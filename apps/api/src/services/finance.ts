@@ -773,7 +773,82 @@ export async function deleteFinancialTransaction(id: number) {
   });
 }
 
+const normalizeCategoryName = (value: string) =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+
+async function mergeDuplicateTransactionCategoriesByName() {
+  const categories = await db.transactionCategory.findMany({
+    orderBy: { id: "asc" },
+    select: { id: true, name: true },
+  });
+
+  const groups = new Map<string, { id: number; name: string }[]>();
+  for (const category of categories) {
+    const key = normalizeCategoryName(category.name);
+    if (!key) continue;
+    const current = groups.get(key);
+    if (current) {
+      current.push(category);
+    } else {
+      groups.set(key, [category]);
+    }
+  }
+
+  const duplicateSets = Array.from(groups.values()).filter((group) => group.length > 1);
+  if (duplicateSets.length === 0) {
+    return;
+  }
+
+  await db.$transaction(async (tx) => {
+    for (const group of duplicateSets) {
+      const [primary, ...duplicates] = group;
+      if (!primary || duplicates.length === 0) continue;
+      const duplicateIds = duplicates.map((item) => item.id);
+
+      await tx.financialTransaction.updateMany({
+        where: { categoryId: { in: duplicateIds } },
+        data: { categoryId: primary.id },
+      });
+
+      await tx.financialAutoCategoryRule.updateMany({
+        where: { categoryId: { in: duplicateIds } },
+        data: { categoryId: primary.id },
+      });
+
+      await tx.transactionCategory.deleteMany({
+        where: { id: { in: duplicateIds } },
+      });
+    }
+  });
+}
+
+async function findCategoryByNormalizedName(name: string, excludeId?: number) {
+  const normalized = normalizeCategoryName(name);
+  if (!normalized) {
+    return null;
+  }
+
+  const categories = await db.transactionCategory.findMany({
+    select: { id: true, name: true },
+  });
+
+  return (
+    categories.find((category) => {
+      if (excludeId != null && category.id === excludeId) {
+        return false;
+      }
+      return normalizeCategoryName(category.name) === normalized;
+    }) ?? null
+  );
+}
+
 export async function listTransactionCategories() {
+  await mergeDuplicateTransactionCategoriesByName();
   return db.transactionCategory.findMany({
     orderBy: { name: "asc" },
   });
@@ -784,7 +859,24 @@ export async function createTransactionCategory(data: {
   type: TransactionType;
   color?: string;
 }) {
-  return db.transactionCategory.create({ data });
+  await mergeDuplicateTransactionCategoriesByName();
+
+  const cleanName = data.name.trim().replace(/\s+/g, " ");
+  if (!cleanName) {
+    throw new Error("El nombre de la categoría es obligatorio");
+  }
+
+  const duplicate = await findCategoryByNormalizedName(cleanName);
+  if (duplicate) {
+    throw new Error("Ya existe una categoría con ese nombre");
+  }
+
+  return db.transactionCategory.create({
+    data: {
+      ...data,
+      name: cleanName,
+    },
+  });
 }
 
 export async function updateTransactionCategory(
@@ -795,6 +887,22 @@ export async function updateTransactionCategory(
     type?: TransactionType;
   },
 ) {
+  await mergeDuplicateTransactionCategoriesByName();
+
+  if (data.name !== undefined) {
+    const cleanName = data.name.trim().replace(/\s+/g, " ");
+    if (!cleanName) {
+      throw new Error("El nombre de la categoría es obligatorio");
+    }
+
+    const duplicate = await findCategoryByNormalizedName(cleanName, id);
+    if (duplicate) {
+      throw new Error("Ya existe una categoría con ese nombre");
+    }
+
+    data.name = cleanName;
+  }
+
   return db.transactionCategory.update({
     where: { id },
     data: {
