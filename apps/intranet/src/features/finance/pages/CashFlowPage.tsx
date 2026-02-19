@@ -279,7 +279,6 @@ type CashFlowColumnFilters = {
   amount: string;
   comment: string;
   fromCounterpart: string;
-  description: string;
   toCounterpart: string;
   type: CashFlowTypeFilter;
 };
@@ -288,7 +287,6 @@ const DEFAULT_COLUMN_FILTERS: CashFlowColumnFilters = {
   amount: "",
   comment: "",
   fromCounterpart: "",
-  description: "",
   toCounterpart: "",
   type: "ALL",
 };
@@ -580,7 +578,6 @@ export function CashFlowPage() {
   const hasActiveFilters =
     selectedCategoryFilters.length > 0 ||
     columnFilters.type !== "ALL" ||
-    columnFilters.description.trim().length > 0 ||
     columnFilters.fromCounterpart.trim().length > 0 ||
     columnFilters.toCounterpart.trim().length > 0 ||
     columnFilters.amount.trim().length > 0 ||
@@ -589,7 +586,6 @@ export function CashFlowPage() {
   const monthTransactions = data?.data ?? [];
 
   const filteredTransactions = useMemo(() => {
-    const descriptionFilter = normalizeText(columnFilters.description);
     const fromCounterpartFilter = normalizeText(columnFilters.fromCounterpart);
     const toCounterpartFilter = normalizeText(columnFilters.toCounterpart);
     const commentFilter = normalizeText(columnFilters.comment);
@@ -603,13 +599,6 @@ export function CashFlowPage() {
       if (selectedCategoryFilters.length > 0) {
         const txCategoryKey = tx.categoryId == null ? "__none__" : String(tx.categoryId);
         if (!selectedCategoryFilters.includes(txCategoryKey)) {
-          return false;
-        }
-      }
-
-      if (descriptionFilter) {
-        const descriptionText = normalizeText(tx.description);
-        if (!descriptionText.includes(descriptionFilter)) {
           return false;
         }
       }
@@ -1497,20 +1486,6 @@ export function CashFlowPage() {
                 </div>
 
                 <SearchField
-                  aria-label="Buscar en descripción"
-                  className="lg:col-span-2"
-                  variant="secondary"
-                  value={columnFilters.description}
-                  onChange={(value) => updateColumnFilter("description", value)}
-                >
-                  <SearchField.Group>
-                    <SearchField.SearchIcon />
-                    <SearchField.Input placeholder="Descripción" />
-                    <SearchField.ClearButton />
-                  </SearchField.Group>
-                </SearchField>
-
-                <SearchField
                   aria-label="Buscar en desde"
                   className="lg:col-span-2"
                   variant="secondary"
@@ -1595,18 +1570,6 @@ export function CashFlowPage() {
                       onClick={() => updateColumnFilter("type", "ALL")}
                     >
                       {columnFilters.type === "INCOME" ? "Ingreso" : "Egreso"}
-                      <X className="h-3.5 w-3.5" />
-                    </Button>
-                  )}
-
-                  {columnFilters.description.trim().length > 0 && (
-                    <Button
-                      className="h-7 rounded-full px-3"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => updateColumnFilter("description", "")}
-                    >
-                      Descripción: {columnFilters.description}
                       <X className="h-3.5 w-3.5" />
                     </Button>
                   )}

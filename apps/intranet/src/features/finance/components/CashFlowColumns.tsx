@@ -102,14 +102,6 @@ const mapPaymentMethodLabel = (
   return "";
 };
 
-const mapDescriptionLabel = (rawDescription: null | string | undefined) => {
-  const description = normalizeComparable(rawDescription);
-  if (description === "reserve_for_payment") return "Reservado para pago";
-  if (description === "payment") return "Pago";
-  if (description === "payout") return "Retiro";
-  return rawDescription ?? "";
-};
-
 const normalizeSaleDetail = (rawValue: null | string | undefined) =>
   (rawValue ?? "").replaceAll('"', "").trim();
 
@@ -129,14 +121,6 @@ export const columns: ColumnDef<TransactionWithRelations>[] = [
       );
     },
     cell: ({ row }) => dayjs(row.getValue("date")).format("DD-MM-YY HH:mm"),
-  },
-  {
-    accessorKey: "description",
-    header: "Descripción",
-    cell: ({ row }) => {
-      const label = mapDescriptionLabel(String(row.getValue("description") ?? ""));
-      return <span className="text-small font-medium">{label || "-"}</span>;
-    },
   },
   {
     accessorKey: "sourceId",
