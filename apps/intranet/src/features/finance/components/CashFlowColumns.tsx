@@ -9,6 +9,12 @@ import { Button } from "@/components/ui/Button";
 export type TransactionWithRelations = FinancialTransaction & {
   category?: TransactionCategory | null;
   counterpart?: Counterpart | null;
+  releaseBalanceAmount?: null | number | string;
+  releasePaymentMethod?: null | string;
+  releaseSaleDetail?: null | string;
+  settlementPaymentMethod?: null | string;
+  settlementPaymentMethodType?: null | string;
+  settlementSaleDetail?: null | string;
 };
 
 const formatCurrency = (amount: number) => {
@@ -41,6 +47,89 @@ export const columns: ColumnDef<TransactionWithRelations>[] = [
     cell: ({ row }) => (
       <span className="text-small font-medium">{row.getValue("description")}</span>
     ),
+  },
+  {
+    accessorKey: "sourceId",
+    header: "source_id",
+    cell: ({ row }) => (
+      <span
+        className="block max-w-60 truncate text-small text-default-600"
+        title={row.original.sourceId ?? ""}
+      >
+        {row.original.sourceId ?? "-"}
+      </span>
+    ),
+  },
+  {
+    id: "release_payment_method",
+    header: "release_payment_method",
+    cell: ({ row }) => (
+      <span
+        className="block max-w-52 truncate text-small text-default-600"
+        title={row.original.releasePaymentMethod ?? ""}
+      >
+        {row.original.releasePaymentMethod ?? "-"}
+      </span>
+    ),
+  },
+  {
+    id: "settlement_payment_method_type",
+    header: "settlement_payment_method_type",
+    cell: ({ row }) => (
+      <span
+        className="block max-w-52 truncate text-small text-default-600"
+        title={row.original.settlementPaymentMethodType ?? ""}
+      >
+        {row.original.settlementPaymentMethodType ?? "-"}
+      </span>
+    ),
+  },
+  {
+    id: "settlement_payment_method",
+    header: "settlement_payment_method",
+    cell: ({ row }) => (
+      <span
+        className="block max-w-52 truncate text-small text-default-600"
+        title={row.original.settlementPaymentMethod ?? ""}
+      >
+        {row.original.settlementPaymentMethod ?? "-"}
+      </span>
+    ),
+  },
+  {
+    id: "release_sale_detail",
+    header: "release_sale_detail",
+    cell: ({ row }) => (
+      <span
+        className="block max-w-60 truncate text-small text-default-600"
+        title={row.original.releaseSaleDetail ?? ""}
+      >
+        {row.original.releaseSaleDetail ?? "-"}
+      </span>
+    ),
+  },
+  {
+    id: "settlement_sale_detail",
+    header: "settlement_sale_detail",
+    cell: ({ row }) => (
+      <span
+        className="block max-w-60 truncate text-small text-default-600"
+        title={row.original.settlementSaleDetail ?? ""}
+      >
+        {row.original.settlementSaleDetail ?? "-"}
+      </span>
+    ),
+  },
+  {
+    id: "release_balance_amount",
+    header: "balance_amount",
+    cell: ({ row }) => {
+      const raw = row.original.releaseBalanceAmount;
+      if (raw == null) return <span className="text-default-400">-</span>;
+      const amount = Number(raw);
+      if (!Number.isFinite(amount)) return <span className="text-default-400">-</span>;
+      return <span className="font-medium text-small">{formatCurrency(amount)}</span>;
+    },
   },
   {
     id: "source_target",

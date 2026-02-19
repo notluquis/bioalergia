@@ -564,8 +564,59 @@ export async function listFinancialTransactions(params: {
     }),
   ]);
 
+  const sourceIds = Array.from(
+    new Set(
+      transactions
+        .map((transaction) => transaction.sourceId)
+        .filter((sourceId): sourceId is string => Boolean(sourceId && sourceId.trim())),
+    ),
+  );
+
+  const [releaseRows, settlementRows] =
+    sourceIds.length > 0
+      ? await Promise.all([
+          db.releaseTransaction.findMany({
+            where: { sourceId: { in: sourceIds } },
+            select: {
+              balanceAmount: true,
+              paymentMethod: true,
+              saleDetail: true,
+              sourceId: true,
+            },
+          }),
+          db.settlementTransaction.findMany({
+            where: { sourceId: { in: sourceIds } },
+            select: {
+              paymentMethod: true,
+              paymentMethodType: true,
+              saleDetail: true,
+              sourceId: true,
+            },
+          }),
+        ])
+      : [[], []];
+
+  const releaseBySourceId = new Map(releaseRows.map((row) => [row.sourceId, row]));
+  const settlementBySourceId = new Map(settlementRows.map((row) => [row.sourceId, row]));
+
+  const enrichedTransactions = transactions.map((transaction) => {
+    const sourceId = transaction.sourceId ?? null;
+    const release = sourceId ? releaseBySourceId.get(sourceId) : undefined;
+    const settlement = sourceId ? settlementBySourceId.get(sourceId) : undefined;
+
+    return {
+      ...transaction,
+      releaseBalanceAmount: release?.balanceAmount ?? null,
+      releasePaymentMethod: release?.paymentMethod ?? null,
+      releaseSaleDetail: release?.saleDetail ?? null,
+      settlementPaymentMethod: settlement?.paymentMethod ?? null,
+      settlementPaymentMethodType: settlement?.paymentMethodType ?? null,
+      settlementSaleDetail: settlement?.saleDetail ?? null,
+    };
+  });
+
   return {
-    data: transactions,
+    data: enrichedTransactions,
     meta: {
       total,
       page,
