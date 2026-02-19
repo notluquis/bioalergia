@@ -268,8 +268,8 @@ function MedicalCertificatePage() {
                 {(field) => (
                   <Select
                     label="Para ser presentado en"
-                    selectedKey={field.state.value}
-                    onSelectionChange={(key) => {
+                    value={field.state.value || null}
+                    onChange={(key) => {
                       if (typeof key === "string") {
                         field.handleChange(key as typeof field.state.value);
                       }

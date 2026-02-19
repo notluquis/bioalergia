@@ -198,8 +198,8 @@ export function TransactionForm({ isOpen, onClose, initialData }: Props) {
 
                   {/* Tipo */}
                   <Select
-                    selectedKey={formData.type}
-                    onSelectionChange={(key) => key && handleChange("type", key as string)}
+                    value={formData.type}
+                    onChange={(key) => key && handleChange("type", key as string)}
                     isInvalid={!!errors.type}
                     placeholder="Seleccionar tipo"
                   >
@@ -259,10 +259,10 @@ export function TransactionForm({ isOpen, onClose, initialData }: Props) {
 
                   {/* Categoría */}
                   <Select
-                    selectedKey={
+                    value={
                       formData.categoryId == null ? "__none__" : formData.categoryId.toString()
                     }
-                    onSelectionChange={(key) => {
+                    onChange={(key) => {
                       const raw = String(key);
                       if (raw === "__none__") {
                         handleChange("categoryId", null);

@@ -731,9 +731,9 @@ export function CashFlowPage() {
               <div className="grid grid-cols-1 gap-2 lg:grid-cols-10">
                 <div className="lg:col-span-2">
                   <Select
-                    selectedKey={selectedMonth}
-                    onSelectionChange={(key) => {
-                      setSelectedMonth(String(key));
+                    value={selectedMonth}
+                    onChange={(key) => {
+                      setSelectedMonth(String(key ?? ""));
                       setPage(1);
                     }}
                   >
@@ -797,9 +797,9 @@ export function CashFlowPage() {
 
                 <div className="lg:col-span-2">
                   <Select
-                    selectedKey={columnFilters.type}
-                    onSelectionChange={(key) =>
-                      updateColumnFilter("type", String(key) as CashFlowTypeFilter)
+                    value={columnFilters.type}
+                    onChange={(key) =>
+                      updateColumnFilter("type", String(key ?? "ALL") as CashFlowTypeFilter)
                     }
                   >
                     <Label>Tipo</Label>
@@ -1040,9 +1040,9 @@ export function CashFlowPage() {
                 </TextField>
 
                 <Select
-                  selectedKey={newCategoryType}
-                  onSelectionChange={(key) =>
-                    setNewCategoryType(String(key) as "EXPENSE" | "INCOME")
+                  value={newCategoryType}
+                  onChange={(key) =>
+                    setNewCategoryType(String(key ?? "EXPENSE") as "EXPENSE" | "INCOME")
                   }
                   placeholder="Tipo"
                 >
@@ -1101,9 +1101,11 @@ export function CashFlowPage() {
                             />
                           </TextField>
                           <Select
-                            selectedKey={editingCategoryType}
-                            onSelectionChange={(key) =>
-                              setEditingCategoryType(String(key) as "EXPENSE" | "INCOME")
+                            value={editingCategoryType}
+                            onChange={(key) =>
+                              setEditingCategoryType(
+                                String(key ?? "EXPENSE") as "EXPENSE" | "INCOME",
+                              )
                             }
                           >
                             <Label>Tipo</Label>

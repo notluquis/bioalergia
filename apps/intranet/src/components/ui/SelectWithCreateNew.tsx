@@ -69,7 +69,7 @@ export function SelectWithCreateNew({
       <Select
         isDisabled={isDisabled}
         isRequired={isRequired}
-        onSelectionChange={(key) => {
+        onChange={(key) => {
           if (key) {
             onChange(String(key));
             onBlur?.();
@@ -77,7 +77,7 @@ export function SelectWithCreateNew({
         }}
         onBlur={onBlur}
         placeholder={placeholder}
-        selectedKey={value || undefined}
+        value={value || null}
       >
         <Label>{label}</Label>
         <Select.Trigger>

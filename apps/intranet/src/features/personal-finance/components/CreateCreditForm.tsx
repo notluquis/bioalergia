@@ -145,7 +145,7 @@ export function CreateCreditForm() {
                       <Select
                         className="w-full"
                         placeholder="Selecciona moneda"
-                        selectedKey={field.state.value}
+                        value={field.state.value || null}
                         onChange={(key) => {
                           field.handleChange(key as "CLP" | "UF" | "USD");
                         }}
