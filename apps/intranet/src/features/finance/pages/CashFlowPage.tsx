@@ -22,15 +22,25 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { z } from "zod";
 import { useLazyTabs } from "@/hooks/use-lazy-tabs";
 import { ApiError, apiClient } from "@/lib/api-client";
 import { toast } from "@/lib/toast-interceptor";
 import type { TransactionWithRelations } from "../components/CashFlowColumns";
-import { CashFlowTable } from "../components/CashFlowTable";
-import { TransactionForm } from "../components/TransactionForm";
+
+const CashFlowTable = lazy(() =>
+  import("../components/CashFlowTable").then((module) => ({
+    default: module.CashFlowTable,
+  })),
+);
+
+const TransactionForm = lazy(() =>
+  import("../components/TransactionForm").then((module) => ({
+    default: module.TransactionForm,
+  })),
+);
 
 // Hooks
 interface TransactionQueryParams {
@@ -1729,18 +1739,22 @@ export function CashFlowPage() {
                 )}
               </div>
               <div className="p-2">
-                <CashFlowTable
-                  data={paginatedTransactions}
-                  categories={categories}
-                  total={totalFiltered}
-                  isLoading={isLoading}
-                  page={safePage}
-                  pageSize={TABLE_PAGE_SIZE}
-                  onPageChange={(nextPage) => setPage(Math.max(1, nextPage))}
-                  onEdit={handleEdit}
-                  onCategoryChange={handleCategoryChange}
-                  updatingCategoryIds={updatingCategoryIds}
-                />
+                <Suspense
+                  fallback={<div className="p-3 text-default-500 text-sm">Cargando...</div>}
+                >
+                  <CashFlowTable
+                    data={paginatedTransactions}
+                    categories={categories}
+                    total={totalFiltered}
+                    isLoading={isLoading}
+                    page={safePage}
+                    pageSize={TABLE_PAGE_SIZE}
+                    onPageChange={(nextPage) => setPage(Math.max(1, nextPage))}
+                    onEdit={handleEdit}
+                    onCategoryChange={handleCategoryChange}
+                    updatingCategoryIds={updatingCategoryIds}
+                  />
+                </Suspense>
               </div>
             </Card>
           ) : null}
@@ -2325,11 +2339,15 @@ export function CashFlowPage() {
         </Tabs.Panel>
       </Tabs>
 
-      <TransactionForm
-        isOpen={isFormOpen}
-        onClose={() => setIsFormOpen(false)}
-        initialData={editingTx}
-      />
+      {isFormOpen ? (
+        <Suspense fallback={null}>
+          <TransactionForm
+            isOpen={isFormOpen}
+            onClose={() => setIsFormOpen(false)}
+            initialData={editingTx}
+          />
+        </Suspense>
+      ) : null}
     </div>
   );
 }

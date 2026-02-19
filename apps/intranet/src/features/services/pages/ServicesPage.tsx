@@ -1,8 +1,18 @@
 import { Tabs } from "@heroui/react";
-import { useState } from "react";
-import { ServicesAgendaContent } from "@/features/services/components/ServicesAgendaContent";
-import { ServicesOverviewContent } from "@/features/services/components/ServicesOverviewContent";
+import { lazy, Suspense, useState } from "react";
 import { useLazyTabs } from "@/hooks/use-lazy-tabs";
+
+const ServicesOverviewContent = lazy(() =>
+  import("@/features/services/components/ServicesOverviewContent").then((module) => ({
+    default: module.ServicesOverviewContent,
+  })),
+);
+
+const ServicesAgendaContent = lazy(() =>
+  import("@/features/services/components/ServicesAgendaContent").then((module) => ({
+    default: module.ServicesAgendaContent,
+  })),
+);
 
 export function ServicesPage() {
   const [selectedTab, setSelectedTab] = useState<"overview" | "agenda">("overview");
@@ -35,11 +45,19 @@ export function ServicesPage() {
       </Tabs.ListContainer>
 
       <Tabs.Panel className="space-y-4 pt-4" id="overview">
-        {isTabMounted("overview") ? <ServicesOverviewContent /> : null}
+        {isTabMounted("overview") ? (
+          <Suspense fallback={<div className="py-2 text-default-500 text-sm">Cargando...</div>}>
+            <ServicesOverviewContent />
+          </Suspense>
+        ) : null}
       </Tabs.Panel>
 
       <Tabs.Panel className="space-y-8 pt-4" id="agenda">
-        {isTabMounted("agenda") ? <ServicesAgendaContent /> : null}
+        {isTabMounted("agenda") ? (
+          <Suspense fallback={<div className="py-2 text-default-500 text-sm">Cargando...</div>}>
+            <ServicesAgendaContent />
+          </Suspense>
+        ) : null}
       </Tabs.Panel>
     </Tabs>
   );
