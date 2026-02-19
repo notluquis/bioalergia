@@ -3,6 +3,7 @@ import { Autocomplete, Chip, EmptyState, ListBox, SearchField } from "@heroui/re
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { ArrowUpDown } from "lucide-react";
+import type { ReactNode } from "react";
 import { Button } from "@/components/ui/Button";
 
 // Extend with relations
@@ -23,6 +24,58 @@ const formatCurrency = (amount: number) => {
     currency: "CLP",
   }).format(amount);
 };
+
+const normalizeComparable = (value: null | string | undefined) =>
+  value?.trim().replace(/\s+/g, " ").toLowerCase() ?? "";
+
+function renderUnifiedValue(params: {
+  primary: null | string | undefined;
+  primaryLabel: string;
+  secondary: null | string | undefined;
+  secondaryLabel: string;
+}): ReactNode {
+  const primaryRaw = params.primary?.trim() ?? "";
+  const secondaryRaw = params.secondary?.trim() ?? "";
+  const primaryNorm = normalizeComparable(primaryRaw);
+  const secondaryNorm = normalizeComparable(secondaryRaw);
+
+  if (!primaryNorm && !secondaryNorm) {
+    return <span className="text-default-400">-</span>;
+  }
+
+  if (primaryNorm && secondaryNorm && primaryNorm === secondaryNorm) {
+    return (
+      <span className="block max-w-60 truncate text-small text-default-600" title={primaryRaw}>
+        {primaryRaw}
+      </span>
+    );
+  }
+
+  if (primaryNorm && secondaryNorm) {
+    return (
+      <div className="flex max-w-72 flex-col gap-1 text-small">
+        <span className="truncate text-default-600" title={`${params.primaryLabel}: ${primaryRaw}`}>
+          <span className="text-tiny text-default-400">{params.primaryLabel}: </span>
+          {primaryRaw}
+        </span>
+        <span
+          className="truncate text-default-600"
+          title={`${params.secondaryLabel}: ${secondaryRaw}`}
+        >
+          <span className="text-tiny text-default-400">{params.secondaryLabel}: </span>
+          {secondaryRaw}
+        </span>
+      </div>
+    );
+  }
+
+  const single = primaryNorm ? primaryRaw : secondaryRaw;
+  return (
+    <span className="block max-w-60 truncate text-small text-default-600" title={single}>
+      {single}
+    </span>
+  );
+}
 
 export const columns: ColumnDef<TransactionWithRelations>[] = [
   {
@@ -61,18 +114,6 @@ export const columns: ColumnDef<TransactionWithRelations>[] = [
     ),
   },
   {
-    id: "release_payment_method",
-    header: "release_payment_method",
-    cell: ({ row }) => (
-      <span
-        className="block max-w-52 truncate text-small text-default-600"
-        title={row.original.releasePaymentMethod ?? ""}
-      >
-        {row.original.releasePaymentMethod ?? "-"}
-      </span>
-    ),
-  },
-  {
     id: "settlement_payment_method_type",
     header: "settlement_payment_method_type",
     cell: ({ row }) => (
@@ -85,51 +126,26 @@ export const columns: ColumnDef<TransactionWithRelations>[] = [
     ),
   },
   {
-    id: "settlement_payment_method",
-    header: "settlement_payment_method",
-    cell: ({ row }) => (
-      <span
-        className="block max-w-52 truncate text-small text-default-600"
-        title={row.original.settlementPaymentMethod ?? ""}
-      >
-        {row.original.settlementPaymentMethod ?? "-"}
-      </span>
-    ),
+    id: "payment_method",
+    header: "payment_method",
+    cell: ({ row }) =>
+      renderUnifiedValue({
+        primary: row.original.releasePaymentMethod,
+        primaryLabel: "Release",
+        secondary: row.original.settlementPaymentMethod,
+        secondaryLabel: "Settlement",
+      }),
   },
   {
-    id: "release_sale_detail",
-    header: "release_sale_detail",
-    cell: ({ row }) => (
-      <span
-        className="block max-w-60 truncate text-small text-default-600"
-        title={row.original.releaseSaleDetail ?? ""}
-      >
-        {row.original.releaseSaleDetail ?? "-"}
-      </span>
-    ),
-  },
-  {
-    id: "settlement_sale_detail",
-    header: "settlement_sale_detail",
-    cell: ({ row }) => (
-      <span
-        className="block max-w-60 truncate text-small text-default-600"
-        title={row.original.settlementSaleDetail ?? ""}
-      >
-        {row.original.settlementSaleDetail ?? "-"}
-      </span>
-    ),
-  },
-  {
-    id: "release_balance_amount",
-    header: "balance_amount",
-    cell: ({ row }) => {
-      const raw = row.original.releaseBalanceAmount;
-      if (raw == null) return <span className="text-default-400">-</span>;
-      const amount = Number(raw);
-      if (!Number.isFinite(amount)) return <span className="text-default-400">-</span>;
-      return <span className="font-medium text-small">{formatCurrency(amount)}</span>;
-    },
+    id: "sale_detail",
+    header: "sale_detail",
+    cell: ({ row }) =>
+      renderUnifiedValue({
+        primary: row.original.releaseSaleDetail,
+        primaryLabel: "Release",
+        secondary: row.original.settlementSaleDetail,
+        secondaryLabel: "Settlement",
+      }),
   },
   {
     id: "source_target",
@@ -273,6 +289,17 @@ export const columns: ColumnDef<TransactionWithRelations>[] = [
         {row.getValue("comment")}
       </span>
     ),
+  },
+  {
+    id: "release_balance_amount",
+    header: "balance_amount",
+    cell: ({ row }) => {
+      const raw = row.original.releaseBalanceAmount;
+      if (raw == null) return <span className="text-default-400">-</span>;
+      const amount = Number(raw);
+      if (!Number.isFinite(amount)) return <span className="text-default-400">-</span>;
+      return <span className="font-medium text-small">{formatCurrency(amount)}</span>;
+    },
   },
   {
     id: "actions",

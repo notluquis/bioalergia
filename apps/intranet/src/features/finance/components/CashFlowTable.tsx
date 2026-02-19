@@ -1,3 +1,5 @@
+import type { VisibilityState } from "@tanstack/react-table";
+import { useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { columns, type TransactionWithRelations } from "./CashFlowColumns";
 
@@ -26,6 +28,11 @@ export function CashFlowTable({
   onCategoryChange,
   updatingCategoryIds,
 }: Props) {
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
+    release_balance_amount: false,
+    sourceId: false,
+  });
+
   // Convert 1-indexed page to 0-indexed for DataTable
   const pagination = {
     pageIndex: page - 1,
@@ -35,7 +42,9 @@ export function CashFlowTable({
   return (
     <DataTable
       columns={columns}
+      columnVisibility={columnVisibility}
       data={data}
+      onColumnVisibilityChange={setColumnVisibility}
       pageCount={Math.ceil(total / pageSize)}
       pagination={pagination}
       onPaginationChange={(updater) => {
