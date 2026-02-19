@@ -118,5 +118,3 @@ export const DTEType = $schema.enums.DTEType.values;
 export type DTEType = (typeof DTEType)[keyof typeof DTEType];
 export const TransactionType = $schema.enums.TransactionType.values;
 export type TransactionType = (typeof TransactionType)[keyof typeof TransactionType];
-export const TransactionSource = $schema.enums.TransactionSource.values;
-export type TransactionSource = (typeof TransactionSource)[keyof typeof TransactionSource];

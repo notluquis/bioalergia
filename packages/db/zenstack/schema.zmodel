@@ -1937,10 +1937,6 @@ enum TransactionType {
   EXPENSE
 }
 
-enum TransactionSource {
-  MERCADOPAGO
-}
-
 model TransactionCategory {
   id           Int                    @id @default(autoincrement())
   name         String
@@ -1992,7 +1988,6 @@ model FinancialTransaction {
   description String
   amount      Decimal              @db.Decimal(19, 4)
   type        TransactionType
-  source      TransactionSource    @default(MERCADOPAGO)
   sourceId    String?              @map("source_id")
   categoryId  Int?                 @map("category_id")
   counterpartId Int?               @map("counterpart_id")

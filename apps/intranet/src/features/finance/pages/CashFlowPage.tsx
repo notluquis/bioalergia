@@ -77,7 +77,6 @@ const CashFlowTransactionSchema = z
     date: z.coerce.date(),
     description: z.string(),
     id: z.number(),
-    source: z.string(),
     type: z.enum(["INCOME", "EXPENSE"]),
   })
   .passthrough();
@@ -471,7 +470,7 @@ export function CashFlowPage() {
       }
 
       if (descriptionFilter) {
-        const descriptionText = normalizeText(`${tx.description} ${tx.source ?? ""}`);
+        const descriptionText = normalizeText(tx.description);
         if (!descriptionText.includes(descriptionFilter)) {
           return false;
         }

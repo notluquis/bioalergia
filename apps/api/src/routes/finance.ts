@@ -109,10 +109,7 @@ app.get("/transactions/summary", zValidator("query", listSchema), async (c) => {
 // 2. Create Transaction (Manual)
 app.post("/transactions", zValidator("json", createSchema), async (c) => {
   const data = c.req.valid("json");
-  const result = await createFinancialTransaction({
-    ...data,
-    source: "MERCADOPAGO",
-  });
+  const result = await createFinancialTransaction(data);
   return reply(c, { status: "ok", data: result });
 });
 

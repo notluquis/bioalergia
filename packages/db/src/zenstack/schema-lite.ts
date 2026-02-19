@@ -5474,11 +5474,6 @@ export class SchemaType implements SchemaDef {
           name: "type",
           type: "TransactionType",
         },
-        source: {
-          name: "source",
-          type: "TransactionSource",
-          default: "MERCADOPAGO",
-        },
         sourceId: {
           name: "sourceId",
           type: "String",
@@ -5724,12 +5719,6 @@ export class SchemaType implements SchemaDef {
       values: {
         INCOME: "INCOME",
         EXPENSE: "EXPENSE",
-      },
-    },
-    TransactionSource: {
-      name: "TransactionSource",
-      values: {
-        MERCADOPAGO: "MERCADOPAGO",
       },
     },
   } as const;

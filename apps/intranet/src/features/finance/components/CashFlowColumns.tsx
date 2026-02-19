@@ -39,12 +39,7 @@ export const columns: ColumnDef<TransactionWithRelations>[] = [
     accessorKey: "description",
     header: "Descripción",
     cell: ({ row }) => (
-      <div className="flex flex-col">
-        <span className="text-small font-medium">{row.getValue("description")}</span>
-        <span className="text-tiny text-default-400 capitalize">
-          {(row.original.source || "").toLowerCase()}
-        </span>
-      </div>
+      <span className="text-small font-medium">{row.getValue("description")}</span>
     ),
   },
   {

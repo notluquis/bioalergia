@@ -1,10 +1,9 @@
-import type { TransactionSource, TransactionType } from "@finanzas/db";
+import type { TransactionType } from "@finanzas/db";
 import { db } from "@finanzas/db";
 import Decimal from "decimal.js";
 import { fetchMergedTransactions } from "./transactions";
 
 const SETTLEMENT_CASHBACK_TYPE = "CASHBACK";
-const AUTO_RULE_SOURCE: TransactionSource = "MERCADOPAGO";
 
 export type CreateFinancialTransactionInput = {
   date: Date;
@@ -14,7 +13,6 @@ export type CreateFinancialTransactionInput = {
   categoryId?: number | null;
   counterpartId?: number | null;
   comment?: string;
-  source?: TransactionSource;
   sourceId?: string;
 };
 
@@ -270,7 +268,6 @@ async function applyAutoCategoryRulesToExistingTransactions(rules: AutoCategoryR
           ...(rule.descriptionContains != null && {
             description: { contains: rule.descriptionContains, mode: "insensitive" },
           }),
-          source: AUTO_RULE_SOURCE,
           type: rule.type,
         },
         data: {
@@ -303,8 +300,6 @@ export async function syncFinancialTransactions(_userId: number) {
   const errors: string[] = [];
 
   for (const tour of nonCashbackTransactions) {
-    // All MP-sourced transactions map to MERCADOPAGO source
-    const source: TransactionSource = "MERCADOPAGO";
     const counterpartId = resolveCounterpartIdForTransaction(
       tour,
       counterpartLookup,
@@ -315,7 +310,7 @@ export async function syncFinancialTransactions(_userId: number) {
       // Check if already synced (idempotent via sourceId)
       if (tour.sourceId) {
         const existing = await db.financialTransaction.findFirst({
-          where: { source, sourceId: tour.sourceId },
+          where: { sourceId: tour.sourceId },
           select: {
             amount: true,
             categoryId: true,
@@ -364,7 +359,6 @@ export async function syncFinancialTransactions(_userId: number) {
             amount: tour.transactionAmount,
             date: tour.transactionDate,
             description: tour.description || "Sin descripcion",
-            source,
           },
           select: {
             amount: true,
@@ -426,7 +420,6 @@ export async function syncFinancialTransactions(_userId: number) {
           description: tour.description || "Sin descripcion",
           amount: new Decimal(tour.transactionAmount),
           type,
-          source,
           sourceId: tour.sourceId ?? undefined,
           categoryId,
           counterpartId,
@@ -499,7 +492,6 @@ export async function listFinancialTransactions(params: {
   if (cashbackSettlementSourceIds.length > 0) {
     where.NOT = [
       {
-        source: "MERCADOPAGO",
         sourceId: { in: cashbackSettlementSourceIds },
       },
     ];
@@ -555,7 +547,6 @@ export async function getFinancialSummaryByCategory(params: { from?: Date; to?: 
   if (cashbackSettlementSourceIds.length > 0) {
     where.NOT = [
       {
-        source: "MERCADOPAGO",
         sourceId: { in: cashbackSettlementSourceIds },
       },
     ];
@@ -629,7 +620,6 @@ export async function createFinancialTransaction(data: CreateFinancialTransactio
       description: data.description,
       amount: new Decimal(data.amount),
       type: data.type,
-      source: data.source ?? "MERCADOPAGO",
       categoryId: data.categoryId,
       counterpartId: data.counterpartId,
       comment: data.comment,
@@ -772,7 +762,6 @@ async function applySingleAutoCategoryRule(ruleId: number) {
       ...(rule.descriptionContains != null && {
         description: { contains: rule.descriptionContains, mode: "insensitive" },
       }),
-      source: AUTO_RULE_SOURCE,
       type: rule.type,
     },
     data: {
