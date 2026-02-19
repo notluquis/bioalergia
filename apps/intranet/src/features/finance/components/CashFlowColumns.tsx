@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 export type TransactionWithRelations = FinancialTransaction & {
   category?: TransactionCategory | null;
   counterpart?: Counterpart | null;
+  counterpartAccountNumber?: null | string;
   releaseBalanceAmount?: null | number | string;
   releasePaymentMethod?: null | string;
   releaseSaleDetail?: null | string;
@@ -77,6 +78,41 @@ function renderUnifiedValue(params: {
   );
 }
 
+const mapPaymentMethodLabel = (
+  rawMethod: null | string | undefined,
+  rawMethodType: null | string | undefined,
+) => {
+  const method = normalizeComparable(rawMethod);
+  const methodType = normalizeComparable(rawMethodType);
+
+  if (method === "available_money") return "Dinero disponible";
+  if (method === "tef" || method === "bank_transfer") return "Transferencia";
+  if (method === "master" || method === "mastercard") {
+    return methodType === "debit_card" ? "Débito MasterCard" : "MasterCard";
+  }
+  if (method === "debmaster") return "Débito MasterCard";
+  if (method === "debvisa") return "Débito VISA";
+  if (method === "visa") {
+    return methodType === "debit_card" ? "Débito VISA" : "VISA";
+  }
+  if (method) return rawMethod?.trim() ?? "";
+
+  if (methodType === "bank_transfer") return "Transferencia";
+  if (methodType === "available_money") return "Dinero disponible";
+  return "";
+};
+
+const mapDescriptionLabel = (rawDescription: null | string | undefined) => {
+  const description = normalizeComparable(rawDescription);
+  if (description === "reserve_for_payment") return "Reservado para pago";
+  if (description === "payment") return "Pago";
+  if (description === "payout") return "Retiro";
+  return rawDescription ?? "";
+};
+
+const normalizeSaleDetail = (rawValue: null | string | undefined) =>
+  (rawValue ?? "").replaceAll('"', "").trim();
+
 export const columns: ColumnDef<TransactionWithRelations>[] = [
   {
     accessorKey: "date",
@@ -97,9 +133,10 @@ export const columns: ColumnDef<TransactionWithRelations>[] = [
   {
     accessorKey: "description",
     header: "Descripción",
-    cell: ({ row }) => (
-      <span className="text-small font-medium">{row.getValue("description")}</span>
-    ),
+    cell: ({ row }) => {
+      const label = mapDescriptionLabel(String(row.getValue("description") ?? ""));
+      return <span className="text-small font-medium">{label || "-"}</span>;
+    },
   },
   {
     accessorKey: "sourceId",
@@ -114,36 +151,30 @@ export const columns: ColumnDef<TransactionWithRelations>[] = [
     ),
   },
   {
-    id: "settlement_payment_method_type",
-    header: "settlement_payment_method_type",
-    cell: ({ row }) => (
-      <span
-        className="block max-w-52 truncate text-small text-default-600"
-        title={row.original.settlementPaymentMethodType ?? ""}
-      >
-        {row.original.settlementPaymentMethodType ?? "-"}
-      </span>
-    ),
-  },
-  {
     id: "payment_method",
     header: "payment_method",
-    cell: ({ row }) =>
-      renderUnifiedValue({
-        primary: row.original.releasePaymentMethod,
+    cell: ({ row }) => {
+      const releaseMethod = mapPaymentMethodLabel(row.original.releasePaymentMethod, null);
+      const settlementMethod = mapPaymentMethodLabel(
+        row.original.settlementPaymentMethod,
+        row.original.settlementPaymentMethodType,
+      );
+      return renderUnifiedValue({
+        primary: releaseMethod,
         primaryLabel: "Release",
-        secondary: row.original.settlementPaymentMethod,
+        secondary: settlementMethod,
         secondaryLabel: "Settlement",
-      }),
+      });
+    },
   },
   {
     id: "sale_detail",
     header: "sale_detail",
     cell: ({ row }) =>
       renderUnifiedValue({
-        primary: row.original.releaseSaleDetail,
+        primary: normalizeSaleDetail(row.original.releaseSaleDetail),
         primaryLabel: "Release",
-        secondary: row.original.settlementSaleDetail,
+        secondary: normalizeSaleDetail(row.original.settlementSaleDetail),
         secondaryLabel: "Settlement",
       }),
   },
@@ -156,6 +187,9 @@ export const columns: ColumnDef<TransactionWithRelations>[] = [
           <span className="text-small">{row.original.counterpart.bankAccountHolder}</span>
           <span className="text-tiny text-default-400">
             {row.original.counterpart.identificationNumber}
+          </span>
+          <span className="text-tiny text-default-400">
+            {row.original.counterpartAccountNumber ?? "-"}
           </span>
         </div>
       ) : (

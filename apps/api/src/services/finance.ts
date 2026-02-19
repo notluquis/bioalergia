@@ -556,7 +556,14 @@ export async function listFinancialTransactions(params: {
       where,
       include: {
         category: true,
-        counterpart: true,
+        counterpart: {
+          include: {
+            accounts: {
+              select: { accountNumber: true },
+              take: 1,
+            },
+          },
+        },
       },
       orderBy: { date: "desc" },
       skip,
@@ -580,6 +587,7 @@ export async function listFinancialTransactions(params: {
             select: {
               balanceAmount: true,
               paymentMethod: true,
+              payoutBankAccountNumber: true,
               saleDetail: true,
               sourceId: true,
             },
@@ -606,6 +614,10 @@ export async function listFinancialTransactions(params: {
 
     return {
       ...transaction,
+      counterpartAccountNumber:
+        release?.payoutBankAccountNumber ??
+        transaction.counterpart?.accounts?.[0]?.accountNumber ??
+        null,
       releaseBalanceAmount: release?.balanceAmount ?? null,
       releasePaymentMethod: release?.paymentMethod ?? null,
       releaseSaleDetail: release?.saleDetail ?? null,
