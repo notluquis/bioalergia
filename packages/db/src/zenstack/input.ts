@@ -1918,6 +1918,60 @@ export type TransactionCategoryGetPayload<
   Args extends $SelectIncludeOmit<$Schema, "TransactionCategory", true>,
   Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>,
 > = $Result<$Schema, "TransactionCategory", Args, Options>;
+export type FinancialAutoCategoryRuleFindManyArgs = $FindManyArgs<
+  $Schema,
+  "FinancialAutoCategoryRule"
+>;
+export type FinancialAutoCategoryRuleFindUniqueArgs = $FindUniqueArgs<
+  $Schema,
+  "FinancialAutoCategoryRule"
+>;
+export type FinancialAutoCategoryRuleFindFirstArgs = $FindFirstArgs<
+  $Schema,
+  "FinancialAutoCategoryRule"
+>;
+export type FinancialAutoCategoryRuleExistsArgs = $ExistsArgs<$Schema, "FinancialAutoCategoryRule">;
+export type FinancialAutoCategoryRuleCreateArgs = $CreateArgs<$Schema, "FinancialAutoCategoryRule">;
+export type FinancialAutoCategoryRuleCreateManyArgs = $CreateManyArgs<
+  $Schema,
+  "FinancialAutoCategoryRule"
+>;
+export type FinancialAutoCategoryRuleCreateManyAndReturnArgs = $CreateManyAndReturnArgs<
+  $Schema,
+  "FinancialAutoCategoryRule"
+>;
+export type FinancialAutoCategoryRuleUpdateArgs = $UpdateArgs<$Schema, "FinancialAutoCategoryRule">;
+export type FinancialAutoCategoryRuleUpdateManyArgs = $UpdateManyArgs<
+  $Schema,
+  "FinancialAutoCategoryRule"
+>;
+export type FinancialAutoCategoryRuleUpdateManyAndReturnArgs = $UpdateManyAndReturnArgs<
+  $Schema,
+  "FinancialAutoCategoryRule"
+>;
+export type FinancialAutoCategoryRuleUpsertArgs = $UpsertArgs<$Schema, "FinancialAutoCategoryRule">;
+export type FinancialAutoCategoryRuleDeleteArgs = $DeleteArgs<$Schema, "FinancialAutoCategoryRule">;
+export type FinancialAutoCategoryRuleDeleteManyArgs = $DeleteManyArgs<
+  $Schema,
+  "FinancialAutoCategoryRule"
+>;
+export type FinancialAutoCategoryRuleCountArgs = $CountArgs<$Schema, "FinancialAutoCategoryRule">;
+export type FinancialAutoCategoryRuleAggregateArgs = $AggregateArgs<
+  $Schema,
+  "FinancialAutoCategoryRule"
+>;
+export type FinancialAutoCategoryRuleGroupByArgs = $GroupByArgs<
+  $Schema,
+  "FinancialAutoCategoryRule"
+>;
+export type FinancialAutoCategoryRuleWhereInput = $WhereInput<$Schema, "FinancialAutoCategoryRule">;
+export type FinancialAutoCategoryRuleSelect = $SelectInput<$Schema, "FinancialAutoCategoryRule">;
+export type FinancialAutoCategoryRuleInclude = $IncludeInput<$Schema, "FinancialAutoCategoryRule">;
+export type FinancialAutoCategoryRuleOmit = $OmitInput<$Schema, "FinancialAutoCategoryRule">;
+export type FinancialAutoCategoryRuleGetPayload<
+  Args extends $SelectIncludeOmit<$Schema, "FinancialAutoCategoryRule", true>,
+  Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>,
+> = $Result<$Schema, "FinancialAutoCategoryRule", Args, Options>;
 export type FinancialTransactionFindManyArgs = $FindManyArgs<$Schema, "FinancialTransaction">;
 export type FinancialTransactionFindUniqueArgs = $FindUniqueArgs<$Schema, "FinancialTransaction">;
 export type FinancialTransactionFindFirstArgs = $FindFirstArgs<$Schema, "FinancialTransaction">;

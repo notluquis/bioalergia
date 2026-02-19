@@ -1650,6 +1650,12 @@ export class SchemaType implements SchemaDef {
           array: true,
           relation: { opposite: "counterpart" },
         },
+        autoCategoryRules: {
+          name: "autoCategoryRules",
+          type: "FinancialAutoCategoryRule",
+          array: true,
+          relation: { opposite: "counterpart" },
+        },
         financialTransactions: {
           name: "financialTransactions",
           type: "FinancialTransaction",
@@ -1857,10 +1863,20 @@ export class SchemaType implements SchemaDef {
             },
           ],
         },
+        {
+          name: "@@unique",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("String", [ExpressionUtils.field("accountNumber")]),
+            },
+          ],
+        },
       ],
       idFields: ["id"],
       uniqueFields: {
         id: { type: "Int" },
+        accountNumber: { type: "String" },
       },
     },
     EmployeeTimesheet: {
@@ -14262,6 +14278,12 @@ export class SchemaType implements SchemaDef {
           array: true,
           relation: { opposite: "category" },
         },
+        autoRules: {
+          name: "autoRules",
+          type: "FinancialAutoCategoryRule",
+          array: true,
+          relation: { opposite: "category" },
+        },
       },
       attributes: [
         {
@@ -14281,6 +14303,265 @@ export class SchemaType implements SchemaDef {
         {
           name: "@@map",
           args: [{ name: "name", value: ExpressionUtils.literal("transaction_categories") }],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+      },
+    },
+    FinancialAutoCategoryRule: {
+      name: "FinancialAutoCategoryRule",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        name: {
+          name: "name",
+          type: "String",
+        },
+        type: {
+          name: "type",
+          type: "TransactionType",
+          attributes: [
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.literal("EXPENSE") }],
+            },
+          ],
+          default: "EXPENSE",
+        },
+        counterpartId: {
+          name: "counterpartId",
+          type: "Int",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("counterpart_id") }],
+            },
+          ],
+          foreignKeyFor: ["counterpart"],
+        },
+        categoryId: {
+          name: "categoryId",
+          type: "Int",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("category_id") }],
+            },
+          ],
+          foreignKeyFor: ["category"],
+        },
+        minAmount: {
+          name: "minAmount",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("min_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(19) },
+                { name: "s", value: ExpressionUtils.literal(4) },
+              ],
+            },
+          ],
+        },
+        maxAmount: {
+          name: "maxAmount",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("max_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(19) },
+                { name: "s", value: ExpressionUtils.literal(4) },
+              ],
+            },
+          ],
+        },
+        commentContains: {
+          name: "commentContains",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("comment_contains") }],
+            },
+          ],
+        },
+        descriptionContains: {
+          name: "descriptionContains",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("description_contains") }],
+            },
+          ],
+        },
+        isActive: {
+          name: "isActive",
+          type: "Boolean",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(true) }] },
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("is_active") }] },
+          ],
+          default: true,
+        },
+        priority: {
+          name: "priority",
+          type: "Int",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+          ],
+          default: 0,
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          attributes: [
+            { name: "@updatedAt" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }],
+            },
+          ],
+        },
+        counterpart: {
+          name: "counterpart",
+          type: "Counterpart",
+          optional: true,
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("counterpartId")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+                { name: "onDelete", value: ExpressionUtils.literal("Cascade") },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "autoCategoryRules",
+            fields: ["counterpartId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
+        },
+        category: {
+          name: "category",
+          type: "TransactionCategory",
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("categoryId")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+                { name: "onDelete", value: ExpressionUtils.literal("Cascade") },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "autoRules",
+            fields: ["categoryId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
+        },
+      },
+      attributes: [
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("counterpartId")]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("categoryId")]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Boolean", [ExpressionUtils.field("isActive")]),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("financial_auto_category_rules") }],
         },
       ],
       idFields: ["id"],
@@ -14335,10 +14616,10 @@ export class SchemaType implements SchemaDef {
           attributes: [
             {
               name: "@default",
-              args: [{ name: "value", value: ExpressionUtils.literal("MANUAL") }],
+              args: [{ name: "value", value: ExpressionUtils.literal("MERCADOPAGO") }],
             },
           ],
-          default: "MANUAL",
+          default: "MERCADOPAGO",
         },
         sourceId: {
           name: "sourceId",
@@ -14705,9 +14986,7 @@ export class SchemaType implements SchemaDef {
     TransactionSource: {
       name: "TransactionSource",
       values: {
-        MANUAL: "MANUAL",
         MERCADOPAGO: "MERCADOPAGO",
-        BANK: "BANK",
       },
     },
   } as const;

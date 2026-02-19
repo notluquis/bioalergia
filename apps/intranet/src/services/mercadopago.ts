@@ -153,17 +153,21 @@ export const MPService = {
     beginDate: Date,
     endDate: Date,
     type: MpReportType,
+    options?: { endAtNow?: boolean },
     onProgress?: (current: number, total: number) => void,
   ): Promise<MPReport[]> => {
     const MAX_DAYS = 60; // Safe margin below 62-day limit
     const start = new Date(beginDate);
     let end = new Date(endDate);
+    const useEndAtNow = options?.endAtNow === true;
 
     // Cap end date to today (MP API doesn't accept future dates)
-    const today = new Date();
-    today.setHours(23, 59, 59, 999);
-    if (end > today) {
-      end = today;
+    const maxEnd = new Date();
+    if (!useEndAtNow) {
+      maxEnd.setHours(23, 59, 59, 999);
+    }
+    if (end > maxEnd) {
+      end = maxEnd;
     }
 
     // Calculate chunks needed
@@ -193,19 +197,21 @@ export const MPService = {
       index++;
       onProgress?.(index, chunks.length);
 
-      // Format dates as ISO with time for MP API (YYYY-MM-DDTHH:MM:SSZ)
-      // Begin date: start of day, End date: end of day
+      // Build range using local day boundaries.
+      // Using UTC setters here can push the date into the next day for CL timezone.
       const beginDate = new Date(chunk.begin);
-      beginDate.setUTCHours(0, 0, 0, 0);
+      beginDate.setHours(0, 0, 0, 0);
 
       const endDate = new Date(chunk.end);
-      endDate.setUTCHours(23, 59, 59, 999);
-
-      const beginStr = `${beginDate.toISOString().split(".")[0] ?? ""}Z`;
-      const endStr = `${endDate.toISOString().split(".")[0] ?? ""}Z`;
+      const isLastChunk = index === chunks.length;
+      if (useEndAtNow && isLastChunk) {
+        endDate.setTime(end.getTime());
+      } else {
+        endDate.setHours(23, 59, 59, 999);
+      }
 
       console.log(
-        `[MP Service] Creating chunk ${index}/${chunks.length}: ${beginStr} to ${endStr}`,
+        `[MP Service] Creating chunk ${index}/${chunks.length}: ${beginDate.toISOString()} to ${endDate.toISOString()}`,
       );
 
       const report = await MPService.createReport(beginDate, endDate, type);

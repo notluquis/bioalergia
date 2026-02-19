@@ -47,6 +47,28 @@ type FinancialTransactionsResponse = {
   };
 };
 
+type CounterpartOption = {
+  bankAccountHolder: string;
+  id: number;
+  identificationNumber: string;
+};
+
+type FinancialAutoCategoryRule = {
+  category: TransactionCategory;
+  categoryId: number;
+  commentContains?: null | string;
+  counterpart?: CounterpartOption | null;
+  counterpartId?: null | number;
+  descriptionContains?: null | string;
+  id: number;
+  isActive: boolean;
+  maxAmount?: null | number;
+  minAmount?: null | number;
+  name: string;
+  priority: number;
+  type: "EXPENSE" | "INCOME";
+};
+
 const CashFlowTransactionSchema = z
   .object({
     amount: z.number(),
@@ -87,6 +109,38 @@ const TransactionCategoriesResponseSchema = z.object({
   status: z.literal("ok"),
 });
 
+const CounterpartSchema = z.object({
+  bankAccountHolder: z.string(),
+  id: z.number(),
+  identificationNumber: z.string(),
+});
+
+const CounterpartsResponseSchema = z.object({
+  counterparts: z.array(CounterpartSchema),
+  status: z.literal("ok"),
+});
+
+const FinancialAutoCategoryRuleSchema = z.object({
+  category: TransactionCategorySchema,
+  categoryId: z.number(),
+  commentContains: z.string().nullable().optional(),
+  counterpart: CounterpartSchema.nullable().optional(),
+  counterpartId: z.number().nullable().optional(),
+  descriptionContains: z.string().nullable().optional(),
+  id: z.number(),
+  isActive: z.boolean(),
+  maxAmount: z.number().nullable().optional(),
+  minAmount: z.number().nullable().optional(),
+  name: z.string(),
+  priority: z.number(),
+  type: z.enum(["INCOME", "EXPENSE"]),
+});
+
+const AutoCategoryRulesResponseSchema = z.object({
+  data: z.array(FinancialAutoCategoryRuleSchema),
+  status: z.literal("ok"),
+});
+
 const CreateTransactionCategoryResponseSchema = z.object({
   data: TransactionCategorySchema,
   status: z.literal("ok"),
@@ -98,6 +152,20 @@ const UpdateTransactionCategoryResponseSchema = z.object({
 });
 
 const DeleteTransactionCategoryResponseSchema = z.object({
+  status: z.literal("ok"),
+});
+
+const CreateAutoCategoryRuleResponseSchema = z.object({
+  data: FinancialAutoCategoryRuleSchema,
+  status: z.literal("ok"),
+});
+
+const UpdateAutoCategoryRuleResponseSchema = z.object({
+  data: FinancialAutoCategoryRuleSchema,
+  status: z.literal("ok"),
+});
+
+const DeleteAutoCategoryRuleResponseSchema = z.object({
   status: z.literal("ok"),
 });
 
@@ -131,6 +199,36 @@ function useTransactionCategories() {
         "/api/finance/categories",
         {
           responseSchema: TransactionCategoriesResponseSchema,
+        },
+      );
+      return payload.data;
+    },
+  });
+}
+
+function useCounterparts() {
+  return useQuery<CounterpartOption[]>({
+    queryKey: ["Counterpart"],
+    queryFn: async () => {
+      const payload = await apiClient.get<{ counterparts: CounterpartOption[] }>(
+        "/api/counterparts",
+        {
+          responseSchema: CounterpartsResponseSchema,
+        },
+      );
+      return payload.counterparts;
+    },
+  });
+}
+
+function useFinancialAutoCategoryRules() {
+  return useQuery<FinancialAutoCategoryRule[]>({
+    queryKey: ["FinancialAutoCategoryRule"],
+    queryFn: async () => {
+      const payload = await apiClient.get<{ data: FinancialAutoCategoryRule[] }>(
+        "/api/finance/auto-category-rules",
+        {
+          responseSchema: AutoCategoryRulesResponseSchema,
         },
       );
       return payload.data;
@@ -245,6 +343,26 @@ export function CashFlowPage() {
   const [editingCategoryName, setEditingCategoryName] = useState("");
   const [editingCategoryType, setEditingCategoryType] = useState<"EXPENSE" | "INCOME">("EXPENSE");
   const [editingCategoryColor, setEditingCategoryColor] = useState("#64748b");
+  const [newRuleName, setNewRuleName] = useState("");
+  const [newRuleCounterpartId, setNewRuleCounterpartId] = useState<null | number>(null);
+  const [newRuleCategoryId, setNewRuleCategoryId] = useState<null | number>(null);
+  const [newRuleType, setNewRuleType] = useState<"EXPENSE" | "INCOME">("EXPENSE");
+  const [newRulePriority, setNewRulePriority] = useState("0");
+  const [newRuleMinAmount, setNewRuleMinAmount] = useState("");
+  const [newRuleMaxAmount, setNewRuleMaxAmount] = useState("");
+  const [newRuleCommentContains, setNewRuleCommentContains] = useState("");
+  const [newRuleDescriptionContains, setNewRuleDescriptionContains] = useState("");
+  const [editingRuleId, setEditingRuleId] = useState<null | number>(null);
+  const [editingRuleName, setEditingRuleName] = useState("");
+  const [editingRuleCounterpartId, setEditingRuleCounterpartId] = useState<null | number>(null);
+  const [editingRuleCategoryId, setEditingRuleCategoryId] = useState<null | number>(null);
+  const [editingRuleType, setEditingRuleType] = useState<"EXPENSE" | "INCOME">("EXPENSE");
+  const [editingRulePriority, setEditingRulePriority] = useState("0");
+  const [editingRuleIsActive, setEditingRuleIsActive] = useState(true);
+  const [editingRuleMinAmount, setEditingRuleMinAmount] = useState("");
+  const [editingRuleMaxAmount, setEditingRuleMaxAmount] = useState("");
+  const [editingRuleCommentContains, setEditingRuleCommentContains] = useState("");
+  const [editingRuleDescriptionContains, setEditingRuleDescriptionContains] = useState("");
 
   const monthRange = useMemo(() => {
     const base = dayjs(`${selectedMonth}-01`);
@@ -272,6 +390,8 @@ export function CashFlowPage() {
     to: monthRange.to,
   });
   const { data: categories = [] } = useTransactionCategories();
+  const { data: counterparts = [] } = useCounterparts();
+  const { data: autoCategoryRules = [] } = useFinancialAutoCategoryRules();
   const queryClient = useQueryClient();
 
   const categoryFilterOptions = useMemo(() => {
@@ -301,6 +421,23 @@ export function CashFlowPage() {
   const selectedCategoryMap = useMemo(
     () => new Map(categoryFilterOptions.map((option) => [option.value, option.label])),
     [categoryFilterOptions],
+  );
+
+  const counterpartOptions = useMemo(
+    () =>
+      counterparts.map((counterpart) => ({
+        label: `${counterpart.bankAccountHolder} (${counterpart.identificationNumber})`,
+        value: counterpart.id,
+      })),
+    [counterparts],
+  );
+
+  const categoryOptionsByType = useMemo(
+    () => ({
+      EXPENSE: categories.filter((category) => category.type === "EXPENSE"),
+      INCOME: categories.filter((category) => category.type === "INCOME"),
+    }),
+    [categories],
   );
 
   const hasActiveFilters =
@@ -552,6 +689,98 @@ export function CashFlowPage() {
     },
   });
 
+  const createAutoCategoryRuleMutation = useMutation({
+    mutationFn: async (payload: {
+      categoryId: number;
+      commentContains?: null | string;
+      counterpartId?: null | number;
+      descriptionContains?: null | string;
+      isActive: boolean;
+      maxAmount?: null | number;
+      minAmount?: null | number;
+      name: string;
+      priority: number;
+      type: "EXPENSE" | "INCOME";
+    }) =>
+      apiClient.post("/api/finance/auto-category-rules", payload, {
+        responseSchema: CreateAutoCategoryRuleResponseSchema,
+      }),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["FinancialAutoCategoryRule"] }),
+        queryClient.invalidateQueries({ queryKey: ["FinancialTransaction"] }),
+      ]);
+      setNewRuleName("");
+      setNewRuleCounterpartId(null);
+      setNewRuleCategoryId(null);
+      setNewRuleType("EXPENSE");
+      setNewRulePriority("0");
+      setNewRuleMinAmount("");
+      setNewRuleMaxAmount("");
+      setNewRuleCommentContains("");
+      setNewRuleDescriptionContains("");
+      toast.success("Regla automática creada");
+    },
+    onError: (error) => {
+      const message = error instanceof ApiError ? error.message : "Error al crear regla";
+      toast.error(message);
+    },
+  });
+
+  const updateAutoCategoryRuleMutation = useMutation({
+    mutationFn: async ({
+      id,
+      payload,
+    }: {
+      id: number;
+      payload: Partial<{
+        categoryId: number;
+        commentContains?: null | string;
+        counterpartId?: null | number;
+        descriptionContains?: null | string;
+        isActive: boolean;
+        maxAmount?: null | number;
+        minAmount?: null | number;
+        name: string;
+        priority: number;
+        type: "EXPENSE" | "INCOME";
+      }>;
+    }) =>
+      apiClient.put(`/api/finance/auto-category-rules/${id}`, payload, {
+        responseSchema: UpdateAutoCategoryRuleResponseSchema,
+      }),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["FinancialAutoCategoryRule"] }),
+        queryClient.invalidateQueries({ queryKey: ["FinancialTransaction"] }),
+      ]);
+      setEditingRuleId(null);
+      toast.success("Regla automática actualizada");
+    },
+    onError: (error) => {
+      const message = error instanceof ApiError ? error.message : "Error al actualizar regla";
+      toast.error(message);
+    },
+  });
+
+  const deleteAutoCategoryRuleMutation = useMutation({
+    mutationFn: async (id: number) =>
+      apiClient.delete(`/api/finance/auto-category-rules/${id}`, {
+        responseSchema: DeleteAutoCategoryRuleResponseSchema,
+      }),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["FinancialAutoCategoryRule"] }),
+        queryClient.invalidateQueries({ queryKey: ["FinancialTransaction"] }),
+      ]);
+      toast.success("Regla automática eliminada");
+    },
+    onError: (error) => {
+      const message = error instanceof ApiError ? error.message : "Error al eliminar regla";
+      toast.error(message);
+    },
+  });
+
   const handleEdit = (tx: FinancialTransaction) => {
     setEditingTx(tx);
     setIsFormOpen(true);
@@ -610,6 +839,98 @@ export function CashFlowPage() {
     const confirmed = window.confirm(`¿Eliminar la categoría "${category.name}"?`);
     if (!confirmed) return;
     deleteCategoryMutation.mutate(category.id);
+  };
+
+  const handleCreateAutoCategoryRule = (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = newRuleName.trim();
+    if (!name) {
+      toast.error("El nombre de la regla es obligatorio");
+      return;
+    }
+    if (newRuleCategoryId == null) {
+      toast.error("Selecciona una categoría");
+      return;
+    }
+    const parsedPriority = Number.parseInt(newRulePriority, 10);
+    const parsedMinAmount = Number.parseFloat(newRuleMinAmount);
+    const parsedMaxAmount = Number.parseFloat(newRuleMaxAmount);
+    createAutoCategoryRuleMutation.mutate({
+      categoryId: newRuleCategoryId,
+      commentContains: newRuleCommentContains.trim() || null,
+      counterpartId: newRuleCounterpartId,
+      descriptionContains: newRuleDescriptionContains.trim() || null,
+      isActive: true,
+      maxAmount: Number.isNaN(parsedMaxAmount) ? null : parsedMaxAmount,
+      minAmount: Number.isNaN(parsedMinAmount) ? null : parsedMinAmount,
+      name,
+      priority: Number.isNaN(parsedPriority) ? 0 : parsedPriority,
+      type: newRuleType,
+    });
+  };
+
+  const handleStartEditRule = (rule: FinancialAutoCategoryRule) => {
+    setEditingRuleId(rule.id);
+    setEditingRuleName(rule.name);
+    setEditingRuleCounterpartId(rule.counterpartId ?? null);
+    setEditingRuleCategoryId(rule.categoryId);
+    setEditingRuleType(rule.type);
+    setEditingRulePriority(String(rule.priority));
+    setEditingRuleIsActive(rule.isActive);
+    setEditingRuleMinAmount(rule.minAmount == null ? "" : String(rule.minAmount));
+    setEditingRuleMaxAmount(rule.maxAmount == null ? "" : String(rule.maxAmount));
+    setEditingRuleCommentContains(rule.commentContains ?? "");
+    setEditingRuleDescriptionContains(rule.descriptionContains ?? "");
+  };
+
+  const handleCancelEditRule = () => {
+    setEditingRuleId(null);
+    setEditingRuleName("");
+    setEditingRuleCounterpartId(null);
+    setEditingRuleCategoryId(null);
+    setEditingRuleType("EXPENSE");
+    setEditingRulePriority("0");
+    setEditingRuleIsActive(true);
+    setEditingRuleMinAmount("");
+    setEditingRuleMaxAmount("");
+    setEditingRuleCommentContains("");
+    setEditingRuleDescriptionContains("");
+  };
+
+  const handleSaveEditRule = (ruleId: number) => {
+    const name = editingRuleName.trim();
+    if (!name) {
+      toast.error("El nombre de la regla es obligatorio");
+      return;
+    }
+    if (editingRuleCategoryId == null) {
+      toast.error("Selecciona una categoría");
+      return;
+    }
+    const parsedPriority = Number.parseInt(editingRulePriority, 10);
+    const parsedMinAmount = Number.parseFloat(editingRuleMinAmount);
+    const parsedMaxAmount = Number.parseFloat(editingRuleMaxAmount);
+    updateAutoCategoryRuleMutation.mutate({
+      id: ruleId,
+      payload: {
+        categoryId: editingRuleCategoryId,
+        commentContains: editingRuleCommentContains.trim() || null,
+        counterpartId: editingRuleCounterpartId,
+        descriptionContains: editingRuleDescriptionContains.trim() || null,
+        isActive: editingRuleIsActive,
+        maxAmount: Number.isNaN(parsedMaxAmount) ? null : parsedMaxAmount,
+        minAmount: Number.isNaN(parsedMinAmount) ? null : parsedMinAmount,
+        name,
+        priority: Number.isNaN(parsedPriority) ? 0 : parsedPriority,
+        type: editingRuleType,
+      },
+    });
+  };
+
+  const handleDeleteRule = (rule: FinancialAutoCategoryRule) => {
+    const confirmed = window.confirm(`¿Eliminar la regla "${rule.name}"?`);
+    if (!confirmed) return;
+    deleteAutoCategoryRuleMutation.mutate(rule.id);
   };
 
   const updateColumnFilter = <K extends keyof CashFlowColumnFilters>(
@@ -1178,6 +1499,384 @@ export function CashFlowPage() {
                             </Button>
                           </div>
                         </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </Card>
+
+          <Card>
+            <div className="space-y-3 p-3">
+              <h3 className="text-sm font-semibold">Reglas automáticas por contraparte</h3>
+              <form
+                className="grid grid-cols-1 gap-3 md:grid-cols-8"
+                onSubmit={handleCreateAutoCategoryRule}
+              >
+                <TextField className="md:col-span-2">
+                  <Label>Nombre regla</Label>
+                  <Input
+                    placeholder="Ej: Paula Flores MP Egreso"
+                    value={newRuleName}
+                    onChange={(e) => setNewRuleName(e.target.value)}
+                  />
+                </TextField>
+                <Select
+                  className="md:col-span-2"
+                  value={newRuleCounterpartId == null ? null : String(newRuleCounterpartId)}
+                  onChange={(key) => {
+                    const value = key == null || String(key) === "__none__" ? null : Number(key);
+                    setNewRuleCounterpartId(value);
+                  }}
+                >
+                  <Label>Contraparte</Label>
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      <ListBox.Item id="__none__" textValue="Sin filtro">
+                        Sin filtro (cualquier contraparte)
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                      {counterpartOptions.map((counterpart) => (
+                        <ListBox.Item
+                          id={String(counterpart.value)}
+                          key={counterpart.value}
+                          textValue={counterpart.label}
+                        >
+                          {counterpart.label}
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                      ))}
+                    </ListBox>
+                  </Select.Popover>
+                </Select>
+                <Select
+                  value={newRuleType}
+                  onChange={(key) =>
+                    setNewRuleType(String(key ?? "EXPENSE") as "EXPENSE" | "INCOME")
+                  }
+                >
+                  <Label>Tipo</Label>
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      <ListBox.Item id="EXPENSE" textValue="Egreso">
+                        Egreso
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                      <ListBox.Item id="INCOME" textValue="Ingreso">
+                        Ingreso
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                    </ListBox>
+                  </Select.Popover>
+                </Select>
+                <Select
+                  className="md:col-span-2"
+                  value={newRuleCategoryId == null ? null : String(newRuleCategoryId)}
+                  onChange={(key) => {
+                    const value = key == null ? null : Number(key);
+                    setNewRuleCategoryId(value);
+                  }}
+                >
+                  <Label>Categoría</Label>
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      {categoryOptionsByType[newRuleType].map((category) => (
+                        <ListBox.Item
+                          id={String(category.id)}
+                          key={category.id}
+                          textValue={category.name}
+                        >
+                          {category.name}
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                      ))}
+                    </ListBox>
+                  </Select.Popover>
+                </Select>
+                <TextField>
+                  <Label>Prioridad</Label>
+                  <Input
+                    inputMode="numeric"
+                    value={newRulePriority}
+                    onChange={(e) => setNewRulePriority(e.target.value.replace(/[^\d-]/g, ""))}
+                  />
+                </TextField>
+                <TextField>
+                  <Label>Monto mínimo</Label>
+                  <Input
+                    inputMode="decimal"
+                    placeholder="0"
+                    value={newRuleMinAmount}
+                    onChange={(e) => setNewRuleMinAmount(e.target.value.replace(/[^0-9.-]/g, ""))}
+                  />
+                </TextField>
+                <TextField>
+                  <Label>Monto máximo</Label>
+                  <Input
+                    inputMode="decimal"
+                    placeholder="200000"
+                    value={newRuleMaxAmount}
+                    onChange={(e) => setNewRuleMaxAmount(e.target.value.replace(/[^0-9.-]/g, ""))}
+                  />
+                </TextField>
+                <TextField className="md:col-span-2">
+                  <Label>Comentario contiene</Label>
+                  <Input
+                    placeholder="Ref: Venta presencial"
+                    value={newRuleCommentContains}
+                    onChange={(e) => setNewRuleCommentContains(e.target.value)}
+                  />
+                </TextField>
+                <TextField className="md:col-span-2">
+                  <Label>Descripción contiene</Label>
+                  <Input
+                    placeholder="Opcional"
+                    value={newRuleDescriptionContains}
+                    onChange={(e) => setNewRuleDescriptionContains(e.target.value)}
+                  />
+                </TextField>
+                <div className="flex items-end md:col-span-8">
+                  <Button type="submit" isPending={createAutoCategoryRuleMutation.isPending}>
+                    Crear regla
+                  </Button>
+                </div>
+              </form>
+
+              {autoCategoryRules.length === 0 ? (
+                <p className="text-default-500 text-sm">No hay reglas automáticas configuradas.</p>
+              ) : (
+                <div className="space-y-2">
+                  {autoCategoryRules.map((rule) => (
+                    <div key={rule.id} className="rounded-md border border-default-200 px-3 py-2">
+                      {editingRuleId === rule.id ? (
+                        <div className="grid grid-cols-1 gap-3 md:grid-cols-8 md:items-end">
+                          <TextField className="md:col-span-2">
+                            <Label>Nombre regla</Label>
+                            <Input
+                              value={editingRuleName}
+                              onChange={(e) => setEditingRuleName(e.target.value)}
+                            />
+                          </TextField>
+                          <Select
+                            value={
+                              editingRuleCounterpartId == null
+                                ? null
+                                : String(editingRuleCounterpartId)
+                            }
+                            onChange={(key) => {
+                              const value =
+                                key == null || String(key) === "__none__" ? null : Number(key);
+                              setEditingRuleCounterpartId(value);
+                            }}
+                          >
+                            <Label>Contraparte</Label>
+                            <Select.Trigger>
+                              <Select.Value />
+                              <Select.Indicator />
+                            </Select.Trigger>
+                            <Select.Popover>
+                              <ListBox>
+                                <ListBox.Item id="__none__" textValue="Sin filtro">
+                                  Sin filtro (cualquier contraparte)
+                                  <ListBox.ItemIndicator />
+                                </ListBox.Item>
+                                {counterpartOptions.map((counterpart) => (
+                                  <ListBox.Item
+                                    id={String(counterpart.value)}
+                                    key={counterpart.value}
+                                    textValue={counterpart.label}
+                                  >
+                                    {counterpart.label}
+                                    <ListBox.ItemIndicator />
+                                  </ListBox.Item>
+                                ))}
+                              </ListBox>
+                            </Select.Popover>
+                          </Select>
+                          <Select
+                            value={editingRuleType}
+                            onChange={(key) =>
+                              setEditingRuleType(String(key ?? "EXPENSE") as "EXPENSE" | "INCOME")
+                            }
+                          >
+                            <Label>Tipo</Label>
+                            <Select.Trigger>
+                              <Select.Value />
+                              <Select.Indicator />
+                            </Select.Trigger>
+                            <Select.Popover>
+                              <ListBox>
+                                <ListBox.Item id="EXPENSE" textValue="Egreso">
+                                  Egreso
+                                  <ListBox.ItemIndicator />
+                                </ListBox.Item>
+                                <ListBox.Item id="INCOME" textValue="Ingreso">
+                                  Ingreso
+                                  <ListBox.ItemIndicator />
+                                </ListBox.Item>
+                              </ListBox>
+                            </Select.Popover>
+                          </Select>
+                          <Select
+                            value={
+                              editingRuleCategoryId == null ? null : String(editingRuleCategoryId)
+                            }
+                            onChange={(key) => {
+                              const value = key == null ? null : Number(key);
+                              setEditingRuleCategoryId(value);
+                            }}
+                          >
+                            <Label>Categoría</Label>
+                            <Select.Trigger>
+                              <Select.Value />
+                              <Select.Indicator />
+                            </Select.Trigger>
+                            <Select.Popover>
+                              <ListBox>
+                                {categoryOptionsByType[editingRuleType].map((category) => (
+                                  <ListBox.Item
+                                    id={String(category.id)}
+                                    key={category.id}
+                                    textValue={category.name}
+                                  >
+                                    {category.name}
+                                    <ListBox.ItemIndicator />
+                                  </ListBox.Item>
+                                ))}
+                              </ListBox>
+                            </Select.Popover>
+                          </Select>
+                          <TextField>
+                            <Label>Prioridad</Label>
+                            <Input
+                              inputMode="numeric"
+                              value={editingRulePriority}
+                              onChange={(e) =>
+                                setEditingRulePriority(e.target.value.replace(/[^\d-]/g, ""))
+                              }
+                            />
+                          </TextField>
+                          <TextField>
+                            <Label>Monto mínimo</Label>
+                            <Input
+                              inputMode="decimal"
+                              value={editingRuleMinAmount}
+                              onChange={(e) =>
+                                setEditingRuleMinAmount(e.target.value.replace(/[^0-9.-]/g, ""))
+                              }
+                            />
+                          </TextField>
+                          <TextField>
+                            <Label>Monto máximo</Label>
+                            <Input
+                              inputMode="decimal"
+                              value={editingRuleMaxAmount}
+                              onChange={(e) =>
+                                setEditingRuleMaxAmount(e.target.value.replace(/[^0-9.-]/g, ""))
+                              }
+                            />
+                          </TextField>
+                          <TextField className="md:col-span-2">
+                            <Label>Comentario contiene</Label>
+                            <Input
+                              value={editingRuleCommentContains}
+                              onChange={(e) => setEditingRuleCommentContains(e.target.value)}
+                            />
+                          </TextField>
+                          <TextField className="md:col-span-2">
+                            <Label>Descripción contiene</Label>
+                            <Input
+                              value={editingRuleDescriptionContains}
+                              onChange={(e) => setEditingRuleDescriptionContains(e.target.value)}
+                            />
+                          </TextField>
+                          <Select
+                            value={editingRuleIsActive ? "ACTIVE" : "INACTIVE"}
+                            onChange={(key) => setEditingRuleIsActive(String(key) === "ACTIVE")}
+                          >
+                            <Label>Estado</Label>
+                            <Select.Trigger>
+                              <Select.Value />
+                              <Select.Indicator />
+                            </Select.Trigger>
+                            <Select.Popover>
+                              <ListBox>
+                                <ListBox.Item id="ACTIVE" textValue="Activa">
+                                  Activa
+                                  <ListBox.ItemIndicator />
+                                </ListBox.Item>
+                                <ListBox.Item id="INACTIVE" textValue="Inactiva">
+                                  Inactiva
+                                  <ListBox.ItemIndicator />
+                                </ListBox.Item>
+                              </ListBox>
+                            </Select.Popover>
+                          </Select>
+                          <div className="flex gap-2 md:col-span-8 md:justify-end">
+                            <Button size="sm" variant="secondary" onPress={handleCancelEditRule}>
+                              Cancelar
+                            </Button>
+                            <Button
+                              size="sm"
+                              onPress={() => handleSaveEditRule(rule.id)}
+                              isPending={updateAutoCategoryRuleMutation.isPending}
+                            >
+                              Guardar
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium">{rule.name}</p>
+                            <p className="text-tiny text-default-500">
+                              {rule.counterpart
+                                ? `${rule.counterpart.bankAccountHolder} (${rule.counterpart.identificationNumber})`
+                                : "Sin filtro de contraparte"}
+                            </p>
+                            <p className="text-tiny text-default-500">
+                              {rule.type === "INCOME" ? "Ingreso" : "Egreso"} | {rule.category.name}{" "}
+                              | prioridad {rule.priority} | {rule.isActive ? "Activa" : "Inactiva"}
+                            </p>
+                            <p className="text-tiny text-default-500">
+                              {rule.minAmount != null ? `min ${rule.minAmount}` : "min -"} |{" "}
+                              {rule.maxAmount != null ? `max ${rule.maxAmount}` : "max -"} |{" "}
+                              comentario: {rule.commentContains || "-"} | descripción:{" "}
+                              {rule.descriptionContains || "-"}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onPress={() => handleStartEditRule(rule)}
+                            >
+                              Editar
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-danger"
+                              isPending={deleteAutoCategoryRuleMutation.isPending}
+                              onPress={() => handleDeleteRule(rule)}
+                            >
+                              Eliminar
+                            </Button>
+                          </div>
+                        </div>
                       )}
                     </div>
                   ))}

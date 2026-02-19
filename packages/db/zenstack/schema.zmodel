@@ -241,6 +241,7 @@ model Counterpart {
   
   // Relations
   accounts               CounterpartAccount[]
+  autoCategoryRules      FinancialAutoCategoryRule[]
   financialTransactions  FinancialTransaction[]
   withdrawTransactions   WithdrawTransaction[]
   releaseTransactions    ReleaseTransaction[]
@@ -1937,9 +1938,7 @@ enum TransactionType {
 }
 
 enum TransactionSource {
-  MANUAL
   MERCADOPAGO
-  BANK
 }
 
 model TransactionCategory {
@@ -1952,11 +1951,39 @@ model TransactionCategory {
   updatedAt    DateTime               @updatedAt @map("updated_at")
 
   transactions FinancialTransaction[]
+  autoRules    FinancialAutoCategoryRule[]
 
   // Access policies
   @@allow('all', auth().status == 'ACTIVE')
 
   @@map("transaction_categories")
+}
+
+model FinancialAutoCategoryRule {
+  id              Int                  @id @default(autoincrement())
+  name            String
+  type            TransactionType      @default(EXPENSE)
+  counterpartId   Int?                 @map("counterpart_id")
+  categoryId      Int                  @map("category_id")
+  minAmount       Decimal?             @map("min_amount") @db.Decimal(19, 4)
+  maxAmount       Decimal?             @map("max_amount") @db.Decimal(19, 4)
+  commentContains String?              @map("comment_contains")
+  descriptionContains String?          @map("description_contains")
+  isActive        Boolean              @default(true) @map("is_active")
+  priority        Int                  @default(0)
+  createdAt       DateTime             @default(now()) @map("created_at")
+  updatedAt       DateTime             @updatedAt @map("updated_at")
+
+  counterpart  Counterpart?        @relation(fields: [counterpartId], references: [id], onDelete: Cascade)
+  category     TransactionCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  // Access policies
+  @@allow('all', auth().status == 'ACTIVE')
+
+  @@index([counterpartId])
+  @@index([categoryId])
+  @@index([isActive])
+  @@map("financial_auto_category_rules")
 }
 
 model FinancialTransaction {
@@ -1965,7 +1992,7 @@ model FinancialTransaction {
   description String
   amount      Decimal              @db.Decimal(19, 4)
   type        TransactionType
-  source      TransactionSource    @default(MANUAL)
+  source      TransactionSource    @default(MERCADOPAGO)
   sourceId    String?              @map("source_id")
   categoryId  Int?                 @map("category_id")
   counterpartId Int?               @map("counterpart_id")

@@ -691,6 +691,12 @@ export class SchemaType implements SchemaDef {
           array: true,
           relation: { opposite: "counterpart" },
         },
+        autoCategoryRules: {
+          name: "autoCategoryRules",
+          type: "FinancialAutoCategoryRule",
+          array: true,
+          relation: { opposite: "counterpart" },
+        },
         financialTransactions: {
           name: "financialTransactions",
           type: "FinancialTransaction",
@@ -770,6 +776,7 @@ export class SchemaType implements SchemaDef {
       idFields: ["id"],
       uniqueFields: {
         id: { type: "Int" },
+        accountNumber: { type: "String" },
       },
     },
     EmployeeTimesheet: {
@@ -5334,6 +5341,108 @@ export class SchemaType implements SchemaDef {
           array: true,
           relation: { opposite: "category" },
         },
+        autoRules: {
+          name: "autoRules",
+          type: "FinancialAutoCategoryRule",
+          array: true,
+          relation: { opposite: "category" },
+        },
+      },
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+      },
+    },
+    FinancialAutoCategoryRule: {
+      name: "FinancialAutoCategoryRule",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        name: {
+          name: "name",
+          type: "String",
+        },
+        type: {
+          name: "type",
+          type: "TransactionType",
+          default: "EXPENSE",
+        },
+        counterpartId: {
+          name: "counterpartId",
+          type: "Int",
+          optional: true,
+          foreignKeyFor: ["counterpart"],
+        },
+        categoryId: {
+          name: "categoryId",
+          type: "Int",
+          foreignKeyFor: ["category"],
+        },
+        minAmount: {
+          name: "minAmount",
+          type: "Decimal",
+          optional: true,
+        },
+        maxAmount: {
+          name: "maxAmount",
+          type: "Decimal",
+          optional: true,
+        },
+        commentContains: {
+          name: "commentContains",
+          type: "String",
+          optional: true,
+        },
+        descriptionContains: {
+          name: "descriptionContains",
+          type: "String",
+          optional: true,
+        },
+        isActive: {
+          name: "isActive",
+          type: "Boolean",
+          default: true,
+        },
+        priority: {
+          name: "priority",
+          type: "Int",
+          default: 0,
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+        },
+        counterpart: {
+          name: "counterpart",
+          type: "Counterpart",
+          optional: true,
+          relation: {
+            opposite: "autoCategoryRules",
+            fields: ["counterpartId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
+        },
+        category: {
+          name: "category",
+          type: "TransactionCategory",
+          relation: {
+            opposite: "autoRules",
+            fields: ["categoryId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
+        },
       },
       idFields: ["id"],
       uniqueFields: {
@@ -5368,7 +5477,7 @@ export class SchemaType implements SchemaDef {
         source: {
           name: "source",
           type: "TransactionSource",
-          default: "MANUAL",
+          default: "MERCADOPAGO",
         },
         sourceId: {
           name: "sourceId",
@@ -5620,9 +5729,7 @@ export class SchemaType implements SchemaDef {
     TransactionSource: {
       name: "TransactionSource",
       values: {
-        MANUAL: "MANUAL",
         MERCADOPAGO: "MERCADOPAGO",
-        BANK: "BANK",
       },
     },
   } as const;

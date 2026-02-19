@@ -3,14 +3,18 @@ import { z } from "zod";
 import { getSessionUser } from "../auth";
 import { zValidator } from "../lib/zod-validator";
 import {
+  createFinancialAutoCategoryRule,
   createFinancialTransaction,
   createTransactionCategory,
+  deleteFinancialAutoCategoryRule,
   deleteFinancialTransaction,
   deleteTransactionCategory,
   getFinancialSummaryByCategory,
+  listFinancialAutoCategoryRules,
   listFinancialTransactions,
   listTransactionCategories,
   syncFinancialTransactions,
+  updateFinancialAutoCategoryRule,
   updateFinancialTransaction,
   updateTransactionCategory,
 } from "../services/finance";
@@ -55,6 +59,21 @@ const updateCategorySchema = z.object({
   color: z.string().nullable().optional(),
 });
 
+const createAutoCategoryRuleSchema = z.object({
+  categoryId: z.number().int().positive(),
+  commentContains: z.string().nullable().optional(),
+  counterpartId: z.number().int().positive().nullable().optional(),
+  descriptionContains: z.string().nullable().optional(),
+  isActive: z.boolean().optional(),
+  maxAmount: z.number().nullable().optional(),
+  minAmount: z.number().nullable().optional(),
+  name: z.string().min(1),
+  priority: z.number().int().optional(),
+  type: z.enum(["INCOME", "EXPENSE"]).default("EXPENSE"),
+});
+
+const updateAutoCategoryRuleSchema = createAutoCategoryRuleSchema.partial();
+
 // Middleware for auth
 app.use("*", async (c, next) => {
   const user = await getSessionUser(c);
@@ -92,7 +111,7 @@ app.post("/transactions", zValidator("json", createSchema), async (c) => {
   const data = c.req.valid("json");
   const result = await createFinancialTransaction({
     ...data,
-    source: "MANUAL",
+    source: "MERCADOPAGO",
   });
   return reply(c, { status: "ok", data: result });
 });
@@ -143,6 +162,31 @@ app.put("/categories/:id", zValidator("json", updateCategorySchema), async (c) =
 app.delete("/categories/:id", async (c) => {
   const id = Number(c.req.param("id"));
   await deleteTransactionCategory(id);
+  return reply(c, { status: "ok" });
+});
+
+// 7. Auto-category rules
+app.get("/auto-category-rules", async (c) => {
+  const rules = await listFinancialAutoCategoryRules();
+  return reply(c, { status: "ok", data: rules });
+});
+
+app.post("/auto-category-rules", zValidator("json", createAutoCategoryRuleSchema), async (c) => {
+  const data = c.req.valid("json");
+  const rule = await createFinancialAutoCategoryRule(data);
+  return reply(c, { status: "ok", data: rule });
+});
+
+app.put("/auto-category-rules/:id", zValidator("json", updateAutoCategoryRuleSchema), async (c) => {
+  const id = Number(c.req.param("id"));
+  const data = c.req.valid("json");
+  const rule = await updateFinancialAutoCategoryRule(id, data);
+  return reply(c, { status: "ok", data: rule });
+});
+
+app.delete("/auto-category-rules/:id", async (c) => {
+  const id = Number(c.req.param("id"));
+  await deleteFinancialAutoCategoryRule(id);
   return reply(c, { status: "ok" });
 });
 

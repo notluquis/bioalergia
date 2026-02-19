@@ -46,12 +46,19 @@ export function GenerateReportModal({ onClose, open, reportType }: Props) {
   const queryClient = useQueryClient();
   const { error: showError, success: showSuccess } = useToast();
   const [progress, setProgress] = useState<null | { current: number; total: number }>(null);
+  const [useNowAsEndDate, setUseNowAsEndDate] = useState(false);
 
   const mutation = useMutation({
     mutationFn: (data: FormData) =>
-      MPService.createReportBulk(data.begin_date, data.end_date, reportType, (current, total) => {
-        setProgress({ current, total });
-      }),
+      MPService.createReportBulk(
+        data.begin_date,
+        data.end_date,
+        reportType,
+        { endAtNow: useNowAsEndDate },
+        (current, total) => {
+          setProgress({ current, total });
+        },
+      ),
     onError: (e: Error) => {
       showError(`Error: ${e.message}`);
       setProgress(null);
@@ -64,6 +71,7 @@ export function GenerateReportModal({ onClose, open, reportType }: Props) {
       void queryClient.invalidateQueries({ queryKey: ["mp-reports", reportType] });
       form.reset();
       setProgress(null);
+      setUseNowAsEndDate(false);
       onClose();
     },
   });
@@ -74,22 +82,32 @@ export function GenerateReportModal({ onClose, open, reportType }: Props) {
       end_date: dayjs().toDate(),
     } as FormData,
     onSubmit: async ({ value }) => {
+      const payload: FormData = {
+        ...value,
+        end_date: useNowAsEndDate ? new Date() : value.end_date,
+      };
+
       // Manual validation
-      const result = schema.safeParse(value);
+      const result = schema.safeParse(payload);
       if (!result.success) {
         const firstError = result.error.issues[0]?.message || "Datos inválidos";
         showError(firstError);
         return;
       }
 
-      await mutation.mutateAsync(value);
+      await mutation.mutateAsync(payload);
     },
   });
+
+  const handleClose = () => {
+    setUseNowAsEndDate(false);
+    onClose();
+  };
 
   return (
     <Modal
       isOpen={open}
-      onClose={onClose}
+      onClose={handleClose}
       title={`Generar Reporte: ${reportType === "release" ? "Liberación" : "Conciliación"}`}
     >
       <form
@@ -104,6 +122,24 @@ export function GenerateReportModal({ onClose, open, reportType }: Props) {
           {reportType === "release" ? "liberación de fondos" : "conciliación"}. Si el rango es mayor
           a 60 días, se crearán múltiples reportes automáticamente.
         </p>
+
+        <div className="flex items-center gap-3">
+          <Button
+            disabled={mutation.isPending}
+            onClick={() => {
+              setUseNowAsEndDate((prev) => !prev);
+            }}
+            type="button"
+            variant={useNowAsEndDate ? "primary" : "ghost"}
+          >
+            {useNowAsEndDate ? "Fecha fin: Ahora" : "Usar fecha actual como fin"}
+          </Button>
+          {useNowAsEndDate ? (
+            <span className="text-default-500 text-xs">
+              Se usará la hora actual al momento de generar.
+            </span>
+          ) : null}
+        </div>
 
         <form.Field name="begin_date">
           {(field) => (
@@ -123,6 +159,7 @@ export function GenerateReportModal({ onClose, open, reportType }: Props) {
         <form.Field name="end_date">
           {(field) => (
             <Input
+              disabled={useNowAsEndDate}
               error={getFieldErrorMessage(field.state.meta.errors[0])}
               label="Fecha Fin"
               onBlur={field.handleBlur}
@@ -136,7 +173,7 @@ export function GenerateReportModal({ onClose, open, reportType }: Props) {
         </form.Field>
 
         <div className="mt-6 flex justify-end gap-3">
-          <Button disabled={mutation.isPending} onClick={onClose} type="button" variant="ghost">
+          <Button disabled={mutation.isPending} onClick={handleClose} type="button" variant="ghost">
             Cancelar
           </Button>
           <Button disabled={mutation.isPending} type="submit" variant="primary">

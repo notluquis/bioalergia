@@ -68,6 +68,7 @@ export type DTEPurchaseDetail = $ModelResult<$Schema, "DTEPurchaseDetail">;
 export type DTESaleDetail = $ModelResult<$Schema, "DTESaleDetail">;
 export type DTESyncLog = $ModelResult<$Schema, "DTESyncLog">;
 export type TransactionCategory = $ModelResult<$Schema, "TransactionCategory">;
+export type FinancialAutoCategoryRule = $ModelResult<$Schema, "FinancialAutoCategoryRule">;
 export type FinancialTransaction = $ModelResult<$Schema, "FinancialTransaction">;
 export const PersonType = $schema.enums.PersonType.values;
 export type PersonType = (typeof PersonType)[keyof typeof PersonType];
