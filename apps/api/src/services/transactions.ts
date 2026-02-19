@@ -83,11 +83,11 @@ type UnifiedTransaction = {
 };
 
 const toLower = (value: null | string | undefined) => value?.toLowerCase() ?? "";
-const ACCOUNT_SPACES_REGEX = /\s+/g;
+const NON_ACCOUNT_CHARS_REGEX = /[^0-9a-z]/gi;
 const LEADING_ZEROS_REGEX = /^0+/;
 const normalizeAccountIdentifier = (value: null | string | undefined) =>
   (() => {
-    const compact = (value ?? "").replaceAll(ACCOUNT_SPACES_REGEX, "").toUpperCase();
+    const compact = (value ?? "").replace(NON_ACCOUNT_CHARS_REGEX, "").toUpperCase();
     if (!compact) {
       return "";
     }

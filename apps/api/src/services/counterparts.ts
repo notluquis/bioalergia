@@ -13,7 +13,7 @@ export type CounterpartPayload = {
 export type CounterpartUpdatePayload = Partial<CounterpartPayload>;
 
 const NON_RUT_CHARS_REGEX = /[^0-9k]/gi;
-const ACCOUNT_SPACES_REGEX = /\s+/g;
+const NON_ACCOUNT_CHARS_REGEX = /[^0-9a-z]/gi;
 const LEADING_ZEROS_REGEX = /^0+/;
 
 const normalizeRut = (rut: string): string => {
@@ -21,7 +21,7 @@ const normalizeRut = (rut: string): string => {
 };
 
 const normalizeAccountNumber = (accountNumber: string): string => {
-  const compact = accountNumber.replace(ACCOUNT_SPACES_REGEX, "").toUpperCase();
+  const compact = accountNumber.replace(NON_ACCOUNT_CHARS_REGEX, "").toUpperCase();
   if (!compact) {
     return "";
   }
@@ -470,7 +470,7 @@ const buildCounterpartSuggestions = (
 ) => {
   const grouped = new Map<string, CounterpartAccountSuggestion>();
   for (const row of rows) {
-    const accountIdentifier = row.bankAccountNumber?.trim() || row.withdrawId?.trim() || "";
+    const accountIdentifier = normalizeAccountNumber(row.bankAccountNumber ?? row.withdrawId ?? "");
     if (!accountIdentifier) {
       continue;
     }
@@ -698,9 +698,54 @@ export async function updateCounterpartAccount(
   accountId: number,
   payload: CounterpartAccountUpdateInput,
 ) {
+  const existingAccount = await db.counterpartAccount.findUnique({
+    where: { id: accountId },
+    select: { counterpartId: true, id: true },
+  });
+  if (!existingAccount) {
+    throw new Error("Counterpart account not found");
+  }
+
+  const updateData: CounterpartAccountUpdateInput = { ...payload };
+  if (payload.accountNumber !== undefined) {
+    const normalizedAccount = normalizeAccountNumber(payload.accountNumber);
+    if (!normalizedAccount) {
+      throw new Error("Número de cuenta inválido");
+    }
+
+    const conflicting = await db.counterpartAccount.findFirst({
+      include: {
+        counterpart: {
+          select: {
+            identificationNumber: true,
+          },
+        },
+      },
+      where: {
+        accountNumber: normalizedAccount,
+        id: { not: accountId },
+      },
+    });
+
+    if (conflicting && conflicting.counterpartId !== existingAccount.counterpartId) {
+      const targetCounterpart = await db.counterpart.findUnique({
+        where: { id: existingAccount.counterpartId },
+        select: { identificationNumber: true },
+      });
+      throw new CounterpartAccountConflictError({
+        accountNumber: normalizedAccount,
+        counterpartId: conflicting.counterpartId,
+        counterpartRut: conflicting.counterpart.identificationNumber,
+        withdrawRut: targetCounterpart?.identificationNumber ?? "UNKNOWN",
+      });
+    }
+
+    updateData.accountNumber = normalizedAccount;
+  }
+
   return await db.counterpartAccount.update({
     where: { id: accountId },
-    data: payload,
+    data: updateData,
   });
 }
 

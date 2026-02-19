@@ -191,7 +191,7 @@ export async function syncFinancialTransactions(_userId: number) {
           select: { counterpartId: true, id: true },
         });
         if (existing) {
-          if (existing.counterpartId == null && counterpartId != null) {
+          if (counterpartId != null && existing.counterpartId !== counterpartId) {
             await db.financialTransaction.update({
               where: { id: existing.id },
               data: { counterpartId },
@@ -212,7 +212,7 @@ export async function syncFinancialTransactions(_userId: number) {
           select: { counterpartId: true, id: true },
         });
         if (existing) {
-          if (existing.counterpartId == null && counterpartId != null) {
+          if (counterpartId != null && existing.counterpartId !== counterpartId) {
             await db.financialTransaction.update({
               where: { id: existing.id },
               data: { counterpartId },

@@ -270,6 +270,7 @@ model CounterpartAccount {
 
   @@map("counterpart_accounts")
   @@index([counterpartId])
+  @@unique([accountNumber])
 }
 
 model EmployeeTimesheet {
