@@ -1,4 +1,4 @@
-import { Description } from "@heroui/react";
+import { Description, Skeleton } from "@heroui/react";
 import dayjs from "dayjs";
 
 import { fmtCLP } from "@/lib/format";
@@ -28,13 +28,13 @@ export function BalanceSummary({ error, loading, report }: Readonly<BalanceSumma
             </Description>
           )}
           <div className="space-y-3">
-            <div className="skeleton-card space-y-2">
-              <span className="skeleton-line w-1/2" />
-              <span className="skeleton-line w-1/3" />
+            <div className="space-y-2 rounded-2xl border border-default-200 bg-default-50/60 p-4">
+              <Skeleton className="h-4 w-1/2 rounded-md" />
+              <Skeleton className="h-4 w-1/3 rounded-md" />
             </div>
-            <div className="skeleton-card space-y-2">
-              <span className="skeleton-line w-1/4" />
-              <span className="skeleton-line w-2/3" />
+            <div className="space-y-2 rounded-2xl border border-default-200 bg-default-50/60 p-4">
+              <Skeleton className="h-4 w-1/4 rounded-md" />
+              <Skeleton className="h-4 w-2/3 rounded-md" />
             </div>
           </div>
         </div>

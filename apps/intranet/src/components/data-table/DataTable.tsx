@@ -1,4 +1,4 @@
-import { Spinner } from "@heroui/react";
+import { Skeleton } from "@heroui/react";
 import {
   type Column,
   type ColumnDef,
@@ -370,14 +370,26 @@ function DataTableContent<TData, TValue>({
                   )}
               </>
             ) : isLoading ? (
-              <tr>
-                <td colSpan={columns.length} className="h-24 text-center align-middle">
-                  <div className="flex flex-col items-center justify-center gap-2">
-                    <Spinner className="text-primary" color="current" size="md" />
-                    <span className="text-default-500 text-sm">Cargando...</span>
-                  </div>
-                </td>
-              </tr>
+              Array.from({ length: 6 }).map((_, rowIndex) => (
+                <tr className="border-b-small border-divider" key={`skeleton-row-${rowIndex + 1}`}>
+                  {Array.from({ length: columns.length }).map((__, colIndex) => (
+                    <td
+                      className="whitespace-nowrap px-4 py-3 align-middle"
+                      key={`skeleton-cell-${rowIndex + 1}-${colIndex + 1}`}
+                    >
+                      <Skeleton
+                        className={
+                          colIndex === 0
+                            ? "h-4 w-28 rounded-md"
+                            : colIndex === columns.length - 1
+                              ? "h-4 w-14 rounded-md"
+                              : "h-4 w-full max-w-36 rounded-md"
+                        }
+                      />
+                    </td>
+                  ))}
+                </tr>
+              ))
             ) : rows.length === 0 ? (
               <tr>
                 <td

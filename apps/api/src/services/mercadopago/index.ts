@@ -1,4 +1,4 @@
-import { syncFinancialTransactions } from "../finance";
+import { syncFinancialTransactions, syncFinancialTransactionsBySourceIds } from "../finance";
 import {
   checkMpConfig,
   MP_ACCESS_TOKEN,
@@ -82,7 +82,10 @@ export const MercadoPagoService = {
     return await processReportUrl(downloadUrl, type);
   },
 
-  async syncCashFlow(userId?: number) {
+  async syncCashFlow(userId?: number, options?: { sourceIds?: string[] }) {
+    if (options?.sourceIds && options.sourceIds.length > 0) {
+      return syncFinancialTransactionsBySourceIds(options.sourceIds, userId ?? 0);
+    }
     return syncFinancialTransactions(userId ?? 0);
   },
 };

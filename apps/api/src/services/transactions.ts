@@ -62,7 +62,7 @@ type WithdrawRow = {
   withdrawId: string;
 };
 
-type UnifiedTransaction = {
+export type UnifiedTransaction = {
   id: number;
   source: "release" | "settlement" | "withdraw";
   transactionDate: Date;
@@ -470,6 +470,80 @@ export async function fetchMergedTransactions(
 
   return reconcileTransactions(merged)
     .filter((tx) => matchesFilter(tx, filters))
+    .sort((a, b) => b.transactionDate.getTime() - a.transactionDate.getTime());
+}
+
+export async function fetchMergedTransactionsBySourceIds(
+  sourceIds: string[],
+): Promise<UnifiedTransaction[]> {
+  const normalizedSourceIds = Array.from(
+    new Set(sourceIds.map((id) => id.trim()).filter((id) => id.length > 0)),
+  );
+
+  if (normalizedSourceIds.length === 0) {
+    return [];
+  }
+
+  const [settlements, releases, withdraws] = await Promise.all([
+    db.settlementTransaction.findMany({
+      where: { sourceId: { in: normalizedSourceIds } },
+      select: {
+        id: true,
+        metadata: true,
+        description: true,
+        externalReference: true,
+        identificationNumber: true,
+        paymentMethod: true,
+        settlementNetAmount: true,
+        sourceId: true,
+        transactionAmount: true,
+        transactionDate: true,
+        transactionType: true,
+      },
+    }),
+    db.releaseTransaction.findMany({
+      where: { sourceId: { in: normalizedSourceIds } },
+      select: {
+        id: true,
+        metadata: true,
+        description: true,
+        date: true,
+        externalReference: true,
+        grossAmount: true,
+        identificationNumber: true,
+        netCreditAmount: true,
+        netDebitAmount: true,
+        paymentMethod: true,
+        payoutBankAccountNumber: true,
+        recordType: true,
+        sourceId: true,
+      },
+    }),
+    db.withdrawTransaction.findMany({
+      where: { withdrawId: { in: normalizedSourceIds } },
+      select: {
+        amount: true,
+        bankAccountHolder: true,
+        bankAccountNumber: true,
+        bankAccountType: true,
+        bankName: true,
+        dateCreated: true,
+        id: true,
+        identificationNumber: true,
+        status: true,
+        withdrawId: true,
+      },
+    }),
+  ]);
+
+  const merged = [
+    ...settlements.map(mapSettlementRow),
+    ...releases.map(mapReleaseRow),
+    ...withdraws.map(mapWithdrawRow),
+  ];
+
+  return reconcileTransactions(merged)
+    .filter((tx) => !isTestLike(tx))
     .sort((a, b) => b.transactionDate.getTime() - a.transactionDate.getTime());
 }
 

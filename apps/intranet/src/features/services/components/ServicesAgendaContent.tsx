@@ -1,4 +1,4 @@
-import { Spinner, Surface } from "@heroui/react";
+import { Skeleton, Surface } from "@heroui/react";
 import { useStore } from "@tanstack/react-store";
 import dayjs from "dayjs";
 import { StatCard } from "@/components/ui/StatCard";
@@ -53,11 +53,14 @@ export function ServicesAgendaContent() {
   if (aggregatedLoading && unifiedAgendaItems.length === 0) {
     return (
       <section className="space-y-8">
-        <Surface className="flex min-h-64 items-center justify-center rounded-[28px] p-6 shadow-inner">
-          <div className="flex items-center gap-3 text-default-600 text-sm">
-            <Spinner size="md" />
-            <span>Cargando agenda consolidada...</span>
+        <Surface className="space-y-4 rounded-[28px] p-6 shadow-inner">
+          <Skeleton className="h-6 w-64 rounded-md" />
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Skeleton className="h-24 rounded-xl" />
+            <Skeleton className="h-24 rounded-xl" />
+            <Skeleton className="h-24 rounded-xl" />
           </div>
+          <Skeleton className="h-56 w-full rounded-xl" />
         </Surface>
       </section>
     );

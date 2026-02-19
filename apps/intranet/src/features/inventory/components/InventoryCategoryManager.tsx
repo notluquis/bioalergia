@@ -1,5 +1,5 @@
 import { schema as schemaLite } from "@finanzas/db/schema-lite";
-import { Description } from "@heroui/react";
+import { Description, Skeleton } from "@heroui/react";
 import { useClientQueries } from "@zenstackhq/tanstack-query/react";
 import { PlusCircle } from "lucide-react";
 import { useState } from "react";
@@ -94,7 +94,14 @@ export function InventoryCategoryManager() {
 
       <div className="max-h-60 overflow-y-auto border border-default-200 bg-background p-3">
         {loading && (
-          <Description className="text-foreground text-sm">Cargando categorías...</Description>
+          <div className="space-y-2">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <Skeleton
+                className="h-10 w-full rounded-xl"
+                key={`inventory-category-skeleton-${index + 1}`}
+              />
+            ))}
+          </div>
         )}
         {!loading && categories.length === 0 && (
           <Description className="text-foreground text-sm">

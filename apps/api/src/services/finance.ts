@@ -1,7 +1,11 @@
 import type { TransactionType } from "@finanzas/db";
 import { db } from "@finanzas/db";
 import Decimal from "decimal.js";
-import { fetchMergedTransactions } from "./transactions";
+import {
+  fetchMergedTransactions,
+  fetchMergedTransactionsBySourceIds,
+  type UnifiedTransaction,
+} from "./transactions";
 
 const SETTLEMENT_CASHBACK_TYPE = "CASHBACK";
 
@@ -115,8 +119,6 @@ async function buildWithdrawLookup(): Promise<WithdrawLookup> {
 
   return { byWithdrawId };
 }
-
-type UnifiedTransaction = Awaited<ReturnType<typeof fetchMergedTransactions>>[number];
 
 function resolveCounterpartIdForTransaction(
   tour: UnifiedTransaction,
@@ -278,11 +280,10 @@ async function applyAutoCategoryRulesToExistingTransactions(rules: AutoCategoryR
   );
 }
 
-export async function syncFinancialTransactions(_userId: number) {
-  // 1. Fetch all unified transactions from MP (Settlements, Releases, Withdraws)
-  const unifiedTransactions = await fetchMergedTransactions({
-    includeTest: false,
-  });
+async function syncUnifiedTransactions(
+  unifiedTransactions: UnifiedTransaction[],
+  options?: { applyGlobalRules?: boolean },
+) {
   const nonCashbackTransactions = unifiedTransactions.filter(
     (tour) =>
       !(
@@ -293,6 +294,41 @@ export async function syncFinancialTransactions(_userId: number) {
   const counterpartLookup = await buildCounterpartLookup();
   const withdrawLookup = await buildWithdrawLookup();
   const autoCategoryRules = await buildAutoCategoryRuleLookup();
+  const sourceIds = Array.from(
+    new Set(nonCashbackTransactions.map((tx) => tx.sourceId?.trim() ?? "").filter(Boolean)),
+  );
+  const existingBySourceId =
+    sourceIds.length > 0
+      ? new Map(
+          (
+            await db.financialTransaction.findMany({
+              where: { sourceId: { in: sourceIds } },
+              select: {
+                amount: true,
+                categoryId: true,
+                comment: true,
+                counterpartId: true,
+                description: true,
+                id: true,
+                sourceId: true,
+                type: true,
+              },
+            })
+          ).map((row) => [row.sourceId ?? "", row]),
+        )
+      : new Map<
+          string,
+          {
+            amount: Decimal;
+            categoryId: null | number;
+            comment: null | string;
+            counterpartId: null | number;
+            description: string;
+            id: number;
+            sourceId: null | string;
+            type: TransactionType;
+          }
+        >();
 
   let createdCount = 0;
   let duplicateCount = 0;
@@ -309,18 +345,7 @@ export async function syncFinancialTransactions(_userId: number) {
     try {
       // Check if already synced (idempotent via sourceId)
       if (tour.sourceId) {
-        const existing = await db.financialTransaction.findFirst({
-          where: { sourceId: tour.sourceId },
-          select: {
-            amount: true,
-            categoryId: true,
-            comment: true,
-            counterpartId: true,
-            description: true,
-            id: true,
-            type: true,
-          },
-        });
+        const existing = existingBySourceId.get(tour.sourceId.trim());
         if (existing) {
           const nextCounterpartId = counterpartId ?? existing.counterpartId ?? null;
           const nextCategoryId = resolveAutoCategoryId(
@@ -414,7 +439,7 @@ export async function syncFinancialTransactions(_userId: number) {
         autoCategoryRules,
       );
 
-      await db.financialTransaction.create({
+      const created = await db.financialTransaction.create({
         data: {
           date: tour.transactionDate,
           description: tour.description || "Sin descripcion",
@@ -426,6 +451,18 @@ export async function syncFinancialTransactions(_userId: number) {
           comment,
         },
       });
+      if (tour.sourceId) {
+        existingBySourceId.set(tour.sourceId.trim(), {
+          amount: new Decimal(tour.transactionAmount),
+          categoryId,
+          comment: comment ?? null,
+          counterpartId,
+          description: tour.description || "Sin descripcion",
+          id: created.id,
+          sourceId: tour.sourceId,
+          type,
+        });
+      }
       createdCount++;
     } catch (error) {
       failedCount++;
@@ -436,7 +473,9 @@ export async function syncFinancialTransactions(_userId: number) {
     }
   }
 
-  await applyAutoCategoryRulesToExistingTransactions(autoCategoryRules);
+  if (options?.applyGlobalRules !== false) {
+    await applyAutoCategoryRulesToExistingTransactions(autoCategoryRules);
+  }
 
   return {
     created: createdCount,
@@ -445,6 +484,20 @@ export async function syncFinancialTransactions(_userId: number) {
     errors,
     total: nonCashbackTransactions.length,
   };
+}
+
+export async function syncFinancialTransactions(_userId: number) {
+  // Full sync path used by scheduled/manual global sync flows.
+  const unifiedTransactions = await fetchMergedTransactions({
+    includeTest: false,
+  });
+  return syncUnifiedTransactions(unifiedTransactions, { applyGlobalRules: true });
+}
+
+export async function syncFinancialTransactionsBySourceIds(sourceIds: string[], _userId: number) {
+  const unifiedTransactions = await fetchMergedTransactionsBySourceIds(sourceIds);
+  // Incremental path: avoid re-applying all rules across full historical table on each report.
+  return syncUnifiedTransactions(unifiedTransactions, { applyGlobalRules: false });
 }
 
 export async function listFinancialTransactions(params: {

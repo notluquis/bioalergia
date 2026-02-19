@@ -1,3 +1,4 @@
+import { Skeleton } from "@heroui/react";
 import { DollarSign, TrendingDown, TrendingUp } from "lucide-react";
 import { StatCard } from "@/components/ui/StatCard";
 import type { FinancialSummary } from "../types";
@@ -15,7 +16,11 @@ export function FinancialSummaryCards({
     return (
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-32 animate-pulse rounded-2xl bg-background" />
+          <div className="space-y-3 rounded-2xl border border-default-200 p-4" key={i}>
+            <Skeleton className="h-4 w-28 rounded-md" />
+            <Skeleton className="h-8 w-40 rounded-md" />
+            <Skeleton className="h-3 w-24 rounded-md" />
+          </div>
         ))}
       </div>
     );

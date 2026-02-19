@@ -1,4 +1,4 @@
-import { Card, Chip } from "@heroui/react";
+import { Card, Chip, Skeleton } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -151,7 +151,15 @@ export function PersonalCreditDetailsPageWrapper() {
   }
 
   return (
-    <Suspense fallback={<div>Cargando detalle...</div>}>
+    <Suspense
+      fallback={
+        <div className="space-y-3">
+          <Skeleton className="h-8 w-52 rounded-md" />
+          <Skeleton className="h-32 w-full rounded-xl" />
+          <Skeleton className="h-96 w-full rounded-xl" />
+        </div>
+      }
+    >
       <PersonalCreditDetailsPage creditId={creditId} />
     </Suspense>
   );

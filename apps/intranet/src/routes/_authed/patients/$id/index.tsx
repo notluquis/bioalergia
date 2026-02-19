@@ -1,4 +1,4 @@
-import { Card, Chip, Separator, Spinner, Tabs } from "@heroui/react";
+import { Card, Chip, Separator, Skeleton, Tabs } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -403,8 +403,13 @@ function renderPatientQueryState({
 
 function PatientDetailsLoadingState() {
   return (
-    <div className="flex h-full w-full items-center justify-center p-12">
-      <Spinner size="lg" />
+    <div className="w-full space-y-4 p-6">
+      <Skeleton className="h-10 w-64 rounded-lg" />
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Skeleton className="h-56 rounded-xl" />
+        <Skeleton className="h-56 rounded-xl" />
+      </div>
+      <Skeleton className="h-80 w-full rounded-xl" />
     </div>
   );
 }

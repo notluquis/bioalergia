@@ -182,6 +182,7 @@ interface RequestOptions extends Omit<RequestInit, "body"> {
   responseType?: ResponseType;
   retry?: number;
   responseSchema?: z.ZodTypeAny;
+  timeout?: false | number;
 }
 
 type JsonRequestOptions = Omit<RequestOptions, "responseType" | "responseSchema"> & {
@@ -217,11 +218,13 @@ const buildKyOptions = (
     "body" | "query" | "responseType" | "retry" | "responseSchema"
   >,
   retry?: number,
+  timeout?: false | number,
   body?: FormData | object,
 ): Options => {
   const kyOptions: Options = {
     method,
     retry,
+    timeout,
     ...fetchOptions,
   };
 
@@ -282,10 +285,10 @@ async function parseResponse<T>(
 }
 
 async function request<T>(method: string, url: string, options?: RequestOptions): Promise<T> {
-  const { body, query, responseType = "json", retry, ...fetchOptions } = options ?? {};
+  const { body, query, responseType = "json", retry, timeout, ...fetchOptions } = options ?? {};
 
   const finalUrl = buildUrlWithQuery(url, query);
-  const kyOptions = buildKyOptions(method, fetchOptions, retry, body);
+  const kyOptions = buildKyOptions(method, fetchOptions, retry, timeout, body);
 
   try {
     const res = await kyInstance(finalUrl, kyOptions);

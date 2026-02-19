@@ -1,6 +1,6 @@
 import type { Event } from "@finanzas/db/models";
 import { schema as schemaLite } from "@finanzas/db/schema-lite";
-import { Alert, Card, Chip, Input, Spinner } from "@heroui/react";
+import { Alert, Card, Chip, Input, Skeleton } from "@heroui/react";
 import { useClientQueries } from "@zenstackhq/tanstack-query/react";
 import dayjs from "dayjs";
 import { useState } from "react";
@@ -66,8 +66,28 @@ export function DailyIncomePage() {
 
       <div className="space-y-4">
         {isLoading && (
-          <div className="flex justify-center py-8">
-            <Spinner />
+          <div className="space-y-3 py-2">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <Card key={`daily-income-skeleton-${index + 1}`} className="w-full">
+                <Card.Content className="gap-3 p-4">
+                  <div className="flex items-center justify-between">
+                    <Skeleton className="h-5 w-52 rounded-md" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-28 rounded-md" />
+                      <Skeleton className="h-4 w-24 rounded-md" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    {["line-1", "line-2", "line-3"].map((lineKey) => (
+                      <div className="flex items-center justify-between" key={lineKey}>
+                        <Skeleton className="h-4 w-56 rounded-md" />
+                        <Skeleton className="h-4 w-20 rounded-md" />
+                      </div>
+                    ))}
+                  </div>
+                </Card.Content>
+              </Card>
+            ))}
           </div>
         )}
 

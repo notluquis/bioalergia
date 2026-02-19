@@ -1,4 +1,4 @@
-import { Chip } from "@heroui/react";
+import { Chip, Skeleton } from "@heroui/react";
 import dayjs from "dayjs";
 
 import { DataTable } from "@/components/data-table/DataTable";
@@ -64,11 +64,11 @@ export const DailyBalancesPanel = function DailyBalancesPanel({
               className="flex flex-wrap items-center gap-3 rounded-2xl border border-default-200 bg-default-50/60 px-4 py-3"
               key={key}
             >
-              <span className="skeleton-line w-24" />
-              <span className="skeleton-line w-16" />
-              <span className="skeleton-line w-24" />
-              <span className="skeleton-line min-w-30 flex-1" />
-              <span className="skeleton-line w-16" />
+              <Skeleton className="h-4 w-24 rounded-md" />
+              <Skeleton className="h-4 w-16 rounded-md" />
+              <Skeleton className="h-4 w-24 rounded-md" />
+              <Skeleton className="h-4 min-w-30 flex-1 rounded-md" />
+              <Skeleton className="h-4 w-16 rounded-md" />
             </div>
           ))}
         </div>

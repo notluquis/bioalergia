@@ -1,4 +1,4 @@
-import { Spinner } from "@heroui/react";
+import { Skeleton } from "@heroui/react";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
@@ -23,8 +23,10 @@ export const Route = createFileRoute("/_authed/finanzas/cash-flow")({
   component: () => (
     <Suspense
       fallback={
-        <div className="flex justify-center p-10">
-          <Spinner />
+        <div className="space-y-3 p-4">
+          <Skeleton className="h-10 w-56 rounded-lg" />
+          <Skeleton className="h-40 w-full rounded-xl" />
+          <Skeleton className="h-96 w-full rounded-xl" />
         </div>
       }
     >

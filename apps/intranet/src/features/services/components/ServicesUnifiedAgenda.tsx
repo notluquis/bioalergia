@@ -1,4 +1,4 @@
-import { Button, Description, Spinner } from "@heroui/react";
+import { Button, Description, Skeleton } from "@heroui/react";
 import dayjs from "dayjs";
 import { useState } from "react";
 import { today } from "@/lib/dates";
@@ -171,8 +171,8 @@ export function ServicesUnifiedAgenda({
           </div>
           {loading && (
             <div className="flex items-center gap-2 text-default-300 text-xs">
-              <Spinner size="sm" />
-              <span>Actualizando agenda…</span>
+              <Skeleton className="h-3 w-3 rounded-full" />
+              <span>Actualizando agenda...</span>
             </div>
           )}
         </div>
@@ -190,12 +190,12 @@ export function ServicesUnifiedAgenda({
                 key={value}
               >
                 <div className="flex items-center justify-between">
-                  <span className="skeleton-line w-24" />
-                  <span className="skeleton-line w-16" />
+                  <Skeleton className="h-4 w-24 rounded-md" />
+                  <Skeleton className="h-4 w-16 rounded-md" />
                 </div>
                 <div className="mt-3 space-y-2">
-                  <span className="skeleton-line block w-full" />
-                  <span className="skeleton-line block w-4/5" />
+                  <Skeleton className="h-4 w-full rounded-md" />
+                  <Skeleton className="h-4 w-4/5 rounded-md" />
                 </div>
               </div>
             ))}

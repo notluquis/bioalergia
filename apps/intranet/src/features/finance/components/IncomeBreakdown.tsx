@@ -1,3 +1,4 @@
+import { Skeleton } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { DataTable } from "@/components/data-table/DataTable";
@@ -10,7 +11,21 @@ interface IncomeBreakdownProps {
 
 export function IncomeBreakdown({ summary, isLoading }: Readonly<IncomeBreakdownProps>) {
   if (isLoading || !summary) {
-    return <div className="h-64 w-full animate-pulse rounded-2xl bg-background" />;
+    return (
+      <div className="space-y-4 rounded-2xl border border-default-200 p-4">
+        <Skeleton className="h-6 w-52 rounded-md" />
+        <div className="space-y-2">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div className="grid grid-cols-4 gap-3" key={`income-skeleton-${index + 1}`}>
+              <Skeleton className="h-4 w-20 rounded-md" />
+              <Skeleton className="h-4 w-24 rounded-md" />
+              <Skeleton className="h-4 w-full rounded-md" />
+              <Skeleton className="ml-auto h-4 w-24 rounded-md" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   const columns: ColumnDef<IncomeItem>[] = [

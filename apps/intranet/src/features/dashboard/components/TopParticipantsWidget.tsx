@@ -1,3 +1,4 @@
+import { Skeleton } from "@heroui/react";
 import { Link } from "@tanstack/react-router";
 
 import { fmtCLP } from "@/lib/format";
@@ -27,7 +28,19 @@ export function TopParticipantsWidget({
         </Link>
       </div>
       {error && <p className="text-danger text-xs">{error}</p>}
-      {loading && <p className="text-foreground text-xs">Cargando...</p>}
+      {loading && (
+        <div className="space-y-3">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div
+              className="rounded-2xl border border-default-200 bg-default-50 px-4 py-3 shadow-sm"
+              key={`top-participants-widget-skeleton-${index + 1}`}
+            >
+              <Skeleton className="h-4 w-44 rounded-md" />
+              <Skeleton className="mt-2 h-3 w-52 rounded-md" />
+            </div>
+          ))}
+        </div>
+      )}
       {!loading && data.length > 0 && (
         <ul className="space-y-3 text-foreground text-sm">
           {data.map((item) => {

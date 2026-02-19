@@ -1,3 +1,4 @@
+import { Skeleton } from "@heroui/react";
 import dayjs from "dayjs";
 
 const RANGE_DAYS = 30;
@@ -10,7 +11,14 @@ export function DashboardChart({
 }) {
   if (loading) {
     return (
-      <div className="surface-recessed p-6 text-foreground text-sm">Cargando actividad...</div>
+      <div className="surface-recessed space-y-4 p-6">
+        <Skeleton className="h-5 w-72 rounded-md" />
+        <div className="grid grid-cols-4 gap-4">
+          {Array.from({ length: 8 }).map((_, index) => (
+            <Skeleton className="h-32 rounded-lg" key={`dashboard-chart-skeleton-${index + 1}`} />
+          ))}
+        </div>
+      </div>
     );
   }
 

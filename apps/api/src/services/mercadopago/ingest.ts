@@ -64,6 +64,7 @@ export interface ImportStats {
   insertedRows: number;
   duplicateRows: number;
   errors: string[];
+  processedSourceIds: string[];
 }
 
 type MpJsonDocumentGroup = {
@@ -83,6 +84,7 @@ type MpJsonReportPayload = {
  */
 
 export async function processReportUrl(url: string, reportType: string): Promise<ImportStats> {
+  const processedSourceIdSet = new Set<string>();
   const stats: ImportStats = {
     totalRows: 0,
     validRows: 0,
@@ -90,6 +92,7 @@ export async function processReportUrl(url: string, reportType: string): Promise
     insertedRows: 0,
     duplicateRows: 0,
     errors: [],
+    processedSourceIds: [],
   };
 
   try {
@@ -131,7 +134,15 @@ export async function processReportUrl(url: string, reportType: string): Promise
 
     if (contentType.includes("application/json")) {
       const payload = (await res.json()) as MpJsonReportPayload;
-      await processMpJsonPayload(payload, reportType, stats, batchState, flushBatch, isFirstRow);
+      await processMpJsonPayload(
+        payload,
+        reportType,
+        stats,
+        batchState,
+        flushBatch,
+        isFirstRow,
+        processedSourceIdSet,
+      );
     } else {
       const body = res.body;
       if (!body) {
@@ -141,7 +152,15 @@ export async function processReportUrl(url: string, reportType: string): Promise
       // Convert Web Stream to Node Stream
       const nodeStream = Readable.fromWeb(body as import("stream/web").ReadableStream);
 
-      await processCsvStream(nodeStream, reportType, stats, batchState, flushBatch, isFirstRow);
+      await processCsvStream(
+        nodeStream,
+        reportType,
+        stats,
+        batchState,
+        flushBatch,
+        isFirstRow,
+        processedSourceIdSet,
+      );
     }
   } catch (e) {
     console.error(`[MP Webhook] Failed to process report ${url}:`, e);
@@ -149,6 +168,7 @@ export async function processReportUrl(url: string, reportType: string): Promise
     throw e;
   }
 
+  stats.processedSourceIds = Array.from(processedSourceIdSet);
   return stats;
 }
 
@@ -159,6 +179,7 @@ async function processCsvStream(
   batchState: BatchState,
   flushBatch: () => Promise<void>,
   isFirstRow: { value: boolean },
+  processedSourceIdSet: Set<string>,
 ) {
   await new Promise<void>((resolve, reject) => {
     // Use readline to process CSV line by line with proper quote handling
@@ -185,6 +206,7 @@ async function processCsvStream(
           nodeStream,
           reject,
           isFirstRow,
+          processedSourceIdSet,
         );
       } catch (err) {
         reject(err);
@@ -276,6 +298,7 @@ const handleCsvData = (
   nodeStream: Readable,
   reject: (reason?: unknown) => void,
   isFirstRow: { value: boolean },
+  processedSourceIdSet: Set<string>,
 ): boolean => {
   // First row is the header - create a mapping
   if (!headerMap) {
@@ -294,6 +317,7 @@ const handleCsvData = (
     nodeStream,
     reject,
     isFirstRow,
+    processedSourceIdSet,
   );
   return false;
 };
@@ -377,6 +401,7 @@ const handleCsvRow = (
   nodeStream: Readable,
   reject: (reason?: unknown) => void,
   isFirstRow: { value: boolean },
+  processedSourceIdSet: Set<string>,
 ) => {
   stats.totalRows += 1;
   const cleanRow = cleanCsvRow(row);
@@ -387,6 +412,9 @@ const handleCsvRow = (
     if (!record) {
       stats.skippedRows += 1;
       return;
+    }
+    if (record.sourceId?.trim()) {
+      processedSourceIdSet.add(record.sourceId.trim());
     }
     void enqueueBatchRecord(record, batchState, stats, flushBatch, nodeStream, reject);
   } catch (err) {
@@ -460,6 +488,7 @@ async function processMpJsonPayload(
   batchState: BatchState,
   flushBatch: () => Promise<void>,
   isFirstRow: { value: boolean },
+  processedSourceIdSet: Set<string>,
 ) {
   const rows = extractRowsFromJsonPayload(payload);
   console.log(`[MP Ingest] JSON payload detected for ${reportType}. Rows: ${rows.length}`);
@@ -474,6 +503,9 @@ async function processMpJsonPayload(
       if (!record) {
         stats.skippedRows += 1;
         continue;
+      }
+      if (record.sourceId?.trim()) {
+        processedSourceIdSet.add(record.sourceId.trim());
       }
 
       batchState.batch.push(record);

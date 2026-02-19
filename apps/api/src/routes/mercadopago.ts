@@ -268,7 +268,19 @@ mercadopagoRoutes.post("/process-report", async (c) => {
     const stats = await MercadoPagoService.processReport(reportType, {
       fileName,
     });
-    const cashFlowSync = await MercadoPagoService.syncCashFlow(auth.userId);
+    const sourceIds = Array.from(
+      new Set(stats.processedSourceIds.map((id) => id.trim()).filter((id) => id.length > 0)),
+    );
+    const cashFlowSync =
+      sourceIds.length > 0
+        ? await MercadoPagoService.syncCashFlow(auth.userId, { sourceIds })
+        : {
+            created: 0,
+            duplicates: 0,
+            failed: 0,
+            errors: ["No sourceIds found in processed report; cashflow sync skipped"],
+            total: 0,
+          };
 
     await finalizeMpSyncLogEntry(logId, {
       status: "SUCCESS",

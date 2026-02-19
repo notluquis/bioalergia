@@ -1,4 +1,4 @@
-import { Button, Chip, Spinner } from "@heroui/react";
+import { Button, Chip, Skeleton } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { Suspense, useState } from "react";
@@ -18,9 +18,9 @@ function TotalPaidCell({ credit }: { credit: PersonalCredit }) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center gap-2">
-        <Spinner size="sm" />
-        <span className="text-xs text-muted">Calculando...</span>
+      <div className="space-y-1">
+        <Skeleton className="h-4 w-24 rounded-md" />
+        <Skeleton className="h-3 w-20 rounded-md" />
       </div>
     );
   }
@@ -156,7 +156,14 @@ export function PersonalCreditsPage() {
 }
 export function PersonalCreditsPageWrapper() {
   return (
-    <Suspense fallback={<div>Cargando créditos...</div>}>
+    <Suspense
+      fallback={
+        <div className="space-y-3">
+          <Skeleton className="h-10 w-40 rounded-lg" />
+          <Skeleton className="h-96 w-full rounded-xl" />
+        </div>
+      }
+    >
       <PersonalCreditsPage />
     </Suspense>
   );

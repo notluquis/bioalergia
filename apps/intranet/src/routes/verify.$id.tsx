@@ -1,4 +1,4 @@
-import { Description, Spinner } from "@heroui/react";
+import { Description, Skeleton } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import dayjs from "dayjs";
@@ -50,9 +50,14 @@ function VerifyCertificatePage() {
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <Spinner size="lg" />
-          <Description className="mt-4 text-foreground/70">Verificando certificado...</Description>
+        <div className="w-full max-w-2xl space-y-4 rounded-2xl bg-background p-8 shadow-xl">
+          <Skeleton className="mx-auto h-10 w-56 rounded-lg" />
+          <Skeleton className="h-6 w-2/3 rounded-md" />
+          <Skeleton className="h-6 w-3/4 rounded-md" />
+          <Skeleton className="h-6 w-1/2 rounded-md" />
+          <Description className="text-foreground/70 text-sm">
+            Verificando certificado...
+          </Description>
         </div>
       </div>
     );

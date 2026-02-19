@@ -1,4 +1,4 @@
-import { Spinner } from "@heroui/react";
+import { Skeleton } from "@heroui/react";
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 
 import { lazy, Suspense } from "react";
@@ -55,8 +55,9 @@ export const Route = createFileRoute("/_authed/calendar/classify")({
   component: () => (
     <Suspense
       fallback={
-        <div className="flex items-center justify-center py-12">
-          <Spinner size="lg" />
+        <div className="space-y-3 p-4">
+          <Skeleton className="h-10 w-52 rounded-lg" />
+          <Skeleton className="h-80 w-full rounded-xl" />
         </div>
       }
     >

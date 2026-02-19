@@ -1,4 +1,4 @@
-import { Description } from "@heroui/react";
+import { Description, Skeleton } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 
 import { Alert } from "@/components/ui/Alert";
@@ -60,7 +60,20 @@ function AllergyInventoryView() {
       </div>
       {errorMessage && <Alert status="danger">{errorMessage}</Alert>}
       {loading && data.length === 0 && (
-        <Description className="text-default-500 text-xs">Cargando datos…</Description>
+        <div className="space-y-4">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div
+              className="rounded-2xl border border-default-200/60 bg-background/80 p-4 shadow-sm"
+              key={`allergy-inventory-skeleton-${index + 1}`}
+            >
+              <Skeleton className="h-5 w-44 rounded-md" />
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <Skeleton className="h-28 rounded-xl" />
+                <Skeleton className="h-28 rounded-xl" />
+              </div>
+            </div>
+          ))}
+        </div>
       )}
       {!loading && data.length === 0 && (
         <Description className="text-default-500 text-xs">

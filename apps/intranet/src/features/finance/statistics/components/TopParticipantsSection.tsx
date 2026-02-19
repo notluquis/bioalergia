@@ -2,7 +2,7 @@
  * Top Participants Section Component
  */
 
-import { Alert, Card, Spinner } from "@heroui/react";
+import { Alert, Card, Skeleton } from "@heroui/react";
 import { Users2 } from "lucide-react";
 import { lazy, Suspense } from "react";
 
@@ -27,8 +27,27 @@ export function TopParticipantsSection({ data, error, loading }: TopParticipants
       </h2>
 
       {loading && (
-        <div className="flex h-60 items-center justify-center">
-          <Spinner className="text-primary" color="current" size="lg" />
+        <div className="grid gap-6 lg:grid-cols-2">
+          <div className="space-y-3">
+            <Skeleton className="h-60 w-full rounded-xl" />
+          </div>
+          <div className="space-y-3">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div
+                className="flex items-center justify-between rounded-lg border border-default-200 p-3"
+                key={`top-participant-skeleton-${index + 1}`}
+              >
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-8 w-8 rounded-full" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-32 rounded-md" />
+                    <Skeleton className="h-3 w-24 rounded-md" />
+                  </div>
+                </div>
+                <Skeleton className="h-4 w-20 rounded-md" />
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -43,13 +62,7 @@ export function TopParticipantsSection({ data, error, loading }: TopParticipants
       {!loading && !error && data.length > 0 && (
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Chart */}
-          <Suspense
-            fallback={
-              <div className="flex h-60 items-center justify-center">
-                <Spinner className="text-primary" color="current" size="md" />
-              </div>
-            }
-          >
+          <Suspense fallback={<Skeleton className="h-60 w-full rounded-xl" />}>
             <TopParticipantsPieChart data={data.slice(0, 5)} />
           </Suspense>
 

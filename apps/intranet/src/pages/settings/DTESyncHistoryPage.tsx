@@ -1,4 +1,4 @@
-import { Accordion, Button, Card, Chip, Description, Spinner } from "@heroui/react";
+import { Accordion, Button, Card, Chip, Description, Skeleton, Spinner } from "@heroui/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -152,8 +152,21 @@ export function DTESyncHistoryPage() {
       <Card>
         <Card.Content>
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Spinner />
+            <div className="space-y-3 py-3">
+              {Array.from({ length: 5 }).map((_, index) => (
+                <div
+                  className="rounded-xl border border-default-200 bg-default-50/60 px-4 py-3"
+                  key={`dte-history-skeleton-${index + 1}`}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="h-5 w-20 rounded-full" />
+                      <Skeleton className="h-4 w-16 rounded-md" />
+                    </div>
+                    <Skeleton className="h-4 w-24 rounded-md" />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : error ? (
             <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
