@@ -18,13 +18,18 @@ import {
   Trash2,
   User,
 } from "lucide-react";
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { Button } from "@/components/ui/Button";
-import { NewAttachmentModal } from "@/features/patients/components/NewAttachmentModal";
 import { PatientDetailSchema } from "@/features/patients/schemas";
 import { useLazyTabs } from "@/hooks/use-lazy-tabs";
 import { apiClient } from "@/lib/api-client";
+
+const NewAttachmentModal = lazy(() =>
+  import("@/features/patients/components/NewAttachmentModal").then((module) => ({
+    default: module.NewAttachmentModal,
+  })),
+);
 
 interface Person {
   rut: string;
@@ -415,11 +420,15 @@ function PatientDetailsPage() {
         </div>
       </div>
 
-      <NewAttachmentModal
-        isOpen={isAttachmentModalOpen}
-        onClose={() => setIsAttachmentModalOpen(false)}
-        patientId={String(patient.id)}
-      />
+      {isAttachmentModalOpen ? (
+        <Suspense fallback={null}>
+          <NewAttachmentModal
+            isOpen={isAttachmentModalOpen}
+            onClose={() => setIsAttachmentModalOpen(false)}
+            patientId={String(patient.id)}
+          />
+        </Suspense>
+      ) : null}
     </section>
   );
 }

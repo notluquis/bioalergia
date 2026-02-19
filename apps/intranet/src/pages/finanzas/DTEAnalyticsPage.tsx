@@ -1,40 +1,22 @@
-import { Card, Tabs } from "@heroui/react";
+import { Tabs } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { BarChart3, TrendingUp } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Legend,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-
-import { Select, SelectItem } from "@/components/ui/Select";
+import { lazy, Suspense, useMemo, useState } from "react";
 import { dteAnalyticsKeys } from "@/features/finance/dte-analytics/queries";
-import type {
-  ComparisonChartData,
-  MonthlyChartData,
-  MonthlySummaryProps,
-  YearlyTotals,
-} from "@/features/finance/dte-analytics/types";
-import { CHART_COLORS } from "@/features/finance/dte-analytics/types";
-import {
-  buildComparisonChartData,
-  buildMonthlyChartData,
-  calculateYearlyTotals,
-  extractYearsFromSummary,
-  formatCurrency,
-  formatCurrencyCompact,
-  formatNumber,
-  safeYearSelection,
-} from "@/features/finance/dte-analytics/utils";
+import { extractYearsFromSummary, safeYearSelection } from "@/features/finance/dte-analytics/utils";
 import { useLazyTabs } from "@/hooks/use-lazy-tabs";
+
+const LazyDteMonthlySummaryPanel = lazy(() =>
+  import("@/features/finance/dte-analytics/components/DteMonthlySummaryPanel").then((module) => ({
+    default: module.DteMonthlySummaryPanel,
+  })),
+);
+
+const LazyDteComparisonPanel = lazy(() =>
+  import("@/features/finance/dte-analytics/components/DteComparisonPanel").then((module) => ({
+    default: module.DteComparisonPanel,
+  })),
+);
 
 export function DTEAnalyticsPage() {
   const currentYear = new Date().getFullYear();
@@ -104,365 +86,46 @@ export function DTEAnalyticsPage() {
 
         <Tabs.Panel id="purchases-monthly">
           {isTabMounted("purchases-monthly") ? (
-            <PurchasesMonthlySummary
-              selectedYear={validatedYear}
-              setSelectedYear={setSelectedYear}
-              yearOptions={yearOptions}
-            />
+            <Suspense fallback={<div className="py-2 text-default-500 text-sm">Cargando...</div>}>
+              <LazyDteMonthlySummaryPanel
+                kind="purchases"
+                selectedYear={validatedYear}
+                setSelectedYear={setSelectedYear}
+                yearOptions={yearOptions}
+              />
+            </Suspense>
           ) : null}
         </Tabs.Panel>
 
         <Tabs.Panel id="sales-monthly">
           {isTabMounted("sales-monthly") ? (
-            <SalesMonthlySummary
-              selectedYear={validatedYear}
-              setSelectedYear={setSelectedYear}
-              yearOptions={yearOptions}
-            />
+            <Suspense fallback={<div className="py-2 text-default-500 text-sm">Cargando...</div>}>
+              <LazyDteMonthlySummaryPanel
+                kind="sales"
+                selectedYear={validatedYear}
+                setSelectedYear={setSelectedYear}
+                yearOptions={yearOptions}
+              />
+            </Suspense>
           ) : null}
         </Tabs.Panel>
 
         <Tabs.Panel id="purchases-comparison">
-          {isTabMounted("purchases-comparison") ? <PurchasesComparison /> : null}
+          {isTabMounted("purchases-comparison") ? (
+            <Suspense fallback={<div className="py-2 text-default-500 text-sm">Cargando...</div>}>
+              <LazyDteComparisonPanel kind="purchases" />
+            </Suspense>
+          ) : null}
         </Tabs.Panel>
 
         <Tabs.Panel id="sales-comparison">
-          {isTabMounted("sales-comparison") ? <SalesComparison /> : null}
+          {isTabMounted("sales-comparison") ? (
+            <Suspense fallback={<div className="py-2 text-default-500 text-sm">Cargando...</div>}>
+              <LazyDteComparisonPanel kind="sales" />
+            </Suspense>
+          ) : null}
         </Tabs.Panel>
       </Tabs>
-    </div>
-  );
-}
-
-/**
- * Monthly summary component for purchases
- * Shows single year with bar chart and KPI cards
- */
-function PurchasesMonthlySummary({
-  selectedYear,
-  setSelectedYear,
-  yearOptions,
-}: MonthlySummaryProps) {
-  const { data: summary } = useSuspenseQuery(dteAnalyticsKeys.purchases(Number(selectedYear)));
-
-  // Build typed chart data
-  const chartData = useMemo<MonthlyChartData[]>(
-    () => buildMonthlyChartData(summary, selectedYear),
-    [summary, selectedYear],
-  );
-
-  // Calculate totals from chart data
-  const totals = useMemo<YearlyTotals>(() => calculateYearlyTotals(chartData), [chartData]);
-
-  // Callback for year selection with type safety
-  const handleYearChange = useCallback(
-    (key: string | number | null) => {
-      if (key && typeof key === "string") {
-        setSelectedYear(key);
-      }
-    },
-    [setSelectedYear],
-  );
-
-  return (
-    <div className="space-y-4 pt-4">
-      <div className="flex items-center gap-4">
-        <Select
-          label="Año"
-          placeholder="Seleccionar año"
-          value={selectedYear}
-          onChange={handleYearChange}
-        >
-          {yearOptions.map((year) => (
-            <SelectItem key={year} id={year}>
-              {year}
-            </SelectItem>
-          ))}
-        </Select>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
-        <Card>
-          <Card.Header>
-            <Card.Title className="text-sm">Total Compras</Card.Title>
-          </Card.Header>
-          <Card.Content>
-            <span className="font-bold text-2xl">{formatCurrency(totals.totalAmount)}</span>
-          </Card.Content>
-        </Card>
-        <Card>
-          <Card.Header>
-            <Card.Title className="text-sm">Exento</Card.Title>
-          </Card.Header>
-          <Card.Content>
-            <span className="font-bold text-2xl">{formatCurrency(totals.exemptAmount)}</span>
-          </Card.Content>
-        </Card>
-        <Card>
-          <Card.Header>
-            <Card.Title className="text-sm">Neto</Card.Title>
-          </Card.Header>
-          <Card.Content>
-            <span className="font-bold text-2xl">{formatCurrency(totals.netAmount)}</span>
-          </Card.Content>
-        </Card>
-        <Card>
-          <Card.Header>
-            <Card.Title className="text-sm">IVA Recuperable</Card.Title>
-          </Card.Header>
-          <Card.Content>
-            <span className="font-bold text-2xl">{formatCurrency(totals.taxAmount)}</span>
-          </Card.Content>
-        </Card>
-        <Card>
-          <Card.Header>
-            <Card.Title className="text-sm">Documentos</Card.Title>
-          </Card.Header>
-          <Card.Content>
-            <span className="font-bold text-2xl">{formatNumber(totals.count)}</span>
-          </Card.Content>
-        </Card>
-      </div>
-
-      <Card>
-        <Card.Header>
-          <Card.Title>Compras Mensuales {selectedYear} (Exento + Neto + IVA)</Card.Title>
-        </Card.Header>
-        <Card.Content>
-          <ResponsiveContainer height={400} width="100%">
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis tickFormatter={formatCurrencyCompact} />
-              <Tooltip
-                formatter={(value: number | undefined) =>
-                  value !== undefined ? formatCurrency(value) : "N/A"
-                }
-                labelStyle={{ color: "#000" }}
-                contentStyle={{ backgroundColor: "#fff" }}
-              />
-              <Legend />
-              <Bar dataKey="exemptAmount" stackId="total" fill="#8b5cf6" name="Exento" />
-              <Bar dataKey="netAmount" stackId="total" fill="#10b981" name="Neto" />
-              <Bar dataKey="taxAmount" stackId="total" fill="#f59e0b" name="IVA" />
-            </BarChart>
-          </ResponsiveContainer>
-        </Card.Content>
-      </Card>
-    </div>
-  );
-}
-
-/**
- * Monthly summary component for sales
- * Mirrors purchases component with sales data
- */
-function SalesMonthlySummary({ selectedYear, setSelectedYear, yearOptions }: MonthlySummaryProps) {
-  const { data: summary } = useSuspenseQuery(dteAnalyticsKeys.sales(Number(selectedYear)));
-
-  const chartData = useMemo<MonthlyChartData[]>(
-    () => buildMonthlyChartData(summary, selectedYear),
-    [summary, selectedYear],
-  );
-
-  const totals = useMemo<YearlyTotals>(() => calculateYearlyTotals(chartData), [chartData]);
-
-  const handleYearChange = useCallback(
-    (key: string | number | null) => {
-      if (key && typeof key === "string") {
-        setSelectedYear(key);
-      }
-    },
-    [setSelectedYear],
-  );
-
-  return (
-    <div className="space-y-4 pt-4">
-      <div className="flex items-center gap-4">
-        <Select
-          label="Año"
-          placeholder="Seleccionar año"
-          value={selectedYear}
-          onChange={handleYearChange}
-        >
-          {yearOptions.map((year) => (
-            <SelectItem key={year} id={year}>
-              {year}
-            </SelectItem>
-          ))}
-        </Select>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
-        <Card>
-          <Card.Header>
-            <Card.Title className="text-sm">Total Ventas</Card.Title>
-          </Card.Header>
-          <Card.Content>
-            <span className="font-bold text-2xl">{formatCurrency(totals.totalAmount)}</span>
-          </Card.Content>
-        </Card>
-        <Card>
-          <Card.Header>
-            <Card.Title className="text-sm">Exento</Card.Title>
-          </Card.Header>
-          <Card.Content>
-            <span className="font-bold text-2xl">{formatCurrency(totals.exemptAmount)}</span>
-          </Card.Content>
-        </Card>
-        <Card>
-          <Card.Header>
-            <Card.Title className="text-sm">Neto</Card.Title>
-          </Card.Header>
-          <Card.Content>
-            <span className="font-bold text-2xl">{formatCurrency(totals.netAmount)}</span>
-          </Card.Content>
-        </Card>
-        <Card>
-          <Card.Header>
-            <Card.Title className="text-sm">IVA</Card.Title>
-          </Card.Header>
-          <Card.Content>
-            <span className="font-bold text-2xl">{formatCurrency(totals.taxAmount)}</span>
-          </Card.Content>
-        </Card>
-        <Card>
-          <Card.Header>
-            <Card.Title className="text-sm">Documentos</Card.Title>
-          </Card.Header>
-          <Card.Content>
-            <span className="font-bold text-2xl">{formatNumber(totals.count)}</span>
-          </Card.Content>
-        </Card>
-      </div>
-
-      <Card>
-        <Card.Header>
-          <Card.Title>Ventas Mensuales {selectedYear} (Exento + Neto + IVA)</Card.Title>
-        </Card.Header>
-        <Card.Content>
-          <ResponsiveContainer height={400} width="100%">
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis tickFormatter={formatCurrencyCompact} />
-              <Tooltip
-                formatter={(value: number | undefined) =>
-                  value !== undefined ? formatCurrency(value) : "N/A"
-                }
-                labelStyle={{ color: "#000" }}
-                contentStyle={{ backgroundColor: "#fff" }}
-              />
-              <Legend />
-              <Bar dataKey="exemptAmount" stackId="total" fill="#8b5cf6" name="Exento" />
-              <Bar dataKey="netAmount" stackId="total" fill="#10b981" name="Neto" />
-              <Bar dataKey="taxAmount" stackId="total" fill="#f59e0b" name="IVA" />
-            </BarChart>
-          </ResponsiveContainer>
-        </Card.Content>
-      </Card>
-    </div>
-  );
-}
-
-/**
- * Multi-year comparison component for purchases
- * Shows LineChart with all years on same axis
- */
-function PurchasesComparison() {
-  const { data: summary } = useSuspenseQuery(dteAnalyticsKeys.purchases());
-
-  const chartData = useMemo<ComparisonChartData[]>(
-    () => buildComparisonChartData(summary),
-    [summary],
-  );
-
-  const years = useMemo<string[]>(() => extractYearsFromSummary(summary), [summary]);
-
-  return (
-    <div className="space-y-4 pt-4">
-      <Card>
-        <Card.Header>
-          <Card.Title>Comparación de Compras (Todos los Años)</Card.Title>
-        </Card.Header>
-        <Card.Content>
-          <ResponsiveContainer height={400} width="100%">
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis tickFormatter={formatCurrencyCompact} />
-              <Tooltip
-                formatter={(value: number | undefined) =>
-                  value !== undefined ? formatCurrency(value) : "N/A"
-                }
-                labelStyle={{ color: "#000" }}
-              />
-              <Legend />
-              {years.map((year, idx) => (
-                <Line
-                  key={year}
-                  dataKey={year}
-                  stroke={CHART_COLORS[idx % CHART_COLORS.length]}
-                  name={year}
-                  dot
-                  strokeWidth={2}
-                />
-              ))}
-            </LineChart>
-          </ResponsiveContainer>
-        </Card.Content>
-      </Card>
-    </div>
-  );
-}
-
-/**
- * Multi-year comparison component for sales
- * Mirrors purchases comparison with sales data
- */
-function SalesComparison() {
-  const { data: summary } = useSuspenseQuery(dteAnalyticsKeys.sales());
-
-  const chartData = useMemo<ComparisonChartData[]>(
-    () => buildComparisonChartData(summary),
-    [summary],
-  );
-
-  const years = useMemo<string[]>(() => extractYearsFromSummary(summary), [summary]);
-
-  return (
-    <div className="space-y-4 pt-4">
-      <Card>
-        <Card.Header>
-          <Card.Title>Comparación de Ventas (Todos los Años)</Card.Title>
-        </Card.Header>
-        <Card.Content>
-          <ResponsiveContainer height={400} width="100%">
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis tickFormatter={formatCurrencyCompact} />
-              <Tooltip
-                formatter={(value: number | undefined) =>
-                  value !== undefined ? formatCurrency(value) : "N/A"
-                }
-                labelStyle={{ color: "#000" }}
-              />
-              <Legend />
-              {years.map((year, idx) => (
-                <Line
-                  key={year}
-                  dataKey={year}
-                  stroke={CHART_COLORS[idx % CHART_COLORS.length]}
-                  name={year}
-                  dot
-                  strokeWidth={2}
-                />
-              ))}
-            </LineChart>
-          </ResponsiveContainer>
-        </Card.Content>
-      </Card>
     </div>
   );
 }

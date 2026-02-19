@@ -4,17 +4,22 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import type { ColumnDef, PaginationState } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { ArrowRight, Database, RefreshCw, Search, User, UserPlus } from "lucide-react";
-import { useMemo, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import { z } from "zod";
 import { DataTable } from "@/components/data-table/DataTable";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { CreatePatientModal } from "@/features/patients/components/CreatePatientModal";
 import { PatientListSchema } from "@/features/patients/schemas";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { useLazyTabs } from "@/hooks/use-lazy-tabs";
 import { apiClient } from "@/lib/api-client";
 import { PAGE_CONTAINER_RELAXED } from "@/lib/styles";
+
+const CreatePatientModal = lazy(() =>
+  import("@/features/patients/components/CreatePatientModal").then((module) => ({
+    default: module.CreatePatientModal,
+  })),
+);
 
 export const Route = createFileRoute("/_authed/patients/")({
   staticData: {
@@ -331,7 +336,11 @@ function PatientsListPage() {
         </Card.Content>
       </Card>
 
-      <CreatePatientModal isOpen={createOpen} onClose={closeCreateModal} />
+      {createOpen ? (
+        <Suspense fallback={null}>
+          <CreatePatientModal isOpen={createOpen} onClose={closeCreateModal} />
+        </Suspense>
+      ) : null}
     </section>
   );
 }
