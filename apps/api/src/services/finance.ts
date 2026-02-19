@@ -580,7 +580,7 @@ export async function listFinancialTransactions(params: {
     new Set(
       transactions
         .map((transaction) => transaction.sourceId)
-        .filter((sourceId): sourceId is string => Boolean(sourceId && sourceId.trim())),
+        .filter((sourceId): sourceId is string => Boolean(sourceId?.trim())),
     ),
   );
 
@@ -641,6 +641,20 @@ export async function listFinancialTransactions(params: {
       totalPages: Math.ceil(total / pageSize),
     },
   };
+}
+
+export async function listAvailableFinancialTransactionMonths() {
+  const rows = await db.$queryRaw<Array<{ month: string }>>`
+    SELECT to_char(date_trunc('month', ft."date"), 'YYYY-MM') AS month
+    FROM financial_transactions ft
+    LEFT JOIN settlement_transactions st
+      ON st.source_id = ft.source_id
+    WHERE st.transaction_type IS DISTINCT FROM ${SETTLEMENT_CASHBACK_TYPE}
+    GROUP BY 1
+    ORDER BY 1 DESC
+  `;
+
+  return rows.map((row) => row.month).filter(Boolean);
 }
 
 export async function getFinancialSummaryByCategory(params: { from?: Date; to?: Date }) {

@@ -10,6 +10,7 @@ import {
   deleteFinancialTransaction,
   deleteTransactionCategory,
   getFinancialSummaryByCategory,
+  listAvailableFinancialTransactionMonths,
   listFinancialAutoCategoryRules,
   listFinancialTransactions,
   listTransactionCategories,
@@ -104,6 +105,11 @@ app.get("/transactions/summary", zValidator("query", listSchema), async (c) => {
     to: query.to ? new Date(query.to) : undefined,
   });
   return reply(c, { status: "ok", ...result });
+});
+
+app.get("/transactions/available-months", async (c) => {
+  const data = await listAvailableFinancialTransactionMonths();
+  return reply(c, { status: "ok", data });
 });
 
 // 2. Create Transaction (Manual)

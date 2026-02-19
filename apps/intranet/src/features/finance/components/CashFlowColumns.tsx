@@ -104,9 +104,10 @@ const mapPaymentMethodLabel = (
 
 const normalizeSaleDetail = (rawValue: null | string | undefined) =>
   (rawValue ?? "").replaceAll('"', "").trim();
+const COMMENT_REF_PREFIX_REGEX = /^ref:\s*/i;
 
 const normalizeCommentDetail = (rawValue: null | string | undefined) =>
-  (rawValue ?? "").replace(/^ref:\s*/i, "").trim();
+  (rawValue ?? "").replace(COMMENT_REF_PREFIX_REGEX, "").trim();
 
 const dedupeDetails = (values: string[]) => {
   const result: string[] = [];
@@ -214,7 +215,7 @@ export const columns: ColumnDef<TransactionWithRelations>[] = [
     size: 240,
     cell: ({ row }) =>
       row.original.counterpart ? (
-        <div className="flex max-w-[280px] min-w-0 flex-col">
+        <div className="flex max-w-70 min-w-0 flex-col">
           <span
             className="block truncate text-small"
             title={row.original.counterpart.bankAccountHolder}

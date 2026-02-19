@@ -6,6 +6,7 @@ import {
   Dropdown,
   DropdownPopover,
   DropdownTrigger,
+  Header,
   Input,
   Label,
   ListBox,
@@ -21,7 +22,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -93,6 +94,11 @@ const FinancialTransactionsResponseSchema = z.object({
       totalPages: z.number(),
     })
     .optional(),
+  status: z.literal("ok"),
+});
+
+const AvailableMonthsResponseSchema = z.object({
+  data: z.array(z.string()),
   status: z.literal("ok"),
 });
 
@@ -237,6 +243,22 @@ function useFinancialAutoCategoryRules() {
   });
 }
 
+function useAvailableFinancialMonths() {
+  return useQuery<string[]>({
+    queryKey: ["FinancialTransaction", "available-months"],
+    queryFn: async () => {
+      const payload = await apiClient.get<{ data: string[] }>(
+        "/api/finance/transactions/available-months",
+        {
+          responseSchema: AvailableMonthsResponseSchema,
+        },
+      );
+      return payload.data;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 export const Route = createFileRoute("/_authed/finanzas/cash-flow")({
   component: CashFlowPage,
 });
@@ -297,6 +319,7 @@ const normalizeText = (value: null | string | undefined) =>
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .trim();
+const MONTH_VALUE_REGEX = /^\d{4}-\d{2}$/;
 
 const formatMonthLabel = (monthValue: string) => {
   const date = new Date(`${monthValue}-01T00:00:00`);
@@ -498,6 +521,7 @@ export function CashFlowPage() {
   const [editingRuleMaxAmount, setEditingRuleMaxAmount] = useState("");
   const [editingRuleCommentContains, setEditingRuleCommentContains] = useState("");
   const [editingRuleDescriptionContains, setEditingRuleDescriptionContains] = useState("");
+  const { data: availableMonths = [] } = useAvailableFinancialMonths();
 
   const monthRange = useMemo(() => {
     const base = dayjs(`${selectedMonth}-01`);
@@ -508,15 +532,42 @@ export function CashFlowPage() {
   }, [selectedMonth]);
 
   const monthOptions = useMemo(() => {
-    const current = dayjs().startOf("month");
-    return Array.from({ length: 24 }, (_item, index) => {
-      const value = current.subtract(index, "month").format("YYYY-MM");
-      return {
-        label: formatMonthLabel(value),
-        value,
-      };
-    });
-  }, []);
+    const uniqueMonths = Array.from(
+      new Set(availableMonths.filter((value) => MONTH_VALUE_REGEX.test(value))),
+    ).sort((a, b) => b.localeCompare(a));
+
+    if (uniqueMonths.length === 0) {
+      const value = dayjs().startOf("month").format("YYYY-MM");
+      return [{ label: formatMonthLabel(value), value }];
+    }
+
+    return uniqueMonths.map((value) => ({
+      label: formatMonthLabel(value),
+      value,
+    }));
+  }, [availableMonths]);
+
+  const monthOptionsByYear = useMemo(() => {
+    const grouped = new Map<string, typeof monthOptions>();
+    for (const option of monthOptions) {
+      const year = option.value.slice(0, 4);
+      const options = grouped.get(year) ?? [];
+      options.push(option);
+      grouped.set(year, options);
+    }
+    return Array.from(grouped.entries()).map(([year, options]) => ({
+      options,
+      year,
+    }));
+  }, [monthOptions]);
+
+  useEffect(() => {
+    const firstMonthOption = monthOptions[0];
+    if (!firstMonthOption) return;
+    if (monthOptions.some((option) => option.value === selectedMonth)) return;
+    setSelectedMonth(firstMonthOption.value);
+    setPage(1);
+  }, [monthOptions, selectedMonth]);
 
   const { data, isLoading } = useFinancialTransactions({
     from: monthRange.from,
@@ -1085,7 +1136,7 @@ export function CashFlowPage() {
         </Tabs.ListContainer>
 
         <Tabs.Panel id="cash-flow" className="space-y-3 pt-3">
-          <Card className="border border-default-200/70 bg-gradient-to-b from-default-100/40 to-default-50/10 shadow-sm">
+          <Card className="border border-default-200/70 bg-linear-to-b from-default-100/40 to-default-50/10 shadow-sm">
             <div className="space-y-3 p-3">
               <div className="max-w-xs">
                 <Select
@@ -1102,15 +1153,20 @@ export function CashFlowPage() {
                   </Select.Trigger>
                   <Select.Popover>
                     <ListBox>
-                      {monthOptions.map((monthOption) => (
-                        <ListBox.Item
-                          id={monthOption.value}
-                          key={monthOption.value}
-                          textValue={monthOption.label}
-                        >
-                          {monthOption.label}
-                          <ListBox.ItemIndicator />
-                        </ListBox.Item>
+                      {monthOptionsByYear.map((monthGroup) => (
+                        <ListBox.Section key={monthGroup.year}>
+                          <Header>{monthGroup.year}</Header>
+                          {monthGroup.options.map((monthOption) => (
+                            <ListBox.Item
+                              id={monthOption.value}
+                              key={monthOption.value}
+                              textValue={monthOption.label}
+                            >
+                              {monthOption.label}
+                              <ListBox.ItemIndicator />
+                            </ListBox.Item>
+                          ))}
+                        </ListBox.Section>
                       ))}
                     </ListBox>
                   </Select.Popover>
@@ -1248,123 +1304,119 @@ export function CashFlowPage() {
             </div>
           </Card>
 
-          <Card className="border border-default-200/70 bg-gradient-to-b from-default-100/40 to-default-50/10 shadow-sm">
+          <Card className="border border-default-200/70 bg-linear-to-b from-default-100/40 to-default-50/10 shadow-sm">
             <div className="space-y-3 p-3">
               <p className="text-sm font-medium">Distribución por categoría</p>
               <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
                 <div className="rounded-md border border-default-200 p-3">
                   <h4 className="mb-2 text-sm font-medium">Ingresos por categoría</h4>
                   {isLoading ? (
-                    <Skeleton className="h-[320px] w-full rounded-md" />
+                    <Skeleton className="h-80 w-full rounded-md" />
                   ) : incomePieData.length === 0 ? (
                     <p className="text-sm text-default-500">
                       No hay ingresos para el mes seleccionado.
                     </p>
                   ) : (
-                    <>
-                      <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(240px,1fr)_minmax(220px,260px)]">
-                        <div className="h-[320px] min-w-0">
-                          <ResponsiveContainer height="100%" width="100%">
-                            <PieChart>
-                              <Pie
-                                data={incomePieData}
-                                dataKey="value"
-                                nameKey="name"
-                                innerRadius={70}
-                                outerRadius={105}
-                                paddingAngle={2}
-                              >
-                                {incomePieData.map((entry) => (
-                                  <Cell key={`income-pie-${entry.name}`} fill={entry.color} />
-                                ))}
-                              </Pie>
-                              <Tooltip content={<CashflowPieTooltip />} />
-                            </PieChart>
-                          </ResponsiveContainer>
-                        </div>
-                        <div className="max-h-[320px] space-y-2 overflow-auto pr-1">
-                          {incomePieData.map((entry) => {
-                            const share =
-                              incomePieTotal > 0 ? (entry.value / incomePieTotal) * 100 : 0;
-                            return (
-                              <div
-                                className="flex items-center justify-between gap-2 rounded-md border border-default-200 px-2 py-1.5 text-sm"
-                                key={`income-legend-${entry.name}`}
-                              >
-                                <div className="flex min-w-0 items-center gap-2">
-                                  <span
-                                    className="h-2.5 w-2.5 shrink-0 rounded-full"
-                                    style={{ backgroundColor: entry.color }}
-                                  />
-                                  <span className="truncate text-default-700">{entry.name}</span>
-                                </div>
-                                <div className="shrink-0 text-right text-default-500">
-                                  {share.toFixed(1)}%
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
+                    <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(240px,1fr)_minmax(220px,260px)]">
+                      <div className="h-80 min-w-0">
+                        <ResponsiveContainer height="100%" width="100%">
+                          <PieChart>
+                            <Pie
+                              data={incomePieData}
+                              dataKey="value"
+                              nameKey="name"
+                              innerRadius={70}
+                              outerRadius={105}
+                              paddingAngle={2}
+                            >
+                              {incomePieData.map((entry) => (
+                                <Cell key={`income-pie-${entry.name}`} fill={entry.color} />
+                              ))}
+                            </Pie>
+                            <Tooltip content={<CashflowPieTooltip />} />
+                          </PieChart>
+                        </ResponsiveContainer>
                       </div>
-                    </>
+                      <div className="max-h-80 space-y-2 overflow-auto pr-1">
+                        {incomePieData.map((entry) => {
+                          const share =
+                            incomePieTotal > 0 ? (entry.value / incomePieTotal) * 100 : 0;
+                          return (
+                            <div
+                              className="flex items-center justify-between gap-2 rounded-md border border-default-200 px-2 py-1.5 text-sm"
+                              key={`income-legend-${entry.name}`}
+                            >
+                              <div className="flex min-w-0 items-center gap-2">
+                                <span
+                                  className="h-2.5 w-2.5 shrink-0 rounded-full"
+                                  style={{ backgroundColor: entry.color }}
+                                />
+                                <span className="truncate text-default-700">{entry.name}</span>
+                              </div>
+                              <div className="shrink-0 text-right text-default-500">
+                                {share.toFixed(1)}%
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
                   )}
                 </div>
 
                 <div className="rounded-md border border-default-200 p-3">
                   <h4 className="mb-2 text-sm font-medium">Egresos por categoría</h4>
                   {isLoading ? (
-                    <Skeleton className="h-[320px] w-full rounded-md" />
+                    <Skeleton className="h-80 w-full rounded-md" />
                   ) : expensePieData.length === 0 ? (
                     <p className="text-sm text-default-500">
                       No hay egresos para el mes seleccionado.
                     </p>
                   ) : (
-                    <>
-                      <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(240px,1fr)_minmax(220px,260px)]">
-                        <div className="h-[320px] min-w-0">
-                          <ResponsiveContainer height="100%" width="100%">
-                            <PieChart>
-                              <Pie
-                                data={expensePieData}
-                                dataKey="value"
-                                nameKey="name"
-                                innerRadius={70}
-                                outerRadius={105}
-                                paddingAngle={2}
-                              >
-                                {expensePieData.map((entry) => (
-                                  <Cell key={`expense-pie-${entry.name}`} fill={entry.color} />
-                                ))}
-                              </Pie>
-                              <Tooltip content={<CashflowPieTooltip />} />
-                            </PieChart>
-                          </ResponsiveContainer>
-                        </div>
-                        <div className="max-h-[320px] space-y-2 overflow-auto pr-1">
-                          {expensePieData.map((entry) => {
-                            const share =
-                              expensePieTotal > 0 ? (entry.value / expensePieTotal) * 100 : 0;
-                            return (
-                              <div
-                                className="flex items-center justify-between gap-2 rounded-md border border-default-200 px-2 py-1.5 text-sm"
-                                key={`expense-legend-${entry.name}`}
-                              >
-                                <div className="flex min-w-0 items-center gap-2">
-                                  <span
-                                    className="h-2.5 w-2.5 shrink-0 rounded-full"
-                                    style={{ backgroundColor: entry.color }}
-                                  />
-                                  <span className="truncate text-default-700">{entry.name}</span>
-                                </div>
-                                <div className="shrink-0 text-right text-default-500">
-                                  {share.toFixed(1)}%
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
+                    <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(240px,1fr)_minmax(220px,260px)]">
+                      <div className="h-80 min-w-0">
+                        <ResponsiveContainer height="100%" width="100%">
+                          <PieChart>
+                            <Pie
+                              data={expensePieData}
+                              dataKey="value"
+                              nameKey="name"
+                              innerRadius={70}
+                              outerRadius={105}
+                              paddingAngle={2}
+                            >
+                              {expensePieData.map((entry) => (
+                                <Cell key={`expense-pie-${entry.name}`} fill={entry.color} />
+                              ))}
+                            </Pie>
+                            <Tooltip content={<CashflowPieTooltip />} />
+                          </PieChart>
+                        </ResponsiveContainer>
                       </div>
-                    </>
+                      <div className="max-h-80 space-y-2 overflow-auto pr-1">
+                        {expensePieData.map((entry) => {
+                          const share =
+                            expensePieTotal > 0 ? (entry.value / expensePieTotal) * 100 : 0;
+                          return (
+                            <div
+                              className="flex items-center justify-between gap-2 rounded-md border border-default-200 px-2 py-1.5 text-sm"
+                              key={`expense-legend-${entry.name}`}
+                            >
+                              <div className="flex min-w-0 items-center gap-2">
+                                <span
+                                  className="h-2.5 w-2.5 shrink-0 rounded-full"
+                                  style={{ backgroundColor: entry.color }}
+                                />
+                                <span className="truncate text-default-700">{entry.name}</span>
+                              </div>
+                              <div className="shrink-0 text-right text-default-500">
+                                {share.toFixed(1)}%
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>
@@ -1373,7 +1425,7 @@ export function CashFlowPage() {
         </Tabs.Panel>
 
         <Tabs.Panel id="movements" className="space-y-3 pt-3">
-          <Card className="overflow-hidden border border-default-200/70 bg-gradient-to-b from-default-100/35 via-default-50/15 to-transparent shadow-sm">
+          <Card className="overflow-hidden border border-default-200/70 bg-linear-to-b from-default-100/35 via-default-50/15 to-transparent shadow-sm">
             <div className="border-b border-default-200/70 px-4 py-3">
               <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-12">
                 <div className="lg:col-span-2">
@@ -1391,15 +1443,20 @@ export function CashFlowPage() {
                     </Select.Trigger>
                     <Select.Popover>
                       <ListBox>
-                        {monthOptions.map((monthOption) => (
-                          <ListBox.Item
-                            id={monthOption.value}
-                            key={monthOption.value}
-                            textValue={monthOption.label}
-                          >
-                            {monthOption.label}
-                            <ListBox.ItemIndicator />
-                          </ListBox.Item>
+                        {monthOptionsByYear.map((monthGroup) => (
+                          <ListBox.Section key={monthGroup.year}>
+                            <Header>{monthGroup.year}</Header>
+                            {monthGroup.options.map((monthOption) => (
+                              <ListBox.Item
+                                id={monthOption.value}
+                                key={monthOption.value}
+                                textValue={monthOption.label}
+                              >
+                                {monthOption.label}
+                                <ListBox.ItemIndicator />
+                              </ListBox.Item>
+                            ))}
+                          </ListBox.Section>
                         ))}
                       </ListBox>
                     </Select.Popover>
@@ -1648,7 +1705,7 @@ export function CashFlowPage() {
         </Tabs.Panel>
 
         <Tabs.Panel id="categories" className="space-y-3 pt-3">
-          <Card className="border border-default-200/70 bg-gradient-to-b from-default-100/40 to-default-50/10 shadow-sm">
+          <Card className="border border-default-200/70 bg-linear-to-b from-default-100/40 to-default-50/10 shadow-sm">
             <div className="p-3">
               <form
                 className="grid grid-cols-1 gap-4 md:grid-cols-4"
@@ -1704,7 +1761,7 @@ export function CashFlowPage() {
             </div>
           </Card>
 
-          <Card className="border border-default-200/70 bg-gradient-to-b from-default-100/40 to-default-50/10 shadow-sm">
+          <Card className="border border-default-200/70 bg-linear-to-b from-default-100/40 to-default-50/10 shadow-sm">
             <div className="p-3">
               {categories.length === 0 ? (
                 <p className="text-default-500 text-sm">No hay categorías creadas.</p>
