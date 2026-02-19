@@ -8,6 +8,9 @@ import {
 } from "./transactions";
 
 const SETTLEMENT_CASHBACK_TYPE = "CASHBACK";
+const MP_CARD_CATEGORY_NAME = "Tarjeta Mercadopago";
+const MP_CARD_RULE_NAME = "Sistema - Tarjeta Mercadopago por referencia";
+const MP_CARD_REFERENCE_PATTERN = "074fe4f0-1808-44bf-92b7-5f6215842ff5-17";
 
 export type CreateFinancialTransactionInput = {
   date: Date;
@@ -284,6 +287,8 @@ async function syncUnifiedTransactions(
   unifiedTransactions: UnifiedTransaction[],
   options?: { applyGlobalRules?: boolean },
 ) {
+  await ensureMercadoPagoCardAutoCategoryRule();
+
   const nonCashbackTransactions = unifiedTransactions.filter(
     (tour) =>
       !(
@@ -884,6 +889,65 @@ async function applySingleAutoCategoryRule(ruleId: number) {
       categoryId: rule.categoryId,
     },
   });
+}
+
+async function ensureMercadoPagoCardAutoCategoryRule() {
+  const category =
+    (await db.transactionCategory.findFirst({
+      where: {
+        name: MP_CARD_CATEGORY_NAME,
+        type: "EXPENSE",
+      },
+      select: { id: true },
+    })) ??
+    (await db.transactionCategory.create({
+      data: {
+        color: "#3B82F6",
+        name: MP_CARD_CATEGORY_NAME,
+        type: "EXPENSE",
+      },
+      select: { id: true },
+    }));
+
+  const existingRule = await db.financialAutoCategoryRule.findFirst({
+    where: { name: MP_CARD_RULE_NAME },
+    select: { id: true },
+  });
+
+  const ensuredRule = existingRule
+    ? await db.financialAutoCategoryRule.update({
+        where: { id: existingRule.id },
+        data: {
+          categoryId: category.id,
+          commentContains: MP_CARD_REFERENCE_PATTERN,
+          counterpartId: null,
+          descriptionContains: null,
+          isActive: true,
+          maxAmount: null,
+          minAmount: null,
+          priority: 10000,
+          type: "EXPENSE",
+        },
+        select: { id: true },
+      })
+    : await db.financialAutoCategoryRule.create({
+        data: {
+          categoryId: category.id,
+          commentContains: MP_CARD_REFERENCE_PATTERN,
+          counterpartId: null,
+          descriptionContains: null,
+          isActive: true,
+          maxAmount: null,
+          minAmount: null,
+          name: MP_CARD_RULE_NAME,
+          priority: 10000,
+          type: "EXPENSE",
+        },
+        select: { id: true },
+      });
+
+  // Apply to historical records too, including already classified ones.
+  await applySingleAutoCategoryRule(ensuredRule.id);
 }
 
 export async function listFinancialAutoCategoryRules() {
