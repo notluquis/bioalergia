@@ -247,16 +247,21 @@ function resolveAutoCategoryId(
   return null;
 }
 
-async function applyAutoCategoryRulesToExistingTransactions(rules: AutoCategoryRuleLookup) {
+async function applyAutoCategoryRulesToExistingTransactions(
+  rules: AutoCategoryRuleLookup,
+  options?: { onlyUncategorized?: boolean },
+) {
   if (rules.rules.length === 0) {
-    return;
+    return 0;
   }
 
-  await db.$transaction(
+  const result = await db.$transaction(
     rules.rules.map((rule) =>
       db.financialTransaction.updateMany({
         where: {
-          categoryId: { not: rule.categoryId },
+          ...(options?.onlyUncategorized
+            ? { categoryId: null }
+            : { categoryId: { not: rule.categoryId } }),
           ...(rule.counterpartId != null && { counterpartId: rule.counterpartId }),
           ...(rule.minAmount != null && {
             amount: { gte: Number(rule.minAmount) },
@@ -281,6 +286,8 @@ async function applyAutoCategoryRulesToExistingTransactions(rules: AutoCategoryR
       }),
     ),
   );
+
+  return result.reduce((acc, item) => acc + item.count, 0);
 }
 
 async function syncUnifiedTransactions(
@@ -503,6 +510,18 @@ export async function syncFinancialTransactionsBySourceIds(sourceIds: string[], 
   const unifiedTransactions = await fetchMergedTransactionsBySourceIds(sourceIds);
   // Incremental path: avoid re-applying all rules across full historical table on each report.
   return syncUnifiedTransactions(unifiedTransactions, { applyGlobalRules: false });
+}
+
+export async function syncUncategorizedTransactionsByPatterns() {
+  await ensureMercadoPagoCardAutoCategoryRule();
+  const autoCategoryRules = await buildAutoCategoryRuleLookup();
+  const updated = await applyAutoCategoryRulesToExistingTransactions(autoCategoryRules, {
+    onlyUncategorized: true,
+  });
+
+  return {
+    updated,
+  };
 }
 
 export async function listFinancialTransactions(params: {

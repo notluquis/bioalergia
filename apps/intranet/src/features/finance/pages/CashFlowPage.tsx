@@ -176,6 +176,16 @@ const DeleteAutoCategoryRuleResponseSchema = z.object({
   status: z.literal("ok"),
 });
 
+const SyncUncategorizedByPatternsResponseSchema = z.object({
+  data: z.object({
+    updated: z.number(),
+  }),
+  status: z.literal("ok"),
+});
+type SyncUncategorizedByPatternsResponse = z.infer<
+  typeof SyncUncategorizedByPatternsResponseSchema
+>;
+
 const UpdateTransactionResponseSchema = z.object({
   data: z.unknown().optional(),
   status: z.literal("ok"),
@@ -934,6 +944,26 @@ export function CashFlowPage() {
     },
     onError: (error) => {
       const message = error instanceof ApiError ? error.message : "Error al eliminar regla";
+      toast.error(message);
+    },
+  });
+
+  const syncUncategorizedByPatternsMutation = useMutation({
+    mutationFn: async (): Promise<SyncUncategorizedByPatternsResponse> =>
+      apiClient.post(
+        "/api/finance/sync/uncategorized-patterns",
+        {},
+        {
+          responseSchema: SyncUncategorizedByPatternsResponseSchema,
+        },
+      ),
+    onSuccess: async (response) => {
+      await queryClient.invalidateQueries({ queryKey: ["FinancialTransaction"] });
+      toast.success(`Sincronización completada: ${response.data.updated} categorizados`);
+    },
+    onError: (error) => {
+      const message =
+        error instanceof ApiError ? error.message : "Error al sincronizar sin categoría";
       toast.error(message);
     },
   });
@@ -1870,7 +1900,17 @@ export function CashFlowPage() {
 
           <Card>
             <div className="space-y-3 p-3">
-              <h3 className="text-sm font-semibold">Reglas automáticas por contraparte</h3>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold">Reglas automáticas por contraparte</h3>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  isPending={syncUncategorizedByPatternsMutation.isPending}
+                  onPress={() => syncUncategorizedByPatternsMutation.mutate()}
+                >
+                  Sincronizar sin categoría
+                </Button>
+              </div>
               <form
                 className="grid grid-cols-1 gap-3 md:grid-cols-8"
                 onSubmit={handleCreateAutoCategoryRule}

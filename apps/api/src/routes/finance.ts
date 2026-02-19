@@ -15,6 +15,7 @@ import {
   listFinancialTransactions,
   listTransactionCategories,
   syncFinancialTransactions,
+  syncUncategorizedTransactionsByPatterns,
   updateFinancialAutoCategoryRule,
   updateFinancialTransaction,
   updateTransactionCategory,
@@ -140,6 +141,11 @@ app.post("/sync", async (c) => {
   if (!user) return reply(c, { status: "error" }, 401);
 
   const result = await syncFinancialTransactions(user.id);
+  return reply(c, { status: "ok", data: result });
+});
+
+app.post("/sync/uncategorized-patterns", async (c) => {
+  const result = await syncUncategorizedTransactionsByPatterns();
   return reply(c, { status: "ok", data: result });
 });
 
