@@ -271,6 +271,9 @@ export const columns: ColumnDef<TransactionWithRelations>[] = [
   {
     accessorKey: "category",
     header: "Categoría",
+    maxSize: 340,
+    minSize: 240,
+    size: 280,
     cell: ({ row, table }) => {
       const meta = table.options.meta;
       const cat = row.original.category;
@@ -295,7 +298,7 @@ export const columns: ColumnDef<TransactionWithRelations>[] = [
 
       return (
         <Autocomplete
-          className="min-w-56"
+          className="min-w-56 [&_.autocomplete__indicator]:hidden"
           isDisabled={isUpdating}
           placeholder="Sin categoría"
           selectionMode="single"
@@ -313,8 +316,6 @@ export const columns: ColumnDef<TransactionWithRelations>[] = [
         >
           <Autocomplete.Trigger>
             <Autocomplete.Value />
-            <Autocomplete.ClearButton />
-            <Autocomplete.Indicator />
           </Autocomplete.Trigger>
           <Autocomplete.Popover>
             <Autocomplete.Filter
@@ -368,20 +369,27 @@ export const columns: ColumnDef<TransactionWithRelations>[] = [
   },
   {
     id: "actions",
+    enableResizing: false,
+    header: "",
+    maxSize: 64,
+    minSize: 56,
+    size: 56,
     cell: ({ row, table }) => {
       // table.options.meta is typed via the global TableMeta declaration in tanstack-table.d.ts
       return (
-        <Button
-          aria-label="Editar movimiento"
-          className="h-7 w-7 min-w-7 p-0"
-          isIconOnly
-          size="sm"
-          title="Editar"
-          variant="ghost"
-          onClick={() => table.options.meta?.onEdit?.(row.original)}
-        >
-          <Pencil className="h-3.5 w-3.5" />
-        </Button>
+        <div className="flex justify-center">
+          <Button
+            aria-label="Editar movimiento"
+            className="h-7 w-7 min-w-7 p-0"
+            isIconOnly
+            size="sm"
+            title="Editar"
+            variant="ghost"
+            onClick={() => table.options.meta?.onEdit?.(row.original)}
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </Button>
+        </div>
       );
     },
   },
