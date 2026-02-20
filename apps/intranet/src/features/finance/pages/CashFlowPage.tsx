@@ -727,16 +727,14 @@ export function CashFlowPage() {
     () =>
       monthlySummary.byCategory
         .filter((item) => item.type === "INCOME")
-        .sort((a, b) => Math.abs(b.total) - Math.abs(a.total))
-        .slice(0, 6),
+        .sort((a, b) => Math.abs(b.total) - Math.abs(a.total)),
     [monthlySummary.byCategory],
   );
   const expenseCategorySummary = useMemo(
     () =>
       monthlySummary.byCategory
         .filter((item) => item.type === "EXPENSE")
-        .sort((a, b) => Math.abs(b.total) - Math.abs(a.total))
-        .slice(0, 6),
+        .sort((a, b) => Math.abs(b.total) - Math.abs(a.total)),
     [monthlySummary.byCategory],
   );
   const incomePieData = useMemo(
@@ -1266,9 +1264,14 @@ export function CashFlowPage() {
 
                   <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
                     <div className="rounded-md border border-default-200 p-3">
-                      <p className="mb-2 text-tiny font-medium uppercase tracking-wide text-default-500">
-                        Categorías de ingreso
-                      </p>
+                      <div className="mb-2 flex items-center justify-between">
+                        <p className="text-tiny font-medium uppercase tracking-wide text-default-500">
+                          Categorías de ingreso
+                        </p>
+                        <span className="text-tiny text-default-400">
+                          {incomeCategorySummary.length} categorías
+                        </span>
+                      </div>
                       {isLoading ? (
                         <div className="space-y-2">
                           <Skeleton className="h-7 w-full rounded-md" />
@@ -1280,26 +1283,41 @@ export function CashFlowPage() {
                           Sin ingresos categorizados en este mes.
                         </p>
                       ) : (
-                        <div className="space-y-2">
+                        <div className="max-h-96 space-y-2 overflow-auto pr-1">
                           {incomeCategorySummary.map((item) => (
                             <div
-                              className="flex items-center justify-between gap-2 rounded-md border border-default-200 px-2.5 py-1.5"
+                              className="space-y-1.5 rounded-md border border-default-200 px-2.5 py-2"
                               key={`summary-income-category-${item.type}-${item.categoryId ?? "none"}`}
                             >
-                              <div className="flex min-w-0 items-center gap-2">
-                                <span
-                                  className="h-2.5 w-2.5 shrink-0 rounded-full"
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex min-w-0 items-center gap-2">
+                                  <span
+                                    className="h-2.5 w-2.5 shrink-0 rounded-full"
+                                    style={{
+                                      backgroundColor: item.categoryColor ?? "#64748B",
+                                    }}
+                                  />
+                                  <span className="truncate text-sm">{item.categoryName}</span>
+                                </div>
+                                <div className="shrink-0 text-right">
+                                  <p className="text-sm font-medium text-success">
+                                    {formatCurrency(Math.abs(item.total))}
+                                  </p>
+                                  <p className="text-tiny text-default-500">{item.count} mov.</p>
+                                </div>
+                              </div>
+                              <div className="h-1.5 w-full overflow-hidden rounded-full bg-default-200">
+                                <div
+                                  className="h-full rounded-full bg-success"
                                   style={{
-                                    backgroundColor: item.categoryColor ?? "#64748B",
+                                    width: `${
+                                      monthlySummary.totals.income > 0
+                                        ? (Math.abs(item.total) / monthlySummary.totals.income) *
+                                          100
+                                        : 0
+                                    }%`,
                                   }}
                                 />
-                                <span className="truncate text-sm">{item.categoryName}</span>
-                              </div>
-                              <div className="text-right">
-                                <p className="text-sm font-medium text-success">
-                                  {formatCurrency(Math.abs(item.total))}
-                                </p>
-                                <p className="text-tiny text-default-500">{item.count} mov.</p>
                               </div>
                             </div>
                           ))}
@@ -1308,9 +1326,14 @@ export function CashFlowPage() {
                     </div>
 
                     <div className="rounded-md border border-default-200 p-3">
-                      <p className="mb-2 text-tiny font-medium uppercase tracking-wide text-default-500">
-                        Categorías de egreso
-                      </p>
+                      <div className="mb-2 flex items-center justify-between">
+                        <p className="text-tiny font-medium uppercase tracking-wide text-default-500">
+                          Categorías de egreso
+                        </p>
+                        <span className="text-tiny text-default-400">
+                          {expenseCategorySummary.length} categorías
+                        </span>
+                      </div>
                       {isLoading ? (
                         <div className="space-y-2">
                           <Skeleton className="h-7 w-full rounded-md" />
@@ -1322,26 +1345,41 @@ export function CashFlowPage() {
                           Sin egresos categorizados en este mes.
                         </p>
                       ) : (
-                        <div className="space-y-2">
+                        <div className="max-h-96 space-y-2 overflow-auto pr-1">
                           {expenseCategorySummary.map((item) => (
                             <div
-                              className="flex items-center justify-between gap-2 rounded-md border border-default-200 px-2.5 py-1.5"
+                              className="space-y-1.5 rounded-md border border-default-200 px-2.5 py-2"
                               key={`summary-expense-category-${item.type}-${item.categoryId ?? "none"}`}
                             >
-                              <div className="flex min-w-0 items-center gap-2">
-                                <span
-                                  className="h-2.5 w-2.5 shrink-0 rounded-full"
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex min-w-0 items-center gap-2">
+                                  <span
+                                    className="h-2.5 w-2.5 shrink-0 rounded-full"
+                                    style={{
+                                      backgroundColor: item.categoryColor ?? "#64748B",
+                                    }}
+                                  />
+                                  <span className="truncate text-sm">{item.categoryName}</span>
+                                </div>
+                                <div className="shrink-0 text-right">
+                                  <p className="text-sm font-medium text-danger">
+                                    {formatCurrency(Math.abs(item.total))}
+                                  </p>
+                                  <p className="text-tiny text-default-500">{item.count} mov.</p>
+                                </div>
+                              </div>
+                              <div className="h-1.5 w-full overflow-hidden rounded-full bg-default-200">
+                                <div
+                                  className="h-full rounded-full bg-danger"
                                   style={{
-                                    backgroundColor: item.categoryColor ?? "#64748B",
+                                    width: `${
+                                      monthlySummary.totals.expense > 0
+                                        ? (Math.abs(item.total) / monthlySummary.totals.expense) *
+                                          100
+                                        : 0
+                                    }%`,
                                   }}
                                 />
-                                <span className="truncate text-sm">{item.categoryName}</span>
-                              </div>
-                              <div className="text-right">
-                                <p className="text-sm font-medium text-danger">
-                                  {formatCurrency(Math.abs(item.total))}
-                                </p>
-                                <p className="text-tiny text-default-500">{item.count} mov.</p>
                               </div>
                             </div>
                           ))}
