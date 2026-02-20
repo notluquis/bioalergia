@@ -7,6 +7,8 @@ import {
   extractErrorMessage,
   regenerateServiceSchedules,
   skipServiceSchedule,
+  syncAllServiceTransactions,
+  syncServiceTransactions,
   unlinkServicePayment,
 } from "../api";
 import { serviceKeys } from "../queries";
@@ -17,6 +19,7 @@ import type {
   ServiceListResponse,
   ServiceScheduleEditPayload,
   ServiceScheduleSkipPayload,
+  ServiceSyncTransactionsResult,
 } from "../types";
 
 export function useServiceMutations() {
@@ -86,6 +89,23 @@ export function useServiceMutations() {
     },
   });
 
+  // Sync financial transactions
+  const syncAllTransactionsMutation = useMutation({
+    mutationFn: syncAllServiceTransactions,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: serviceKeys.lists() });
+      void queryClient.invalidateQueries({ queryKey: serviceKeys.details() });
+    },
+  });
+
+  const syncServiceTransactionsMutation = useMutation({
+    mutationFn: syncServiceTransactions,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: serviceKeys.lists() });
+      void queryClient.invalidateQueries({ queryKey: serviceKeys.details() });
+    },
+  });
+
   return {
     // State
     canManage,
@@ -120,5 +140,14 @@ export function useServiceMutations() {
     },
     skipScheduleError: extractErrorMessage(skipScheduleMutation.error),
     skipSchedulePending: skipScheduleMutation.isPending,
+
+    syncAllTransactions: async () => {
+      return await syncAllTransactionsMutation.mutateAsync();
+    },
+    syncAllTransactionsPending: syncAllTransactionsMutation.isPending,
+    syncServiceTransactions: async (publicId: string): Promise<ServiceSyncTransactionsResult> => {
+      return await syncServiceTransactionsMutation.mutateAsync(publicId);
+    },
+    syncServiceTransactionsPending: syncServiceTransactionsMutation.isPending,
   };
 }

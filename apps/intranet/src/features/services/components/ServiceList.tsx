@@ -113,6 +113,10 @@ export function ServiceList({ loading = false, onSelect, selectedId, services }:
               <div className="mt-1 flex flex-wrap items-center gap-3 text-default-400 text-xs">
                 <span>Inicio {dayjs(service.startDate).format("DD MMM YYYY")}</span>
                 {service.counterpartName && <span>{service.counterpartName}</span>}
+                <span>Recordatorio {service.reminderDaysBefore ?? 3}d</span>
+                {service.transactionCategory?.name && (
+                  <span>Categoría: {service.transactionCategory.name}</span>
+                )}
               </div>
               <div className="mt-2 text-default-400 text-xs">
                 Pendientes {service.pendingCount} · Vencidos {service.overdueCount}

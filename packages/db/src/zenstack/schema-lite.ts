@@ -1672,6 +1672,22 @@ export class SchemaType implements SchemaDef {
           type: "String",
           optional: true,
         },
+        transactionCategoryId: {
+          name: "transactionCategoryId",
+          type: "Int",
+          optional: true,
+          foreignKeyFor: ["transactionCategory"],
+        },
+        reminderDaysBefore: {
+          name: "reminderDaysBefore",
+          type: "Int",
+          default: 3,
+        },
+        autoLinkTransactions: {
+          name: "autoLinkTransactions",
+          type: "Boolean",
+          default: true,
+        },
         counterpartId: {
           name: "counterpartId",
           type: "Int",
@@ -1799,6 +1815,17 @@ export class SchemaType implements SchemaDef {
           optional: true,
           relation: { opposite: "services", fields: ["counterpartId"], references: ["id"] },
         },
+        transactionCategory: {
+          name: "transactionCategory",
+          type: "TransactionCategory",
+          optional: true,
+          relation: {
+            opposite: "services",
+            fields: ["transactionCategoryId"],
+            references: ["id"],
+            onDelete: "SetNull",
+          },
+        },
         schedules: {
           name: "schedules",
           type: "ServiceSchedule",
@@ -1866,6 +1893,12 @@ export class SchemaType implements SchemaDef {
           type: "DateTime",
           optional: true,
         },
+        financialTransactionId: {
+          name: "financialTransactionId",
+          type: "Int",
+          optional: true,
+          foreignKeyFor: ["financialTransaction"],
+        },
         settlementTransactionId: {
           name: "settlementTransactionId",
           type: "Int",
@@ -1908,6 +1941,17 @@ export class SchemaType implements SchemaDef {
             fields: ["serviceId"],
             references: ["id"],
             onDelete: "Cascade",
+          },
+        },
+        financialTransaction: {
+          name: "financialTransaction",
+          type: "FinancialTransaction",
+          optional: true,
+          relation: {
+            opposite: "serviceSchedules",
+            fields: ["financialTransactionId"],
+            references: ["id"],
+            onDelete: "SetNull",
           },
         },
         settlementTransaction: {
@@ -5347,6 +5391,12 @@ export class SchemaType implements SchemaDef {
           array: true,
           relation: { opposite: "category" },
         },
+        services: {
+          name: "services",
+          type: "Service",
+          array: true,
+          relation: { opposite: "transactionCategory" },
+        },
       },
       idFields: ["id"],
       uniqueFields: {
@@ -5506,6 +5556,12 @@ export class SchemaType implements SchemaDef {
             fields: ["counterpartId"],
             references: ["id"],
           },
+        },
+        serviceSchedules: {
+          name: "serviceSchedules",
+          type: "ServiceSchedule",
+          array: true,
+          relation: { opposite: "financialTransaction" },
         },
         comment: {
           name: "comment",

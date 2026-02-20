@@ -275,6 +275,7 @@ function mapServiceToForm(
   return {
     accountReference: service.accountReference ?? undefined,
     amountIndexation: service.amountIndexation,
+    autoLinkTransactions: service.autoLinkTransactions,
     category: service.category ?? undefined,
     counterpartAccountId: service.counterpartAccountId,
     counterpartId: service.counterpartId,
@@ -296,7 +297,9 @@ function mapServiceToForm(
     obligationType: service.obligationType,
     ownership: service.ownership,
     recurrenceType: service.recurrenceType,
+    reminderDaysBefore: service.reminderDaysBefore,
     serviceType: service.serviceType,
     startDate: service.startDate,
+    transactionCategoryId: service.transactionCategoryId,
   };
 }

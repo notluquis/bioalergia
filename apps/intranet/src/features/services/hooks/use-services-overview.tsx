@@ -57,6 +57,17 @@ export function useServicesOverview() {
     servicesActions.openSkipScheduleModal(schedule);
   };
 
+  const handleSyncAllTransactions = async () => {
+    return await mutations.syncAllTransactions();
+  };
+
+  const handleSyncSelectedServiceTransactions = async () => {
+    if (!details.selectedService) {
+      return null;
+    }
+    return await mutations.syncServiceTransactions(details.selectedService.publicId);
+  };
+
   return {
     ...list,
     ...details,
@@ -75,6 +86,8 @@ export function useServicesOverview() {
     handleCreateService,
     handleEditSchedule,
     handleRegenerate,
+    handleSyncAllTransactions,
+    handleSyncSelectedServiceTransactions,
     handleSkipSchedule,
     handleUnlink,
     // Computed / Combined

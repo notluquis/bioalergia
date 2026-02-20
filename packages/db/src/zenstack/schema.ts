@@ -4163,6 +4163,42 @@ export class SchemaType implements SchemaDef {
           type: "String",
           optional: true,
         },
+        transactionCategoryId: {
+          name: "transactionCategoryId",
+          type: "Int",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("transaction_category_id") }],
+            },
+          ],
+          foreignKeyFor: ["transactionCategory"],
+        },
+        reminderDaysBefore: {
+          name: "reminderDaysBefore",
+          type: "Int",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(3) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("reminder_days_before") }],
+            },
+          ],
+          default: 3,
+        },
+        autoLinkTransactions: {
+          name: "autoLinkTransactions",
+          type: "Boolean",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(true) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("auto_link_transactions") }],
+            },
+          ],
+          default: true,
+        },
         counterpartId: {
           name: "counterpartId",
           type: "Int",
@@ -4473,6 +4509,35 @@ export class SchemaType implements SchemaDef {
           ],
           relation: { opposite: "services", fields: ["counterpartId"], references: ["id"] },
         },
+        transactionCategory: {
+          name: "transactionCategory",
+          type: "TransactionCategory",
+          optional: true,
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [
+                    ExpressionUtils.field("transactionCategoryId"),
+                  ]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+                { name: "onDelete", value: ExpressionUtils.literal("SetNull") },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "services",
+            fields: ["transactionCategoryId"],
+            references: ["id"],
+            onDelete: "SetNull",
+          },
+        },
         schedules: {
           name: "schedules",
           type: "ServiceSchedule",
@@ -4522,6 +4587,15 @@ export class SchemaType implements SchemaDef {
             {
               name: "fields",
               value: ExpressionUtils.array("Int", [ExpressionUtils.field("counterpartId")]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("transactionCategoryId")]),
             },
           ],
         },
@@ -4680,6 +4754,18 @@ export class SchemaType implements SchemaDef {
             { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("paid_date") }] },
           ],
         },
+        financialTransactionId: {
+          name: "financialTransactionId",
+          type: "Int",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("financial_transaction_id") }],
+            },
+          ],
+          foreignKeyFor: ["financialTransaction"],
+        },
         settlementTransactionId: {
           name: "settlementTransactionId",
           type: "Int",
@@ -4771,6 +4857,35 @@ export class SchemaType implements SchemaDef {
             fields: ["serviceId"],
             references: ["id"],
             onDelete: "Cascade",
+          },
+        },
+        financialTransaction: {
+          name: "financialTransaction",
+          type: "FinancialTransaction",
+          optional: true,
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [
+                    ExpressionUtils.field("financialTransactionId"),
+                  ]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+                { name: "onDelete", value: ExpressionUtils.literal("SetNull") },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "serviceSchedules",
+            fields: ["financialTransactionId"],
+            references: ["id"],
+            onDelete: "SetNull",
           },
         },
         settlementTransaction: {
@@ -4923,6 +5038,17 @@ export class SchemaType implements SchemaDef {
               value: ExpressionUtils.array("ServiceScheduleStatus", [
                 ExpressionUtils.field("status"),
                 ExpressionUtils.field("dueDate"),
+              ]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [
+                ExpressionUtils.field("financialTransactionId"),
               ]),
             },
           ],
@@ -14284,6 +14410,12 @@ export class SchemaType implements SchemaDef {
           array: true,
           relation: { opposite: "category" },
         },
+        services: {
+          name: "services",
+          type: "Service",
+          array: true,
+          relation: { opposite: "transactionCategory" },
+        },
       },
       attributes: [
         {
@@ -14687,6 +14819,12 @@ export class SchemaType implements SchemaDef {
             fields: ["counterpartId"],
             references: ["id"],
           },
+        },
+        serviceSchedules: {
+          name: "serviceSchedules",
+          type: "ServiceSchedule",
+          array: true,
+          relation: { opposite: "financialTransaction" },
         },
         comment: {
           name: "comment",

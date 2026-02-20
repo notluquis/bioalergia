@@ -602,6 +602,9 @@ model Service {
   name                 String
   detail               String?
   category             String?
+  transactionCategoryId Int?                   @map("transaction_category_id")
+  reminderDaysBefore   Int                     @default(3) @map("reminder_days_before")
+  autoLinkTransactions Boolean                 @default(true) @map("auto_link_transactions")
   counterpartId        Int?                    @map("counterpart_id")
   type                 ServiceType             @default(BUSINESS)
   recurrenceType       ServiceRecurrenceType   @default(RECURRING) @map("recurrence_type")
@@ -627,6 +630,7 @@ model Service {
   createdAt            DateTime                @default(now()) @map("created_at")
   updatedAt            DateTime                @default(now()) @updatedAt @map("updated_at")
   counterpart          Counterpart?            @relation(fields: [counterpartId], references: [id])
+  transactionCategory  TransactionCategory?    @relation(fields: [transactionCategoryId], references: [id], onDelete: SetNull)
   schedules            ServiceSchedule[]
 
   //Access policies
@@ -635,6 +639,7 @@ model Service {
   @@allow('create,update,delete', auth().status == 'ACTIVE')
 
   @@index([counterpartId])
+  @@index([transactionCategoryId])
   @@map("services")
 }
 
@@ -650,6 +655,7 @@ model ServiceSchedule {
   status                  ServiceScheduleStatus  @default(PENDING)
   paidAmount              Decimal?               @map("paid_amount") @db.Decimal(15, 2)
   paidDate                DateTime?              @map("paid_date")
+  financialTransactionId  Int?                   @map("financial_transaction_id")
   settlementTransactionId Int?                   @map("settlement_transaction_id")
   releaseTransactionId    Int?                   @map("release_transaction_id")
   withdrawTransactionId   Int?                   @map("withdraw_transaction_id")
@@ -657,6 +663,7 @@ model ServiceSchedule {
   createdAt               DateTime               @default(now()) @map("created_at")
   updatedAt               DateTime               @default(now()) @updatedAt @map("updated_at")
   service                 Service                @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  financialTransaction    FinancialTransaction?  @relation(fields: [financialTransactionId], references: [id], onDelete: SetNull)
   settlementTransaction   SettlementTransaction? @relation(fields: [settlementTransactionId], references: [id])
   releaseTransaction      ReleaseTransaction?    @relation(fields: [releaseTransactionId], references: [id])
   withdrawTransaction     WithdrawTransaction?   @relation(fields: [withdrawTransactionId], references: [id])
@@ -669,6 +676,7 @@ model ServiceSchedule {
   @@unique([serviceId, periodStart])
   @@index([serviceId, dueDate])
   @@index([status, dueDate])
+  @@index([financialTransactionId])
   @@index([settlementTransactionId])
   @@index([releaseTransactionId])
   @@index([withdrawTransactionId])
@@ -1948,6 +1956,7 @@ model TransactionCategory {
 
   transactions FinancialTransaction[]
   autoRules    FinancialAutoCategoryRule[]
+  services     Service[]
 
   // Access policies
   @@allow('all', auth().status == 'ACTIVE')
@@ -1993,6 +2002,7 @@ model FinancialTransaction {
   counterpartId Int?               @map("counterpart_id")
   category    TransactionCategory? @relation(fields: [categoryId], references: [id])
   counterpart Counterpart?         @relation(fields: [counterpartId], references: [id])
+  serviceSchedules ServiceSchedule[]
   comment     String?
 
   createdAt   DateTime             @default(now()) @map("created_at")

@@ -11,7 +11,7 @@ import {
 } from "@heroui/react";
 import { useStore } from "@tanstack/react-store";
 import dayjs from "dayjs";
-import type { ChangeEvent } from "react";
+import { type ChangeEvent, useState } from "react";
 import { EditScheduleModal } from "@/features/services/components/EditScheduleModal";
 import { ServiceDetail } from "@/features/services/components/ServiceDetail";
 import { ServiceForm } from "@/features/services/components/ServiceForm";
@@ -23,6 +23,8 @@ import { servicesActions, servicesStore } from "@/features/services/store";
 import { currencyFormatter, numberFormatter } from "@/lib/format";
 import { CARD_COMPACT, TITLE_MD } from "@/lib/styles";
 export function ServicesOverviewContent() {
+  const [syncError, setSyncError] = useState<null | string>(null);
+  const [syncMessage, setSyncMessage] = useState<null | string>(null);
   const overview = useServicesOverview();
   const { editScheduleOpen, editScheduleTarget, skipScheduleOpen, skipScheduleTarget } = useStore(
     servicesStore,
@@ -45,6 +47,8 @@ export function ServicesOverviewContent() {
     handlePaymentFieldChange,
     handlePaymentSubmit,
     handleRegenerate,
+    handleSyncAllTransactions,
+    handleSyncSelectedServiceTransactions,
     handleSkipSchedule,
     handleUnlink,
     loadingDetail,
@@ -61,6 +65,8 @@ export function ServicesOverviewContent() {
     selectedTemplate,
     services,
     setSelectedId,
+    syncAllTransactionsPending,
+    syncServiceTransactionsPending,
     summaryTotals,
   } = overview;
 
@@ -96,14 +102,41 @@ export function ServicesOverviewContent() {
   return (
     <section className="space-y-4">
       {globalError && <Alert status="danger">{globalError}</Alert>}
+      {syncError && <Alert status="danger">{syncError}</Alert>}
+      {syncMessage && <Alert status="success">{syncMessage}</Alert>}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <span className={TITLE_MD}>Resumen de servicios</span>
-        {canManage && (
-          <Button onPress={() => openCreateModal()} size="sm" variant="primary">
-            Nuevo servicio
-          </Button>
-        )}
+        <div className="flex flex-wrap gap-2">
+          {canManage && (
+            <Button
+              isDisabled={syncAllTransactionsPending}
+              onPress={async () => {
+                setSyncError(null);
+                setSyncMessage(null);
+                try {
+                  const result = await handleSyncAllTransactions();
+                  setSyncMessage(
+                    `Sync servicios: ${result.matchedSchedules} vinculadas de ${result.processedSchedules} cuotas.`,
+                  );
+                } catch (error_) {
+                  const message =
+                    error_ instanceof Error ? error_.message : "No se pudo sincronizar servicios";
+                  setSyncError(message);
+                }
+              }}
+              size="sm"
+              variant="secondary"
+            >
+              Sincronizar transacciones
+            </Button>
+          )}
+          {canManage && (
+            <Button onPress={() => openCreateModal()} size="sm" variant="primary">
+              Nuevo servicio
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className={CARD_COMPACT}>
@@ -159,17 +192,49 @@ export function ServicesOverviewContent() {
       </div>
 
       {selectedService && (
-        <ServiceDetail
-          canManage={canManage}
-          loading={loadingDetail}
-          onEditSchedule={(schedule) => handleEditSchedule(selectedService.publicId, schedule)}
-          onRegenerate={handleRegenerate}
-          onRegisterPayment={openPaymentModal}
-          onSkipSchedule={(schedule) => handleSkipSchedule(selectedService.publicId, schedule)}
-          onUnlinkPayment={handleUnlink}
-          schedules={schedules}
-          service={selectedService}
-        />
+        <div className="space-y-3">
+          {canManage && (
+            <div className="flex justify-end">
+              <Button
+                isDisabled={syncServiceTransactionsPending}
+                onPress={async () => {
+                  setSyncError(null);
+                  setSyncMessage(null);
+                  try {
+                    const result = await handleSyncSelectedServiceTransactions();
+                    if (!result) {
+                      return;
+                    }
+                    setSyncMessage(
+                      `Sync ${selectedService.name}: ${result.matchedSchedules} vinculadas de ${result.processedSchedules} cuotas.`,
+                    );
+                  } catch (error_) {
+                    const message =
+                      error_ instanceof Error
+                        ? error_.message
+                        : "No se pudo sincronizar el servicio";
+                    setSyncError(message);
+                  }
+                }}
+                size="sm"
+                variant="secondary"
+              >
+                Sync servicio seleccionado
+              </Button>
+            </div>
+          )}
+          <ServiceDetail
+            canManage={canManage}
+            loading={loadingDetail}
+            onEditSchedule={(schedule) => handleEditSchedule(selectedService.publicId, schedule)}
+            onRegenerate={handleRegenerate}
+            onRegisterPayment={openPaymentModal}
+            onSkipSchedule={(schedule) => handleSkipSchedule(selectedService.publicId, schedule)}
+            onUnlinkPayment={handleUnlink}
+            schedules={schedules}
+            service={selectedService}
+          />
+        </div>
       )}
 
       <Modal.Backdrop isOpen={createOpen} onOpenChange={(open) => !open && closeCreateModal()}>

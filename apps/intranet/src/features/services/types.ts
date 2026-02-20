@@ -1,6 +1,7 @@
 export interface CreateServicePayload {
   accountReference?: null | string;
   amountIndexation?: ServiceAmountIndexation;
+  autoLinkTransactions?: boolean;
   category?: null | string;
   counterpartAccountId?: null | number;
   counterpartId?: null | number;
@@ -22,8 +23,10 @@ export interface CreateServicePayload {
   obligationType?: ServiceObligationType;
   ownership?: ServiceOwnership;
   recurrenceType?: ServiceRecurrenceType;
+  reminderDaysBefore?: number;
   serviceType: ServiceType;
   startDate: Date;
+  transactionCategoryId?: null | number;
 }
 
 export interface RegenerateServicePayload {
@@ -85,6 +88,7 @@ export interface ServiceSchedule {
   dueDate: Date;
   effectiveAmount: number;
   expectedAmount: number;
+  financialTransactionId?: null | number;
   id: number;
   lateFeeAmount: number;
   note: null | string;
@@ -114,6 +118,7 @@ export interface ServicesFilterState {
 export interface ServiceSummary {
   accountReference: null | string;
   amountIndexation: ServiceAmountIndexation;
+  autoLinkTransactions: boolean;
   category: null | string;
   counterpartAccountBankName: null | string;
   counterpartAccountId: null | number;
@@ -144,12 +149,27 @@ export interface ServiceSummary {
   pendingCount: number;
   publicId: string;
   recurrenceType: ServiceRecurrenceType;
+  reminderDaysBefore: number;
   serviceType: ServiceType;
   startDate: Date;
   status: "ACTIVE" | "ARCHIVED" | "INACTIVE";
   totalExpected: number;
   totalPaid: number;
+  transactionCategory?: null | {
+    color: null | string;
+    id: number;
+    name: string;
+    type: "EXPENSE" | "INCOME";
+  };
+  transactionCategoryId: null | number;
   updatedAt: Date;
+}
+
+export interface ServiceSyncTransactionsResult {
+  matchedSchedules: number;
+  processedSchedules: number;
+  scannedTransactions: number;
+  servicesCount: number;
 }
 
 export interface ServiceTemplate {

@@ -9,6 +9,7 @@ import {
   generateSchedules,
   getServiceByIdOrPublicId,
   listServices,
+  syncServiceSchedulesWithFinancialTransactions,
   updateService,
 } from "../services/services";
 import { reply } from "../utils/reply";
@@ -32,6 +33,21 @@ app.get("/", cacheControl(300), async (c) => {
 
   const items = await listServices();
   return reply(c, { status: "ok", services: items });
+});
+
+app.post("/sync/transactions", async (c) => {
+  const user = await getSessionUser(c);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
+
+  const canUpdate = await hasPermission(user.id, "update", "Service");
+  if (!canUpdate) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
+
+  const result = await syncServiceSchedulesWithFinancialTransactions();
+  return reply(c, { status: "ok", data: result });
 });
 
 app.get("/:id", async (c) => {
@@ -193,6 +209,28 @@ app.post("/:id/schedules", async (c) => {
     const message = error instanceof Error ? error.message : "Failed to generate schedules";
     return reply(c, { status: "error", message }, 500);
   }
+});
+
+app.post("/:id/sync-transactions", async (c) => {
+  const user = await getSessionUser(c);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
+
+  const canUpdate = await hasPermission(user.id, "update", "Service");
+  if (!canUpdate) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
+
+  const identifier = c.req.param("id");
+  const existing = await getServiceByIdOrPublicId(identifier);
+
+  if (!existing) {
+    return reply(c, { status: "error", message: "Not found" }, 404);
+  }
+
+  const result = await syncServiceSchedulesWithFinancialTransactions(existing.publicId);
+  return reply(c, { status: "ok", data: result });
 });
 
 export const serviceRoutes = app;

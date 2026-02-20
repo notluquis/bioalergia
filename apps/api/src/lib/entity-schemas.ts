@@ -26,6 +26,9 @@ const serviceBaseSchema = z.object({
   name: z.string().min(1).max(191),
   detail: z.string().max(255).optional().nullable(),
   category: z.string().max(120).optional().nullable(),
+  transactionCategoryId: z.coerce.number().int().positive().optional().nullable(),
+  reminderDaysBefore: z.coerce.number().int().min(0).max(90).optional(),
+  autoLinkTransactions: z.boolean().optional(),
   serviceType: z
     .enum(["BUSINESS", "PERSONAL", "SUPPLIER", "TAX", "UTILITY", "LEASE", "SOFTWARE", "OTHER"])
     .default("BUSINESS"),

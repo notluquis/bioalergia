@@ -1,7 +1,9 @@
-import { Button, Description } from "@heroui/react";
+import { Button, Description, Switch } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
+import { z } from "zod";
+import { apiClient } from "@/lib/api-client";
 import { fetchCounterpart, fetchCounterparts } from "../../counterparts/api";
 import type { CounterpartAccount } from "../../counterparts/types";
 import type {
@@ -31,6 +33,7 @@ interface ServiceFormProps {
 const INITIAL_STATE: ServiceFormState = {
   accountReference: "",
   amountIndexation: "NONE",
+  autoLinkTransactions: true,
   category: "",
   counterpartAccountId: null,
   counterpartId: null,
@@ -52,8 +55,10 @@ const INITIAL_STATE: ServiceFormState = {
   obligationType: "SERVICE",
   ownership: "COMPANY",
   recurrenceType: "RECURRING",
+  reminderDaysBefore: 3,
   serviceType: "BUSINESS",
   startDate: dayjs().toDate(),
+  transactionCategoryId: null,
 };
 
 const resetFormState = (initialValues?: Partial<CreateServicePayload>) => ({
@@ -175,8 +180,18 @@ const buildServicePayload = (
   obligationType: form.obligationType,
   ownership: form.ownership,
   recurrenceType: form.recurrenceType,
+  reminderDaysBefore: form.reminderDaysBefore ?? 3,
   serviceType: form.serviceType,
   startDate: form.startDate,
+  transactionCategoryId: form.transactionCategoryId ?? null,
+  autoLinkTransactions: form.autoLinkTransactions ?? true,
+});
+
+const FinanceCategorySchema = z.object({
+  color: z.string().nullable().optional(),
+  id: z.number(),
+  name: z.string(),
+  type: z.enum(["EXPENSE", "INCOME"]),
 });
 
 export function ServiceForm({ initialValues, onCancel, onSubmit, submitLabel }: ServiceFormProps) {
@@ -247,6 +262,21 @@ export function ServiceForm({ initialValues, onCancel, onSubmit, submitLabel }: 
   const { data: counterparts = [] } = useQuery({
     queryFn: fetchCounterparts,
     queryKey: ["counterparts"],
+  });
+
+  const { data: financeCategories = [] } = useQuery({
+    queryFn: async () => {
+      const payload = await apiClient.get<{ data: Array<z.infer<typeof FinanceCategorySchema>> }>(
+        "/api/finance/categories",
+        {
+          responseSchema: z.object({
+            data: z.array(FinanceCategorySchema),
+          }),
+        },
+      );
+      return payload.data.filter((category) => category.type === "EXPENSE");
+    },
+    queryKey: ["TransactionCategory", "expense"],
   });
 
   const { data: accounts = [] } = useQuery<CounterpartAccount[]>({
@@ -347,9 +377,23 @@ export function ServiceForm({ initialValues, onCancel, onSubmit, submitLabel }: 
         detail={form.detail}
         name={form.name}
         notes={form.notes}
+        reminderDaysBefore={form.reminderDaysBefore ?? 3}
+        transactionCategories={financeCategories}
+        transactionCategoryId={form.transactionCategoryId}
         onChange={handleChange}
         onCreateCategory={handleCreateCategory}
       />
+
+      <section className="rounded-2xl border border-default-200/70 p-4">
+        <Switch
+          isSelected={form.autoLinkTransactions ?? true}
+          onChange={(value) => {
+            handleChange("autoLinkTransactions", value);
+          }}
+        >
+          Auto-vincular transacciones por categoría financiera
+        </Switch>
+      </section>
 
       <ServiceClassificationSection
         obligationType={form.obligationType}

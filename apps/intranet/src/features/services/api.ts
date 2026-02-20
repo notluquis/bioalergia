@@ -11,12 +11,22 @@ import type {
   ServiceSchedule,
   ServiceScheduleEditPayload,
   ServiceScheduleSkipPayload,
+  ServiceSyncTransactionsResult,
 } from "./types";
 
 const ServiceDetailResponseSchema = z.looseObject({});
 const ServiceListResponseSchema = z.looseObject({});
 const ServiceScheduleResponseSchema = z.object({
   schedule: z.unknown(),
+  status: z.literal("ok"),
+});
+const ServiceSyncResponseSchema = z.object({
+  data: z.object({
+    matchedSchedules: z.number(),
+    processedSchedules: z.number(),
+    scannedTransactions: z.number(),
+    servicesCount: z.number(),
+  }),
   status: z.literal("ok"),
 });
 
@@ -160,4 +170,34 @@ export async function updateService(
       responseSchema: ServiceDetailResponseSchema,
     },
   );
+}
+
+export async function syncAllServiceTransactions(): Promise<ServiceSyncTransactionsResult> {
+  const response = await apiClient.post<{
+    data: ServiceSyncTransactionsResult;
+    status: "ok";
+  }>(
+    "/api/services/sync/transactions",
+    {},
+    {
+      responseSchema: ServiceSyncResponseSchema,
+    },
+  );
+  return response.data;
+}
+
+export async function syncServiceTransactions(
+  publicId: string,
+): Promise<ServiceSyncTransactionsResult> {
+  const response = await apiClient.post<{
+    data: ServiceSyncTransactionsResult;
+    status: "ok";
+  }>(
+    `/api/services/${publicId}/sync-transactions`,
+    {},
+    {
+      responseSchema: ServiceSyncResponseSchema,
+    },
+  );
+  return response.data;
 }

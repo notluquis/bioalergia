@@ -47,6 +47,9 @@ export const ServiceFormSchema = z
       .max(255, "Nombre demasiado largo (máx 255 caracteres)"),
     detail: z.string().max(500, "Detalle demasiado largo (máx 500 caracteres)").optional(),
     category: z.string().max(100).optional(),
+    transactionCategoryId: z.number().int().positive().nullable(),
+    reminderDaysBefore: z.number().int().min(0).max(90),
+    autoLinkTransactions: z.boolean(),
     notes: z.string().max(2000, "Notas demasiado largas (máx 2000 caracteres)").optional(),
 
     // Classification

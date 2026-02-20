@@ -1,6 +1,7 @@
 import type { ChangeEvent } from "react";
 import { z } from "zod";
 import { Input } from "@/components/ui/Input";
+import { Select, SelectItem } from "@/components/ui/Select";
 import { SelectWithCreateNew } from "@/components/ui/SelectWithCreateNew";
 import { GRID_2_COL_MD } from "@/lib/styles";
 
@@ -12,6 +13,13 @@ interface BasicInfoSectionProps {
   detail?: null | string;
   name: string;
   notes?: null | string;
+  reminderDaysBefore: number;
+  transactionCategories: Array<{
+    color?: null | string;
+    id: number;
+    name: string;
+  }>;
+  transactionCategoryId?: null | number;
   onChange: <K extends keyof ServiceFormState>(key: K, value: ServiceFormState[K]) => void;
   onCreateCategory: (value: string) => void;
 }
@@ -22,6 +30,9 @@ export function BasicInfoSection({
   detail,
   name,
   notes,
+  reminderDaysBefore,
+  transactionCategories,
+  transactionCategoryId,
   onChange,
   onCreateCategory,
 }: BasicInfoSectionProps) {
@@ -50,6 +61,38 @@ export function BasicInfoSection({
         onCreateNew={(newCategory) => {
           onCreateCategory(newCategory);
         }}
+      />
+
+      <Select
+        label="Categoría financiera"
+        onChange={(value) => {
+          if (!value) {
+            onChange("transactionCategoryId", null);
+            return;
+          }
+          onChange("transactionCategoryId", Number(value));
+        }}
+        value={transactionCategoryId == null ? "__none__" : String(transactionCategoryId)}
+      >
+        <SelectItem id="__none__" key="__none__">
+          Sin categoría financiera
+        </SelectItem>
+        {transactionCategories.map((categoryOption) => (
+          <SelectItem id={String(categoryOption.id)} key={categoryOption.id}>
+            {categoryOption.name}
+          </SelectItem>
+        ))}
+      </Select>
+
+      <Input
+        label="Recordar (días antes)"
+        max={90}
+        min={0}
+        onChange={(event: ChangeEvent<HTMLInputElement>) => {
+          onChange("reminderDaysBefore", Number(event.target.value || 0));
+        }}
+        type="number"
+        value={reminderDaysBefore}
       />
 
       <Input
