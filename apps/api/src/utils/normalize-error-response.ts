@@ -3,8 +3,10 @@ import { resolveErrorCode } from "./error-code-resolver";
 
 type ErrorShape = {
   code?: unknown;
+  error?: unknown;
   message?: unknown;
   status?: unknown;
+  [key: string]: unknown;
 };
 
 function tryParseJson(text: string): null | unknown {
@@ -19,17 +21,37 @@ function normalizeErrorShape(
   payload: ErrorShape,
   ctx: Pick<Context, "req" | "res">,
 ): { changed: boolean; payload: ErrorShape } {
-  if (payload.status !== "error") {
+  const hasLegacyErrorField = typeof payload.error === "string" && payload.error.length > 0;
+  const isErrorStatus = payload.status === "error";
+  if (!isErrorStatus && !hasLegacyErrorField) {
     return { changed: false, payload };
   }
 
-  if (typeof payload.code === "string" && payload.code.length > 0) {
+  const message = (() => {
+    if (typeof payload.message === "string" && payload.message.length > 0) {
+      return payload.message;
+    }
+    if (typeof payload.error === "string" && payload.error.length > 0) {
+      return payload.error;
+    }
+    return undefined;
+  })();
+
+  const hasCode = typeof payload.code === "string" && payload.code.length > 0;
+  const hasStatusError = payload.status === "error";
+  if (hasCode && hasStatusError && message) {
     return { changed: false, payload };
   }
 
-  const message = typeof payload.message === "string" ? payload.message : undefined;
+  const { error: _legacyError, ...payloadWithoutError } = payload;
+  const basePayload: ErrorShape = {
+    ...payloadWithoutError,
+    status: "error",
+    ...(message ? { message } : {}),
+  };
+
   const nextPayload: ErrorShape = {
-    ...payload,
+    ...basePayload,
     code: resolveErrorCode({
       method: ctx.req.method,
       path: ctx.req.path,
@@ -71,19 +93,17 @@ export async function normalizeErrorResponse(c: Context): Promise<void> {
   let next: unknown = parsed;
 
   // reply() serialized payload: { json: { status: "error", ... }, meta: ... }
-  if (
-    "json" in (parsed as Record<string, unknown>) &&
-    (parsed as { json?: unknown }).json &&
-    typeof (parsed as { json?: unknown }).json === "object"
-  ) {
+  if ("json" in (parsed as Record<string, unknown>) && (parsed as { json?: unknown }).json) {
     const container = parsed as { json: ErrorShape; meta?: unknown };
-    const result = normalizeErrorShape(container.json, c);
-    if (result.changed) {
-      changed = true;
-      next = {
-        ...container,
-        json: result.payload,
-      };
+    if (typeof container.json === "object") {
+      const result = normalizeErrorShape(container.json, c);
+      if (result.changed) {
+        changed = true;
+        next = {
+          ...container,
+          json: result.payload,
+        };
+      }
     }
   } else {
     const result = normalizeErrorShape(parsed as ErrorShape, c);

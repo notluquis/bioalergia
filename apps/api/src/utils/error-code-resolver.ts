@@ -76,6 +76,51 @@ function financeCode(message: string, path: string): null | string {
   return null;
 }
 
+function patientsCode(message: string, path: string, status: number): null | string {
+  if (!path.startsWith("/api/patients")) return null;
+  if (includesAny(message, ["paciente no encontrado"])) return "PATIENT_NOT_FOUND";
+  if (includesAny(message, ["id inválido", "id invalido", "id de paciente inválido"])) {
+    return "PATIENT_INVALID_ID";
+  }
+  if (includesAny(message, ["ya está registrado", "ya esta registrado"])) {
+    return "PATIENT_ALREADY_EXISTS";
+  }
+  if (
+    includesAny(message, ["no se proporcionó ningún archivo", "no se proporciono ningun archivo"])
+  ) {
+    return "PATIENT_ATTACHMENT_FILE_REQUIRED";
+  }
+  if (includesAny(message, ["no autorizado", "unauthorized"]) || status === 401) {
+    return "PATIENT_UNAUTHORIZED";
+  }
+  if (status >= 500) return "PATIENT_OPERATION_ERROR";
+  return null;
+}
+
+function certificatesCode(message: string, path: string, status: number): null | string {
+  if (!path.startsWith("/api/certificates")) return null;
+  if (includesAny(message, ["usuario no autenticado", "no autorizado"])) {
+    return "CERTIFICATE_UNAUTHORIZED";
+  }
+  if (includesAny(message, ["certificado no encontrado"])) return "CERTIFICATE_NOT_FOUND";
+  if (includesAny(message, ["error al verificar certificado"]))
+    return "CERTIFICATE_VERIFICATION_ERROR";
+  if (includesAny(message, ["error al generar el certificado"]))
+    return "CERTIFICATE_GENERATION_ERROR";
+  if (status >= 500) return "CERTIFICATE_OPERATION_ERROR";
+  return null;
+}
+
+function doctoraliaCode(message: string, path: string): null | string {
+  if (!path.startsWith("/api/doctoralia")) return null;
+  if (includesAny(message, ["payload inválido", "payload invalido"]))
+    return "DOCTORALIA_INVALID_PAYLOAD";
+  if (includesAny(message, ["firma requerida"])) return "DOCTORALIA_SIGNATURE_REQUIRED";
+  if (includesAny(message, ["firma inválida", "firma invalida"]))
+    return "DOCTORALIA_INVALID_SIGNATURE";
+  return null;
+}
+
 function integrationsCode(message: string, path: string): null | string {
   if (path.startsWith("/api/integrations/google") && includesAny(message, ["failed", "error"])) {
     return "GOOGLE_INTEGRATION_ERROR";
@@ -103,6 +148,9 @@ export function resolveErrorCode(input: ErrorCodeInput): string {
 
   return (
     financeCode(message, input.path) ??
+    patientsCode(message, input.path, input.status) ??
+    certificatesCode(message, input.path, input.status) ??
+    doctoraliaCode(message, input.path) ??
     integrationsCode(message, input.path) ??
     backupCode(message, input.path) ??
     defaultCode(input.status)

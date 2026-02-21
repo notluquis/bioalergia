@@ -15,6 +15,7 @@ import { getSessionUser } from "../../auth.js";
 import { normalizeRut } from "../../lib/rut.js";
 import { zValidator } from "../../lib/zod-validator";
 import { uploadPatientAttachmentToDrive } from "../../services/patient-attachments-drive.js";
+import { replyRaw } from "../../utils/reply";
 import {
   createBudgetSchema,
   createConsultationSchema,
@@ -268,10 +269,10 @@ patientsRoutes.get("/", async (c) => {
       take: 50,
     });
 
-    return c.json(patients);
+    return replyRaw(c, patients);
   } catch (error) {
     console.error("Error fetching patients:", error);
-    return c.json({ error: "Error al buscar pacientes" }, 500);
+    return replyRaw(c, { error: "Error al buscar pacientes" }, 500);
   }
 });
 
@@ -302,10 +303,10 @@ patientsRoutes.get(
         take: maxRows,
       });
 
-      return c.json(rows);
+      return replyRaw(c, rows);
     } catch (error) {
       console.error("Error listing DTE patient sources:", error);
-      return c.json({ error: "Error al listar fuentes DTE de pacientes" }, 500);
+      return replyRaw(c, { error: "Error al listar fuentes DTE de pacientes" }, 500);
     }
   },
 );
@@ -319,10 +320,11 @@ patientsRoutes.post(
 
     try {
       const result = await syncPatientDteSaleSources(options);
-      return c.json(result);
+      return replyRaw(c, result);
     } catch (error) {
       console.error("Error syncing DTE patient sources:", error);
-      return c.json(
+      return replyRaw(
+        c,
         {
           error: "Error al sincronizar base de pacientes desde DTE sales",
           details: error instanceof Error ? error.message : String(error),
@@ -338,7 +340,7 @@ patientsRoutes.get("/:id", async (c) => {
   const id = Number(c.req.param("id"));
 
   if (Number.isNaN(id)) {
-    return c.json({ error: "ID inválido" }, 400);
+    return replyRaw(c, { error: "ID inválido" }, 400);
   }
 
   try {
@@ -367,13 +369,13 @@ patientsRoutes.get("/:id", async (c) => {
     });
 
     if (!patient) {
-      return c.json({ error: "Paciente no encontrado" }, 404);
+      return replyRaw(c, { error: "Paciente no encontrado" }, 404);
     }
 
-    return c.json(withBudgetItems(patient));
+    return replyRaw(c, withBudgetItems(patient));
   } catch (error) {
     console.error("Error fetching patient:", error);
-    return c.json({ error: "Error al obtener paciente" }, 500);
+    return replyRaw(c, { error: "Error al obtener paciente" }, 500);
   }
 });
 
@@ -394,7 +396,7 @@ patientsRoutes.post("/", zValidator("json", createPatientSchema), async (c) => {
       });
 
       if (existingPatient) {
-        return c.json({ error: "El paciente ya está registrado" }, 409);
+        return replyRaw(c, { error: "El paciente ya está registrado" }, 409);
       }
 
       // Update person details if provided
@@ -437,10 +439,10 @@ patientsRoutes.post("/", zValidator("json", createPatientSchema), async (c) => {
       },
     });
 
-    return c.json(patient, 201);
+    return replyRaw(c, patient, 201);
   } catch (error) {
     console.error("Error creating patient:", error);
-    return c.json({ error: "Error al crear paciente", details: String(error) }, 500);
+    return replyRaw(c, { error: "Error al crear paciente", details: String(error) }, 500);
   }
 });
 
@@ -450,7 +452,7 @@ patientsRoutes.put("/:id", zValidator("json", updatePatientSchema), async (c) =>
   const input = c.req.valid("json");
 
   if (Number.isNaN(id)) {
-    return c.json({ error: "ID inválido" }, 400);
+    return replyRaw(c, { error: "ID inválido" }, 400);
   }
 
   try {
@@ -460,7 +462,7 @@ patientsRoutes.put("/:id", zValidator("json", updatePatientSchema), async (c) =>
     });
 
     if (!patient) {
-      return c.json({ error: "Paciente no encontrado" }, 404);
+      return replyRaw(c, { error: "Paciente no encontrado" }, 404);
     }
 
     // Update person if person fields are provided
@@ -505,10 +507,10 @@ patientsRoutes.put("/:id", zValidator("json", updatePatientSchema), async (c) =>
       },
     });
 
-    return c.json(updatedPatient);
+    return replyRaw(c, updatedPatient);
   } catch (error) {
     console.error("Error updating patient:", error);
-    return c.json({ error: "Error al actualizar paciente" }, 500);
+    return replyRaw(c, { error: "Error al actualizar paciente" }, 500);
   }
 });
 
@@ -521,7 +523,7 @@ patientsRoutes.post(
     const input = c.req.valid("json");
 
     if (Number.isNaN(patientId)) {
-      return c.json({ error: "ID de paciente inválido" }, 400);
+      return replyRaw(c, { error: "ID de paciente inválido" }, 400);
     }
 
     try {
@@ -530,7 +532,7 @@ patientsRoutes.post(
       });
 
       if (!patient) {
-        return c.json({ error: "Paciente no encontrado" }, 404);
+        return replyRaw(c, { error: "Paciente no encontrado" }, 404);
       }
 
       const consultation = await db.consultation.create({
@@ -545,10 +547,10 @@ patientsRoutes.post(
         },
       });
 
-      return c.json(consultation, 201);
+      return replyRaw(c, consultation, 201);
     } catch (error) {
       console.error("Error creating consultation:", error);
-      return c.json({ error: "Error al registrar la consulta", details: String(error) }, 500);
+      return replyRaw(c, { error: "Error al registrar la consulta", details: String(error) }, 500);
     }
   },
 );
@@ -573,10 +575,10 @@ patientsRoutes.post("/:id/budgets", zValidator("json", createBudgetSchema), asyn
       },
     });
 
-    return c.json({ ...budget, items: [] }, 201);
+    return replyRaw(c, { ...budget, items: [] }, 201);
   } catch {
     console.error("Error creating budget:");
-    return c.json({ error: "Error al crear el presupuesto" }, 500);
+    return replyRaw(c, { error: "Error al crear el presupuesto" }, 500);
   }
 });
 
@@ -589,9 +591,12 @@ patientsRoutes.get("/:id/budgets", async (c) => {
       include: { payments: true },
       orderBy: { updatedAt: "desc" },
     });
-    return c.json(budgets.map((budget) => ({ ...budget, items: [] })));
+    return replyRaw(
+      c,
+      budgets.map((budget) => ({ ...budget, items: [] })),
+    );
   } catch {
-    return c.json({ error: "Error al obtener presupuestos" }, 500);
+    return replyRaw(c, { error: "Error al obtener presupuestos" }, 500);
   }
 });
 
@@ -613,10 +618,10 @@ patientsRoutes.post("/:id/payments", zValidator("json", createPaymentSchema), as
       },
     });
 
-    return c.json(payment, 201);
+    return replyRaw(c, payment, 201);
   } catch {
     console.error("Error registering payment:");
-    return c.json({ error: "Error al registrar pago" }, 500);
+    return replyRaw(c, { error: "Error al registrar pago" }, 500);
   }
 });
 
@@ -628,9 +633,9 @@ patientsRoutes.get("/:id/payments", async (c) => {
       where: { patientId },
       orderBy: { paymentDate: "desc" },
     });
-    return c.json(payments);
+    return replyRaw(c, payments);
   } catch {
-    return c.json({ error: "Error al obtener pagos" }, 500);
+    return replyRaw(c, { error: "Error al obtener pagos" }, 500);
   }
 });
 
@@ -643,7 +648,7 @@ patientsRoutes.post("/:id/attachments", async (c) => {
   const user = await getSessionUser(c);
 
   if (!user) {
-    return c.json({ error: "No autorizado" }, 401);
+    return replyRaw(c, { error: "No autorizado" }, 401);
   }
 
   try {
@@ -653,7 +658,7 @@ patientsRoutes.post("/:id/attachments", async (c) => {
     const name = (body.name as string) || file.name || "Sin nombre";
 
     if (!file) {
-      return c.json({ error: "No se proporcionó ningún archivo" }, 400);
+      return replyRaw(c, { error: "No se proporcionó ningún archivo" }, 400);
     }
 
     // Save temp file
@@ -686,7 +691,7 @@ patientsRoutes.post("/:id/attachments", async (c) => {
         },
       });
 
-      return c.json({ ...attachment, webViewLink });
+      return replyRaw(c, { ...attachment, webViewLink });
     } finally {
       // Clean up
       if (fs.existsSync(tempPath)) {
@@ -695,7 +700,7 @@ patientsRoutes.post("/:id/attachments", async (c) => {
     }
   } catch (error) {
     console.error("Error uploading attachment:", error);
-    return c.json({ error: "Error al subir el documento" }, 500);
+    return replyRaw(c, { error: "Error al subir el documento" }, 500);
   }
 });
 
@@ -707,9 +712,9 @@ patientsRoutes.get("/:id/attachments", async (c) => {
       where: { patientId },
       orderBy: { uploadedAt: "desc" },
     });
-    return c.json(attachments);
+    return replyRaw(c, attachments);
   } catch {
-    return c.json({ error: "Error al obtener adjuntos" }, 500);
+    return replyRaw(c, { error: "Error al obtener adjuntos" }, 500);
   }
 });
 

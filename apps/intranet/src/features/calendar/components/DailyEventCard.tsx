@@ -135,7 +135,7 @@ export function DailyEventCard({ event }: DailyEventCardProps) {
         {/* Content - Center Column */}
         <div className="min-w-0 space-y-1.5">
           {/* Title */}
-          <h3 className="line-clamp-2 break-words font-semibold text-sm leading-tight sm:text-base">
+          <h3 className="line-clamp-2 wrap-break-word font-semibold text-sm leading-tight sm:text-base">
             {event.summary?.trim() ?? "(Sin título)"}
           </h3>
 

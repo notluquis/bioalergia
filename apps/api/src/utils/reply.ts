@@ -6,3 +6,7 @@ export const reply = <T = unknown>(c: Context, data: T, status: ContentfulStatus
   const serialized = superjson.serialize(data);
   return c.json(serialized, status);
 };
+
+export const replyRaw = <T = unknown>(c: Context, data: T, status: ContentfulStatusCode = 200) => {
+  return c.json(data, status);
+};

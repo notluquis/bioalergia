@@ -50,7 +50,7 @@ import { transactionRoutes } from "./routes/transactions";
 import { userRoutes } from "./routes/users";
 import { errorReply } from "./utils/error-reply";
 import { normalizeErrorResponse } from "./utils/normalize-error-response";
-import { reply } from "./utils/reply";
+import { reply, replyRaw } from "./utils/reply";
 
 // Register Decimal.js serialization for superjson
 superjson.registerCustom<Decimal, string>(
@@ -138,8 +138,8 @@ app.use(
 );
 
 // Health check (at root for Railway healthcheck)
-app.get("/health", (c) => c.json({ status: "ok" }));
-app.get("/api/health", (c) => c.json({ status: "ok" }));
+app.get("/health", (c) => replyRaw(c, { status: "ok" }));
+app.get("/api/health", (c) => replyRaw(c, { status: "ok" }));
 
 // Rate limiting for auth routes (prevent brute force attacks)
 const authRateLimiter = rateLimiter({
@@ -277,7 +277,7 @@ app.get("/", (c) => {
     info.note = "Run `pnpm --filter @finanzas/intranet dev` for frontend";
   }
 
-  return c.json(info);
+  return replyRaw(c, info);
 });
 
 app.notFound((c) => {

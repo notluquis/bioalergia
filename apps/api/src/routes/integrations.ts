@@ -8,6 +8,7 @@ import {
   validateOAuthToken,
 } from "../lib/google/google-core";
 import { logEvent, logWarn } from "../lib/logger";
+import { replyRaw } from "../utils/reply";
 
 const OAUTH_TOKEN_KEY = "GOOGLE_OAUTH_REFRESH_TOKEN";
 const OAUTH_STATE_COOKIE = "oauth_state";
@@ -42,10 +43,10 @@ integrationRoutes.get("/google/url", async (c) => {
       state: `${state.substring(0, 8)}...`,
     });
 
-    return c.json({ url: authUrl });
+    return replyRaw(c, { url: authUrl });
   } catch (error) {
     console.error("Error generating auth url", error);
-    return c.json({ error: "Failed to generate auth URL" }, 500);
+    return replyRaw(c, { error: "Failed to generate auth URL" }, 500);
   }
 });
 
@@ -134,9 +135,9 @@ integrationRoutes.delete("/google/disconnect", async (c) => {
 
     logEvent("google.oauth.disconnected", {});
 
-    return c.json({ success: true });
+    return replyRaw(c, { success: true });
   } catch (_error) {
-    return c.json({ error: "Failed to disconnect" }, 500);
+    return replyRaw(c, { error: "Failed to disconnect" }, 500);
   }
 });
 
@@ -144,7 +145,7 @@ integrationRoutes.delete("/google/disconnect", async (c) => {
 integrationRoutes.get("/google/status", async (c) => {
   const validation = await validateOAuthToken();
 
-  return c.json({
+  return replyRaw(c, {
     configured: validation.configured,
     valid: validation.valid,
     source: validation.source,

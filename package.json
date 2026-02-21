@@ -33,7 +33,7 @@
     "turbo": "^2.8.10"
   },
   "dependencies": {
-    "isomorphic-dompurify": "3.0.0-rc.2",
+    "isomorphic-dompurify": "3.0.0",
     "papaparse": "^5.5.3",
     "superjson": "^2.2.6"
   }

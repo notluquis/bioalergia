@@ -373,6 +373,6 @@ export function htmlSanitizerMiddleware(): MiddlewareHandler {
  * - Cost: Minimal (jsdom reinit is fast)
  *
  * References:
- * - https://github.com/isomorphic-git/isomorphic-dompurify/releases/tag/v3.0.0-rc.2
+ * - https://github.com/kkomelin/isomorphic-dompurify/releases/tag/3.0.0
  * - https://github.com/cure53/DOMPurify#readme
  */

@@ -10,6 +10,7 @@ import utc from "dayjs/plugin/utc.js";
 import { Hono } from "hono";
 import { zValidator } from "../../lib/zod-validator";
 import { uploadCertificateToDrive } from "../../services/certificates-drive.js";
+import { replyRaw } from "../../utils/reply";
 import { medicalCertificateSchema } from "./certificate.schema.js";
 import { generateMedicalCertificatePdf, generateQRCode, signPdf } from "./certificate.service.js";
 
@@ -37,7 +38,7 @@ certificates.post("/medical", zValidator("json", medicalCertificateSchema), asyn
     const userId = c.get("user")?.id;
 
     if (!userId) {
-      return c.json({ error: "Usuario no autenticado" }, 401);
+      return replyRaw(c, { error: "Usuario no autenticado" }, 401);
     }
 
     // Generate unique ID for certificate
@@ -108,7 +109,7 @@ certificates.post("/medical", zValidator("json", medicalCertificateSchema), asyn
     return c.body(Buffer.from(signedPdfBytes));
   } catch (error) {
     console.error("Error generating certificate:", error);
-    return c.json({ error: "Error al generar el certificado", details: String(error) }, 500);
+    return replyRaw(c, { error: "Error al generar el certificado", details: String(error) }, 500);
   }
 });
 
@@ -133,11 +134,11 @@ certificates.get("/verify/:id", async (c) => {
     });
 
     if (!certificate) {
-      return c.json({ valid: false, error: "Certificado no encontrado" }, 404);
+      return replyRaw(c, { valid: false, error: "Certificado no encontrado" }, 404);
     }
 
     // Return Level 3 verification (full details as approved by user)
-    return c.json({
+    return replyRaw(c, {
       valid: true,
       issuedAt: certificate.issuedAt,
       doctor: {
@@ -155,7 +156,7 @@ certificates.get("/verify/:id", async (c) => {
     });
   } catch (error) {
     console.error("Error verifying certificate:", error);
-    return c.json({ valid: false, error: "Error al verificar certificado" }, 500);
+    return replyRaw(c, { valid: false, error: "Error al verificar certificado" }, 500);
   }
 });
 
@@ -164,7 +165,7 @@ certificates.get("/verify/:id", async (c) => {
  * Health check for the certificates module
  */
 certificates.get("/health", (c) => {
-  return c.json({ status: "ok", module: "certificates" });
+  return replyRaw(c, { status: "ok", module: "certificates" });
 });
 
 export const certificatesRoutes = certificates;

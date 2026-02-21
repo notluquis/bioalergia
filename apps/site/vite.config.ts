@@ -10,7 +10,9 @@ export default defineConfig({
     react(),
     tailwindcss(),
     visualizer({
-      filename: "dist/bundle-analysis.html",
+      // Let Rollup/Vite handle output placement instead of hard-coding dist/.
+      emitFile: true,
+      filename: "bundle-analysis.html",
       open: false,
       gzipSize: true,
       brotliSize: true,

@@ -14,6 +14,7 @@ const MP_CARD_REFERENCE_PATTERN = "74fe4f0-1808-44bf-92b7-5f6215842ff5-17";
 const PERSONAL_DR_CATEGORY_NAME = "Personal Dr";
 const PERSONAL_DR_RULE_NAME_PREFIX = "Sistema - Personal Dr por referencia";
 const PATIENTS_CATEGORY_NAME = "Pacientes";
+const PATIENTS_RULE_NAME = "Sistema - Pacientes por keyword";
 const PATIENTS_KEYWORD = "paciente";
 const PERSONAL_DR_REFERENCE_PATTERNS = [
   "db4b64d0-a31f-4622-9f7b-ec28f54ab6e8-17",
@@ -268,8 +269,23 @@ function matchesPersonalDrPattern(comment: null | string | undefined) {
 const normalizeSearchText = (value: null | string | undefined) =>
   (value ?? "").toLowerCase().normalize("NFD").replace(DIACRITICS_REGEX, "").trim();
 
-function matchesPatientsPattern(values: Array<null | string | undefined>) {
-  return values.some((value) => normalizeSearchText(value).includes(PATIENTS_KEYWORD));
+const mergeDescriptionWithSaleDetails = (
+  description: null | string | undefined,
+  saleDetails: string[],
+) => {
+  const base = (description ?? "").trim();
+  const details = saleDetails
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .join(" ");
+  const merged = `${base} ${details}`.trim();
+  return merged.length > 0 ? merged : null;
+};
+
+function matchesPatientsPattern(values: Array<null | string | undefined>, keyword: string) {
+  const normalizedKeyword = normalizeSearchText(keyword);
+  if (!normalizedKeyword) return false;
+  return values.some((value) => normalizeSearchText(value).includes(normalizedKeyword));
 }
 
 async function applyPersonalDrPatternCategoryToExistingTransactions(
@@ -303,8 +319,12 @@ async function applyPersonalDrPatternCategoryToExistingTransactions(
 
 async function applyPatientsPatternCategoryToExistingTransactions(
   categoryId: number,
+  keyword: string,
   options?: { onlyUncategorized?: boolean },
 ) {
+  const normalizedKeyword = normalizeSearchText(keyword) || PATIENTS_KEYWORD;
+  const likePattern = `%${normalizedKeyword}%`;
+
   if (options?.onlyUncategorized) {
     const updatedRows = await db.$executeRaw`
       UPDATE financial_transactions ft
@@ -313,21 +333,21 @@ async function applyPatientsPatternCategoryToExistingTransactions(
       WHERE ft.type = 'INCOME'
         AND ft.category_id IS NULL
         AND (
-          ft.description ILIKE '%paciente%'
-          OR (ft.comment IS NOT NULL AND ft.comment ILIKE '%paciente%')
+          ft.description ILIKE ${likePattern}
+          OR (ft.comment IS NOT NULL AND ft.comment ILIKE ${likePattern})
           OR EXISTS (
             SELECT 1
             FROM release_transactions rt
             WHERE rt.source_id = ft.source_id
               AND rt.sale_detail IS NOT NULL
-              AND rt.sale_detail ILIKE '%paciente%'
+              AND rt.sale_detail ILIKE ${likePattern}
           )
           OR EXISTS (
             SELECT 1
             FROM settlement_transactions st
             WHERE st.source_id = ft.source_id
               AND st.sale_detail IS NOT NULL
-              AND st.sale_detail ILIKE '%paciente%'
+              AND st.sale_detail ILIKE ${likePattern}
           )
         )
     `;
@@ -341,21 +361,21 @@ async function applyPatientsPatternCategoryToExistingTransactions(
     WHERE ft.type = 'INCOME'
       AND ft.category_id IS DISTINCT FROM ${categoryId}
       AND (
-        ft.description ILIKE '%paciente%'
-        OR (ft.comment IS NOT NULL AND ft.comment ILIKE '%paciente%')
+        ft.description ILIKE ${likePattern}
+        OR (ft.comment IS NOT NULL AND ft.comment ILIKE ${likePattern})
         OR EXISTS (
           SELECT 1
           FROM release_transactions rt
           WHERE rt.source_id = ft.source_id
             AND rt.sale_detail IS NOT NULL
-            AND rt.sale_detail ILIKE '%paciente%'
+            AND rt.sale_detail ILIKE ${likePattern}
         )
         OR EXISTS (
           SELECT 1
           FROM settlement_transactions st
           WHERE st.source_id = ft.source_id
             AND st.sale_detail IS NOT NULL
-            AND st.sale_detail ILIKE '%paciente%'
+            AND st.sale_detail ILIKE ${likePattern}
         )
       )
   `;
@@ -405,7 +425,7 @@ async function applyAutoCategoryRulesToExistingTransactions(
   return result.reduce((acc, item) => acc + item.count, 0);
 }
 
-async function ensurePatientsCategory() {
+async function ensurePatientsAutoCategoryRule() {
   const category =
     (await db.transactionCategory.findFirst({
       where: {
@@ -423,7 +443,61 @@ async function ensurePatientsCategory() {
       select: { id: true },
     }));
 
-  return category.id;
+  const existingRule = await db.financialAutoCategoryRule.findFirst({
+    where: { name: PATIENTS_RULE_NAME },
+    select: { id: true },
+  });
+
+  const ensuredRule = existingRule
+    ? await db.financialAutoCategoryRule.update({
+        where: { id: existingRule.id },
+        data: {
+          categoryId: category.id,
+          commentContains: null,
+          counterpartId: null,
+          descriptionContains: PATIENTS_KEYWORD,
+          isActive: true,
+          maxAmount: null,
+          minAmount: null,
+          priority: 10500,
+          type: "INCOME",
+        },
+        select: {
+          commentContains: true,
+          descriptionContains: true,
+          id: true,
+        },
+      })
+    : await db.financialAutoCategoryRule.create({
+        data: {
+          categoryId: category.id,
+          commentContains: null,
+          counterpartId: null,
+          descriptionContains: PATIENTS_KEYWORD,
+          isActive: true,
+          maxAmount: null,
+          minAmount: null,
+          name: PATIENTS_RULE_NAME,
+          priority: 10500,
+          type: "INCOME",
+        },
+        select: {
+          commentContains: true,
+          descriptionContains: true,
+          id: true,
+        },
+      });
+
+  // Applies the DB rule to historical records based on financial_transaction fields.
+  await applySingleAutoCategoryRule(ensuredRule.id);
+
+  const keyword =
+    ensuredRule.descriptionContains ?? ensuredRule.commentContains ?? PATIENTS_KEYWORD;
+
+  return {
+    categoryId: category.id,
+    keyword,
+  };
 }
 
 async function syncUnifiedTransactions(
@@ -432,7 +506,7 @@ async function syncUnifiedTransactions(
 ) {
   await ensureMercadoPagoCardAutoCategoryRule();
   const personalDrCategoryId = await ensurePersonalDrAutoCategoryRules();
-  const patientsCategoryId = await ensurePatientsCategory();
+  const patientsRule = await ensurePatientsAutoCategoryRule();
 
   const nonCashbackTransactions = unifiedTransactions.filter(
     (tour) =>
@@ -533,17 +607,20 @@ async function syncUnifiedTransactions(
             Number(existing.amount),
             existing.comment,
             nextCounterpartId,
-            existing.description,
+            mergeDescriptionWithSaleDetails(existing.description, sourceSaleDetails),
             autoCategoryRules,
           );
           const matchesPatients =
             existing.type === "INCOME" &&
-            matchesPatientsPattern([existing.description, existing.comment, ...sourceSaleDetails]);
+            matchesPatientsPattern(
+              [existing.description, existing.comment, ...sourceSaleDetails],
+              patientsRule.keyword,
+            );
           const nextSystemCategoryId =
             existing.type === "EXPENSE" && matchesPersonalDrPattern(existing.comment)
               ? personalDrCategoryId
               : matchesPatients
-                ? patientsCategoryId
+                ? patientsRule.categoryId
                 : null;
           const updateData: {
             categoryId?: null | number;
@@ -597,12 +674,12 @@ async function syncUnifiedTransactions(
           );
           const matchesPatients =
             existing.type === "INCOME" &&
-            matchesPatientsPattern([existing.description, existing.comment]);
+            matchesPatientsPattern([existing.description, existing.comment], patientsRule.keyword);
           const nextSystemCategoryId =
             existing.type === "EXPENSE" && matchesPersonalDrPattern(existing.comment)
               ? personalDrCategoryId
               : matchesPatients
-                ? patientsCategoryId
+                ? patientsRule.categoryId
                 : null;
           const updateData: {
             categoryId?: null | number;
@@ -638,17 +715,20 @@ async function syncUnifiedTransactions(
         tour.transactionAmount,
         comment,
         counterpartId,
-        tour.description,
+        mergeDescriptionWithSaleDetails(tour.description, sourceSaleDetails),
         autoCategoryRules,
       );
       const isPatientsIncome =
         type === "INCOME" &&
-        matchesPatientsPattern([tour.description, comment, ...sourceSaleDetails]);
+        matchesPatientsPattern(
+          [tour.description, comment, ...sourceSaleDetails],
+          patientsRule.keyword,
+        );
       const resolvedCategoryId =
         type === "EXPENSE" && matchesPersonalDrPattern(comment)
           ? personalDrCategoryId
           : isPatientsIncome
-            ? patientsCategoryId
+            ? patientsRule.categoryId
             : categoryId;
 
       const created = await db.financialTransaction.create({
@@ -688,7 +768,10 @@ async function syncUnifiedTransactions(
   if (options?.applyGlobalRules !== false) {
     await applyAutoCategoryRulesToExistingTransactions(autoCategoryRules);
     await applyPersonalDrPatternCategoryToExistingTransactions(personalDrCategoryId);
-    await applyPatientsPatternCategoryToExistingTransactions(patientsCategoryId);
+    await applyPatientsPatternCategoryToExistingTransactions(
+      patientsRule.categoryId,
+      patientsRule.keyword,
+    );
   }
 
   return {
@@ -717,7 +800,7 @@ export async function syncFinancialTransactionsBySourceIds(sourceIds: string[], 
 export async function syncUncategorizedTransactionsByPatterns() {
   await ensureMercadoPagoCardAutoCategoryRule();
   const personalDrCategoryId = await ensurePersonalDrAutoCategoryRules();
-  const patientsCategoryId = await ensurePatientsCategory();
+  const patientsRule = await ensurePatientsAutoCategoryRule();
   const autoCategoryRules = await buildAutoCategoryRuleLookup();
   const updatedByRules = await applyAutoCategoryRulesToExistingTransactions(autoCategoryRules, {
     onlyUncategorized: true,
@@ -729,7 +812,8 @@ export async function syncUncategorizedTransactionsByPatterns() {
     },
   );
   const updatedByPatientsPattern = await applyPatientsPatternCategoryToExistingTransactions(
-    patientsCategoryId,
+    patientsRule.categoryId,
+    patientsRule.keyword,
     {
       onlyUncategorized: true,
     },

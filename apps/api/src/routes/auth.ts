@@ -15,6 +15,7 @@ import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { signToken, verifyToken } from "../lib/paseto";
 import { errorReply } from "../utils/error-reply";
+import { replyRaw } from "../utils/reply";
 
 const COOKIE_NAME = "finanzas_session";
 const COOKIE_OPTIONS = {
@@ -175,7 +176,7 @@ authRoutes.post("/login", zValidator("json", loginSchema), async (c) => {
 
   // Check MFA
   if (user.mfaEnabled) {
-    return c.json({ status: "mfa_required", userId: user.id });
+    return replyRaw(c, { status: "mfa_required", userId: user.id });
   }
 
   // Build roles array
@@ -194,7 +195,7 @@ authRoutes.post("/login", zValidator("json", loginSchema), async (c) => {
   const { getAbilityRulesForUser } = await import("../services/authz.js");
   const abilityRules = await getAbilityRulesForUser(user.id);
 
-  return c.json({
+  return replyRaw(c, {
     status: "ok",
     user: {
       id: user.id,
@@ -248,7 +249,7 @@ authRoutes.post("/login/mfa", zValidator("json", mfaLoginSchema), async (c) => {
   const { getAbilityRulesForUser } = await import("../services/authz.js");
   const abilityRules = await getAbilityRulesForUser(user.id);
 
-  return c.json({
+  return replyRaw(c, {
     status: "ok",
     user: {
       id: user.id,
@@ -268,7 +269,7 @@ authRoutes.post("/login/mfa", zValidator("json", mfaLoginSchema), async (c) => {
 
 authRoutes.post("/logout", async (c) => {
   deleteCookie(c, COOKIE_NAME);
-  return c.json({ status: "ok" });
+  return replyRaw(c, { status: "ok" });
 });
 
 // ============================================================
@@ -279,14 +280,14 @@ authRoutes.get("/me/session", async (c) => {
   const token = getCookie(c, COOKIE_NAME);
 
   if (!token) {
-    return c.json({ status: "ok", user: null });
+    return replyRaw(c, { status: "ok", user: null });
   }
 
   try {
     const session = await resolveSessionFromToken(token);
     if (!session) {
       deleteCookie(c, COOKIE_NAME);
-      return c.json({ status: "ok", user: null });
+      return replyRaw(c, { status: "ok", user: null });
     }
     const userId = session.userId;
 
@@ -301,13 +302,13 @@ authRoutes.get("/me/session", async (c) => {
 
     if (!user) {
       deleteCookie(c, COOKIE_NAME);
-      return c.json({ status: "ok", user: null });
+      return replyRaw(c, { status: "ok", user: null });
     }
     // --- Role Governance Logic ---
     const { getAbilityRulesForUser } = await import("../services/authz.js");
     const abilityRules = await getAbilityRulesForUser(user.id);
 
-    return c.json({
+    return replyRaw(c, {
       status: "ok",
       user: {
         id: user.id,
@@ -324,7 +325,7 @@ authRoutes.get("/me/session", async (c) => {
     });
   } catch {
     deleteCookie(c, COOKIE_NAME);
-    return c.json({ status: "ok", user: null });
+    return replyRaw(c, { status: "ok", user: null });
   }
 });
 
@@ -355,7 +356,7 @@ authRoutes.post("/mfa/setup", async (c) => {
       data: { mfaSecret: secret, mfaEnabled: false },
     });
 
-    return c.json({ status: "ok", secret, qrCodeUrl });
+    return replyRaw(c, { status: "ok", secret, qrCodeUrl });
   } catch {
     return authError(c, 401, "Token inválido");
   }
@@ -393,7 +394,7 @@ authRoutes.post("/mfa/enable", zValidator("json", mfaEnableSchema), async (c) =>
       data: { mfaEnabled: true },
     });
 
-    return c.json({ status: "ok" });
+    return replyRaw(c, { status: "ok" });
   } catch {
     return authError(c, 401, "Token inválido");
   }
@@ -417,7 +418,7 @@ authRoutes.post("/mfa/disable", async (c) => {
       data: { mfaSecret: null, mfaEnabled: false },
     });
 
-    return c.json({ status: "ok" });
+    return replyRaw(c, { status: "ok" });
   } catch {
     return authError(c, 401, "Token inválido");
   }
@@ -477,7 +478,7 @@ authRoutes.get("/passkey/login/options", async (c) => {
     // Store challenge for verification
     storeChallenge(`login:${options.challenge}`, options.challenge);
 
-    return c.json(options);
+    return replyRaw(c, options);
   } catch (error) {
     console.error("[passkey] login options error:", error);
     return authError(c, 500, "Error generando opciones");
@@ -561,7 +562,7 @@ authRoutes.post("/passkey/login/verify", zValidator("json", passkeyVerifySchema)
     );
     const abilityRules = await getAbilityRulesForUser2(user.id);
 
-    return c.json({
+    return replyRaw(c, {
       status: "ok",
       user: {
         id: user.id,
@@ -622,7 +623,7 @@ authRoutes.get("/passkey/register/options", async (c) => {
     // Store challenge
     storeChallenge(`register:${options.challenge}`, options.challenge, userId);
 
-    return c.json(options);
+    return replyRaw(c, options);
   } catch (error) {
     console.error("[passkey] register options error:", error);
     return authError(c, 500, "Error generando opciones");
@@ -688,7 +689,7 @@ authRoutes.post(
         },
       });
 
-      return c.json({
+      return replyRaw(c, {
         status: "ok",
         message: "Passkey registrado exitosamente",
       });
@@ -718,7 +719,7 @@ authRoutes.delete("/passkey/remove", async (c) => {
       where: { userId },
     });
 
-    return c.json({ status: "ok", message: "Passkey eliminado" });
+    return replyRaw(c, { status: "ok", message: "Passkey eliminado" });
   } catch (error) {
     console.error("[passkey] remove error:", error);
     return authError(c, 500, "Error eliminando passkey");

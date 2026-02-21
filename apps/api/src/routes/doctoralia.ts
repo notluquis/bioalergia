@@ -19,7 +19,7 @@ import {
   getDoctoraliaFacilitiesWithCounts,
   listDoctoraliaSyncLogs,
 } from "../services/doctoralia.js";
-import { reply } from "../utils/reply.js";
+import { reply, replyRaw } from "../utils/reply.js";
 
 export const doctoraliaRoutes = new Hono();
 const CALENDAR_OAUTH_STATE_COOKIE = "doctoralia_calendar_oauth_state";
@@ -934,7 +934,7 @@ doctoraliaRoutes.post("/webhook", async (c) => {
   try {
     body = rawBody ? (JSON.parse(rawBody) as DoctoraliaWebhookPayload) : {};
   } catch {
-    return c.json({ status: "error", message: "Payload inválido" }, 400);
+    return replyRaw(c, { status: "error", message: "Payload inválido" }, 400);
   }
 
   // Log the notification
@@ -945,7 +945,7 @@ doctoraliaRoutes.post("/webhook", async (c) => {
   if (secret) {
     const signatureHeader = c.req.header("x-doctoralia-signature");
     if (!signatureHeader) {
-      return c.json({ status: "error", message: "Firma requerida" }, 401);
+      return replyRaw(c, { status: "error", message: "Firma requerida" }, 401);
     }
 
     const signature = signatureHeader.includes("=")
@@ -960,7 +960,7 @@ doctoraliaRoutes.post("/webhook", async (c) => {
     );
 
     if (!signatureMatches) {
-      return c.json({ status: "error", message: "Firma inválida" }, 401);
+      return replyRaw(c, { status: "error", message: "Firma inválida" }, 401);
     }
   }
 
@@ -1001,5 +1001,5 @@ doctoraliaRoutes.post("/webhook", async (c) => {
       console.log("[Doctoralia Webhook] Unknown event:", body.name);
   }
 
-  return c.json({ received: true }, 200);
+  return replyRaw(c, { received: true }, 200);
 });
