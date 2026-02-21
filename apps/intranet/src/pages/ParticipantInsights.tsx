@@ -1,9 +1,8 @@
-import { Card } from "@heroui/react";
+import { Card, Label, ListBox, Select } from "@heroui/react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Select, SelectItem } from "@/components/ui/Select";
 import {
   getCounterpartsColumns,
   getLeaderboardColumns,
@@ -63,15 +62,25 @@ export function ParticipantInsightsPage() {
             />
 
             <Select
-              label="Rango rápido"
               onChange={(value) => {
                 setQuickMonth(value as string);
               }}
               value={quickMonth}
             >
-              {quickMonthOptions.map((option) => (
-                <SelectItem key={option.value}>{option.label}</SelectItem>
-              ))}
+              <Label>Rango rápido</Label>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  {quickMonthOptions.map((option) => (
+                    <ListBox.Item id={option.value} key={option.value}>
+                      {option.label}
+                    </ListBox.Item>
+                  ))}
+                </ListBox>
+              </Select.Popover>
             </Select>
             <Input
               disabled={quickMonth !== "custom"}
@@ -114,29 +123,47 @@ export function ParticipantInsightsPage() {
             <div className="w-32">
               <Select
                 className="select-sm"
-                label="Mostrar top"
                 onChange={(val) => {
                   const value = Number(val);
                   setLeaderboardLimit(Number.isFinite(value) ? value : 10);
                 }}
                 value={String(leaderboardLimit)}
               >
-                {[10, 20, 30].map((value) => (
-                  <SelectItem key={value}>{value}</SelectItem>
-                ))}
+                <Label>Mostrar top</Label>
+                <Select.Trigger>
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover>
+                  <ListBox>
+                    {[10, 20, 30].map((value) => (
+                      <ListBox.Item id={String(value)} key={value}>
+                        {value}
+                      </ListBox.Item>
+                    ))}
+                  </ListBox>
+                </Select.Popover>
               </Select>
             </div>
             <div className="w-44">
               <Select
                 className="select-sm"
-                label="Agrupar por"
                 onChange={(val) => {
                   setLeaderboardGrouping(val as "account" | "rut");
                 }}
                 value={leaderboardGrouping}
               >
-                <SelectItem key="account">Cuenta bancaria</SelectItem>
-                <SelectItem key="rut">RUT</SelectItem>
+                <Label>Agrupar por</Label>
+                <Select.Trigger>
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover>
+                  <ListBox>
+                    <ListBox.Item id="account">Cuenta bancaria</ListBox.Item>
+                    <ListBox.Item id="rut">RUT</ListBox.Item>
+                  </ListBox>
+                </Select.Popover>
               </Select>
             </div>
           </div>

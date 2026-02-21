@@ -1,11 +1,10 @@
-import { Skeleton, Surface } from "@heroui/react";
+import { FieldError, Label, ListBox, Select, Skeleton, Surface } from "@heroui/react";
 import { useForm } from "@tanstack/react-form";
 import { useEffect } from "react";
 import { z } from "zod";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Select, SelectItem } from "@/components/ui/Select";
 import { GRID_2_COL_MD } from "@/lib/styles";
 import type { CounterpartCategory } from "@/types/schema";
 
@@ -170,20 +169,28 @@ export function CounterpartForm({
               return (
                 <div>
                   <Select
-                    errorMessage={fieldError}
                     isInvalid={Boolean(fieldError)}
-                    label="Clasificación"
                     onBlur={field.handleBlur}
                     onChange={(key) => {
                       field.handleChange(key as CounterpartCategory);
                     }}
                     value={field.state.value}
                   >
-                    {CATEGORY_OPTIONS.map((option) => (
-                      <SelectItem id={option.value} key={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
+                    <Label>Clasificación</Label>
+                    <Select.Trigger>
+                      <Select.Value />
+                      <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        {CATEGORY_OPTIONS.map((option) => (
+                          <ListBox.Item id={option.value} key={option.value}>
+                            {option.label}
+                          </ListBox.Item>
+                        ))}
+                      </ListBox>
+                    </Select.Popover>
+                    {fieldError && <FieldError>{fieldError}</FieldError>}
                   </Select>
                 </div>
               );

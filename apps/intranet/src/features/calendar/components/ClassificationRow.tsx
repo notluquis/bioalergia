@@ -1,9 +1,8 @@
-import { Card, Checkbox } from "@heroui/react";
+import { Card, Checkbox, Label, ListBox, Select } from "@heroui/react";
 import { useStore } from "@tanstack/react-form";
 import dayjs from "dayjs";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Select, SelectItem } from "@/components/ui/Select";
 import type { CalendarUnclassifiedEvent } from "@/features/calendar/types";
 
 import type { ClassificationForm } from "../form-types";
@@ -117,7 +116,6 @@ export function ClassificationRow({
                 selectedCategory.length > 0 && !categoryChoices.includes(selectedCategory);
               return (
                 <Select
-                  label="Clasificación"
                   placeholder="Selecciona una clasificación"
                   onChange={(key) => {
                     field.handleChange(key === NONE_CATEGORY_KEY ? "" : (key as string));
@@ -125,19 +123,31 @@ export function ClassificationRow({
                   value={selectedCategory || NONE_CATEGORY_KEY}
                   variant="secondary"
                 >
-                  <SelectItem id={NONE_CATEGORY_KEY} key={NONE_CATEGORY_KEY}>
-                    Sin clasificación
-                  </SelectItem>
-                  {hasLegacyCategory && (
-                    <SelectItem id={selectedCategory} key={`legacy-category-${selectedCategory}`}>
-                      {selectedCategory}
-                    </SelectItem>
-                  )}
-                  {categoryChoices.map((option: string) => (
-                    <SelectItem id={option} key={option}>
-                      {option}
-                    </SelectItem>
-                  ))}
+                  <Label>Clasificación</Label>
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      <ListBox.Item id={NONE_CATEGORY_KEY} key={NONE_CATEGORY_KEY}>
+                        Sin clasificación
+                      </ListBox.Item>
+                      {hasLegacyCategory && (
+                        <ListBox.Item
+                          id={selectedCategory}
+                          key={`legacy-category-${selectedCategory}`}
+                        >
+                          {selectedCategory}
+                        </ListBox.Item>
+                      )}
+                      {categoryChoices.map((option: string) => (
+                        <ListBox.Item id={option} key={option}>
+                          {option}
+                        </ListBox.Item>
+                      ))}
+                    </ListBox>
+                  </Select.Popover>
                 </Select>
               );
             }}
@@ -190,7 +200,6 @@ export function ClassificationRow({
             <form.Field name={`entries[${index}].treatmentStage`}>
               {(field: { handleChange: (v: string) => void; state: { value: null | string } }) => (
                 <Select
-                  label="Etapa tratamiento"
                   placeholder="Selecciona una etapa"
                   onChange={(key) => {
                     field.handleChange(key === NONE_TREATMENT_STAGE_KEY ? "" : (key as string));
@@ -201,14 +210,23 @@ export function ClassificationRow({
                   }
                   variant="secondary"
                 >
-                  <SelectItem id={NONE_TREATMENT_STAGE_KEY} key={NONE_TREATMENT_STAGE_KEY}>
-                    Sin etapa
-                  </SelectItem>
-                  {treatmentStageChoices.map((option: string) => (
-                    <SelectItem id={option} key={option}>
-                      {option}
-                    </SelectItem>
-                  ))}
+                  <Label>Etapa tratamiento</Label>
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      <ListBox.Item id={NONE_TREATMENT_STAGE_KEY} key={NONE_TREATMENT_STAGE_KEY}>
+                        Sin etapa
+                      </ListBox.Item>
+                      {treatmentStageChoices.map((option: string) => (
+                        <ListBox.Item id={option} key={option}>
+                          {option}
+                        </ListBox.Item>
+                      ))}
+                    </ListBox>
+                  </Select.Popover>
                 </Select>
               )}
             </form.Field>

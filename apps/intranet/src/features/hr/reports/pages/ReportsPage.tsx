@@ -2,7 +2,10 @@ import {
   Chip,
   DateField,
   DateRangePicker,
+  Label,
+  ListBox,
   RangeCalendar,
+  Select,
   Separator,
   Skeleton,
   Spinner,
@@ -17,7 +20,6 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
-import { Select, SelectItem } from "@/components/ui/Select";
 
 import { StatCard } from "@/components/ui/StatCard";
 import { useAuth } from "@/context/AuthContext";
@@ -344,17 +346,25 @@ function ReportsFiltersPanel({
           {viewMode === "month" && (
             <div className="space-y-2">
               <Select
-                label="Seleccionar mes"
                 className="w-full"
                 value={selectedMonth}
                 onChange={(key) => setSelectedMonth(key ? String(key) : "")}
               >
-                {months.map((month) => (
-                  <SelectItem id={month} key={month}>
-                    {dayjs(`${month}-01`).format("MMMM YYYY")}{" "}
-                    {monthsWithData.has(month) ? "✓" : ""}
-                  </SelectItem>
-                ))}
+                <Label>Seleccionar mes</Label>
+                <Select.Trigger>
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover>
+                  <ListBox>
+                    {months.map((month) => (
+                      <ListBox.Item id={month} key={month}>
+                        {dayjs(`${month}-01`).format("MMMM YYYY")}{" "}
+                        {monthsWithData.has(month) ? "✓" : ""}
+                      </ListBox.Item>
+                    ))}
+                  </ListBox>
+                </Select.Popover>
               </Select>
             </div>
           )}
@@ -406,7 +416,6 @@ function ReportsFiltersPanel({
 
           <div className="space-y-2">
             <Select
-              label="Agrupación temporal"
               className="w-full"
               value={granularity}
               onChange={(key) => {
@@ -415,15 +424,24 @@ function ReportsFiltersPanel({
                 }
               }}
             >
-              <SelectItem id="day" key="day">
-                Diaria
-              </SelectItem>
-              <SelectItem id="week" key="week">
-                Semanal
-              </SelectItem>
-              <SelectItem id="month" key="month">
-                Mensual
-              </SelectItem>
+              <Label>Agrupación temporal</Label>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  <ListBox.Item id="day" key="day">
+                    Diaria
+                  </ListBox.Item>
+                  <ListBox.Item id="week" key="week">
+                    Semanal
+                  </ListBox.Item>
+                  <ListBox.Item id="month" key="month">
+                    Mensual
+                  </ListBox.Item>
+                </ListBox>
+              </Select.Popover>
             </Select>
           </div>
         </div>

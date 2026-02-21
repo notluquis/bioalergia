@@ -1,4 +1,4 @@
-import { Card } from "@heroui/react";
+import { Card, Label, ListBox, Select } from "@heroui/react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
@@ -6,7 +6,6 @@ import dayjs from "dayjs";
 import { z } from "zod";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Select, SelectItem } from "@/components/ui/Select";
 import { apiClient } from "@/lib/api-client";
 import { toast } from "@/lib/toast-interceptor";
 
@@ -267,7 +266,6 @@ function MedicalCertificatePage() {
               <form.Field name="purpose">
                 {(field) => (
                   <Select
-                    label="Para ser presentado en"
                     value={field.state.value || null}
                     onChange={(key) => {
                       if (typeof key === "string") {
@@ -276,15 +274,24 @@ function MedicalCertificatePage() {
                     }}
                     onBlur={field.handleBlur}
                   >
-                    <SelectItem id="trabajo" textValue="Lugar de trabajo">
-                      Lugar de trabajo
-                    </SelectItem>
-                    <SelectItem id="estudio" textValue="Establecimiento educacional">
-                      Establecimiento educacional
-                    </SelectItem>
-                    <SelectItem id="otro" textValue="Otro">
-                      Otro
-                    </SelectItem>
+                    <Label>Para ser presentado en</Label>
+                    <Select.Trigger>
+                      <Select.Value />
+                      <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        <ListBox.Item id="trabajo" textValue="Lugar de trabajo">
+                          Lugar de trabajo
+                        </ListBox.Item>
+                        <ListBox.Item id="estudio" textValue="Establecimiento educacional">
+                          Establecimiento educacional
+                        </ListBox.Item>
+                        <ListBox.Item id="otro" textValue="Otro">
+                          Otro
+                        </ListBox.Item>
+                      </ListBox>
+                    </Select.Popover>
                   </Select>
                 )}
               </form.Field>

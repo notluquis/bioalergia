@@ -1,9 +1,9 @@
+import { Label, ListBox, Select } from "@heroui/react";
 import { useMutation } from "@tanstack/react-query";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Select, SelectItem } from "@/components/ui/Select";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { formatRut, normalizeRut, validateRut } from "@/lib/rut";
@@ -266,7 +266,6 @@ function EmployeeFormContent({
       <div className="grid gap-4 md:grid-cols-3">
         <div className="md:col-span-3">
           <Select
-            label="Tipo de salario"
             onChange={(key) => {
               if (!key) {
                 return;
@@ -275,12 +274,21 @@ function EmployeeFormContent({
             }}
             value={form.salaryType}
           >
-            <SelectItem id="HOURLY" key="HOURLY">
-              Por hora
-            </SelectItem>
-            <SelectItem id="FIXED" key="FIXED">
-              Sueldo fijo mensual
-            </SelectItem>
+            <Label>Tipo de salario</Label>
+            <Select.Trigger>
+              <Select.Value />
+              <Select.Indicator />
+            </Select.Trigger>
+            <Select.Popover>
+              <ListBox>
+                <ListBox.Item id="HOURLY" key="HOURLY">
+                  Por hora
+                </ListBox.Item>
+                <ListBox.Item id="FIXED" key="FIXED">
+                  Sueldo fijo mensual
+                </ListBox.Item>
+              </ListBox>
+            </Select.Popover>
           </Select>
         </div>
         <Input

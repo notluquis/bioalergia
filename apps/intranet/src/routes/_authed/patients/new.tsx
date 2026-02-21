@@ -1,4 +1,4 @@
-import { Card } from "@heroui/react";
+import { Card, Label, ListBox, Select } from "@heroui/react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
@@ -6,7 +6,6 @@ import { Save, User, UserPlus, X } from "lucide-react";
 import { z } from "zod";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Select, SelectItem } from "@/components/ui/Select";
 import { useToast } from "@/context/ToastContext";
 import { apiClient } from "@/lib/api-client";
 import { formatRut, validateRut } from "@/lib/rut";
@@ -184,18 +183,28 @@ function AddPatientPage() {
                 <form.Field name="bloodType">
                   {(field) => (
                     <Select
-                      label="Grupo Sanguíneo"
                       value={field.state.value || "__unknown_blood_type__"}
                       onChange={(val) =>
                         field.handleChange(val === "__unknown_blood_type__" ? "" : (val as string))
                       }
                     >
-                      <SelectItem id="__unknown_blood_type__" key="__unknown_blood_type__">
-                        Desconocido
-                      </SelectItem>
-                      {BLOOD_TYPES.map((type) => (
-                        <SelectItem key={type}>{type}</SelectItem>
-                      ))}
+                      <Label>Grupo Sanguíneo</Label>
+                      <Select.Trigger>
+                        <Select.Value />
+                        <Select.Indicator />
+                      </Select.Trigger>
+                      <Select.Popover>
+                        <ListBox>
+                          <ListBox.Item id="__unknown_blood_type__" key="__unknown_blood_type__">
+                            Desconocido
+                          </ListBox.Item>
+                          {BLOOD_TYPES.map((type) => (
+                            <ListBox.Item id={type} key={type}>
+                              {type}
+                            </ListBox.Item>
+                          ))}
+                        </ListBox>
+                      </Select.Popover>
                     </Select>
                   )}
                 </form.Field>

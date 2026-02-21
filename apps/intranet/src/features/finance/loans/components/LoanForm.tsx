@@ -1,4 +1,4 @@
-import { Checkbox } from "@heroui/react";
+import { Checkbox, FieldError, Label, ListBox, Select } from "@heroui/react";
 import { useForm, useStore } from "@tanstack/react-form";
 import dayjs from "dayjs";
 import { z } from "zod";
@@ -6,7 +6,6 @@ import { z } from "zod";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Select, SelectItem } from "@/components/ui/Select";
 import { zDateString } from "@/lib/api-validate";
 import { GRID_2_COL_MD } from "@/lib/styles";
 
@@ -116,17 +115,31 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
           {(field) => (
             <div>
               <Select
-                errorMessage={field.state.meta.errors.join(", ")}
                 isInvalid={field.state.meta.errors.length > 0}
-                label="Tipo de Deudor"
                 onBlur={field.handleBlur}
                 onChange={(key) => {
                   field.handleChange(key as "COMPANY" | "PERSON");
                 }}
                 value={field.state.value}
               >
-                <SelectItem key="PERSON">Persona</SelectItem>
-                <SelectItem key="COMPANY">Empresa</SelectItem>
+                <Label>Tipo de Deudor</Label>
+                <Select.Trigger>
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover>
+                  <ListBox>
+                    <ListBox.Item id="PERSON" key="PERSON">
+                      Persona
+                    </ListBox.Item>
+                    <ListBox.Item id="COMPANY" key="COMPANY">
+                      Empresa
+                    </ListBox.Item>
+                  </ListBox>
+                </Select.Popover>
+                {field.state.meta.errors.length > 0 && (
+                  <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
+                )}
               </Select>
             </div>
           )}
@@ -182,17 +195,31 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
           {(field) => (
             <div>
               <Select
-                errorMessage={field.state.meta.errors.join(", ")}
                 isInvalid={field.state.meta.errors.length > 0}
-                label="Tipo de Interés"
                 onBlur={field.handleBlur}
                 onChange={(key) => {
                   field.handleChange(key as "COMPOUND" | "SIMPLE");
                 }}
                 value={field.state.value}
               >
-                <SelectItem key="SIMPLE">Simple</SelectItem>
-                <SelectItem key="COMPOUND">Compuesto</SelectItem>
+                <Label>Tipo de Interés</Label>
+                <Select.Trigger>
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover>
+                  <ListBox>
+                    <ListBox.Item id="SIMPLE" key="SIMPLE">
+                      Simple
+                    </ListBox.Item>
+                    <ListBox.Item id="COMPOUND" key="COMPOUND">
+                      Compuesto
+                    </ListBox.Item>
+                  </ListBox>
+                </Select.Popover>
+                {field.state.meta.errors.length > 0 && (
+                  <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
+                )}
               </Select>
             </div>
           )}
@@ -202,18 +229,34 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
           {(field) => (
             <div>
               <Select
-                errorMessage={field.state.meta.errors.join(", ")}
                 isInvalid={field.state.meta.errors.length > 0}
-                label="Frecuencia de Pago"
                 onBlur={field.handleBlur}
                 onChange={(key) => {
                   field.handleChange(key as "BIWEEKLY" | "MONTHLY" | "WEEKLY");
                 }}
                 value={field.state.value}
               >
-                <SelectItem key="WEEKLY">Semanal</SelectItem>
-                <SelectItem key="BIWEEKLY">Quincenal</SelectItem>
-                <SelectItem key="MONTHLY">Mensual</SelectItem>
+                <Label>Frecuencia de Pago</Label>
+                <Select.Trigger>
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover>
+                  <ListBox>
+                    <ListBox.Item id="WEEKLY" key="WEEKLY">
+                      Semanal
+                    </ListBox.Item>
+                    <ListBox.Item id="BIWEEKLY" key="BIWEEKLY">
+                      Quincenal
+                    </ListBox.Item>
+                    <ListBox.Item id="MONTHLY" key="MONTHLY">
+                      Mensual
+                    </ListBox.Item>
+                  </ListBox>
+                </Select.Popover>
+                {field.state.meta.errors.length > 0 && (
+                  <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
+                )}
               </Select>
             </div>
           )}

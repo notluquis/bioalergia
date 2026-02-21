@@ -1,10 +1,10 @@
+import { FieldError, Label, ListBox, Select } from "@heroui/react";
 import { useForm, useStore } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Select, SelectItem } from "@/components/ui/Select";
 import { useToast } from "@/context/ToastContext";
 import { queryKeys } from "@/lib/query-keys";
 import { createSupplyRequest, type SupplyRequestPayload } from "../api";
@@ -113,7 +113,6 @@ export function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyRequestFo
         {(field) => (
           <div>
             <Select
-              label="Nombre del insumo"
               placeholder="Seleccione un insumo"
               value={field.state.value || null}
               onChange={(key) => {
@@ -124,13 +123,24 @@ export function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyRequestFo
               onBlur={field.handleBlur}
               isRequired
               isInvalid={field.state.meta.errors.length > 0}
-              errorMessage={field.state.meta.errors.join(", ")}
             >
-              {supplyNames.map((name) => (
-                <SelectItem id={name} key={name}>
-                  {name}
-                </SelectItem>
-              ))}
+              <Label>Nombre del insumo</Label>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  {supplyNames.map((name) => (
+                    <ListBox.Item id={name} key={name}>
+                      {name}
+                    </ListBox.Item>
+                  ))}
+                </ListBox>
+              </Select.Popover>
+              {field.state.meta.errors.length > 0 && (
+                <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
+              )}
             </Select>
           </div>
         )}
@@ -163,7 +173,6 @@ export function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyRequestFo
         {(field) => (
           <div>
             <Select
-              label="Marca"
               placeholder="Seleccione una marca"
               value={field.state.value || null}
               onChange={(key) => {
@@ -173,13 +182,24 @@ export function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyRequestFo
               onBlur={field.handleBlur}
               isDisabled={!selectedSupply}
               isInvalid={field.state.meta.errors.length > 0}
-              errorMessage={field.state.meta.errors.join(", ")}
             >
-              {availableBrands.map((brand) => (
-                <SelectItem id={brand} key={brand}>
-                  {brand === "N/A" ? "Sin marca" : brand}
-                </SelectItem>
-              ))}
+              <Label>Marca</Label>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  {availableBrands.map((brand) => (
+                    <ListBox.Item id={brand} key={brand}>
+                      {brand === "N/A" ? "Sin marca" : brand}
+                    </ListBox.Item>
+                  ))}
+                </ListBox>
+              </Select.Popover>
+              {field.state.meta.errors.length > 0 && (
+                <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
+              )}
             </Select>
           </div>
         )}
@@ -189,7 +209,6 @@ export function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyRequestFo
         {(field) => (
           <div>
             <Select
-              label="Modelo"
               placeholder="Seleccione un modelo"
               value={field.state.value || null}
               onChange={(key) => {
@@ -198,13 +217,24 @@ export function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyRequestFo
               onBlur={field.handleBlur}
               isDisabled={!selectedBrand || availableModels.length === 0}
               isInvalid={field.state.meta.errors.length > 0}
-              errorMessage={field.state.meta.errors.join(", ")}
             >
-              {availableModels.map((model) => (
-                <SelectItem id={model} key={model}>
-                  {model}
-                </SelectItem>
-              ))}
+              <Label>Modelo</Label>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  {availableModels.map((model) => (
+                    <ListBox.Item id={model} key={model}>
+                      {model}
+                    </ListBox.Item>
+                  ))}
+                </ListBox>
+              </Select.Popover>
+              {field.state.meta.errors.length > 0 && (
+                <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
+              )}
             </Select>
           </div>
         )}

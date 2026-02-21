@@ -1,5 +1,5 @@
 import { schema as schemaLite } from "@finanzas/db/schema-lite";
-import { Checkbox, Description } from "@heroui/react";
+import { Checkbox, Description, FieldError, Label, ListBox, Select } from "@heroui/react";
 import { type ReactFormExtendedApi, useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useClientQueries } from "@zenstackhq/tanstack-query/react";
@@ -7,7 +7,6 @@ import { Shield, UserPlus, Users } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { PageLoader } from "@/components/ui/PageLoader";
-import { Select, SelectItem } from "@/components/ui/Select";
 import { useToast } from "@/context/ToastContext";
 import { fetchPeople, type PersonWithExtras } from "@/features/people/api";
 import { inviteUser } from "@/features/users/api";
@@ -296,29 +295,37 @@ function PersonLinkSection({
             <form.Field name="personId">
               {(field) => (
                 <Select
-                  label="Vincular con persona (opcional)"
                   onChange={(val) => {
                     const pid = val && val !== NONE_PERSON_KEY ? Number(val) : undefined;
                     handleLinkPerson(pid);
                   }}
                   value={field.state.value ? String(field.state.value) : NONE_PERSON_KEY}
                 >
-                  <SelectItem
-                    id={NONE_PERSON_KEY}
-                    key={NONE_PERSON_KEY}
-                    textValue="No vincular (Crear usuario nuevo)"
-                  >
-                    No vincular (Crear usuario nuevo)
-                  </SelectItem>
-                  {availablePeople.map((person) => (
-                    <SelectItem
-                      id={String(person.id)}
-                      key={person.id}
-                      textValue={getPersonFullName(person)}
-                    >
-                      {getPersonFullName(person)} - {person.rut}
-                    </SelectItem>
-                  ))}
+                  <Label>Vincular con persona (opcional)</Label>
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      <ListBox.Item
+                        id={NONE_PERSON_KEY}
+                        key={NONE_PERSON_KEY}
+                        textValue="No vincular (Crear usuario nuevo)"
+                      >
+                        No vincular (Crear usuario nuevo)
+                      </ListBox.Item>
+                      {availablePeople.map((person) => (
+                        <ListBox.Item
+                          id={String(person.id)}
+                          key={person.id}
+                          textValue={getPersonFullName(person)}
+                        >
+                          {getPersonFullName(person)} - {person.rut}
+                        </ListBox.Item>
+                      ))}
+                    </ListBox>
+                  </Select.Popover>
                 </Select>
               )}
             </form.Field>
@@ -438,19 +445,29 @@ function UserDataFields({
             <form.Field name="role">
               {(field) => (
                 <Select
-                  errorMessage={field.state.meta.errors.join(", ")}
                   isDisabled={isRolesLoading}
                   isInvalid={field.state.meta.errors.length > 0}
-                  label="Rol del sistema"
                   onChange={(val) => field.handleChange(val as string)}
                   placeholder={isRolesLoading ? "Cargando roles..." : "Seleccionar rol"}
                   value={field.state.value}
                 >
-                  {roles.map((r) => (
-                    <SelectItem id={r.name} key={r.id} textValue={r.name}>
-                      {r.name} ({r.description || "Sin descripción"})
-                    </SelectItem>
-                  ))}
+                  <Label>Rol del sistema</Label>
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      {roles.map((r) => (
+                        <ListBox.Item id={r.name} key={r.id} textValue={r.name}>
+                          {r.name} ({r.description || "Sin descripción"})
+                        </ListBox.Item>
+                      ))}
+                    </ListBox>
+                  </Select.Popover>
+                  {field.state.meta.errors.length > 0 && (
+                    <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
+                  )}
                 </Select>
               )}
             </form.Field>

@@ -1,4 +1,4 @@
-import { Card, Chip, Tooltip } from "@heroui/react";
+import { Card, Chip, Label, ListBox, Select, Tooltip } from "@heroui/react";
 import { useMutation } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { AlertCircle, CheckCircle, FileUp, Loader2, Lock } from "lucide-react";
@@ -9,7 +9,6 @@ import { DataTable } from "@/components/data-table/DataTable";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { FileInput } from "@/components/ui/FileInput";
-import { Select, SelectItem } from "@/components/ui/Select";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import type { AuthContextType } from "@/features/auth/hooks/use-auth";
@@ -520,20 +519,28 @@ function TableSelectionCard({
           <div className="w-full sm:w-1/3">
             <Select
               className="w-full max-w-md"
-              label="Tipo de Datos (Tabla)"
               onChange={(val) =>
                 onTableChange(val === NO_TABLE_SELECTED_KEY ? "" : (val as string))
               }
               value={selectedTable || NO_TABLE_SELECTED_KEY}
             >
-              <SelectItem id={NO_TABLE_SELECTED_KEY} key={NO_TABLE_SELECTED_KEY}>
-                -- Seleccionar tabla --
-              </SelectItem>
-              {allowedTableOptions.map((table) => (
-                <SelectItem id={table.value} key={table.value}>
-                  {table.label}
-                </SelectItem>
-              ))}
+              <Label>Tipo de Datos (Tabla)</Label>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  <ListBox.Item id={NO_TABLE_SELECTED_KEY} key={NO_TABLE_SELECTED_KEY}>
+                    -- Seleccionar tabla --
+                  </ListBox.Item>
+                  {allowedTableOptions.map((table) => (
+                    <ListBox.Item id={table.value} key={table.value}>
+                      {table.label}
+                    </ListBox.Item>
+                  ))}
+                </ListBox>
+              </Select.Popover>
             </Select>
           </div>
 
@@ -880,7 +887,6 @@ function buildMappingColumns({
       cell: ({ row }) => (
         <Select
           className="w-full min-w-35"
-          label="Columna CSV"
           onChange={(val) => {
             onMappingChanged();
             setUploadedFiles((prev) =>
@@ -901,14 +907,23 @@ function buildMappingColumns({
           }}
           value={firstFile.columnMapping[row.original.name] || UNMAPPED_COLUMN_KEY}
         >
-          <SelectItem id={UNMAPPED_COLUMN_KEY} key={UNMAPPED_COLUMN_KEY}>
-            -- Ignorar / Sin mapear --
-          </SelectItem>
-          {firstFile.csvHeaders.map((header) => (
-            <SelectItem id={header} key={header}>
-              {header}
-            </SelectItem>
-          ))}
+          <Label>Columna CSV</Label>
+          <Select.Trigger>
+            <Select.Value />
+            <Select.Indicator />
+          </Select.Trigger>
+          <Select.Popover>
+            <ListBox>
+              <ListBox.Item id={UNMAPPED_COLUMN_KEY} key={UNMAPPED_COLUMN_KEY}>
+                -- Ignorar / Sin mapear --
+              </ListBox.Item>
+              {firstFile.csvHeaders.map((header) => (
+                <ListBox.Item id={header} key={header}>
+                  {header}
+                </ListBox.Item>
+              ))}
+            </ListBox>
+          </Select.Popover>
         </Select>
       ),
 

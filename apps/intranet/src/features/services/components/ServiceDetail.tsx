@@ -4,14 +4,15 @@ import {
   FieldError,
   Input,
   Label,
+  ListBox,
   Modal,
+  Select,
   Skeleton,
   TextField,
 } from "@heroui/react";
 import { useNavigate } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { useState } from "react";
-import { Select, SelectItem } from "../../../components/ui/Select";
 
 import type {
   RegenerateServicePayload,
@@ -468,15 +469,40 @@ function RegenerateServiceModal({
                 <Input min={1} max={31} />
               </TextField>
 
-              <Select isRequired label="Frecuencia" name="frequency" value={service.frequency}>
-                <SelectItem key="WEEKLY">Semanal</SelectItem>
-                <SelectItem key="BIWEEKLY">Quincenal</SelectItem>
-                <SelectItem key="MONTHLY">Mensual</SelectItem>
-                <SelectItem key="BIMONTHLY">Bimensual</SelectItem>
-                <SelectItem key="QUARTERLY">Trimestral</SelectItem>
-                <SelectItem key="SEMIANNUAL">Semestral</SelectItem>
-                <SelectItem key="ANNUAL">Anual</SelectItem>
-                <SelectItem key="ONCE">Única vez</SelectItem>
+              <Select isRequired name="frequency" value={service.frequency}>
+                <Label>Frecuencia</Label>
+                <Select.Trigger>
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover>
+                  <ListBox>
+                    <ListBox.Item id="WEEKLY" key="WEEKLY">
+                      Semanal
+                    </ListBox.Item>
+                    <ListBox.Item id="BIWEEKLY" key="BIWEEKLY">
+                      Quincenal
+                    </ListBox.Item>
+                    <ListBox.Item id="MONTHLY" key="MONTHLY">
+                      Mensual
+                    </ListBox.Item>
+                    <ListBox.Item id="BIMONTHLY" key="BIMONTHLY">
+                      Bimensual
+                    </ListBox.Item>
+                    <ListBox.Item id="QUARTERLY" key="QUARTERLY">
+                      Trimestral
+                    </ListBox.Item>
+                    <ListBox.Item id="SEMIANNUAL" key="SEMIANNUAL">
+                      Semestral
+                    </ListBox.Item>
+                    <ListBox.Item id="ANNUAL" key="ANNUAL">
+                      Anual
+                    </ListBox.Item>
+                    <ListBox.Item id="ONCE" key="ONCE">
+                      Única vez
+                    </ListBox.Item>
+                  </ListBox>
+                </Select.Popover>
               </Select>
 
               {service.emissionMode === "FIXED_DAY" && (

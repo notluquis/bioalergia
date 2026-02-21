@@ -1,8 +1,8 @@
+import { Label, ListBox, Select } from "@heroui/react";
 import { CreditCard } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Select, SelectItem } from "@/components/ui/Select";
 
 interface FinancialStepProps {
   profile: {
@@ -52,24 +52,32 @@ export function FinancialStep({
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <Select
-            label="Tipo de cuenta"
             onChange={(key) =>
               onProfileChange("bankAccountType", key === NO_ACCOUNT_TYPE_KEY ? "" : (key as string))
             }
             value={profile.bankAccountType || NO_ACCOUNT_TYPE_KEY}
           >
-            <SelectItem id={NO_ACCOUNT_TYPE_KEY} key={NO_ACCOUNT_TYPE_KEY}>
-              Seleccionar...
-            </SelectItem>
-            <SelectItem id="Corriente" key="Corriente" textValue="Cuenta corriente">
-              Cuenta corriente
-            </SelectItem>
-            <SelectItem id="Vista" key="Vista" textValue="Cuenta vista / RUT">
-              Cuenta vista / RUT
-            </SelectItem>
-            <SelectItem id="Ahorro" key="Ahorro" textValue="Cuenta de ahorro">
-              Cuenta de ahorro
-            </SelectItem>
+            <Label>Tipo de cuenta</Label>
+            <Select.Trigger>
+              <Select.Value />
+              <Select.Indicator />
+            </Select.Trigger>
+            <Select.Popover>
+              <ListBox>
+                <ListBox.Item id={NO_ACCOUNT_TYPE_KEY} key={NO_ACCOUNT_TYPE_KEY}>
+                  Seleccionar...
+                </ListBox.Item>
+                <ListBox.Item id="Corriente" key="Corriente" textValue="Cuenta corriente">
+                  Cuenta corriente
+                </ListBox.Item>
+                <ListBox.Item id="Vista" key="Vista" textValue="Cuenta vista / RUT">
+                  Cuenta vista / RUT
+                </ListBox.Item>
+                <ListBox.Item id="Ahorro" key="Ahorro" textValue="Cuenta de ahorro">
+                  Cuenta de ahorro
+                </ListBox.Item>
+              </ListBox>
+            </Select.Popover>
           </Select>
           <Input
             label="Número de cuenta"

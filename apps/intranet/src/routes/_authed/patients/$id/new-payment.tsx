@@ -1,4 +1,4 @@
-import { Card } from "@heroui/react";
+import { Card, Label, ListBox, Select } from "@heroui/react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
@@ -8,7 +8,6 @@ import { z } from "zod";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { MoneyInput } from "@/components/ui/MoneyInput";
-import { Select, SelectItem } from "@/components/ui/Select";
 import { PatientBudgetListSchema, PatientPaymentSchema } from "@/features/patients/schemas";
 import { apiClient } from "@/lib/api-client";
 import { zDateString } from "@/lib/api-validate";
@@ -160,7 +159,6 @@ function NewPaymentPage() {
             <form.Field name="paymentMethod">
               {(field) => (
                 <Select
-                  label="Método de Pago"
                   value={field.state.value}
                   onChange={(key) => {
                     if (key) {
@@ -168,18 +166,31 @@ function NewPaymentPage() {
                     }
                   }}
                 >
-                  <SelectItem key="Transferencia" textValue="Transferencia">
-                    Transferencia
-                  </SelectItem>
-                  <SelectItem key="Efectivo" textValue="Efectivo">
-                    Efectivo
-                  </SelectItem>
-                  <SelectItem key="Tarjeta" textValue="Tarjeta">
-                    Tarjeta
-                  </SelectItem>
-                  <SelectItem key="Otro" textValue="Otro">
-                    Otro/Varios
-                  </SelectItem>
+                  <Label>Método de Pago</Label>
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      <ListBox.Item
+                        id="Transferencia"
+                        key="Transferencia"
+                        textValue="Transferencia"
+                      >
+                        Transferencia
+                      </ListBox.Item>
+                      <ListBox.Item id="Efectivo" key="Efectivo" textValue="Efectivo">
+                        Efectivo
+                      </ListBox.Item>
+                      <ListBox.Item id="Tarjeta" key="Tarjeta" textValue="Tarjeta">
+                        Tarjeta
+                      </ListBox.Item>
+                      <ListBox.Item id="Otro" key="Otro" textValue="Otro">
+                        Otro/Varios
+                      </ListBox.Item>
+                    </ListBox>
+                  </Select.Popover>
                 </Select>
               )}
             </form.Field>
@@ -187,23 +198,31 @@ function NewPaymentPage() {
             <form.Field name="budgetId">
               {(field) => (
                 <Select
-                  label="Vincular a Presupuesto (Opcional)"
                   placeholder="Seleccione un presupuesto"
                   value={field.state.value}
                   onChange={(key) => {
                     field.handleChange(key ? String(key) : "");
                   }}
                 >
-                  {(budgets || []).map((b) => (
-                    <SelectItem key={String(b.id)} textValue={b.title}>
-                      {b.title} (
-                      {new Intl.NumberFormat("es-CL", {
-                        style: "currency",
-                        currency: "CLP",
-                      }).format(b.finalAmount)}
-                      )
-                    </SelectItem>
-                  ))}
+                  <Label>Vincular a Presupuesto (Opcional)</Label>
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      {(budgets || []).map((b) => (
+                        <ListBox.Item id={String(b.id)} key={String(b.id)} textValue={b.title}>
+                          {b.title} (
+                          {new Intl.NumberFormat("es-CL", {
+                            style: "currency",
+                            currency: "CLP",
+                          }).format(b.finalAmount)}
+                          )
+                        </ListBox.Item>
+                      ))}
+                    </ListBox>
+                  </Select.Popover>
                 </Select>
               )}
             </form.Field>
