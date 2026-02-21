@@ -47,6 +47,7 @@ export function TimesheetSummaryTable({
           onSelectEmployee(row.employeeId === selectedEmployeeId ? null : row.employeeId);
         }}
         rowSelection={rowSelection}
+        scrollMaxHeight="min(56dvh, 640px)"
       />
     </div>
   );

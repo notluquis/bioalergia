@@ -7,7 +7,7 @@ import {
   removeGoogleCalendarEvents,
   upsertGoogleCalendarEvents,
 } from "../../lib/google/google-calendar-store";
-import { parseCalendarMetadata } from "../../modules/calendar/parsers";
+import { parseCalendarMetadata } from "../../lib/parsers";
 
 function isEventExcluded(
   summary: string | null | undefined,

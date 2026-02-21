@@ -91,6 +91,7 @@ export function SettlementTransactionsPage() {
               enableGlobalFilter={false}
               isLoading={isLoading}
               noDataMessage="No se encontraron conciliaciones en el rango seleccionado."
+              scrollMaxHeight="min(68dvh, 760px)"
             />
           </Card.Content>
         </Card>

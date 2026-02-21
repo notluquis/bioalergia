@@ -43,6 +43,7 @@ export function ServiceScheduleTable({
         containerVariant="plain"
         enablePagination={false}
         enableToolbar={false} // Small sub-table usually doesn't need search/filter toolbar
+        scrollMaxHeight="min(56dvh, 640px)"
       />
     </div>
   );

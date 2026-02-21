@@ -18,6 +18,7 @@ import type { ColumnDef, OnChangeFn, PaginationState } from "@tanstack/react-tab
 import { Filter, Plus, RefreshCcw } from "lucide-react";
 import { Suspense, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
+import { TableRegion } from "@/components/data-table/TableRegion";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
@@ -822,7 +823,7 @@ function UnassignedPayoutAccountsTable({
           </SearchField.Group>
         </SearchField>
       </div>
-      <div className="overflow-hidden rounded-2xl border border-default-200/70 bg-background/70">
+      <TableRegion>
         <DataTable
           columns={columns}
           data={rows}
@@ -830,13 +831,14 @@ function UnassignedPayoutAccountsTable({
           enableExport={false}
           enableGlobalFilter={false}
           isLoading={loading}
+          noDataMessage="No hay cuentas payout pendientes."
           onPaginationChange={onPaginationChange}
           pageCount={pageCount}
           pagination={pagination}
           pageSizeOptions={[10, 20, 50, 100]}
-          noDataMessage="No hay cuentas payout pendientes."
+          scrollMaxHeight="var(--table-region-height)"
         />
-      </div>
+      </TableRegion>
     </Surface>
   );
 }

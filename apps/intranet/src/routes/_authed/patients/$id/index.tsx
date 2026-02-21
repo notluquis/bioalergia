@@ -284,6 +284,7 @@ function PatientDetailsPage() {
                   enablePagination={false}
                   enableToolbar={false}
                   noDataMessage="No hay consultas registradas para este paciente."
+                  scrollMaxHeight="min(56dvh, 640px)"
                 />
               ) : null}
             </Tabs.Panel>
@@ -296,6 +297,7 @@ function PatientDetailsPage() {
                   enablePagination={false}
                   enableToolbar={false}
                   noDataMessage="No se han emitido certificados a este paciente."
+                  scrollMaxHeight="min(56dvh, 640px)"
                 />
               ) : null}
             </Tabs.Panel>
@@ -324,6 +326,7 @@ function PatientDetailsPage() {
                     enablePagination={false}
                     enableToolbar={false}
                     noDataMessage="No hay presupuestos registrados."
+                    scrollMaxHeight="min(56dvh, 640px)"
                   />
                 </>
               ) : null}
@@ -353,6 +356,7 @@ function PatientDetailsPage() {
                     enablePagination={false}
                     enableToolbar={false}
                     noDataMessage="No hay pagos registrados."
+                    scrollMaxHeight="min(56dvh, 640px)"
                   />
                 </>
               ) : null}
@@ -378,6 +382,7 @@ function PatientDetailsPage() {
                     enablePagination={false}
                     enableToolbar={false}
                     noDataMessage="No hay documentos adjuntos."
+                    scrollMaxHeight="min(56dvh, 640px)"
                   />
                 </>
               ) : null}

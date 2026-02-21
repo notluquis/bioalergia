@@ -94,6 +94,14 @@ interface DataTableProps<TData, TValue, TMeta extends TableMeta<TData> = TableMe
    */
   readonly scrollMaxHeight?: number | string;
   /**
+   * Controls how vertical scrolling is handled inside the table region.
+   * - `auto`: enables internal scroll for virtualized tables and non-paginated tables.
+   * - `container`: always enables internal scroll.
+   * - `page`: disables internal vertical scroll and delegates to page scroll.
+   * @default "auto"
+   */
+  readonly scrollMode?: "auto" | "container" | "page";
+  /**
    * Faceted filters for specific columns
    */
   readonly filters?: DataTableFilterOption[];
@@ -175,6 +183,7 @@ interface DataTableContentProps<TData, TValue> {
   readonly renderSubComponent?: (props: { row: Row<TData> }) => React.ReactNode;
   readonly table: TanStackTable<TData>;
   readonly scrollMaxHeight?: number | string;
+  readonly scrollMode: "auto" | "container" | "page";
   readonly virtualizationMaxHeight: number | string;
 }
 
@@ -189,6 +198,7 @@ function DataTableContent<TData, TValue>({
   onRowClick,
   renderSubComponent,
   scrollMaxHeight,
+  scrollMode,
   table,
   virtualizationMaxHeight,
 }: DataTableContentProps<TData, TValue>) {
@@ -204,6 +214,10 @@ function DataTableContent<TData, TValue>({
   });
 
   const virtualRows = virtualizer.getVirtualItems();
+  const shouldEnableInternalVerticalScroll =
+    scrollMode === "container" ||
+    (scrollMode === "auto" && (Boolean(scrollMaxHeight) || enableVirtualization));
+  const resolvedMaxHeight = scrollMaxHeight ?? virtualizationMaxHeight;
 
   return (
     <div
@@ -219,9 +233,9 @@ function DataTableContent<TData, TValue>({
         ref={tableContainerRef}
         style={{
           maxWidth: "100%",
-          ...((scrollMaxHeight ?? enableVirtualization)
+          ...(shouldEnableInternalVerticalScroll
             ? {
-                maxHeight: scrollMaxHeight ?? virtualizationMaxHeight,
+                maxHeight: resolvedMaxHeight,
                 overflowY: "auto",
               }
             : {}),
@@ -459,6 +473,7 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
   enableVirtualization = true,
   estimatedRowHeight = 48,
   scrollMaxHeight,
+  scrollMode = "auto",
   virtualizationMaxHeight = "70dvh",
   filters = [],
   initialPinning = {},
@@ -499,6 +514,7 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
   const manualPagination = pageCount !== undefined;
   const shouldPaginate = enablePagination && !manualPagination;
   const shouldVirtualize = enableVirtualization && data.length >= virtualizationThreshold;
+  const effectiveScrollMode = scrollMode === "auto" && !enablePagination ? "container" : scrollMode;
 
   const table = useReactTable({
     autoResetPageIndex: !manualPagination,
@@ -567,6 +583,7 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
         onRowClick={onRowClick}
         renderSubComponent={renderSubComponent}
         scrollMaxHeight={scrollMaxHeight}
+        scrollMode={effectiveScrollMode}
         table={table}
         virtualizationMaxHeight={virtualizationMaxHeight}
       />

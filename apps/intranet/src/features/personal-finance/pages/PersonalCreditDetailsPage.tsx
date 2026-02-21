@@ -136,6 +136,7 @@ export function PersonalCreditDetailsPage({ creditId }: { creditId: number }) {
             containerVariant="plain"
             enableToolbar={false}
             pageCount={-1}
+            scrollMaxHeight="min(56dvh, 640px)"
           />
         </Card.Content>
       </Card>

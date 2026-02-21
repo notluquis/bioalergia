@@ -635,6 +635,7 @@ function ReportsResultsPanel({
                 enableToolbar={false}
                 meta={meta as unknown as Record<string, unknown>}
                 noDataMessage="No hay datos para mostrar."
+                scrollMaxHeight="min(56dvh, 640px)"
               />
             </div>
           </div>

@@ -34,6 +34,7 @@ export function PayoutsPage() {
         enablePagination={false}
         enableVirtualization
         noDataMessage="No hay retiros registrados."
+        scrollMaxHeight="min(68dvh, 760px)"
       />
     </div>
   );

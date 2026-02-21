@@ -664,6 +664,7 @@ function AnalyticsDetailTable({
           enablePagination={true}
           enableToolbar={false}
           pageSizeOptions={[5, 10, 20]}
+          scrollMaxHeight="min(60dvh, 700px)"
         />
       </Card.Content>
     </Card>

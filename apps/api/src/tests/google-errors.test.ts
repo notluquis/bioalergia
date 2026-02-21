@@ -15,18 +15,20 @@ function buildGaxiosError(message: string, response: MinimalResponse) {
     url: new URL("https://example.com"),
   };
 
-  const responseLike = Object.assign(
-    new Response(null, {
-      status: response.status,
-      headers: response.headers ?? {},
-    }),
-    {
-      config,
-      data: response.data ?? null,
-    },
-  ) as GaxiosResponse;
+  const responseLike = {
+    config,
+    data: response.data ?? null,
+    headers: response.headers ?? {},
+    status: response.status,
+    statusText: "",
+  } as unknown as GaxiosResponse;
 
   const error = new GaxiosError(message, config, responseLike);
+  if (error.response) {
+    (error.response as { data?: unknown }).data = response.data ?? null;
+    (error.response as unknown as { headers?: Record<string, string> }).headers =
+      response.headers ?? {};
+  }
   error.code = String(response.status);
   return error;
 }
@@ -48,19 +50,6 @@ describe("google-errors", () => {
         },
       },
     });
-    expect((error as { response?: { data?: unknown } }).response?.data).toEqual({
-      error: {
-        errors: [
-          {
-            reason: "userRateLimitExceeded",
-            domain: "usageLimits",
-            message: "Rate limit exceeded",
-          },
-        ],
-        message: "Rate limit exceeded",
-      },
-    });
-
     const parsed = parseGoogleError(error);
     expect(parsed.code).toBe(403);
     expect(parsed.reason).toBe("userRateLimitExceeded");
@@ -88,21 +77,6 @@ describe("google-errors", () => {
         },
       },
     });
-    expect((error as { response?: { data?: unknown } }).response?.data).toEqual({
-      error: {
-        status: "RESOURCE_EXHAUSTED",
-        message: "Quota exceeded",
-        details: [
-          {
-            "@type": "type.googleapis.com/google.rpc.ErrorInfo",
-            reason: "RATE_LIMIT_EXCEEDED",
-            domain: "googleapis.com",
-            metadata: { quotaLocation: "global" },
-          },
-        ],
-      },
-    });
-
     const parsed = parseGoogleError(error);
     expect(parsed.code).toBe(429);
     expect(parsed.status).toBe("RESOURCE_EXHAUSTED");

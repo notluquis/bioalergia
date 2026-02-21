@@ -5,6 +5,7 @@ import { Search } from "lucide-react";
 import { type ChangeEvent, useState } from "react";
 
 import { DataTable } from "@/components/data-table/DataTable";
+import { TableRegion } from "@/components/data-table/TableRegion";
 import { Input } from "@/components/ui/Input";
 import { financeKeys } from "@/features/finance/queries";
 
@@ -34,28 +35,32 @@ export function SettlementsPage() {
         </div>
       </div>
 
-      <DataTable
-        columns={columns}
-        data={data.data}
-        enableExport={false}
-        enableGlobalFilter={false}
-        initialPinning={{ left: ["expander", "sourceId"], right: [] }}
-        onPaginationChange={(updater: Updater<PaginationState>) => {
-          if (typeof updater === "function") {
-            const newState = updater({ pageIndex: page, pageSize });
-            setPage(newState.pageIndex);
-            setPageSize(newState.pageSize);
-          } else {
-            setPage(updater.pageIndex);
-            setPageSize(updater.pageSize);
-          }
-        }}
-        pageCount={data.totalPages}
-        pagination={{
-          pageIndex: page,
-          pageSize: pageSize,
-        }}
-      />
+      <TableRegion>
+        <DataTable
+          columns={columns}
+          containerVariant="plain"
+          data={data.data}
+          enableExport={false}
+          enableGlobalFilter={false}
+          initialPinning={{ left: ["expander", "sourceId"], right: [] }}
+          onPaginationChange={(updater: Updater<PaginationState>) => {
+            if (typeof updater === "function") {
+              const newState = updater({ pageIndex: page, pageSize });
+              setPage(newState.pageIndex);
+              setPageSize(newState.pageSize);
+            } else {
+              setPage(updater.pageIndex);
+              setPageSize(updater.pageSize);
+            }
+          }}
+          pageCount={data.totalPages}
+          pagination={{
+            pageIndex: page,
+            pageSize: pageSize,
+          }}
+          scrollMaxHeight="var(--table-region-height)"
+        />
+      </TableRegion>
     </div>
   );
 }

@@ -604,6 +604,7 @@ function AccountGroupsTable({
         enableToolbar={false}
         isLoading={isLoading}
         noDataMessage="Sin cuentas asociadas."
+        scrollMaxHeight="min(56dvh, 640px)"
       />
     </div>
   );

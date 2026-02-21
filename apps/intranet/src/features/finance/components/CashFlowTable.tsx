@@ -65,6 +65,7 @@ export function CashFlowTable({
         updatingCategoryIds,
       }}
       enableGlobalFilter={false} // Handled by parent
+      scrollMaxHeight="min(68dvh, 760px)"
     />
   );
 }

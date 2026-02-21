@@ -8,7 +8,7 @@ import { calendar, type calendar_v3 } from "@googleapis/calendar";
 import dayjs from "dayjs";
 import { JWT } from "google-auth-library";
 import { compileExcludePatterns, googleCalendarConfig } from "../../config";
-import { parseCalendarMetadata } from "../../modules/calendar/parsers";
+import { parseCalendarMetadata } from "../../lib/parsers";
 import { loadSettings } from "../../services/settings";
 import { logEvent, logWarn } from "../logger";
 import { removeGoogleCalendarEvents, upsertGoogleCalendarEvents } from "./google-calendar-store";

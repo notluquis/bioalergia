@@ -105,6 +105,7 @@ export const DailyBalancesPanel = function DailyBalancesPanel({
           }}
           pageCount={-1}
           pagination={undefined} // Show all days in range (usually 7-30)
+          scrollMaxHeight="min(56dvh, 640px)"
         />
       </div>
     );

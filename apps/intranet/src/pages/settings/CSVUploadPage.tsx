@@ -590,6 +590,7 @@ function ColumnMappingCard({
           containerVariant="plain"
           enablePagination={false}
           enableToolbar={false}
+          scrollMaxHeight="min(56dvh, 640px)"
         />
       </div>
     </Card>

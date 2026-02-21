@@ -7,6 +7,7 @@ import { ArrowRight, Database, RefreshCw, Search, User, UserPlus } from "lucide-
 import { lazy, Suspense, useMemo, useState } from "react";
 import { z } from "zod";
 import { DataTable } from "@/components/data-table/DataTable";
+import { TableRegion } from "@/components/data-table/TableRegion";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { PatientListSchema } from "@/features/patients/schemas";
@@ -286,19 +287,22 @@ function PatientsListPage() {
                     rightElement={<Search className="text-default-300" size={18} />}
                     value={searchClinical}
                   />
-                  <DataTable
-                    columns={patientColumns}
-                    containerVariant="plain"
-                    data={patients}
-                    enableExport={false}
-                    enableGlobalFilter={false}
-                    enableToolbar={false}
-                    isLoading={isLoadingPatients}
-                    noDataMessage="No hay fichas clínicas registradas."
-                    onPaginationChange={setPaginationClinical}
-                    pageSizeOptions={[10, 20, 50]}
-                    pagination={paginationClinical}
-                  />
+                  <TableRegion>
+                    <DataTable
+                      columns={patientColumns}
+                      containerVariant="plain"
+                      data={patients}
+                      enableExport={false}
+                      enableGlobalFilter={false}
+                      enableToolbar={false}
+                      isLoading={isLoadingPatients}
+                      noDataMessage="No hay fichas clínicas registradas."
+                      onPaginationChange={setPaginationClinical}
+                      pageSizeOptions={[10, 20, 50]}
+                      pagination={paginationClinical}
+                      scrollMaxHeight="var(--table-region-height)"
+                    />
+                  </TableRegion>
                 </>
               ) : null}
             </Tabs.Panel>
@@ -316,19 +320,22 @@ function PatientsListPage() {
                     rightElement={<Search className="text-default-300" size={18} />}
                     value={searchDte}
                   />
-                  <DataTable
-                    columns={dteColumns}
-                    containerVariant="plain"
-                    data={dteSources}
-                    enableExport={false}
-                    enableGlobalFilter={false}
-                    enableToolbar={false}
-                    isLoading={isLoadingDteSources}
-                    noDataMessage="No hay registros DTE en la base de fuentes."
-                    onPaginationChange={setPaginationDte}
-                    pageSizeOptions={[10, 20, 50]}
-                    pagination={paginationDte}
-                  />
+                  <TableRegion>
+                    <DataTable
+                      columns={dteColumns}
+                      containerVariant="plain"
+                      data={dteSources}
+                      enableExport={false}
+                      enableGlobalFilter={false}
+                      enableToolbar={false}
+                      isLoading={isLoadingDteSources}
+                      noDataMessage="No hay registros DTE en la base de fuentes."
+                      onPaginationChange={setPaginationDte}
+                      pageSizeOptions={[10, 20, 50]}
+                      pagination={paginationDte}
+                      scrollMaxHeight="var(--table-region-height)"
+                    />
+                  </TableRegion>
                 </>
               ) : null}
             </Tabs.Panel>

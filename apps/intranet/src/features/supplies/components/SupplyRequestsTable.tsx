@@ -32,6 +32,7 @@ export function SupplyRequestsTable({ onStatusChange, requests }: SupplyRequests
       initialPinning={{ right: ["actions"] }}
       meta={{ isAdmin, onStatusChange }}
       noDataMessage="No se encontraron solicitudes de insumos."
+      scrollMaxHeight="min(56dvh, 640px)"
     />
   );
 }

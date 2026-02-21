@@ -34,6 +34,7 @@ export function LoanScheduleTable({
         enablePagination={false}
         enableToolbar={false}
         noDataMessage="No hay cronograma disponible."
+        scrollMaxHeight="32rem"
       />
     </div>
   );

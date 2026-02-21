@@ -420,6 +420,7 @@ export function MercadoPagoSettingsPage() {
             onColumnVisibilityChange={setColumnVisibility}
             pageCount={reportPageCount}
             noDataMessage="Aún no hay reportes. Genera uno para comenzar."
+            scrollMaxHeight="min(68dvh, 760px)"
           />
         </div>
       )}
@@ -455,6 +456,7 @@ export function MercadoPagoSettingsPage() {
             onPaginationChange={setSyncPagination}
             pageCount={syncPageCount}
             noDataMessage="Aún no hay sincronizaciones registradas."
+            scrollMaxHeight="min(68dvh, 760px)"
           />
         </div>
       )}

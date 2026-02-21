@@ -163,6 +163,7 @@ export function ParticipantInsightsPage() {
                   ? "Cargando ranking..."
                   : "Sin participantes en el rango seleccionado."
               }
+              scrollMaxHeight="min(68dvh, 760px)"
             />
           </Card.Content>
         </Card>
@@ -183,6 +184,7 @@ export function ParticipantInsightsPage() {
                   containerVariant="plain"
                   isLoading={detailLoading}
                   noDataMessage="Sin movimientos."
+                  scrollMaxHeight="min(48dvh, 560px)"
                 />
               </Card.Content>
             </Card>
@@ -199,6 +201,7 @@ export function ParticipantInsightsPage() {
                   containerVariant="plain"
                   isLoading={detailLoading}
                   noDataMessage="No hay contrapartes."
+                  scrollMaxHeight="min(48dvh, 560px)"
                 />
               </Card.Content>
             </Card>

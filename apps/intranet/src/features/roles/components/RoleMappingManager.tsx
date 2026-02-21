@@ -121,6 +121,7 @@ export function RoleMappingManager() {
         enablePagination={false}
         containerVariant="plain"
         pagination={{ pageIndex: 0, pageSize: 100 }}
+        scrollMaxHeight="min(56dvh, 640px)"
       />
 
       <div className="flex justify-end pt-2">

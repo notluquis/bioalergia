@@ -4,7 +4,7 @@ import timezone from "dayjs/plugin/timezone.js";
 import utc from "dayjs/plugin/utc.js";
 import { sql } from "kysely";
 import { googleCalendarConfig } from "../../config";
-import { parseCalendarMetadata } from "../../modules/calendar/parsers";
+import { parseCalendarMetadata } from "../../lib/parsers";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);

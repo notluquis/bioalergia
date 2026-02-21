@@ -125,6 +125,7 @@ export function TimesheetDetailTable({
             ? "Selecciona un prestador para ver o editar sus tiempos."
             : "Registra prestadores activos para comenzar a cargar tiempos."
         }
+        scrollMaxHeight="min(62dvh, 680px)"
       />
 
       {/* Modal para ver comentario */}

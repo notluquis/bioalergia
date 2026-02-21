@@ -159,6 +159,7 @@ export function InventoryPage() {
             openAdjustStockModal,
             openEditModal,
           }}
+          scrollMaxHeight="min(68dvh, 760px)"
         />
       </Surface>
 

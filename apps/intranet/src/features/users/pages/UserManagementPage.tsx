@@ -368,6 +368,7 @@ export function UserManagementPage() {
           enableGlobalFilter={false}
           enableToolbar={true}
           isLoading={isLoading}
+          scrollMaxHeight="min(68dvh, 760px)"
         />
       </div>
 

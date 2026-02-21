@@ -91,6 +91,7 @@ export function IncomeBreakdown({ summary, isLoading }: Readonly<IncomeBreakdown
             containerVariant="plain"
             enablePagination={false}
             enableToolbar={false}
+            scrollMaxHeight="28rem"
           />
         </section>
       ))}

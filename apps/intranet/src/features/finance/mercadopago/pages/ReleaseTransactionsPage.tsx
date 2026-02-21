@@ -92,6 +92,7 @@ export function ReleaseTransactionsPage() {
               enableGlobalFilter={false}
               isLoading={isLoading}
               noDataMessage="No se encontraron liberaciones de fondos."
+              scrollMaxHeight="min(68dvh, 760px)"
             />
           </Card.Content>
         </Card>

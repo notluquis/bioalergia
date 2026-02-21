@@ -173,6 +173,7 @@ export function EmployeesPage() {
           onPaginationChange={setPagination}
           pageSizeOptions={[10, 20, 50]}
           pagination={pagination}
+          scrollMaxHeight="min(68dvh, 760px)"
         />
       </div>
     </section>
