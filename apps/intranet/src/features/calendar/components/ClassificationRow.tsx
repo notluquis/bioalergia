@@ -214,10 +214,18 @@ export function ClassificationRow({
 
           <form.Field name={`entries[${index}].attended`}>
             {(field: { handleChange: (v: boolean) => void; state: { value: boolean } }) => (
-              <div className="flex items-center pt-2">
-                <Checkbox isSelected={Boolean(field.state.value)} onChange={field.handleChange}>
-                  Asistió / llegó
+              <div className="flex items-center gap-2 pt-2">
+                <Checkbox
+                  aria-label="Asistió / llegó"
+                  isSelected={Boolean(field.state.value)}
+                  onChange={field.handleChange}
+                  variant="secondary"
+                >
+                  <Checkbox.Control>
+                    <Checkbox.Indicator />
+                  </Checkbox.Control>
                 </Checkbox>
+                <span className="text-sm">Asistió / llegó</span>
               </div>
             )}
           </form.Field>
