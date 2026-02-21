@@ -10,6 +10,11 @@ import {
 } from "lucide-react";
 
 import type { CalendarEventDetail } from "@/features/calendar/types";
+import type {
+  CalendarEventState,
+  CalendarEventStateTone,
+} from "@/features/calendar/utils/event-state";
+import { getCalendarEventStates } from "@/features/calendar/utils/event-state";
 import { currencyFormatter } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -19,71 +24,35 @@ interface DailyEventCardProps {
   readonly event: CalendarEventDetail;
 }
 
-type StateBadge = {
+type StateBadge = CalendarEventState & {
   color: "danger" | "default" | "success" | "warning";
   icon: LucideIcon;
-  key: string;
-  label: string;
 };
 
-function getAttendanceBadge(event: CalendarEventDetail): StateBadge {
-  const start = event.startDateTime ? dayjs(event.startDateTime) : null;
-  const isPastOrNow = start ? !start.isAfter(dayjs()) : false;
-
-  if (event.attended === true) {
-    return {
-      color: "success",
-      icon: CheckCircle2,
-      key: "attendance",
-      label: "Asistió",
-    };
+function iconByState(state: CalendarEventState): LucideIcon {
+  if (state.label === "Programada") {
+    return CalendarClock;
   }
-  if (event.attended === false) {
-    return {
-      color: "danger",
-      icon: XCircle,
-      key: "attendance",
-      label: "No asistió",
-    };
+  if (state.label === "Asistencia pendiente" || state.label === "Tentativo") {
+    return Clock3;
   }
-  return {
-    color: "warning",
-    icon: isPastOrNow ? Clock3 : CalendarClock,
-    key: "attendance",
-    label: isPastOrNow ? "Asistencia pendiente" : "Programada",
-  };
+  if (state.label === "Por confirmar") {
+    return CircleHelp;
+  }
+  if (state.tone === "success") {
+    return CheckCircle2;
+  }
+  if (state.tone === "danger") {
+    return XCircle;
+  }
+  return CircleHelp;
 }
 
-function getEventStatusBadge(event: CalendarEventDetail): null | StateBadge {
-  const raw = event.status?.trim();
-  if (!raw) {
-    return null;
-  }
-
-  const normalized = raw.toLowerCase();
-
-  if (["cancelled", "canceled"].includes(normalized)) {
-    return { color: "danger", icon: XCircle, key: "event-status", label: "Cancelado" };
-  }
-  if (["tentative"].includes(normalized)) {
-    return { color: "warning", icon: Clock3, key: "event-status", label: "Tentativo" };
-  }
-  if (["confirmed", "booked"].includes(normalized)) {
-    return { color: "success", icon: CheckCircle2, key: "event-status", label: "Confirmado" };
-  }
-  if (["needsaction", "needs_action"].includes(normalized)) {
-    return { color: "warning", icon: CircleHelp, key: "event-status", label: "Por confirmar" };
-  }
-  if (["noshow", "no_show", "no-show"].includes(normalized)) {
-    return { color: "danger", icon: XCircle, key: "event-status", label: "No asistió" };
-  }
-
-  return {
-    color: "default",
-    icon: CircleHelp,
-    key: "event-status",
-    label: raw,
-  };
+function chipColorByTone(tone: CalendarEventStateTone): StateBadge["color"] {
+  if (tone === "success") return "success";
+  if (tone === "danger") return "danger";
+  if (tone === "warning") return "warning";
+  return "default";
 }
 
 function buildRightSideBadges(event: CalendarEventDetail) {
@@ -130,11 +99,11 @@ export function DailyEventCard({ event }: DailyEventCardProps) {
   const end = event.endDateTime ? dayjs(event.endDateTime) : null;
   const durationMinutes = start && end ? end.diff(start, "minute") : null;
   const indicatorColor = getCategoryIndicatorColor(event.category);
-  const attendanceBadge = getAttendanceBadge(event);
-  const eventStatusBadge = getEventStatusBadge(event);
-  const stateBadges = [attendanceBadge, eventStatusBadge].filter(
-    (badge, index, arr) => badge && arr.findIndex((b) => b?.label === badge.label) === index,
-  );
+  const stateBadges: StateBadge[] = getCalendarEventStates(event).map((state) => ({
+    ...state,
+    color: chipColorByTone(state.tone),
+    icon: iconByState(state),
+  }));
   const rightBadges = buildRightSideBadges(event);
 
   return (

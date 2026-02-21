@@ -7,6 +7,7 @@ import { currencyFormatter } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 import type { CalendarEventDetail } from "../types";
+import { getCalendarEventStates } from "../utils/event-state";
 
 dayjs.extend(isoWeek);
 
@@ -407,15 +408,24 @@ function buildEventTooltipContent({
   amountStr,
   controlFlag,
   endTimeStr,
+  states,
   timeStr,
   title,
 }: {
   amountStr: string;
   controlFlag: boolean;
   endTimeStr: string;
+  states: ReturnType<typeof getCalendarEventStates>;
   timeStr: string;
   title: string;
 }) {
+  const stateToneClass = (tone: "danger" | "default" | "success" | "warning") => {
+    if (tone === "success") return "text-success";
+    if (tone === "danger") return "text-danger";
+    if (tone === "warning") return "text-warning";
+    return "text-default-600";
+  };
+
   return (
     <div className="space-y-1 text-xs">
       <p className="font-semibold text-foreground">{title}</p>
@@ -424,6 +434,11 @@ function buildEventTooltipContent({
       </p>
       {amountStr && <p className="text-default-600">{amountStr}</p>}
       {controlFlag && <p className="text-default-600">Control</p>}
+      {states.map((state) => (
+        <p className={stateToneClass(state.tone)} key={`${state.key}-${state.label}`}>
+          {state.label}
+        </p>
+      ))}
     </div>
   );
 }
@@ -432,12 +447,14 @@ function EventButtonContent({
   amountExpected,
   controlFlag,
   displayMode,
+  primaryStateLabel,
   timeStr,
   title,
 }: {
   amountExpected: number | null | undefined;
   controlFlag: boolean;
   displayMode: DisplayMode;
+  primaryStateLabel: null | string;
   timeStr: string;
   title: string;
 }) {
@@ -476,6 +493,11 @@ function EventButtonContent({
           {currencyFormatter.format(amountExpected)}
         </span>
       )}
+      {displayMode === "detailed" && primaryStateLabel && (
+        <span className="overflow-hidden text-ellipsis whitespace-nowrap font-medium text-[0.55rem] text-default-600">
+          {primaryStateLabel}
+        </span>
+      )}
     </>
   );
 }
@@ -491,6 +513,7 @@ function EventItem({ endHour, event, onEventClick, startHour, tooltipTrigger }: 
   const amountStr =
     event.amountExpected == null ? "" : currencyFormatter.format(event.amountExpected);
   const controlFlag = event.controlIncluded === true;
+  const states = getCalendarEventStates(event);
   const title = event.summary?.trim() ?? "(Sin título)";
 
   const padding = event.totalColumns > 1 ? 2 : 3;
@@ -514,6 +537,7 @@ function EventItem({ endHour, event, onEventClick, startHour, tooltipTrigger }: 
         amountExpected={event.amountExpected}
         controlFlag={controlFlag}
         displayMode={displayMode}
+        primaryStateLabel={states[0]?.label ?? null}
         timeStr={timeStr}
         title={title}
       />
@@ -532,6 +556,7 @@ function EventItem({ endHour, event, onEventClick, startHour, tooltipTrigger }: 
           amountStr,
           controlFlag,
           endTimeStr,
+          states,
           timeStr,
           title,
         })}
