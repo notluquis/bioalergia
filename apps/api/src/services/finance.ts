@@ -13,6 +13,8 @@ const MP_CARD_RULE_NAME = "Sistema - Tarjeta Mercadopago por referencia";
 const MP_CARD_REFERENCE_PATTERN = "74fe4f0-1808-44bf-92b7-5f6215842ff5-17";
 const PERSONAL_DR_CATEGORY_NAME = "Personal Dr";
 const PERSONAL_DR_RULE_NAME_PREFIX = "Sistema - Personal Dr por referencia";
+const PATIENTS_CATEGORY_NAME = "Pacientes";
+const PATIENTS_KEYWORD = "paciente";
 const PERSONAL_DR_REFERENCE_PATTERNS = [
   "db4b64d0-a31f-4622-9f7b-ec28f54ab6e8-17",
   "e3c65f7a-64c4-4664-b3ed-87674105d34f-17",
@@ -21,6 +23,7 @@ const PERSONAL_DR_REFERENCE_REGEX =
   /^ref:\s*[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-17\d*$/i;
 const PERSONAL_DR_REFERENCE_SQL_REGEX =
   "^\\s*ref:\\s*[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-17[0-9]*\\s*$";
+const DIACRITICS_REGEX = /[\u0300-\u036f]/g;
 
 export type CreateFinancialTransactionInput = {
   date: Date;
@@ -262,6 +265,13 @@ function matchesPersonalDrPattern(comment: null | string | undefined) {
   return PERSONAL_DR_REFERENCE_REGEX.test(comment.trim());
 }
 
+const normalizeSearchText = (value: null | string | undefined) =>
+  (value ?? "").toLowerCase().normalize("NFD").replace(DIACRITICS_REGEX, "").trim();
+
+function matchesPatientsPattern(values: Array<null | string | undefined>) {
+  return values.some((value) => normalizeSearchText(value).includes(PATIENTS_KEYWORD));
+}
+
 async function applyPersonalDrPatternCategoryToExistingTransactions(
   categoryId: number,
   options?: { onlyUncategorized?: boolean },
@@ -287,6 +297,67 @@ async function applyPersonalDrPatternCategoryToExistingTransactions(
       AND comment IS NOT NULL
       AND comment ~* ${PERSONAL_DR_REFERENCE_SQL_REGEX}
       AND category_id IS DISTINCT FROM ${categoryId}
+  `;
+  return Number(updatedRows);
+}
+
+async function applyPatientsPatternCategoryToExistingTransactions(
+  categoryId: number,
+  options?: { onlyUncategorized?: boolean },
+) {
+  if (options?.onlyUncategorized) {
+    const updatedRows = await db.$executeRaw`
+      UPDATE financial_transactions ft
+      SET category_id = ${categoryId},
+          updated_at = NOW()
+      WHERE ft.type = 'INCOME'
+        AND ft.category_id IS NULL
+        AND (
+          ft.description ILIKE '%paciente%'
+          OR (ft.comment IS NOT NULL AND ft.comment ILIKE '%paciente%')
+          OR EXISTS (
+            SELECT 1
+            FROM release_transactions rt
+            WHERE rt.source_id = ft.source_id
+              AND rt.sale_detail IS NOT NULL
+              AND rt.sale_detail ILIKE '%paciente%'
+          )
+          OR EXISTS (
+            SELECT 1
+            FROM settlement_transactions st
+            WHERE st.source_id = ft.source_id
+              AND st.sale_detail IS NOT NULL
+              AND st.sale_detail ILIKE '%paciente%'
+          )
+        )
+    `;
+    return Number(updatedRows);
+  }
+
+  const updatedRows = await db.$executeRaw`
+    UPDATE financial_transactions ft
+    SET category_id = ${categoryId},
+        updated_at = NOW()
+    WHERE ft.type = 'INCOME'
+      AND ft.category_id IS DISTINCT FROM ${categoryId}
+      AND (
+        ft.description ILIKE '%paciente%'
+        OR (ft.comment IS NOT NULL AND ft.comment ILIKE '%paciente%')
+        OR EXISTS (
+          SELECT 1
+          FROM release_transactions rt
+          WHERE rt.source_id = ft.source_id
+            AND rt.sale_detail IS NOT NULL
+            AND rt.sale_detail ILIKE '%paciente%'
+        )
+        OR EXISTS (
+          SELECT 1
+          FROM settlement_transactions st
+          WHERE st.source_id = ft.source_id
+            AND st.sale_detail IS NOT NULL
+            AND st.sale_detail ILIKE '%paciente%'
+        )
+      )
   `;
   return Number(updatedRows);
 }
@@ -334,12 +405,34 @@ async function applyAutoCategoryRulesToExistingTransactions(
   return result.reduce((acc, item) => acc + item.count, 0);
 }
 
+async function ensurePatientsCategory() {
+  const category =
+    (await db.transactionCategory.findFirst({
+      where: {
+        name: PATIENTS_CATEGORY_NAME,
+        type: "INCOME",
+      },
+      select: { id: true },
+    })) ??
+    (await db.transactionCategory.create({
+      data: {
+        color: "#22C55E",
+        name: PATIENTS_CATEGORY_NAME,
+        type: "INCOME",
+      },
+      select: { id: true },
+    }));
+
+  return category.id;
+}
+
 async function syncUnifiedTransactions(
   unifiedTransactions: UnifiedTransaction[],
   options?: { applyGlobalRules?: boolean },
 ) {
   await ensureMercadoPagoCardAutoCategoryRule();
   const personalDrCategoryId = await ensurePersonalDrAutoCategoryRules();
+  const patientsCategoryId = await ensurePatientsCategory();
 
   const nonCashbackTransactions = unifiedTransactions.filter(
     (tour) =>
@@ -354,6 +447,33 @@ async function syncUnifiedTransactions(
   const sourceIds = Array.from(
     new Set(nonCashbackTransactions.map((tx) => tx.sourceId?.trim() ?? "").filter(Boolean)),
   );
+  const [releaseSaleDetails, settlementSaleDetails] =
+    sourceIds.length > 0
+      ? await Promise.all([
+          db.releaseTransaction.findMany({
+            where: { sourceId: { in: sourceIds } },
+            select: {
+              saleDetail: true,
+              sourceId: true,
+            },
+          }),
+          db.settlementTransaction.findMany({
+            where: { sourceId: { in: sourceIds } },
+            select: {
+              saleDetail: true,
+              sourceId: true,
+            },
+          }),
+        ])
+      : [[], []];
+  const saleDetailsBySourceId = new Map<string, string[]>();
+  for (const row of [...releaseSaleDetails, ...settlementSaleDetails]) {
+    const sourceId = row.sourceId.trim();
+    if (!sourceId || !row.saleDetail?.trim()) continue;
+    const bucket = saleDetailsBySourceId.get(sourceId) ?? [];
+    bucket.push(row.saleDetail);
+    saleDetailsBySourceId.set(sourceId, bucket);
+  }
   const existingBySourceId =
     sourceIds.length > 0
       ? new Map(
@@ -405,6 +525,9 @@ async function syncUnifiedTransactions(
         const existing = existingBySourceId.get(tour.sourceId.trim());
         if (existing) {
           const nextCounterpartId = counterpartId ?? existing.counterpartId ?? null;
+          const sourceSaleDetails = existing.sourceId
+            ? (saleDetailsBySourceId.get(existing.sourceId.trim()) ?? [])
+            : [];
           const nextCategoryId = resolveAutoCategoryId(
             existing.type,
             Number(existing.amount),
@@ -413,10 +536,15 @@ async function syncUnifiedTransactions(
             existing.description,
             autoCategoryRules,
           );
+          const matchesPatients =
+            existing.type === "INCOME" &&
+            matchesPatientsPattern([existing.description, existing.comment, ...sourceSaleDetails]);
           const nextSystemCategoryId =
             existing.type === "EXPENSE" && matchesPersonalDrPattern(existing.comment)
               ? personalDrCategoryId
-              : null;
+              : matchesPatients
+                ? patientsCategoryId
+                : null;
           const updateData: {
             categoryId?: null | number;
             counterpartId?: null | number;
@@ -467,10 +595,15 @@ async function syncUnifiedTransactions(
             existing.description,
             autoCategoryRules,
           );
+          const matchesPatients =
+            existing.type === "INCOME" &&
+            matchesPatientsPattern([existing.description, existing.comment]);
           const nextSystemCategoryId =
             existing.type === "EXPENSE" && matchesPersonalDrPattern(existing.comment)
               ? personalDrCategoryId
-              : null;
+              : matchesPatients
+                ? patientsCategoryId
+                : null;
           const updateData: {
             categoryId?: null | number;
             counterpartId?: null | number;
@@ -497,6 +630,9 @@ async function syncUnifiedTransactions(
 
       const type: TransactionType = tour.transactionAmount >= 0 ? "INCOME" : "EXPENSE";
       const comment = tour.externalReference ? `Ref: ${tour.externalReference}` : undefined;
+      const sourceSaleDetails = tour.sourceId
+        ? (saleDetailsBySourceId.get(tour.sourceId.trim()) ?? [])
+        : [];
       const categoryId = resolveAutoCategoryId(
         type,
         tour.transactionAmount,
@@ -505,8 +641,15 @@ async function syncUnifiedTransactions(
         tour.description,
         autoCategoryRules,
       );
+      const isPatientsIncome =
+        type === "INCOME" &&
+        matchesPatientsPattern([tour.description, comment, ...sourceSaleDetails]);
       const resolvedCategoryId =
-        type === "EXPENSE" && matchesPersonalDrPattern(comment) ? personalDrCategoryId : categoryId;
+        type === "EXPENSE" && matchesPersonalDrPattern(comment)
+          ? personalDrCategoryId
+          : isPatientsIncome
+            ? patientsCategoryId
+            : categoryId;
 
       const created = await db.financialTransaction.create({
         data: {
@@ -545,6 +688,7 @@ async function syncUnifiedTransactions(
   if (options?.applyGlobalRules !== false) {
     await applyAutoCategoryRulesToExistingTransactions(autoCategoryRules);
     await applyPersonalDrPatternCategoryToExistingTransactions(personalDrCategoryId);
+    await applyPatientsPatternCategoryToExistingTransactions(patientsCategoryId);
   }
 
   return {
@@ -573,6 +717,7 @@ export async function syncFinancialTransactionsBySourceIds(sourceIds: string[], 
 export async function syncUncategorizedTransactionsByPatterns() {
   await ensureMercadoPagoCardAutoCategoryRule();
   const personalDrCategoryId = await ensurePersonalDrAutoCategoryRules();
+  const patientsCategoryId = await ensurePatientsCategory();
   const autoCategoryRules = await buildAutoCategoryRuleLookup();
   const updatedByRules = await applyAutoCategoryRulesToExistingTransactions(autoCategoryRules, {
     onlyUncategorized: true,
@@ -583,8 +728,14 @@ export async function syncUncategorizedTransactionsByPatterns() {
       onlyUncategorized: true,
     },
   );
+  const updatedByPatientsPattern = await applyPatientsPatternCategoryToExistingTransactions(
+    patientsCategoryId,
+    {
+      onlyUncategorized: true,
+    },
+  );
   return {
-    updated: updatedByRules + updatedByPersonalPattern,
+    updated: updatedByRules + updatedByPersonalPattern + updatedByPatientsPattern,
   };
 }
 

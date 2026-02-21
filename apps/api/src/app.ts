@@ -49,6 +49,7 @@ import { timesheetRoutes } from "./routes/timesheets";
 import { transactionRoutes } from "./routes/transactions";
 import { userRoutes } from "./routes/users";
 import { errorReply } from "./utils/error-reply";
+import { normalizeErrorResponse } from "./utils/normalize-error-response";
 import { reply } from "./utils/reply";
 
 // Register Decimal.js serialization for superjson
@@ -94,6 +95,12 @@ app.use("*", async (c, next) => {
 // Clears jsdom window state after each request to prevent unbounded memory growth
 // Only necessary when using isomorphic-dompurify for HTML sanitization
 app.use("*", htmlSanitizerMiddleware());
+
+// Normalize legacy/manual JSON error responses to a single contract
+app.use("*", async (c, next) => {
+  await next();
+  await normalizeErrorResponse(c);
+});
 
 // CORS for frontend (same-origin in prod, localhost in dev)
 app.use(
