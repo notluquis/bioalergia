@@ -1,16 +1,8 @@
+import { Dropdown, Label, Separator } from "@heroui/react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 
 import { Button } from "./Button";
-import {
-  DropdownMenu,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  DropdownPopover,
-  HeroDropdownMenu,
-} from "./DropdownMenu";
 
 const meta: Meta = {
   title: "UI/DropdownMenu",
@@ -26,27 +18,27 @@ export const Basic: Story = {
 
     return (
       <div className="flex h-40 items-start justify-start">
-        <DropdownMenu>
-          <DropdownMenuTrigger>
+        <Dropdown>
+          <Dropdown.Trigger>
             <Button variant="outline">Abrir menú</Button>
-          </DropdownMenuTrigger>
-          <DropdownPopover>
-            <HeroDropdownMenu aria-label="Opciones" className="w-48">
-              <DropdownMenuLabel>Preferencias</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>Perfil</DropdownMenuItem>
-              <DropdownMenuItem>Notificaciones</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
+          </Dropdown.Trigger>
+          <Dropdown.Popover>
+            <Dropdown.Menu aria-label="Opciones" className="w-48">
+              <Label>Preferencias</Label>
+              <Separator />
+              <Dropdown.Item>Perfil</Dropdown.Item>
+              <Dropdown.Item>Notificaciones</Dropdown.Item>
+              <Separator />
+              <Dropdown.Item
                 className="flex items-center justify-between gap-2"
                 onPress={() => setCompact((prev) => !prev)}
               >
                 <span>Modo compacto</span>
                 {compact ? <span className="text-small">✓</span> : null}
-              </DropdownMenuItem>
-            </HeroDropdownMenu>
-          </DropdownPopover>
-        </DropdownMenu>
+              </Dropdown.Item>
+            </Dropdown.Menu>
+          </Dropdown.Popover>
+        </Dropdown>
       </div>
     );
   },

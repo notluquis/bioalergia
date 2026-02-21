@@ -1,4 +1,4 @@
-import { Avatar, Chip, Tooltip } from "@heroui/react";
+import { Avatar, Chip, Dropdown, Separator, Tooltip } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import {
@@ -12,14 +12,6 @@ import {
   UserCog,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import {
-  DropdownMenu,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  DropdownPopover,
-  HeroDropdownMenu,
-} from "@/components/ui/DropdownMenu";
 import type { User } from "@/features/users/types";
 import { getPersonFullName, getPersonInitials } from "@/lib/person";
 
@@ -177,40 +169,40 @@ export const getColumns = (actions: {
     cell: ({ row }) => {
       const user = row.original;
       return (
-        <DropdownMenu>
-          <DropdownMenuTrigger>
+        <Dropdown>
+          <Dropdown.Trigger>
             <Button isIconOnly size="sm" variant="ghost">
               <MoreVertical size={16} />
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownPopover placement="bottom end">
-            <HeroDropdownMenu aria-label="Acciones de usuario" className="w-56">
-              <DropdownMenuItem
+          </Dropdown.Trigger>
+          <Dropdown.Popover placement="bottom end">
+            <Dropdown.Menu aria-label="Acciones de usuario" className="w-56">
+              <Dropdown.Item
                 onPress={() => {
                   actions.onEditRole(user);
                 }}
               >
                 <UserCog className="mr-2 h-4 w-4" />
                 Editar rol
-              </DropdownMenuItem>
-              <DropdownMenuItem
+              </Dropdown.Item>
+              <Dropdown.Item
                 onPress={() => {
                   actions.onToggleMfa(user.id, user.mfaEnabled);
                 }}
               >
                 <ShieldCheck className="mr-2 h-4 w-4" />
                 {user.mfaEnabled ? "Desactivar" : "Activar"} MFA
-              </DropdownMenuItem>
-              <DropdownMenuItem
+              </Dropdown.Item>
+              <Dropdown.Item
                 onPress={() => {
                   actions.onResetPassword(user.id);
                 }}
               >
                 <Key className="mr-2 h-4 w-4" />
                 Restablecer contraseña
-              </DropdownMenuItem>
+              </Dropdown.Item>
               {user.hasPasskey && (
-                <DropdownMenuItem
+                <Dropdown.Item
                   className="text-warning focus:text-warning"
                   onPress={() => {
                     actions.onDeletePasskey(user.id);
@@ -218,10 +210,10 @@ export const getColumns = (actions: {
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
                   Eliminar passkey
-                </DropdownMenuItem>
+                </Dropdown.Item>
               )}
               {user.status === "SUSPENDED" ? (
-                <DropdownMenuItem
+                <Dropdown.Item
                   className="text-success focus:text-success"
                   onPress={() => {
                     actions.onToggleStatus(user.id, user.status);
@@ -229,9 +221,9 @@ export const getColumns = (actions: {
                 >
                   <Shield className="mr-2 h-4 w-4" />
                   Reactivar acceso
-                </DropdownMenuItem>
+                </Dropdown.Item>
               ) : (
-                <DropdownMenuItem
+                <Dropdown.Item
                   className="text-warning focus:text-warning"
                   onPress={() => {
                     actions.onToggleStatus(user.id, user.status);
@@ -239,10 +231,10 @@ export const getColumns = (actions: {
                 >
                   <Lock className="mr-2 h-4 w-4" />
                   Suspender acceso
-                </DropdownMenuItem>
+                </Dropdown.Item>
               )}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
+              <Separator />
+              <Dropdown.Item
                 className="text-danger focus:text-danger"
                 onPress={() => {
                   actions.onDeleteUser(user.id);
@@ -250,10 +242,10 @@ export const getColumns = (actions: {
               >
                 <Trash2 className="mr-2 h-4 w-4" />
                 Eliminar usuario
-              </DropdownMenuItem>
-            </HeroDropdownMenu>
-          </DropdownPopover>
-        </DropdownMenu>
+              </Dropdown.Item>
+            </Dropdown.Menu>
+          </Dropdown.Popover>
+        </Dropdown>
       );
     },
     id: "actions",

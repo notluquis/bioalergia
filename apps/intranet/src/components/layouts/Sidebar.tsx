@@ -16,8 +16,9 @@ interface SidebarProps {
   readonly isMobile: boolean;
   readonly isOpen: boolean; // For mobile drawer state
   readonly onClose?: () => void;
+  readonly sidebarId?: string;
 }
-export function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
+export function Sidebar({ isMobile, isOpen, onClose, sidebarId }: SidebarProps) {
   const { logout, user } = useAuth();
   const { can } = useCan();
 
@@ -62,7 +63,9 @@ export function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
         )}
       >
         <aside
+          id={sidebarId}
           aria-label="Navegación principal"
+          aria-hidden={isMobile && !isOpen}
           className="flex h-full w-full flex-col overflow-hidden pt-[env(safe-area-inset-top)]"
         >
           {/* Header / Logo */}

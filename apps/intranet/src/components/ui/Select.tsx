@@ -6,9 +6,6 @@ import {
   Label,
   ListBox,
   ListBoxItem,
-  SelectIndicator,
-  SelectTrigger,
-  SelectValue,
 } from "@heroui/react";
 import type { ReactNode } from "react";
 
@@ -65,10 +62,10 @@ function SelectBase<T extends object>({
       {label && (
         <Label className="font-semibold text-default-600 uppercase tracking-wider">{label}</Label>
       )}
-      <SelectTrigger>
-        <SelectValue />
-        <SelectIndicator />
-      </SelectTrigger>
+      <HeroSelect.Trigger>
+        <HeroSelect.Value />
+        <HeroSelect.Indicator />
+      </HeroSelect.Trigger>
       {(description || helper) && <Description>{description || helper}</Description>}
       {errorMessage && <FieldError>{errorMessage}</FieldError>}
       <HeroSelect.Popover>
@@ -79,10 +76,10 @@ function SelectBase<T extends object>({
 }
 
 export const Select = Object.assign(SelectBase, {
-  Indicator: SelectIndicator,
+  Indicator: HeroSelect.Indicator,
   Item: ListBoxItem,
-  Trigger: SelectTrigger,
-  Value: SelectValue,
+  Trigger: HeroSelect.Trigger,
+  Value: HeroSelect.Value,
 });
 
 export const SelectItem = ListBoxItem;

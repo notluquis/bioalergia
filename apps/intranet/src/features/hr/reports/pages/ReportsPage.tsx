@@ -1,8 +1,8 @@
 import {
   Chip,
   DateField,
-  DateInputGroup,
-  Label,
+  DateRangePicker,
+  RangeCalendar,
   Separator,
   Skeleton,
   Spinner,
@@ -326,10 +326,12 @@ function ReportsFiltersPanel({
                 Mensual
                 <Tabs.Indicator />
               </Tabs.Tab>
+              <Tabs.Separator />
               <Tabs.Tab id="range">
                 Rango
                 <Tabs.Indicator />
               </Tabs.Tab>
+              <Tabs.Separator />
               <Tabs.Tab id="all">
                 Todo
                 <Tabs.Indicator />
@@ -358,36 +360,39 @@ function ReportsFiltersPanel({
           )}
 
           {viewMode === "range" && (
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <DateField
-                  className="w-full"
-                  onChange={(val) => setStartDate(val ? val.toString() : "")}
-                  value={startDate ? parseDate(startDate) : null}
-                >
-                  <Label>Desde</Label>
-                  <DateInputGroup>
-                    <DateInputGroup.Input>
-                      {(segment) => <DateInputGroup.Segment segment={segment} />}
-                    </DateInputGroup.Input>
-                  </DateInputGroup>
-                </DateField>
-              </div>
-              <div className="space-y-2">
-                <DateField
-                  className="w-full"
-                  onChange={(val) => setEndDate(val ? val.toString() : "")}
-                  value={endDate ? parseDate(endDate) : null}
-                >
-                  <Label>Hasta</Label>
-                  <DateInputGroup>
-                    <DateInputGroup.Input>
-                      {(segment) => <DateInputGroup.Segment segment={segment} />}
-                    </DateInputGroup.Input>
-                  </DateInputGroup>
-                </DateField>
-              </div>
-            </div>
+            <DateRangePicker
+              aria-label="Rango de fechas"
+              className="w-full"
+              onChange={(value) => {
+                if (!value) {
+                  return;
+                }
+                setStartDate(value.start.toString());
+                setEndDate(value.end.toString());
+              }}
+              value={{
+                start: parseDate(startDate),
+                end: parseDate(endDate),
+              }}
+            >
+              <DateField.Group>
+                <DateField.Input slot="start">
+                  {(segment) => <DateField.Segment segment={segment} />}
+                </DateField.Input>
+                <DateRangePicker.RangeSeparator />
+                <DateField.Input slot="end">
+                  {(segment) => <DateField.Segment segment={segment} />}
+                </DateField.Input>
+                <DateField.Suffix>
+                  <DateRangePicker.Trigger>
+                    <DateRangePicker.TriggerIndicator />
+                  </DateRangePicker.Trigger>
+                </DateField.Suffix>
+              </DateField.Group>
+              <DateRangePicker.Popover>
+                <RangeCalendar visibleDuration={{ months: 2 }} />
+              </DateRangePicker.Popover>
+            </DateRangePicker>
           )}
 
           {viewMode === "all" && (

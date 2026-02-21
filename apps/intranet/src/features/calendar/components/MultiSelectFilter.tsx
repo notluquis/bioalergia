@@ -1,11 +1,4 @@
-import {
-  Button,
-  Dropdown,
-  DropdownPopover,
-  DropdownTrigger,
-  ListBox,
-  type Selection,
-} from "@heroui/react";
+import { Button, Dropdown, ListBox, type Selection } from "@heroui/react";
 import { Check, ChevronDown } from "lucide-react";
 
 export interface MultiSelectOption {
@@ -80,7 +73,7 @@ export function MultiSelectFilter({
         </span>
       )}
       <Dropdown>
-        <DropdownTrigger>
+        <Dropdown.Trigger>
           <Button
             className={`flex w-full min-w-0 items-center justify-between rounded-md border border-default-200 bg-content1/50 px-3 py-2 text-foreground hover:bg-content1 focus:bg-content1 ${
               isCompact ? "h-9 text-[13px]" : "h-10 text-sm"
@@ -90,8 +83,8 @@ export function MultiSelectFilter({
             <span className="truncate font-medium">{displayText}</span>
             <ChevronDown className="h-4 w-4 shrink-0 text-foreground-500" />
           </Button>
-        </DropdownTrigger>
-        <DropdownPopover>
+        </Dropdown.Trigger>
+        <Dropdown.Popover>
           <ListBox
             aria-label={label}
             items={itemsWithId}
@@ -113,7 +106,7 @@ export function MultiSelectFilter({
               </ListBox.Item>
             )}
           </ListBox>
-        </DropdownPopover>
+        </Dropdown.Popover>
       </Dropdown>
     </div>
   );

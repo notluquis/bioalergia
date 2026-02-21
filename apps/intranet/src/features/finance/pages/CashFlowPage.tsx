@@ -4,8 +4,6 @@ import {
   Card,
   ColorSwatchPicker,
   Dropdown,
-  DropdownPopover,
-  DropdownTrigger,
   Header,
   Input,
   Label,
@@ -1168,10 +1166,12 @@ export function CashFlowPage() {
               Resumen
               <Tabs.Indicator />
             </Tabs.Tab>
+            <Tabs.Separator />
             <Tabs.Tab id="movements">
               Movimientos
               <Tabs.Indicator />
             </Tabs.Tab>
+            <Tabs.Separator />
             <Tabs.Tab id="categories">
               Categorías
               <Tabs.Indicator />
@@ -1555,15 +1555,15 @@ export function CashFlowPage() {
                   <div className="lg:col-span-4">
                     <Label className="mb-1 block">Categorías (multi)</Label>
                     <Dropdown>
-                      <DropdownTrigger>
+                      <Dropdown.Trigger>
                         <Button
                           className="h-10 w-full justify-start rounded-xl border-default-300/60 bg-default-100/40 text-left"
                           variant="outline"
                         >
                           {selectedCategoryLabel}
                         </Button>
-                      </DropdownTrigger>
-                      <DropdownPopover>
+                      </Dropdown.Trigger>
+                      <Dropdown.Popover>
                         <ListBox
                           className="max-h-60 w-[320px] overflow-auto"
                           selectedKeys={new Set(selectedCategoryFilters)}
@@ -1587,7 +1587,7 @@ export function CashFlowPage() {
                             </ListBox.Item>
                           ))}
                         </ListBox>
-                      </DropdownPopover>
+                      </Dropdown.Popover>
                     </Dropdown>
                   </div>
 

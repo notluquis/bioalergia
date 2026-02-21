@@ -1,4 +1,4 @@
-import { DateInputGroup, Label, TimeField } from "@heroui/react";
+import { Label, TimeField } from "@heroui/react";
 import { parseTime, type Time } from "@internationalized/date";
 
 interface TimeInputProps {
@@ -52,11 +52,9 @@ export function TimeInput({
       value={timeValue}
     >
       <Label className="hidden">Hora</Label>
-      <DateInputGroup>
-        <DateInputGroup.Input>
-          {(segment) => <DateInputGroup.Segment segment={segment} />}
-        </DateInputGroup.Input>
-      </DateInputGroup>
+      <TimeField.Group>
+        <TimeField.Input>{(segment) => <TimeField.Segment segment={segment} />}</TimeField.Input>
+      </TimeField.Group>
     </TimeField>
   );
 }

@@ -1,14 +1,7 @@
+import { Dropdown, Separator } from "@heroui/react";
 import { Check, ChevronDown, ChevronRight, Eye, Pencil, Trash2 } from "lucide-react";
 import { Fragment, useState } from "react";
 import { Button } from "@/components/ui/Button";
-import {
-  DropdownMenu,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  DropdownPopover,
-  HeroDropdownMenu,
-} from "@/components/ui/DropdownMenu";
 import type { Permission, Role } from "@/types/roles";
 
 import { BulkToggleCell } from "./BulkToggleCell";
@@ -98,8 +91,8 @@ export function PermissionsMatrixTable({
               </span>
 
               <div className="mt-2 flex justify-center">
-                <DropdownMenu>
-                  <DropdownMenuTrigger>
+                <Dropdown>
+                  <Dropdown.Trigger>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -108,27 +101,27 @@ export function PermissionsMatrixTable({
                       Opciones
                       <ChevronDown className="h-3 w-3" />
                     </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownPopover placement="bottom end">
-                    <HeroDropdownMenu aria-label="Opciones de rol">
-                      <DropdownMenuItem
+                  </Dropdown.Trigger>
+                  <Dropdown.Popover placement="bottom end">
+                    <Dropdown.Menu aria-label="Opciones de rol">
+                      <Dropdown.Item
                         onPress={() => {
                           onImpersonate(role);
                         }}
                       >
                         <Eye className="h-4 w-4" />
                         Previsualizar
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
+                      </Dropdown.Item>
+                      <Dropdown.Item
                         onPress={() => {
                           onEditRole(role);
                         }}
                       >
                         <Pencil className="h-4 w-4" />
                         Editar
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
+                      </Dropdown.Item>
+                      <Separator />
+                      <Dropdown.Item
                         className="text-danger focus:text-danger"
                         onPress={() => {
                           onDeleteRole(role);
@@ -136,10 +129,10 @@ export function PermissionsMatrixTable({
                       >
                         <Trash2 className="h-4 w-4" />
                         Eliminar
-                      </DropdownMenuItem>
-                    </HeroDropdownMenu>
-                  </DropdownPopover>
-                </DropdownMenu>
+                      </Dropdown.Item>
+                    </Dropdown.Menu>
+                  </Dropdown.Popover>
+                </Dropdown>
               </div>
             </div>
           </div>

@@ -1,14 +1,8 @@
-import { Tooltip } from "@heroui/react";
+import { Dropdown, Tooltip } from "@heroui/react";
 import { createColumnHelper } from "@tanstack/react-table";
 import dayjs from "dayjs";
 
 import { Button } from "@/components/ui/Button";
-import {
-  DropdownMenu,
-  DropdownMenuItem,
-  DropdownPopover,
-  HeroDropdownMenu,
-} from "@/components/ui/DropdownMenu";
 import { TimeInput } from "@/components/ui/TimeInput";
 
 import type { BulkRow } from "../types";
@@ -284,19 +278,21 @@ const ActionsCell = ({
   }
 
   return (
-    <DropdownMenu>
-      <Button
-        aria-label="Acciones"
-        className="h-8 w-8 p-0"
-        isIconOnly
-        size="sm"
-        variant="secondary"
-      >
-        ⋯
-      </Button>
-      <DropdownPopover placement="bottom end">
-        <HeroDropdownMenu aria-label="Acciones de registro">
-          <DropdownMenuItem
+    <Dropdown>
+      <Dropdown.Trigger>
+        <Button
+          aria-label="Acciones"
+          className="h-8 w-8 p-0"
+          isIconOnly
+          size="sm"
+          variant="secondary"
+        >
+          ⋯
+        </Button>
+      </Dropdown.Trigger>
+      <Dropdown.Popover placement="bottom end">
+        <Dropdown.Menu aria-label="Acciones de registro">
+          <Dropdown.Item
             onPress={() => {
               if (row.date) {
                 meta.setCommentPreview({ date: row.date, text: row.comment || "(Sin comentario)" });
@@ -304,19 +300,19 @@ const ActionsCell = ({
             }}
           >
             Ver comentario
-          </DropdownMenuItem>
+          </Dropdown.Item>
 
           {dirty && (
-            <DropdownMenuItem
+            <Dropdown.Item
               onPress={() => {
                 meta.onResetRow(index);
               }}
             >
               Deshacer cambios
-            </DropdownMenuItem>
+            </Dropdown.Item>
           )}
 
-          <DropdownMenuItem
+          <Dropdown.Item
             onPress={() => {
               meta.setNotWorkedDays((prev) => {
                 const next = new Set(prev);
@@ -333,21 +329,21 @@ const ActionsCell = ({
             }}
           >
             {isMarkedNotWorked ? "Marcar como trabajado" : "Día no trabajado"}
-          </DropdownMenuItem>
+          </Dropdown.Item>
 
           {row.entryId && (
-            <DropdownMenuItem
+            <Dropdown.Item
               className="text-danger focus:text-danger"
               onPress={() => {
                 meta.onRemoveEntry(row);
               }}
             >
               Eliminar registro
-            </DropdownMenuItem>
+            </Dropdown.Item>
           )}
-        </HeroDropdownMenu>
-      </DropdownPopover>
-    </DropdownMenu>
+        </Dropdown.Menu>
+      </Dropdown.Popover>
+    </Dropdown>
   );
 };
 

@@ -1,14 +1,4 @@
-import {
-  Chip,
-  Description,
-  ModalBackdrop,
-  ModalBody,
-  ModalContainer,
-  ModalDialog,
-  ModalFooter,
-  ModalRoot,
-  Spinner,
-} from "@heroui/react";
+import { Chip, Description, Modal, Spinner } from "@heroui/react";
 import dayjs from "dayjs";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
@@ -99,10 +89,14 @@ export function EmailPreviewModal({
   const retentionPercent = formatRetentionPercent(effectiveRate);
 
   return (
-    <ModalRoot isOpen={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <ModalBackdrop className="bg-black/40 backdrop-blur-[2px]">
-        <ModalContainer placement="center">
-          <ModalDialog className="relative w-full max-w-2xl overflow-hidden rounded-2xl bg-background p-0 shadow-2xl">
+    <Modal>
+      <Modal.Backdrop
+        className="bg-black/40 backdrop-blur-[2px]"
+        isOpen={isOpen}
+        onOpenChange={(open) => !open && onClose()}
+      >
+        <Modal.Container placement="center">
+          <Modal.Dialog className="relative w-full max-w-2xl overflow-hidden rounded-2xl bg-background p-0 shadow-2xl">
             {/* Custom Header with Gradient */}
             <div className="bg-linear-to-r from-primary to-primary/80 px-6 py-5 text-primary-foreground">
               <span className="block font-bold text-xl">Vista previa del correo</span>
@@ -111,7 +105,7 @@ export function EmailPreviewModal({
               </Description>
             </div>
 
-            <ModalBody className="block max-h-[60vh] overflow-y-auto p-6">
+            <Modal.Body className="block max-h-[60vh] overflow-y-auto p-6">
               <div className="mb-4 rounded-xl border border-default-200 bg-default-50/40 p-4">
                 <LocalAgentPanel isHttpsPage={isHttpsPage} state={localAgent} />
               </div>
@@ -234,9 +228,9 @@ export function EmailPreviewModal({
                   subordinación o dependencia.
                 </Description>
               </div>
-            </ModalBody>
+            </Modal.Body>
 
-            <ModalFooter className="flex items-center justify-between border-default-200 border-t bg-background px-6 py-4">
+            <Modal.Footer className="flex items-center justify-between border-default-200 border-t bg-background px-6 py-4">
               <Description className="mr-4 flex-1 text-default-400 text-xs">
                 {getPrepareStatusMessage(prepareStatus)}
               </Description>
@@ -253,11 +247,11 @@ export function EmailPreviewModal({
                   {renderPrepareButtonContent(prepareStatus)}
                 </Button>
               </div>
-            </ModalFooter>
-          </ModalDialog>
-        </ModalContainer>
-      </ModalBackdrop>
-    </ModalRoot>
+            </Modal.Footer>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
+    </Modal>
   );
 }
 

@@ -2,7 +2,6 @@ import type { FinancialTransaction, TransactionCategory } from "@finanzas/db";
 import {
   Button,
   DateField,
-  DateInputGroup,
   FieldError,
   Input,
   Label,
@@ -187,11 +186,11 @@ export function TransactionForm({ isOpen, onClose, initialData }: Props) {
                       isInvalid={!!errors.date}
                     >
                       <Label>Fecha</Label>
-                      <DateInputGroup>
-                        <DateInputGroup.Input>
-                          {(segment) => <DateInputGroup.Segment segment={segment} />}
-                        </DateInputGroup.Input>
-                      </DateInputGroup>
+                      <DateField.Group>
+                        <DateField.Input>
+                          {(segment) => <DateField.Segment segment={segment} />}
+                        </DateField.Input>
+                      </DateField.Group>
                       <FieldError>{errors.date}</FieldError>
                     </DateField>
                   ) : null}

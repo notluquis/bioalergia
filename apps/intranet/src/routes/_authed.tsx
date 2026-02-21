@@ -59,6 +59,9 @@ export const Route = createFileRoute("/_authed")({
 function AuthedLayout() {
   const { impersonatedRole, stopImpersonating, user } = useAuth();
   const { settings } = useSettings();
+  const sidebarId = "app-sidebar";
+  const menuToggleButtonId = "mobile-menu-toggle";
+  const wasMobileSidebarOpenRef = React.useRef(false);
 
   // Navigation state from TanStack Router
   const isNavigating = useRouterState({ select: (s) => s.status === "pending" });
@@ -96,9 +99,9 @@ function AuthedLayout() {
   const toggleSidebar = () => {
     setSidebarOpen((open) => !open);
   };
-  const closeSidebar = () => {
+  const closeSidebar = React.useCallback(() => {
     setSidebarOpen(false);
-  };
+  }, []);
   const buildLabel = React.useMemo(() => {
     if (!BUILD_TIMESTAMP) {
       return "Desconocido";
@@ -115,6 +118,68 @@ function AuthedLayout() {
       document.title = settings.pageTitle;
     }
   }, [settings.pageTitle]);
+
+  React.useEffect(() => {
+    if (!isMobile || !sidebarOpen) {
+      return;
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeSidebar();
+      }
+    };
+
+    globalThis.addEventListener("keydown", onKeyDown);
+
+    const firstFocusable = document.querySelector<HTMLElement>(
+      `#${sidebarId} a[href], #${sidebarId} button:not([disabled])`,
+    );
+    firstFocusable?.focus();
+
+    return () => {
+      globalThis.removeEventListener("keydown", onKeyDown);
+    };
+  }, [closeSidebar, isMobile, sidebarOpen]);
+
+  React.useEffect(() => {
+    if (!isMobile) {
+      return;
+    }
+
+    const originalOverflow = document.body.style.overflow;
+    const originalTouchAction = document.body.style.touchAction;
+
+    if (sidebarOpen) {
+      document.body.style.overflow = "hidden";
+      document.body.style.touchAction = "none";
+    }
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.touchAction = originalTouchAction;
+    };
+  }, [isMobile, sidebarOpen]);
+
+  React.useEffect(() => {
+    if (!isMobile) {
+      wasMobileSidebarOpenRef.current = false;
+      return;
+    }
+
+    if (sidebarOpen) {
+      wasMobileSidebarOpenRef.current = true;
+      return;
+    }
+
+    if (wasMobileSidebarOpenRef.current) {
+      const toggleButton = document.getElementById(menuToggleButtonId) as HTMLButtonElement | null;
+      toggleButton?.focus();
+    }
+
+    wasMobileSidebarOpenRef.current = false;
+  }, [isMobile, sidebarOpen]);
 
   // Handle PWA File Launch (macOS/Windows "Open With")
   React.useEffect(() => {
@@ -142,6 +207,12 @@ function AuthedLayout() {
 
   return (
     <>
+      <a
+        className="sr-only fixed top-3 left-3 z-110 rounded-md bg-background px-3 py-2 font-semibold text-foreground shadow-lg focus:not-sr-only focus:outline-none focus:ring-2 focus:ring-primary/70"
+        href="#main-content"
+      >
+        Saltar al contenido principal
+      </a>
       {impersonatedRole && (
         <div className="sticky top-0 z-100 flex h-10 w-full items-center justify-center gap-4 bg-warning px-4 font-bold text-warning-foreground text-xs shadow-md">
           <span>VISTA PREVIA: {impersonatedRole.name}</span>
@@ -164,7 +235,8 @@ function AuthedLayout() {
       <div className="layout-shell relative mx-auto flex h-dvh w-full gap-0 overflow-hidden p-0 text-foreground transition-all duration-300 md:gap-4 md:p-4">
         {/* Hamburger button: accessible, compact, always visible on mobile */}
         <Button
-          aria-controls="app-sidebar"
+          id={menuToggleButtonId}
+          aria-controls={sidebarId}
           aria-expanded={sidebarOpen}
           aria-label={sidebarOpen ? "Cerrar menú principal" : "Abrir menú principal"}
           aria-pressed={sidebarOpen}
@@ -197,13 +269,22 @@ function AuthedLayout() {
         </Button>
 
         {/* Sidebar */}
-        <Sidebar isMobile={isMobile} isOpen={sidebarOpen} onClose={closeSidebar} />
+        <Sidebar
+          isMobile={isMobile}
+          isOpen={sidebarOpen}
+          onClose={closeSidebar}
+          sidebarId={sidebarId}
+        />
 
         {/* Main content */}
         <div className="layout-container flex min-w-0 flex-1 flex-col gap-3 pt-[calc(env(safe-area-inset-top)+0.25rem)] pb-[calc(110px+env(safe-area-inset-bottom))] md:pt-0 md:pb-0">
           <Header />
 
-          <main className="flex-1 overflow-hidden rounded-3xl transition-all duration-300">
+          <main
+            className="flex-1 overflow-hidden rounded-3xl transition-all duration-300"
+            id="main-content"
+            tabIndex={-1}
+          >
             <div className="surface-recessed h-full w-full overflow-hidden rounded-3xl border border-default-100/50 bg-background/50 shadow-inner">
               <div className="h-full w-full overflow-y-auto overflow-x-hidden p-3 md:p-5">
                 <Outlet />
@@ -256,7 +337,11 @@ function AuthedLayout() {
         </div>
 
         {/* Mobile bottom navigation */}
-        <BottomNav isHidden={isMobile && sidebarOpen} />
+        <BottomNav
+          buildLabel={buildLabel}
+          isHidden={isMobile && sidebarOpen}
+          isSessionActive={Boolean(user)}
+        />
 
         {/* Update notification popup */}
         <UpdateNotification />

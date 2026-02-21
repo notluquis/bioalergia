@@ -1,5 +1,5 @@
 import { schema as schemaLite } from "@finanzas/db/schema-lite";
-import { Switch } from "@heroui/react";
+import { Description, Switch } from "@heroui/react";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import type { PaginationState } from "@tanstack/react-table";
 import { useClientQueries } from "@zenstackhq/tanstack-query/react";
@@ -104,7 +104,12 @@ export function EmployeesPage() {
               setIncludeInactive(value);
             }}
           >
-            Ver inactivos
+            <Switch.Content>
+              Ver inactivos
+              <Description className="text-default-500 text-xs">
+                Incluye empleados con estado inactivo.
+              </Description>
+            </Switch.Content>
           </Switch>
           {canEdit && (
             <Button

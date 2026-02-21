@@ -391,7 +391,12 @@ export function ServiceForm({ initialValues, onCancel, onSubmit, submitLabel }: 
             handleChange("autoLinkTransactions", value);
           }}
         >
-          Auto-vincular transacciones por categoría financiera
+          <Switch.Content>
+            Auto-vincular transacciones por categoría financiera
+            <Description className="text-default-500 text-xs">
+              Asigna movimientos automáticamente usando la categoría financiera del servicio.
+            </Description>
+          </Switch.Content>
         </Switch>
       </section>
 

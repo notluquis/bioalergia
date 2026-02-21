@@ -1,6 +1,7 @@
-import { Button, Chip, Input, TextField } from "@heroui/react";
+import { Button, Chip, DateField, DateRangePicker, Label, RangeCalendar } from "@heroui/react";
+import { parseDate } from "@internationalized/date";
 import dayjs from "dayjs";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { ExpensePlaceholder } from "../components/ExpensePlaceholder";
 import { FinancialSummaryCards } from "../components/FinancialSummaryCards";
@@ -20,34 +21,56 @@ export function FinancialDashboardPage() {
     setDateRange((prev) => ({ ...prev, [field]: value }));
   };
 
+  const rangeValue = useMemo(
+    () => ({
+      start: parseDate(dateRange.from),
+      end: parseDate(dateRange.to),
+    }),
+    [dateRange.from, dateRange.to],
+  );
+
   return (
     <div className="space-y-8 p-6 md:p-8">
       {/* Header & Filters */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="font-bold text-2xl tracking-tight">Tablero Financiero</h1>
+          <h2 className="font-bold text-2xl tracking-tight">Tablero Financiero</h2>
           <p className="text-default-500 text-sm">
             Resumen de ingresos por tratamientos y gastos operativos.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <TextField aria-label="Desde">
-            <Input
-              type="date"
-              value={dateRange.from}
-              onChange={(e) => handleDateChange("from", e.target.value)}
-            />
-          </TextField>
-          <span className="text-default-400 text-sm">ha</span>
-          <TextField aria-label="Hasta">
-            <Input
-              type="date"
-              value={dateRange.to}
-              onChange={(e) => handleDateChange("to", e.target.value)}
-            />
-          </TextField>
-        </div>
+        <DateRangePicker
+          aria-label="Rango de fechas"
+          className="w-full md:w-auto"
+          onChange={(value) => {
+            if (!value) {
+              return;
+            }
+            handleDateChange("from", value.start.toString());
+            handleDateChange("to", value.end.toString());
+          }}
+          value={rangeValue}
+        >
+          <Label>Rango de fechas</Label>
+          <DateField.Group>
+            <DateField.Input slot="start">
+              {(segment) => <DateField.Segment segment={segment} />}
+            </DateField.Input>
+            <DateRangePicker.RangeSeparator />
+            <DateField.Input slot="end">
+              {(segment) => <DateField.Segment segment={segment} />}
+            </DateField.Input>
+            <DateField.Suffix>
+              <DateRangePicker.Trigger>
+                <DateRangePicker.TriggerIndicator />
+              </DateRangePicker.Trigger>
+            </DateField.Suffix>
+          </DateField.Group>
+          <DateRangePicker.Popover>
+            <RangeCalendar visibleDuration={{ months: 2 }} />
+          </DateRangePicker.Popover>
+        </DateRangePicker>
       </div>
 
       {/* Summary Cards */}

@@ -37,6 +37,7 @@ export function ServicesPage() {
             Servicios
             <Tabs.Indicator />
           </Tabs.Tab>
+          <Tabs.Separator />
           <Tabs.Tab id="agenda">
             Agenda
             <Tabs.Indicator />

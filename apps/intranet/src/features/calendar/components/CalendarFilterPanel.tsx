@@ -3,7 +3,7 @@
  * Redesigned to match "Filtrar Vistas" spec using HeroUI v3
  */
 
-import { Button, DateField, DateInputGroup, Input, Label, TextField } from "@heroui/react";
+import { Button, DateField, Input, Label, TextField } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { RotateCcw } from "lucide-react";
 import React, { type SubmitEvent } from "react";
@@ -131,11 +131,11 @@ export function CalendarFilterPanel({
                 value={filters.from ? parseDate(filters.from) : undefined}
                 onChange={(d) => onFilterChange("from", d?.toString() ?? "")}
               >
-                <DateInputGroup>
-                  <DateInputGroup.Input>
-                    {(segment) => <DateInputGroup.Segment segment={segment} />}
-                  </DateInputGroup.Input>
-                </DateInputGroup>
+                <DateField.Group>
+                  <DateField.Input>
+                    {(segment) => <DateField.Segment segment={segment} />}
+                  </DateField.Input>
+                </DateField.Group>
               </DateField>
               <DateField
                 className="flex-1"
@@ -143,11 +143,11 @@ export function CalendarFilterPanel({
                 value={filters.to ? parseDate(filters.to) : undefined}
                 onChange={(d) => onFilterChange("to", d?.toString() ?? "")}
               >
-                <DateInputGroup>
-                  <DateInputGroup.Input>
-                    {(segment) => <DateInputGroup.Segment segment={segment} />}
-                  </DateInputGroup.Input>
-                </DateInputGroup>
+                <DateField.Group>
+                  <DateField.Input>
+                    {(segment) => <DateField.Segment segment={segment} />}
+                  </DateField.Input>
+                </DateField.Group>
               </DateField>
             </div>
           </div>
