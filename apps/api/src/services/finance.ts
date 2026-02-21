@@ -21,6 +21,10 @@ const PERSONAL_DR_REFERENCE_REGEX =
   /^ref:\s*[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-17\d*$/i;
 const PERSONAL_DR_REFERENCE_SQL_REGEX =
   "^\\s*ref:\\s*[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-17[0-9]*\\s*$";
+const ROXAIR_CATEGORY_NAME = "Roxair";
+const ROXAIR_RULE_NAME = "Sistema - Roxair por texto";
+const ROXAIR_KEYWORD = "roxair";
+const ROXAIR_FIXED_AMOUNT = 160_000;
 
 export type CreateFinancialTransactionInput = {
   date: Date;
@@ -262,6 +266,24 @@ function matchesPersonalDrPattern(comment: null | string | undefined) {
   return PERSONAL_DR_REFERENCE_REGEX.test(comment.trim());
 }
 
+function matchesRoxairPattern(
+  comment: null | string | undefined,
+  description: null | string | undefined,
+) {
+  const normalizedComment = normalizeRuleText(comment);
+  const normalizedDescription = normalizeRuleText(description);
+  return (
+    normalizedComment.includes(ROXAIR_KEYWORD) || normalizedDescription.includes(ROXAIR_KEYWORD)
+  );
+}
+
+function getRoxairFixedAmount(type: TransactionType, currentAmount: number) {
+  if (currentAmount < 0 || type === "EXPENSE") {
+    return -ROXAIR_FIXED_AMOUNT;
+  }
+  return ROXAIR_FIXED_AMOUNT;
+}
+
 async function applyPersonalDrPatternCategoryToExistingTransactions(
   categoryId: number,
   options?: { onlyUncategorized?: boolean },
@@ -288,6 +310,31 @@ async function applyPersonalDrPatternCategoryToExistingTransactions(
       AND comment ~* ${PERSONAL_DR_REFERENCE_SQL_REGEX}
       AND category_id IS DISTINCT FROM ${categoryId}
   `;
+  return Number(updatedRows);
+}
+
+async function applyRoxairCategoryAndAmountToExistingTransactions(
+  categoryId: number,
+  options?: { onlyUncategorized?: boolean },
+) {
+  const updatedRows = options?.onlyUncategorized
+    ? await db.$executeRaw`
+        UPDATE financial_transactions
+        SET category_id = ${categoryId},
+            amount = CASE WHEN amount < 0 THEN ${-ROXAIR_FIXED_AMOUNT} ELSE ${ROXAIR_FIXED_AMOUNT} END,
+            updated_at = NOW()
+        WHERE LOWER(COALESCE(description, '') || ' ' || COALESCE(comment, '')) LIKE ${`%${ROXAIR_KEYWORD}%`}
+          AND category_id IS NULL
+      `
+    : await db.$executeRaw`
+        UPDATE financial_transactions
+        SET category_id = ${categoryId},
+            amount = CASE WHEN amount < 0 THEN ${-ROXAIR_FIXED_AMOUNT} ELSE ${ROXAIR_FIXED_AMOUNT} END,
+            updated_at = NOW()
+        WHERE LOWER(COALESCE(description, '') || ' ' || COALESCE(comment, '')) LIKE ${`%${ROXAIR_KEYWORD}%`}
+          AND category_id IS DISTINCT FROM ${categoryId}
+      `;
+
   return Number(updatedRows);
 }
 
@@ -340,6 +387,7 @@ async function syncUnifiedTransactions(
 ) {
   await ensureMercadoPagoCardAutoCategoryRule();
   const personalDrCategoryId = await ensurePersonalDrAutoCategoryRules();
+  const roxairCategoryId = await ensureRoxairAutoCategoryRule();
 
   const nonCashbackTransactions = unifiedTransactions.filter(
     (tour) =>
@@ -416,8 +464,11 @@ async function syncUnifiedTransactions(
           const nextSystemCategoryId =
             existing.type === "EXPENSE" && matchesPersonalDrPattern(existing.comment)
               ? personalDrCategoryId
-              : null;
+              : matchesRoxairPattern(existing.comment, existing.description)
+                ? roxairCategoryId
+                : null;
           const updateData: {
+            amount?: Decimal;
             categoryId?: null | number;
             counterpartId?: null | number;
           } = {};
@@ -430,8 +481,18 @@ async function syncUnifiedTransactions(
           } else if (nextCategoryId != null && existing.categoryId !== nextCategoryId) {
             updateData.categoryId = nextCategoryId;
           }
+          if (nextSystemCategoryId === roxairCategoryId) {
+            const fixedAmount = getRoxairFixedAmount(existing.type, Number(existing.amount));
+            if (Number(existing.amount) !== fixedAmount) {
+              updateData.amount = new Decimal(fixedAmount);
+            }
+          }
 
-          if (updateData.counterpartId !== undefined || updateData.categoryId !== undefined) {
+          if (
+            updateData.counterpartId !== undefined ||
+            updateData.categoryId !== undefined ||
+            updateData.amount !== undefined
+          ) {
             await db.financialTransaction.update({
               where: { id: existing.id },
               data: updateData,
@@ -471,8 +532,11 @@ async function syncUnifiedTransactions(
           const nextSystemCategoryId =
             existing.type === "EXPENSE" && matchesPersonalDrPattern(existing.comment)
               ? personalDrCategoryId
-              : null;
+              : matchesRoxairPattern(existing.comment, existing.description)
+                ? roxairCategoryId
+                : null;
           const updateData: {
+            amount?: Decimal;
             categoryId?: null | number;
             counterpartId?: null | number;
           } = {};
@@ -485,8 +549,18 @@ async function syncUnifiedTransactions(
           } else if (nextCategoryId != null && existing.categoryId !== nextCategoryId) {
             updateData.categoryId = nextCategoryId;
           }
+          if (nextSystemCategoryId === roxairCategoryId) {
+            const fixedAmount = getRoxairFixedAmount(existing.type, Number(existing.amount));
+            if (Number(existing.amount) !== fixedAmount) {
+              updateData.amount = new Decimal(fixedAmount);
+            }
+          }
 
-          if (updateData.counterpartId !== undefined || updateData.categoryId !== undefined) {
+          if (
+            updateData.counterpartId !== undefined ||
+            updateData.categoryId !== undefined ||
+            updateData.amount !== undefined
+          ) {
             await db.financialTransaction.update({
               where: { id: existing.id },
               data: updateData,
@@ -499,9 +573,13 @@ async function syncUnifiedTransactions(
 
       const type: TransactionType = tour.transactionAmount >= 0 ? "INCOME" : "EXPENSE";
       const comment = tour.externalReference ? `Ref: ${tour.externalReference}` : undefined;
+      const isRoxair = matchesRoxairPattern(comment, tour.description);
+      const normalizedAmount = isRoxair
+        ? getRoxairFixedAmount(type, tour.transactionAmount)
+        : tour.transactionAmount;
       const categoryId = resolveAutoCategoryId(
         type,
-        tour.transactionAmount,
+        normalizedAmount,
         comment,
         counterpartId,
         tour.description,
@@ -509,23 +587,24 @@ async function syncUnifiedTransactions(
       );
       const resolvedCategoryId =
         type === "EXPENSE" && matchesPersonalDrPattern(comment) ? personalDrCategoryId : categoryId;
+      const finalCategoryId = isRoxair ? roxairCategoryId : resolvedCategoryId;
 
       const created = await db.financialTransaction.create({
         data: {
           date: tour.transactionDate,
           description: tour.description || "Sin descripcion",
-          amount: new Decimal(tour.transactionAmount),
+          amount: new Decimal(normalizedAmount),
           type,
           sourceId: tour.sourceId ?? undefined,
-          categoryId: resolvedCategoryId,
+          categoryId: finalCategoryId,
           counterpartId,
           comment,
         },
       });
       if (tour.sourceId) {
         existingBySourceId.set(tour.sourceId.trim(), {
-          amount: new Decimal(tour.transactionAmount),
-          categoryId: resolvedCategoryId,
+          amount: new Decimal(normalizedAmount),
+          categoryId: finalCategoryId,
           comment: comment ?? null,
           counterpartId,
           description: tour.description || "Sin descripcion",
@@ -547,6 +626,7 @@ async function syncUnifiedTransactions(
   if (options?.applyGlobalRules !== false) {
     await applyAutoCategoryRulesToExistingTransactions(autoCategoryRules);
     await applyPersonalDrPatternCategoryToExistingTransactions(personalDrCategoryId);
+    await applyRoxairCategoryAndAmountToExistingTransactions(roxairCategoryId);
   }
 
   return {
@@ -575,6 +655,7 @@ export async function syncFinancialTransactionsBySourceIds(sourceIds: string[], 
 export async function syncUncategorizedTransactionsByPatterns() {
   await ensureMercadoPagoCardAutoCategoryRule();
   const personalDrCategoryId = await ensurePersonalDrAutoCategoryRules();
+  const roxairCategoryId = await ensureRoxairAutoCategoryRule();
   const autoCategoryRules = await buildAutoCategoryRuleLookup();
   const updatedByRules = await applyAutoCategoryRulesToExistingTransactions(autoCategoryRules, {
     onlyUncategorized: true,
@@ -585,9 +666,15 @@ export async function syncUncategorizedTransactionsByPatterns() {
       onlyUncategorized: true,
     },
   );
+  const updatedByRoxair = await applyRoxairCategoryAndAmountToExistingTransactions(
+    roxairCategoryId,
+    {
+      onlyUncategorized: true,
+    },
+  );
 
   return {
-    updated: updatedByRules + updatedByPersonalPattern,
+    updated: updatedByRules + updatedByPersonalPattern + updatedByRoxair,
   };
 }
 
@@ -1218,6 +1305,67 @@ async function ensurePersonalDrAutoCategoryRules() {
     // Apply to historical records too, including already classified ones.
     await applySingleAutoCategoryRule(ensuredRule.id);
   }
+
+  return category.id;
+}
+
+async function ensureRoxairAutoCategoryRule() {
+  const category =
+    (await db.transactionCategory.findFirst({
+      where: {
+        name: ROXAIR_CATEGORY_NAME,
+        type: "EXPENSE",
+      },
+      select: { id: true },
+    })) ??
+    (await db.transactionCategory.create({
+      data: {
+        color: "#0891B2",
+        name: ROXAIR_CATEGORY_NAME,
+        type: "EXPENSE",
+      },
+      select: { id: true },
+    }));
+
+  const existingRule = await db.financialAutoCategoryRule.findFirst({
+    where: { name: ROXAIR_RULE_NAME },
+    select: { id: true },
+  });
+
+  const ensuredRule = existingRule
+    ? await db.financialAutoCategoryRule.update({
+        where: { id: existingRule.id },
+        data: {
+          categoryId: category.id,
+          commentContains: null,
+          counterpartId: null,
+          descriptionContains: ROXAIR_KEYWORD,
+          isActive: true,
+          maxAmount: null,
+          minAmount: null,
+          priority: 12000,
+          type: "EXPENSE",
+        },
+        select: { id: true },
+      })
+    : await db.financialAutoCategoryRule.create({
+        data: {
+          categoryId: category.id,
+          commentContains: null,
+          counterpartId: null,
+          descriptionContains: ROXAIR_KEYWORD,
+          isActive: true,
+          maxAmount: null,
+          minAmount: null,
+          name: ROXAIR_RULE_NAME,
+          priority: 12000,
+          type: "EXPENSE",
+        },
+        select: { id: true },
+      });
+
+  await applySingleAutoCategoryRule(ensuredRule.id);
+  await applyRoxairCategoryAndAmountToExistingTransactions(category.id);
 
   return category.id;
 }
