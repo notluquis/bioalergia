@@ -155,6 +155,7 @@ const CONSULTA_PATTERNS = [
  * - enviar roxair: "enviar roxair a Santino (pagado)"
  */
 const ROXAIR_PATTERNS = [/\broxair\b/i, /\bretira\s+roxair\b/i, /\benviar\s+roxair\b/i];
+const ROXAIR_FIXED_AMOUNT = 160000;
 
 /** Patterns for "Servicio de inyección" (Patient brings med or specific injection service) */
 const INJECTION_PATTERNS = [
@@ -709,6 +710,7 @@ export function parseCalendarMetadata(input: {
   const treatmentStage = detectTreatmentStage(summary, description);
   const controlIncluded = matchesAny(`${summary} ${description}`, CONTROL_PATTERNS);
   const isDomicilio = matchesAny(`${summary} ${description}`, DOMICILIO_PATTERNS);
+  const isRoxair = category === "Roxair";
 
   // Logic: Dosage and Treatment Stage only apply to "Tratamiento subcutáneo"
   const isSubcut = category === "Tratamiento subcutáneo";
@@ -727,10 +729,13 @@ export function parseCalendarMetadata(input: {
     }
   }
 
+  const finalAmountExpected = isRoxair ? ROXAIR_FIXED_AMOUNT : amounts.amountExpected;
+  const finalAmountPaid = isRoxair ? ROXAIR_FIXED_AMOUNT : amounts.amountPaid;
+
   return {
     category,
-    amountExpected: amounts.amountExpected,
-    amountPaid: amounts.amountPaid,
+    amountExpected: finalAmountExpected,
+    amountPaid: finalAmountPaid,
     attended,
     dosageValue: isSubcut && dosage ? dosage.value : null,
     dosageUnit: isSubcut && dosage ? dosage.unit : null,
