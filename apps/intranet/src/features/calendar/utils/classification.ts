@@ -13,6 +13,14 @@ export interface ParsedPayload {
 }
 
 const SUBCUTANEOUS_CATEGORY = "Tratamiento subcutáneo";
+const NOT_ATTENDED_PATTERNS = [
+  /\bno\s+viene\b/i,
+  /\bno\s+vino\b/i,
+  /\bno\s+asiste\b/i,
+  /\bno\s+asisti[oó]\b/i,
+  /\bno\s+podr[áa]\s+asistir\b/i,
+  /\bno\s+podr[áa]\s+venir\b/i,
+];
 
 function normalizeChoiceValue(value: string): string {
   return value
@@ -86,6 +94,13 @@ function sanitizeSelectValue(value: null | string | undefined): null | string {
 
 export function eventKey(event: Pick<CalendarUnclassifiedEvent, "calendarId" | "eventId">) {
   return `${event.calendarId}:::${event.eventId}`;
+}
+
+export function isExplicitNoShowEvent(
+  event: Pick<CalendarUnclassifiedEvent, "description" | "summary">,
+) {
+  const text = `${event.summary ?? ""} ${event.description ?? ""}`;
+  return NOT_ATTENDED_PATTERNS.some((pattern) => pattern.test(text));
 }
 
 export function parseAmountInput(value: null | string | undefined): null | number {

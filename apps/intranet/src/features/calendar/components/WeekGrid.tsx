@@ -224,11 +224,11 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
       )}
       role="none"
     >
-      <div className="muted-scrollbar flex-1 touch-pan-x overflow-x-auto overscroll-x-contain">
+      <div className="muted-scrollbar flex-1 touch-auto overflow-auto overscroll-contain">
         <div className="min-w-270">
           <WeekGridHeader days={days} />
 
-          <div className="muted-scrollbar grid min-h-100 touch-pan-y grid-cols-[52px_repeat(6,1fr)] overflow-y-auto overscroll-y-contain">
+          <div className="grid min-h-100 grid-cols-[52px_repeat(6,1fr)]">
             <TimeAxis hours={hours} />
 
             {days.map((day) => (
@@ -254,7 +254,7 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
 
 function WeekGridHeader({ days }: { days: DayInfo[] }) {
   return (
-    <div className="grid grid-cols-[52px_repeat(6,1fr)] border-default-200 border-b bg-content2/60 backdrop-blur-md">
+    <div className="sticky top-0 z-15 grid grid-cols-[52px_repeat(6,1fr)] border-default-200 border-b bg-content2/60 backdrop-blur-md">
       <div className="border-default-200 border-r" />
       {days.map((day) => (
         <div

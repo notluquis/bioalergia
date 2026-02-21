@@ -7,6 +7,7 @@ import { Select, SelectItem } from "@/components/ui/Select";
 import type { CalendarUnclassifiedEvent } from "@/features/calendar/types";
 
 import type { ClassificationForm } from "../form-types";
+import { isExplicitNoShowEvent } from "../utils/classification";
 import { FormattedEventDescription } from "./FormattedEventDescription";
 
 interface ClassificationRowProps {
@@ -23,14 +24,6 @@ interface ClassificationRowProps {
 const SUBCUTANEOUS_CATEGORY = "Tratamiento subcutáneo";
 const NONE_CATEGORY_KEY = "__none_category__";
 const NONE_TREATMENT_STAGE_KEY = "__none_treatment_stage__";
-const NOT_ATTENDED_PATTERNS = [
-  /\bno\s+viene\b/i,
-  /\bno\s+vino\b/i,
-  /\bno\s+asiste\b/i,
-  /\bno\s+asisti[oó]\b/i,
-  /\bno\s+podr[áa]\s+asistir\b/i,
-  /\bno\s+podr[áa]\s+venir\b/i,
-];
 
 function normalizeChoiceValue(value: string): string {
   return value
@@ -61,11 +54,6 @@ function resolveChoiceValue(value: null | string | undefined, choices: readonly 
     (choice) => normalizeChoiceValue(choice) === normalizedInput,
   );
   return normalizedMatch ?? trimmed;
-}
-
-function isExplicitNoShowEvent(event: CalendarUnclassifiedEvent): boolean {
-  const text = `${event.summary ?? ""} ${event.description ?? ""}`;
-  return NOT_ATTENDED_PATTERNS.some((pattern) => pattern.test(text));
 }
 
 export function ClassificationRow({

@@ -35,6 +35,13 @@ const data: Row[] = [
   { id: "3", name: "Control anual", status: "Pausado", amount: 36000 },
 ];
 
+const longData: Row[] = Array.from({ length: 120 }, (_, index) => ({
+  id: String(index + 1),
+  name: `Servicio ${index + 1}`,
+  status: index % 3 === 0 ? "Activo" : index % 3 === 1 ? "Pausado" : "Pendiente",
+  amount: 15000 + index * 1000,
+}));
+
 const meta: Meta = {
   title: "Data/DataTable",
 };
@@ -47,6 +54,41 @@ export const Basic: Story = {
   render: () => (
     <div className="max-w-3xl">
       <DataTable columns={columns} data={data} enableVirtualization={false} />
+    </div>
+  ),
+};
+
+export const ScrollMaxHeight: Story = {
+  render: () => (
+    <div className="max-w-4xl">
+      <DataTable columns={columns} data={longData} scrollMaxHeight="24rem" />
+    </div>
+  ),
+};
+
+export const NonPaginatedAutoScroll: Story = {
+  render: () => (
+    <div className="max-w-4xl">
+      <DataTable
+        columns={columns}
+        data={longData}
+        enablePagination={false}
+        enableVirtualization={false}
+      />
+    </div>
+  ),
+};
+
+export const PageScrollMode: Story = {
+  render: () => (
+    <div className="max-w-4xl">
+      <DataTable
+        columns={columns}
+        data={longData}
+        enablePagination={false}
+        enableVirtualization={false}
+        scrollMode="page"
+      />
     </div>
   ),
 };
