@@ -6,6 +6,7 @@ import {
   Input as HeroInput,
   Label,
   ListBox,
+  Modal,
   ScrollShadow,
   SearchField,
   Separator,
@@ -21,7 +22,6 @@ import { DataTable } from "@/components/data-table/DataTable";
 import { TableRegion } from "@/components/data-table/TableRegion";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Modal } from "@/components/ui/Modal";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
@@ -600,63 +600,98 @@ export function CounterpartsPage() {
           ) : null}
         </Tabs.Panel>
       </Tabs>
-      <Modal
-        isOpen={state.isFormModalOpen}
-        onClose={state.closeFormModal}
-        title={state.formCounterpart ? "Editar contraparte" : "Nueva contraparte"}
-      >
-        <CounterpartForm
-          counterpart={state.formCounterpart}
-          error={state.error ?? displayError}
-          onSave={actions.handleSaveCounterpart}
-          saving={mutations.createMutation.isPending || mutations.updateMutation.isPending}
-        />
+      <Modal>
+        <Modal.Backdrop
+          className="bg-black/40 backdrop-blur-[2px]"
+          isOpen={state.isFormModalOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              state.closeFormModal();
+            }
+          }}
+        >
+          <Modal.Container placement="center">
+            <Modal.Dialog className="relative w-full max-w-2xl rounded-[28px] bg-background p-6 shadow-2xl">
+              <Modal.Header className="mb-4 font-bold text-primary text-xl">
+                <Modal.Heading>
+                  {state.formCounterpart ? "Editar contraparte" : "Nueva contraparte"}
+                </Modal.Heading>
+              </Modal.Header>
+              <Modal.Body className="mt-2 max-h-[80vh] overflow-y-auto overscroll-contain text-foreground">
+                <CounterpartForm
+                  counterpart={state.formCounterpart}
+                  error={state.error ?? displayError}
+                  onSave={actions.handleSaveCounterpart}
+                  saving={mutations.createMutation.isPending || mutations.updateMutation.isPending}
+                />
+              </Modal.Body>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
       </Modal>
-      <Modal
-        isOpen={state.isAssignRutModalOpen}
-        onClose={state.resetAssignRutModalState}
-        title="Asignar RUT a cuenta payout"
-      >
-        <div className="space-y-4">
-          <Input
-            readOnly
-            label="Cuentas payout seleccionadas"
-            value={String(state.assigningPayoutAccounts.length)}
-          />
-          <Input
-            label="RUT de contraparte"
-            onChange={(event) => {
-              state.setAssignRutValue(event.target.value);
-            }}
-            placeholder="12.345.678-5"
-            value={state.assignRutValue}
-          />
-          <Input
-            label="Titular (opcional)"
-            onChange={(event) => {
-              state.setAssignHolderValue(event.target.value);
-            }}
-            placeholder="Nombre contraparte"
-            value={state.assignHolderValue}
-          />
-          <p
-            className={`text-xs ${
-              derived.assignRutIsValid || state.assignRutValue.trim().length === 0
-                ? "text-default-500"
-                : "text-danger"
-            }`}
-          >
-            {derived.assignPreviewMessage}
-          </p>
-          <div className="flex justify-end gap-2">
-            <Button onClick={state.resetAssignRutModalState} variant="ghost">
-              Cancelar
-            </Button>
-            <Button disabled={!derived.assignRutIsValid} onClick={actions.handleAssignRutToPayout}>
-              Confirmar asignación
-            </Button>
-          </div>
-        </div>
+      <Modal>
+        <Modal.Backdrop
+          className="bg-black/40 backdrop-blur-[2px]"
+          isOpen={state.isAssignRutModalOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              state.resetAssignRutModalState();
+            }
+          }}
+        >
+          <Modal.Container placement="center">
+            <Modal.Dialog className="relative w-full max-w-2xl rounded-[28px] bg-background p-6 shadow-2xl">
+              <Modal.Header className="mb-4 font-bold text-primary text-xl">
+                <Modal.Heading>Asignar RUT a cuenta payout</Modal.Heading>
+              </Modal.Header>
+              <Modal.Body className="mt-2 max-h-[80vh] overflow-y-auto overscroll-contain text-foreground">
+                <div className="space-y-4">
+                  <Input
+                    readOnly
+                    label="Cuentas payout seleccionadas"
+                    value={String(state.assigningPayoutAccounts.length)}
+                  />
+                  <Input
+                    label="RUT de contraparte"
+                    onChange={(event) => {
+                      state.setAssignRutValue(event.target.value);
+                    }}
+                    placeholder="12.345.678-5"
+                    value={state.assignRutValue}
+                  />
+                  <Input
+                    label="Titular (opcional)"
+                    onChange={(event) => {
+                      state.setAssignHolderValue(event.target.value);
+                    }}
+                    placeholder="Nombre contraparte"
+                    value={state.assignHolderValue}
+                  />
+                  <p
+                    className={`text-xs ${
+                      derived.assignRutIsValid || state.assignRutValue.trim().length === 0
+                        ? "text-default-500"
+                        : "text-danger"
+                    }`}
+                  >
+                    {derived.assignPreviewMessage}
+                  </p>
+                  <div className="flex justify-end gap-2">
+                    <Button onClick={state.resetAssignRutModalState} variant="ghost">
+                      Cancelar
+                    </Button>
+                    <Button
+                      disabled={!derived.assignRutIsValid}
+                      onClick={actions.handleAssignRutToPayout}
+                    >
+                      Confirmar asignación
+                    </Button>
+                  </div>
+                </div>
+              </Modal.Body>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
       </Modal>
     </section>
   );

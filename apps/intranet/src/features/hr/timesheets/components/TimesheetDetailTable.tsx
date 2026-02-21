@@ -1,9 +1,9 @@
+import { Modal } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { Button } from "@/components/ui/Button";
-import { Modal } from "@/components/ui/Modal";
 import { useAuth } from "@/context/AuthContext";
 import type { Employee } from "@/features/hr/employees/types";
 
@@ -129,14 +129,27 @@ export function TimesheetDetailTable({
       />
 
       {/* Modal para ver comentario */}
-      <Modal
-        isOpen={Boolean(commentPreview)}
-        onClose={() => {
-          setCommentPreview(null);
-        }}
-        title={`Comentario · ${commentPreview ? formatDateLabel(commentPreview.date) : ""}`}
-      >
-        <p className="whitespace-pre-wrap text-foreground">{commentPreview?.text}</p>
+      <Modal>
+        <Modal.Backdrop
+          className="bg-black/40 backdrop-blur-[2px]"
+          isOpen={Boolean(commentPreview)}
+          onOpenChange={(open) => {
+            if (!open) {
+              setCommentPreview(null);
+            }
+          }}
+        >
+          <Modal.Container placement="center">
+            <Modal.Dialog className="relative w-full max-w-2xl rounded-[28px] bg-background p-6 shadow-2xl">
+              <Modal.Header className="mb-4 font-bold text-primary text-xl">
+                <Modal.Heading>{`Comentario · ${commentPreview ? formatDateLabel(commentPreview.date) : ""}`}</Modal.Heading>
+              </Modal.Header>
+              <Modal.Body className="mt-2 max-h-[80vh] overflow-y-auto overscroll-contain text-foreground">
+                <p className="whitespace-pre-wrap text-foreground">{commentPreview?.text}</p>
+              </Modal.Body>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
       </Modal>
     </div>
   );

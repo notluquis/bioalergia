@@ -1,5 +1,5 @@
+import { Modal } from "@heroui/react";
 import { AlertTriangle, CheckCircle, XCircle } from "lucide-react";
-import { Modal } from "@/components/ui/Modal";
 import type { CalendarSyncLog } from "@/features/calendar/types";
 import { numberFormatter } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -21,114 +21,133 @@ export function SyncDetailModal({ isOpen, log, onClose }: Readonly<SyncDetailMod
     (log.changeDetails?.excluded?.length ?? 0) > 0;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Detalle de sincronización">
-      <div className="space-y-6">
-        {/* Status Banner */}
-        <div
-          className={cn(
-            "flex items-center gap-3 rounded-lg p-3 font-medium text-sm",
-            (() => {
-              if (log.status === "SUCCESS") {
-                return "bg-success/10 text-success";
-              }
-              if (log.status === "ERROR") {
-                return "bg-danger/10 text-danger";
-              }
-              return "bg-warning/10 text-warning";
-            })(),
-          )}
-        >
-          {(() => {
-            if (log.status === "SUCCESS") {
-              return <CheckCircle size={18} />;
-            }
-            if (log.status === "ERROR") {
-              return <XCircle size={18} />;
-            }
-            return <AlertTriangle size={18} />;
-          })()}
-          <span>
-            {(() => {
-              if (log.status === "SUCCESS") {
-                return "Sincronización completada exitosamente";
-              }
-              if (log.status === "ERROR") {
-                return "Error durante la sincronización";
-              }
-              return "Sincronización en curso";
-            })()}
-          </span>
-        </div>
-
-        {log.errorMessage && (
-          <div className="rounded-lg border border-danger/20 bg-danger/5 p-3 text-danger text-sm">
-            <p className="font-semibold">Error reportado:</p>
-            <p className="mt-1 font-mono text-xs opacity-90">{log.errorMessage}</p>
-          </div>
-        )}
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <StatBox color="text-success" label="Insertadas" value={log.inserted} />
-          <StatBox color="text-info" label="Actualizadas" value={log.updated} />
-          <StatBox color="text-foreground-500" label="Omitidas" value={log.skipped} />
-          <StatBox color="text-warning" label="Excluidas" value={log.excluded} />
-        </div>
-
-        {/* Change Details */}
-        {hasChanges && log.changeDetails && (
-          <div className="space-y-4">
-            <h3 className="font-semibold text-foreground text-sm">Detalle de cambios</h3>
-            <div className="max-h-60 space-y-4 overflow-y-auto rounded-xl bg-default-100/50 p-4 text-xs">
-              {log.changeDetails.inserted && log.changeDetails.inserted.length > 0 && (
-                <div>
-                  <h4 className="mb-2 font-medium text-success">
-                    Nuevos eventos ({log.changeDetails.inserted.length})
-                  </h4>
-                  <ul className="list-disc space-y-1 pl-4 opacity-80">
-                    {log.changeDetails.inserted.map((item) => (
-                      <li key={`inserted-${item}`}>{item}</li>
-                    ))}
-                  </ul>
+    <Modal>
+      <Modal.Backdrop
+        className="bg-black/40 backdrop-blur-[2px]"
+        isOpen={isOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            onClose();
+          }
+        }}
+      >
+        <Modal.Container placement="center">
+          <Modal.Dialog className="relative w-full max-w-2xl rounded-[28px] bg-background p-6 shadow-2xl">
+            <Modal.Header className="mb-4 font-bold text-primary text-xl">
+              <Modal.Heading>Detalle de sincronización</Modal.Heading>
+            </Modal.Header>
+            <Modal.Body className="mt-2 max-h-[80vh] overflow-y-auto overscroll-contain text-foreground">
+              <div className="space-y-6">
+                {/* Status Banner */}
+                <div
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg p-3 font-medium text-sm",
+                    (() => {
+                      if (log.status === "SUCCESS") {
+                        return "bg-success/10 text-success";
+                      }
+                      if (log.status === "ERROR") {
+                        return "bg-danger/10 text-danger";
+                      }
+                      return "bg-warning/10 text-warning";
+                    })(),
+                  )}
+                >
+                  {(() => {
+                    if (log.status === "SUCCESS") {
+                      return <CheckCircle size={18} />;
+                    }
+                    if (log.status === "ERROR") {
+                      return <XCircle size={18} />;
+                    }
+                    return <AlertTriangle size={18} />;
+                  })()}
+                  <span>
+                    {(() => {
+                      if (log.status === "SUCCESS") {
+                        return "Sincronización completada exitosamente";
+                      }
+                      if (log.status === "ERROR") {
+                        return "Error durante la sincronización";
+                      }
+                      return "Sincronización en curso";
+                    })()}
+                  </span>
                 </div>
-              )}
 
-              {log.changeDetails.updated && log.changeDetails.updated.length > 0 && (
-                <div>
-                  <h4 className="mb-2 font-medium text-info">
-                    Actualizados ({log.changeDetails.updated.length})
-                  </h4>
-                  <ul className="list-disc space-y-1 pl-4 opacity-80">
-                    {log.changeDetails.updated.map((item) => {
-                      const summary = typeof item === "string" ? item : item.summary;
-                      return <li key={`updated-${summary}`}>{summary}</li>;
-                    })}
-                  </ul>
+                {log.errorMessage && (
+                  <div className="rounded-lg border border-danger/20 bg-danger/5 p-3 text-danger text-sm">
+                    <p className="font-semibold">Error reportado:</p>
+                    <p className="mt-1 font-mono text-xs opacity-90">{log.errorMessage}</p>
+                  </div>
+                )}
+
+                {/* Stats Grid */}
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                  <StatBox color="text-success" label="Insertadas" value={log.inserted} />
+                  <StatBox color="text-info" label="Actualizadas" value={log.updated} />
+                  <StatBox color="text-foreground-500" label="Omitidas" value={log.skipped} />
+                  <StatBox color="text-warning" label="Excluidas" value={log.excluded} />
                 </div>
-              )}
 
-              {log.changeDetails.excluded && log.changeDetails.excluded.length > 0 && (
-                <div>
-                  <h4 className="mb-2 font-medium text-warning">
-                    Excluidos ({log.changeDetails.excluded.length})
-                  </h4>
-                  <ul className="list-disc space-y-1 pl-4 opacity-80">
-                    {log.changeDetails.excluded.map((item) => (
-                      <li key={`excluded-${item}`}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+                {/* Change Details */}
+                {hasChanges && log.changeDetails && (
+                  <div className="space-y-4">
+                    <h3 className="font-semibold text-foreground text-sm">Detalle de cambios</h3>
+                    <div className="max-h-60 space-y-4 overflow-y-auto rounded-xl bg-default-100/50 p-4 text-xs">
+                      {log.changeDetails.inserted && log.changeDetails.inserted.length > 0 && (
+                        <div>
+                          <h4 className="mb-2 font-medium text-success">
+                            Nuevos eventos ({log.changeDetails.inserted.length})
+                          </h4>
+                          <ul className="list-disc space-y-1 pl-4 opacity-80">
+                            {log.changeDetails.inserted.map((item) => (
+                              <li key={`inserted-${item}`}>{item}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
 
-        {!hasChanges && log.status === "SUCCESS" && (
-          <div className="py-4 text-center text-foreground-500 text-sm italic">
-            No hubo cambios registrados en esta sincronización.
-          </div>
-        )}
-      </div>
+                      {log.changeDetails.updated && log.changeDetails.updated.length > 0 && (
+                        <div>
+                          <h4 className="mb-2 font-medium text-info">
+                            Actualizados ({log.changeDetails.updated.length})
+                          </h4>
+                          <ul className="list-disc space-y-1 pl-4 opacity-80">
+                            {log.changeDetails.updated.map((item) => {
+                              const summary = typeof item === "string" ? item : item.summary;
+                              return <li key={`updated-${summary}`}>{summary}</li>;
+                            })}
+                          </ul>
+                        </div>
+                      )}
+
+                      {log.changeDetails.excluded && log.changeDetails.excluded.length > 0 && (
+                        <div>
+                          <h4 className="mb-2 font-medium text-warning">
+                            Excluidos ({log.changeDetails.excluded.length})
+                          </h4>
+                          <ul className="list-disc space-y-1 pl-4 opacity-80">
+                            {log.changeDetails.excluded.map((item) => (
+                              <li key={`excluded-${item}`}>{item}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {!hasChanges && log.status === "SUCCESS" && (
+                  <div className="py-4 text-center text-foreground-500 text-sm italic">
+                    No hubo cambios registrados en esta sincronización.
+                  </div>
+                )}
+              </div>
+            </Modal.Body>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
     </Modal>
   );
 }

@@ -1,8 +1,8 @@
+import { Label, ListBox, Select } from "@heroui/react";
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 
 import { Input } from "@/components/ui/Input";
-import { Select, SelectItem } from "@/components/ui/Select";
 import { GRID_2_COL_MD } from "@/lib/styles";
 
 import type { ServiceFrequency, ServiceRecurrenceType } from "../../types";
@@ -40,15 +40,25 @@ export function SchedulingSection({
   return (
     <section className={GRID_2_COL_MD}>
       <Select
-        label="Frecuencia"
         onChange={(key) => {
           onChange("frequency", key as ServiceFrequency);
         }}
         value={frequency ?? "MONTHLY"}
       >
-        {FREQUENCY_OPTIONS.map((option) => (
-          <SelectItem key={option.value}>{option.label}</SelectItem>
-        ))}
+        <Label>Frecuencia</Label>
+        <Select.Trigger>
+          <Select.Value />
+          <Select.Indicator />
+        </Select.Trigger>
+        <Select.Popover>
+          <ListBox>
+            {FREQUENCY_OPTIONS.map((option) => (
+              <ListBox.Item id={option.value} key={option.value}>
+                {option.label}
+              </ListBox.Item>
+            ))}
+          </ListBox>
+        </Select.Popover>
       </Select>
       <Input
         label="Fecha de inicio"

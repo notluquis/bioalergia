@@ -3,7 +3,16 @@
  * A more ergonomic, user-friendly interface for auditing employee schedules
  */
 
-import { ButtonGroup, Card, Chip, Description, Skeleton } from "@heroui/react";
+import {
+  ButtonGroup,
+  Card,
+  Chip,
+  Description,
+  Label,
+  ListBox,
+  Select,
+  Skeleton,
+} from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
@@ -11,7 +20,6 @@ import { ChevronDown, Users, X } from "lucide-react";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
-import { Select, SelectItem } from "@/components/ui/Select";
 import { SmoothCollapse } from "@/components/ui/SmoothCollapse";
 import { useAuth } from "@/context/AuthContext";
 import { EmployeeMultiSelectPopover } from "@/features/hr/components/EmployeeMultiSelectPopover";
@@ -335,11 +343,20 @@ function PeriodSelectionPanel({
                     }
                   }}
                 >
-                  {months.map((month) => (
-                    <SelectItem id={month} key={month}>
-                      {dayjs(`${month}-01`).format("MMMM YYYY")}
-                    </SelectItem>
-                  ))}
+                  <Label className="sr-only">Seleccionar mes</Label>
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      {months.map((month) => (
+                        <ListBox.Item id={month} key={month}>
+                          {dayjs(`${month}-01`).format("MMMM YYYY")}
+                        </ListBox.Item>
+                      ))}
+                    </ListBox>
+                  </Select.Popover>
                 </Select>
                 {weeksForMonth.length > 0 && (
                   <Button

@@ -1,3 +1,4 @@
+import { Modal } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
@@ -5,7 +6,6 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Modal } from "@/components/ui/Modal";
 import { useAuth } from "@/context/AuthContext";
 import {
   createLoan,
@@ -211,100 +211,126 @@ export function LoansPage() {
         </div>
       </div>
 
-      <Modal
-        isOpen={createOpen}
-        onClose={() => {
-          setCreateOpen(false);
-        }}
-        title="Nuevo préstamo"
-      >
-        <LoanForm
-          onCancel={() => {
-            setCreateOpen(false);
+      <Modal>
+        <Modal.Backdrop
+          className="bg-black/40 backdrop-blur-[2px]"
+          isOpen={createOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              setCreateOpen(false);
+            }
           }}
-          onSubmit={async (payload) => {
-            await handleCreateLoan(payload);
-          }}
-        />
+        >
+          <Modal.Container placement="center">
+            <Modal.Dialog className="relative w-full max-w-2xl rounded-[28px] bg-background p-6 shadow-2xl">
+              <Modal.Header className="mb-4 font-bold text-primary text-xl">
+                <Modal.Heading>Nuevo préstamo</Modal.Heading>
+              </Modal.Header>
+              <Modal.Body className="mt-2 max-h-[80vh] overflow-y-auto overscroll-contain text-foreground">
+                <LoanForm
+                  onCancel={() => {
+                    setCreateOpen(false);
+                  }}
+                  onSubmit={async (payload) => {
+                    await handleCreateLoan(payload);
+                  }}
+                />
 
-        {createError && (
-          <p className="mt-4 rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">
-            {createError}
-          </p>
-        )}
+                {createError && (
+                  <p className="mt-4 rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">
+                    {createError}
+                  </p>
+                )}
+              </Modal.Body>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
       </Modal>
 
-      <Modal
-        isOpen={Boolean(paymentSchedule)}
-        onClose={() => {
-          setPaymentSchedule(null);
-        }}
-        title={
-          paymentSchedule
-            ? `Registrar pago cuota #${paymentSchedule.installment_number}`
-            : "Registrar pago"
-        }
-      >
-        {paymentSchedule && (
-          <form className="space-y-4" onSubmit={handlePaymentSubmit}>
-            <Input
-              inputMode="numeric"
-              label="ID transacción"
-              onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                setPaymentForm((prev) => ({ ...prev, transactionId: event.target.value }));
-              }}
-              required
-              type="number"
-              value={paymentForm.transactionId}
-            />
+      <Modal>
+        <Modal.Backdrop
+          className="bg-black/40 backdrop-blur-[2px]"
+          isOpen={Boolean(paymentSchedule)}
+          onOpenChange={(open) => {
+            if (!open) {
+              setPaymentSchedule(null);
+            }
+          }}
+        >
+          <Modal.Container placement="center">
+            <Modal.Dialog className="relative w-full max-w-2xl rounded-[28px] bg-background p-6 shadow-2xl">
+              <Modal.Header className="mb-4 font-bold text-primary text-xl">
+                <Modal.Heading>
+                  {paymentSchedule
+                    ? `Registrar pago cuota #${paymentSchedule.installment_number}`
+                    : "Registrar pago"}
+                </Modal.Heading>
+              </Modal.Header>
+              <Modal.Body className="mt-2 max-h-[80vh] overflow-y-auto overscroll-contain text-foreground">
+                {paymentSchedule && (
+                  <form className="space-y-4" onSubmit={handlePaymentSubmit}>
+                    <Input
+                      inputMode="numeric"
+                      label="ID transacción"
+                      onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                        setPaymentForm((prev) => ({ ...prev, transactionId: event.target.value }));
+                      }}
+                      required
+                      type="number"
+                      value={paymentForm.transactionId}
+                    />
 
-            <Input
-              inputMode="decimal"
-              label="Monto pagado"
-              min={0}
-              onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                setPaymentForm((prev) => ({ ...prev, paidAmount: event.target.value }));
-              }}
-              required
-              step="0.01"
-              type="number"
-              value={paymentForm.paidAmount}
-            />
+                    <Input
+                      inputMode="decimal"
+                      label="Monto pagado"
+                      min={0}
+                      onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                        setPaymentForm((prev) => ({ ...prev, paidAmount: event.target.value }));
+                      }}
+                      required
+                      step="0.01"
+                      type="number"
+                      value={paymentForm.paidAmount}
+                    />
 
-            <Input
-              label="Fecha de pago"
-              onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                setPaymentForm((prev) => ({
-                  ...prev,
-                  paidDate: event.target.value,
-                }));
-              }}
-              required
-              type="date"
-              value={paymentForm.paidDate}
-            />
+                    <Input
+                      label="Fecha de pago"
+                      onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                        setPaymentForm((prev) => ({
+                          ...prev,
+                          paidDate: event.target.value,
+                        }));
+                      }}
+                      required
+                      type="date"
+                      value={paymentForm.paidDate}
+                    />
 
-            {paymentError && (
-              <p className="rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">
-                {paymentError}
-              </p>
-            )}
-            <div className="flex justify-end gap-3">
-              <Button
-                onClick={() => {
-                  setPaymentSchedule(null);
-                }}
-                type="button"
-                variant="secondary"
-              >
-                Cancelar
-              </Button>
-              <Button disabled={registerPaymentMutation.isPending} type="submit">
-                {registerPaymentMutation.isPending ? "Guardando..." : "Guardar pago"}
-              </Button>
-            </div>
-          </form>
-        )}
+                    {paymentError && (
+                      <p className="rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">
+                        {paymentError}
+                      </p>
+                    )}
+                    <div className="flex justify-end gap-3">
+                      <Button
+                        onClick={() => {
+                          setPaymentSchedule(null);
+                        }}
+                        type="button"
+                        variant="secondary"
+                      >
+                        Cancelar
+                      </Button>
+                      <Button disabled={registerPaymentMutation.isPending} type="submit">
+                        {registerPaymentMutation.isPending ? "Guardando..." : "Guardar pago"}
+                      </Button>
+                    </div>
+                  </form>
+                )}
+              </Modal.Body>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
       </Modal>
     </section>
   );

@@ -1,5 +1,4 @@
-// No ListBox needed here
-import { Card } from "@heroui/react";
+import { Card, Label, ListBox, Select } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import type { AnyRoute } from "@tanstack/react-router";
 import { useRouter } from "@tanstack/react-router";
@@ -7,7 +6,6 @@ import { Plus, RotateCw, Shield } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { Button } from "@/components/ui/Button";
-import { Select, SelectItem } from "@/components/ui/Select";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { syncPermissions, updateRolePermissions } from "@/features/roles/api";
@@ -202,14 +200,23 @@ export function RolesSettingsPage() {
                 value={viewModeRole}
                 onChange={(key) => setViewModeRole(key ? key.toString() : "")}
               >
-                <SelectItem id="all" textValue="Ver todos los roles">
-                  Ver todos los roles
-                </SelectItem>
-                {roles.map((r) => (
-                  <SelectItem id={r.id.toString()} key={r.id} textValue={r.name}>
-                    {r.name}
-                  </SelectItem>
-                ))}
+                <Label className="sr-only">Filtrar roles</Label>
+                <Select.Trigger>
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover>
+                  <ListBox>
+                    <ListBox.Item id="all" textValue="Ver todos los roles">
+                      Ver todos los roles
+                    </ListBox.Item>
+                    {roles.map((r) => (
+                      <ListBox.Item id={r.id.toString()} key={r.id} textValue={r.name}>
+                        {r.name}
+                      </ListBox.Item>
+                    ))}
+                  </ListBox>
+                </Select.Popover>
               </Select>
             </div>
 

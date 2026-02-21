@@ -1,9 +1,8 @@
-import { Skeleton } from "@heroui/react";
+import { Label, ListBox, Select, Skeleton } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { Suspense, useState } from "react";
 
-import { Select, SelectItem } from "@/components/ui/Select";
 import { useAuth } from "@/context/AuthContext";
 import { employeeKeys } from "@/features/hr/employees/queries";
 import { fetchTimesheetSummary } from "@/features/hr/timesheets/api";
@@ -78,7 +77,6 @@ export function TimesheetsPage() {
             <Select
               className="w-full"
               isDisabled={activeEmployees.length === 0}
-              label="Prestador"
               placeholder="Seleccionar..."
               value={selectedEmployeeId ? String(selectedEmployeeId) : null}
               onChange={(key) => {
@@ -86,17 +84,25 @@ export function TimesheetsPage() {
                 setSelectedEmployeeId(value);
               }}
             >
-              {activeEmployees.map((emp) => (
-                <SelectItem id={String(emp.id)} key={String(emp.id)}>
-                  {emp.full_name}
-                </SelectItem>
-              ))}
+              <Label>Prestador</Label>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  {activeEmployees.map((emp) => (
+                    <ListBox.Item id={String(emp.id)} key={String(emp.id)}>
+                      {emp.full_name}
+                    </ListBox.Item>
+                  ))}
+                </ListBox>
+              </Select.Popover>
             </Select>
           </div>
           <div className="min-w-44">
             <Select
               className="w-full"
-              label="Periodo"
               value={month}
               onChange={(key) => {
                 if (key) {
@@ -104,20 +110,29 @@ export function TimesheetsPage() {
                 }
               }}
             >
-              {groupedMonths.flatMap((group) => [
-                <SelectItem id={`year-${group.year}`} isDisabled key={`year-${group.year}`}>
-                  {group.year}
-                </SelectItem>,
-                ...group.months.map((m) => {
-                  const hasData = monthsWithData.has(m);
-                  const label = dayjs(`${m}-01`).format("MMMM");
-                  return (
-                    <SelectItem id={m} key={m}>
-                      {label} {hasData ? "✓" : ""}
-                    </SelectItem>
-                  );
-                }),
-              ])}
+              <Label>Periodo</Label>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  {groupedMonths.flatMap((group) => [
+                    <ListBox.Item id={`year-${group.year}`} isDisabled key={`year-${group.year}`}>
+                      {group.year}
+                    </ListBox.Item>,
+                    ...group.months.map((m) => {
+                      const hasData = monthsWithData.has(m);
+                      const label = dayjs(`${m}-01`).format("MMMM");
+                      return (
+                        <ListBox.Item id={m} key={m}>
+                          {label} {hasData ? "✓" : ""}
+                        </ListBox.Item>
+                      );
+                    }),
+                  ])}
+                </ListBox>
+              </Select.Popover>
             </Select>
           </div>
         </div>

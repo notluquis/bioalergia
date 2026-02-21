@@ -1,3 +1,4 @@
+import { Modal } from "@heroui/react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
@@ -5,7 +6,6 @@ import { Check } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Modal } from "@/components/ui/Modal";
 import { toast } from "@/lib/toast-interceptor";
 
 import { personalFinanceApi } from "../api";
@@ -70,84 +70,100 @@ export function PayInstallmentModal({
         {iconOnly ? <Check className="size-4" /> : "Pagar"}
       </Button>
 
-      <Modal
-        className="max-w-md"
-        isOpen={open}
-        onClose={() => {
-          setOpen(false);
-        }}
-        title={`Pagar Cuota #${installment.installmentNumber}`}
-      >
-        <div className="mb-4 text-gray-500 text-sm">
-          Registrar pago de la cuota vencida el{" "}
-          {dayjs(installment.dueDate, "YYYY-MM-DD").format("DD/MM/YYYY")}.
-        </div>
-
-        <form
-          className="space-y-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            void form.handleSubmit();
+      <Modal>
+        <Modal.Backdrop
+          className="bg-black/40 backdrop-blur-[2px]"
+          isOpen={open}
+          onOpenChange={(isOpen) => {
+            if (!isOpen) {
+              setOpen(false);
+            }
           }}
         >
-          <form.Field name="amount">
-            {(field) => (
-              <div>
-                <Input
-                  label="Monto Pagado"
-                  onBlur={field.handleBlur}
-                  onChange={(e) => {
-                    field.handleChange(Number.parseFloat(e.target.value));
+          <Modal.Container placement="center">
+            <Modal.Dialog className="relative w-full max-w-2xl rounded-[28px] bg-background p-6 shadow-2xl max-w-md">
+              <Modal.Header className="mb-4 font-bold text-primary text-xl">
+                <Modal.Heading>{`Pagar Cuota #${installment.installmentNumber}`}</Modal.Heading>
+              </Modal.Header>
+              <Modal.Body className="mt-2 max-h-[80vh] overflow-y-auto overscroll-contain text-foreground">
+                <div className="mb-4 text-gray-500 text-sm">
+                  Registrar pago de la cuota vencida el{" "}
+                  {dayjs(installment.dueDate, "YYYY-MM-DD").format("DD/MM/YYYY")}.
+                </div>
+
+                <form
+                  className="space-y-4"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    void form.handleSubmit();
                   }}
-                  required
-                  type="number"
-                  value={field.state.value}
-                />
+                >
+                  <form.Field name="amount">
+                    {(field) => (
+                      <div>
+                        <Input
+                          label="Monto Pagado"
+                          onBlur={field.handleBlur}
+                          onChange={(e) => {
+                            field.handleChange(Number.parseFloat(e.target.value));
+                          }}
+                          required
+                          type="number"
+                          value={field.state.value}
+                        />
 
-                {field.state.meta.errors.length > 0 && (
-                  <p className="mt-1 text-danger text-xs">{field.state.meta.errors.join(", ")}</p>
-                )}
-              </div>
-            )}
-          </form.Field>
+                        {field.state.meta.errors.length > 0 && (
+                          <p className="mt-1 text-danger text-xs">
+                            {field.state.meta.errors.join(", ")}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </form.Field>
 
-          <form.Field name="paymentDate">
-            {(field) => (
-              <div>
-                <Input
-                  label="Fecha de Pago"
-                  onBlur={field.handleBlur}
-                  onChange={(e) => {
-                    field.handleChange(e.target.value);
-                  }}
-                  required
-                  type="date"
-                  value={field.state.value || ""}
-                />
+                  <form.Field name="paymentDate">
+                    {(field) => (
+                      <div>
+                        <Input
+                          label="Fecha de Pago"
+                          onBlur={field.handleBlur}
+                          onChange={(e) => {
+                            field.handleChange(e.target.value);
+                          }}
+                          required
+                          type="date"
+                          value={field.state.value || ""}
+                        />
 
-                {field.state.meta.errors.length > 0 && (
-                  <p className="mt-1 text-danger text-xs">{field.state.meta.errors.join(", ")}</p>
-                )}
-              </div>
-            )}
-          </form.Field>
+                        {field.state.meta.errors.length > 0 && (
+                          <p className="mt-1 text-danger text-xs">
+                            {field.state.meta.errors.join(", ")}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </form.Field>
 
-          <div className="mt-6 flex justify-end gap-3">
-            <Button
-              disabled={mutation.isPending}
-              onClick={() => {
-                setOpen(false);
-              }}
-              variant="ghost"
-            >
-              Cancelar
-            </Button>
-            <Button isLoading={mutation.isPending} type="submit">
-              {mutation.isPending ? "Pagando..." : "Confirmar Pago"}
-            </Button>
-          </div>
-        </form>
+                  <div className="mt-6 flex justify-end gap-3">
+                    <Button
+                      disabled={mutation.isPending}
+                      onClick={() => {
+                        setOpen(false);
+                      }}
+                      variant="ghost"
+                    >
+                      Cancelar
+                    </Button>
+                    <Button isLoading={mutation.isPending} type="submit">
+                      {mutation.isPending ? "Pagando..." : "Confirmar Pago"}
+                    </Button>
+                  </div>
+                </form>
+              </Modal.Body>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
       </Modal>
     </>
   );

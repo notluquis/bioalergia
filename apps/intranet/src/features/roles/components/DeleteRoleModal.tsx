@@ -1,11 +1,17 @@
-import { Alert, Description, Skeleton, Spinner } from "@heroui/react";
+import {
+  Alert,
+  Description,
+  Label,
+  ListBox,
+  Modal,
+  Select,
+  Skeleton,
+  Spinner,
+} from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { AlertCircle, AlertTriangle, ArrowRight } from "lucide-react";
 import { Suspense, useState } from "react";
-
 import { Button } from "@/components/ui/Button";
-import { Modal } from "@/components/ui/Modal";
-import { Select, SelectItem } from "@/components/ui/Select";
 import { useToast } from "@/context/ToastContext";
 import { deleteRole, reassignRoleUsers, roleKeys, roleQueries } from "@/features/roles/api";
 import type { Role } from "@/types/roles";
@@ -21,40 +27,59 @@ export function DeleteRoleModal({ allRoles, isOpen, onClose, role }: DeleteRoleM
   const isSystemRole = role.isSystem;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={`Eliminar Rol: ${role.name}`}>
-      <div className="pb-6">
-        {isSystemRole ? (
-          <div className="py-2">
-            <Alert status="danger">
-              <Alert.Indicator>
-                <AlertCircle className="h-4 w-4" />
-              </Alert.Indicator>
-              <Alert.Content>
-                Este es un rol de sistema protegido y no puede ser eliminado.
-              </Alert.Content>
-            </Alert>
-            <div className="mt-6 flex justify-end">
-              <Button variant="ghost" onPress={onClose}>
-                Cerrar
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <Suspense
-            fallback={
-              <div className="space-y-3 py-4">
-                <Skeleton className="h-6 w-56 rounded-md" />
-                <Skeleton className="h-10 w-full rounded-md" />
-                <Description className="text-sm opacity-70">
-                  Verificando usuarios afectados...
-                </Description>
+    <Modal>
+      <Modal.Backdrop
+        className="bg-black/40 backdrop-blur-[2px]"
+        isOpen={isOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            onClose();
+          }
+        }}
+      >
+        <Modal.Container placement="center">
+          <Modal.Dialog className="relative w-full max-w-2xl rounded-[28px] bg-background p-6 shadow-2xl">
+            <Modal.Header className="mb-4 font-bold text-primary text-xl">
+              <Modal.Heading>{`Eliminar Rol: ${role.name}`}</Modal.Heading>
+            </Modal.Header>
+            <Modal.Body className="mt-2 max-h-[80vh] overflow-y-auto overscroll-contain text-foreground">
+              <div className="pb-6">
+                {isSystemRole ? (
+                  <div className="py-2">
+                    <Alert status="danger">
+                      <Alert.Indicator>
+                        <AlertCircle className="h-4 w-4" />
+                      </Alert.Indicator>
+                      <Alert.Content>
+                        Este es un rol de sistema protegido y no puede ser eliminado.
+                      </Alert.Content>
+                    </Alert>
+                    <div className="mt-6 flex justify-end">
+                      <Button variant="ghost" onPress={onClose}>
+                        Cerrar
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <Suspense
+                    fallback={
+                      <div className="space-y-3 py-4">
+                        <Skeleton className="h-6 w-56 rounded-md" />
+                        <Skeleton className="h-10 w-full rounded-md" />
+                        <Description className="text-sm opacity-70">
+                          Verificando usuarios afectados...
+                        </Description>
+                      </div>
+                    }
+                  >
+                    <DeleteRoleForm allRoles={allRoles} onClose={onClose} role={role} />
+                  </Suspense>
+                )}
               </div>
-            }
-          >
-            <DeleteRoleForm allRoles={allRoles} onClose={onClose} role={role} />
-          </Suspense>
-        )}
-      </div>
+            </Modal.Body>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
     </Modal>
   );
 }
@@ -140,16 +165,24 @@ function DeleteRoleForm({
               <Select
                 aria-label="Seleccionar rol de destino"
                 className="w-full"
-                label="Rol de destino"
                 placeholder="Seleccionar rol..."
                 value={targetRoleId}
                 onChange={(key) => setTargetRoleId(key ? String(key) : "")}
               >
-                {availableRoles.map((r) => (
-                  <SelectItem id={r.id.toString()} key={r.id} textValue={r.name}>
-                    {r.name}
-                  </SelectItem>
-                ))}
+                <Label>Rol de destino</Label>
+                <Select.Trigger>
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover>
+                  <ListBox>
+                    {availableRoles.map((r) => (
+                      <ListBox.Item id={r.id.toString()} key={r.id} textValue={r.name}>
+                        {r.name}
+                      </ListBox.Item>
+                    ))}
+                  </ListBox>
+                </Select.Popover>
               </Select>
             </div>
           </div>

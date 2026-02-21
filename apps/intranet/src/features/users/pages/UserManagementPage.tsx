@@ -1,5 +1,5 @@
 import { schema as schemaLite } from "@finanzas/db/schema-lite";
-import { Description } from "@heroui/react";
+import { Description, Label, ListBox, Modal, Select } from "@heroui/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useClientQueries } from "@zenstackhq/tanstack-query/react";
 import dayjs from "dayjs";
@@ -8,8 +8,6 @@ import { Copy, Key, Shield, UserCog, UserPlus } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { Button } from "@/components/ui/Button";
-import { Modal } from "@/components/ui/Modal";
-import { Select, SelectItem } from "@/components/ui/Select";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { deleteUserPasskey, resetUserPassword, toggleUserMfa } from "@/features/users/api";
@@ -328,7 +326,6 @@ export function UserManagementPage() {
             <Select
               aria-label="Filtrar por rol"
               className="w-full"
-              label="Filtrar por rol"
               value={roleFilter}
               onChange={(key) => {
                 if (key) {
@@ -336,14 +333,23 @@ export function UserManagementPage() {
                 }
               }}
             >
-              <SelectItem id="ALL" textValue="Todos los roles">
-                Todos los roles
-              </SelectItem>
-              {roles?.map((role: RoleOption) => (
-                <SelectItem id={role.name} key={role.id} textValue={role.name}>
-                  {role.name}
-                </SelectItem>
-              ))}
+              <Label>Filtrar por rol</Label>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  <ListBox.Item id="ALL" textValue="Todos los roles">
+                    Todos los roles
+                  </ListBox.Item>
+                  {roles?.map((role: RoleOption) => (
+                    <ListBox.Item id={role.name} key={role.id} textValue={role.name}>
+                      {role.name}
+                    </ListBox.Item>
+                  ))}
+                </ListBox>
+              </Select.Popover>
             </Select>
           </div>
 
@@ -372,23 +378,35 @@ export function UserManagementPage() {
         />
       </div>
 
-      <Modal
-        boxClassName="max-w-4xl"
-        isOpen={isCreateUserOpen}
-        onClose={() => {
-          setIsCreateUserOpen(false);
-        }}
-        title="Agregar usuario"
-      >
-        <AddUserFormContainer
-          showPageHeader={false}
-          onCancel={() => {
-            setIsCreateUserOpen(false);
+      <Modal>
+        <Modal.Backdrop
+          className="bg-black/40 backdrop-blur-[2px]"
+          isOpen={isCreateUserOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              setIsCreateUserOpen(false);
+            }
           }}
-          onCreated={() => {
-            setIsCreateUserOpen(false);
-          }}
-        />
+        >
+          <Modal.Container placement="center">
+            <Modal.Dialog className="relative w-full max-w-2xl rounded-[28px] bg-background p-6 shadow-2xl max-w-4xl">
+              <Modal.Header className="mb-4 font-bold text-primary text-xl">
+                <Modal.Heading>Agregar usuario</Modal.Heading>
+              </Modal.Header>
+              <Modal.Body className="mt-2 max-h-[80vh] overflow-y-auto overscroll-contain text-foreground">
+                <AddUserFormContainer
+                  showPageHeader={false}
+                  onCancel={() => {
+                    setIsCreateUserOpen(false);
+                  }}
+                  onCreated={() => {
+                    setIsCreateUserOpen(false);
+                  }}
+                />
+              </Modal.Body>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
       </Modal>
 
       <EditRoleModalContent
@@ -493,52 +511,75 @@ function EditRoleModalContent({
   setSelectedRole: (value: string) => void;
 }) {
   return (
-    <Modal
-      boxClassName="max-w-md"
-      isOpen={Boolean(editingUser)}
-      onClose={onCancel}
-      title={`Editar Rol: ${editingUser ? getPersonFullName(editingUser.person) : ""}`}
-    >
-      <div className="mt-4 flex flex-col gap-4">
-        <Description className="text-default-600 text-sm">
-          Selecciona el nuevo rol para el usuario. Esto actualizará sus permisos inmediatamente.
-        </Description>
+    <Modal>
+      <Modal.Backdrop
+        className="bg-black/40 backdrop-blur-[2px]"
+        isOpen={Boolean(editingUser)}
+        onOpenChange={(open) => {
+          if (!open) {
+            onCancel();
+          }
+        }}
+      >
+        <Modal.Container placement="center">
+          <Modal.Dialog className="relative w-full max-w-2xl rounded-[28px] bg-background p-6 shadow-2xl max-w-md">
+            <Modal.Header className="mb-4 font-bold text-primary text-xl">
+              <Modal.Heading>{`Editar Rol: ${editingUser ? getPersonFullName(editingUser.person) : ""}`}</Modal.Heading>
+            </Modal.Header>
+            <Modal.Body className="mt-2 max-h-[80vh] overflow-y-auto overscroll-contain text-foreground">
+              <div className="mt-4 flex flex-col gap-4">
+                <Description className="text-default-600 text-sm">
+                  Selecciona el nuevo rol para el usuario. Esto actualizará sus permisos
+                  inmediatamente.
+                </Description>
 
-        <div className="form-control">
-          <Select
-            aria-label="Rol asignado"
-            className="w-full"
-            label="Rol asignado"
-            placeholder="Seleccionar rol"
-            value={selectedRole}
-            onChange={(key) => {
-              if (key) {
-                setSelectedRole(key.toString());
-              }
-            }}
-          >
-            {roles.map((role) => (
-              <SelectItem id={role.name} key={role.id} textValue={role.name}>
-                {role.name}
-              </SelectItem>
-            ))}
-          </Select>
-        </div>
+                <div className="form-control">
+                  <Select
+                    aria-label="Rol asignado"
+                    className="w-full"
+                    placeholder="Seleccionar rol"
+                    value={selectedRole}
+                    onChange={(key) => {
+                      if (key) {
+                        setSelectedRole(key.toString());
+                      }
+                    }}
+                  >
+                    <Label>Rol asignado</Label>
+                    <Select.Trigger>
+                      <Select.Value />
+                      <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        {roles.map((role) => (
+                          <ListBox.Item id={role.name} key={role.id} textValue={role.name}>
+                            {role.name}
+                          </ListBox.Item>
+                        ))}
+                      </ListBox>
+                    </Select.Popover>
+                  </Select>
+                </div>
 
-        <div className="modal-action mt-6">
-          <Button onClick={onCancel} variant="ghost">
-            Cancelar
-          </Button>
-          <Button
-            disabled={!selectedRole || selectedRole === editingUser?.role}
-            isLoading={isSaving}
-            onClick={onSave}
-            variant="primary"
-          >
-            Guardar cambios
-          </Button>
-        </div>
-      </div>
+                <div className="modal-action mt-6">
+                  <Button onClick={onCancel} variant="ghost">
+                    Cancelar
+                  </Button>
+                  <Button
+                    disabled={!selectedRole || selectedRole === editingUser?.role}
+                    isLoading={isSaving}
+                    onClick={onSave}
+                    variant="primary"
+                  >
+                    Guardar cambios
+                  </Button>
+                </div>
+              </div>
+            </Modal.Body>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
     </Modal>
   );
 }
@@ -557,30 +598,49 @@ function ResetPasswordModalContent({
   userLabel: string;
 }) {
   return (
-    <Modal
-      boxClassName="max-w-md"
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Contraseña temporal generada"
-    >
-      <div className="flex flex-col gap-4">
-        <Description className="text-default-600 text-sm">
-          Guarda esta contraseña para <strong>{userLabel}</strong>. Se mostrará una sola vez.
-        </Description>
+    <Modal>
+      <Modal.Backdrop
+        className="bg-black/40 backdrop-blur-[2px]"
+        isOpen={isOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            onClose();
+          }
+        }}
+      >
+        <Modal.Container placement="center">
+          <Modal.Dialog className="relative w-full max-w-2xl rounded-[28px] bg-background p-6 shadow-2xl max-w-md">
+            <Modal.Header className="mb-4 font-bold text-primary text-xl">
+              <Modal.Heading>Contraseña temporal generada</Modal.Heading>
+            </Modal.Header>
+            <Modal.Body className="mt-2 max-h-[80vh] overflow-y-auto overscroll-contain text-foreground">
+              <div className="flex flex-col gap-4">
+                <Description className="text-default-600 text-sm">
+                  Guarda esta contraseña para <strong>{userLabel}</strong>. Se mostrará una sola
+                  vez.
+                </Description>
 
-        <div className="rounded-xl border border-default-200 bg-default-50 p-3">
-          <code className="break-all font-mono text-sm">{password}</code>
-        </div>
+                <div className="rounded-xl border border-default-200 bg-default-50 p-3">
+                  <code className="break-all font-mono text-sm">{password}</code>
+                </div>
 
-        <div className="flex justify-end gap-2">
-          <Button onClick={() => void onCopy()} startContent={<Copy size={16} />} variant="ghost">
-            Copiar
-          </Button>
-          <Button onClick={onClose} variant="primary">
-            Cerrar
-          </Button>
-        </div>
-      </div>
+                <div className="flex justify-end gap-2">
+                  <Button
+                    onClick={() => void onCopy()}
+                    startContent={<Copy size={16} />}
+                    variant="ghost"
+                  >
+                    Copiar
+                  </Button>
+                  <Button onClick={onClose} variant="primary">
+                    Cerrar
+                  </Button>
+                </div>
+              </div>
+            </Modal.Body>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
     </Modal>
   );
 }

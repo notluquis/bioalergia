@@ -1,8 +1,7 @@
-import { Alert, Button, Card, Input, Label, TextField } from "@heroui/react";
+import { Alert, Button, Card, Input, Label, ListBox, Select, TextField } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
-import { Select, SelectItem } from "@/components/ui/Select";
 import { useAuth } from "@/context/AuthContext";
 import { BalanceSummary } from "@/features/finance/balances/components/BalanceSummary";
 import { DailyBalancesPanel } from "@/features/finance/balances/components/DailyBalancesPanel";
@@ -81,7 +80,6 @@ export function DailyBalances() {
                 </TextField>
                 <Select
                   className="w-full"
-                  label="Mes rápido"
                   value={quickRange}
                   onChange={(key) => {
                     const value = key as string;
@@ -96,14 +94,23 @@ export function DailyBalances() {
                     setTo(match.to);
                   }}
                 >
-                  <SelectItem key="custom" textValue="Personalizado">
-                    Personalizado
-                  </SelectItem>
-                  {quickMonths.map((month) => (
-                    <SelectItem key={month.value} textValue={month.label}>
-                      {month.label}
-                    </SelectItem>
-                  ))}
+                  <Label>Mes rápido</Label>
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      <ListBox.Item id="custom" textValue="Personalizado">
+                        Personalizado
+                      </ListBox.Item>
+                      {quickMonths.map((month) => (
+                        <ListBox.Item id={month.value} key={month.value} textValue={month.label}>
+                          {month.label}
+                        </ListBox.Item>
+                      ))}
+                    </ListBox>
+                  </Select.Popover>
                 </Select>
                 <div className="flex items-end">
                   <Button

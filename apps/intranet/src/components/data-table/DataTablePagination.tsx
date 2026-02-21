@@ -1,8 +1,8 @@
+import { Label, ListBox, Select } from "@heroui/react";
 import type { PaginationState, Table } from "@tanstack/react-table";
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
-import { Select, SelectItem } from "@/components/ui/Select";
 
 interface DataTablePaginationProps<TData> {
   readonly enablePageSizeSelector?: boolean;
@@ -48,11 +48,20 @@ export function DataTablePagination<TData>({
               }}
               variant="secondary"
             >
-              {normalizedOptions.map((size) => (
-                <SelectItem id={String(size)} key={size}>
-                  {size}
-                </SelectItem>
-              ))}
+              <Label className="sr-only">Filas por página</Label>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  {normalizedOptions.map((size) => (
+                    <ListBox.Item id={String(size)} key={size}>
+                      {size}
+                    </ListBox.Item>
+                  ))}
+                </ListBox>
+              </Select.Popover>
             </Select>
           </>
         )}

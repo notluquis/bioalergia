@@ -1,4 +1,4 @@
-import { Description, Tabs, Tooltip } from "@heroui/react";
+import { Description, Label, ListBox, Modal, Select, Tabs, Tooltip } from "@heroui/react";
 import {
   keepPreviousData,
   type QueryClient,
@@ -14,8 +14,6 @@ import { useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { GenerateReportModal } from "@/components/mercadopago/GenerateReportModal";
 import { Button } from "@/components/ui/Button";
-import { Modal } from "@/components/ui/Modal";
-import { Select, SelectItem } from "@/components/ui/Select";
 import { StatCard } from "@/components/ui/StatCard";
 import { useToast } from "@/context/ToastContext";
 import { getMpReportColumns } from "@/features/finance/mercadopago/components/MpReportColumns";
@@ -278,74 +276,97 @@ export function MercadoPagoSettingsPage() {
       </div>
 
       {/* Import Stats Modal */}
-      <Modal
-        isOpen={Boolean(lastImportStats)}
-        onClose={closeImportStatsModal}
-        title="Reporte Procesado"
-      >
-        {lastImportStats && (
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 text-success">
-              <CheckCircle2 className="h-5 w-5" />
-              <span className="font-medium">Procesamiento completado</span>
-            </div>
+      <Modal>
+        <Modal.Backdrop
+          className="bg-black/40 backdrop-blur-[2px]"
+          isOpen={Boolean(lastImportStats)}
+          onOpenChange={(open) => {
+            if (!open) {
+              closeImportStatsModal();
+            }
+          }}
+        >
+          <Modal.Container placement="center">
+            <Modal.Dialog className="relative w-full max-w-2xl rounded-[28px] bg-background p-6 shadow-2xl">
+              <Modal.Header className="mb-4 font-bold text-primary text-xl">
+                <Modal.Heading>Reporte Procesado</Modal.Heading>
+              </Modal.Header>
+              <Modal.Body className="mt-2 max-h-[80vh] overflow-y-auto overscroll-contain text-foreground">
+                {lastImportStats && (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 text-success">
+                      <CheckCircle2 className="h-5 w-5" />
+                      <span className="font-medium">Procesamiento completado</span>
+                    </div>
 
-            <div className="grid grid-cols-2 gap-3 rounded-lg bg-default-50/50 p-4 sm:grid-cols-3">
-              <div className="text-center">
-                <span className="block font-bold text-2xl">{lastImportStats.totalRows}</span>
-                <span className="block text-default-500 text-xs">Total filas</span>
-              </div>
-              <div className="text-center">
-                <span className="block font-bold text-2xl">{lastImportStats.validRows}</span>
-                <span className="block text-default-500 text-xs">Válidas</span>
-              </div>
-              <div className="text-center">
-                <span className="block font-bold text-2xl text-success">
-                  {lastImportStats.insertedRows}
-                </span>
-                <span className="block text-success/70 text-xs">Insertadas</span>
-              </div>
-              <div className="text-center">
-                <span className="block font-bold text-2xl text-warning">
-                  {lastImportStats.duplicateRows}
-                </span>
-                <span className="block text-warning/70 text-xs">Duplicados</span>
-              </div>
-              <div className="text-center">
-                <span className="block font-bold text-2xl">{lastImportStats.skippedRows}</span>
-                <span className="block text-default-500 text-xs">Omitidas</span>
-              </div>
-              {lastImportStats.errors.length > 0 && (
-                <div className="text-center">
-                  <span className="block font-bold text-2xl text-danger">
-                    {lastImportStats.errors.length}
-                  </span>
-                  <span className="block text-danger/70 text-xs">Errores</span>
-                </div>
-              )}
-            </div>
+                    <div className="grid grid-cols-2 gap-3 rounded-lg bg-default-50/50 p-4 sm:grid-cols-3">
+                      <div className="text-center">
+                        <span className="block font-bold text-2xl">
+                          {lastImportStats.totalRows}
+                        </span>
+                        <span className="block text-default-500 text-xs">Total filas</span>
+                      </div>
+                      <div className="text-center">
+                        <span className="block font-bold text-2xl">
+                          {lastImportStats.validRows}
+                        </span>
+                        <span className="block text-default-500 text-xs">Válidas</span>
+                      </div>
+                      <div className="text-center">
+                        <span className="block font-bold text-2xl text-success">
+                          {lastImportStats.insertedRows}
+                        </span>
+                        <span className="block text-success/70 text-xs">Insertadas</span>
+                      </div>
+                      <div className="text-center">
+                        <span className="block font-bold text-2xl text-warning">
+                          {lastImportStats.duplicateRows}
+                        </span>
+                        <span className="block text-warning/70 text-xs">Duplicados</span>
+                      </div>
+                      <div className="text-center">
+                        <span className="block font-bold text-2xl">
+                          {lastImportStats.skippedRows}
+                        </span>
+                        <span className="block text-default-500 text-xs">Omitidas</span>
+                      </div>
+                      {lastImportStats.errors.length > 0 && (
+                        <div className="text-center">
+                          <span className="block font-bold text-2xl text-danger">
+                            {lastImportStats.errors.length}
+                          </span>
+                          <span className="block text-danger/70 text-xs">Errores</span>
+                        </div>
+                      )}
+                    </div>
 
-            {lastImportStats.errors.length > 0 && (
-              <div className="rounded-lg bg-danger/10 p-3 text-sm">
-                <span className="mb-2 block font-medium text-danger">Errores encontrados:</span>
-                <ul className="list-inside list-disc space-y-1 text-danger/80 text-xs">
-                  {lastImportStats.errors.slice(0, 5).map((err) => (
-                    <li key={err}>{err}</li>
-                  ))}
-                  {lastImportStats.errors.length > 5 && (
-                    <li>...y {lastImportStats.errors.length - 5} más</li>
-                  )}
-                </ul>
-              </div>
-            )}
+                    {lastImportStats.errors.length > 0 && (
+                      <div className="rounded-lg bg-danger/10 p-3 text-sm">
+                        <span className="mb-2 block font-medium text-danger">
+                          Errores encontrados:
+                        </span>
+                        <ul className="list-inside list-disc space-y-1 text-danger/80 text-xs">
+                          {lastImportStats.errors.slice(0, 5).map((err) => (
+                            <li key={err}>{err}</li>
+                          ))}
+                          {lastImportStats.errors.length > 5 && (
+                            <li>...y {lastImportStats.errors.length - 5} más</li>
+                          )}
+                        </ul>
+                      </div>
+                    )}
 
-            <div className="flex justify-end">
-              <Button onClick={closeImportStatsModal} variant="primary">
-                Cerrar
-              </Button>
-            </div>
-          </div>
-        )}
+                    <div className="flex justify-end">
+                      <Button onClick={closeImportStatsModal} variant="primary">
+                        Cerrar
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </Modal.Body>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
       </Modal>
 
       {!isSyncTab && (
@@ -403,9 +424,18 @@ export function MercadoPagoSettingsPage() {
                 onChange={handleReportPageSizeChange}
                 className="w-28"
               >
-                <SelectItem id="10">10</SelectItem>
-                <SelectItem id="25">25</SelectItem>
-                <SelectItem id="50">50</SelectItem>
+                <Label className="sr-only">Cantidad de filas</Label>
+                <Select.Trigger>
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover>
+                  <ListBox>
+                    <ListBox.Item id="10">10</ListBox.Item>
+                    <ListBox.Item id="25">25</ListBox.Item>
+                    <ListBox.Item id="50">50</ListBox.Item>
+                  </ListBox>
+                </Select.Popover>
               </Select>
             </div>
           </div>
@@ -443,9 +473,18 @@ export function MercadoPagoSettingsPage() {
               onChange={handleSyncPageSizeChange}
               className="w-28"
             >
-              <SelectItem id="10">10</SelectItem>
-              <SelectItem id="25">25</SelectItem>
-              <SelectItem id="50">50</SelectItem>
+              <Label className="sr-only">Cantidad de filas</Label>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  <ListBox.Item id="10">10</ListBox.Item>
+                  <ListBox.Item id="25">25</ListBox.Item>
+                  <ListBox.Item id="50">50</ListBox.Item>
+                </ListBox>
+              </Select.Popover>
             </Select>
           </div>
           <DataTable

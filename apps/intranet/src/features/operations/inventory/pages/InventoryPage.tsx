@@ -1,5 +1,5 @@
 import { schema as schemaLite } from "@finanzas/db/schema-lite";
-import { Surface } from "@heroui/react";
+import { Modal, Surface } from "@heroui/react";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useClientQueries } from "@zenstackhq/tanstack-query/react";
 import { Lock, PlusCircle } from "lucide-react";
@@ -7,7 +7,6 @@ import { useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
-import { Modal } from "@/components/ui/Modal";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { AdjustStockForm } from "@/features/inventory/components/AdjustStockForm";
@@ -165,27 +164,61 @@ export function InventoryPage() {
 
       <AllergyInventoryView />
 
-      <Modal
-        isOpen={isItemModalOpen}
-        onClose={closeModal}
-        title={editingItem ? "Editar item" : "Agregar nuevo item"}
-      >
-        <InventoryItemForm
-          item={editingItem}
-          onCancel={closeModal}
-          onSave={handleSaveItem}
-          saving={saving}
-        />
+      <Modal>
+        <Modal.Backdrop
+          className="bg-black/40 backdrop-blur-[2px]"
+          isOpen={isItemModalOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              closeModal();
+            }
+          }}
+        >
+          <Modal.Container placement="center">
+            <Modal.Dialog className="relative w-full max-w-2xl rounded-[28px] bg-background p-6 shadow-2xl">
+              <Modal.Header className="mb-4 font-bold text-primary text-xl">
+                <Modal.Heading>{editingItem ? "Editar item" : "Agregar nuevo item"}</Modal.Heading>
+              </Modal.Header>
+              <Modal.Body className="mt-2 max-h-[80vh] overflow-y-auto overscroll-contain text-foreground">
+                <InventoryItemForm
+                  item={editingItem}
+                  onCancel={closeModal}
+                  onSave={handleSaveItem}
+                  saving={saving}
+                />
+              </Modal.Body>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
       </Modal>
 
       {itemForStockAdjust && (
-        <Modal isOpen={isAdjustStockModalOpen} onClose={closeModal} title="Ajustar stock">
-          <AdjustStockForm
-            item={itemForStockAdjust}
-            onCancel={closeModal}
-            onSave={handleAdjustStock}
-            saving={saving}
-          />
+        <Modal>
+          <Modal.Backdrop
+            className="bg-black/40 backdrop-blur-[2px]"
+            isOpen={isAdjustStockModalOpen}
+            onOpenChange={(open) => {
+              if (!open) {
+                closeModal();
+              }
+            }}
+          >
+            <Modal.Container placement="center">
+              <Modal.Dialog className="relative w-full max-w-2xl rounded-[28px] bg-background p-6 shadow-2xl">
+                <Modal.Header className="mb-4 font-bold text-primary text-xl">
+                  <Modal.Heading>Ajustar stock</Modal.Heading>
+                </Modal.Header>
+                <Modal.Body className="mt-2 max-h-[80vh] overflow-y-auto overscroll-contain text-foreground">
+                  <AdjustStockForm
+                    item={itemForStockAdjust}
+                    onCancel={closeModal}
+                    onSave={handleAdjustStock}
+                    saving={saving}
+                  />
+                </Modal.Body>
+              </Modal.Dialog>
+            </Modal.Container>
+          </Modal.Backdrop>
         </Modal>
       )}
     </section>

@@ -1,7 +1,7 @@
+import { Modal } from "@heroui/react";
 import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/Button";
-import { Modal } from "@/components/ui/Modal";
 import { type AppFallbackReason, clearAppCaches, onAppFallback } from "@/lib/app-recovery";
 
 const PRE_MOUNT_SHELL_ID = "app-fallback";
@@ -121,35 +121,74 @@ export function AppFallback() {
 
   return (
     <>
-      <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title={content.title}>
-        <div className="text-default-600 text-sm">{content.body}</div>
-        <div className="mt-6 flex flex-wrap gap-3">
-          <Button onClick={handleReload} size="sm" variant="primary">
-            {content.primary}
-          </Button>
-          <Button onClick={() => setIsConfirmOpen(true)} size="sm" variant="secondary">
-            Limpiar caché
-          </Button>
-        </div>
+      <Modal>
+        <Modal.Backdrop
+          className="bg-black/40 backdrop-blur-[2px]"
+          isOpen={isOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              setIsOpen(false);
+            }
+          }}
+        >
+          <Modal.Container placement="center">
+            <Modal.Dialog className="relative w-full max-w-2xl rounded-[28px] bg-background p-6 shadow-2xl">
+              <Modal.Header className="mb-4 font-bold text-primary text-xl">
+                <Modal.Heading>{content.title}</Modal.Heading>
+              </Modal.Header>
+              <Modal.Body className="mt-2 max-h-[80vh] overflow-y-auto overscroll-contain text-foreground">
+                <div className="text-default-600 text-sm">{content.body}</div>
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <Button onClick={handleReload} size="sm" variant="primary">
+                    {content.primary}
+                  </Button>
+                  <Button onClick={() => setIsConfirmOpen(true)} size="sm" variant="secondary">
+                    Limpiar caché
+                  </Button>
+                </div>
+              </Modal.Body>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
       </Modal>
 
-      <Modal
-        isOpen={isConfirmOpen}
-        onClose={() => setIsConfirmOpen(false)}
-        title="Limpiar caché y recargar"
-      >
-        <div className="text-default-600 text-sm">
-          Esto forzará una recarga completa y eliminará datos en caché. Úsalo solo si el problema
-          persiste.
-        </div>
-        <div className="mt-6 flex flex-wrap gap-3">
-          <Button onClick={handleCleanReload} size="sm" variant="primary" disabled={isWorking}>
-            {isWorking ? "Limpiando..." : "Limpiar y recargar"}
-          </Button>
-          <Button onClick={() => setIsConfirmOpen(false)} size="sm" variant="ghost">
-            Cancelar
-          </Button>
-        </div>
+      <Modal>
+        <Modal.Backdrop
+          className="bg-black/40 backdrop-blur-[2px]"
+          isOpen={isConfirmOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              setIsConfirmOpen(false);
+            }
+          }}
+        >
+          <Modal.Container placement="center">
+            <Modal.Dialog className="relative w-full max-w-2xl rounded-[28px] bg-background p-6 shadow-2xl">
+              <Modal.Header className="mb-4 font-bold text-primary text-xl">
+                <Modal.Heading>Limpiar caché y recargar</Modal.Heading>
+              </Modal.Header>
+              <Modal.Body className="mt-2 max-h-[80vh] overflow-y-auto overscroll-contain text-foreground">
+                <div className="text-default-600 text-sm">
+                  Esto forzará una recarga completa y eliminará datos en caché. Úsalo solo si el
+                  problema persiste.
+                </div>
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <Button
+                    onClick={handleCleanReload}
+                    size="sm"
+                    variant="primary"
+                    disabled={isWorking}
+                  >
+                    {isWorking ? "Limpiando..." : "Limpiar y recargar"}
+                  </Button>
+                  <Button onClick={() => setIsConfirmOpen(false)} size="sm" variant="ghost">
+                    Cancelar
+                  </Button>
+                </div>
+              </Modal.Body>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
       </Modal>
     </>
   );

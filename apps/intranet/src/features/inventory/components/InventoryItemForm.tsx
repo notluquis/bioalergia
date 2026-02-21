@@ -1,9 +1,9 @@
+import { Label, ListBox, Select } from "@heroui/react";
 import type React from "react";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Select, SelectItem } from "@/components/ui/Select";
 
 import { getInventoryCategories } from "../api";
 import type { InventoryCategory, InventoryItem } from "../types";
@@ -47,7 +47,6 @@ export function InventoryItemForm({ item, onCancel, onSave, saving }: InventoryI
         />
 
         <Select
-          label="Categoría"
           onChange={(key) => {
             setForm({
               ...form,
@@ -56,12 +55,23 @@ export function InventoryItemForm({ item, onCancel, onSave, saving }: InventoryI
           }}
           value={form.category_id == null ? NO_CATEGORY_KEY : String(form.category_id)}
         >
-          <SelectItem id={NO_CATEGORY_KEY} key={NO_CATEGORY_KEY}>
-            Sin categoría
-          </SelectItem>
-          {categories.map((cat) => (
-            <SelectItem key={String(cat.id)}>{cat.name}</SelectItem>
-          ))}
+          <Label>Categoría</Label>
+          <Select.Trigger>
+            <Select.Value />
+            <Select.Indicator />
+          </Select.Trigger>
+          <Select.Popover>
+            <ListBox>
+              <ListBox.Item id={NO_CATEGORY_KEY} key={NO_CATEGORY_KEY}>
+                Sin categoría
+              </ListBox.Item>
+              {categories.map((cat) => (
+                <ListBox.Item id={String(cat.id)} key={String(cat.id)}>
+                  {cat.name}
+                </ListBox.Item>
+              ))}
+            </ListBox>
+          </Select.Popover>
         </Select>
       </div>
       <Input

@@ -1,7 +1,7 @@
+import { Label, ListBox, Select } from "@heroui/react";
 import type { ChangeEvent } from "react";
 
 import { Input } from "@/components/ui/Input";
-import { Select, SelectItem } from "@/components/ui/Select";
 
 import type { ServiceAmountIndexation, ServiceLateFeeMode } from "../../types";
 import type { ServiceFormState } from "../ServiceForm";
@@ -51,24 +51,44 @@ export function FinancialSection({
       <Select
         // errorMessage={errors.amountIndexation?.message} // Removed as errors is not defined
         // isInvalid={!!errors.amountIndexation} // Removed as errors is not defined
-        label="Modo de cálculo"
         onChange={(val) => onChange("amountIndexation", val as ServiceAmountIndexation)}
         value={amountIndexation ? amountIndexation : "NONE"}
       >
-        {INDEXATION_OPTIONS.map((option) => (
-          <SelectItem key={option.value}>{option.label}</SelectItem>
-        ))}
+        <Label>Modo de cálculo</Label>
+        <Select.Trigger>
+          <Select.Value />
+          <Select.Indicator />
+        </Select.Trigger>
+        <Select.Popover>
+          <ListBox>
+            {INDEXATION_OPTIONS.map((option) => (
+              <ListBox.Item id={option.value} key={option.value}>
+                {option.label}
+              </ListBox.Item>
+            ))}
+          </ListBox>
+        </Select.Popover>
       </Select>
       <Select
         // errorMessage={errors.lateFeeMode?.message} // Removed as errors is not defined
         // isInvalid={!!errors.lateFeeMode} // Removed as errors is not defined
-        label="Recargo por atraso"
         onChange={(val) => onChange("lateFeeMode", val as ServiceLateFeeMode)}
         value={lateFeeMode ? lateFeeMode : "NONE"}
       >
-        {LATE_FEE_OPTIONS.map((option) => (
-          <SelectItem key={option.value}>{option.label}</SelectItem>
-        ))}
+        <Label>Recargo por atraso</Label>
+        <Select.Trigger>
+          <Select.Value />
+          <Select.Indicator />
+        </Select.Trigger>
+        <Select.Popover>
+          <ListBox>
+            {LATE_FEE_OPTIONS.map((option) => (
+              <ListBox.Item id={option.value} key={option.value}>
+                {option.label}
+              </ListBox.Item>
+            ))}
+          </ListBox>
+        </Select.Popover>
       </Select>
       {(lateFeeMode ?? "NONE") !== "NONE" && (
         <>

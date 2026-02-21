@@ -1,5 +1,5 @@
+import { Label, ListBox, Select } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Select, SelectItem } from "@/components/ui/Select";
 
 import type { SupplyRequest } from "../types";
 
@@ -87,11 +87,20 @@ export const getSupplyRequestsColumns = (): ColumnDef<SupplyRequest>[] => [
           }}
           value={row.original.status}
         >
-          <SelectItem key="pending">Pendiente</SelectItem>
-          <SelectItem key="ordered">Pedido</SelectItem>
-          <SelectItem key="in_transit">En tránsito</SelectItem>
-          <SelectItem key="delivered">Entregado</SelectItem>
-          <SelectItem key="rejected">Rechazado</SelectItem>
+          <Label className="sr-only">Estado</Label>
+          <Select.Trigger>
+            <Select.Value />
+            <Select.Indicator />
+          </Select.Trigger>
+          <Select.Popover>
+            <ListBox>
+              <ListBox.Item id="pending">Pendiente</ListBox.Item>
+              <ListBox.Item id="ordered">Pedido</ListBox.Item>
+              <ListBox.Item id="in_transit">En tránsito</ListBox.Item>
+              <ListBox.Item id="delivered">Entregado</ListBox.Item>
+              <ListBox.Item id="rejected">Rechazado</ListBox.Item>
+            </ListBox>
+          </Select.Popover>
         </Select>
       );
     },

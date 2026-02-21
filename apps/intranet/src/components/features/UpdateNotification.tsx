@@ -1,9 +1,9 @@
 import { useRegisterSW } from "virtual:pwa-register/react";
+import { Modal } from "@heroui/react";
 import { X } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/Button";
-import { Modal } from "@/components/ui/Modal";
 import { clearOnlyCaches } from "@/lib/app-recovery";
 
 export function UpdateNotification() {
@@ -156,23 +156,43 @@ export function UpdateNotification() {
         </div>
       </div>
 
-      <Modal
-        isOpen={isConfirmOpen}
-        onClose={() => setIsConfirmOpen(false)}
-        title="Limpiar caché y actualizar"
-      >
-        <p className="text-default-600 text-sm">
-          Esto elimina la caché local y fuerza una recarga completa. Úsalo solo si ves errores al
-          actualizar.
-        </p>
-        <div className="mt-6 flex flex-wrap gap-3">
-          <Button onClick={handleCleanUpdate} size="sm" variant="primary" disabled={isUpdating}>
-            {isUpdating ? "Actualizando..." : "Limpiar y actualizar"}
-          </Button>
-          <Button onClick={() => setIsConfirmOpen(false)} size="sm" variant="ghost">
-            Cancelar
-          </Button>
-        </div>
+      <Modal>
+        <Modal.Backdrop
+          className="bg-black/40 backdrop-blur-[2px]"
+          isOpen={isConfirmOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              setIsConfirmOpen(false);
+            }
+          }}
+        >
+          <Modal.Container placement="center">
+            <Modal.Dialog className="relative w-full max-w-2xl rounded-[28px] bg-background p-6 shadow-2xl">
+              <Modal.Header className="mb-4 font-bold text-primary text-xl">
+                <Modal.Heading>Limpiar caché y actualizar</Modal.Heading>
+              </Modal.Header>
+              <Modal.Body className="mt-2 max-h-[80vh] overflow-y-auto overscroll-contain text-foreground">
+                <p className="text-default-600 text-sm">
+                  Esto elimina la caché local y fuerza una recarga completa. Úsalo solo si ves
+                  errores al actualizar.
+                </p>
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <Button
+                    onClick={handleCleanUpdate}
+                    size="sm"
+                    variant="primary"
+                    disabled={isUpdating}
+                  >
+                    {isUpdating ? "Actualizando..." : "Limpiar y actualizar"}
+                  </Button>
+                  <Button onClick={() => setIsConfirmOpen(false)} size="sm" variant="ghost">
+                    Cancelar
+                  </Button>
+                </div>
+              </Modal.Body>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
       </Modal>
     </>
   );

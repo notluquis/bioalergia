@@ -1,4 +1,4 @@
-import { Card } from "@heroui/react";
+import { Card, Label, ListBox, Select } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useCallback, useMemo } from "react";
 import {
@@ -11,7 +11,6 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Select, SelectItem } from "@/components/ui/Select";
 import { dteAnalyticsKeys } from "@/features/finance/dte-analytics/queries";
 import type { MonthlyChartData, YearlyTotals } from "@/features/finance/dte-analytics/types";
 import {
@@ -75,17 +74,21 @@ export function DteMonthlySummaryPanel({
   return (
     <div className="space-y-4 pt-4">
       <div className="flex items-center gap-4">
-        <Select
-          label="Año"
-          placeholder="Seleccionar año"
-          value={selectedYear}
-          onChange={handleYearChange}
-        >
-          {yearOptions.map((year) => (
-            <SelectItem key={year} id={year}>
-              {year}
-            </SelectItem>
-          ))}
+        <Select placeholder="Seleccionar año" value={selectedYear} onChange={handleYearChange}>
+          <Label>Año</Label>
+          <Select.Trigger>
+            <Select.Value />
+            <Select.Indicator />
+          </Select.Trigger>
+          <Select.Popover>
+            <ListBox>
+              {yearOptions.map((year) => (
+                <ListBox.Item key={year} id={year}>
+                  {year}
+                </ListBox.Item>
+              ))}
+            </ListBox>
+          </Select.Popover>
         </Select>
       </div>
 

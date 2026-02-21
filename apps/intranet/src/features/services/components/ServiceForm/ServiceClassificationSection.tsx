@@ -1,5 +1,5 @@
+import { Label, ListBox, Select } from "@heroui/react";
 import { z } from "zod";
-import { Select, SelectItem } from "@/components/ui/Select";
 import { SelectWithCreateNew } from "@/components/ui/SelectWithCreateNew";
 import { GRID_2_COL_MD } from "@/lib/styles";
 
@@ -85,15 +85,25 @@ export function ServiceClassificationSection({
       />
 
       <Select
-        label="Recurrencia"
         onChange={(key) => {
           onChange("recurrenceType", key as ServiceRecurrenceType);
         }}
         value={recurrenceType ?? "RECURRING"}
       >
-        {RECURRENCE_OPTIONS.map((option) => (
-          <SelectItem key={option.value}>{option.label}</SelectItem>
-        ))}
+        <Label>Recurrencia</Label>
+        <Select.Trigger>
+          <Select.Value />
+          <Select.Indicator />
+        </Select.Trigger>
+        <Select.Popover>
+          <ListBox>
+            {RECURRENCE_OPTIONS.map((option) => (
+              <ListBox.Item id={option.value} key={option.value}>
+                {option.label}
+              </ListBox.Item>
+            ))}
+          </ListBox>
+        </Select.Popover>
       </Select>
     </section>
   );

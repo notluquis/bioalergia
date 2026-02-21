@@ -1,4 +1,4 @@
-import { Card, Surface } from "@heroui/react";
+import { Card, Modal, Surface } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
@@ -9,7 +9,6 @@ import { DataTable } from "@/components/data-table/DataTable";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/context/ToastContext";
 import { CATEGORY_LABELS } from "@/features/counterparts/constants";
 import { fetchTransactions } from "@/features/finance/api";
@@ -774,43 +773,62 @@ function AddAccountModal({
   ) => (event: ChangeEvent<HTMLInputElement>) => void;
 }) {
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Agregar cuenta">
-      <div className="space-y-4 text-sm">
-        <Input
-          label="Número de cuenta"
-          onChange={onAccountIdentifierChange}
-          placeholder="Ej. 124282432930"
-          type="text"
-          value={accountForm.accountNumber}
-        />
+    <Modal>
+      <Modal.Backdrop
+        className="bg-black/40 backdrop-blur-[2px]"
+        isOpen={isOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            onClose();
+          }
+        }}
+      >
+        <Modal.Container placement="center">
+          <Modal.Dialog className="relative w-full max-w-2xl rounded-[28px] bg-background p-6 shadow-2xl">
+            <Modal.Header className="mb-4 font-bold text-primary text-xl">
+              <Modal.Heading>Agregar cuenta</Modal.Heading>
+            </Modal.Header>
+            <Modal.Body className="mt-2 max-h-[80vh] overflow-y-auto overscroll-contain text-foreground">
+              <div className="space-y-4 text-sm">
+                <Input
+                  label="Número de cuenta"
+                  onChange={onAccountIdentifierChange}
+                  placeholder="Ej. 124282432930"
+                  type="text"
+                  value={accountForm.accountNumber}
+                />
 
-        {renderSuggestions}
-        <div className="grid gap-3 md:grid-cols-2">
-          <Input
-            label="Banco"
-            onChange={updateAccountForm("bankName")}
-            placeholder="Banco"
-            type="text"
-            value={accountForm.bankName}
-          />
+                {renderSuggestions}
+                <div className="grid gap-3 md:grid-cols-2">
+                  <Input
+                    label="Banco"
+                    onChange={updateAccountForm("bankName")}
+                    placeholder="Banco"
+                    type="text"
+                    value={accountForm.bankName}
+                  />
 
-          <Input
-            label="Tipo de cuenta"
-            onChange={updateAccountForm("accountType")}
-            placeholder="Ej. Cuenta corriente"
-            type="text"
-            value={accountForm.accountType}
-          />
-        </div>
-        <div className="flex justify-end gap-2">
-          <Button onClick={onClose} variant="ghost">
-            Cancelar
-          </Button>
-          <Button disabled={addPending} onClick={onAddAccount}>
-            {addPending ? "Guardando..." : "Agregar cuenta"}
-          </Button>
-        </div>
-      </div>
+                  <Input
+                    label="Tipo de cuenta"
+                    onChange={updateAccountForm("accountType")}
+                    placeholder="Ej. Cuenta corriente"
+                    type="text"
+                    value={accountForm.accountType}
+                  />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button onClick={onClose} variant="ghost">
+                    Cancelar
+                  </Button>
+                  <Button disabled={addPending} onClick={onAddAccount}>
+                    {addPending ? "Guardando..." : "Agregar cuenta"}
+                  </Button>
+                </div>
+              </div>
+            </Modal.Body>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
     </Modal>
   );
 }

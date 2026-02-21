@@ -1,7 +1,7 @@
+import { Label, ListBox, Select } from "@heroui/react";
 import type { ChangeEvent } from "react";
 import { z } from "zod";
 import { Input } from "@/components/ui/Input";
-import { Select, SelectItem } from "@/components/ui/Select";
 import { SelectWithCreateNew } from "@/components/ui/SelectWithCreateNew";
 import { GRID_2_COL_MD } from "@/lib/styles";
 
@@ -64,7 +64,6 @@ export function BasicInfoSection({
       />
 
       <Select
-        label="Categoría financiera"
         onChange={(value) => {
           if (!value) {
             onChange("transactionCategoryId", null);
@@ -74,14 +73,23 @@ export function BasicInfoSection({
         }}
         value={transactionCategoryId == null ? "__none__" : String(transactionCategoryId)}
       >
-        <SelectItem id="__none__" key="__none__">
-          Sin categoría financiera
-        </SelectItem>
-        {transactionCategories.map((categoryOption) => (
-          <SelectItem id={String(categoryOption.id)} key={categoryOption.id}>
-            {categoryOption.name}
-          </SelectItem>
-        ))}
+        <Label>Categoría financiera</Label>
+        <Select.Trigger>
+          <Select.Value />
+          <Select.Indicator />
+        </Select.Trigger>
+        <Select.Popover>
+          <ListBox>
+            <ListBox.Item id="__none__" key="__none__">
+              Sin categoría financiera
+            </ListBox.Item>
+            {transactionCategories.map((categoryOption) => (
+              <ListBox.Item id={String(categoryOption.id)} key={categoryOption.id}>
+                {categoryOption.name}
+              </ListBox.Item>
+            ))}
+          </ListBox>
+        </Select.Popover>
       </Select>
 
       <Input

@@ -1,3 +1,4 @@
+import { Modal } from "@heroui/react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
@@ -7,7 +8,6 @@ import { z } from "zod";
 
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/context/ToastContext";
 import { MPService, type MpReportType } from "@/services/mercadopago";
 
@@ -105,89 +105,111 @@ export function GenerateReportModal({ onClose, open, reportType }: Props) {
   };
 
   return (
-    <Modal
-      isOpen={open}
-      onClose={handleClose}
-      title={`Generar Reporte: ${reportType === "release" ? "Liberación" : "Conciliación"}`}
-    >
-      <form
-        className="space-y-4"
-        onSubmit={(e) => {
-          e.preventDefault();
-          void form.handleSubmit();
+    <Modal>
+      <Modal.Backdrop
+        className="bg-black/40 backdrop-blur-[2px]"
+        isOpen={open}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) {
+            handleClose();
+          }
         }}
       >
-        <p className="text-default-600 text-sm">
-          Selecciona el rango de fechas para generar el reporte de{" "}
-          {reportType === "release" ? "liberación de fondos" : "conciliación"}. Si el rango es mayor
-          a 60 días, se crearán múltiples reportes automáticamente.
-        </p>
+        <Modal.Container placement="center">
+          <Modal.Dialog className="relative w-full max-w-2xl rounded-[28px] bg-background p-6 shadow-2xl">
+            <Modal.Header className="mb-4 font-bold text-primary text-xl">
+              <Modal.Heading>{`Generar Reporte: ${reportType === "release" ? "Liberación" : "Conciliación"}`}</Modal.Heading>
+            </Modal.Header>
+            <Modal.Body className="mt-2 max-h-[80vh] overflow-y-auto overscroll-contain text-foreground">
+              <form
+                className="space-y-4"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void form.handleSubmit();
+                }}
+              >
+                <p className="text-default-600 text-sm">
+                  Selecciona el rango de fechas para generar el reporte de{" "}
+                  {reportType === "release" ? "liberación de fondos" : "conciliación"}. Si el rango
+                  es mayor a 60 días, se crearán múltiples reportes automáticamente.
+                </p>
 
-        <div className="flex items-center gap-3">
-          <Button
-            disabled={mutation.isPending}
-            onClick={() => {
-              setUseNowAsEndDate((prev) => !prev);
-            }}
-            type="button"
-            variant={useNowAsEndDate ? "primary" : "ghost"}
-          >
-            {useNowAsEndDate ? "Fecha fin: Ahora" : "Usar fecha actual como fin"}
-          </Button>
-          {useNowAsEndDate ? (
-            <span className="text-default-500 text-xs">
-              Se usará la hora actual al momento de generar.
-            </span>
-          ) : null}
-        </div>
+                <div className="flex items-center gap-3">
+                  <Button
+                    disabled={mutation.isPending}
+                    onClick={() => {
+                      setUseNowAsEndDate((prev) => !prev);
+                    }}
+                    type="button"
+                    variant={useNowAsEndDate ? "primary" : "ghost"}
+                  >
+                    {useNowAsEndDate ? "Fecha fin: Ahora" : "Usar fecha actual como fin"}
+                  </Button>
+                  {useNowAsEndDate ? (
+                    <span className="text-default-500 text-xs">
+                      Se usará la hora actual al momento de generar.
+                    </span>
+                  ) : null}
+                </div>
 
-        <form.Field name="begin_date">
-          {(field) => (
-            <Input
-              error={getFieldErrorMessage(field.state.meta.errors[0])}
-              label="Fecha Inicio"
-              onBlur={field.handleBlur}
-              onChange={(e) => {
-                field.handleChange(dayjs(e.target.value).toDate());
-              }}
-              type="date"
-              value={dayjs(field.state.value).format("YYYY-MM-DD")}
-            />
-          )}
-        </form.Field>
+                <form.Field name="begin_date">
+                  {(field) => (
+                    <Input
+                      error={getFieldErrorMessage(field.state.meta.errors[0])}
+                      label="Fecha Inicio"
+                      onBlur={field.handleBlur}
+                      onChange={(e) => {
+                        field.handleChange(dayjs(e.target.value).toDate());
+                      }}
+                      type="date"
+                      value={dayjs(field.state.value).format("YYYY-MM-DD")}
+                    />
+                  )}
+                </form.Field>
 
-        <form.Field name="end_date">
-          {(field) => (
-            <Input
-              disabled={useNowAsEndDate}
-              error={getFieldErrorMessage(field.state.meta.errors[0])}
-              label="Fecha Fin"
-              onBlur={field.handleBlur}
-              onChange={(e) => {
-                field.handleChange(dayjs(e.target.value).toDate());
-              }}
-              type="date"
-              value={dayjs(field.state.value).format("YYYY-MM-DD")}
-            />
-          )}
-        </form.Field>
+                <form.Field name="end_date">
+                  {(field) => (
+                    <Input
+                      disabled={useNowAsEndDate}
+                      error={getFieldErrorMessage(field.state.meta.errors[0])}
+                      label="Fecha Fin"
+                      onBlur={field.handleBlur}
+                      onChange={(e) => {
+                        field.handleChange(dayjs(e.target.value).toDate());
+                      }}
+                      type="date"
+                      value={dayjs(field.state.value).format("YYYY-MM-DD")}
+                    />
+                  )}
+                </form.Field>
 
-        <div className="mt-6 flex justify-end gap-3">
-          <Button disabled={mutation.isPending} onClick={handleClose} type="button" variant="ghost">
-            Cancelar
-          </Button>
-          <Button disabled={mutation.isPending} type="submit" variant="primary">
-            {mutation.isPending ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {progress ? `Creando ${progress.current}/${progress.total}...` : "Creando..."}
-              </>
-            ) : (
-              "Generar"
-            )}
-          </Button>
-        </div>
-      </form>
+                <div className="mt-6 flex justify-end gap-3">
+                  <Button
+                    disabled={mutation.isPending}
+                    onClick={handleClose}
+                    type="button"
+                    variant="ghost"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button disabled={mutation.isPending} type="submit" variant="primary">
+                    {mutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        {progress
+                          ? `Creando ${progress.current}/${progress.total}...`
+                          : "Creando..."}
+                      </>
+                    ) : (
+                      "Generar"
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </Modal.Body>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
     </Modal>
   );
 }

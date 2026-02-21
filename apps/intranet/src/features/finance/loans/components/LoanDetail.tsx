@@ -1,12 +1,10 @@
-import { Description } from "@heroui/react";
+import { Description, Label, ListBox, Modal, Select } from "@heroui/react";
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Modal } from "@/components/ui/Modal";
-import { Select, SelectItem } from "@/components/ui/Select";
 
 import type { LoanSchedule, LoanSummary, RegenerateSchedulePayload } from "../types";
 
@@ -182,86 +180,110 @@ export function LoanDetail({
         </div>
       )}
 
-      <Modal
-        isOpen={regenerateOpen}
-        onClose={() => {
-          setRegenerateOpen(false);
-        }}
-        title="Regenerar cronograma"
-      >
-        <form className="space-y-4" onSubmit={handleRegenerate}>
-          <Input
-            label="Nuevo total de cuotas"
-            max={360}
-            min={1}
-            onChange={(event: ChangeEvent<HTMLInputElement>) => {
-              setRegenerateForm((prev) => ({
-                ...prev,
-                totalInstallments: Number(event.target.value),
-              }));
-            }}
-            type="number"
-            value={regenerateForm.totalInstallments ?? loan.total_installments}
-          />
+      <Modal>
+        <Modal.Backdrop
+          className="bg-black/40 backdrop-blur-[2px]"
+          isOpen={regenerateOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              setRegenerateOpen(false);
+            }
+          }}
+        >
+          <Modal.Container placement="center">
+            <Modal.Dialog className="relative w-full max-w-2xl rounded-[28px] bg-background p-6 shadow-2xl">
+              <Modal.Header className="mb-4 font-bold text-primary text-xl">
+                <Modal.Heading>Regenerar cronograma</Modal.Heading>
+              </Modal.Header>
+              <Modal.Body className="mt-2 max-h-[80vh] overflow-y-auto overscroll-contain text-foreground">
+                <form className="space-y-4" onSubmit={handleRegenerate}>
+                  <Input
+                    label="Nuevo total de cuotas"
+                    max={360}
+                    min={1}
+                    onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                      setRegenerateForm((prev) => ({
+                        ...prev,
+                        totalInstallments: Number(event.target.value),
+                      }));
+                    }}
+                    type="number"
+                    value={regenerateForm.totalInstallments ?? loan.total_installments}
+                  />
 
-          <Input
-            label="Nueva fecha de inicio"
-            onChange={(event: ChangeEvent<HTMLInputElement>) => {
-              setRegenerateForm((prev) => ({
-                ...prev,
-                startDate: event.target.value,
-              }));
-            }}
-            type="date"
-            value={regenerateForm.startDate ?? loan.start_date}
-          />
+                  <Input
+                    label="Nueva fecha de inicio"
+                    onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                      setRegenerateForm((prev) => ({
+                        ...prev,
+                        startDate: event.target.value,
+                      }));
+                    }}
+                    type="date"
+                    value={regenerateForm.startDate ?? loan.start_date}
+                  />
 
-          <Input
-            label="Tasa de interés (%)"
-            min={0}
-            onChange={(event: ChangeEvent<HTMLInputElement>) => {
-              setRegenerateForm((prev) => ({ ...prev, interestRate: Number(event.target.value) }));
-            }}
-            step="0.01"
-            type="number"
-            value={regenerateForm.interestRate ?? loan.interest_rate}
-          />
+                  <Input
+                    label="Tasa de interés (%)"
+                    min={0}
+                    onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                      setRegenerateForm((prev) => ({
+                        ...prev,
+                        interestRate: Number(event.target.value),
+                      }));
+                    }}
+                    step="0.01"
+                    type="number"
+                    value={regenerateForm.interestRate ?? loan.interest_rate}
+                  />
 
-          <Select
-            label="Frecuencia"
-            onChange={(key) => {
-              setRegenerateForm((prev) => ({
-                ...prev,
-                frequency: key as RegenerateSchedulePayload["frequency"],
-              }));
-            }}
-            value={regenerateForm.frequency ?? loan.frequency}
-          >
-            <SelectItem key="WEEKLY">Semanal</SelectItem>
-            <SelectItem key="BIWEEKLY">Quincenal</SelectItem>
-            <SelectItem key="MONTHLY">Mensual</SelectItem>
-          </Select>
-          {regenerateError && (
-            <Description className="rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">
-              {regenerateError}
-            </Description>
-          )}
-          <div className="flex justify-end gap-3">
-            <Button
-              disabled={regenerating}
-              onClick={() => {
-                setRegenerateOpen(false);
-              }}
-              type="button"
-              variant="secondary"
-            >
-              Cancelar
-            </Button>
-            <Button disabled={regenerating} type="submit">
-              {regenerating ? "Actualizando..." : "Regenerar"}
-            </Button>
-          </div>
-        </form>
+                  <Select
+                    onChange={(key) => {
+                      setRegenerateForm((prev) => ({
+                        ...prev,
+                        frequency: key as RegenerateSchedulePayload["frequency"],
+                      }));
+                    }}
+                    value={regenerateForm.frequency ?? loan.frequency}
+                  >
+                    <Label>Frecuencia</Label>
+                    <Select.Trigger>
+                      <Select.Value />
+                      <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        <ListBox.Item id="WEEKLY">Semanal</ListBox.Item>
+                        <ListBox.Item id="BIWEEKLY">Quincenal</ListBox.Item>
+                        <ListBox.Item id="MONTHLY">Mensual</ListBox.Item>
+                      </ListBox>
+                    </Select.Popover>
+                  </Select>
+                  {regenerateError && (
+                    <Description className="rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">
+                      {regenerateError}
+                    </Description>
+                  )}
+                  <div className="flex justify-end gap-3">
+                    <Button
+                      disabled={regenerating}
+                      onClick={() => {
+                        setRegenerateOpen(false);
+                      }}
+                      type="button"
+                      variant="secondary"
+                    >
+                      Cancelar
+                    </Button>
+                    <Button disabled={regenerating} type="submit">
+                      {regenerating ? "Actualizando..." : "Regenerar"}
+                    </Button>
+                  </div>
+                </form>
+              </Modal.Body>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
       </Modal>
 
       {loading && (

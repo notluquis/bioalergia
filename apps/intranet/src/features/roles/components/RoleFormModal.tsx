@@ -1,4 +1,4 @@
-import { Description, Skeleton } from "@heroui/react";
+import { Description, Modal, Skeleton } from "@heroui/react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { AlertCircle, User as UserIcon } from "lucide-react";
@@ -6,7 +6,6 @@ import { Suspense } from "react";
 import { z } from "zod";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/context/ToastContext";
 import { createRole, type RoleUser, roleKeys, roleQueries, updateRole } from "@/features/roles/api";
 import type { Role } from "@/types/roles";
@@ -35,24 +34,43 @@ type RoleFormData = z.infer<typeof formSchema>;
 
 export function RoleFormModal({ isOpen, onClose, role }: RoleFormModalProps) {
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={role ? "Editar Rol" : "Nuevo Rol"}>
-      <div className="pb-6">
-        {role ? (
-          <Suspense
-            fallback={
-              <div className="space-y-3 p-4">
-                <Skeleton className="h-8 w-40 rounded-md" />
-                <Skeleton className="h-10 w-full rounded-md" />
-                <Skeleton className="h-10 w-full rounded-md" />
+    <Modal>
+      <Modal.Backdrop
+        className="bg-black/40 backdrop-blur-[2px]"
+        isOpen={isOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            onClose();
+          }
+        }}
+      >
+        <Modal.Container placement="center">
+          <Modal.Dialog className="relative w-full max-w-2xl rounded-[28px] bg-background p-6 shadow-2xl">
+            <Modal.Header className="mb-4 font-bold text-primary text-xl">
+              <Modal.Heading>{role ? "Editar Rol" : "Nuevo Rol"}</Modal.Heading>
+            </Modal.Header>
+            <Modal.Body className="mt-2 max-h-[80vh] overflow-y-auto overscroll-contain text-foreground">
+              <div className="pb-6">
+                {role ? (
+                  <Suspense
+                    fallback={
+                      <div className="space-y-3 p-4">
+                        <Skeleton className="h-8 w-40 rounded-md" />
+                        <Skeleton className="h-10 w-full rounded-md" />
+                        <Skeleton className="h-10 w-full rounded-md" />
+                      </div>
+                    }
+                  >
+                    <RoleEditForm onClose={onClose} roleEntity={role} />
+                  </Suspense>
+                ) : (
+                  <RoleBaseForm onClose={onClose} roleEntity={null} userData={[]} />
+                )}
               </div>
-            }
-          >
-            <RoleEditForm onClose={onClose} roleEntity={role} />
-          </Suspense>
-        ) : (
-          <RoleBaseForm onClose={onClose} roleEntity={null} userData={[]} />
-        )}
-      </div>
+            </Modal.Body>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
     </Modal>
   );
 }

@@ -1,8 +1,8 @@
+import { FieldError, Label, ListBox, Select } from "@heroui/react";
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 
 import { Input } from "@/components/ui/Input";
-import { Select, SelectItem } from "@/components/ui/Select";
 
 import type { ServiceEmissionMode } from "../../types";
 import type { ServiceFormState } from "../ServiceForm";
@@ -43,16 +43,24 @@ export function EmissionSection({
   return (
     <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       <Select
-        errorMessage={errors.emissionMode?.message}
         isInvalid={Boolean(errors.emissionMode)}
-        label="Modalidad de emisión"
         onChange={(val) => onChange("emissionMode", val as ServiceEmissionMode)}
         value={emissionMode}
       >
-        <SelectItem key="SPECIFIC_DATE">Fecha Específica</SelectItem>
-        <SelectItem key="DATE_RANGE">Rango de Fechas</SelectItem>
-        <SelectItem key="FIXED_DAY">Día Fijo del Mes</SelectItem>
-        <SelectItem key="NONE">No Aplica / Desconocido</SelectItem>
+        <Label>Modalidad de emisión</Label>
+        <Select.Trigger>
+          <Select.Value />
+          <Select.Indicator />
+        </Select.Trigger>
+        <Select.Popover>
+          <ListBox>
+            <ListBox.Item id="SPECIFIC_DATE">Fecha Específica</ListBox.Item>
+            <ListBox.Item id="DATE_RANGE">Rango de Fechas</ListBox.Item>
+            <ListBox.Item id="FIXED_DAY">Día Fijo del Mes</ListBox.Item>
+            <ListBox.Item id="NONE">No Aplica / Desconocido</ListBox.Item>
+          </ListBox>
+        </Select.Popover>
+        {errors.emissionMode?.message && <FieldError>{errors.emissionMode.message}</FieldError>}
       </Select>
       {(emissionMode ?? "FIXED_DAY") === "FIXED_DAY" && (
         <Input
