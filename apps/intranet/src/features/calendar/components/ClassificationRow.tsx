@@ -23,6 +23,14 @@ interface ClassificationRowProps {
 const SUBCUTANEOUS_CATEGORY = "Tratamiento subcutáneo";
 const NONE_CATEGORY_KEY = "__none_category__";
 const NONE_TREATMENT_STAGE_KEY = "__none_treatment_stage__";
+const NOT_ATTENDED_PATTERNS = [
+  /\bno\s+viene\b/i,
+  /\bno\s+vino\b/i,
+  /\bno\s+asiste\b/i,
+  /\bno\s+asisti[oó]\b/i,
+  /\bno\s+podr[áa]\s+asistir\b/i,
+  /\bno\s+podr[áa]\s+venir\b/i,
+];
 
 function normalizeChoiceValue(value: string): string {
   return value
@@ -55,6 +63,11 @@ function resolveChoiceValue(value: null | string | undefined, choices: readonly 
   return normalizedMatch ?? trimmed;
 }
 
+function isExplicitNoShowEvent(event: CalendarUnclassifiedEvent): boolean {
+  const text = `${event.summary ?? ""} ${event.description ?? ""}`;
+  return NOT_ATTENDED_PATTERNS.some((pattern) => pattern.test(text));
+}
+
 export function ClassificationRow({
   categoryChoices,
   event,
@@ -71,6 +84,7 @@ export function ClassificationRow({
   const category = useStore(form.store, (state) => state.values.entries[index]?.category ?? "");
   const isSubcutaneous =
     normalizeChoiceValue(category) === normalizeChoiceValue(SUBCUTANEOUS_CATEGORY);
+  const isNoShowLocked = isExplicitNoShowEvent(event);
 
   return (
     <Card className="border-default-200/70 bg-content1 text-sm shadow-sm">
@@ -217,6 +231,7 @@ export function ClassificationRow({
               <div className="flex items-center gap-2 pt-2">
                 <Checkbox
                   aria-label="Asistió / llegó"
+                  isDisabled={isNoShowLocked}
                   isSelected={Boolean(field.state.value)}
                   onChange={field.handleChange}
                   variant="secondary"
@@ -226,6 +241,9 @@ export function ClassificationRow({
                   </Checkbox.Control>
                 </Checkbox>
                 <span className="text-sm">Asistió / llegó</span>
+                {isNoShowLocked && (
+                  <span className="text-default-500 text-xs">(bloqueado por "no asiste")</span>
+                )}
               </div>
             )}
           </form.Field>

@@ -200,6 +200,17 @@ export const IGNORE_PATTERNS = [
 
 /** Patterns for attendance confirmation */
 const ATTENDED_PATTERNS = [/\bllego\b/i, /\basist[ií]o\b/i];
+/** Patterns for explicit no-show / non-attendance */
+const NOT_ATTENDED_PATTERNS = [
+  /\bno\s+viene\b/i,
+  /\bno\s+vino\b/i,
+  /\bno\s+asiste\b/i,
+  /\bno\s+asisti[oó]\b/i,
+  /\bno\s+podr[áa]\s+asistir\b/i,
+  /\bno\s+podr[áa]\s+venir\b/i,
+];
+/** Patterns for confirmation of future attendance (not attended yet) */
+const PENDING_CONFIRMATION_PATTERNS = [/\bconfirma\b/i, /\bconfirmado\b/i, /\bconfirmada\b/i];
 
 /** Patterns for induction stage (1st-5th dose) */
 const INDUCTION_PATTERNS = [
@@ -536,7 +547,14 @@ function refineAmounts(
   description: string,
 ) {
   const text = `${summary} ${description}`;
+  const isNotAttended = matchesAny(text, NOT_ATTENDED_PATTERNS);
+  const isPendingConfirmation = matchesAny(text, PENDING_CONFIRMATION_PATTERNS);
   const isConfirmed = matchesAny(text, MONEY_CONFIRMED_PATTERNS);
+
+  // Explicit no-show or pending confirmation means no payment yet.
+  if ((isNotAttended || isPendingConfirmation) && amounts.amountPaid != null) {
+    return { ...amounts, amountPaid: null };
+  }
 
   // If confirmed (llegó, envio, etc.) and only expected is set, assume paid
   if (isConfirmed && amounts.amountExpected != null && amounts.amountPaid == null) {
@@ -609,6 +627,9 @@ function classifyCategory(summary: string, description: string): string | null {
 
 function detectAttendance(summary: string, description: string): boolean | null {
   const text = `${summary} ${description}`;
+  if (matchesAny(text, NOT_ATTENDED_PATTERNS)) {
+    return false;
+  }
   return matchesAny(text, ATTENDED_PATTERNS) ? true : null;
 }
 
