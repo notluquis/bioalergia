@@ -32,7 +32,6 @@ import { Route as AuthedSettingsIndexRouteImport } from "./routes/_authed/settin
 import { Route as AuthedServicesIndexRouteImport } from "./routes/_authed/services/index"
 import { Route as AuthedPatientsIndexRouteImport } from "./routes/_authed/patients/index"
 import { Route as AuthedHrIndexRouteImport } from "./routes/_authed/hr/index"
-import { Route as AuthedFinanzasIndexRouteImport } from "./routes/_authed/finanzas/index"
 import { Route as AuthedSettingsRolesRouteImport } from "./routes/_authed/settings/roles"
 import { Route as AuthedSettingsMercadopagoRouteImport } from "./routes/_authed/settings/mercadopago"
 import { Route as AuthedSettingsInventarioRouteImport } from "./routes/_authed/settings/inventario"
@@ -53,12 +52,10 @@ import { Route as AuthedFinanzasProductionBalancesRouteImport } from "./routes/_
 import { Route as AuthedFinanzasPersonalCreditsRouteImport } from "./routes/_authed/finanzas/personal-credits"
 import { Route as AuthedFinanzasPayoutsRouteImport } from "./routes/_authed/finanzas/payouts"
 import { Route as AuthedFinanzasLoansRouteImport } from "./routes/_authed/finanzas/loans"
-import { Route as AuthedFinanzasLiberacionesRouteImport } from "./routes/_authed/finanzas/liberaciones"
 import { Route as AuthedFinanzasDteAnalyticsRouteImport } from "./routes/_authed/finanzas/dte-analytics"
 import { Route as AuthedFinanzasDashboardRouteImport } from "./routes/_authed/finanzas/dashboard"
 import { Route as AuthedFinanzasDailyRouteImport } from "./routes/_authed/finanzas/daily"
 import { Route as AuthedFinanzasCounterpartsRouteImport } from "./routes/_authed/finanzas/counterparts"
-import { Route as AuthedFinanzasConciliacionesRouteImport } from "./routes/_authed/finanzas/conciliaciones"
 import { Route as AuthedFinanzasCashFlowRouteImport } from "./routes/_authed/finanzas/cash-flow"
 import { Route as AuthedDevRoutesAuditRouteImport } from "./routes/_authed/dev/routes-audit"
 import { Route as AuthedCertificatesMedicalRouteImport } from "./routes/_authed/certificates/medical"
@@ -159,11 +156,6 @@ const AuthedHrIndexRoute = AuthedHrIndexRouteImport.update({
   id: "/",
   path: "/",
   getParentRoute: () => AuthedHrRoute,
-} as any)
-const AuthedFinanzasIndexRoute = AuthedFinanzasIndexRouteImport.update({
-  id: "/",
-  path: "/",
-  getParentRoute: () => AuthedFinanzasRoute,
 } as any)
 const AuthedSettingsRolesRoute = AuthedSettingsRolesRouteImport.update({
   id: "/roles",
@@ -273,12 +265,6 @@ const AuthedFinanzasLoansRoute = AuthedFinanzasLoansRouteImport.update({
   path: "/loans",
   getParentRoute: () => AuthedFinanzasRoute,
 } as any)
-const AuthedFinanzasLiberacionesRoute =
-  AuthedFinanzasLiberacionesRouteImport.update({
-    id: "/liberaciones",
-    path: "/liberaciones",
-    getParentRoute: () => AuthedFinanzasRoute,
-  } as any)
 const AuthedFinanzasDteAnalyticsRoute =
   AuthedFinanzasDteAnalyticsRouteImport.update({
     id: "/dte-analytics",
@@ -299,12 +285,6 @@ const AuthedFinanzasCounterpartsRoute =
   AuthedFinanzasCounterpartsRouteImport.update({
     id: "/counterparts",
     path: "/counterparts",
-    getParentRoute: () => AuthedFinanzasRoute,
-  } as any)
-const AuthedFinanzasConciliacionesRoute =
-  AuthedFinanzasConciliacionesRouteImport.update({
-    id: "/conciliaciones",
-    path: "/conciliaciones",
     getParentRoute: () => AuthedFinanzasRoute,
   } as any)
 const AuthedFinanzasCashFlowRoute = AuthedFinanzasCashFlowRouteImport.update({
@@ -416,12 +396,10 @@ export interface FileRoutesByFullPath {
   "/certificates/medical": typeof AuthedCertificatesMedicalRoute
   "/dev/routes-audit": typeof AuthedDevRoutesAuditRoute
   "/finanzas/cash-flow": typeof AuthedFinanzasCashFlowRoute
-  "/finanzas/conciliaciones": typeof AuthedFinanzasConciliacionesRoute
   "/finanzas/counterparts": typeof AuthedFinanzasCounterpartsRoute
   "/finanzas/daily": typeof AuthedFinanzasDailyRoute
   "/finanzas/dashboard": typeof AuthedFinanzasDashboardRoute
   "/finanzas/dte-analytics": typeof AuthedFinanzasDteAnalyticsRoute
-  "/finanzas/liberaciones": typeof AuthedFinanzasLiberacionesRoute
   "/finanzas/loans": typeof AuthedFinanzasLoansRoute
   "/finanzas/payouts": typeof AuthedFinanzasPayoutsRoute
   "/finanzas/personal-credits": typeof AuthedFinanzasPersonalCreditsRouteWithChildren
@@ -442,7 +420,6 @@ export interface FileRoutesByFullPath {
   "/settings/inventario": typeof AuthedSettingsInventarioRoute
   "/settings/mercadopago": typeof AuthedSettingsMercadopagoRoute
   "/settings/roles": typeof AuthedSettingsRolesRoute
-  "/finanzas/": typeof AuthedFinanzasIndexRoute
   "/hr/": typeof AuthedHrIndexRoute
   "/patients/": typeof AuthedPatientsIndexRoute
   "/services/": typeof AuthedServicesIndexRoute
@@ -462,6 +439,7 @@ export interface FileRoutesByTo {
   "/account": typeof AuthedAccountRoute
   "/calendar": typeof AuthedCalendarRouteWithChildren
   "/certificates": typeof AuthedCertificatesRouteWithChildren
+  "/finanzas": typeof AuthedFinanzasRouteWithChildren
   "/operations": typeof AuthedOperationsRouteWithChildren
   "/verify/$id": typeof VerifyIdRoute
   "/": typeof AuthedIndexRoute
@@ -473,12 +451,10 @@ export interface FileRoutesByTo {
   "/certificates/medical": typeof AuthedCertificatesMedicalRoute
   "/dev/routes-audit": typeof AuthedDevRoutesAuditRoute
   "/finanzas/cash-flow": typeof AuthedFinanzasCashFlowRoute
-  "/finanzas/conciliaciones": typeof AuthedFinanzasConciliacionesRoute
   "/finanzas/counterparts": typeof AuthedFinanzasCounterpartsRoute
   "/finanzas/daily": typeof AuthedFinanzasDailyRoute
   "/finanzas/dashboard": typeof AuthedFinanzasDashboardRoute
   "/finanzas/dte-analytics": typeof AuthedFinanzasDteAnalyticsRoute
-  "/finanzas/liberaciones": typeof AuthedFinanzasLiberacionesRoute
   "/finanzas/loans": typeof AuthedFinanzasLoansRoute
   "/finanzas/payouts": typeof AuthedFinanzasPayoutsRoute
   "/finanzas/personal-credits": typeof AuthedFinanzasPersonalCreditsRouteWithChildren
@@ -499,7 +475,6 @@ export interface FileRoutesByTo {
   "/settings/inventario": typeof AuthedSettingsInventarioRoute
   "/settings/mercadopago": typeof AuthedSettingsMercadopagoRoute
   "/settings/roles": typeof AuthedSettingsRolesRoute
-  "/finanzas": typeof AuthedFinanzasIndexRoute
   "/hr": typeof AuthedHrIndexRoute
   "/patients": typeof AuthedPatientsIndexRoute
   "/services": typeof AuthedServicesIndexRoute
@@ -536,12 +511,10 @@ export interface FileRoutesById {
   "/_authed/certificates/medical": typeof AuthedCertificatesMedicalRoute
   "/_authed/dev/routes-audit": typeof AuthedDevRoutesAuditRoute
   "/_authed/finanzas/cash-flow": typeof AuthedFinanzasCashFlowRoute
-  "/_authed/finanzas/conciliaciones": typeof AuthedFinanzasConciliacionesRoute
   "/_authed/finanzas/counterparts": typeof AuthedFinanzasCounterpartsRoute
   "/_authed/finanzas/daily": typeof AuthedFinanzasDailyRoute
   "/_authed/finanzas/dashboard": typeof AuthedFinanzasDashboardRoute
   "/_authed/finanzas/dte-analytics": typeof AuthedFinanzasDteAnalyticsRoute
-  "/_authed/finanzas/liberaciones": typeof AuthedFinanzasLiberacionesRoute
   "/_authed/finanzas/loans": typeof AuthedFinanzasLoansRoute
   "/_authed/finanzas/payouts": typeof AuthedFinanzasPayoutsRoute
   "/_authed/finanzas/personal-credits": typeof AuthedFinanzasPersonalCreditsRouteWithChildren
@@ -562,7 +535,6 @@ export interface FileRoutesById {
   "/_authed/settings/inventario": typeof AuthedSettingsInventarioRoute
   "/_authed/settings/mercadopago": typeof AuthedSettingsMercadopagoRoute
   "/_authed/settings/roles": typeof AuthedSettingsRolesRoute
-  "/_authed/finanzas/": typeof AuthedFinanzasIndexRoute
   "/_authed/hr/": typeof AuthedHrIndexRoute
   "/_authed/patients/": typeof AuthedPatientsIndexRoute
   "/_authed/services/": typeof AuthedServicesIndexRoute
@@ -599,12 +571,10 @@ export interface FileRouteTypes {
     | "/certificates/medical"
     | "/dev/routes-audit"
     | "/finanzas/cash-flow"
-    | "/finanzas/conciliaciones"
     | "/finanzas/counterparts"
     | "/finanzas/daily"
     | "/finanzas/dashboard"
     | "/finanzas/dte-analytics"
-    | "/finanzas/liberaciones"
     | "/finanzas/loans"
     | "/finanzas/payouts"
     | "/finanzas/personal-credits"
@@ -625,7 +595,6 @@ export interface FileRouteTypes {
     | "/settings/inventario"
     | "/settings/mercadopago"
     | "/settings/roles"
-    | "/finanzas/"
     | "/hr/"
     | "/patients/"
     | "/services/"
@@ -645,6 +614,7 @@ export interface FileRouteTypes {
     | "/account"
     | "/calendar"
     | "/certificates"
+    | "/finanzas"
     | "/operations"
     | "/verify/$id"
     | "/"
@@ -656,12 +626,10 @@ export interface FileRouteTypes {
     | "/certificates/medical"
     | "/dev/routes-audit"
     | "/finanzas/cash-flow"
-    | "/finanzas/conciliaciones"
     | "/finanzas/counterparts"
     | "/finanzas/daily"
     | "/finanzas/dashboard"
     | "/finanzas/dte-analytics"
-    | "/finanzas/liberaciones"
     | "/finanzas/loans"
     | "/finanzas/payouts"
     | "/finanzas/personal-credits"
@@ -682,7 +650,6 @@ export interface FileRouteTypes {
     | "/settings/inventario"
     | "/settings/mercadopago"
     | "/settings/roles"
-    | "/finanzas"
     | "/hr"
     | "/patients"
     | "/services"
@@ -718,12 +685,10 @@ export interface FileRouteTypes {
     | "/_authed/certificates/medical"
     | "/_authed/dev/routes-audit"
     | "/_authed/finanzas/cash-flow"
-    | "/_authed/finanzas/conciliaciones"
     | "/_authed/finanzas/counterparts"
     | "/_authed/finanzas/daily"
     | "/_authed/finanzas/dashboard"
     | "/_authed/finanzas/dte-analytics"
-    | "/_authed/finanzas/liberaciones"
     | "/_authed/finanzas/loans"
     | "/_authed/finanzas/payouts"
     | "/_authed/finanzas/personal-credits"
@@ -744,7 +709,6 @@ export interface FileRouteTypes {
     | "/_authed/settings/inventario"
     | "/_authed/settings/mercadopago"
     | "/_authed/settings/roles"
-    | "/_authed/finanzas/"
     | "/_authed/hr/"
     | "/_authed/patients/"
     | "/_authed/services/"
@@ -887,13 +851,6 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedHrIndexRouteImport
       parentRoute: typeof AuthedHrRoute
     }
-    "/_authed/finanzas/": {
-      id: "/_authed/finanzas/"
-      path: "/"
-      fullPath: "/finanzas/"
-      preLoaderRoute: typeof AuthedFinanzasIndexRouteImport
-      parentRoute: typeof AuthedFinanzasRoute
-    }
     "/_authed/settings/roles": {
       id: "/_authed/settings/roles"
       path: "/roles"
@@ -1034,13 +991,6 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedFinanzasLoansRouteImport
       parentRoute: typeof AuthedFinanzasRoute
     }
-    "/_authed/finanzas/liberaciones": {
-      id: "/_authed/finanzas/liberaciones"
-      path: "/liberaciones"
-      fullPath: "/finanzas/liberaciones"
-      preLoaderRoute: typeof AuthedFinanzasLiberacionesRouteImport
-      parentRoute: typeof AuthedFinanzasRoute
-    }
     "/_authed/finanzas/dte-analytics": {
       id: "/_authed/finanzas/dte-analytics"
       path: "/dte-analytics"
@@ -1067,13 +1017,6 @@ declare module "@tanstack/react-router" {
       path: "/counterparts"
       fullPath: "/finanzas/counterparts"
       preLoaderRoute: typeof AuthedFinanzasCounterpartsRouteImport
-      parentRoute: typeof AuthedFinanzasRoute
-    }
-    "/_authed/finanzas/conciliaciones": {
-      id: "/_authed/finanzas/conciliaciones"
-      path: "/conciliaciones"
-      fullPath: "/finanzas/conciliaciones"
-      preLoaderRoute: typeof AuthedFinanzasConciliacionesRouteImport
       parentRoute: typeof AuthedFinanzasRoute
     }
     "/_authed/finanzas/cash-flow": {
@@ -1239,35 +1182,29 @@ const AuthedFinanzasPersonalCreditsRouteWithChildren =
 
 interface AuthedFinanzasRouteChildren {
   AuthedFinanzasCashFlowRoute: typeof AuthedFinanzasCashFlowRoute
-  AuthedFinanzasConciliacionesRoute: typeof AuthedFinanzasConciliacionesRoute
   AuthedFinanzasCounterpartsRoute: typeof AuthedFinanzasCounterpartsRoute
   AuthedFinanzasDailyRoute: typeof AuthedFinanzasDailyRoute
   AuthedFinanzasDashboardRoute: typeof AuthedFinanzasDashboardRoute
   AuthedFinanzasDteAnalyticsRoute: typeof AuthedFinanzasDteAnalyticsRoute
-  AuthedFinanzasLiberacionesRoute: typeof AuthedFinanzasLiberacionesRoute
   AuthedFinanzasLoansRoute: typeof AuthedFinanzasLoansRoute
   AuthedFinanzasPayoutsRoute: typeof AuthedFinanzasPayoutsRoute
   AuthedFinanzasPersonalCreditsRoute: typeof AuthedFinanzasPersonalCreditsRouteWithChildren
   AuthedFinanzasProductionBalancesRoute: typeof AuthedFinanzasProductionBalancesRoute
   AuthedFinanzasStatisticsRoute: typeof AuthedFinanzasStatisticsRoute
-  AuthedFinanzasIndexRoute: typeof AuthedFinanzasIndexRoute
 }
 
 const AuthedFinanzasRouteChildren: AuthedFinanzasRouteChildren = {
   AuthedFinanzasCashFlowRoute: AuthedFinanzasCashFlowRoute,
-  AuthedFinanzasConciliacionesRoute: AuthedFinanzasConciliacionesRoute,
   AuthedFinanzasCounterpartsRoute: AuthedFinanzasCounterpartsRoute,
   AuthedFinanzasDailyRoute: AuthedFinanzasDailyRoute,
   AuthedFinanzasDashboardRoute: AuthedFinanzasDashboardRoute,
   AuthedFinanzasDteAnalyticsRoute: AuthedFinanzasDteAnalyticsRoute,
-  AuthedFinanzasLiberacionesRoute: AuthedFinanzasLiberacionesRoute,
   AuthedFinanzasLoansRoute: AuthedFinanzasLoansRoute,
   AuthedFinanzasPayoutsRoute: AuthedFinanzasPayoutsRoute,
   AuthedFinanzasPersonalCreditsRoute:
     AuthedFinanzasPersonalCreditsRouteWithChildren,
   AuthedFinanzasProductionBalancesRoute: AuthedFinanzasProductionBalancesRoute,
   AuthedFinanzasStatisticsRoute: AuthedFinanzasStatisticsRoute,
-  AuthedFinanzasIndexRoute: AuthedFinanzasIndexRoute,
 }
 
 const AuthedFinanzasRouteWithChildren = AuthedFinanzasRoute._addFileChildren(
