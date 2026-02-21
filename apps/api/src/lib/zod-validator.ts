@@ -3,7 +3,7 @@ import type { ValidationTargets } from "hono";
 import type { ZodType } from "zod";
 import { z } from "zod";
 
-import { reply } from "../utils/reply";
+import { errorReply } from "../utils/error-reply";
 
 export const zValidator = <T extends ZodType, Target extends keyof ValidationTargets>(
   target: Target,
@@ -12,6 +12,9 @@ export const zValidator = <T extends ZodType, Target extends keyof ValidationTar
   baseValidator(target, schema, (result, c) => {
     if (!result.success) {
       const pretty = z.prettifyError(result.error);
-      return reply(c, { status: "error", message: pretty, issues: result.error.issues }, 400);
+      return errorReply(c, 400, pretty, {
+        code: "VALIDATION_ERROR",
+        details: { issues: result.error.issues },
+      });
     }
   });

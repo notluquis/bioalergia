@@ -10,9 +10,11 @@ import type {
   AuthenticatorTransportFuture,
   RegistrationResponseJSON,
 } from "@simplewebauthn/server";
-import { Hono } from "hono";
+import { type Context, Hono } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
+import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { signToken, verifyToken } from "../lib/paseto";
+import { errorReply } from "../utils/error-reply";
 
 const COOKIE_NAME = "finanzas_session";
 const COOKIE_OPTIONS = {
@@ -24,6 +26,10 @@ const COOKIE_OPTIONS = {
 };
 
 export const authRoutes = new Hono();
+
+function authError(c: Context, status: ContentfulStatusCode, message: string) {
+  return errorReply(c, status, message, { code: "AUTH_ERROR" });
+}
 
 // Prevent caching of auth responses (security + UX)
 authRoutes.use("*", async (c, next) => {
@@ -147,7 +153,7 @@ authRoutes.post("/login", zValidator("json", loginSchema), async (c) => {
   });
 
   if (!user || !user.passwordHash) {
-    return c.json({ status: "error", message: "Credenciales incorrectas" }, 401);
+    return authError(c, 401, "Credenciales incorrectas");
   }
 
   // Import crypto verification (Argon2)
@@ -155,7 +161,7 @@ authRoutes.post("/login", zValidator("json", loginSchema), async (c) => {
   const { valid, needsRehash } = await verifyPassword(password, user.passwordHash);
 
   if (!valid) {
-    return c.json({ status: "error", message: "Credenciales incorrectas" }, 401);
+    return authError(c, 401, "Credenciales incorrectas");
   }
 
   // Auto-upgrade legacy bcrypt hashes to Argon2
@@ -218,7 +224,7 @@ authRoutes.post("/login/mfa", zValidator("json", mfaLoginSchema), async (c) => {
   });
 
   if (!user || !user.mfaEnabled || !user.mfaSecret) {
-    return c.json({ status: "error", message: "MFA no configurado" }, 400);
+    return authError(c, 400, "MFA no configurado");
   }
 
   // Verify MFA token
@@ -226,7 +232,7 @@ authRoutes.post("/login/mfa", zValidator("json", mfaLoginSchema), async (c) => {
   const isValid = await verifyMfaToken(mfaToken, user.mfaSecret);
 
   if (!isValid) {
-    return c.json({ status: "error", message: "Código incorrecto" }, 401);
+    return authError(c, 401, "Código incorrecto");
   }
 
   const roles = user.roles.map((r) => r.role.name);
@@ -330,13 +336,13 @@ authRoutes.post("/mfa/setup", async (c) => {
   // Requires auth - extract from cookie
   const token = getCookie(c, COOKIE_NAME);
   if (!token) {
-    return c.json({ status: "error", message: "No autorizado" }, 401);
+    return authError(c, 401, "No autorizado");
   }
 
   try {
     const session = await resolveSessionFromToken(token);
     if (!session) {
-      return c.json({ status: "error", message: "Token inválido" }, 401);
+      return authError(c, 401, "Token inválido");
     }
     const userId = session.userId;
     const email = session.userEmail;
@@ -351,20 +357,20 @@ authRoutes.post("/mfa/setup", async (c) => {
 
     return c.json({ status: "ok", secret, qrCodeUrl });
   } catch {
-    return c.json({ status: "error", message: "Token inválido" }, 401);
+    return authError(c, 401, "Token inválido");
   }
 });
 
 authRoutes.post("/mfa/enable", zValidator("json", mfaEnableSchema), async (c) => {
   const token = getCookie(c, COOKIE_NAME);
   if (!token) {
-    return c.json({ status: "error", message: "No autorizado" }, 401);
+    return authError(c, 401, "No autorizado");
   }
 
   try {
     const session = await resolveSessionFromToken(token);
     if (!session) {
-      return c.json({ status: "error", message: "Token inválido" }, 401);
+      return authError(c, 401, "Token inválido");
     }
     const userId = session.userId;
 
@@ -372,14 +378,14 @@ authRoutes.post("/mfa/enable", zValidator("json", mfaEnableSchema), async (c) =>
 
     const user = await db.user.findUnique({ where: { id: userId } });
     if (!user?.mfaSecret) {
-      return c.json({ status: "error", message: "MFA setup no iniciado" }, 400);
+      return authError(c, 400, "MFA setup no iniciado");
     }
 
     const { verifyMfaToken } = await import("../services/mfa.js");
     const isValid = await verifyMfaToken(mfaToken, user.mfaSecret);
 
     if (!isValid) {
-      return c.json({ status: "error", message: "Código incorrecto" }, 400);
+      return authError(c, 400, "Código incorrecto");
     }
 
     await db.user.update({
@@ -389,20 +395,20 @@ authRoutes.post("/mfa/enable", zValidator("json", mfaEnableSchema), async (c) =>
 
     return c.json({ status: "ok" });
   } catch {
-    return c.json({ status: "error", message: "Token inválido" }, 401);
+    return authError(c, 401, "Token inválido");
   }
 });
 
 authRoutes.post("/mfa/disable", async (c) => {
   const token = getCookie(c, COOKIE_NAME);
   if (!token) {
-    return c.json({ status: "error", message: "No autorizado" }, 401);
+    return authError(c, 401, "No autorizado");
   }
 
   try {
     const session = await resolveSessionFromToken(token);
     if (!session) {
-      return c.json({ status: "error", message: "Token inválido" }, 401);
+      return authError(c, 401, "Token inválido");
     }
     const userId = session.userId;
 
@@ -413,7 +419,7 @@ authRoutes.post("/mfa/disable", async (c) => {
 
     return c.json({ status: "ok" });
   } catch {
-    return c.json({ status: "error", message: "Token inválido" }, 401);
+    return authError(c, 401, "Token inválido");
   }
 });
 
@@ -474,7 +480,7 @@ authRoutes.get("/passkey/login/options", async (c) => {
     return c.json(options);
   } catch (error) {
     console.error("[passkey] login options error:", error);
-    return c.json({ status: "error", message: "Error generando opciones" }, 500);
+    return authError(c, 500, "Error generando opciones");
   }
 });
 
@@ -487,7 +493,7 @@ authRoutes.post("/passkey/login/verify", zValidator("json", passkeyVerifySchema)
     // Verify challenge exists
     const storedChallenge = getChallenge(`login:${challenge}`);
     if (!storedChallenge) {
-      return c.json({ status: "error", message: "Challenge inválido o expirado" }, 400);
+      return authError(c, 400, "Challenge inválido o expirado");
     }
 
     // Find passkey by credential ID
@@ -509,7 +515,7 @@ authRoutes.post("/passkey/login/verify", zValidator("json", passkeyVerifySchema)
     });
 
     if (!passkey || !passkey.user) {
-      return c.json({ status: "error", message: "Credencial no encontrada" }, 401);
+      return authError(c, 401, "Credencial no encontrada");
     }
     const user = passkey.user;
 
@@ -528,7 +534,7 @@ authRoutes.post("/passkey/login/verify", zValidator("json", passkeyVerifySchema)
     });
 
     if (!verification.verified) {
-      return c.json({ status: "error", message: "Verificación fallida" }, 401);
+      return authError(c, 401, "Verificación fallida");
     }
 
     // Update counter
@@ -569,7 +575,7 @@ authRoutes.post("/passkey/login/verify", zValidator("json", passkeyVerifySchema)
     });
   } catch (error) {
     console.error("[passkey] login verify error:", error);
-    return c.json({ status: "error", message: "Error de verificación" }, 500);
+    return authError(c, 500, "Error de verificación");
   }
 });
 
@@ -577,14 +583,14 @@ authRoutes.post("/passkey/login/verify", zValidator("json", passkeyVerifySchema)
 authRoutes.get("/passkey/register/options", async (c) => {
   const token = getCookie(c, COOKIE_NAME);
   if (!token) {
-    return c.json({ status: "error", message: "No autorizado" }, 401);
+    return authError(c, 401, "No autorizado");
   }
 
   try {
     const { generateRegistrationOptions } = await import("@simplewebauthn/server");
     const session = await resolveSessionFromToken(token);
     if (!session) {
-      return c.json({ status: "error", message: "Token inválido" }, 401);
+      return authError(c, 401, "Token inválido");
     }
     const userId = session.userId;
     const email = session.userEmail;
@@ -595,7 +601,7 @@ authRoutes.get("/passkey/register/options", async (c) => {
     });
 
     if (!user) {
-      return c.json({ status: "error", message: "Usuario no encontrado" }, 404);
+      return authError(c, 404, "Usuario no encontrado");
     }
 
     const options = await generateRegistrationOptions({
@@ -619,7 +625,7 @@ authRoutes.get("/passkey/register/options", async (c) => {
     return c.json(options);
   } catch (error) {
     console.error("[passkey] register options error:", error);
-    return c.json({ status: "error", message: "Error generando opciones" }, 500);
+    return authError(c, 500, "Error generando opciones");
   }
 });
 
@@ -630,14 +636,14 @@ authRoutes.post(
   async (c) => {
     const sessionToken = getCookie(c, COOKIE_NAME);
     if (!sessionToken) {
-      return c.json({ status: "error", message: "No autorizado" }, 401);
+      return authError(c, 401, "No autorizado");
     }
 
     try {
       const { verifyRegistrationResponse } = await import("@simplewebauthn/server");
       const session = await resolveSessionFromToken(sessionToken);
       if (!session) {
-        return c.json({ status: "error", message: "Token inválido" }, 401);
+        return authError(c, 401, "Token inválido");
       }
       const userId = session.userId;
 
@@ -646,7 +652,7 @@ authRoutes.post(
       // Verify challenge
       const storedChallenge = getChallenge(`register:${challenge}`);
       if (!storedChallenge || storedChallenge.userId !== userId) {
-        return c.json({ status: "error", message: "Challenge inválido" }, 400);
+        return authError(c, 400, "Challenge inválido");
       }
 
       // Note: regResponse is typed as unknown by Zod, but simplewebauthn expects a specific structure.
@@ -661,7 +667,7 @@ authRoutes.post(
       });
 
       if (!verification.verified || !verification.registrationInfo) {
-        return c.json({ status: "error", message: "Verificación fallida" }, 400);
+        return authError(c, 400, "Verificación fallida");
       }
 
       const { credential, credentialDeviceType, credentialBackedUp } =
@@ -688,7 +694,7 @@ authRoutes.post(
       });
     } catch (error) {
       console.error("[passkey] register verify error:", error);
-      return c.json({ status: "error", message: "Error de verificación" }, 500);
+      return authError(c, 500, "Error de verificación");
     }
   },
 );
@@ -697,13 +703,13 @@ authRoutes.post(
 authRoutes.delete("/passkey/remove", async (c) => {
   const token = getCookie(c, COOKIE_NAME);
   if (!token) {
-    return c.json({ status: "error", message: "No autorizado" }, 401);
+    return authError(c, 401, "No autorizado");
   }
 
   try {
     const session = await resolveSessionFromToken(token);
     if (!session) {
-      return c.json({ status: "error", message: "Token inválido" }, 401);
+      return authError(c, 401, "Token inválido");
     }
     const userId = session.userId;
 
@@ -715,6 +721,6 @@ authRoutes.delete("/passkey/remove", async (c) => {
     return c.json({ status: "ok", message: "Passkey eliminado" });
   } catch (error) {
     console.error("[passkey] remove error:", error);
-    return c.json({ status: "error", message: "Error eliminando passkey" }, 500);
+    return authError(c, 500, "Error eliminando passkey");
   }
 });

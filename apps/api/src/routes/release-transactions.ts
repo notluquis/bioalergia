@@ -4,6 +4,8 @@ import { type Context, Hono } from "hono";
 import { z } from "zod";
 
 import { getSessionUser, hasPermission } from "../auth";
+import { AppError } from "../lib/app-error";
+import { errorReply } from "../utils/error-reply";
 import { reply } from "../utils/reply";
 
 const NUMERIC_PATTERN = /^\d+$/;
@@ -23,12 +25,12 @@ const querySchema = z.object({
 async function requireIntegrationRead(c: Context) {
   const user = await getSessionUser(c);
   if (!user) {
-    return c.json({ status: "error", message: "Unauthorized" }, 401);
+    throw new AppError(401, { code: "UNAUTHORIZED", message: "Unauthorized" });
   }
 
   const canRead = await hasPermission(user.id, "read", "Integration");
   if (!canRead) {
-    return c.json({ status: "error", message: "Forbidden" }, 403);
+    throw new AppError(403, { code: "FORBIDDEN", message: "Forbidden" });
   }
 
   return user;
@@ -81,13 +83,13 @@ function buildReleaseWhere(input: z.infer<typeof querySchema>): ReleaseTransacti
 // GET /api/release-transactions
 app.get("/", async (c) => {
   const user = await requireIntegrationRead(c);
-  if (user instanceof Response) {
-    return user;
-  }
 
   const parsed = querySchema.safeParse(c.req.query());
   if (!parsed.success) {
-    return c.json({ status: "error", message: "Invalid params" }, 400);
+    return errorReply(c, 400, "Invalid params", {
+      code: "VALIDATION_ERROR",
+      details: { issues: parsed.error.issues },
+    });
   }
 
   const { page, pageSize } = parsed.data;
@@ -121,9 +123,6 @@ app.get("/", async (c) => {
 // GET /api/release-transactions/:id
 app.get("/:id", async (c) => {
   const user = await requireIntegrationRead(c);
-  if (user instanceof Response) {
-    return user;
-  }
 
   const id = Number(c.req.param("id"));
 
@@ -134,10 +133,13 @@ app.get("/:id", async (c) => {
   });
 
   if (!transaction) {
-    return c.json({ status: "error", message: "Transacción no encontrada" }, 404);
+    throw new AppError(404, {
+      code: "TRANSACTION_NOT_FOUND",
+      message: "Transacción no encontrada",
+    });
   }
 
-  return c.json({ status: "ok", data: transaction });
+  return reply(c, { status: "ok", data: transaction });
 });
 
 export const releaseTransactionRoutes = app;

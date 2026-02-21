@@ -5,10 +5,14 @@ import { createHonoHandler } from "@zenstackhq/server/hono";
 import { Decimal } from "decimal.js";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { HTTPException } from "hono/http-exception";
+import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { rateLimiter } from "hono-rate-limiter";
 import superjson from "superjson";
 import { createAuthContext, getSessionUser } from "./auth";
+import { AppError } from "./lib/app-error";
 import { htmlSanitizerMiddleware } from "./lib/html-sanitizer";
+import { logError } from "./lib/logger";
 import { certificatesRoutes } from "./modules/certificates/index.js";
 import { patientsRoutes } from "./modules/patients/index.js";
 import { authRoutes } from "./routes/auth";
@@ -44,6 +48,8 @@ import { suppliesRoutes } from "./routes/supplies";
 import { timesheetRoutes } from "./routes/timesheets";
 import { transactionRoutes } from "./routes/transactions";
 import { userRoutes } from "./routes/users";
+import { errorReply } from "./utils/error-reply";
+import { reply } from "./utils/reply";
 
 // Register Decimal.js serialization for superjson
 superjson.registerCustom<Decimal, string>(
@@ -265,4 +271,66 @@ app.get("/", (c) => {
   }
 
   return c.json(info);
+});
+
+app.notFound((c) => {
+  return errorReply(c, 404, "Ruta no encontrada", {
+    code: "NOT_FOUND",
+    details: { method: c.req.method, path: c.req.path },
+  });
+});
+
+app.onError((error, c) => {
+  if (error instanceof AppError) {
+    if (error.status >= 500) {
+      logError("api.unhandled.app_error", error, {
+        method: c.req.method,
+        path: c.req.path,
+        code: error.code,
+      });
+    }
+
+    return errorReply(
+      c,
+      error.status as ContentfulStatusCode,
+      error.expose ? error.message : "Internal Server Error",
+      {
+        code: error.code,
+        ...(error.expose ? { details: error.details } : {}),
+      },
+    );
+  }
+
+  if (error instanceof HTTPException) {
+    const httpErrorMessages: Record<number, string> = {
+      400: "Bad Request",
+      401: "Unauthorized",
+      403: "Forbidden",
+      404: "Not Found",
+      405: "Method Not Allowed",
+      409: "Conflict",
+      422: "Unprocessable Entity",
+      429: "Too Many Requests",
+      500: "Internal Server Error",
+    };
+
+    return errorReply(
+      c,
+      error.status as ContentfulStatusCode,
+      httpErrorMessages[error.status] ?? "Request Error",
+      {
+        code: "HTTP_EXCEPTION",
+      },
+    );
+  }
+
+  logError("api.unhandled.error", error, {
+    method: c.req.method,
+    path: c.req.path,
+  });
+  return reply(
+    c,
+    { status: "error", code: "INTERNAL_ERROR", message: "Internal Server Error" },
+    500,
+  );
 });
