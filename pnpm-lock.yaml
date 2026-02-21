@@ -48,10 +48,10 @@ importers:
         version: 20.1.0
       '@hono/node-server':
         specifier: ^1.19.9
-        version: 1.19.9(hono@4.11.10)
+        version: 1.19.9(hono@4.12.1)
       '@hono/zod-validator':
         specifier: ^0.7.6
-        version: 0.7.6(hono@4.11.10)(zod@4.3.6)
+        version: 0.7.6(hono@4.12.1)(zod@4.3.6)
       '@otplib/plugin-base32-scure':
         specifier: ^13.3.0
         version: 13.3.0
@@ -78,7 +78,7 @@ importers:
         version: 3.3.3(better-sqlite3@12.6.2)(mysql2@3.17.2)(pg@8.18.0)(zod@4.3.6)
       '@zenstackhq/server':
         specifier: ^3.3.3
-        version: 3.3.3(better-sqlite3@12.6.2)(express@5.2.1)(hono@4.11.10)(mysql2@3.17.2)(pg@8.18.0)(zod@4.3.6)
+        version: 3.3.3(better-sqlite3@12.6.2)(express@5.2.1)(hono@4.12.1)(mysql2@3.17.2)(pg@8.18.0)(zod@4.3.6)
       argon2:
         specifier: ^0.44.0
         version: 0.44.0
@@ -98,11 +98,11 @@ importers:
         specifier: ^10.5.0
         version: 10.5.0
       hono:
-        specifier: ^4.11.10
-        version: 4.11.10
+        specifier: ^4.12.1
+        version: 4.12.1
       hono-rate-limiter:
         specifier: ^0.5.3
-        version: 0.5.3(hono@4.11.10)
+        version: 0.5.3(hono@4.12.1)
       isomorphic-dompurify:
         specifier: 3.0.0-rc.2
         version: 3.0.0-rc.2(@noble/hashes@2.0.1)
@@ -238,7 +238,7 @@ importers:
         version: 0.9.1
       '@zenstackhq/server':
         specifier: ^3.3.3
-        version: 3.3.3(better-sqlite3@12.6.2)(express@5.2.1)(hono@4.11.10)(mysql2@3.17.2)(pg@8.18.0)(zod@4.3.6)
+        version: 3.3.3(better-sqlite3@12.6.2)(express@5.2.1)(hono@4.12.1)(mysql2@3.17.2)(pg@8.18.0)(zod@4.3.6)
       '@zenstackhq/tanstack-query':
         specifier: ^3.3.3
         version: 3.3.3(@tanstack/react-query@5.90.21(react@19.2.4))
@@ -434,10 +434,10 @@ importers:
     dependencies:
       '@hono/node-server':
         specifier: ^1.19.9
-        version: 1.19.9(hono@4.11.10)
+        version: 1.19.9(hono@4.12.1)
       hono:
-        specifier: ^4.11.10
-        version: 4.11.10
+        specifier: ^4.12.1
+        version: 4.12.1
       imapflow:
         specifier: ^1.2.9
         version: 1.2.9
@@ -553,13 +553,13 @@ importers:
         version: 3.3.3(better-sqlite3@12.6.2)(kysely@0.28.11)(mysql2@3.17.2)(pg@8.18.0)(zod@4.3.6)
       '@zenstackhq/server':
         specifier: ^3.3.3
-        version: 3.3.3(better-sqlite3@12.6.2)(express@5.2.1)(hono@4.11.10)(mysql2@3.17.2)(pg@8.18.0)(zod@4.3.6)
+        version: 3.3.3(better-sqlite3@12.6.2)(express@5.2.1)(hono@4.12.1)(mysql2@3.17.2)(pg@8.18.0)(zod@4.3.6)
       '@zenstackhq/tanstack-query':
         specifier: ^3.3.3
         version: 3.3.3(@tanstack/react-query@5.90.21(react@19.2.4))
       hono:
-        specifier: ^4.11.10
-        version: 4.11.10
+        specifier: ^4.12.1
+        version: 4.12.1
       kysely:
         specifier: ^0.28.11
         version: 0.28.11
@@ -587,7 +587,7 @@ importers:
         version: 19.2.14
       '@zenstackhq/cli':
         specifier: ^3.3.3
-        version: 3.3.3(hono@4.11.10)(typescript@5.9.3)(zod@4.3.6)
+        version: 3.3.3(hono@4.12.1)(typescript@5.9.3)(zod@4.3.6)
       '@zenstackhq/sdk':
         specifier: ^3.3.3
         version: 3.3.3
@@ -4985,8 +4985,8 @@ packages:
       unstorage:
         optional: true
 
-  hono@4.11.10:
-    resolution: {integrity: sha512-kyWP5PAiMooEvGrA9jcD3IXF7ATu8+o7B3KCbPXid5se52NPqnOpM/r9qeW2heMnOekF4kqR1fXJqCYeCLKrZg==}
+  hono@4.12.1:
+    resolution: {integrity: sha512-hi9afu8g0lfJVLolxElAZGANCTTl6bewIdsRNhaywfP9K8BPf++F2z6OLrYGIinUwpRKzbZHMhPwvc0ZEpAwGw==}
     engines: {node: '>=16.9.0'}
 
   html-encoding-sniffer@6.0.0:
@@ -8965,13 +8965,13 @@ snapshots:
 
   '@hexagon/base64@1.1.28': {}
 
-  '@hono/node-server@1.19.9(hono@4.11.10)':
+  '@hono/node-server@1.19.9(hono@4.12.1)':
     dependencies:
-      hono: 4.11.10
+      hono: 4.12.1
 
-  '@hono/zod-validator@0.7.6(hono@4.11.10)(zod@4.3.6)':
+  '@hono/zod-validator@0.7.6(hono@4.12.1)(zod@4.3.6)':
     dependencies:
-      hono: 4.11.10
+      hono: 4.12.1
       zod: 4.3.6
 
   '@iconify/tailwind@1.2.0':
@@ -11419,13 +11419,13 @@ snapshots:
       '@vitest/pretty-format': 4.0.18
       tinyrainbow: 3.0.3
 
-  '@zenstackhq/cli@3.3.3(hono@4.11.10)(typescript@5.9.3)(zod@4.3.6)':
+  '@zenstackhq/cli@3.3.3(hono@4.12.1)(typescript@5.9.3)(zod@4.3.6)':
     dependencies:
       '@zenstackhq/common-helpers': 3.3.3
       '@zenstackhq/language': 3.3.3
       '@zenstackhq/orm': 3.3.3(better-sqlite3@12.6.2)(mysql2@3.17.2)(pg@8.18.0)(zod@4.3.6)
       '@zenstackhq/sdk': 3.3.3
-      '@zenstackhq/server': 3.3.3(better-sqlite3@12.6.2)(express@5.2.1)(hono@4.11.10)(mysql2@3.17.2)(pg@8.18.0)(zod@4.3.6)
+      '@zenstackhq/server': 3.3.3(better-sqlite3@12.6.2)(express@5.2.1)(hono@4.12.1)(mysql2@3.17.2)(pg@8.18.0)(zod@4.3.6)
       better-sqlite3: 12.6.2
       chokidar: 5.0.0
       colors: 1.4.0
@@ -11523,7 +11523,7 @@ snapshots:
       ts-pattern: 5.9.0
       typescript: 5.9.3
 
-  '@zenstackhq/server@3.3.3(better-sqlite3@12.6.2)(express@5.2.1)(hono@4.11.10)(mysql2@3.17.2)(pg@8.18.0)(zod@4.3.6)':
+  '@zenstackhq/server@3.3.3(better-sqlite3@12.6.2)(express@5.2.1)(hono@4.12.1)(mysql2@3.17.2)(pg@8.18.0)(zod@4.3.6)':
     dependencies:
       '@zenstackhq/common-helpers': 3.3.3
       '@zenstackhq/orm': 3.3.3(better-sqlite3@12.6.2)(mysql2@3.17.2)(pg@8.18.0)(zod@4.3.6)
@@ -11536,7 +11536,7 @@ snapshots:
       zod-validation-error: 4.0.2(zod@4.3.6)
     optionalDependencies:
       express: 5.2.1
-      hono: 4.11.10
+      hono: 4.12.1
     transitivePeerDependencies:
       - better-sqlite3
       - mysql2
@@ -12779,11 +12779,11 @@ snapshots:
 
   help-me@5.0.0: {}
 
-  hono-rate-limiter@0.5.3(hono@4.11.10):
+  hono-rate-limiter@0.5.3(hono@4.12.1):
     dependencies:
-      hono: 4.11.10
+      hono: 4.12.1
 
-  hono@4.11.10: {}
+  hono@4.12.1: {}
 
   html-encoding-sniffer@6.0.0(@noble/hashes@2.0.1):
     dependencies:

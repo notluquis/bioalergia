@@ -1,5 +1,13 @@
 import { Card, Chip } from "@heroui/react";
 import dayjs from "dayjs";
+import {
+  CalendarClock,
+  CheckCircle2,
+  CircleHelp,
+  Clock3,
+  type LucideIcon,
+  XCircle,
+} from "lucide-react";
 
 import type { CalendarEventDetail } from "@/features/calendar/types";
 import { currencyFormatter } from "@/lib/format";
@@ -11,20 +19,71 @@ interface DailyEventCardProps {
   readonly event: CalendarEventDetail;
 }
 
-function getAttendanceLabel(event: CalendarEventDetail): null | { label: string; tone: string } {
-  if (event.attended == null) {
+type StateBadge = {
+  color: "danger" | "default" | "success" | "warning";
+  icon: LucideIcon;
+  key: string;
+  label: string;
+};
+
+function getAttendanceBadge(event: CalendarEventDetail): StateBadge {
+  const start = event.startDateTime ? dayjs(event.startDateTime) : null;
+  const isPastOrNow = start ? !start.isAfter(dayjs()) : false;
+
+  if (event.attended === true) {
+    return {
+      color: "success",
+      icon: CheckCircle2,
+      key: "attendance",
+      label: "Asistió",
+    };
+  }
+  if (event.attended === false) {
+    return {
+      color: "danger",
+      icon: XCircle,
+      key: "attendance",
+      label: "No asistió",
+    };
+  }
+  return {
+    color: "warning",
+    icon: isPastOrNow ? Clock3 : CalendarClock,
+    key: "attendance",
+    label: isPastOrNow ? "Asistencia pendiente" : "Programada",
+  };
+}
+
+function getEventStatusBadge(event: CalendarEventDetail): null | StateBadge {
+  const raw = event.status?.trim();
+  if (!raw) {
     return null;
   }
 
-  const shouldShow =
-    event.attended || (event.startDateTime && dayjs(event.startDateTime).isBefore(dayjs()));
-  if (!shouldShow) {
-    return null;
+  const normalized = raw.toLowerCase();
+
+  if (["cancelled", "canceled"].includes(normalized)) {
+    return { color: "danger", icon: XCircle, key: "event-status", label: "Cancelado" };
+  }
+  if (["tentative"].includes(normalized)) {
+    return { color: "warning", icon: Clock3, key: "event-status", label: "Tentativo" };
+  }
+  if (["confirmed", "booked"].includes(normalized)) {
+    return { color: "success", icon: CheckCircle2, key: "event-status", label: "Confirmado" };
+  }
+  if (["needsaction", "needs_action"].includes(normalized)) {
+    return { color: "warning", icon: CircleHelp, key: "event-status", label: "Por confirmar" };
+  }
+  if (["noshow", "no_show", "no-show"].includes(normalized)) {
+    return { color: "danger", icon: XCircle, key: "event-status", label: "No asistió" };
   }
 
-  return event.attended
-    ? { label: "✓ Asistió", tone: "text-success" }
-    : { label: "✗ No asistió", tone: "text-danger" };
+  return {
+    color: "default",
+    icon: CircleHelp,
+    key: "event-status",
+    label: raw,
+  };
 }
 
 function buildRightSideBadges(event: CalendarEventDetail) {
@@ -71,7 +130,11 @@ export function DailyEventCard({ event }: DailyEventCardProps) {
   const end = event.endDateTime ? dayjs(event.endDateTime) : null;
   const durationMinutes = start && end ? end.diff(start, "minute") : null;
   const indicatorColor = getCategoryIndicatorColor(event.category);
-  const attendance = getAttendanceLabel(event);
+  const attendanceBadge = getAttendanceBadge(event);
+  const eventStatusBadge = getEventStatusBadge(event);
+  const stateBadges = [attendanceBadge, eventStatusBadge].filter(
+    (badge, index, arr) => badge && arr.findIndex((b) => b?.label === badge.label) === index,
+  );
   const rightBadges = buildRightSideBadges(event);
 
   return (
@@ -125,9 +188,24 @@ export function DailyEventCard({ event }: DailyEventCardProps) {
                 </span>
               </div>
             )}
-            {attendance && (
-              <span className={cn("font-medium", attendance.tone)}>{attendance.label}</span>
-            )}
+            {stateBadges.map((badge) => {
+              if (!badge) {
+                return null;
+              }
+              const Icon = badge.icon;
+              return (
+                <Chip
+                  className="h-6 gap-1 font-medium text-[10px] uppercase tracking-wide"
+                  color={badge.color}
+                  key={badge.key}
+                  size="sm"
+                  variant="soft"
+                >
+                  <Icon className="h-3 w-3" />
+                  {badge.label}
+                </Chip>
+              );
+            })}
           </div>
 
           {/* Description */}
