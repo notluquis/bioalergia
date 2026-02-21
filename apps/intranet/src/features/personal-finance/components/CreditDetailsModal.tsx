@@ -18,11 +18,7 @@ export function CreditDetailsModal({ creditId, onClose }: CreditDetailsModalProp
   const isOpen = creditId !== null;
 
   if (!creditId) {
-    return (
-      <Modal isOpen={false}>
-        <Modal.Backdrop />
-      </Modal>
-    );
+    return null;
   }
 
   return <CreditDetailsModalContent creditId={creditId} isOpen={isOpen} onClose={onClose} />;
@@ -44,8 +40,15 @@ function CreditDetailsModalContent({
   }
 
   return (
-    <Modal isOpen={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <Modal.Backdrop>
+    <Modal>
+      <Modal.Backdrop
+        isOpen={isOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            onClose();
+          }
+        }}
+      >
         <Modal.Container className="max-h-[90vh] overflow-hidden">
           <Modal.Dialog className="flex flex-col h-full">
             <Modal.CloseTrigger onClick={onClose} />

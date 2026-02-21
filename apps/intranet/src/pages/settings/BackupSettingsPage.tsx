@@ -1,12 +1,10 @@
-import { Checkbox, Description, Link, Skeleton } from "@heroui/react";
+import { Checkbox, Description, Disclosure, Link, ScrollShadow, Skeleton } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import {
   AlertTriangle,
   CheckCircle,
-  ChevronDown,
-  ChevronRight,
   Clock,
   Database,
   Download,
@@ -391,7 +389,9 @@ export function BackupSettingsPage() {
               </Button>
             </div>
           </div>
-          <div className="divide-y divide-default-100">{renderBackupListContent()}</div>
+          <ScrollShadow className="max-h-125 divide-y divide-default-100" hideScrollBar>
+            {renderBackupListContent()}
+          </ScrollShadow>
         </div>
 
         {/* Incremental Exports */}
@@ -408,7 +408,7 @@ export function BackupSettingsPage() {
             </div>
           </div>
           {auditExports.length > 0 ? (
-            <div className="max-h-125 divide-y divide-default-100 overflow-y-auto">
+            <ScrollShadow className="max-h-125 divide-y divide-default-100" hideScrollBar>
               {auditExports.slice(0, 50).map((backup) => (
                 <div
                   className="flex items-center justify-between px-4 py-3 text-sm transition-colors hover:bg-default-50"
@@ -442,7 +442,7 @@ export function BackupSettingsPage() {
                   </div>
                 </div>
               ))}
-            </div>
+            </ScrollShadow>
           ) : (
             <div className="py-12 text-center text-default-500 text-sm">
               No hay exports incrementales
@@ -460,7 +460,6 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
   const { can } = useAuth();
   const { error: showError, success } = useToast();
   const queryClient = useQueryClient();
-  const [isExpanded, setIsExpanded] = useState(false);
   const canRestore = can("update", "Backup");
 
   const restoreMutation = useMutation<RestoreJob, Error, string[] | undefined>({
@@ -476,52 +475,47 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
   });
 
   return (
-    <div>
-      <Button
-        aria-expanded={isExpanded}
-        className="flex w-full cursor-pointer items-center justify-between p-4 px-4 text-left transition-colors hover:bg-default-50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-inset"
-        onPress={() => {
-          setIsExpanded(!isExpanded);
-        }}
-        type="button"
-        variant="ghost"
-      >
-        <div className="flex items-center gap-4">
-          {isExpanded ? (
-            <ChevronDown className="size-4 text-default-300" />
-          ) : (
-            <ChevronRight className="size-4 text-default-300" />
-          )}
-          <div>
-            <div className="flex items-center gap-2">
-              <CheckCircle className="size-4 text-success" />
-              <span className="font-medium">{backup.name}</span>
+    <Disclosure>
+      <Disclosure.Heading>
+        <Button
+          className="flex w-full cursor-pointer items-center justify-between p-4 text-left transition-colors hover:bg-default-50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-inset"
+          slot="trigger"
+          type="button"
+          variant="ghost"
+        >
+          <div className="flex items-center gap-4">
+            <Disclosure.Indicator className="size-4 text-default-300" />
+            <div>
+              <div className="flex items-center gap-2">
+                <CheckCircle className="size-4 text-success" />
+                <span className="font-medium">{backup.name}</span>
+              </div>
+              <Description className="text-default-500 text-sm">
+                {dayjs(backup.createdTime).format("DD MMM YYYY, HH:mm")} •{" "}
+                {formatFileSize(Number(backup.size))}
+              </Description>
             </div>
-            <Description className="text-default-500 text-sm">
-              {dayjs(backup.createdTime).format("DD MMM YYYY, HH:mm")} •{" "}
-              {formatFileSize(Number(backup.size))}
-            </Description>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {backup.webViewLink && (
-            <Link
-              className="inline-flex h-8 w-8 items-center justify-center rounded-medium hover:bg-default-100"
-              href={backup.webViewLink}
-              rel="noreferrer"
-              target="_blank"
-              onClick={(event) => {
-                event.stopPropagation();
-              }}
-            >
-              <Download className="size-4" />
-            </Link>
-          )}
-        </div>
-      </Button>
+          <div className="flex items-center gap-2">
+            {backup.webViewLink && (
+              <Link
+                className="inline-flex h-8 w-8 items-center justify-center rounded-medium hover:bg-default-100"
+                href={backup.webViewLink}
+                rel="noreferrer"
+                target="_blank"
+                onClick={(event) => {
+                  event.stopPropagation();
+                }}
+              >
+                <Download className="size-4" />
+              </Link>
+            )}
+          </div>
+        </Button>
+      </Disclosure.Heading>
 
-      {isExpanded && (
-        <div className="bg-default-100/30 px-6 py-4">
+      <Disclosure.Content>
+        <Disclosure.Body className="bg-default-100/30 px-6 py-4">
           <div className="mb-4 flex items-start gap-2 rounded-lg bg-warning/10 p-3 text-sm text-warning">
             <AlertTriangle className="mt-0.5 size-4 shrink-0" />
             <span>
@@ -530,7 +524,6 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
             </span>
           </div>
 
-          {/* Quick restore all button */}
           <div className="mb-4 flex gap-3">
             <Button
               disabled={!canRestore || restoreMutation.isPending}
@@ -566,15 +559,14 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
               <BackupTablesList
                 backupId={backup.id}
                 canRestore={canRestore}
-                createdTime={backup.createdTime}
                 isRestoring={restoreMutation.isPending}
                 onRestore={restoreMutation.mutate}
               />
             </Suspense>
           </div>
-        </div>
-      )}
-    </div>
+        </Disclosure.Body>
+      </Disclosure.Content>
+    </Disclosure>
   );
 }
 
@@ -586,7 +578,6 @@ function BackupTablesList({
 }: {
   backupId: string;
   canRestore: boolean;
-  createdTime: Date;
   isRestoring: boolean;
   onRestore: (tables: string[]) => void;
 }) {

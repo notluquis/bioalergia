@@ -108,49 +108,50 @@ export function SelectWithCreateNew({
         {createButtonLabel}
       </Button>
 
-      <Modal isOpen={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <Modal.Backdrop />
-        <Modal.Container>
-          <Modal.Dialog className="sm:max-w-sm">
-            <Modal.CloseTrigger />
-            <Modal.Header>
-              <Modal.Heading>Nueva {label.toLowerCase()}</Modal.Heading>
-            </Modal.Header>
-            <Modal.Body className="gap-4">
-              <TextField>
-                <Label>{label}</Label>
-                <Input
-                  disabled={isCreating}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                    setNewValue(e.target.value);
-                    setCreateError(null);
-                  }}
-                  onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
-                    if (e.key === "Enter" && !isCreating) {
-                      void handleCreateNew();
-                    }
-                  }}
-                  placeholder={`Ej: ${label}`}
-                  type="text"
-                  value={newValue}
-                />
-                {createError && <FieldError>{createError}</FieldError>}
-              </TextField>
-            </Modal.Body>
-            <Modal.Footer className="gap-2">
-              <Button
-                isDisabled={isCreating}
-                onPress={() => setIsCreateOpen(false)}
-                variant="secondary"
-              >
-                Cancelar
-              </Button>
-              <Button isDisabled={isCreating || !newValue.trim()} onPress={handleCreateNew}>
-                {isCreating ? "Creando..." : "Crear"}
-              </Button>
-            </Modal.Footer>
-          </Modal.Dialog>
-        </Modal.Container>
+      <Modal>
+        <Modal.Backdrop isOpen={isCreateOpen} onOpenChange={setIsCreateOpen}>
+          <Modal.Container>
+            <Modal.Dialog className="sm:max-w-sm">
+              <Modal.CloseTrigger />
+              <Modal.Header>
+                <Modal.Heading>Nueva {label.toLowerCase()}</Modal.Heading>
+              </Modal.Header>
+              <Modal.Body className="gap-4">
+                <TextField>
+                  <Label>{label}</Label>
+                  <Input
+                    disabled={isCreating}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                      setNewValue(e.target.value);
+                      setCreateError(null);
+                    }}
+                    onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
+                      if (e.key === "Enter" && !isCreating) {
+                        void handleCreateNew();
+                      }
+                    }}
+                    placeholder={`Ej: ${label}`}
+                    type="text"
+                    value={newValue}
+                  />
+                  {createError && <FieldError>{createError}</FieldError>}
+                </TextField>
+              </Modal.Body>
+              <Modal.Footer className="gap-2">
+                <Button
+                  isDisabled={isCreating}
+                  onPress={() => setIsCreateOpen(false)}
+                  variant="secondary"
+                >
+                  Cancelar
+                </Button>
+                <Button isDisabled={isCreating || !newValue.trim()} onPress={handleCreateNew}>
+                  {isCreating ? "Creando..." : "Crear"}
+                </Button>
+              </Modal.Footer>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
       </Modal>
     </div>
   );
