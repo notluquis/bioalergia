@@ -65,7 +65,7 @@ export function PermissionsMatrixTable({
   const displayRoles =
     viewModeRole === "all" ? roles : roles.filter((r) => r.id.toString() === viewModeRole);
 
-  const gridTemplateColumns = `280px repeat(${displayRoles.length}, minmax(160px, 1fr))`;
+  const gridTemplateColumns = `320px repeat(${displayRoles.length}, minmax(160px, 1fr))`;
 
   return (
     <ScrollShadow className="w-full border-default-200 border-t" orientation="horizontal" size={56}>
@@ -143,7 +143,7 @@ export function PermissionsMatrixTable({
           <Fragment key={section.title}>
             {/* Section Title & Bulk Toggle */}
             {/* Section Title & Bulk Toggle */}
-            <div className="sticky left-0 z-10 flex border-default-200 border-r border-b">
+            <div className="sticky left-0 z-10 flex overflow-hidden border-default-200 border-r border-b">
               <Button
                 className="flex flex-1 cursor-pointer items-center gap-2 bg-default-100/40 py-3 pl-4 font-semibold text-xs uppercase tracking-wide transition-colors hover:bg-default-100/60"
                 onPress={() => {
@@ -157,7 +157,9 @@ export function PermissionsMatrixTable({
                 ) : (
                   <ChevronRight className="h-4 w-4" />
                 )}
-                {section.title}
+                <span className="min-w-0 truncate" title={section.title}>
+                  {section.title}
+                </span>
               </Button>
             </div>
             {displayRoles.map((role) => (
@@ -187,7 +189,7 @@ export function PermissionsMatrixTable({
                   if (hasMultiple) {
                     return (
                       <Fragment key={item.label}>
-                        <div className="sticky left-0 z-10 flex border-default-200 border-r border-b">
+                        <div className="sticky left-0 z-10 flex overflow-hidden border-default-200 border-r border-b">
                           <Button
                             className="flex flex-1 cursor-pointer items-center gap-2 bg-background py-3 pl-8 font-medium text-sm transition-colors hover:bg-default-50/30"
                             onPress={() => {
@@ -199,8 +201,10 @@ export function PermissionsMatrixTable({
                             <div className="flex h-4 w-4 items-center justify-center text-default-300">
                               {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                             </div>
-                            <item.icon className="h-4 w-4 opacity-70" />
-                            {item.label}
+                            <item.icon className="h-4 w-4 shrink-0 opacity-70" />
+                            <span className="min-w-0 truncate" title={item.label}>
+                              {item.label}
+                            </span>
                           </Button>
                         </div>
                         {displayRoles.map((role) => (
@@ -251,12 +255,17 @@ export function PermissionsMatrixTable({
 
                   return (
                     <Fragment key={perm.id}>
-                      <div className="sticky left-0 z-10 flex flex-col justify-center border-default-200 border-r border-b bg-background py-3 pl-8">
-                        <span className="flex items-center gap-2 font-medium text-sm">
-                          <item.icon className="h-4 w-4 opacity-70" />
-                          {displayLabel}
+                      <div className="sticky left-0 z-10 flex flex-col justify-center overflow-hidden border-default-200 border-r border-b bg-background py-3 pl-8">
+                        <span className="flex min-w-0 items-center gap-2 font-medium text-sm">
+                          <item.icon className="h-4 w-4 shrink-0 opacity-70" />
+                          <span className="min-w-0 truncate" title={displayLabel}>
+                            {displayLabel}
+                          </span>
                         </span>
-                        <span className="pl-6 font-mono text-[10px] text-default-500">
+                        <span
+                          className="truncate pl-6 font-mono text-[10px] text-default-500"
+                          title={`${perm.action} • ${perm.subject}`}
+                        >
                           {perm.action} • {perm.subject}
                         </span>
                       </div>
@@ -341,9 +350,14 @@ function PermissionRow({
 
   return (
     <div className="contents">
-      <div className="sticky left-0 z-10 flex flex-col justify-center border-default-200 border-r border-b bg-background py-2 pl-16 text-sm">
-        <span className="flex items-center gap-2 font-medium">{actionLabel}</span>
-        <span className="font-mono text-[10px] text-default-500">
+      <div className="sticky left-0 z-10 flex flex-col justify-center overflow-hidden border-default-200 border-r border-b bg-background py-2 pl-16 text-sm">
+        <span className="truncate font-medium" title={actionLabel}>
+          {actionLabel}
+        </span>
+        <span
+          className="truncate font-mono text-[10px] text-default-500"
+          title={`${perm.action} • ${perm.subject}`}
+        >
           {perm.action} • {perm.subject}
         </span>
       </div>
