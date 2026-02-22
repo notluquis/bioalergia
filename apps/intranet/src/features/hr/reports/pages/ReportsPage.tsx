@@ -4,7 +4,6 @@ import {
   DateRangePicker,
   Label,
   ListBox,
-  RangeCalendar,
   Select,
   Separator,
   Skeleton,
@@ -20,6 +19,7 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
+import { DateRangeCalendar } from "@/components/ui/DateRangeCalendar";
 
 import { StatCard } from "@/components/ui/StatCard";
 import { useAuth } from "@/context/AuthContext";
@@ -400,7 +400,7 @@ function ReportsFiltersPanel({
                 </DateField.Suffix>
               </DateField.Group>
               <DateRangePicker.Popover>
-                <RangeCalendar visibleDuration={{ months: 2 }} />
+                <DateRangeCalendar visibleDuration={{ months: 2 }} />
               </DateRangePicker.Popover>
             </DateRangePicker>
           )}

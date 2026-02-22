@@ -1,8 +1,9 @@
-import { Button, Chip, DateField, DateRangePicker, Label, RangeCalendar } from "@heroui/react";
+import { Button, Chip, DateField, DateRangePicker, Label } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import dayjs from "dayjs";
 import { useMemo, useState } from "react";
 
+import { DateRangeCalendar } from "@/components/ui/DateRangeCalendar";
 import { ExpensePlaceholder } from "../components/ExpensePlaceholder";
 import { FinancialSummaryCards } from "../components/FinancialSummaryCards";
 import { IncomeBreakdown } from "../components/IncomeBreakdown";
@@ -68,7 +69,7 @@ export function FinancialDashboardPage() {
             </DateField.Suffix>
           </DateField.Group>
           <DateRangePicker.Popover>
-            <RangeCalendar visibleDuration={{ months: 2 }} />
+            <DateRangeCalendar visibleDuration={{ months: 2 }} />
           </DateRangePicker.Popover>
         </DateRangePicker>
       </div>

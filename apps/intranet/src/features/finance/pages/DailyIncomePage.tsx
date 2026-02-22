@@ -1,19 +1,11 @@
 import type { Event } from "@finanzas/db/models";
 import { schema as schemaLite } from "@finanzas/db/schema-lite";
-import {
-  Alert,
-  Card,
-  Chip,
-  DateField,
-  DateRangePicker,
-  Label,
-  RangeCalendar,
-  Skeleton,
-} from "@heroui/react";
+import { Alert, Card, Chip, DateField, DateRangePicker, Label, Skeleton } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { useClientQueries } from "@zenstackhq/tanstack-query/react";
 import dayjs from "dayjs";
 import { useState } from "react";
+import { DateRangeCalendar } from "@/components/ui/DateRangeCalendar";
 
 type EventForDaily = Pick<
   Event,
@@ -82,7 +74,7 @@ export function DailyIncomePage() {
             </DateField.Suffix>
           </DateField.Group>
           <DateRangePicker.Popover>
-            <RangeCalendar visibleDuration={{ months: 2 }} />
+            <DateRangeCalendar visibleDuration={{ months: 2 }} />
           </DateRangePicker.Popover>
         </DateRangePicker>
       </div>

@@ -6,13 +6,13 @@ import {
   DateRangePicker,
   Label,
   ListBox,
-  RangeCalendar,
   Select,
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
+import { DateRangeCalendar } from "@/components/ui/DateRangeCalendar";
 import { useAuth } from "@/context/AuthContext";
 import { BalanceSummary } from "@/features/finance/balances/components/BalanceSummary";
 import { DailyBalancesPanel } from "@/features/finance/balances/components/DailyBalancesPanel";
@@ -108,7 +108,7 @@ export function DailyBalances() {
                     </DateField.Suffix>
                   </DateField.Group>
                   <DateRangePicker.Popover>
-                    <RangeCalendar visibleDuration={{ months: 2 }} />
+                    <DateRangeCalendar visibleDuration={{ months: 2 }} />
                   </DateRangePicker.Popover>
                 </DateRangePicker>
                 <Select

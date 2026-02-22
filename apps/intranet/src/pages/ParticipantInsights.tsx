@@ -1,16 +1,9 @@
-import {
-  Card,
-  DateField,
-  DateRangePicker,
-  Label,
-  ListBox,
-  RangeCalendar,
-  Select,
-} from "@heroui/react";
+import { Card, DateField, DateRangePicker, Label, ListBox, Select } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { DataTable } from "@/components/data-table/DataTable";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
+import { DateRangeCalendar } from "@/components/ui/DateRangeCalendar";
 import { Input } from "@/components/ui/Input";
 import {
   getCounterpartsColumns,
@@ -118,7 +111,7 @@ export function ParticipantInsightsPage() {
                 </DateField.Suffix>
               </DateField.Group>
               <DateRangePicker.Popover>
-                <RangeCalendar visibleDuration={{ months: 2 }} />
+                <DateRangeCalendar visibleDuration={{ months: 2 }} />
               </DateRangePicker.Popover>
             </DateRangePicker>
 

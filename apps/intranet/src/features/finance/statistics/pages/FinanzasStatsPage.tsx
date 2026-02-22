@@ -11,7 +11,6 @@ import {
   DateRangePicker,
   Label,
   ListBox,
-  RangeCalendar,
   Select,
   Spinner,
 } from "@heroui/react";
@@ -20,6 +19,7 @@ import dayjs from "dayjs";
 import { ArrowDown, ArrowUp, BarChart3, Calendar, TrendingUp } from "lucide-react";
 import { useState } from "react";
 
+import { DateRangeCalendar } from "@/components/ui/DateRangeCalendar";
 import { StatCard } from "@/components/ui/StatCard";
 import { useAuth } from "@/context/AuthContext";
 import { BalanceSummary } from "@/features/finance/balances/components/BalanceSummary";
@@ -163,7 +163,7 @@ export function FinanzasStatsPage() {
               </DateField.Suffix>
             </DateField.Group>
             <DateRangePicker.Popover>
-              <RangeCalendar visibleDuration={{ months: 2 }} />
+              <DateRangeCalendar visibleDuration={{ months: 2 }} />
             </DateRangePicker.Popover>
           </DateRangePicker>
         </div>

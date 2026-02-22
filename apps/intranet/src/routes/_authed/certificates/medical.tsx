@@ -7,7 +7,6 @@ import {
   FieldError,
   Label,
   ListBox,
-  RangeCalendar,
   Select,
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
@@ -17,6 +16,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { z } from "zod";
 import { Button } from "@/components/ui/Button";
+import { DateRangeCalendar } from "@/components/ui/DateRangeCalendar";
 import { Input } from "@/components/ui/Input";
 import { apiClient } from "@/lib/api-client";
 import { toast } from "@/lib/toast-interceptor";
@@ -361,7 +361,7 @@ function MedicalCertificatePage() {
                           </DateField.Suffix>
                         </DateField.Group>
                         <DateRangePicker.Popover>
-                          <RangeCalendar visibleDuration={{ months: 2 }} />
+                          <DateRangeCalendar visibleDuration={{ months: 2 }} />
                         </DateRangePicker.Popover>
                       </DateRangePicker>
                     )}

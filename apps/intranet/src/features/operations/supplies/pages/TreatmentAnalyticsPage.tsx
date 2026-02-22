@@ -5,7 +5,6 @@ import {
   DateRangePicker,
   Description,
   Label,
-  RangeCalendar,
   Skeleton,
   Spinner,
 } from "@heroui/react";
@@ -42,6 +41,7 @@ dayjs.locale("es");
 
 import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/data-table/DataTable";
+import { DateRangeCalendar } from "@/components/ui/DateRangeCalendar";
 import { calendarQueries } from "@/features/calendar/queries";
 import type { TreatmentAnalytics, TreatmentAnalyticsFilters } from "@/features/calendar/types";
 import { formatCurrency } from "@/lib/utils";
@@ -918,7 +918,7 @@ function AnalyticsFilters({
               </DateField.Suffix>
             </DateField.Group>
             <DateRangePicker.Popover>
-              <RangeCalendar visibleDuration={{ months: 2 }} />
+              <DateRangeCalendar visibleDuration={{ months: 2 }} />
             </DateRangePicker.Popover>
           </DateRangePicker>
 
