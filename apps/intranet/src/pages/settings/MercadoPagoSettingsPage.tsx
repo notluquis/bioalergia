@@ -247,12 +247,10 @@ export function MercadoPagoSettingsPage() {
                 Liberación
                 <Tabs.Indicator />
               </Tabs.Tab>
-              <Tabs.Separator />
               <Tabs.Tab id="settlement">
                 Conciliación
                 <Tabs.Indicator />
               </Tabs.Tab>
-              <Tabs.Separator />
               <Tabs.Tab id="sync">
                 Historial Sync
                 <Tabs.Indicator />

@@ -1166,12 +1166,10 @@ export function CashFlowPage() {
               Resumen
               <Tabs.Indicator />
             </Tabs.Tab>
-            <Tabs.Separator />
             <Tabs.Tab id="movements">
               Movimientos
               <Tabs.Indicator />
             </Tabs.Tab>
-            <Tabs.Separator />
             <Tabs.Tab id="categories">
               Categorías
               <Tabs.Indicator />

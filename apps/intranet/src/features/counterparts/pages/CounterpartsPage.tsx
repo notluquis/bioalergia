@@ -521,7 +521,6 @@ export function CounterpartsPage() {
               Contrapartes
               <Tabs.Indicator />
             </Tabs.Tab>
-            <Tabs.Separator />
             <Tabs.Tab id="unassigned-payouts">
               Cuentas sin RUT
               {unassignedTotal > 0 ? <Chip size="sm">{unassignedTotal}</Chip> : null}

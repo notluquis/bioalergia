@@ -271,7 +271,6 @@ function PatientsListPage() {
           >
             <Tabs.List className="w-fit rounded-xl bg-default-100 p-1">
               <Tabs.Tab id="clinical">Ficha clínica</Tabs.Tab>
-              <Tabs.Separator />
               <Tabs.Tab id="dte">Fuentes DTE</Tabs.Tab>
             </Tabs.List>
 

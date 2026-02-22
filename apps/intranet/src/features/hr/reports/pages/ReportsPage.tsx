@@ -328,12 +328,10 @@ function ReportsFiltersPanel({
                 Mensual
                 <Tabs.Indicator />
               </Tabs.Tab>
-              <Tabs.Separator />
               <Tabs.Tab id="range">
                 Rango
                 <Tabs.Indicator />
               </Tabs.Tab>
-              <Tabs.Separator />
               <Tabs.Tab id="all">
                 Todo
                 <Tabs.Indicator />

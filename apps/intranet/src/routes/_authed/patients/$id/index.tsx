@@ -249,32 +249,22 @@ function PatientDetailsPage() {
                 <Calendar size={18} />
                 <span>Consultas</span>
               </Tabs.Tab>
-
-              <Tabs.Separator />
               <Tabs.Tab id="certificates" className="min-w-max gap-2 font-semibold">
                 <FileText size={18} />
                 <span>Certificados</span>
               </Tabs.Tab>
-
-              <Tabs.Separator />
               <Tabs.Tab id="budgets" className="min-w-max gap-2 font-semibold">
                 <DollarSign size={18} />
                 <span>Presupuestos</span>
               </Tabs.Tab>
-
-              <Tabs.Separator />
               <Tabs.Tab id="payments" className="min-w-max gap-2 font-semibold">
                 <PlusCircle size={18} />
                 <span>Pagos</span>
               </Tabs.Tab>
-
-              <Tabs.Separator />
               <Tabs.Tab id="docs" className="min-w-max gap-2 font-semibold">
                 <FileText size={18} />
                 <span>Documentos</span>
               </Tabs.Tab>
-
-              <Tabs.Separator />
               <Tabs.Tab id="info" className="min-w-max gap-2 font-semibold">
                 <User size={18} />
                 <span>Info Detallada</span>

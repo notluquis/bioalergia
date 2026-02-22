@@ -70,17 +70,14 @@ export function DTEAnalyticsPage() {
             <BarChart3 className="size-4" />
             Compras Mensual
           </Tabs.Tab>
-          <Tabs.Separator />
           <Tabs.Tab id="sales-monthly" className="gap-2">
             <BarChart3 className="size-4" />
             Ventas Mensual
           </Tabs.Tab>
-          <Tabs.Separator />
           <Tabs.Tab id="purchases-comparison" className="gap-2">
             <TrendingUp className="size-4" />
             Compras Comparativa
           </Tabs.Tab>
-          <Tabs.Separator />
           <Tabs.Tab id="sales-comparison" className="gap-2">
             <TrendingUp className="size-4" />
             Ventas Comparativa
