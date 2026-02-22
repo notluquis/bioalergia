@@ -46,16 +46,6 @@ const MISSING_CLASSIFICATION_FILTERS = [
 
 type MissingClassificationFilterKey = (typeof MISSING_CLASSIFICATION_FILTERS)[number]["key"];
 
-const LEGACY_QUERY_FLAG_TO_MISSING_KEY = {
-  missingAmount: "missingAmountExpected",
-  missingAmountExpected: "missingAmountExpected",
-  missingAmountPaid: "missingAmountPaid",
-  missingAttended: "missingAttended",
-  missingCategory: "missingCategory",
-  missingDosage: "missingDosage",
-  missingTreatmentStage: "missingTreatmentStage",
-} as const;
-
 const MISSING_QUERY_TO_SERVICE_FILTER = {
   missingAmountExpected: "amountExpected",
   missingAmountPaid: "amountPaid",
@@ -834,35 +824,6 @@ const unclassifiedQuerySchema = z.object({
     .transform((values) => (values ? [...new Set(values)] : undefined)) as z.ZodType<
     MissingClassificationFilterKey[] | undefined
   >,
-  // Legacy alias (kept for backwards compatibility)
-  missingCategory: z
-    .enum(["true", "false"])
-    .transform((v) => v === "true")
-    .optional(),
-  missingAmount: z
-    .enum(["true", "false"])
-    .transform((v) => v === "true")
-    .optional(),
-  missingAmountExpected: z
-    .enum(["true", "false"])
-    .transform((v) => v === "true")
-    .optional(),
-  missingAmountPaid: z
-    .enum(["true", "false"])
-    .transform((v) => v === "true")
-    .optional(),
-  missingAttended: z
-    .enum(["true", "false"])
-    .transform((v) => v === "true")
-    .optional(),
-  missingDosage: z
-    .enum(["true", "false"])
-    .transform((v) => v === "true")
-    .optional(),
-  missingTreatmentStage: z
-    .enum(["true", "false"])
-    .transform((v) => v === "true")
-    .optional(),
 });
 
 calendarRoutes.get(
@@ -884,11 +845,6 @@ calendarRoutes.get(
     const { limit, offset, filterMode } = query;
 
     const selectedMissingFilters = new Set<MissingClassificationFilterKey>(query.missing ?? []);
-    for (const [legacyKey, mappedKey] of Object.entries(LEGACY_QUERY_FLAG_TO_MISSING_KEY)) {
-      if (query[legacyKey as keyof typeof LEGACY_QUERY_FLAG_TO_MISSING_KEY]) {
-        selectedMissingFilters.add(mappedKey);
-      }
-    }
 
     const mappedFilters = Object.fromEntries(
       Object.entries(MISSING_QUERY_TO_SERVICE_FILTER).map(([queryKey, serviceKey]) => [
