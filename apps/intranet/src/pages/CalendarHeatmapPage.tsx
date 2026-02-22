@@ -1,4 +1,4 @@
-import { Card, Modal, Surface } from "@heroui/react";
+import { Button, Card, Modal, Surface } from "@heroui/react";
 import { getRouteApi } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import React, { useMemo, useState } from "react";
@@ -22,6 +22,17 @@ interface HeatmapDayData {
   amountPaid: number;
   total: number;
   typeCounts: Record<string, number>;
+}
+
+interface MonthlyKpiData {
+  amountExpected: number;
+  amountPaid: number;
+  avgTicket: number;
+  collectionRate: number;
+  events: number;
+  gap: number;
+  key: string;
+  label: string;
 }
 
 function processHeatmapData(
@@ -129,50 +140,69 @@ function CalendarHeatmapPage() {
     return matched ?? null;
   }, [daily?.days, selectedDate]);
   const selectedDayLabel = selectedDate ? dayjs(selectedDate).format("dddd DD MMMM YYYY") : "";
-
-  const kpis = useMemo(() => {
-    const totalEvents = summary?.totals.events ?? 0;
-    const amountExpected = summary?.totals.amountExpected ?? 0;
-    const amountPaid = summary?.totals.amountPaid ?? 0;
-    const collectionRate = amountExpected > 0 ? (amountPaid / amountExpected) * 100 : 0;
-    const uncategorizedEvents =
-      summary?.available.categories
-        .filter((entry) => !entry.category || entry.category.trim() === "")
-        .reduce((sum, entry) => sum + entry.total, 0) ?? 0;
-
-    const noShowCount =
-      daily?.days.reduce(
-        (sum, day) => sum + day.events.filter((event) => event.attended === false).length,
-        0,
-      ) ?? 0;
-
-    const today = dayjs().startOf("day");
-    let pastOutstanding = 0;
-    let futureOutstanding = 0;
-    for (const entry of summary?.aggregates.byDate ?? []) {
-      const date = dayjs.utc(entry.date).startOf("day");
-      const outstanding = Math.max((entry.amountExpected ?? 0) - (entry.amountPaid ?? 0), 0);
-      if (date.isBefore(today, "day")) {
-        pastOutstanding += outstanding;
-      } else {
-        futureOutstanding += outstanding;
-      }
+  const monthlyKpis = useMemo<MonthlyKpiData[]>(() => {
+    const monthMap = new Map<
+      string,
+      { amountExpected: number; amountPaid: number; events: number }
+    >();
+    for (const entry of summary?.aggregates.byMonth ?? []) {
+      const key = `${entry.year}-${String(entry.month).padStart(2, "0")}`;
+      monthMap.set(key, {
+        amountExpected: entry.amountExpected ?? 0,
+        amountPaid: entry.amountPaid ?? 0,
+        events: entry.total ?? 0,
+      });
     }
 
-    const avgTicket = totalEvents > 0 ? amountExpected / totalEvents : 0;
+    return heatmapMonths.map((month) => {
+      const key = month.format("YYYY-MM");
+      const base = monthMap.get(key) ?? { amountExpected: 0, amountPaid: 0, events: 0 };
+      const collectionRate =
+        base.amountExpected > 0 ? (base.amountPaid / base.amountExpected) * 100 : 0;
+      const avgTicket = base.events > 0 ? base.amountExpected / base.events : 0;
+      const gap = Math.max(base.amountExpected - base.amountPaid, 0);
 
-    return {
-      amountExpected,
-      amountPaid,
-      avgTicket,
-      collectionRate,
-      futureOutstanding,
-      noShowCount,
-      pastOutstanding,
-      totalEvents,
-      uncategorizedEvents,
-    };
-  }, [summary, daily?.days]);
+      return {
+        amountExpected: base.amountExpected,
+        amountPaid: base.amountPaid,
+        avgTicket,
+        collectionRate,
+        events: base.events,
+        gap,
+        key,
+        label: month.format("MMM YYYY"),
+      };
+    });
+  }, [summary?.aggregates.byMonth, heatmapMonths]);
+
+  const [selectedMonthKey, setSelectedMonthKey] = useState<null | string>(null);
+
+  React.useEffect(() => {
+    if (monthlyKpis.length === 0) {
+      setSelectedMonthKey(null);
+      return;
+    }
+    const hasSelected =
+      selectedMonthKey && monthlyKpis.some((entry) => entry.key === selectedMonthKey);
+    if (!hasSelected) {
+      const fallbackKey = monthlyKpis.at(-1)?.key ?? monthlyKpis[0]?.key;
+      if (fallbackKey) {
+        setSelectedMonthKey(fallbackKey);
+      }
+    }
+  }, [monthlyKpis, selectedMonthKey]);
+
+  const activeMonthlyKpi = useMemo(() => {
+    if (monthlyKpis.length === 0) {
+      return null;
+    }
+    if (!selectedMonthKey) {
+      return monthlyKpis.at(-1) ?? null;
+    }
+    return (
+      monthlyKpis.find((entry) => entry.key === selectedMonthKey) ?? monthlyKpis.at(-1) ?? null
+    );
+  }, [monthlyKpis, selectedMonthKey]);
 
   return (
     <section className="space-y-4">
@@ -227,72 +257,81 @@ function CalendarHeatmapPage() {
         />
       </Surface>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <StatCard
-          size="sm"
-          subtitle="Total del rango seleccionado"
-          title="Eventos"
-          tone="primary"
-          value={numberFormatter.format(kpis.totalEvents)}
-        />
-        <StatCard
-          size="sm"
-          subtitle="No asistió / no llegó"
-          title="No Show"
-          tone={kpis.noShowCount > 0 ? "warning" : "default"}
-          value={numberFormatter.format(kpis.noShowCount)}
-        />
-        <StatCard
-          size="sm"
-          subtitle="Sin categoría"
-          title="Sin Clasificar"
-          tone={kpis.uncategorizedEvents > 0 ? "warning" : "default"}
-          value={numberFormatter.format(kpis.uncategorizedEvents)}
-        />
-        <StatCard
-          size="sm"
-          subtitle="Pagado / esperado"
-          suffix="%"
-          title="Cobranza"
-          tone={
-            kpis.collectionRate >= 90 ? "success" : kpis.collectionRate >= 70 ? "warning" : "error"
-          }
-          value={kpis.collectionRate.toFixed(1)}
-        />
-        <StatCard
-          size="sm"
-          subtitle="Esperado por evento"
-          title="Ticket Prom."
-          value={currencyFormatter.format(kpis.avgTicket)}
-        />
-        <StatCard
-          size="sm"
-          subtitle="Esperado - pagado (pasado)"
-          title="No Cobrado"
-          tone={kpis.pastOutstanding > 0 ? "warning" : "default"}
-          value={currencyFormatter.format(kpis.pastOutstanding)}
-        />
-        <StatCard
-          size="sm"
-          subtitle="Desde hoy en adelante"
-          title="Restante"
-          tone="primary"
-          value={currencyFormatter.format(kpis.futureOutstanding)}
-        />
-        <StatCard
-          size="sm"
-          subtitle="Total del rango"
-          title="Monto Esperado"
-          value={currencyFormatter.format(kpis.amountExpected)}
-        />
-        <StatCard
-          size="sm"
-          subtitle="Total del rango"
-          title="Monto Pagado"
-          tone="success"
-          value={currencyFormatter.format(kpis.amountPaid)}
-        />
-      </div>
+      {activeMonthlyKpi && (
+        <Card variant="secondary">
+          <Card.Header className="flex flex-col items-start gap-3 pb-2">
+            <div className="flex w-full flex-wrap items-center justify-between gap-2">
+              <span className="font-semibold text-default-700 text-sm">KPI Mensuales</span>
+              <span className="text-default-500 text-xs">Mes activo: {activeMonthlyKpi.label}</span>
+            </div>
+            <div className="flex w-full gap-2 overflow-x-auto pb-1">
+              {monthlyKpis.map((month) => (
+                <Button
+                  className="shrink-0"
+                  key={month.key}
+                  onPress={() => setSelectedMonthKey(month.key)}
+                  size="sm"
+                  variant={month.key === activeMonthlyKpi.key ? "primary" : "secondary"}
+                >
+                  {month.label}
+                </Button>
+              ))}
+            </div>
+          </Card.Header>
+          <Card.Content>
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+              <StatCard
+                size="sm"
+                subtitle="Eventos del mes"
+                title="Eventos"
+                tone="primary"
+                value={numberFormatter.format(activeMonthlyKpi.events)}
+              />
+              <StatCard
+                size="sm"
+                subtitle="Total esperado"
+                title="Monto Esperado"
+                tone="warning"
+                value={currencyFormatter.format(activeMonthlyKpi.amountExpected)}
+              />
+              <StatCard
+                size="sm"
+                subtitle="Total pagado"
+                title="Monto Pagado"
+                tone="success"
+                value={currencyFormatter.format(activeMonthlyKpi.amountPaid)}
+              />
+              <StatCard
+                size="sm"
+                subtitle="Pagado / esperado"
+                suffix="%"
+                title="Cobranza"
+                tone={
+                  activeMonthlyKpi.collectionRate >= 90
+                    ? "success"
+                    : activeMonthlyKpi.collectionRate >= 70
+                      ? "warning"
+                      : "error"
+                }
+                value={activeMonthlyKpi.collectionRate.toFixed(1)}
+              />
+              <StatCard
+                size="sm"
+                subtitle="Esperado por evento"
+                title="Ticket Prom."
+                value={currencyFormatter.format(activeMonthlyKpi.avgTicket)}
+              />
+              <StatCard
+                size="sm"
+                subtitle="Esperado - pagado"
+                title="Brecha"
+                tone={activeMonthlyKpi.gap > 0 ? "warning" : "default"}
+                value={currencyFormatter.format(activeMonthlyKpi.gap)}
+              />
+            </div>
+          </Card.Content>
+        </Card>
+      )}
 
       <Card variant="secondary">
         <Card.Header className="pb-2">

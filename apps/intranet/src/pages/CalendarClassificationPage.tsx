@@ -116,7 +116,9 @@ function CalendarClassificationPage() {
       toast.error(`Error: ${err instanceof Error ? err.message : "Error desconocido"}`),
     onSuccess: (response) => {
       setActiveJobId(response.jobId);
-      toast.info(`Iniciando reclasificación de ${response.totalEvents} eventos...`);
+      toast.info(
+        `Iniciando reclasificación de ${response.totalEvents} eventos (todos los pendientes)...`,
+      );
     },
   });
 

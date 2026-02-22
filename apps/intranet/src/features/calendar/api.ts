@@ -181,7 +181,7 @@ export async function reclassifyAllCalendarEvents(): Promise<ReclassifyJobRespon
   };
 }
 
-/** Start reclassification job (returns immediately with jobId) */
+/** Start reclassification job for all pending events (returns immediately with jobId) */
 export async function reclassifyCalendarEvents(): Promise<ReclassifyJobResponse> {
   const response = await apiClient.post<{
     jobId: string;

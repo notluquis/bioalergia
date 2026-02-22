@@ -826,6 +826,18 @@ const unclassifiedQuerySchema = z.object({
   >,
 });
 
+const reclassifyMissingBodySchema = z.object({
+  filterMode: z.enum(["AND", "OR"]).optional(),
+  missing: z
+    .preprocess(arrayPreprocess, z.array(z.string()).optional())
+    .refine((values) => !values || values.every(isMissingClassificationFilterKey), {
+      message: "Invalid missing filter key",
+    })
+    .transform((values) => (values ? [...new Set(values)] : undefined)) as z.ZodType<
+    MissingClassificationFilterKey[] | undefined
+  >,
+});
+
 calendarRoutes.get(
   "/events/unclassified",
   requireAuth,
@@ -1248,62 +1260,100 @@ calendarRoutes.post("/webhook", async (c) => {
 // JOB QUEUE TASKS
 // ============================================================
 
-calendarRoutes.post("/events/reclassify", requireAuth, async (c) => {
-  const user = await getSessionUser(c);
-  if (!user) {
-    return reply(c, { status: "error", message: "No autorizado" }, 401);
-  }
+calendarRoutes.post(
+  "/events/reclassify",
+  requireAuth,
+  zValidator("json", reclassifyMissingBodySchema),
+  async (c) => {
+    const user = await getSessionUser(c);
+    if (!user) {
+      return reply(c, { status: "error", message: "No autorizado" }, 401);
+    }
 
-  const canReclassify = await hasPermission(user.id, "update", "CalendarEvent");
-  if (!canReclassify) {
-    return reply(c, { status: "error", message: "Forbidden" }, 403);
-  }
+    const canReclassify = await hasPermission(user.id, "update", "CalendarEvent");
+    if (!canReclassify) {
+      return reply(c, { status: "error", message: "Forbidden" }, 403);
+    }
 
-  // Dynamic import to avoid cycles if any, though imports up top are fine
-  const { startJob, updateJobProgress, completeJob, failJob } = await import("../lib/jobQueue");
+    // Dynamic import to avoid cycles if any, though imports up top are fine
+    const { startJob, updateJobProgress, completeJob, failJob } = await import("../lib/jobQueue");
+    const body = c.req.valid("json");
+    const selectedMissingFilters = new Set<MissingClassificationFilterKey>(body.missing ?? []);
+    const filterMode = body.filterMode ?? "OR";
+    const now = new Date();
 
-  const events = await db.event.findMany({
-    where: {
-      OR: [
-        { category: null },
-        { category: "" },
-        { dosageValue: null },
-        { treatmentStage: null },
-        { attended: null },
-        { amountExpected: null },
-        { amountPaid: null },
-      ],
-    },
-    select: {
-      id: true,
-      summary: true,
-      description: true,
-      category: true,
-      dosageValue: true,
-      dosageUnit: true,
-      treatmentStage: true,
-      attended: true,
-      amountExpected: true,
-      amountPaid: true,
-      controlIncluded: true,
-      isDomicilio: true,
-    },
-  });
+    const selectedConditions: Record<string, unknown>[] = [];
+    if (selectedMissingFilters.has("missingCategory")) {
+      selectedConditions.push({ OR: [{ category: null }, { category: "" }] });
+    }
+    if (selectedMissingFilters.has("missingAmountExpected")) {
+      selectedConditions.push({ amountExpected: null });
+    }
+    if (selectedMissingFilters.has("missingAmountPaid")) {
+      selectedConditions.push({ amountPaid: null });
+    }
+    if (selectedMissingFilters.has("missingAttended")) {
+      selectedConditions.push({ attended: null, startDateTime: { lte: now } });
+    }
+    if (selectedMissingFilters.has("missingDosage")) {
+      selectedConditions.push({
+        category: "Tratamiento subcutáneo",
+        dosageValue: null,
+      });
+    }
+    if (selectedMissingFilters.has("missingTreatmentStage")) {
+      selectedConditions.push({
+        category: "Tratamiento subcutáneo",
+        OR: [{ treatmentStage: null }, { treatmentStage: "" }],
+      });
+    }
 
-  const jobId = startJob("reclassify", events.length);
-  reply(c, { status: "accepted", jobId, totalEvents: events.length }); // Respond first? No, await issues in Hono.
-  // Hono doesn't support responding then continuing easily without waitUntil.
-  // c.executionCtx.waitUntil is for Cloudflare Workers.
-  // In Node, we can just not await the async IIFE.
+    const where =
+      selectedConditions.length > 0
+        ? filterMode === "AND"
+          ? { AND: selectedConditions }
+          : { OR: selectedConditions }
+        : {
+            OR: [
+              { category: null },
+              { category: "" },
+              { dosageValue: null },
+              { treatmentStage: null },
+              { attended: null },
+              { amountExpected: null },
+              { amountPaid: null },
+            ],
+          };
 
-  void runReclassifyMissingFieldsJob(events, jobId, {
-    completeJob,
-    failJob,
-    updateJobProgress,
-  });
+    const events = await db.event.findMany({
+      where,
+      select: {
+        id: true,
+        summary: true,
+        description: true,
+        category: true,
+        dosageValue: true,
+        dosageUnit: true,
+        treatmentStage: true,
+        attended: true,
+        amountExpected: true,
+        amountPaid: true,
+        controlIncluded: true,
+        isDomicilio: true,
+      },
+    });
 
-  return reply(c, { status: "accepted", jobId, totalEvents: events.length });
-});
+    const jobId = startJob("reclassify", events.length);
+
+    void runReclassifyMissingFieldsJob(events, jobId, {
+      completeJob,
+      failJob,
+      updateJobProgress,
+    });
+
+    return reply(c, { status: "accepted", jobId, totalEvents: events.length });
+  },
+);
 
 calendarRoutes.post("/events/reclassify-all", requireAuth, async (c) => {
   const user = await getSessionUser(c);
