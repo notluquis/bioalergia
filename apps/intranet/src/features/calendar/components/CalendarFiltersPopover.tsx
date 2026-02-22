@@ -14,7 +14,7 @@ interface CalendarFiltersPopoverProps extends CalendarFilterPanelProps {
 export function CalendarFiltersPopover({
   isOpen,
   onOpenChange,
-  panelWidthClassName = "w-[min(92vw,500px)]",
+  panelWidthClassName = "w-[min(92vw,460px)]",
   ...panelProps
 }: Readonly<CalendarFiltersPopoverProps>) {
   return (

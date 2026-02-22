@@ -73,11 +73,12 @@ export function MultiSelectFilter({
         </span>
       )}
       <Dropdown>
-        <Dropdown.Trigger>
+        <Dropdown.Trigger className="block w-full">
           <Button
-            className={`flex w-full min-w-0 items-center justify-between rounded-md border border-default-200 bg-content1/50 px-3 py-2 text-foreground hover:bg-content1 focus:bg-content1 ${
-              isCompact ? "h-8 text-[13px]" : "h-9 text-sm"
+            className={`flex min-w-0 items-center justify-between rounded-md border border-default-200 bg-content1/50 px-3 py-2 text-foreground hover:bg-content1 focus:bg-content1 ${
+              isCompact ? "h-9 text-[13px]" : "h-9 text-sm"
             }`}
+            fullWidth
             variant="ghost"
           >
             <span className="truncate font-medium">{displayText}</span>

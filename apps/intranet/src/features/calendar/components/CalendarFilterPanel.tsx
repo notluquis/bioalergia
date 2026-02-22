@@ -91,6 +91,7 @@ export function CalendarFilterPanel({
         {/* Categories Select */}
         <div className="space-y-1.5">
           <MultiSelectFilter
+            className="w-full"
             label="Clasificación"
             placeholder="Todas"
             density="compact"
@@ -109,7 +110,7 @@ export function CalendarFilterPanel({
             <TextField className="w-full">
               <Label>Búsqueda</Label>
               <Input
-                className="h-9 rounded-lg text-sm"
+                className="h-9 w-full min-w-0 rounded-lg text-sm"
                 placeholder="Paciente, tratamiento..."
                 value={filters.search ?? ""}
                 variant="secondary"
