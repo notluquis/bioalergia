@@ -184,10 +184,10 @@ export function RolesSettingsPage() {
   return (
     <div className="space-y-6">
       <Card>
-        <Card.Header className="flex flex-row items-center justify-between gap-4 border-b pb-4">
+        <Card.Header className="flex flex-col gap-3 border-b px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
             <span className="block font-semibold text-lg">Listado de roles</span>
-            <span className="hidden text-default-600 text-sm md:block">
+            <span className="text-default-600 text-sm">
               Gestiona los permisos y roles del sistema
             </span>
           </div>
@@ -220,7 +220,7 @@ export function RolesSettingsPage() {
               </Select>
             </div>
 
-            <div className="ml-2 flex items-center gap-2 border-l pl-2">
+            <div className="flex items-center gap-2">
               <Button
                 isIconOnly
                 size="sm"
@@ -236,7 +236,7 @@ export function RolesSettingsPage() {
 
               <Button size="sm" variant="primary" className="gap-2" onPress={handleCreateRole}>
                 <Plus className="h-4 w-4" />
-                <span className="hidden sm:inline">Nuevo rol</span>
+                <span>Nuevo rol</span>
               </Button>
             </div>
           </div>

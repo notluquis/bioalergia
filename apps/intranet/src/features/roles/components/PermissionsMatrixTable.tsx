@@ -1,4 +1,4 @@
-import { Dropdown, Separator } from "@heroui/react";
+import { Checkbox, Dropdown, ScrollShadow, Separator } from "@heroui/react";
 import { Check, ChevronDown, ChevronRight, Eye, Pencil, Trash2 } from "lucide-react";
 import { Fragment, useState } from "react";
 import { Button } from "@/components/ui/Button";
@@ -65,18 +65,18 @@ export function PermissionsMatrixTable({
   const displayRoles =
     viewModeRole === "all" ? roles : roles.filter((r) => r.id.toString() === viewModeRole);
 
-  const gridTemplateColumns = `320px repeat(${displayRoles.length}, minmax(140px, 1fr))`;
+  const gridTemplateColumns = `280px repeat(${displayRoles.length}, minmax(160px, 1fr))`;
 
   return (
-    <div className="w-full overflow-x-auto border-default-200 border-t">
+    <ScrollShadow className="w-full border-default-200 border-t" orientation="horizontal" size={56}>
       <div className="min-w-fit" style={{ display: "grid", gridTemplateColumns }}>
         {/* Header Row */}
-        <div className="sticky top-0 left-0 z-20 border-default-200 border-r border-b bg-background px-6 py-4 text-left font-bold">
+        <div className="sticky top-0 left-0 z-20 border-default-200 border-r border-b bg-default-50/70 px-4 py-4 text-left font-semibold">
           Permiso / acción
         </div>
         {displayRoles.map((role) => (
           <div
-            className="group relative flex flex-col items-center justify-start border-default-200 border-b p-4 text-center align-top hover:bg-default-50/50"
+            className="group relative flex flex-col items-center justify-start border-default-200 border-b px-3 py-4 text-center align-top hover:bg-default-50/40"
             key={role.id}
           >
             <div className="flex flex-col items-center gap-1">
@@ -96,7 +96,7 @@ export function PermissionsMatrixTable({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-6 w-full gap-1 font-normal opacity-50 hover:opacity-100"
+                      className="h-7 w-full gap-1 font-normal text-default-500 hover:text-foreground"
                     >
                       Opciones
                       <ChevronDown className="h-3 w-3" />
@@ -145,7 +145,7 @@ export function PermissionsMatrixTable({
             {/* Section Title & Bulk Toggle */}
             <div className="sticky left-0 z-10 flex border-default-200 border-r border-b">
               <Button
-                className="flex flex-1 cursor-pointer items-center gap-2 bg-default-50/50 py-3 pl-4 font-bold text-xs uppercase tracking-widest transition-colors hover:bg-default-50/70"
+                className="flex flex-1 cursor-pointer items-center gap-2 bg-default-100/40 py-3 pl-4 font-semibold text-xs uppercase tracking-wide transition-colors hover:bg-default-100/60"
                 onPress={() => {
                   toggleSection(section.title);
                 }}
@@ -162,7 +162,7 @@ export function PermissionsMatrixTable({
             </div>
             {displayRoles.map((role) => (
               <div
-                className="flex items-center justify-center border-default-200 border-b bg-default-50/50 p-0 transition-colors hover:bg-default-50/70"
+                className="flex items-center justify-center border-default-200 border-b bg-default-100/40 p-0 transition-colors hover:bg-default-100/60"
                 key={role.id}
               >
                 <BulkToggleCell
@@ -189,7 +189,7 @@ export function PermissionsMatrixTable({
                       <Fragment key={item.label}>
                         <div className="sticky left-0 z-10 flex border-default-200 border-r border-b">
                           <Button
-                            className="flex flex-1 cursor-pointer items-center gap-2 bg-background/50 py-3 pl-8 font-semibold text-sm transition-colors hover:bg-default-50/20"
+                            className="flex flex-1 cursor-pointer items-center gap-2 bg-background py-3 pl-8 font-medium text-sm transition-colors hover:bg-default-50/30"
                             onPress={() => {
                               toggleItem(itemKey);
                             }}
@@ -205,7 +205,7 @@ export function PermissionsMatrixTable({
                         </div>
                         {displayRoles.map((role) => (
                           <div
-                            className="flex items-center justify-center border-default-200 border-b bg-background/50 p-0 transition-colors hover:bg-default-50/20"
+                            className="flex items-center justify-center border-default-200 border-b bg-background p-0 transition-colors hover:bg-default-50/30"
                             key={role.id}
                           >
                             <BulkToggleCell
@@ -278,7 +278,7 @@ export function PermissionsMatrixTable({
           </Fragment>
         ))}
       </div>
-    </div>
+    </ScrollShadow>
   );
 }
 
@@ -299,23 +299,21 @@ function PermissionCell({
 
   return (
     <div className={`flex items-center justify-center ${className || ""}`}>
-      <Button
-        className="group flex h-8 w-8 items-center justify-center transition-colors"
+      <Checkbox
+        aria-label={`Permiso ${permissionId} para rol ${role.name}`}
+        className="justify-center"
         isDisabled={isUpdating}
-        onPress={() => {
+        isSelected={hasAccess}
+        onChange={() => {
           onToggle(role, permissionId);
         }}
-        type="button"
-        variant="ghost"
       >
-        {hasAccess ? (
-          <div className="flex h-5 w-5 items-center justify-center rounded-md bg-primary shadow-sm transition-transform hover:bg-primary-focus active:scale-95">
-            <Check className="text-primary-foreground" size={12} />
-          </div>
-        ) : (
-          <div className="h-5 w-5 rounded-md border-2 border-default-200 bg-background transition-colors group-hover:border-primary/50 group-hover:bg-primary/5" />
-        )}
-      </Button>
+        <Checkbox.Control>
+          <Checkbox.Indicator>
+            {({ isSelected }) => (isSelected ? <Check className="h-3.5 w-3.5" /> : null)}
+          </Checkbox.Indicator>
+        </Checkbox.Control>
+      </Checkbox>
     </div>
   );
 }
