@@ -1,4 +1,16 @@
-import { Card, Label, ListBox, Select } from "@heroui/react";
+import {
+  Calendar,
+  Card,
+  DateField,
+  DatePicker,
+  DateRangePicker,
+  FieldError,
+  Label,
+  ListBox,
+  RangeCalendar,
+  Select,
+} from "@heroui/react";
+import { parseDate } from "@internationalized/date";
 import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
@@ -134,15 +146,54 @@ function MedicalCertificatePage() {
 
               <form.Field name="birthDate">
                 {(field) => (
-                  <Input
-                    type="date"
-                    label="Fecha de Nacimiento"
-                    id="birthDate"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
+                  <DatePicker
+                    isInvalid={field.state.meta.errors.length > 0}
                     onBlur={field.handleBlur}
-                    error={field.state.meta.errors.join(", ")}
-                  />
+                    onChange={(value) => {
+                      field.handleChange(value?.toString() ?? "");
+                    }}
+                    value={field.state.value ? parseDate(field.state.value) : undefined}
+                  >
+                    <Label>Fecha de Nacimiento</Label>
+                    <DateField.Group>
+                      <DateField.Input>
+                        {(segment) => <DateField.Segment segment={segment} />}
+                      </DateField.Input>
+                      <DateField.Suffix>
+                        <DatePicker.Trigger>
+                          <DatePicker.TriggerIndicator />
+                        </DatePicker.Trigger>
+                      </DateField.Suffix>
+                    </DateField.Group>
+                    {field.state.meta.errors.length > 0 && (
+                      <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
+                    )}
+                    <DatePicker.Popover>
+                      <Calendar aria-label="Fecha de nacimiento">
+                        <Calendar.Header>
+                          <Calendar.YearPickerTrigger>
+                            <Calendar.YearPickerTriggerHeading />
+                            <Calendar.YearPickerTriggerIndicator />
+                          </Calendar.YearPickerTrigger>
+                          <Calendar.NavButton slot="previous" />
+                          <Calendar.NavButton slot="next" />
+                        </Calendar.Header>
+                        <Calendar.Grid>
+                          <Calendar.GridHeader>
+                            {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
+                          </Calendar.GridHeader>
+                          <Calendar.GridBody>
+                            {(date) => <Calendar.Cell date={date} />}
+                          </Calendar.GridBody>
+                        </Calendar.Grid>
+                        <Calendar.YearPickerGrid>
+                          <Calendar.YearPickerGridBody>
+                            {({ year }) => <Calendar.YearPickerCell year={year} />}
+                          </Calendar.YearPickerGridBody>
+                        </Calendar.YearPickerGrid>
+                      </Calendar>
+                    </DatePicker.Popover>
+                  </DatePicker>
                 )}
               </form.Field>
 
@@ -167,16 +218,55 @@ function MedicalCertificatePage() {
             <div className="grid gap-4">
               <form.Field name="date">
                 {(field) => (
-                  <Input
-                    type="date"
-                    label="Fecha del Certificado"
-                    id="date"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                    error={field.state.meta.errors.join(", ")}
+                  <DatePicker
                     className="sm:w-1/2"
-                  />
+                    isInvalid={field.state.meta.errors.length > 0}
+                    onBlur={field.handleBlur}
+                    onChange={(value) => {
+                      field.handleChange(value?.toString() ?? "");
+                    }}
+                    value={field.state.value ? parseDate(field.state.value) : undefined}
+                  >
+                    <Label>Fecha del Certificado</Label>
+                    <DateField.Group>
+                      <DateField.Input>
+                        {(segment) => <DateField.Segment segment={segment} />}
+                      </DateField.Input>
+                      <DateField.Suffix>
+                        <DatePicker.Trigger>
+                          <DatePicker.TriggerIndicator />
+                        </DatePicker.Trigger>
+                      </DateField.Suffix>
+                    </DateField.Group>
+                    {field.state.meta.errors.length > 0 && (
+                      <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
+                    )}
+                    <DatePicker.Popover>
+                      <Calendar aria-label="Fecha del certificado">
+                        <Calendar.Header>
+                          <Calendar.YearPickerTrigger>
+                            <Calendar.YearPickerTriggerHeading />
+                            <Calendar.YearPickerTriggerIndicator />
+                          </Calendar.YearPickerTrigger>
+                          <Calendar.NavButton slot="previous" />
+                          <Calendar.NavButton slot="next" />
+                        </Calendar.Header>
+                        <Calendar.Grid>
+                          <Calendar.GridHeader>
+                            {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
+                          </Calendar.GridHeader>
+                          <Calendar.GridBody>
+                            {(date) => <Calendar.Cell date={date} />}
+                          </Calendar.GridBody>
+                        </Calendar.Grid>
+                        <Calendar.YearPickerGrid>
+                          <Calendar.YearPickerGridBody>
+                            {({ year }) => <Calendar.YearPickerCell year={year} />}
+                          </Calendar.YearPickerGridBody>
+                        </Calendar.YearPickerGrid>
+                      </Calendar>
+                    </DatePicker.Popover>
+                  </DatePicker>
                 )}
               </form.Field>
 
@@ -232,28 +322,50 @@ function MedicalCertificatePage() {
               </form.Field>
 
               <form.Field name="restStartDate">
-                {(field) => (
-                  <Input
-                    type="date"
-                    label="Desde"
-                    id="restStartDate"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                  />
-                )}
-              </form.Field>
-
-              <form.Field name="restEndDate">
-                {(field) => (
-                  <Input
-                    type="date"
-                    label="Hasta"
-                    id="restEndDate"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                  />
+                {(restStartField) => (
+                  <form.Field name="restEndDate">
+                    {(restEndField) => (
+                      <DateRangePicker
+                        className="sm:col-span-2"
+                        onChange={(value) => {
+                          if (!value) {
+                            restStartField.handleChange("");
+                            restEndField.handleChange("");
+                            return;
+                          }
+                          restStartField.handleChange(value.start.toString());
+                          restEndField.handleChange(value.end.toString());
+                        }}
+                        value={
+                          restStartField.state.value && restEndField.state.value
+                            ? {
+                                end: parseDate(restEndField.state.value),
+                                start: parseDate(restStartField.state.value),
+                              }
+                            : undefined
+                        }
+                      >
+                        <Label>Reposo: Desde / Hasta</Label>
+                        <DateField.Group>
+                          <DateField.Input slot="start">
+                            {(segment) => <DateField.Segment segment={segment} />}
+                          </DateField.Input>
+                          <DateRangePicker.RangeSeparator />
+                          <DateField.Input slot="end">
+                            {(segment) => <DateField.Segment segment={segment} />}
+                          </DateField.Input>
+                          <DateField.Suffix>
+                            <DateRangePicker.Trigger>
+                              <DateRangePicker.TriggerIndicator />
+                            </DateRangePicker.Trigger>
+                          </DateField.Suffix>
+                        </DateField.Group>
+                        <DateRangePicker.Popover>
+                          <RangeCalendar visibleDuration={{ months: 2 }} />
+                        </DateRangePicker.Popover>
+                      </DateRangePicker>
+                    )}
+                  </form.Field>
                 )}
               </form.Field>
             </div>

@@ -1,4 +1,14 @@
-import { Checkbox, FieldError, Label, ListBox, Select } from "@heroui/react";
+import {
+  Calendar,
+  Checkbox,
+  DateField,
+  DatePicker,
+  FieldError,
+  Label,
+  ListBox,
+  Select,
+} from "@heroui/react";
+import { parseDate } from "@internationalized/date";
 import { useForm, useStore } from "@tanstack/react-form";
 import dayjs from "dayjs";
 import { z } from "zod";
@@ -288,16 +298,51 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
         <form.Field name="startDate">
           {(field) => (
             <div>
-              <Input
-                label="Fecha de Inicio"
+              <DatePicker
+                isRequired
                 onBlur={field.handleBlur}
-                onChange={(e) => {
-                  field.handleChange(e.target.value);
+                onChange={(value) => {
+                  field.handleChange(value?.toString() ?? "");
                 }}
-                required
-                type="date"
-                value={field.state.value}
-              />
+                value={field.state.value ? parseDate(field.state.value) : undefined}
+              >
+                <Label>Fecha de Inicio</Label>
+                <DateField.Group>
+                  <DateField.Input>
+                    {(segment) => <DateField.Segment segment={segment} />}
+                  </DateField.Input>
+                  <DateField.Suffix>
+                    <DatePicker.Trigger>
+                      <DatePicker.TriggerIndicator />
+                    </DatePicker.Trigger>
+                  </DateField.Suffix>
+                </DateField.Group>
+                <DatePicker.Popover>
+                  <Calendar aria-label="Fecha de inicio">
+                    <Calendar.Header>
+                      <Calendar.YearPickerTrigger>
+                        <Calendar.YearPickerTriggerHeading />
+                        <Calendar.YearPickerTriggerIndicator />
+                      </Calendar.YearPickerTrigger>
+                      <Calendar.NavButton slot="previous" />
+                      <Calendar.NavButton slot="next" />
+                    </Calendar.Header>
+                    <Calendar.Grid>
+                      <Calendar.GridHeader>
+                        {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
+                      </Calendar.GridHeader>
+                      <Calendar.GridBody>
+                        {(date) => <Calendar.Cell date={date} />}
+                      </Calendar.GridBody>
+                    </Calendar.Grid>
+                    <Calendar.YearPickerGrid>
+                      <Calendar.YearPickerGridBody>
+                        {({ year }) => <Calendar.YearPickerCell year={year} />}
+                      </Calendar.YearPickerGridBody>
+                    </Calendar.YearPickerGrid>
+                  </Calendar>
+                </DatePicker.Popover>
+              </DatePicker>
 
               {field.state.meta.errors.length > 0 && (
                 <p className="mt-1 text-danger text-xs">{field.state.meta.errors.join(", ")}</p>

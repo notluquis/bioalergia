@@ -1,5 +1,8 @@
 import {
   Button,
+  Calendar,
+  DateField,
+  DatePicker,
   Description,
   FieldError,
   Input,
@@ -10,6 +13,7 @@ import {
   Skeleton,
   TextField,
 } from "@heroui/react";
+import { parseDate } from "@internationalized/date";
 import { useNavigate } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { useState } from "react";
@@ -435,16 +439,49 @@ function RegenerateServiceModal({
                 <FieldError />
               </TextField>
 
-              <TextField
-                defaultValue={dayjs(service.startDate).format("YYYY-MM-DD")}
+              <DatePicker
+                defaultValue={parseDate(dayjs(service.startDate).format("YYYY-MM-DD"))}
                 isRequired
                 name="startDate"
-                type="date"
               >
                 <Label>Nueva fecha de inicio</Label>
-                <Input />
+                <DateField.Group>
+                  <DateField.Input>
+                    {(segment) => <DateField.Segment segment={segment} />}
+                  </DateField.Input>
+                  <DateField.Suffix>
+                    <DatePicker.Trigger>
+                      <DatePicker.TriggerIndicator />
+                    </DatePicker.Trigger>
+                  </DateField.Suffix>
+                </DateField.Group>
                 <FieldError />
-              </TextField>
+                <DatePicker.Popover>
+                  <Calendar aria-label="Nueva fecha de inicio">
+                    <Calendar.Header>
+                      <Calendar.YearPickerTrigger>
+                        <Calendar.YearPickerTriggerHeading />
+                        <Calendar.YearPickerTriggerIndicator />
+                      </Calendar.YearPickerTrigger>
+                      <Calendar.NavButton slot="previous" />
+                      <Calendar.NavButton slot="next" />
+                    </Calendar.Header>
+                    <Calendar.Grid>
+                      <Calendar.GridHeader>
+                        {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
+                      </Calendar.GridHeader>
+                      <Calendar.GridBody>
+                        {(date) => <Calendar.Cell date={date} />}
+                      </Calendar.GridBody>
+                    </Calendar.Grid>
+                    <Calendar.YearPickerGrid>
+                      <Calendar.YearPickerGridBody>
+                        {({ year }) => <Calendar.YearPickerCell year={year} />}
+                      </Calendar.YearPickerGridBody>
+                    </Calendar.YearPickerGrid>
+                  </Calendar>
+                </DatePicker.Popover>
+              </DatePicker>
 
               <TextField
                 defaultValue={String(service.defaultAmount)}

@@ -1,4 +1,5 @@
-import { Modal } from "@heroui/react";
+import { Calendar, DateField, DatePicker, Label, Modal } from "@heroui/react";
+import { parseDate } from "@internationalized/date";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
@@ -125,16 +126,51 @@ export function PayInstallmentModal({
                   <form.Field name="paymentDate">
                     {(field) => (
                       <div>
-                        <Input
-                          label="Fecha de Pago"
+                        <DatePicker
+                          isRequired
                           onBlur={field.handleBlur}
-                          onChange={(e) => {
-                            field.handleChange(e.target.value);
+                          onChange={(value) => {
+                            field.handleChange(value?.toString() ?? "");
                           }}
-                          required
-                          type="date"
-                          value={field.state.value || ""}
-                        />
+                          value={field.state.value ? parseDate(field.state.value) : undefined}
+                        >
+                          <Label>Fecha de Pago</Label>
+                          <DateField.Group>
+                            <DateField.Input>
+                              {(segment) => <DateField.Segment segment={segment} />}
+                            </DateField.Input>
+                            <DateField.Suffix>
+                              <DatePicker.Trigger>
+                                <DatePicker.TriggerIndicator />
+                              </DatePicker.Trigger>
+                            </DateField.Suffix>
+                          </DateField.Group>
+                          <DatePicker.Popover>
+                            <Calendar aria-label="Fecha de pago">
+                              <Calendar.Header>
+                                <Calendar.YearPickerTrigger>
+                                  <Calendar.YearPickerTriggerHeading />
+                                  <Calendar.YearPickerTriggerIndicator />
+                                </Calendar.YearPickerTrigger>
+                                <Calendar.NavButton slot="previous" />
+                                <Calendar.NavButton slot="next" />
+                              </Calendar.Header>
+                              <Calendar.Grid>
+                                <Calendar.GridHeader>
+                                  {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
+                                </Calendar.GridHeader>
+                                <Calendar.GridBody>
+                                  {(date) => <Calendar.Cell date={date} />}
+                                </Calendar.GridBody>
+                              </Calendar.Grid>
+                              <Calendar.YearPickerGrid>
+                                <Calendar.YearPickerGridBody>
+                                  {({ year }) => <Calendar.YearPickerCell year={year} />}
+                                </Calendar.YearPickerGridBody>
+                              </Calendar.YearPickerGrid>
+                            </Calendar>
+                          </DatePicker.Popover>
+                        </DatePicker>
 
                         {field.state.meta.errors.length > 0 && (
                           <p className="mt-1 text-danger text-xs">

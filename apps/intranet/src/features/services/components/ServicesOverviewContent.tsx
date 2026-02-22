@@ -1,7 +1,10 @@
 import {
   Alert,
   Button,
+  Calendar,
   Chip,
+  DateField,
+  DatePicker,
   Description,
   FieldError,
   Input,
@@ -9,6 +12,7 @@ import {
   Modal,
   TextField,
 } from "@heroui/react";
+import { parseDate } from "@internationalized/date";
 import { useStore } from "@tanstack/react-store";
 import dayjs from "dayjs";
 import { type ChangeEvent, useState } from "react";
@@ -307,17 +311,52 @@ export function ServicesOverviewContent() {
                     <FieldError />
                   </TextField>
 
-                  <TextField isRequired name="paidDate">
+                  <DatePicker
+                    isRequired
+                    name="paidDate"
+                    onChange={(value) => {
+                      handlePaymentFieldChange("paidDate", value?.toString() ?? "");
+                    }}
+                    value={parseDate(dayjs(paymentForm.paidDate).format("YYYY-MM-DD"))}
+                  >
                     <Label>Fecha de pago</Label>
-                    <Input
-                      onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                        handlePaymentFieldChange("paidDate", event.target.value);
-                      }}
-                      type="date"
-                      value={dayjs(paymentForm.paidDate).format("YYYY-MM-DD")}
-                    />
+                    <DateField.Group>
+                      <DateField.Input>
+                        {(segment) => <DateField.Segment segment={segment} />}
+                      </DateField.Input>
+                      <DateField.Suffix>
+                        <DatePicker.Trigger>
+                          <DatePicker.TriggerIndicator />
+                        </DatePicker.Trigger>
+                      </DateField.Suffix>
+                    </DateField.Group>
                     <FieldError />
-                  </TextField>
+                    <DatePicker.Popover>
+                      <Calendar aria-label="Fecha de pago">
+                        <Calendar.Header>
+                          <Calendar.YearPickerTrigger>
+                            <Calendar.YearPickerTriggerHeading />
+                            <Calendar.YearPickerTriggerIndicator />
+                          </Calendar.YearPickerTrigger>
+                          <Calendar.NavButton slot="previous" />
+                          <Calendar.NavButton slot="next" />
+                        </Calendar.Header>
+                        <Calendar.Grid>
+                          <Calendar.GridHeader>
+                            {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
+                          </Calendar.GridHeader>
+                          <Calendar.GridBody>
+                            {(date) => <Calendar.Cell date={date} />}
+                          </Calendar.GridBody>
+                        </Calendar.Grid>
+                        <Calendar.YearPickerGrid>
+                          <Calendar.YearPickerGridBody>
+                            {({ year }) => <Calendar.YearPickerCell year={year} />}
+                          </Calendar.YearPickerGridBody>
+                        </Calendar.YearPickerGrid>
+                      </Calendar>
+                    </DatePicker.Popover>
+                  </DatePicker>
 
                   <TextField name="note">
                     <Label>Nota</Label>

@@ -1,4 +1,5 @@
-import { Label, ListBox, Modal, Select } from "@heroui/react";
+import { Calendar, DateField, DatePicker, Label, ListBox, Modal, Select } from "@heroui/react";
+import { parseDate } from "@internationalized/date";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Save, User, UserPlus } from "lucide-react";
@@ -174,12 +175,49 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
 
                     <form.Field name="birthDate">
                       {(field) => (
-                        <Input
-                          label="Fecha de Nacimiento"
-                          onChange={(e) => field.handleChange(e.target.value)}
-                          type="date"
-                          value={field.state.value}
-                        />
+                        <DatePicker
+                          onChange={(value) => {
+                            field.handleChange(value?.toString() ?? "");
+                          }}
+                          value={field.state.value ? parseDate(field.state.value) : undefined}
+                        >
+                          <Label>Fecha de Nacimiento</Label>
+                          <DateField.Group>
+                            <DateField.Input>
+                              {(segment) => <DateField.Segment segment={segment} />}
+                            </DateField.Input>
+                            <DateField.Suffix>
+                              <DatePicker.Trigger>
+                                <DatePicker.TriggerIndicator />
+                              </DatePicker.Trigger>
+                            </DateField.Suffix>
+                          </DateField.Group>
+                          <DatePicker.Popover>
+                            <Calendar aria-label="Fecha de nacimiento">
+                              <Calendar.Header>
+                                <Calendar.YearPickerTrigger>
+                                  <Calendar.YearPickerTriggerHeading />
+                                  <Calendar.YearPickerTriggerIndicator />
+                                </Calendar.YearPickerTrigger>
+                                <Calendar.NavButton slot="previous" />
+                                <Calendar.NavButton slot="next" />
+                              </Calendar.Header>
+                              <Calendar.Grid>
+                                <Calendar.GridHeader>
+                                  {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
+                                </Calendar.GridHeader>
+                                <Calendar.GridBody>
+                                  {(date) => <Calendar.Cell date={date} />}
+                                </Calendar.GridBody>
+                              </Calendar.Grid>
+                              <Calendar.YearPickerGrid>
+                                <Calendar.YearPickerGridBody>
+                                  {({ year }) => <Calendar.YearPickerCell year={year} />}
+                                </Calendar.YearPickerGridBody>
+                              </Calendar.YearPickerGrid>
+                            </Calendar>
+                          </DatePicker.Popover>
+                        </DatePicker>
                       )}
                     </form.Field>
 

@@ -1,4 +1,14 @@
-import { Description, Label, ListBox, Modal, Select } from "@heroui/react";
+import {
+  Calendar,
+  DateField,
+  DatePicker,
+  Description,
+  Label,
+  ListBox,
+  Modal,
+  Select,
+} from "@heroui/react";
+import { parseDate } from "@internationalized/date";
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 import { useState } from "react";
@@ -211,17 +221,52 @@ export function LoanDetail({
                     value={regenerateForm.totalInstallments ?? loan.total_installments}
                   />
 
-                  <Input
-                    label="Nueva fecha de inicio"
-                    onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                  <DatePicker
+                    onChange={(value) => {
                       setRegenerateForm((prev) => ({
                         ...prev,
-                        startDate: event.target.value,
+                        startDate: value?.toString() ?? "",
                       }));
                     }}
-                    type="date"
-                    value={regenerateForm.startDate ?? loan.start_date}
-                  />
+                    value={parseDate(regenerateForm.startDate ?? loan.start_date)}
+                  >
+                    <Label>Nueva fecha de inicio</Label>
+                    <DateField.Group>
+                      <DateField.Input>
+                        {(segment) => <DateField.Segment segment={segment} />}
+                      </DateField.Input>
+                      <DateField.Suffix>
+                        <DatePicker.Trigger>
+                          <DatePicker.TriggerIndicator />
+                        </DatePicker.Trigger>
+                      </DateField.Suffix>
+                    </DateField.Group>
+                    <DatePicker.Popover>
+                      <Calendar aria-label="Nueva fecha de inicio">
+                        <Calendar.Header>
+                          <Calendar.YearPickerTrigger>
+                            <Calendar.YearPickerTriggerHeading />
+                            <Calendar.YearPickerTriggerIndicator />
+                          </Calendar.YearPickerTrigger>
+                          <Calendar.NavButton slot="previous" />
+                          <Calendar.NavButton slot="next" />
+                        </Calendar.Header>
+                        <Calendar.Grid>
+                          <Calendar.GridHeader>
+                            {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
+                          </Calendar.GridHeader>
+                          <Calendar.GridBody>
+                            {(date) => <Calendar.Cell date={date} />}
+                          </Calendar.GridBody>
+                        </Calendar.Grid>
+                        <Calendar.YearPickerGrid>
+                          <Calendar.YearPickerGridBody>
+                            {({ year }) => <Calendar.YearPickerCell year={year} />}
+                          </Calendar.YearPickerGridBody>
+                        </Calendar.YearPickerGrid>
+                      </Calendar>
+                    </DatePicker.Popover>
+                  </DatePicker>
 
                   <Input
                     label="Tasa de interés (%)"

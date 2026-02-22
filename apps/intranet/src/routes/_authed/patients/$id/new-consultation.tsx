@@ -1,4 +1,5 @@
-import { Card } from "@heroui/react";
+import { Calendar, Card, DateField, DatePicker, FieldError, Label } from "@heroui/react";
+import { parseDate } from "@internationalized/date";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
@@ -96,15 +97,54 @@ function NewConsultationPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <form.Field name="date">
                 {(field) => (
-                  <Input
-                    type="date"
-                    label="Fecha de Atención"
-                    id="consultationDate"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
+                  <DatePicker
+                    isInvalid={field.state.meta.errors.length > 0}
                     onBlur={field.handleBlur}
-                    error={field.state.meta.errors.join(", ")}
-                  />
+                    onChange={(value) => {
+                      field.handleChange(value?.toString() ?? "");
+                    }}
+                    value={field.state.value ? parseDate(field.state.value) : undefined}
+                  >
+                    <Label>Fecha de Atención</Label>
+                    <DateField.Group>
+                      <DateField.Input>
+                        {(segment) => <DateField.Segment segment={segment} />}
+                      </DateField.Input>
+                      <DateField.Suffix>
+                        <DatePicker.Trigger>
+                          <DatePicker.TriggerIndicator />
+                        </DatePicker.Trigger>
+                      </DateField.Suffix>
+                    </DateField.Group>
+                    {field.state.meta.errors.length > 0 && (
+                      <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
+                    )}
+                    <DatePicker.Popover>
+                      <Calendar aria-label="Fecha de atención">
+                        <Calendar.Header>
+                          <Calendar.YearPickerTrigger>
+                            <Calendar.YearPickerTriggerHeading />
+                            <Calendar.YearPickerTriggerIndicator />
+                          </Calendar.YearPickerTrigger>
+                          <Calendar.NavButton slot="previous" />
+                          <Calendar.NavButton slot="next" />
+                        </Calendar.Header>
+                        <Calendar.Grid>
+                          <Calendar.GridHeader>
+                            {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
+                          </Calendar.GridHeader>
+                          <Calendar.GridBody>
+                            {(date) => <Calendar.Cell date={date} />}
+                          </Calendar.GridBody>
+                        </Calendar.Grid>
+                        <Calendar.YearPickerGrid>
+                          <Calendar.YearPickerGridBody>
+                            {({ year }) => <Calendar.YearPickerCell year={year} />}
+                          </Calendar.YearPickerGridBody>
+                        </Calendar.YearPickerGrid>
+                      </Calendar>
+                    </DatePicker.Popover>
+                  </DatePicker>
                 )}
               </form.Field>
             </div>

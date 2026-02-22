@@ -1,4 +1,5 @@
-import { FieldError, Label, ListBox, Select } from "@heroui/react";
+import { Calendar, DateField, DatePicker, FieldError, Label, ListBox, Select } from "@heroui/react";
+import { parseDate } from "@internationalized/date";
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 
@@ -100,17 +101,52 @@ export function EmissionSection({
         </>
       )}
       {(emissionMode ?? "FIXED_DAY") === "SPECIFIC_DATE" && (
-        <Input
-          label="Fecha emisión"
-          onChange={(event: ChangeEvent<HTMLInputElement>) => {
+        <DatePicker
+          onChange={(value) => {
             onChange(
               "emissionExactDate",
-              event.target.value ? dayjs(event.target.value).toDate() : null,
+              value ? dayjs(value.toString(), "YYYY-MM-DD").toDate() : null,
             );
           }}
-          type="date"
-          value={emissionExactDate ? dayjs(emissionExactDate).format("YYYY-MM-DD") : ""}
-        />
+          value={
+            emissionExactDate ? parseDate(dayjs(emissionExactDate).format("YYYY-MM-DD")) : undefined
+          }
+        >
+          <Label>Fecha emisión</Label>
+          <DateField.Group>
+            <DateField.Input>
+              {(segment) => <DateField.Segment segment={segment} />}
+            </DateField.Input>
+            <DateField.Suffix>
+              <DatePicker.Trigger>
+                <DatePicker.TriggerIndicator />
+              </DatePicker.Trigger>
+            </DateField.Suffix>
+          </DateField.Group>
+          <DatePicker.Popover>
+            <Calendar aria-label="Fecha emisión">
+              <Calendar.Header>
+                <Calendar.YearPickerTrigger>
+                  <Calendar.YearPickerTriggerHeading />
+                  <Calendar.YearPickerTriggerIndicator />
+                </Calendar.YearPickerTrigger>
+                <Calendar.NavButton slot="previous" />
+                <Calendar.NavButton slot="next" />
+              </Calendar.Header>
+              <Calendar.Grid>
+                <Calendar.GridHeader>
+                  {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
+                </Calendar.GridHeader>
+                <Calendar.GridBody>{(date) => <Calendar.Cell date={date} />}</Calendar.GridBody>
+              </Calendar.Grid>
+              <Calendar.YearPickerGrid>
+                <Calendar.YearPickerGridBody>
+                  {({ year }) => <Calendar.YearPickerCell year={year} />}
+                </Calendar.YearPickerGridBody>
+              </Calendar.YearPickerGrid>
+            </Calendar>
+          </DatePicker.Popover>
+        </DatePicker>
       )}
     </section>
   );

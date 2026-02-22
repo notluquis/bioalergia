@@ -1,4 +1,5 @@
-import { Modal } from "@heroui/react";
+import { Calendar, DateField, DatePicker, FieldError, Label, Modal } from "@heroui/react";
+import { parseDate } from "@internationalized/date";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
@@ -7,7 +8,6 @@ import { useState } from "react";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
 import { useToast } from "@/context/ToastContext";
 import { MPService, type MpReportType } from "@/services/mercadopago";
 
@@ -154,32 +154,116 @@ export function GenerateReportModal({ onClose, open, reportType }: Props) {
 
                 <form.Field name="begin_date">
                   {(field) => (
-                    <Input
-                      error={getFieldErrorMessage(field.state.meta.errors[0])}
-                      label="Fecha Inicio"
+                    <DatePicker
+                      isInvalid={field.state.meta.errors.length > 0}
+                      isRequired
                       onBlur={field.handleBlur}
-                      onChange={(e) => {
-                        field.handleChange(dayjs(e.target.value).toDate());
+                      onChange={(value) => {
+                        if (!value) {
+                          return;
+                        }
+                        field.handleChange(dayjs(value.toString(), "YYYY-MM-DD").toDate());
                       }}
-                      type="date"
-                      value={dayjs(field.state.value).format("YYYY-MM-DD")}
-                    />
+                      value={parseDate(dayjs(field.state.value).format("YYYY-MM-DD"))}
+                    >
+                      <Label>Fecha Inicio</Label>
+                      <DateField.Group>
+                        <DateField.Input>
+                          {(segment) => <DateField.Segment segment={segment} />}
+                        </DateField.Input>
+                        <DateField.Suffix>
+                          <DatePicker.Trigger>
+                            <DatePicker.TriggerIndicator />
+                          </DatePicker.Trigger>
+                        </DateField.Suffix>
+                      </DateField.Group>
+                      {field.state.meta.errors.length > 0 && (
+                        <FieldError>{getFieldErrorMessage(field.state.meta.errors[0])}</FieldError>
+                      )}
+                      <DatePicker.Popover>
+                        <Calendar aria-label="Fecha inicio">
+                          <Calendar.Header>
+                            <Calendar.YearPickerTrigger>
+                              <Calendar.YearPickerTriggerHeading />
+                              <Calendar.YearPickerTriggerIndicator />
+                            </Calendar.YearPickerTrigger>
+                            <Calendar.NavButton slot="previous" />
+                            <Calendar.NavButton slot="next" />
+                          </Calendar.Header>
+                          <Calendar.Grid>
+                            <Calendar.GridHeader>
+                              {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
+                            </Calendar.GridHeader>
+                            <Calendar.GridBody>
+                              {(date) => <Calendar.Cell date={date} />}
+                            </Calendar.GridBody>
+                          </Calendar.Grid>
+                          <Calendar.YearPickerGrid>
+                            <Calendar.YearPickerGridBody>
+                              {({ year }) => <Calendar.YearPickerCell year={year} />}
+                            </Calendar.YearPickerGridBody>
+                          </Calendar.YearPickerGrid>
+                        </Calendar>
+                      </DatePicker.Popover>
+                    </DatePicker>
                   )}
                 </form.Field>
 
                 <form.Field name="end_date">
                   {(field) => (
-                    <Input
-                      disabled={useNowAsEndDate}
-                      error={getFieldErrorMessage(field.state.meta.errors[0])}
-                      label="Fecha Fin"
+                    <DatePicker
+                      isDisabled={useNowAsEndDate}
+                      isInvalid={field.state.meta.errors.length > 0}
+                      isRequired
                       onBlur={field.handleBlur}
-                      onChange={(e) => {
-                        field.handleChange(dayjs(e.target.value).toDate());
+                      onChange={(value) => {
+                        if (!value) {
+                          return;
+                        }
+                        field.handleChange(dayjs(value.toString(), "YYYY-MM-DD").toDate());
                       }}
-                      type="date"
-                      value={dayjs(field.state.value).format("YYYY-MM-DD")}
-                    />
+                      value={parseDate(dayjs(field.state.value).format("YYYY-MM-DD"))}
+                    >
+                      <Label>Fecha Fin</Label>
+                      <DateField.Group>
+                        <DateField.Input>
+                          {(segment) => <DateField.Segment segment={segment} />}
+                        </DateField.Input>
+                        <DateField.Suffix>
+                          <DatePicker.Trigger>
+                            <DatePicker.TriggerIndicator />
+                          </DatePicker.Trigger>
+                        </DateField.Suffix>
+                      </DateField.Group>
+                      {field.state.meta.errors.length > 0 && (
+                        <FieldError>{getFieldErrorMessage(field.state.meta.errors[0])}</FieldError>
+                      )}
+                      <DatePicker.Popover>
+                        <Calendar aria-label="Fecha fin">
+                          <Calendar.Header>
+                            <Calendar.YearPickerTrigger>
+                              <Calendar.YearPickerTriggerHeading />
+                              <Calendar.YearPickerTriggerIndicator />
+                            </Calendar.YearPickerTrigger>
+                            <Calendar.NavButton slot="previous" />
+                            <Calendar.NavButton slot="next" />
+                          </Calendar.Header>
+                          <Calendar.Grid>
+                            <Calendar.GridHeader>
+                              {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
+                            </Calendar.GridHeader>
+                            <Calendar.GridBody>
+                              {(date) => <Calendar.Cell date={date} />}
+                            </Calendar.GridBody>
+                          </Calendar.Grid>
+                          <Calendar.YearPickerGrid>
+                            <Calendar.YearPickerGridBody>
+                              {({ year }) => <Calendar.YearPickerCell year={year} />}
+                            </Calendar.YearPickerGridBody>
+                          </Calendar.YearPickerGrid>
+                        </Calendar>
+                      </DatePicker.Popover>
+                    </DatePicker>
                   )}
                 </form.Field>
 

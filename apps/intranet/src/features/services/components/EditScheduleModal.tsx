@@ -1,5 +1,8 @@
 import {
   Button,
+  Calendar,
+  DateField,
+  DatePicker,
   Description,
   FieldError,
   Form,
@@ -8,6 +11,7 @@ import {
   Modal,
   TextField,
 } from "@heroui/react";
+import { parseDate } from "@internationalized/date";
 import dayjs from "dayjs";
 import { useServiceMutations } from "../hooks/use-service-mutations";
 import type { ServiceSchedule } from "../types";
@@ -54,22 +58,49 @@ export function EditScheduleModal({ isOpen, onClose, schedule }: EditScheduleMod
           </Modal.Header>
           <Modal.Body>
             <Form className="flex flex-col gap-4" onSubmit={handleSubmit} validationBehavior="aria">
-              <TextField
-                defaultValue={dayjs(schedule.dueDate).format("YYYY-MM-DD")}
+              <DatePicker
+                defaultValue={parseDate(dayjs(schedule.dueDate).format("YYYY-MM-DD"))}
                 isRequired
                 name="dueDate"
-                type="date"
-                validate={(value) => {
-                  if (!value) {
-                    return "Fecha de vencimiento requerida";
-                  }
-                  return null;
-                }}
               >
                 <Label>Fecha de vencimiento</Label>
-                <Input />
+                <DateField.Group>
+                  <DateField.Input>
+                    {(segment) => <DateField.Segment segment={segment} />}
+                  </DateField.Input>
+                  <DateField.Suffix>
+                    <DatePicker.Trigger>
+                      <DatePicker.TriggerIndicator />
+                    </DatePicker.Trigger>
+                  </DateField.Suffix>
+                </DateField.Group>
                 <FieldError />
-              </TextField>
+                <DatePicker.Popover>
+                  <Calendar aria-label="Fecha de vencimiento">
+                    <Calendar.Header>
+                      <Calendar.YearPickerTrigger>
+                        <Calendar.YearPickerTriggerHeading />
+                        <Calendar.YearPickerTriggerIndicator />
+                      </Calendar.YearPickerTrigger>
+                      <Calendar.NavButton slot="previous" />
+                      <Calendar.NavButton slot="next" />
+                    </Calendar.Header>
+                    <Calendar.Grid>
+                      <Calendar.GridHeader>
+                        {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
+                      </Calendar.GridHeader>
+                      <Calendar.GridBody>
+                        {(date) => <Calendar.Cell date={date} />}
+                      </Calendar.GridBody>
+                    </Calendar.Grid>
+                    <Calendar.YearPickerGrid>
+                      <Calendar.YearPickerGridBody>
+                        {({ year }) => <Calendar.YearPickerCell year={year} />}
+                      </Calendar.YearPickerGridBody>
+                    </Calendar.YearPickerGrid>
+                  </Calendar>
+                </DatePicker.Popover>
+              </DatePicker>
 
               <TextField
                 defaultValue={String(schedule.expectedAmount)}

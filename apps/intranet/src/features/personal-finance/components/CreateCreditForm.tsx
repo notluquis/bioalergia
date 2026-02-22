@@ -1,4 +1,17 @@
-import { Button, FieldError, Input, Label, ListBox, Modal, Select, TextField } from "@heroui/react";
+import {
+  Button,
+  Calendar,
+  DateField,
+  DatePicker,
+  FieldError,
+  Input,
+  Label,
+  ListBox,
+  Modal,
+  Select,
+  TextField,
+} from "@heroui/react";
+import { parseDate } from "@internationalized/date";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
@@ -204,18 +217,55 @@ export function CreateCreditForm() {
 
                   <form.Field name="startDate">
                     {(field) => (
-                      <TextField isRequired name="startDate">
+                      <DatePicker
+                        isRequired
+                        name="startDate"
+                        onBlur={field.handleBlur}
+                        onChange={(value) => {
+                          field.handleChange(value?.toString() ?? "");
+                        }}
+                        value={field.state.value ? parseDate(field.state.value) : undefined}
+                      >
                         <Label>Fecha Inicio</Label>
-                        <Input
-                          type="date"
-                          value={field.state.value || ""}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                          onBlur={field.handleBlur}
-                        />
+                        <DateField.Group>
+                          <DateField.Input>
+                            {(segment) => <DateField.Segment segment={segment} />}
+                          </DateField.Input>
+                          <DateField.Suffix>
+                            <DatePicker.Trigger>
+                              <DatePicker.TriggerIndicator />
+                            </DatePicker.Trigger>
+                          </DateField.Suffix>
+                        </DateField.Group>
                         {field.state.meta.errors.length > 0 && (
                           <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
                         )}
-                      </TextField>
+                        <DatePicker.Popover>
+                          <Calendar aria-label="Fecha inicio">
+                            <Calendar.Header>
+                              <Calendar.YearPickerTrigger>
+                                <Calendar.YearPickerTriggerHeading />
+                                <Calendar.YearPickerTriggerIndicator />
+                              </Calendar.YearPickerTrigger>
+                              <Calendar.NavButton slot="previous" />
+                              <Calendar.NavButton slot="next" />
+                            </Calendar.Header>
+                            <Calendar.Grid>
+                              <Calendar.GridHeader>
+                                {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
+                              </Calendar.GridHeader>
+                              <Calendar.GridBody>
+                                {(date) => <Calendar.Cell date={date} />}
+                              </Calendar.GridBody>
+                            </Calendar.Grid>
+                            <Calendar.YearPickerGrid>
+                              <Calendar.YearPickerGridBody>
+                                {({ year }) => <Calendar.YearPickerCell year={year} />}
+                              </Calendar.YearPickerGridBody>
+                            </Calendar.YearPickerGrid>
+                          </Calendar>
+                        </DatePicker.Popover>
+                      </DatePicker>
                     )}
                   </form.Field>
                 </div>
