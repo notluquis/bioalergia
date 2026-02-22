@@ -1,4 +1,12 @@
-import { Checkbox, Description, Disclosure, Link, ScrollShadow, Skeleton } from "@heroui/react";
+import {
+  Checkbox,
+  Description,
+  Disclosure,
+  Link,
+  ScrollShadow,
+  Skeleton,
+  Surface,
+} from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -141,7 +149,7 @@ function RunningJobProgressCard({
   }
 
   return (
-    <div className="rounded-xl bg-default-50 p-6 shadow-sm">
+    <Surface aria-live="polite" className="rounded-[28px] p-6 shadow-inner" variant="secondary">
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Loader2 className="size-5 animate-spin text-primary" />
@@ -161,7 +169,7 @@ function RunningJobProgressCard({
           style={{ width: `${currentBackup?.progress ?? currentRestore?.progress ?? 0}%` }}
         />
       </div>
-    </div>
+    </Surface>
   );
 }
 
@@ -174,7 +182,7 @@ function LastCompletedBackupCard({ result }: { result: BackupJob["result"] | nul
   const hasStats = statsEntries.length > 0;
 
   return (
-    <div className="rounded-xl bg-default-50 p-6 shadow-sm">
+    <Surface className="rounded-[28px] p-6 shadow-inner" variant="secondary">
       <div className="mb-3 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <CheckCircle className="size-5 text-success" />
@@ -201,7 +209,7 @@ function LastCompletedBackupCard({ result }: { result: BackupJob["result"] | nul
       {hasStats ? (
         <div className="rounded-lg border border-default-200 bg-background p-3">
           <span className="mb-2 block font-medium text-sm">Conteo por tabla</span>
-          <div className="max-h-56 overflow-auto">
+          <ScrollShadow className="max-h-56" hideScrollBar size={56}>
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-default-500 text-xs">
@@ -220,14 +228,14 @@ function LastCompletedBackupCard({ result }: { result: BackupJob["result"] | nul
                   ))}
               </tbody>
             </table>
-          </div>
+          </ScrollShadow>
         </div>
       ) : (
         <div className="rounded-lg border border-default-200 bg-background p-3 text-default-500 text-sm">
           No hay estadísticas por tabla disponibles para este backup.
         </div>
       )}
-    </div>
+    </Surface>
   );
 }
 
@@ -318,7 +326,15 @@ export function BackupSettingsPage() {
 
   const renderBackupListContent = () => {
     if (fullBackups.length === 0) {
-      return <div className="py-12 text-center text-default-500">No hay backups disponibles</div>;
+      return (
+        <div className="flex flex-col items-center justify-center gap-2 px-4 py-12 text-center">
+          <HardDrive className="size-6 text-default-400" />
+          <p className="font-medium text-default-700 text-sm">No hay backups disponibles</p>
+          <Description className="max-w-sm text-xs">
+            Cuando ejecutes un backup, aparecerá aquí con opciones de descarga y restauración.
+          </Description>
+        </div>
+      );
     }
 
     return (
@@ -352,8 +368,8 @@ export function BackupSettingsPage() {
 
       <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
         {/* Full Backups List */}
-        <div className="rounded-xl bg-default-50/50">
-          <div className="flex items-center justify-between border-default-100 border-b p-4">
+        <Surface className="rounded-[28px] p-0" variant="secondary">
+          <div className="flex items-center justify-between border-default-100 border-b px-5 py-4">
             <div>
               <span className="font-semibold text-lg">Backups Completos</span>
               <span className="block text-default-500 text-sm">Snapshots completos</span>
@@ -389,14 +405,14 @@ export function BackupSettingsPage() {
               </Button>
             </div>
           </div>
-          <ScrollShadow className="max-h-125 divide-y divide-default-100" hideScrollBar>
+          <ScrollShadow className="max-h-125 divide-y divide-default-100" hideScrollBar size={56}>
             {renderBackupListContent()}
           </ScrollShadow>
-        </div>
+        </Surface>
 
         {/* Incremental Exports */}
-        <div className="rounded-xl bg-default-50/50">
-          <div className="border-default-100 border-b p-4">
+        <Surface className="rounded-[28px] p-0" variant="secondary">
+          <div className="border-default-100 border-b px-5 py-4">
             <div className="flex items-center justify-between">
               <div>
                 <span className="font-semibold text-lg">Exports Incrementales</span>
@@ -408,7 +424,7 @@ export function BackupSettingsPage() {
             </div>
           </div>
           {auditExports.length > 0 ? (
-            <ScrollShadow className="max-h-125 divide-y divide-default-100" hideScrollBar>
+            <ScrollShadow className="max-h-125 divide-y divide-default-100" hideScrollBar size={56}>
               {auditExports.slice(0, 50).map((backup) => (
                 <div
                   className="flex items-center justify-between px-4 py-3 text-sm transition-colors hover:bg-default-50"
@@ -444,11 +460,15 @@ export function BackupSettingsPage() {
               ))}
             </ScrollShadow>
           ) : (
-            <div className="py-12 text-center text-default-500 text-sm">
-              No hay exports incrementales
+            <div className="flex flex-col items-center justify-center gap-2 px-4 py-12 text-center">
+              <FileText className="size-6 text-default-400" />
+              <p className="font-medium text-default-700 text-sm">No hay exports incrementales</p>
+              <Description className="max-w-sm text-xs">
+                Los cambios horarios aparecerán aquí cuando exista actividad en tablas auditadas.
+              </Description>
             </div>
           )}
-        </div>
+        </Surface>
       </div>
     </div>
   );
@@ -596,44 +616,46 @@ function BackupTablesList({
 
   return (
     <>
-      <div className="mb-3 flex items-center justify-between">
-        <span className="font-medium text-sm">Seleccionar tablas</span>
-        <Button
-          className="text-primary text-xs hover:underline"
-          onPress={selectAll}
-          type="button"
-          variant="ghost"
-        >
-          {selectedTables.length === tables.length ? "Ninguna" : "Todas"}
-        </Button>
-      </div>
-
-      <div className="mb-3">
-        {tables.length === 0 && (
-          <Description className="text-default-500 text-sm">
-            No hay tablas en este backup.
-          </Description>
-        )}
-
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
-          {tables.map((table) => (
-            <div
-              className={cn(
-                "flex cursor-pointer items-center gap-2 rounded-lg border border-default-200 p-2 text-sm transition-colors hover:bg-default-50",
-                selectedTables.includes(table) ? "border-primary bg-primary/5" : "",
-              )}
-              key={table}
+      {tables.length > 0 ? (
+        <>
+          <div className="mb-3 flex items-center justify-between">
+            <span className="font-medium text-sm">Seleccionar tablas</span>
+            <Button
+              className="text-primary text-xs hover:underline"
+              onPress={selectAll}
+              type="button"
+              variant="ghost"
             >
-              <Checkbox
-                isSelected={selectedTables.includes(table)}
-                onChange={() => toggleTable(table)}
-              >
-                <span className="flex-1 truncate">{table}</span>
-              </Checkbox>
+              {selectedTables.length === tables.length ? "Ninguna" : "Todas"}
+            </Button>
+          </div>
+
+          <ScrollShadow className="mb-3 max-h-64" hideScrollBar size={48}>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+              {tables.map((table) => (
+                <div
+                  className={cn(
+                    "flex items-center gap-2 rounded-lg border border-default-200 p-2 text-sm transition-colors hover:bg-default-50",
+                    selectedTables.includes(table) ? "border-primary bg-primary/5" : "",
+                  )}
+                  key={table}
+                >
+                  <Checkbox
+                    isSelected={selectedTables.includes(table)}
+                    onChange={() => toggleTable(table)}
+                  >
+                    <span className="flex-1 truncate">{table}</span>
+                  </Checkbox>
+                </div>
+              ))}
             </div>
-          ))}
+          </ScrollShadow>
+        </>
+      ) : (
+        <div className="mb-3 rounded-lg border border-default-200 bg-background px-4 py-6 text-center">
+          <Description className="text-sm">No hay tablas en este backup.</Description>
         </div>
-      </div>
+      )}
 
       {selectedTables.length > 0 && (
         <Button

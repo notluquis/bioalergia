@@ -1,4 +1,14 @@
-import { Button, FieldError, Input, Label, ListBox, Modal, Select, TextField } from "@heroui/react";
+import {
+  Button,
+  Description,
+  FieldError,
+  Input,
+  Label,
+  ListBox,
+  Modal,
+  Select,
+  TextField,
+} from "@heroui/react";
 import type { ChangeEvent, KeyboardEvent, ReactNode } from "react";
 import { useState } from "react";
 import { z } from "zod";
@@ -97,7 +107,7 @@ export function SelectWithCreateNew({
         {errors.length > 0 && <FieldError>{errors.join(", ")}</FieldError>}
       </Select>
 
-      {description && <p className="text-default-500 text-xs">{description}</p>}
+      {description && <Description className="text-xs">{description}</Description>}
 
       <Button
         isDisabled={isDisabled}

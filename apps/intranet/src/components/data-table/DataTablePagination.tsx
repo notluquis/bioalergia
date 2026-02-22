@@ -23,6 +23,7 @@ export function DataTablePagination<TData>({
   const currentPageSize = currentPagination.pageSize;
   const currentPageIndex = currentPagination.pageIndex;
   const totalPages = pageCount ?? table.getPageCount();
+  const hasKnownTotalPages = totalPages !== -1;
   const canPrevious = currentPageIndex > 0;
   const canNext = totalPages === -1 ? true : currentPageIndex < Math.max(1, totalPages) - 1;
   const normalizedOptions = Array.from(new Set([...pageSizeOptions, currentPageSize])).sort(
@@ -66,9 +67,11 @@ export function DataTablePagination<TData>({
           </>
         )}
       </div>
-      <div className="flex items-center space-x-6 lg:space-x-8">
+      <div className="flex items-center gap-4 sm:gap-6 lg:gap-8">
         <div className="flex items-center justify-center font-medium text-sm">
-          Página {currentPageIndex + 1} de {Math.max(1, totalPages)}
+          {hasKnownTotalPages
+            ? `Página ${currentPageIndex + 1} de ${Math.max(1, totalPages)}`
+            : `Página ${currentPageIndex + 1}`}
         </div>
         <div className="flex items-center space-x-2">
           <Button
@@ -109,7 +112,7 @@ export function DataTablePagination<TData>({
           </Button>
           <Button
             className="hidden h-8 w-8 p-0 lg:flex"
-            disabled={!canNext || totalPages === -1}
+            disabled={!canNext || !hasKnownTotalPages}
             onClick={() => {
               const lastIndex = Math.max(1, totalPages) - 1;
               table.setPageIndex(lastIndex);
