@@ -15,6 +15,7 @@ export interface ParsedPayload {
 const SUBCUTANEOUS_CATEGORY = "Tratamiento subcutáneo";
 const ROXAIR_CATEGORY = "Roxair";
 const ROXAIR_DEFAULT_AMOUNT = 150000;
+const READY_KEYWORD_PATTERN = /\blisto\b/i;
 const NOT_ATTENDED_PATTERNS = [
   /\bno\s+viene\b/i,
   /\bno\s+vino\b/i,
@@ -53,6 +54,10 @@ export function buildDefaultEntry(event: CalendarUnclassifiedEvent) {
     isRoxairCategory(resolvedCategory) && event.amountExpected == null
       ? ROXAIR_DEFAULT_AMOUNT
       : null;
+  const text = `${event.summary ?? ""} ${event.description ?? ""}`;
+  const inferredAttended = isExplicitNoShowEvent(event)
+    ? false
+    : (event.attended ?? READY_KEYWORD_PATTERN.test(text));
 
   return {
     amountExpected:
@@ -62,7 +67,7 @@ export function buildDefaultEntry(event: CalendarUnclassifiedEvent) {
           : String(roxairDefaultAmount)
         : String(event.amountExpected),
     amountPaid: event.amountPaid == null ? "" : String(event.amountPaid),
-    attended: event.attended ?? false,
+    attended: inferredAttended,
     category: resolvedCategory,
     dosageValue: event.dosageValue != null ? String(event.dosageValue) : "",
     dosageUnit: event.dosageUnit ?? "",

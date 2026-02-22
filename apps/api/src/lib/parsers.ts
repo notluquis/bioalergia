@@ -786,9 +786,9 @@ export function parseCalendarMetadata(input: {
   const treatmentStage = detectTreatmentStage(summary, description);
   const controlIncluded = matchesAny(text, CONTROL_PATTERNS);
   const isDomicilio = matchesAny(text, DOMICILIO_PATTERNS);
-  const isRoxair = category === "Roxair";
   const hasReadyKeyword = READY_KEYWORD_PATTERN.test(text);
-  const finalAttended = attended ?? (isRoxair && hasReadyKeyword ? true : null);
+  const isRoxair = category === "Roxair";
+  const finalAttended = attended ?? (hasReadyKeyword ? true : null);
 
   // Logic: Dosage and Treatment Stage only apply to "Tratamiento subcutáneo"
   const isSubcut = category === "Tratamiento subcutáneo";
