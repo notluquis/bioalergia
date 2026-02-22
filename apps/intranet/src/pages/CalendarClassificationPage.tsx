@@ -42,7 +42,8 @@ function CalendarClassificationPage() {
   const page = search.page ?? 0;
   const filters: MissingFieldFilters = {
     missingCategory: search.missingCategory,
-    missingAmount: search.missingAmount,
+    missingAmountExpected: search.missingAmountExpected ?? search.missingAmount,
+    missingAmountPaid: search.missingAmountPaid,
     missingAttended: search.missingAttended,
     missingDosage: search.missingDosage,
     missingTreatmentStage: search.missingTreatmentStage,
@@ -58,6 +59,7 @@ function CalendarClassificationPage() {
 
   const { data: optionsData } = useSuspenseQuery(calendarQueries.options());
   const categoryChoices = optionsData?.categories ?? [];
+  const missingFieldChoices = optionsData?.missingFilters ?? [];
   const treatmentStageChoices = optionsData?.treatmentStages ?? [];
 
   const events = data?.events || EMPTY_EVENTS;
@@ -205,7 +207,11 @@ function CalendarClassificationPage() {
       <ClassificationStats events={events} form={form} loading={loading} totalCount={totalCount} />
 
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-default-200/70 bg-content1 p-4 sm:p-5">
-        <ClassificationFilters filters={filters} onSearchChange={handleSearchChange} />
+        <ClassificationFilters
+          availableFilters={missingFieldChoices}
+          filters={filters}
+          onSearchChange={handleSearchChange}
+        />
         <ClassificationToolbar
           isJobRunning={isJobRunning}
           job={job}

@@ -19,7 +19,9 @@ const routeApi = getRouteApi("/_authed/calendar/classify");
 const classifySearchSchema = z.object({
   page: z.coerce.number().optional().catch(0),
   missingCategory: z.boolean().optional(),
-  missingAmount: z.boolean().optional(),
+  missingAmount: z.boolean().optional(), // legacy alias
+  missingAmountExpected: z.boolean().optional(),
+  missingAmountPaid: z.boolean().optional(),
   missingAttended: z.boolean().optional(),
   missingDosage: z.boolean().optional(),
   missingTreatmentStage: z.boolean().optional(),
@@ -68,7 +70,8 @@ export const Route = createFileRoute("/_authed/calendar/classify")({
   loader: async ({ context, deps: search }) => {
     const filters: MissingFieldFilters = {
       missingCategory: search.missingCategory,
-      missingAmount: search.missingAmount,
+      missingAmountExpected: search.missingAmountExpected ?? search.missingAmount,
+      missingAmountPaid: search.missingAmountPaid,
       missingAttended: search.missingAttended,
       missingDosage: search.missingDosage,
       missingTreatmentStage: search.missingTreatmentStage,

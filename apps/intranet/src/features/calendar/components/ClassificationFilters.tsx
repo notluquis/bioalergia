@@ -2,67 +2,89 @@ import { Button } from "@/components/ui/Button";
 import type { MissingFieldFilters } from "../api";
 
 interface ClassificationFiltersProps {
+  availableFilters?: readonly { key: string; label: string }[];
   filters: MissingFieldFilters;
   onSearchChange: (update: Partial<MissingFieldFilters> & { page?: number }) => void;
 }
 
-const FILTER_BUTTONS = [
-  { key: "missingCategory" as const, label: "Sin categoría" },
-  { key: "missingAmount" as const, label: "Sin monto" },
-  { key: "missingAttended" as const, label: "Sin asistencia" },
-  { key: "missingDosage" as const, label: "Sin dosis" },
-  { key: "missingTreatmentStage" as const, label: "Sin etapa" },
+const DEFAULT_FILTER_BUTTONS = [
+  { key: "missingCategory", label: "Sin categoría" },
+  { key: "missingAmountExpected", label: "Sin monto esperado" },
+  { key: "missingAmountPaid", label: "Sin monto pagado" },
+  { key: "missingAttended", label: "Sin asistencia" },
+  { key: "missingDosage", label: "Sin dosis" },
+  { key: "missingTreatmentStage", label: "Sin etapa" },
 ] as const;
 
-export function ClassificationFilters({ filters, onSearchChange }: ClassificationFiltersProps) {
-  const hasActiveFilters = Object.values(filters).some(Boolean);
+const SUPPORTED_FILTER_KEYS = [
+  "missingCategory",
+  "missingAmountExpected",
+  "missingAmountPaid",
+  "missingAttended",
+  "missingDosage",
+  "missingTreatmentStage",
+] as const;
 
-  const toggleFilter = (key: keyof MissingFieldFilters) => {
-    onSearchChange({
-      missingCategory:
-        key === "missingCategory" ? !filters.missingCategory : filters.missingCategory,
-      missingAmount: key === "missingAmount" ? !filters.missingAmount : filters.missingAmount,
-      missingAttended:
-        key === "missingAttended" ? !filters.missingAttended : filters.missingAttended,
-      missingDosage: key === "missingDosage" ? !filters.missingDosage : filters.missingDosage,
-      missingTreatmentStage:
-        key === "missingTreatmentStage"
-          ? !filters.missingTreatmentStage
-          : filters.missingTreatmentStage,
+type SupportedFilterKey = (typeof SUPPORTED_FILTER_KEYS)[number];
+
+function isSupportedFilterKey(key: string): key is SupportedFilterKey {
+  return (SUPPORTED_FILTER_KEYS as readonly string[]).includes(key);
+}
+
+export function ClassificationFilters({
+  availableFilters,
+  filters,
+  onSearchChange,
+}: ClassificationFiltersProps) {
+  const filterButtons = (
+    availableFilters?.length ? availableFilters : DEFAULT_FILTER_BUTTONS
+  ).filter((f) => isSupportedFilterKey(f.key)) as ReadonlyArray<{
+    key: SupportedFilterKey;
+    label: string;
+  }>;
+
+  const hasActiveFilters =
+    filterButtons.some(({ key }) => Boolean(filters[key])) || Boolean(filters.filterMode);
+
+  const toggleFilter = (key: SupportedFilterKey) => {
+    const next: Partial<MissingFieldFilters> & { page: number } = {
       filterMode: filters.filterMode,
       page: 0,
-    });
+    };
+    for (const candidate of SUPPORTED_FILTER_KEYS) {
+      next[candidate] = candidate === key ? !filters[candidate] : filters[candidate];
+    }
+    // Clear legacy alias to keep URL clean and avoid ambiguity.
+    next.missingAmount = undefined;
+    onSearchChange(next);
   };
 
   const setFilterMode = (mode: "AND" | undefined) => {
-    onSearchChange({
-      missingCategory: filters.missingCategory,
-      missingAmount: filters.missingAmount,
-      missingAttended: filters.missingAttended,
-      missingDosage: filters.missingDosage,
-      missingTreatmentStage: filters.missingTreatmentStage,
-      filterMode: mode,
-      page: 0,
-    });
+    const next: Partial<MissingFieldFilters> & { page: number } = { filterMode: mode, page: 0 };
+    for (const candidate of SUPPORTED_FILTER_KEYS) {
+      next[candidate] = filters[candidate];
+    }
+    next.missingAmount = undefined;
+    onSearchChange(next);
   };
 
   const clearFilters = () => {
-    onSearchChange({
-      missingCategory: undefined,
-      missingAmount: undefined,
-      missingAttended: undefined,
-      missingDosage: undefined,
-      missingTreatmentStage: undefined,
+    const next: Partial<MissingFieldFilters> & { page: number } = {
       filterMode: undefined,
+      missingAmount: undefined,
       page: 0,
-    });
+    };
+    for (const candidate of SUPPORTED_FILTER_KEYS) {
+      next[candidate] = undefined;
+    }
+    onSearchChange(next);
   };
 
   return (
     <div className="flex flex-wrap items-center gap-3">
       <span className="font-medium text-default-400 text-xs uppercase tracking-wide">Filtrar:</span>
       <div className="flex flex-wrap gap-2">
-        {FILTER_BUTTONS.map(({ key, label }) => (
+        {filterButtons.map(({ key, label }) => (
           <Button
             key={key}
             className="font-medium text-xs"

@@ -25,6 +25,7 @@ import type {
 
 export interface ClassificationOptions {
   categories: readonly string[];
+  missingFilters: readonly { key: string; label: string }[];
   treatmentStages: readonly string[];
 }
 
@@ -40,7 +41,10 @@ export interface FieldCounts {
 export interface MissingFieldFilters {
   /** Filter mode: AND requires all conditions, OR matches any (default: OR) */
   filterMode?: "AND" | "OR";
+  /** @deprecated use missingAmountExpected */
   missingAmount?: boolean;
+  missingAmountExpected?: boolean;
+  missingAmountPaid?: boolean;
   missingAttended?: boolean;
   missingCategory?: boolean;
   missingDosage?: boolean;
@@ -129,12 +133,14 @@ export async function fetchCalendarSyncLogs(limit = 50): Promise<CalendarSyncLog
 export async function fetchClassificationOptions(): Promise<ClassificationOptions> {
   const response = await apiClient.get<{
     categories: readonly string[];
+    missingFilters: readonly { key: string; label: string }[];
     status: "ok";
     treatmentStages: readonly string[];
   }>("/api/calendar/classification-options", { responseSchema: ClassificationOptionsSchema });
 
   return {
     categories: response.categories,
+    missingFilters: response.missingFilters,
     treatmentStages: response.treatmentStages,
   };
 }
@@ -152,6 +158,12 @@ export async function fetchUnclassifiedCalendarEvents(
   }
   if (filters?.missingAmount) {
     params.set("missingAmount", "true");
+  }
+  if (filters?.missingAmountExpected) {
+    params.set("missingAmountExpected", "true");
+  }
+  if (filters?.missingAmountPaid) {
+    params.set("missingAmountPaid", "true");
   }
   if (filters?.missingAttended) {
     params.set("missingAttended", "true");

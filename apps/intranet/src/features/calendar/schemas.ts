@@ -249,6 +249,12 @@ export const CalendarSyncResponseSchema = z.strictObject({
 
 export const ClassificationOptionsSchema = z.strictObject({
   categories: z.array(z.string()),
+  missingFilters: z.array(
+    z.strictObject({
+      key: z.string(),
+      label: z.string(),
+    }),
+  ),
   status: z.literal("ok"),
   treatmentStages: z.array(z.string()),
 });

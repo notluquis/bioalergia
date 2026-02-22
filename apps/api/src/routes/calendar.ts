@@ -35,6 +35,15 @@ import { reply } from "../utils/reply";
 
 export const calendarRoutes = new Hono();
 
+const MISSING_CLASSIFICATION_FILTERS = [
+  { key: "missingCategory", label: "Sin categoría" },
+  { key: "missingAmountExpected", label: "Sin monto esperado" },
+  { key: "missingAmountPaid", label: "Sin monto pagado" },
+  { key: "missingAttended", label: "Sin asistencia" },
+  { key: "missingDosage", label: "Sin dosis" },
+  { key: "missingTreatmentStage", label: "Sin etapa" },
+] as const;
+
 // Helper schemas
 const dateSchema = z
   .string()
@@ -780,6 +789,7 @@ calendarRoutes.get("/classification-options", async (c: Context) => {
   return reply(c, {
     status: "ok",
     categories: CATEGORY_CHOICES,
+    missingFilters: MISSING_CLASSIFICATION_FILTERS,
     treatmentStages: TREATMENT_STAGE_CHOICES,
   });
 });
@@ -791,11 +801,20 @@ const unclassifiedQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(500).default(50),
   offset: z.coerce.number().int().min(0).default(0),
   filterMode: z.enum(["AND", "OR"]).default("OR"),
+  // Legacy alias (kept for backwards compatibility)
   missingCategory: z
     .enum(["true", "false"])
     .transform((v) => v === "true")
     .optional(),
   missingAmount: z
+    .enum(["true", "false"])
+    .transform((v) => v === "true")
+    .optional(),
+  missingAmountExpected: z
+    .enum(["true", "false"])
+    .transform((v) => v === "true")
+    .optional(),
+  missingAmountPaid: z
     .enum(["true", "false"])
     .transform((v) => v === "true")
     .optional(),
@@ -833,7 +852,8 @@ calendarRoutes.get(
 
     const filters = {
       category: query.missingCategory,
-      amountExpected: query.missingAmount,
+      amountExpected: query.missingAmountExpected ?? query.missingAmount,
+      amountPaid: query.missingAmountPaid,
       attended: query.missingAttended,
       dosageValue: query.missingDosage,
       treatmentStage: query.missingTreatmentStage,
