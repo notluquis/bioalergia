@@ -1,4 +1,15 @@
-import { Button, Card, Description, Skeleton, Spinner } from "@heroui/react";
+import {
+  Button,
+  Card,
+  DateField,
+  DateRangePicker,
+  Description,
+  Label,
+  RangeCalendar,
+  Skeleton,
+  Spinner,
+} from "@heroui/react";
+import { parseDate } from "@internationalized/date";
 import { useQuery } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
 import dayjs from "dayjs";
@@ -31,7 +42,6 @@ dayjs.locale("es");
 
 import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/data-table/DataTable";
-import { Input as AppInput } from "@/components/ui/Input";
 import { calendarQueries } from "@/features/calendar/queries";
 import type { TreatmentAnalytics, TreatmentAnalyticsFilters } from "@/features/calendar/types";
 import { formatCurrency } from "@/lib/utils";
@@ -878,28 +888,39 @@ function AnalyticsFilters({
           <Description className="font-semibold text-default-500 text-xs uppercase tracking-wide">
             Rango personalizado
           </Description>
-          <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="flex flex-col gap-1">
-              <AppInput
-                id="date-from"
-                type="date"
-                label="Desde"
-                value={filters.from || ""}
-                onChange={(e) => onDateChange(e.target.value, filters.to || "")}
-                containerClassName="gap-1"
-              />
-            </div>
-            <div className="flex flex-col gap-1">
-              <AppInput
-                id="date-to"
-                type="date"
-                label="Hasta"
-                value={filters.to || ""}
-                onChange={(e) => onDateChange(filters.from || "", e.target.value)}
-                containerClassName="gap-1"
-              />
-            </div>
-          </div>
+          <DateRangePicker
+            className="w-full"
+            onChange={(value) => {
+              if (!value) {
+                return;
+              }
+              onDateChange(value.start.toString(), value.end.toString());
+            }}
+            value={
+              filters.from && filters.to
+                ? { end: parseDate(filters.to), start: parseDate(filters.from) }
+                : undefined
+            }
+          >
+            <Label>Rango personalizado</Label>
+            <DateField.Group>
+              <DateField.Input slot="start">
+                {(segment) => <DateField.Segment segment={segment} />}
+              </DateField.Input>
+              <DateRangePicker.RangeSeparator />
+              <DateField.Input slot="end">
+                {(segment) => <DateField.Segment segment={segment} />}
+              </DateField.Input>
+              <DateField.Suffix>
+                <DateRangePicker.Trigger>
+                  <DateRangePicker.TriggerIndicator />
+                </DateRangePicker.Trigger>
+              </DateField.Suffix>
+            </DateField.Group>
+            <DateRangePicker.Popover>
+              <RangeCalendar visibleDuration={{ months: 2 }} />
+            </DateRangePicker.Popover>
+          </DateRangePicker>
 
           {/* Error Message */}
           {dateRangeError && (

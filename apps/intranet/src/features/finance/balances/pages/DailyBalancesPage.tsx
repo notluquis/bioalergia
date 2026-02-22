@@ -1,4 +1,15 @@
-import { Alert, Button, Card, Input, Label, ListBox, Select, TextField } from "@heroui/react";
+import {
+  Alert,
+  Button,
+  Card,
+  DateField,
+  DateRangePicker,
+  Label,
+  ListBox,
+  RangeCalendar,
+  Select,
+} from "@heroui/react";
+import { parseDate } from "@internationalized/date";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
@@ -70,14 +81,36 @@ export function DailyBalances() {
           <Card>
             <Card.Content>
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-[1fr_1fr_1fr_auto]">
-                <TextField className="w-full">
-                  <Label>Desde</Label>
-                  <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
-                </TextField>
-                <TextField className="w-full">
-                  <Label>Hasta</Label>
-                  <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
-                </TextField>
+                <DateRangePicker
+                  className="w-full"
+                  onChange={(value) => {
+                    if (!value) {
+                      return;
+                    }
+                    setFrom(value.start.toString());
+                    setTo(value.end.toString());
+                  }}
+                  value={from && to ? { end: parseDate(to), start: parseDate(from) } : undefined}
+                >
+                  <Label>Rango de fechas</Label>
+                  <DateField.Group>
+                    <DateField.Input slot="start">
+                      {(segment) => <DateField.Segment segment={segment} />}
+                    </DateField.Input>
+                    <DateRangePicker.RangeSeparator />
+                    <DateField.Input slot="end">
+                      {(segment) => <DateField.Segment segment={segment} />}
+                    </DateField.Input>
+                    <DateField.Suffix>
+                      <DateRangePicker.Trigger>
+                        <DateRangePicker.TriggerIndicator />
+                      </DateRangePicker.Trigger>
+                    </DateField.Suffix>
+                  </DateField.Group>
+                  <DateRangePicker.Popover>
+                    <RangeCalendar visibleDuration={{ months: 2 }} />
+                  </DateRangePicker.Popover>
+                </DateRangePicker>
                 <Select
                   className="w-full"
                   value={quickRange}

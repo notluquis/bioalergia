@@ -1,4 +1,5 @@
-import { Label, ListBox, Select } from "@heroui/react";
+import { Calendar, DateField, DatePicker, Label, ListBox, Select } from "@heroui/react";
+import { parseDate } from "@internationalized/date";
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 
@@ -60,15 +61,49 @@ export function SchedulingSection({
           </ListBox>
         </Select.Popover>
       </Select>
-      <Input
-        label="Fecha de inicio"
-        onChange={(event: ChangeEvent<HTMLInputElement>) => {
-          onChange("startDate", dayjs(event.target.value).toDate());
+      <DatePicker
+        isRequired
+        onChange={(value) => {
+          if (!value) {
+            return;
+          }
+          onChange("startDate", dayjs(value.toString(), "YYYY-MM-DD").toDate());
         }}
-        required
-        type="date"
-        value={startDate ? dayjs(startDate).format("YYYY-MM-DD") : ""}
-      />
+        value={startDate ? parseDate(dayjs(startDate).format("YYYY-MM-DD")) : undefined}
+      >
+        <Label>Fecha de inicio</Label>
+        <DateField.Group>
+          <DateField.Input>{(segment) => <DateField.Segment segment={segment} />}</DateField.Input>
+          <DateField.Suffix>
+            <DatePicker.Trigger>
+              <DatePicker.TriggerIndicator />
+            </DatePicker.Trigger>
+          </DateField.Suffix>
+        </DateField.Group>
+        <DatePicker.Popover>
+          <Calendar aria-label="Fecha de inicio">
+            <Calendar.Header>
+              <Calendar.YearPickerTrigger>
+                <Calendar.YearPickerTriggerHeading />
+                <Calendar.YearPickerTriggerIndicator />
+              </Calendar.YearPickerTrigger>
+              <Calendar.NavButton slot="previous" />
+              <Calendar.NavButton slot="next" />
+            </Calendar.Header>
+            <Calendar.Grid>
+              <Calendar.GridHeader>
+                {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
+              </Calendar.GridHeader>
+              <Calendar.GridBody>{(date) => <Calendar.Cell date={date} />}</Calendar.GridBody>
+            </Calendar.Grid>
+            <Calendar.YearPickerGrid>
+              <Calendar.YearPickerGridBody>
+                {({ year }) => <Calendar.YearPickerCell year={year} />}
+              </Calendar.YearPickerGridBody>
+            </Calendar.YearPickerGrid>
+          </Calendar>
+        </DatePicker.Popover>
+      </DatePicker>
 
       <Input
         disabled={recurrenceType === "ONE_OFF" || frequency === "ONCE"}

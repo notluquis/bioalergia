@@ -1,4 +1,13 @@
-import { Card, Label, ListBox, Select } from "@heroui/react";
+import {
+  Card,
+  DateField,
+  DateRangePicker,
+  Label,
+  ListBox,
+  RangeCalendar,
+  Select,
+} from "@heroui/react";
+import { parseDate } from "@internationalized/date";
 import { DataTable } from "@/components/data-table/DataTable";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
@@ -82,25 +91,36 @@ export function ParticipantInsightsPage() {
                 </ListBox>
               </Select.Popover>
             </Select>
-            <Input
-              disabled={quickMonth !== "custom"}
-              label="Desde"
-              onChange={(e) => {
-                setFrom(e.target.value);
+            <DateRangePicker
+              isDisabled={quickMonth !== "custom"}
+              onChange={(value) => {
+                if (!value) {
+                  return;
+                }
+                setFrom(value.start.toString());
+                setTo(value.end.toString());
               }}
-              type="date"
-              value={from}
-            />
-
-            <Input
-              disabled={quickMonth !== "custom"}
-              label="Hasta"
-              onChange={(e) => {
-                setTo(e.target.value);
-              }}
-              type="date"
-              value={to}
-            />
+              value={from && to ? { end: parseDate(to), start: parseDate(from) } : undefined}
+            >
+              <Label>Rango personalizado</Label>
+              <DateField.Group>
+                <DateField.Input slot="start">
+                  {(segment) => <DateField.Segment segment={segment} />}
+                </DateField.Input>
+                <DateRangePicker.RangeSeparator />
+                <DateField.Input slot="end">
+                  {(segment) => <DateField.Segment segment={segment} />}
+                </DateField.Input>
+                <DateField.Suffix>
+                  <DateRangePicker.Trigger>
+                    <DateRangePicker.TriggerIndicator />
+                  </DateRangePicker.Trigger>
+                </DateField.Suffix>
+              </DateField.Group>
+              <DateRangePicker.Popover>
+                <RangeCalendar visibleDuration={{ months: 2 }} />
+              </DateRangePicker.Popover>
+            </DateRangePicker>
 
             <div className="flex justify-end lg:col-span-4">
               <Button disabled={detailLoading} isLoading={detailLoading} type="submit">

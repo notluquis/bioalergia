@@ -7,13 +7,15 @@ import {
   Alert,
   Button,
   Card,
-  Input,
+  DateField,
+  DateRangePicker,
   Label,
   ListBox,
+  RangeCalendar,
   Select,
   Spinner,
-  TextField,
 } from "@heroui/react";
+import { parseDate } from "@internationalized/date";
 import dayjs from "dayjs";
 import { ArrowDown, ArrowUp, BarChart3, Calendar, TrendingUp } from "lucide-react";
 import { useState } from "react";
@@ -132,34 +134,38 @@ export function FinanzasStatsPage() {
         className="grid gap-4 rounded-2xl border border-default-100 bg-background p-6 shadow-sm sm:grid-cols-5"
         onSubmit={handleSubmit}
       >
-        <div className="form-control">
-          <TextField className="w-full">
-            <Label className="font-medium text-xs">Desde</Label>
-            <Input
-              id="from-date"
-              onChange={(e) => {
-                setFrom(e.target.value);
-                setQuickRange("custom");
-              }}
-              type="date"
-              value={from}
-            />
-          </TextField>
-        </div>
-
-        <div className="form-control">
-          <TextField className="w-full">
-            <Label className="font-medium text-xs">Hasta</Label>
-            <Input
-              id="to-date"
-              onChange={(e) => {
-                setTo(e.target.value);
-                setQuickRange("custom");
-              }}
-              type="date"
-              value={to}
-            />
-          </TextField>
+        <div className="form-control sm:col-span-2">
+          <DateRangePicker
+            className="w-full"
+            onChange={(value) => {
+              if (!value) {
+                return;
+              }
+              setFrom(value.start.toString());
+              setTo(value.end.toString());
+              setQuickRange("custom");
+            }}
+            value={from && to ? { end: parseDate(to), start: parseDate(from) } : undefined}
+          >
+            <Label className="font-medium text-xs">Rango de fechas</Label>
+            <DateField.Group>
+              <DateField.Input slot="start">
+                {(segment) => <DateField.Segment segment={segment} />}
+              </DateField.Input>
+              <DateRangePicker.RangeSeparator />
+              <DateField.Input slot="end">
+                {(segment) => <DateField.Segment segment={segment} />}
+              </DateField.Input>
+              <DateField.Suffix>
+                <DateRangePicker.Trigger>
+                  <DateRangePicker.TriggerIndicator />
+                </DateRangePicker.Trigger>
+              </DateField.Suffix>
+            </DateField.Group>
+            <DateRangePicker.Popover>
+              <RangeCalendar visibleDuration={{ months: 2 }} />
+            </DateRangePicker.Popover>
+          </DateRangePicker>
         </div>
 
         <div className="form-control">

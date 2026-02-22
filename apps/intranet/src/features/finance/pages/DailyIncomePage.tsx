@@ -1,6 +1,16 @@
 import type { Event } from "@finanzas/db/models";
 import { schema as schemaLite } from "@finanzas/db/schema-lite";
-import { Alert, Card, Chip, Input, Skeleton } from "@heroui/react";
+import {
+  Alert,
+  Card,
+  Chip,
+  DateField,
+  DateRangePicker,
+  Label,
+  RangeCalendar,
+  Skeleton,
+} from "@heroui/react";
+import { parseDate } from "@internationalized/date";
 import { useClientQueries } from "@zenstackhq/tanstack-query/react";
 import dayjs from "dayjs";
 import { useState } from "react";
@@ -45,23 +55,36 @@ export function DailyIncomePage() {
     <div className="space-y-6 p-6 md:p-8">
       <div className="flex items-center justify-between">
         <h1 className="font-bold text-2xl">Detalle Diario de Ingresos</h1>
-        <div className="flex items-center gap-2">
-          <Input
-            type="date"
-            value={from}
-            onChange={(e) => setFrom(e.target.value)}
-            className="w-40"
-            aria-label="Fecha inicio"
-          />
-          <span className="text-default-400">-</span>
-          <Input
-            type="date"
-            value={to}
-            onChange={(e) => setTo(e.target.value)}
-            className="w-40"
-            aria-label="Fecha fin"
-          />
-        </div>
+        <DateRangePicker
+          className="w-full max-w-sm"
+          onChange={(value) => {
+            if (!value) {
+              return;
+            }
+            setFrom(value.start.toString());
+            setTo(value.end.toString());
+          }}
+          value={from && to ? { end: parseDate(to), start: parseDate(from) } : undefined}
+        >
+          <Label className="sr-only">Rango de fechas</Label>
+          <DateField.Group>
+            <DateField.Input slot="start">
+              {(segment) => <DateField.Segment segment={segment} />}
+            </DateField.Input>
+            <DateRangePicker.RangeSeparator />
+            <DateField.Input slot="end">
+              {(segment) => <DateField.Segment segment={segment} />}
+            </DateField.Input>
+            <DateField.Suffix>
+              <DateRangePicker.Trigger>
+                <DateRangePicker.TriggerIndicator />
+              </DateRangePicker.Trigger>
+            </DateField.Suffix>
+          </DateField.Group>
+          <DateRangePicker.Popover>
+            <RangeCalendar visibleDuration={{ months: 2 }} />
+          </DateRangePicker.Popover>
+        </DateRangePicker>
       </div>
 
       <div className="space-y-4">

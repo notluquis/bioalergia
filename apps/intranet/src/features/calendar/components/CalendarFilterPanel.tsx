@@ -3,7 +3,15 @@
  * Redesigned to match "Filtrar Vistas" spec using HeroUI v3
  */
 
-import { Button, DateField, Input, Label, TextField } from "@heroui/react";
+import {
+  Button,
+  DateField,
+  DateRangePicker,
+  Input,
+  Label,
+  RangeCalendar,
+  TextField,
+} from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { RotateCcw } from "lucide-react";
 import React, { type SubmitEvent } from "react";
@@ -124,32 +132,42 @@ export function CalendarFilterPanel({
             <span className="mb-1.5 block font-semibold text-[10px] text-default-600 uppercase tracking-wider">
               Rango de Fechas
             </span>
-            <div className="flex gap-2">
-              <DateField
-                className="flex-1"
-                aria-label="Desde"
-                value={filters.from ? parseDate(filters.from) : undefined}
-                onChange={(d) => onFilterChange("from", d?.toString() ?? "")}
-              >
-                <DateField.Group>
-                  <DateField.Input>
-                    {(segment) => <DateField.Segment segment={segment} />}
-                  </DateField.Input>
-                </DateField.Group>
-              </DateField>
-              <DateField
-                className="flex-1"
-                aria-label="Hasta"
-                value={filters.to ? parseDate(filters.to) : undefined}
-                onChange={(d) => onFilterChange("to", d?.toString() ?? "")}
-              >
-                <DateField.Group>
-                  <DateField.Input>
-                    {(segment) => <DateField.Segment segment={segment} />}
-                  </DateField.Input>
-                </DateField.Group>
-              </DateField>
-            </div>
+            <DateRangePicker
+              className="w-full"
+              onChange={(value) => {
+                if (!value) {
+                  onFilterChange("from", "");
+                  onFilterChange("to", "");
+                  return;
+                }
+                onFilterChange("from", value.start.toString());
+                onFilterChange("to", value.end.toString());
+              }}
+              value={
+                filters.from && filters.to
+                  ? { end: parseDate(filters.to), start: parseDate(filters.from) }
+                  : undefined
+              }
+            >
+              <Label className="sr-only">Rango de fechas</Label>
+              <DateField.Group>
+                <DateField.Input slot="start">
+                  {(segment) => <DateField.Segment segment={segment} />}
+                </DateField.Input>
+                <DateRangePicker.RangeSeparator />
+                <DateField.Input slot="end">
+                  {(segment) => <DateField.Segment segment={segment} />}
+                </DateField.Input>
+                <DateField.Suffix>
+                  <DateRangePicker.Trigger>
+                    <DateRangePicker.TriggerIndicator />
+                  </DateRangePicker.Trigger>
+                </DateField.Suffix>
+              </DateField.Group>
+              <DateRangePicker.Popover>
+                <RangeCalendar visibleDuration={{ months: 2 }} />
+              </DateRangePicker.Popover>
+            </DateRangePicker>
           </div>
         )}
 
