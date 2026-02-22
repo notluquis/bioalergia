@@ -170,13 +170,15 @@ export function ClassificationRow({
           <form.Field name={`entries[${index}].amountPaid`}>
             {(field: { handleChange: (v: string) => void; state: { value: null | string } }) => (
               <Input
+                helper={isNoShowLocked ? 'Evento "no asiste": pago forzado a 0.' : undefined}
+                disabled={isNoShowLocked}
                 label="Monto pagado"
                 onChange={(e) => {
                   field.handleChange(e.target.value);
                 }}
                 placeholder="50000"
                 type="text"
-                value={field.state.value ?? ""}
+                value={isNoShowLocked ? "0" : (field.state.value ?? "")}
               />
             )}
           </form.Field>
@@ -234,21 +236,27 @@ export function ClassificationRow({
 
           <form.Field name={`entries[${index}].attended`}>
             {(field: { handleChange: (v: boolean) => void; state: { value: boolean } }) => (
-              <div className="flex items-center gap-2 pt-2">
-                <Checkbox
-                  aria-label="Asistió / llegó"
-                  isDisabled={isNoShowLocked}
-                  isSelected={Boolean(field.state.value)}
-                  onChange={field.handleChange}
-                  variant="secondary"
-                >
-                  <Checkbox.Control>
-                    <Checkbox.Indicator />
-                  </Checkbox.Control>
-                </Checkbox>
-                <span className="text-sm">Asistió / llegó</span>
+              <div className="flex flex-col gap-1 pt-2">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    aria-label="Asistió / llegó"
+                    isDisabled={isNoShowLocked}
+                    isSelected={isNoShowLocked ? false : Boolean(field.state.value)}
+                    onChange={field.handleChange}
+                    variant="secondary"
+                  >
+                    <Checkbox.Control>
+                      <Checkbox.Indicator />
+                    </Checkbox.Control>
+                  </Checkbox>
+                  <span className="text-sm">
+                    {isNoShowLocked ? "No asistió / no llegó" : "Asistió / llegó"}
+                  </span>
+                </div>
                 {isNoShowLocked && (
-                  <span className="text-default-500 text-xs">(bloqueado por "no asiste")</span>
+                  <span className="pl-8 text-default-500 text-xs">
+                    Bloqueado por detección automática de no-show.
+                  </span>
                 )}
               </div>
             )}

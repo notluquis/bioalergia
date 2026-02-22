@@ -155,7 +155,7 @@ const CONSULTA_PATTERNS = [
  * - enviar roxair: "enviar roxair a Santino (pagado)"
  */
 const ROXAIR_PATTERNS = [/\broxair\b/i, /\bretira\s+roxair\b/i, /\benviar\s+roxair\b/i];
-const ROXAIR_FIXED_AMOUNT = 160000;
+const ROXAIR_DEFAULT_AMOUNT = 150000;
 
 /** Patterns for "Servicio de inyección" (Patient brings med or specific injection service) */
 const INJECTION_PATTERNS = [
@@ -199,7 +199,7 @@ export const IGNORE_PATTERNS = [
 ];
 
 /** Patterns for attendance confirmation */
-const ATTENDED_PATTERNS = [/\bllego\b/i, /\basist[ií]o\b/i];
+const ATTENDED_PATTERNS = [/\blleg[oó]\b/i, /\basist[ií]o\b/i];
 /** Patterns for explicit no-show / non-attendance */
 const NOT_ATTENDED_PATTERNS = [
   /\bno\s+viene\b/i,
@@ -280,6 +280,9 @@ const SLASH_FORMAT_PATTERN = /^\d+\s*\/\s*\d+$/; // Detect "paid/expected" forma
 const PAGADO_KEYWORD_PATTERN = /pagado/i; // Detect "pagado" keyword in parenthesized amounts
 const AMOUNT_AT_END_PATTERN = /\s(\d{2,3})\s*$/; // Detect amount at end of text (fallback)
 const DATE_PATTERN = /\b\d{1,2}[-]\d{1,2}\b/g; // Date pattern to remove from amount content
+const AMOUNT_CONTEXT_PATTERN =
+  /\b(?:test|examen(?:es)?|ambient(?:e|al)|consulta|control|parche)\s*(?:de\s+parche)?\s*(\d{2,3})\b/gi;
+const READY_KEYWORD_PATTERN = /\blisto\b/i;
 
 /** Dosage extraction helper patterns */
 const CLUSTOID_DOSAGE_PATTERN = /clust(?:oid)?\s*(0[.,]\d+)/i; // "clustoid0,3" format
@@ -479,6 +482,24 @@ function applyKeywordFallback(text: string, amounts: AmountExtraction) {
   }
 }
 
+function applyContextualAmountFallback(text: string, amounts: AmountExtraction) {
+  if (amounts.amountExpected != null) {
+    return;
+  }
+
+  for (
+    let match = AMOUNT_CONTEXT_PATTERN.exec(text);
+    match !== null;
+    match = AMOUNT_CONTEXT_PATTERN.exec(text)
+  ) {
+    const amount = normalizeAmountRaw(match[1]);
+    if (amount != null) {
+      amounts.amountExpected = amount;
+      break;
+    }
+  }
+}
+
 function applyEndAmountFallback(text: string, amounts: AmountExtraction) {
   if (amounts.amountExpected != null) {
     return;
@@ -525,6 +546,7 @@ function extractAmounts(summary: string, description: string) {
   applyParenAmounts(text, amounts);
   applyTypoAndMlFallback(text, amounts);
   applyKeywordFallback(text, amounts);
+  applyContextualAmountFallback(text, amounts);
   applyEndAmountFallback(text, amounts);
   applyPaidPattern(text, amounts);
 
@@ -551,8 +573,13 @@ function refineAmounts(
   const isPendingConfirmation = matchesAny(text, PENDING_CONFIRMATION_PATTERNS);
   const isConfirmed = matchesAny(text, MONEY_CONFIRMED_PATTERNS);
 
-  // Explicit no-show or pending confirmation means no payment yet.
-  if ((isNotAttended || isPendingConfirmation) && amounts.amountPaid != null) {
+  // Explicit no-show means no payment (hard business rule).
+  if (isNotAttended) {
+    return { ...amounts, amountPaid: 0 };
+  }
+
+  // Pending confirmation means no payment yet.
+  if (isPendingConfirmation && amounts.amountPaid != null) {
     return { ...amounts, amountPaid: null };
   }
 
@@ -722,6 +749,7 @@ export function parseCalendarMetadata(input: {
   description?: string | null;
 }): ParsedCalendarMetadata {
   const { summary, description } = CalendarEventTextSchema.parse(input);
+  const text = `${summary} ${description}`;
 
   const rawAmounts = extractAmounts(summary, description);
   const amounts = refineAmounts(rawAmounts, summary, description);
@@ -729,9 +757,11 @@ export function parseCalendarMetadata(input: {
   const attended = detectAttendance(summary, description);
   const dosage = extractDosage(summary, description);
   const treatmentStage = detectTreatmentStage(summary, description);
-  const controlIncluded = matchesAny(`${summary} ${description}`, CONTROL_PATTERNS);
-  const isDomicilio = matchesAny(`${summary} ${description}`, DOMICILIO_PATTERNS);
+  const controlIncluded = matchesAny(text, CONTROL_PATTERNS);
+  const isDomicilio = matchesAny(text, DOMICILIO_PATTERNS);
   const isRoxair = category === "Roxair";
+  const hasReadyKeyword = READY_KEYWORD_PATTERN.test(text);
+  const finalAttended = attended ?? (isRoxair && hasReadyKeyword ? true : null);
 
   // Logic: Dosage and Treatment Stage only apply to "Tratamiento subcutáneo"
   const isSubcut = category === "Tratamiento subcutáneo";
@@ -750,14 +780,21 @@ export function parseCalendarMetadata(input: {
     }
   }
 
-  const finalAmountExpected = isRoxair ? ROXAIR_FIXED_AMOUNT : amounts.amountExpected;
-  const finalAmountPaid = isRoxair ? ROXAIR_FIXED_AMOUNT : amounts.amountPaid;
+  const finalAmountExpected = isRoxair
+    ? (amounts.amountExpected ?? ROXAIR_DEFAULT_AMOUNT)
+    : amounts.amountExpected;
+  const roxairLikelyPaid =
+    isRoxair && (finalAttended === true || matchesAny(text, MONEY_CONFIRMED_PATTERNS));
+  const finalAmountPaid =
+    finalAttended === false
+      ? 0
+      : (amounts.amountPaid ?? (roxairLikelyPaid ? finalAmountExpected : null));
 
   return {
     category,
     amountExpected: finalAmountExpected,
     amountPaid: finalAmountPaid,
-    attended,
+    attended: finalAttended,
     dosageValue: isSubcut && dosage ? dosage.value : null,
     dosageUnit: isSubcut && dosage ? dosage.unit : null,
     treatmentStage: finalTreatmentStage,

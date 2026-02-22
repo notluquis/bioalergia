@@ -13,6 +13,8 @@ export interface ParsedPayload {
 }
 
 const SUBCUTANEOUS_CATEGORY = "Tratamiento subcutáneo";
+const ROXAIR_CATEGORY = "Roxair";
+const ROXAIR_DEFAULT_AMOUNT = 150000;
 const NOT_ATTENDED_PATTERNS = [
   /\bno\s+viene\b/i,
   /\bno\s+vino\b/i,
@@ -38,12 +40,30 @@ function isSubcutaneousCategory(value: null | string | undefined): boolean {
   return normalizeChoiceValue(value) === normalizeChoiceValue(SUBCUTANEOUS_CATEGORY);
 }
 
+function isRoxairCategory(value: null | string | undefined): boolean {
+  if (!value) {
+    return false;
+  }
+  return normalizeChoiceValue(value) === normalizeChoiceValue(ROXAIR_CATEGORY);
+}
+
 export function buildDefaultEntry(event: CalendarUnclassifiedEvent) {
+  const resolvedCategory = event.category?.trim() ?? "";
+  const roxairDefaultAmount =
+    isRoxairCategory(resolvedCategory) && event.amountExpected == null
+      ? ROXAIR_DEFAULT_AMOUNT
+      : null;
+
   return {
-    amountExpected: event.amountExpected == null ? "" : String(event.amountExpected),
+    amountExpected:
+      event.amountExpected == null
+        ? roxairDefaultAmount == null
+          ? ""
+          : String(roxairDefaultAmount)
+        : String(event.amountExpected),
     amountPaid: event.amountPaid == null ? "" : String(event.amountPaid),
     attended: event.attended ?? false,
-    category: event.category ? event.category.trim() : "",
+    category: resolvedCategory,
     dosageValue: event.dosageValue != null ? String(event.dosageValue) : "",
     dosageUnit: event.dosageUnit ?? "",
     treatmentStage: event.treatmentStage ?? "",
@@ -59,9 +79,14 @@ export function buildPayload(
   const resolvedCategory = isSubcutaneousCategory(resolvedCategoryRaw)
     ? SUBCUTANEOUS_CATEGORY
     : resolvedCategoryRaw;
-  const amountExpected = parseAmountInput(entry.amountExpected) ?? event.amountExpected ?? null;
-  const amountPaid = parseAmountInput(entry.amountPaid) ?? event.amountPaid ?? null;
-  const attended = entry.attended;
+  const isRoxair = isRoxairCategory(resolvedCategory);
+  const isLockedNoShow = isExplicitNoShowEvent(event);
+  const attended = isLockedNoShow ? false : entry.attended;
+  const amountExpectedRaw = parseAmountInput(entry.amountExpected) ?? event.amountExpected ?? null;
+  const amountExpected =
+    amountExpectedRaw == null && isRoxair ? ROXAIR_DEFAULT_AMOUNT : amountExpectedRaw;
+  const amountPaidRaw = parseAmountInput(entry.amountPaid) ?? event.amountPaid ?? null;
+  const amountPaid = attended === false ? 0 : amountPaidRaw;
 
   // Parse dosageValue from string input
   const dosageValue = entry.dosageValue?.trim()
