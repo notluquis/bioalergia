@@ -106,6 +106,7 @@ function CalendarDailyPage() {
           amountExpected={selectedDayEntry.amountExpected}
           amountPaid={selectedDayEntry.amountPaid}
           className="mt-4"
+          events={selectedDayEntry.events}
           eventsCount={selectedDayEntry.total}
         />
       )}
