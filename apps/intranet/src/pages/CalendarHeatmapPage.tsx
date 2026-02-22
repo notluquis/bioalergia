@@ -3,6 +3,7 @@ import { getRouteApi } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { StatCard } from "@/components/ui/StatCard";
 import { CalendarFiltersPopover } from "@/features/calendar/components/CalendarFiltersPopover";
 import { DailyEventCard } from "@/features/calendar/components/DailyEventCard";
 import { HeatmapMonth } from "@/features/calendar/components/HeatmapMonth";
@@ -129,6 +130,50 @@ function CalendarHeatmapPage() {
   }, [daily?.days, selectedDate]);
   const selectedDayLabel = selectedDate ? dayjs(selectedDate).format("dddd DD MMMM YYYY") : "";
 
+  const kpis = useMemo(() => {
+    const totalEvents = summary?.totals.events ?? 0;
+    const amountExpected = summary?.totals.amountExpected ?? 0;
+    const amountPaid = summary?.totals.amountPaid ?? 0;
+    const collectionRate = amountExpected > 0 ? (amountPaid / amountExpected) * 100 : 0;
+    const uncategorizedEvents =
+      summary?.available.categories
+        .filter((entry) => !entry.category || entry.category.trim() === "")
+        .reduce((sum, entry) => sum + entry.total, 0) ?? 0;
+
+    const noShowCount =
+      daily?.days.reduce(
+        (sum, day) => sum + day.events.filter((event) => event.attended === false).length,
+        0,
+      ) ?? 0;
+
+    const today = dayjs().startOf("day");
+    let pastOutstanding = 0;
+    let futureOutstanding = 0;
+    for (const entry of summary?.aggregates.byDate ?? []) {
+      const date = dayjs.utc(entry.date).startOf("day");
+      const outstanding = Math.max((entry.amountExpected ?? 0) - (entry.amountPaid ?? 0), 0);
+      if (date.isBefore(today, "day")) {
+        pastOutstanding += outstanding;
+      } else {
+        futureOutstanding += outstanding;
+      }
+    }
+
+    const avgTicket = totalEvents > 0 ? amountExpected / totalEvents : 0;
+
+    return {
+      amountExpected,
+      amountPaid,
+      avgTicket,
+      collectionRate,
+      futureOutstanding,
+      noShowCount,
+      pastOutstanding,
+      totalEvents,
+      uncategorizedEvents,
+    };
+  }, [summary, daily?.days]);
+
   return (
     <section className="space-y-4">
       <Surface
@@ -181,6 +226,73 @@ function CalendarHeatmapPage() {
           showDateRange
         />
       </Surface>
+
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <StatCard
+          size="sm"
+          subtitle="Total del rango seleccionado"
+          title="Eventos"
+          tone="primary"
+          value={numberFormatter.format(kpis.totalEvents)}
+        />
+        <StatCard
+          size="sm"
+          subtitle="No asistió / no llegó"
+          title="No Show"
+          tone={kpis.noShowCount > 0 ? "warning" : "default"}
+          value={numberFormatter.format(kpis.noShowCount)}
+        />
+        <StatCard
+          size="sm"
+          subtitle="Sin categoría"
+          title="Sin Clasificar"
+          tone={kpis.uncategorizedEvents > 0 ? "warning" : "default"}
+          value={numberFormatter.format(kpis.uncategorizedEvents)}
+        />
+        <StatCard
+          size="sm"
+          subtitle="Pagado / esperado"
+          suffix="%"
+          title="Cobranza"
+          tone={
+            kpis.collectionRate >= 90 ? "success" : kpis.collectionRate >= 70 ? "warning" : "error"
+          }
+          value={kpis.collectionRate.toFixed(1)}
+        />
+        <StatCard
+          size="sm"
+          subtitle="Esperado por evento"
+          title="Ticket Prom."
+          value={currencyFormatter.format(kpis.avgTicket)}
+        />
+        <StatCard
+          size="sm"
+          subtitle="Esperado - pagado (pasado)"
+          title="No Cobrado"
+          tone={kpis.pastOutstanding > 0 ? "warning" : "default"}
+          value={currencyFormatter.format(kpis.pastOutstanding)}
+        />
+        <StatCard
+          size="sm"
+          subtitle="Desde hoy en adelante"
+          title="Restante"
+          tone="primary"
+          value={currencyFormatter.format(kpis.futureOutstanding)}
+        />
+        <StatCard
+          size="sm"
+          subtitle="Total del rango"
+          title="Monto Esperado"
+          value={currencyFormatter.format(kpis.amountExpected)}
+        />
+        <StatCard
+          size="sm"
+          subtitle="Total del rango"
+          title="Monto Pagado"
+          tone="success"
+          value={currencyFormatter.format(kpis.amountPaid)}
+        />
+      </div>
 
       <Card variant="secondary">
         <Card.Header className="pb-2">

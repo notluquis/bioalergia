@@ -12,51 +12,54 @@ export function FormattedEventDescription({
   text,
 }: Readonly<FormattedEventDescriptionProps>) {
   const plainContent = (() => {
-    let html = text;
-
-    // Preserve line breaks from calendar descriptions
-    html = html.replace(/\r\n|\n/g, "<br />");
-
-    // 1. Highlight common keys for better readability
-    const keysToBold = [
-      "Edad",
-      "RUT",
-      "Motivo de la consulta",
-      "Tratamiento usado",
-      "Previsión",
-      "Comuna",
-      "Contacto",
-      "Fono",
-    ];
-
-    // eslint-disable-next-line security/detect-non-literal-regexp
-    const pattern = new RegExp(`(${keysToBold.join("|")}):`, "gi");
-    html = html.replaceAll(pattern, '<span class="font-bold text-foreground-600">$1:</span>');
-
-    // 2. Highlight and separate DATOS BOLETA specifically
-    html = html.replaceAll(
-      "DATOS BOLETA",
-      '<div class="mt-3 mb-1 font-bold text-foreground uppercase tracking-wide border-t border-default-200 pt-2">Datos Boleta</div>',
-    );
-
-    // 3. Remove empty spans (cleanup)
-    html = html.replaceAll(/<span>\s*<\/span>/g, "");
-
-    // 4. Sanitize HTML first
-    const sanitizedHtml = DOMPurify.sanitize(html, {
-      ALLOWED_ATTR: ["class", "href", "target", "rel"],
-      ALLOWED_TAGS: ["span", "div", "a", "br", "strong", "em", "ul", "li"],
+    const sanitizedHtml = DOMPurify.sanitize(text, {
+      ALLOWED_ATTR: ["href", "target", "rel"],
+      ALLOWED_TAGS: ["a", "br", "div", "em", "li", "ol", "p", "span", "strong", "ul"],
     });
 
-    // 5. Convert to plain text while preserving basic line breaks
-    const withLineBreaks = sanitizedHtml
+    // Convert common block tags to line breaks before stripping the rest.
+    const withBreaks = sanitizedHtml
       .replaceAll(/<br\s*\/?>/gi, "\n")
-      .replaceAll(/<\/div>/gi, "\n");
+      .replaceAll(/<\/?(?:div|p|ul|ol)[^>]*>/gi, "\n")
+      .replaceAll(/<\/li>/gi, "\n")
+      .replaceAll(/<li[^>]*>/gi, "- ");
 
-    return DOMPurify.sanitize(withLineBreaks, {
-      ALLOWED_ATTR: [],
-      ALLOWED_TAGS: [],
-    });
+    // Strip all remaining HTML tags.
+    let plain = withBreaks.replaceAll(/<[^>]+>/g, "");
+
+    // Decode non-breaking spaces and common HTML entities.
+    plain = plain
+      .replaceAll(/&nbsp;|&#160;/gi, " ")
+      .replaceAll(/&amp;/gi, "&")
+      .replaceAll(/&lt;/gi, "<")
+      .replaceAll(/&gt;/gi, ">")
+      .replaceAll(/&quot;/gi, '"')
+      .replaceAll(/&#39;/gi, "'");
+
+    // Promote bullet-like "-Campo" segments that were glued by many spaces.
+    plain = plain.replaceAll(/\s+-(?=[A-Za-zÁÉÍÓÚÑáéíóúñ])/g, "\n-");
+
+    const normalizedLines = plain
+      .replaceAll(/\r\n?/g, "\n")
+      .split("\n")
+      .map((line) =>
+        line
+          .replaceAll(/\u00A0/g, " ")
+          .replaceAll(/[ \t]+/g, " ")
+          .trim(),
+      );
+
+    // Keep at most one consecutive blank line.
+    const compactLines: string[] = [];
+    for (const line of normalizedLines) {
+      const prev = compactLines.at(-1) ?? "";
+      if (line === "" && prev === "") {
+        continue;
+      }
+      compactLines.push(line);
+    }
+
+    return compactLines.join("\n").trim();
   })();
 
   return (

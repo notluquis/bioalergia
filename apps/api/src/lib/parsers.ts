@@ -199,7 +199,11 @@ export const IGNORE_PATTERNS = [
 ];
 
 /** Patterns for attendance confirmation */
-const ATTENDED_PATTERNS = [/\blleg[oó]\b/i, /\basist[ií]o\b/i];
+const ATTENDED_PATTERNS = [
+  /\bll+eg[oóp]\b/i, // llego, lllego, llegp
+  /ll+eg[oóp](?=[a-záéíóúñ])/i, // llegoKatherine
+  /\basist[ií]o\b/i,
+];
 /** Patterns for explicit no-show / non-attendance */
 const NOT_ATTENDED_PATTERNS = [
   /\bno\s+viene\b/i,
@@ -262,10 +266,15 @@ const MONEY_CONFIRMED_PATTERNS = [
 /** Patterns for domicilio (home visit) to mark as paid and track home delivery */
 const DOMICILIO_PATTERNS = [
   /\bdomicilio\b/i,
+  /\bse\s+la\s+lleva\b/i, // "se la lleva"
   /\bse\s+la\s+llevo\b/i, // "se la llevo"
   /\bse\s+la\s+llev[oó]\b/i, // "se la llevo" with accent variations
+  /\bse\s+lo\s+lleva\b/i, // "se lo lleva"
   /\bse\s+lo\s+llevo\b/i, // "se lo llevo" (masculine variant)
   /\bse\s+lo\s+llev[oó]\b/i,
+  /\bse\s+llev[oó]\b/i, // "se llevo ..."
+  /\bse\s+envi[oó]\b/i, // "se envio ..."
+  /\bse\s+envi[oó]\s+pagad[ao]\b/i, // "se envio pagada/o"
 ];
 
 /** Phone number patterns to exclude from amount parsing */
@@ -278,11 +287,14 @@ const PHONE_PATTERNS = [
 /** Amount parsing helper patterns */
 const SLASH_FORMAT_PATTERN = /^\d+\s*\/\s*\d+$/; // Detect "paid/expected" format like "25/50"
 const PAGADO_KEYWORD_PATTERN = /pagado/i; // Detect "pagado" keyword in parenthesized amounts
-const AMOUNT_AT_END_PATTERN = /\s(\d{2,3})\s*$/; // Detect amount at end of text (fallback)
+const AMOUNT_AT_END_PATTERN = /\s(\d{2,3})\s*\)?\s*$/; // Detect amount at end of text, with optional trailing ')'
 const DATE_PATTERN = /\b\d{1,2}[-]\d{1,2}\b/g; // Date pattern to remove from amount content
 const AMOUNT_CONTEXT_PATTERN =
   /\b(?:test|examen(?:es)?|ambient(?:e|al)|consulta|control|parche)\s*(?:de\s+parche)?\s*(\d{2,3})\b/gi;
 const READY_KEYWORD_PATTERN = /\blisto\b/i;
+const ORDINAL_DOSIS_PATTERN =
+  /\b(?:\d{1,2}\s*(?:era|ra|da|ta|va|er|[º°])|primera|segunda|tercera|cuarta|quinta)\b/i;
+const DOSIS_KEYWORD_PATTERN = /\bdosis\b/i;
 
 /** Dosage extraction helper patterns */
 const CLUSTOID_DOSAGE_PATTERN = /clust(?:oid)?\s*(0[.,]\d+)/i; // "clustoid0,3" format
@@ -408,6 +420,11 @@ function applyParenAmounts(text: string, amounts: AmountExtraction) {
   for (let match = parenPattern.exec(text); match !== null; match = parenPattern.exec(text)) {
     let content = match[1];
     if (SLASH_FORMAT_PATTERN.test(content)) {
+      continue;
+    }
+
+    // Ignore ordinal-dose markers like "(1era dosis)" that are not monetary amounts.
+    if (DOSIS_KEYWORD_PATTERN.test(content) && ORDINAL_DOSIS_PATTERN.test(content)) {
       continue;
     }
 
