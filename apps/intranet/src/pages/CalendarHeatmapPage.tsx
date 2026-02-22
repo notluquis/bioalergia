@@ -1,9 +1,10 @@
-import { Card, Surface } from "@heroui/react";
+import { Card, Modal, Surface } from "@heroui/react";
 import { getRouteApi } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CalendarFiltersPopover } from "@/features/calendar/components/CalendarFiltersPopover";
+import { DailyEventCard } from "@/features/calendar/components/DailyEventCard";
 import { HeatmapMonth } from "@/features/calendar/components/HeatmapMonth";
 import { useCalendarEvents } from "@/features/calendar/hooks/use-calendar-events";
 import type { CalendarSummary } from "@/features/calendar/types";
@@ -77,11 +78,14 @@ function CalendarHeatmapPage() {
   const { t } = useTranslation();
   const tc = (key: string, options?: Record<string, unknown>) => t(`calendar.${key}`, options);
 
-  const { appliedFilters, availableCategories, defaults, loading, summary } = useCalendarEvents();
+  const { appliedFilters, availableCategories, daily, defaults, loading, summary } =
+    useCalendarEvents();
 
   // Local state for filter draft
   const [draftFilters, setDraftFilters] = useState(appliedFilters);
   const { isOpen: filtersOpen, set: setFiltersOpen } = useDisclosure(false);
+  const [selectedDate, setSelectedDate] = useState<null | string>(null);
+  const { isOpen: dayDetailOpen, set: setDayDetailOpen } = useDisclosure(false);
 
   // Sync draft with active filters when popover is closed
   React.useEffect(() => {
@@ -114,6 +118,16 @@ function CalendarHeatmapPage() {
 
   const rangeStartLabel = heatmapMonths[0]?.format("MMM YYYY") ?? "—";
   const rangeEndLabel = heatmapMonths.at(-1)?.format("MMM YYYY") ?? "—";
+  const selectedDay = useMemo(() => {
+    if (!selectedDate) {
+      return null;
+    }
+    const matched = daily?.days.find(
+      (day) => dayjs(day.date).format("YYYY-MM-DD") === selectedDate,
+    );
+    return matched ?? null;
+  }, [daily?.days, selectedDate]);
+  const selectedDayLabel = selectedDate ? dayjs(selectedDate).format("dddd DD MMMM YYYY") : "";
 
   return (
     <section className="space-y-4">
@@ -181,6 +195,11 @@ function CalendarHeatmapPage() {
                 key={month.format("YYYY-MM")}
                 maxValue={heatmapMaxValue}
                 month={month}
+                onDayClick={(isoDate) => {
+                  setSelectedDate(isoDate);
+                  setDayDetailOpen(true);
+                }}
+                selectedDate={selectedDate ?? undefined}
                 statsByDate={statsByDate}
               />
             ))}
@@ -196,6 +215,51 @@ function CalendarHeatmapPage() {
           )}
         </Card.Content>
       </Card>
+
+      <Modal.Backdrop isOpen={dayDetailOpen} onOpenChange={setDayDetailOpen} variant="blur">
+        <Modal.Container placement="center" scroll="inside" size="lg">
+          <Modal.Dialog className="w-full max-w-4xl">
+            <Modal.CloseTrigger />
+            <Modal.Header>
+              <Modal.Heading>Detalle diario</Modal.Heading>
+              <p className="text-default-500 text-sm capitalize">{selectedDayLabel}</p>
+            </Modal.Header>
+            <Modal.Body className="space-y-3">
+              {selectedDay ? (
+                <>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-default-600 text-xs">
+                    <span>Eventos: {numberFormatter.format(selectedDay.total)}</span>
+                    <span>Esperado: {currencyFormatter.format(selectedDay.amountExpected)}</span>
+                    <span>Pagado: {currencyFormatter.format(selectedDay.amountPaid)}</span>
+                  </div>
+                  {selectedDay.events.length > 0 ? (
+                    <div className="space-y-2">
+                      {selectedDay.events.map((event) => (
+                        <DailyEventCard
+                          event={event}
+                          key={`${event.eventId}-${event.calendarId}`}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <Card className="border border-default-200" variant="default">
+                      <Card.Content className="py-6 text-center text-default-500 text-sm">
+                        No hay eventos para este día.
+                      </Card.Content>
+                    </Card>
+                  )}
+                </>
+              ) : (
+                <Card className="border border-default-200" variant="default">
+                  <Card.Content className="py-6 text-center text-default-500 text-sm">
+                    No se encontró información diaria para la fecha seleccionada.
+                  </Card.Content>
+                </Card>
+              )}
+            </Modal.Body>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
     </section>
   );
 }

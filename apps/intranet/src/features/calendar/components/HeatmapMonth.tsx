@@ -8,6 +8,8 @@ import { fmtCLP } from "@/lib/format";
 export interface HeatmapMonthProps {
   maxValue: number;
   month: Dayjs;
+  onDayClick?: (isoDate: string) => void;
+  selectedDate?: string;
   statsByDate: Map<
     string,
     {
@@ -84,7 +86,13 @@ interface PaddingCell {
   type: "padding";
 }
 
-function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<HeatmapMonthProps>) {
+function HeatmapMonthComponent({
+  maxValue,
+  month,
+  onDayClick,
+  selectedDate,
+  statsByDate,
+}: Readonly<HeatmapMonthProps>) {
   const [tooltipTrigger, setTooltipTrigger] = useState<"focus" | "hover">("hover");
 
   useEffect(() => {
@@ -212,14 +220,17 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
                 INTENSITY_COLORS[cell.intensity],
                 // Conditional classes
                 {
-                  "cursor-pointer font-semibold": cell.total > 0,
+                  "cursor-pointer font-semibold": cell.total > 0 || !!onDayClick,
                   // TODAY indicator
                   "z-10 shadow-lg shadow-warning/40 ring-2 ring-warning ring-offset-2 ring-offset-content1":
                     cell.isToday,
+                  "ring-2 ring-primary ring-offset-2 ring-offset-content1":
+                    selectedDate === cell.isoDate && !cell.isToday,
                 },
                 !cell.isToday &&
                   "hover:z-10 hover:scale-110 hover:shadow-lg hover:ring-2 hover:ring-primary hover:ring-offset-2 hover:ring-offset-content1",
               )}
+              onPress={() => onDayClick?.(cell.isoDate)}
               size="sm"
               variant="ghost"
             >
@@ -260,6 +271,10 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
                 </div>
               </div>
             ) : null;
+
+          if (onDayClick) {
+            return <div key={cell.key}>{cellButton}</div>;
+          }
 
           if (tooltipTrigger === "focus") {
             if (!cellDetails) {
