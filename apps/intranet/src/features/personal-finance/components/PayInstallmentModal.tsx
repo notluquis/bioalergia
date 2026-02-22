@@ -82,7 +82,7 @@ export function PayInstallmentModal({
           }}
         >
           <Modal.Container placement="center">
-            <Modal.Dialog className="relative w-full max-w-2xl rounded-[28px] bg-background p-6 shadow-2xl max-w-md">
+            <Modal.Dialog className="relative w-full max-w-2xl rounded-[28px] bg-background p-6 shadow-2xl">
               <Modal.Header className="mb-4 font-bold text-primary text-xl">
                 <Modal.Heading>{`Pagar Cuota #${installment.installmentNumber}`}</Modal.Heading>
               </Modal.Header>
