@@ -14,7 +14,7 @@ interface CalendarFiltersPopoverProps extends CalendarFilterPanelProps {
 export function CalendarFiltersPopover({
   isOpen,
   onOpenChange,
-  panelWidthClassName = "w-[min(92vw,520px)]",
+  panelWidthClassName = "w-[min(92vw,500px)]",
   ...panelProps
 }: Readonly<CalendarFiltersPopoverProps>) {
   return (
@@ -25,9 +25,9 @@ export function CalendarFiltersPopover({
           <span className="hidden sm:inline">Filtros</span>
         </Button>
       </Popover.Trigger>
-      <Popover.Content className={cn(panelWidthClassName, "p-0")} offset={8}>
+      <Popover.Content className={cn(panelWidthClassName, "p-0")} offset={6}>
         <div className="rounded-xl bg-content1 shadow-lg ring-1 ring-black/5">
-          <div className="flex items-center justify-between border-default-100 border-b px-4 py-3">
+          <div className="flex items-center justify-between border-default-100 border-b px-3 py-2.5">
             <h3 className="font-semibold text-small">Filtrar Vistas</h3>
           </div>
           <CalendarFilterPanel {...panelProps} variant="plain" />

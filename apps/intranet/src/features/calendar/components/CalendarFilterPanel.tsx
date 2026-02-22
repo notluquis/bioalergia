@@ -87,13 +87,13 @@ export function CalendarFilterPanel({
   // If layout is dropdown, use the new specific vertical design
   if (isDropdownLayout) {
     return (
-      <form onSubmit={handleSubmit} className={cn("space-y-5 p-4", formClassName, className)}>
+      <form onSubmit={handleSubmit} className={cn("space-y-3.5 p-3", formClassName, className)}>
         {/* Categories Select */}
         <div className="space-y-1.5">
           <MultiSelectFilter
             label="Clasificación"
             placeholder="Todas"
-            density="comfortable"
+            density="compact"
             options={availableCategories.map((entry) => ({
               value: entry.category ?? NULL_CATEGORY_VALUE,
               label: entry.category ?? "Sin clasificación",
@@ -109,7 +109,7 @@ export function CalendarFilterPanel({
             <TextField className="w-full">
               <Label>Búsqueda</Label>
               <Input
-                className="h-11 rounded-xl"
+                className="h-9 rounded-lg text-sm"
                 placeholder="Paciente, tratamiento..."
                 value={filters.search ?? ""}
                 variant="secondary"
@@ -143,7 +143,7 @@ export function CalendarFilterPanel({
               }
             >
               <Label className="sr-only">Rango de fechas</Label>
-              <DateField.Group fullWidth variant="secondary">
+              <DateField.Group className="h-9 text-sm" fullWidth variant="secondary">
                 <DateField.Input slot="start">
                   {(segment) => <DateField.Segment segment={segment} />}
                 </DateField.Input>
@@ -165,13 +165,13 @@ export function CalendarFilterPanel({
         )}
 
         {/* Footer Actions */}
-        <div className="flex items-center justify-between pt-2">
+        <div className="flex items-center justify-between pt-1">
           <Button
             type="button"
             variant="ghost"
             size="sm"
             onPress={onReset}
-            className="h-10 rounded-xl px-3 font-medium text-default-400 hover:text-foreground"
+            className="h-9 rounded-lg px-2.5 font-medium text-default-400 hover:text-foreground"
           >
             <RotateCcw size={14} />
             Limpiar
@@ -180,7 +180,8 @@ export function CalendarFilterPanel({
           <Button
             type="submit"
             variant="primary"
-            className="h-10 rounded-xl px-6 font-semibold shadow-md shadow-primary/20"
+            size="sm"
+            className="h-9 rounded-lg px-4 font-semibold shadow-md shadow-primary/20"
           >
             {applyLabel}
           </Button>

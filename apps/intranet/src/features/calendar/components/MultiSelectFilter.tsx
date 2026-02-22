@@ -66,7 +66,7 @@ export function MultiSelectFilter({
       {label && (
         <span
           className={`block font-semibold text-foreground-600 uppercase tracking-wider ${
-            isCompact ? "mb-1 text-[10px]" : "mb-1.5 text-xs"
+            isCompact ? "mb-1 text-[10px]" : "mb-1 text-[10px]"
           }`}
         >
           {label}
@@ -76,7 +76,7 @@ export function MultiSelectFilter({
         <Dropdown.Trigger>
           <Button
             className={`flex w-full min-w-0 items-center justify-between rounded-md border border-default-200 bg-content1/50 px-3 py-2 text-foreground hover:bg-content1 focus:bg-content1 ${
-              isCompact ? "h-9 text-[13px]" : "h-10 text-sm"
+              isCompact ? "h-8 text-[13px]" : "h-9 text-sm"
             }`}
             variant="ghost"
           >
