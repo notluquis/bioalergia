@@ -224,7 +224,7 @@ const INDUCTION_PATTERNS = [
   /\bpr[im]+[er]*a\s*dosis\b/i, // catches primer, primra, prmera
 
   // 2nd-5th dose variants (numeric)
-  /\b[2-5][º°]?(?:da|ra|ta|va|a)?\s*dosis\b/i,
+  /\b[2-5][º°]?(?:era|da|ra|ta|va|a)?\s*dosis\b/i,
 
   // Text variants
   /(?:segunda|tercera|cuarta|quinta)\s*dosis\b/i,
@@ -236,12 +236,17 @@ const MAINTENANCE_PATTERNS = [
   /\bmantencio\b/i, // typo: missing final 'n'
   /\bmant\b/i, // abbreviated
   /\bmensual\b/i, // monthly
+  /\bmesual\b/i, // typo: mensual
+  /\bmensaul\b/i, // typo: mensual
   /\bvacuna\s+mensual\s+clustoid\b/i, // "vacuna mensual clustoid" = maintenance
   // NOTE: Removed "dosis clustoid" - it conflicts with "2da dosis clustoid" which is induction
   /\(\s*50\s*\)/i, // (50) - parenthesized 50 indicates maintenance dose
+  /\(\s*60\s*\)/i, // (60) is also maintenance in local business rule
   /\b50\s*(?:$|\))/i, // "50" at end of text or before closing paren
+  /\b60\s*(?:$|\))/i, // "60" at end of text or before closing paren
   /\brefuerzo\b/i, // refuerzo (booster) = maintenance
 ];
+const DOSE_CLUSTOID_PATTERN = /\bdosis\s+clust(?:oid)?\b/i;
 
 /** Patterns for dosage extraction */
 const DOSAGE_PATTERNS = [
@@ -749,6 +754,11 @@ function detectTreatmentStage(summary: string, description: string): string | nu
     return "Inducción";
   }
 
+  // "dosis clustoid" without ordinal marker defaults to maintenance.
+  if (DOSE_CLUSTOID_PATTERN.test(text) && !ORDINAL_DOSIS_PATTERN.test(text)) {
+    return "Mantención";
+  }
+
   // Maintenance keywords or 0.5 (with or without ml) = Mantención
   if (matchesAny(text, MAINTENANCE_PATTERNS) || HALF_ML_PATTERN.test(text)) {
     return "Mantención";
@@ -800,6 +810,33 @@ export function parseCalendarMetadata(input: {
   const finalAmountExpected = isRoxair
     ? (amounts.amountExpected ?? ROXAIR_DEFAULT_AMOUNT)
     : amounts.amountExpected;
+
+  // Amount-based fallback for subcutaneous events when stage is still unknown:
+  // 50k/60k => maintenance, other positive amounts => induction.
+  if (
+    isSubcut &&
+    finalTreatmentStage === null &&
+    finalAmountExpected != null &&
+    finalAmountExpected > 0
+  ) {
+    finalTreatmentStage =
+      finalAmountExpected === 50000 || finalAmountExpected === 60000 ? "Mantención" : "Inducción";
+  }
+
+  // Maintenance defaults to 0.5 ml when dosage wasn't explicit.
+  const finalDosageValue =
+    isSubcut && finalTreatmentStage === "Mantención" && dosage == null
+      ? 0.5
+      : isSubcut && dosage
+        ? dosage.value
+        : null;
+  const finalDosageUnit =
+    isSubcut && finalTreatmentStage === "Mantención" && dosage == null
+      ? "ml"
+      : isSubcut && dosage
+        ? dosage.unit
+        : null;
+
   const roxairLikelyPaid =
     isRoxair && (finalAttended === true || matchesAny(text, MONEY_CONFIRMED_PATTERNS));
   const finalAmountPaid =
@@ -812,8 +849,8 @@ export function parseCalendarMetadata(input: {
     amountExpected: finalAmountExpected,
     amountPaid: finalAmountPaid,
     attended: finalAttended,
-    dosageValue: isSubcut && dosage ? dosage.value : null,
-    dosageUnit: isSubcut && dosage ? dosage.unit : null,
+    dosageValue: finalDosageValue,
+    dosageUnit: finalDosageUnit,
     treatmentStage: finalTreatmentStage,
     controlIncluded,
     isDomicilio,

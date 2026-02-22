@@ -5,6 +5,7 @@ import {
   DateRangePicker,
   Description,
   Label,
+  Popover,
   Skeleton,
   Spinner,
 } from "@heroui/react";
@@ -257,12 +258,15 @@ export function TreatmentAnalyticsPage() {
   return (
     <div className="mx-auto max-w-7xl space-y-4 px-3 py-3 pb-6 sm:px-4 lg:px-6">
       <AnalyticsHeader
+        dateRangeError={dateRangeError}
+        filters={filters}
         isMonthSelected={isMonthSelected}
         period={period}
         isFilterOpen={isFilterOpen}
         isLoading={isLoading}
         isRefetching={isRefetching}
-        onToggleFilter={() => setIsFilterOpen(!isFilterOpen)}
+        onDateChange={handleDateChange}
+        onToggleFilter={setIsFilterOpen}
         onSetPeriod={handleSetPeriod}
         onSelectMonth={handleMonthSelect}
         onRefresh={handleRefresh}
@@ -274,15 +278,6 @@ export function TreatmentAnalyticsPage() {
         to={resolvedRange.to}
         isMonthSelected={isMonthSelected}
       />
-
-      {isFilterOpen && (
-        <AnalyticsFilters
-          dateRangeError={dateRangeError}
-          filters={filters}
-          onDateChange={handleDateChange}
-          onMonthSelect={handleMonthSelect}
-        />
-      )}
 
       <TreatmentAnalyticsContent
         data={data}
@@ -721,19 +716,25 @@ function AnalyticsHeader({
   isFilterOpen,
   isLoading,
   isRefetching,
+  dateRangeError,
+  filters,
   onToggleFilter,
   onSetPeriod,
   onSelectMonth,
+  onDateChange,
   onRefresh,
 }: {
+  dateRangeError: null | string;
+  filters: TreatmentAnalyticsFilters;
   isFilterOpen: boolean;
   isLoading: boolean;
   isMonthSelected: boolean;
+  onDateChange: (from: string, to: string) => void;
   isRefetching: boolean;
+  onToggleFilter: (open: boolean) => void;
   onRefresh: () => void;
   onSelectMonth: (month: string) => void;
   onSetPeriod: (p: "day" | "week") => void;
-  onToggleFilter: () => void;
   period: "day" | "week" | "month";
 }) {
   const prevMonth = dayjs().subtract(1, "month").format("YYYY-MM");
@@ -763,15 +764,28 @@ function AnalyticsHeader({
               <RefreshCcw className="h-4 w-4" />
             )}
           </Button>
-          <Button
-            isIconOnly
-            variant="ghost"
-            size="sm"
-            onPress={onToggleFilter}
-            className={isFilterOpen ? "bg-primary/10 text-primary" : ""}
-          >
-            <CalendarIcon className="h-4 w-4" />
-          </Button>
+          <Popover isOpen={isFilterOpen} onOpenChange={onToggleFilter}>
+            <Popover.Trigger>
+              <Button
+                isIconOnly
+                variant="ghost"
+                size="sm"
+                className={isFilterOpen ? "bg-primary/10 text-primary" : ""}
+              >
+                <CalendarIcon className="h-4 w-4" />
+              </Button>
+            </Popover.Trigger>
+            <Popover.Content className="w-[min(92vw,38rem)] p-0" offset={8} placement="bottom end">
+              <Popover.Dialog className="p-0">
+                <AnalyticsFilters
+                  dateRangeError={dateRangeError}
+                  filters={filters}
+                  onDateChange={onDateChange}
+                  onMonthSelect={onSelectMonth}
+                />
+              </Popover.Dialog>
+            </Popover.Content>
+          </Popover>
         </div>
       </div>
 
@@ -840,7 +854,7 @@ function AnalyticsFilters({
     onDateChange(from.format("YYYY-MM-DD"), to.format("YYYY-MM-DD"));
   };
   return (
-    <Card className="border-default-100 bg-content2/50">
+    <Card className="border-default-100 bg-content2/50 shadow-none">
       <Card.Content className="space-y-4 p-3 sm:p-4">
         {/* Current Range Indicator */}
         <div className="rounded-lg bg-default-50 p-2.5">
