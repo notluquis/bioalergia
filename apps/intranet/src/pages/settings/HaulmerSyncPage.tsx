@@ -192,11 +192,11 @@ function SyncAllCard({
 
   return (
     <Card className="border-primary-100 bg-primary-50">
-      <div className="space-y-4 p-4">
+      <div className="space-y-3 p-3">
         <div className="flex items-center justify-between">
           <div>
             <span className="block font-semibold text-default-700">Sincronización Masiva</span>
-            <div className="mt-1">
+            <div className="mt-0.5">
               <Description className="text-default-500 text-sm">
                 Datos disponibles: {availablePeriods.sales.length} períodos de ventas +{" "}
                 {availablePeriods.purchases.length} períodos de compras
@@ -215,7 +215,7 @@ function SyncAllCard({
         </div>
 
         {isSyncingAll && syncAllProgress.total > 0 && (
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <div className="h-2 w-full rounded bg-default-200">
               <div
                 className="h-2 rounded bg-success-500 transition-all duration-300"
@@ -260,7 +260,7 @@ function PeriodCard({
 }: PeriodCardProps) {
   return (
     <Card key={period.period} className="border-default-100">
-      <div className="gap-4 space-y-4 p-4">
+      <div className="gap-3 space-y-3 p-3">
         <div className="flex items-center justify-between">
           <div>
             <span className="block font-medium text-base">{period.month}</span>
@@ -272,7 +272,7 @@ function PeriodCard({
         </div>
 
         {/* Sales Section */}
-        <div className="space-y-2 border-default-100 border-t pt-3">
+        <div className="space-y-1.5 border-default-100 border-t pt-2.5">
           <div className="flex items-center justify-between">
             <span className="text-sm">Ventas</span>
             <div className="flex items-center gap-2">
@@ -320,7 +320,7 @@ function PeriodCard({
         </div>
 
         {/* Purchases Section */}
-        <div className="space-y-2 border-default-100 border-t pt-3">
+        <div className="space-y-1.5 border-default-100 border-t pt-2.5">
           <div className="flex items-center justify-between">
             <span className="text-sm">Compras</span>
             <div className="flex items-center gap-2">
@@ -544,11 +544,11 @@ export function HaulmerSyncPage() {
     .sort((a, b) => b - a);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Loading State */}
       {isLoadingPeriods && (
         <Card className="border-warning-100 bg-warning-50">
-          <div className="space-y-2 p-4">
+          <div className="space-y-1.5 p-3">
             <Skeleton className="h-4 w-56 rounded-md" />
             <Skeleton className="h-3 w-40 rounded-md" />
           </div>
@@ -558,20 +558,20 @@ export function HaulmerSyncPage() {
       {/* Error State */}
       {periodsError && (
         <Card className="border-danger-100 bg-danger-50">
-          <div className="p-4">
+          <div className="p-3">
             <span className="block font-semibold text-danger text-sm">
               Error al cargar períodos
             </span>
-            <div className="mt-1">
+            <div className="mt-0.5">
               <Description className="text-danger text-xs">
                 {periodsError instanceof Error ? periodsError.message : "Error desconocido"}
               </Description>
             </div>
-            <details className="mt-2">
+            <details className="mt-1.5">
               <summary className="cursor-pointer font-mono text-danger text-xs">
                 Respuesta del servidor
               </summary>
-              <pre className="mt-1 overflow-auto rounded bg-danger-soft-hover p-2 font-mono text-danger text-xs">
+              <pre className="mt-1 overflow-auto rounded bg-danger-soft-hover p-1.5 font-mono text-danger text-xs">
                 {(() => {
                   if (!(periodsError instanceof Error)) {
                     return String(periodsError);
@@ -599,11 +599,11 @@ export function HaulmerSyncPage() {
       )}
 
       {/* By Year - Scrollable Container */}
-      <div className="max-h-[calc(100vh-400px)] space-y-4 overflow-y-auto pr-2">
+      <div className="max-h-[calc(100vh-400px)] space-y-3 overflow-y-auto pr-1">
         {sortedYears.map((year) => (
-          <div key={year} className="space-y-4">
+          <div key={year} className="space-y-3">
             <span className="block font-semibold text-default-700 text-lg">{year}</span>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {(periodsByYear[year] ?? []).map((period) => (
                 <PeriodCard
                   key={period.period}
