@@ -150,7 +150,7 @@ export function CalendarFilterPanel({
               }
             >
               <Label className="sr-only">Rango de fechas</Label>
-              <DateField.Group>
+              <DateField.Group fullWidth variant="secondary">
                 <DateField.Input slot="start">
                   {(segment) => <DateField.Segment segment={segment} />}
                 </DateField.Input>

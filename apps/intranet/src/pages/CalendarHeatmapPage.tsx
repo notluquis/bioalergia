@@ -138,6 +138,8 @@ function CalendarHeatmapPage() {
             void navigate({
               search: {
                 ...search,
+                from: draftFilters.from || undefined,
+                to: draftFilters.to || undefined,
                 calendarId: draftFilters.calendarIds?.length ? draftFilters.calendarIds : undefined,
                 category: draftFilters.categories,
                 search: draftFilters.search || undefined,
