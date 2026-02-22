@@ -321,14 +321,7 @@ export interface TreatmentAnalytics {
 export type ClassifySearchParams = {
   calendarId?: string[];
   filterMode?: "AND" | "OR";
-  /** @deprecated use missingAmountExpected */
-  missingAmount?: boolean;
-  missingAmountExpected?: boolean;
-  missingAmountPaid?: boolean;
-  missingAttended?: boolean;
-  missingCategory?: boolean;
-  missingDosage?: boolean;
-  missingTreatmentStage?: boolean;
+  missing?: string[];
   page?: number;
 };
 

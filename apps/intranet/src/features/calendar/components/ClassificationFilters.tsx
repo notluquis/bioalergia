@@ -16,68 +16,47 @@ const DEFAULT_FILTER_BUTTONS = [
   { key: "missingTreatmentStage", label: "Sin etapa" },
 ] as const;
 
-const SUPPORTED_FILTER_KEYS = [
-  "missingCategory",
-  "missingAmountExpected",
-  "missingAmountPaid",
-  "missingAttended",
-  "missingDosage",
-  "missingTreatmentStage",
-] as const;
-
-type SupportedFilterKey = (typeof SUPPORTED_FILTER_KEYS)[number];
-
-function isSupportedFilterKey(key: string): key is SupportedFilterKey {
-  return (SUPPORTED_FILTER_KEYS as readonly string[]).includes(key);
-}
-
 export function ClassificationFilters({
   availableFilters,
   filters,
   onSearchChange,
 }: ClassificationFiltersProps) {
-  const filterButtons = (
-    availableFilters?.length ? availableFilters : DEFAULT_FILTER_BUTTONS
-  ).filter((f) => isSupportedFilterKey(f.key)) as ReadonlyArray<{
-    key: SupportedFilterKey;
-    label: string;
-  }>;
+  const filterButtons = availableFilters?.length ? availableFilters : DEFAULT_FILTER_BUTTONS;
+  const activeMissing = filters.missing ?? [];
 
-  const hasActiveFilters =
-    filterButtons.some(({ key }) => Boolean(filters[key])) || Boolean(filters.filterMode);
+  const hasActiveFilters = activeMissing.length > 0 || Boolean(filters.filterMode);
 
-  const toggleFilter = (key: SupportedFilterKey) => {
-    const next: Partial<MissingFieldFilters> & { page: number } = {
-      filterMode: filters.filterMode,
-      page: 0,
-    };
-    for (const candidate of SUPPORTED_FILTER_KEYS) {
-      next[candidate] = candidate === key ? !filters[candidate] : filters[candidate];
+  const toggleFilter = (key: string) => {
+    const currentMissing = new Set(activeMissing);
+    if (currentMissing.has(key)) {
+      currentMissing.delete(key);
+    } else {
+      currentMissing.add(key);
     }
-    // Clear legacy alias to keep URL clean and avoid ambiguity.
-    next.missingAmount = undefined;
-    onSearchChange(next);
+
+    const nextMissing = [...currentMissing];
+
+    onSearchChange({
+      filterMode: filters.filterMode,
+      missing: nextMissing.length > 0 ? nextMissing : undefined,
+      page: 0,
+    });
   };
 
   const setFilterMode = (mode: "AND" | undefined) => {
-    const next: Partial<MissingFieldFilters> & { page: number } = { filterMode: mode, page: 0 };
-    for (const candidate of SUPPORTED_FILTER_KEYS) {
-      next[candidate] = filters[candidate];
-    }
-    next.missingAmount = undefined;
-    onSearchChange(next);
+    onSearchChange({
+      filterMode: mode,
+      missing: activeMissing.length > 0 ? activeMissing : undefined,
+      page: 0,
+    });
   };
 
   const clearFilters = () => {
-    const next: Partial<MissingFieldFilters> & { page: number } = {
+    onSearchChange({
       filterMode: undefined,
-      missingAmount: undefined,
+      missing: undefined,
       page: 0,
-    };
-    for (const candidate of SUPPORTED_FILTER_KEYS) {
-      next[candidate] = undefined;
-    }
-    onSearchChange(next);
+    });
   };
 
   return (
@@ -88,11 +67,11 @@ export function ClassificationFilters({
           <Button
             key={key}
             className="font-medium text-xs"
-            color={filters[key] ? "primary" : "default"}
+            color={activeMissing.includes(key) ? "primary" : "default"}
             onClick={() => toggleFilter(key)}
             size="sm"
             type="button"
-            variant={filters[key] ? "secondary" : "ghost"}
+            variant={activeMissing.includes(key) ? "secondary" : "ghost"}
           >
             {label}
           </Button>

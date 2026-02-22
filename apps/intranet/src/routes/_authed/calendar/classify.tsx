@@ -16,26 +16,67 @@ import type { MissingFieldFilters } from "@/features/calendar/api";
 
 const routeApi = getRouteApi("/_authed/calendar/classify");
 
-const classifySearchSchema = z.object({
-  page: z.coerce.number().optional().catch(0),
-  missingCategory: z.boolean().optional(),
-  missingAmount: z.boolean().optional(), // legacy alias
-  missingAmountExpected: z.boolean().optional(),
-  missingAmountPaid: z.boolean().optional(),
-  missingAttended: z.boolean().optional(),
-  missingDosage: z.boolean().optional(),
-  missingTreatmentStage: z.boolean().optional(),
-  filterMode: z.enum(["AND", "OR"]).optional(),
-  calendarId: z
-    .union([z.string(), z.array(z.string())])
-    .optional()
-    .transform((val) => {
-      if (!val) {
-        return undefined;
-      }
-      return Array.isArray(val) ? val : [val];
-    }),
-});
+const arrayPreprocess = (val: unknown) => {
+  if (!val) {
+    return undefined;
+  }
+  if (Array.isArray(val)) {
+    return val;
+  }
+  return [val];
+};
+
+const classifySearchSchema = z
+  .object({
+    page: z.coerce.number().optional().catch(0),
+    missing: z.preprocess(arrayPreprocess, z.array(z.string()).optional()),
+    missingCategory: z.boolean().optional(),
+    missingAmount: z.boolean().optional(), // legacy alias
+    missingAmountExpected: z.boolean().optional(),
+    missingAmountPaid: z.boolean().optional(),
+    missingAttended: z.boolean().optional(),
+    missingDosage: z.boolean().optional(),
+    missingTreatmentStage: z.boolean().optional(),
+    filterMode: z.enum(["AND", "OR"]).optional(),
+    calendarId: z
+      .union([z.string(), z.array(z.string())])
+      .optional()
+      .transform((val) => {
+        if (!val) {
+          return undefined;
+        }
+        return Array.isArray(val) ? val : [val];
+      }),
+  })
+  .transform((search) => {
+    const missing = new Set(search.missing ?? []);
+
+    if (search.missingCategory) {
+      missing.add("missingCategory");
+    }
+    if (search.missingAmount || search.missingAmountExpected) {
+      missing.add("missingAmountExpected");
+    }
+    if (search.missingAmountPaid) {
+      missing.add("missingAmountPaid");
+    }
+    if (search.missingAttended) {
+      missing.add("missingAttended");
+    }
+    if (search.missingDosage) {
+      missing.add("missingDosage");
+    }
+    if (search.missingTreatmentStage) {
+      missing.add("missingTreatmentStage");
+    }
+
+    return {
+      page: search.page ?? 0,
+      missing: missing.size ? [...missing] : undefined,
+      filterMode: search.filterMode,
+      calendarId: search.calendarId,
+    };
+  });
 
 type ClassifySearchParams = z.infer<typeof classifySearchSchema>;
 
@@ -69,12 +110,7 @@ export const Route = createFileRoute("/_authed/calendar/classify")({
 
   loader: async ({ context, deps: search }) => {
     const filters: MissingFieldFilters = {
-      missingCategory: search.missingCategory,
-      missingAmountExpected: search.missingAmountExpected ?? search.missingAmount,
-      missingAmountPaid: search.missingAmountPaid,
-      missingAttended: search.missingAttended,
-      missingDosage: search.missingDosage,
-      missingTreatmentStage: search.missingTreatmentStage,
+      missing: search.missing,
       filterMode: search.filterMode,
     };
 

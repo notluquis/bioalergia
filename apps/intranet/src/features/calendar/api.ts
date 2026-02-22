@@ -41,14 +41,7 @@ export interface FieldCounts {
 export interface MissingFieldFilters {
   /** Filter mode: AND requires all conditions, OR matches any (default: OR) */
   filterMode?: "AND" | "OR";
-  /** @deprecated use missingAmountExpected */
-  missingAmount?: boolean;
-  missingAmountExpected?: boolean;
-  missingAmountPaid?: boolean;
-  missingAttended?: boolean;
-  missingCategory?: boolean;
-  missingDosage?: boolean;
-  missingTreatmentStage?: boolean;
+  missing?: string[];
 }
 
 /** Response for async reclassify jobs */
@@ -153,26 +146,11 @@ export async function fetchUnclassifiedCalendarEvents(
   const params = new URLSearchParams();
   params.set("limit", String(limit));
   params.set("offset", String(offset));
-  if (filters?.missingCategory) {
-    params.set("missingCategory", "true");
-  }
-  if (filters?.missingAmount) {
-    params.set("missingAmount", "true");
-  }
-  if (filters?.missingAmountExpected) {
-    params.set("missingAmountExpected", "true");
-  }
-  if (filters?.missingAmountPaid) {
-    params.set("missingAmountPaid", "true");
-  }
-  if (filters?.missingAttended) {
-    params.set("missingAttended", "true");
-  }
-  if (filters?.missingDosage) {
-    params.set("missingDosage", "true");
-  }
-  if (filters?.missingTreatmentStage) {
-    params.set("missingTreatmentStage", "true");
+  if (filters?.missing?.length) {
+    const uniqueMissing = [...new Set(filters.missing)];
+    for (const key of uniqueMissing) {
+      params.append("missing", key);
+    }
   }
   if (filters?.filterMode) {
     params.set("filterMode", filters.filterMode);

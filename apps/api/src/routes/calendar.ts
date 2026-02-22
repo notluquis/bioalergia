@@ -44,6 +44,31 @@ const MISSING_CLASSIFICATION_FILTERS = [
   { key: "missingTreatmentStage", label: "Sin etapa" },
 ] as const;
 
+type MissingClassificationFilterKey = (typeof MISSING_CLASSIFICATION_FILTERS)[number]["key"];
+
+const LEGACY_QUERY_FLAG_TO_MISSING_KEY = {
+  missingAmount: "missingAmountExpected",
+  missingAmountExpected: "missingAmountExpected",
+  missingAmountPaid: "missingAmountPaid",
+  missingAttended: "missingAttended",
+  missingCategory: "missingCategory",
+  missingDosage: "missingDosage",
+  missingTreatmentStage: "missingTreatmentStage",
+} as const;
+
+const MISSING_QUERY_TO_SERVICE_FILTER = {
+  missingAmountExpected: "amountExpected",
+  missingAmountPaid: "amountPaid",
+  missingAttended: "attended",
+  missingCategory: "category",
+  missingDosage: "dosageValue",
+  missingTreatmentStage: "treatmentStage",
+} as const;
+
+function isMissingClassificationFilterKey(value: string): value is MissingClassificationFilterKey {
+  return MISSING_CLASSIFICATION_FILTERS.some((filter) => filter.key === value);
+}
+
 // Helper schemas
 const dateSchema = z
   .string()
@@ -801,6 +826,14 @@ const unclassifiedQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(500).default(50),
   offset: z.coerce.number().int().min(0).default(0),
   filterMode: z.enum(["AND", "OR"]).default("OR"),
+  missing: z
+    .preprocess(arrayPreprocess, z.array(z.string()).optional())
+    .refine((values) => !values || values.every(isMissingClassificationFilterKey), {
+      message: "Invalid missing filter key",
+    })
+    .transform((values) => (values ? [...new Set(values)] : undefined)) as z.ZodType<
+    MissingClassificationFilterKey[] | undefined
+  >,
   // Legacy alias (kept for backwards compatibility)
   missingCategory: z
     .enum(["true", "false"])
@@ -850,19 +883,33 @@ calendarRoutes.get(
     const query = c.req.valid("query");
     const { limit, offset, filterMode } = query;
 
+    const selectedMissingFilters = new Set<MissingClassificationFilterKey>(query.missing ?? []);
+    for (const [legacyKey, mappedKey] of Object.entries(LEGACY_QUERY_FLAG_TO_MISSING_KEY)) {
+      if (query[legacyKey as keyof typeof LEGACY_QUERY_FLAG_TO_MISSING_KEY]) {
+        selectedMissingFilters.add(mappedKey);
+      }
+    }
+
+    const mappedFilters = Object.fromEntries(
+      Object.entries(MISSING_QUERY_TO_SERVICE_FILTER).map(([queryKey, serviceKey]) => [
+        serviceKey,
+        selectedMissingFilters.has(queryKey as MissingClassificationFilterKey),
+      ]),
+    ) as {
+      amountExpected: boolean;
+      amountPaid: boolean;
+      attended: boolean;
+      category: boolean;
+      dosageValue: boolean;
+      treatmentStage: boolean;
+    };
+
     const filters = {
-      category: query.missingCategory,
-      amountExpected: query.missingAmountExpected ?? query.missingAmount,
-      amountPaid: query.missingAmountPaid,
-      attended: query.missingAttended,
-      dosageValue: query.missingDosage,
-      treatmentStage: query.missingTreatmentStage,
+      ...mappedFilters,
       filterMode,
     };
 
-    const hasFilters = Object.values(filters)
-      .filter((v) => typeof v === "boolean")
-      .some(Boolean);
+    const hasFilters = selectedMissingFilters.size > 0;
 
     const { events: rows, totalCount } = await listUnclassifiedCalendarEvents(
       limit,

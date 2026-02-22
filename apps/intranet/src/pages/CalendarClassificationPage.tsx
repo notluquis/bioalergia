@@ -41,12 +41,7 @@ function CalendarClassificationPage() {
 
   const page = search.page ?? 0;
   const filters: MissingFieldFilters = {
-    missingCategory: search.missingCategory,
-    missingAmountExpected: search.missingAmountExpected ?? search.missingAmount,
-    missingAmountPaid: search.missingAmountPaid,
-    missingAttended: search.missingAttended,
-    missingDosage: search.missingDosage,
-    missingTreatmentStage: search.missingTreatmentStage,
+    missing: search.missing,
     filterMode: search.filterMode,
   };
 
