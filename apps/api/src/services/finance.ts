@@ -2083,7 +2083,7 @@ export async function reallocateFinancialTransaction(
           ${transaction.id},
           ${profileRow.id},
           ${toPeriod(transaction.date)},
-          ${new Decimal(Math.abs(Number(transaction.amount)))},
+          ${Math.abs(Number(transaction.amount))},
           'ORIGINAL',
           NOW(),
           NOW()
@@ -2124,7 +2124,7 @@ export async function reallocateFinancialTransaction(
         ${transaction.id},
         ${profileRow.id},
         ${data.fromPeriod},
-        ${new Decimal(data.amount)},
+        ${Number(data.amount)},
         'ROLLOVER_OUT',
         ${sourceAllocationId},
         NOW(),
@@ -2134,6 +2134,7 @@ export async function reallocateFinancialTransaction(
     `;
 
     const outId = rolloverOut[0]?.id;
+    const reallocationAmount = Number(data.amount);
     const rolloverIn = await tx.$queryRaw<
       Array<{
         allocationType: string;
@@ -2151,7 +2152,7 @@ export async function reallocateFinancialTransaction(
         ${transaction.id},
         ${profileRow.id},
         ${data.targetPeriod},
-        ${new Decimal(data.amount)},
+        ${reallocationAmount},
         'ROLLOVER_IN',
         ${outId ?? null},
         NOW(),
