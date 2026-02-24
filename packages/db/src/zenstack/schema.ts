@@ -1656,6 +1656,12 @@ export class SchemaType implements SchemaDef {
           array: true,
           relation: { opposite: "counterpart" },
         },
+        compensationProfiles: {
+          name: "compensationProfiles",
+          type: "CompensationProfile",
+          array: true,
+          relation: { opposite: "counterpart" },
+        },
         financialTransactions: {
           name: "financialTransactions",
           type: "FinancialTransaction",
@@ -14410,6 +14416,12 @@ export class SchemaType implements SchemaDef {
           array: true,
           relation: { opposite: "category" },
         },
+        compensationProfiles: {
+          name: "compensationProfiles",
+          type: "CompensationProfile",
+          array: true,
+          relation: { opposite: "category" },
+        },
         services: {
           name: "services",
           type: "Service",
@@ -14820,6 +14832,12 @@ export class SchemaType implements SchemaDef {
             references: ["id"],
           },
         },
+        allocations: {
+          name: "allocations",
+          type: "FinancialTransactionAllocation",
+          array: true,
+          relation: { opposite: "transaction" },
+        },
         serviceSchedules: {
           name: "serviceSchedules",
           type: "ServiceSchedule",
@@ -14910,6 +14928,646 @@ export class SchemaType implements SchemaDef {
         {
           name: "@@map",
           args: [{ name: "name", value: ExpressionUtils.literal("financial_transactions") }],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+      },
+    },
+    CompensationProfile: {
+      name: "CompensationProfile",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        name: {
+          name: "name",
+          type: "String",
+        },
+        categoryId: {
+          name: "categoryId",
+          type: "Int",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("category_id") }],
+            },
+          ],
+          foreignKeyFor: ["category"],
+        },
+        counterpartId: {
+          name: "counterpartId",
+          type: "Int",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("counterpart_id") }],
+            },
+          ],
+          foreignKeyFor: ["counterpart"],
+        },
+        isActive: {
+          name: "isActive",
+          type: "Boolean",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(true) }] },
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("is_active") }] },
+          ],
+          default: true,
+        },
+        timezone: {
+          name: "timezone",
+          type: "String",
+          attributes: [
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.literal("America/Santiago") }],
+            },
+          ],
+          default: "America/Santiago",
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          attributes: [
+            { name: "@updatedAt" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }],
+            },
+          ],
+        },
+        category: {
+          name: "category",
+          type: "TransactionCategory",
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("categoryId")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+                { name: "onDelete", value: ExpressionUtils.literal("Cascade") },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "compensationProfiles",
+            fields: ["categoryId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
+        },
+        counterpart: {
+          name: "counterpart",
+          type: "Counterpart",
+          optional: true,
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("counterpartId")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+                { name: "onDelete", value: ExpressionUtils.literal("SetNull") },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "compensationProfiles",
+            fields: ["counterpartId"],
+            references: ["id"],
+            onDelete: "SetNull",
+          },
+        },
+        budgets: {
+          name: "budgets",
+          type: "CompensationPeriodBudget",
+          array: true,
+          relation: { opposite: "profile" },
+        },
+        allocations: {
+          name: "allocations",
+          type: "FinancialTransactionAllocation",
+          array: true,
+          relation: { opposite: "profile" },
+        },
+      },
+      attributes: [
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("categoryId")]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("counterpartId")]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Boolean", [ExpressionUtils.field("isActive")]),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("compensation_profiles") }],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+      },
+    },
+    CompensationPeriodBudget: {
+      name: "CompensationPeriodBudget",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        profileId: {
+          name: "profileId",
+          type: "Int",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("profile_id") }],
+            },
+          ],
+          foreignKeyFor: ["profile"],
+        },
+        period: {
+          name: "period",
+          type: "String",
+          attributes: [
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(7) }] },
+          ],
+        },
+        baseAmount: {
+          name: "baseAmount",
+          type: "Decimal",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("base_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(19) },
+                { name: "s", value: ExpressionUtils.literal(4) },
+              ],
+            },
+          ],
+        },
+        isLocked: {
+          name: "isLocked",
+          type: "Boolean",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] },
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("is_locked") }] },
+          ],
+          default: false,
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          attributes: [
+            { name: "@updatedAt" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }],
+            },
+          ],
+        },
+        profile: {
+          name: "profile",
+          type: "CompensationProfile",
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("profileId")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+                { name: "onDelete", value: ExpressionUtils.literal("Cascade") },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "budgets",
+            fields: ["profileId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
+        },
+      },
+      attributes: [
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@unique",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [
+                ExpressionUtils.field("profileId"),
+                ExpressionUtils.field("period"),
+              ]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("profileId")]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("String", [ExpressionUtils.field("period")]),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("compensation_period_budgets") }],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+        profileId_period: { profileId: { type: "Int" }, period: { type: "String" } },
+      },
+    },
+    FinancialTransactionAllocation: {
+      name: "FinancialTransactionAllocation",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        transactionId: {
+          name: "transactionId",
+          type: "Int",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("transaction_id") }],
+            },
+          ],
+          foreignKeyFor: ["transaction"],
+        },
+        profileId: {
+          name: "profileId",
+          type: "Int",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("profile_id") }],
+            },
+          ],
+          foreignKeyFor: ["profile"],
+        },
+        period: {
+          name: "period",
+          type: "String",
+          attributes: [
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(7) }] },
+          ],
+        },
+        amount: {
+          name: "amount",
+          type: "Decimal",
+          attributes: [
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(19) },
+                { name: "s", value: ExpressionUtils.literal(4) },
+              ],
+            },
+          ],
+        },
+        allocationType: {
+          name: "allocationType",
+          type: "CompensationAllocationType",
+          attributes: [
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.literal("MANUAL_ADJUST") }],
+            },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("allocation_type") }],
+            },
+          ],
+          default: "MANUAL_ADJUST",
+        },
+        sourceAllocationId: {
+          name: "sourceAllocationId",
+          type: "Int",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("source_allocation_id") }],
+            },
+          ],
+          foreignKeyFor: ["sourceAllocation"],
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          attributes: [
+            { name: "@updatedAt" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }],
+            },
+          ],
+        },
+        transaction: {
+          name: "transaction",
+          type: "FinancialTransaction",
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("transactionId")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+                { name: "onDelete", value: ExpressionUtils.literal("Cascade") },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "allocations",
+            fields: ["transactionId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
+        },
+        profile: {
+          name: "profile",
+          type: "CompensationProfile",
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("profileId")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+                { name: "onDelete", value: ExpressionUtils.literal("Cascade") },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "allocations",
+            fields: ["profileId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
+        },
+        sourceAllocation: {
+          name: "sourceAllocation",
+          type: "FinancialTransactionAllocation",
+          optional: true,
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                { name: "name", value: ExpressionUtils.literal("AllocationSource") },
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [
+                    ExpressionUtils.field("sourceAllocationId"),
+                  ]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+                { name: "onDelete", value: ExpressionUtils.literal("SetNull") },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "derivedAllocations",
+            name: "AllocationSource",
+            fields: ["sourceAllocationId"],
+            references: ["id"],
+            onDelete: "SetNull",
+          },
+        },
+        derivedAllocations: {
+          name: "derivedAllocations",
+          type: "FinancialTransactionAllocation",
+          array: true,
+          attributes: [
+            {
+              name: "@relation",
+              args: [{ name: "name", value: ExpressionUtils.literal("AllocationSource") }],
+            },
+          ],
+          relation: { opposite: "sourceAllocation", name: "AllocationSource" },
+        },
+      },
+      attributes: [
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("transactionId")]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("profileId")]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("String", [ExpressionUtils.field("period")]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("sourceAllocationId")]),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [
+            { name: "name", value: ExpressionUtils.literal("financial_transaction_allocations") },
+          ],
         },
       ],
       idFields: ["id"],
@@ -15108,6 +15766,15 @@ export class SchemaType implements SchemaDef {
       values: {
         INCOME: "INCOME",
         EXPENSE: "EXPENSE",
+      },
+    },
+    CompensationAllocationType: {
+      name: "CompensationAllocationType",
+      values: {
+        MANUAL_ADJUST: "MANUAL_ADJUST",
+        ORIGINAL: "ORIGINAL",
+        ROLLOVER_IN: "ROLLOVER_IN",
+        ROLLOVER_OUT: "ROLLOVER_OUT",
       },
     },
   } as const;

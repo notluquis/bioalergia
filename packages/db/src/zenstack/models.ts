@@ -70,6 +70,12 @@ export type DTESyncLog = $ModelResult<$Schema, "DTESyncLog">;
 export type TransactionCategory = $ModelResult<$Schema, "TransactionCategory">;
 export type FinancialAutoCategoryRule = $ModelResult<$Schema, "FinancialAutoCategoryRule">;
 export type FinancialTransaction = $ModelResult<$Schema, "FinancialTransaction">;
+export type CompensationProfile = $ModelResult<$Schema, "CompensationProfile">;
+export type CompensationPeriodBudget = $ModelResult<$Schema, "CompensationPeriodBudget">;
+export type FinancialTransactionAllocation = $ModelResult<
+  $Schema,
+  "FinancialTransactionAllocation"
+>;
 export const PersonType = $schema.enums.PersonType.values;
 export type PersonType = (typeof PersonType)[keyof typeof PersonType];
 export const CounterpartCategory = $schema.enums.CounterpartCategory.values;
@@ -118,3 +124,6 @@ export const DTEType = $schema.enums.DTEType.values;
 export type DTEType = (typeof DTEType)[keyof typeof DTEType];
 export const TransactionType = $schema.enums.TransactionType.values;
 export type TransactionType = (typeof TransactionType)[keyof typeof TransactionType];
+export const CompensationAllocationType = $schema.enums.CompensationAllocationType.values;
+export type CompensationAllocationType =
+  (typeof CompensationAllocationType)[keyof typeof CompensationAllocationType];

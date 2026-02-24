@@ -4,11 +4,13 @@ import {
   Card,
   Chip,
   ColorSwatchPicker,
+  Description,
   Dropdown,
   Header,
   Input,
   Label,
   ListBox,
+  Modal,
   parseColor,
   SearchField,
   Select,
@@ -45,6 +47,7 @@ const TransactionForm = lazy(() =>
 
 // Hooks
 interface TransactionQueryParams {
+  effectivePeriod?: string;
   page: number;
   pageSize?: number;
   from?: string;
@@ -140,6 +143,49 @@ const CounterpartsResponseSchema = z.object({
   status: z.literal("ok"),
 });
 
+const CompensationProfileSchema = z.object({
+  category: TransactionCategorySchema,
+  categoryId: z.number(),
+  counterpart: CounterpartSchema.nullable().optional(),
+  counterpartId: z.number().nullable().optional(),
+  id: z.number(),
+  isActive: z.boolean(),
+  name: z.string(),
+  timezone: z.string(),
+});
+
+const CompensationProfilesResponseSchema = z.object({
+  data: z.array(CompensationProfileSchema),
+  status: z.literal("ok"),
+});
+
+const CompensationLedgerEntrySchema = z.object({
+  allocatedAmount: z.number(),
+  budgetAmount: z.number(),
+  isLocked: z.boolean(),
+  period: z.string(),
+  variance: z.number(),
+});
+
+const CompensationLedgerResponseSchema = z.object({
+  data: z.array(CompensationLedgerEntrySchema),
+  status: z.literal("ok"),
+});
+
+const ReallocationResponseSchema = z.object({
+  data: z
+    .object({
+      allocationType: z.string(),
+      amount: z.number(),
+      id: z.number(),
+      period: z.string(),
+      profileId: z.number(),
+      transactionId: z.number(),
+    })
+    .passthrough(),
+  status: z.literal("ok"),
+});
+
 const FinancialAutoCategoryRuleSchema = z.object({
   category: TransactionCategorySchema,
   categoryId: z.number(),
@@ -210,6 +256,7 @@ function useFinancialTransactions(params: TransactionQueryParams) {
     queryFn: () =>
       apiClient.get<FinancialTransactionsResponse>("/api/finance/transactions", {
         query: {
+          effectivePeriod: params.effectivePeriod,
           from: params.from,
           page: params.page,
           pageSize: params.pageSize,
@@ -247,6 +294,41 @@ function useCounterparts() {
         },
       );
       return payload.counterparts;
+    },
+  });
+}
+
+type CompensationProfileOption = z.infer<typeof CompensationProfileSchema>;
+
+function useCompensationProfiles() {
+  return useQuery<CompensationProfileOption[]>({
+    queryKey: ["CompensationProfile"],
+    queryFn: async () => {
+      const payload = await apiClient.get<{ data: CompensationProfileOption[] }>(
+        "/api/finance/compensation-profiles",
+        {
+          responseSchema: CompensationProfilesResponseSchema,
+        },
+      );
+      return payload.data;
+    },
+  });
+}
+
+function useCompensationLedger(profileId: null | number, period: string) {
+  const fromPeriod = period;
+  const toPeriod = period;
+  return useQuery<z.infer<typeof CompensationLedgerEntrySchema>[]>({
+    enabled: profileId != null,
+    queryKey: ["CompensationLedger", profileId, fromPeriod, toPeriod],
+    queryFn: async () => {
+      const payload = await apiClient.get<{
+        data: z.infer<typeof CompensationLedgerEntrySchema>[];
+      }>(`/api/finance/compensation-profiles/${profileId}/ledger`, {
+        query: { fromPeriod, toPeriod },
+        responseSchema: CompensationLedgerResponseSchema,
+      });
+      return payload.data;
     },
   });
 }
@@ -547,20 +629,32 @@ export function CashFlowPage() {
   const [editingRuleMaxAmount, setEditingRuleMaxAmount] = useState("");
   const [editingRuleCommentContains, setEditingRuleCommentContains] = useState("");
   const [editingRuleDescriptionContains, setEditingRuleDescriptionContains] = useState("");
+  const [newCompensationName, setNewCompensationName] = useState("");
+  const [newCompensationCategoryId, setNewCompensationCategoryId] = useState<null | number>(null);
+  const [newCompensationCounterpartId, setNewCompensationCounterpartId] = useState<null | number>(
+    null,
+  );
+  const [newCompensationIsActive, setNewCompensationIsActive] = useState(true);
+  const [selectedCompensationProfileId, setSelectedCompensationProfileId] = useState<null | number>(
+    null,
+  );
+  const [budgetAmountInput, setBudgetAmountInput] = useState("");
+  const [isReallocateOpen, setIsReallocateOpen] = useState(false);
+  const [reallocateTx, setReallocateTx] = useState<null | TransactionWithRelations>(null);
+  const [reallocateProfileId, setReallocateProfileId] = useState<null | number>(null);
+  const [reallocateFromPeriod, setReallocateFromPeriod] = useState(dayjs().format("YYYY-MM"));
+  const [reallocateTargetPeriod, setReallocateTargetPeriod] = useState(dayjs().format("YYYY-MM"));
+  const [reallocateAmount, setReallocateAmount] = useState("");
   const { data: availableMonths = [] } = useAvailableFinancialMonths();
 
-  const monthRange = useMemo(() => {
-    const base = dayjs(`${selectedMonth}-01`);
-    return {
-      from: base.startOf("month").format("YYYY-MM-DD"),
-      to: base.endOf("month").format("YYYY-MM-DD"),
-    };
-  }, [selectedMonth]);
-
   const monthOptions = useMemo(() => {
-    const uniqueMonths = Array.from(
-      new Set(availableMonths.filter((value) => MONTH_VALUE_REGEX.test(value))),
-    ).sort((a, b) => b.localeCompare(a));
+    const baseMonths = new Set(availableMonths.filter((value) => MONTH_VALUE_REGEX.test(value)));
+    const currentMonth = dayjs().startOf("month");
+    for (let index = 0; index < 6; index += 1) {
+      baseMonths.add(currentMonth.add(index, "month").format("YYYY-MM"));
+    }
+
+    const uniqueMonths = Array.from(baseMonths).sort((a, b) => b.localeCompare(a));
 
     if (uniqueMonths.length === 0) {
       const value = dayjs().startOf("month").format("YYYY-MM");
@@ -596,13 +690,17 @@ export function CashFlowPage() {
   }, [monthOptions, selectedMonth]);
 
   const { data, isLoading } = useFinancialTransactions({
-    from: monthRange.from,
+    effectivePeriod: selectedMonth,
     page: 1,
     pageSize: 2500,
-    to: monthRange.to,
   });
   const { data: categories = [] } = useTransactionCategories();
   const { data: counterparts = [] } = useCounterparts();
+  const { data: compensationProfiles = [] } = useCompensationProfiles();
+  const { data: selectedCompensationLedger = [] } = useCompensationLedger(
+    selectedCompensationProfileId,
+    selectedMonth,
+  );
   const { data: autoCategoryRules = [] } = useFinancialAutoCategoryRules();
   const queryClient = useQueryClient();
 
@@ -651,6 +749,25 @@ export function CashFlowPage() {
     }),
     [categories],
   );
+  const activeCompensationProfiles = useMemo(
+    () => compensationProfiles.filter((profile) => profile.isActive),
+    [compensationProfiles],
+  );
+  const selectedCompensationEntry = selectedCompensationLedger[0];
+
+  useEffect(() => {
+    if (activeCompensationProfiles.length === 0) {
+      setSelectedCompensationProfileId(null);
+      return;
+    }
+    if (
+      selectedCompensationProfileId != null &&
+      activeCompensationProfiles.some((profile) => profile.id === selectedCompensationProfileId)
+    ) {
+      return;
+    }
+    setSelectedCompensationProfileId(activeCompensationProfiles[0]?.id ?? null);
+  }, [activeCompensationProfiles, selectedCompensationProfileId]);
 
   const hasActiveFilters =
     selectedCategoryFilters.length > 0 ||
@@ -661,6 +778,18 @@ export function CashFlowPage() {
     columnFilters.comment.trim().length > 0;
 
   const monthTransactions = data?.data ?? [];
+  const reallocationProfileOptions = useMemo(() => {
+    if (!reallocateTx) return activeCompensationProfiles;
+    return activeCompensationProfiles.filter((profile) => {
+      if (reallocateTx.categoryId == null || profile.categoryId !== reallocateTx.categoryId) {
+        return false;
+      }
+      if (profile.counterpartId != null && profile.counterpartId !== reallocateTx.counterpartId) {
+        return false;
+      }
+      return true;
+    });
+  }, [activeCompensationProfiles, reallocateTx]);
   const nonAccountableCategoryIds = useMemo(
     () =>
       new Set(
@@ -897,6 +1026,91 @@ export function CashFlowPage() {
     },
   });
 
+  const createCompensationProfileMutation = useMutation({
+    mutationFn: async (payload: {
+      categoryId: number;
+      counterpartId?: null | number;
+      isActive?: boolean;
+      name: string;
+    }) =>
+      apiClient.post("/api/finance/compensation-profiles", payload, {
+        responseSchema: z.object({ data: CompensationProfileSchema, status: z.literal("ok") }),
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["CompensationProfile"] });
+      setNewCompensationName("");
+      setNewCompensationCategoryId(null);
+      setNewCompensationCounterpartId(null);
+      setNewCompensationIsActive(true);
+      toast.success("Perfil de compensación creado");
+    },
+    onError: (error) => {
+      const message = error instanceof ApiError ? error.message : "Error al crear perfil";
+      toast.error(message);
+    },
+  });
+
+  const upsertCompensationBudgetMutation = useMutation({
+    mutationFn: async (payload: { baseAmount: number; period: string; profileId: number }) =>
+      apiClient.put(
+        `/api/finance/compensation-profiles/${payload.profileId}/budget`,
+        {
+          baseAmount: payload.baseAmount,
+          period: payload.period,
+        },
+        {
+          responseSchema: z.object({
+            data: z.unknown(),
+            status: z.literal("ok"),
+          }),
+        },
+      ),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["CompensationLedger"] });
+      toast.success("Presupuesto de período actualizado");
+    },
+    onError: (error) => {
+      const message = error instanceof ApiError ? error.message : "Error al guardar presupuesto";
+      toast.error(message);
+    },
+  });
+
+  const reallocateTransactionMutation = useMutation({
+    mutationFn: async (payload: {
+      amount: number;
+      fromPeriod: string;
+      profileId: number;
+      targetPeriod: string;
+      transactionId: number;
+    }) =>
+      apiClient.post(
+        `/api/finance/transactions/${payload.transactionId}/reallocate`,
+        {
+          amount: payload.amount,
+          fromPeriod: payload.fromPeriod,
+          profileId: payload.profileId,
+          targetPeriod: payload.targetPeriod,
+        },
+        {
+          responseSchema: ReallocationResponseSchema,
+        },
+      ),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["FinancialTransaction"] }),
+        queryClient.invalidateQueries({ queryKey: ["CompensationLedger"] }),
+      ]);
+      toast.success("Movimiento reasignado al período destino");
+      setIsReallocateOpen(false);
+      setReallocateTx(null);
+      setReallocateAmount("");
+    },
+    onError: (error) => {
+      const message = error instanceof ApiError ? error.message : "Error al reasignar movimiento";
+      toast.error(message);
+    },
+  });
+
   const createAutoCategoryRuleMutation = useMutation({
     mutationFn: async (payload: {
       categoryId: number;
@@ -1071,6 +1285,90 @@ export function CashFlowPage() {
     const confirmed = window.confirm(`¿Eliminar la categoría "${category.name}"?`);
     if (!confirmed) return;
     deleteCategoryMutation.mutate(category.id);
+  };
+
+  const handleCreateCompensationProfile = (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = newCompensationName.trim();
+    if (!name) {
+      toast.error("El nombre del perfil es obligatorio");
+      return;
+    }
+    if (newCompensationCategoryId == null) {
+      toast.error("Selecciona una categoría de egreso");
+      return;
+    }
+    createCompensationProfileMutation.mutate({
+      categoryId: newCompensationCategoryId,
+      counterpartId: newCompensationCounterpartId,
+      isActive: newCompensationIsActive,
+      name,
+    });
+  };
+
+  const handleSavePeriodBudget = () => {
+    if (selectedCompensationProfileId == null) {
+      toast.error("Selecciona un perfil de compensación");
+      return;
+    }
+    const parsedAmount = Number.parseFloat(budgetAmountInput.replace(/[^0-9.-]/g, ""));
+    if (Number.isNaN(parsedAmount)) {
+      toast.error("Ingresa un monto válido");
+      return;
+    }
+    upsertCompensationBudgetMutation.mutate({
+      baseAmount: parsedAmount,
+      period: selectedMonth,
+      profileId: selectedCompensationProfileId,
+    });
+  };
+
+  const handleOpenReallocate = (tx: TransactionWithRelations) => {
+    if (tx.categoryId == null) {
+      toast.error("La transacción debe tener categoría para reasignar");
+      return;
+    }
+    const matchingProfiles = activeCompensationProfiles.filter((profile) => {
+      if (profile.categoryId !== tx.categoryId) return false;
+      if (profile.counterpartId != null && profile.counterpartId !== tx.counterpartId) return false;
+      return true;
+    });
+    if (matchingProfiles.length === 0) {
+      toast.error("No hay perfil de compensación activo para esta transacción");
+      return;
+    }
+
+    const defaultProfile = matchingProfiles[0];
+    setReallocateTx(tx);
+    setReallocateProfileId(defaultProfile?.id ?? null);
+    setReallocateFromPeriod(dayjs(tx.date).format("YYYY-MM"));
+    setReallocateTargetPeriod(selectedMonth);
+    setReallocateAmount(String(Math.abs(Number(tx.amount))));
+    setIsReallocateOpen(true);
+  };
+
+  const handleSubmitReallocation = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reallocateTx) {
+      toast.error("No hay transacción seleccionada");
+      return;
+    }
+    if (reallocateProfileId == null) {
+      toast.error("Selecciona un perfil de compensación");
+      return;
+    }
+    const amount = Number.parseFloat(reallocateAmount.replace(/[^0-9.-]/g, ""));
+    if (!Number.isFinite(amount) || amount <= 0) {
+      toast.error("Ingresa un monto válido");
+      return;
+    }
+    reallocateTransactionMutation.mutate({
+      amount,
+      fromPeriod: reallocateFromPeriod,
+      profileId: reallocateProfileId,
+      targetPeriod: reallocateTargetPeriod,
+      transactionId: reallocateTx.id,
+    });
   };
 
   const handleCreateAutoCategoryRule = (e: React.FormEvent) => {
@@ -1824,6 +2122,7 @@ export function CashFlowPage() {
                     pageSize={TABLE_PAGE_SIZE}
                     onPageChange={(nextPage) => setPage(Math.max(1, nextPage))}
                     onEdit={handleEdit}
+                    onReallocate={handleOpenReallocate}
                     onCategoryChange={handleCategoryChange}
                     updatingCategoryIds={updatingCategoryIds}
                   />
@@ -2013,6 +2312,172 @@ export function CashFlowPage() {
                           )}
                         </div>
                       ))}
+                    </div>
+                  )}
+                </div>
+              </Card>
+
+              <Card className="border border-default-200/70 bg-linear-to-b from-default-100/40 to-default-50/10 shadow-sm">
+                <div className="space-y-3 p-3">
+                  <h3 className="text-sm font-semibold">Perfiles de compensación (sueldos)</h3>
+                  <form
+                    className="grid grid-cols-1 gap-3 md:grid-cols-6"
+                    onSubmit={handleCreateCompensationProfile}
+                  >
+                    <TextField className="md:col-span-2">
+                      <Label>Nombre perfil</Label>
+                      <Input
+                        placeholder="Ej: Sueldo Lucas"
+                        value={newCompensationName}
+                        onChange={(e) => setNewCompensationName(e.target.value)}
+                      />
+                    </TextField>
+                    <Select
+                      className="md:col-span-2"
+                      value={
+                        newCompensationCategoryId == null ? null : String(newCompensationCategoryId)
+                      }
+                      onChange={(key) => {
+                        const value = key == null ? null : Number(key);
+                        setNewCompensationCategoryId(value);
+                      }}
+                    >
+                      <Label>Categoría (egreso)</Label>
+                      <Select.Trigger>
+                        <Select.Value />
+                        <Select.Indicator />
+                      </Select.Trigger>
+                      <Select.Popover>
+                        <ListBox>
+                          {categoryOptionsByType.EXPENSE.map((category) => (
+                            <ListBox.Item id={String(category.id)} key={category.id}>
+                              {category.name}
+                            </ListBox.Item>
+                          ))}
+                        </ListBox>
+                      </Select.Popover>
+                    </Select>
+                    <Select
+                      value={
+                        newCompensationCounterpartId == null
+                          ? "__none__"
+                          : String(newCompensationCounterpartId)
+                      }
+                      onChange={(key) => {
+                        const value =
+                          key == null || String(key) === "__none__" ? null : Number(key);
+                        setNewCompensationCounterpartId(value);
+                      }}
+                    >
+                      <Label>Contraparte (opcional)</Label>
+                      <Select.Trigger>
+                        <Select.Value />
+                        <Select.Indicator />
+                      </Select.Trigger>
+                      <Select.Popover>
+                        <ListBox>
+                          <ListBox.Item id="__none__">Sin restricción</ListBox.Item>
+                          {counterpartOptions.map((counterpart) => (
+                            <ListBox.Item id={String(counterpart.value)} key={counterpart.value}>
+                              {counterpart.label}
+                            </ListBox.Item>
+                          ))}
+                        </ListBox>
+                      </Select.Popover>
+                    </Select>
+                    <Switch
+                      className="pt-6"
+                      isSelected={newCompensationIsActive}
+                      onChange={(value) => setNewCompensationIsActive(value)}
+                    >
+                      <Switch.Content>Activo</Switch.Content>
+                    </Switch>
+                    <div className="md:col-span-6">
+                      <Button type="submit" isPending={createCompensationProfileMutation.isPending}>
+                        Crear perfil de compensación
+                      </Button>
+                    </div>
+                  </form>
+
+                  {activeCompensationProfiles.length === 0 ? (
+                    <p className="text-default-500 text-sm">
+                      No hay perfiles de compensación activos.
+                    </p>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.2fr_1fr]">
+                      <div className="space-y-2">
+                        {activeCompensationProfiles.map((profile) => (
+                          <button
+                            className={`w-full rounded-md border px-3 py-2 text-left transition ${
+                              selectedCompensationProfileId === profile.id
+                                ? "border-primary bg-primary-50/40"
+                                : "border-default-200 hover:bg-default-100/40"
+                            }`}
+                            key={profile.id}
+                            type="button"
+                            onClick={() => setSelectedCompensationProfileId(profile.id)}
+                          >
+                            <p className="text-sm font-medium">{profile.name}</p>
+                            <p className="text-tiny text-default-500">
+                              {profile.category.name}
+                              {profile.counterpart
+                                ? ` · ${profile.counterpart.bankAccountHolder}`
+                                : " · sin contraparte fija"}
+                            </p>
+                          </button>
+                        ))}
+                      </div>
+                      <div className="space-y-2 rounded-md border border-default-200 p-3">
+                        <p className="text-sm font-medium">Ledger período {selectedMonth}</p>
+                        <p className="text-tiny text-default-500">
+                          Presupuesto, imputado y diferencia para cuadrar arrastres.
+                        </p>
+                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                          <div className="rounded-md border border-default-200 px-2 py-1.5">
+                            <p className="text-tiny text-default-500">Presupuesto</p>
+                            <p className="text-sm font-semibold">
+                              {formatCurrency(selectedCompensationEntry?.budgetAmount ?? 0)}
+                            </p>
+                          </div>
+                          <div className="rounded-md border border-default-200 px-2 py-1.5">
+                            <p className="text-tiny text-default-500">Imputado</p>
+                            <p className="text-sm font-semibold">
+                              {formatCurrency(selectedCompensationEntry?.allocatedAmount ?? 0)}
+                            </p>
+                          </div>
+                          <div className="rounded-md border border-default-200 px-2 py-1.5">
+                            <p className="text-tiny text-default-500">Diferencia</p>
+                            <p
+                              className={`text-sm font-semibold ${
+                                (selectedCompensationEntry?.variance ?? 0) >= 0
+                                  ? "text-success"
+                                  : "text-danger"
+                              }`}
+                            >
+                              {formatCurrency(selectedCompensationEntry?.variance ?? 0)}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-end gap-2">
+                          <TextField>
+                            <Label>Presupuesto mes</Label>
+                            <Input
+                              inputMode="decimal"
+                              placeholder="Ej: 1500000"
+                              value={budgetAmountInput}
+                              onChange={(e) =>
+                                setBudgetAmountInput(e.target.value.replace(/[^0-9.-]/g, ""))
+                              }
+                            />
+                          </TextField>
+                          <Button
+                            isPending={upsertCompensationBudgetMutation.isPending}
+                            onPress={handleSavePeriodBudget}
+                          >
+                            Guardar presupuesto
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -2440,6 +2905,130 @@ export function CashFlowPage() {
           />
         </Suspense>
       ) : null}
+
+      <Modal>
+        <Modal.Backdrop
+          isOpen={isReallocateOpen}
+          onOpenChange={(open) => !open && setIsReallocateOpen(false)}
+        >
+          <Modal.Container size="md">
+            <Modal.Dialog>
+              <Modal.CloseTrigger />
+              <Modal.Header>
+                <Modal.Heading>Reasignar Movimiento a Otro Período</Modal.Heading>
+              </Modal.Header>
+              <Modal.Body>
+                <form
+                  className="space-y-3"
+                  id="reallocate-form"
+                  onSubmit={handleSubmitReallocation}
+                >
+                  <Description className="text-sm text-default-600">
+                    Selecciona perfil y período destino para arrastrar parte del monto.
+                  </Description>
+                  <TextField>
+                    <Label>Movimiento</Label>
+                    <Input
+                      readOnly
+                      value={
+                        reallocateTx
+                          ? `${dayjs(reallocateTx.date).format("DD-MM-YYYY")} · ${reallocateTx.description}`
+                          : ""
+                      }
+                    />
+                  </TextField>
+
+                  <Select
+                    value={reallocateProfileId == null ? null : String(reallocateProfileId)}
+                    onChange={(key) => {
+                      const value = key == null ? null : Number(key);
+                      setReallocateProfileId(value);
+                    }}
+                  >
+                    <Label>Perfil de compensación</Label>
+                    <Select.Trigger>
+                      <Select.Value />
+                      <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        {reallocationProfileOptions.map((profile) => (
+                          <ListBox.Item id={String(profile.id)} key={profile.id}>
+                            {profile.name} · {profile.category.name}
+                          </ListBox.Item>
+                        ))}
+                      </ListBox>
+                    </Select.Popover>
+                  </Select>
+
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <Select
+                      value={reallocateFromPeriod}
+                      onChange={(key) => setReallocateFromPeriod(String(key ?? ""))}
+                    >
+                      <Label>Período origen</Label>
+                      <Select.Trigger>
+                        <Select.Value />
+                        <Select.Indicator />
+                      </Select.Trigger>
+                      <Select.Popover>
+                        <ListBox>
+                          {monthOptions.map((option) => (
+                            <ListBox.Item id={option.value} key={option.value}>
+                              {option.label}
+                            </ListBox.Item>
+                          ))}
+                        </ListBox>
+                      </Select.Popover>
+                    </Select>
+                    <Select
+                      value={reallocateTargetPeriod}
+                      onChange={(key) => setReallocateTargetPeriod(String(key ?? ""))}
+                    >
+                      <Label>Período destino</Label>
+                      <Select.Trigger>
+                        <Select.Value />
+                        <Select.Indicator />
+                      </Select.Trigger>
+                      <Select.Popover>
+                        <ListBox>
+                          {monthOptions.map((option) => (
+                            <ListBox.Item id={option.value} key={option.value}>
+                              {option.label}
+                            </ListBox.Item>
+                          ))}
+                        </ListBox>
+                      </Select.Popover>
+                    </Select>
+                  </div>
+
+                  <TextField>
+                    <Label>Monto a arrastrar</Label>
+                    <Input
+                      inputMode="decimal"
+                      placeholder="Ej: 120000"
+                      value={reallocateAmount}
+                      onChange={(e) => setReallocateAmount(e.target.value.replace(/[^0-9.-]/g, ""))}
+                    />
+                  </TextField>
+                </form>
+              </Modal.Body>
+              <Modal.Footer>
+                <Button variant="secondary" onPress={() => setIsReallocateOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button
+                  form="reallocate-form"
+                  isPending={reallocateTransactionMutation.isPending}
+                  type="submit"
+                >
+                  Reasignar
+                </Button>
+              </Modal.Footer>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal>
     </div>
   );
 }

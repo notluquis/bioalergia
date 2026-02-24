@@ -33,7 +33,13 @@ declare module "@tanstack/react-table" {
     onStatusChange?: (requestId: number, newStatus: SupplyRequest["status"]) => void;
 
     onCategoryChange?: (row: TData, categoryId: null | number) => void;
-    transactionCategories?: Array<{ color?: null | string; id: number; name: string }>;
+    onReallocate?: (row: TData) => void;
+    transactionCategories?: Array<{
+      color?: null | string;
+      icon?: null | string;
+      id: number;
+      name: string;
+    }>;
     updatingCategoryIds?: Set<number>;
   }
 }

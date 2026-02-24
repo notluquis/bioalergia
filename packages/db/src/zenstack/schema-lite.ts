@@ -697,6 +697,12 @@ export class SchemaType implements SchemaDef {
           array: true,
           relation: { opposite: "counterpart" },
         },
+        compensationProfiles: {
+          name: "compensationProfiles",
+          type: "CompensationProfile",
+          array: true,
+          relation: { opposite: "counterpart" },
+        },
         financialTransactions: {
           name: "financialTransactions",
           type: "FinancialTransaction",
@@ -5391,6 +5397,12 @@ export class SchemaType implements SchemaDef {
           array: true,
           relation: { opposite: "category" },
         },
+        compensationProfiles: {
+          name: "compensationProfiles",
+          type: "CompensationProfile",
+          array: true,
+          relation: { opposite: "category" },
+        },
         services: {
           name: "services",
           type: "Service",
@@ -5557,6 +5569,12 @@ export class SchemaType implements SchemaDef {
             references: ["id"],
           },
         },
+        allocations: {
+          name: "allocations",
+          type: "FinancialTransactionAllocation",
+          array: true,
+          relation: { opposite: "transaction" },
+        },
         serviceSchedules: {
           name: "serviceSchedules",
           type: "ServiceSchedule",
@@ -5577,6 +5595,235 @@ export class SchemaType implements SchemaDef {
           name: "updatedAt",
           type: "DateTime",
           updatedAt: true,
+        },
+      },
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+      },
+    },
+    CompensationProfile: {
+      name: "CompensationProfile",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        name: {
+          name: "name",
+          type: "String",
+        },
+        categoryId: {
+          name: "categoryId",
+          type: "Int",
+          foreignKeyFor: ["category"],
+        },
+        counterpartId: {
+          name: "counterpartId",
+          type: "Int",
+          optional: true,
+          foreignKeyFor: ["counterpart"],
+        },
+        isActive: {
+          name: "isActive",
+          type: "Boolean",
+          default: true,
+        },
+        timezone: {
+          name: "timezone",
+          type: "String",
+          default: "America/Santiago",
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+        },
+        category: {
+          name: "category",
+          type: "TransactionCategory",
+          relation: {
+            opposite: "compensationProfiles",
+            fields: ["categoryId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
+        },
+        counterpart: {
+          name: "counterpart",
+          type: "Counterpart",
+          optional: true,
+          relation: {
+            opposite: "compensationProfiles",
+            fields: ["counterpartId"],
+            references: ["id"],
+            onDelete: "SetNull",
+          },
+        },
+        budgets: {
+          name: "budgets",
+          type: "CompensationPeriodBudget",
+          array: true,
+          relation: { opposite: "profile" },
+        },
+        allocations: {
+          name: "allocations",
+          type: "FinancialTransactionAllocation",
+          array: true,
+          relation: { opposite: "profile" },
+        },
+      },
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+      },
+    },
+    CompensationPeriodBudget: {
+      name: "CompensationPeriodBudget",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        profileId: {
+          name: "profileId",
+          type: "Int",
+          foreignKeyFor: ["profile"],
+        },
+        period: {
+          name: "period",
+          type: "String",
+        },
+        baseAmount: {
+          name: "baseAmount",
+          type: "Decimal",
+        },
+        isLocked: {
+          name: "isLocked",
+          type: "Boolean",
+          default: false,
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+        },
+        profile: {
+          name: "profile",
+          type: "CompensationProfile",
+          relation: {
+            opposite: "budgets",
+            fields: ["profileId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
+        },
+      },
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+        profileId_period: { profileId: { type: "Int" }, period: { type: "String" } },
+      },
+    },
+    FinancialTransactionAllocation: {
+      name: "FinancialTransactionAllocation",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        transactionId: {
+          name: "transactionId",
+          type: "Int",
+          foreignKeyFor: ["transaction"],
+        },
+        profileId: {
+          name: "profileId",
+          type: "Int",
+          foreignKeyFor: ["profile"],
+        },
+        period: {
+          name: "period",
+          type: "String",
+        },
+        amount: {
+          name: "amount",
+          type: "Decimal",
+        },
+        allocationType: {
+          name: "allocationType",
+          type: "CompensationAllocationType",
+          default: "MANUAL_ADJUST",
+        },
+        sourceAllocationId: {
+          name: "sourceAllocationId",
+          type: "Int",
+          optional: true,
+          foreignKeyFor: ["sourceAllocation"],
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+        },
+        transaction: {
+          name: "transaction",
+          type: "FinancialTransaction",
+          relation: {
+            opposite: "allocations",
+            fields: ["transactionId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
+        },
+        profile: {
+          name: "profile",
+          type: "CompensationProfile",
+          relation: {
+            opposite: "allocations",
+            fields: ["profileId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
+        },
+        sourceAllocation: {
+          name: "sourceAllocation",
+          type: "FinancialTransactionAllocation",
+          optional: true,
+          relation: {
+            opposite: "derivedAllocations",
+            name: "AllocationSource",
+            fields: ["sourceAllocationId"],
+            references: ["id"],
+            onDelete: "SetNull",
+          },
+        },
+        derivedAllocations: {
+          name: "derivedAllocations",
+          type: "FinancialTransactionAllocation",
+          array: true,
+          relation: { opposite: "sourceAllocation", name: "AllocationSource" },
         },
       },
       idFields: ["id"],
@@ -5775,6 +6022,15 @@ export class SchemaType implements SchemaDef {
       values: {
         INCOME: "INCOME",
         EXPENSE: "EXPENSE",
+      },
+    },
+    CompensationAllocationType: {
+      name: "CompensationAllocationType",
+      values: {
+        MANUAL_ADJUST: "MANUAL_ADJUST",
+        ORIGINAL: "ORIGINAL",
+        ROLLOVER_IN: "ROLLOVER_IN",
+        ROLLOVER_OUT: "ROLLOVER_OUT",
       },
     },
   } as const;

@@ -59,6 +59,7 @@ export type UpdateFinancialTransactionInput = {
 const NON_RUT_CHARS_REGEX = /[^0-9k]/gi;
 const NON_ACCOUNT_CHARS_REGEX = /[^0-9a-z]/gi;
 const LEADING_ZEROS_REGEX = /^0+/;
+const PERIOD_REGEX = /^\d{4}-(0[1-9]|1[0-2])$/;
 
 const normalizeRut = (value: null | string | undefined) => {
   if (!value) return "";
@@ -72,6 +73,24 @@ const normalizeAccount = (value: null | string | undefined) => {
   const normalized = compact.replace(LEADING_ZEROS_REGEX, "");
   return normalized.length > 0 ? normalized : "0";
 };
+
+function assertPeriodOrThrow(period: string) {
+  if (!PERIOD_REGEX.test(period)) {
+    throw new Error("Periodo inválido. Usa formato YYYY-MM.");
+  }
+}
+
+function getPeriodRange(period: string) {
+  assertPeriodOrThrow(period);
+  const [yearRaw, monthRaw] = period.split("-");
+  const year = Number(yearRaw);
+  const monthIndex = Number(monthRaw) - 1;
+  const from = new Date(Date.UTC(year, monthIndex, 1, 0, 0, 0));
+  const to = new Date(Date.UTC(year, monthIndex + 1, 0, 23, 59, 59, 999));
+  return { from, to };
+}
+
+const toPeriod = (value: Date) => value.toISOString().slice(0, 7);
 
 type CounterpartLookup = {
   byAccount: Map<string, number>;
@@ -835,6 +854,7 @@ export async function syncUncategorizedTransactionsByPatterns() {
 export async function listFinancialTransactions(params: {
   from?: Date;
   to?: Date;
+  effectivePeriod?: string;
   categoryId?: number;
   type?: string;
   search?: string;
@@ -878,6 +898,43 @@ export async function listFinancialTransactions(params: {
     where.NOT = [
       {
         sourceId: { in: cashbackSettlementSourceIds },
+      },
+    ];
+  }
+
+  if (params.effectivePeriod) {
+    const { from, to } = getPeriodRange(params.effectivePeriod);
+    const [periodAllocations, periodTransactionsWithoutAllocations] = await Promise.all([
+      db.$queryRaw<Array<{ transactionId: number }>>`
+        SELECT DISTINCT transaction_id AS "transactionId"
+        FROM financial_transaction_allocations
+        WHERE period = ${params.effectivePeriod}
+      `,
+      db.$queryRaw<Array<{ id: number }>>`
+        SELECT ft.id
+        FROM financial_transactions ft
+        WHERE ft.date >= ${from}
+          AND ft.date <= ${to}
+          AND NOT EXISTS (
+            SELECT 1
+            FROM financial_transaction_allocations fta
+            WHERE fta.transaction_id = ft.id
+          )
+      `,
+    ]);
+
+    const effectiveTransactionIds = Array.from(
+      new Set([
+        ...periodAllocations.map((row) => row.transactionId),
+        ...periodTransactionsWithoutAllocations.map((row) => row.id),
+      ]),
+    );
+
+    const existingAnd = Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : [];
+    where.AND = [
+      ...existingAnd,
+      {
+        id: { in: effectiveTransactionIds.length > 0 ? effectiveTransactionIds : [-1] },
       },
     ];
   }
@@ -1575,5 +1632,512 @@ export async function updateFinancialAutoCategoryRule(
 export async function deleteFinancialAutoCategoryRule(id: number) {
   return db.financialAutoCategoryRule.delete({
     where: { id },
+  });
+}
+
+export type CompensationProfileInput = {
+  categoryId: number;
+  counterpartId?: null | number;
+  isActive?: boolean;
+  name: string;
+  timezone?: string;
+};
+
+export type CompensationBudgetInput = {
+  baseAmount: number;
+  isLocked?: boolean;
+  period: string;
+};
+
+export type ReallocateTransactionInput = {
+  amount: number;
+  fromPeriod: string;
+  profileId: number;
+  targetPeriod: string;
+};
+
+function signedAllocationAmount(allocationType: string, amount: number) {
+  if (allocationType === "ROLLOVER_OUT") {
+    return -Math.abs(amount);
+  }
+  return Math.abs(amount);
+}
+
+type CompensationProfileRow = {
+  categoryId: number;
+  categoryName: string;
+  categoryType: TransactionType;
+  counterpartBankAccountHolder: null | string;
+  counterpartId: null | number;
+  counterpartIdentificationNumber: null | string;
+  id: number;
+  isActive: boolean;
+  name: string;
+  timezone: string;
+};
+
+function mapCompensationProfileRow(row: CompensationProfileRow) {
+  return {
+    category: {
+      id: row.categoryId,
+      name: row.categoryName,
+      type: row.categoryType,
+    },
+    categoryId: row.categoryId,
+    counterpart:
+      row.counterpartId == null
+        ? null
+        : {
+            bankAccountHolder: row.counterpartBankAccountHolder ?? "",
+            id: row.counterpartId,
+            identificationNumber: row.counterpartIdentificationNumber ?? "",
+          },
+    counterpartId: row.counterpartId,
+    id: row.id,
+    isActive: row.isActive,
+    name: row.name,
+    timezone: row.timezone,
+  };
+}
+
+async function getCompensationProfileById(id: number) {
+  const rows = await db.$queryRaw<CompensationProfileRow[]>`
+    SELECT
+      cp.id AS id,
+      cp.name AS name,
+      cp.is_active AS "isActive",
+      cp.timezone AS timezone,
+      cp.category_id AS "categoryId",
+      tc.name AS "categoryName",
+      tc.type AS "categoryType",
+      cp.counterpart_id AS "counterpartId",
+      c.bank_account_holder AS "counterpartBankAccountHolder",
+      c.identification_number AS "counterpartIdentificationNumber"
+    FROM compensation_profiles cp
+    INNER JOIN transaction_categories tc ON tc.id = cp.category_id
+    LEFT JOIN counterparts c ON c.id = cp.counterpart_id
+    WHERE cp.id = ${id}
+    LIMIT 1
+  `;
+  const row = rows[0];
+  return row ? mapCompensationProfileRow(row) : null;
+}
+
+export async function listCompensationProfiles() {
+  const rows = await db.$queryRaw<CompensationProfileRow[]>`
+    SELECT
+      cp.id AS id,
+      cp.name AS name,
+      cp.is_active AS "isActive",
+      cp.timezone AS timezone,
+      cp.category_id AS "categoryId",
+      tc.name AS "categoryName",
+      tc.type AS "categoryType",
+      cp.counterpart_id AS "counterpartId",
+      c.bank_account_holder AS "counterpartBankAccountHolder",
+      c.identification_number AS "counterpartIdentificationNumber"
+    FROM compensation_profiles cp
+    INNER JOIN transaction_categories tc ON tc.id = cp.category_id
+    LEFT JOIN counterparts c ON c.id = cp.counterpart_id
+    ORDER BY cp.is_active DESC, cp.name ASC
+  `;
+  return rows.map(mapCompensationProfileRow);
+}
+
+export async function createCompensationProfile(data: CompensationProfileInput) {
+  const category = await db.transactionCategory.findUnique({
+    where: { id: data.categoryId },
+    select: { id: true, type: true },
+  });
+  if (!category) {
+    throw new Error("Categoría no encontrada");
+  }
+  if (category.type !== "EXPENSE") {
+    throw new Error("Solo se permiten perfiles de compensación para categorías de egreso.");
+  }
+
+  if (data.counterpartId != null) {
+    const counterpart = await db.counterpart.findUnique({
+      where: { id: data.counterpartId },
+      select: { id: true },
+    });
+    if (!counterpart) {
+      throw new Error("Contraparte no encontrada");
+    }
+  }
+
+  const name = data.name.trim();
+  if (!name) {
+    throw new Error("El nombre del perfil es obligatorio");
+  }
+
+  const rows = await db.$queryRaw<Array<{ id: number }>>`
+    INSERT INTO compensation_profiles (
+      name, category_id, counterpart_id, is_active, timezone, created_at, updated_at
+    )
+    VALUES (
+      ${name},
+      ${data.categoryId},
+      ${data.counterpartId ?? null},
+      ${data.isActive ?? true},
+      ${data.timezone?.trim() || "America/Santiago"},
+      NOW(),
+      NOW()
+    )
+    RETURNING id
+  `;
+  const createdId = rows[0]?.id;
+  if (!createdId) {
+    throw new Error("No se pudo crear el perfil de compensación");
+  }
+  const created = await getCompensationProfileById(createdId);
+  if (!created) {
+    throw new Error("No se pudo cargar el perfil creado");
+  }
+  return created;
+}
+
+export async function updateCompensationProfile(
+  id: number,
+  data: Partial<CompensationProfileInput>,
+) {
+  if (data.categoryId != null) {
+    const category = await db.transactionCategory.findUnique({
+      where: { id: data.categoryId },
+      select: { id: true, type: true },
+    });
+    if (!category) {
+      throw new Error("Categoría no encontrada");
+    }
+    if (category.type !== "EXPENSE") {
+      throw new Error("Solo se permiten perfiles de compensación para categorías de egreso.");
+    }
+  }
+
+  if (data.counterpartId != null) {
+    const counterpart = await db.counterpart.findUnique({
+      where: { id: data.counterpartId },
+      select: { id: true },
+    });
+    if (!counterpart) {
+      throw new Error("Contraparte no encontrada");
+    }
+  }
+
+  const existing = await db.$queryRaw<Array<{ id: number }>>`
+    SELECT id FROM compensation_profiles WHERE id = ${id} LIMIT 1
+  `;
+  if (existing.length === 0) {
+    throw new Error("Perfil de compensación no encontrado");
+  }
+
+  await db.$executeRaw`
+    UPDATE compensation_profiles
+    SET
+      name = COALESCE(${data.name?.trim() || null}, name),
+      category_id = COALESCE(${data.categoryId ?? null}, category_id),
+      counterpart_id = CASE
+        WHEN ${data.counterpartId !== undefined}
+        THEN ${data.counterpartId ?? null}
+        ELSE counterpart_id
+      END,
+      is_active = COALESCE(${data.isActive ?? null}, is_active),
+      timezone = COALESCE(${data.timezone?.trim() || null}, timezone),
+      updated_at = NOW()
+    WHERE id = ${id}
+  `;
+
+  const updated = await getCompensationProfileById(id);
+  if (!updated) {
+    throw new Error("No se pudo cargar el perfil actualizado");
+  }
+  return updated;
+}
+
+export async function upsertCompensationPeriodBudget(
+  profileId: number,
+  data: CompensationBudgetInput,
+) {
+  assertPeriodOrThrow(data.period);
+  const profile = await db.$queryRaw<Array<{ id: number }>>`
+    SELECT id FROM compensation_profiles WHERE id = ${profileId} LIMIT 1
+  `;
+  if (profile.length === 0) {
+    throw new Error("Perfil de compensación no encontrado");
+  }
+
+  const rows = await db.$queryRaw<
+    Array<{ baseAmount: number; id: number; isLocked: boolean; period: string; profileId: number }>
+  >`
+    INSERT INTO compensation_period_budgets (
+      profile_id, period, base_amount, is_locked, created_at, updated_at
+    )
+    VALUES (
+      ${profileId},
+      ${data.period},
+      ${new Decimal(data.baseAmount)},
+      ${data.isLocked ?? false},
+      NOW(),
+      NOW()
+    )
+    ON CONFLICT (profile_id, period)
+    DO UPDATE SET
+      base_amount = EXCLUDED.base_amount,
+      is_locked = COALESCE(${data.isLocked ?? null}, compensation_period_budgets.is_locked),
+      updated_at = NOW()
+    RETURNING
+      id,
+      profile_id AS "profileId",
+      period,
+      base_amount AS "baseAmount",
+      is_locked AS "isLocked"
+  `;
+  const row = rows[0];
+  if (!row) {
+    throw new Error("No se pudo guardar el presupuesto");
+  }
+  return row;
+}
+
+export async function listCompensationPeriodLedger(
+  profileId: number,
+  fromPeriod: string,
+  toPeriod: string,
+) {
+  assertPeriodOrThrow(fromPeriod);
+  assertPeriodOrThrow(toPeriod);
+  if (fromPeriod > toPeriod) {
+    throw new Error("Rango de periodos inválido");
+  }
+
+  const [budgets, allocations] = await Promise.all([
+    db.$queryRaw<Array<{ baseAmount: number; isLocked: boolean; period: string }>>`
+      SELECT
+        period,
+        base_amount AS "baseAmount",
+        is_locked AS "isLocked"
+      FROM compensation_period_budgets
+      WHERE profile_id = ${profileId}
+        AND period >= ${fromPeriod}
+        AND period <= ${toPeriod}
+      ORDER BY period ASC
+    `,
+    db.$queryRaw<Array<{ allocationType: string; amount: number; period: string }>>`
+      SELECT
+        period,
+        allocation_type AS "allocationType",
+        amount
+      FROM financial_transaction_allocations
+      WHERE profile_id = ${profileId}
+        AND period >= ${fromPeriod}
+        AND period <= ${toPeriod}
+      ORDER BY period ASC
+    `,
+  ]);
+
+  const periods: string[] = [];
+  let cursor = `${fromPeriod}-01T00:00:00.000Z`;
+  while (cursor.slice(0, 7) <= toPeriod) {
+    periods.push(cursor.slice(0, 7));
+    const date = new Date(cursor);
+    date.setUTCMonth(date.getUTCMonth() + 1);
+    cursor = date.toISOString();
+  }
+
+  const budgetByPeriod = new Map(
+    budgets.map((item) => [
+      item.period,
+      { amount: Number(item.baseAmount), isLocked: item.isLocked },
+    ]),
+  );
+  const allocatedByPeriod = new Map<string, number>();
+  for (const allocation of allocations) {
+    const current = allocatedByPeriod.get(allocation.period) ?? 0;
+    allocatedByPeriod.set(
+      allocation.period,
+      current + signedAllocationAmount(allocation.allocationType, Number(allocation.amount)),
+    );
+  }
+
+  return periods.map((period) => {
+    const budget = budgetByPeriod.get(period);
+    const allocated = allocatedByPeriod.get(period) ?? 0;
+    const budgetAmount = budget?.amount ?? 0;
+    return {
+      allocatedAmount: allocated,
+      budgetAmount,
+      isLocked: budget?.isLocked ?? false,
+      period,
+      variance: budgetAmount - allocated,
+    };
+  });
+}
+
+export async function reallocateFinancialTransaction(
+  transactionId: number,
+  data: ReallocateTransactionInput,
+) {
+  assertPeriodOrThrow(data.fromPeriod);
+  assertPeriodOrThrow(data.targetPeriod);
+  if (data.targetPeriod === data.fromPeriod) {
+    throw new Error("El periodo de origen y destino no pueden ser iguales");
+  }
+  if (data.amount <= 0) {
+    throw new Error("El monto a reasignar debe ser mayor a 0");
+  }
+
+  return db.$transaction(async (tx) => {
+    const [profile, transaction] = await Promise.all([
+      tx.$queryRaw<
+        Array<{ categoryId: number; counterpartId: null | number; id: number; isActive: boolean }>
+      >`
+        SELECT
+          id,
+          category_id AS "categoryId",
+          counterpart_id AS "counterpartId",
+          is_active AS "isActive"
+        FROM compensation_profiles
+        WHERE id = ${data.profileId}
+        LIMIT 1
+      `,
+      tx.financialTransaction.findUnique({
+        where: { id: transactionId },
+        select: {
+          amount: true,
+          categoryId: true,
+          counterpartId: true,
+          date: true,
+          id: true,
+          type: true,
+        },
+      }),
+    ]);
+
+    const profileRow = profile[0];
+    if (!profileRow || !profileRow.isActive) {
+      throw new Error("Perfil de compensación no encontrado o inactivo");
+    }
+    if (!transaction) {
+      throw new Error("Transacción no encontrada");
+    }
+    if (transaction.categoryId == null || transaction.categoryId !== profileRow.categoryId) {
+      throw new Error("La transacción no corresponde a la categoría del perfil");
+    }
+    if (
+      profileRow.counterpartId != null &&
+      transaction.counterpartId !== profileRow.counterpartId
+    ) {
+      throw new Error("La contraparte de la transacción no coincide con el perfil");
+    }
+
+    const lockedPeriods = await tx.$queryRaw<Array<{ isLocked: boolean }>>`
+      SELECT is_locked AS "isLocked"
+      FROM compensation_period_budgets
+      WHERE profile_id = ${profileRow.id}
+        AND (period = ${data.fromPeriod} OR period = ${data.targetPeriod})
+    `;
+    if (lockedPeriods.some((item) => item.isLocked)) {
+      throw new Error("No se puede reasignar: el periodo origen o destino está bloqueado.");
+    }
+
+    const originalAllocation = await tx.$queryRaw<Array<{ id: number }>>`
+      SELECT id
+      FROM financial_transaction_allocations
+      WHERE profile_id = ${profileRow.id}
+        AND transaction_id = ${transaction.id}
+        AND allocation_type = 'ORIGINAL'
+      LIMIT 1
+    `;
+    let sourceAllocationId = originalAllocation[0]?.id;
+    if (!sourceAllocationId) {
+      const createdOriginal = await tx.$queryRaw<Array<{ id: number }>>`
+        INSERT INTO financial_transaction_allocations (
+          transaction_id, profile_id, period, amount, allocation_type, created_at, updated_at
+        )
+        VALUES (
+          ${transaction.id},
+          ${profileRow.id},
+          ${toPeriod(transaction.date)},
+          ${new Decimal(Math.abs(Number(transaction.amount)))},
+          'ORIGINAL',
+          NOW(),
+          NOW()
+        )
+        RETURNING id
+      `;
+      sourceAllocationId = createdOriginal[0]?.id;
+    }
+
+    const availableInFromPeriod = (
+      await tx.$queryRaw<Array<{ allocationType: string; amount: number }>>`
+        SELECT
+          allocation_type AS "allocationType",
+          amount
+        FROM financial_transaction_allocations
+        WHERE period = ${data.fromPeriod}
+          AND profile_id = ${profileRow.id}
+          AND transaction_id = ${transaction.id}
+      `
+    ).reduce(
+      (acc, allocation) =>
+        acc + signedAllocationAmount(allocation.allocationType, Number(allocation.amount)),
+      0,
+    );
+
+    if (data.amount > availableInFromPeriod) {
+      throw new Error("Monto excede lo disponible en el periodo de origen");
+    }
+
+    const rolloverOut = await tx.$queryRaw<Array<{ id: number }>>`
+      INSERT INTO financial_transaction_allocations (
+        transaction_id, profile_id, period, amount, allocation_type, source_allocation_id, created_at, updated_at
+      )
+      VALUES (
+        ${transaction.id},
+        ${profileRow.id},
+        ${data.fromPeriod},
+        ${new Decimal(data.amount)},
+        'ROLLOVER_OUT',
+        ${sourceAllocationId},
+        NOW(),
+        NOW()
+      )
+      RETURNING id
+    `;
+
+    const outId = rolloverOut[0]?.id;
+    const rolloverIn = await tx.$queryRaw<
+      Array<{
+        allocationType: string;
+        amount: number;
+        id: number;
+        period: string;
+        profileId: number;
+        transactionId: number;
+      }>
+    >`
+      INSERT INTO financial_transaction_allocations (
+        transaction_id, profile_id, period, amount, allocation_type, source_allocation_id, created_at, updated_at
+      )
+      VALUES (
+        ${transaction.id},
+        ${profileRow.id},
+        ${data.targetPeriod},
+        ${new Decimal(data.amount)},
+        'ROLLOVER_IN',
+        ${outId ?? null},
+        NOW(),
+        NOW()
+      )
+      RETURNING
+        id,
+        transaction_id AS "transactionId",
+        profile_id AS "profileId",
+        period,
+        amount,
+        allocation_type AS "allocationType"
+    `;
+
+    return rolloverIn[0];
   });
 }

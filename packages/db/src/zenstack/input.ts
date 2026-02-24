@@ -2002,3 +2002,168 @@ export type FinancialTransactionGetPayload<
   Args extends $SelectIncludeOmit<$Schema, "FinancialTransaction", true>,
   Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>,
 > = $Result<$Schema, "FinancialTransaction", Args, Options>;
+export type CompensationProfileFindManyArgs = $FindManyArgs<$Schema, "CompensationProfile">;
+export type CompensationProfileFindUniqueArgs = $FindUniqueArgs<$Schema, "CompensationProfile">;
+export type CompensationProfileFindFirstArgs = $FindFirstArgs<$Schema, "CompensationProfile">;
+export type CompensationProfileExistsArgs = $ExistsArgs<$Schema, "CompensationProfile">;
+export type CompensationProfileCreateArgs = $CreateArgs<$Schema, "CompensationProfile">;
+export type CompensationProfileCreateManyArgs = $CreateManyArgs<$Schema, "CompensationProfile">;
+export type CompensationProfileCreateManyAndReturnArgs = $CreateManyAndReturnArgs<
+  $Schema,
+  "CompensationProfile"
+>;
+export type CompensationProfileUpdateArgs = $UpdateArgs<$Schema, "CompensationProfile">;
+export type CompensationProfileUpdateManyArgs = $UpdateManyArgs<$Schema, "CompensationProfile">;
+export type CompensationProfileUpdateManyAndReturnArgs = $UpdateManyAndReturnArgs<
+  $Schema,
+  "CompensationProfile"
+>;
+export type CompensationProfileUpsertArgs = $UpsertArgs<$Schema, "CompensationProfile">;
+export type CompensationProfileDeleteArgs = $DeleteArgs<$Schema, "CompensationProfile">;
+export type CompensationProfileDeleteManyArgs = $DeleteManyArgs<$Schema, "CompensationProfile">;
+export type CompensationProfileCountArgs = $CountArgs<$Schema, "CompensationProfile">;
+export type CompensationProfileAggregateArgs = $AggregateArgs<$Schema, "CompensationProfile">;
+export type CompensationProfileGroupByArgs = $GroupByArgs<$Schema, "CompensationProfile">;
+export type CompensationProfileWhereInput = $WhereInput<$Schema, "CompensationProfile">;
+export type CompensationProfileSelect = $SelectInput<$Schema, "CompensationProfile">;
+export type CompensationProfileInclude = $IncludeInput<$Schema, "CompensationProfile">;
+export type CompensationProfileOmit = $OmitInput<$Schema, "CompensationProfile">;
+export type CompensationProfileGetPayload<
+  Args extends $SelectIncludeOmit<$Schema, "CompensationProfile", true>,
+  Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>,
+> = $Result<$Schema, "CompensationProfile", Args, Options>;
+export type CompensationPeriodBudgetFindManyArgs = $FindManyArgs<
+  $Schema,
+  "CompensationPeriodBudget"
+>;
+export type CompensationPeriodBudgetFindUniqueArgs = $FindUniqueArgs<
+  $Schema,
+  "CompensationPeriodBudget"
+>;
+export type CompensationPeriodBudgetFindFirstArgs = $FindFirstArgs<
+  $Schema,
+  "CompensationPeriodBudget"
+>;
+export type CompensationPeriodBudgetExistsArgs = $ExistsArgs<$Schema, "CompensationPeriodBudget">;
+export type CompensationPeriodBudgetCreateArgs = $CreateArgs<$Schema, "CompensationPeriodBudget">;
+export type CompensationPeriodBudgetCreateManyArgs = $CreateManyArgs<
+  $Schema,
+  "CompensationPeriodBudget"
+>;
+export type CompensationPeriodBudgetCreateManyAndReturnArgs = $CreateManyAndReturnArgs<
+  $Schema,
+  "CompensationPeriodBudget"
+>;
+export type CompensationPeriodBudgetUpdateArgs = $UpdateArgs<$Schema, "CompensationPeriodBudget">;
+export type CompensationPeriodBudgetUpdateManyArgs = $UpdateManyArgs<
+  $Schema,
+  "CompensationPeriodBudget"
+>;
+export type CompensationPeriodBudgetUpdateManyAndReturnArgs = $UpdateManyAndReturnArgs<
+  $Schema,
+  "CompensationPeriodBudget"
+>;
+export type CompensationPeriodBudgetUpsertArgs = $UpsertArgs<$Schema, "CompensationPeriodBudget">;
+export type CompensationPeriodBudgetDeleteArgs = $DeleteArgs<$Schema, "CompensationPeriodBudget">;
+export type CompensationPeriodBudgetDeleteManyArgs = $DeleteManyArgs<
+  $Schema,
+  "CompensationPeriodBudget"
+>;
+export type CompensationPeriodBudgetCountArgs = $CountArgs<$Schema, "CompensationPeriodBudget">;
+export type CompensationPeriodBudgetAggregateArgs = $AggregateArgs<
+  $Schema,
+  "CompensationPeriodBudget"
+>;
+export type CompensationPeriodBudgetGroupByArgs = $GroupByArgs<$Schema, "CompensationPeriodBudget">;
+export type CompensationPeriodBudgetWhereInput = $WhereInput<$Schema, "CompensationPeriodBudget">;
+export type CompensationPeriodBudgetSelect = $SelectInput<$Schema, "CompensationPeriodBudget">;
+export type CompensationPeriodBudgetInclude = $IncludeInput<$Schema, "CompensationPeriodBudget">;
+export type CompensationPeriodBudgetOmit = $OmitInput<$Schema, "CompensationPeriodBudget">;
+export type CompensationPeriodBudgetGetPayload<
+  Args extends $SelectIncludeOmit<$Schema, "CompensationPeriodBudget", true>,
+  Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>,
+> = $Result<$Schema, "CompensationPeriodBudget", Args, Options>;
+export type FinancialTransactionAllocationFindManyArgs = $FindManyArgs<
+  $Schema,
+  "FinancialTransactionAllocation"
+>;
+export type FinancialTransactionAllocationFindUniqueArgs = $FindUniqueArgs<
+  $Schema,
+  "FinancialTransactionAllocation"
+>;
+export type FinancialTransactionAllocationFindFirstArgs = $FindFirstArgs<
+  $Schema,
+  "FinancialTransactionAllocation"
+>;
+export type FinancialTransactionAllocationExistsArgs = $ExistsArgs<
+  $Schema,
+  "FinancialTransactionAllocation"
+>;
+export type FinancialTransactionAllocationCreateArgs = $CreateArgs<
+  $Schema,
+  "FinancialTransactionAllocation"
+>;
+export type FinancialTransactionAllocationCreateManyArgs = $CreateManyArgs<
+  $Schema,
+  "FinancialTransactionAllocation"
+>;
+export type FinancialTransactionAllocationCreateManyAndReturnArgs = $CreateManyAndReturnArgs<
+  $Schema,
+  "FinancialTransactionAllocation"
+>;
+export type FinancialTransactionAllocationUpdateArgs = $UpdateArgs<
+  $Schema,
+  "FinancialTransactionAllocation"
+>;
+export type FinancialTransactionAllocationUpdateManyArgs = $UpdateManyArgs<
+  $Schema,
+  "FinancialTransactionAllocation"
+>;
+export type FinancialTransactionAllocationUpdateManyAndReturnArgs = $UpdateManyAndReturnArgs<
+  $Schema,
+  "FinancialTransactionAllocation"
+>;
+export type FinancialTransactionAllocationUpsertArgs = $UpsertArgs<
+  $Schema,
+  "FinancialTransactionAllocation"
+>;
+export type FinancialTransactionAllocationDeleteArgs = $DeleteArgs<
+  $Schema,
+  "FinancialTransactionAllocation"
+>;
+export type FinancialTransactionAllocationDeleteManyArgs = $DeleteManyArgs<
+  $Schema,
+  "FinancialTransactionAllocation"
+>;
+export type FinancialTransactionAllocationCountArgs = $CountArgs<
+  $Schema,
+  "FinancialTransactionAllocation"
+>;
+export type FinancialTransactionAllocationAggregateArgs = $AggregateArgs<
+  $Schema,
+  "FinancialTransactionAllocation"
+>;
+export type FinancialTransactionAllocationGroupByArgs = $GroupByArgs<
+  $Schema,
+  "FinancialTransactionAllocation"
+>;
+export type FinancialTransactionAllocationWhereInput = $WhereInput<
+  $Schema,
+  "FinancialTransactionAllocation"
+>;
+export type FinancialTransactionAllocationSelect = $SelectInput<
+  $Schema,
+  "FinancialTransactionAllocation"
+>;
+export type FinancialTransactionAllocationInclude = $IncludeInput<
+  $Schema,
+  "FinancialTransactionAllocation"
+>;
+export type FinancialTransactionAllocationOmit = $OmitInput<
+  $Schema,
+  "FinancialTransactionAllocation"
+>;
+export type FinancialTransactionAllocationGetPayload<
+  Args extends $SelectIncludeOmit<$Schema, "FinancialTransactionAllocation", true>,
+  Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>,
+> = $Result<$Schema, "FinancialTransactionAllocation", Args, Options>;

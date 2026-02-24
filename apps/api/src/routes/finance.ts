@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getSessionUser } from "../auth";
 import { zValidator } from "../lib/zod-validator";
 import {
+  createCompensationProfile,
   createFinancialAutoCategoryRule,
   createFinancialTransaction,
   createTransactionCategory,
@@ -11,14 +12,19 @@ import {
   deleteTransactionCategory,
   getFinancialSummaryByCategory,
   listAvailableFinancialTransactionMonths,
+  listCompensationPeriodLedger,
+  listCompensationProfiles,
   listFinancialAutoCategoryRules,
   listFinancialTransactions,
   listTransactionCategories,
+  reallocateFinancialTransaction,
   syncFinancialTransactions,
   syncUncategorizedTransactionsByPatterns,
+  updateCompensationProfile,
   updateFinancialAutoCategoryRule,
   updateFinancialTransaction,
   updateTransactionCategory,
+  upsertCompensationPeriodBudget,
 } from "../services/finance";
 import { reply } from "../utils/reply";
 
@@ -28,6 +34,10 @@ const app = new Hono();
 const listSchema = z.object({
   from: z.string().optional(),
   to: z.string().optional(),
+  effectivePeriod: z
+    .string()
+    .regex(/^\d{4}-(0[1-9]|1[0-2])$/)
+    .optional(),
   categoryId: z.coerce.number().optional(),
   type: z.enum(["INCOME", "EXPENSE"]).optional(),
   search: z.string().optional(),
@@ -77,6 +87,34 @@ const createAutoCategoryRuleSchema = z.object({
 });
 
 const updateAutoCategoryRuleSchema = createAutoCategoryRuleSchema.partial();
+
+const createCompensationProfileSchema = z.object({
+  categoryId: z.number().int().positive(),
+  counterpartId: z.number().int().positive().nullable().optional(),
+  isActive: z.boolean().optional(),
+  name: z.string().min(1),
+  timezone: z.string().min(1).optional(),
+});
+
+const updateCompensationProfileSchema = createCompensationProfileSchema.partial();
+
+const upsertCompensationBudgetSchema = z.object({
+  baseAmount: z.number(),
+  isLocked: z.boolean().optional(),
+  period: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
+});
+
+const compensationLedgerQuerySchema = z.object({
+  fromPeriod: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
+  toPeriod: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
+});
+
+const reallocateTransactionSchema = z.object({
+  amount: z.number().positive(),
+  fromPeriod: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
+  profileId: z.number().int().positive(),
+  targetPeriod: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
+});
 
 // Middleware for auth
 app.use("*", async (c, next) => {
@@ -200,5 +238,65 @@ app.delete("/auto-category-rules/:id", async (c) => {
   await deleteFinancialAutoCategoryRule(id);
   return reply(c, { status: "ok" });
 });
+
+// 8. Compensation profiles and period allocations
+app.get("/compensation-profiles", async (c) => {
+  const profiles = await listCompensationProfiles();
+  return reply(c, { status: "ok", data: profiles });
+});
+
+app.post(
+  "/compensation-profiles",
+  zValidator("json", createCompensationProfileSchema),
+  async (c) => {
+    const payload = c.req.valid("json");
+    const profile = await createCompensationProfile(payload);
+    return reply(c, { status: "ok", data: profile });
+  },
+);
+
+app.put(
+  "/compensation-profiles/:id",
+  zValidator("json", updateCompensationProfileSchema),
+  async (c) => {
+    const id = Number(c.req.param("id"));
+    const payload = c.req.valid("json");
+    const profile = await updateCompensationProfile(id, payload);
+    return reply(c, { status: "ok", data: profile });
+  },
+);
+
+app.put(
+  "/compensation-profiles/:id/budget",
+  zValidator("json", upsertCompensationBudgetSchema),
+  async (c) => {
+    const id = Number(c.req.param("id"));
+    const payload = c.req.valid("json");
+    const budget = await upsertCompensationPeriodBudget(id, payload);
+    return reply(c, { status: "ok", data: budget });
+  },
+);
+
+app.get(
+  "/compensation-profiles/:id/ledger",
+  zValidator("query", compensationLedgerQuerySchema),
+  async (c) => {
+    const id = Number(c.req.param("id"));
+    const { fromPeriod, toPeriod } = c.req.valid("query");
+    const ledger = await listCompensationPeriodLedger(id, fromPeriod, toPeriod);
+    return reply(c, { status: "ok", data: ledger });
+  },
+);
+
+app.post(
+  "/transactions/:id/reallocate",
+  zValidator("json", reallocateTransactionSchema),
+  async (c) => {
+    const id = Number(c.req.param("id"));
+    const payload = c.req.valid("json");
+    const allocation = await reallocateFinancialTransaction(id, payload);
+    return reply(c, { status: "ok", data: allocation });
+  },
+);
 
 export const financeRoutes = app;

@@ -242,6 +242,7 @@ model Counterpart {
   // Relations
   accounts               CounterpartAccount[]
   autoCategoryRules      FinancialAutoCategoryRule[]
+  compensationProfiles   CompensationProfile[]
   financialTransactions  FinancialTransaction[]
   withdrawTransactions   WithdrawTransaction[]
   releaseTransactions    ReleaseTransaction[]
@@ -1945,6 +1946,13 @@ enum TransactionType {
   EXPENSE
 }
 
+enum CompensationAllocationType {
+  MANUAL_ADJUST
+  ORIGINAL
+  ROLLOVER_IN
+  ROLLOVER_OUT
+}
+
 model TransactionCategory {
   id           Int                    @id @default(autoincrement())
   name         String
@@ -1956,6 +1964,7 @@ model TransactionCategory {
 
   transactions FinancialTransaction[]
   autoRules    FinancialAutoCategoryRule[]
+  compensationProfiles CompensationProfile[]
   services     Service[]
 
   // Access policies
@@ -2002,6 +2011,7 @@ model FinancialTransaction {
   counterpartId Int?               @map("counterpart_id")
   category    TransactionCategory? @relation(fields: [categoryId], references: [id])
   counterpart Counterpart?         @relation(fields: [counterpartId], references: [id])
+  allocations FinancialTransactionAllocation[]
   serviceSchedules ServiceSchedule[]
   comment     String?
 
@@ -2016,4 +2026,74 @@ model FinancialTransaction {
   @@index([categoryId])
   @@index([counterpartId])
   @@map("financial_transactions")
+}
+
+model CompensationProfile {
+  id            Int                     @id @default(autoincrement())
+  name          String
+  categoryId    Int                     @map("category_id")
+  counterpartId Int?                    @map("counterpart_id")
+  isActive      Boolean                 @default(true) @map("is_active")
+  timezone      String                  @default("America/Santiago")
+  createdAt     DateTime                @default(now()) @map("created_at")
+  updatedAt     DateTime                @updatedAt @map("updated_at")
+
+  category      TransactionCategory     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  counterpart   Counterpart?            @relation(fields: [counterpartId], references: [id], onDelete: SetNull)
+  budgets       CompensationPeriodBudget[]
+  allocations   FinancialTransactionAllocation[]
+
+  // Access policies
+  @@allow('all', auth().status == 'ACTIVE')
+
+  @@index([categoryId])
+  @@index([counterpartId])
+  @@index([isActive])
+  @@map("compensation_profiles")
+}
+
+model CompensationPeriodBudget {
+  id            Int                 @id @default(autoincrement())
+  profileId     Int                 @map("profile_id")
+  period        String              @db.VarChar(7) // YYYY-MM
+  baseAmount    Decimal             @map("base_amount") @db.Decimal(19, 4)
+  isLocked      Boolean             @default(false) @map("is_locked")
+  createdAt     DateTime            @default(now()) @map("created_at")
+  updatedAt     DateTime            @updatedAt @map("updated_at")
+
+  profile       CompensationProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  // Access policies
+  @@allow('all', auth().status == 'ACTIVE')
+
+  @@unique([profileId, period])
+  @@index([profileId])
+  @@index([period])
+  @@map("compensation_period_budgets")
+}
+
+model FinancialTransactionAllocation {
+  id               Int                        @id @default(autoincrement())
+  transactionId    Int                        @map("transaction_id")
+  profileId        Int                        @map("profile_id")
+  period           String                     @db.VarChar(7) // YYYY-MM
+  amount           Decimal                    @db.Decimal(19, 4)
+  allocationType   CompensationAllocationType @default(MANUAL_ADJUST) @map("allocation_type")
+  sourceAllocationId Int?                     @map("source_allocation_id")
+  createdAt        DateTime                   @default(now()) @map("created_at")
+  updatedAt        DateTime                   @updatedAt @map("updated_at")
+
+  transaction      FinancialTransaction       @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  profile          CompensationProfile        @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  sourceAllocation FinancialTransactionAllocation? @relation("AllocationSource", fields: [sourceAllocationId], references: [id], onDelete: SetNull)
+  derivedAllocations FinancialTransactionAllocation[] @relation("AllocationSource")
+
+  // Access policies
+  @@allow('all', auth().status == 'ACTIVE')
+
+  @@index([transactionId])
+  @@index([profileId])
+  @@index([period])
+  @@index([sourceAllocationId])
+  @@map("financial_transaction_allocations")
 }

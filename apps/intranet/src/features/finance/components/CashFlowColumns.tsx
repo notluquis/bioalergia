@@ -2,7 +2,7 @@ import type { Counterpart, FinancialTransaction, TransactionCategory } from "@fi
 import { Autocomplete, Chip, EmptyState, ListBox, SearchField } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
-import { ArrowUpDown, Pencil } from "lucide-react";
+import { ArrowRightLeft, ArrowUpDown, Pencil } from "lucide-react";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/Button";
 import { isNonAccountableCategory } from "../utils/non-accountable-category";
@@ -384,13 +384,24 @@ export const columns: ColumnDef<TransactionWithRelations>[] = [
     id: "actions",
     enableResizing: false,
     header: "",
-    maxSize: 64,
-    minSize: 56,
-    size: 56,
+    maxSize: 108,
+    minSize: 96,
+    size: 96,
     cell: ({ row, table }) => {
       // table.options.meta is typed via the global TableMeta declaration in tanstack-table.d.ts
       return (
-        <div className="flex justify-center">
+        <div className="flex justify-center gap-1">
+          <Button
+            aria-label="Reasignar periodo"
+            className="h-7 w-7 min-w-7 p-0"
+            isIconOnly
+            size="sm"
+            title="Reasignar periodo"
+            variant="ghost"
+            onClick={() => table.options.meta?.onReallocate?.(row.original)}
+          >
+            <ArrowRightLeft className="h-3.5 w-3.5" />
+          </Button>
           <Button
             aria-label="Editar movimiento"
             className="h-7 w-7 min-w-7 p-0"
