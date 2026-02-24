@@ -654,7 +654,7 @@ export function CashFlowPage() {
   const [reallocateProfileId, setReallocateProfileId] = useState<null | number>(null);
   const [reallocateFromPeriod, setReallocateFromPeriod] = useState(dayjs().format("YYYY-MM"));
   const [reallocateTargetPeriod, setReallocateTargetPeriod] = useState(dayjs().format("YYYY-MM"));
-  const [reallocateAmount, setReallocateAmount] = useState("");
+  const [reallocateAmount, setReallocateAmount] = useState<null | number>(null);
   const { data: availableMonths = [] } = useAvailableFinancialMonths();
 
   const monthOptions = useMemo(() => {
@@ -1119,7 +1119,7 @@ export function CashFlowPage() {
       toast.success("Movimiento reasignado al período destino");
       setIsReallocateOpen(false);
       setReallocateTx(null);
-      setReallocateAmount("");
+      setReallocateAmount(null);
     },
     onError: (error) => {
       const message = error instanceof ApiError ? error.message : "Error al reasignar movimiento";
@@ -1361,7 +1361,7 @@ export function CashFlowPage() {
     setReallocateProfileId(defaultProfile?.id ?? null);
     setReallocateFromPeriod(fromPeriod);
     setReallocateTargetPeriod(targetPeriod);
-    setReallocateAmount(String(Math.abs(Number(tx.amount))));
+    setReallocateAmount(Math.abs(Number(tx.amount)));
     setIsReallocateOpen(true);
   };
 
@@ -1379,13 +1379,12 @@ export function CashFlowPage() {
       toast.error("El período destino debe ser al menos un mes posterior al origen");
       return;
     }
-    const amount = Number.parseFloat(reallocateAmount.replace(/[^0-9.-]/g, ""));
-    if (!Number.isFinite(amount) || amount <= 0) {
+    if (reallocateAmount == null || !Number.isFinite(reallocateAmount) || reallocateAmount <= 0) {
       toast.error("Ingresa un monto válido");
       return;
     }
     reallocateTransactionMutation.mutate({
-      amount,
+      amount: reallocateAmount,
       fromPeriod: reallocateFromPeriod,
       profileId: reallocateProfileId,
       targetPeriod: reallocateTargetPeriod,
@@ -3054,9 +3053,20 @@ export function CashFlowPage() {
                     <Label>Monto a arrastrar</Label>
                     <Input
                       inputMode="decimal"
+                      min={0}
                       placeholder="Ej: 120000"
-                      value={reallocateAmount}
-                      onChange={(e) => setReallocateAmount(e.target.value.replace(/[^0-9.-]/g, ""))}
+                      step="0.01"
+                      type="number"
+                      value={reallocateAmount == null ? "" : String(reallocateAmount)}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === "") {
+                          setReallocateAmount(null);
+                          return;
+                        }
+                        const parsed = Number(value);
+                        setReallocateAmount(Number.isFinite(parsed) ? parsed : null);
+                      }}
                     />
                   </TextField>
                 </form>

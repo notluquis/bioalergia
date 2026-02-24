@@ -1989,7 +1989,7 @@ export async function reallocateFinancialTransaction(
       message: "El periodo destino debe ser al menos un mes posterior al origen",
     });
   }
-  if (data.amount <= 0) {
+  if (!Number.isFinite(data.amount) || data.amount <= 0) {
     throw new AppError(422, {
       code: "INVALID_AMOUNT",
       message: "El monto a reasignar debe ser mayor a 0",
