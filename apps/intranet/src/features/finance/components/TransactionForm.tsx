@@ -1,6 +1,7 @@
 import type { FinancialTransaction, TransactionCategory } from "@finanzas/db";
 import {
   Button,
+  Chip,
   DateField,
   FieldError,
   Input,
@@ -18,6 +19,7 @@ import { type ChangeEvent, useEffect, useState } from "react";
 import { z } from "zod";
 import { apiClient } from "@/lib/api-client";
 import { toast } from "@/lib/toast-interceptor";
+import { isNonAccountableCategory } from "../utils/non-accountable-category";
 
 const schema = z.object({
   date: z.string(),
@@ -40,6 +42,7 @@ const TransactionCategorySchema = z
   .object({
     color: z.string().nullable().optional(),
     id: z.number(),
+    icon: z.string().nullable().optional(),
     name: z.string(),
   })
   .passthrough();
@@ -297,7 +300,12 @@ export function TransactionForm({ isOpen, onClose, initialData }: Props) {
                                 className="w-3 h-3 rounded-full shrink-0"
                                 style={{ backgroundColor: cat.color ?? "#ccc" }}
                               />
-                              {cat.name}
+                              <span>{cat.name}</span>
+                              {isNonAccountableCategory(cat) ? (
+                                <Chip color="warning" size="sm" variant="soft">
+                                  No contabilizable
+                                </Chip>
+                              ) : null}
                             </div>
                             <ListBox.ItemIndicator />
                           </ListBox.Item>

@@ -5,6 +5,7 @@ import dayjs from "dayjs";
 import { ArrowUpDown, Pencil } from "lucide-react";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/Button";
+import { isNonAccountableCategory } from "../utils/non-accountable-category";
 
 // Extend with relations
 export type TransactionWithRelations = FinancialTransaction & {
@@ -289,7 +290,14 @@ export const columns: ColumnDef<TransactionWithRelations>[] = [
               className="inline-block w-2 h-2 rounded-full shrink-0"
               style={{ backgroundColor: cat.color ?? "#ccc" }}
             />
-            <Chip.Label>{cat.name}</Chip.Label>
+            <Chip.Label>
+              <span>{cat.name}</span>
+              {isNonAccountableCategory(cat) ? (
+                <Chip className="ml-1" color="warning" size="sm" variant="soft">
+                  No contabilizable
+                </Chip>
+              ) : null}
+            </Chip.Label>
           </Chip>
         ) : (
           <span className="text-default-300 italic">Sin categoría</span>
@@ -345,6 +353,11 @@ export const columns: ColumnDef<TransactionWithRelations>[] = [
                         style={{ backgroundColor: category.color ?? "#ccc" }}
                       />
                       <span>{category.name}</span>
+                      {isNonAccountableCategory(category) ? (
+                        <Chip color="warning" size="sm" variant="soft">
+                          No contabilizable
+                        </Chip>
+                      ) : null}
                     </div>
                     <ListBox.ItemIndicator />
                   </ListBox.Item>
