@@ -656,13 +656,9 @@ export function CashFlowPage() {
   const { data: availableMonths = [] } = useAvailableFinancialMonths();
 
   const monthOptions = useMemo(() => {
-    const baseMonths = new Set(availableMonths.filter((value) => MONTH_VALUE_REGEX.test(value)));
-    const currentMonth = dayjs().startOf("month");
-    for (let index = 0; index < 6; index += 1) {
-      baseMonths.add(currentMonth.add(index, "month").format("YYYY-MM"));
-    }
-
-    const uniqueMonths = Array.from(baseMonths).sort((a, b) => b.localeCompare(a));
+    const uniqueMonths = Array.from(
+      new Set(availableMonths.filter((value) => MONTH_VALUE_REGEX.test(value))),
+    ).sort((a, b) => b.localeCompare(a));
 
     if (uniqueMonths.length === 0) {
       const value = dayjs().startOf("month").format("YYYY-MM");
