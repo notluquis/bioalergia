@@ -3,6 +3,9 @@ import {
   Button,
   Card,
   Chip,
+  ColorField,
+  ColorPicker,
+  ColorSwatch,
   ColorSwatchPicker,
   Description,
   Dropdown,
@@ -571,21 +574,26 @@ function CategoryColorPicker({
   return (
     <div className="space-y-2">
       <Label>{label}</Label>
-      <div className="flex items-center gap-3">
-        <ColorSwatchPicker
-          size="sm"
-          value={parseColor(value)}
-          onChange={(color) => onChange(color.toString("hex"))}
-        >
-          {CATEGORY_COLOR_PRESETS.map((color) => (
-            <ColorSwatchPicker.Item key={color} color={color}>
-              <ColorSwatchPicker.Swatch />
-              <ColorSwatchPicker.Indicator />
-            </ColorSwatchPicker.Item>
-          ))}
-        </ColorSwatchPicker>
-        <span className="text-tiny text-default-500 uppercase">{value}</span>
-      </div>
+      <ColorPicker value={parseColor(value)} onChange={(color) => onChange(color.toString("hex"))}>
+        <ColorPicker.Trigger className="flex items-center gap-2 rounded-md border border-default-300/70 px-2 py-1.5">
+          <ColorSwatch size="sm" />
+          <span className="text-tiny text-default-500 uppercase">{value}</span>
+        </ColorPicker.Trigger>
+        <ColorPicker.Popover className="gap-2 p-2">
+          <ColorSwatchPicker className="justify-center" size="xs">
+            {CATEGORY_COLOR_PRESETS.map((color) => (
+              <ColorSwatchPicker.Item key={color} color={color}>
+                <ColorSwatchPicker.Swatch />
+                <ColorSwatchPicker.Indicator />
+              </ColorSwatchPicker.Item>
+            ))}
+          </ColorSwatchPicker>
+          <ColorField>
+            <Label>Color</Label>
+            <ColorField.Input />
+          </ColorField>
+        </ColorPicker.Popover>
+      </ColorPicker>
     </div>
   );
 }
@@ -2186,7 +2194,12 @@ export function CashFlowPage() {
                       isSelected={newCategoryIsNonAccountable}
                       onChange={(value) => setNewCategoryIsNonAccountable(value)}
                     >
-                      <Switch.Content>No contabilizable</Switch.Content>
+                      <Switch.Control>
+                        <Switch.Thumb />
+                      </Switch.Control>
+                      <Switch.Content>
+                        <Label>No contabilizable</Label>
+                      </Switch.Content>
                     </Switch>
 
                     <div className="md:col-span-5">
@@ -2254,7 +2267,12 @@ export function CashFlowPage() {
                                 isSelected={editingCategoryIsNonAccountable}
                                 onChange={(value) => setEditingCategoryIsNonAccountable(value)}
                               >
-                                <Switch.Content>No contabilizable</Switch.Content>
+                                <Switch.Control>
+                                  <Switch.Thumb />
+                                </Switch.Control>
+                                <Switch.Content>
+                                  <Label>No contabilizable</Label>
+                                </Switch.Content>
                               </Switch>
                               <div className="flex gap-2">
                                 <Button
@@ -2390,7 +2408,12 @@ export function CashFlowPage() {
                       isSelected={newCompensationIsActive}
                       onChange={(value) => setNewCompensationIsActive(value)}
                     >
-                      <Switch.Content>Activo</Switch.Content>
+                      <Switch.Control>
+                        <Switch.Thumb />
+                      </Switch.Control>
+                      <Switch.Content>
+                        <Label>Activo</Label>
+                      </Switch.Content>
                     </Switch>
                     <div className="md:col-span-6">
                       <Button type="submit" isPending={createCompensationProfileMutation.isPending}>
