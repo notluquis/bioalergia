@@ -58,10 +58,11 @@ export function Header() {
     }))
     .filter((item) => Boolean(item.label?.trim()));
   const pageTitle = crumbs[crumbs.length - 1]?.label ?? "Inicio";
-  const showBreadcrumbs = !(
-    crumbs.length === 0 ||
-    (crumbs.length === 1 && crumbs[0]?.label === pageTitle)
-  );
+  const breadcrumbItems =
+    crumbs.length > 1 && crumbs[crumbs.length - 1]?.label === pageTitle
+      ? crumbs.slice(0, -1)
+      : crumbs;
+  const showBreadcrumbs = breadcrumbItems.length > 0;
 
   const handleLogout = async () => {
     await logout();
@@ -74,9 +75,9 @@ export function Header() {
         <div className="min-w-0 flex-1">
           {showBreadcrumbs ? (
             <Breadcrumbs className="font-medium text-default-500 text-xs">
-              {crumbs.length === 0 && <Breadcrumbs.Item>Inicio</Breadcrumbs.Item>}
-              {crumbs.map((crumb, i) => {
-                const isLast = i === crumbs.length - 1;
+              {breadcrumbItems.length === 0 && <Breadcrumbs.Item>Inicio</Breadcrumbs.Item>}
+              {breadcrumbItems.map((crumb, i) => {
+                const isLast = i === breadcrumbItems.length - 1;
                 return (
                   <Breadcrumbs.Item key={`${crumb.to}-${crumb.label}`}>
                     {!isLast ? (

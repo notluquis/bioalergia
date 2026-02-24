@@ -606,6 +606,7 @@ export function CashFlowPage() {
   const [activeTab, setActiveTab] = useState<CashFlowTab>("cash-flow");
   const { isTabMounted, markTabAsMounted } = useLazyTabs<CashFlowTab>("cash-flow");
   const [selectedCategoryFilters, setSelectedCategoryFilters] = useState<string[]>([]);
+  const [categoryFilterSearch, setCategoryFilterSearch] = useState("");
   const [columnFilters, setColumnFilters] = useState<CashFlowColumnFilters>(DEFAULT_COLUMN_FILTERS);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTx, setEditingTx] = useState<FinancialTransaction | null>(null);
@@ -739,6 +740,11 @@ export function CashFlowPage() {
     () => new Map(categoryFilterOptions.map((option) => [option.value, option.label])),
     [categoryFilterOptions],
   );
+  const visibleCategoryFilterOptions = useMemo(() => {
+    const search = normalizeText(categoryFilterSearch);
+    if (!search) return categoryFilterOptions;
+    return categoryFilterOptions.filter((option) => normalizeText(option.label).includes(search));
+  }, [categoryFilterOptions, categoryFilterSearch]);
 
   const counterpartOptions = useMemo(
     () =>
@@ -1932,36 +1938,56 @@ export function CashFlowPage() {
                     <Dropdown>
                       <Dropdown.Trigger>
                         <Button
-                          className="h-10 w-full justify-start rounded-xl border-default-300/60 bg-default-100/40 text-left"
-                          variant="outline"
+                          className="h-10 w-full justify-between rounded-xl px-3"
+                          variant="secondary"
                         >
-                          {selectedCategoryLabel}
+                          <span className="truncate text-left">{selectedCategoryLabel}</span>
+                          <span className="text-xs text-default-500">
+                            {selectedCategoryFilters.length > 0
+                              ? `${selectedCategoryFilters.length} seleccionadas`
+                              : "Todas"}
+                          </span>
                         </Button>
                       </Dropdown.Trigger>
                       <Dropdown.Popover>
-                        <ListBox
-                          className="max-h-60 w-[320px] overflow-auto"
-                          selectedKeys={new Set(selectedCategoryFilters)}
-                          selectionMode="multiple"
-                          onSelectionChange={handleCategoryFilterSelection}
-                        >
-                          {categoryFilterOptions.map((option) => (
-                            <ListBox.Item
-                              id={option.value}
-                              key={option.value}
-                              textValue={option.label}
-                            >
-                              <div className="flex items-center gap-2">
-                                <span
-                                  className="h-2.5 w-2.5 rounded-full shrink-0"
-                                  style={{ backgroundColor: option.color }}
-                                />
-                                <span>{option.label}</span>
-                              </div>
-                              <ListBox.ItemIndicator />
-                            </ListBox.Item>
-                          ))}
-                        </ListBox>
+                        <div className="w-[320px] p-2">
+                          <SearchField
+                            aria-label="Buscar categorías"
+                            className="mb-2"
+                            value={categoryFilterSearch}
+                            variant="secondary"
+                            onChange={setCategoryFilterSearch}
+                          >
+                            <SearchField.Group>
+                              <SearchField.SearchIcon />
+                              <SearchField.Input placeholder="Buscar categoría..." />
+                              <SearchField.ClearButton />
+                            </SearchField.Group>
+                          </SearchField>
+                          <ListBox
+                            className="max-h-60 overflow-auto"
+                            selectedKeys={new Set(selectedCategoryFilters)}
+                            selectionMode="multiple"
+                            onSelectionChange={handleCategoryFilterSelection}
+                          >
+                            {visibleCategoryFilterOptions.map((option) => (
+                              <ListBox.Item
+                                id={option.value}
+                                key={option.value}
+                                textValue={option.label}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <span
+                                    className="h-2.5 w-2.5 shrink-0 rounded-full"
+                                    style={{ backgroundColor: option.color }}
+                                  />
+                                  <span>{option.label}</span>
+                                </div>
+                                <ListBox.ItemIndicator />
+                              </ListBox.Item>
+                            ))}
+                          </ListBox>
+                        </div>
                       </Dropdown.Popover>
                     </Dropdown>
                   </div>
@@ -1998,19 +2024,20 @@ export function CashFlowPage() {
                   </div>
 
                   <div className="flex items-end lg:col-span-3">
-                    <div className="rounded-xl border border-default-300/60 bg-default-100/40 px-3 py-2">
-                      <Switch
-                        isSelected={showNonAccountableMovements}
-                        onChange={setShowNonAccountableMovements}
-                      >
-                        <Switch.Control>
-                          <Switch.Thumb />
-                        </Switch.Control>
-                        <Switch.Content>
-                          <Label>Mostrar no contabilizables</Label>
-                        </Switch.Content>
-                      </Switch>
-                    </div>
+                    <Switch
+                      className="h-10"
+                      isSelected={showNonAccountableMovements}
+                      onChange={setShowNonAccountableMovements}
+                    >
+                      <Switch.Control>
+                        <Switch.Thumb />
+                      </Switch.Control>
+                      <Switch.Content>
+                        <Label className="text-sm text-default-600">
+                          Mostrar no contabilizables
+                        </Label>
+                      </Switch.Content>
+                    </Switch>
                   </div>
 
                   <div className="flex items-end justify-end lg:col-span-2">
@@ -2020,6 +2047,7 @@ export function CashFlowPage() {
                       variant="outline"
                       onClick={() => {
                         setSelectedCategoryFilters([]);
+                        setCategoryFilterSearch("");
                         setColumnFilters(DEFAULT_COLUMN_FILTERS);
                         setShowNonAccountableMovements(false);
                         setPage(1);
