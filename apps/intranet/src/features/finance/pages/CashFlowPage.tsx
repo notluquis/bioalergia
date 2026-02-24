@@ -563,16 +563,18 @@ function buildPieCategoryData(
 }
 
 function CategoryColorPicker({
+  className,
   label,
   onChange,
   value,
 }: {
+  className?: string;
   label: string;
   onChange: (hex: string) => void;
   value: string;
 }) {
   return (
-    <div className="space-y-2">
+    <div className={`space-y-2 ${className ?? ""}`.trim()}>
       <Label>{label}</Label>
       <ColorPicker value={parseColor(value)} onChange={(color) => onChange(color.toString("hex"))}>
         <ColorPicker.Trigger className="flex h-10 w-full items-center gap-2 rounded-xl border border-default-300/70 bg-default-100/35 px-3">
@@ -794,6 +796,16 @@ export function CashFlowPage() {
       return true;
     });
   }, [activeCompensationProfiles, reallocateTx]);
+  const targetPeriodOptions = useMemo(() => {
+    const nextPeriod = dayjs(`${reallocateFromPeriod}-01`).add(1, "month").format("YYYY-MM");
+    const filtered = monthOptions.filter((option) => option.value >= nextPeriod);
+    if (filtered.some((option) => option.value === nextPeriod)) {
+      return filtered;
+    }
+    return [{ label: formatMonthLabel(nextPeriod), value: nextPeriod }, ...filtered].sort((a, b) =>
+      b.value.localeCompare(a.value),
+    );
+  }, [monthOptions, reallocateFromPeriod]);
   const nonAccountableCategoryIds = useMemo(
     () =>
       new Set(
@@ -1342,11 +1354,13 @@ export function CashFlowPage() {
       return;
     }
 
+    const fromPeriod = dayjs(tx.date).format("YYYY-MM");
+    const targetPeriod = dayjs(`${fromPeriod}-01`).add(1, "month").format("YYYY-MM");
     const defaultProfile = matchingProfiles[0];
     setReallocateTx(tx);
     setReallocateProfileId(defaultProfile?.id ?? null);
-    setReallocateFromPeriod(dayjs(tx.date).format("YYYY-MM"));
-    setReallocateTargetPeriod(selectedMonth);
+    setReallocateFromPeriod(fromPeriod);
+    setReallocateTargetPeriod(targetPeriod);
     setReallocateAmount(String(Math.abs(Number(tx.amount))));
     setIsReallocateOpen(true);
   };
@@ -1359,6 +1373,10 @@ export function CashFlowPage() {
     }
     if (reallocateProfileId == null) {
       toast.error("Selecciona un perfil de compensación");
+      return;
+    }
+    if (reallocateTargetPeriod <= reallocateFromPeriod) {
+      toast.error("El período destino debe ser al menos un mes posterior al origen");
       return;
     }
     const amount = Number.parseFloat(reallocateAmount.replace(/[^0-9.-]/g, ""));
@@ -1374,6 +1392,12 @@ export function CashFlowPage() {
       transactionId: reallocateTx.id,
     });
   };
+
+  useEffect(() => {
+    if (targetPeriodOptions.length === 0) return;
+    if (targetPeriodOptions.some((option) => option.value === reallocateTargetPeriod)) return;
+    setReallocateTargetPeriod(targetPeriodOptions[0]?.value ?? reallocateTargetPeriod);
+  }, [reallocateTargetPeriod, targetPeriodOptions]);
 
   const handleCreateAutoCategoryRule = (e: React.FormEvent) => {
     e.preventDefault();
@@ -2142,7 +2166,7 @@ export function CashFlowPage() {
               <Card className="border border-default-200/70 bg-linear-to-b from-default-100/40 to-default-50/10 shadow-sm">
                 <div className="p-3">
                   <form
-                    className="grid grid-cols-1 gap-4 md:grid-cols-5"
+                    className="grid grid-cols-1 gap-4 md:grid-cols-5 md:items-end"
                     onSubmit={handleCreateCategory}
                   >
                     <TextField className="md:col-span-2">
@@ -2181,6 +2205,7 @@ export function CashFlowPage() {
                     </Select>
 
                     <CategoryColorPicker
+                      className="md:self-end"
                       label="Color"
                       value={newCategoryColor}
                       onChange={setNewCategoryColor}
@@ -2255,6 +2280,7 @@ export function CashFlowPage() {
                                 </Select.Popover>
                               </Select>
                               <CategoryColorPicker
+                                className="md:self-end"
                                 label="Color"
                                 value={editingCategoryColor}
                                 onChange={setEditingCategoryColor}
@@ -3014,7 +3040,7 @@ export function CashFlowPage() {
                       </Select.Trigger>
                       <Select.Popover>
                         <ListBox>
-                          {monthOptions.map((option) => (
+                          {targetPeriodOptions.map((option) => (
                             <ListBox.Item id={option.value} key={option.value}>
                               {option.label}
                             </ListBox.Item>
