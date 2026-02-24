@@ -16,6 +16,7 @@ const PERSONAL_DR_RULE_NAME_PREFIX = "Sistema - Personal Dr por referencia";
 const PATIENTS_CATEGORY_NAME = "Pacientes";
 const PATIENTS_RULE_NAME = "Sistema - Pacientes por keyword";
 const PATIENTS_KEYWORD = "paciente";
+const NON_ACCOUNTABLE_CATEGORY_ICON = "NON_ACCOUNTABLE";
 const PERSONAL_DR_REFERENCE_PATTERNS = [
   "db4b64d0-a31f-4622-9f7b-ec28f54ab6e8-17",
   "e3c65f7a-64c4-4664-b3ed-87674105d34f-17",
@@ -25,6 +26,14 @@ const PERSONAL_DR_REFERENCE_REGEX =
 const PERSONAL_DR_REFERENCE_SQL_REGEX =
   "^\\s*ref:\\s*[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-17[0-9]*\\s*$";
 const DIACRITICS_REGEX = /[\u0300-\u036f]/g;
+
+async function getNonAccountableCategoryIds() {
+  const categories = await db.transactionCategory.findMany({
+    where: { icon: NON_ACCOUNTABLE_CATEGORY_ICON },
+    select: { id: true },
+  });
+  return categories.map((category) => category.id);
+}
 
 export type CreateFinancialTransactionInput = {
   date: Date;
@@ -1005,6 +1014,14 @@ export async function getFinancialSummaryByCategory(params: { from?: Date; to?: 
     ];
   }
 
+  const nonAccountableCategoryIds = await getNonAccountableCategoryIds();
+  if (nonAccountableCategoryIds.length > 0) {
+    where.NOT = [
+      ...(Array.isArray(where.NOT) ? where.NOT : where.NOT ? [where.NOT] : []),
+      { categoryId: { in: nonAccountableCategoryIds } },
+    ];
+  }
+
   const grouped = await db.financialTransaction.groupBy({
     by: ["categoryId", "type"],
     where,
@@ -1190,6 +1207,7 @@ export async function createTransactionCategory(data: {
   name: string;
   type: TransactionType;
   color?: string;
+  isNonAccountable?: boolean;
 }) {
   await mergeDuplicateTransactionCategoriesByName();
 
@@ -1205,8 +1223,10 @@ export async function createTransactionCategory(data: {
 
   return db.transactionCategory.create({
     data: {
-      ...data,
+      color: data.color,
+      icon: data.isNonAccountable ? NON_ACCOUNTABLE_CATEGORY_ICON : null,
       name: cleanName,
+      type: data.type,
     },
   });
 }
@@ -1215,6 +1235,7 @@ export async function updateTransactionCategory(
   id: number,
   data: {
     color?: null | string;
+    isNonAccountable?: boolean;
     name?: string;
     type?: TransactionType;
   },
@@ -1241,6 +1262,9 @@ export async function updateTransactionCategory(
       ...(data.name !== undefined && { name: data.name }),
       ...(data.type !== undefined && { type: data.type }),
       ...(data.color !== undefined && { color: data.color }),
+      ...(data.isNonAccountable !== undefined && {
+        icon: data.isNonAccountable ? NON_ACCOUNTABLE_CATEGORY_ICON : null,
+      }),
     },
   });
 }

@@ -2,6 +2,7 @@ import type { FinancialTransaction, TransactionCategory } from "@finanzas/db";
 import {
   Button,
   Card,
+  Chip,
   ColorSwatchPicker,
   Dropdown,
   Header,
@@ -13,6 +14,7 @@ import {
   Select,
   type Selection,
   Skeleton,
+  Switch,
   Tabs,
   TextField,
 } from "@heroui/react";
@@ -27,6 +29,7 @@ import { useLazyTabs } from "@/hooks/use-lazy-tabs";
 import { ApiError, apiClient } from "@/lib/api-client";
 import { toast } from "@/lib/toast-interceptor";
 import type { TransactionWithRelations } from "../components/CashFlowColumns";
+import { isNonAccountableCategory } from "../utils/non-accountable-category";
 
 const CashFlowTable = lazy(() =>
   import("../components/CashFlowTable").then((module) => ({
@@ -115,6 +118,7 @@ const TransactionCategorySchema = z
   .object({
     color: z.string().nullable().optional(),
     id: z.number(),
+    icon: z.string().nullable().optional(),
     name: z.string(),
     type: z.enum(["INCOME", "EXPENSE"]),
   })
@@ -517,10 +521,12 @@ export function CashFlowPage() {
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryType, setNewCategoryType] = useState<"EXPENSE" | "INCOME">("EXPENSE");
   const [newCategoryColor, setNewCategoryColor] = useState("#64748b");
+  const [newCategoryIsNonAccountable, setNewCategoryIsNonAccountable] = useState(false);
   const [editingCategoryId, setEditingCategoryId] = useState<null | number>(null);
   const [editingCategoryName, setEditingCategoryName] = useState("");
   const [editingCategoryType, setEditingCategoryType] = useState<"EXPENSE" | "INCOME">("EXPENSE");
   const [editingCategoryColor, setEditingCategoryColor] = useState("#64748b");
+  const [editingCategoryIsNonAccountable, setEditingCategoryIsNonAccountable] = useState(false);
   const [newRuleName, setNewRuleName] = useState("");
   const [newRuleCounterpartId, setNewRuleCounterpartId] = useState<null | number>(null);
   const [newRuleCategoryId, setNewRuleCategoryId] = useState<null | number>(null);
@@ -655,6 +661,15 @@ export function CashFlowPage() {
     columnFilters.comment.trim().length > 0;
 
   const monthTransactions = data?.data ?? [];
+  const nonAccountableCategoryIds = useMemo(
+    () =>
+      new Set(
+        categories
+          .filter((category) => isNonAccountableCategory(category))
+          .map((category) => category.id),
+      ),
+    [categories],
+  );
 
   const filteredTransactions = useMemo(() => {
     const fromCounterpartFilter = normalizeText(columnFilters.fromCounterpart);
@@ -720,7 +735,17 @@ export function CashFlowPage() {
     });
   }, [columnFilters, monthTransactions, selectedCategoryFilters]);
 
-  const monthlySummary = useMemo(() => buildSummary(monthTransactions), [monthTransactions]);
+  const accountableMonthTransactions = useMemo(
+    () =>
+      monthTransactions.filter(
+        (tx) => tx.categoryId == null || !nonAccountableCategoryIds.has(tx.categoryId),
+      ),
+    [monthTransactions, nonAccountableCategoryIds],
+  );
+  const monthlySummary = useMemo(
+    () => buildSummary(accountableMonthTransactions),
+    [accountableMonthTransactions],
+  );
   const incomeCategorySummary = useMemo(
     () =>
       monthlySummary.byCategory
@@ -799,7 +824,12 @@ export function CashFlowPage() {
   });
 
   const createCategoryMutation = useMutation({
-    mutationFn: async (payload: { color?: string; name: string; type: "EXPENSE" | "INCOME" }) =>
+    mutationFn: async (payload: {
+      color?: string;
+      isNonAccountable?: boolean;
+      name: string;
+      type: "EXPENSE" | "INCOME";
+    }) =>
       apiClient.post("/api/finance/categories", payload, {
         responseSchema: CreateTransactionCategoryResponseSchema,
       }),
@@ -808,6 +838,7 @@ export function CashFlowPage() {
       setNewCategoryName("");
       setNewCategoryType("EXPENSE");
       setNewCategoryColor("#64748b");
+      setNewCategoryIsNonAccountable(false);
       toast.success("Categoría creada");
     },
     onError: (error) => {
@@ -821,6 +852,7 @@ export function CashFlowPage() {
     mutationFn: async (payload: {
       color?: null | string;
       id: number;
+      isNonAccountable?: boolean;
       name: string;
       type: "EXPENSE" | "INCOME";
     }) =>
@@ -828,6 +860,7 @@ export function CashFlowPage() {
         `/api/finance/categories/${payload.id}`,
         {
           color: payload.color,
+          isNonAccountable: payload.isNonAccountable,
           name: payload.name,
           type: payload.type,
         },
@@ -997,6 +1030,7 @@ export function CashFlowPage() {
     }
     createCategoryMutation.mutate({
       color: newCategoryColor || undefined,
+      isNonAccountable: newCategoryIsNonAccountable,
       name,
       type: newCategoryType,
     });
@@ -1007,6 +1041,7 @@ export function CashFlowPage() {
     setEditingCategoryName(category.name);
     setEditingCategoryType(category.type === "INCOME" ? "INCOME" : "EXPENSE");
     setEditingCategoryColor(category.color ?? "#64748b");
+    setEditingCategoryIsNonAccountable(isNonAccountableCategory(category));
   };
 
   const handleCancelEditCategory = () => {
@@ -1014,6 +1049,7 @@ export function CashFlowPage() {
     setEditingCategoryName("");
     setEditingCategoryType("EXPENSE");
     setEditingCategoryColor("#64748b");
+    setEditingCategoryIsNonAccountable(false);
   };
 
   const handleSaveEditCategory = (categoryId: number) => {
@@ -1025,6 +1061,7 @@ export function CashFlowPage() {
     updateCategoryMutation.mutate({
       color: editingCategoryColor || null,
       id: categoryId,
+      isNonAccountable: editingCategoryIsNonAccountable,
       name,
       type: editingCategoryType,
     });
@@ -1802,7 +1839,7 @@ export function CashFlowPage() {
               <Card className="border border-default-200/70 bg-linear-to-b from-default-100/40 to-default-50/10 shadow-sm">
                 <div className="p-3">
                   <form
-                    className="grid grid-cols-1 gap-4 md:grid-cols-4"
+                    className="grid grid-cols-1 gap-4 md:grid-cols-5"
                     onSubmit={handleCreateCategory}
                   >
                     <TextField className="md:col-span-2">
@@ -1845,8 +1882,15 @@ export function CashFlowPage() {
                       value={newCategoryColor}
                       onChange={setNewCategoryColor}
                     />
+                    <Switch
+                      className="pt-6"
+                      isSelected={newCategoryIsNonAccountable}
+                      onChange={(value) => setNewCategoryIsNonAccountable(value)}
+                    >
+                      <Switch.Content>No contabilizable</Switch.Content>
+                    </Switch>
 
-                    <div className="md:col-span-4">
+                    <div className="md:col-span-5">
                       <Button type="submit" isPending={createCategoryMutation.isPending}>
                         {({ isPending }) => (isPending ? "Creando..." : "Crear categoría")}
                       </Button>
@@ -1867,7 +1911,7 @@ export function CashFlowPage() {
                           className="flex items-center justify-between rounded-md border border-default-200 px-3 py-2"
                         >
                           {editingCategoryId === category.id ? (
-                            <div className="grid w-full grid-cols-1 gap-3 md:grid-cols-[1fr_160px_90px_auto] md:items-end">
+                            <div className="grid w-full grid-cols-1 gap-3 md:grid-cols-[1fr_160px_130px_90px_auto] md:items-end">
                               <TextField>
                                 <Label>Nombre</Label>
                                 <Input
@@ -1906,6 +1950,13 @@ export function CashFlowPage() {
                                 value={editingCategoryColor}
                                 onChange={setEditingCategoryColor}
                               />
+                              <Switch
+                                className="pt-6"
+                                isSelected={editingCategoryIsNonAccountable}
+                                onChange={(value) => setEditingCategoryIsNonAccountable(value)}
+                              >
+                                <Switch.Content>No contabilizable</Switch.Content>
+                              </Switch>
                               <div className="flex gap-2">
                                 <Button
                                   size="sm"
@@ -1931,6 +1982,11 @@ export function CashFlowPage() {
                                   style={{ backgroundColor: category.color ?? "#ccc" }}
                                 />
                                 <span>{category.name}</span>
+                                {isNonAccountableCategory(category) ? (
+                                  <Chip color="warning" size="sm" variant="soft">
+                                    No contabilizable
+                                  </Chip>
+                                ) : null}
                               </div>
                               <div className="flex items-center gap-3">
                                 <span className="text-default-500 text-sm">

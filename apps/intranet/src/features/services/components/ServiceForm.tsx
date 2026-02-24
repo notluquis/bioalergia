@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
 import { z } from "zod";
+import { isNonAccountableCategory } from "@/features/finance/utils/non-accountable-category";
 import { apiClient } from "@/lib/api-client";
 import { fetchCounterpart, fetchCounterparts } from "../../counterparts/api";
 import type { CounterpartAccount } from "../../counterparts/types";
@@ -190,6 +191,7 @@ const buildServicePayload = (
 const FinanceCategorySchema = z.object({
   color: z.string().nullable().optional(),
   id: z.number(),
+  icon: z.string().nullable().optional(),
   name: z.string(),
   type: z.enum(["EXPENSE", "INCOME"]),
 });
@@ -274,7 +276,9 @@ export function ServiceForm({ initialValues, onCancel, onSubmit, submitLabel }: 
           }),
         },
       );
-      return payload.data.filter((category) => category.type === "EXPENSE");
+      return payload.data.filter(
+        (category) => category.type === "EXPENSE" && !isNonAccountableCategory(category),
+      );
     },
     queryKey: ["TransactionCategory", "expense"],
   });
