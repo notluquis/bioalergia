@@ -84,6 +84,12 @@ function assertPeriodOrThrow(period: string) {
   }
 }
 
+function normalizePeriodOrThrow(period: string) {
+  const normalized = period.trim();
+  assertPeriodOrThrow(normalized);
+  return normalized;
+}
+
 function getPeriodRange(period: string) {
   assertPeriodOrThrow(period);
   const [yearRaw, monthRaw] = period.split("-");
@@ -94,7 +100,17 @@ function getPeriodRange(period: string) {
   return { from, to };
 }
 
-const toPeriod = (value: Date) => value.toISOString().slice(0, 7);
+const toPeriod = (value: Date) => {
+  if (!(value instanceof Date) || Number.isNaN(value.getTime())) {
+    throw new AppError(422, {
+      code: "INVALID_TRANSACTION_DATE",
+      message: "La transacción tiene una fecha inválida para reasignación",
+    });
+  }
+  const period = value.toISOString().slice(0, 7);
+  assertPeriodOrThrow(period);
+  return period;
+};
 
 type CounterpartLookup = {
   byAccount: Map<string, number>;
@@ -1981,9 +1997,9 @@ export async function reallocateFinancialTransaction(
   transactionId: number,
   data: ReallocateTransactionInput,
 ) {
-  assertPeriodOrThrow(data.fromPeriod);
-  assertPeriodOrThrow(data.targetPeriod);
-  if (data.targetPeriod <= data.fromPeriod) {
+  const fromPeriod = normalizePeriodOrThrow(data.fromPeriod);
+  const targetPeriod = normalizePeriodOrThrow(data.targetPeriod);
+  if (targetPeriod <= fromPeriod) {
     throw new AppError(422, {
       code: "INVALID_TARGET_PERIOD",
       message: "El periodo destino debe ser al menos un mes posterior al origen",
@@ -2056,7 +2072,7 @@ export async function reallocateFinancialTransaction(
       SELECT is_locked AS "isLocked"
       FROM compensation_period_budgets
       WHERE profile_id = ${profileRow.id}
-        AND (period = ${data.fromPeriod} OR period = ${data.targetPeriod})
+        AND (period = ${fromPeriod} OR period = ${targetPeriod})
     `;
     if (lockedPeriods.some((item) => item.isLocked)) {
       throw new AppError(409, {
@@ -2099,7 +2115,7 @@ export async function reallocateFinancialTransaction(
           allocation_type AS "allocationType",
           amount
         FROM financial_transaction_allocations
-        WHERE period = ${data.fromPeriod}
+        WHERE period = ${fromPeriod}
           AND profile_id = ${profileRow.id}
           AND transaction_id = ${transaction.id}
       `
@@ -2123,7 +2139,7 @@ export async function reallocateFinancialTransaction(
       VALUES (
         ${transaction.id},
         ${profileRow.id},
-        ${data.fromPeriod},
+        ${fromPeriod},
         ${Number(data.amount)},
         'ROLLOVER_OUT',
         ${sourceAllocationId},
@@ -2151,7 +2167,7 @@ export async function reallocateFinancialTransaction(
       VALUES (
         ${transaction.id},
         ${profileRow.id},
-        ${data.targetPeriod},
+        ${targetPeriod},
         ${reallocationAmount},
         'ROLLOVER_IN',
         ${outId ?? null},
