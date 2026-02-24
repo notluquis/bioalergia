@@ -1,6 +1,8 @@
+import type { Context } from "hono";
 import { Hono } from "hono";
 import { z } from "zod";
-import { getSessionUser } from "../auth";
+import { getSessionUser, hasPermission } from "../auth";
+import { AppError } from "../lib/app-error";
 import { zValidator } from "../lib/zod-validator";
 import {
   createCompensationProfile,
@@ -29,6 +31,40 @@ import {
 import { reply } from "../utils/reply";
 
 const app = new Hono();
+
+async function requireFinanceRead(c: Context) {
+  const user = await getSessionUser(c);
+  if (!user) {
+    throw new AppError(401, { code: "UNAUTHORIZED", message: "Unauthorized" });
+  }
+
+  const canRead = await hasPermission(user.id, "read", "Transaction");
+  if (!canRead) {
+    throw new AppError(403, {
+      code: "FORBIDDEN",
+      message: "No tienes permisos para realizar esta acción.",
+    });
+  }
+
+  return user;
+}
+
+async function requireFinanceWrite(c: Context) {
+  const user = await getSessionUser(c);
+  if (!user) {
+    throw new AppError(401, { code: "UNAUTHORIZED", message: "Unauthorized" });
+  }
+
+  const canWrite = await hasPermission(user.id, "update", "Transaction");
+  if (!canWrite) {
+    throw new AppError(403, {
+      code: "FORBIDDEN",
+      message: "No tienes permisos para realizar esta acción.",
+    });
+  }
+
+  return user;
+}
 
 // Schemas
 const listSchema = z.object({
@@ -129,6 +165,7 @@ app.use("*", async (c, next) => {
 
 // 1. List Transactions
 app.get("/transactions", zValidator("query", listSchema), async (c) => {
+  await requireFinanceRead(c);
   const query = c.req.valid("query");
   const filters = {
     ...query,
@@ -140,6 +177,7 @@ app.get("/transactions", zValidator("query", listSchema), async (c) => {
 });
 
 app.get("/transactions/summary", zValidator("query", listSchema), async (c) => {
+  await requireFinanceRead(c);
   const query = c.req.valid("query");
   const result = await getFinancialSummaryByCategory({
     from: query.from ? new Date(query.from) : undefined,
@@ -149,12 +187,14 @@ app.get("/transactions/summary", zValidator("query", listSchema), async (c) => {
 });
 
 app.get("/transactions/available-months", async (c) => {
+  await requireFinanceRead(c);
   const data = await listAvailableFinancialTransactionMonths();
   return reply(c, { status: "ok", data });
 });
 
 // 2. Create Transaction (Manual)
 app.post("/transactions", zValidator("json", createSchema), async (c) => {
+  await requireFinanceWrite(c);
   const data = c.req.valid("json");
   const result = await createFinancialTransaction(data);
   return reply(c, { status: "ok", data: result });
@@ -162,6 +202,7 @@ app.post("/transactions", zValidator("json", createSchema), async (c) => {
 
 // 3. Update Transaction
 app.put("/transactions/:id", zValidator("json", updateSchema), async (c) => {
+  await requireFinanceWrite(c);
   const id = Number(c.req.param("id"));
   const data = c.req.valid("json");
   const result = await updateFinancialTransaction(id, data);
@@ -170,6 +211,7 @@ app.put("/transactions/:id", zValidator("json", updateSchema), async (c) => {
 
 // 4. Delete Transaction
 app.delete("/transactions/:id", async (c) => {
+  await requireFinanceWrite(c);
   const id = Number(c.req.param("id"));
   await deleteFinancialTransaction(id);
   return reply(c, { status: "ok", message: "Deleted" });
@@ -177,31 +219,34 @@ app.delete("/transactions/:id", async (c) => {
 
 // 5. Sync (Trigger)
 app.post("/sync", async (c) => {
-  const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error" }, 401);
+  const user = await requireFinanceWrite(c);
 
   const result = await syncFinancialTransactions(user.id);
   return reply(c, { status: "ok", data: result });
 });
 
 app.post("/sync/uncategorized-patterns", async (c) => {
+  await requireFinanceWrite(c);
   const result = await syncUncategorizedTransactionsByPatterns();
   return reply(c, { status: "ok", data: result });
 });
 
 // 6. Categories
 app.get("/categories", async (c) => {
+  await requireFinanceRead(c);
   const cats = await listTransactionCategories();
   return reply(c, { status: "ok", data: cats });
 });
 
 app.post("/categories", zValidator("json", createCategorySchema), async (c) => {
+  await requireFinanceWrite(c);
   const data = c.req.valid("json");
   const result = await createTransactionCategory(data);
   return reply(c, { status: "ok", data: result });
 });
 
 app.put("/categories/:id", zValidator("json", updateCategorySchema), async (c) => {
+  await requireFinanceWrite(c);
   const id = Number(c.req.param("id"));
   const data = c.req.valid("json");
   const result = await updateTransactionCategory(id, data);
@@ -209,6 +254,7 @@ app.put("/categories/:id", zValidator("json", updateCategorySchema), async (c) =
 });
 
 app.delete("/categories/:id", async (c) => {
+  await requireFinanceWrite(c);
   const id = Number(c.req.param("id"));
   await deleteTransactionCategory(id);
   return reply(c, { status: "ok" });
@@ -216,17 +262,20 @@ app.delete("/categories/:id", async (c) => {
 
 // 7. Auto-category rules
 app.get("/auto-category-rules", async (c) => {
+  await requireFinanceRead(c);
   const rules = await listFinancialAutoCategoryRules();
   return reply(c, { status: "ok", data: rules });
 });
 
 app.post("/auto-category-rules", zValidator("json", createAutoCategoryRuleSchema), async (c) => {
+  await requireFinanceWrite(c);
   const data = c.req.valid("json");
   const rule = await createFinancialAutoCategoryRule(data);
   return reply(c, { status: "ok", data: rule });
 });
 
 app.put("/auto-category-rules/:id", zValidator("json", updateAutoCategoryRuleSchema), async (c) => {
+  await requireFinanceWrite(c);
   const id = Number(c.req.param("id"));
   const data = c.req.valid("json");
   const rule = await updateFinancialAutoCategoryRule(id, data);
@@ -234,6 +283,7 @@ app.put("/auto-category-rules/:id", zValidator("json", updateAutoCategoryRuleSch
 });
 
 app.delete("/auto-category-rules/:id", async (c) => {
+  await requireFinanceWrite(c);
   const id = Number(c.req.param("id"));
   await deleteFinancialAutoCategoryRule(id);
   return reply(c, { status: "ok" });
@@ -241,6 +291,7 @@ app.delete("/auto-category-rules/:id", async (c) => {
 
 // 8. Compensation profiles and period allocations
 app.get("/compensation-profiles", async (c) => {
+  await requireFinanceRead(c);
   const profiles = await listCompensationProfiles();
   return reply(c, { status: "ok", data: profiles });
 });
@@ -249,6 +300,7 @@ app.post(
   "/compensation-profiles",
   zValidator("json", createCompensationProfileSchema),
   async (c) => {
+    await requireFinanceWrite(c);
     const payload = c.req.valid("json");
     const profile = await createCompensationProfile(payload);
     return reply(c, { status: "ok", data: profile });
@@ -259,6 +311,7 @@ app.put(
   "/compensation-profiles/:id",
   zValidator("json", updateCompensationProfileSchema),
   async (c) => {
+    await requireFinanceWrite(c);
     const id = Number(c.req.param("id"));
     const payload = c.req.valid("json");
     const profile = await updateCompensationProfile(id, payload);
@@ -270,6 +323,7 @@ app.put(
   "/compensation-profiles/:id/budget",
   zValidator("json", upsertCompensationBudgetSchema),
   async (c) => {
+    await requireFinanceWrite(c);
     const id = Number(c.req.param("id"));
     const payload = c.req.valid("json");
     const budget = await upsertCompensationPeriodBudget(id, payload);
@@ -281,6 +335,7 @@ app.get(
   "/compensation-profiles/:id/ledger",
   zValidator("query", compensationLedgerQuerySchema),
   async (c) => {
+    await requireFinanceRead(c);
     const id = Number(c.req.param("id"));
     const { fromPeriod, toPeriod } = c.req.valid("query");
     const ledger = await listCompensationPeriodLedger(id, fromPeriod, toPeriod);
@@ -292,6 +347,7 @@ app.post(
   "/transactions/:id/reallocate",
   zValidator("json", reallocateTransactionSchema),
   async (c) => {
+    await requireFinanceWrite(c);
     const id = Number(c.req.param("id"));
     const payload = c.req.valid("json");
     const allocation = await reallocateFinancialTransaction(id, payload);

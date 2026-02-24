@@ -1,6 +1,7 @@
 import type { TransactionType } from "@finanzas/db";
 import { db } from "@finanzas/db";
 import Decimal from "decimal.js";
+import { AppError } from "../lib/app-error";
 import {
   fetchMergedTransactions,
   fetchMergedTransactionsBySourceIds,
@@ -76,7 +77,10 @@ const normalizeAccount = (value: null | string | undefined) => {
 
 function assertPeriodOrThrow(period: string) {
   if (!PERIOD_REGEX.test(period)) {
-    throw new Error("Periodo inválido. Usa formato YYYY-MM.");
+    throw new AppError(422, {
+      code: "INVALID_PERIOD",
+      message: "Periodo inválido. Usa formato YYYY-MM.",
+    });
   }
 }
 
@@ -1979,11 +1983,17 @@ export async function reallocateFinancialTransaction(
 ) {
   assertPeriodOrThrow(data.fromPeriod);
   assertPeriodOrThrow(data.targetPeriod);
-  if (data.targetPeriod === data.fromPeriod) {
-    throw new Error("El periodo de origen y destino no pueden ser iguales");
+  if (data.targetPeriod <= data.fromPeriod) {
+    throw new AppError(422, {
+      code: "INVALID_TARGET_PERIOD",
+      message: "El periodo destino debe ser al menos un mes posterior al origen",
+    });
   }
   if (data.amount <= 0) {
-    throw new Error("El monto a reasignar debe ser mayor a 0");
+    throw new AppError(422, {
+      code: "INVALID_AMOUNT",
+      message: "El monto a reasignar debe ser mayor a 0",
+    });
   }
 
   return db.$transaction(async (tx) => {
@@ -2015,19 +2025,31 @@ export async function reallocateFinancialTransaction(
 
     const profileRow = profile[0];
     if (!profileRow || !profileRow.isActive) {
-      throw new Error("Perfil de compensación no encontrado o inactivo");
+      throw new AppError(404, {
+        code: "COMPENSATION_PROFILE_NOT_AVAILABLE",
+        message: "Perfil de compensación no encontrado o inactivo",
+      });
     }
     if (!transaction) {
-      throw new Error("Transacción no encontrada");
+      throw new AppError(404, {
+        code: "TRANSACTION_NOT_FOUND",
+        message: "Transacción no encontrada",
+      });
     }
     if (transaction.categoryId == null || transaction.categoryId !== profileRow.categoryId) {
-      throw new Error("La transacción no corresponde a la categoría del perfil");
+      throw new AppError(409, {
+        code: "PROFILE_CATEGORY_MISMATCH",
+        message: "La transacción no corresponde a la categoría del perfil",
+      });
     }
     if (
       profileRow.counterpartId != null &&
       transaction.counterpartId !== profileRow.counterpartId
     ) {
-      throw new Error("La contraparte de la transacción no coincide con el perfil");
+      throw new AppError(409, {
+        code: "PROFILE_COUNTERPART_MISMATCH",
+        message: "La contraparte de la transacción no coincide con el perfil",
+      });
     }
 
     const lockedPeriods = await tx.$queryRaw<Array<{ isLocked: boolean }>>`
@@ -2037,7 +2059,10 @@ export async function reallocateFinancialTransaction(
         AND (period = ${data.fromPeriod} OR period = ${data.targetPeriod})
     `;
     if (lockedPeriods.some((item) => item.isLocked)) {
-      throw new Error("No se puede reasignar: el periodo origen o destino está bloqueado.");
+      throw new AppError(409, {
+        code: "LOCKED_PERIOD",
+        message: "No se puede reasignar: el periodo origen o destino está bloqueado.",
+      });
     }
 
     const originalAllocation = await tx.$queryRaw<Array<{ id: number }>>`
@@ -2085,7 +2110,10 @@ export async function reallocateFinancialTransaction(
     );
 
     if (data.amount > availableInFromPeriod) {
-      throw new Error("Monto excede lo disponible en el periodo de origen");
+      throw new AppError(409, {
+        code: "INSUFFICIENT_AMOUNT_IN_SOURCE_PERIOD",
+        message: "Monto excede lo disponible en el periodo de origen",
+      });
     }
 
     const rolloverOut = await tx.$queryRaw<Array<{ id: number }>>`
