@@ -575,7 +575,7 @@ function CategoryColorPicker({
     <div className="space-y-2">
       <Label>{label}</Label>
       <ColorPicker value={parseColor(value)} onChange={(color) => onChange(color.toString("hex"))}>
-        <ColorPicker.Trigger className="flex items-center gap-2 rounded-md border border-default-300/70 px-2 py-1.5">
+        <ColorPicker.Trigger className="flex h-10 w-full items-center gap-2 rounded-xl border border-default-300/70 bg-default-100/35 px-3">
           <ColorSwatch size="sm" />
           <span className="text-tiny text-default-500 uppercase">{value}</span>
         </ColorPicker.Trigger>
@@ -2189,18 +2189,19 @@ export function CashFlowPage() {
                       value={newCategoryColor}
                       onChange={setNewCategoryColor}
                     />
-                    <Switch
-                      className="pt-6"
-                      isSelected={newCategoryIsNonAccountable}
-                      onChange={(value) => setNewCategoryIsNonAccountable(value)}
-                    >
-                      <Switch.Control>
-                        <Switch.Thumb />
-                      </Switch.Control>
-                      <Switch.Content>
-                        <Label>No contabilizable</Label>
-                      </Switch.Content>
-                    </Switch>
+                    <div className="flex h-full items-end pb-1">
+                      <Switch
+                        isSelected={newCategoryIsNonAccountable}
+                        onChange={(value) => setNewCategoryIsNonAccountable(value)}
+                      >
+                        <Switch.Control>
+                          <Switch.Thumb />
+                        </Switch.Control>
+                        <Switch.Content>
+                          <Label>No contabilizable</Label>
+                        </Switch.Content>
+                      </Switch>
+                    </div>
 
                     <div className="md:col-span-5">
                       <Button type="submit" isPending={createCategoryMutation.isPending}>
@@ -2262,18 +2263,19 @@ export function CashFlowPage() {
                                 value={editingCategoryColor}
                                 onChange={setEditingCategoryColor}
                               />
-                              <Switch
-                                className="pt-6"
-                                isSelected={editingCategoryIsNonAccountable}
-                                onChange={(value) => setEditingCategoryIsNonAccountable(value)}
-                              >
-                                <Switch.Control>
-                                  <Switch.Thumb />
-                                </Switch.Control>
-                                <Switch.Content>
-                                  <Label>No contabilizable</Label>
-                                </Switch.Content>
-                              </Switch>
+                              <div className="flex h-full items-end pb-1">
+                                <Switch
+                                  isSelected={editingCategoryIsNonAccountable}
+                                  onChange={(value) => setEditingCategoryIsNonAccountable(value)}
+                                >
+                                  <Switch.Control>
+                                    <Switch.Thumb />
+                                  </Switch.Control>
+                                  <Switch.Content>
+                                    <Label>No contabilizable</Label>
+                                  </Switch.Content>
+                                </Switch>
+                              </div>
                               <div className="flex gap-2">
                                 <Button
                                   size="sm"
@@ -2403,18 +2405,19 @@ export function CashFlowPage() {
                         </ListBox>
                       </Select.Popover>
                     </Select>
-                    <Switch
-                      className="pt-6"
-                      isSelected={newCompensationIsActive}
-                      onChange={(value) => setNewCompensationIsActive(value)}
-                    >
-                      <Switch.Control>
-                        <Switch.Thumb />
-                      </Switch.Control>
-                      <Switch.Content>
-                        <Label>Activo</Label>
-                      </Switch.Content>
-                    </Switch>
+                    <div className="flex h-full items-end pb-1">
+                      <Switch
+                        isSelected={newCompensationIsActive}
+                        onChange={(value) => setNewCompensationIsActive(value)}
+                      >
+                        <Switch.Control>
+                          <Switch.Thumb />
+                        </Switch.Control>
+                        <Switch.Content>
+                          <Label>Activo</Label>
+                        </Switch.Content>
+                      </Switch>
+                    </div>
                     <div className="md:col-span-6">
                       <Button type="submit" isPending={createCompensationProfileMutation.isPending}>
                         Crear perfil de compensación
