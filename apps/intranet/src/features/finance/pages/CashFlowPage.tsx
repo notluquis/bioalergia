@@ -655,6 +655,7 @@ export function CashFlowPage() {
   const [reallocateFromPeriod, setReallocateFromPeriod] = useState(dayjs().format("YYYY-MM"));
   const [reallocateTargetPeriod, setReallocateTargetPeriod] = useState(dayjs().format("YYYY-MM"));
   const [reallocateAmount, setReallocateAmount] = useState<null | number>(null);
+  const [showNonAccountableMovements, setShowNonAccountableMovements] = useState(false);
   const { data: availableMonths = [] } = useAvailableFinancialMonths();
 
   const monthOptions = useMemo(() => {
@@ -823,6 +824,14 @@ export function CashFlowPage() {
     const amountFilter = columnFilters.amount.replace(/[^\d-]/g, "").trim();
 
     return monthTransactions.filter((tx) => {
+      if (
+        !showNonAccountableMovements &&
+        tx.categoryId != null &&
+        nonAccountableCategoryIds.has(tx.categoryId)
+      ) {
+        return false;
+      }
+
       if (columnFilters.type !== "ALL" && tx.type !== columnFilters.type) {
         return false;
       }
@@ -878,7 +887,13 @@ export function CashFlowPage() {
 
       return true;
     });
-  }, [columnFilters, monthTransactions, selectedCategoryFilters]);
+  }, [
+    columnFilters,
+    monthTransactions,
+    nonAccountableCategoryIds,
+    selectedCategoryFilters,
+    showNonAccountableMovements,
+  ]);
 
   const accountableMonthTransactions = useMemo(
     () =>
@@ -1912,7 +1927,7 @@ export function CashFlowPage() {
                     </Select>
                   </div>
 
-                  <div className="lg:col-span-4">
+                  <div className="lg:col-span-3">
                     <Label className="mb-1 block">Categorías (multi)</Label>
                     <Dropdown>
                       <Dropdown.Trigger>
@@ -1982,6 +1997,22 @@ export function CashFlowPage() {
                     </Select>
                   </div>
 
+                  <div className="flex items-end lg:col-span-3">
+                    <div className="rounded-xl border border-default-300/60 bg-default-100/40 px-3 py-2">
+                      <Switch
+                        isSelected={showNonAccountableMovements}
+                        onChange={setShowNonAccountableMovements}
+                      >
+                        <Switch.Control>
+                          <Switch.Thumb />
+                        </Switch.Control>
+                        <Switch.Content>
+                          <Label>Mostrar no contabilizables</Label>
+                        </Switch.Content>
+                      </Switch>
+                    </div>
+                  </div>
+
                   <div className="flex items-end justify-end lg:col-span-2">
                     <Button
                       className="h-10 rounded-xl border-default-300/60 bg-default-100/40 px-3 text-default-700 hover:bg-default-100/70"
@@ -1990,6 +2021,7 @@ export function CashFlowPage() {
                       onClick={() => {
                         setSelectedCategoryFilters([]);
                         setColumnFilters(DEFAULT_COLUMN_FILTERS);
+                        setShowNonAccountableMovements(false);
                         setPage(1);
                       }}
                     >
