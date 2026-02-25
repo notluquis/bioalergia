@@ -889,6 +889,7 @@ export async function listFinancialTransactions(params: {
     Parameters<typeof db.financialTransaction.findMany>[0]
   >["where"];
   const where: FinancialTransactionWhereInput = {};
+  const effectivePeriodNetAmountByTransaction = new Map<number, number>();
 
   if (params.from || params.to) {
     where.date = {};
@@ -925,10 +926,22 @@ export async function listFinancialTransactions(params: {
   if (params.effectivePeriod) {
     const { from, to } = getPeriodRange(params.effectivePeriod);
     const [periodAllocations, periodTransactionsWithoutAllocations] = await Promise.all([
-      db.$queryRaw<Array<{ transactionId: number }>>`
-        SELECT DISTINCT transaction_id AS "transactionId"
+      db.$queryRaw<Array<{ netAmount: number; transactionId: number }>>`
+        SELECT
+          transaction_id AS "transactionId",
+          COALESCE(
+            SUM(
+              CASE
+                WHEN allocation_type IN ('ORIGINAL', 'ROLLOVER_IN', 'MANUAL_ADJUST') THEN amount
+                WHEN allocation_type = 'ROLLOVER_OUT' THEN -amount
+                ELSE 0
+              END
+            ),
+            0
+          ) AS "netAmount"
         FROM financial_transaction_allocations
         WHERE period = ${params.effectivePeriod}
+        GROUP BY transaction_id
       `,
       db.$queryRaw<Array<{ id: number }>>`
         SELECT ft.id
@@ -949,6 +962,9 @@ export async function listFinancialTransactions(params: {
         ...periodTransactionsWithoutAllocations.map((row) => row.id),
       ]),
     );
+    for (const row of periodAllocations) {
+      effectivePeriodNetAmountByTransaction.set(row.transactionId, Number(row.netAmount));
+    }
 
     const existingAnd = Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : [];
     where.AND = [
@@ -1078,8 +1094,19 @@ export async function listFinancialTransactions(params: {
     const reallocatedInEffectivePeriod = allocationSummary?.inInEffectivePeriod ?? 0;
     const reallocatedOutEffectivePeriod = allocationSummary?.outInEffectivePeriod ?? 0;
 
+    const rawAmount = Number(transaction.amount);
+    const amountSign = rawAmount < 0 ? -1 : 1;
+    const effectivePeriodNetAmount = params.effectivePeriod
+      ? effectivePeriodNetAmountByTransaction.get(transaction.id)
+      : undefined;
+    const effectiveAmount =
+      effectivePeriodNetAmount == null
+        ? rawAmount
+        : amountSign * Math.abs(Number(effectivePeriodNetAmount));
+
     return {
       ...transaction,
+      amount: effectiveAmount,
       counterpartAccountNumber:
         release?.payoutBankAccountNumber ??
         transaction.counterpart?.accounts?.[0]?.accountNumber ??
