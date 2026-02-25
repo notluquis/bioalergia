@@ -277,25 +277,32 @@ export const columns: ColumnDef<TransactionWithRelations>[] = [
         (outInPeriod > 0 || inInPeriod > 0);
       const hasGlobalIndicator =
         (row.original.hasReallocation ?? false) && (outTotal > 0 || inTotal > 0);
-      const chipLabel = hasPeriodIndicator
-        ? `Reasignado ${formatCurrency(outInPeriod - inInPeriod)}`
-        : hasGlobalIndicator
-          ? `Reasignado ${formatCurrency(outTotal - inTotal)}`
-          : null;
+      const activeOut = hasPeriodIndicator ? outInPeriod : outTotal;
+      const activeIn = hasPeriodIndicator ? inInPeriod : inTotal;
 
       return (
         <div className="flex flex-col items-end gap-1">
           <div className={`text-right font-medium ${amount >= 0 ? "text-success" : "text-danger"}`}>
             {formatCurrency(amount)}
           </div>
-          {chipLabel ? (
+          {(hasPeriodIndicator || hasGlobalIndicator) && activeOut > 0 ? (
             <Chip
-              color="warning"
+              color="danger"
               size="sm"
-              title="Parte de este movimiento ya fue reasignada de período"
+              title="Monto arrastrado hacia otros períodos"
               variant="soft"
             >
-              {chipLabel}
+              Arrastrado {formatCurrency(activeOut)}
+            </Chip>
+          ) : null}
+          {(hasPeriodIndicator || hasGlobalIndicator) && activeIn > 0 ? (
+            <Chip
+              color="success"
+              size="sm"
+              title="Monto traído desde otros períodos"
+              variant="soft"
+            >
+              Traído {formatCurrency(activeIn)}
             </Chip>
           ) : null}
         </div>
