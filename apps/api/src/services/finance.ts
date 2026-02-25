@@ -1140,13 +1140,27 @@ export async function listFinancialTransactions(params: {
 
 export async function listAvailableFinancialTransactionMonths() {
   const rows = await db.$queryRaw<Array<{ month: string }>>`
-    SELECT to_char(date_trunc('month', ft."date"), 'YYYY-MM') AS month
-    FROM financial_transactions ft
-    LEFT JOIN settlement_transactions st
-      ON st.source_id = ft.source_id
-    WHERE st.transaction_type IS DISTINCT FROM ${SETTLEMENT_CASHBACK_TYPE}
-    GROUP BY 1
-    ORDER BY 1 DESC
+    SELECT month
+    FROM (
+      SELECT to_char(date_trunc('month', ft."date"), 'YYYY-MM') AS month
+      FROM financial_transactions ft
+      LEFT JOIN settlement_transactions st
+        ON st.source_id = ft.source_id
+      WHERE st.transaction_type IS DISTINCT FROM ${SETTLEMENT_CASHBACK_TYPE}
+      GROUP BY 1
+
+      UNION
+
+      SELECT fta.period AS month
+      FROM financial_transaction_allocations fta
+      INNER JOIN financial_transactions ft
+        ON ft.id = fta.transaction_id
+      LEFT JOIN settlement_transactions st
+        ON st.source_id = ft.source_id
+      WHERE st.transaction_type IS DISTINCT FROM ${SETTLEMENT_CASHBACK_TYPE}
+      GROUP BY 1
+    ) months
+    ORDER BY month DESC
   `;
 
   return rows.map((row) => row.month).filter(Boolean);
