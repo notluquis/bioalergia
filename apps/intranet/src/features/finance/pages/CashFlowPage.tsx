@@ -3069,25 +3069,10 @@ export function CashFlowPage() {
                   </Select>
 
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <Select
-                      value={reallocateFromPeriod}
-                      onChange={(key) => setReallocateFromPeriod(String(key ?? ""))}
-                    >
+                    <TextField>
                       <Label>Período origen</Label>
-                      <Select.Trigger>
-                        <Select.Value />
-                        <Select.Indicator />
-                      </Select.Trigger>
-                      <Select.Popover>
-                        <ListBox>
-                          {monthOptions.map((option) => (
-                            <ListBox.Item id={option.value} key={option.value}>
-                              {option.label}
-                            </ListBox.Item>
-                          ))}
-                        </ListBox>
-                      </Select.Popover>
-                    </Select>
+                      <Input readOnly value={formatMonthLabel(reallocateFromPeriod)} />
+                    </TextField>
                     <Select
                       value={reallocateTargetPeriod}
                       onChange={(key) => setReallocateTargetPeriod(String(key ?? ""))}
