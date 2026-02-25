@@ -1013,6 +1013,58 @@ export async function listFinancialTransactions(params: {
         ])
       : [[], []];
 
+  const transactionIds = transactions.map((transaction) => transaction.id);
+  const allocationRows =
+    transactionIds.length > 0
+      ? await db.financialTransactionAllocation.findMany({
+          where: {
+            allocationType: {
+              in: ["ROLLOVER_IN", "ROLLOVER_OUT"],
+            },
+            transactionId: { in: transactionIds },
+          },
+          select: {
+            allocationType: true,
+            amount: true,
+            period: true,
+            transactionId: true,
+          },
+        })
+      : [];
+
+  type AllocationSummary = {
+    inInEffectivePeriod: number;
+    inTotal: number;
+    outInEffectivePeriod: number;
+    outTotal: number;
+  };
+  const allocationSummaryByTransaction = new Map<number, AllocationSummary>();
+  for (const allocation of allocationRows) {
+    const current = allocationSummaryByTransaction.get(allocation.transactionId) ?? {
+      inInEffectivePeriod: 0,
+      inTotal: 0,
+      outInEffectivePeriod: 0,
+      outTotal: 0,
+    };
+    const amount = Number(allocation.amount);
+    if (!Number.isFinite(amount) || amount <= 0) continue;
+
+    const isIn = allocation.allocationType === "ROLLOVER_IN";
+    if (isIn) {
+      current.inTotal += amount;
+      if (params.effectivePeriod && allocation.period === params.effectivePeriod) {
+        current.inInEffectivePeriod += amount;
+      }
+    } else {
+      current.outTotal += amount;
+      if (params.effectivePeriod && allocation.period === params.effectivePeriod) {
+        current.outInEffectivePeriod += amount;
+      }
+    }
+
+    allocationSummaryByTransaction.set(allocation.transactionId, current);
+  }
+
   const releaseBySourceId = new Map(releaseRows.map((row) => [row.sourceId, row]));
   const settlementBySourceId = new Map(settlementRows.map((row) => [row.sourceId, row]));
 
@@ -1020,6 +1072,11 @@ export async function listFinancialTransactions(params: {
     const sourceId = transaction.sourceId ?? null;
     const release = sourceId ? releaseBySourceId.get(sourceId) : undefined;
     const settlement = sourceId ? settlementBySourceId.get(sourceId) : undefined;
+    const allocationSummary = allocationSummaryByTransaction.get(transaction.id);
+    const reallocatedInTotal = allocationSummary?.inTotal ?? 0;
+    const reallocatedOutTotal = allocationSummary?.outTotal ?? 0;
+    const reallocatedInEffectivePeriod = allocationSummary?.inInEffectivePeriod ?? 0;
+    const reallocatedOutEffectivePeriod = allocationSummary?.outInEffectivePeriod ?? 0;
 
     return {
       ...transaction,
@@ -1033,6 +1090,13 @@ export async function listFinancialTransactions(params: {
       settlementPaymentMethod: settlement?.paymentMethod ?? null,
       settlementPaymentMethodType: settlement?.paymentMethodType ?? null,
       settlementSaleDetail: settlement?.saleDetail ?? null,
+      hasReallocation: reallocatedInTotal > 0 || reallocatedOutTotal > 0,
+      hasReallocationInEffectivePeriod:
+        reallocatedInEffectivePeriod > 0 || reallocatedOutEffectivePeriod > 0,
+      reallocatedInEffectivePeriod,
+      reallocatedInTotal,
+      reallocatedOutEffectivePeriod,
+      reallocatedOutTotal,
     };
   });
 

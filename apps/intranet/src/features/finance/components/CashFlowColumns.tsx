@@ -12,6 +12,12 @@ export type TransactionWithRelations = FinancialTransaction & {
   category?: TransactionCategory | null;
   counterpart?: Counterpart | null;
   counterpartAccountNumber?: null | string;
+  hasReallocation?: boolean;
+  hasReallocationInEffectivePeriod?: boolean;
+  reallocatedInEffectivePeriod?: number;
+  reallocatedInTotal?: number;
+  reallocatedOutEffectivePeriod?: number;
+  reallocatedOutTotal?: number;
   releaseBalanceAmount?: null | number | string;
   releasePaymentMethod?: null | string;
   releaseSaleDetail?: null | string;
@@ -262,9 +268,36 @@ export const columns: ColumnDef<TransactionWithRelations>[] = [
     header: () => <div className="text-right">Monto</div>,
     cell: ({ row }) => {
       const amount = parseFloat(row.getValue("amount"));
+      const outInPeriod = Number(row.original.reallocatedOutEffectivePeriod ?? 0);
+      const inInPeriod = Number(row.original.reallocatedInEffectivePeriod ?? 0);
+      const outTotal = Number(row.original.reallocatedOutTotal ?? 0);
+      const inTotal = Number(row.original.reallocatedInTotal ?? 0);
+      const hasPeriodIndicator =
+        (row.original.hasReallocationInEffectivePeriod ?? false) &&
+        (outInPeriod > 0 || inInPeriod > 0);
+      const hasGlobalIndicator =
+        (row.original.hasReallocation ?? false) && (outTotal > 0 || inTotal > 0);
+      const chipLabel = hasPeriodIndicator
+        ? `Reasignado ${formatCurrency(outInPeriod - inInPeriod)}`
+        : hasGlobalIndicator
+          ? `Reasignado ${formatCurrency(outTotal - inTotal)}`
+          : null;
+
       return (
-        <div className={`text-right font-medium ${amount >= 0 ? "text-success" : "text-danger"}`}>
-          {formatCurrency(amount)}
+        <div className="flex flex-col items-end gap-1">
+          <div className={`text-right font-medium ${amount >= 0 ? "text-success" : "text-danger"}`}>
+            {formatCurrency(amount)}
+          </div>
+          {chipLabel ? (
+            <Chip
+              color="warning"
+              size="sm"
+              title="Parte de este movimiento ya fue reasignada de período"
+              variant="soft"
+            >
+              {chipLabel}
+            </Chip>
+          ) : null}
         </div>
       );
     },
