@@ -2012,11 +2012,14 @@ export async function reallocateFinancialTransaction(
     });
   }
 
-  return db.$transaction(async (tx) => {
-    const [profile, transaction] = await Promise.all([
-      tx.$queryRaw<
-        Array<{ categoryId: number; counterpartId: null | number; id: number; isActive: boolean }>
-      >`
+  let originalPeriodUsed: string | undefined;
+
+  try {
+    return await db.$transaction(async (tx) => {
+      const [profile, transaction] = await Promise.all([
+        tx.$queryRaw<
+          Array<{ categoryId: number; counterpartId: null | number; id: number; isActive: boolean }>
+        >`
         SELECT
           id,
           category_id AS "categoryId",
@@ -2026,62 +2029,62 @@ export async function reallocateFinancialTransaction(
         WHERE id = ${data.profileId}
         LIMIT 1
       `,
-      tx.financialTransaction.findUnique({
-        where: { id: transactionId },
-        select: {
-          amount: true,
-          categoryId: true,
-          counterpartId: true,
-          date: true,
-          id: true,
-          type: true,
-        },
-      }),
-    ]);
+        tx.financialTransaction.findUnique({
+          where: { id: transactionId },
+          select: {
+            amount: true,
+            categoryId: true,
+            counterpartId: true,
+            date: true,
+            id: true,
+            type: true,
+          },
+        }),
+      ]);
 
-    const profileRow = profile[0];
-    if (!profileRow || !profileRow.isActive) {
-      throw new AppError(404, {
-        code: "COMPENSATION_PROFILE_NOT_AVAILABLE",
-        message: "Perfil de compensación no encontrado o inactivo",
-      });
-    }
-    if (!transaction) {
-      throw new AppError(404, {
-        code: "TRANSACTION_NOT_FOUND",
-        message: "Transacción no encontrada",
-      });
-    }
-    if (transaction.categoryId == null || transaction.categoryId !== profileRow.categoryId) {
-      throw new AppError(409, {
-        code: "PROFILE_CATEGORY_MISMATCH",
-        message: "La transacción no corresponde a la categoría del perfil",
-      });
-    }
-    if (
-      profileRow.counterpartId != null &&
-      transaction.counterpartId !== profileRow.counterpartId
-    ) {
-      throw new AppError(409, {
-        code: "PROFILE_COUNTERPART_MISMATCH",
-        message: "La contraparte de la transacción no coincide con el perfil",
-      });
-    }
+      const profileRow = profile[0];
+      if (!profileRow || !profileRow.isActive) {
+        throw new AppError(404, {
+          code: "COMPENSATION_PROFILE_NOT_AVAILABLE",
+          message: "Perfil de compensación no encontrado o inactivo",
+        });
+      }
+      if (!transaction) {
+        throw new AppError(404, {
+          code: "TRANSACTION_NOT_FOUND",
+          message: "Transacción no encontrada",
+        });
+      }
+      if (transaction.categoryId == null || transaction.categoryId !== profileRow.categoryId) {
+        throw new AppError(409, {
+          code: "PROFILE_CATEGORY_MISMATCH",
+          message: "La transacción no corresponde a la categoría del perfil",
+        });
+      }
+      if (
+        profileRow.counterpartId != null &&
+        transaction.counterpartId !== profileRow.counterpartId
+      ) {
+        throw new AppError(409, {
+          code: "PROFILE_COUNTERPART_MISMATCH",
+          message: "La contraparte de la transacción no coincide con el perfil",
+        });
+      }
 
-    const lockedPeriods = await tx.$queryRaw<Array<{ isLocked: boolean }>>`
+      const lockedPeriods = await tx.$queryRaw<Array<{ isLocked: boolean }>>`
       SELECT is_locked AS "isLocked"
       FROM compensation_period_budgets
       WHERE profile_id = ${profileRow.id}
         AND (period = ${fromPeriod} OR period = ${targetPeriod})
     `;
-    if (lockedPeriods.some((item) => item.isLocked)) {
-      throw new AppError(409, {
-        code: "LOCKED_PERIOD",
-        message: "No se puede reasignar: el periodo origen o destino está bloqueado.",
-      });
-    }
+      if (lockedPeriods.some((item) => item.isLocked)) {
+        throw new AppError(409, {
+          code: "LOCKED_PERIOD",
+          message: "No se puede reasignar: el periodo origen o destino está bloqueado.",
+        });
+      }
 
-    const originalAllocation = await tx.$queryRaw<Array<{ id: number }>>`
+      const originalAllocation = await tx.$queryRaw<Array<{ id: number }>>`
       SELECT id
       FROM financial_transaction_allocations
       WHERE profile_id = ${profileRow.id}
@@ -2089,16 +2092,17 @@ export async function reallocateFinancialTransaction(
         AND allocation_type = 'ORIGINAL'
       LIMIT 1
     `;
-    let sourceAllocationId = originalAllocation[0]?.id;
-    if (!sourceAllocationId) {
-      const createdOriginal = await tx.$queryRaw<Array<{ id: number }>>`
+      originalPeriodUsed = toPeriod(transaction.date);
+      let sourceAllocationId = originalAllocation[0]?.id;
+      if (!sourceAllocationId) {
+        const createdOriginal = await tx.$queryRaw<Array<{ id: number }>>`
         INSERT INTO financial_transaction_allocations (
           transaction_id, profile_id, period, amount, allocation_type, created_at, updated_at
         )
         VALUES (
           ${transaction.id},
           ${profileRow.id},
-          ${toPeriod(transaction.date)},
+          ${originalPeriodUsed},
           ${Math.abs(Number(transaction.amount))},
           'ORIGINAL',
           NOW(),
@@ -2106,11 +2110,11 @@ export async function reallocateFinancialTransaction(
         )
         RETURNING id
       `;
-      sourceAllocationId = createdOriginal[0]?.id;
-    }
+        sourceAllocationId = createdOriginal[0]?.id;
+      }
 
-    const availableInFromPeriod = (
-      await tx.$queryRaw<Array<{ allocationType: string; amount: number }>>`
+      const availableInFromPeriod = (
+        await tx.$queryRaw<Array<{ allocationType: string; amount: number }>>`
         SELECT
           allocation_type AS "allocationType",
           amount
@@ -2119,20 +2123,20 @@ export async function reallocateFinancialTransaction(
           AND profile_id = ${profileRow.id}
           AND transaction_id = ${transaction.id}
       `
-    ).reduce(
-      (acc, allocation) =>
-        acc + signedAllocationAmount(allocation.allocationType, Number(allocation.amount)),
-      0,
-    );
+      ).reduce(
+        (acc, allocation) =>
+          acc + signedAllocationAmount(allocation.allocationType, Number(allocation.amount)),
+        0,
+      );
 
-    if (data.amount > availableInFromPeriod) {
-      throw new AppError(409, {
-        code: "INSUFFICIENT_AMOUNT_IN_SOURCE_PERIOD",
-        message: "Monto excede lo disponible en el periodo de origen",
-      });
-    }
+      if (data.amount > availableInFromPeriod) {
+        throw new AppError(409, {
+          code: "INSUFFICIENT_AMOUNT_IN_SOURCE_PERIOD",
+          message: "Monto excede lo disponible en el periodo de origen",
+        });
+      }
 
-    const rolloverOut = await tx.$queryRaw<Array<{ id: number }>>`
+      const rolloverOut = await tx.$queryRaw<Array<{ id: number }>>`
       INSERT INTO financial_transaction_allocations (
         transaction_id, profile_id, period, amount, allocation_type, source_allocation_id, created_at, updated_at
       )
@@ -2149,18 +2153,18 @@ export async function reallocateFinancialTransaction(
       RETURNING id
     `;
 
-    const outId = rolloverOut[0]?.id;
-    const reallocationAmount = Number(data.amount);
-    const rolloverIn = await tx.$queryRaw<
-      Array<{
-        allocationType: string;
-        amount: number;
-        id: number;
-        period: string;
-        profileId: number;
-        transactionId: number;
-      }>
-    >`
+      const outId = rolloverOut[0]?.id;
+      const reallocationAmount = Number(data.amount);
+      const rolloverIn = await tx.$queryRaw<
+        Array<{
+          allocationType: string;
+          amount: number;
+          id: number;
+          period: string;
+          profileId: number;
+          transactionId: number;
+        }>
+      >`
       INSERT INTO financial_transaction_allocations (
         transaction_id, profile_id, period, amount, allocation_type, source_allocation_id, created_at, updated_at
       )
@@ -2183,6 +2187,25 @@ export async function reallocateFinancialTransaction(
         allocation_type AS "allocationType"
     `;
 
-    return rolloverIn[0];
-  });
+      return rolloverIn[0];
+    });
+  } catch (error) {
+    const pgError = error as { code?: string; constraint?: string; message?: string };
+    if (
+      pgError?.code === "23514" &&
+      pgError?.constraint === "financial_transaction_allocations_period_format_chk"
+    ) {
+      throw new AppError(422, {
+        code: "INVALID_ALLOCATION_PERIOD_FORMAT",
+        details: {
+          fromPeriod,
+          originalPeriod: originalPeriodUsed ?? null,
+          targetPeriod,
+          transactionId,
+        },
+        message: "Formato de período inválido al registrar la reasignación.",
+      });
+    }
+    throw error;
+  }
 }
