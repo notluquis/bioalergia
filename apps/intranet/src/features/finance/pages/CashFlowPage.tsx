@@ -472,14 +472,7 @@ function CashflowPieTooltip({
 
   const item = payload[0];
   return (
-    <div
-      className="rounded-md border px-2.5 py-1.5 text-sm shadow-sm"
-      style={{
-        backgroundColor: "hsl(var(--b1))",
-        borderColor: "hsl(var(--bc) / 0.2)",
-        color: "hsl(var(--bc))",
-      }}
-    >
+    <div className="rounded-md border border-default-300 bg-default-100 px-2.5 py-1.5 text-sm text-foreground shadow-md">
       <span className="font-medium">{item?.name ?? "Categoría"}</span>
       <span> : {formatCurrency(Number(item?.value ?? 0))}</span>
     </div>
