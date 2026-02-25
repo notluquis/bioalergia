@@ -2191,10 +2191,13 @@ export async function reallocateFinancialTransaction(
     });
   } catch (error) {
     const pgError = error as { code?: string; constraint?: string; message?: string };
-    if (
-      pgError?.code === "23514" &&
-      pgError?.constraint === "financial_transaction_allocations_period_format_chk"
-    ) {
+    const message = String(pgError?.message ?? "");
+    const isPeriodConstraintError =
+      (pgError?.code === "23514" &&
+        pgError?.constraint === "financial_transaction_allocations_period_format_chk") ||
+      message.includes("financial_transaction_allocations_period_format_chk");
+
+    if (isPeriodConstraintError) {
       throw new AppError(422, {
         code: "INVALID_ALLOCATION_PERIOD_FORMAT",
         details: {
