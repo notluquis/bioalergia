@@ -1688,40 +1688,42 @@ export function CashFlowPage() {
                         <div className="max-h-96 space-y-2 overflow-auto pr-1">
                           {incomeCategorySummary.map((item) => (
                             <Button
-                              className="h-auto w-full justify-start space-y-1.5 rounded-md border border-default-200 px-2.5 py-2 text-left transition-colors hover:bg-default-100/60"
+                              className="group h-auto w-full justify-start rounded-md border border-default-200 p-0 text-left transition-colors hover:bg-default-100/60"
                               key={`summary-income-category-${item.type}-${item.categoryId ?? "none"}`}
                               variant="ghost"
                               onPress={() => navigateToMovementsBySummaryCategory(item)}
                             >
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="flex min-w-0 items-center gap-2">
-                                  <span
-                                    className="h-2.5 w-2.5 shrink-0 rounded-full"
+                              <div className="w-full space-y-1.5 px-2.5 py-2">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex min-w-0 items-center gap-2">
+                                    <span
+                                      className="h-2.5 w-2.5 shrink-0 rounded-full"
+                                      style={{
+                                        backgroundColor: item.categoryColor ?? "#64748B",
+                                      }}
+                                    />
+                                    <span className="truncate text-sm">{item.categoryName}</span>
+                                  </div>
+                                  <div className="shrink-0 text-right">
+                                    <p className="text-sm font-medium text-success">
+                                      {formatCurrency(Math.abs(item.total))}
+                                    </p>
+                                    <p className="text-tiny text-default-500">{item.count} mov.</p>
+                                  </div>
+                                </div>
+                                <div className="h-1.5 w-full overflow-hidden rounded-full bg-default-200">
+                                  <div
+                                    className="h-full rounded-full bg-success"
                                     style={{
-                                      backgroundColor: item.categoryColor ?? "#64748B",
+                                      width: `${
+                                        monthlySummary.totals.income > 0
+                                          ? (Math.abs(item.total) / monthlySummary.totals.income) *
+                                            100
+                                          : 0
+                                      }%`,
                                     }}
                                   />
-                                  <span className="truncate text-sm">{item.categoryName}</span>
                                 </div>
-                                <div className="shrink-0 text-right">
-                                  <p className="text-sm font-medium text-success">
-                                    {formatCurrency(Math.abs(item.total))}
-                                  </p>
-                                  <p className="text-tiny text-default-500">{item.count} mov.</p>
-                                </div>
-                              </div>
-                              <div className="h-1.5 w-full overflow-hidden rounded-full bg-default-200">
-                                <div
-                                  className="h-full rounded-full bg-success"
-                                  style={{
-                                    width: `${
-                                      monthlySummary.totals.income > 0
-                                        ? (Math.abs(item.total) / monthlySummary.totals.income) *
-                                          100
-                                        : 0
-                                    }%`,
-                                  }}
-                                />
                               </div>
                             </Button>
                           ))}
@@ -1752,40 +1754,42 @@ export function CashFlowPage() {
                         <div className="max-h-96 space-y-2 overflow-auto pr-1">
                           {expenseCategorySummary.map((item) => (
                             <Button
-                              className="h-auto w-full justify-start space-y-1.5 rounded-md border border-default-200 px-2.5 py-2 text-left transition-colors hover:bg-default-100/60"
+                              className="group h-auto w-full justify-start rounded-md border border-default-200 p-0 text-left transition-colors hover:bg-default-100/60"
                               key={`summary-expense-category-${item.type}-${item.categoryId ?? "none"}`}
                               variant="ghost"
                               onPress={() => navigateToMovementsBySummaryCategory(item)}
                             >
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="flex min-w-0 items-center gap-2">
-                                  <span
-                                    className="h-2.5 w-2.5 shrink-0 rounded-full"
+                              <div className="w-full space-y-1.5 px-2.5 py-2">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex min-w-0 items-center gap-2">
+                                    <span
+                                      className="h-2.5 w-2.5 shrink-0 rounded-full"
+                                      style={{
+                                        backgroundColor: item.categoryColor ?? "#64748B",
+                                      }}
+                                    />
+                                    <span className="truncate text-sm">{item.categoryName}</span>
+                                  </div>
+                                  <div className="shrink-0 text-right">
+                                    <p className="text-sm font-medium text-danger">
+                                      {formatCurrency(Math.abs(item.total))}
+                                    </p>
+                                    <p className="text-tiny text-default-500">{item.count} mov.</p>
+                                  </div>
+                                </div>
+                                <div className="h-1.5 w-full overflow-hidden rounded-full bg-default-200">
+                                  <div
+                                    className="h-full rounded-full bg-danger"
                                     style={{
-                                      backgroundColor: item.categoryColor ?? "#64748B",
+                                      width: `${
+                                        monthlySummary.totals.expense > 0
+                                          ? (Math.abs(item.total) / monthlySummary.totals.expense) *
+                                            100
+                                          : 0
+                                      }%`,
                                     }}
                                   />
-                                  <span className="truncate text-sm">{item.categoryName}</span>
                                 </div>
-                                <div className="shrink-0 text-right">
-                                  <p className="text-sm font-medium text-danger">
-                                    {formatCurrency(Math.abs(item.total))}
-                                  </p>
-                                  <p className="text-tiny text-default-500">{item.count} mov.</p>
-                                </div>
-                              </div>
-                              <div className="h-1.5 w-full overflow-hidden rounded-full bg-default-200">
-                                <div
-                                  className="h-full rounded-full bg-danger"
-                                  style={{
-                                    width: `${
-                                      monthlySummary.totals.expense > 0
-                                        ? (Math.abs(item.total) / monthlySummary.totals.expense) *
-                                          100
-                                        : 0
-                                    }%`,
-                                  }}
-                                />
                               </div>
                             </Button>
                           ))}
