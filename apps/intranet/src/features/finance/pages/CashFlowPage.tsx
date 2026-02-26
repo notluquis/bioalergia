@@ -1535,6 +1535,21 @@ export function CashFlowPage() {
     setPage(1);
   };
 
+  const navigateToMovementsBySummaryCategory = (item: SummaryByCategoryEntry) => {
+    const categoryKey = item.categoryId == null ? "__none__" : String(item.categoryId);
+    setSelectedCategoryFilters([categoryKey]);
+    setColumnFilters((prev) => ({
+      ...prev,
+      type: item.type,
+    }));
+    if (item.categoryId != null && nonAccountableCategoryIds.has(item.categoryId)) {
+      setShowNonAccountableMovements(true);
+    }
+    setPage(1);
+    setActiveTab("movements");
+    markTabAsMounted("movements");
+  };
+
   return (
     <div className="flex flex-col gap-4 px-3 pb-4 pt-2">
       <Tabs
@@ -1672,9 +1687,11 @@ export function CashFlowPage() {
                       ) : (
                         <div className="max-h-96 space-y-2 overflow-auto pr-1">
                           {incomeCategorySummary.map((item) => (
-                            <div
-                              className="space-y-1.5 rounded-md border border-default-200 px-2.5 py-2"
+                            <Button
+                              className="h-auto w-full justify-start space-y-1.5 rounded-md border border-default-200 px-2.5 py-2 text-left transition-colors hover:bg-default-100/60"
                               key={`summary-income-category-${item.type}-${item.categoryId ?? "none"}`}
+                              variant="ghost"
+                              onPress={() => navigateToMovementsBySummaryCategory(item)}
                             >
                               <div className="flex items-start justify-between gap-2">
                                 <div className="flex min-w-0 items-center gap-2">
@@ -1706,7 +1723,7 @@ export function CashFlowPage() {
                                   }}
                                 />
                               </div>
-                            </div>
+                            </Button>
                           ))}
                         </div>
                       )}
@@ -1734,9 +1751,11 @@ export function CashFlowPage() {
                       ) : (
                         <div className="max-h-96 space-y-2 overflow-auto pr-1">
                           {expenseCategorySummary.map((item) => (
-                            <div
-                              className="space-y-1.5 rounded-md border border-default-200 px-2.5 py-2"
+                            <Button
+                              className="h-auto w-full justify-start space-y-1.5 rounded-md border border-default-200 px-2.5 py-2 text-left transition-colors hover:bg-default-100/60"
                               key={`summary-expense-category-${item.type}-${item.categoryId ?? "none"}`}
+                              variant="ghost"
+                              onPress={() => navigateToMovementsBySummaryCategory(item)}
                             >
                               <div className="flex items-start justify-between gap-2">
                                 <div className="flex min-w-0 items-center gap-2">
@@ -1768,7 +1787,7 @@ export function CashFlowPage() {
                                   }}
                                 />
                               </div>
-                            </div>
+                            </Button>
                           ))}
                         </div>
                       )}
