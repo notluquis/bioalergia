@@ -116,6 +116,7 @@ function mapEventToUpsertRecord(
     treatmentStage: metadata.treatmentStage,
     controlIncluded: metadata.controlIncluded,
     isDomicilio: metadata.isDomicilio,
+    testMetadata: metadata.testMetadata,
   };
 }
 

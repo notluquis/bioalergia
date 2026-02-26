@@ -9,10 +9,18 @@ export interface ParsedPayload {
   category: null | string;
   dosageValue: null | number;
   dosageUnit: null | string;
+  testMetadata: null | {
+    firstReading: boolean;
+    patchTest: boolean;
+    secondReading: boolean;
+    skinTest: boolean;
+    thirdReading: boolean;
+  };
   treatmentStage: null | string;
 }
 
 const SUBCUTANEOUS_CATEGORY = "Tratamiento subcutáneo";
+const TEST_CATEGORY = "Test y exámenes";
 const ROXAIR_CATEGORY = "Roxair";
 const ROXAIR_DEFAULT_AMOUNT = 150000;
 const READY_KEYWORD_PATTERN = /\blisto\b/i;
@@ -48,6 +56,13 @@ function isRoxairCategory(value: null | string | undefined): boolean {
   return normalizeChoiceValue(value) === normalizeChoiceValue(ROXAIR_CATEGORY);
 }
 
+function isTestCategory(value: null | string | undefined): boolean {
+  if (!value) {
+    return false;
+  }
+  return normalizeChoiceValue(value) === normalizeChoiceValue(TEST_CATEGORY);
+}
+
 export function buildDefaultEntry(event: CalendarUnclassifiedEvent) {
   const resolvedCategory = event.category?.trim() ?? "";
   const roxairDefaultAmount =
@@ -71,6 +86,11 @@ export function buildDefaultEntry(event: CalendarUnclassifiedEvent) {
     category: resolvedCategory,
     dosageValue: event.dosageValue != null ? String(event.dosageValue) : "",
     dosageUnit: event.dosageUnit ?? "",
+    testSubtypeSkin: event.testMetadata?.skinTest ?? false,
+    testSubtypePatch: event.testMetadata?.patchTest ?? false,
+    testPatchFirstReading: event.testMetadata?.firstReading ?? false,
+    testPatchSecondReading: event.testMetadata?.secondReading ?? false,
+    testPatchThirdReading: event.testMetadata?.thirdReading ?? false,
     treatmentStage: event.treatmentStage ?? "",
   };
 }
@@ -84,14 +104,14 @@ export function buildPayload(
   const resolvedCategory = isSubcutaneousCategory(resolvedCategoryRaw)
     ? SUBCUTANEOUS_CATEGORY
     : resolvedCategoryRaw;
+  const isTest = isTestCategory(resolvedCategory);
   const isRoxair = isRoxairCategory(resolvedCategory);
   const isLockedNoShow = isExplicitNoShowEvent(event);
   const attended = isLockedNoShow ? false : entry.attended;
   const amountExpectedRaw = parseAmountInput(entry.amountExpected) ?? event.amountExpected ?? null;
-  const amountExpected =
+  const baseAmountExpected =
     amountExpectedRaw == null && isRoxair ? ROXAIR_DEFAULT_AMOUNT : amountExpectedRaw;
   const amountPaidRaw = parseAmountInput(entry.amountPaid) ?? event.amountPaid ?? null;
-  const amountPaid = attended === false ? 0 : amountPaidRaw;
 
   // Parse dosageValue from string input
   const dosageValue = entry.dosageValue?.trim()
@@ -103,6 +123,21 @@ export function buildPayload(
   const treatmentStage =
     isSubcutaneousCategory(resolvedCategory) && treatmentStageValue ? treatmentStageValue : null;
 
+  const testMetadata = isTest
+    ? {
+        firstReading: Boolean(entry.testPatchFirstReading),
+        patchTest: Boolean(entry.testSubtypePatch),
+        secondReading: Boolean(entry.testPatchSecondReading),
+        skinTest: Boolean(entry.testSubtypeSkin),
+        thirdReading: Boolean(entry.testPatchThirdReading),
+      }
+    : null;
+  const hasPatchReading = Boolean(
+    testMetadata?.firstReading || testMetadata?.secondReading || testMetadata?.thirdReading,
+  );
+  const amountExpected = hasPatchReading ? 0 : baseAmountExpected;
+  const amountPaid = attended === false || hasPatchReading ? 0 : amountPaidRaw;
+
   return {
     amountExpected,
     amountPaid,
@@ -110,6 +145,7 @@ export function buildPayload(
     category: resolvedCategory,
     dosageValue: dosageValue ?? null,
     dosageUnit,
+    testMetadata,
     treatmentStage,
   };
 }

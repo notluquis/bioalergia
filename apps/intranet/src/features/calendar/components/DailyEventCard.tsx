@@ -57,6 +57,7 @@ function chipColorByTone(tone: CalendarEventStateTone): StateBadge["color"] {
 
 function buildRightSideBadges(event: CalendarEventDetail) {
   const isSubcutaneous = event.category === "Tratamiento subcutáneo";
+  const isTestCategory = event.category === "Test y exámenes";
   const badges: Array<{
     className?: string;
     color?: "accent" | "warning";
@@ -88,6 +89,41 @@ function buildRightSideBadges(event: CalendarEventDetail) {
       className: "h-6 font-medium text-[10px] uppercase tracking-wide",
       color: "accent",
       label: `${event.dosageValue} ${event.dosageUnit}`,
+    });
+  }
+  if (isTestCategory && event.testMetadata?.skinTest) {
+    badges.push({
+      className: "h-6 font-medium text-[10px] uppercase tracking-wide",
+      color: "accent",
+      label: "Test cutáneo",
+    });
+  }
+  if (isTestCategory && event.testMetadata?.patchTest) {
+    badges.push({
+      className: "h-6 font-medium text-[10px] uppercase tracking-wide",
+      color: "accent",
+      label: "Test de parche",
+    });
+  }
+  if (isTestCategory && event.testMetadata?.firstReading) {
+    badges.push({
+      className: "h-6 font-medium text-[10px] uppercase tracking-wide",
+      color: "warning",
+      label: "1ra lectura",
+    });
+  }
+  if (isTestCategory && event.testMetadata?.secondReading) {
+    badges.push({
+      className: "h-6 font-medium text-[10px] uppercase tracking-wide",
+      color: "warning",
+      label: "2da lectura",
+    });
+  }
+  if (isTestCategory && event.testMetadata?.thirdReading) {
+    badges.push({
+      className: "h-6 font-medium text-[10px] uppercase tracking-wide",
+      color: "warning",
+      label: "3ra lectura",
     });
   }
 

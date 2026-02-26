@@ -6198,6 +6198,17 @@ export class SchemaType implements SchemaDef {
             },
           ],
         },
+        testMetadata: {
+          name: "testMetadata",
+          type: "Json",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("test_metadata") }],
+            },
+          ],
+        },
         createdAt: {
           name: "createdAt",
           type: "DateTime",

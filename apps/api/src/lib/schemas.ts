@@ -84,6 +84,16 @@ export const updateClassificationSchema = z.object({
   treatmentStage: z.string().nullable().optional(),
   controlIncluded: z.boolean().nullable().optional(),
   isDomicilio: z.boolean().nullable().optional(),
+  testMetadata: z
+    .object({
+      firstReading: z.boolean(),
+      patchTest: z.boolean(),
+      secondReading: z.boolean(),
+      skinTest: z.boolean(),
+      thirdReading: z.boolean(),
+    })
+    .nullable()
+    .optional(),
 });
 
 // ==========================================

@@ -2438,6 +2438,11 @@ export class SchemaType implements SchemaDef {
           type: "String",
           optional: true,
         },
+        testMetadata: {
+          name: "testMetadata",
+          type: "Json",
+          optional: true,
+        },
         createdAt: {
           name: "createdAt",
           type: "DateTime",

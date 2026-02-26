@@ -55,6 +55,8 @@ function CalendarClassificationPage() {
   const { data: optionsData } = useSuspenseQuery(calendarQueries.options());
   const categoryChoices = optionsData?.categories ?? [];
   const missingFieldChoices = optionsData?.missingFilters ?? [];
+  const patchReadingChoices = optionsData?.patchReadings ?? [];
+  const testSubtypeChoices = optionsData?.testSubtypes ?? [];
   const treatmentStageChoices = optionsData?.treatmentStages ?? [];
 
   const events = data?.events || EMPTY_EVENTS;
@@ -96,6 +98,7 @@ function CalendarClassificationPage() {
         dosageValue: params.payload.dosageValue,
         dosageUnit: params.payload.dosageUnit,
         eventId: params.event.eventId,
+        testMetadata: params.payload.testMetadata,
         treatmentStage: params.payload.treatmentStage,
       });
     },
@@ -248,6 +251,8 @@ function CalendarClassificationPage() {
                 key={key}
                 onReset={handleResetEntry}
                 onSave={handleSave}
+                patchReadingChoices={patchReadingChoices}
+                testSubtypeChoices={testSubtypeChoices}
                 treatmentStageChoices={treatmentStageChoices}
               />
             );

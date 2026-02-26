@@ -2,6 +2,37 @@ import { db } from "@finanzas/db";
 
 import type { CalendarEventRecord } from "./google-calendar";
 
+type TestMetadata = {
+  firstReading: boolean;
+  patchTest: boolean;
+  secondReading: boolean;
+  skinTest: boolean;
+  thirdReading: boolean;
+};
+
+function toTestMetadata(value: unknown): TestMetadata | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+  const candidate = value as Partial<TestMetadata>;
+  if (
+    typeof candidate.firstReading !== "boolean" ||
+    typeof candidate.patchTest !== "boolean" ||
+    typeof candidate.secondReading !== "boolean" ||
+    typeof candidate.skinTest !== "boolean" ||
+    typeof candidate.thirdReading !== "boolean"
+  ) {
+    return null;
+  }
+  return {
+    firstReading: candidate.firstReading,
+    patchTest: candidate.patchTest,
+    secondReading: candidate.secondReading,
+    skinTest: candidate.skinTest,
+    thirdReading: candidate.thirdReading,
+  };
+}
+
 // Cache para mapeo de googleId -> calendar.id (evita queries repetidas)
 const calendarIdCache = new Map<string, number>();
 
@@ -70,6 +101,7 @@ function buildEventUpsertData(event: CalendarEventRecord, calendarInternalId: nu
     treatmentStage: event.treatmentStage,
     controlIncluded: event.controlIncluded ?? false,
     isDomicilio: event.isDomicilio ?? false,
+    testMetadata: event.testMetadata ?? undefined,
     lastSyncedAt: new Date(),
   };
 }
@@ -103,6 +135,7 @@ async function findExistingEvent(calendarInternalId: number, eventId: string) {
       treatmentStage: true,
       controlIncluded: true,
       isDomicilio: true,
+      testMetadata: true,
     },
   });
 }
@@ -295,6 +328,7 @@ interface DiffableEvent {
   treatmentStage?: string | null;
   controlIncluded?: boolean | null;
   isDomicilio?: boolean | null;
+  testMetadata?: unknown;
 }
 
 function computeEventDiff(existing: DiffableEvent, incoming: DiffableEvent): string[] {
@@ -350,6 +384,11 @@ function computeEventDiff(existing: DiffableEvent, incoming: DiffableEvent): str
   diff("Etapa tratamiento", existing.treatmentStage, incoming.treatmentStage);
   diff("Control incluido", existing.controlIncluded, incoming.controlIncluded);
   diff("Domicilio", existing.isDomicilio, incoming.isDomicilio);
+  diff(
+    "Metadata test",
+    JSON.stringify(toTestMetadata(existing.testMetadata)),
+    JSON.stringify(toTestMetadata(incoming.testMetadata)),
+  );
 
   return changes;
 }

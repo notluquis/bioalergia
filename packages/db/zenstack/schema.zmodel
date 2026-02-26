@@ -826,6 +826,7 @@ model Event {
 
   dosageValue     Float?         @map("dosage_value")
   dosageUnit      String?        @map("dosage_unit")
+  testMetadata    Json?          @map("test_metadata")
   createdAt       DateTime       @default(now()) @map("created_at")
   updatedAt       DateTime       @default(now()) @updatedAt @map("updated_at")
   calendar        Calendar       @relation(fields: [calendarId], references: [id], onDelete: Cascade)

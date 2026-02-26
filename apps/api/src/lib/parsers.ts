@@ -32,6 +32,8 @@ export const CATEGORY_CHOICES = [
 ] as const;
 
 export const TREATMENT_STAGE_CHOICES = ["Mantención", "Inducción"] as const;
+export const TEST_SUBTYPE_CHOICES = ["Test cutáneo", "Test de parche"] as const;
+export const PATCH_READING_CHOICES = ["1ra lectura", "2da lectura", "3ra lectura"] as const;
 
 export type CategoryChoice = (typeof CATEGORY_CHOICES)[number];
 export type TreatmentStageChoice = (typeof TREATMENT_STAGE_CHOICES)[number];
@@ -46,6 +48,13 @@ export type ParsedCalendarMetadata = {
   treatmentStage: string | null;
   controlIncluded: boolean;
   isDomicilio: boolean;
+  testMetadata: {
+    firstReading: boolean;
+    patchTest: boolean;
+    secondReading: boolean;
+    skinTest: boolean;
+    thirdReading: boolean;
+  } | null;
 };
 
 // ============================================================================
@@ -94,6 +103,17 @@ const TEST_PATTERNS = [
   /multi\s*tes?t?/i, // multitest
   /prick/i, // prick test
   /aeroal[eé]rgenos?/i, // aeroalergenos
+];
+const TEST_CUTANEO_PATTERNS = [/\btest\s*cut[áa]neo\b/i, /\bprick\b/i, /multi\s*tes?t?/i];
+const TEST_PARCHE_PATTERNS = [/\btest\s*(de\s*)?parche\b/i, /\bparche\b/i];
+const TEST_PARCHE_1_READING_PATTERNS = [
+  /\b1(?:ra|era|a|ª|º)?\s*lectura\b/i,
+  /\bprimera\s*lectura\b/i,
+];
+const TEST_PARCHE_2_READING_PATTERNS = [/\b2(?:da|a|ª|º)?\s*lectura\b/i, /\bsegunda\s*lectura\b/i];
+const TEST_PARCHE_3_READING_PATTERNS = [
+  /\b3(?:ra|era|a|ª|º)?\s*lectura\b/i,
+  /\btercera\s*lectura\b/i,
 ];
 
 /** Patterns for "Licencia médica" */
@@ -767,6 +787,33 @@ function detectTreatmentStage(summary: string, description: string): string | nu
   return null;
 }
 
+function detectTestMetadata(
+  summary: string,
+  description: string,
+  category: string | null,
+): ParsedCalendarMetadata["testMetadata"] {
+  if (category !== "Test y exámenes") {
+    return null;
+  }
+
+  const text = `${summary} ${description}`;
+  const firstReading = matchesAny(text, TEST_PARCHE_1_READING_PATTERNS);
+  const secondReading = matchesAny(text, TEST_PARCHE_2_READING_PATTERNS);
+  const thirdReading = matchesAny(text, TEST_PARCHE_3_READING_PATTERNS);
+  const hasAnyReading = firstReading || secondReading || thirdReading;
+
+  const skinTest = matchesAny(text, TEST_CUTANEO_PATTERNS);
+  const patchTest = matchesAny(text, TEST_PARCHE_PATTERNS) || hasAnyReading;
+
+  return {
+    firstReading,
+    patchTest,
+    secondReading,
+    skinTest,
+    thirdReading,
+  };
+}
+
 // ============================================================================
 // MAIN EXPORT
 // ============================================================================
@@ -786,6 +833,10 @@ export function parseCalendarMetadata(input: {
   const treatmentStage = detectTreatmentStage(summary, description);
   const controlIncluded = matchesAny(text, CONTROL_PATTERNS);
   const isDomicilio = matchesAny(text, DOMICILIO_PATTERNS);
+  const testMetadata = detectTestMetadata(summary, description, category);
+  const hasPatchReading = Boolean(
+    testMetadata?.firstReading || testMetadata?.secondReading || testMetadata?.thirdReading,
+  );
   const hasReadyKeyword = READY_KEYWORD_PATTERN.test(text);
   const isRoxair = category === "Roxair";
   const finalAttended = attended ?? (hasReadyKeyword ? true : null);
@@ -810,6 +861,8 @@ export function parseCalendarMetadata(input: {
   const finalAmountExpected = isRoxair
     ? (amounts.amountExpected ?? ROXAIR_DEFAULT_AMOUNT)
     : amounts.amountExpected;
+  const testReadingExpectedAmount =
+    category === "Test y exámenes" && hasPatchReading ? 0 : finalAmountExpected;
 
   // Amount-based fallback for subcutaneous events when stage is still unknown:
   // 50k/60k => maintenance, other positive amounts => induction.
@@ -842,11 +895,13 @@ export function parseCalendarMetadata(input: {
   const finalAmountPaid =
     finalAttended === false
       ? 0
-      : (amounts.amountPaid ?? (roxairLikelyPaid ? finalAmountExpected : null));
+      : category === "Test y exámenes" && hasPatchReading
+        ? 0
+        : (amounts.amountPaid ?? (roxairLikelyPaid ? testReadingExpectedAmount : null));
 
   return {
     category,
-    amountExpected: finalAmountExpected,
+    amountExpected: testReadingExpectedAmount,
     amountPaid: finalAmountPaid,
     attended: finalAttended,
     dosageValue: finalDosageValue,
@@ -854,5 +909,6 @@ export function parseCalendarMetadata(input: {
     treatmentStage: finalTreatmentStage,
     controlIncluded,
     isDomicilio,
+    testMetadata,
   };
 }

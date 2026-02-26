@@ -321,6 +321,13 @@ export async function updateCalendarEventClassification(
     treatmentStage?: string | null;
     controlIncluded?: boolean | null;
     isDomicilio?: boolean | null;
+    testMetadata?: {
+      firstReading: boolean;
+      patchTest: boolean;
+      secondReading: boolean;
+      skinTest: boolean;
+      thirdReading: boolean;
+    } | null;
   },
 ) {
   // ... (function body of createCalendarEvent moved out)
@@ -350,6 +357,7 @@ export async function updateCalendarEventClassification(
       treatmentStage: data.treatmentStage,
       controlIncluded: data.controlIncluded ?? undefined,
       isDomicilio: data.isDomicilio ?? undefined,
+      testMetadata: data.testMetadata || undefined,
     },
   });
 }
@@ -392,6 +400,7 @@ export async function createCalendarEvent(data: CalendarEventRecord) {
     dosageUnit: data.dosageUnit,
     controlIncluded: data.controlIncluded ?? false,
     isDomicilio: data.isDomicilio || false,
+    testMetadata: data.testMetadata || undefined,
     lastSyncedAt: new Date(),
   };
 

@@ -17,10 +17,13 @@ interface ClassificationRowProps {
   isSaving: boolean;
   onReset: (index: number, event: CalendarUnclassifiedEvent) => void;
   onSave: (event: CalendarUnclassifiedEvent, index: number) => void;
+  patchReadingChoices: readonly string[];
+  testSubtypeChoices: readonly string[];
   treatmentStageChoices: readonly string[];
 }
 
 const SUBCUTANEOUS_CATEGORY = "Tratamiento subcutáneo";
+const TEST_CATEGORY = "Test y exámenes";
 const NONE_CATEGORY_KEY = "__none_category__";
 const NONE_TREATMENT_STAGE_KEY = "__none_treatment_stage__";
 
@@ -63,6 +66,8 @@ export function ClassificationRow({
   isSaving,
   onReset,
   onSave,
+  patchReadingChoices,
+  testSubtypeChoices,
   treatmentStageChoices,
 }: Readonly<ClassificationRowProps>) {
   const description = event.description?.trim();
@@ -71,6 +76,20 @@ export function ClassificationRow({
   const category = useStore(form.store, (state) => state.values.entries[index]?.category ?? "");
   const isSubcutaneous =
     normalizeChoiceValue(category) === normalizeChoiceValue(SUBCUTANEOUS_CATEGORY);
+  const isTest = normalizeChoiceValue(category) === normalizeChoiceValue(TEST_CATEGORY);
+  const testSubtypePatch = useStore(form.store, (state) =>
+    Boolean(state.values.entries[index]?.testSubtypePatch),
+  );
+  const testPatchFirstReading = useStore(form.store, (state) =>
+    Boolean(state.values.entries[index]?.testPatchFirstReading),
+  );
+  const testPatchSecondReading = useStore(form.store, (state) =>
+    Boolean(state.values.entries[index]?.testPatchSecondReading),
+  );
+  const testPatchThirdReading = useStore(form.store, (state) =>
+    Boolean(state.values.entries[index]?.testPatchThirdReading),
+  );
+  const hasPatchReading = testPatchFirstReading || testPatchSecondReading || testPatchThirdReading;
   const isNoShowLocked = isExplicitNoShowEvent(event);
 
   return (
@@ -156,13 +175,17 @@ export function ClassificationRow({
           <form.Field name={`entries[${index}].amountExpected`}>
             {(field: { handleChange: (v: string) => void; state: { value: null | string } }) => (
               <Input
+                helper={
+                  isTest && hasPatchReading ? "Lecturas de parche no tienen costo." : undefined
+                }
+                disabled={isTest && hasPatchReading}
                 label="Monto esperado"
                 onChange={(e) => {
                   field.handleChange(e.target.value);
                 }}
                 placeholder="50000"
                 type="text"
-                value={field.state.value ?? ""}
+                value={isTest && hasPatchReading ? "0" : (field.state.value ?? "")}
               />
             )}
           </form.Field>
@@ -171,17 +194,148 @@ export function ClassificationRow({
             {(field: { handleChange: (v: string) => void; state: { value: null | string } }) => (
               <Input
                 helper={isNoShowLocked ? 'Evento "no asiste": pago forzado a 0.' : undefined}
-                disabled={isNoShowLocked}
+                disabled={isNoShowLocked || (isTest && hasPatchReading)}
                 label="Monto pagado"
                 onChange={(e) => {
                   field.handleChange(e.target.value);
                 }}
                 placeholder="50000"
                 type="text"
-                value={isNoShowLocked ? "0" : (field.state.value ?? "")}
+                value={
+                  isNoShowLocked || (isTest && hasPatchReading) ? "0" : (field.state.value ?? "")
+                }
               />
             )}
           </form.Field>
+
+          {isTest && (
+            <>
+              <form.Field name={`entries[${index}].testSubtypeSkin`}>
+                {(field: {
+                  handleChange: (v: boolean) => void;
+                  state: { value: boolean | null | undefined };
+                }) => (
+                  <div className="flex flex-col gap-1 pt-2">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        aria-label={testSubtypeChoices[0] ?? "Test cutáneo"}
+                        isSelected={Boolean(field.state.value)}
+                        onChange={field.handleChange}
+                        variant="secondary"
+                      >
+                        <Checkbox.Control>
+                          <Checkbox.Indicator />
+                        </Checkbox.Control>
+                      </Checkbox>
+                      <span className="text-sm">{testSubtypeChoices[0] ?? "Test cutáneo"}</span>
+                    </div>
+                  </div>
+                )}
+              </form.Field>
+
+              <form.Field name={`entries[${index}].testSubtypePatch`}>
+                {(field: {
+                  handleChange: (v: boolean) => void;
+                  state: { value: boolean | null | undefined };
+                }) => (
+                  <div className="flex flex-col gap-1 pt-2">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        aria-label={testSubtypeChoices[1] ?? "Test de parche"}
+                        isSelected={Boolean(field.state.value)}
+                        onChange={(next) => {
+                          field.handleChange(next);
+                          if (!next) {
+                            form.setFieldValue(`entries[${index}].testPatchFirstReading`, false);
+                            form.setFieldValue(`entries[${index}].testPatchSecondReading`, false);
+                            form.setFieldValue(`entries[${index}].testPatchThirdReading`, false);
+                          }
+                        }}
+                        variant="secondary"
+                      >
+                        <Checkbox.Control>
+                          <Checkbox.Indicator />
+                        </Checkbox.Control>
+                      </Checkbox>
+                      <span className="text-sm">{testSubtypeChoices[1] ?? "Test de parche"}</span>
+                    </div>
+                  </div>
+                )}
+              </form.Field>
+
+              <form.Field name={`entries[${index}].testPatchFirstReading`}>
+                {(field: {
+                  handleChange: (v: boolean) => void;
+                  state: { value: boolean | null | undefined };
+                }) => (
+                  <div className="flex flex-col gap-1 pt-2">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        aria-label={patchReadingChoices[0] ?? "1ra lectura"}
+                        isDisabled={!testSubtypePatch}
+                        isSelected={Boolean(field.state.value)}
+                        onChange={field.handleChange}
+                        variant="secondary"
+                      >
+                        <Checkbox.Control>
+                          <Checkbox.Indicator />
+                        </Checkbox.Control>
+                      </Checkbox>
+                      <span className="text-sm">{patchReadingChoices[0] ?? "1ra lectura"}</span>
+                    </div>
+                  </div>
+                )}
+              </form.Field>
+
+              <form.Field name={`entries[${index}].testPatchSecondReading`}>
+                {(field: {
+                  handleChange: (v: boolean) => void;
+                  state: { value: boolean | null | undefined };
+                }) => (
+                  <div className="flex flex-col gap-1 pt-2">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        aria-label={patchReadingChoices[1] ?? "2da lectura"}
+                        isDisabled={!testSubtypePatch}
+                        isSelected={Boolean(field.state.value)}
+                        onChange={field.handleChange}
+                        variant="secondary"
+                      >
+                        <Checkbox.Control>
+                          <Checkbox.Indicator />
+                        </Checkbox.Control>
+                      </Checkbox>
+                      <span className="text-sm">{patchReadingChoices[1] ?? "2da lectura"}</span>
+                    </div>
+                  </div>
+                )}
+              </form.Field>
+
+              <form.Field name={`entries[${index}].testPatchThirdReading`}>
+                {(field: {
+                  handleChange: (v: boolean) => void;
+                  state: { value: boolean | null | undefined };
+                }) => (
+                  <div className="flex flex-col gap-1 pt-2">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        aria-label={patchReadingChoices[2] ?? "3ra lectura"}
+                        isDisabled={!testSubtypePatch}
+                        isSelected={Boolean(field.state.value)}
+                        onChange={field.handleChange}
+                        variant="secondary"
+                      >
+                        <Checkbox.Control>
+                          <Checkbox.Indicator />
+                        </Checkbox.Control>
+                      </Checkbox>
+                      <span className="text-sm">{patchReadingChoices[2] ?? "3ra lectura"}</span>
+                    </div>
+                  </div>
+                )}
+              </form.Field>
+            </>
+          )}
 
           {isSubcutaneous && (
             <form.Field name={`entries[${index}].dosageValue`}>

@@ -26,6 +26,8 @@ import type {
 export interface ClassificationOptions {
   categories: readonly string[];
   missingFilters: readonly { key: string; label: string }[];
+  patchReadings: readonly string[];
+  testSubtypes: readonly string[];
   treatmentStages: readonly string[];
 }
 
@@ -127,13 +129,17 @@ export async function fetchClassificationOptions(): Promise<ClassificationOption
   const response = await apiClient.get<{
     categories: readonly string[];
     missingFilters: readonly { key: string; label: string }[];
+    patchReadings: readonly string[];
     status: "ok";
+    testSubtypes: readonly string[];
     treatmentStages: readonly string[];
   }>("/api/calendar/classification-options", { responseSchema: ClassificationOptionsSchema });
 
   return {
     categories: response.categories,
     missingFilters: response.missingFilters,
+    patchReadings: response.patchReadings,
+    testSubtypes: response.testSubtypes,
     treatmentStages: response.treatmentStages,
   };
 }

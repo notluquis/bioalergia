@@ -115,6 +115,13 @@ export interface CalendarEventClassificationPayload {
   dosageValue?: null | number;
   dosageUnit?: null | string;
   eventId: string;
+  testMetadata?: null | {
+    firstReading: boolean;
+    patchTest: boolean;
+    secondReading: boolean;
+    skinTest: boolean;
+    thirdReading: boolean;
+  };
   treatmentStage?: null | string;
 }
 
@@ -147,6 +154,13 @@ export interface CalendarEventDetail {
   startTimeZone: null | string;
   status: null | string;
   summary: null | string;
+  testMetadata?: null | {
+    firstReading: boolean;
+    patchTest: boolean;
+    secondReading: boolean;
+    skinTest: boolean;
+    thirdReading: boolean;
+  };
   transparency: null | string;
   treatmentStage?: null | string;
   visibility: null | string;
@@ -237,6 +251,13 @@ export interface CalendarUnclassifiedEvent {
   startDateTime: null | string;
   status: null | string;
   summary: null | string;
+  testMetadata: null | {
+    firstReading: boolean;
+    patchTest: boolean;
+    secondReading: boolean;
+    skinTest: boolean;
+    thirdReading: boolean;
+  };
   treatmentStage: null | string;
 }
 
@@ -247,6 +268,11 @@ export interface ClassificationFormValues {
   category: string;
   dosageValue: string;
   dosageUnit: string;
+  testPatchFirstReading: boolean;
+  testPatchSecondReading: boolean;
+  testPatchThirdReading: boolean;
+  testSubtypePatch: boolean;
+  testSubtypeSkin: boolean;
   treatmentStage: string;
 }
 

@@ -25,6 +25,11 @@ export const classificationSchema = z.object({
   category: z.string().optional().nullable(),
   dosageValue: z.string().optional().nullable(),
   dosageUnit: z.string().optional().nullable(),
+  testPatchFirstReading: z.boolean().optional(),
+  testPatchSecondReading: z.boolean().optional(),
+  testPatchThirdReading: z.boolean().optional(),
+  testSubtypePatch: z.boolean().optional(),
+  testSubtypeSkin: z.boolean().optional(),
   treatmentStage: z.string().optional().nullable(),
 });
 
@@ -34,6 +39,14 @@ export const classificationArraySchema = z.object({
 
 export type ClassificationEntry = z.infer<typeof classificationSchema>;
 export type FormValues = z.infer<typeof classificationArraySchema>;
+
+const TestMetadataSchema = z.strictObject({
+  firstReading: z.boolean(),
+  patchTest: z.boolean(),
+  secondReading: z.boolean(),
+  skinTest: z.boolean(),
+  thirdReading: z.boolean(),
+});
 
 export const CalendarEventDetailSchema = z.strictObject({
   amountExpected: z.number().nullable().optional(),
@@ -46,6 +59,7 @@ export const CalendarEventDetailSchema = z.strictObject({
   description: z.string().nullable(),
   dosageValue: z.number().nullable().optional(),
   dosageUnit: z.string().nullable().optional(),
+  testMetadata: TestMetadataSchema.nullable().optional(),
   endDate: zDateOnlyNullable,
   endDateTime: zEventDateTime,
   endTimeZone: z.string().nullable(),
@@ -256,6 +270,8 @@ export const ClassificationOptionsSchema = z.strictObject({
     }),
   ),
   status: z.literal("ok"),
+  patchReadings: z.array(z.string()),
+  testSubtypes: z.array(z.string()),
   treatmentStages: z.array(z.string()),
 });
 
@@ -268,6 +284,7 @@ export const CalendarUnclassifiedEventSchema = z.strictObject({
   description: z.string().nullable(),
   dosageValue: z.number().nullable(),
   dosageUnit: z.string().nullable(),
+  testMetadata: TestMetadataSchema.nullable(),
   endDate: zDateOnlyNullable,
   endDateTime: zEventDateTime,
   eventId: z.string(),

@@ -16,7 +16,9 @@ import {
 import {
   CATEGORY_CHOICES,
   isIgnoredEvent,
+  PATCH_READING_CHOICES,
   parseCalendarMetadata,
+  TEST_SUBTYPE_CHOICES,
   TREATMENT_STAGE_CHOICES,
 } from "../lib/parsers";
 import { updateClassificationSchema } from "../lib/schemas";
@@ -89,6 +91,36 @@ const calendarQuerySchema = z.object({
 type CalendarQuery = z.infer<typeof calendarQuerySchema>;
 type JobQueueModule = Awaited<typeof import("../lib/jobQueue")>;
 type JobQueueFns = Pick<JobQueueModule, "completeJob" | "failJob" | "updateJobProgress">;
+type TestMetadata = {
+  firstReading: boolean;
+  patchTest: boolean;
+  secondReading: boolean;
+  skinTest: boolean;
+  thirdReading: boolean;
+};
+
+function toTestMetadata(value: unknown): null | TestMetadata {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+  const candidate = value as Partial<TestMetadata>;
+  if (
+    typeof candidate.firstReading !== "boolean" ||
+    typeof candidate.patchTest !== "boolean" ||
+    typeof candidate.secondReading !== "boolean" ||
+    typeof candidate.skinTest !== "boolean" ||
+    typeof candidate.thirdReading !== "boolean"
+  ) {
+    return null;
+  }
+  return {
+    firstReading: candidate.firstReading,
+    patchTest: candidate.patchTest,
+    secondReading: candidate.secondReading,
+    skinTest: candidate.skinTest,
+    thirdReading: candidate.thirdReading,
+  };
+}
 
 type PartialReclassifyEvent = {
   id: number;
@@ -103,6 +135,7 @@ type PartialReclassifyEvent = {
   amountPaid: null | number;
   controlIncluded: boolean;
   isDomicilio: boolean;
+  testMetadata: null | TestMetadata;
 };
 
 type FullReclassifyEvent = {
@@ -122,6 +155,7 @@ type PartialReclassifyUpdateData = {
   amountPaid?: number;
   controlIncluded?: boolean;
   isDomicilio?: boolean;
+  testMetadata?: null | TestMetadata;
 };
 
 type FullReclassifyUpdateData = {
@@ -134,6 +168,7 @@ type FullReclassifyUpdateData = {
   amountPaid: null | number;
   controlIncluded: boolean;
   isDomicilio: boolean;
+  testMetadata: null | TestMetadata;
 };
 
 type PartialFieldCounts = {
@@ -288,6 +323,16 @@ const applyPartialDomicilioUpdate = (
   }
 };
 
+const applyPartialTestMetadataUpdate = (
+  event: PartialReclassifyEvent,
+  metadata: ParsedCalendarMetadata,
+  updateData: PartialReclassifyUpdateData,
+) => {
+  if (metadata.testMetadata && event.testMetadata == null) {
+    updateData.testMetadata = metadata.testMetadata;
+  }
+};
+
 const buildPartialUpdateData = (
   event: PartialReclassifyEvent,
   fieldCounts: PartialFieldCounts,
@@ -303,6 +348,7 @@ const buildPartialUpdateData = (
   applyPartialAmountPaidUpdate(event, metadata, updateData, fieldCounts);
   applyPartialControlIncludedUpdate(event, metadata, updateData, fieldCounts);
   applyPartialDomicilioUpdate(event, metadata, updateData, fieldCounts);
+  applyPartialTestMetadataUpdate(event, metadata, updateData);
 
   return updateData;
 };
@@ -351,6 +397,7 @@ const buildFullUpdateData = (
     amountPaid: metadata.amountPaid,
     controlIncluded: metadata.controlIncluded,
     isDomicilio: metadata.isDomicilio,
+    testMetadata: metadata.testMetadata,
   };
 };
 
@@ -805,6 +852,8 @@ calendarRoutes.get("/classification-options", async (c: Context) => {
     status: "ok",
     categories: CATEGORY_CHOICES,
     missingFilters: MISSING_CLASSIFICATION_FILTERS,
+    patchReadings: PATCH_READING_CHOICES,
+    testSubtypes: TEST_SUBTYPE_CHOICES,
     treatmentStages: TREATMENT_STAGE_CHOICES,
   });
 });
@@ -907,6 +956,7 @@ calendarRoutes.get(
         attended: row.attended ?? null,
         dosageValue: row.dosageValue ?? null,
         dosageUnit: row.dosageUnit ?? null,
+        testMetadata: toTestMetadata(row.testMetadata),
         treatmentStage: row.treatmentStage ?? null,
       })),
     });
@@ -950,6 +1000,7 @@ calendarRoutes.post(
       treatmentStage: sanitizeOptionalSelectionValue(payload.treatmentStage),
       controlIncluded: payload.controlIncluded ?? null,
       isDomicilio: payload.isDomicilio ?? null,
+      testMetadata: payload.testMetadata ?? null,
     });
 
     return reply(c, { status: "ok" });
@@ -1340,18 +1391,24 @@ calendarRoutes.post(
         amountPaid: true,
         controlIncluded: true,
         isDomicilio: true,
+        testMetadata: true,
       },
     });
 
-    const jobId = startJob("reclassify", events.length);
+    const normalizedEvents: PartialReclassifyEvent[] = events.map((event) => ({
+      ...event,
+      testMetadata: toTestMetadata(event.testMetadata),
+    }));
 
-    void runReclassifyMissingFieldsJob(events, jobId, {
+    const jobId = startJob("reclassify", normalizedEvents.length);
+
+    void runReclassifyMissingFieldsJob(normalizedEvents, jobId, {
       completeJob,
       failJob,
       updateJobProgress,
     });
 
-    return reply(c, { status: "accepted", jobId, totalEvents: events.length });
+    return reply(c, { status: "accepted", jobId, totalEvents: normalizedEvents.length });
   },
 );
 

@@ -358,6 +358,13 @@ export type CalendarEventDetail = {
   attended?: boolean | null;
   dosageValue?: number | null;
   dosageUnit?: string | null;
+  testMetadata?: {
+    firstReading: boolean;
+    patchTest: boolean;
+    secondReading: boolean;
+    skinTest: boolean;
+    thirdReading: boolean;
+  } | null;
   treatmentStage?: string | null;
   controlIncluded?: boolean | null;
   isDomicilio?: boolean | null;
@@ -575,6 +582,7 @@ export async function getCalendarEventsByDate(
       "e.attended",
       "e.dosageValue as dosageValue",
       "e.dosageUnit as dosageUnit",
+      sql<unknown>`e.test_metadata`.as("testMetadata"),
       "e.treatmentStage as treatmentStage",
       "e.controlIncluded as controlIncluded",
       EVENT_DATE_SQL.as("eventDateString"), // helper for grouping: use raw SQL names
@@ -627,6 +635,13 @@ export async function getCalendarEventsByDate(
     attended: boolean | null;
     dosageValue: number | null;
     dosageUnit: string | null;
+    testMetadata: {
+      firstReading: boolean;
+      patchTest: boolean;
+      secondReading: boolean;
+      skinTest: boolean;
+      thirdReading: boolean;
+    } | null;
     treatmentStage: string | null;
     controlIncluded: boolean | null;
     isDomicilio: boolean | null;
@@ -691,6 +706,7 @@ export async function getCalendarEventsByDate(
       attended: ev.attended,
       dosageValue: ev.dosageValue,
       dosageUnit: ev.dosageUnit,
+      testMetadata: ev.testMetadata ?? parsedMetadata?.testMetadata ?? null,
       treatmentStage: ev.treatmentStage ?? parsedMetadata?.treatmentStage ?? null,
       controlIncluded: ev.controlIncluded ?? parsedMetadata?.controlIncluded ?? false,
       isDomicilio: ev.isDomicilio ?? parsedMetadata?.isDomicilio ?? false,
