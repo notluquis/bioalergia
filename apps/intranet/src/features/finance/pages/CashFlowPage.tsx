@@ -20,6 +20,7 @@ import {
   type Selection,
   Skeleton,
   Switch,
+  SwitchGroup,
   Tabs,
   TextField,
 } from "@heroui/react";
@@ -650,6 +651,7 @@ export function CashFlowPage() {
   const [reallocateTargetPeriod, setReallocateTargetPeriod] = useState(dayjs().format("YYYY-MM"));
   const [reallocateAmount, setReallocateAmount] = useState<null | number>(null);
   const [showNonAccountableMovements, setShowNonAccountableMovements] = useState(false);
+  const [showOnlyUncategorizedMovements, setShowOnlyUncategorizedMovements] = useState(false);
   const { data: availableMonths = [] } = useAvailableFinancialMonths();
 
   const monthOptions = useMemo(() => {
@@ -781,7 +783,9 @@ export function CashFlowPage() {
     columnFilters.fromCounterpart.trim().length > 0 ||
     columnFilters.toCounterpart.trim().length > 0 ||
     columnFilters.amount.trim().length > 0 ||
-    columnFilters.comment.trim().length > 0;
+    columnFilters.comment.trim().length > 0 ||
+    showNonAccountableMovements ||
+    showOnlyUncategorizedMovements;
 
   const monthTransactions = data?.data ?? [];
   const reallocationProfileOptions = useMemo(() => {
@@ -828,6 +832,10 @@ export function CashFlowPage() {
         tx.categoryId != null &&
         nonAccountableCategoryIds.has(tx.categoryId)
       ) {
+        return false;
+      }
+
+      if (showOnlyUncategorizedMovements && tx.categoryId != null) {
         return false;
       }
 
@@ -891,6 +899,7 @@ export function CashFlowPage() {
     monthTransactions,
     nonAccountableCategoryIds,
     selectedCategoryFilters,
+    showOnlyUncategorizedMovements,
     showNonAccountableMovements,
   ]);
 
@@ -2017,20 +2026,37 @@ export function CashFlowPage() {
                   </div>
 
                   <div className="flex items-end lg:col-span-3">
-                    <Switch
-                      className="h-10"
-                      isSelected={showNonAccountableMovements}
-                      onChange={setShowNonAccountableMovements}
-                    >
-                      <Switch.Control>
-                        <Switch.Thumb />
-                      </Switch.Control>
-                      <Switch.Content>
-                        <Label className="text-sm text-default-600">
-                          Mostrar no contabilizables
-                        </Label>
-                      </Switch.Content>
-                    </Switch>
+                    <Card className="w-full rounded-xl border border-default-200/70 bg-default-100/35 px-3 py-2">
+                      <SwitchGroup
+                        className="flex flex-wrap items-center gap-x-4 gap-y-2"
+                        orientation="horizontal"
+                      >
+                        <Switch
+                          className="h-7"
+                          isSelected={showNonAccountableMovements}
+                          onChange={setShowNonAccountableMovements}
+                        >
+                          <Switch.Control>
+                            <Switch.Thumb />
+                          </Switch.Control>
+                          <Switch.Content>
+                            <Label className="text-xs text-default-600">No contabilizables</Label>
+                          </Switch.Content>
+                        </Switch>
+                        <Switch
+                          className="h-7"
+                          isSelected={showOnlyUncategorizedMovements}
+                          onChange={setShowOnlyUncategorizedMovements}
+                        >
+                          <Switch.Control>
+                            <Switch.Thumb />
+                          </Switch.Control>
+                          <Switch.Content>
+                            <Label className="text-xs text-default-600">Solo sin categoría</Label>
+                          </Switch.Content>
+                        </Switch>
+                      </SwitchGroup>
+                    </Card>
                   </div>
 
                   <div className="flex items-end justify-end lg:col-span-2">
@@ -2043,6 +2069,7 @@ export function CashFlowPage() {
                         setCategoryFilterSearch("");
                         setColumnFilters(DEFAULT_COLUMN_FILTERS);
                         setShowNonAccountableMovements(false);
+                        setShowOnlyUncategorizedMovements(false);
                         setPage(1);
                       }}
                     >
@@ -2183,6 +2210,36 @@ export function CashFlowPage() {
                         onClick={() => updateColumnFilter("comment", "")}
                       >
                         Comentario: {columnFilters.comment}
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+
+                    {showNonAccountableMovements && (
+                      <Button
+                        className="h-7 rounded-full px-3"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setShowNonAccountableMovements(false);
+                          setPage(1);
+                        }}
+                      >
+                        No contabilizables
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+
+                    {showOnlyUncategorizedMovements && (
+                      <Button
+                        className="h-7 rounded-full px-3"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setShowOnlyUncategorizedMovements(false);
+                          setPage(1);
+                        }}
+                      >
+                        Solo sin categoría
                         <X className="h-3.5 w-3.5" />
                       </Button>
                     )}
