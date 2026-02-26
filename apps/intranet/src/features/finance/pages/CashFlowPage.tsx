@@ -609,6 +609,9 @@ export function CashFlowPage() {
   const [newCategoryType, setNewCategoryType] = useState<"EXPENSE" | "INCOME">("EXPENSE");
   const [newCategoryColor, setNewCategoryColor] = useState("#64748b");
   const [newCategoryIsNonAccountable, setNewCategoryIsNonAccountable] = useState(false);
+  const [activeCategorySection, setActiveCategorySection] = useState<
+    "catalog" | "compensation" | "rules"
+  >("catalog");
   const [editingCategoryId, setEditingCategoryId] = useState<null | number>(null);
   const [editingCategoryName, setEditingCategoryName] = useState("");
   const [editingCategoryType, setEditingCategoryType] = useState<"EXPENSE" | "INCOME">("EXPENSE");
@@ -2272,782 +2275,833 @@ export function CashFlowPage() {
         <Tabs.Panel id="categories" className="space-y-3 pt-3">
           {isTabMounted("categories") ? (
             <>
-              <Card className="border border-default-200/70 bg-linear-to-b from-default-100/40 to-default-50/10 shadow-sm">
-                <div className="p-3">
-                  <form
-                    className="grid grid-cols-1 gap-4 md:grid-cols-5 md:items-end"
-                    onSubmit={handleCreateCategory}
+              <Card className="border border-default-200/70 bg-linear-to-b from-default-100/35 to-default-50/10 shadow-sm">
+                <div className="flex flex-wrap gap-2 p-2">
+                  <Button
+                    size="sm"
+                    variant={activeCategorySection === "catalog" ? "primary" : "secondary"}
+                    onPress={() => setActiveCategorySection("catalog")}
                   >
-                    <TextField className="md:col-span-2">
-                      <Label>Nombre</Label>
-                      <Input
-                        value={newCategoryName}
-                        onChange={(e) => setNewCategoryName(e.target.value)}
-                        placeholder="Ej: Honorarios médicos"
-                      />
-                    </TextField>
-
-                    <Select
-                      value={newCategoryType}
-                      onChange={(key) =>
-                        setNewCategoryType(String(key ?? "EXPENSE") as "EXPENSE" | "INCOME")
-                      }
-                      placeholder="Tipo"
-                    >
-                      <Label>Tipo</Label>
-                      <Select.Trigger>
-                        <Select.Value />
-                        <Select.Indicator />
-                      </Select.Trigger>
-                      <Select.Popover>
-                        <ListBox>
-                          <ListBox.Item id="INCOME" textValue="Ingreso">
-                            Ingreso
-                            <ListBox.ItemIndicator />
-                          </ListBox.Item>
-                          <ListBox.Item id="EXPENSE" textValue="Egreso">
-                            Egreso
-                            <ListBox.ItemIndicator />
-                          </ListBox.Item>
-                        </ListBox>
-                      </Select.Popover>
-                    </Select>
-
-                    <CategoryColorPicker
-                      className="md:self-end"
-                      label="Color"
-                      value={newCategoryColor}
-                      onChange={setNewCategoryColor}
-                    />
-                    <div className="flex h-full items-end pb-1">
-                      <Switch
-                        isSelected={newCategoryIsNonAccountable}
-                        onChange={(value) => setNewCategoryIsNonAccountable(value)}
-                      >
-                        <Switch.Control>
-                          <Switch.Thumb />
-                        </Switch.Control>
-                        <Switch.Content>
-                          <Label>No contabilizable</Label>
-                        </Switch.Content>
-                      </Switch>
-                    </div>
-
-                    <div className="md:col-span-5">
-                      <Button type="submit" isPending={createCategoryMutation.isPending}>
-                        {({ isPending }) => (isPending ? "Creando..." : "Crear categoría")}
-                      </Button>
-                    </div>
-                  </form>
+                    Catálogo de categorías
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={activeCategorySection === "rules" ? "primary" : "secondary"}
+                    onPress={() => setActiveCategorySection("rules")}
+                  >
+                    Reglas automáticas
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={activeCategorySection === "compensation" ? "primary" : "secondary"}
+                    onPress={() => setActiveCategorySection("compensation")}
+                  >
+                    Perfiles de compensación
+                  </Button>
                 </div>
               </Card>
 
-              <Card className="border border-default-200/70 bg-linear-to-b from-default-100/40 to-default-50/10 shadow-sm">
-                <div className="p-3">
-                  {categories.length === 0 ? (
-                    <p className="text-default-500 text-sm">No hay categorías creadas.</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {categories.map((category) => (
-                        <div
-                          key={category.id}
-                          className="flex items-center justify-between rounded-md border border-default-200 px-3 py-2"
+              {activeCategorySection === "catalog" ? (
+                <>
+                  <Card className="border border-default-200/70 bg-linear-to-b from-default-100/40 to-default-50/10 shadow-sm">
+                    <div className="p-3">
+                      <form
+                        className="grid grid-cols-1 gap-4 md:grid-cols-5 md:items-end"
+                        onSubmit={handleCreateCategory}
+                      >
+                        <TextField className="md:col-span-2">
+                          <Label>Nombre</Label>
+                          <Input
+                            value={newCategoryName}
+                            onChange={(e) => setNewCategoryName(e.target.value)}
+                            placeholder="Ej: Honorarios médicos"
+                          />
+                        </TextField>
+
+                        <Select
+                          value={newCategoryType}
+                          onChange={(key) =>
+                            setNewCategoryType(String(key ?? "EXPENSE") as "EXPENSE" | "INCOME")
+                          }
+                          placeholder="Tipo"
                         >
-                          {editingCategoryId === category.id ? (
-                            <div className="grid w-full grid-cols-1 gap-3 md:grid-cols-[1fr_160px_130px_90px_auto] md:items-end">
-                              <TextField>
-                                <Label>Nombre</Label>
-                                <Input
-                                  value={editingCategoryName}
-                                  onChange={(e) => setEditingCategoryName(e.target.value)}
-                                />
-                              </TextField>
-                              <Select
-                                value={editingCategoryType}
-                                onChange={(key) =>
-                                  setEditingCategoryType(
-                                    String(key ?? "EXPENSE") as "EXPENSE" | "INCOME",
-                                  )
-                                }
-                              >
-                                <Label>Tipo</Label>
-                                <Select.Trigger>
-                                  <Select.Value />
-                                  <Select.Indicator />
-                                </Select.Trigger>
-                                <Select.Popover>
-                                  <ListBox>
-                                    <ListBox.Item id="INCOME" textValue="Ingreso">
-                                      Ingreso
-                                      <ListBox.ItemIndicator />
-                                    </ListBox.Item>
-                                    <ListBox.Item id="EXPENSE" textValue="Egreso">
-                                      Egreso
-                                      <ListBox.ItemIndicator />
-                                    </ListBox.Item>
-                                  </ListBox>
-                                </Select.Popover>
-                              </Select>
-                              <CategoryColorPicker
-                                className="md:self-end"
-                                label="Color"
-                                value={editingCategoryColor}
-                                onChange={setEditingCategoryColor}
-                              />
-                              <div className="flex h-full items-end pb-1">
-                                <Switch
-                                  isSelected={editingCategoryIsNonAccountable}
-                                  onChange={(value) => setEditingCategoryIsNonAccountable(value)}
-                                >
-                                  <Switch.Control>
-                                    <Switch.Thumb />
-                                  </Switch.Control>
-                                  <Switch.Content>
-                                    <Label>No contabilizable</Label>
-                                  </Switch.Content>
-                                </Switch>
-                              </div>
-                              <div className="flex gap-2">
-                                <Button
-                                  size="sm"
-                                  variant="secondary"
-                                  onPress={() => handleCancelEditCategory()}
-                                >
-                                  Cancelar
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  onPress={() => handleSaveEditCategory(category.id)}
-                                  isPending={updateCategoryMutation.isPending}
-                                >
-                                  Guardar
-                                </Button>
-                              </div>
-                            </div>
-                          ) : (
-                            <>
-                              <div className="flex items-center gap-2">
-                                <span
-                                  className="h-2.5 w-2.5 rounded-full"
-                                  style={{ backgroundColor: category.color ?? "#ccc" }}
-                                />
-                                <span>{category.name}</span>
-                                {isNonAccountableCategory(category) ? (
-                                  <Chip color="warning" size="sm" variant="soft">
-                                    No contabilizable
-                                  </Chip>
-                                ) : null}
-                              </div>
-                              <div className="flex items-center gap-3">
-                                <span className="text-default-500 text-sm">
-                                  {category.type === "INCOME" ? "Ingreso" : "Egreso"}
-                                </span>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onPress={() => handleStartEditCategory(category)}
-                                >
-                                  Editar
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="text-danger"
-                                  onPress={() => handleDeleteCategory(category)}
-                                  isPending={deleteCategoryMutation.isPending}
-                                >
-                                  Eliminar
-                                </Button>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </Card>
+                          <Label>Tipo</Label>
+                          <Select.Trigger>
+                            <Select.Value />
+                            <Select.Indicator />
+                          </Select.Trigger>
+                          <Select.Popover>
+                            <ListBox>
+                              <ListBox.Item id="INCOME" textValue="Ingreso">
+                                Ingreso
+                                <ListBox.ItemIndicator />
+                              </ListBox.Item>
+                              <ListBox.Item id="EXPENSE" textValue="Egreso">
+                                Egreso
+                                <ListBox.ItemIndicator />
+                              </ListBox.Item>
+                            </ListBox>
+                          </Select.Popover>
+                        </Select>
 
-              <Card className="border border-default-200/70 bg-linear-to-b from-default-100/40 to-default-50/10 shadow-sm">
-                <div className="space-y-3 p-3">
-                  <h3 className="text-sm font-semibold">Perfiles de compensación (sueldos)</h3>
-                  <form
-                    className="grid grid-cols-1 gap-3 md:grid-cols-6"
-                    onSubmit={handleCreateCompensationProfile}
-                  >
-                    <TextField className="md:col-span-2">
-                      <Label>Nombre perfil</Label>
-                      <Input
-                        placeholder="Ej: Sueldo Lucas"
-                        value={newCompensationName}
-                        onChange={(e) => setNewCompensationName(e.target.value)}
-                      />
-                    </TextField>
-                    <Select
-                      className="md:col-span-2"
-                      value={
-                        newCompensationCategoryId == null ? null : String(newCompensationCategoryId)
-                      }
-                      onChange={(key) => {
-                        const value = key == null ? null : Number(key);
-                        setNewCompensationCategoryId(value);
-                      }}
-                    >
-                      <Label>Categoría (egreso)</Label>
-                      <Select.Trigger>
-                        <Select.Value />
-                        <Select.Indicator />
-                      </Select.Trigger>
-                      <Select.Popover>
-                        <ListBox>
-                          {categoryOptionsByType.EXPENSE.map((category) => (
-                            <ListBox.Item id={String(category.id)} key={category.id}>
-                              {category.name}
-                            </ListBox.Item>
-                          ))}
-                        </ListBox>
-                      </Select.Popover>
-                    </Select>
-                    <Select
-                      value={
-                        newCompensationCounterpartId == null
-                          ? "__none__"
-                          : String(newCompensationCounterpartId)
-                      }
-                      onChange={(key) => {
-                        const value =
-                          key == null || String(key) === "__none__" ? null : Number(key);
-                        setNewCompensationCounterpartId(value);
-                      }}
-                    >
-                      <Label>Contraparte (opcional)</Label>
-                      <Select.Trigger>
-                        <Select.Value />
-                        <Select.Indicator />
-                      </Select.Trigger>
-                      <Select.Popover>
-                        <ListBox>
-                          <ListBox.Item id="__none__">Sin restricción</ListBox.Item>
-                          {counterpartOptions.map((counterpart) => (
-                            <ListBox.Item id={String(counterpart.value)} key={counterpart.value}>
-                              {counterpart.label}
-                            </ListBox.Item>
-                          ))}
-                        </ListBox>
-                      </Select.Popover>
-                    </Select>
-                    <div className="flex h-full items-end pb-1">
-                      <Switch
-                        isSelected={newCompensationIsActive}
-                        onChange={(value) => setNewCompensationIsActive(value)}
-                      >
-                        <Switch.Control>
-                          <Switch.Thumb />
-                        </Switch.Control>
-                        <Switch.Content>
-                          <Label>Activo</Label>
-                        </Switch.Content>
-                      </Switch>
-                    </div>
-                    <div className="md:col-span-6">
-                      <Button type="submit" isPending={createCompensationProfileMutation.isPending}>
-                        Crear perfil de compensación
-                      </Button>
-                    </div>
-                  </form>
-
-                  {activeCompensationProfiles.length === 0 ? (
-                    <p className="text-default-500 text-sm">
-                      No hay perfiles de compensación activos.
-                    </p>
-                  ) : (
-                    <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.2fr_1fr]">
-                      <div className="space-y-2">
-                        {activeCompensationProfiles.map((profile) => (
-                          <button
-                            className={`w-full rounded-md border px-3 py-2 text-left transition ${
-                              selectedCompensationProfileId === profile.id
-                                ? "border-primary bg-primary-50/40"
-                                : "border-default-200 hover:bg-default-100/40"
-                            }`}
-                            key={profile.id}
-                            type="button"
-                            onClick={() => setSelectedCompensationProfileId(profile.id)}
+                        <CategoryColorPicker
+                          className="md:self-end"
+                          label="Color"
+                          value={newCategoryColor}
+                          onChange={setNewCategoryColor}
+                        />
+                        <div className="flex h-full items-end pb-1">
+                          <Switch
+                            isSelected={newCategoryIsNonAccountable}
+                            onChange={(value) => setNewCategoryIsNonAccountable(value)}
                           >
-                            <p className="text-sm font-medium">{profile.name}</p>
-                            <p className="text-tiny text-default-500">
-                              {profile.category.name}
-                              {profile.counterpart
-                                ? ` · ${profile.counterpart.bankAccountHolder}`
-                                : " · sin contraparte fija"}
-                            </p>
-                          </button>
-                        ))}
-                      </div>
-                      <div className="space-y-2 rounded-md border border-default-200 p-3">
-                        <p className="text-sm font-medium">Ledger período {selectedMonth}</p>
-                        <p className="text-tiny text-default-500">
-                          Presupuesto, imputado y diferencia para cuadrar arrastres.
-                        </p>
-                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                          <div className="rounded-md border border-default-200 px-2 py-1.5">
-                            <p className="text-tiny text-default-500">Presupuesto</p>
-                            <p className="text-sm font-semibold">
-                              {formatCurrency(selectedCompensationEntry?.budgetAmount ?? 0)}
-                            </p>
-                          </div>
-                          <div className="rounded-md border border-default-200 px-2 py-1.5">
-                            <p className="text-tiny text-default-500">Imputado</p>
-                            <p className="text-sm font-semibold">
-                              {formatCurrency(selectedCompensationEntry?.allocatedAmount ?? 0)}
-                            </p>
-                          </div>
-                          <div className="rounded-md border border-default-200 px-2 py-1.5">
-                            <p className="text-tiny text-default-500">Diferencia</p>
-                            <p
-                              className={`text-sm font-semibold ${
-                                (selectedCompensationEntry?.variance ?? 0) >= 0
-                                  ? "text-success"
-                                  : "text-danger"
-                              }`}
-                            >
-                              {formatCurrency(selectedCompensationEntry?.variance ?? 0)}
-                            </p>
-                          </div>
+                            <Switch.Control>
+                              <Switch.Thumb />
+                            </Switch.Control>
+                            <Switch.Content>
+                              <Label>No contabilizable</Label>
+                            </Switch.Content>
+                          </Switch>
                         </div>
-                        <div className="flex items-end gap-2">
-                          <TextField>
-                            <Label>Presupuesto mes</Label>
-                            <Input
-                              inputMode="decimal"
-                              placeholder="Ej: 1500000"
-                              value={budgetAmountInput}
-                              onChange={(e) =>
-                                setBudgetAmountInput(e.target.value.replace(/[^0-9.-]/g, ""))
-                              }
-                            />
-                          </TextField>
-                          <Button
-                            isPending={upsertCompensationBudgetMutation.isPending}
-                            onPress={handleSavePeriodBudget}
-                          >
-                            Guardar presupuesto
+
+                        <div className="md:col-span-5">
+                          <Button type="submit" isPending={createCategoryMutation.isPending}>
+                            {({ isPending }) => (isPending ? "Creando..." : "Crear categoría")}
                           </Button>
                         </div>
-                      </div>
+                      </form>
                     </div>
-                  )}
-                </div>
-              </Card>
+                  </Card>
 
-              <Card>
-                <div className="space-y-3 p-3">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <h3 className="text-sm font-semibold">Reglas automáticas por contraparte</h3>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      isPending={syncUncategorizedByPatternsMutation.isPending}
-                      onPress={() => syncUncategorizedByPatternsMutation.mutate()}
-                    >
-                      Sincronizar sin categoría
-                    </Button>
-                  </div>
-                  <form
-                    className="grid grid-cols-1 gap-3 md:grid-cols-8"
-                    onSubmit={handleCreateAutoCategoryRule}
-                  >
-                    <TextField className="md:col-span-2">
-                      <Label>Nombre regla</Label>
-                      <Input
-                        placeholder="Ej: Paula Flores MP Egreso"
-                        value={newRuleName}
-                        onChange={(e) => setNewRuleName(e.target.value)}
-                      />
-                    </TextField>
-                    <Select
-                      className="md:col-span-2"
-                      value={newRuleCounterpartId == null ? null : String(newRuleCounterpartId)}
-                      onChange={(key) => {
-                        const value =
-                          key == null || String(key) === "__none__" ? null : Number(key);
-                        setNewRuleCounterpartId(value);
-                      }}
-                    >
-                      <Label>Contraparte</Label>
-                      <Select.Trigger>
-                        <Select.Value />
-                        <Select.Indicator />
-                      </Select.Trigger>
-                      <Select.Popover>
-                        <ListBox>
-                          <ListBox.Item id="__none__" textValue="Sin filtro">
-                            Sin filtro (cualquier contraparte)
-                            <ListBox.ItemIndicator />
-                          </ListBox.Item>
-                          {counterpartOptions.map((counterpart) => (
-                            <ListBox.Item
-                              id={String(counterpart.value)}
-                              key={counterpart.value}
-                              textValue={counterpart.label}
-                            >
-                              {counterpart.label}
-                              <ListBox.ItemIndicator />
-                            </ListBox.Item>
-                          ))}
-                        </ListBox>
-                      </Select.Popover>
-                    </Select>
-                    <Select
-                      value={newRuleType}
-                      onChange={(key) =>
-                        setNewRuleType(String(key ?? "EXPENSE") as "EXPENSE" | "INCOME")
-                      }
-                    >
-                      <Label>Tipo</Label>
-                      <Select.Trigger>
-                        <Select.Value />
-                        <Select.Indicator />
-                      </Select.Trigger>
-                      <Select.Popover>
-                        <ListBox>
-                          <ListBox.Item id="EXPENSE" textValue="Egreso">
-                            Egreso
-                            <ListBox.ItemIndicator />
-                          </ListBox.Item>
-                          <ListBox.Item id="INCOME" textValue="Ingreso">
-                            Ingreso
-                            <ListBox.ItemIndicator />
-                          </ListBox.Item>
-                        </ListBox>
-                      </Select.Popover>
-                    </Select>
-                    <Select
-                      className="md:col-span-2"
-                      value={newRuleCategoryId == null ? null : String(newRuleCategoryId)}
-                      onChange={(key) => {
-                        const value = key == null ? null : Number(key);
-                        setNewRuleCategoryId(value);
-                      }}
-                    >
-                      <Label>Categoría</Label>
-                      <Select.Trigger>
-                        <Select.Value />
-                        <Select.Indicator />
-                      </Select.Trigger>
-                      <Select.Popover>
-                        <ListBox>
-                          {categoryOptionsByType[newRuleType].map((category) => (
-                            <ListBox.Item
-                              id={String(category.id)}
+                  <Card className="border border-default-200/70 bg-linear-to-b from-default-100/40 to-default-50/10 shadow-sm">
+                    <div className="p-3">
+                      {categories.length === 0 ? (
+                        <p className="text-default-500 text-sm">No hay categorías creadas.</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {categories.map((category) => (
+                            <div
                               key={category.id}
-                              textValue={category.name}
+                              className="flex items-center justify-between rounded-md border border-default-200 px-3 py-2"
                             >
-                              {category.name}
-                              <ListBox.ItemIndicator />
-                            </ListBox.Item>
+                              {editingCategoryId === category.id ? (
+                                <div className="grid w-full grid-cols-1 gap-3 md:grid-cols-[1fr_160px_130px_90px_auto] md:items-end">
+                                  <TextField>
+                                    <Label>Nombre</Label>
+                                    <Input
+                                      value={editingCategoryName}
+                                      onChange={(e) => setEditingCategoryName(e.target.value)}
+                                    />
+                                  </TextField>
+                                  <Select
+                                    value={editingCategoryType}
+                                    onChange={(key) =>
+                                      setEditingCategoryType(
+                                        String(key ?? "EXPENSE") as "EXPENSE" | "INCOME",
+                                      )
+                                    }
+                                  >
+                                    <Label>Tipo</Label>
+                                    <Select.Trigger>
+                                      <Select.Value />
+                                      <Select.Indicator />
+                                    </Select.Trigger>
+                                    <Select.Popover>
+                                      <ListBox>
+                                        <ListBox.Item id="INCOME" textValue="Ingreso">
+                                          Ingreso
+                                          <ListBox.ItemIndicator />
+                                        </ListBox.Item>
+                                        <ListBox.Item id="EXPENSE" textValue="Egreso">
+                                          Egreso
+                                          <ListBox.ItemIndicator />
+                                        </ListBox.Item>
+                                      </ListBox>
+                                    </Select.Popover>
+                                  </Select>
+                                  <CategoryColorPicker
+                                    className="md:self-end"
+                                    label="Color"
+                                    value={editingCategoryColor}
+                                    onChange={setEditingCategoryColor}
+                                  />
+                                  <div className="flex h-full items-end pb-1">
+                                    <Switch
+                                      isSelected={editingCategoryIsNonAccountable}
+                                      onChange={(value) =>
+                                        setEditingCategoryIsNonAccountable(value)
+                                      }
+                                    >
+                                      <Switch.Control>
+                                        <Switch.Thumb />
+                                      </Switch.Control>
+                                      <Switch.Content>
+                                        <Label>No contabilizable</Label>
+                                      </Switch.Content>
+                                    </Switch>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <Button
+                                      size="sm"
+                                      variant="secondary"
+                                      onPress={() => handleCancelEditCategory()}
+                                    >
+                                      Cancelar
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      onPress={() => handleSaveEditCategory(category.id)}
+                                      isPending={updateCategoryMutation.isPending}
+                                    >
+                                      Guardar
+                                    </Button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <>
+                                  <div className="flex items-center gap-2">
+                                    <span
+                                      className="h-2.5 w-2.5 rounded-full"
+                                      style={{ backgroundColor: category.color ?? "#ccc" }}
+                                    />
+                                    <span>{category.name}</span>
+                                    {isNonAccountableCategory(category) ? (
+                                      <Chip color="warning" size="sm" variant="soft">
+                                        No contabilizable
+                                      </Chip>
+                                    ) : null}
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                    <span className="text-default-500 text-sm">
+                                      {category.type === "INCOME" ? "Ingreso" : "Egreso"}
+                                    </span>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onPress={() => handleStartEditCategory(category)}
+                                    >
+                                      Editar
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="text-danger"
+                                      onPress={() => handleDeleteCategory(category)}
+                                      isPending={deleteCategoryMutation.isPending}
+                                    >
+                                      Eliminar
+                                    </Button>
+                                  </div>
+                                </>
+                              )}
+                            </div>
                           ))}
-                        </ListBox>
-                      </Select.Popover>
-                    </Select>
-                    <TextField>
-                      <Label>Prioridad</Label>
-                      <Input
-                        inputMode="numeric"
-                        value={newRulePriority}
-                        onChange={(e) => setNewRulePriority(e.target.value.replace(/[^\d-]/g, ""))}
-                      />
-                    </TextField>
-                    <TextField>
-                      <Label>Monto mínimo</Label>
-                      <Input
-                        inputMode="decimal"
-                        placeholder="0"
-                        value={newRuleMinAmount}
-                        onChange={(e) =>
-                          setNewRuleMinAmount(e.target.value.replace(/[^0-9.-]/g, ""))
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+                </>
+              ) : null}
+
+              {activeCategorySection === "compensation" ? (
+                <Card className="border border-default-200/70 bg-linear-to-b from-default-100/40 to-default-50/10 shadow-sm">
+                  <div className="space-y-3 p-3">
+                    <h3 className="text-sm font-semibold">Perfiles de compensación (sueldos)</h3>
+                    <form
+                      className="grid grid-cols-1 gap-3 md:grid-cols-6"
+                      onSubmit={handleCreateCompensationProfile}
+                    >
+                      <TextField className="md:col-span-2">
+                        <Label>Nombre perfil</Label>
+                        <Input
+                          placeholder="Ej: Sueldo Lucas"
+                          value={newCompensationName}
+                          onChange={(e) => setNewCompensationName(e.target.value)}
+                        />
+                      </TextField>
+                      <Select
+                        className="md:col-span-2"
+                        value={
+                          newCompensationCategoryId == null
+                            ? null
+                            : String(newCompensationCategoryId)
                         }
-                      />
-                    </TextField>
-                    <TextField>
-                      <Label>Monto máximo</Label>
-                      <Input
-                        inputMode="decimal"
-                        placeholder="200000"
-                        value={newRuleMaxAmount}
-                        onChange={(e) =>
-                          setNewRuleMaxAmount(e.target.value.replace(/[^0-9.-]/g, ""))
+                        onChange={(key) => {
+                          const value = key == null ? null : Number(key);
+                          setNewCompensationCategoryId(value);
+                        }}
+                      >
+                        <Label>Categoría (egreso)</Label>
+                        <Select.Trigger>
+                          <Select.Value />
+                          <Select.Indicator />
+                        </Select.Trigger>
+                        <Select.Popover>
+                          <ListBox>
+                            {categoryOptionsByType.EXPENSE.map((category) => (
+                              <ListBox.Item id={String(category.id)} key={category.id}>
+                                {category.name}
+                              </ListBox.Item>
+                            ))}
+                          </ListBox>
+                        </Select.Popover>
+                      </Select>
+                      <Select
+                        value={
+                          newCompensationCounterpartId == null
+                            ? "__none__"
+                            : String(newCompensationCounterpartId)
                         }
-                      />
-                    </TextField>
-                    <TextField className="md:col-span-2">
-                      <Label>Comentario contiene</Label>
-                      <Input
-                        placeholder="Ref: Venta presencial"
-                        value={newRuleCommentContains}
-                        onChange={(e) => setNewRuleCommentContains(e.target.value)}
-                      />
-                    </TextField>
-                    <TextField className="md:col-span-2">
-                      <Label>Descripción contiene</Label>
-                      <Input
-                        placeholder="Opcional"
-                        value={newRuleDescriptionContains}
-                        onChange={(e) => setNewRuleDescriptionContains(e.target.value)}
-                      />
-                    </TextField>
-                    <div className="flex items-end md:col-span-8">
-                      <Button type="submit" isPending={createAutoCategoryRuleMutation.isPending}>
-                        Crear regla
+                        onChange={(key) => {
+                          const value =
+                            key == null || String(key) === "__none__" ? null : Number(key);
+                          setNewCompensationCounterpartId(value);
+                        }}
+                      >
+                        <Label>Contraparte (opcional)</Label>
+                        <Select.Trigger>
+                          <Select.Value />
+                          <Select.Indicator />
+                        </Select.Trigger>
+                        <Select.Popover>
+                          <ListBox>
+                            <ListBox.Item id="__none__">Sin restricción</ListBox.Item>
+                            {counterpartOptions.map((counterpart) => (
+                              <ListBox.Item id={String(counterpart.value)} key={counterpart.value}>
+                                {counterpart.label}
+                              </ListBox.Item>
+                            ))}
+                          </ListBox>
+                        </Select.Popover>
+                      </Select>
+                      <div className="flex h-full items-end pb-1">
+                        <Switch
+                          isSelected={newCompensationIsActive}
+                          onChange={(value) => setNewCompensationIsActive(value)}
+                        >
+                          <Switch.Control>
+                            <Switch.Thumb />
+                          </Switch.Control>
+                          <Switch.Content>
+                            <Label>Activo</Label>
+                          </Switch.Content>
+                        </Switch>
+                      </div>
+                      <div className="md:col-span-6">
+                        <Button
+                          type="submit"
+                          isPending={createCompensationProfileMutation.isPending}
+                        >
+                          Crear perfil de compensación
+                        </Button>
+                      </div>
+                    </form>
+
+                    {activeCompensationProfiles.length === 0 ? (
+                      <p className="text-default-500 text-sm">
+                        No hay perfiles de compensación activos.
+                      </p>
+                    ) : (
+                      <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.2fr_1fr]">
+                        <div className="space-y-2">
+                          {activeCompensationProfiles.map((profile) => (
+                            <button
+                              className={`w-full rounded-md border px-3 py-2 text-left transition ${
+                                selectedCompensationProfileId === profile.id
+                                  ? "border-primary bg-primary-50/40"
+                                  : "border-default-200 hover:bg-default-100/40"
+                              }`}
+                              key={profile.id}
+                              type="button"
+                              onClick={() => setSelectedCompensationProfileId(profile.id)}
+                            >
+                              <p className="text-sm font-medium">{profile.name}</p>
+                              <p className="text-tiny text-default-500">
+                                {profile.category.name}
+                                {profile.counterpart
+                                  ? ` · ${profile.counterpart.bankAccountHolder}`
+                                  : " · sin contraparte fija"}
+                              </p>
+                            </button>
+                          ))}
+                        </div>
+                        <div className="space-y-2 rounded-md border border-default-200 p-3">
+                          <p className="text-sm font-medium">Ledger período {selectedMonth}</p>
+                          <p className="text-tiny text-default-500">
+                            Presupuesto, imputado y diferencia para cuadrar arrastres.
+                          </p>
+                          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                            <div className="rounded-md border border-default-200 px-2 py-1.5">
+                              <p className="text-tiny text-default-500">Presupuesto</p>
+                              <p className="text-sm font-semibold">
+                                {formatCurrency(selectedCompensationEntry?.budgetAmount ?? 0)}
+                              </p>
+                            </div>
+                            <div className="rounded-md border border-default-200 px-2 py-1.5">
+                              <p className="text-tiny text-default-500">Imputado</p>
+                              <p className="text-sm font-semibold">
+                                {formatCurrency(selectedCompensationEntry?.allocatedAmount ?? 0)}
+                              </p>
+                            </div>
+                            <div className="rounded-md border border-default-200 px-2 py-1.5">
+                              <p className="text-tiny text-default-500">Diferencia</p>
+                              <p
+                                className={`text-sm font-semibold ${
+                                  (selectedCompensationEntry?.variance ?? 0) >= 0
+                                    ? "text-success"
+                                    : "text-danger"
+                                }`}
+                              >
+                                {formatCurrency(selectedCompensationEntry?.variance ?? 0)}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-end gap-2">
+                            <TextField>
+                              <Label>Presupuesto mes</Label>
+                              <Input
+                                inputMode="decimal"
+                                placeholder="Ej: 1500000"
+                                value={budgetAmountInput}
+                                onChange={(e) =>
+                                  setBudgetAmountInput(e.target.value.replace(/[^0-9.-]/g, ""))
+                                }
+                              />
+                            </TextField>
+                            <Button
+                              isPending={upsertCompensationBudgetMutation.isPending}
+                              onPress={handleSavePeriodBudget}
+                            >
+                              Guardar presupuesto
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              ) : null}
+
+              {activeCategorySection === "rules" ? (
+                <Card>
+                  <div className="space-y-3 p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <h3 className="text-sm font-semibold">Reglas automáticas por contraparte</h3>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        isPending={syncUncategorizedByPatternsMutation.isPending}
+                        onPress={() => syncUncategorizedByPatternsMutation.mutate()}
+                      >
+                        Sincronizar sin categoría
                       </Button>
                     </div>
-                  </form>
+                    <form
+                      className="grid grid-cols-1 gap-3 md:grid-cols-8"
+                      onSubmit={handleCreateAutoCategoryRule}
+                    >
+                      <TextField className="md:col-span-2">
+                        <Label>Nombre regla</Label>
+                        <Input
+                          placeholder="Ej: Paula Flores MP Egreso"
+                          value={newRuleName}
+                          onChange={(e) => setNewRuleName(e.target.value)}
+                        />
+                      </TextField>
+                      <Select
+                        className="md:col-span-2"
+                        value={newRuleCounterpartId == null ? null : String(newRuleCounterpartId)}
+                        onChange={(key) => {
+                          const value =
+                            key == null || String(key) === "__none__" ? null : Number(key);
+                          setNewRuleCounterpartId(value);
+                        }}
+                      >
+                        <Label>Contraparte</Label>
+                        <Select.Trigger>
+                          <Select.Value />
+                          <Select.Indicator />
+                        </Select.Trigger>
+                        <Select.Popover>
+                          <ListBox>
+                            <ListBox.Item id="__none__" textValue="Sin filtro">
+                              Sin filtro (cualquier contraparte)
+                              <ListBox.ItemIndicator />
+                            </ListBox.Item>
+                            {counterpartOptions.map((counterpart) => (
+                              <ListBox.Item
+                                id={String(counterpart.value)}
+                                key={counterpart.value}
+                                textValue={counterpart.label}
+                              >
+                                {counterpart.label}
+                                <ListBox.ItemIndicator />
+                              </ListBox.Item>
+                            ))}
+                          </ListBox>
+                        </Select.Popover>
+                      </Select>
+                      <Select
+                        value={newRuleType}
+                        onChange={(key) =>
+                          setNewRuleType(String(key ?? "EXPENSE") as "EXPENSE" | "INCOME")
+                        }
+                      >
+                        <Label>Tipo</Label>
+                        <Select.Trigger>
+                          <Select.Value />
+                          <Select.Indicator />
+                        </Select.Trigger>
+                        <Select.Popover>
+                          <ListBox>
+                            <ListBox.Item id="EXPENSE" textValue="Egreso">
+                              Egreso
+                              <ListBox.ItemIndicator />
+                            </ListBox.Item>
+                            <ListBox.Item id="INCOME" textValue="Ingreso">
+                              Ingreso
+                              <ListBox.ItemIndicator />
+                            </ListBox.Item>
+                          </ListBox>
+                        </Select.Popover>
+                      </Select>
+                      <Select
+                        className="md:col-span-2"
+                        value={newRuleCategoryId == null ? null : String(newRuleCategoryId)}
+                        onChange={(key) => {
+                          const value = key == null ? null : Number(key);
+                          setNewRuleCategoryId(value);
+                        }}
+                      >
+                        <Label>Categoría</Label>
+                        <Select.Trigger>
+                          <Select.Value />
+                          <Select.Indicator />
+                        </Select.Trigger>
+                        <Select.Popover>
+                          <ListBox>
+                            {categoryOptionsByType[newRuleType].map((category) => (
+                              <ListBox.Item
+                                id={String(category.id)}
+                                key={category.id}
+                                textValue={category.name}
+                              >
+                                {category.name}
+                                <ListBox.ItemIndicator />
+                              </ListBox.Item>
+                            ))}
+                          </ListBox>
+                        </Select.Popover>
+                      </Select>
+                      <TextField>
+                        <Label>Prioridad</Label>
+                        <Input
+                          inputMode="numeric"
+                          value={newRulePriority}
+                          onChange={(e) =>
+                            setNewRulePriority(e.target.value.replace(/[^\d-]/g, ""))
+                          }
+                        />
+                      </TextField>
+                      <TextField>
+                        <Label>Monto mínimo</Label>
+                        <Input
+                          inputMode="decimal"
+                          placeholder="0"
+                          value={newRuleMinAmount}
+                          onChange={(e) =>
+                            setNewRuleMinAmount(e.target.value.replace(/[^0-9.-]/g, ""))
+                          }
+                        />
+                      </TextField>
+                      <TextField>
+                        <Label>Monto máximo</Label>
+                        <Input
+                          inputMode="decimal"
+                          placeholder="200000"
+                          value={newRuleMaxAmount}
+                          onChange={(e) =>
+                            setNewRuleMaxAmount(e.target.value.replace(/[^0-9.-]/g, ""))
+                          }
+                        />
+                      </TextField>
+                      <TextField className="md:col-span-2">
+                        <Label>Comentario contiene</Label>
+                        <Input
+                          placeholder="Ref: Venta presencial"
+                          value={newRuleCommentContains}
+                          onChange={(e) => setNewRuleCommentContains(e.target.value)}
+                        />
+                      </TextField>
+                      <TextField className="md:col-span-2">
+                        <Label>Descripción contiene</Label>
+                        <Input
+                          placeholder="Opcional"
+                          value={newRuleDescriptionContains}
+                          onChange={(e) => setNewRuleDescriptionContains(e.target.value)}
+                        />
+                      </TextField>
+                      <div className="flex items-end md:col-span-8">
+                        <Button type="submit" isPending={createAutoCategoryRuleMutation.isPending}>
+                          Crear regla
+                        </Button>
+                      </div>
+                    </form>
 
-                  {autoCategoryRules.length === 0 ? (
-                    <p className="text-default-500 text-sm">
-                      No hay reglas automáticas configuradas.
-                    </p>
-                  ) : (
-                    <div className="space-y-2">
-                      {autoCategoryRules.map((rule) => (
-                        <div
-                          key={rule.id}
-                          className="rounded-md border border-default-200 px-3 py-2"
-                        >
-                          {editingRuleId === rule.id ? (
-                            <div className="grid grid-cols-1 gap-3 md:grid-cols-8 md:items-end">
-                              <TextField className="md:col-span-2">
-                                <Label>Nombre regla</Label>
-                                <Input
-                                  value={editingRuleName}
-                                  onChange={(e) => setEditingRuleName(e.target.value)}
-                                />
-                              </TextField>
-                              <Select
-                                value={
-                                  editingRuleCounterpartId == null
-                                    ? null
-                                    : String(editingRuleCounterpartId)
-                                }
-                                onChange={(key) => {
-                                  const value =
-                                    key == null || String(key) === "__none__" ? null : Number(key);
-                                  setEditingRuleCounterpartId(value);
-                                }}
-                              >
-                                <Label>Contraparte</Label>
-                                <Select.Trigger>
-                                  <Select.Value />
-                                  <Select.Indicator />
-                                </Select.Trigger>
-                                <Select.Popover>
-                                  <ListBox>
-                                    <ListBox.Item id="__none__" textValue="Sin filtro">
-                                      Sin filtro (cualquier contraparte)
-                                      <ListBox.ItemIndicator />
-                                    </ListBox.Item>
-                                    {counterpartOptions.map((counterpart) => (
-                                      <ListBox.Item
-                                        id={String(counterpart.value)}
-                                        key={counterpart.value}
-                                        textValue={counterpart.label}
-                                      >
-                                        {counterpart.label}
+                    {autoCategoryRules.length === 0 ? (
+                      <p className="text-default-500 text-sm">
+                        No hay reglas automáticas configuradas.
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        {autoCategoryRules.map((rule) => (
+                          <div
+                            key={rule.id}
+                            className="rounded-md border border-default-200 px-3 py-2"
+                          >
+                            {editingRuleId === rule.id ? (
+                              <div className="grid grid-cols-1 gap-3 md:grid-cols-8 md:items-end">
+                                <TextField className="md:col-span-2">
+                                  <Label>Nombre regla</Label>
+                                  <Input
+                                    value={editingRuleName}
+                                    onChange={(e) => setEditingRuleName(e.target.value)}
+                                  />
+                                </TextField>
+                                <Select
+                                  value={
+                                    editingRuleCounterpartId == null
+                                      ? null
+                                      : String(editingRuleCounterpartId)
+                                  }
+                                  onChange={(key) => {
+                                    const value =
+                                      key == null || String(key) === "__none__"
+                                        ? null
+                                        : Number(key);
+                                    setEditingRuleCounterpartId(value);
+                                  }}
+                                >
+                                  <Label>Contraparte</Label>
+                                  <Select.Trigger>
+                                    <Select.Value />
+                                    <Select.Indicator />
+                                  </Select.Trigger>
+                                  <Select.Popover>
+                                    <ListBox>
+                                      <ListBox.Item id="__none__" textValue="Sin filtro">
+                                        Sin filtro (cualquier contraparte)
                                         <ListBox.ItemIndicator />
                                       </ListBox.Item>
-                                    ))}
-                                  </ListBox>
-                                </Select.Popover>
-                              </Select>
-                              <Select
-                                value={editingRuleType}
-                                onChange={(key) =>
-                                  setEditingRuleType(
-                                    String(key ?? "EXPENSE") as "EXPENSE" | "INCOME",
-                                  )
-                                }
-                              >
-                                <Label>Tipo</Label>
-                                <Select.Trigger>
-                                  <Select.Value />
-                                  <Select.Indicator />
-                                </Select.Trigger>
-                                <Select.Popover>
-                                  <ListBox>
-                                    <ListBox.Item id="EXPENSE" textValue="Egreso">
-                                      Egreso
-                                      <ListBox.ItemIndicator />
-                                    </ListBox.Item>
-                                    <ListBox.Item id="INCOME" textValue="Ingreso">
-                                      Ingreso
-                                      <ListBox.ItemIndicator />
-                                    </ListBox.Item>
-                                  </ListBox>
-                                </Select.Popover>
-                              </Select>
-                              <Select
-                                value={
-                                  editingRuleCategoryId == null
-                                    ? null
-                                    : String(editingRuleCategoryId)
-                                }
-                                onChange={(key) => {
-                                  const value = key == null ? null : Number(key);
-                                  setEditingRuleCategoryId(value);
-                                }}
-                              >
-                                <Label>Categoría</Label>
-                                <Select.Trigger>
-                                  <Select.Value />
-                                  <Select.Indicator />
-                                </Select.Trigger>
-                                <Select.Popover>
-                                  <ListBox>
-                                    {categoryOptionsByType[editingRuleType].map((category) => (
-                                      <ListBox.Item
-                                        id={String(category.id)}
-                                        key={category.id}
-                                        textValue={category.name}
-                                      >
-                                        {category.name}
+                                      {counterpartOptions.map((counterpart) => (
+                                        <ListBox.Item
+                                          id={String(counterpart.value)}
+                                          key={counterpart.value}
+                                          textValue={counterpart.label}
+                                        >
+                                          {counterpart.label}
+                                          <ListBox.ItemIndicator />
+                                        </ListBox.Item>
+                                      ))}
+                                    </ListBox>
+                                  </Select.Popover>
+                                </Select>
+                                <Select
+                                  value={editingRuleType}
+                                  onChange={(key) =>
+                                    setEditingRuleType(
+                                      String(key ?? "EXPENSE") as "EXPENSE" | "INCOME",
+                                    )
+                                  }
+                                >
+                                  <Label>Tipo</Label>
+                                  <Select.Trigger>
+                                    <Select.Value />
+                                    <Select.Indicator />
+                                  </Select.Trigger>
+                                  <Select.Popover>
+                                    <ListBox>
+                                      <ListBox.Item id="EXPENSE" textValue="Egreso">
+                                        Egreso
                                         <ListBox.ItemIndicator />
                                       </ListBox.Item>
-                                    ))}
-                                  </ListBox>
-                                </Select.Popover>
-                              </Select>
-                              <TextField>
-                                <Label>Prioridad</Label>
-                                <Input
-                                  inputMode="numeric"
-                                  value={editingRulePriority}
-                                  onChange={(e) =>
-                                    setEditingRulePriority(e.target.value.replace(/[^\d-]/g, ""))
+                                      <ListBox.Item id="INCOME" textValue="Ingreso">
+                                        Ingreso
+                                        <ListBox.ItemIndicator />
+                                      </ListBox.Item>
+                                    </ListBox>
+                                  </Select.Popover>
+                                </Select>
+                                <Select
+                                  value={
+                                    editingRuleCategoryId == null
+                                      ? null
+                                      : String(editingRuleCategoryId)
                                   }
-                                />
-                              </TextField>
-                              <TextField>
-                                <Label>Monto mínimo</Label>
-                                <Input
-                                  inputMode="decimal"
-                                  value={editingRuleMinAmount}
-                                  onChange={(e) =>
-                                    setEditingRuleMinAmount(e.target.value.replace(/[^0-9.-]/g, ""))
-                                  }
-                                />
-                              </TextField>
-                              <TextField>
-                                <Label>Monto máximo</Label>
-                                <Input
-                                  inputMode="decimal"
-                                  value={editingRuleMaxAmount}
-                                  onChange={(e) =>
-                                    setEditingRuleMaxAmount(e.target.value.replace(/[^0-9.-]/g, ""))
-                                  }
-                                />
-                              </TextField>
-                              <TextField className="md:col-span-2">
-                                <Label>Comentario contiene</Label>
-                                <Input
-                                  value={editingRuleCommentContains}
-                                  onChange={(e) => setEditingRuleCommentContains(e.target.value)}
-                                />
-                              </TextField>
-                              <TextField className="md:col-span-2">
-                                <Label>Descripción contiene</Label>
-                                <Input
-                                  value={editingRuleDescriptionContains}
-                                  onChange={(e) =>
-                                    setEditingRuleDescriptionContains(e.target.value)
-                                  }
-                                />
-                              </TextField>
-                              <Select
-                                value={editingRuleIsActive ? "ACTIVE" : "INACTIVE"}
-                                onChange={(key) => setEditingRuleIsActive(String(key) === "ACTIVE")}
-                              >
-                                <Label>Estado</Label>
-                                <Select.Trigger>
-                                  <Select.Value />
-                                  <Select.Indicator />
-                                </Select.Trigger>
-                                <Select.Popover>
-                                  <ListBox>
-                                    <ListBox.Item id="ACTIVE" textValue="Activa">
-                                      Activa
-                                      <ListBox.ItemIndicator />
-                                    </ListBox.Item>
-                                    <ListBox.Item id="INACTIVE" textValue="Inactiva">
-                                      Inactiva
-                                      <ListBox.ItemIndicator />
-                                    </ListBox.Item>
-                                  </ListBox>
-                                </Select.Popover>
-                              </Select>
-                              <div className="flex gap-2 md:col-span-8 md:justify-end">
-                                <Button
-                                  size="sm"
-                                  variant="secondary"
-                                  onPress={handleCancelEditRule}
+                                  onChange={(key) => {
+                                    const value = key == null ? null : Number(key);
+                                    setEditingRuleCategoryId(value);
+                                  }}
                                 >
-                                  Cancelar
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  onPress={() => handleSaveEditRule(rule.id)}
-                                  isPending={updateAutoCategoryRuleMutation.isPending}
+                                  <Label>Categoría</Label>
+                                  <Select.Trigger>
+                                    <Select.Value />
+                                    <Select.Indicator />
+                                  </Select.Trigger>
+                                  <Select.Popover>
+                                    <ListBox>
+                                      {categoryOptionsByType[editingRuleType].map((category) => (
+                                        <ListBox.Item
+                                          id={String(category.id)}
+                                          key={category.id}
+                                          textValue={category.name}
+                                        >
+                                          {category.name}
+                                          <ListBox.ItemIndicator />
+                                        </ListBox.Item>
+                                      ))}
+                                    </ListBox>
+                                  </Select.Popover>
+                                </Select>
+                                <TextField>
+                                  <Label>Prioridad</Label>
+                                  <Input
+                                    inputMode="numeric"
+                                    value={editingRulePriority}
+                                    onChange={(e) =>
+                                      setEditingRulePriority(e.target.value.replace(/[^\d-]/g, ""))
+                                    }
+                                  />
+                                </TextField>
+                                <TextField>
+                                  <Label>Monto mínimo</Label>
+                                  <Input
+                                    inputMode="decimal"
+                                    value={editingRuleMinAmount}
+                                    onChange={(e) =>
+                                      setEditingRuleMinAmount(
+                                        e.target.value.replace(/[^0-9.-]/g, ""),
+                                      )
+                                    }
+                                  />
+                                </TextField>
+                                <TextField>
+                                  <Label>Monto máximo</Label>
+                                  <Input
+                                    inputMode="decimal"
+                                    value={editingRuleMaxAmount}
+                                    onChange={(e) =>
+                                      setEditingRuleMaxAmount(
+                                        e.target.value.replace(/[^0-9.-]/g, ""),
+                                      )
+                                    }
+                                  />
+                                </TextField>
+                                <TextField className="md:col-span-2">
+                                  <Label>Comentario contiene</Label>
+                                  <Input
+                                    value={editingRuleCommentContains}
+                                    onChange={(e) => setEditingRuleCommentContains(e.target.value)}
+                                  />
+                                </TextField>
+                                <TextField className="md:col-span-2">
+                                  <Label>Descripción contiene</Label>
+                                  <Input
+                                    value={editingRuleDescriptionContains}
+                                    onChange={(e) =>
+                                      setEditingRuleDescriptionContains(e.target.value)
+                                    }
+                                  />
+                                </TextField>
+                                <Select
+                                  value={editingRuleIsActive ? "ACTIVE" : "INACTIVE"}
+                                  onChange={(key) =>
+                                    setEditingRuleIsActive(String(key) === "ACTIVE")
+                                  }
                                 >
-                                  Guardar
-                                </Button>
+                                  <Label>Estado</Label>
+                                  <Select.Trigger>
+                                    <Select.Value />
+                                    <Select.Indicator />
+                                  </Select.Trigger>
+                                  <Select.Popover>
+                                    <ListBox>
+                                      <ListBox.Item id="ACTIVE" textValue="Activa">
+                                        Activa
+                                        <ListBox.ItemIndicator />
+                                      </ListBox.Item>
+                                      <ListBox.Item id="INACTIVE" textValue="Inactiva">
+                                        Inactiva
+                                        <ListBox.ItemIndicator />
+                                      </ListBox.Item>
+                                    </ListBox>
+                                  </Select.Popover>
+                                </Select>
+                                <div className="flex gap-2 md:col-span-8 md:justify-end">
+                                  <Button
+                                    size="sm"
+                                    variant="secondary"
+                                    onPress={handleCancelEditRule}
+                                  >
+                                    Cancelar
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    onPress={() => handleSaveEditRule(rule.id)}
+                                    isPending={updateAutoCategoryRuleMutation.isPending}
+                                  >
+                                    Guardar
+                                  </Button>
+                                </div>
                               </div>
-                            </div>
-                          ) : (
-                            <div className="flex flex-wrap items-center justify-between gap-3">
-                              <div className="min-w-0">
-                                <p className="text-sm font-medium">{rule.name}</p>
-                                <p className="text-tiny text-default-500">
-                                  {rule.counterpart
-                                    ? `${rule.counterpart.bankAccountHolder} (${rule.counterpart.identificationNumber})`
-                                    : "Sin filtro de contraparte"}
-                                </p>
-                                <p className="text-tiny text-default-500">
-                                  {rule.type === "INCOME" ? "Ingreso" : "Egreso"} |{" "}
-                                  {rule.category.name} | prioridad {rule.priority} |{" "}
-                                  {rule.isActive ? "Activa" : "Inactiva"}
-                                </p>
-                                <p className="text-tiny text-default-500">
-                                  {rule.minAmount != null ? `min ${rule.minAmount}` : "min -"} |{" "}
-                                  {rule.maxAmount != null ? `max ${rule.maxAmount}` : "max -"} |{" "}
-                                  comentario: {rule.commentContains || "-"} | descripción:{" "}
-                                  {rule.descriptionContains || "-"}
-                                </p>
+                            ) : (
+                              <div className="flex flex-wrap items-center justify-between gap-3">
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium">{rule.name}</p>
+                                  <p className="text-tiny text-default-500">
+                                    {rule.counterpart
+                                      ? `${rule.counterpart.bankAccountHolder} (${rule.counterpart.identificationNumber})`
+                                      : "Sin filtro de contraparte"}
+                                  </p>
+                                  <p className="text-tiny text-default-500">
+                                    {rule.type === "INCOME" ? "Ingreso" : "Egreso"} |{" "}
+                                    {rule.category.name} | prioridad {rule.priority} |{" "}
+                                    {rule.isActive ? "Activa" : "Inactiva"}
+                                  </p>
+                                  <p className="text-tiny text-default-500">
+                                    {rule.minAmount != null ? `min ${rule.minAmount}` : "min -"} |{" "}
+                                    {rule.maxAmount != null ? `max ${rule.maxAmount}` : "max -"} |{" "}
+                                    comentario: {rule.commentContains || "-"} | descripción:{" "}
+                                    {rule.descriptionContains || "-"}
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onPress={() => handleStartEditRule(rule)}
+                                  >
+                                    Editar
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="text-danger"
+                                    isPending={deleteAutoCategoryRuleMutation.isPending}
+                                    onPress={() => handleDeleteRule(rule)}
+                                  >
+                                    Eliminar
+                                  </Button>
+                                </div>
                               </div>
-                              <div className="flex items-center gap-2">
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onPress={() => handleStartEditRule(rule)}
-                                >
-                                  Editar
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="text-danger"
-                                  isPending={deleteAutoCategoryRuleMutation.isPending}
-                                  onPress={() => handleDeleteRule(rule)}
-                                >
-                                  Eliminar
-                                </Button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </Card>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              ) : null}
             </>
           ) : null}
         </Tabs.Panel>
