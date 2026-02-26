@@ -31,9 +31,10 @@
 		respond "OK" 200
 	}
 
-	# API proxy to backend - Forward all /api/* requests to api.bioalergia.cl
+	# API proxy to backend - MUST use internal/direct origin to avoid CDN loop
+	# Set in Railway: API_INTERNAL_ORIGIN=https://<api-internal-origin>
 	handle /api/* {
-		reverse_proxy https://api.bioalergia.cl {
+		reverse_proxy {$API_INTERNAL_ORIGIN} {
 			header_up Host {upstream_hostport}
 			header_up X-Real-IP {remote_host}
 		}
