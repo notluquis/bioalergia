@@ -20,7 +20,6 @@ import {
   type Selection,
   Skeleton,
   Switch,
-  SwitchGroup,
   Tabs,
   TextField,
 } from "@heroui/react";
@@ -789,6 +788,8 @@ export function CashFlowPage() {
     columnFilters.comment.trim().length > 0 ||
     showNonAccountableMovements ||
     showOnlyUncategorizedMovements;
+  const visibilityFiltersCount =
+    Number(showNonAccountableMovements) + Number(showOnlyUncategorizedMovements);
 
   const monthTransactions = data?.data ?? [];
   const reallocationProfileOptions = useMemo(() => {
@@ -2029,37 +2030,50 @@ export function CashFlowPage() {
                   </div>
 
                   <div className="flex items-end lg:col-span-3">
-                    <Card className="w-full rounded-xl border border-default-200/70 bg-default-100/35 px-3 py-2">
-                      <SwitchGroup
-                        className="flex flex-wrap items-center gap-x-4 gap-y-2"
-                        orientation="horizontal"
-                      >
-                        <Switch
-                          className="h-7"
-                          isSelected={showNonAccountableMovements}
-                          onChange={setShowNonAccountableMovements}
+                    <Dropdown>
+                      <Dropdown.Trigger>
+                        <Button
+                          className="h-10 rounded-xl border-default-300/60 bg-default-100/30 px-3 text-default-600 hover:bg-default-100/60"
+                          size="sm"
+                          variant="outline"
                         >
-                          <Switch.Control>
-                            <Switch.Thumb />
-                          </Switch.Control>
-                          <Switch.Content>
-                            <Label className="text-xs text-default-600">No contabilizables</Label>
-                          </Switch.Content>
-                        </Switch>
-                        <Switch
-                          className="h-7"
-                          isSelected={showOnlyUncategorizedMovements}
-                          onChange={setShowOnlyUncategorizedMovements}
-                        >
-                          <Switch.Control>
-                            <Switch.Thumb />
-                          </Switch.Control>
-                          <Switch.Content>
-                            <Label className="text-xs text-default-600">Solo sin categoría</Label>
-                          </Switch.Content>
-                        </Switch>
-                      </SwitchGroup>
-                    </Card>
+                          Visibilidad
+                          {visibilityFiltersCount > 0 ? (
+                            <Chip size="sm" variant="soft">
+                              {visibilityFiltersCount}
+                            </Chip>
+                          ) : null}
+                        </Button>
+                      </Dropdown.Trigger>
+                      <Dropdown.Popover>
+                        <div className="w-64 space-y-2 p-2">
+                          <Switch
+                            className="h-7"
+                            isSelected={showNonAccountableMovements}
+                            onChange={setShowNonAccountableMovements}
+                          >
+                            <Switch.Control>
+                              <Switch.Thumb />
+                            </Switch.Control>
+                            <Switch.Content>
+                              <Label className="text-xs text-default-600">No contabilizables</Label>
+                            </Switch.Content>
+                          </Switch>
+                          <Switch
+                            className="h-7"
+                            isSelected={showOnlyUncategorizedMovements}
+                            onChange={setShowOnlyUncategorizedMovements}
+                          >
+                            <Switch.Control>
+                              <Switch.Thumb />
+                            </Switch.Control>
+                            <Switch.Content>
+                              <Label className="text-xs text-default-600">Solo sin categoría</Label>
+                            </Switch.Content>
+                          </Switch>
+                        </div>
+                      </Dropdown.Popover>
+                    </Dropdown>
                   </div>
 
                   <div className="flex items-end justify-end lg:col-span-2">
