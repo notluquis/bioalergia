@@ -1782,9 +1782,11 @@ export function CashFlowPage() {
                                     className="h-full rounded-full bg-danger"
                                     style={{
                                       width: `${
-                                        monthlySummary.totals.expense > 0
-                                          ? (Math.abs(item.total) / monthlySummary.totals.expense) *
-                                            100
+                                        Math.abs(monthlySummary.totals.expense) > 0
+                                          ? (
+                                              Math.abs(item.total) /
+                                                Math.abs(monthlySummary.totals.expense)
+                                            ) * 100
                                           : 0
                                       }%`,
                                     }}
