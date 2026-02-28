@@ -77,7 +77,31 @@ const toggleMfaSchema = z.object({
   enabled: z.boolean(),
 });
 
+const updateUserProfileSchema = z.object({
+  address: z.string().max(255).nullable().optional(),
+  bankAccountNumber: z.string().max(120).nullable().optional(),
+  bankAccountType: z.string().max(80).nullable().optional(),
+  bankName: z.string().max(120).nullable().optional(),
+  department: z.string().max(120).nullable().optional(),
+  email: z.email("Email inválido"),
+  fatherName: z.string().max(120).nullable().optional(),
+  mfaEnforced: z.boolean().optional(),
+  motherName: z.string().max(120).nullable().optional(),
+  names: z.string().min(1, "Nombres requeridos").max(160),
+  phone: z.string().max(60).nullable().optional(),
+  position: z.string().min(1, "Cargo requerido").max(120),
+  rut: z.string().min(1, "RUT requerido").max(20),
+});
+
 type InviteUserPayload = z.infer<typeof inviteUserSchema>;
+
+function toNullableText(value: null | string | undefined): null | string {
+  if (typeof value !== "string") {
+    return null;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
 
 async function resolveInvitePersonId(
   personId: number | undefined,
@@ -413,6 +437,121 @@ userRoutes.post("/:id/reset-password", zValidator("param", idParamSchema), async
   console.log("[User] Password reset by", auth.email, "for user", targetUserId);
   return reply(c, { status: "ok", tempPassword });
 });
+
+// ============================================================
+// UPDATE USER PROFILE (ADMIN)
+// ============================================================
+
+userRoutes.put(
+  "/:id/profile",
+  zValidator("param", idParamSchema),
+  zValidator("json", updateUserProfileSchema),
+  async (c) => {
+    const auth = await getAuth(c);
+    if (!auth) {
+      return reply(c, { status: "error", message: "No autorizado" }, 401);
+    }
+
+    const canUpdate = await hasPermission(auth.userId, "update", "User");
+    if (!canUpdate) {
+      return reply(c, { status: "error", message: "Forbidden" }, 403);
+    }
+
+    const { id: targetUserId } = c.req.valid("param");
+    const body = c.req.valid("json");
+
+    const targetUser = await db.user.findUnique({
+      where: { id: targetUserId },
+      include: {
+        person: {
+          include: { employee: true },
+        },
+      },
+    });
+    if (!targetUser) {
+      return reply(c, { status: "error", message: "Usuario no encontrado" }, 404);
+    }
+
+    const normalizedEmail = body.email.toLowerCase().trim();
+    const normalizedRut = normalizeRut(body.rut);
+    if (!normalizedRut) {
+      return reply(c, { status: "error", message: "RUT inválido" }, 400);
+    }
+
+    const [conflictingEmail, conflictingRut] = await Promise.all([
+      db.person.findFirst({
+        where: {
+          email: normalizedEmail,
+          NOT: { id: targetUser.personId },
+        },
+        select: { id: true },
+      }),
+      db.person.findFirst({
+        where: {
+          rut: normalizedRut,
+          NOT: { id: targetUser.personId },
+        },
+        select: { id: true },
+      }),
+    ]);
+
+    if (conflictingEmail) {
+      return reply(
+        c,
+        { status: "error", message: "El correo ya está en uso por otro usuario" },
+        409,
+      );
+    }
+    if (conflictingRut) {
+      return reply(c, { status: "error", message: "El RUT ya está en uso por otro usuario" }, 409);
+    }
+
+    await db.$transaction(async (tx) => {
+      await tx.person.update({
+        where: { id: targetUser.personId },
+        data: {
+          address: toNullableText(body.address),
+          email: normalizedEmail,
+          fatherName: toNullableText(body.fatherName),
+          motherName: toNullableText(body.motherName),
+          names: body.names.trim(),
+          phone: toNullableText(body.phone),
+          rut: normalizedRut,
+        },
+      });
+
+      await tx.employee.upsert({
+        where: { personId: targetUser.personId },
+        create: {
+          personId: targetUser.personId,
+          position: body.position.trim(),
+          department: toNullableText(body.department),
+          startDate: targetUser.person.employee?.startDate ?? new Date(),
+          status: targetUser.person.employee?.status ?? "ACTIVE",
+          bankName: toNullableText(body.bankName),
+          bankAccountType: toNullableText(body.bankAccountType),
+          bankAccountNumber: toNullableText(body.bankAccountNumber),
+        },
+        update: {
+          position: body.position.trim(),
+          department: toNullableText(body.department),
+          bankName: toNullableText(body.bankName),
+          bankAccountType: toNullableText(body.bankAccountType),
+          bankAccountNumber: toNullableText(body.bankAccountNumber),
+        },
+      });
+
+      if (typeof body.mfaEnforced === "boolean") {
+        await tx.user.update({
+          where: { id: targetUserId },
+          data: { mfaEnforced: body.mfaEnforced },
+        });
+      }
+    });
+
+    return reply(c, { status: "ok" });
+  },
+);
 
 // ============================================================
 // UPDATE STATUS

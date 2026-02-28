@@ -1,6 +1,6 @@
 import { schema as schemaLite } from "@finanzas/db/schema-lite";
-import { Description, Label, ListBox, Modal, Select } from "@heroui/react";
-import { useQueryClient } from "@tanstack/react-query";
+import { Description, Label, ListBox, Modal, Select, Switch } from "@heroui/react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useClientQueries } from "@zenstackhq/tanstack-query/react";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -8,9 +8,15 @@ import { Copy, Key, Shield, UserCog, UserPlus } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
-import { deleteUserPasskey, resetUserPassword, toggleUserMfa } from "@/features/users/api";
+import {
+  deleteUserPasskey,
+  resetUserPassword,
+  toggleUserMfa,
+  updateUserProfile,
+} from "@/features/users/api";
 import { AddUserFormContainer } from "@/features/users/components/AddUserFormContainer";
 import { getColumns } from "@/features/users/components/columns";
 import type { User } from "@/features/users/types";
@@ -23,6 +29,21 @@ dayjs.extend(relativeTime);
 dayjs.locale("es");
 
 type RoleOption = { id: number; name: string };
+type UserDetailsFormState = {
+  address: string;
+  bankAccountNumber: string;
+  bankAccountType: string;
+  bankName: string;
+  department: string;
+  email: string;
+  fatherName: string;
+  mfaEnforced: boolean;
+  motherName: string;
+  names: string;
+  phone: string;
+  position: string;
+  rut: string;
+};
 
 function mapRawUsers(usersData: unknown[] | undefined): User[] {
   if (!usersData) {
@@ -33,8 +54,24 @@ function mapRawUsers(usersData: unknown[] | undefined): User[] {
     createdAt?: Date | null;
     id: number;
     mfaEnabled?: boolean | null;
+    mfaEnforced?: boolean | null;
     passkeys?: unknown[];
-    person?: { email?: null | string; fatherName?: null | string; names?: string; rut?: string };
+    person?: {
+      address?: null | string;
+      email?: null | string;
+      employee?: {
+        bankAccountNumber?: null | string;
+        bankAccountType?: null | string;
+        bankName?: null | string;
+        department?: null | string;
+        position?: string;
+      } | null;
+      fatherName?: null | string;
+      motherName?: null | string;
+      names?: string;
+      phone?: null | string;
+      rut?: string;
+    };
     roles?: { role?: { name?: string } }[];
     status?: string;
   };
@@ -51,10 +88,23 @@ function mapRawUsers(usersData: unknown[] | undefined): User[] {
         hasPasskey: ((u as RawUser).passkeys ?? []).length > 0,
         id: (u as RawUser).id,
         mfaEnabled: (u as RawUser).mfaEnabled ?? false,
+        mfaEnforced: (u as RawUser).mfaEnforced ?? true,
         passkeysCount: ((u as RawUser).passkeys ?? []).length,
+        employee: (u as RawUser).person?.employee
+          ? {
+              bankAccountNumber: (u as RawUser).person?.employee?.bankAccountNumber ?? null,
+              bankAccountType: (u as RawUser).person?.employee?.bankAccountType ?? null,
+              bankName: (u as RawUser).person?.employee?.bankName ?? null,
+              department: (u as RawUser).person?.employee?.department ?? null,
+              position: (u as RawUser).person?.employee?.position ?? "",
+            }
+          : null,
         person: {
+          address: (u as RawUser).person?.address ?? null,
           fatherName: (u as RawUser).person?.fatherName ?? null,
+          motherName: (u as RawUser).person?.motherName ?? null,
           names: (u as RawUser).person?.names ?? "",
+          phone: (u as RawUser).person?.phone ?? null,
           rut: (u as RawUser).person?.rut ?? "",
         },
         role: (u as RawUser).roles?.[0]?.role?.name ?? "",
@@ -242,6 +292,8 @@ export function UserManagementPage() {
 
   const [editingUser, setEditingUser] = useState<null | User>(null);
   const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
+  const [editingDetailsUser, setEditingDetailsUser] = useState<null | User>(null);
+  const [detailsForm, setDetailsForm] = useState<null | UserDetailsFormState>(null);
   const [isResetPasswordOpen, setIsResetPasswordOpen] = useState(false);
   const [resetPasswordValue, setResetPasswordValue] = useState("");
   const [resetPasswordUser, setResetPasswordUser] = useState("");
@@ -249,7 +301,11 @@ export function UserManagementPage() {
 
   // ZenStack hooks for users
   const { data: usersData, isLoading } = client.user.useFindMany({
-    include: { passkeys: true, person: true, roles: { include: { role: true } } },
+    include: {
+      passkeys: true,
+      person: { include: { employee: true } },
+      roles: { include: { role: true } },
+    },
     orderBy: { createdAt: "desc" },
   });
 
@@ -264,6 +320,28 @@ export function UserManagementPage() {
 
   // Mutations
   const updateUserMutation = client.user.useUpdate();
+  const updateUserProfileMutation = useMutation({
+    mutationFn: async ({ payload, userId }: { payload: UserDetailsFormState; userId: number }) =>
+      updateUserProfile(userId, {
+        address: toNullableField(payload.address),
+        bankAccountNumber: toNullableField(payload.bankAccountNumber),
+        bankAccountType: toNullableField(payload.bankAccountType),
+        bankName: toNullableField(payload.bankName),
+        department: toNullableField(payload.department),
+        email: payload.email.trim(),
+        fatherName: toNullableField(payload.fatherName),
+        mfaEnforced: payload.mfaEnforced,
+        motherName: toNullableField(payload.motherName),
+        names: payload.names.trim(),
+        phone: toNullableField(payload.phone),
+        position: payload.position.trim(),
+        rut: payload.rut.trim(),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["user"] });
+      success("Datos de usuario actualizados");
+    },
+  });
   const deleteUserMutation = client.user.useDelete();
   const createRoleAssignment = client.userRoleAssignment.useCreate();
   const deleteRoleAssignments = client.userRoleAssignment.useDeleteMany();
@@ -309,7 +387,19 @@ export function UserManagementPage() {
     users,
   });
 
-  const columns = useMemo(() => getColumns(actions), [actions]);
+  const handleEditDetails = useCallback((user: User) => {
+    setEditingDetailsUser(user);
+    setDetailsForm(createDetailsFormState(user));
+  }, []);
+
+  const columns = useMemo(
+    () =>
+      getColumns({
+        ...actions,
+        onEditDetails: handleEditDetails,
+      }),
+    [actions, handleEditDetails],
+  );
 
   // Filter users based on role filter (client side)
   const filteredUsers = useMemo(() => filterUsersByRole(users, roleFilter), [users, roleFilter]);
@@ -421,6 +511,35 @@ export function UserManagementPage() {
         setSelectedRole={setSelectedRole}
       />
 
+      <EditUserDetailsModalContent
+        form={detailsForm}
+        isOpen={Boolean(editingDetailsUser)}
+        isSaving={updateUserProfileMutation.isPending}
+        onCancel={() => {
+          setEditingDetailsUser(null);
+          setDetailsForm(null);
+        }}
+        onChange={(field, value) => {
+          setDetailsForm((prev) => (prev ? { ...prev, [field]: value } : prev));
+        }}
+        onSave={async () => {
+          if (!editingDetailsUser || !detailsForm) {
+            return;
+          }
+          try {
+            await updateUserProfileMutation.mutateAsync({
+              payload: detailsForm,
+              userId: editingDetailsUser.id,
+            });
+            setEditingDetailsUser(null);
+            setDetailsForm(null);
+          } catch (error_) {
+            error(error_ instanceof Error ? error_.message : "No se pudo actualizar el usuario");
+          }
+        }}
+        title={editingDetailsUser ? getPersonFullName(editingDetailsUser.person) : ""}
+      />
+
       <ResetPasswordModalContent
         isOpen={isResetPasswordOpen}
         onClose={() => {
@@ -439,6 +558,29 @@ export function UserManagementPage() {
       />
     </div>
   );
+}
+
+function toNullableField(value: string): null | string {
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function createDetailsFormState(user: User): UserDetailsFormState {
+  return {
+    address: user.person.address ?? "",
+    bankAccountNumber: user.employee?.bankAccountNumber ?? "",
+    bankAccountType: user.employee?.bankAccountType ?? "",
+    bankName: user.employee?.bankName ?? "",
+    department: user.employee?.department ?? "",
+    email: user.email ?? "",
+    fatherName: user.person.fatherName ?? "",
+    mfaEnforced: user.mfaEnforced ?? true,
+    motherName: user.person.motherName ?? "",
+    names: user.person.names ?? "",
+    phone: user.person.phone ?? "",
+    position: user.employee?.position ?? "",
+    rut: user.person.rut ?? "",
+  };
 }
 
 function UserSecurityOverview({ users }: { users: User[] }) {
@@ -575,6 +717,146 @@ function EditRoleModalContent({
                     Guardar cambios
                   </Button>
                 </div>
+              </div>
+            </Modal.Body>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
+    </Modal>
+  );
+}
+
+function EditUserDetailsModalContent({
+  form,
+  isOpen,
+  isSaving,
+  onCancel,
+  onChange,
+  onSave,
+  title,
+}: {
+  form: null | UserDetailsFormState;
+  isOpen: boolean;
+  isSaving: boolean;
+  onCancel: () => void;
+  onChange: <K extends keyof UserDetailsFormState>(
+    field: K,
+    value: UserDetailsFormState[K],
+  ) => void;
+  onSave: () => Promise<void>;
+  title: string;
+}) {
+  return (
+    <Modal>
+      <Modal.Backdrop
+        className="bg-black/40 backdrop-blur-[2px]"
+        isOpen={isOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            onCancel();
+          }
+        }}
+      >
+        <Modal.Container placement="center">
+          <Modal.Dialog className="relative w-full max-w-2xl rounded-[28px] bg-background p-6 shadow-2xl max-w-4xl">
+            <Modal.Header className="mb-4 font-bold text-primary text-xl">
+              <Modal.Heading>{`Editar usuario: ${title}`}</Modal.Heading>
+            </Modal.Header>
+            <Modal.Body className="mt-2 max-h-[80vh] overflow-y-auto overscroll-contain text-foreground">
+              {form && (
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Input
+                    label="Nombres"
+                    onChange={(event) => onChange("names", event.target.value)}
+                    value={form.names}
+                  />
+                  <Input
+                    label="Primer apellido"
+                    onChange={(event) => onChange("fatherName", event.target.value)}
+                    value={form.fatherName}
+                  />
+                  <Input
+                    label="Segundo apellido"
+                    onChange={(event) => onChange("motherName", event.target.value)}
+                    value={form.motherName}
+                  />
+                  <Input
+                    label="RUT"
+                    onChange={(event) => onChange("rut", event.target.value)}
+                    value={form.rut}
+                  />
+                  <Input
+                    label="Correo electrónico"
+                    onChange={(event) => onChange("email", event.target.value)}
+                    type="email"
+                    value={form.email}
+                  />
+                  <Input
+                    label="Teléfono"
+                    onChange={(event) => onChange("phone", event.target.value)}
+                    value={form.phone}
+                  />
+                  <div className="md:col-span-2">
+                    <Input
+                      label="Dirección"
+                      onChange={(event) => onChange("address", event.target.value)}
+                      value={form.address}
+                    />
+                  </div>
+                  <Input
+                    label="Cargo"
+                    onChange={(event) => onChange("position", event.target.value)}
+                    value={form.position}
+                  />
+                  <Input
+                    label="Departamento"
+                    onChange={(event) => onChange("department", event.target.value)}
+                    value={form.department}
+                  />
+                  <Input
+                    label="Banco"
+                    onChange={(event) => onChange("bankName", event.target.value)}
+                    value={form.bankName}
+                  />
+                  <Input
+                    label="Tipo de cuenta"
+                    onChange={(event) => onChange("bankAccountType", event.target.value)}
+                    value={form.bankAccountType}
+                  />
+                  <div className="md:col-span-2">
+                    <Input
+                      label="Número de cuenta"
+                      onChange={(event) => onChange("bankAccountNumber", event.target.value)}
+                      value={form.bankAccountNumber}
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <Switch
+                      isSelected={form.mfaEnforced}
+                      onChange={(value) => {
+                        onChange("mfaEnforced", value);
+                      }}
+                    >
+                      <Switch.Control>
+                        <Switch.Thumb />
+                      </Switch.Control>
+                      <Switch.Content>Forzar MFA/Passkey al iniciar sesión</Switch.Content>
+                    </Switch>
+                  </div>
+                </div>
+              )}
+              <div className="mt-6 flex justify-end gap-2">
+                <Button onClick={onCancel} variant="ghost">
+                  Cancelar
+                </Button>
+                <Button
+                  disabled={!form?.names.trim() || !form?.email.trim() || !form?.position.trim()}
+                  isLoading={isSaving}
+                  onClick={() => void onSave()}
+                  variant="primary"
+                >
+                  Guardar cambios
+                </Button>
               </div>
             </Modal.Body>
           </Modal.Dialog>

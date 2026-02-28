@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { apiClient } from "@/lib/api-client";
 
-import type { User, UserProfile } from "./types";
+import type { User, UserProfile, UserProfileUpdatePayload } from "./types";
 
 export interface UsersResponse {
   users: User[];
@@ -84,4 +84,30 @@ export async function updateUserStatus(userId: number, status: string): Promise<
     { status },
     { responseSchema: StatusResponseSchema },
   );
+}
+
+const UserProfileUpdatePayloadSchema = z.object({
+  address: z.string().nullable().optional(),
+  bankAccountNumber: z.string().nullable().optional(),
+  bankAccountType: z.string().nullable().optional(),
+  bankName: z.string().nullable().optional(),
+  department: z.string().nullable().optional(),
+  email: z.email(),
+  fatherName: z.string().nullable().optional(),
+  mfaEnforced: z.boolean().optional(),
+  motherName: z.string().nullable().optional(),
+  names: z.string().min(1),
+  phone: z.string().nullable().optional(),
+  position: z.string().min(1),
+  rut: z.string().min(1),
+});
+
+export async function updateUserProfile(
+  userId: number,
+  payload: UserProfileUpdatePayload,
+): Promise<void> {
+  const parsedPayload = UserProfileUpdatePayloadSchema.parse(payload);
+  await apiClient.put(`/api/users/${userId}/profile`, parsedPayload, {
+    responseSchema: StatusResponseSchema,
+  });
 }

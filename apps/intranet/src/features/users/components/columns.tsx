@@ -6,6 +6,7 @@ import {
   Key,
   Lock,
   MoreVertical,
+  Pencil,
   Shield,
   ShieldCheck,
   Trash2,
@@ -36,6 +37,7 @@ const getStatusColor = (s: string): "success" | "warning" | "danger" | "default"
 export const getColumns = (actions: {
   onDeletePasskey: (id: number) => void;
   onDeleteUser: (id: number) => void;
+  onEditDetails: (user: User) => void;
   onEditRole: (user: User) => void;
   onResetPassword: (id: number) => void;
   onToggleMfa: (id: number, current: boolean) => void;
@@ -177,6 +179,14 @@ export const getColumns = (actions: {
           </Dropdown.Trigger>
           <Dropdown.Popover placement="bottom end">
             <Dropdown.Menu aria-label="Acciones de usuario" className="w-56">
+              <Dropdown.Item
+                onPress={() => {
+                  actions.onEditDetails(user);
+                }}
+              >
+                <Pencil className="mr-2 h-4 w-4" />
+                Editar datos
+              </Dropdown.Item>
               <Dropdown.Item
                 onPress={() => {
                   actions.onEditRole(user);
