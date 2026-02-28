@@ -26,8 +26,7 @@ interface EmailPreviewModalProps {
 
 const LOCAL_AGENT_TOKEN_KEY = "bioalergia_local_mail_agent_token";
 const LOCAL_AGENT_URL_KEY = "bioalergia_local_mail_agent_url";
-const DEFAULT_LOCAL_AGENT_URL =
-  import.meta.env.VITE_LOCAL_MAIL_AGENT_URL ?? "https://127.0.0.1:3333";
+const DEFAULT_LOCAL_AGENT_URL = getDefaultLocalAgentUrl();
 const TRAILING_SLASHES_REGEX = /\/+$/;
 
 type AgentStatus = {
@@ -453,6 +452,16 @@ async function readLocalAgentErrorMessage(response: Response, fallbackMessage: s
   } catch {
     return fallbackMessage;
   }
+}
+
+function getDefaultLocalAgentUrl() {
+  if (import.meta.env.VITE_LOCAL_MAIL_AGENT_URL) {
+    return import.meta.env.VITE_LOCAL_MAIL_AGENT_URL;
+  }
+  if (typeof window !== "undefined" && window.location.protocol === "http:") {
+    return "http://127.0.0.1:3333";
+  }
+  return "https://127.0.0.1:3333";
 }
 
 function normalizeAgentUrl(value: string) {

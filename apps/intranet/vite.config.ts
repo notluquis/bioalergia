@@ -11,6 +11,9 @@ import { configDefaults } from "vitest/config";
 // Regex Constants (Top-level scope for performance)
 const REGEX_API_FALLBACK = /^\/api/;
 const REGEX_SHARE_TARGET_FALLBACK = /^\/share-target/;
+const API_PROXY_TARGET =
+  process.env.VITE_API_PROXY_TARGET ?? process.env.VITE_API_URL ?? "http://127.0.0.1:4000";
+const API_PROXY_SECURE = API_PROXY_TARGET.startsWith("https://");
 
 // Bundle Analysis:
 // Use Vite's built-in analysis with: pnpm exec vite build --mode analyze
@@ -201,9 +204,9 @@ export default defineConfig(({ mode }) => ({
     open: true,
     proxy: {
       "/api": {
-        target: "https://api.bioalergia.cl",
+        target: API_PROXY_TARGET,
         changeOrigin: true,
-        secure: true,
+        secure: API_PROXY_SECURE,
       },
     },
   },

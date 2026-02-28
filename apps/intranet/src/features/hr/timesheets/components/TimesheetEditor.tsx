@@ -30,8 +30,7 @@ import {
 import type { Employee } from "../../employees/types";
 
 const MONTH_STRING_REGEX = /^\d{4}-\d{2}$/;
-const DEFAULT_LOCAL_AGENT_URL =
-  import.meta.env.VITE_LOCAL_MAIL_AGENT_URL ?? "https://127.0.0.1:3333";
+const DEFAULT_LOCAL_AGENT_URL = getDefaultLocalAgentUrl();
 const LOCAL_AGENT_TOKEN_KEY = "bioalergia_local_mail_agent_token";
 const LOCAL_AGENT_URL_KEY = "bioalergia_local_mail_agent_url";
 const TRAILING_SLASHES_REGEX = /\/+$/;
@@ -618,6 +617,16 @@ function getLocalAgentUrl() {
 
 function normalizeAgentUrl(value: string) {
   return value.trim().replace(TRAILING_SLASHES_REGEX, "");
+}
+
+function getDefaultLocalAgentUrl() {
+  if (import.meta.env.VITE_LOCAL_MAIL_AGENT_URL) {
+    return import.meta.env.VITE_LOCAL_MAIL_AGENT_URL;
+  }
+  if (typeof window !== "undefined" && window.location.protocol === "http:") {
+    return "http://127.0.0.1:3333";
+  }
+  return "https://127.0.0.1:3333";
 }
 
 async function buildLocalAgentErrorMessage(response: Response, fallbackMessage: string) {

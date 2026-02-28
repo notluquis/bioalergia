@@ -4,8 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "start": "tsx src/index.ts",
+    "predev": "node ./scripts/free-port.mjs",
+    "dev": "node ./scripts/run-agent.mjs",
+    "prestart": "node ./scripts/free-port.mjs",
+    "start": "node ./scripts/run-agent.mjs start",
     "test:send-self": "tsx src/scripts/send-self-test.ts"
   },
   "dependencies": {

@@ -22,6 +22,11 @@ pnpm --filter @finanzas/local-mail-agent dev
 ```
 
 Por defecto escucha en `http://127.0.0.1:3333`. Puedes cambiar el puerto con `PORT=4444`.
+Si el puerto ya está ocupado, el script de inicio ahora libera automáticamente el proceso que está escuchando en ese puerto.
+Si existen los certificados `127.0.0.1+1-key.pem` y `127.0.0.1+1.pem` en la raíz del repo, se habilita TLS automáticamente y el agente queda en `https://127.0.0.1:3333`.
+En la intranet:
+- Si la página está en `http://...`, usa `http://127.0.0.1:3333`.
+- Si la página está en `https://...` (por ejemplo `intranet.bioalergia.cl`), usa `https://127.0.0.1:3333` con certificado local confiable.
 
 ## HTTPS local (recomendado para usar desde intranet HTTPS)
 
@@ -61,6 +66,8 @@ Puedes permitir orígenes adicionales con:
 ```bash
 LOCAL_AGENT_ALLOWED_ORIGINS="https://intranet.bioalergia.cl,http://localhost" pnpm --filter @finanzas/local-mail-agent dev
 ```
+
+Por defecto ya incluye `localhost` y `127.0.0.1` (http/https) además de `https://intranet.bioalergia.cl`.
 
 ## Verificación SMTP
 
