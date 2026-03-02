@@ -1781,6 +1781,20 @@ export type ReallocateTransactionInput = {
   targetPeriod: string;
 };
 
+type ZodParser<T> = { parse: (input: unknown) => T };
+
+function parseOrmArgs<T>(tx: unknown, model: string, operation: string, args: T): T {
+  const parser = (
+    tx as {
+      $zod?: Record<string, Record<string, ZodParser<T> | undefined> | undefined>;
+    }
+  ).$zod?.[model]?.[operation];
+  if (!parser) {
+    return args;
+  }
+  return parser.parse(args);
+}
+
 function signedAllocationAmount(allocationType: string, amount: number) {
   if (allocationType === "ROLLOVER_OUT") {
     return -Math.abs(amount);
@@ -2121,33 +2135,33 @@ export async function reallocateFinancialTransaction(
 
   try {
     return await db.$transaction(async (tx) => {
-      const [profile, transaction] = await Promise.all([
-        tx.$queryRaw<
-          Array<{ categoryId: number; counterpartId: null | number; id: number; isActive: boolean }>
-        >`
-        SELECT
-          id,
-          category_id AS "categoryId",
-          counterpart_id AS "counterpartId",
-          is_active AS "isActive"
-        FROM compensation_profiles
-        WHERE id = ${data.profileId}
-        LIMIT 1
-      `,
-        tx.financialTransaction.findUnique({
-          where: { id: transactionId },
-          select: {
-            amount: true,
-            categoryId: true,
-            counterpartId: true,
-            date: true,
-            id: true,
-            type: true,
-          },
-        }),
+      const profileArgs = parseOrmArgs(tx, "compensationProfile", "findUnique", {
+        where: { id: data.profileId },
+        select: {
+          categoryId: true,
+          counterpartId: true,
+          id: true,
+          isActive: true,
+        },
+      });
+
+      const transactionArgs = parseOrmArgs(tx, "financialTransaction", "findUnique", {
+        where: { id: transactionId },
+        select: {
+          amount: true,
+          categoryId: true,
+          counterpartId: true,
+          date: true,
+          id: true,
+          type: true,
+        },
+      });
+
+      const [profileRow, transaction] = await Promise.all([
+        tx.compensationProfile.findUnique(profileArgs),
+        tx.financialTransaction.findUnique(transactionArgs),
       ]);
 
-      const profileRow = profile[0];
       if (!profileRow || !profileRow.isActive) {
         throw new AppError(404, {
           code: "COMPENSATION_PROFILE_NOT_AVAILABLE",
@@ -2176,12 +2190,19 @@ export async function reallocateFinancialTransaction(
         });
       }
 
-      const lockedPeriods = await tx.$queryRaw<Array<{ isLocked: boolean }>>`
-      SELECT is_locked AS "isLocked"
-      FROM compensation_period_budgets
-      WHERE profile_id = ${profileRow.id}
-        AND (period = ${fromPeriod} OR period = ${targetPeriod})
-    `;
+      const lockedPeriodsArgs = parseOrmArgs(tx, "compensationPeriodBudget", "findMany", {
+        where: {
+          profileId: profileRow.id,
+          period: {
+            in: [fromPeriod, targetPeriod],
+          },
+        },
+        select: {
+          isLocked: true,
+        },
+      });
+      const lockedPeriods = await tx.compensationPeriodBudget.findMany(lockedPeriodsArgs);
+
       if (lockedPeriods.some((item) => item.isLocked)) {
         throw new AppError(409, {
           code: "LOCKED_PERIOD",
@@ -2189,46 +2210,56 @@ export async function reallocateFinancialTransaction(
         });
       }
 
-      const originalAllocation = await tx.$queryRaw<Array<{ id: number }>>`
-      SELECT id
-      FROM financial_transaction_allocations
-      WHERE profile_id = ${profileRow.id}
-        AND transaction_id = ${transaction.id}
-        AND allocation_type = 'ORIGINAL'
-      LIMIT 1
-    `;
+      const originalAllocationArgs = parseOrmArgs(
+        tx,
+        "financialTransactionAllocation",
+        "findFirst",
+        {
+          where: {
+            profileId: profileRow.id,
+            transactionId: transaction.id,
+            allocationType: { equals: "ORIGINAL" as const },
+          },
+          select: {
+            id: true,
+          },
+        },
+      );
+      const originalAllocation =
+        await tx.financialTransactionAllocation.findFirst(originalAllocationArgs);
       originalPeriodUsed = toPeriod(transaction.date);
-      let sourceAllocationId = originalAllocation[0]?.id;
+      let sourceAllocationId = originalAllocation?.id;
       if (!sourceAllocationId) {
-        const createdOriginal = await tx.$queryRaw<Array<{ id: number }>>`
-        INSERT INTO financial_transaction_allocations (
-          transaction_id, profile_id, period, amount, allocation_type, created_at, updated_at
-        )
-        VALUES (
-          ${transaction.id},
-          ${profileRow.id},
-          ${originalPeriodUsed},
-          ${Math.abs(Number(transaction.amount))},
-          'ORIGINAL',
-          NOW(),
-          NOW()
-        )
-        RETURNING id
-      `;
-        sourceAllocationId = createdOriginal[0]?.id;
+        const createOriginalArgs = parseOrmArgs(tx, "financialTransactionAllocation", "create", {
+          data: {
+            transactionId: transaction.id,
+            profileId: profileRow.id,
+            period: originalPeriodUsed,
+            amount: new Decimal(Math.abs(Number(transaction.amount))),
+            allocationType: "ORIGINAL" as const,
+          },
+          select: {
+            id: true,
+          },
+        });
+        const createdOriginal = await tx.financialTransactionAllocation.create(createOriginalArgs);
+        sourceAllocationId = createdOriginal.id;
       }
 
-      const availableInFromPeriod = (
-        await tx.$queryRaw<Array<{ allocationType: string; amount: number }>>`
-        SELECT
-          allocation_type AS "allocationType",
-          amount
-        FROM financial_transaction_allocations
-        WHERE period = ${fromPeriod}
-          AND profile_id = ${profileRow.id}
-          AND transaction_id = ${transaction.id}
-      `
-      ).reduce(
+      const periodAllocationsArgs = parseOrmArgs(tx, "financialTransactionAllocation", "findMany", {
+        where: {
+          period: fromPeriod,
+          profileId: profileRow.id,
+          transactionId: transaction.id,
+        },
+        select: {
+          allocationType: true,
+          amount: true,
+        },
+      });
+      const periodAllocations =
+        await tx.financialTransactionAllocation.findMany(periodAllocationsArgs);
+      const availableInFromPeriod = periodAllocations.reduce(
         (acc, allocation) =>
           acc + signedAllocationAmount(allocation.allocationType, Number(allocation.amount)),
         0,
@@ -2241,58 +2272,43 @@ export async function reallocateFinancialTransaction(
         });
       }
 
-      const rolloverOut = await tx.$queryRaw<Array<{ id: number }>>`
-      INSERT INTO financial_transaction_allocations (
-        transaction_id, profile_id, period, amount, allocation_type, source_allocation_id, created_at, updated_at
-      )
-      VALUES (
-        ${transaction.id},
-        ${profileRow.id},
-        ${fromPeriod},
-        ${Number(data.amount)},
-        'ROLLOVER_OUT',
-        ${sourceAllocationId},
-        NOW(),
-        NOW()
-      )
-      RETURNING id
-    `;
+      const createRolloverOutArgs = parseOrmArgs(tx, "financialTransactionAllocation", "create", {
+        data: {
+          transactionId: transaction.id,
+          profileId: profileRow.id,
+          period: fromPeriod,
+          amount: new Decimal(Number(data.amount)),
+          allocationType: "ROLLOVER_OUT" as const,
+          sourceAllocationId,
+        },
+        select: {
+          id: true,
+        },
+      });
+      const rolloverOut = await tx.financialTransactionAllocation.create(createRolloverOutArgs);
 
-      const outId = rolloverOut[0]?.id;
+      const outId = rolloverOut.id;
       const reallocationAmount = Number(data.amount);
-      const rolloverIn = await tx.$queryRaw<
-        Array<{
-          allocationType: string;
-          amount: number;
-          id: number;
-          period: string;
-          profileId: number;
-          transactionId: number;
-        }>
-      >`
-      INSERT INTO financial_transaction_allocations (
-        transaction_id, profile_id, period, amount, allocation_type, source_allocation_id, created_at, updated_at
-      )
-      VALUES (
-        ${transaction.id},
-        ${profileRow.id},
-        ${targetPeriod},
-        ${reallocationAmount},
-        'ROLLOVER_IN',
-        ${outId ?? null},
-        NOW(),
-        NOW()
-      )
-      RETURNING
-        id,
-        transaction_id AS "transactionId",
-        profile_id AS "profileId",
-        period,
-        amount,
-        allocation_type AS "allocationType"
-    `;
+      const createRolloverInArgs = parseOrmArgs(tx, "financialTransactionAllocation", "create", {
+        data: {
+          transactionId: transaction.id,
+          profileId: profileRow.id,
+          period: targetPeriod,
+          amount: new Decimal(reallocationAmount),
+          allocationType: "ROLLOVER_IN" as const,
+          sourceAllocationId: outId,
+        },
+        select: {
+          id: true,
+          transactionId: true,
+          profileId: true,
+          period: true,
+          amount: true,
+          allocationType: true,
+        },
+      });
 
-      return rolloverIn[0];
+      return await tx.financialTransactionAllocation.create(createRolloverInArgs);
     });
   } catch (error) {
     const pgError = error as { code?: string; constraint?: string; message?: string };

@@ -5,7 +5,7 @@
 
 /* eslint-disable */
 
-import { ExpressionUtils, type SchemaDef } from "@zenstackhq/orm/schema";
+import { ExpressionUtils, type SchemaDef } from "@zenstackhq/schema";
 export class SchemaType implements SchemaDef {
   provider = {
     type: "postgresql",
@@ -209,6 +209,19 @@ export class SchemaType implements SchemaDef {
             { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("person_id") }] },
           ],
           foreignKeyFor: ["person"],
+        },
+        loginEmail: {
+          name: "loginEmail",
+          type: "String",
+          unique: true,
+          optional: true,
+          attributes: [
+            { name: "@unique" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("login_email") }],
+            },
+          ],
         },
         passwordHash: {
           name: "passwordHash",
@@ -437,6 +450,7 @@ export class SchemaType implements SchemaDef {
       uniqueFields: {
         id: { type: "Int" },
         personId: { type: "Int" },
+        loginEmail: { type: "String" },
       },
     },
     Passkey: {
