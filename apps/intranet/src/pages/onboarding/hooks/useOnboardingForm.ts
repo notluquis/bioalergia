@@ -158,18 +158,14 @@ export function useOnboardingForm() {
 
   const finalSubmit = useMutation({
     mutationFn: async () => {
-      const names = values.names.trim();
-      const motherName = values.motherName.trim();
-      const cleanNames = motherName ? `${names} ${motherName}` : names;
-
       await setupUser({
         loginEmail: values.loginEmail.trim() || undefined,
-        names: cleanNames,
+        names: values.names.trim(),
         rut: values.rut,
         phone: values.phone,
         address: values.address,
-        fatherName: values.fatherName,
-        motherName: values.motherName,
+        fatherName: values.fatherName.trim(),
+        motherName: values.motherName.trim(),
         bankName: values.bankName,
         bankAccountType: values.bankAccountType,
         bankAccountNumber: values.bankAccountNumber,

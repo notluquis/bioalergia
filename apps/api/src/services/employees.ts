@@ -29,6 +29,35 @@ interface EmployeePayload {
 
 type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 
+type ParsedPersonName = {
+  fatherName: null | string;
+  hasSplit: boolean;
+  motherName: null | string;
+  names: string;
+};
+
+function parsePersonName(fullName: string): ParsedPersonName {
+  const normalized = fullName.trim().replace(/\s+/g, " ");
+  if (!normalized) {
+    return { names: "", fatherName: null, motherName: null, hasSplit: false };
+  }
+
+  const tokens = normalized.split(" ");
+  if (tokens.length < 3) {
+    return { names: normalized, fatherName: null, motherName: null, hasSplit: false };
+  }
+
+  const motherName = tokens.at(-1) ?? null;
+  const fatherName = tokens.at(-2) ?? null;
+  const names = tokens.slice(0, -2).join(" ");
+
+  if (!names || !fatherName || !motherName) {
+    return { names: normalized, fatherName: null, motherName: null, hasSplit: false };
+  }
+
+  return { names, fatherName, motherName, hasSplit: true };
+}
+
 // Helper to convert metadata to compatible JSON
 function toJsonValue(value: Record<string, unknown> | null | undefined): JsonValue | undefined {
   if (value === undefined) {
@@ -93,7 +122,12 @@ function mapToPersonData(payload: EmployeePayload): PersonUpdateInput {
   const data: PersonUpdateInput = {};
 
   if (payload.full_name !== undefined) {
-    data.names = payload.full_name;
+    const parsed = parsePersonName(payload.full_name);
+    data.names = parsed.names;
+    if (parsed.hasSplit) {
+      data.fatherName = parsed.fatherName;
+      data.motherName = parsed.motherName;
+    }
   }
   if (payload.email !== undefined) {
     data.email = payload.email;
@@ -160,16 +194,23 @@ export async function createEmployee(
   payload: EmployeePayload & { rut: string; full_name: string },
 ) {
   return await db.$transaction(async (tx) => {
+    const parsedName = parsePersonName(payload.full_name);
+
     // First create or find Person by RUT
     const person = await tx.person.upsert({
       where: { rut: payload.rut },
       update: {
-        names: payload.full_name,
+        names: parsedName.names,
+        ...(parsedName.hasSplit
+          ? { fatherName: parsedName.fatherName, motherName: parsedName.motherName }
+          : {}),
         email: payload.email,
       },
       create: {
         rut: payload.rut,
-        names: payload.full_name,
+        names: parsedName.names,
+        fatherName: parsedName.fatherName,
+        motherName: parsedName.motherName,
         email: payload.email,
         personType: "NATURAL",
       },

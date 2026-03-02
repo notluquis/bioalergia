@@ -497,7 +497,50 @@ function toNullableField(value: string): null | string {
   return trimmed.length > 0 ? trimmed : null;
 }
 
+function splitLegacyFullName(person: User["person"]) {
+  const currentFatherName = person.fatherName?.trim() ?? "";
+  const currentMotherName = person.motherName?.trim() ?? "";
+  const currentNames = person.names?.trim() ?? "";
+
+  if (!currentNames || currentFatherName || currentMotherName) {
+    return {
+      fatherName: currentFatherName,
+      motherName: currentMotherName,
+      names: currentNames,
+    };
+  }
+
+  const tokens = currentNames.split(/\s+/).filter(Boolean);
+  if (tokens.length < 3) {
+    return {
+      fatherName: currentFatherName,
+      motherName: currentMotherName,
+      names: currentNames,
+    };
+  }
+
+  const motherName = tokens.at(-1) ?? "";
+  const fatherName = tokens.at(-2) ?? "";
+  const names = tokens.slice(0, -2).join(" ");
+
+  if (!names || !fatherName || !motherName) {
+    return {
+      fatherName: currentFatherName,
+      motherName: currentMotherName,
+      names: currentNames,
+    };
+  }
+
+  return {
+    fatherName,
+    motherName,
+    names,
+  };
+}
+
 function createDetailsFormState(user: User): UserDetailsFormState {
+  const splitName = splitLegacyFullName(user.person);
+
   return {
     address: user.person.address ?? "",
     bankAccountNumber: user.employee?.bankAccountNumber ?? "",
@@ -506,10 +549,10 @@ function createDetailsFormState(user: User): UserDetailsFormState {
     department: user.employee?.department ?? "",
     loginEmail: user.loginEmail ?? user.email ?? "",
     notificationEmail: user.notificationEmail ?? user.email ?? "",
-    fatherName: user.person.fatherName ?? "",
+    fatherName: splitName.fatherName,
     mfaEnforced: user.mfaEnforced ?? true,
-    motherName: user.person.motherName ?? "",
-    names: user.person.names ?? "",
+    motherName: splitName.motherName,
+    names: splitName.names,
     phone: user.person.phone ?? "",
     position: user.employee?.position ?? "",
     rut: user.person.rut ?? "",
