@@ -1266,7 +1266,7 @@ export async function getFinancialSummaryByCategory(params: { from?: Date; to?: 
 }
 
 export async function createFinancialTransaction(data: CreateFinancialTransactionInput) {
-  return db.financialTransaction.create({
+  const createArgs = parseOrmArgs(db, "financialTransaction", "create", {
     data: {
       date: data.date,
       description: data.description,
@@ -1278,13 +1278,14 @@ export async function createFinancialTransaction(data: CreateFinancialTransactio
       sourceId: data.sourceId,
     },
   });
+  return db.financialTransaction.create(createArgs);
 }
 
 export async function updateFinancialTransaction(
   id: number,
   data: UpdateFinancialTransactionInput,
 ) {
-  return db.financialTransaction.update({
+  const updateArgs = parseOrmArgs(db, "financialTransaction", "update", {
     where: { id },
     data: {
       ...(data.date !== undefined && { date: data.date }),
@@ -1296,6 +1297,7 @@ export async function updateFinancialTransaction(
       ...(data.comment !== undefined && { comment: data.comment }),
     },
   });
+  return db.financialTransaction.update(updateArgs);
 }
 
 export async function deleteFinancialTransaction(id: number) {
@@ -1403,7 +1405,7 @@ export async function createTransactionCategory(data: {
     throw new Error("Ya existe una categoría con ese nombre");
   }
 
-  return db.transactionCategory.create({
+  const createArgs = parseOrmArgs(db, "transactionCategory", "create", {
     data: {
       color: data.color,
       icon: data.isNonAccountable ? NON_ACCOUNTABLE_CATEGORY_ICON : null,
@@ -1411,6 +1413,7 @@ export async function createTransactionCategory(data: {
       type: data.type,
     },
   });
+  return db.transactionCategory.create(createArgs);
 }
 
 export async function updateTransactionCategory(
@@ -1438,7 +1441,7 @@ export async function updateTransactionCategory(
     data.name = cleanName;
   }
 
-  return db.transactionCategory.update({
+  const updateArgs = parseOrmArgs(db, "transactionCategory", "update", {
     where: { id },
     data: {
       ...(data.name !== undefined && { name: data.name }),
@@ -1449,6 +1452,7 @@ export async function updateTransactionCategory(
       }),
     },
   });
+  return db.transactionCategory.update(updateArgs);
 }
 
 export async function deleteTransactionCategory(id: number) {
