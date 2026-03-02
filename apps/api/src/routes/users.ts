@@ -67,7 +67,7 @@ const idParamSchema = z.object({
 });
 
 const updateStatusSchema = z.object({
-  status: z.enum(["ACTIVE", "SUSPENDED"]),
+  status: z.enum(["ACTIVE", "PENDING_SETUP", "SUSPENDED"]),
 });
 
 const updateRoleSchema = z.object({
@@ -719,13 +719,34 @@ userRoutes.put(
     const { id: targetUserId } = c.req.valid("param");
     const { status } = c.req.valid("json");
 
-    if (targetUserId === auth.userId) {
-      return reply(c, { status: "error", message: "No puedes suspender tu propia cuenta" }, 400);
+    if (targetUserId === auth.userId && (status === "SUSPENDED" || status === "PENDING_SETUP")) {
+      return reply(
+        c,
+        { status: "error", message: "No puedes cambiar tu propia cuenta a este estado" },
+        400,
+      );
     }
 
-    await db.user.update({
-      where: { id: targetUserId },
-      data: { status },
+    await db.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: targetUserId },
+        data: {
+          status,
+          sessionVersion: { increment: 1 },
+          ...(status === "PENDING_SETUP"
+            ? {
+                mfaEnabled: false,
+                mfaSecret: null,
+              }
+            : {}),
+        },
+      });
+
+      if (status === "PENDING_SETUP") {
+        await tx.passkey.deleteMany({
+          where: { userId: targetUserId },
+        });
+      }
     });
 
     console.log("[User] Status updated by", auth.email, ":", targetUserId, "->", status);

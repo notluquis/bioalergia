@@ -17,6 +17,7 @@ import {
   resetUserPassword,
   toggleUserMfa,
   updateUserProfile,
+  updateUserStatus as updateUserStatusApi,
 } from "@/features/users/api";
 import { AddUserFormContainer } from "@/features/users/components/AddUserFormContainer";
 import { getColumns } from "@/features/users/components/columns";
@@ -71,7 +72,10 @@ function useUserManagementActions(params: {
   setResetPasswordValue: (value: string) => void;
   setSelectedRole: (value: string) => void;
   successToast: (message: string) => void;
-  updateUserStatus: (id: number, status: "ACTIVE" | "SUSPENDED") => Promise<unknown>;
+  updateUserStatus: (
+    id: number,
+    status: "ACTIVE" | "PENDING_SETUP" | "SUSPENDED",
+  ) => Promise<unknown>;
   users: User[];
 }) {
   const invalidateUsers = useCallback(() => {
@@ -155,16 +159,27 @@ function useUserManagementActions(params: {
     [invalidateUsers, params],
   );
 
-  const handleToggleStatus = useCallback(
-    async (id: number, currentStatus: string) => {
-      const newStatus = currentStatus === "SUSPENDED" ? "ACTIVE" : "SUSPENDED";
-      const action = newStatus === "ACTIVE" ? "reactivar" : "suspender";
-      if (!confirm(`¿${action} usuario?`)) {
+  const handleSetStatus = useCallback(
+    async (id: number, nextStatus: "ACTIVE" | "PENDING_SETUP" | "SUSPENDED") => {
+      const prompts: Record<typeof nextStatus, string> = {
+        ACTIVE: "¿Activar cuenta?",
+        PENDING_SETUP:
+          "¿Enviar a onboarding? Esto cerrará sesiones, eliminará passkeys y desactivará MFA.",
+        SUSPENDED: "¿Suspender acceso?",
+      };
+
+      if (!confirm(prompts[nextStatus])) {
         return;
       }
+
       try {
-        await params.updateUserStatus(id, newStatus as "ACTIVE" | "SUSPENDED");
-        params.successToast(`Usuario ${newStatus === "ACTIVE" ? "reactivado" : "suspendido"}`);
+        await params.updateUserStatus(id, nextStatus);
+        const successByStatus: Record<typeof nextStatus, string> = {
+          ACTIVE: "Usuario activado",
+          PENDING_SETUP: "Usuario enviado a onboarding",
+          SUSPENDED: "Usuario suspendido",
+        };
+        params.successToast(successByStatus[nextStatus]);
       } catch (error_) {
         params.errorToast(error_ instanceof Error ? error_.message : "Error al actualizar estado");
       }
@@ -202,16 +217,16 @@ function useUserManagementActions(params: {
       onDeleteUser: handleDeleteUser,
       onEditRole: handleEditRole,
       onResetPassword: handleResetPassword,
+      onSetStatus: handleSetStatus,
       onToggleMfa: handleToggleMfa,
-      onToggleStatus: handleToggleStatus,
     }),
     [
       handleDeletePasskey,
       handleDeleteUser,
       handleEditRole,
       handleResetPassword,
+      handleSetStatus,
       handleToggleMfa,
-      handleToggleStatus,
     ],
   );
 
@@ -248,7 +263,6 @@ export function UserManagementPage() {
   const roles = rolesData ?? [];
 
   // Mutations
-  const updateUserMutation = client.user.useUpdate();
   const updateUserProfileMutation = useMutation({
     mutationFn: async ({ payload, userId }: { payload: UserDetailsFormState; userId: number }) =>
       updateUserProfile(userId, {
@@ -274,6 +288,15 @@ export function UserManagementPage() {
     },
   });
   const deleteUserMutation = client.user.useDelete();
+  const updateUserStatusMutation = useMutation({
+    mutationFn: async ({
+      id,
+      status,
+    }: {
+      id: number;
+      status: "ACTIVE" | "PENDING_SETUP" | "SUSPENDED";
+    }) => updateUserStatusApi(id, status),
+  });
   const createRoleAssignment = client.userRoleAssignment.useCreate();
   const deleteRoleAssignments = client.userRoleAssignment.useDeleteMany();
 
@@ -291,12 +314,12 @@ export function UserManagementPage() {
     [createRoleAssignment],
   );
   const updateUserStatus = useCallback(
-    (id: number, status: "ACTIVE" | "SUSPENDED") =>
-      updateUserMutation.mutateAsync({
-        data: { status },
-        where: { id },
+    (id: number, status: "ACTIVE" | "PENDING_SETUP" | "SUSPENDED") =>
+      updateUserStatusMutation.mutateAsync({
+        id,
+        status,
       }),
-    [updateUserMutation],
+    [updateUserStatusMutation],
   );
 
   const { actions, handleSaveRole } = useUserManagementActions({
@@ -433,7 +456,7 @@ export function UserManagementPage() {
 
       <EditRoleModalContent
         editingUser={editingUser}
-        isSaving={updateUserMutation.isPending}
+        isSaving={updateUserStatusMutation.isPending}
         onCancel={() => {
           setEditingUser(null);
         }}

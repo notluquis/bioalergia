@@ -40,8 +40,8 @@ export const getColumns = (actions: {
   onEditDetails: (user: User) => void;
   onEditRole: (user: User) => void;
   onResetPassword: (id: number) => void;
+  onSetStatus: (id: number, status: "ACTIVE" | "PENDING_SETUP" | "SUSPENDED") => void;
   onToggleMfa: (id: number, current: boolean) => void;
-  onToggleStatus: (id: number, status: string) => void;
 }): ColumnDef<User>[] => [
   {
     accessorKey: "user",
@@ -222,11 +222,33 @@ export const getColumns = (actions: {
                   Eliminar passkey
                 </Dropdown.Item>
               )}
+              {user.status === "ACTIVE" && (
+                <Dropdown.Item
+                  className="text-warning focus:text-warning"
+                  onPress={() => {
+                    actions.onSetStatus(user.id, "PENDING_SETUP");
+                  }}
+                >
+                  <Lock className="mr-2 h-4 w-4" />
+                  Enviar a onboarding
+                </Dropdown.Item>
+              )}
+              {user.status === "PENDING_SETUP" && (
+                <Dropdown.Item
+                  className="text-success focus:text-success"
+                  onPress={() => {
+                    actions.onSetStatus(user.id, "ACTIVE");
+                  }}
+                >
+                  <Shield className="mr-2 h-4 w-4" />
+                  Activar cuenta
+                </Dropdown.Item>
+              )}
               {user.status === "SUSPENDED" ? (
                 <Dropdown.Item
                   className="text-success focus:text-success"
                   onPress={() => {
-                    actions.onToggleStatus(user.id, user.status);
+                    actions.onSetStatus(user.id, "ACTIVE");
                   }}
                 >
                   <Shield className="mr-2 h-4 w-4" />
@@ -236,7 +258,7 @@ export const getColumns = (actions: {
                 <Dropdown.Item
                   className="text-warning focus:text-warning"
                   onPress={() => {
-                    actions.onToggleStatus(user.id, user.status);
+                    actions.onSetStatus(user.id, "SUSPENDED");
                   }}
                 >
                   <Lock className="mr-2 h-4 w-4" />

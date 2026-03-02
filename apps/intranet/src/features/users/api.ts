@@ -78,7 +78,10 @@ export async function updateUserRole(userId: number, role: string): Promise<void
   );
 }
 
-export async function updateUserStatus(userId: number, status: string): Promise<void> {
+export async function updateUserStatus(
+  userId: number,
+  status: "ACTIVE" | "PENDING_SETUP" | "SUSPENDED",
+): Promise<void> {
   await apiClient.put(
     `/api/users/${userId}/status`,
     { status },
