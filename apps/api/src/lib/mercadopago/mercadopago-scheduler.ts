@@ -30,7 +30,6 @@ const SETTINGS_KEYS = {
   lastGenerated: (type: ReportType) => `mp:lastGenerated:${type}`,
   lastCreateAttempt: (type: ReportType) => `mp:lastCreateAttempt:${type}`,
   processedFiles: (type: ProcessedFilesKey) => `mp:processedFiles:${type}`,
-  lastProcessedAt: (type: ReportType) => `mp:lastProcessedAt:${type}`,
   lastRun: "mp:lastAutoSyncRun",
   pendingWebhooks: "mp:webhook:pending",
   autoSyncEnabled: "mp:autoSync:enabled",
@@ -237,24 +236,11 @@ async function processReadyReports(
   importStatsForType: ImportStatsAggregate,
 ) {
   const processedSet = await loadProcessedFiles(type);
-  const lastProcessedAt = await getLastProcessedAt(type);
   let processedCount = 0;
 
   const readyReports = reports
     .filter((report) => report.file_name && isReportReady(report.status))
-    .filter((report) => {
-      if (!lastProcessedAt) {
-        return true;
-      }
-      const createdAt = parseDate(report.date_created);
-      if (!createdAt) {
-        return true;
-      }
-      return createdAt.getTime() > lastProcessedAt.getTime();
-    })
     .sort((a, b) => (a.date_created ?? "").localeCompare(b.date_created ?? ""));
-
-  let newestProcessedAt: Date | null = lastProcessedAt;
 
   for (const report of readyReports) {
     if (processedCount >= MAX_PROCESS_PER_RUN) {
@@ -273,10 +259,6 @@ async function processReadyReports(
       accumulateImportStats(importStatsForType, stats);
       processedSet.add(fileName);
       processedCount += 1;
-      const createdAt = parseDate(report.date_created);
-      if (createdAt && (!newestProcessedAt || createdAt > newestProcessedAt)) {
-        newestProcessedAt = createdAt;
-      }
       logEvent("mp.autoSync.reportProcessed", { type, fileName });
     } catch (error) {
       logError("mp.autoSync.reportFailed", error, { type, fileName });
@@ -284,9 +266,6 @@ async function processReadyReports(
   }
 
   await persistProcessedFiles(type, processedSet);
-  if (newestProcessedAt) {
-    await updateSetting(SETTINGS_KEYS.lastProcessedAt(type), newestProcessedAt.toISOString());
-  }
   return processedCount;
 }
 
@@ -423,18 +402,6 @@ async function persistProcessedFiles(type: ProcessedFilesKey, processed: Set<str
     .slice(-MAX_PROCESSED_FILES)
     .map((name) => ({ name, at: now }));
   await updateSetting(SETTINGS_KEYS.processedFiles(type), JSON.stringify(trimmed));
-}
-
-async function getLastProcessedAt(type: ReportType) {
-  const raw = await getSetting(SETTINGS_KEYS.lastProcessedAt(type));
-  if (!raw) {
-    return null;
-  }
-  const parsed = new Date(raw);
-  if (Number.isNaN(parsed.getTime())) {
-    return null;
-  }
-  return parsed;
 }
 
 function isReportReady(status?: string) {

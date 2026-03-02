@@ -218,8 +218,10 @@ userRoutes.get("/", zValidator("query", listUsersQuerySchema), async (c) => {
       includeTest === "true"
         ? undefined
         : {
-            person: {
-              OR: [{ email: { contains: "test" } }, { email: { contains: "debug" } }],
+            NOT: {
+              person: {
+                OR: [{ email: { contains: "test" } }, { email: { contains: "debug" } }],
+              },
             },
           },
     include: {
