@@ -169,17 +169,11 @@ function SyncStatusIcon({ result }: { result: SyncResult | null | undefined }) {
 
 interface SyncAllCardProps {
   isSyncingAll: boolean;
-  syncAllProgress: { completed: number; total: number };
   availablePeriods: AvailablePeriodsData | undefined;
   onSyncAll: () => void;
 }
 
-function SyncAllCard({
-  isSyncingAll,
-  syncAllProgress,
-  availablePeriods,
-  onSyncAll,
-}: SyncAllCardProps) {
+function SyncAllCard({ isSyncingAll, availablePeriods, onSyncAll }: SyncAllCardProps) {
   if (!availablePeriods) {
     return null;
   }
@@ -195,7 +189,7 @@ function SyncAllCard({
       <div className="space-y-3 p-3">
         <div className="flex items-center justify-between">
           <div>
-            <span className="block font-semibold text-default-700">Sincronización Masiva</span>
+            <span className="block font-semibold text-default-700">Sincronización Incremental</span>
             <div className="mt-0.5">
               <Description className="text-default-500 text-sm">
                 Datos disponibles: {availablePeriods.sales.length} períodos de ventas +{" "}
@@ -210,25 +204,9 @@ function SyncAllCard({
             onClick={onSyncAll}
             startContent={isSyncingAll ? undefined : <RefreshCw className="h-4 w-4" />}
           >
-            {isSyncingAll ? "Sincronizando..." : "Sincronizar Todo"}
+            {isSyncingAll ? "Sincronizando..." : "Sincronizar incremental"}
           </Button>
         </div>
-
-        {isSyncingAll && syncAllProgress.total > 0 && (
-          <div className="space-y-1.5">
-            <div className="h-2 w-full rounded bg-default-200">
-              <div
-                className="h-2 rounded bg-success-500 transition-all duration-300"
-                style={{
-                  width: `${(syncAllProgress.completed / syncAllProgress.total) * 100}%`,
-                }}
-              />
-            </div>
-            <Description className="text-default-600 text-xs">
-              {syncAllProgress.completed} de {syncAllProgress.total} completados
-            </Description>
-          </div>
-        )}
       </div>
     </Card>
   );
@@ -374,7 +352,6 @@ function PeriodCard({
 export function HaulmerSyncPage() {
   const { error: showError, success: showSuccess } = useToast();
   const [lastSyncs, setLastSyncs] = useState<LastSyncState>({});
-  const [syncAllProgress, setSyncAllProgress] = useState({ completed: 0, total: 0 });
   const [isSyncingAll, setIsSyncingAll] = useState(false);
 
   // Fetch available periods
@@ -444,88 +421,46 @@ export function HaulmerSyncPage() {
     }
   };
 
-  const buildSyncTasks = () => {
-    if (!availablePeriods) {
-      return [];
-    }
-
-    const tasks: Array<{ period: string; docType: "sales" | "purchases" }> = [];
-    for (const sale of availablePeriods.sales) {
-      tasks.push({ period: sale.periodo, docType: "sales" });
-    }
-    for (const purchase of availablePeriods.purchases) {
-      tasks.push({ period: purchase.periodo, docType: "purchases" });
-    }
-    return tasks;
-  };
-
-  const executeSyncBatch = async (
-    tasks: Array<{ period: string; docType: "sales" | "purchases" }>,
-  ) => {
-    const batchSize = 5;
-    for (let i = 0; i < tasks.length; i += batchSize) {
-      const batch = tasks.slice(i, i + batchSize);
-      await Promise.all(
-        batch.map((task) =>
-          apiClient
-            .post<z.infer<typeof SyncResponseSchema>>(
-              "/api/haulmer/sync",
-              {
-                periods: [task.period],
-                docTypes: [task.docType],
-              },
-              { responseSchema: SyncResponseSchema },
-            )
-            .then((response) => {
-              const result = response.results?.[0];
-              if (result) {
-                const key = `${task.period}-${task.docType}`;
-                setLastSyncs((prev) => ({
-                  ...prev,
-                  [key]: result,
-                }));
-              }
-              setSyncAllProgress((prev) => ({
-                ...prev,
-                completed: prev.completed + 1,
-              }));
-            })
-            .catch((error) => {
-              console.error(`Error syncing ${task.period}-${task.docType}:`, error);
-              setSyncAllProgress((prev) => ({
-                ...prev,
-                completed: prev.completed + 1,
-              }));
-            }),
-        ),
-      );
-    }
-  };
-
   const handleSyncAll = async () => {
-    const syncTasks = buildSyncTasks();
-    if (syncTasks.length === 0) {
-      return;
-    }
-
-    const message = `¿Sincronizar TODOS los períodos? Se sincronizarán ${syncTasks.length} registros (${availablePeriods?.sales.length ?? 0} sales + ${availablePeriods?.purchases.length ?? 0} purchases). Esto puede tomar un tiempo.`;
+    const message =
+      "¿Sincronizar incremental? Se traerán solo períodos nuevos y el más reciente para refresco.";
     if (!confirm(message)) {
       return;
     }
 
     setIsSyncingAll(true);
-    setSyncAllProgress({ completed: 0, total: syncTasks.length });
 
     try {
-      await executeSyncBatch(syncTasks);
-      showSuccess(`Sincronización completada: ${syncAllProgress.total} períodos procesados`);
+      const response = await apiClient.post<z.infer<typeof SyncResponseSchema>>(
+        "/api/haulmer/sync/incremental",
+        {
+          docTypes: ["sales", "purchases"],
+          includeLatestAlreadySynced: true,
+        },
+        { responseSchema: SyncResponseSchema },
+      );
+
+      for (const result of response.results ?? []) {
+        const key = `${result.period}-${result.docType}`;
+        setLastSyncs((prev) => ({
+          ...prev,
+          [key]: result,
+        }));
+      }
+
+      if ((response.summary?.total ?? 0) === 0) {
+        showSuccess("No hay períodos nuevos para sincronizar");
+      } else {
+        showSuccess(
+          `Sync incremental completado: ${response.summary.success} OK, ${response.summary.failed} con error`,
+        );
+      }
     } catch (error) {
       showError(
-        `Error durante sincronización masiva: ${error instanceof Error ? error.message : "Desconocido"}`,
+        `Error durante sincronización incremental: ${error instanceof Error ? error.message : "Desconocido"}`,
       );
     } finally {
       setIsSyncingAll(false);
-      setSyncAllProgress({ completed: 0, total: 0 });
     }
   };
 
@@ -592,7 +527,6 @@ export function HaulmerSyncPage() {
       {!isLoadingPeriods && !periodsError && availablePeriods && (
         <SyncAllCard
           isSyncingAll={isSyncingAll}
-          syncAllProgress={syncAllProgress}
           availablePeriods={availablePeriods}
           onSyncAll={handleSyncAll}
         />
