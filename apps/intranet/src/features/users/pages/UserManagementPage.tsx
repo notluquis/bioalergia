@@ -1,6 +1,6 @@
 import { schema as schemaLite } from "@finanzas/db/schema-lite";
 import { Description, Label, ListBox, Modal, Select, Switch } from "@heroui/react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useClientQueries } from "@zenstackhq/tanstack-query/react";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -13,6 +13,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import {
   deleteUserPasskey,
+  fetchUsers,
   resetUserPassword,
   toggleUserMfa,
   updateUserProfile,
@@ -35,7 +36,8 @@ type UserDetailsFormState = {
   bankAccountType: string;
   bankName: string;
   department: string;
-  email: string;
+  loginEmail: string;
+  notificationEmail: string;
   fatherName: string;
   mfaEnforced: boolean;
   motherName: string;
@@ -44,74 +46,6 @@ type UserDetailsFormState = {
   position: string;
   rut: string;
 };
-
-function mapRawUsers(usersData: unknown[] | undefined): User[] {
-  if (!usersData) {
-    return [];
-  }
-
-  type RawUser = {
-    createdAt?: Date | null;
-    id: number;
-    mfaEnabled?: boolean | null;
-    mfaEnforced?: boolean | null;
-    passkeys?: unknown[];
-    person?: {
-      address?: null | string;
-      email?: null | string;
-      employee?: {
-        bankAccountNumber?: null | string;
-        bankAccountType?: null | string;
-        bankName?: null | string;
-        department?: null | string;
-        position?: string;
-      } | null;
-      fatherName?: null | string;
-      motherName?: null | string;
-      names?: string;
-      phone?: null | string;
-      rut?: string;
-    };
-    roles?: { role?: { name?: string } }[];
-    status?: string;
-  };
-
-  return usersData
-    .filter((u) => {
-      const personEmail = (u as RawUser).person?.email ?? "";
-      return !personEmail.includes("test") && !personEmail.includes("debug");
-    })
-    .map(
-      (u): User => ({
-        createdAt: (u as RawUser).createdAt ?? new Date(),
-        email: (u as RawUser).person?.email ?? "",
-        hasPasskey: ((u as RawUser).passkeys ?? []).length > 0,
-        id: (u as RawUser).id,
-        mfaEnabled: (u as RawUser).mfaEnabled ?? false,
-        mfaEnforced: (u as RawUser).mfaEnforced ?? true,
-        passkeysCount: ((u as RawUser).passkeys ?? []).length,
-        employee: (u as RawUser).person?.employee
-          ? {
-              bankAccountNumber: (u as RawUser).person?.employee?.bankAccountNumber ?? null,
-              bankAccountType: (u as RawUser).person?.employee?.bankAccountType ?? null,
-              bankName: (u as RawUser).person?.employee?.bankName ?? null,
-              department: (u as RawUser).person?.employee?.department ?? null,
-              position: (u as RawUser).person?.employee?.position ?? "",
-            }
-          : null,
-        person: {
-          address: (u as RawUser).person?.address ?? null,
-          fatherName: (u as RawUser).person?.fatherName ?? null,
-          motherName: (u as RawUser).person?.motherName ?? null,
-          names: (u as RawUser).person?.names ?? "",
-          phone: (u as RawUser).person?.phone ?? null,
-          rut: (u as RawUser).person?.rut ?? "",
-        },
-        role: (u as RawUser).roles?.[0]?.role?.name ?? "",
-        status: ((u as RawUser).status ?? "ACTIVE") as User["status"],
-      }),
-    );
-}
 
 function filterUsersByRole(users: User[], roleFilter: string) {
   if (roleFilter === "ALL") {
@@ -141,6 +75,7 @@ function useUserManagementActions(params: {
   users: User[];
 }) {
   const invalidateUsers = useCallback(() => {
+    void params.queryClient.invalidateQueries({ queryKey: ["users"] });
     void params.queryClient.invalidateQueries({ queryKey: ["user"] });
   }, [params.queryClient]);
 
@@ -252,6 +187,7 @@ function useUserManagementActions(params: {
       await params.clearUserRoles(params.editingUser.id);
       await params.assignUserRole(selectedRoleObj.id, params.editingUser.id);
 
+      void params.queryClient.invalidateQueries({ queryKey: ["users"] });
       void params.queryClient.invalidateQueries({ queryKey: ["user"] });
       params.successToast("Rol actualizado correctamente");
       params.setEditingUser(null);
@@ -299,18 +235,11 @@ export function UserManagementPage() {
   const [resetPasswordUser, setResetPasswordUser] = useState("");
   const [selectedRole, setSelectedRole] = useState("");
 
-  // ZenStack hooks for users
-  const { data: usersData, isLoading } = client.user.useFindMany({
-    include: {
-      passkeys: true,
-      person: { include: { employee: true } },
-      roles: { include: { role: true } },
-    },
-    orderBy: { createdAt: "desc" },
+  const { data: usersData, isLoading } = useQuery({
+    queryFn: fetchUsers,
+    queryKey: ["users"],
   });
-
-  // Transform to frontend User view model (with computed properties)
-  const users: User[] = useMemo(() => mapRawUsers(usersData), [usersData]);
+  const users: User[] = usersData ?? [];
 
   // ZenStack hooks for roles (for filter dropdown)
   const { data: rolesData } = client.role.useFindMany({
@@ -328,7 +257,8 @@ export function UserManagementPage() {
         bankAccountType: toNullableField(payload.bankAccountType),
         bankName: toNullableField(payload.bankName),
         department: toNullableField(payload.department),
-        email: payload.email.trim(),
+        loginEmail: toNullableField(payload.loginEmail),
+        notificationEmail: payload.notificationEmail.trim(),
         fatherName: toNullableField(payload.fatherName),
         mfaEnforced: payload.mfaEnforced,
         motherName: toNullableField(payload.motherName),
@@ -338,6 +268,7 @@ export function UserManagementPage() {
         rut: payload.rut.trim(),
       }),
     onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["users"] });
       void queryClient.invalidateQueries({ queryKey: ["user"] });
       success("Datos de usuario actualizados");
     },
@@ -479,7 +410,7 @@ export function UserManagementPage() {
           }}
         >
           <Modal.Container placement="center">
-            <Modal.Dialog className="relative w-full max-w-2xl rounded-[28px] bg-background p-6 shadow-2xl max-w-4xl">
+            <Modal.Dialog className="relative w-full max-w-2xl rounded-[28px] bg-background p-6 shadow-2xl">
               <Modal.Header className="mb-4 font-bold text-primary text-xl">
                 <Modal.Heading>Agregar usuario</Modal.Heading>
               </Modal.Header>
@@ -490,6 +421,7 @@ export function UserManagementPage() {
                     setIsCreateUserOpen(false);
                   }}
                   onCreated={() => {
+                    void queryClient.invalidateQueries({ queryKey: ["users"] });
                     setIsCreateUserOpen(false);
                   }}
                 />
@@ -572,7 +504,8 @@ function createDetailsFormState(user: User): UserDetailsFormState {
     bankAccountType: user.employee?.bankAccountType ?? "",
     bankName: user.employee?.bankName ?? "",
     department: user.employee?.department ?? "",
-    email: user.email ?? "",
+    loginEmail: user.loginEmail ?? user.email ?? "",
+    notificationEmail: user.notificationEmail ?? user.email ?? "",
     fatherName: user.person.fatherName ?? "",
     mfaEnforced: user.mfaEnforced ?? true,
     motherName: user.person.motherName ?? "",
@@ -664,7 +597,7 @@ function EditRoleModalContent({
         }}
       >
         <Modal.Container placement="center">
-          <Modal.Dialog className="relative w-full max-w-2xl rounded-[28px] bg-background p-6 shadow-2xl max-w-md">
+          <Modal.Dialog className="relative w-full max-w-2xl rounded-[28px] bg-background p-6 shadow-2xl">
             <Modal.Header className="mb-4 font-bold text-primary text-xl">
               <Modal.Heading>{`Editar Rol: ${editingUser ? getPersonFullName(editingUser.person) : ""}`}</Modal.Heading>
             </Modal.Header>
@@ -758,7 +691,7 @@ function EditUserDetailsModalContent({
         }}
       >
         <Modal.Container placement="center">
-          <Modal.Dialog className="relative w-full max-w-2xl rounded-[28px] bg-background p-6 shadow-2xl max-w-4xl">
+          <Modal.Dialog className="relative w-full max-w-2xl rounded-[28px] bg-background p-6 shadow-2xl">
             <Modal.Header className="mb-4 font-bold text-primary text-xl">
               <Modal.Heading>{`Editar usuario: ${title}`}</Modal.Heading>
             </Modal.Header>
@@ -786,10 +719,17 @@ function EditUserDetailsModalContent({
                     value={form.rut}
                   />
                   <Input
-                    label="Correo electrónico"
-                    onChange={(event) => onChange("email", event.target.value)}
+                    label="Correo de notificación"
+                    onChange={(event) => onChange("notificationEmail", event.target.value)}
                     type="email"
-                    value={form.email}
+                    value={form.notificationEmail}
+                  />
+                  <Input
+                    helper="Si lo dejas igual al de notificación, se usa ese por defecto para login."
+                    label="Correo de login"
+                    onChange={(event) => onChange("loginEmail", event.target.value)}
+                    type="email"
+                    value={form.loginEmail}
                   />
                   <Input
                     label="Teléfono"
@@ -850,7 +790,9 @@ function EditUserDetailsModalContent({
                   Cancelar
                 </Button>
                 <Button
-                  disabled={!form?.names.trim() || !form?.email.trim() || !form?.position.trim()}
+                  disabled={
+                    !form?.names.trim() || !form?.notificationEmail.trim() || !form?.position.trim()
+                  }
                   isLoading={isSaving}
                   onClick={() => void onSave()}
                   variant="primary"
@@ -891,7 +833,7 @@ function ResetPasswordModalContent({
         }}
       >
         <Modal.Container placement="center">
-          <Modal.Dialog className="relative w-full max-w-2xl rounded-[28px] bg-background p-6 shadow-2xl max-w-md">
+          <Modal.Dialog className="relative w-full max-w-2xl rounded-[28px] bg-background p-6 shadow-2xl">
             <Modal.Header className="mb-4 font-bold text-primary text-xl">
               <Modal.Heading>Contraseña temporal generada</Modal.Heading>
             </Modal.Header>

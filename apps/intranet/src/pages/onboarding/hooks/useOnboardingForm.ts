@@ -13,6 +13,7 @@ import { validateRut } from "@/lib/rut";
 
 export const profileSchema = z.object({
   names: z.string().min(1, "El nombre es requerido"),
+  loginEmail: z.email("El correo de login no es válido").optional().or(z.literal("")),
   rut: z
     .string()
     .min(1, "El RUT es requerido")
@@ -54,6 +55,7 @@ export interface MfaSecretData {
 }
 
 interface OnboardingValues {
+  loginEmail: string;
   names: string;
   rut: string;
   phone: string;
@@ -80,6 +82,7 @@ export function useOnboardingForm() {
   const [mfaSecret, setMfaSecret] = useState<MfaSecretData | null>(null);
 
   const [defaultValues] = useState<OnboardingValues>(() => ({
+    loginEmail: userProfile?.loginEmail ?? userProfile?.email ?? "",
     names: userProfile?.names ?? "",
     rut: userProfile?.rut ?? "",
     phone: userProfile?.phone ?? "",
@@ -160,6 +163,7 @@ export function useOnboardingForm() {
       const cleanNames = motherName ? `${names} ${motherName}` : names;
 
       await setupUser({
+        loginEmail: values.loginEmail.trim() || undefined,
         names: cleanNames,
         rut: values.rut,
         phone: values.phone,
@@ -213,6 +217,7 @@ export function useOnboardingForm() {
     mfaSecret,
     isLoading,
     profile: {
+      loginEmail: values.loginEmail,
       names: values.names,
       rut: values.rut,
       phone: values.phone,

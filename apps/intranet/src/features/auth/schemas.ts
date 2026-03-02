@@ -4,9 +4,11 @@ export const AuthUserSchema = z.strictObject({
   email: z.string(),
   hasPasskey: z.boolean().optional(),
   id: z.number(),
+  loginEmail: z.string().optional(),
   mfaEnabled: z.boolean().optional(),
   mfaEnforced: z.boolean().optional(),
   name: z.string().nullable(),
+  notificationEmail: z.string().optional(),
   roles: z.array(z.string()),
   status: z.string(),
 });

@@ -60,6 +60,46 @@ async function issueToken(session: AuthSession): Promise<string> {
   );
 }
 
+function normalizeEmailInput(value: string) {
+  return value.toLowerCase().trim();
+}
+
+async function findUserByLoginIdentifier(email: string) {
+  const rows = await db.$queryRaw<
+    Array<{ id: number; loginEmail: null | string; notificationEmail: null | string }>
+  >`
+    SELECT
+      u.id AS "id",
+      u.login_email AS "loginEmail",
+      p.email AS "notificationEmail"
+    FROM users u
+    JOIN people p ON p.id = u.person_id
+    WHERE lower(coalesce(nullif(u.login_email, ''), p.email)) = lower(${email})
+    LIMIT 1
+  `;
+
+  return rows[0] ?? null;
+}
+
+async function getEffectiveLoginEmailByUserId(userId: number, fallbackEmail: string) {
+  const rows = await db.$queryRaw<
+    Array<{ loginEmail: null | string; notificationEmail: null | string }>
+  >`
+    SELECT
+      u.login_email AS "loginEmail",
+      p.email AS "notificationEmail"
+    FROM users u
+    JOIN people p ON p.id = u.person_id
+    WHERE u.id = ${userId}
+    LIMIT 1
+  `;
+
+  const row = rows[0];
+  const explicitLoginEmail = row?.loginEmail?.trim();
+  const notificationEmail = row?.notificationEmail?.trim();
+  return explicitLoginEmail || notificationEmail || fallbackEmail;
+}
+
 async function resolveSessionFromToken(token: string) {
   const decoded = await verifyToken(token);
   if (!decoded || typeof decoded.sub !== "string") {
@@ -84,7 +124,10 @@ async function resolveSessionFromToken(token: string) {
   return {
     decoded,
     userId: user.id,
-    userEmail: user.person?.email ?? String(decoded.email ?? ""),
+    userEmail: await getEffectiveLoginEmailByUserId(
+      user.id,
+      user.person?.email ?? String(decoded.email ?? ""),
+    ),
   };
 }
 
@@ -130,7 +173,7 @@ const passkeyResponseSchema = z.object({
 
 authRoutes.post("/login", zValidator("json", loginSchema), async (c) => {
   const { email, password } = c.req.valid("json");
-  const normalizedEmail = email.toLowerCase().trim();
+  const normalizedEmail = normalizeEmailInput(email);
 
   // Find user with ZenStack
   const baseInclude = {
@@ -148,8 +191,13 @@ authRoutes.post("/login", zValidator("json", loginSchema), async (c) => {
     },
   } as const;
 
-  const user = await db.user.findFirst({
-    where: { person: { email: normalizedEmail } },
+  const loginCandidate = await findUserByLoginIdentifier(normalizedEmail);
+  if (!loginCandidate) {
+    return authError(c, 401, "Credenciales incorrectas");
+  }
+
+  const user = await db.user.findUnique({
+    where: { id: loginCandidate.id },
     include: baseInclude,
   });
 
@@ -181,12 +229,16 @@ authRoutes.post("/login", zValidator("json", loginSchema), async (c) => {
 
   // Build roles array
   const roles = user.roles.map((r) => r.role.name);
-  const userEmail = user.person?.email ?? normalizedEmail;
+  const notificationEmail = user.person?.email ?? normalizedEmail;
+  const loginEmail =
+    loginCandidate.loginEmail?.trim() ||
+    loginCandidate.notificationEmail?.trim() ||
+    normalizedEmail;
 
   // Issue token and set cookie
   const token = await issueToken({
     userId: user.id,
-    email: userEmail,
+    email: loginEmail,
     roles,
     sessionVersion: user.sessionVersion,
   });
@@ -199,7 +251,9 @@ authRoutes.post("/login", zValidator("json", loginSchema), async (c) => {
     status: "ok",
     user: {
       id: user.id,
-      email: userEmail,
+      email: loginEmail,
+      loginEmail,
+      notificationEmail,
       name: user.person?.names || null,
       roles,
       status: user.status,
@@ -237,10 +291,11 @@ authRoutes.post("/login/mfa", zValidator("json", mfaLoginSchema), async (c) => {
   }
 
   const roles = user.roles.map((r) => r.role.name);
-  const userEmail = user.person?.email ?? "";
+  const notificationEmail = user.person?.email ?? "";
+  const loginEmail = await getEffectiveLoginEmailByUserId(user.id, notificationEmail);
   const token = await issueToken({
     userId: user.id,
-    email: userEmail,
+    email: loginEmail,
     roles,
     sessionVersion: user.sessionVersion,
   });
@@ -253,7 +308,9 @@ authRoutes.post("/login/mfa", zValidator("json", mfaLoginSchema), async (c) => {
     status: "ok",
     user: {
       id: user.id,
-      email: userEmail,
+      email: loginEmail,
+      loginEmail,
+      notificationEmail,
       name: user.person?.names || null,
       roles,
       status: user.status,
@@ -307,12 +364,16 @@ authRoutes.get("/me/session", async (c) => {
     // --- Role Governance Logic ---
     const { getAbilityRulesForUser } = await import("../services/authz.js");
     const abilityRules = await getAbilityRulesForUser(user.id);
+    const notificationEmail = user.person?.email ?? "";
+    const loginEmail = await getEffectiveLoginEmailByUserId(user.id, notificationEmail);
 
     return replyRaw(c, {
       status: "ok",
       user: {
         id: user.id,
-        email: user.person?.email ?? "",
+        email: loginEmail,
+        loginEmail,
+        notificationEmail,
         name: user.person?.names || null,
         roles: user.roles.map((r) => r.role.name),
         status: user.status,
@@ -549,9 +610,11 @@ authRoutes.post("/passkey/login/verify", zValidator("json", passkeyVerifySchema)
 
     // Issue session token
     const roles = user.roles.map((r) => r.role.name);
+    const notificationEmail = user.person?.email ?? "";
+    const loginEmail = await getEffectiveLoginEmailByUserId(user.id, notificationEmail);
     const token = await issueToken({
       userId: user.id,
-      email: user.person?.email ?? "",
+      email: loginEmail,
       roles,
       sessionVersion: user.sessionVersion,
     });
@@ -566,7 +629,9 @@ authRoutes.post("/passkey/login/verify", zValidator("json", passkeyVerifySchema)
       status: "ok",
       user: {
         id: user.id,
-        email: user.person?.email ?? "",
+        email: loginEmail,
+        loginEmail,
+        notificationEmail,
         name: user.person?.names || null,
         roles,
         status: user.status,

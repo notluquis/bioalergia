@@ -52,6 +52,7 @@ const setupUserSchema = z.object({
   names: z.string().min(1),
   fatherName: z.string().optional(),
   motherName: z.string().optional(),
+  loginEmail: z.email("Email de login inválido").optional(),
   rut: z.string().min(1),
   phone: z.string().optional(),
   address: z.string().optional(),
@@ -77,21 +78,33 @@ const toggleMfaSchema = z.object({
   enabled: z.boolean(),
 });
 
-const updateUserProfileSchema = z.object({
-  address: z.string().max(255).nullable().optional(),
-  bankAccountNumber: z.string().max(120).nullable().optional(),
-  bankAccountType: z.string().max(80).nullable().optional(),
-  bankName: z.string().max(120).nullable().optional(),
-  department: z.string().max(120).nullable().optional(),
-  email: z.email("Email inválido"),
-  fatherName: z.string().max(120).nullable().optional(),
-  mfaEnforced: z.boolean().optional(),
-  motherName: z.string().max(120).nullable().optional(),
-  names: z.string().min(1, "Nombres requeridos").max(160),
-  phone: z.string().max(60).nullable().optional(),
-  position: z.string().min(1, "Cargo requerido").max(120),
-  rut: z.string().min(1, "RUT requerido").max(20),
-});
+const updateUserProfileSchema = z
+  .object({
+    address: z.string().max(255).nullable().optional(),
+    bankAccountNumber: z.string().max(120).nullable().optional(),
+    bankAccountType: z.string().max(80).nullable().optional(),
+    bankName: z.string().max(120).nullable().optional(),
+    department: z.string().max(120).nullable().optional(),
+    email: z.email("Email inválido").optional(),
+    fatherName: z.string().max(120).nullable().optional(),
+    loginEmail: z.email("Email de login inválido").nullable().optional(),
+    mfaEnforced: z.boolean().optional(),
+    motherName: z.string().max(120).nullable().optional(),
+    names: z.string().min(1, "Nombres requeridos").max(160),
+    notificationEmail: z.email("Email de notificación inválido").optional(),
+    phone: z.string().max(60).nullable().optional(),
+    position: z.string().min(1, "Cargo requerido").max(120),
+    rut: z.string().min(1, "RUT requerido").max(20),
+  })
+  .superRefine((value, ctx) => {
+    if (!value.notificationEmail && !value.email) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "notificationEmail es requerido",
+        path: ["notificationEmail"],
+      });
+    }
+  });
 
 type InviteUserPayload = z.infer<typeof inviteUserSchema>;
 
@@ -101,6 +114,37 @@ function toNullableText(value: null | string | undefined): null | string {
   }
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : null;
+}
+
+function normalizeEmail(value: string) {
+  return value.toLowerCase().trim();
+}
+
+async function findUserByEffectiveLoginEmail(email: string, excludeUserId?: number) {
+  const rows = await db.$queryRaw<Array<{ id: number }>>`
+    SELECT u.id
+    FROM users u
+    JOIN people p ON p.id = u.person_id
+    WHERE lower(coalesce(nullif(u.login_email, ''), p.email)) = lower(${email})
+      AND (${excludeUserId ?? 0} = 0 OR u.id <> ${excludeUserId ?? 0})
+    LIMIT 1
+  `;
+
+  return rows[0] ?? null;
+}
+
+async function getUserLoginEmailMap(userIds: number[]) {
+  if (userIds.length === 0) {
+    return new Map<number, null | string>();
+  }
+
+  const rows = await db.$queryRaw<Array<{ id: number; loginEmail: null | string }>>`
+    SELECT u.id AS "id", u.login_email AS "loginEmail"
+    FROM users u
+    WHERE u.id = ANY(${userIds})
+  `;
+
+  return new Map<number, null | string>(rows.map((row) => [row.id, row.loginEmail]));
 }
 
 async function resolveInvitePersonId(
@@ -170,25 +214,42 @@ userRoutes.get("/", zValidator("query", listUsersQuerySchema), async (c) => {
             },
           },
     include: {
-      person: true,
+      person: { include: { employee: true } },
       roles: { include: { role: true } },
       passkeys: { select: { id: true } },
     },
     orderBy: { person: { names: "asc" } },
   });
 
+  const loginEmailByUserId = await getUserLoginEmailMap(users.map((user) => user.id));
+
   const safeUsers = users.map((u) => ({
     id: u.id,
     email: u.person?.email ?? "",
+    notificationEmail: u.person?.email ?? "",
+    loginEmail: loginEmailByUserId.get(u.id)?.trim() || (u.person?.email ?? ""),
     status: u.status,
     mfaEnabled: u.mfaEnabled,
+    mfaEnforced: u.mfaEnforced,
     hasPasskey: u.passkeys.length > 0,
     createdAt: u.createdAt,
     role: u.roles[0]?.role.name || "VIEWER",
+    employee: u.person?.employee
+      ? {
+          position: u.person.employee.position,
+          department: u.person.employee.department,
+          bankName: u.person.employee.bankName,
+          bankAccountType: u.person.employee.bankAccountType,
+          bankAccountNumber: u.person.employee.bankAccountNumber,
+        }
+      : null,
     person: u.person
       ? {
+          address: u.person.address,
           names: u.person.names,
           fatherName: u.person.fatherName,
+          motherName: u.person.motherName,
+          phone: u.person.phone,
           rut: normalizeRut(u.person.rut),
         }
       : null,
@@ -216,6 +277,16 @@ userRoutes.get("/profile", async (c) => {
     return reply(c, { status: "error", message: "Usuario no encontrado" }, 404);
   }
 
+  const loginEmailRow = await db.$queryRaw<Array<{ loginEmail: null | string }>>`
+    SELECT u.login_email AS "loginEmail"
+    FROM users u
+    WHERE u.id = ${auth.userId}
+    LIMIT 1
+  `;
+  const explicitLoginEmail = loginEmailRow[0]?.loginEmail?.trim() || null;
+  const notificationEmail = user.person?.email ?? "";
+  const effectiveLoginEmail = explicitLoginEmail || notificationEmail;
+
   return reply(c, {
     status: "ok",
     data: {
@@ -223,7 +294,9 @@ userRoutes.get("/profile", async (c) => {
       fatherName: user.person.fatherName,
       motherName: user.person.motherName,
       rut: normalizeRut(user.person.rut),
-      email: user.person?.email ?? "",
+      email: notificationEmail,
+      notificationEmail,
+      loginEmail: effectiveLoginEmail,
       phone: user.person.phone,
       address: user.person.address,
       bankName: user.person.employee?.bankName,
@@ -250,12 +323,17 @@ userRoutes.post("/invite", zValidator("json", inviteUserSchema), async (c) => {
 
   const { email, role, position, mfaEnforced, personId, names, fatherName, motherName, rut } =
     c.req.valid("json");
-  const normalizedEmail = email.toLowerCase().trim();
+  const normalizedEmail = normalizeEmail(email);
 
   // Check if user exists
   const existing = await db.user.findFirst({ where: { person: { email: normalizedEmail } } });
   if (existing) {
     return reply(c, { status: "error", message: "Email ya registrado" }, 400);
+  }
+
+  const loginConflict = await findUserByEffectiveLoginEmail(normalizedEmail);
+  if (loginConflict) {
+    return reply(c, { status: "error", message: "Email ya está en uso para login" }, 409);
   }
 
   // Generate temp password
@@ -356,6 +434,25 @@ userRoutes.post("/setup", zValidator("json", setupUserSchema), async (c) => {
   }
 
   const hash = await hashPassword(body.password);
+  const normalizedNotificationEmail = normalizeEmail(user.person?.email ?? "");
+  const normalizedLoginEmail = body.loginEmail ? normalizeEmail(body.loginEmail) : null;
+  const effectiveLoginEmail = normalizedLoginEmail || normalizedNotificationEmail;
+
+  if (!effectiveLoginEmail) {
+    return reply(
+      c,
+      {
+        status: "error",
+        message: "No existe correo válido para login. Contacta a un administrador.",
+      },
+      409,
+    );
+  }
+
+  const conflictingLogin = await findUserByEffectiveLoginEmail(effectiveLoginEmail, auth.userId);
+  if (conflictingLogin) {
+    return reply(c, { status: "error", message: "El correo de login ya está en uso" }, 409);
+  }
 
   await db.person.update({
     where: { id: user.personId },
@@ -390,6 +487,16 @@ userRoutes.post("/setup", zValidator("json", setupUserSchema), async (c) => {
     where: { id: auth.userId },
     data: { passwordHash: hash, status: "ACTIVE" },
   });
+
+  const explicitLoginEmail =
+    normalizedLoginEmail && normalizedLoginEmail !== normalizedNotificationEmail
+      ? normalizedLoginEmail
+      : null;
+  await db.$executeRaw`
+    UPDATE users
+    SET login_email = ${explicitLoginEmail}
+    WHERE id = ${auth.userId}
+  `;
 
   console.log("[User] Setup complete:", auth.email);
   return reply(c, { status: "ok", message: "Configuración completada" });
@@ -472,16 +579,26 @@ userRoutes.put(
       return reply(c, { status: "error", message: "Usuario no encontrado" }, 404);
     }
 
-    const normalizedEmail = body.email.toLowerCase().trim();
+    const notificationEmailInput = body.notificationEmail ?? body.email;
+    if (!notificationEmailInput) {
+      return reply(c, { status: "error", message: "Email de notificación requerido" }, 400);
+    }
+    const normalizedNotificationEmail = normalizeEmail(notificationEmailInput);
+    const normalizedLoginEmail = body.loginEmail ? normalizeEmail(body.loginEmail) : null;
+    const explicitLoginEmail =
+      normalizedLoginEmail && normalizedLoginEmail !== normalizedNotificationEmail
+        ? normalizedLoginEmail
+        : null;
+    const effectiveLoginEmail = explicitLoginEmail ?? normalizedNotificationEmail;
     const normalizedRut = normalizeRut(body.rut);
     if (!normalizedRut) {
       return reply(c, { status: "error", message: "RUT inválido" }, 400);
     }
 
-    const [conflictingEmail, conflictingRut] = await Promise.all([
+    const [conflictingEmail, conflictingRut, conflictingLogin] = await Promise.all([
       db.person.findFirst({
         where: {
-          email: normalizedEmail,
+          email: normalizedNotificationEmail,
           NOT: { id: targetUser.personId },
         },
         select: { id: true },
@@ -493,17 +610,21 @@ userRoutes.put(
         },
         select: { id: true },
       }),
+      findUserByEffectiveLoginEmail(effectiveLoginEmail, targetUserId),
     ]);
 
     if (conflictingEmail) {
       return reply(
         c,
-        { status: "error", message: "El correo ya está en uso por otro usuario" },
+        { status: "error", message: "El correo de notificación ya está en uso por otro usuario" },
         409,
       );
     }
     if (conflictingRut) {
       return reply(c, { status: "error", message: "El RUT ya está en uso por otro usuario" }, 409);
+    }
+    if (conflictingLogin) {
+      return reply(c, { status: "error", message: "El correo de login ya está en uso" }, 409);
     }
 
     await db.$transaction(async (tx) => {
@@ -511,7 +632,7 @@ userRoutes.put(
         where: { id: targetUser.personId },
         data: {
           address: toNullableText(body.address),
-          email: normalizedEmail,
+          email: normalizedNotificationEmail,
           fatherName: toNullableText(body.fatherName),
           motherName: toNullableText(body.motherName),
           names: body.names.trim(),
@@ -547,6 +668,12 @@ userRoutes.put(
           data: { mfaEnforced: body.mfaEnforced },
         });
       }
+
+      await tx.$executeRaw`
+        UPDATE users
+        SET login_email = ${explicitLoginEmail}
+        WHERE id = ${targetUserId}
+      `;
     });
 
     return reply(c, { status: "ok" });

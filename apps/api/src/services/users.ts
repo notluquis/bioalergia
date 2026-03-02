@@ -6,8 +6,22 @@
 import { db } from "@finanzas/db";
 
 export async function findUserByEmail(email: string) {
-  return await db.user.findFirst({
-    where: { person: { email: email.toLowerCase() } },
+  const normalizedEmail = email.toLowerCase().trim();
+  const rows = await db.$queryRaw<Array<{ id: number }>>`
+    SELECT u.id
+    FROM users u
+    JOIN people p ON p.id = u.person_id
+    WHERE lower(coalesce(nullif(u.login_email, ''), p.email)) = lower(${normalizedEmail})
+    LIMIT 1
+  `;
+
+  const userId = rows[0]?.id;
+  if (!userId) {
+    return null;
+  }
+
+  return await db.user.findUnique({
+    where: { id: userId },
     include: {
       person: true,
       roles: { include: { role: true } },

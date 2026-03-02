@@ -55,6 +55,7 @@ model Person {
 model User {
   id                      Int                      @id @default(autoincrement())
   personId                Int                      @unique @map("person_id")
+  loginEmail              String?                  @unique @map("login_email")
   passwordHash            String?                  @map("password_hash")
   status                  UserStatus               @default(PENDING_SETUP)
   mfaSecret               String?                  @map("mfa_secret")

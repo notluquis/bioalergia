@@ -4,9 +4,11 @@ export interface AuthUser {
   email: string;
   hasPasskey?: boolean;
   id: number;
+  loginEmail?: string;
   mfaEnabled?: boolean;
   mfaEnforced?: boolean;
   name: null | string;
+  notificationEmail?: string;
   roles: string[];
   status: string;
 }

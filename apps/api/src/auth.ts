@@ -85,7 +85,7 @@ export async function getSessionUser(ctx: Context): Promise<AuthSession | null> 
 
     const session: AuthSession = {
       id: user.id,
-      email: user.person?.email ?? "",
+      email: String(decoded.email ?? user.person?.email ?? ""),
       status: user.status,
       roles: user.roles.map((roleAssignment) => ({ role: { name: roleAssignment.role.name } })),
     };

@@ -3,8 +3,10 @@ export interface User {
   email: string;
   hasPasskey: boolean;
   id: number;
+  loginEmail: string;
   mfaEnabled: boolean;
   mfaEnforced: boolean;
+  notificationEmail: string;
   passkeysCount: number;
   person: {
     address: null | string;
@@ -33,8 +35,10 @@ export interface UserProfile {
   email: string;
   fatherName: string;
   id: number;
+  loginEmail: string;
   motherName?: string;
   names: string;
+  notificationEmail?: string;
   phone?: string;
   rut: string;
 }
@@ -45,7 +49,8 @@ export interface UserProfileUpdatePayload {
   bankAccountType?: null | string;
   bankName?: null | string;
   department?: null | string;
-  email: string;
+  loginEmail?: null | string;
+  notificationEmail: string;
   fatherName?: null | string;
   mfaEnforced?: boolean;
   motherName?: null | string;

@@ -6,6 +6,7 @@ import { formatRut, validateRut } from "@/lib/rut";
 
 interface ProfileStepProps {
   profile: {
+    loginEmail: string;
     names: string;
     rut: string;
     phone: string;
@@ -42,6 +43,15 @@ export function ProfileStep(props: ProfileStepProps) {
           onChange={(e) => onProfileChange("names", e.target.value)}
           required
           value={profile.names}
+        />
+
+        <Input
+          helper="Puedes usar otro correo solo para iniciar sesión. Si no, usa el mismo actual."
+          label="Correo de login"
+          onChange={(e) => onProfileChange("loginEmail", e.target.value)}
+          required
+          type="email"
+          value={profile.loginEmail}
         />
 
         <Input
