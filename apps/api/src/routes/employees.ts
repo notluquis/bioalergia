@@ -79,8 +79,8 @@ app.post("/", async (c) => {
   try {
     const body = await c.req.json();
 
-    if (!body.rut || !body.full_name) {
-      return reply(c, { status: "error", message: "RUT y nombre completo son requeridos" }, 400);
+    if (!body.rut || !body.names) {
+      return reply(c, { status: "error", message: "RUT y nombres son requeridos" }, 400);
     }
 
     const employee = await createEmployee(body);

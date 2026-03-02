@@ -153,13 +153,22 @@ async function resolveInvitePersonId(
   payload: InviteUserPayload,
 ) {
   if (!personId) {
+    const names = payload.names?.trim();
+    const rut = payload.rut?.trim();
+    if (!names) {
+      throw new Error("PERSON_NAME_REQUIRED");
+    }
+    if (!rut) {
+      throw new Error("PERSON_RUT_REQUIRED");
+    }
+
     const person = await db.person.create({
       data: {
-        names: payload.names || "Nuevo Usuario",
-        fatherName: payload.fatherName || "",
-        motherName: payload.motherName || "",
+        names,
+        fatherName: toNullableText(payload.fatherName),
+        motherName: toNullableText(payload.motherName),
         email,
-        rut: payload.rut || `TEMP-${Date.now()}`,
+        rut,
       },
     });
     return person.id;
@@ -355,6 +364,12 @@ userRoutes.post("/invite", zValidator("json", inviteUserSchema), async (c) => {
       rut,
     });
   } catch (error) {
+    if (error instanceof Error && error.message === "PERSON_NAME_REQUIRED") {
+      return reply(c, { status: "error", message: "Nombres son requeridos" }, 400);
+    }
+    if (error instanceof Error && error.message === "PERSON_RUT_REQUIRED") {
+      return reply(c, { status: "error", message: "RUT es requerido" }, 400);
+    }
     if (error instanceof Error && error.message === "PERSON_NOT_FOUND") {
       return reply(c, { status: "error", message: "Persona no encontrada" }, 404);
     }

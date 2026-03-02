@@ -11,7 +11,9 @@ import type {
 
 // Type for the frontend payload (snake_case)
 interface EmployeePayload {
-  full_name?: string;
+  fatherName?: null | string;
+  motherName?: null | string;
+  names?: string;
   role?: string;
   email?: string | null;
   rut?: string | null;
@@ -28,35 +30,6 @@ interface EmployeePayload {
 }
 
 type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
-
-type ParsedPersonName = {
-  fatherName: null | string;
-  hasSplit: boolean;
-  motherName: null | string;
-  names: string;
-};
-
-function parsePersonName(fullName: string): ParsedPersonName {
-  const normalized = fullName.trim().replace(/\s+/g, " ");
-  if (!normalized) {
-    return { names: "", fatherName: null, motherName: null, hasSplit: false };
-  }
-
-  const tokens = normalized.split(" ");
-  if (tokens.length < 3) {
-    return { names: normalized, fatherName: null, motherName: null, hasSplit: false };
-  }
-
-  const motherName = tokens.at(-1) ?? null;
-  const fatherName = tokens.at(-2) ?? null;
-  const names = tokens.slice(0, -2).join(" ");
-
-  if (!names || !fatherName || !motherName) {
-    return { names: normalized, fatherName: null, motherName: null, hasSplit: false };
-  }
-
-  return { names, fatherName, motherName, hasSplit: true };
-}
 
 // Helper to convert metadata to compatible JSON
 function toJsonValue(value: Record<string, unknown> | null | undefined): JsonValue | undefined {
@@ -121,13 +94,14 @@ function mapToEmployeeData(payload: EmployeePayload): EmployeeUpdateInput {
 function mapToPersonData(payload: EmployeePayload): PersonUpdateInput {
   const data: PersonUpdateInput = {};
 
-  if (payload.full_name !== undefined) {
-    const parsed = parsePersonName(payload.full_name);
-    data.names = parsed.names;
-    if (parsed.hasSplit) {
-      data.fatherName = parsed.fatherName;
-      data.motherName = parsed.motherName;
-    }
+  if (payload.names !== undefined) {
+    data.names = payload.names.trim();
+  }
+  if (payload.fatherName !== undefined) {
+    data.fatherName = payload.fatherName?.trim() || null;
+  }
+  if (payload.motherName !== undefined) {
+    data.motherName = payload.motherName?.trim() || null;
   }
   if (payload.email !== undefined) {
     data.email = payload.email;
@@ -190,27 +164,26 @@ export async function findEmployeeByEmail(email: string) {
 }
 
 // Create employee from frontend payload - requires creating Person first
-export async function createEmployee(
-  payload: EmployeePayload & { rut: string; full_name: string },
-) {
+export async function createEmployee(payload: EmployeePayload & { names: string; rut: string }) {
   return await db.$transaction(async (tx) => {
-    const parsedName = parsePersonName(payload.full_name);
+    const cleanNames = payload.names.trim();
+    const cleanFatherName = payload.fatherName?.trim() || null;
+    const cleanMotherName = payload.motherName?.trim() || null;
 
     // First create or find Person by RUT
     const person = await tx.person.upsert({
       where: { rut: payload.rut },
       update: {
-        names: parsedName.names,
-        ...(parsedName.hasSplit
-          ? { fatherName: parsedName.fatherName, motherName: parsedName.motherName }
-          : {}),
+        names: cleanNames,
+        fatherName: cleanFatherName,
+        motherName: cleanMotherName,
         email: payload.email,
       },
       create: {
         rut: payload.rut,
-        names: parsedName.names,
-        fatherName: parsedName.fatherName,
-        motherName: parsedName.motherName,
+        names: cleanNames,
+        fatherName: cleanFatherName,
+        motherName: cleanMotherName,
         email: payload.email,
         personType: "NATURAL",
       },

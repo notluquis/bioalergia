@@ -23,13 +23,15 @@ type EmployeeFormState = {
   bankAccountType: string;
   bankName: string;
   email: string;
+  firstLastName: string;
   fixedSalary: string;
-  fullName: string;
   hourlyRate: string;
+  names: string;
   overtimeRate: string;
   retentionRate: string;
   role: string;
   rut: string;
+  secondLastName: string;
   salaryType: string;
 };
 
@@ -38,13 +40,15 @@ const EMPTY_EMPLOYEE_FORM: EmployeeFormState = {
   bankAccountType: "",
   bankName: "",
   email: "",
+  firstLastName: "",
   fixedSalary: "",
-  fullName: "",
   hourlyRate: "0",
+  names: "",
   overtimeRate: "",
   retentionRate: "",
   role: "",
   rut: "",
+  secondLastName: "",
   salaryType: "HOURLY",
 };
 
@@ -63,13 +67,15 @@ const buildEmployeeFormState = (employee?: Employee | null): EmployeeFormState =
     bankAccountType: employee.bankAccountType ?? "",
     bankName: employee.bankName ?? "",
     email: employee.person?.email ?? "",
+    firstLastName: employee.person?.fatherName ?? "",
     fixedSalary: employee.baseSalary == null ? "" : String(employee.baseSalary),
-    fullName: employee.full_name,
     hourlyRate: String(employee.hourlyRate ?? "0"),
+    names: employee.person?.names ?? "",
     overtimeRate: "",
     retentionRate: rateToShow,
     role: employee.position,
     rut: employee.person?.rut ?? "",
+    secondLastName: employee.person?.motherName ?? "",
     salaryType: employee.salaryType ?? "HOURLY",
   };
 };
@@ -80,11 +86,13 @@ const buildEmployeePayload = (form: EmployeeFormState): EmployeePayload => {
     bank_account_type: form.bankAccountType.trim() || null,
     bank_name: form.bankName.trim() || null,
     email: form.email.trim() || null,
+    fatherName: form.firstLastName.trim() || null,
     fixed_salary:
       form.salaryType === "FIXED" && form.fixedSalary ? Number(form.fixedSalary) : undefined,
-    full_name: form.fullName.trim(),
     hourly_rate:
       form.salaryType === "HOURLY" && form.hourlyRate ? Number(form.hourlyRate) : undefined,
+    motherName: form.secondLastName.trim() || null,
+    names: form.names.trim(),
     overtime_rate: form.overtimeRate ? Number(form.overtimeRate) : null,
     retention_rate: form.retentionRate.trim()
       ? Number(form.retentionRate.replace(",", ".")) / 100
@@ -228,13 +236,15 @@ function EmployeeFormContent({
     bankAccountType: string;
     bankName: string;
     email: string;
+    firstLastName: string;
     fixedSalary: string;
-    fullName: string;
     hourlyRate: string;
+    names: string;
     overtimeRate: string;
     retentionRate: string;
     role: string;
     rut: string;
+    secondLastName: string;
     salaryType: string;
   };
   handleRutBlur: () => void;
@@ -249,13 +259,15 @@ function EmployeeFormContent({
       bankAccountType: string;
       bankName: string;
       email: string;
+      firstLastName: string;
       fixedSalary: string;
-      fullName: string;
       hourlyRate: string;
+      names: string;
       overtimeRate: string;
       retentionRate: string;
       role: string;
       rut: string;
+      secondLastName: string;
       salaryType: string;
     }>
   >;
@@ -292,13 +304,31 @@ function EmployeeFormContent({
           </Select>
         </div>
         <Input
-          label="Nombre completo"
+          label="Nombres"
           onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-            setForm((prev) => ({ ...prev, fullName: event.target.value }));
+            setForm((prev) => ({ ...prev, names: event.target.value }));
           }}
           required
           type="text"
-          value={form.fullName}
+          value={form.names}
+        />
+
+        <Input
+          label="Primer apellido"
+          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+            setForm((prev) => ({ ...prev, firstLastName: event.target.value }));
+          }}
+          type="text"
+          value={form.firstLastName}
+        />
+
+        <Input
+          label="Segundo apellido"
+          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+            setForm((prev) => ({ ...prev, secondLastName: event.target.value }));
+          }}
+          type="text"
+          value={form.secondLastName}
         />
 
         <Input

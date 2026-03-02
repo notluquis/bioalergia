@@ -14,8 +14,10 @@ export interface EmployeePayload {
   bank_account_type?: null | string;
   bank_name?: null | string;
   email?: null | string;
+  fatherName?: null | string;
   fixed_salary?: null | number;
-  full_name: string;
+  motherName?: null | string;
+  names: string;
   hourly_rate?: number;
   metadata?: null | Record<string, unknown>;
   overtime_rate?: null | number;
