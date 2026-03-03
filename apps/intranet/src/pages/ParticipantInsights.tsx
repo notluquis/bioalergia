@@ -1,4 +1,6 @@
 import {
+  Alert,
+  Button,
   Card,
   DateField,
   DateRangePicker,
@@ -9,8 +11,6 @@ import {
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { DataTable } from "@/components/data-table/DataTable";
-import { Alert } from "@/components/ui/Alert";
-import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import {
   getCounterpartsColumns,
@@ -147,7 +147,7 @@ export function ParticipantInsightsPage() {
             </DateRangePicker>
 
             <div className="flex justify-end lg:col-span-4">
-              <Button disabled={detailLoading} isLoading={detailLoading} type="submit">
+              <Button isDisabled={detailLoading} isPending={detailLoading} type="submit">
                 Consultar
               </Button>
             </div>

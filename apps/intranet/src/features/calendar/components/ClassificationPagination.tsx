@@ -1,4 +1,5 @@
 import { Pagination } from "@heroui/react";
+import { buildPaginationItems } from "@/components/pagination/pagination-items";
 
 interface ClassificationPaginationProps {
   loading: boolean;
@@ -24,38 +25,10 @@ export function ClassificationPagination({
   const currentPage = page + 1;
   const canPrevious = currentPage > 1;
   const canNext = currentPage < totalPages;
-  const pages: Array<"ellipsis" | number> = [];
-  if (totalPages <= 7) {
-    for (let p = 1; p <= totalPages; p += 1) {
-      pages.push(p);
-    }
-  } else {
-    pages.push(1);
-    if (currentPage > 3) {
-      pages.push("ellipsis");
-    }
-    const start = Math.max(2, currentPage - 1);
-    const end = Math.min(totalPages - 1, currentPage + 1);
-    for (let p = start; p <= end; p += 1) {
-      pages.push(p);
-    }
-    if (currentPage < totalPages - 2) {
-      pages.push("ellipsis");
-    }
-    pages.push(totalPages);
-  }
-  const pageItems = pages.reduce<Array<{ key: string; type: "ellipsis" | "page"; value?: number }>>(
-    (acc, value) => {
-      if (value === "ellipsis") {
-        const ellipsisIndex = acc.filter((item) => item.type === "ellipsis").length + 1;
-        acc.push({ key: `ellipsis-${ellipsisIndex}`, type: "ellipsis" });
-      } else {
-        acc.push({ key: `page-${value}`, type: "page", value });
-      }
-      return acc;
-    },
-    [],
-  );
+  const pageItems = buildPaginationItems({
+    currentPage,
+    totalPages,
+  });
 
   return (
     <Pagination className="justify-center pt-4" size="sm">

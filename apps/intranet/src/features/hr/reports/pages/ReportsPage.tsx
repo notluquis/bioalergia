@@ -1,4 +1,6 @@
 import {
+  Alert,
+  Button,
   Chip,
   DateField,
   DateRangePicker,
@@ -18,8 +20,6 @@ import isoWeek from "dayjs/plugin/isoWeek";
 import { BarChart2, BarChart3, Calendar, Clock, Filter, List, TrendingUp, X } from "lucide-react";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
-import { Alert } from "@/components/ui/Alert";
-import { Button } from "@/components/ui/Button";
 
 import { StatCard } from "@/components/ui/StatCard";
 import { useAuth } from "@/context/AuthContext";
@@ -534,8 +534,8 @@ function ReportsFiltersPanel({
 
         <Button
           className="mt-4 w-full shadow-md shadow-primary/20"
-          disabled={selectedEmployeeIds.length === 0 || loading}
-          onClick={handleGenerateReport}
+          isDisabled={selectedEmployeeIds.length === 0 || loading}
+          onPress={handleGenerateReport}
           variant="primary"
         >
           {loading ? (

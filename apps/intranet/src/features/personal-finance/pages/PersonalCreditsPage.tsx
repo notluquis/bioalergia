@@ -1,7 +1,9 @@
 import { Button, Chip, Skeleton } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
+import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { Suspense, useState } from "react";
+import { DataTable } from "@/components/data-table/DataTable";
 import { formatCurrency } from "@/lib/utils";
 import { CreateCreditForm } from "../components/CreateCreditForm";
 import { CreditDetailsModal } from "../components/CreditDetailsModal";
@@ -39,117 +41,141 @@ function TotalPaidCell({ credit }: { credit: PersonalCredit }) {
   return <div className="font-medium">{formatCurrency(totalPaid, credit.currency || "CLP")}</div>;
 }
 
-const TableData = ({
-  credits,
-  onSelectCredit,
-}: {
-  credits: PersonalCredit[];
-  onSelectCredit: (id: number) => void;
-}) => {
-  const paid = (credit: PersonalCredit) =>
-    credit.installments?.filter((i) => i.status === "PAID").length || 0;
-  const total = (credit: PersonalCredit) => credit.totalInstallments || 1;
-  const nextDueDate = (credit: PersonalCredit) => {
-    const pending = credit.installments
-      ?.filter((i) => i.status === "PENDING")
-      .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
-    return pending?.[0]?.dueDate;
-  };
-
-  return (
-    <div className="w-full overflow-x-auto">
-      <table className="w-full border-collapse text-sm">
-        <thead>
-          <tr className="border-b border-default-200 bg-default-50">
-            <th className="px-4 py-3 text-left font-semibold">Banco</th>
-            <th className="px-4 py-3 text-left font-semibold">Descripción</th>
-            <th className="px-4 py-3 text-left font-semibold">Monto Total</th>
-            <th className="px-4 py-3 text-left font-semibold">Total Pagado</th>
-            <th className="px-4 py-3 text-left font-semibold">Tasa de Interés</th>
-            <th className="px-4 py-3 text-left font-semibold">Cuotas Pagadas</th>
-            <th className="px-4 py-3 text-left font-semibold">Cuotas Pendientes</th>
-            <th className="px-4 py-3 text-left font-semibold">Próximo Vencimiento</th>
-            <th className="px-4 py-3 text-left font-semibold">Progreso</th>
-            <th className="px-4 py-3 text-left font-semibold">Estado</th>
-            <th className="px-4 py-3 text-right font-semibold">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {credits.map((credit) => {
-            const paidCount = paid(credit);
-            const totalCount = total(credit);
-            const percent = Math.min(100, Math.round((paidCount / totalCount) * 100));
-
-            return (
-              <tr key={credit.id} className="border-b border-default-100 hover:bg-default-50">
-                <td className="px-4 py-3 font-medium">{credit.bankName}</td>
-                <td className="px-4 py-3">{credit.description || "-"}</td>
-                <td className="px-4 py-3">
-                  {formatCurrency(Number(credit.totalAmount), credit.currency || "CLP")}
-                </td>
-                <td className="px-4 py-3">
-                  <TotalPaidCell credit={credit} />
-                </td>
-                <td className="px-4 py-3">
-                  {credit.interestRate ? `${credit.interestRate}%` : "-"}
-                </td>
-                <td className="px-4 py-3">
-                  <span className="font-medium">
-                    {paidCount} <span className="text-muted">/ {totalCount}</span>
-                  </span>
-                </td>
-                <td className="px-4 py-3">
-                  <span className="font-medium text-warning">{totalCount - paidCount}</span>
-                </td>
-                <td className="px-4 py-3">
-                  {nextDueDate(credit) ? (
-                    <span className="text-sm">
-                      {dayjs(nextDueDate(credit)).format("DD/MM/YYYY")}
-                    </span>
-                  ) : (
-                    <span className="text-muted">-</span>
-                  )}
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <div className="h-2.5 w-20 rounded-full bg-default-200">
-                      <div
-                        className="h-2.5 rounded-full bg-primary transition-all"
-                        style={{ width: `${percent}%` }}
-                      />
-                    </div>
-                    <span className="text-xs font-medium text-muted">{percent}%</span>
-                  </div>
-                </td>
-                <td className="px-4 py-3">
-                  <Chip color={credit.status === "ACTIVE" ? "success" : "default"} size="sm">
-                    {credit.status}
-                  </Chip>
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <Button size="sm" variant="secondary" onPress={() => onSelectCredit(credit.id)}>
-                    Ver Detalle
-                  </Button>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
+const paid = (credit: PersonalCredit) =>
+  credit.installments?.filter((installment) => installment.status === "PAID").length || 0;
+const total = (credit: PersonalCredit) => credit.totalInstallments || 1;
+const nextDueDate = (credit: PersonalCredit) => {
+  const pending = credit.installments
+    ?.filter((installment) => installment.status === "PENDING")
+    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+  return pending?.[0]?.dueDate;
 };
+
+function getColumns(onSelectCredit: (id: number) => void): ColumnDef<PersonalCredit>[] {
+  return [
+    {
+      accessorKey: "bankName",
+      header: "Banco",
+      cell: ({ row }) => <span className="font-medium">{row.original.bankName}</span>,
+    },
+    {
+      accessorKey: "description",
+      header: "Descripción",
+      cell: ({ row }) => row.original.description || "-",
+    },
+    {
+      id: "totalAmount",
+      header: "Monto Total",
+      cell: ({ row }) =>
+        formatCurrency(Number(row.original.totalAmount), row.original.currency || "CLP"),
+    },
+    {
+      id: "totalPaid",
+      header: "Total Pagado",
+      cell: ({ row }) => <TotalPaidCell credit={row.original} />,
+    },
+    {
+      id: "interestRate",
+      header: "Tasa de Interés",
+      cell: ({ row }) => (row.original.interestRate ? `${row.original.interestRate}%` : "-"),
+    },
+    {
+      id: "installmentsPaid",
+      header: "Cuotas Pagadas",
+      cell: ({ row }) => {
+        const paidCount = paid(row.original);
+        const totalCount = total(row.original);
+        return (
+          <span className="font-medium">
+            {paidCount} <span className="text-muted">/ {totalCount}</span>
+          </span>
+        );
+      },
+    },
+    {
+      id: "installmentsPending",
+      header: "Cuotas Pendientes",
+      cell: ({ row }) => {
+        const paidCount = paid(row.original);
+        const totalCount = total(row.original);
+        return <span className="font-medium text-warning">{totalCount - paidCount}</span>;
+      },
+    },
+    {
+      id: "nextDueDate",
+      header: "Próximo Vencimiento",
+      cell: ({ row }) => {
+        const dueDate = nextDueDate(row.original);
+        return dueDate ? (
+          <span className="text-sm">{dayjs(dueDate).format("DD/MM/YYYY")}</span>
+        ) : (
+          <span className="text-muted">-</span>
+        );
+      },
+    },
+    {
+      id: "progress",
+      header: "Progreso",
+      cell: ({ row }) => {
+        const paidCount = paid(row.original);
+        const totalCount = total(row.original);
+        const percent = Math.min(100, Math.round((paidCount / totalCount) * 100));
+
+        return (
+          <div className="flex items-center gap-2">
+            <div className="h-2.5 w-20 rounded-full bg-default-200">
+              <div
+                className="h-2.5 rounded-full bg-primary transition-all"
+                style={{ width: `${percent}%` }}
+              />
+            </div>
+            <span className="text-xs font-medium text-muted">{percent}%</span>
+          </div>
+        );
+      },
+    },
+    {
+      id: "status",
+      header: "Estado",
+      cell: ({ row }) => (
+        <Chip color={row.original.status === "ACTIVE" ? "success" : "default"} size="sm">
+          {row.original.status}
+        </Chip>
+      ),
+    },
+    {
+      id: "actions",
+      header: "Acciones",
+      cell: ({ row }) => (
+        <div className="flex justify-end">
+          <Button size="sm" variant="secondary" onPress={() => onSelectCredit(row.original.id)}>
+            Ver Detalle
+          </Button>
+        </div>
+      ),
+    },
+  ];
+}
 
 export function PersonalCreditsPage() {
   const { data: credits } = useSuspenseQuery(personalFinanceQueries.list());
   const [selectedCreditId, setSelectedCreditId] = useState<number | null>(null);
+  const columns = getColumns(setSelectedCreditId);
 
   return (
     <div className="space-y-6">
       <div className="flex justify-end">
         <CreateCreditForm />
       </div>
-      <TableData credits={credits} onSelectCredit={setSelectedCreditId} />
+      <DataTable
+        columns={columns}
+        data={credits}
+        enableGlobalFilter={false}
+        enableExport={false}
+        noDataMessage="No hay créditos personales registrados."
+        pageSizeOptions={[10, 25, 50]}
+        scrollMaxHeight="min(68dvh, 760px)"
+      />
       <CreditDetailsModal creditId={selectedCreditId} onClose={() => setSelectedCreditId(null)} />
     </div>
   );

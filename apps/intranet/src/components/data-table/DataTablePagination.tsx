@@ -1,5 +1,6 @@
 import { Label, ListBox, Pagination, Select } from "@heroui/react";
 import type { PaginationState, Table } from "@tanstack/react-table";
+import { buildPaginationItems } from "@/components/pagination/pagination-items";
 
 interface DataTablePaginationProps<TData> {
   readonly enablePageSizeSelector?: boolean;
@@ -29,36 +30,12 @@ export function DataTablePagination<TData>({
   );
   const currentPageNumber = currentPageIndex + 1;
 
-  const pageItems: Array<{ key: string; type: "ellipsis" | "page"; value?: number }> = [];
-  let ellipsisCount = 0;
-  const pushPage = (page: number) => {
-    pageItems.push({ key: `page-${page}`, type: "page", value: page });
-  };
-  const pushEllipsis = () => {
-    ellipsisCount += 1;
-    pageItems.push({ key: `ellipsis-${ellipsisCount}`, type: "ellipsis" });
-  };
-  if (hasKnownTotalPages) {
-    if (totalPages <= 7) {
-      for (let page = 1; page <= totalPages; page += 1) {
-        pushPage(page);
-      }
-    } else {
-      pushPage(1);
-      if (currentPageNumber > 3) {
-        pushEllipsis();
-      }
-      const start = Math.max(2, currentPageNumber - 1);
-      const end = Math.min(totalPages - 1, currentPageNumber + 1);
-      for (let page = start; page <= end; page += 1) {
-        pushPage(page);
-      }
-      if (currentPageNumber < totalPages - 2) {
-        pushEllipsis();
-      }
-      pushPage(totalPages);
-    }
-  }
+  const pageItems = hasKnownTotalPages
+    ? buildPaginationItems({
+        currentPage: currentPageNumber,
+        totalPages,
+      })
+    : [];
 
   return (
     <div className="flex flex-col items-start justify-between gap-3 px-2 sm:flex-row sm:items-center">

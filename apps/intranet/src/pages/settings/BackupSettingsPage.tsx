@@ -8,6 +8,7 @@ import {
   ScrollShadow,
   Skeleton,
   Surface,
+  Table,
 } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
@@ -223,26 +224,29 @@ function LastCompletedBackupCard({ result }: { result: BackupJob["result"] | nul
       {hasStats ? (
         <div className="rounded-lg border border-default-200 bg-background p-3">
           <span className="mb-2 block font-medium text-sm">Conteo por tabla</span>
-          <ScrollShadow className="max-h-56" hideScrollBar size={56}>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-default-500 text-xs">
-                  <th className="pb-2 text-left font-medium">Tabla</th>
-                  <th className="pb-2 text-right font-medium">Registros</th>
-                </tr>
-              </thead>
-              <tbody>
-                {statsEntries
-                  .sort(([a], [b]) => a.localeCompare(b))
-                  .map(([tableName, stat]) => (
-                    <tr className="border-default-100 border-t" key={tableName}>
-                      <td className="py-2">{tableName}</td>
-                      <td className="py-2 text-right">{stat.count}</td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-          </ScrollShadow>
+          <Table variant="secondary">
+            <Table.ScrollContainer className="max-h-56">
+              <Table.Content
+                aria-label="Conteo por tabla del último backup"
+                className="min-w-[360px]"
+              >
+                <Table.Header>
+                  <Table.Column isRowHeader>Tabla</Table.Column>
+                  <Table.Column className="text-right">Registros</Table.Column>
+                </Table.Header>
+                <Table.Body>
+                  {statsEntries
+                    .sort(([a], [b]) => a.localeCompare(b))
+                    .map(([tableName, stat]) => (
+                      <Table.Row id={tableName} key={tableName}>
+                        <Table.Cell>{tableName}</Table.Cell>
+                        <Table.Cell className="text-right">{stat.count}</Table.Cell>
+                      </Table.Row>
+                    ))}
+                </Table.Body>
+              </Table.Content>
+            </Table.ScrollContainer>
+          </Table>
         </div>
       ) : (
         <div className="rounded-lg border border-default-200 bg-background p-3 text-default-500 text-sm">
