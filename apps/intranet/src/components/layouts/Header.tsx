@@ -81,7 +81,7 @@ export function Header() {
                 return (
                   <Breadcrumbs.Item key={`${crumb.to}-${crumb.label}`}>
                     {!isLast ? (
-                      <Link className="transition-colors hover:text-foreground" to={crumb.to}>
+                      <Link className=" hover:text-foreground" to={crumb.to}>
                         {crumb.label}
                       </Link>
                     ) : (
@@ -96,7 +96,7 @@ export function Header() {
             <h1 className="truncate font-semibold text-foreground text-lg">{pageTitle}</h1>
             {isNavigating && (
               <span className="flex items-center gap-1 font-semibold text-primary text-xs">
-                <Loader2 className="h-3 w-3 animate-spin" />
+                <Loader2 className="h-3 w-3 " />
               </span>
             )}
           </div>
@@ -112,14 +112,14 @@ export function Header() {
             <Button
               isIconOnly
               aria-label="Cerrar sesión"
-              className="rounded-full border border-default-200/70 bg-background/80 text-foreground shadow-sm transition-all duration-300 hover:border-danger/40 hover:bg-danger/10 hover:text-danger"
+              className="rounded-full border border-default-200/70 bg-background/80 text-foreground shadow-sm hover:border-danger/40 hover:bg-danger/10 hover:text-danger"
               onClick={() => {
                 void handleLogout();
               }}
               title="Cerrar sesión"
               variant="ghost"
             >
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-default-50/50 shadow-inner transition-all duration-300">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-default-50/50 shadow-inner ">
                 <LogOut className="h-4 w-4" />
               </span>
             </Button>

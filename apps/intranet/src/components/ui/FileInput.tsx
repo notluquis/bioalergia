@@ -65,7 +65,7 @@ export function FileInput({ className, label, multiple, ...props }: Readonly<Fil
         aria-label="Área de carga de archivos"
         variant="secondary"
         className={cn(
-          "group relative flex min-h-32 w-full flex-col items-center justify-center gap-3 rounded-large border-2 border-default-300 border-dashed bg-default-50 p-6 transition-all duration-200",
+          "group relative flex min-h-32 w-full flex-col items-center justify-center gap-3 rounded-large border-2 border-default-300 border-dashed bg-default-50 p-6 ",
           isDragActive && "scale-[1.01] border-primary bg-primary-50/30",
           !props.disabled && "hover:border-default-400 hover:bg-default-100",
           props.disabled && "cursor-not-allowed opacity-50",
@@ -78,17 +78,14 @@ export function FileInput({ className, label, multiple, ...props }: Readonly<Fil
       >
         <Upload
           className={cn(
-            "h-10 w-10 text-default-400 transition-all duration-200",
+            "h-10 w-10 text-default-400 ",
             isDragActive && "scale-110 text-primary",
             !props.disabled && "group-hover:scale-105 group-hover:text-default-500",
           )}
         />
         <div className="flex flex-col items-center gap-2 text-center">
           <p
-            className={cn(
-              "font-medium text-default-700 text-sm transition-colors",
-              isDragActive && "text-primary",
-            )}
+            className={cn("font-medium text-default-700 text-sm ", isDragActive && "text-primary")}
           >
             {isDragActive
               ? "Suelta los archivos aquí"

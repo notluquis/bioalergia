@@ -75,7 +75,7 @@ export function BottomNav({
           const Icon = item.icon;
           return (
             <Button
-              className={`relative flex flex-1 flex-col items-center justify-center gap-1 rounded-3xl px-1 py-3 font-medium text-[10px] transition-all duration-300 ${
+              className={`relative flex flex-1 flex-col items-center justify-center gap-1 rounded-3xl px-1 py-3 font-medium text-[10px] ${
                 active ? "text-primary" : "text-default-400 hover:text-default-700"
               }`}
               key={item.to}
@@ -93,12 +93,10 @@ export function BottomNav({
 
               <span className="relative z-10 flex flex-col items-center gap-1">
                 <Icon
-                  className={`h-6 w-6 transition-transform duration-300 ${active ? "scale-110" : ""}`}
+                  className={`h-6 w-6 ${active ? "scale-110" : ""}`}
                   strokeWidth={active ? 2.5 : 2}
                 />
-                <span
-                  className={`transition-opacity duration-300 ${active ? "font-semibold opacity-100" : "opacity-70"}`}
-                >
+                <span className={` ${active ? "font-semibold opacity-100" : "opacity-70"}`}>
                   {item.label}
                 </span>
               </span>

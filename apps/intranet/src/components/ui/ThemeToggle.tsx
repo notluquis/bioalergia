@@ -13,7 +13,7 @@ export function ThemeToggle() {
       aria-label={label}
       isIconOnly
       variant="ghost"
-      className={`rounded-full border border-default-200/70 bg-background/80 text-foreground shadow-sm transition-all duration-300 ${
+      className={`rounded-full border border-default-200/70 bg-background/80 text-foreground shadow-sm ${
         isDark
           ? "hover:border-primary/60 hover:bg-default-50/40"
           : "hover:border-primary/60 hover:bg-default-50/70"
@@ -21,7 +21,7 @@ export function ThemeToggle() {
       onPress={toggleTheme}
     >
       <span
-        className={`flex h-6 w-6 items-center justify-center rounded-full transition-all duration-300 ${
+        className={`flex h-6 w-6 items-center justify-center rounded-full ${
           isDark
             ? "bg-linear-to-br from-base-200 via-primary/40 to-primary text-primary-foreground shadow-inner shadow-primary/20"
             : "bg-linear-to-br from-base-100 via-primary/10 to-primary/70 text-primary shadow-inner shadow-primary/10"

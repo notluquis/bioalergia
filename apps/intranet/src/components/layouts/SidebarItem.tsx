@@ -24,7 +24,7 @@ export function SidebarItem({ isMobile, item, onNavigate }: SidebarItemProps) {
           <Tooltip.Trigger>
             <div
               className={cn(
-                "relative flex items-center rounded-xl transition-all duration-200 ease-in-out",
+                "relative flex items-center rounded-xl ",
                 isMobile
                   ? "w-full justify-start px-4 py-3"
                   : "mx-auto h-12 w-12 justify-center p-0",
@@ -37,17 +37,14 @@ export function SidebarItem({ isMobile, item, onNavigate }: SidebarItemProps) {
               {isActive && (
                 <span
                   className={cn(
-                    "absolute rounded-full bg-primary transition-all duration-300",
+                    "absolute rounded-full bg-primary ",
                     isMobile ? "top-1/2 left-0 h-6 w-1 -translate-y-1/2" : "top-2 right-0 h-7 w-1",
                   )}
                 />
               )}
 
               {/* Icon */}
-              <item.icon
-                className="h-6 w-6 transition-transform duration-200"
-                strokeWidth={isActive ? 2.5 : 2}
-              />
+              <item.icon className="h-6 w-6 " strokeWidth={isActive ? 2.5 : 2} />
 
               {/* Label (Mobile only, hidden on Slim Desktop) */}
               {isMobile && <span className="ml-4 font-medium text-sm">{item.label}</span>}

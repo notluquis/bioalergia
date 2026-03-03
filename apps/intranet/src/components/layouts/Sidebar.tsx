@@ -53,7 +53,7 @@ export function Sidebar({ isMobile, isOpen, onClose, sidebarId }: SidebarProps) 
 
       <div
         className={cn(
-          "z-50 h-full transition-[width] duration-300 ease-in-out",
+          "z-50 h-full ",
           isMobile
             ? "fixed inset-y-0 left-0 w-[min(85vw,320px)] rounded-r-3xl border-r bg-background pl-[env(safe-area-inset-left)] shadow-2xl"
             : "relative w-20 rounded-2xl border border-default-100 bg-background shadow-xl",
@@ -69,20 +69,15 @@ export function Sidebar({ isMobile, isOpen, onClose, sidebarId }: SidebarProps) 
           {/* Header / Logo */}
           <div
             className={cn(
-              "flex h-20 shrink-0 items-center justify-center transition-all duration-300",
+              "flex h-20 shrink-0 items-center justify-center ",
               isMobile ? "px-5" : "px-0",
             )}
           >
             {/* Logo Container */}
-            <div
-              className={cn(
-                "relative flex items-center justify-center transition-all duration-300",
-                "h-12 w-12",
-              )}
-            >
+            <div className={cn("relative flex items-center justify-center ", "h-12 w-12")}>
               <img
                 alt="Bioalergia"
-                className={cn("h-10 w-10 object-contain transition-all duration-300")}
+                className={cn("h-10 w-10 object-contain ")}
                 fetchPriority="high"
                 src="/logo_bimi.svg"
               />
@@ -130,7 +125,7 @@ export function Sidebar({ isMobile, isOpen, onClose, sidebarId }: SidebarProps) 
           {/* User Footer */}
           <div
             className={cn(
-              "mt-auto shrink-0 border-default-100/50 border-t bg-background/30 pt-4 pb-8 transition-all duration-300",
+              "mt-auto shrink-0 border-default-100/50 border-t bg-background/30 pt-4 pb-8 ",
               isMobile ? "px-3" : "flex flex-col items-center justify-center px-0",
             )}
           >
@@ -141,7 +136,7 @@ export function Sidebar({ isMobile, isOpen, onClose, sidebarId }: SidebarProps) 
                   type="button"
                   variant="ghost"
                   className={cn(
-                    "group flex cursor-pointer items-center outline-none transition-all hover:bg-default-50/50",
+                    "group flex cursor-pointer items-center outline-none hover:bg-default-50/50",
                     isMobile
                       ? "w-full gap-3 rounded-2xl px-3 py-2"
                       : "h-12 w-12 justify-center rounded-xl p-0",
@@ -154,8 +149,8 @@ export function Sidebar({ isMobile, isOpen, onClose, sidebarId }: SidebarProps) 
                   </Avatar>
 
                   {isMobile && (
-                    <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-left transition-all duration-300">
-                      <span className="truncate font-semibold text-foreground transition-colors group-hover:text-primary">
+                    <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-left ">
+                      <span className="truncate font-semibold text-foreground group-hover:text-primary">
                         {displayName}
                       </span>
                       <span className="truncate text-default-400 text-xs">{user?.email}</span>

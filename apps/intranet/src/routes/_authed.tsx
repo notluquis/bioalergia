@@ -235,7 +235,7 @@ function AuthedLayout() {
         </div>
       )}
       {/* Layout Shell: Main Flex Container - Height constrained to dynamic viewport */}
-      <div className="layout-shell relative mx-auto flex h-dvh w-full gap-0 overflow-hidden p-0 text-foreground transition-all duration-300 md:gap-4 md:p-4">
+      <div className="layout-shell relative mx-auto flex h-dvh w-full gap-0 overflow-hidden p-0 text-foreground md:gap-4 md:p-4">
         {/* Hamburger button: accessible, compact, always visible on mobile */}
         <Button
           id={menuToggleButtonId}
@@ -243,25 +243,25 @@ function AuthedLayout() {
           aria-expanded={sidebarOpen}
           aria-label={sidebarOpen ? "Cerrar menú principal" : "Abrir menú principal"}
           aria-pressed={sidebarOpen}
-          className="fixed top-[calc(env(safe-area-inset-top)+0.5rem)] left-4 z-40 inline-flex items-center gap-2 rounded-full border border-default-200/70 bg-background/85 px-3 py-2 font-semibold text-foreground text-sm shadow-lg backdrop-blur-md transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-1 md:hidden"
+          className="fixed top-[calc(env(safe-area-inset-top)+0.5rem)] left-4 z-40 inline-flex items-center gap-2 rounded-full border border-default-200/70 bg-background/85 px-3 py-2 font-semibold text-foreground text-sm shadow-lg backdrop-blur-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-1 md:hidden"
           onPress={toggleSidebar}
           type="button"
           variant="ghost"
         >
           <span
             aria-hidden="true"
-            className={`relative flex h-5 w-5 flex-col items-center justify-center gap-1.25 rounded-full transition-colors ${
+            className={`relative flex h-5 w-5 flex-col items-center justify-center gap-1.25 rounded-full ${
               sidebarOpen ? "text-primary" : "text-foreground"
             }`}
           >
             <span
-              className={`block h-0.5 w-4 rounded-full bg-current transition-all duration-200 ${
+              className={`block h-0.5 w-4 rounded-full bg-current ${
                 sidebarOpen ? "absolute translate-y-0 rotate-45" : ""
               }`}
             />
 
             <span
-              className={`block h-0.5 w-4 rounded-full bg-current transition-all duration-200 ${
+              className={`block h-0.5 w-4 rounded-full bg-current ${
                 sidebarOpen ? "absolute translate-y-0 -rotate-45" : ""
               }`}
             />
@@ -283,11 +283,7 @@ function AuthedLayout() {
         <div className="layout-container flex min-w-0 flex-1 flex-col gap-3 pt-[calc(env(safe-area-inset-top)+0.25rem)] pb-[calc(110px+env(safe-area-inset-bottom))] md:pt-0 md:pb-0">
           <Header />
 
-          <main
-            className="flex-1 overflow-hidden rounded-3xl transition-all duration-300"
-            id="main-content"
-            tabIndex={-1}
-          >
+          <main className="flex-1 overflow-hidden rounded-3xl " id="main-content" tabIndex={-1}>
             <div className="surface-recessed h-full w-full overflow-hidden rounded-3xl border border-default-100/50 bg-background/50 shadow-inner">
               <div
                 className={`h-full w-full overflow-y-auto overflow-x-hidden ${contentPaddingClass}`}

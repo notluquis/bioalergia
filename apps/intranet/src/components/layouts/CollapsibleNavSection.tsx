@@ -25,13 +25,10 @@ export function CollapsibleNavSection({ children, className, title }: Collapsibl
           variant="secondary"
         >
           <span className="font-semibold">{title}</span>
-          <ChevronDown
-            className={cn("transform transition-transform duration-300", !isOpen && "-rotate-90")}
-            size={16}
-          />
+          <ChevronDown className={cn("transform ", !isOpen && "-rotate-90")} size={16} />
         </Button>
         <SmoothCollapse isOpen={isOpen}>
-          <div className="p-0 pl-2 opacity-100 transition-opacity duration-300">
+          <div className="p-0 pl-2 opacity-100 ">
             <div className="flex flex-col gap-1.5 pb-2">{children}</div>
           </div>
         </SmoothCollapse>

@@ -49,7 +49,7 @@ export function GoogleDriveConnectWrapper() {
     <Suspense
       fallback={
         <div className="flex items-center justify-center rounded-xl bg-default-50/50 p-8">
-          <Loader2 className="size-6 animate-spin text-primary" />
+          <Loader2 className="size-6 text-primary" />
         </div>
       }
     >
