@@ -153,10 +153,10 @@ export function DTESyncHistoryPage() {
         <Card.Content>
           {isLoading ? (
             <div className="space-y-3 py-3">
-              {Array.from({ length: 5 }).map((_, index) => (
+              {["1", "2", "3", "4", "5"].map((skeletonKey) => (
                 <div
                   className="rounded-xl border border-default-200 bg-default-50/60 px-4 py-3"
-                  key={`dte-history-skeleton-${index + 1}`}
+                  key={`dte-history-skeleton-${skeletonKey}`}
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">

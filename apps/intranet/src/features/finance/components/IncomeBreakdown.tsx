@@ -15,8 +15,8 @@ export function IncomeBreakdown({ summary, isLoading }: Readonly<IncomeBreakdown
       <div className="space-y-4 rounded-2xl border border-default-200 p-4">
         <Skeleton className="h-6 w-52 rounded-md" />
         <div className="space-y-2">
-          {Array.from({ length: 6 }).map((_, index) => (
-            <div className="grid grid-cols-4 gap-3" key={`income-skeleton-${index + 1}`}>
+          {["1", "2", "3", "4", "5", "6"].map((skeletonKey) => (
+            <div className="grid grid-cols-4 gap-3" key={`income-skeleton-${skeletonKey}`}>
               <Skeleton className="h-4 w-20 rounded-md" />
               <Skeleton className="h-4 w-24 rounded-md" />
               <Skeleton className="h-4 w-full rounded-md" />

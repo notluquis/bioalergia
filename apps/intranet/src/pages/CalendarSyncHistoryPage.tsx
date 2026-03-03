@@ -125,10 +125,10 @@ function renderSyncHistoryContent(params: {
   if (params.isLoading) {
     return (
       <div className="space-y-3 p-4">
-        {Array.from({ length: 4 }).map((_, index) => (
+        {["1", "2", "3", "4"].map((skeletonKey) => (
           <div
             className="rounded-2xl border border-default-200 bg-default-50/60 px-4 py-3"
-            key={`calendar-sync-skeleton-${index + 1}`}
+            key={`calendar-sync-skeleton-${skeletonKey}`}
           >
             <div className="flex items-center justify-between gap-3">
               <div className="space-y-2">

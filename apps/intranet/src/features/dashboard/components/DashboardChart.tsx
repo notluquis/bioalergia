@@ -14,8 +14,8 @@ export function DashboardChart({
       <div className="surface-recessed space-y-4 p-6">
         <Skeleton className="h-5 w-72 rounded-md" />
         <div className="grid grid-cols-4 gap-4">
-          {Array.from({ length: 8 }).map((_, index) => (
-            <Skeleton className="h-32 rounded-lg" key={`dashboard-chart-skeleton-${index + 1}`} />
+          {["1", "2", "3", "4", "5", "6", "7", "8"].map((skeletonKey) => (
+            <Skeleton className="h-32 rounded-lg" key={`dashboard-chart-skeleton-${skeletonKey}`} />
           ))}
         </div>
       </div>

@@ -30,10 +30,10 @@ export function TopParticipantsWidget({
       {error && <p className="text-danger text-xs">{error}</p>}
       {loading && (
         <div className="space-y-3">
-          {Array.from({ length: 4 }).map((_, index) => (
+          {["1", "2", "3", "4"].map((skeletonKey) => (
             <div
               className="rounded-2xl border border-default-200 bg-default-50 px-4 py-3 shadow-sm"
-              key={`top-participants-widget-skeleton-${index + 1}`}
+              key={`top-participants-widget-skeleton-${skeletonKey}`}
             >
               <Skeleton className="h-4 w-44 rounded-md" />
               <Skeleton className="mt-2 h-3 w-52 rounded-md" />

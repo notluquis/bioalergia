@@ -32,10 +32,10 @@ export function TopParticipantsSection({ data, error, loading }: TopParticipants
             <Skeleton className="h-60 w-full rounded-xl" />
           </div>
           <div className="space-y-3">
-            {Array.from({ length: 6 }).map((_, index) => (
+            {["1", "2", "3", "4", "5", "6"].map((skeletonKey) => (
               <div
                 className="flex items-center justify-between rounded-lg border border-default-200 p-3"
-                key={`top-participant-skeleton-${index + 1}`}
+                key={`top-participant-skeleton-${skeletonKey}`}
               >
                 <div className="flex items-center gap-3">
                   <Skeleton className="h-8 w-8 rounded-full" />

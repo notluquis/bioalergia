@@ -95,10 +95,10 @@ export function InventoryCategoryManager() {
       <div className="max-h-60 overflow-y-auto border border-default-200 bg-background p-3">
         {loading && (
           <div className="space-y-2">
-            {Array.from({ length: 4 }).map((_, index) => (
+            {["1", "2", "3", "4"].map((skeletonKey) => (
               <Skeleton
                 className="h-10 w-full rounded-xl"
-                key={`inventory-category-skeleton-${index + 1}`}
+                key={`inventory-category-skeleton-${skeletonKey}`}
               />
             ))}
           </div>

@@ -82,8 +82,8 @@ export function DailyIncomePage() {
       <div className="space-y-4">
         {isLoading && (
           <div className="space-y-3 py-2">
-            {Array.from({ length: 3 }).map((_, index) => (
-              <Card key={`daily-income-skeleton-${index + 1}`} className="w-full">
+            {["1", "2", "3"].map((skeletonKey) => (
+              <Card key={`daily-income-skeleton-${skeletonKey}`} className="w-full">
                 <Card.Content className="gap-3 p-4">
                   <div className="flex items-center justify-between">
                     <Skeleton className="h-5 w-52 rounded-md" />

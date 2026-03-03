@@ -10,6 +10,7 @@ import {
   ScrollShadow,
   SearchField,
   Separator,
+  Skeleton,
   Surface,
   Tabs,
 } from "@heroui/react";
@@ -22,7 +23,6 @@ import { DataTable } from "@/components/data-table/DataTable";
 import { TableRegion } from "@/components/data-table/TableRegion";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Skeleton } from "@/components/ui/Skeleton";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import {

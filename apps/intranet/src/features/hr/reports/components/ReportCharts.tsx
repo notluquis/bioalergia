@@ -78,12 +78,16 @@ function TemporalCustomTooltip({ active, payload }: TemporalTooltipProps) {
   return (
     <div className="p-3" style={tooltipStyle}>
       <p className="font-semibold text-xs">{payload[0]?.payload?.period}</p>
-      {payload.map((entry, idx) => {
+      {payload.map((entry) => {
         const isSalary = entry.name.includes("_gross") || entry.name.includes("_net");
         const displayName = formatSeriesLabel(entry.name);
 
         return (
-          <p className="text-xs" key={`${entry.name}-${idx}`} style={{ color: entry.color }}>
+          <p
+            className="text-xs"
+            key={`${entry.name}-${String(entry.value)}`}
+            style={{ color: entry.color }}
+          >
             {displayName}:{" "}
             {isSalary ? compactClpFormatter.format(Number(entry.value)) : `${entry.value}h`}
           </p>

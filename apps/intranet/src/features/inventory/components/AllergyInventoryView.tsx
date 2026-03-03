@@ -61,10 +61,10 @@ function AllergyInventoryView() {
       {errorMessage && <Alert status="danger">{errorMessage}</Alert>}
       {loading && data.length === 0 && (
         <div className="space-y-4">
-          {Array.from({ length: 3 }).map((_, index) => (
+          {["1", "2", "3"].map((skeletonKey) => (
             <div
               className="rounded-2xl border border-default-200/60 bg-background/80 p-4 shadow-sm"
-              key={`allergy-inventory-skeleton-${index + 1}`}
+              key={`allergy-inventory-skeleton-${skeletonKey}`}
             >
               <Skeleton className="h-5 w-44 rounded-md" />
               <div className="mt-4 grid gap-4 sm:grid-cols-2">

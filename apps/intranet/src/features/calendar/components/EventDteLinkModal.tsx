@@ -1,4 +1,4 @@
-import { Description, Modal, Spinner } from "@heroui/react";
+import { Description, Modal } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useMemo } from "react";
@@ -152,13 +152,6 @@ export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDte
                   {event?.description ?? "Sin descripción"}
                 </p>
               </div>
-
-              {suggestionsQuery.isLoading ? (
-                <div className="flex items-center gap-2 py-6 text-default-500">
-                  <Spinner size="sm" />
-                  Buscando sugerencias...
-                </div>
-              ) : null}
 
               {suggestionsQuery.isError ? (
                 <Description className="text-danger">

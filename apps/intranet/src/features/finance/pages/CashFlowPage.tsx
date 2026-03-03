@@ -2644,15 +2644,15 @@ export function CashFlowPage() {
                       <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.2fr_1fr]">
                         <div className="space-y-2">
                           {activeCompensationProfiles.map((profile) => (
-                            <button
-                              className={`w-full rounded-md border px-3 py-2 text-left transition ${
+                            <Button
+                              className={`h-auto w-full rounded-md border px-3 py-2 text-left transition ${
                                 selectedCompensationProfileId === profile.id
                                   ? "border-primary bg-primary-50/40"
                                   : "border-default-200 hover:bg-default-100/40"
                               }`}
                               key={profile.id}
-                              type="button"
-                              onClick={() => setSelectedCompensationProfileId(profile.id)}
+                              onPress={() => setSelectedCompensationProfileId(profile.id)}
+                              variant="ghost"
                             >
                               <p className="text-sm font-medium">{profile.name}</p>
                               <p className="text-tiny text-default-500">
@@ -2661,7 +2661,7 @@ export function CashFlowPage() {
                                   ? ` · ${profile.counterpart.bankAccountHolder}`
                                   : " · sin contraparte fija"}
                               </p>
-                            </button>
+                            </Button>
                           ))}
                         </div>
                         <div className="space-y-2 rounded-md border border-default-200 p-3">

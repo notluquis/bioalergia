@@ -706,6 +706,13 @@ function ImportSummaryCard({
     return null;
   }
 
+  const errorOccurrences = new Map<string, number>();
+  const validationErrors = (previewData.errors ?? []).slice(0, 50).map((err) => {
+    const nextCount = (errorOccurrences.get(err) ?? 0) + 1;
+    errorOccurrences.set(err, nextCount);
+    return { key: `${err}-${nextCount}`, message: err };
+  });
+
   return (
     <Card className="border-primary/20 bg-primary/5">
       <Card.Content className="p-6">
@@ -739,8 +746,8 @@ function ImportSummaryCard({
                 Errores de validación ({previewData.errors?.length ?? 0})
               </div>
               <ul className="max-h-32 list-inside list-disc overflow-y-auto rounded bg-background/50 p-2 text-xs opacity-90">
-                {(previewData.errors ?? []).slice(0, 50).map((err: string, i: number) => (
-                  <li key={`${i}-${err.substring(0, 20)}`}>{err}</li>
+                {validationErrors.map((err) => (
+                  <li key={err.key}>{err.message}</li>
                 ))}
                 {(previewData.errors?.length ?? 0) > 50 && (
                   <li className="text-default-500">

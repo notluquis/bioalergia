@@ -1,15 +1,13 @@
+import { Skeleton } from "@heroui/react";
 import { Link } from "@tanstack/react-router";
 import { ArrowRightLeft, ArrowUpRight, CalendarDays, Users, Wallet } from "lucide-react";
 import { Suspense, useEffect } from "react";
-
-import { Skeleton } from "@/components/ui/Skeleton";
 import { useAuth } from "@/context/AuthContext";
 import { DashboardParticipantsSection } from "@/features/dashboard/components/DashboardParticipantsSection";
 import { DashboardPersonalLiabilities } from "@/features/dashboard/components/DashboardPersonalLiabilities";
 import { DashboardTransactionsSection } from "@/features/dashboard/components/DashboardTransactionsSection";
 import { daysAgo, today } from "@/lib/dates";
 import { CARD_COMPACT, TITLE_MD } from "@/lib/styles";
-
 import { useAppBadge } from "../hooks/use-app-badge";
 import { useWakeLock } from "../hooks/use-wake-lock";
 

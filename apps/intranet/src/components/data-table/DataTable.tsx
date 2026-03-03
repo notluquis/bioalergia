@@ -384,24 +384,36 @@ function DataTableContent<TData, TValue>({
                   )}
               </>
             ) : isLoading ? (
-              Array.from({ length: 6 }).map((_, rowIndex) => (
-                <tr className="border-b-small border-divider" key={`skeleton-row-${rowIndex + 1}`}>
-                  {Array.from({ length: columns.length }).map((__, colIndex) => (
-                    <td
-                      className="whitespace-nowrap px-4 py-3 align-middle"
-                      key={`skeleton-cell-${rowIndex + 1}-${colIndex + 1}`}
-                    >
-                      <Skeleton
-                        className={
-                          colIndex === 0
-                            ? "h-4 w-28 rounded-md"
-                            : colIndex === columns.length - 1
-                              ? "h-4 w-14 rounded-md"
-                              : "h-4 w-full max-w-36 rounded-md"
-                        }
-                      />
-                    </td>
-                  ))}
+              ["1", "2", "3", "4", "5", "6"].map((rowKey) => (
+                <tr className="border-b-small border-divider" key={`skeleton-row-${rowKey}`}>
+                  {columns.map((column) => {
+                    const accessorKey =
+                      "accessorKey" in column && typeof column.accessorKey === "string"
+                        ? column.accessorKey
+                        : null;
+                    const headerKey = typeof column.header === "string" ? column.header : null;
+                    const loadingColumnKey = String(
+                      column.id ?? accessorKey ?? headerKey ?? "column",
+                    );
+                    const isFirstColumn = column === columns[0];
+                    const isLastColumn = column === columns[columns.length - 1];
+                    return (
+                      <td
+                        className="whitespace-nowrap px-4 py-3 align-middle"
+                        key={`skeleton-cell-${rowKey}-${loadingColumnKey}`}
+                      >
+                        <Skeleton
+                          className={
+                            isFirstColumn
+                              ? "h-4 w-28 rounded-md"
+                              : isLastColumn
+                                ? "h-4 w-14 rounded-md"
+                                : "h-4 w-full max-w-36 rounded-md"
+                          }
+                        />
+                      </td>
+                    );
+                  })}
                 </tr>
               ))
             ) : rows.length === 0 ? (
