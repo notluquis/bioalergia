@@ -127,7 +127,7 @@ export function DteSalesDetailsPanel() {
   }
 
   return (
-    <div className="space-y-3 pt-4">
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
       <div className="flex flex-wrap items-end gap-3">
         <Select
           value={selectedPeriod}
@@ -157,24 +157,27 @@ export function DteSalesDetailsPanel() {
         </Description>
       </div>
 
-      <DataTable
-        autoFitColumns={false}
-        columns={salesColumns}
-        containerVariant="plain"
-        data={detailsQuery.data?.data ?? []}
-        enableGlobalFilter={false}
-        isLoading={detailsQuery.isLoading}
-        onPaginationChange={(updater) => {
-          if (typeof updater === "function") {
-            setPagination((prev) => updater(prev));
-            return;
-          }
-          setPagination(updater);
-        }}
-        pageCount={detailsQuery.data?.meta.totalPages ?? 0}
-        pagination={pagination}
-        scrollMaxHeight="min(68dvh, 760px)"
-      />
+      <div className="min-h-0 flex-1">
+        <DataTable
+          autoFitColumns={false}
+          columns={salesColumns}
+          containerVariant="plain"
+          data={detailsQuery.data?.data ?? []}
+          enableGlobalFilter={false}
+          isLoading={detailsQuery.isLoading}
+          onPaginationChange={(updater) => {
+            if (typeof updater === "function") {
+              setPagination((prev) => updater(prev));
+              return;
+            }
+            setPagination(updater);
+          }}
+          pageCount={detailsQuery.data?.meta.totalPages ?? 0}
+          pagination={pagination}
+          scrollMaxHeight="calc(100dvh - 20rem)"
+          scrollMode="container"
+        />
+      </div>
     </div>
   );
 }

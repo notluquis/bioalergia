@@ -70,9 +70,10 @@ export function DTEAnalyticsPage() {
   );
 
   return (
-    <div className="container mx-auto space-y-6 p-6">
+    <div className="flex h-full min-h-full w-full flex-col gap-4 p-3 md:p-5">
       <Tabs
         aria-label="DTE Analytics Tabs"
+        className="flex min-h-0 flex-1 flex-col"
         selectedKey={selectedTab}
         onSelectionChange={(key) => {
           const nextTab = String(key) as
@@ -84,37 +85,39 @@ export function DTEAnalyticsPage() {
           markTabAsMounted(nextTab);
         }}
       >
-        <Tabs.List
-          aria-label="Opciones de visualización"
-          className="rounded-lg bg-default-50/50 p-1"
-        >
-          <Tabs.Tab id="purchases-monthly" className="gap-2">
-            <BarChart3 className="size-4" />
-            Compras Mensual
-          </Tabs.Tab>
-          <Tabs.Tab id="sales-monthly" className="gap-2">
-            <BarChart3 className="size-4" />
-            Ventas Mensual
-          </Tabs.Tab>
-          <Tabs.Tab id="purchases-details" className="gap-2">
-            <BarChart3 className="size-4" />
-            Compras Detalle
-          </Tabs.Tab>
-          <Tabs.Tab id="sales-details" className="gap-2">
-            <BarChart3 className="size-4" />
-            Ventas Detalle
-          </Tabs.Tab>
-          <Tabs.Tab id="purchases-comparison" className="gap-2">
-            <TrendingUp className="size-4" />
-            Compras Comparativa
-          </Tabs.Tab>
-          <Tabs.Tab id="sales-comparison" className="gap-2">
-            <TrendingUp className="size-4" />
-            Ventas Comparativa
-          </Tabs.Tab>
-        </Tabs.List>
+        <Tabs.ListContainer className="muted-scrollbar overflow-x-auto pb-1">
+          <Tabs.List
+            aria-label="Opciones de visualización"
+            className="w-max min-w-full rounded-lg bg-default-50/50 p-1 whitespace-nowrap"
+          >
+            <Tabs.Tab id="purchases-monthly" className="gap-2">
+              <BarChart3 className="size-4" />
+              Compras Mensual
+            </Tabs.Tab>
+            <Tabs.Tab id="sales-monthly" className="gap-2">
+              <BarChart3 className="size-4" />
+              Ventas Mensual
+            </Tabs.Tab>
+            <Tabs.Tab id="purchases-details" className="gap-2">
+              <BarChart3 className="size-4" />
+              Compras Detalle
+            </Tabs.Tab>
+            <Tabs.Tab id="sales-details" className="gap-2">
+              <BarChart3 className="size-4" />
+              Ventas Detalle
+            </Tabs.Tab>
+            <Tabs.Tab id="purchases-comparison" className="gap-2">
+              <TrendingUp className="size-4" />
+              Compras Comparativa
+            </Tabs.Tab>
+            <Tabs.Tab id="sales-comparison" className="gap-2">
+              <TrendingUp className="size-4" />
+              Ventas Comparativa
+            </Tabs.Tab>
+          </Tabs.List>
+        </Tabs.ListContainer>
 
-        <Tabs.Panel id="purchases-monthly">
+        <Tabs.Panel className="min-h-0 flex-1 pt-2 sm:pt-4" id="purchases-monthly">
           {isTabMounted("purchases-monthly") ? (
             <Suspense fallback={<div className="py-2 text-default-500 text-sm">Cargando...</div>}>
               <LazyDteMonthlySummaryPanel
@@ -127,7 +130,7 @@ export function DTEAnalyticsPage() {
           ) : null}
         </Tabs.Panel>
 
-        <Tabs.Panel id="sales-monthly">
+        <Tabs.Panel className="min-h-0 flex-1 pt-2 sm:pt-4" id="sales-monthly">
           {isTabMounted("sales-monthly") ? (
             <Suspense fallback={<div className="py-2 text-default-500 text-sm">Cargando...</div>}>
               <LazyDteMonthlySummaryPanel
@@ -140,7 +143,7 @@ export function DTEAnalyticsPage() {
           ) : null}
         </Tabs.Panel>
 
-        <Tabs.Panel id="purchases-comparison">
+        <Tabs.Panel className="min-h-0 flex-1 pt-2 sm:pt-4" id="purchases-comparison">
           {isTabMounted("purchases-comparison") ? (
             <Suspense fallback={<div className="py-2 text-default-500 text-sm">Cargando...</div>}>
               <LazyDteComparisonPanel kind="purchases" />
@@ -148,7 +151,7 @@ export function DTEAnalyticsPage() {
           ) : null}
         </Tabs.Panel>
 
-        <Tabs.Panel id="purchases-details">
+        <Tabs.Panel className="min-h-0 flex-1 pt-2 sm:pt-4" id="purchases-details">
           {isTabMounted("purchases-details") ? (
             <Suspense fallback={<div className="py-2 text-default-500 text-sm">Cargando...</div>}>
               <LazyDtePurchasesDetailsPanel />
@@ -156,7 +159,7 @@ export function DTEAnalyticsPage() {
           ) : null}
         </Tabs.Panel>
 
-        <Tabs.Panel id="sales-details">
+        <Tabs.Panel className="min-h-0 flex-1 pt-2 sm:pt-4" id="sales-details">
           {isTabMounted("sales-details") ? (
             <Suspense fallback={<div className="py-2 text-default-500 text-sm">Cargando...</div>}>
               <LazyDteSalesDetailsPanel />
@@ -164,7 +167,7 @@ export function DTEAnalyticsPage() {
           ) : null}
         </Tabs.Panel>
 
-        <Tabs.Panel id="sales-comparison">
+        <Tabs.Panel className="min-h-0 flex-1 pt-2 sm:pt-4" id="sales-comparison">
           {isTabMounted("sales-comparison") ? (
             <Suspense fallback={<div className="py-2 text-default-500 text-sm">Cargando...</div>}>
               <LazyDteComparisonPanel kind="sales" />
