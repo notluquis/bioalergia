@@ -1,7 +1,6 @@
+import { Button } from "@heroui/react";
 import { type ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import dayjs from "dayjs";
-
-import { Button } from "@/components/ui/Button";
 import type { Transaction } from "@/features/finance/types";
 import { fmtCLP } from "@/lib/format";
 
@@ -50,7 +49,7 @@ export const getAccountGroupColumns = (
         <div className="flex flex-col gap-2 text-xs">
           <Button
             className="self-start"
-            onClick={() => {
+            onPress={() => {
               onQuickView(group);
             }}
             size="sm"

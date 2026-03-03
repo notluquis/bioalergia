@@ -1,8 +1,6 @@
-import { Chip } from "@heroui/react";
+import { Button, Chip } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
-
-import { Button } from "@/components/ui/Button";
 
 import type { ServiceSchedule } from "../types";
 
@@ -158,7 +156,7 @@ export const getColumns = (
                 {(schedule.status === "PENDING" || schedule.status === "PARTIAL") && (
                   <>
                     <Button
-                      onClick={() => {
+                      onPress={() => {
                         actions.onRegisterPayment(schedule);
                       }}
                       size="sm"
@@ -168,7 +166,7 @@ export const getColumns = (
                     </Button>
                     {actions.onEditSchedule && (
                       <Button
-                        onClick={() => {
+                        onPress={() => {
                           actions.onEditSchedule?.(schedule);
                         }}
                         size="sm"
@@ -180,7 +178,7 @@ export const getColumns = (
                     )}
                     {actions.onSkipSchedule && (
                       <Button
-                        onClick={() => {
+                        onPress={() => {
                           actions.onSkipSchedule?.(schedule);
                         }}
                         size="sm"
@@ -194,7 +192,7 @@ export const getColumns = (
                 )}
                 {schedule.transaction && (
                   <Button
-                    onClick={() => {
+                    onPress={() => {
                       actions.onUnlinkPayment(schedule);
                     }}
                     size="sm"

@@ -1,8 +1,7 @@
-import { Checkbox, Popover, Tooltip } from "@heroui/react";
+import { Button, Checkbox, Popover, Tooltip } from "@heroui/react";
 import dayjs from "dayjs";
 import type { CellHookData } from "jspdf-autotable";
 import React from "react";
-import { Button } from "@/components/ui/Button";
 import { useSettings } from "@/context/SettingsContext";
 import type { Employee } from "@/features/hr/employees/types";
 import { apiClient } from "@/lib/api-client";
@@ -192,7 +191,7 @@ export function TimesheetExportPDF({
       <div className="relative inline-block">
         <Button
           className="rounded-xl bg-primary px-4 py-2 font-semibold text-primary-foreground text-sm shadow-md hover:bg-primary/85 focus-visible:outline-2 focus-visible:outline-primary/35 focus-visible:outline-offset-2"
-          onClick={() => handleExport(true)}
+          onPress={() => handleExport(true)}
           type="button"
           variant="primary"
         >
@@ -246,7 +245,7 @@ export function TimesheetExportPDF({
               <div className="mt-3 flex justify-end gap-2">
                 <Button
                   className="text-default-500 text-xs"
-                  onClick={() => {
+                  onPress={() => {
                     setShowOptions(false);
                   }}
                   size="sm"
@@ -256,7 +255,7 @@ export function TimesheetExportPDF({
                 </Button>
                 <Button
                   className="text-primary text-xs"
-                  onClick={() => handleExport(true)}
+                  onPress={() => handleExport(true)}
                   size="sm"
                   variant="ghost"
                 >
@@ -264,7 +263,7 @@ export function TimesheetExportPDF({
                 </Button>
                 <Button
                   className="text-primary text-xs"
-                  onClick={() => handleExport(false)}
+                  onPress={() => handleExport(false)}
                   size="sm"
                   variant="ghost"
                 >

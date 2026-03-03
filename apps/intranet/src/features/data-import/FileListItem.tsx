@@ -1,7 +1,5 @@
-import { Chip } from "@heroui/react";
+import { Button, Chip } from "@heroui/react";
 import { AlertCircle, CheckCircle2, FileText, Loader2, X } from "lucide-react";
-
-import { Button } from "@/components/ui/Button";
 import { formatFileSize } from "@/lib/format";
 
 export type FileStatus =
@@ -141,7 +139,7 @@ export function FileListItem({
           variant="ghost"
           size="sm"
           isIconOnly
-          onClick={() => onRemove(id)}
+          onPress={() => onRemove(id)}
           className="opacity-0 transition-opacity group-hover:opacity-100"
           aria-label="Eliminar archivo"
         >

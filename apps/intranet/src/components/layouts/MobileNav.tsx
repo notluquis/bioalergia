@@ -1,7 +1,6 @@
+import { Button } from "@heroui/react";
 import { useLocation, useNavigate, useRouter } from "@tanstack/react-router";
 import React from "react";
-
-import { Button } from "@/components/ui/Button";
 import { useCan } from "@/hooks/use-can";
 import { getNavSections, type NavItem } from "@/lib/nav-generator";
 

@@ -1,7 +1,5 @@
-import { Separator } from "@heroui/react";
+import { Button, Separator } from "@heroui/react";
 import { Fingerprint, Loader2, Smartphone } from "lucide-react";
-
-import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
 interface MfaSecretData {
@@ -51,7 +49,7 @@ export function MfaStep({
             Authenticator, Apple Passwords, etc).
           </p>
         </div>
-        <Button onClick={onSetupMfa} variant="primary" disabled={isLoading}>
+        <Button isDisabled={isLoading} onPress={onSetupMfa} variant="primary">
           Generar código QR
         </Button>
       </div>
@@ -98,8 +96,8 @@ export function MfaStep({
 
         <div className="flex justify-center">
           <Button
-            disabled={mfaCode.length !== 6 || isLoading}
-            onClick={onVerifyMfa}
+            isDisabled={mfaCode.length !== 6 || isLoading}
+            onPress={onVerifyMfa}
             variant="primary"
           >
             {isLoading ? <Loader2 className="animate-spin" /> : "Verificar y activar"}
@@ -115,8 +113,8 @@ export function MfaStep({
         <div className="flex justify-center">
           <Button
             className="gap-2"
-            disabled={isLoading}
-            onClick={onPasskeyRegister}
+            isDisabled={isLoading}
+            onPress={onPasskeyRegister}
             variant="outline"
           >
             <Fingerprint size={20} />
@@ -127,8 +125,8 @@ export function MfaStep({
         <div className="flex justify-center">
           <Button
             className="text-default-400 hover:text-foreground"
-            disabled={isLoading}
-            onClick={onSkip}
+            isDisabled={isLoading}
+            onPress={onSkip}
             size="sm"
             variant="ghost"
           >

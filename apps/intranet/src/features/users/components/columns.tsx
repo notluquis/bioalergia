@@ -1,4 +1,4 @@
-import { Avatar, Chip, Dropdown, Separator, Tooltip } from "@heroui/react";
+import { Avatar, Button, Chip, Dropdown, Separator, Tooltip } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import {
@@ -12,7 +12,6 @@ import {
   Trash2,
   UserCog,
 } from "lucide-react";
-import { Button } from "@/components/ui/Button";
 import type { User } from "@/features/users/types";
 import { getPersonFullName, getPersonInitials } from "@/lib/person";
 

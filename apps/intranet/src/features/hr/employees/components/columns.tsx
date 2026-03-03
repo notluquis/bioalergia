@@ -1,6 +1,5 @@
-import { Chip } from "@heroui/react";
+import { Button, Chip } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Button } from "@/components/ui/Button";
 import type { Employee } from "@/features/hr/employees/types";
 import { getRetentionRateForYear } from "~/shared/retention";
 
@@ -166,7 +165,7 @@ export const columns: ColumnDef<Employee>[] = [
       return (
         <div className="flex justify-end gap-2 whitespace-nowrap">
           <Button
-            onClick={() => {
+            onPress={() => {
               onEdit(employee);
             }}
             size="sm"
@@ -176,7 +175,7 @@ export const columns: ColumnDef<Employee>[] = [
           </Button>
           {employee.status === "ACTIVE" ? (
             <Button
-              onClick={() => {
+              onPress={() => {
                 onDeactivate(employee.id);
               }}
               size="sm"
@@ -186,7 +185,7 @@ export const columns: ColumnDef<Employee>[] = [
             </Button>
           ) : (
             <Button
-              onClick={() => {
+              onPress={() => {
                 onActivate(employee.id);
               }}
               size="sm"

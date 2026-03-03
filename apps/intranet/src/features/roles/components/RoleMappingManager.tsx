@@ -1,8 +1,7 @@
-import { Description } from "@heroui/react";
+import { Button, Description } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
-import { Button } from "@/components/ui/Button";
 import type { Employee } from "@/features/hr/employees/api";
 import type { Role as AvailableRole } from "@/types/roles";
 
@@ -126,9 +125,9 @@ export function RoleMappingManager() {
 
       <div className="flex justify-end pt-2">
         <Button
-          disabled={isSaving || mappings.every((m) => !m.isNew && !m.isModified)}
-          isLoading={isSaving}
-          onClick={handleSave}
+          isDisabled={isSaving || mappings.every((m) => !m.isNew && !m.isModified)}
+          isPending={isSaving}
+          onPress={handleSave}
         >
           Guardar Cambios
         </Button>

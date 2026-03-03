@@ -1,7 +1,6 @@
+import { Button } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
-
-import { Button } from "@/components/ui/Button";
 import { fmtCLP } from "@/lib/format";
 import { formatRut } from "@/lib/rut";
 
@@ -51,8 +50,8 @@ export const getLeaderboardColumns = (): ColumnDef<LeaderboardDisplayRow>[] => [
       return (
         <Button
           className="h-8"
-          disabled={meta.detailLoading || !participantKey}
-          onClick={() => participantKey && meta.onSelect(participantKey)}
+          isDisabled={meta.detailLoading || !participantKey}
+          onPress={() => participantKey && meta.onSelect(participantKey)}
           size="sm"
           variant="ghost"
         >

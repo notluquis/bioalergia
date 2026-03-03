@@ -1,9 +1,8 @@
-import { Modal } from "@heroui/react";
+import { Button, Modal } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
-import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
 import type { Employee } from "@/features/hr/employees/types";
 
@@ -98,8 +97,8 @@ export function TimesheetDetailTable({
         {canEdit && (
           <div className="flex flex-wrap items-center gap-2">
             <Button
-              disabled={saving || (pendingCount === 0 && modifiedCount === 0)}
-              onClick={onBulkSave}
+              isDisabled={saving || (pendingCount === 0 && modifiedCount === 0)}
+              onPress={onBulkSave}
               variant="primary"
             >
               Guardar cambios

@@ -1,8 +1,7 @@
+import { Button } from "@heroui/react";
 import { useLocation } from "@tanstack/react-router";
 import { Fingerprint, Mail } from "lucide-react";
 import type { ChangeEvent, SubmitEvent } from "react";
-
-import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useSettings } from "@/context/SettingsContext";
@@ -127,8 +126,8 @@ function PasskeyStep({ isPending, handlePasskeyLogin, switchToCredentials }: Pas
     <div className="mx-auto w-full max-w-xs space-y-3">
       <Button
         className="gap-2 text-base"
-        disabled={isPending}
-        onClick={handlePasskeyLogin}
+        isDisabled={isPending}
+        onPress={handlePasskeyLogin}
         size="lg"
         type="button"
         fullWidth
@@ -139,8 +138,8 @@ function PasskeyStep({ isPending, handlePasskeyLogin, switchToCredentials }: Pas
       </Button>
 
       <Button
-        disabled={isPending}
-        onClick={switchToCredentials}
+        isDisabled={isPending}
+        onPress={switchToCredentials}
         size="lg"
         type="button"
         variant="outline"
@@ -204,8 +203,8 @@ function CredentialsStep({
         <div className="flex w-full gap-2 pt-2">
           <Button
             className="h-14 min-w-0 flex-1"
-            disabled={isLoading}
-            onClick={switchToPasskey}
+            isDisabled={isLoading}
+            onPress={switchToPasskey}
             type="button"
             variant="ghost"
             aria-label="Volver a biometría"
@@ -214,7 +213,7 @@ function CredentialsStep({
           </Button>
           <Button
             className="h-14 min-w-0 flex-1"
-            disabled={isLoading}
+            isDisabled={isLoading}
             type="submit"
             aria-label="Continuar con credenciales"
           >
@@ -264,8 +263,8 @@ function MfaStep({
         <div className="flex w-full gap-2 pt-2">
           <Button
             className="h-14 min-w-0 flex-1"
-            disabled={isLoading}
-            onClick={switchToCredentialsFromMfa}
+            isDisabled={isLoading}
+            onPress={switchToCredentialsFromMfa}
             type="button"
             variant="ghost"
             aria-label="Volver a credenciales"
@@ -274,7 +273,7 @@ function MfaStep({
           </Button>
           <Button
             className="h-14 min-w-0 flex-1"
-            disabled={isLoading}
+            isDisabled={isLoading}
             type="submit"
             aria-label="Confirmar código MFA"
           >

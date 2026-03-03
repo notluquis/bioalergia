@@ -21,7 +21,7 @@ const handleRetry = async () => {
   }
 };
 
-import { Button } from "@/components/ui/Button";
+import { Button } from "@heroui/react";
 export function ChunkLoadErrorPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-default-50 p-4">

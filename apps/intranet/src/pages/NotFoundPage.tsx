@@ -1,6 +1,6 @@
+import { Button } from "@heroui/react";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { AlertTriangle, ArrowLeft, Home } from "lucide-react";
-import { Button } from "@/components/ui/Button";
 export function NotFoundPage() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -21,14 +21,14 @@ export function NotFoundPage() {
       <div className="flex gap-4">
         <Button
           variant="outline"
-          onClick={() => {
+          onPress={() => {
             void navigate({ to: "/" });
           }}
         >
           <ArrowLeft size={18} />
           Volver
         </Button>
-        <Button variant="primary" onClick={() => navigate({ to: "/" })}>
+        <Button variant="primary" onPress={() => navigate({ to: "/" })}>
           <Home size={18} />
           Ir al Inicio
         </Button>

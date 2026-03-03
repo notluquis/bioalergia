@@ -1,6 +1,5 @@
+import { Button } from "@heroui/react";
 import { User } from "lucide-react";
-
-import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { formatRut, validateRut } from "@/lib/rut";
 
@@ -96,7 +95,7 @@ export function ProfileStep(props: ProfileStepProps) {
           className="px-8"
           type="submit"
           variant="primary"
-          disabled={isLoading || !profile.names || !validateRut(profile.rut)}
+          isDisabled={isLoading || !profile.names || !validateRut(profile.rut)}
         >
           Siguiente
         </Button>

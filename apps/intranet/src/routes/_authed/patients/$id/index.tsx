@@ -1,4 +1,4 @@
-import { Card, Chip, Separator, Skeleton, Tabs } from "@heroui/react";
+import { Button, Card, Chip, Separator, Skeleton, Tabs } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -20,7 +20,6 @@ import {
 } from "lucide-react";
 import { lazy, Suspense, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
-import { Button } from "@/components/ui/Button";
 import { PatientDetailSchema } from "@/features/patients/schemas";
 import { useLazyTabs } from "@/hooks/use-lazy-tabs";
 import { apiClient } from "@/lib/api-client";
@@ -306,7 +305,7 @@ function PatientDetailsPage() {
                     <Button
                       size="sm"
                       className="gap-2"
-                      onClick={() =>
+                      onPress={() =>
                         navigate({
                           to: "/patients/$id/new-budget",
                           params: { id: String(id) },
@@ -336,7 +335,7 @@ function PatientDetailsPage() {
                     <Button
                       size="sm"
                       className="gap-2"
-                      onClick={() =>
+                      onPress={() =>
                         navigate({
                           to: "/patients/$id/new-payment",
                           params: { id: String(id) },
@@ -367,7 +366,7 @@ function PatientDetailsPage() {
                       size="sm"
                       className="gap-2"
                       variant="outline"
-                      onClick={() => setIsAttachmentModalOpen(true)}
+                      onPress={() => setIsAttachmentModalOpen(true)}
                     >
                       <PlusCircle size={16} />
                       Cargar Documento
@@ -470,7 +469,7 @@ function PatientNotFoundState({ onBack }: { onBack: () => void }) {
   return (
     <div className="p-12 text-center">
       <h2 className="font-bold text-xl">Paciente no encontrado</h2>
-      <Button className="mt-4" onClick={onBack} variant="ghost">
+      <Button className="mt-4" onPress={onBack} variant="ghost">
         Volver a la lista
       </Button>
     </div>
@@ -519,7 +518,7 @@ function PatientDetailsHeader({
       <div className="flex items-center gap-4">
         <Button
           className="h-10 w-10 min-w-0 rounded-full p-0"
-          onClick={goBackToPatients}
+          onPress={goBackToPatients}
           variant="ghost"
         >
           <ChevronLeft size={24} />
@@ -539,11 +538,11 @@ function PatientDetailsHeader({
         </div>
       </div>
       <div className="flex flex-wrap gap-2">
-        <Button className="gap-2" onClick={goToNewConsultation}>
+        <Button className="gap-2" onPress={goToNewConsultation}>
           <PlusCircle size={18} />
           Nueva Consulta
         </Button>
-        <Button className="gap-2" onClick={goToMedicalCertificate} variant="outline">
+        <Button className="gap-2" onPress={goToMedicalCertificate} variant="outline">
           <FileText size={18} />
           Emitir Certificado
         </Button>

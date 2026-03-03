@@ -1,6 +1,5 @@
+import { Button } from "@heroui/react";
 import dayjs from "dayjs";
-
-import { Button } from "@/components/ui/Button";
 
 import type { MonthlyExpense } from "../types";
 
@@ -24,7 +23,7 @@ export function MonthlyExpenseList({
           <p className="text-default-400 text-xs">Registros de gastos mensuales y puntuales.</p>
         </div>
         {onCreateRequest && (
-          <Button onClick={onCreateRequest} size="sm" type="button" variant="secondary">
+          <Button onPress={onCreateRequest} size="sm" type="button" variant="secondary">
             Nuevo
           </Button>
         )}

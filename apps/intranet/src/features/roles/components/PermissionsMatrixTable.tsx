@@ -1,7 +1,6 @@
-import { Checkbox, Dropdown, ScrollShadow, Separator } from "@heroui/react";
+import { Button, Checkbox, Dropdown, ScrollShadow, Separator } from "@heroui/react";
 import { Check, ChevronDown, ChevronRight, Eye, Pencil, Trash2 } from "lucide-react";
 import { Fragment, useState } from "react";
-import { Button } from "@/components/ui/Button";
 import type { Permission, Role } from "@/types/roles";
 
 import { BulkToggleCell } from "./BulkToggleCell";

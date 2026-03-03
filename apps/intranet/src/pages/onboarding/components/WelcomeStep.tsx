@@ -1,6 +1,5 @@
+import { Button } from "@heroui/react";
 import { ArrowRight, Shield } from "lucide-react";
-
-import { Button } from "@/components/ui/Button";
 
 interface WelcomeStepProps {
   userEmail: string;
@@ -23,7 +22,7 @@ export function WelcomeStep({ userEmail, onNext }: WelcomeStepProps) {
         </p>
       </div>
       <div className="flex justify-center">
-        <Button className="gap-2" onClick={onNext} size="lg" variant="primary">
+        <Button className="gap-2" onPress={onNext} size="lg" variant="primary">
           Comenzar <ArrowRight size={20} />
         </Button>
       </div>

@@ -1,5 +1,6 @@
 import {
   Alert,
+  Button,
   Description,
   Label,
   ListBox,
@@ -11,7 +12,6 @@ import {
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { AlertCircle, AlertTriangle, ArrowRight } from "lucide-react";
 import { Suspense, useState } from "react";
-import { Button } from "@/components/ui/Button";
 import { useToast } from "@/context/ToastContext";
 import { deleteRole, reassignRoleUsers, roleKeys, roleQueries } from "@/features/roles/api";
 import type { Role } from "@/types/roles";

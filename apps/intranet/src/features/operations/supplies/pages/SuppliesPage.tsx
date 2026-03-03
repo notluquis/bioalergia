@@ -1,6 +1,5 @@
-import { Surface } from "@heroui/react";
+import { Button, Surface } from "@heroui/react";
 import { RefreshCcw } from "lucide-react";
-import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
 import { SupplyRequestForm } from "@/features/supplies/components/SupplyRequestForm";
 import { SupplyRequestsTable } from "@/features/supplies/components/SupplyRequestsTable";
@@ -35,7 +34,7 @@ export function Supplies() {
           <p className="text-default-500 text-sm">{tableTitle}</p>
           <Button
             className="w-full sm:w-auto"
-            onClick={() => void refresh()}
+            onPress={() => void refresh()}
             size="sm"
             variant="secondary"
             aria-label="Actualizar solicitudes de insumos"

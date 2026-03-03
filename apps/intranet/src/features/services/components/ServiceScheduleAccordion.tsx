@@ -1,8 +1,6 @@
-import { Description } from "@heroui/react";
+import { Button, Description } from "@heroui/react";
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
-
-import { Button } from "@/components/ui/Button";
 import { today } from "@/lib/dates";
 import { currencyFormatter } from "@/lib/format";
 
@@ -241,7 +239,7 @@ function ServiceScheduleAccordion({
                         <div className="mt-3 flex flex-wrap items-center gap-3">
                           {(item.status === "PENDING" || item.status === "PARTIAL") && (
                             <Button
-                              onClick={() => {
+                              onPress={() => {
                                 onRegisterPayment(item);
                               }}
                               size="sm"
@@ -251,7 +249,7 @@ function ServiceScheduleAccordion({
                           )}
                           {item.transactionId && item.status === "PAID" && canUnlink(item) && (
                             <Button
-                              onClick={() => {
+                              onPress={() => {
                                 onUnlinkPayment(item);
                               }}
                               size="sm"

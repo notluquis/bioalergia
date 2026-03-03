@@ -1,7 +1,5 @@
-import { Label, ListBox, Select } from "@heroui/react";
+import { Button, Label, ListBox, Select } from "@heroui/react";
 import { CreditCard } from "lucide-react";
-
-import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
 interface FinancialStepProps {
@@ -90,10 +88,10 @@ export function FinancialStep({
       </div>
 
       <div className="mt-6 flex justify-end gap-3">
-        <Button onClick={onPrev} type="button" variant="ghost" disabled={isLoading}>
+        <Button isDisabled={isLoading} onPress={onPrev} type="button" variant="ghost">
           Atrás
         </Button>
-        <Button className="px-8" type="submit" variant="primary" disabled={isLoading}>
+        <Button className="px-8" isDisabled={isLoading} type="submit" variant="primary">
           Siguiente
         </Button>
       </div>

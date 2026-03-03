@@ -1,6 +1,5 @@
+import { Button } from "@heroui/react";
 import { Key } from "lucide-react";
-
-import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
 interface PasswordStepProps {
@@ -74,14 +73,14 @@ export function PasswordStep({
       </div>
 
       <div className="mt-6 flex justify-end gap-3">
-        <Button onClick={onPrev} type="button" variant="ghost" disabled={isLoading}>
+        <Button isDisabled={isLoading} onPress={onPrev} type="button" variant="ghost">
           Atrás
         </Button>
         <Button
           className="px-8"
           type="submit"
           variant="primary"
-          disabled={isLoading || password.length < 8 || password !== confirmPassword}
+          isDisabled={isLoading || password.length < 8 || password !== confirmPassword}
         >
           Siguiente
         </Button>

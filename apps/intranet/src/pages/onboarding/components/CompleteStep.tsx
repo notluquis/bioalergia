@@ -1,6 +1,5 @@
+import { Button } from "@heroui/react";
 import { Check } from "lucide-react";
-
-import { Button } from "@/components/ui/Button";
 
 interface CompleteStepProps {
   onFinish: () => void;
@@ -21,8 +20,8 @@ export function CompleteStep({ onFinish, isLoading }: CompleteStepProps) {
       </div>
       <Button
         className="w-full max-w-xs"
-        disabled={isLoading}
-        onClick={onFinish}
+        isDisabled={isLoading}
+        onPress={onFinish}
         size="lg"
         variant="primary"
       >

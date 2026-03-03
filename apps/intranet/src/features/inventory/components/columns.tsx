@@ -1,7 +1,6 @@
+import { Button } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Lock } from "lucide-react";
-
-import { Button } from "@/components/ui/Button";
 
 import type { InventoryItem } from "../types";
 
@@ -45,24 +44,22 @@ export const columns: ColumnDef<InventoryItem>[] = [
       return (
         <div className="flex justify-end gap-3 px-4 py-3 text-right font-semibold text-xs uppercase tracking-wide">
           <Button
-            disabled={!canAdjust}
-            onClick={() => {
+            isDisabled={!canAdjust}
+            onPress={() => {
               openAdjustStockModal(item);
             }}
             size="sm"
-            title={canAdjust ? undefined : "Sin permiso"}
             variant="secondary"
           >
             {!canAdjust && <Lock className="mr-1" size={12} />}
             Ajustar stock
           </Button>
           <Button
-            disabled={!canUpdate}
-            onClick={() => {
+            isDisabled={!canUpdate}
+            onPress={() => {
               openEditModal(item);
             }}
             size="sm"
-            title={canUpdate ? undefined : "Sin permiso"}
             variant="secondary"
           >
             {!canUpdate && <Lock className="mr-1" size={12} />}
