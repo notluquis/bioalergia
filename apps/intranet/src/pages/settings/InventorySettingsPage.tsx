@@ -128,7 +128,7 @@ export function InventorySettingsPage() {
         </Card.Header>
         <Card.Content className="p-0">
           {isCreating && (
-            <div className="fade-in slide-in-from-top-2 animate-in border-b bg-default-50/30 p-4">
+            <div className="fade-in slide-in-from-top-2 border-b bg-default-50/30 p-4">
               <form className="flex items-end gap-3" onSubmit={handleCreate}>
                 <div className="flex-1">
                   <TextField className="gap-1" id="category-name">
@@ -158,7 +158,7 @@ export function InventorySettingsPage() {
                     isDisabled={createMutation.isPending || !newCategoryName.trim()}
                     type="submit"
                   >
-                    {createMutation.isPending ? <Loader2 className="animate-spin" /> : "Guardar"}
+                    {createMutation.isPending ? <Loader2 className="" /> : "Guardar"}
                   </Button>
                 </div>
               </form>
@@ -196,7 +196,7 @@ function InventoryList({
   if (isLoading) {
     return (
       <div className="py-12 text-center text-default-400">
-        <Loader2 className="mx-auto animate-spin" />
+        <Loader2 className="mx-auto " />
       </div>
     );
   }
@@ -218,7 +218,7 @@ function InventoryList({
         return (
           <div key={category.id}>
             {/* Category Row */}
-            <div className="group flex items-center gap-3 p-4 transition-colors hover:bg-default-50/50">
+            <div className="group flex items-center gap-3 p-4 hover:bg-default-50/50">
               <Button
                 className="flex flex-1 items-center gap-3 text-left focus:outline-none"
                 onPress={() => {
@@ -228,7 +228,7 @@ function InventoryList({
                 aria-label={isExpanded ? "Colapsar" : "Expandir"}
                 variant="ghost"
               >
-                <span className="flex h-6 w-6 items-center justify-center text-default-400 transition-transform">
+                <span className="flex h-6 w-6 items-center justify-center text-default-400 ">
                   {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
                 </span>
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -241,7 +241,7 @@ function InventoryList({
                   {catItems.length} items
                 </Chip>
               </Button>
-              <div className="flex gap-1 opacity-100 transition-opacity sm:opacity-70 sm:group-hover:opacity-100">
+              <div className="flex gap-1 opacity-100 sm:opacity-70 sm:group-hover:opacity-100">
                 <Button isIconOnly size="sm" variant="ghost">
                   <Edit2 size={14} />
                 </Button>
@@ -300,7 +300,7 @@ function InventoryList({
       {/* Uncategorized Items */}
       {uncategorizedItems.length > 0 && (
         <div>
-          <div className="group flex items-center gap-3 p-4 transition-colors hover:bg-default-50/50">
+          <div className="group flex items-center gap-3 p-4 hover:bg-default-50/50">
             <Button
               className="flex flex-1 items-center gap-3 text-left focus:outline-none"
               onPress={() => {

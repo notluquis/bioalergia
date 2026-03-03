@@ -73,26 +73,26 @@ export function Home() {
       )}
 
       {/* If can read transactions, QuickLinks and Participants are inside the layout? 
-            Wait, in previous layout:
-            grid lg:grid-cols-[1.5fr_1fr]
-              left: Charts + QuickLinks
-              right: Participants + RecentMovements
-            
-            My wrapper `DashboardTransactionsSection` returns:
-            Metrics (full width)
-            Grid (Charts + RecentMovements)
-            
-            It MISSES QuickLinks and Participants inside the grid structure.
-            
-            I need to compose them better.
-         */}
+ Wait, in previous layout:
+ grid lg:grid-cols-[1.5fr_1fr]
+ left: Charts + QuickLinks
+ right: Participants + RecentMovements
+ 
+ My wrapper `DashboardTransactionsSection` returns:
+ Metrics (full width)
+ Grid (Charts + RecentMovements)
+ 
+ It MISSES QuickLinks and Participants inside the grid structure.
+ 
+ I need to compose them better.
+ */}
     </section>
   );
 }
 
 function DashboardSkeleton() {
   return (
-    <div className="animate-pulse space-y-4">
+    <div className=" space-y-4">
       <div className="grid grid-cols-3 gap-3">
         <div className="h-24 rounded-xl bg-default-50" />
         <div className="h-24 rounded-xl bg-default-50" />
@@ -163,7 +163,7 @@ function QuickLinksSection({ can }: { can: (action: string, subject: string) => 
         <div className="grid gap-2 sm:grid-cols-2">
           {links.map((link) => (
             <Link
-              className="group flex items-center gap-3 rounded-lg border border-default-100 bg-default-50/50 p-3 transition-colors hover:bg-default-50"
+              className="group flex items-center gap-3 rounded-lg border border-default-100 bg-default-50/50 p-3 hover:bg-default-50"
               key={link.to}
               to={link.to}
             >
@@ -176,7 +176,7 @@ function QuickLinksSection({ can }: { can: (action: string, subject: string) => 
                 <p className="truncate font-medium text-foreground text-sm">{link.title}</p>
                 <p className="truncate text-default-600 text-xs">{link.description}</p>
               </div>
-              <ArrowUpRight className="h-4 w-4 shrink-0 text-default-500 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+              <ArrowUpRight className="h-4 w-4 shrink-0 text-default-500 group-" />
             </Link>
           ))}
         </div>

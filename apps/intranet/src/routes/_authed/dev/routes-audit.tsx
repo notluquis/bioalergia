@@ -201,7 +201,7 @@ function RoutesAuditPage() {
             {filteredRoutes.map((route) => (
               <div
                 key={route.path}
-                className="grid grid-cols-12 items-center gap-4 px-4 py-3 text-sm transition-colors hover:bg-background"
+                className="grid grid-cols-12 items-center gap-4 px-4 py-3 text-sm hover:bg-background"
               >
                 <div className="col-span-8 font-mono">{route.path}</div>
                 <div className="col-span-2">

@@ -118,7 +118,7 @@ export function DTESyncHistoryPage() {
         return <AlertCircle className="h-4 w-4 text-danger" />;
       case "IN_PROGRESS":
       case "PENDING":
-        return <Clock className="h-4 w-4 animate-spin text-warning" />;
+        return <Clock className="h-4 w-4 text-warning" />;
       default:
         return null;
     }

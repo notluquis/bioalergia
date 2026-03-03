@@ -229,7 +229,7 @@ export function RolesSettingsPage() {
                   syncMutation.mutate();
                 }}
               >
-                <RotateCw className={cn("h-4 w-4", isSyncing && "animate-spin")} />
+                <RotateCw className={cn("h-4 w-4", isSyncing && "")} />
               </Button>
 
               <Button size="sm" variant="primary" className="gap-2" onPress={handleCreateRole}>

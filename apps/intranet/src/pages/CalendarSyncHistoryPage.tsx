@@ -66,7 +66,7 @@ export function CalendarSyncHistoryPage() {
                 type="button"
                 variant="ghost"
               >
-                <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
+                <RefreshCw className={cn("h-4 w-4", isLoading && "")} />
               </Button>
               <Button isDisabled={isSyncing || isLoading} onPress={syncNow} size="sm" type="button">
                 {isSyncing ? "Sincronizando..." : "Sincronizar ahora"}
@@ -78,7 +78,7 @@ export function CalendarSyncHistoryPage() {
 
       {showConfig && (
         <Surface
-          className="slide-in-from-top-2 fade-in animate-in rounded-2xl border border-default-100 p-4 duration-200"
+          className="slide-in-from-top-2 fade-in rounded-2xl border border-default-100 p-4 "
           variant="secondary"
         >
           <div className="mb-4 flex items-center gap-2 font-medium text-default-600 text-sm">
@@ -194,7 +194,7 @@ function SyncHistoryItem({
   return (
     <Accordion.Item defaultExpanded={defaultExpanded} id={log.id.toString()}>
       <Accordion.Heading>
-        <Accordion.Trigger className="flex w-full flex-wrap items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-default-50/50 sm:flex-nowrap">
+        <Accordion.Trigger className="flex w-full flex-wrap items-center gap-3 px-4 py-3 text-left hover:bg-default-50/50 sm:flex-nowrap">
           <StatusBadge status={log.status} />
           <div className="min-w-24">
             <div className="font-medium text-sm">{dayjs(log.startedAt).format("DD/MM/YYYY")}</div>

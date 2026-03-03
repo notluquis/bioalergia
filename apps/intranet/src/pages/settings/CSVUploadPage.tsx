@@ -795,7 +795,7 @@ function ImportModeCard({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <Button
             className={cn(
-              "flex-1 rounded-lg border-2 p-4 text-left transition-colors",
+              "flex-1 rounded-lg border-2 p-4 text-left ",
               importMode === "insert-only"
                 ? "border-primary/50 bg-primary/5"
                 : "border-default-200 hover:border-default-300",
@@ -824,7 +824,7 @@ function ImportModeCard({
 
           <Button
             className={cn(
-              "flex-1 rounded-lg border-2 p-4 text-left transition-colors",
+              "flex-1 rounded-lg border-2 p-4 text-left ",
               importMode === "insert-or-update"
                 ? "border-primary/50 bg-primary/5"
                 : "border-default-200 hover:border-default-300",
@@ -1291,7 +1291,7 @@ function ImportActionsBar(props: {
         variant="secondary"
       >
         {props.isProcessing ? (
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          <Loader2 className="mr-2 h-4 w-4 " />
         ) : (
           <FileUp className="mr-2 h-4 w-4" />
         )}
@@ -1309,7 +1309,7 @@ function ImportActionsBar(props: {
         onPress={props.onImport}
       >
         {props.isProcessing ? (
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          <Loader2 className="mr-2 h-4 w-4 " />
         ) : (
           <CheckCircle className="mr-2 h-4 w-4" />
         )}

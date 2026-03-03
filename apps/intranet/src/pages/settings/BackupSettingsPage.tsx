@@ -169,7 +169,7 @@ function RunningJobProgressCard({
     <Surface aria-live="polite" className="rounded-[28px] p-6 shadow-inner" variant="secondary">
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Loader2 className="size-5 animate-spin text-primary" />
+          <Loader2 className="size-5 text-primary" />
           <span className="font-medium">
             {isBackupFlow ? "Backup en progreso" : "Restauración en progreso"}
           </span>
@@ -178,8 +178,8 @@ function RunningJobProgressCard({
       </div>
       <div className="h-2 overflow-hidden rounded-full bg-default-100">
         <div
-          className={cn("h-full bg-primary transition-all duration-300", {
-            "animate-pulse": progress < 12,
+          className={cn("h-full bg-primary ", {
+            "": progress < 12,
           })}
           style={{ width: `${progress}%` }}
         />
@@ -447,7 +447,7 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
     <Disclosure>
       <Disclosure.Heading>
         <Button
-          className="flex w-full cursor-pointer items-center justify-between p-4 text-left transition-colors hover:bg-default-50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-inset"
+          className="flex w-full cursor-pointer items-center justify-between p-4 text-left hover:bg-default-50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-inset"
           slot="trigger"
           type="button"
           variant="ghost"
@@ -583,7 +583,7 @@ function BackupTablesList({
               {tables.map((table) => (
                 <div
                   className={cn(
-                    "flex items-center gap-2 rounded-lg border border-default-200 p-2 text-sm transition-colors hover:bg-default-50",
+                    "flex items-center gap-2 rounded-lg border border-default-200 p-2 text-sm hover:bg-default-50",
                     selectedTables.includes(table) ? "border-primary bg-primary/5" : "",
                   )}
                   key={table}

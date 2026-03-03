@@ -31,7 +31,7 @@ export function MfaStep({
   if (isLoading && !mfaSecret) {
     return (
       <div className="flex justify-center py-8">
-        <Loader2 className="animate-spin text-primary" size={40} />
+        <Loader2 className=" text-primary" size={40} />
       </div>
     );
   }
@@ -100,7 +100,7 @@ export function MfaStep({
             onPress={onVerifyMfa}
             variant="primary"
           >
-            {isLoading ? <Loader2 className="animate-spin" /> : "Verificar y activar"}
+            {isLoading ? <Loader2 className="" /> : "Verificar y activar"}
           </Button>
         </div>
 

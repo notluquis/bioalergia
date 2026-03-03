@@ -238,7 +238,7 @@ export function AccountSettingsPage() {
                           }}
                         >
                           {enableMfaMutation.isPending ? (
-                            <Loader2 className="size-4 animate-spin" />
+                            <Loader2 className="size-4 " />
                           ) : (
                             "Activar"
                           )}
@@ -264,9 +264,7 @@ export function AccountSettingsPage() {
                       setupMfaMutation.mutate();
                     }}
                   >
-                    {setupMfaMutation.isPending ? (
-                      <Loader2 className="mr-2 size-4 animate-spin" />
-                    ) : null}
+                    {setupMfaMutation.isPending ? <Loader2 className="mr-2 size-4 " /> : null}
                     Configurar MFA
                   </Button>
                 )}
@@ -327,7 +325,7 @@ export function AccountSettingsPage() {
                   variant="outline"
                 >
                   {registerPasskeyMutation.isPending ? (
-                    <Loader2 className="mr-2 size-4 animate-spin" />
+                    <Loader2 className="mr-2 size-4 " />
                   ) : (
                     <Fingerprint className="mr-2 size-4" />
                   )}
