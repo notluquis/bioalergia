@@ -725,24 +725,24 @@ function ImportSummaryCard({
 
   return (
     <Card className="border-primary/20 bg-primary/5">
-      <Card.Content className="p-6">
-        <span className="mb-4 block font-semibold text-lg">Vista Previa de Importación</span>
+      <Card.Content className="p-3">
+        <span className="mb-3 block font-semibold text-lg">Vista Previa de Importación</span>
         {droppedDuplicates > 0 && (
           <div className="mb-3 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-warning text-xs">
             Se detectaron {droppedDuplicates} filas repetidas por <code>withdrawId</code> entre
             archivos y se omitieron del cálculo del lote.
           </div>
         )}
-        <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-3">
-          <div className="rounded-lg border border-default-100 bg-background p-3 shadow-sm">
+        <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-3">
+          <div className="rounded-lg border border-default-100 bg-background p-2.5 shadow-sm">
             <div className="mb-1 text-xs uppercase tracking-wider opacity-70">Insertar</div>
             <div className="font-bold text-2xl text-success">{previewData.toInsert ?? 0}</div>
           </div>
-          <div className="rounded-lg border border-default-100 bg-background p-3 shadow-sm">
+          <div className="rounded-lg border border-default-100 bg-background p-2.5 shadow-sm">
             <div className="mb-1 text-xs uppercase tracking-wider opacity-70">Actualizar</div>
             <div className="font-bold text-2xl text-info">{previewData.toUpdate ?? 0}</div>
           </div>
-          <div className="rounded-lg border border-default-100 bg-background p-3 shadow-sm">
+          <div className="rounded-lg border border-default-100 bg-background p-2.5 shadow-sm">
             <div className="mb-1 text-xs uppercase tracking-wider opacity-70">Omitir</div>
             <div className="font-bold text-2xl text-warning">{previewData.toSkip ?? 0}</div>
           </div>

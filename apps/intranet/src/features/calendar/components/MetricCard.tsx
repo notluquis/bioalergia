@@ -41,7 +41,7 @@ export function MetricCard({
 
   return (
     <Card className={cn("border border-default-200 bg-background shadow-sm", className)}>
-      <Card.Content className="p-4">
+      <Card.Content className="p-3">
         <Description
           className={cn(
             "font-semibold text-default-500 uppercase tracking-wide",
@@ -50,7 +50,7 @@ export function MetricCard({
         >
           {title}
         </Description>
-        <p className={cn("mt-2", toneClassByMetric[tone], sizeClasses.value)}>
+        <p className={cn("mt-1", toneClassByMetric[tone], sizeClasses.value)}>
           {value}
           {suffix ? (
             <span className="ml-1 font-normal text-default-400 text-sm">{suffix}</span>

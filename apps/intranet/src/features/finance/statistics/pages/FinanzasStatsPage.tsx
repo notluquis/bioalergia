@@ -233,12 +233,12 @@ export function FinanzasStatsPage() {
         <div className="space-y-6">
           {/* KPI Cards */}
           <section className="grid gap-4 sm:grid-cols-3">
-            <Card className="p-4" variant="secondary">
+            <Card className="p-3" variant="secondary">
               <Card.Header className="items-center justify-between p-0">
                 <Card.Title className="text-sm">INGRESOS</Card.Title>
                 <ArrowUp className="h-4 w-4 text-success" />
               </Card.Header>
-              <Card.Content className="p-0 pt-3">
+              <Card.Content className="p-0 pt-2">
                 <p className="font-semibold text-2xl text-success">
                   ${totals.in.toLocaleString("es-CL")}
                 </p>
@@ -246,12 +246,12 @@ export function FinanzasStatsPage() {
               </Card.Content>
             </Card>
 
-            <Card className="p-4" variant="secondary">
+            <Card className="p-3" variant="secondary">
               <Card.Header className="items-center justify-between p-0">
                 <Card.Title className="text-sm">EGRESOS</Card.Title>
                 <ArrowDown className="h-4 w-4 text-danger" />
               </Card.Header>
-              <Card.Content className="p-0 pt-3">
+              <Card.Content className="p-0 pt-2">
                 <p className="font-semibold text-2xl text-danger">
                   ${totals.out.toLocaleString("es-CL")}
                 </p>
@@ -259,12 +259,12 @@ export function FinanzasStatsPage() {
               </Card.Content>
             </Card>
 
-            <Card className="p-4" variant="secondary">
+            <Card className="p-3" variant="secondary">
               <Card.Header className="items-center justify-between p-0">
                 <Card.Title className="text-sm">RESULTADO</Card.Title>
                 <BarChart3 className="h-4 w-4 text-primary" />
               </Card.Header>
-              <Card.Content className="p-0 pt-3">
+              <Card.Content className="p-0 pt-2">
                 <p
                   className={`font-semibold text-2xl ${totals.net >= 0 ? "text-success" : "text-danger"}`}
                 >

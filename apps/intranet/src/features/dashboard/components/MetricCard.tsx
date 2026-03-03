@@ -1,3 +1,4 @@
+import { Card } from "@heroui/react";
 import { type LucideIcon, TrendingDown, TrendingUp, Wallet } from "lucide-react";
 
 import { fmtCLP } from "@/lib/format";
@@ -59,15 +60,15 @@ export function MetricCard({
   const Icon = theme.icon;
 
   return (
-    <article
-      className={`relative overflow-hidden rounded-4xl bg-linear-to-br ${theme.gradient} p-6 shadow-lg ring-1 ring-inset hover:shadow-xl ${theme.ring}`}
+    <Card
+      className={`relative overflow-hidden rounded-4xl bg-linear-to-br ${theme.gradient} shadow-lg ring-1 ring-inset ${theme.ring}`}
     >
       <div
         aria-hidden="true"
         className={`pointer-events-none absolute inset-0 rounded-3xl bg-linear-to-br ${theme.gradient}`}
       />
 
-      <div className="relative flex flex-col gap-3">
+      <Card.Content className="relative flex flex-col gap-2 p-3">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2">
             <div
@@ -84,7 +85,7 @@ export function MetricCard({
           </span>
         </div>
         <p className={`typ-subtitle ${theme.value} pl-1`}>{loading ? "—" : fmtCLP(value)}</p>
-      </div>
-    </article>
+      </Card.Content>
+    </Card>
   );
 }
