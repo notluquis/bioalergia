@@ -394,8 +394,8 @@ function AnalyticsCharts({
           </span>
         </Card.Header>
         <Card.Content>
-          <div className="h-52 min-h-52 w-full min-w-0">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="w-full min-w-0">
+            <ResponsiveContainer width="100%" height={208} minWidth={0} minHeight={208}>
               <AreaChart
                 data={trendData?.toReversed() ?? []}
                 margin={{ top: 10, right: 30, left: 0, bottom: 0 }}

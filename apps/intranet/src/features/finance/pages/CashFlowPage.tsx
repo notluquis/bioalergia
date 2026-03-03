@@ -24,7 +24,6 @@ import {
   TextField,
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { X } from "lucide-react";
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
@@ -367,14 +366,20 @@ function useAvailableFinancialMonths() {
   });
 }
 
-export const Route = createFileRoute("/_authed/finanzas/cash-flow")({
-  component: CashFlowPage,
-});
-
 type CashFlowTab = "cash-flow" | "categories" | "movements";
 
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat("es-CL", { currency: "CLP", style: "currency" }).format(amount);
+
+const FALLBACK_CATEGORY_COLOR = "#64748b";
+
+function getSafeParsedColor(value: string) {
+  try {
+    return parseColor(value);
+  } catch {
+    return parseColor(FALLBACK_CATEGORY_COLOR);
+  }
+}
 
 const CATEGORY_COLOR_PRESETS = [
   "#EF4444",
@@ -569,7 +574,10 @@ function CategoryColorPicker({
   return (
     <div className={`space-y-2 ${className ?? ""}`.trim()}>
       <Label>{label}</Label>
-      <ColorPicker value={parseColor(value)} onChange={(color) => onChange(color.toString("hex"))}>
+      <ColorPicker
+        value={getSafeParsedColor(value)}
+        onChange={(color) => onChange(color.toString("hex"))}
+      >
         <ColorPicker.Trigger className="flex h-10 w-full items-center gap-2 rounded-xl border border-default-300/70 bg-default-100/35 px-3">
           <ColorSwatch size="sm" />
           <span className="text-tiny text-default-500 uppercase">{value}</span>

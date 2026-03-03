@@ -2,6 +2,7 @@ import { Card, Description, Label, ListBox, Select } from "@heroui/react";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import type { ColumnDef, PaginationState } from "@tanstack/react-table";
 import dayjs from "dayjs";
+import { Check } from "lucide-react";
 import { useEffect, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { dteAnalyticsKeys } from "@/features/finance/dte-analytics/queries";
@@ -146,7 +147,11 @@ export function DteSalesDetailsPanel() {
               {periods.map((period) => (
                 <ListBox.Item id={period} key={period}>
                   {period}
-                  <ListBox.ItemIndicator />
+                  <ListBox.ItemIndicator>
+                    {({ isSelected }) =>
+                      isSelected ? <Check className="h-4 w-4 text-primary" /> : null
+                    }
+                  </ListBox.ItemIndicator>
                 </ListBox.Item>
               ))}
             </ListBox>

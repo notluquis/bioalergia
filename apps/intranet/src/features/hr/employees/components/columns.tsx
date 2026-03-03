@@ -66,11 +66,18 @@ export const columns: ColumnDef<Employee>[] = [
   },
   {
     accessorKey: "person.email",
-    cell: ({ row }) => (
-      <span className="text-default-500">{row.original.person?.email ?? "—"}</span>
-    ),
+    cell: ({ row }) => {
+      const email = row.original.person?.email ?? "—";
+      return (
+        <span className="block max-w-56 truncate text-default-500" title={email}>
+          {email}
+        </span>
+      );
+    },
 
     header: "Correo",
+    minSize: 190,
+    size: 220,
   },
   {
     accessorKey: "person.rut",
@@ -83,16 +90,19 @@ export const columns: ColumnDef<Employee>[] = [
       if (!e.bankName) {
         return <span className="text-default-500">—</span>;
       }
+      const bankText = `${e.bankName}${e.bankAccountType ? ` · ${e.bankAccountType}` : ""}${
+        e.bankAccountNumber ? ` · ${e.bankAccountNumber}` : ""
+      }`;
       return (
-        <span className="whitespace-nowrap text-foreground">
-          {e.bankName}
-          {e.bankAccountType ? ` · ${e.bankAccountType}` : ""}
-          {e.bankAccountNumber ? ` · ${e.bankAccountNumber}` : ""}
+        <span className="block max-w-72 truncate text-foreground" title={bankText}>
+          {bankText}
         </span>
       );
     },
     header: "Banco / Cuenta",
     id: "bank",
+    minSize: 240,
+    size: 280,
   },
   {
     accessorFn: (row) => getEmployeeRetentionRate(row),
@@ -122,6 +132,8 @@ export const columns: ColumnDef<Employee>[] = [
     },
     header: "Retención",
     id: "retentionRate",
+    minSize: 140,
+    size: 160,
   },
   {
     accessorKey: "status",

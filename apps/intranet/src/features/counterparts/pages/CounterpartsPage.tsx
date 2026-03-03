@@ -17,7 +17,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import type { ColumnDef, OnChangeFn, PaginationState } from "@tanstack/react-table";
-import { Filter, Plus, RefreshCcw } from "lucide-react";
+import { Check, Filter, Plus, RefreshCcw } from "lucide-react";
 import { Suspense, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { TableRegion } from "@/components/data-table/TableRegion";
@@ -1028,7 +1028,11 @@ function CounterpartsToolbar({
                             RUT {item.identificationNumber}
                           </span>
                         ) : null}
-                        <ListBox.ItemIndicator />
+                        <ListBox.ItemIndicator>
+                          {({ isSelected }) =>
+                            isSelected ? <Check className="h-4 w-4 text-primary" /> : null
+                          }
+                        </ListBox.ItemIndicator>
                       </ListBox.Item>
                     ))}
                   </ListBox>
