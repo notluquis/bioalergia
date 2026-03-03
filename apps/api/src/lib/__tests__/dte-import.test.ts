@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { parseAmount, parseDate } from "../dte-import";
+import { buildDtePurchaseDetail, parseAmount, parseDate } from "../dte-import";
 
 describe("parseDate", () => {
   describe("Haulmer CSV format (YYYY-MM-DD)", () => {
@@ -164,5 +164,18 @@ describe("parseAmount", () => {
       expect(parseAmount(undefined)).toBeNull();
       expect(parseAmount("")).toBeNull();
     });
+  });
+});
+
+describe("buildDtePurchaseDetail", () => {
+  it("should fallback providerName from clientName for Haulmer purchases", () => {
+    const detail = buildDtePurchaseDetail({
+      period: "202602",
+      providerRUT: "77398220-1",
+      folio: "12092213",
+      clientName: "MercadoLibre Chile Ltda.",
+    });
+
+    expect(detail.providerName).toBe("MercadoLibre Chile Ltda.");
   });
 });

@@ -163,12 +163,15 @@ export function buildDteSaleDetail(row: Record<string, unknown>): Record<string,
  * Build DTEPurchaseDetail data from CSV/Haulmer row
  */
 export function buildDtePurchaseDetail(row: Record<string, unknown>): Record<string, unknown> {
+  const providerNameSource =
+    row.providerName ?? row.clientName ?? row["Razón Social"] ?? row["Razon Social"];
+
   return {
     registerNumber: toNumber(row.registerNumber),
     documentType: toNumber(row.documentType, 33),
     purchaseType: toRequiredString(row.purchaseType, "Compras del Giro"),
     providerRUT: toRequiredString(row.providerRUT),
-    providerName: toRequiredString(row.providerName),
+    providerName: toRequiredString(providerNameSource),
     folio: toRequiredString(row.folio),
     documentDate: parseDate(row.documentDate),
     receiptDate: parseDate(row.receiptDate),
