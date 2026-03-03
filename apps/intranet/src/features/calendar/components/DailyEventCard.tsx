@@ -1,4 +1,4 @@
-import { Card, Chip } from "@heroui/react";
+import { Button, Card, Chip } from "@heroui/react";
 import dayjs from "dayjs";
 import {
   CalendarClock,
@@ -8,8 +8,7 @@ import {
   type LucideIcon,
   XCircle,
 } from "lucide-react";
-
-import type { CalendarEventDetail } from "@/features/calendar/types";
+import type { CalendarEventDetail, EventDteConfirmedLink } from "@/features/calendar/types";
 import type {
   CalendarEventState,
   CalendarEventStateTone,
@@ -22,6 +21,8 @@ import { FormattedEventDescription } from "./FormattedEventDescription";
 
 interface DailyEventCardProps {
   readonly event: CalendarEventDetail;
+  readonly eventDteLink?: EventDteConfirmedLink;
+  readonly onLinkClick?: (event: CalendarEventDetail) => void;
 }
 
 type StateBadge = CalendarEventState & {
@@ -130,7 +131,7 @@ function buildRightSideBadges(event: CalendarEventDetail) {
   return badges;
 }
 
-export function DailyEventCard({ event }: DailyEventCardProps) {
+export function DailyEventCard({ event, eventDteLink, onLinkClick }: DailyEventCardProps) {
   const start = event.startDateTime ? dayjs(event.startDateTime) : null;
   const end = event.endDateTime ? dayjs(event.endDateTime) : null;
   const durationMinutes = start && end ? end.diff(start, "minute") : null;
@@ -232,6 +233,26 @@ export function DailyEventCard({ event }: DailyEventCardProps) {
               {badge.label}
             </Chip>
           ))}
+          {eventDteLink ? (
+            <Chip
+              className="h-6 font-medium text-[10px] uppercase tracking-wide"
+              color="success"
+              size="sm"
+              variant="soft"
+            >
+              DTE: {eventDteLink.folio}
+            </Chip>
+          ) : null}
+          {onLinkClick ? (
+            <Button
+              className="h-6 px-2 text-[10px] uppercase tracking-wide"
+              size="sm"
+              variant="ghost"
+              onPress={() => onLinkClick(event)}
+            >
+              Vincular DTE
+            </Button>
+          ) : null}
         </div>
       </div>
     </Card>

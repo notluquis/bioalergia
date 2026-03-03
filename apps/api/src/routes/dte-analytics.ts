@@ -11,6 +11,14 @@ import { sql } from "kysely";
 import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { zValidator } from "../lib/zod-validator";
+import {
+  autoLinkEventDate,
+  confirmEventDteLink,
+  getEventDteSuggestions,
+  listEventDteLinksByDate,
+  normalizeLinkDate,
+  unlinkEventDteLink,
+} from "../services/dte-event-linking";
 import { reply } from "../utils/reply";
 
 export const dteAnalyticsRoutes = new Hono();
@@ -69,6 +77,36 @@ const detailsQuerySchema = z.object({
     .string()
     .regex(/^\d{4}-\d{2}$/)
     .optional(),
+});
+
+const eventLinkByDayQuerySchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+});
+
+const eventLinkSuggestionsQuerySchema = z.object({
+  calendarId: z.string().min(1),
+  eventId: z.string().min(1),
+  limit: z.coerce.number().int().min(1).max(30).optional(),
+});
+
+const confirmEventLinkSchema = z.object({
+  calendarId: z.string().min(1),
+  eventId: z.string().min(1),
+  dteSaleDetailId: z.string().min(1),
+  confidenceScore: z.number().min(0).max(100).optional(),
+  matchedBy: z.enum(["manual", "mixed", "name_exact", "name_fuzzy", "rut"]).optional(),
+  matchedName: z.string().nullable().optional(),
+  matchedRUT: z.string().nullable().optional(),
+});
+
+const unlinkEventLinkSchema = z.object({
+  calendarId: z.string().min(1),
+  eventId: z.string().min(1),
+});
+
+const autoLinkDaySchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  minScore: z.number().min(0).max(100).optional(),
 });
 
 /**
@@ -364,6 +402,176 @@ dteAnalyticsRoutes.get(
     } catch (error) {
       console.error("Error fetching yearly comparison:", error);
       return reply(c, { status: "error", message: "Failed to retrieve yearly comparison" }, 500);
+    }
+  },
+);
+
+/**
+ * GET /event-links/by-day - List confirmed links for events in a date
+ */
+dteAnalyticsRoutes.get(
+  "/event-links/by-day",
+  zValidator("query", eventLinkByDayQuerySchema),
+  async (c) => {
+    const user = await getSessionUser(c);
+    if (!user) {
+      return reply(c, { status: "error", message: "Unauthorized" }, 401);
+    }
+
+    const canReadCalendar = await hasPermission(user.id, "read", "CalendarDaily");
+    const canReadDte = await hasPermission(user.id, "read", "DTEPurchaseDetail");
+    if (!canReadCalendar || !canReadDte) {
+      return reply(c, { status: "error", message: "Forbidden" }, 403);
+    }
+
+    try {
+      const { date } = c.req.valid("query");
+      const normalizedDate = normalizeLinkDate(date);
+      const data = await listEventDteLinksByDate(normalizedDate);
+      return reply(c, { status: "success", data });
+    } catch (error) {
+      return reply(
+        c,
+        {
+          status: "error",
+          message: error instanceof Error ? error.message : "Failed to list links by day",
+        },
+        400,
+      );
+    }
+  },
+);
+
+/**
+ * GET /event-links/suggestions - Suggest DTE sale links for one event
+ */
+dteAnalyticsRoutes.get(
+  "/event-links/suggestions",
+  zValidator("query", eventLinkSuggestionsQuerySchema),
+  async (c) => {
+    const user = await getSessionUser(c);
+    if (!user) {
+      return reply(c, { status: "error", message: "Unauthorized" }, 401);
+    }
+
+    const canReadCalendar = await hasPermission(user.id, "read", "CalendarDaily");
+    const canReadDte = await hasPermission(user.id, "read", "DTEPurchaseDetail");
+    if (!canReadCalendar || !canReadDte) {
+      return reply(c, { status: "error", message: "Forbidden" }, 403);
+    }
+
+    try {
+      const { calendarId, eventId, limit } = c.req.valid("query");
+      const data = await getEventDteSuggestions({ calendarId, eventId, limit });
+      return reply(c, { status: "success", data });
+    } catch (error) {
+      console.error("Error fetching event link suggestions:", error);
+      return reply(c, { status: "error", message: "Failed to fetch suggestions" }, 500);
+    }
+  },
+);
+
+/**
+ * POST /event-links/confirm - Confirm/overwrite event to DTE link
+ */
+dteAnalyticsRoutes.post(
+  "/event-links/confirm",
+  zValidator("json", confirmEventLinkSchema),
+  async (c) => {
+    const user = await getSessionUser(c);
+    if (!user) {
+      return reply(c, { status: "error", message: "Unauthorized" }, 401);
+    }
+
+    const canWriteCalendar = await hasPermission(user.id, "update", "CalendarEvent");
+    const canReadDte = await hasPermission(user.id, "read", "DTEPurchaseDetail");
+    if (!canWriteCalendar || !canReadDte) {
+      return reply(c, { status: "error", message: "Forbidden" }, 403);
+    }
+
+    try {
+      const payload = c.req.valid("json");
+      const data = await confirmEventDteLink({
+        ...payload,
+        userId: user.id,
+      });
+      return reply(c, { status: "success", data });
+    } catch (error) {
+      return reply(
+        c,
+        {
+          status: "error",
+          message: error instanceof Error ? error.message : "Failed to confirm link",
+        },
+        400,
+      );
+    }
+  },
+);
+
+/**
+ * POST /event-links/unlink - Remove confirmed event to DTE link
+ */
+dteAnalyticsRoutes.post(
+  "/event-links/unlink",
+  zValidator("json", unlinkEventLinkSchema),
+  async (c) => {
+    const user = await getSessionUser(c);
+    if (!user) {
+      return reply(c, { status: "error", message: "Unauthorized" }, 401);
+    }
+
+    const canWriteCalendar = await hasPermission(user.id, "update", "CalendarEvent");
+    if (!canWriteCalendar) {
+      return reply(c, { status: "error", message: "Forbidden" }, 403);
+    }
+
+    try {
+      const payload = c.req.valid("json");
+      const data = await unlinkEventDteLink(payload);
+      return reply(c, { status: "success", data });
+    } catch (_error) {
+      return reply(c, { status: "error", message: "Failed to unlink" }, 500);
+    }
+  },
+);
+
+/**
+ * POST /event-links/auto-link-day - Auto-link confident matches for one day
+ */
+dteAnalyticsRoutes.post(
+  "/event-links/auto-link-day",
+  zValidator("json", autoLinkDaySchema),
+  async (c) => {
+    const user = await getSessionUser(c);
+    if (!user) {
+      return reply(c, { status: "error", message: "Unauthorized" }, 401);
+    }
+
+    const canWriteCalendar = await hasPermission(user.id, "update", "CalendarEvent");
+    const canReadDte = await hasPermission(user.id, "read", "DTEPurchaseDetail");
+    if (!canWriteCalendar || !canReadDte) {
+      return reply(c, { status: "error", message: "Forbidden" }, 403);
+    }
+
+    try {
+      const { date, minScore } = c.req.valid("json");
+      const normalizedDate = normalizeLinkDate(date);
+      const data = await autoLinkEventDate({
+        date: normalizedDate,
+        minScore,
+        userId: user.id,
+      });
+      return reply(c, { status: "success", data });
+    } catch (error) {
+      return reply(
+        c,
+        {
+          status: "error",
+          message: error instanceof Error ? error.message : "Failed to auto link events",
+        },
+        400,
+      );
     }
   },
 );

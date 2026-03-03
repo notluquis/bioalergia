@@ -308,6 +308,85 @@ export const ReclassifyJobResponseSchema = z.strictObject({
   totalEvents: z.number(),
 });
 
+export const EventDteSuggestionSchema = z.strictObject({
+  clientName: z.string(),
+  clientRUT: z.string(),
+  confidenceScore: z.number(),
+  documentDate: z.string(),
+  documentType: z.number(),
+  dteSaleDetailId: z.string(),
+  exemptAmount: z.number(),
+  folio: z.string(),
+  ivaAmount: z.number(),
+  method: z.enum(["mixed", "name_exact", "name_fuzzy", "rut"]),
+  netAmount: z.number(),
+  reasons: z.array(z.string()),
+  registerNumber: z.number(),
+  totalAmount: z.number(),
+});
+
+export const EventDteSuggestionResponseSchema = z.strictObject({
+  data: z.strictObject({
+    event: z
+      .strictObject({
+        amountExpected: z.number().nullable(),
+        amountPaid: z.number().nullable(),
+        calendarId: z.string(),
+        description: z.string().nullable(),
+        eventDate: z.string(),
+        eventId: z.string(),
+        hints: z.strictObject({
+          nameHints: z.array(z.string()),
+          rutHints: z.array(z.string()),
+        }),
+        summary: z.string().nullable(),
+      })
+      .nullable(),
+    linked: z.unknown().nullable(),
+    suggestions: z.array(EventDteSuggestionSchema),
+  }),
+  status: z.literal("success"),
+});
+
+export const EventDteByDayResponseSchema = z.strictObject({
+  data: z.array(
+    z.strictObject({
+      calendarId: z.string(),
+      clientName: z.string(),
+      clientRUT: z.string(),
+      confidenceScore: z.number(),
+      dteSaleDetailId: z.string(),
+      eventId: z.string(),
+      folio: z.string(),
+      matchedBy: z.string(),
+      status: z.string(),
+      totalAmount: z.number(),
+    }),
+  ),
+  status: z.literal("success"),
+});
+
+export const EventDteConfirmResponseSchema = z.strictObject({
+  data: z.unknown().nullable(),
+  status: z.literal("success"),
+});
+
+export const EventDteAutoLinkResponseSchema = z.strictObject({
+  data: z.strictObject({
+    date: z.string(),
+    details: z.array(
+      z.strictObject({
+        eventId: z.string(),
+        reason: z.string(),
+      }),
+    ),
+    linked: z.number(),
+    skipped: z.number(),
+    totalEvents: z.number(),
+  }),
+  status: z.literal("success"),
+});
+
 const TreatmentAnalyticsPeriodSchema = z.strictObject({
   amountExpected: z.number(),
   amountPaid: z.number(),

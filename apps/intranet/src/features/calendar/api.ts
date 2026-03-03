@@ -6,6 +6,10 @@ import {
   CalendarSyncResponseSchema,
   CalendarsResponseSchema,
   ClassificationOptionsSchema,
+  EventDteAutoLinkResponseSchema,
+  EventDteByDayResponseSchema,
+  EventDteConfirmResponseSchema,
+  EventDteSuggestionResponseSchema,
   ReclassifyJobResponseSchema,
   StatusOkSchema,
   TreatmentAnalyticsResponseSchema,
@@ -19,6 +23,8 @@ import type {
   CalendarSummary,
   CalendarSyncLog,
   CalendarUnclassifiedEvent,
+  EventDteConfirmedLink,
+  EventDteSuggestion,
   TreatmentAnalytics,
   TreatmentAnalyticsFilters,
 } from "./types";
@@ -240,6 +246,104 @@ export async function fetchTreatmentAnalytics(
     responseSchema: TreatmentAnalyticsResponseSchema,
   });
 
+  return response.data;
+}
+
+export async function fetchEventDteLinksByDay(date: string): Promise<EventDteConfirmedLink[]> {
+  const response = await apiClient.get<{ data: EventDteConfirmedLink[]; status: "success" }>(
+    "/api/dte-analytics/event-links/by-day",
+    {
+      query: { date },
+      responseSchema: EventDteByDayResponseSchema,
+    },
+  );
+  return response.data;
+}
+
+export async function fetchEventDteSuggestions(params: {
+  calendarId: string;
+  eventId: string;
+  limit?: number;
+}): Promise<{
+  event: null | {
+    amountExpected: null | number;
+    amountPaid: null | number;
+    calendarId: string;
+    description: null | string;
+    eventDate: string;
+    eventId: string;
+    hints: { nameHints: string[]; rutHints: string[] };
+    summary: null | string;
+  };
+  linked: unknown;
+  suggestions: EventDteSuggestion[];
+}> {
+  const response = await apiClient.get<{
+    data: {
+      event: null | {
+        amountExpected: null | number;
+        amountPaid: null | number;
+        calendarId: string;
+        description: null | string;
+        eventDate: string;
+        eventId: string;
+        hints: { nameHints: string[]; rutHints: string[] };
+        summary: null | string;
+      };
+      linked: unknown;
+      suggestions: EventDteSuggestion[];
+    };
+    status: "success";
+  }>("/api/dte-analytics/event-links/suggestions", {
+    query: params,
+    responseSchema: EventDteSuggestionResponseSchema,
+  });
+
+  return response.data;
+}
+
+export async function confirmEventDteLink(payload: {
+  calendarId: string;
+  confidenceScore?: number;
+  dteSaleDetailId: string;
+  eventId: string;
+  matchedBy?: "manual" | "mixed" | "name_exact" | "name_fuzzy" | "rut";
+  matchedName?: null | string;
+  matchedRUT?: null | string;
+}): Promise<void> {
+  await apiClient.post("/api/dte-analytics/event-links/confirm", payload, {
+    responseSchema: EventDteConfirmResponseSchema,
+  });
+}
+
+export async function unlinkEventDteLink(payload: {
+  calendarId: string;
+  eventId: string;
+}): Promise<void> {
+  await apiClient.post("/api/dte-analytics/event-links/unlink", payload, {
+    responseSchema: EventDteConfirmResponseSchema,
+  });
+}
+
+export async function autoLinkEventDteByDay(payload: { date: string; minScore?: number }): Promise<{
+  date: string;
+  details: Array<{ eventId: string; reason: string }>;
+  linked: number;
+  skipped: number;
+  totalEvents: number;
+}> {
+  const response = await apiClient.post<{
+    data: {
+      date: string;
+      details: Array<{ eventId: string; reason: string }>;
+      linked: number;
+      skipped: number;
+      totalEvents: number;
+    };
+    status: "success";
+  }>("/api/dte-analytics/event-links/auto-link-day", payload, {
+    responseSchema: EventDteAutoLinkResponseSchema,
+  });
   return response.data;
 }
 

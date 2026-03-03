@@ -166,6 +166,36 @@ export interface CalendarEventDetail {
   visibility: null | string;
 }
 
+export interface EventDteSuggestion {
+  clientName: string;
+  clientRUT: string;
+  confidenceScore: number;
+  documentDate: string;
+  documentType: number;
+  dteSaleDetailId: string;
+  exemptAmount: number;
+  folio: string;
+  ivaAmount: number;
+  method: "mixed" | "name_exact" | "name_fuzzy" | "rut";
+  netAmount: number;
+  reasons: string[];
+  registerNumber: number;
+  totalAmount: number;
+}
+
+export interface EventDteConfirmedLink {
+  calendarId: string;
+  clientName: string;
+  clientRUT: string;
+  confidenceScore: number;
+  dteSaleDetailId: string;
+  eventId: string;
+  folio: string;
+  matchedBy: string;
+  status: string;
+  totalAmount: number;
+}
+
 export interface CalendarFilters {
   calendarIds?: string[];
   categories: string[];

@@ -1,12 +1,17 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
 import { Filter } from "lucide-react";
+import { useToast } from "@/context/ToastContext";
+import { autoLinkEventDteByDay, fetchEventDteLinksByDay } from "@/features/calendar/api";
 import { CalendarFiltersPopover } from "@/features/calendar/components/CalendarFiltersPopover";
 import { CalendarSkeleton } from "@/features/calendar/components/CalendarSkeleton";
 import { DailyEventCard } from "@/features/calendar/components/DailyEventCard";
 // Components
 import { DailyStatsCards } from "@/features/calendar/components/DailyStatsCards";
 import { DayNavigation } from "@/features/calendar/components/DayNavigation";
+import { EventDteLinkModal } from "@/features/calendar/components/EventDteLinkModal";
 import { useCalendarEvents } from "@/features/calendar/hooks/use-calendar-events";
+import type { CalendarEventDetail } from "@/features/calendar/types";
 import { useDisclosure } from "@/hooks/use-disclosure";
 
 const routeApi = getRouteApi("/_authed/calendar/daily");
@@ -17,6 +22,8 @@ import { useEffect, useState } from "react";
 function CalendarDailyPage() {
   const navigate = routeApi.useNavigate();
   const search = routeApi.useSearch();
+  const queryClient = useQueryClient();
+  const toast = useToast();
 
   const { appliedFilters, availableCategories, currentSelectedDate, daily, defaults, loading } =
     useCalendarEvents();
@@ -24,6 +31,9 @@ function CalendarDailyPage() {
   // Local state for filter draft
   const [draftFilters, setDraftFilters] = useState(appliedFilters);
   const { isOpen: filtersOpen, set: setFiltersOpen } = useDisclosure(false);
+  const [selectedEventForLink, setSelectedEventForLink] = useState<CalendarEventDetail | null>(
+    null,
+  );
 
   // Sync draft with applied filters when popover is closed
   useEffect(() => {
@@ -40,6 +50,29 @@ function CalendarDailyPage() {
   );
 
   const hasEvents = (selectedDayEntry?.events.length ?? 0) > 0;
+  const selectedDateString = dayjs(currentSelectedDate).format("YYYY-MM-DD");
+
+  const linksByDayQuery = useQuery({
+    queryFn: () => fetchEventDteLinksByDay(selectedDateString),
+    queryKey: ["calendar", "dte-link", "by-day", selectedDateString],
+  });
+
+  const autoLinkMutation = useMutation({
+    mutationFn: () => autoLinkEventDteByDay({ date: selectedDateString }),
+    onSuccess: async (result) => {
+      toast.success(`Auto-vinculación completada: ${result.linked} vinculados`);
+      await queryClient.invalidateQueries({
+        queryKey: ["calendar", "dte-link", "by-day", selectedDateString],
+      });
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "No se pudo auto-vincular");
+    },
+  });
+
+  const linksByEvent = new Map(
+    (linksByDayQuery.data ?? []).map((item) => [`${item.calendarId}:::${item.eventId}`, item]),
+  );
 
   return (
     <section className="space-y-4">
@@ -57,44 +90,54 @@ function CalendarDailyPage() {
           }}
           allowedWeekdays={[1, 2, 3, 4, 5, 6]}
           rightSlot={
-            <CalendarFiltersPopover
-              applyCount={daily?.totals.events}
-              availableCategories={availableCategories}
-              className="shadow-lg"
-              filters={draftFilters}
-              isOpen={filtersOpen}
-              layout="dropdown"
-              loading={loading}
-              onApply={() => {
-                void navigate({
-                  search: {
-                    ...search,
-                    calendarId: draftFilters.calendarIds?.length
-                      ? draftFilters.calendarIds
-                      : undefined,
-                    category: draftFilters.categories,
-                    search: draftFilters.search || undefined,
-                  },
-                });
-                setFiltersOpen(false);
-              }}
-              onFilterChange={(key, value) => {
-                setDraftFilters((prev) => ({ ...prev, [key]: value }));
-              }}
-              onOpenChange={setFiltersOpen}
-              onReset={() => {
-                setDraftFilters(defaults);
-                void navigate({
-                  search: (prev: Record<string, unknown>) => ({
-                    ...prev,
-                    calendarId: undefined,
-                    category: [],
-                    search: undefined,
-                  }),
-                });
-              }}
-              panelWidthClassName="w-[min(92vw,480px)]"
-            />
+            <div className="flex items-center gap-2">
+              <button
+                className="rounded-md border border-default-200 px-2 py-1 text-default-600 text-xs hover:bg-default-50"
+                disabled={autoLinkMutation.isPending}
+                onClick={() => autoLinkMutation.mutate()}
+                type="button"
+              >
+                {autoLinkMutation.isPending ? "Auto-vinculando..." : "Auto-vincular DTE"}
+              </button>
+              <CalendarFiltersPopover
+                applyCount={daily?.totals.events}
+                availableCategories={availableCategories}
+                className="shadow-lg"
+                filters={draftFilters}
+                isOpen={filtersOpen}
+                layout="dropdown"
+                loading={loading}
+                onApply={() => {
+                  void navigate({
+                    search: {
+                      ...search,
+                      calendarId: draftFilters.calendarIds?.length
+                        ? draftFilters.calendarIds
+                        : undefined,
+                      category: draftFilters.categories,
+                      search: draftFilters.search || undefined,
+                    },
+                  });
+                  setFiltersOpen(false);
+                }}
+                onFilterChange={(key, value) => {
+                  setDraftFilters((prev) => ({ ...prev, [key]: value }));
+                }}
+                onOpenChange={setFiltersOpen}
+                onReset={() => {
+                  setDraftFilters(defaults);
+                  void navigate({
+                    search: (prev: Record<string, unknown>) => ({
+                      ...prev,
+                      calendarId: undefined,
+                      category: [],
+                      search: undefined,
+                    }),
+                  });
+                }}
+                panelWidthClassName="w-[min(92vw,480px)]"
+              />
+            </div>
           }
           selectedDate={currentSelectedDate}
         />
@@ -135,7 +178,12 @@ function CalendarDailyPage() {
           return (
             <>
               {selectedDayEntry.events.map((event) => (
-                <DailyEventCard event={event} key={event.eventId} />
+                <DailyEventCard
+                  event={event}
+                  eventDteLink={linksByEvent.get(`${event.calendarId}:::${event.eventId}`)}
+                  key={event.eventId}
+                  onLinkClick={(targetEvent) => setSelectedEventForLink(targetEvent)}
+                />
               ))}
 
               {/* Footer */}
@@ -147,6 +195,17 @@ function CalendarDailyPage() {
           );
         })()}
       </div>
+      <EventDteLinkModal
+        event={selectedEventForLink}
+        isOpen={selectedEventForLink != null}
+        onClose={() => setSelectedEventForLink(null)}
+        onLinked={() => {
+          setSelectedEventForLink(null);
+          void queryClient.invalidateQueries({
+            queryKey: ["calendar", "dte-link", "by-day", selectedDateString],
+          });
+        }}
+      />
     </section>
   );
 }
