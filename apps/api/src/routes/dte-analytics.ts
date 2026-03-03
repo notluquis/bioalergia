@@ -13,10 +13,12 @@ import { getSessionUser, hasPermission } from "../auth";
 import { zValidator } from "../lib/zod-validator";
 import {
   autoLinkAllEventPeriods,
+  autoLinkAllEventPeriodsWithProgress,
   autoLinkEventDate,
   autoLinkEventPeriod,
   confirmEventDteLink,
   getEventDteSuggestions,
+  listAutoLinkEligiblePeriods,
   listEventDteLinkOverview,
   listEventDteLinksByDate,
   normalizeLinkDate,
@@ -127,6 +129,7 @@ const autoLinkPeriodSchema = z.object({
 
 const autoLinkAllPeriodsSchema = z.object({
   minScore: z.number().min(0).max(100).optional(),
+  periodConcurrency: z.coerce.number().int().min(1).max(6).optional(),
 });
 
 /**
@@ -646,6 +649,130 @@ dteAnalyticsRoutes.post(
     }
   },
 );
+
+/**
+ * POST /event-links/auto-link-all-periods/start - Start async auto-link job across all periods
+ */
+dteAnalyticsRoutes.post(
+  "/event-links/auto-link-all-periods/start",
+  zValidator("json", autoLinkAllPeriodsSchema),
+  async (c) => {
+    const user = await getSessionUser(c);
+    if (!user) {
+      return reply(c, { status: "error", message: "Unauthorized" }, 401);
+    }
+
+    const canWriteCalendar = await hasPermission(user.id, "update", "CalendarEvent");
+    const canReadDte = await hasPermission(user.id, "read", "DTEPurchaseDetail");
+    if (!canWriteCalendar || !canReadDte) {
+      return reply(c, { status: "error", message: "Forbidden" }, 403);
+    }
+
+    try {
+      const { completeJob, failJob, startJob, updateJobProgress } = await import("../lib/jobQueue");
+      const { minScore, periodConcurrency } = c.req.valid("json");
+      const periods = await listAutoLinkEligiblePeriods();
+      const jobId = startJob("dte-auto-link-all-periods", Math.max(periods.length, 1));
+
+      void (async () => {
+        try {
+          if (periods.length === 0) {
+            updateJobProgress(jobId, 1, "Sin períodos elegibles para auto-vincular");
+            completeJob(jobId, {
+              details: [],
+              linked: 0,
+              periodsProcessed: 0,
+              skipped: 0,
+              skippedByReason: [],
+              totalEvents: 0,
+            });
+            return;
+          }
+
+          const result = await autoLinkAllEventPeriodsWithProgress({
+            minScore,
+            onProgress: (snapshot) => {
+              const boundedProgress = Math.max(
+                0,
+                Math.min(snapshot.completedPeriods, periods.length),
+              );
+              updateJobProgress(
+                jobId,
+                boundedProgress,
+                `Período ${snapshot.currentPeriod} listo (${snapshot.completedPeriods}/${snapshot.totalPeriods}) · Vinculados ${snapshot.linked} · Omitidos ${snapshot.skipped}`,
+              );
+            },
+            periodConcurrency,
+            periods,
+            userId: user.id,
+          });
+
+          completeJob(jobId, result);
+        } catch (error) {
+          failJob(
+            jobId,
+            error instanceof Error ? error.message : "Failed to auto-link all periods",
+          );
+        }
+      })();
+
+      return reply(c, {
+        status: "accepted",
+        data: {
+          jobId,
+          periodConcurrency: Math.max(1, Math.min(periodConcurrency ?? 3, 6)),
+          totalPeriods: periods.length,
+        },
+      });
+    } catch (error) {
+      return reply(
+        c,
+        {
+          status: "error",
+          message: error instanceof Error ? error.message : "Failed to start auto-link job",
+        },
+        400,
+      );
+    }
+  },
+);
+
+/**
+ * GET /event-links/jobs/:jobId - Check async auto-link job status
+ */
+dteAnalyticsRoutes.get("/event-links/jobs/:jobId", async (c) => {
+  const user = await getSessionUser(c);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
+
+  const canReadDte = await hasPermission(user.id, "read", "DTEPurchaseDetail");
+  if (!canReadDte) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
+
+  const { getJobStatus } = await import("../lib/jobQueue");
+  const jobId = c.req.param("jobId");
+  const job = getJobStatus(jobId);
+
+  if (!job || job.type !== "dte-auto-link-all-periods") {
+    return reply(c, { status: "error", message: "Job not found or expired" }, 404);
+  }
+
+  return reply(c, {
+    status: "success",
+    data: {
+      id: job.id,
+      message: job.message,
+      progress: job.progress,
+      result: job.result,
+      status: job.status,
+      total: job.total,
+      type: job.type,
+      error: job.error,
+    },
+  });
+});
 
 /**
  * POST /event-links/unlink - Remove confirmed event to DTE link

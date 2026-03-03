@@ -6,7 +6,9 @@ import {
   CalendarSyncResponseSchema,
   CalendarsResponseSchema,
   ClassificationOptionsSchema,
+  EventDteAutoLinkAllPeriodsJobStatusResponseSchema,
   EventDteAutoLinkAllPeriodsResponseSchema,
+  EventDteAutoLinkAllPeriodsStartResponseSchema,
   EventDteAutoLinkPeriodResponseSchema,
   EventDteAutoLinkResponseSchema,
   EventDteByDayResponseSchema,
@@ -415,6 +417,44 @@ export async function autoLinkEventDteByAllPeriods(payload?: { minScore?: number
   }>("/api/dte-analytics/event-links/auto-link-all-periods", payload ?? {}, {
     responseSchema: EventDteAutoLinkAllPeriodsResponseSchema,
   });
+  return response.data;
+}
+
+export async function startAutoLinkEventDteAllPeriodsJob(payload?: {
+  minScore?: number;
+  periodConcurrency?: number;
+}): Promise<{ jobId: string; periodConcurrency: number; totalPeriods: number }> {
+  const response = await apiClient.post<{
+    data: {
+      jobId: string;
+      periodConcurrency: number;
+      totalPeriods: number;
+    };
+    status: "accepted";
+  }>("/api/dte-analytics/event-links/auto-link-all-periods/start", payload ?? {}, {
+    responseSchema: EventDteAutoLinkAllPeriodsStartResponseSchema,
+  });
+  return response.data;
+}
+
+export interface EventDteAutoLinkJobStatus {
+  error: null | string;
+  id: string;
+  message: string;
+  progress: number;
+  result: unknown;
+  status: "completed" | "failed" | "pending" | "running";
+  total: number;
+  type: string;
+}
+
+export async function fetchAutoLinkEventDteJobStatus(
+  jobId: string,
+): Promise<EventDteAutoLinkJobStatus> {
+  const response = await apiClient.get<{ data: EventDteAutoLinkJobStatus; status: "success" }>(
+    `/api/dte-analytics/event-links/jobs/${jobId}`,
+    { responseSchema: EventDteAutoLinkAllPeriodsJobStatusResponseSchema },
+  );
   return response.data;
 }
 

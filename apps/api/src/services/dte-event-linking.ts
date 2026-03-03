@@ -40,6 +40,23 @@ interface SkipReasonCount {
   reason: string;
 }
 
+interface AutoLinkPeriodSummary {
+  daysProcessed: number;
+  linked: number;
+  period: string;
+  skipped: number;
+  totalEvents: number;
+}
+
+interface AutoLinkProgressSnapshot {
+  completedPeriods: number;
+  currentPeriod: string;
+  linked: number;
+  skipped: number;
+  totalEvents: number;
+  totalPeriods: number;
+}
+
 function incrementReason(counter: Map<string, number>, reason: string, increment = 1) {
   counter.set(reason, (counter.get(reason) ?? 0) + increment);
 }
@@ -1082,48 +1099,128 @@ export async function autoLinkEventPeriod(params: {
 }
 
 export async function autoLinkAllEventPeriods(params: { minScore?: number; userId: number }) {
-  const today = dayjs().tz(TIMEZONE).format("YYYY-MM-DD");
+  const periodRows = await listAutoLinkEligiblePeriods();
+  const periodConcurrency = 3;
+  const queue = [...periodRows];
+  const details: AutoLinkPeriodSummary[] = [];
+  let totalEvents = 0;
+  let linked = 0;
+  let skipped = 0;
+  const skippedByReason = new Map<string, number>();
 
-  const periodRows = await db.$queryRaw<Array<{ period: string }>>`
+  const workers = Array.from({ length: Math.min(periodConcurrency, queue.length || 1) }, () =>
+    (async () => {
+      while (true) {
+        const row = queue.shift();
+        if (!row) {
+          return;
+        }
+
+        const result = await autoLinkEventPeriod({
+          minScore: params.minScore,
+          period: row.period,
+          userId: params.userId,
+        });
+
+        totalEvents += result.totalEvents;
+        linked += result.linked;
+        skipped += result.skipped;
+        for (const reasonCount of result.skippedByReason) {
+          incrementReason(skippedByReason, reasonCount.reason, reasonCount.count);
+        }
+        details.push({
+          period: row.period,
+          linked: result.linked,
+          skipped: result.skipped,
+          totalEvents: result.totalEvents,
+          daysProcessed: result.daysProcessed,
+        });
+      }
+    })(),
+  );
+
+  await Promise.all(workers);
+
+  return {
+    periodsProcessed: details.length,
+    totalEvents,
+    linked,
+    skipped,
+    skippedByReason: normalizeReasonCounts(skippedByReason),
+    details,
+  };
+}
+
+export async function listAutoLinkEligiblePeriods() {
+  const today = dayjs().tz(TIMEZONE).format("YYYY-MM-DD");
+  return db.$queryRaw<Array<{ period: string }>>`
     SELECT DISTINCT
       to_char(COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date), 'YYYY-MM') AS "period"
     FROM events e
     WHERE COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
     ORDER BY "period" DESC
   `;
+}
 
-  const details: Array<{
-    daysProcessed: number;
-    linked: number;
-    period: string;
-    skipped: number;
-    totalEvents: number;
-  }> = [];
+export async function autoLinkAllEventPeriodsWithProgress(params: {
+  minScore?: number;
+  onProgress?: (snapshot: AutoLinkProgressSnapshot) => void;
+  periodConcurrency?: number;
+  periods: Array<{ period: string }>;
+  userId: number;
+}) {
+  const queue = [...params.periods];
+  const details: AutoLinkPeriodSummary[] = [];
+  const concurrency = Math.max(1, Math.min(params.periodConcurrency ?? 3, 6));
   let totalEvents = 0;
   let linked = 0;
   let skipped = 0;
+  let completedPeriods = 0;
   const skippedByReason = new Map<string, number>();
 
-  for (const row of periodRows) {
-    const result = await autoLinkEventPeriod({
-      minScore: params.minScore,
-      period: row.period,
-      userId: params.userId,
-    });
-    totalEvents += result.totalEvents;
-    linked += result.linked;
-    skipped += result.skipped;
-    for (const reasonCount of result.skippedByReason) {
-      incrementReason(skippedByReason, reasonCount.reason, reasonCount.count);
-    }
-    details.push({
-      period: row.period,
-      linked: result.linked,
-      skipped: result.skipped,
-      totalEvents: result.totalEvents,
-      daysProcessed: result.daysProcessed,
-    });
-  }
+  const workers = Array.from({ length: Math.min(concurrency, queue.length || 1) }, () =>
+    (async () => {
+      while (true) {
+        const row = queue.shift();
+        if (!row) {
+          return;
+        }
+
+        const result = await autoLinkEventPeriod({
+          minScore: params.minScore,
+          period: row.period,
+          userId: params.userId,
+        });
+
+        totalEvents += result.totalEvents;
+        linked += result.linked;
+        skipped += result.skipped;
+        for (const reasonCount of result.skippedByReason) {
+          incrementReason(skippedByReason, reasonCount.reason, reasonCount.count);
+        }
+        details.push({
+          period: row.period,
+          linked: result.linked,
+          skipped: result.skipped,
+          totalEvents: result.totalEvents,
+          daysProcessed: result.daysProcessed,
+        });
+
+        completedPeriods += 1;
+        params.onProgress?.({
+          completedPeriods,
+          currentPeriod: row.period,
+          linked,
+          skipped,
+          totalEvents,
+          totalPeriods: params.periods.length,
+        });
+      }
+    })(),
+  );
+
+  await Promise.all(workers);
+  details.sort((a, b) => b.period.localeCompare(a.period));
 
   return {
     periodsProcessed: details.length,

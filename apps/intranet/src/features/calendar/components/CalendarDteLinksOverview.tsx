@@ -17,14 +17,15 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 import { ChevronDown } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/context/ToastContext";
 import {
-  autoLinkEventDteByAllPeriods,
   autoLinkEventDteByPeriod,
   confirmEventDteLink,
+  fetchAutoLinkEventDteJobStatus,
   fetchEventDteLinksOverview,
+  startAutoLinkEventDteAllPeriodsJob,
   unlinkEventDteLink,
 } from "@/features/calendar/api";
 import type { EventDteOverviewItem } from "@/features/calendar/types";
@@ -115,6 +116,7 @@ export function CalendarDteLinksOverview({
   const toast = useToast();
   const [queryDraft, setQueryDraft] = useState(search.query ?? "");
   const [autoLinkSummary, setAutoLinkSummary] = useState<AutoLinkRunSummary | null>(null);
+  const [activeAutoLinkJobId, setActiveAutoLinkJobId] = useState<null | string>(null);
 
   useEffect(() => {
     setQueryDraft(search.query ?? "");
@@ -141,9 +143,23 @@ export function CalendarDteLinksOverview({
     ],
   });
 
-  const refetchOverview = async () => {
+  const refetchOverview = useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: ["calendar", "dte-link", "overview"] });
-  };
+  }, [queryClient]);
+
+  const autoLinkJobQuery = useQuery({
+    enabled: Boolean(activeAutoLinkJobId),
+    queryFn: () => fetchAutoLinkEventDteJobStatus(activeAutoLinkJobId ?? ""),
+    queryKey: ["calendar", "dte-link", "auto-link-job", activeAutoLinkJobId],
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+      if (status === "completed" || status === "failed") {
+        return false;
+      }
+      return activeAutoLinkJobId ? 1000 : false;
+    },
+    staleTime: 0,
+  });
 
   const confirmMutation = useMutation({
     mutationFn: async (item: EventDteOverviewItem) => {
@@ -186,40 +202,76 @@ export function CalendarDteLinksOverview({
   });
 
   const autoLinkPeriodMutation = useMutation({
-    mutationFn: async (mode: AutoLinkMode) =>
-      mode === "all_periods"
-        ? autoLinkEventDteByAllPeriods()
-        : autoLinkEventDteByPeriod({ period: search.period }),
+    mutationFn: async () => autoLinkEventDteByPeriod({ period: search.period }),
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "No se pudo auto-vincular");
     },
     onSuccess: async (result) => {
-      if ("periodsProcessed" in result) {
-        setAutoLinkSummary({
-          linked: result.linked,
-          modeLabel: "Todos los períodos",
-          processedLabel: `${result.periodsProcessed} períodos`,
-          skipped: result.skipped,
-          skippedByReason: result.skippedByReason,
-        });
-        toast.success(
-          `Auto-vinculación completa: ${result.linked} vinculados, ${result.skipped} omitidos (${result.periodsProcessed} períodos)`,
-        );
-      } else {
-        setAutoLinkSummary({
-          linked: result.linked,
-          modeLabel: `Período ${result.period}`,
-          processedLabel: `${result.daysProcessed} días`,
-          skipped: result.skipped,
-          skippedByReason: result.skippedByReason,
-        });
-        toast.success(
-          `Auto-vinculación ${result.period}: ${result.linked} vinculados, ${result.skipped} omitidos (${result.daysProcessed} días)`,
-        );
-      }
+      setAutoLinkSummary({
+        linked: result.linked,
+        modeLabel: `Período ${result.period}`,
+        processedLabel: `${result.daysProcessed} días`,
+        skipped: result.skipped,
+        skippedByReason: result.skippedByReason,
+      });
+      toast.success(
+        `Auto-vinculación ${result.period}: ${result.linked} vinculados, ${result.skipped} omitidos (${result.daysProcessed} días)`,
+      );
       await refetchOverview();
     },
   });
+
+  const startAutoLinkAllPeriodsMutation = useMutation({
+    mutationFn: () => startAutoLinkEventDteAllPeriodsJob({ periodConcurrency: 3 }),
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "No se pudo iniciar auto-vinculación");
+    },
+    onSuccess: (result) => {
+      setActiveAutoLinkJobId(result.jobId);
+      toast.info(
+        `Auto-vinculación iniciada: ${result.totalPeriods} períodos en lotes (concurrencia ${result.periodConcurrency}).`,
+      );
+    },
+  });
+
+  useEffect(() => {
+    const job = autoLinkJobQuery.data;
+    if (!job || !activeAutoLinkJobId) {
+      return;
+    }
+    if (job.status === "completed") {
+      const result = job.result as {
+        linked: number;
+        periodsProcessed: number;
+        skipped: number;
+        skippedByReason: Array<{ count: number; reason: string }>;
+      };
+      setAutoLinkSummary({
+        linked: result.linked,
+        modeLabel: "Todos los períodos",
+        processedLabel: `${result.periodsProcessed} períodos`,
+        skipped: result.skipped,
+        skippedByReason: result.skippedByReason ?? [],
+      });
+      toast.success(
+        `Auto-vinculación completa: ${result.linked} vinculados, ${result.skipped} omitidos (${result.periodsProcessed} períodos)`,
+      );
+      setActiveAutoLinkJobId(null);
+      void refetchOverview();
+      return;
+    }
+    if (job.status === "failed") {
+      toast.error(job.error ?? "Falló la auto-vinculación");
+      setActiveAutoLinkJobId(null);
+    }
+  }, [activeAutoLinkJobId, autoLinkJobQuery.data, toast, refetchOverview]);
+
+  const isAutoLinkRunning = Boolean(activeAutoLinkJobId) && !autoLinkJobQuery.isError;
+  const autoLinkProgress = autoLinkJobQuery.data
+    ? Math.round((autoLinkJobQuery.data.progress / Math.max(autoLinkJobQuery.data.total, 1)) * 100)
+    : 0;
+  const autoLinkActionPending =
+    autoLinkPeriodMutation.isPending || startAutoLinkAllPeriodsMutation.isPending;
 
   const periodOptions = useMemo(() => buildPeriodOptions(30), []);
   const stats = overviewQuery.data?.stats;
@@ -283,7 +335,7 @@ export function CalendarDteLinksOverview({
               </Button>
               <Dropdown>
                 <Dropdown.Trigger>
-                  <Button isLoading={autoLinkPeriodMutation.isPending} variant="primary">
+                  <Button isLoading={autoLinkActionPending} variant="primary">
                     Auto-vincular
                     <ChevronDown className="h-4 w-4" />
                   </Button>
@@ -291,18 +343,25 @@ export function CalendarDteLinksOverview({
                 <Dropdown.Popover className="min-w-75" placement="bottom end">
                   <Dropdown.Menu
                     aria-label="Opciones de auto-vinculación"
-                    onAction={(key) => autoLinkPeriodMutation.mutate(String(key) as AutoLinkMode)}
+                    onAction={(key) => {
+                      const mode = String(key) as AutoLinkMode;
+                      if (mode === "all_periods") {
+                        startAutoLinkAllPeriodsMutation.mutate();
+                        return;
+                      }
+                      autoLinkPeriodMutation.mutate();
+                    }}
                   >
                     <Dropdown.Item
                       id="selected_period"
-                      isDisabled={autoLinkPeriodMutation.isPending}
+                      isDisabled={autoLinkActionPending || isAutoLinkRunning}
                       textValue={`Solo período seleccionado (${search.period})`}
                     >
                       <Label>Solo período seleccionado ({search.period})</Label>
                     </Dropdown.Item>
                     <Dropdown.Item
                       id="all_periods"
-                      isDisabled={autoLinkPeriodMutation.isPending}
+                      isDisabled={autoLinkActionPending || isAutoLinkRunning}
                       textValue="Todos los períodos disponibles (hasta hoy)"
                     >
                       <Label>Todos los períodos disponibles (hasta hoy)</Label>
@@ -314,6 +373,32 @@ export function CalendarDteLinksOverview({
           </div>
         </Card.Header>
       </Card>
+
+      {isAutoLinkRunning && autoLinkJobQuery.data ? (
+        <Card variant="secondary">
+          <Card.Header className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div>
+              <Card.Title className="text-sm">Auto-vinculación en progreso</Card.Title>
+              <Card.Description>{autoLinkJobQuery.data.message}</Card.Description>
+            </div>
+            <div className="inline-flex items-center gap-2">
+              <Spinner size="sm" />
+              <Description className="font-medium tabular-nums">{autoLinkProgress}%</Description>
+            </div>
+          </Card.Header>
+          <Card.Content>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-default-200">
+              <div
+                className="h-full rounded-full bg-primary transition-all duration-300"
+                style={{ width: `${autoLinkProgress}%` }}
+              />
+            </div>
+            <Description className="mt-2 text-xs">
+              {autoLinkJobQuery.data.progress}/{autoLinkJobQuery.data.total} períodos procesados
+            </Description>
+          </Card.Content>
+        </Card>
+      ) : null}
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
         <Card variant="secondary">

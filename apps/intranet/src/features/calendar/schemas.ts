@@ -443,6 +443,29 @@ export const EventDteAutoLinkAllPeriodsResponseSchema = z.strictObject({
   status: z.literal("success"),
 });
 
+export const EventDteAutoLinkAllPeriodsStartResponseSchema = z.strictObject({
+  data: z.strictObject({
+    jobId: z.string(),
+    periodConcurrency: z.number(),
+    totalPeriods: z.number(),
+  }),
+  status: z.literal("accepted"),
+});
+
+export const EventDteAutoLinkAllPeriodsJobStatusResponseSchema = z.strictObject({
+  data: z.strictObject({
+    error: z.string().nullable(),
+    id: z.string(),
+    message: z.string(),
+    progress: z.number(),
+    result: z.unknown(),
+    status: z.enum(["completed", "failed", "pending", "running"]),
+    total: z.number(),
+    type: z.string(),
+  }),
+  status: z.literal("success"),
+});
+
 export const EventDteOverviewResponseSchema = z.strictObject({
   data: z.strictObject({
     items: z.array(
