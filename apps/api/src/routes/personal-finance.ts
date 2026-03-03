@@ -70,7 +70,6 @@ personalFinanceRoutes.get("/credits", async (c) => {
     include: {
       installments: {
         orderBy: { installmentNumber: "asc" },
-        take: 1, // Get next installment?
       },
     },
   });

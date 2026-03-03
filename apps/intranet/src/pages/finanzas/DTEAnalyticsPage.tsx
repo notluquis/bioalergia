@@ -7,6 +7,29 @@ import { dteAnalyticsKeys } from "@/features/finance/dte-analytics/queries";
 import { extractYearsFromSummary, safeYearSelection } from "@/features/finance/dte-analytics/utils";
 import { useLazyTabs } from "@/hooks/use-lazy-tabs";
 
+type DTETabId =
+  | "purchases-comparison"
+  | "event-links"
+  | "purchases-details"
+  | "purchases-monthly"
+  | "sales-comparison"
+  | "sales-details"
+  | "sales-monthly";
+
+const DTE_TAB_IDS = new Set<DTETabId>([
+  "purchases-comparison",
+  "event-links",
+  "purchases-details",
+  "purchases-monthly",
+  "sales-comparison",
+  "sales-details",
+  "sales-monthly",
+]);
+
+function isDTETabId(value: string): value is DTETabId {
+  return DTE_TAB_IDS.has(value as DTETabId);
+}
+
 const LazyDteMonthlySummaryPanel = lazy(() =>
   import("@/features/finance/dte-analytics/components/DteMonthlySummaryPanel").then((module) => ({
     default: module.DteMonthlySummaryPanel,
@@ -92,12 +115,10 @@ export function DTEAnalyticsPage() {
         className="flex min-h-0 flex-1 flex-col"
         selectedKey={selectedTab}
         onSelectionChange={(key) => {
-          const nextTab = String(key) as
-            | "purchases-comparison"
-            | "event-links"
-            | "purchases-monthly"
-            | "sales-comparison"
-            | "sales-monthly";
+          const nextTabCandidate = String(key);
+          const nextTab: DTETabId = isDTETabId(nextTabCandidate)
+            ? nextTabCandidate
+            : "purchases-monthly";
           void navigate({
             search: (prev) => ({
               ...prev,
