@@ -60,7 +60,9 @@ function CalendarDailyPage() {
   const autoLinkMutation = useMutation({
     mutationFn: () => autoLinkEventDteByDay({ date: selectedDateString }),
     onSuccess: async (result) => {
-      toast.success(`Auto-vinculación completada: ${result.linked} vinculados`);
+      toast.success(
+        `Auto-vinculación completada: ${result.linked} vinculados, ${result.skipped} omitidos`,
+      );
       await queryClient.invalidateQueries({
         queryKey: ["calendar", "dte-link", "by-day", selectedDateString],
       });

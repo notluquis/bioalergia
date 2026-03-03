@@ -33,6 +33,7 @@ const EVENT_NOISE_TOKENS = new Set([
 ]);
 
 const MIN_AUTO_LINK_SCORE = 90;
+const MAX_AUTO_LINK_AMOUNT_DIFF = 5000;
 
 export interface EventDteSuggestion {
   dteSaleDetailId: string;
@@ -678,7 +679,21 @@ export async function autoLinkEventDate(params: {
       continue;
     }
 
-    if (isAmbiguous(top, second)) {
+    const amountHint = computeAmountHint(event);
+    if (amountHint != null) {
+      const amountDiff = Math.abs(amountHint - top.totalAmount);
+      if (amountDiff > MAX_AUTO_LINK_AMOUNT_DIFF) {
+        skipped += 1;
+        details.push({
+          eventId: event.externalEventId,
+          reason: `Monto no coincide (dif ${Math.round(amountDiff)})`,
+        });
+        continue;
+      }
+    }
+
+    const isPerfectScore = top.confidenceScore === 100;
+    if (!isPerfectScore && isAmbiguous(top, second)) {
       skipped += 1;
       details.push({ eventId: event.externalEventId, reason: "Ambiguo" });
       continue;
