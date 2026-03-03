@@ -1,4 +1,4 @@
-import { Button, Skeleton } from "@heroui/react";
+import { Button, Skeleton, type SortDescriptor, Table } from "@heroui/react";
 import {
   type Column,
   type ColumnDef,
@@ -179,7 +179,9 @@ interface DataTableContentProps<TData, TValue> {
   readonly isLoading?: boolean;
   readonly noDataMessage: string;
   readonly onRowClick?: (row: TData) => void;
+  readonly onSortingChange: (sorting: SortingState) => void;
   readonly renderSubComponent?: (props: { row: Row<TData> }) => React.ReactNode;
+  readonly sorting: SortingState;
   readonly table: TanStackTable<TData>;
   readonly scrollMaxHeight?: number | string;
   readonly scrollMode: "auto" | "container" | "page";
@@ -195,9 +197,11 @@ function DataTableContent<TData, TValue>({
   isLoading,
   noDataMessage,
   onRowClick,
+  onSortingChange,
   renderSubComponent,
   scrollMaxHeight,
   scrollMode,
+  sorting,
   table,
   virtualizationMaxHeight,
 }: DataTableContentProps<TData, TValue>) {
@@ -217,6 +221,112 @@ function DataTableContent<TData, TValue>({
     scrollMode === "container" ||
     (scrollMode === "auto" && (Boolean(scrollMaxHeight) || enableVirtualization));
   const resolvedMaxHeight = scrollMaxHeight ?? virtualizationMaxHeight;
+  const headerGroups = table.getHeaderGroups();
+  const canUseHeroUITable =
+    !enableVirtualization && !renderSubComponent && !onRowClick && headerGroups.length === 1;
+  const sortDescriptor: SortDescriptor | undefined = sorting[0]
+    ? {
+        column: sorting[0].id,
+        direction: sorting[0].desc ? "descending" : "ascending",
+      }
+    : undefined;
+
+  if (canUseHeroUITable) {
+    const primaryHeaderGroup = headerGroups[0];
+    if (!primaryHeaderGroup) {
+      return null;
+    }
+
+    return (
+      <Table variant={containerVariant === "plain" ? "primary" : "secondary"}>
+        <Table.ResizableContainer>
+          <Table.ScrollContainer
+            className="muted-scrollbar"
+            ref={tableContainerRef}
+            style={
+              shouldEnableInternalVerticalScroll
+                ? {
+                    maxHeight: resolvedMaxHeight,
+                    overflowY: "auto",
+                  }
+                : undefined
+            }
+          >
+            <Table.Content
+              aria-label="Tabla de datos"
+              sortDescriptor={sortDescriptor}
+              onSortChange={(descriptor) => {
+                if (!descriptor?.column) {
+                  onSortingChange([]);
+                  return;
+                }
+                onSortingChange([
+                  {
+                    desc: descriptor.direction === "descending",
+                    id: String(descriptor.column),
+                  },
+                ]);
+              }}
+            >
+              <Table.Header>
+                {primaryHeaderGroup.headers.map((header) => {
+                  const headerContent = header.isPlaceholder
+                    ? null
+                    : flexRender(header.column.columnDef.header, header.getContext());
+                  return (
+                    <Table.Column
+                      allowsSorting={header.column.getCanSort()}
+                      id={header.column.id}
+                      key={header.id}
+                      minWidth={header.getSize()}
+                    >
+                      {headerContent}
+                      {header.column.getCanResize() && <Table.ColumnResizer />}
+                    </Table.Column>
+                  );
+                })}
+              </Table.Header>
+              {isLoading ? (
+                <Table.Body>
+                  {["1", "2", "3", "4", "5", "6"].map((rowKey) => (
+                    <Table.Row id={`skeleton-row-${rowKey}`} key={`skeleton-row-${rowKey}`}>
+                      {columns.map((column) => {
+                        const accessorKey =
+                          "accessorKey" in column && typeof column.accessorKey === "string"
+                            ? column.accessorKey
+                            : null;
+                        const headerKey = typeof column.header === "string" ? column.header : null;
+                        const loadingColumnKey = String(
+                          column.id ?? accessorKey ?? headerKey ?? "column",
+                        );
+                        return (
+                          <Table.Cell key={`skeleton-cell-${rowKey}-${loadingColumnKey}`}>
+                            <Skeleton className="h-4 w-full max-w-36 rounded-md" />
+                          </Table.Cell>
+                        );
+                      })}
+                    </Table.Row>
+                  ))}
+                </Table.Body>
+              ) : (
+                <Table.Body renderEmptyState={() => noDataMessage}>
+                  {rows.map((row) => (
+                    <Table.Row id={row.id} key={row.id}>
+                      {row.getVisibleCells().map((cell) => (
+                        <Table.Cell key={cell.id}>
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </Table.Cell>
+                      ))}
+                    </Table.Row>
+                  ))}
+                </Table.Body>
+              )}
+            </Table.Content>
+          </Table.ScrollContainer>
+        </Table.ResizableContainer>
+      </Table>
+    );
+  }
 
   return (
     <div
@@ -592,9 +702,11 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
         isLoading={isLoading}
         noDataMessage={noDataMessage}
         onRowClick={onRowClick}
+        onSortingChange={setSorting}
         renderSubComponent={renderSubComponent}
         scrollMaxHeight={scrollMaxHeight}
         scrollMode={effectiveScrollMode}
+        sorting={sorting}
         table={table}
         virtualizationMaxHeight={virtualizationMaxHeight}
       />

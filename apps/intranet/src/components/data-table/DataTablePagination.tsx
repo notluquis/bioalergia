@@ -1,6 +1,5 @@
-import { Button, Label, ListBox, Select } from "@heroui/react";
+import { Label, ListBox, Pagination, Select } from "@heroui/react";
 import type { PaginationState, Table } from "@tanstack/react-table";
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 
 interface DataTablePaginationProps<TData> {
   readonly enablePageSizeSelector?: boolean;
@@ -20,13 +19,46 @@ export function DataTablePagination<TData>({
   const currentPagination = pagination ?? table.getState().pagination;
   const currentPageSize = currentPagination.pageSize;
   const currentPageIndex = currentPagination.pageIndex;
-  const totalPages = pageCount ?? table.getPageCount();
-  const hasKnownTotalPages = totalPages !== -1;
+  const computedTotalPages = pageCount ?? table.getPageCount();
+  const hasKnownTotalPages = computedTotalPages !== -1;
+  const totalPages = hasKnownTotalPages ? Math.max(1, computedTotalPages) : currentPageIndex + 1;
   const canPrevious = currentPageIndex > 0;
-  const canNext = totalPages === -1 ? true : currentPageIndex < Math.max(1, totalPages) - 1;
+  const canNext = !hasKnownTotalPages || currentPageIndex < totalPages - 1;
   const normalizedOptions = Array.from(new Set([...pageSizeOptions, currentPageSize])).sort(
     (a, b) => a - b,
   );
+  const currentPageNumber = currentPageIndex + 1;
+
+  const pageItems: Array<{ key: string; type: "ellipsis" | "page"; value?: number }> = [];
+  let ellipsisCount = 0;
+  const pushPage = (page: number) => {
+    pageItems.push({ key: `page-${page}`, type: "page", value: page });
+  };
+  const pushEllipsis = () => {
+    ellipsisCount += 1;
+    pageItems.push({ key: `ellipsis-${ellipsisCount}`, type: "ellipsis" });
+  };
+  if (hasKnownTotalPages) {
+    if (totalPages <= 7) {
+      for (let page = 1; page <= totalPages; page += 1) {
+        pushPage(page);
+      }
+    } else {
+      pushPage(1);
+      if (currentPageNumber > 3) {
+        pushEllipsis();
+      }
+      const start = Math.max(2, currentPageNumber - 1);
+      const end = Math.min(totalPages - 1, currentPageNumber + 1);
+      for (let page = start; page <= end; page += 1) {
+        pushPage(page);
+      }
+      if (currentPageNumber < totalPages - 2) {
+        pushEllipsis();
+      }
+      pushPage(totalPages);
+    }
+  }
 
   return (
     <div className="flex flex-col items-start justify-between gap-3 px-2 sm:flex-row sm:items-center">
@@ -65,64 +97,57 @@ export function DataTablePagination<TData>({
           </>
         )}
       </div>
-      <div className="flex items-center gap-4 sm:gap-6 lg:gap-8">
-        <div className="flex items-center justify-center font-medium text-sm">
+      <Pagination className="w-full sm:w-auto" size="sm">
+        <Pagination.Summary className="text-default-500 text-sm">
           {hasKnownTotalPages
-            ? `Página ${currentPageIndex + 1} de ${Math.max(1, totalPages)}`
-            : `Página ${currentPageIndex + 1}`}
-        </div>
-        <div className="flex items-center space-x-2">
-          <Button
-            className="hidden h-8 w-8 p-0 lg:flex"
-            isDisabled={!canPrevious}
-            onPress={() => {
-              table.setPageIndex(0);
-            }}
-            variant="outline"
-            isIconOnly
-            aria-label="Ir a la primera página"
-          >
-            <ChevronsLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            className="h-8 w-8 p-0"
-            isDisabled={!canPrevious}
-            onPress={() => {
-              table.setPageIndex(Math.max(0, currentPageIndex - 1));
-            }}
-            variant="outline"
-            isIconOnly
-            aria-label="Página anterior"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            className="h-8 w-8 p-0"
-            isDisabled={!canNext}
-            onPress={() => {
-              table.setPageIndex(canNext ? currentPageIndex + 1 : currentPageIndex);
-            }}
-            variant="outline"
-            isIconOnly
-            aria-label="Página siguiente"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          <Button
-            className="hidden h-8 w-8 p-0 lg:flex"
-            isDisabled={!canNext || !hasKnownTotalPages}
-            onPress={() => {
-              const lastIndex = Math.max(1, totalPages) - 1;
-              table.setPageIndex(lastIndex);
-            }}
-            variant="outline"
-            isIconOnly
-            aria-label="Ir a la última página"
-          >
-            <ChevronsRight className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+            ? `Página ${currentPageNumber} de ${totalPages}`
+            : `Página ${currentPageNumber}`}
+        </Pagination.Summary>
+        <Pagination.Content>
+          <Pagination.Item>
+            <Pagination.Previous
+              isDisabled={!canPrevious}
+              onPress={() => {
+                table.setPageIndex(Math.max(0, currentPageIndex - 1));
+              }}
+            >
+              <Pagination.PreviousIcon />
+              <span>Anterior</span>
+            </Pagination.Previous>
+          </Pagination.Item>
+          {hasKnownTotalPages
+            ? pageItems.map((pageItem) =>
+                pageItem.type === "ellipsis" ? (
+                  <Pagination.Item key={pageItem.key}>
+                    <Pagination.Ellipsis />
+                  </Pagination.Item>
+                ) : (
+                  <Pagination.Item key={pageItem.key}>
+                    <Pagination.Link
+                      isActive={pageItem.value === currentPageNumber}
+                      onPress={() => {
+                        table.setPageIndex((pageItem.value ?? 1) - 1);
+                      }}
+                    >
+                      {pageItem.value}
+                    </Pagination.Link>
+                  </Pagination.Item>
+                ),
+              )
+            : null}
+          <Pagination.Item>
+            <Pagination.Next
+              isDisabled={!canNext}
+              onPress={() => {
+                table.setPageIndex(currentPageIndex + 1);
+              }}
+            >
+              <span>Siguiente</span>
+              <Pagination.NextIcon />
+            </Pagination.Next>
+          </Pagination.Item>
+        </Pagination.Content>
+      </Pagination>
     </div>
   );
 }
