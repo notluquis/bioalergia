@@ -35,6 +35,26 @@ interface MonthlyKpiData {
   label: string;
 }
 
+function resolveActiveMonthKey(
+  monthlyKpis: MonthlyKpiData[],
+  manualSelectedMonthKey: null | string,
+  currentMonthKey: string,
+): null | string {
+  if (monthlyKpis.length === 0) {
+    return null;
+  }
+
+  if (manualSelectedMonthKey && monthlyKpis.some((entry) => entry.key === manualSelectedMonthKey)) {
+    return manualSelectedMonthKey;
+  }
+
+  if (monthlyKpis.some((entry) => entry.key === currentMonthKey)) {
+    return currentMonthKey;
+  }
+
+  return monthlyKpis.at(-1)?.key ?? monthlyKpis[0]?.key ?? null;
+}
+
 function processHeatmapData(
   summary: CalendarSummary | null | undefined,
   from: string,
@@ -175,40 +195,20 @@ function CalendarHeatmapPage() {
     });
   }, [summary?.aggregates.byMonth, heatmapMonths]);
 
-  const [selectedMonthKey, setSelectedMonthKey] = useState<null | string>(() =>
-    dayjs().format("YYYY-MM"),
+  const [manualSelectedMonthKey, setManualSelectedMonthKey] = useState<null | string>(null);
+  const currentMonthKey = dayjs().format("YYYY-MM");
+
+  const activeMonthKey = useMemo(
+    () => resolveActiveMonthKey(monthlyKpis, manualSelectedMonthKey, currentMonthKey),
+    [currentMonthKey, manualSelectedMonthKey, monthlyKpis],
   );
 
-  React.useEffect(() => {
-    if (monthlyKpis.length === 0) {
-      setSelectedMonthKey(null);
-      return;
-    }
-    const currentMonthKey = dayjs().format("YYYY-MM");
-    const hasCurrentMonth = monthlyKpis.some((entry) => entry.key === currentMonthKey);
-    const hasSelected =
-      selectedMonthKey && monthlyKpis.some((entry) => entry.key === selectedMonthKey);
-    if (!hasSelected) {
-      const fallbackKey = hasCurrentMonth
-        ? currentMonthKey
-        : (monthlyKpis.at(-1)?.key ?? monthlyKpis[0]?.key);
-      if (fallbackKey) {
-        setSelectedMonthKey(fallbackKey);
-      }
-    }
-  }, [monthlyKpis, selectedMonthKey]);
-
   const activeMonthlyKpi = useMemo(() => {
-    if (monthlyKpis.length === 0) {
+    if (!activeMonthKey) {
       return null;
     }
-    const currentMonthKey = dayjs().format("YYYY-MM");
-    const currentMonthKpi = monthlyKpis.find((entry) => entry.key === currentMonthKey);
-    if (!selectedMonthKey) {
-      return currentMonthKpi ?? monthlyKpis.at(-1) ?? null;
-    }
-    return monthlyKpis.find((entry) => entry.key === selectedMonthKey) ?? currentMonthKpi ?? null;
-  }, [monthlyKpis, selectedMonthKey]);
+    return monthlyKpis.find((entry) => entry.key === activeMonthKey) ?? null;
+  }, [activeMonthKey, monthlyKpis]);
 
   return (
     <section className="space-y-4">
@@ -275,7 +275,7 @@ function CalendarHeatmapPage() {
                 <Button
                   className="shrink-0"
                   key={month.key}
-                  onPress={() => setSelectedMonthKey(month.key)}
+                  onPress={() => setManualSelectedMonthKey(month.key)}
                   size="sm"
                   variant={month.key === activeMonthlyKpi.key ? "primary" : "secondary"}
                 >
