@@ -402,6 +402,7 @@ export interface EventDteOverviewItem {
   confidenceScore: null | number;
   eventDate: string;
   eventId: string;
+  linkStatus: "linked" | "pending_issuance" | "unlinked";
   linked: boolean;
   linkedClientName: null | string;
   linkedClientRUT: null | string;
@@ -415,8 +416,10 @@ export interface EventDteOverviewItem {
 
 export interface EventDteOverviewStats {
   avgLinkedScore: number;
+  dueEvents: number;
   linkRate: number;
   linkedEvents: number;
+  pendingIssuanceEvents: number;
   totalEvents: number;
   unlinkedEvents: number;
   withPerfectScore: number;

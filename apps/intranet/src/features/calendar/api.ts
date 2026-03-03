@@ -354,7 +354,7 @@ export async function fetchEventDteLinksOverview(params: {
   pageSize?: number;
   period: string;
   query?: string;
-  status?: "all" | "linked" | "unlinked";
+  status?: "all" | "linked" | "pending_issuance" | "unlinked";
 }): Promise<EventDteOverviewResponseData> {
   const response = await apiClient.get<{ data: EventDteOverviewResponseData; status: "success" }>(
     "/api/dte-analytics/event-links/overview",

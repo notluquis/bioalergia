@@ -505,7 +505,7 @@ export async function listEventDteLinkOverview(params: {
   pageSize?: number;
   period: string;
   query?: string;
-  status?: "all" | "linked" | "unlinked";
+  status?: "all" | "linked" | "pending_issuance" | "unlinked";
 }) {
   const page = Math.max(0, params.page ?? 0);
   const pageSize = Math.min(100, Math.max(10, params.pageSize ?? 25));
@@ -514,6 +514,7 @@ export async function listEventDteLinkOverview(params: {
   const hasSearch = trimmedQuery.length > 0;
   const offset = page * pageSize;
   const periodDate = dayjs(`${params.period}-01`, "YYYY-MM-DD", true);
+  const today = dayjs().tz(TIMEZONE).format("YYYY-MM-DD");
 
   if (!periodDate.isValid()) {
     throw new Error("Periodo inválido. Usa formato YYYY-MM");
@@ -527,14 +528,32 @@ export async function listEventDteLinkOverview(params: {
   const statsRows = await db.$queryRaw<
     Array<{
       avgLinkedScore: null | number;
+      dueEvents: number;
+      linkedDueEvents: number;
       linkedEvents: number;
+      pendingIssuanceEvents: number;
       totalEvents: number;
+      unlinkedEvents: number;
       withPerfectScore: number;
     }>
   >`
     SELECT
       COUNT(*)::int AS "totalEvents",
       COUNT(l.id)::int AS "linkedEvents",
+      COUNT(*) FILTER (
+        WHERE COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
+      )::int AS "dueEvents",
+      COUNT(l.id) FILTER (
+        WHERE COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
+      )::int AS "linkedDueEvents",
+      COUNT(*) FILTER (
+        WHERE l.id IS NULL
+          AND COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
+      )::int AS "unlinkedEvents",
+      COUNT(*) FILTER (
+        WHERE l.id IS NULL
+          AND COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) > ${today}::date
+      )::int AS "pendingIssuanceEvents",
       COUNT(*) FILTER (WHERE l.confidence_score::float = 100)::int AS "withPerfectScore",
       AVG(l.confidence_score::float) AS "avgLinkedScore"
     FROM events e
@@ -552,7 +571,16 @@ export async function listEventDteLinkOverview(params: {
       AND (
         ${status} = 'all'
         OR (${status} = 'linked' AND l.id IS NOT NULL)
-        OR (${status} = 'unlinked' AND l.id IS NULL)
+        OR (
+          ${status} = 'unlinked'
+          AND l.id IS NULL
+          AND COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
+        )
+        OR (
+          ${status} = 'pending_issuance'
+          AND l.id IS NULL
+          AND COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) > ${today}::date
+        )
       )
       AND (
         ${hasSearch} = false
@@ -586,7 +614,16 @@ export async function listEventDteLinkOverview(params: {
       AND (
         ${status} = 'all'
         OR (${status} = 'linked' AND l.id IS NOT NULL)
-        OR (${status} = 'unlinked' AND l.id IS NULL)
+        OR (
+          ${status} = 'unlinked'
+          AND l.id IS NULL
+          AND COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
+        )
+        OR (
+          ${status} = 'pending_issuance'
+          AND l.id IS NULL
+          AND COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) > ${today}::date
+        )
       )
       AND (
         ${hasSearch} = false
@@ -601,7 +638,8 @@ export async function listEventDteLinkOverview(params: {
     rows.map(async (row) => {
       let topSuggestion: null | (EventDteSuggestion & { amountDiff: null | number }) = null;
 
-      if (!row.linkedDteSaleDetailId) {
+      const isDueForEmission = row.eventDate <= today;
+      if (!row.linkedDteSaleDetailId && isDueForEmission) {
         const suggestions = await getEventDteSuggestions({
           calendarId: row.calendarId,
           eventId: row.eventId,
@@ -629,6 +667,11 @@ export async function listEventDteLinkOverview(params: {
         confidenceScore: row.confidenceScore,
         eventDate: row.eventDate,
         eventId: row.eventId,
+        linkStatus: row.linkedDteSaleDetailId
+          ? "linked"
+          : isDueForEmission
+            ? "unlinked"
+            : "pending_issuance",
         linked: Boolean(row.linkedDteSaleDetailId),
         linkedClientName: row.linkedClientName,
         linkedClientRUT: row.linkedClientRUT,
@@ -644,8 +687,12 @@ export async function listEventDteLinkOverview(params: {
 
   const stats = statsRows[0] ?? {
     avgLinkedScore: null,
+    dueEvents: 0,
+    linkedDueEvents: 0,
     linkedEvents: 0,
+    pendingIssuanceEvents: 0,
     totalEvents: 0,
+    unlinkedEvents: 0,
     withPerfectScore: 0,
   };
 
@@ -656,13 +703,15 @@ export async function listEventDteLinkOverview(params: {
     period: params.period,
     stats: {
       avgLinkedScore: stats.avgLinkedScore ?? 0,
+      dueEvents: stats.dueEvents,
       linkedEvents: stats.linkedEvents,
       linkRate:
-        stats.totalEvents > 0
-          ? Number(((stats.linkedEvents / stats.totalEvents) * 100).toFixed(1))
+        stats.dueEvents > 0
+          ? Number(((stats.linkedDueEvents / stats.dueEvents) * 100).toFixed(1))
           : 0,
       totalEvents: stats.totalEvents,
-      unlinkedEvents: Math.max(0, stats.totalEvents - stats.linkedEvents),
+      pendingIssuanceEvents: stats.pendingIssuanceEvents,
+      unlinkedEvents: stats.unlinkedEvents,
       withPerfectScore: stats.withPerfectScore,
     },
     totalCount,
@@ -834,6 +883,13 @@ export async function autoLinkEventDate(params: {
   minScore?: number;
   userId: number;
 }) {
+  const today = dayjs().tz(TIMEZONE).format("YYYY-MM-DD");
+  if (params.date > today) {
+    throw new Error(
+      `No se puede auto-vincular una fecha futura (${params.date}). Hoy es ${today} en ${TIMEZONE}.`,
+    );
+  }
+
   const minScore = params.minScore ?? MIN_AUTO_LINK_SCORE;
   const events = await getEventsByDate(params.date);
 

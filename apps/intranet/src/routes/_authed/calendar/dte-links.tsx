@@ -21,7 +21,7 @@ const dteLinksSearchSchema = z
       .regex(/^\d{4}-\d{2}$/)
       .optional(),
     query: z.string().optional(),
-    status: z.enum(["all", "linked", "unlinked"]).optional(),
+    status: z.enum(["all", "linked", "pending_issuance", "unlinked"]).optional(),
   })
   .transform((search) => ({
     page: search.page ?? 0,

@@ -52,6 +52,8 @@ function CalendarDailyPage() {
 
   const hasEvents = (selectedDayEntry?.events.length ?? 0) > 0;
   const selectedDateString = dayjs(currentSelectedDate).format("YYYY-MM-DD");
+  const todayString = dayjs().format("YYYY-MM-DD");
+  const isFutureDay = selectedDateString > todayString;
 
   const linksByDayQuery = useQuery({
     queryFn: () => fetchEventDteLinksByDay(selectedDateString),
@@ -95,12 +97,16 @@ function CalendarDailyPage() {
           rightSlot={
             <div className="flex items-center gap-2">
               <Button
-                isDisabled={autoLinkMutation.isPending}
+                isDisabled={autoLinkMutation.isPending || isFutureDay}
                 size="sm"
                 variant="secondary"
                 onPress={() => autoLinkMutation.mutate()}
               >
-                {autoLinkMutation.isPending ? "Auto-vinculando..." : "Auto-vincular DTE"}
+                {isFutureDay
+                  ? "Auto-vincular DTE (disponible al llegar la fecha)"
+                  : autoLinkMutation.isPending
+                    ? "Auto-vinculando..."
+                    : "Auto-vincular DTE"}
               </Button>
               <CalendarFiltersPopover
                 applyCount={daily?.totals.events}

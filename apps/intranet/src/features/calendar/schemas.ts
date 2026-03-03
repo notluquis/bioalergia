@@ -397,6 +397,7 @@ export const EventDteOverviewResponseSchema = z.strictObject({
         confidenceScore: z.number().nullable(),
         eventDate: z.string(),
         eventId: z.string(),
+        linkStatus: z.enum(["linked", "pending_issuance", "unlinked"]),
         linked: z.boolean(),
         linkedClientName: z.string().nullable(),
         linkedClientRUT: z.string().nullable(),
@@ -415,8 +416,10 @@ export const EventDteOverviewResponseSchema = z.strictObject({
     period: z.string(),
     stats: z.strictObject({
       avgLinkedScore: z.number(),
+      dueEvents: z.number(),
       linkRate: z.number(),
       linkedEvents: z.number(),
+      pendingIssuanceEvents: z.number(),
       totalEvents: z.number(),
       unlinkedEvents: z.number(),
       withPerfectScore: z.number(),

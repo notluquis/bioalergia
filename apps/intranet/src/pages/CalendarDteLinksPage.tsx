@@ -37,7 +37,7 @@ const OVERVIEW_SKELETON_KEYS = [
   "overview-skeleton-6",
 ] as const;
 
-type LinkStatusFilter = "all" | "linked" | "unlinked";
+type LinkStatusFilter = "all" | "linked" | "pending_issuance" | "unlinked";
 
 function buildPeriodOptions(count = 24): Array<{ label: string; value: string }> {
   dayjs.locale("es");
@@ -70,6 +70,17 @@ function amountHint(item: EventDteOverviewItem): null | number {
     return item.amountExpected;
   }
   return null;
+}
+
+function linkStatusColor(status: EventDteOverviewItem["linkStatus"]): "success" | "warning" {
+  if (status === "linked") return "success";
+  return "warning";
+}
+
+function linkStatusLabel(status: EventDteOverviewItem["linkStatus"]): string {
+  if (status === "linked") return "Vinculado";
+  if (status === "pending_issuance") return "Pendiente emisión";
+  return "No vinculado";
 }
 
 export function CalendarDteLinksPage() {
@@ -163,7 +174,8 @@ export function CalendarDteLinksPage() {
           <div>
             <Card.Title>Vínculos Evento ↔ DTE</Card.Title>
             <Card.Description>
-              Revisión mensual de vinculadas/no vinculadas, score y estado de sugerencias.
+              Los no vinculados se cuentan solo hasta hoy. Eventos futuros quedan como pendientes de
+              emisión.
             </Card.Description>
           </div>
           <div className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">
@@ -213,7 +225,7 @@ export function CalendarDteLinksPage() {
         </Card.Header>
       </Card>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
         <Card variant="secondary">
           <Card.Header>
             <Card.Title className="text-sm">Eventos</Card.Title>
@@ -232,7 +244,7 @@ export function CalendarDteLinksPage() {
         </Card>
         <Card variant="secondary">
           <Card.Header>
-            <Card.Title className="text-sm">No Vinculados</Card.Title>
+            <Card.Title className="text-sm">No Vinculados (Hasta Hoy)</Card.Title>
             <Card.Description className="text-2xl font-semibold">
               {stats?.unlinkedEvents ?? 0}
             </Card.Description>
@@ -240,10 +252,21 @@ export function CalendarDteLinksPage() {
         </Card>
         <Card variant="secondary">
           <Card.Header>
-            <Card.Title className="text-sm">Tasa Vinculación</Card.Title>
+            <Card.Title className="text-sm">Pendiente Emisión</Card.Title>
+            <Card.Description className="text-2xl font-semibold">
+              {stats?.pendingIssuanceEvents ?? 0}
+            </Card.Description>
+          </Card.Header>
+        </Card>
+        <Card variant="secondary">
+          <Card.Header>
+            <Card.Title className="text-sm">Tasa Vinculación (Hasta Hoy)</Card.Title>
             <Card.Description className="text-2xl font-semibold">
               {stats?.linkRate ?? 0}%
             </Card.Description>
+            <Description className="text-default-500 text-xs">
+              Sobre {stats?.dueEvents ?? 0} eventos exigibles
+            </Description>
           </Card.Header>
         </Card>
         <Card variant="secondary">
@@ -276,7 +299,12 @@ export function CalendarDteLinksPage() {
                   <Tabs.Indicator />
                 </Tabs.Tab>
                 <Tabs.Tab id="unlinked">
-                  No vinculados
+                  No vinculados (hasta hoy)
+                  <Tabs.Separator />
+                  <Tabs.Indicator />
+                </Tabs.Tab>
+                <Tabs.Tab id="pending_issuance">
+                  Pendiente emisión
                   <Tabs.Separator />
                   <Tabs.Indicator />
                 </Tabs.Tab>
@@ -341,24 +369,26 @@ export function CalendarDteLinksPage() {
                           </Card.Description>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
-                          <Chip color={item.linked ? "success" : "warning"} variant="soft">
-                            {item.linked ? "Vinculado" : "No vinculado"}
+                          <Chip color={linkStatusColor(item.linkStatus)} variant="soft">
+                            {linkStatusLabel(item.linkStatus)}
                           </Chip>
-                          <Chip
-                            color={scoreColor(
-                              item.linked
-                                ? item.confidenceScore
-                                : (item.topSuggestion?.confidenceScore ?? null),
-                            )}
-                            variant="soft"
-                          >
-                            Score{" "}
-                            {scoreLabel(
-                              item.linked
-                                ? item.confidenceScore
-                                : (item.topSuggestion?.confidenceScore ?? null),
-                            )}
-                          </Chip>
+                          {item.linkStatus !== "pending_issuance" ? (
+                            <Chip
+                              color={scoreColor(
+                                item.linked
+                                  ? item.confidenceScore
+                                  : (item.topSuggestion?.confidenceScore ?? null),
+                              )}
+                              variant="soft"
+                            >
+                              Score{" "}
+                              {scoreLabel(
+                                item.linked
+                                  ? item.confidenceScore
+                                  : (item.topSuggestion?.confidenceScore ?? null),
+                              )}
+                            </Chip>
+                          ) : null}
                           {item.linked && (item.confidenceScore ?? 0) === 100 ? (
                             <Chip color="success" variant="soft">
                               Perfecto 100
@@ -376,16 +406,28 @@ export function CalendarDteLinksPage() {
                         </div>
                         <div className="rounded-lg border border-default-200 p-2">
                           <p className="text-default-500 text-xs uppercase">
-                            {item.linked ? "DTE vinculado" : "Mejor sugerencia"}
+                            {item.linked
+                              ? "DTE vinculado"
+                              : item.linkStatus === "pending_issuance"
+                                ? "Estado DTE"
+                                : "Mejor sugerencia"}
                           </p>
                           <p className="font-medium">
-                            {displayAmount != null ? currencyFormatter.format(displayAmount) : "-"}
+                            {item.linkStatus === "pending_issuance"
+                              ? "Aún no exigible"
+                              : displayAmount != null
+                                ? currencyFormatter.format(displayAmount)
+                                : "-"}
                           </p>
                         </div>
                         <div className="rounded-lg border border-default-200 p-2">
                           <p className="text-default-500 text-xs uppercase">Diferencia</p>
                           <p className="font-medium">
-                            {localDiff != null ? currencyFormatter.format(localDiff) : "-"}
+                            {item.linkStatus === "pending_issuance"
+                              ? "-"
+                              : localDiff != null
+                                ? currencyFormatter.format(localDiff)
+                                : "-"}
                           </p>
                         </div>
                       </Card.Content>
@@ -394,9 +436,11 @@ export function CalendarDteLinksPage() {
                         <Description>
                           {item.linked
                             ? `${item.linkedClientName ?? "-"} · ${item.linkedClientRUT ?? "-"} · Folio ${item.linkedFolio ?? "-"}`
-                            : item.topSuggestion
-                              ? `${item.topSuggestion.clientName} · ${item.topSuggestion.clientRUT} · Folio ${item.topSuggestion.folio}`
-                              : "Sin sugerencias para este evento"}
+                            : item.linkStatus === "pending_issuance"
+                              ? "Evento en fecha futura: se revisa vínculo cuando llegue el día de emisión."
+                              : item.topSuggestion
+                                ? `${item.topSuggestion.clientName} · ${item.topSuggestion.clientRUT} · Folio ${item.topSuggestion.folio}`
+                                : "Sin sugerencias para este evento"}
                         </Description>
                         <div className="flex gap-2">
                           {item.linked ? (
@@ -411,7 +455,9 @@ export function CalendarDteLinksPage() {
                           ) : (
                             <Button
                               color="primary"
-                              isDisabled={!item.topSuggestion}
+                              isDisabled={
+                                !item.topSuggestion || item.linkStatus === "pending_issuance"
+                              }
                               isLoading={confirmMutation.isPending}
                               size="sm"
                               variant="primary"

@@ -89,7 +89,7 @@ const eventLinkOverviewQuerySchema = z.object({
   pageSize: z.coerce.number().int().min(10).max(100).default(25),
   period: z.string().regex(/^\d{4}-\d{2}$/),
   query: z.string().optional(),
-  status: z.enum(["all", "linked", "unlinked"]).default("all"),
+  status: z.enum(["all", "linked", "pending_issuance", "unlinked"]).default("all"),
 });
 
 const eventLinkSuggestionsQuerySchema = z.object({
