@@ -1,6 +1,7 @@
 import { Description, Modal } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
+import dayjs from "dayjs";
 import { useMemo } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { Button } from "@/components/ui/Button";
@@ -23,9 +24,11 @@ interface EventDteLinkModalProps {
 export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDteLinkModalProps) {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const today = dayjs().format("YYYY-MM-DD");
+  const isPendingEmission = Boolean(event?.eventDate && event.eventDate > today);
 
   const suggestionsQuery = useQuery({
-    enabled: isOpen && Boolean(event?.calendarId && event?.eventId),
+    enabled: isOpen && Boolean(event?.calendarId && event?.eventId) && !isPendingEmission,
     queryFn: () =>
       fetchEventDteSuggestions({
         calendarId: event?.calendarId ?? "",
@@ -176,6 +179,15 @@ export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDte
                 </div>
               ) : null}
 
+              {isPendingEmission && !suggestionsQuery.data?.linked ? (
+                <div className="rounded-lg border border-warning-200 bg-warning-50/40 p-3">
+                  <Description className="text-warning-700">
+                    Evento en fecha futura. El vínculo DTE se habilita cuando llegue la fecha de
+                    emisión.
+                  </Description>
+                </div>
+              ) : null}
+
               <DataTable
                 autoFitColumns={false}
                 columns={suggestionColumns}
@@ -184,8 +196,12 @@ export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDte
                 enableGlobalFilter={false}
                 enablePagination={false}
                 enableToolbar={false}
-                isLoading={suggestionsQuery.isLoading}
-                noDataMessage="Sin candidatos para este día."
+                isLoading={!isPendingEmission && suggestionsQuery.isLoading}
+                noDataMessage={
+                  isPendingEmission
+                    ? "Evento pendiente de emisión: aún no se muestran candidatos."
+                    : "Sin candidatos para este día."
+                }
                 scrollMaxHeight="min(50dvh, 420px)"
                 scrollMode="container"
               />

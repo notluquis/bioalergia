@@ -135,6 +135,8 @@ export function DailyEventCard({ event, eventDteLink, onLinkClick }: DailyEventC
   const start = event.startDateTime ? dayjs(event.startDateTime) : null;
   const end = event.endDateTime ? dayjs(event.endDateTime) : null;
   const durationMinutes = start && end ? end.diff(start, "minute") : null;
+  const today = dayjs().format("YYYY-MM-DD");
+  const isPendingEmission = event.eventDate > today && !eventDteLink;
   const indicatorColor = getCategoryIndicatorColor(event.category);
   const stateBadges: StateBadge[] = getCalendarEventStates(event).map((state) => ({
     ...state,
@@ -234,33 +236,64 @@ export function DailyEventCard({ event, eventDteLink, onLinkClick }: DailyEventC
             </Chip>
           ))}
           {eventDteLink ? (
-            <>
-              <Chip
-                className="h-6 font-medium text-[10px] uppercase tracking-wide"
-                color="success"
-                size="sm"
-                variant="soft"
-              >
-                DTE: {eventDteLink.folio}
-              </Chip>
-              <Chip
-                className="h-6 font-medium text-[10px] uppercase tracking-wide"
-                color="success"
-                size="sm"
-                variant="soft"
-              >
-                Score {Math.round(eventDteLink.confidenceScore)}%
-              </Chip>
-            </>
+            <Card className="w-full min-w-[240px] max-w-[320px] border border-success-200/70 bg-success-50/40 p-2.5">
+              <Card.Header className="flex items-center justify-between gap-2 p-0">
+                <Card.Title className="text-success-700 text-xs uppercase tracking-wide">
+                  DTE Vinculado
+                </Card.Title>
+                <Chip color="success" size="sm" variant="soft">
+                  {Math.round(eventDteLink.confidenceScore)}%
+                </Chip>
+              </Card.Header>
+              <Card.Content className="mt-2 space-y-1.5 p-0">
+                <p className="text-sm">
+                  <span className="text-default-500 text-xs uppercase">Folio</span>{" "}
+                  <span className="font-semibold">{eventDteLink.folio}</span>
+                </p>
+                <p className="text-sm">
+                  <span className="text-default-500 text-xs uppercase">Cliente</span>{" "}
+                  <span className="font-medium">{eventDteLink.clientName}</span>
+                </p>
+                <p className="text-sm">
+                  <span className="text-default-500 text-xs uppercase">RUT</span>{" "}
+                  <span className="font-medium">{eventDteLink.clientRUT}</span>
+                </p>
+                <p className="text-sm">
+                  <span className="text-default-500 text-xs uppercase">Total</span>{" "}
+                  <span className="font-semibold text-success">
+                    {currencyFormatter.format(eventDteLink.totalAmount)}
+                  </span>
+                </p>
+              </Card.Content>
+            </Card>
+          ) : isPendingEmission ? (
+            <Chip
+              className="h-6 font-medium text-[10px] uppercase tracking-wide"
+              color="warning"
+              size="sm"
+              variant="soft"
+            >
+              Pendiente emisión DTE
+            </Chip>
           ) : null}
           {onLinkClick ? (
             <Button
               className="h-6 px-2 text-[10px] uppercase tracking-wide"
+              isDisabled={isPendingEmission}
               size="sm"
               variant={eventDteLink ? "secondary" : "ghost"}
-              onPress={() => onLinkClick(event)}
+              onPress={() => {
+                if (isPendingEmission) {
+                  return;
+                }
+                onLinkClick(event);
+              }}
             >
-              {eventDteLink ? "Ver vínculo DTE" : "Vincular DTE"}
+              {eventDteLink
+                ? "Gestionar vínculo DTE"
+                : isPendingEmission
+                  ? "Pendiente emisión"
+                  : "Vincular DTE"}
             </Button>
           ) : null}
         </div>
