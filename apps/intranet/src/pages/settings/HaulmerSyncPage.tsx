@@ -153,6 +153,16 @@ interface LastSyncState {
   [key: string]: SyncResult | null;
 }
 
+interface SyncAllProgressState {
+  current: number;
+  currentDocType: null | "purchases" | "sales";
+  currentPeriod: null | string;
+  failed: number;
+  isOpen: boolean;
+  success: number;
+  total: number;
+}
+
 // Helper component for sync status icon
 function SyncStatusIcon({ result }: { result: SyncResult | null | undefined }) {
   if (!result) {
@@ -376,6 +386,15 @@ export function HaulmerSyncPage() {
   const [isSyncScopeModalOpen, setIsSyncScopeModalOpen] = useState(false);
   const [syncSalesSelected, setSyncSalesSelected] = useState(true);
   const [syncPurchasesSelected, setSyncPurchasesSelected] = useState(true);
+  const [syncAllProgress, setSyncAllProgress] = useState<SyncAllProgressState>({
+    current: 0,
+    currentDocType: null,
+    currentPeriod: null,
+    failed: 0,
+    isOpen: false,
+    success: 0,
+    total: 0,
+  });
 
   // Fetch available periods
   const {
@@ -410,7 +429,7 @@ export function HaulmerSyncPage() {
           periods: [params.period],
           docTypes: [params.docType],
         },
-        { responseSchema: SyncResponseSchema },
+        { responseSchema: SyncResponseSchema, timeout: false },
       );
       return response.results?.[0];
     },
@@ -453,56 +472,84 @@ export function HaulmerSyncPage() {
     const purchasesPeriods = includePurchases
       ? (availablePeriods?.purchases ?? []).map((item) => item.periodo)
       : [];
-    const totalPeriods = salesPeriods.length + purchasesPeriods.length;
+    const tasks: Array<{ docType: "purchases" | "sales"; period: string }> = [
+      ...salesPeriods.map((period) => ({ period, docType: "sales" as const })),
+      ...purchasesPeriods.map((period) => ({ period, docType: "purchases" as const })),
+    ];
 
-    if (totalPeriods === 0) {
+    if (tasks.length === 0) {
       showSuccess("No hay períodos disponibles para sincronizar");
       return;
     }
 
     setIsSyncingAll(true);
+    setSyncAllProgress({
+      current: 0,
+      currentDocType: null,
+      currentPeriod: null,
+      failed: 0,
+      isOpen: true,
+      success: 0,
+      total: tasks.length,
+    });
 
     try {
-      const responses: Array<z.infer<typeof SyncResponseSchema>> = [];
-
-      if (salesPeriods.length > 0) {
-        responses.push(
-          await apiClient.post<z.infer<typeof SyncResponseSchema>>(
-            "/api/haulmer/sync",
-            {
-              periods: salesPeriods,
-              docTypes: ["sales"],
-            },
-            { responseSchema: SyncResponseSchema },
-          ),
-        );
-      }
-
-      if (purchasesPeriods.length > 0) {
-        responses.push(
-          await apiClient.post<z.infer<typeof SyncResponseSchema>>(
-            "/api/haulmer/sync",
-            {
-              periods: purchasesPeriods,
-              docTypes: ["purchases"],
-            },
-            { responseSchema: SyncResponseSchema },
-          ),
-        );
-      }
-
       let successCount = 0;
       let failedCount = 0;
-      for (const response of responses) {
-        successCount += response.summary?.success ?? 0;
-        failedCount += response.summary?.failed ?? 0;
-        for (const result of response.results ?? []) {
-          const key = `${result.period}-${result.docType}`;
+      for (const [index, task] of tasks.entries()) {
+        setSyncAllProgress((prev) => ({
+          ...prev,
+          current: index + 1,
+          currentDocType: task.docType,
+          currentPeriod: task.period,
+        }));
+
+        try {
+          const response = await apiClient.post<z.infer<typeof SyncResponseSchema>>(
+            "/api/haulmer/sync",
+            {
+              periods: [task.period],
+              docTypes: [task.docType],
+            },
+            { responseSchema: SyncResponseSchema, timeout: false },
+          );
+
+          const result = response.results?.[0];
+          if (result) {
+            const key = `${result.period}-${result.docType}`;
+            setLastSyncs((prev) => ({
+              ...prev,
+              [key]: result,
+            }));
+            if (result.status === "success") {
+              successCount += 1;
+            } else {
+              failedCount += 1;
+            }
+          }
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Error desconocido";
+          failedCount += 1;
+          const key = `${task.period}-${task.docType}`;
           setLastSyncs((prev) => ({
             ...prev,
-            [key]: result,
+            [key]: {
+              docType: task.docType,
+              error: message,
+              period: task.period,
+              rowsInserted: 0,
+              rowsProcessed: 0,
+              rowsUpdated: 0,
+              status: "failed",
+            },
           }));
         }
+
+        setSyncAllProgress((prev) => ({
+          ...prev,
+          failed: failedCount,
+          success: successCount,
+        }));
       }
 
       showSuccess(`Sync total completado: ${successCount} OK, ${failedCount} con error`);
@@ -512,6 +559,12 @@ export function HaulmerSyncPage() {
       );
     } finally {
       setIsSyncingAll(false);
+      setSyncAllProgress((prev) => ({
+        ...prev,
+        currentDocType: null,
+        currentPeriod: null,
+        isOpen: false,
+      }));
     }
   };
 
@@ -553,7 +606,7 @@ export function HaulmerSyncPage() {
           docTypes: ["sales", "purchases"],
           includeLatestAlreadySynced: true,
         },
-        { responseSchema: SyncResponseSchema },
+        { responseSchema: SyncResponseSchema, timeout: false },
       );
 
       for (const result of response.results ?? []) {
@@ -746,6 +799,56 @@ export function HaulmerSyncPage() {
                   Sincronizar seleccionado
                 </Button>
               </Modal.Footer>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal>
+
+      <Modal>
+        <Modal.Backdrop
+          isDismissable={false}
+          isKeyboardDismissDisabled
+          isOpen={syncAllProgress.isOpen}
+          onOpenChange={() => {}}
+          variant="blur"
+        >
+          <Modal.Container placement="center">
+            <Modal.Dialog className="w-full max-w-md">
+              <Modal.Header>
+                <Modal.Heading>Sincronizando Haulmer</Modal.Heading>
+              </Modal.Header>
+              <Modal.Body className="space-y-3">
+                <div className="flex items-center gap-2 text-default-600 text-sm">
+                  <Spinner size="sm" />
+                  <span>
+                    {syncAllProgress.current}/{syncAllProgress.total} •{" "}
+                    {syncAllProgress.currentDocType == null
+                      ? "Preparando..."
+                      : `${syncAllProgress.currentDocType === "sales" ? "Ventas" : "Compras"} ${syncAllProgress.currentPeriod ?? ""}`}
+                  </span>
+                </div>
+
+                <div className="h-2 overflow-hidden rounded-full bg-default-100">
+                  <div
+                    className="h-full bg-primary transition-all duration-300"
+                    style={{
+                      width: `${
+                        syncAllProgress.total > 0
+                          ? Math.round((syncAllProgress.current / syncAllProgress.total) * 100)
+                          : 0
+                      }%`,
+                    }}
+                  />
+                </div>
+
+                <Description className="text-default-500 text-xs">
+                  Progreso:{" "}
+                  {syncAllProgress.total > 0
+                    ? Math.round((syncAllProgress.current / syncAllProgress.total) * 100)
+                    : 0}
+                  % • OK: {syncAllProgress.success} • Error: {syncAllProgress.failed}
+                </Description>
+              </Modal.Body>
             </Modal.Dialog>
           </Modal.Container>
         </Modal.Backdrop>
