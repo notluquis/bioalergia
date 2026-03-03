@@ -336,9 +336,11 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
               >
                 <Label>Fecha de Inicio</Label>
                 <DateField.Group>
-                  <DateField.Input>
-                    {(segment) => <DateField.Segment segment={segment} />}
-                  </DateField.Input>
+                  <DateField.InputContainer>
+                    <DateField.Input>
+                      {(segment) => <DateField.Segment segment={segment} />}
+                    </DateField.Input>
+                  </DateField.InputContainer>
                   <DateField.Suffix>
                     <DatePicker.Trigger>
                       <DatePicker.TriggerIndicator />
