@@ -1,6 +1,8 @@
 import { Description, Modal, Spinner } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { ColumnDef } from "@tanstack/react-table";
 import { useMemo } from "react";
+import { DataTable } from "@/components/data-table/DataTable";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/context/ToastContext";
 import {
@@ -78,16 +80,72 @@ export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDte
     [suggestionsQuery.data],
   );
 
+  const suggestionColumns = useMemo<ColumnDef<EventDteSuggestion>[]>(
+    () => [
+      {
+        accessorKey: "clientName",
+        header: "Cliente",
+        minSize: 220,
+        size: 260,
+        cell: ({ row }) => (
+          <span className="block max-w-72 truncate" title={row.original.clientName}>
+            {row.original.clientName}
+          </span>
+        ),
+      },
+      {
+        accessorKey: "clientRUT",
+        header: "RUT",
+      },
+      {
+        accessorKey: "folio",
+        header: "Folio",
+      },
+      {
+        accessorKey: "totalAmount",
+        header: "Total",
+        cell: ({ row }) => currencyFormatter.format(row.original.totalAmount),
+      },
+      {
+        accessorKey: "confidenceScore",
+        header: "Score",
+        cell: ({ row }) => <span className="font-semibold">{row.original.confidenceScore}</span>,
+      },
+      {
+        accessorKey: "method",
+        header: "Método",
+      },
+      {
+        id: "actions",
+        header: "",
+        cell: ({ row }) => (
+          <div className="text-right">
+            <Button
+              color="primary"
+              isLoading={confirmMutation.isPending}
+              size="sm"
+              variant="ghost"
+              onPress={() => confirmMutation.mutate(row.original)}
+            >
+              Vincular
+            </Button>
+          </div>
+        ),
+      },
+    ],
+    [confirmMutation.isPending, confirmMutation.mutate],
+  );
+
   return (
     <Modal>
       <Modal.Backdrop isOpen={isOpen} onOpenChange={(open) => !open && onClose()} variant="blur">
-        <Modal.Container placement="center" size="lg">
-          <Modal.Dialog>
+        <Modal.Container placement="center" scroll="inside" size="lg">
+          <Modal.Dialog className="w-full max-w-[min(96vw,980px)]">
             <Modal.CloseTrigger />
             <Modal.Header>
               <Modal.Heading>Vincular evento con boleta DTE</Modal.Heading>
             </Modal.Header>
-            <Modal.Body className="space-y-3">
+            <Modal.Body className="space-y-3 pb-4">
               <div className="rounded-lg border border-default-200 p-3">
                 <p className="font-semibold text-sm">{event?.summary ?? "(Sin título)"}</p>
                 <p className="text-default-500 text-xs">
@@ -125,52 +183,19 @@ export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDte
                 </div>
               ) : null}
 
-              <div className="max-h-[50vh] overflow-y-auto rounded-lg border border-default-200">
-                {candidates.length === 0 && !suggestionsQuery.isLoading ? (
-                  <div className="p-4 text-center text-default-500 text-sm">
-                    Sin candidatos para este día.
-                  </div>
-                ) : (
-                  <table className="w-full text-sm">
-                    <thead className="sticky top-0 bg-default-50">
-                      <tr className="text-left text-default-600 text-xs uppercase">
-                        <th className="px-3 py-2">Cliente</th>
-                        <th className="px-3 py-2">RUT</th>
-                        <th className="px-3 py-2">Folio</th>
-                        <th className="px-3 py-2">Total</th>
-                        <th className="px-3 py-2">Score</th>
-                        <th className="px-3 py-2">Método</th>
-                        <th className="px-3 py-2" />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {candidates.map((candidate) => (
-                        <tr className="border-default-100 border-t" key={candidate.dteSaleDetailId}>
-                          <td className="px-3 py-2">{candidate.clientName}</td>
-                          <td className="px-3 py-2">{candidate.clientRUT}</td>
-                          <td className="px-3 py-2">{candidate.folio}</td>
-                          <td className="px-3 py-2">
-                            {currencyFormatter.format(candidate.totalAmount)}
-                          </td>
-                          <td className="px-3 py-2 font-semibold">{candidate.confidenceScore}</td>
-                          <td className="px-3 py-2">{candidate.method}</td>
-                          <td className="px-3 py-2 text-right">
-                            <Button
-                              color="primary"
-                              isLoading={confirmMutation.isPending}
-                              size="sm"
-                              variant="ghost"
-                              onPress={() => confirmMutation.mutate(candidate)}
-                            >
-                              Vincular
-                            </Button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </div>
+              <DataTable
+                autoFitColumns={false}
+                columns={suggestionColumns}
+                containerVariant="plain"
+                data={candidates}
+                enableGlobalFilter={false}
+                enablePagination={false}
+                enableToolbar={false}
+                isLoading={suggestionsQuery.isLoading}
+                noDataMessage="Sin candidatos para este día."
+                scrollMaxHeight="min(50dvh, 420px)"
+                scrollMode="container"
+              />
             </Modal.Body>
           </Modal.Dialog>
         </Modal.Container>
