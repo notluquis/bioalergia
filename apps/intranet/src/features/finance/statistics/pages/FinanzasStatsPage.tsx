@@ -11,6 +11,7 @@ import {
   DateRangePicker,
   Label,
   ListBox,
+  RangeCalendar,
   Select,
   Spinner,
 } from "@heroui/react";
@@ -19,8 +20,6 @@ import dayjs from "dayjs";
 import { ArrowDown, ArrowUp, BarChart3, Calendar, TrendingUp } from "lucide-react";
 import { useState } from "react";
 
-import { DateRangeCalendar } from "@/components/ui/DateRangeCalendar";
-import { StatCard } from "@/components/ui/StatCard";
 import { useAuth } from "@/context/AuthContext";
 import { BalanceSummary } from "@/features/finance/balances/components/BalanceSummary";
 import { PAGE_CONTAINER } from "@/lib/styles";
@@ -163,7 +162,21 @@ export function FinanzasStatsPage() {
               </DateField.Suffix>
             </DateField.Group>
             <DateRangePicker.Popover>
-              <DateRangeCalendar visibleDuration={{ months: 2 }} />
+              <RangeCalendar visibleDuration={{ months: 2 }}>
+                <RangeCalendar.Header>
+                  <RangeCalendar.Heading />
+                  <RangeCalendar.NavButton slot="previous" />
+                  <RangeCalendar.NavButton slot="next" />
+                </RangeCalendar.Header>
+                <RangeCalendar.Grid>
+                  <RangeCalendar.GridHeader>
+                    {(day) => <RangeCalendar.HeaderCell>{day}</RangeCalendar.HeaderCell>}
+                  </RangeCalendar.GridHeader>
+                  <RangeCalendar.GridBody>
+                    {(date) => <RangeCalendar.Cell date={date} />}
+                  </RangeCalendar.GridBody>
+                </RangeCalendar.Grid>
+              </RangeCalendar>
             </DateRangePicker.Popover>
           </DateRangePicker>
         </div>
@@ -218,29 +231,46 @@ export function FinanzasStatsPage() {
         <div className="space-y-6">
           {/* KPI Cards */}
           <section className="grid gap-4 sm:grid-cols-3">
-            <StatCard
-              className="text-success"
-              icon={ArrowUp}
-              subtitle="Total periodo"
-              title="INGRESOS"
-              value={totals.in}
-            />
+            <Card className="p-4" variant="secondary">
+              <Card.Header className="items-center justify-between p-0">
+                <Card.Title className="text-sm">INGRESOS</Card.Title>
+                <ArrowUp className="h-4 w-4 text-success" />
+              </Card.Header>
+              <Card.Content className="p-0 pt-3">
+                <p className="font-semibold text-2xl text-success">
+                  ${totals.in.toLocaleString("es-CL")}
+                </p>
+                <Card.Description>Total periodo</Card.Description>
+              </Card.Content>
+            </Card>
 
-            <StatCard
-              className="text-danger"
-              icon={ArrowDown}
-              subtitle="Total periodo"
-              title="EGRESOS"
-              value={totals.out}
-            />
+            <Card className="p-4" variant="secondary">
+              <Card.Header className="items-center justify-between p-0">
+                <Card.Title className="text-sm">EGRESOS</Card.Title>
+                <ArrowDown className="h-4 w-4 text-danger" />
+              </Card.Header>
+              <Card.Content className="p-0 pt-3">
+                <p className="font-semibold text-2xl text-danger">
+                  ${totals.out.toLocaleString("es-CL")}
+                </p>
+                <Card.Description>Total periodo</Card.Description>
+              </Card.Content>
+            </Card>
 
-            <StatCard
-              className={totals.net >= 0 ? "text-success" : "text-danger"}
-              icon={BarChart3}
-              subtitle="Ingresos - Egresos"
-              title="RESULTADO"
-              value={totals.net}
-            />
+            <Card className="p-4" variant="secondary">
+              <Card.Header className="items-center justify-between p-0">
+                <Card.Title className="text-sm">RESULTADO</Card.Title>
+                <BarChart3 className="h-4 w-4 text-primary" />
+              </Card.Header>
+              <Card.Content className="p-0 pt-3">
+                <p
+                  className={`font-semibold text-2xl ${totals.net >= 0 ? "text-success" : "text-danger"}`}
+                >
+                  ${totals.net.toLocaleString("es-CL")}
+                </p>
+                <Card.Description>Ingresos - Egresos</Card.Description>
+              </Card.Content>
+            </Card>
           </section>
 
           {/* Monthly Flow Chart */}

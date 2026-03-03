@@ -1,4 +1,14 @@
-import { Card, Checkbox, Chip, Description, Label, Modal, Skeleton, Spinner } from "@heroui/react";
+import {
+  Button,
+  Card,
+  Checkbox,
+  Chip,
+  Description,
+  Label,
+  Modal,
+  Skeleton,
+  Spinner,
+} from "@heroui/react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import localeEs from "dayjs/locale/es";
@@ -6,7 +16,6 @@ import { Check, Download, RefreshCw, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { z } from "zod";
 
-import { Button } from "@/components/ui/Button";
 import { useToast } from "@/context/ToastContext";
 import { apiClient } from "@/lib/api-client";
 
@@ -218,20 +227,20 @@ function SyncAllCard({
           <div className="flex gap-2">
             <Button
               isDisabled={isSyncingAll || isSyncingIncremental}
-              isLoading={isSyncingAll}
-              color="primary"
-              onClick={onOpenSyncModal}
-              startContent={isSyncingAll ? undefined : <Download className="h-4 w-4" />}
+              isPending={isSyncingAll}
+              onPress={onOpenSyncModal}
+              variant="primary"
             >
+              {!isSyncingAll ? <Download className="h-4 w-4" /> : null}
               {isSyncingAll ? "Sincronizando..." : "Sincronizar"}
             </Button>
             <Button
               isDisabled={isSyncingAll || isSyncingIncremental}
-              isLoading={isSyncingIncremental}
-              color="secondary"
-              onClick={onSyncIncremental}
-              startContent={isSyncingIncremental ? undefined : <RefreshCw className="h-4 w-4" />}
+              isPending={isSyncingIncremental}
+              onPress={onSyncIncremental}
+              variant="secondary"
             >
+              {!isSyncingIncremental ? <RefreshCw className="h-4 w-4" /> : null}
               {isSyncingIncremental ? "Sincronizando..." : "Incremental"}
             </Button>
           </div>
@@ -296,17 +305,17 @@ function PeriodCard({
             </div>
           </div>
           <Button
-            size="sm"
-            variant="primary"
-            disabled={
+            isDisabled={
               !hasSalesData(period.period) ||
               (syncMutation.isPending && syncMutation.variables?.period === period.period)
             }
-            onClick={() => {
+            size="sm"
+            variant="primary"
+            onPress={() => {
               onSync(period.period, "sales");
             }}
-            startContent={<Download className="h-4 w-4" />}
           >
+            <Download className="h-4 w-4" />
             Importar
           </Button>
           {lastSyncs[`${period.period}-sales`] && (
@@ -344,17 +353,17 @@ function PeriodCard({
             </div>
           </div>
           <Button
-            size="sm"
-            variant="primary"
-            disabled={
+            isDisabled={
               !hasPurchasesData(period.period) ||
               (syncMutation.isPending && syncMutation.variables?.period === period.period)
             }
-            onClick={() => {
+            size="sm"
+            variant="primary"
+            onPress={() => {
               onSync(period.period, "purchases");
             }}
-            startContent={<Download className="h-4 w-4" />}
           >
+            <Download className="h-4 w-4" />
             Importar
           </Button>
           {lastSyncs[`${period.period}-purchases`] && (
@@ -783,7 +792,7 @@ export function HaulmerSyncPage() {
               </Modal.Body>
               <Modal.Footer className="gap-2">
                 <Button
-                  onClick={() => {
+                  onPress={() => {
                     setIsSyncScopeModalOpen(false);
                   }}
                   variant="secondary"
@@ -791,9 +800,9 @@ export function HaulmerSyncPage() {
                   Cancelar
                 </Button>
                 <Button
-                  disabled={!syncSalesSelected && !syncPurchasesSelected}
-                  isLoading={isSyncingAll}
-                  onClick={handleConfirmSyncScope}
+                  isDisabled={!syncSalesSelected && !syncPurchasesSelected}
+                  isPending={isSyncingAll}
+                  onPress={handleConfirmSyncScope}
                   variant="primary"
                 >
                   Sincronizar seleccionado
