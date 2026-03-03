@@ -31,14 +31,14 @@ export function DailyStatsCards({
   return (
     <div className={cn("grid gap-3 sm:grid-cols-3 xl:grid-cols-5", className)}>
       <MetricCard
-        className="transition-transform hover:scale-[1.02]"
+        className=" "
         title="Eventos"
         tone="primary"
         value={numberFormatter.format(eventsCount)}
       />
 
       <MetricCard
-        className="transition-transform hover:scale-[1.02]"
+        className=" "
         subtitle={`No show: ${numberFormatter.format(noShowCount)}`}
         title="Confirmados"
         tone="success"
@@ -46,7 +46,7 @@ export function DailyStatsCards({
       />
 
       <MetricCard
-        className="transition-transform hover:scale-[1.02]"
+        className=" "
         subtitle={`${eventsCount > 0 ? ((noShowCount / eventsCount) * 100).toFixed(1) : "0.0"}% del día`}
         title="No Show"
         tone={noShowCount > 0 ? "warning" : "default"}
@@ -54,7 +54,7 @@ export function DailyStatsCards({
       />
 
       <MetricCard
-        className="transition-transform hover:scale-[1.02]"
+        className=" "
         subtitle={`${currencyFormatter.format(amountPaid)} de ${currencyFormatter.format(amountExpected)}`}
         suffix="%"
         title="Cobranza Día"
@@ -63,7 +63,7 @@ export function DailyStatsCards({
       />
 
       <MetricCard
-        className="transition-transform hover:scale-[1.02]"
+        className=" "
         subtitle={`Inducción ${inductionCount} · Mantención ${maintenanceCount} · Sin etapa ${withoutStageCount}`}
         title="Mix Etapa"
         tone="primary"
@@ -71,21 +71,21 @@ export function DailyStatsCards({
       />
 
       <MetricCard
-        className="transition-transform hover:scale-[1.02]"
+        className=" "
         subtitle={`${eventsCount > 0 ? (totalDosageMl / eventsCount).toFixed(2) : "0.00"} ml promedio por evento`}
         title="Dosis Total Día"
         value={`${totalDosageMl.toFixed(2)} ml`}
       />
 
       <MetricCard
-        className="transition-transform hover:scale-[1.02]"
+        className=" "
         title="Esperado"
         tone="warning"
         value={currencyFormatter.format(amountExpected)}
       />
 
       <MetricCard
-        className="transition-transform hover:scale-[1.02]"
+        className=" "
         title="Pagado"
         tone="success"
         value={currencyFormatter.format(amountPaid)}

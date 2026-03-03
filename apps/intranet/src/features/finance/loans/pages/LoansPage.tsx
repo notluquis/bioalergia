@@ -203,7 +203,7 @@ export function LoansPage() {
             <Suspense
               fallback={
                 <div className="flex h-full items-center justify-center">
-                  <div className="h-10 w-10 animate-spin rounded-full border-4 border-t-transparent bg-default-50 opacity-50" />
+                  <div className="h-10 w-10 rounded-full border-4 border-t-transparent bg-default-50 opacity-50" />
                 </div>
               }
             >

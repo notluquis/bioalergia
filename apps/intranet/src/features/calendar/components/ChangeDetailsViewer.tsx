@@ -155,13 +155,13 @@ export const ChangeDetailsViewer = ({ data }: { data: unknown }) => {
 
   return (
     <Accordion
-      className="overflow-hidden rounded-xl border border-default-200 bg-content1/50 p-0 shadow-none transition-all duration-200"
+      className="overflow-hidden rounded-xl border border-default-200 bg-content1/50 p-0 shadow-none "
       hideSeparator
       variant="default"
     >
       <Accordion.Item key="change-details" aria-label="Detalle de Cambios" className="px-0">
         <Accordion.Heading>
-          <Accordion.Trigger className="px-4 py-3 transition-colors hover:bg-default-100/50 data-[hover=true]:bg-default-100/50">
+          <Accordion.Trigger className="px-4 py-3 hover:bg-default-100/50 data-[hover=true]:bg-default-100/50">
             <span className="font-medium text-sm">Detalle de Cambios</span>
             <Accordion.Indicator className="text-foreground-400" />
           </Accordion.Trigger>

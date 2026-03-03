@@ -81,11 +81,11 @@ export function FileListItem({
   const canRemove = status === "idle" || status === "ready" || status === "error";
 
   return (
-    <div className="group flex items-center gap-3 rounded-lg border border-default-200 bg-background p-3 transition-all hover:border-default-300 hover:shadow-sm">
+    <div className="group flex items-center gap-3 rounded-lg border border-default-200 bg-background p-3 hover:border-default-300 hover:shadow-sm">
       {/* Icon */}
       <div className="shrink-0">
         <Icon
-          className={`h-5 w-5 ${showProgress ? "animate-spin" : ""} ${
+          className={`h-5 w-5 ${showProgress ? "" : ""} ${
             status === "error" ? "text-danger" : "text-default-500"
           }`}
         />
@@ -120,7 +120,7 @@ export function FileListItem({
           <div className="mt-2">
             <div className="h-1 w-full overflow-hidden rounded-full bg-default-200">
               <div
-                className="h-full bg-accent transition-all duration-300"
+                className="h-full bg-accent "
                 style={{ width: `${progress}%` }}
                 role="progressbar"
                 aria-valuenow={progress}
@@ -140,7 +140,7 @@ export function FileListItem({
           size="sm"
           isIconOnly
           onPress={() => onRemove(id)}
-          className="opacity-0 transition-opacity group-hover:opacity-100"
+          className="opacity-0 group-hover:opacity-100"
           aria-label="Eliminar archivo"
         >
           <X className="h-4 w-4" />

@@ -52,7 +52,7 @@ export function CounterpartList({
             return (
               <li key={item.id}>
                 <Button
-                  className={`group w-full cursor-pointer rounded-2xl border px-3 py-2 text-left transition-all ${
+                  className={`group w-full cursor-pointer rounded-2xl border px-3 py-2 text-left ${
                     isActive
                       ? "border-primary/45 bg-primary/10 shadow-sm"
                       : "border-default-200/70 bg-default-50/60 hover:border-default-300 hover:bg-default-100/60"

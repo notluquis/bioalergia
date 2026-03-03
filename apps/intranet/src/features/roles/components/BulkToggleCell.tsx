@@ -39,11 +39,7 @@ export function BulkToggleCell({
         }}
       >
         <Checkbox.Control>
-          {isUpdating ? (
-            <Loader2 className="h-4 w-4 animate-spin text-default-300" />
-          ) : (
-            <Checkbox.Indicator />
-          )}
+          {isUpdating ? <Loader2 className="h-4 w-4 text-default-300" /> : <Checkbox.Indicator />}
         </Checkbox.Control>
       </Checkbox>
     </div>

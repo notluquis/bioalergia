@@ -230,7 +230,7 @@ export function ServicesUnifiedAgenda({
                       {currencyFormatter.format(group.total)}
                     </span>
                     <span
-                      className={`inline-flex h-7 w-7 items-center justify-center rounded-full border border-default-200 bg-background/70 font-semibold text-default-400 text-xs transition-transform ${
+                      className={`inline-flex h-7 w-7 items-center justify-center rounded-full border border-default-200 bg-background/70 font-semibold text-default-400 text-xs ${
                         isExpanded ? "rotate-180" : ""
                       }`}
                     >

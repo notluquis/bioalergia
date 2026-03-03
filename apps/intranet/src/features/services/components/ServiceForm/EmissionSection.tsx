@@ -27,9 +27,9 @@ interface EmissionSectionProps {
 
 // EMISSION_MODE_OPTIONS is no longer used for rendering the Select options directly
 // const EMISSION_MODE_OPTIONS: { label: string; value: ServiceEmissionMode }[] = [
-//   { label: "Día específico", value: "FIXED_DAY" },
-//   { label: "Rango de días", value: "DATE_RANGE" },
-//   { label: "Fecha exacta", value: "SPECIFIC_DATE" },
+// { label: "Día específico", value: "FIXED_DAY" },
+// { label: "Rango de días", value: "DATE_RANGE" },
+// { label: "Fecha exacta", value: "SPECIFIC_DATE" },
 // ];
 
 export function EmissionSection({

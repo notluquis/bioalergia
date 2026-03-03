@@ -45,7 +45,7 @@ export function MovementTypeList({ data }: MovementTypeListProps) {
         <div className="space-y-1">
           {items.map((item) => (
             <div
-              className="flex items-center justify-between rounded-lg border border-transparent p-2 transition-colors hover:bg-default-50/50"
+              className="flex items-center justify-between rounded-lg border border-transparent p-2 hover:bg-default-50/50"
               key={`${item.description ?? "Sin categoría"}-${item.total}`}
             >
               <span className="text-sm">{item.description ?? "Sin categoría"}</span>

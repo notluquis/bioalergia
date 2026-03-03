@@ -1696,7 +1696,7 @@ export function CashFlowPage() {
                         <div className="max-h-96 space-y-2 overflow-auto pr-1">
                           {incomeCategorySummary.map((item) => (
                             <Button
-                              className="group h-auto w-full justify-start rounded-md border border-default-200 p-0 text-left transition-colors hover:bg-default-100/60"
+                              className="group h-auto w-full justify-start rounded-md border border-default-200 p-0 text-left hover:bg-default-100/60"
                               key={`summary-income-category-${item.type}-${item.categoryId ?? "none"}`}
                               variant="ghost"
                               onPress={() => navigateToMovementsBySummaryCategory(item)}
@@ -1762,7 +1762,7 @@ export function CashFlowPage() {
                         <div className="max-h-96 space-y-2 overflow-auto pr-1">
                           {expenseCategorySummary.map((item) => (
                             <Button
-                              className="group h-auto w-full justify-start rounded-md border border-default-200 p-0 text-left transition-colors hover:bg-default-100/60"
+                              className="group h-auto w-full justify-start rounded-md border border-default-200 p-0 text-left hover:bg-default-100/60"
                               key={`summary-expense-category-${item.type}-${item.categoryId ?? "none"}`}
                               variant="ghost"
                               onPress={() => navigateToMovementsBySummaryCategory(item)}

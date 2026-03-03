@@ -76,12 +76,7 @@ export function PersonalCreditDetailsPage({ creditId }: { creditId: number }) {
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Link to="/finanzas/personal-credits">
-          <Button
-            isIconOnly
-            size="sm"
-            variant="ghost"
-            className="no-animation size-8 p-0 transition-all duration-200 ease-apple hover:-translate-y-px active:translate-y-0 active:scale-[0.98]"
-          >
+          <Button isIconOnly size="sm" variant="ghost" className=" size-8 p-0 ">
             <ArrowLeftIcon className="size-4" />
           </Button>
         </Link>

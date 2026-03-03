@@ -960,7 +960,7 @@ function CounterpartsToolbar({
                   size="sm"
                   variant="secondary"
                 >
-                  <RefreshCcw className={`h-4 w-4 ${syncLoading ? "animate-spin" : ""}`} />
+                  <RefreshCcw className={`h-4 w-4 ${syncLoading ? "" : ""}`} />
                 </Button>
               ) : null}
               {canCreate ? (

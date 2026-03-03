@@ -115,7 +115,7 @@ interface NotificationItemProps {
 
 function NotificationItem({ notification, onRead, onRemove }: Readonly<NotificationItemProps>) {
   return (
-    <li className="border-default-100 border-b transition-colors last:border-0 hover:bg-default-50">
+    <li className="border-default-100 border-b last:border-0 hover:bg-default-50">
       <article
         className={cn(
           "group relative flex cursor-default gap-3 px-4 py-3",
@@ -169,7 +169,7 @@ function NotificationItem({ notification, onRead, onRemove }: Readonly<Notificat
             e.stopPropagation();
             onRemove(notification.id);
           }}
-          className="absolute top-2 right-2 rounded-full p-1 text-default-400 opacity-0 transition-opacity hover:text-danger group-hover:opacity-100"
+          className="absolute top-2 right-2 rounded-full p-1 text-default-400 opacity-0 hover:text-danger group-hover:opacity-100"
           variant="ghost"
           isIconOnly
           size="sm"

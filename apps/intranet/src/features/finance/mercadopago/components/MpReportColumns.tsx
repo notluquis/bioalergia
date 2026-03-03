@@ -86,7 +86,7 @@ export const getMpReportColumns = (
     cell: ({ row }) =>
       isReportPending(row.original.status) ? (
         <Chip className="gap-1.5" color="warning" size="sm" variant="soft">
-          <Loader2 className="h-3 w-3 animate-spin" />
+          <Loader2 className="h-3 w-3 " />
           Generando...
         </Chip>
       ) : (
@@ -105,7 +105,7 @@ export const getMpReportColumns = (
       return (
         <div className="flex justify-end gap-1 text-right">
           <Button
-            className="h-9 w-9 p-0 transition-opacity sm:opacity-70 sm:group-hover:opacity-100"
+            className="h-9 w-9 p-0 sm:opacity-70 sm:group-hover:opacity-100"
             isDisabled={downloadPending || pending || !report.file_name}
             onPress={(e) => {
               if (report.file_name) {
@@ -114,14 +114,10 @@ export const getMpReportColumns = (
             }}
             variant="ghost"
           >
-            {downloadPending ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <Download className="h-5 w-5" />
-            )}
+            {downloadPending ? <Loader2 className="h-5 w-5 " /> : <Download className="h-5 w-5" />}
           </Button>
           <Button
-            className="h-9 w-9 p-0 transition-opacity sm:opacity-70 sm:group-hover:opacity-100"
+            className="h-9 w-9 p-0 sm:opacity-70 sm:group-hover:opacity-100"
             isDisabled={processPending || pending || !report.file_name}
             onPress={(e) => {
               if (report.file_name) {
@@ -131,7 +127,7 @@ export const getMpReportColumns = (
             variant="ghost"
           >
             {processPending && processingFile === (report.file_name ?? null) ? (
-              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              <Loader2 className="h-5 w-5 text-primary" />
             ) : (
               <RefreshCw className="h-5 w-5" />
             )}

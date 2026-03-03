@@ -116,7 +116,7 @@ function InstallmentRow({
       : "bg-warning/10 text-warning";
 
   return (
-    <div className="rounded-xl border border-border bg-transparent transition-all duration-200 hover:border-accent/50 hover:shadow-sm">
+    <div className="rounded-xl border border-border bg-transparent hover:border-accent/50 hover:shadow-sm">
       <div className="p-4">
         <div className="flex items-start justify-between gap-4">
           {/* Icon Status */}

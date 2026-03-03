@@ -65,7 +65,7 @@ export function FormattedEventDescription({
   return (
     <div
       className={cn(
-        "whitespace-pre-wrap font-normal text-foreground-500 text-xs leading-relaxed transition-all",
+        "whitespace-pre-wrap font-normal text-foreground-500 text-xs leading-relaxed ",
         className,
       )}
     >

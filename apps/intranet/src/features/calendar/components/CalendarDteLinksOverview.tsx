@@ -389,7 +389,7 @@ export function CalendarDteLinksOverview({
           <Card.Content>
             <div className="h-2 w-full overflow-hidden rounded-full bg-default-200">
               <div
-                className="h-full rounded-full bg-primary transition-all duration-300"
+                className="h-full rounded-full bg-primary "
                 style={{ width: `${autoLinkProgress}%` }}
               />
             </div>

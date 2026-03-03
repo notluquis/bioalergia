@@ -33,7 +33,7 @@ export function MonthlyExpenseList({
           const isActive = expense.publicId === selectedId;
           return (
             <Button
-              className={`w-full rounded-2xl border px-4 py-3 text-left transition-all ${
+              className={`w-full rounded-2xl border px-4 py-3 text-left ${
                 isActive
                   ? "border-primary/40 bg-primary/15 text-primary shadow"
                   : "border-transparent bg-background/55 text-foreground hover:border-default-200 hover:bg-default-50"

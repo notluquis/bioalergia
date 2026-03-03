@@ -75,7 +75,7 @@ export function NewAttachmentModal({ isOpen, onClose, patientId }: NewAttachment
             <Modal.Body className="mt-2 max-h-[80vh] overflow-y-auto overscroll-contain text-foreground">
               <div className="space-y-6">
                 <div className="space-y-4">
-                  <div className="flex flex-col items-center justify-center rounded-xl border-2 border-default-200 border-dashed bg-default-50/50 p-8 transition-colors hover:bg-default-50">
+                  <div className="flex flex-col items-center justify-center rounded-xl border-2 border-default-200 border-dashed bg-default-50/50 p-8 hover:bg-default-50">
                     {file ? (
                       <div className="flex w-full items-center gap-3">
                         <div className="flex-1 truncate rounded-lg bg-primary/10 p-3 font-bold text-primary text-sm">

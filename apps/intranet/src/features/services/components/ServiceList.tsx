@@ -77,7 +77,7 @@ export function ServiceList({ loading = false, onSelect, selectedId, services }:
 
           return (
             <Button
-              className={`w-full cursor-pointer rounded-2xl border px-4 py-3 text-left transition-all ${
+              className={`w-full cursor-pointer rounded-2xl border px-4 py-3 text-left ${
                 isActive
                   ? "border-default-200 bg-primary/20 text-primary"
                   : "border-transparent bg-background/45 text-foreground hover:border-default-200 hover:bg-background/65"

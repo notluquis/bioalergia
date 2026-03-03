@@ -213,7 +213,7 @@ function HeatmapMonthComponent({
           const cellButton = (
             <Button
               className={clsx(
-                "relative flex aspect-square h-full min-h-0 w-full min-w-0 cursor-default flex-col items-center justify-center overflow-hidden rounded-md transition-all duration-200",
+                "relative flex aspect-square h-full min-h-0 w-full min-w-0 cursor-default flex-col items-center justify-center overflow-hidden rounded-md ",
                 // Default empty state
                 "bg-default-100/50 text-foreground-500",
                 // Intensity colors

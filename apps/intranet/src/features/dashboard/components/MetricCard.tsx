@@ -60,7 +60,7 @@ export function MetricCard({
 
   return (
     <article
-      className={`relative overflow-hidden rounded-4xl bg-linear-to-br ${theme.gradient} p-6 shadow-lg ring-1 ring-inset transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${theme.ring}`}
+      className={`relative overflow-hidden rounded-4xl bg-linear-to-br ${theme.gradient} p-6 shadow-lg ring-1 ring-inset hover:shadow-xl ${theme.ring}`}
     >
       <div
         aria-hidden="true"

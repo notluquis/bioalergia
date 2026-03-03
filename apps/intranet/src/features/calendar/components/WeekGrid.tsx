@@ -394,7 +394,7 @@ function getEventDisplayTimes(event: CalendarEventDetail) {
 
 function getEventButtonClasses(displayMode: DisplayMode, category: string | null) {
   return cn(
-    "absolute z-1 flex min-h-5 flex-col justify-start gap-px overflow-hidden text-wrap rounded-md border-l-[3px] px-1.5 py-1 text-start shadow-sm transition-shadow hover:z-10 hover:shadow-md",
+    "absolute z-1 flex min-h-5 flex-col justify-start gap-px overflow-hidden text-wrap rounded-md border-l-[3px] px-1.5 py-1 text-start shadow-sm hover:z-10 hover:shadow-md",
     getCategoryClass(category),
     displayMode === "minimal" && "items-center justify-center px-[0.3rem] py-[0.1rem]",
     displayMode === "compact" && "px-[0.35rem] py-[0.15rem]",
@@ -734,7 +734,7 @@ function NowIndicator({ endHour, startHour }: Readonly<{ endHour: number; startH
       style={{ top: `${position}%` }}
       title={`Hora actual: ${now.format("HH:mm")}`}
     >
-      <div className="-ml-1.25 size-2.5 animate-pulse rounded-full bg-danger shadow-[0_0_8px] shadow-danger/50" />
+      <div className="-ml-1.25 size-2.5 rounded-full bg-danger shadow-[0_0_8px] shadow-danger/50" />
       <div className="h-0.5 flex-1 bg-danger" />
     </div>
   );

@@ -70,7 +70,7 @@ export function TopParticipantsSection({ data, error, loading }: TopParticipants
           <div className="space-y-2">
             {data.slice(0, 10).map((participant, index) => (
               <div
-                className="flex items-center justify-between rounded-lg p-3 transition-colors hover:bg-default-50/50"
+                className="flex items-center justify-between rounded-lg p-3 hover:bg-default-50/50"
                 key={participant.personId}
               >
                 <div className="flex items-center gap-3">

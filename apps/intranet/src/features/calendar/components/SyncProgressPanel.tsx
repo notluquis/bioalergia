@@ -131,7 +131,7 @@ export function SyncProgressPanel({
   const dotClass: Record<SyncProgressStatus, string> = {
     completed: "bg-secondary",
     error: "bg-danger",
-    in_progress: "bg-primary animate-pulse",
+    in_progress: "bg-primary ",
     pending: "bg-default-300",
   };
 

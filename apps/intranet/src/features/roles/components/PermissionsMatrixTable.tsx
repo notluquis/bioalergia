@@ -144,7 +144,7 @@ export function PermissionsMatrixTable({
             {/* Section Title & Bulk Toggle */}
             <div className="sticky left-0 z-10 flex overflow-hidden border-default-200 border-r border-b">
               <Button
-                className="flex flex-1 cursor-pointer items-center gap-2 bg-default-100/40 py-3 pl-4 font-semibold text-xs uppercase tracking-wide transition-colors hover:bg-default-100/60"
+                className="flex flex-1 cursor-pointer items-center gap-2 bg-default-100/40 py-3 pl-4 font-semibold text-xs uppercase tracking-wide hover:bg-default-100/60"
                 onPress={() => {
                   toggleSection(section.title);
                 }}
@@ -163,7 +163,7 @@ export function PermissionsMatrixTable({
             </div>
             {displayRoles.map((role) => (
               <div
-                className="flex items-center justify-center border-default-200 border-b bg-default-100/40 p-0 transition-colors hover:bg-default-100/60"
+                className="flex items-center justify-center border-default-200 border-b bg-default-100/40 p-0 hover:bg-default-100/60"
                 key={role.id}
               >
                 <BulkToggleCell
@@ -190,7 +190,7 @@ export function PermissionsMatrixTable({
                       <Fragment key={item.label}>
                         <div className="sticky left-0 z-10 flex overflow-hidden border-default-200 border-r border-b">
                           <Button
-                            className="flex flex-1 cursor-pointer items-center gap-2 bg-background py-3 pl-8 font-medium text-sm transition-colors hover:bg-default-50/30"
+                            className="flex flex-1 cursor-pointer items-center gap-2 bg-background py-3 pl-8 font-medium text-sm hover:bg-default-50/30"
                             onPress={() => {
                               toggleItem(itemKey);
                             }}
@@ -208,7 +208,7 @@ export function PermissionsMatrixTable({
                         </div>
                         {displayRoles.map((role) => (
                           <div
-                            className="flex items-center justify-center border-default-200 border-b bg-background p-0 transition-colors hover:bg-default-50/30"
+                            className="flex items-center justify-center border-default-200 border-b bg-background p-0 hover:bg-default-50/30"
                             key={role.id}
                           >
                             <BulkToggleCell

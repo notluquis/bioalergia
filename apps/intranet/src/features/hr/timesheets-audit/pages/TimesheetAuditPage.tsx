@@ -320,13 +320,7 @@ function PeriodSelectionPanel({
             variant="ghost"
           >
             <span>Personalizar semanas específicas</span>
-            <ChevronDown
-              className={cn(
-                "transform transition-transform duration-300",
-                customWeeksOpen && "rotate-180",
-              )}
-              size={16}
-            />
+            <ChevronDown className={cn("transform ", customWeeksOpen && "rotate-180")} size={16} />
           </Button>
           <SmoothCollapse isOpen={customWeeksOpen}>
             <div className="space-y-4 px-4 pt-0 pb-4">
@@ -378,7 +372,7 @@ function PeriodSelectionPanel({
                   return (
                     <Button
                       className={cn(
-                        "justify-start rounded-lg border p-3 text-left transition-all",
+                        "justify-start rounded-lg border p-3 text-left ",
                         isActive
                           ? "border-primary bg-primary/10 text-primary"
                           : "border-default-200 bg-background text-foreground hover:border-primary/50",
@@ -643,10 +637,7 @@ function LegendPanel({
     <div className="rounded-2xl border border-default-200 bg-background shadow-sm">
       <Button className="w-full justify-between px-4 py-3" onPress={onToggle} variant="ghost">
         <span>📋 Guía de interpretación</span>
-        <ChevronDown
-          className={cn("transform transition-transform duration-300", isOpen && "rotate-180")}
-          size={16}
-        />
+        <ChevronDown className={cn("transform ", isOpen && "rotate-180")} size={16} />
       </Button>
       <SmoothCollapse isOpen={isOpen}>
         <div className="px-4 pt-0 pb-4">

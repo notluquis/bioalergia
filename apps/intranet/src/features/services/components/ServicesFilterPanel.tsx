@@ -99,7 +99,7 @@ export function ServicesFilterPanel({ filters, onChange, services }: ServicesFil
           <div className="mt-2 flex flex-wrap gap-2">
             {STATUS_ORDER.map((status) => (
               <Button
-                className={`rounded-full border px-3 py-1 font-semibold text-xs transition-all ${
+                className={`rounded-full border px-3 py-1 font-semibold text-xs ${
                   filters.statuses.size === 0 || filters.statuses.has(status)
                     ? "border-primary/40 bg-primary/10 text-primary"
                     : "border-default-200 bg-default-50 text-default-500 hover:border-primary/35 hover:text-primary"
@@ -127,7 +127,7 @@ export function ServicesFilterPanel({ filters, onChange, services }: ServicesFil
               const isActive = filters.types.size === 0 || filters.types.has(type);
               return (
                 <Button
-                  className={`rounded-full border px-3 py-1 font-semibold text-xs transition-all ${
+                  className={`rounded-full border px-3 py-1 font-semibold text-xs ${
                     isActive
                       ? "border-secondary/40 bg-secondary/10 text-secondary"
                       : "border-default-200 bg-default-50 text-default-500 hover:border-secondary/35 hover:text-secondary"

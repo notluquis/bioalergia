@@ -146,7 +146,7 @@ export function DailyEventCard({ event, eventDteLink, onLinkClick }: DailyEventC
   const rightBadges = buildRightSideBadges(event);
 
   return (
-    <Card className="group h-full border border-default-200 shadow-sm transition-all hover:shadow-md">
+    <Card className="group h-full border border-default-200 shadow-sm hover:shadow-md">
       <div className="grid grid-cols-[auto_1fr_auto] gap-3 overflow-visible p-3 sm:gap-4 sm:p-4">
         {/* Time Column - Start, Color Bar, Duration, End */}
         <div className="flex flex-col items-center gap-0.5 text-center">

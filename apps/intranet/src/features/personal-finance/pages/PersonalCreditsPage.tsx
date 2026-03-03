@@ -124,10 +124,7 @@ function getColumns(onSelectCredit: (id: number) => void): ColumnDef<PersonalCre
         return (
           <div className="flex items-center gap-2">
             <div className="h-2.5 w-20 rounded-full bg-default-200">
-              <div
-                className="h-2.5 rounded-full bg-primary transition-all"
-                style={{ width: `${percent}%` }}
-              />
+              <div className="h-2.5 rounded-full bg-primary " style={{ width: `${percent}%` }} />
             </div>
             <span className="text-xs font-medium text-muted">{percent}%</span>
           </div>

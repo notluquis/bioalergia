@@ -160,7 +160,7 @@ function ServiceScheduleAccordion({
               key={group.dateKey}
             >
               <Button
-                className="flex w-full items-center justify-between gap-4 px-4 py-3 text-left transition-colors hover:bg-default-50"
+                className="flex w-full items-center justify-between gap-4 px-4 py-3 text-left hover:bg-default-50"
                 onPress={() => {
                   toggleGroup(group.dateKey);
                 }}
@@ -176,7 +176,7 @@ function ServiceScheduleAccordion({
                   </Description>
                 </div>
                 <span
-                  className={`inline-flex h-7 w-7 items-center justify-center rounded-full border border-default-200 bg-default-50 font-semibold text-default-500 text-xs transition-transform ${
+                  className={`inline-flex h-7 w-7 items-center justify-center rounded-full border border-default-200 bg-default-50 font-semibold text-default-500 text-xs ${
                     isExpanded ? "rotate-180" : ""
                   }`}
                 >

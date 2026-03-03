@@ -362,10 +362,10 @@ function LoginContent({
 function LoginSuccess() {
   return (
     <output
-      className="fade-in zoom-in flex animate-in flex-col items-center justify-center gap-4 py-8 duration-500"
+      className="fade-in zoom-in flex flex-col items-center justify-center gap-4 py-8 "
       aria-live="polite"
     >
-      <div className="flex size-16 scale-110 items-center justify-center rounded-full bg-success-soft-hover text-success transition-transform duration-700">
+      <div className="flex size-16 scale-110 items-center justify-center rounded-full bg-success-soft-hover text-success ">
         <svg
           className="size-8"
           fill="none"

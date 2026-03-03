@@ -121,7 +121,7 @@ export function DayNavigation({
             return (
               <Button
                 className={cn(
-                  "relative mx-0.5 flex min-h-12 min-w-14 flex-1 flex-col items-center justify-center gap-1 rounded-lg px-1 py-2.5 transition-all duration-200",
+                  "relative mx-0.5 flex min-h-12 min-w-14 flex-1 flex-col items-center justify-center gap-1 rounded-lg px-1 py-2.5 ",
                   isSelected
                     ? "z-10 scale-105 bg-primary font-semibold text-primary-foreground shadow-md"
                     : "text-foreground-500 hover:bg-default-100",

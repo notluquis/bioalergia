@@ -24,7 +24,7 @@ export function DailyIncomePage() {
   const [from, setFrom] = useState(dayjs().startOf("month").format("YYYY-MM-DD"));
   const [to, setTo] = useState(dayjs().endOf("month").format("YYYY-MM-DD"));
 
-  //  ZenStack v3.3.0 official pattern
+  // ZenStack v3.3.0 official pattern
   const client = useClientQueries(schemaLite);
   const { data: events, isLoading } = client.event.useFindMany({
     where: {

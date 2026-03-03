@@ -38,7 +38,7 @@ export function ClassificationToolbar({
       >
         <svg
           aria-hidden="true"
-          className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}
+          className={`h-4 w-4 ${loading ? "" : ""}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -62,17 +62,14 @@ export function ClassificationToolbar({
         variant="tertiary"
       >
         {isJobRunning && (
-          <div
-            className="absolute inset-0 bg-primary/20 transition-all duration-300"
-            style={{ width: `${progress}%` }}
-          />
+          <div className="absolute inset-0 bg-primary/20 " style={{ width: `${progress}%` }} />
         )}
         <span className="relative z-10 flex items-center gap-2">
           {isJobRunning ? (
             <>
               <svg
                 aria-hidden="true"
-                className="h-4 w-4 animate-spin"
+                className="h-4 w-4 "
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -128,7 +125,7 @@ export function ClassificationToolbar({
             size="sm"
             variant="ghost"
           >
-            <RefreshCw className={isJobRunning ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
+            <RefreshCw className={isJobRunning ? "h-4 w-4 " : "h-4 w-4"} />
           </Button>
         </Tooltip.Trigger>
         <Tooltip.Content
