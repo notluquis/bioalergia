@@ -244,32 +244,34 @@ function PatientDetailsPage() {
               markTabAsMounted(nextTab);
             }}
           >
-            <Tabs.List className="no-scrollbar flex w-full gap-4 overflow-x-auto border-divider border-b pb-1">
-              <Tabs.Tab id="history" className="min-w-max gap-2 font-semibold">
-                <Calendar size={18} />
-                <span>Consultas</span>
-              </Tabs.Tab>
-              <Tabs.Tab id="certificates" className="min-w-max gap-2 font-semibold">
-                <FileText size={18} />
-                <span>Certificados</span>
-              </Tabs.Tab>
-              <Tabs.Tab id="budgets" className="min-w-max gap-2 font-semibold">
-                <DollarSign size={18} />
-                <span>Presupuestos</span>
-              </Tabs.Tab>
-              <Tabs.Tab id="payments" className="min-w-max gap-2 font-semibold">
-                <PlusCircle size={18} />
-                <span>Pagos</span>
-              </Tabs.Tab>
-              <Tabs.Tab id="docs" className="min-w-max gap-2 font-semibold">
-                <FileText size={18} />
-                <span>Documentos</span>
-              </Tabs.Tab>
-              <Tabs.Tab id="info" className="min-w-max gap-2 font-semibold">
-                <User size={18} />
-                <span>Info Detallada</span>
-              </Tabs.Tab>
-            </Tabs.List>
+            <Tabs.ListContainer className="no-scrollbar overflow-x-auto border-divider border-b pb-1">
+              <Tabs.List className="flex w-max min-w-full gap-4 whitespace-nowrap">
+                <Tabs.Tab id="history" className="min-w-max gap-2 font-semibold">
+                  <Calendar size={18} />
+                  <span>Consultas</span>
+                </Tabs.Tab>
+                <Tabs.Tab id="certificates" className="min-w-max gap-2 font-semibold">
+                  <FileText size={18} />
+                  <span>Certificados</span>
+                </Tabs.Tab>
+                <Tabs.Tab id="budgets" className="min-w-max gap-2 font-semibold">
+                  <DollarSign size={18} />
+                  <span>Presupuestos</span>
+                </Tabs.Tab>
+                <Tabs.Tab id="payments" className="min-w-max gap-2 font-semibold">
+                  <PlusCircle size={18} />
+                  <span>Pagos</span>
+                </Tabs.Tab>
+                <Tabs.Tab id="docs" className="min-w-max gap-2 font-semibold">
+                  <FileText size={18} />
+                  <span>Documentos</span>
+                </Tabs.Tab>
+                <Tabs.Tab id="info" className="min-w-max gap-2 font-semibold">
+                  <User size={18} />
+                  <span>Info Detallada</span>
+                </Tabs.Tab>
+              </Tabs.List>
+            </Tabs.ListContainer>
 
             <Tabs.Panel id="history" className="py-4">
               {isTabMounted("history") ? (
