@@ -1,8 +1,16 @@
-import { Card, Checkbox, Label, ListBox, Select } from "@heroui/react";
+import {
+  Button,
+  Card,
+  Checkbox,
+  Description,
+  Input,
+  Label,
+  ListBox,
+  Select,
+  TextField,
+} from "@heroui/react";
 import { useStore } from "@tanstack/react-form";
 import dayjs from "dayjs";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
 import type { CalendarUnclassifiedEvent } from "@/features/calendar/types";
 
 import type { ClassificationForm } from "../form-types";
@@ -174,37 +182,45 @@ export function ClassificationRow({
 
           <form.Field name={`entries[${index}].amountExpected`}>
             {(field: { handleChange: (v: string) => void; state: { value: null | string } }) => (
-              <Input
-                helper={
-                  isTest && hasPatchReading ? "Lecturas de parche no tienen costo." : undefined
-                }
-                disabled={isTest && hasPatchReading}
-                label="Monto esperado"
-                onChange={(e) => {
-                  field.handleChange(e.target.value);
-                }}
-                placeholder="50000"
-                type="text"
-                value={isTest && hasPatchReading ? "0" : (field.state.value ?? "")}
-              />
+              <TextField>
+                <Label>Monto esperado</Label>
+                <Input
+                  disabled={isTest && hasPatchReading}
+                  onChange={(e) => {
+                    field.handleChange(e.target.value);
+                  }}
+                  placeholder="50000"
+                  type="text"
+                  value={isTest && hasPatchReading ? "0" : (field.state.value ?? "")}
+                  variant="secondary"
+                />
+                {isTest && hasPatchReading ? (
+                  <Description>Lecturas de parche no tienen costo.</Description>
+                ) : null}
+              </TextField>
             )}
           </form.Field>
 
           <form.Field name={`entries[${index}].amountPaid`}>
             {(field: { handleChange: (v: string) => void; state: { value: null | string } }) => (
-              <Input
-                helper={isNoShowLocked ? 'Evento "no asiste": pago forzado a 0.' : undefined}
-                disabled={isNoShowLocked || (isTest && hasPatchReading)}
-                label="Monto pagado"
-                onChange={(e) => {
-                  field.handleChange(e.target.value);
-                }}
-                placeholder="50000"
-                type="text"
-                value={
-                  isNoShowLocked || (isTest && hasPatchReading) ? "0" : (field.state.value ?? "")
-                }
-              />
+              <TextField>
+                <Label>Monto pagado</Label>
+                <Input
+                  disabled={isNoShowLocked || (isTest && hasPatchReading)}
+                  onChange={(e) => {
+                    field.handleChange(e.target.value);
+                  }}
+                  placeholder="50000"
+                  type="text"
+                  value={
+                    isNoShowLocked || (isTest && hasPatchReading) ? "0" : (field.state.value ?? "")
+                  }
+                  variant="secondary"
+                />
+                {isNoShowLocked ? (
+                  <Description>Evento "no asiste": pago forzado a 0.</Description>
+                ) : null}
+              </TextField>
             )}
           </form.Field>
 
@@ -340,14 +356,17 @@ export function ClassificationRow({
           {isSubcutaneous && (
             <form.Field name={`entries[${index}].dosageValue`}>
               {(field: { handleChange: (v: string) => void; state: { value: null | string } }) => (
-                <Input
-                  label="Dosis"
-                  onChange={(e) => {
-                    field.handleChange(e.target.value);
-                  }}
-                  placeholder="0.3"
-                  value={field.state.value ?? ""}
-                />
+                <TextField>
+                  <Label>Dosis</Label>
+                  <Input
+                    onChange={(e) => {
+                      field.handleChange(e.target.value);
+                    }}
+                    placeholder="0.3"
+                    value={field.state.value ?? ""}
+                    variant="secondary"
+                  />
+                </TextField>
               )}
             </form.Field>
           )}
@@ -420,8 +439,8 @@ export function ClassificationRow({
         <div className="flex flex-wrap items-center justify-end gap-2 border-default-200/70 border-t pt-4">
           <Button
             variant="primary"
-            disabled={isSaving}
-            onClick={() => {
+            isDisabled={isSaving}
+            onPress={() => {
               onSave(event, index);
             }}
             size="sm"
@@ -430,8 +449,8 @@ export function ClassificationRow({
             {isSaving ? "Guardando..." : "Guardar y continuar"}
           </Button>
           <Button
-            disabled={isSaving}
-            onClick={() => {
+            isDisabled={isSaving}
+            onPress={() => {
               onReset(index, event);
             }}
             size="sm"

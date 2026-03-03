@@ -1,11 +1,11 @@
 import { useStore } from "@tanstack/react-form";
 import { useMemo } from "react";
 
-import { StatCard } from "@/components/ui/StatCard";
 import type { CalendarUnclassifiedEvent } from "@/features/calendar/types";
 import { currencyFormatter } from "@/lib/format";
 
 import type { ClassificationForm } from "../form-types";
+import { MetricCard } from "./MetricCard";
 
 interface ClassificationTotalsProps {
   events: CalendarUnclassifiedEvent[];
@@ -35,8 +35,12 @@ export function ClassificationTotals({ events, form }: Readonly<ClassificationTo
 
   return (
     <>
-      <StatCard title="Esperado" tone="warning" value={currencyFormatter.format(totals.expected)} />
-      <StatCard title="Pagado" tone="primary" value={currencyFormatter.format(totals.paid)} />
+      <MetricCard
+        title="Esperado"
+        tone="warning"
+        value={currencyFormatter.format(totals.expected)}
+      />
+      <MetricCard title="Pagado" tone="primary" value={currencyFormatter.format(totals.paid)} />
     </>
   );
 }

@@ -1,4 +1,5 @@
 import {
+  Button,
   ButtonGroup,
   Card,
   Chip,
@@ -18,7 +19,6 @@ import dayjs from "dayjs";
 import "dayjs/locale/es";
 import { ChevronDown } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Button } from "@/components/ui/Button";
 import { useToast } from "@/context/ToastContext";
 import {
   autoLinkEventDteByPeriod,
@@ -335,7 +335,7 @@ export function CalendarDteLinksOverview({
               </Button>
               <Dropdown>
                 <Dropdown.Trigger>
-                  <Button isLoading={autoLinkActionPending} variant="primary">
+                  <Button isPending={autoLinkActionPending} variant="primary">
                     Auto-vincular
                     <ChevronDown className="h-4 w-4" />
                   </Button>
@@ -643,7 +643,7 @@ export function CalendarDteLinksOverview({
                         <div className="flex gap-2">
                           {item.linked ? (
                             <Button
-                              isLoading={unlinkMutation.isPending}
+                              isPending={unlinkMutation.isPending}
                               size="sm"
                               variant="danger"
                               onPress={() => unlinkMutation.mutate(item)}
@@ -652,11 +652,10 @@ export function CalendarDteLinksOverview({
                             </Button>
                           ) : (
                             <Button
-                              color="primary"
                               isDisabled={
                                 !item.topSuggestion || item.linkStatus === "pending_issuance"
                               }
-                              isLoading={confirmMutation.isPending}
+                              isPending={confirmMutation.isPending}
                               size="sm"
                               variant="primary"
                               onPress={() => confirmMutation.mutate(item)}

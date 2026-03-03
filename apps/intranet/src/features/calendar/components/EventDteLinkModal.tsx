@@ -1,10 +1,9 @@
-import { Description, Modal } from "@heroui/react";
+import { Button, Description, Modal } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { useMemo } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
-import { Button } from "@/components/ui/Button";
 import { useToast } from "@/context/ToastContext";
 import {
   confirmEventDteLink,
@@ -124,10 +123,9 @@ export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDte
         cell: ({ row }) => (
           <div className="text-right">
             <Button
-              color="primary"
-              isLoading={confirmMutation.isPending}
+              isPending={confirmMutation.isPending}
               size="sm"
-              variant="ghost"
+              variant="primary"
               onPress={() => confirmMutation.mutate(row.original)}
             >
               Vincular
@@ -168,10 +166,9 @@ export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDte
                     Este evento ya tiene un vínculo confirmado.
                   </Description>
                   <Button
-                    color="danger"
-                    isLoading={unlinkMutation.isPending}
+                    isPending={unlinkMutation.isPending}
                     size="sm"
-                    variant="ghost"
+                    variant="danger"
                     onPress={() => unlinkMutation.mutate()}
                   >
                     Desvincular

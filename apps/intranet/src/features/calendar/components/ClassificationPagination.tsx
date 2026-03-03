@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/Button";
+import { Button } from "@heroui/react";
 
 interface ClassificationPaginationProps {
   loading: boolean;
@@ -27,7 +27,7 @@ export function ClassificationPagination({
         className="disabled:opacity-30"
         isDisabled={page === 0 || loading}
         isIconOnly
-        onClick={() => onPageChange(0)}
+        onPress={() => onPageChange(0)}
         size="sm"
         type="button"
         variant="ghost"
@@ -51,7 +51,7 @@ export function ClassificationPagination({
         className="disabled:opacity-30"
         isDisabled={page === 0 || loading}
         isIconOnly
-        onClick={() => onPageChange(Math.max(0, page - 1))}
+        onPress={() => onPageChange(Math.max(0, page - 1))}
         size="sm"
         type="button"
         variant="ghost"
@@ -75,7 +75,7 @@ export function ClassificationPagination({
         className="disabled:opacity-30"
         isDisabled={(page + 1) * pageSize >= totalCount || loading}
         isIconOnly
-        onClick={() => onPageChange(page + 1)}
+        onPress={() => onPageChange(page + 1)}
         size="sm"
         type="button"
         variant="ghost"
@@ -94,7 +94,7 @@ export function ClassificationPagination({
         className="disabled:opacity-30"
         isDisabled={(page + 1) * pageSize >= totalCount || loading}
         isIconOnly
-        onClick={() => onPageChange(totalPages - 1)}
+        onPress={() => onPageChange(totalPages - 1)}
         size="sm"
         type="button"
         variant="ghost"

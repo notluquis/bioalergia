@@ -1,11 +1,10 @@
-import { ButtonGroup, Chip, Label, ListBox, Select, Surface } from "@heroui/react";
+import { Button, ButtonGroup, Chip, Label, ListBox, Select, Surface } from "@heroui/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import React, { useCallback } from "react";
-import { Button } from "@/components/ui/Button";
 import { CalendarFiltersPopover } from "@/features/calendar/components/CalendarFiltersPopover";
 import { CalendarSkeleton } from "@/features/calendar/components/CalendarSkeleton";
 import { ScheduleCalendar } from "@/features/calendar/components/ScheduleCalendar";

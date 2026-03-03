@@ -1,10 +1,9 @@
-import { ButtonGroup } from "@heroui/react";
+import { Button, ButtonGroup } from "@heroui/react";
 import dayjs from "dayjs";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo } from "react";
 
-import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 
 interface DayNavigationProps {

@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/Button";
+import { Button } from "@heroui/react";
 import type { MissingFieldFilters } from "../api";
 
 interface ClassificationFiltersProps {
@@ -67,8 +67,7 @@ export function ClassificationFilters({
           <Button
             key={key}
             className="font-medium text-xs"
-            color={activeMissing.includes(key) ? "primary" : "default"}
-            onClick={() => toggleFilter(key)}
+            onPress={() => toggleFilter(key)}
             size="sm"
             type="button"
             variant={activeMissing.includes(key) ? "secondary" : "ghost"}
@@ -83,8 +82,7 @@ export function ClassificationFilters({
             <div className="flex gap-2">
               <Button
                 className="font-medium text-xs"
-                color={!filters.filterMode || filters.filterMode === "OR" ? "primary" : "default"}
-                onClick={() => setFilterMode(undefined)}
+                onPress={() => setFilterMode(undefined)}
                 size="sm"
                 type="button"
                 variant={!filters.filterMode || filters.filterMode === "OR" ? "secondary" : "ghost"}
@@ -93,8 +91,7 @@ export function ClassificationFilters({
               </Button>
               <Button
                 className="font-medium text-xs"
-                color={filters.filterMode === "AND" ? "primary" : "default"}
-                onClick={() => setFilterMode("AND")}
+                onPress={() => setFilterMode("AND")}
                 size="sm"
                 type="button"
                 variant={filters.filterMode === "AND" ? "secondary" : "ghost"}
@@ -104,11 +101,10 @@ export function ClassificationFilters({
             </div>
             <Button
               className="font-medium text-xs"
-              color="danger"
-              onClick={clearFilters}
+              onPress={clearFilters}
               size="sm"
               type="button"
-              variant="tertiary"
+              variant="danger-soft"
             >
               Limpiar
             </Button>

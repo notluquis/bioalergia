@@ -1,6 +1,5 @@
-import { Tooltip } from "@heroui/react";
+import { Button, Tooltip } from "@heroui/react";
 import { RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui/Button";
 import type { ReclassifyJob } from "../types";
 
 interface ClassificationToolbarProps {
@@ -32,9 +31,8 @@ export function ClassificationToolbar({
       <Button
         className="gap-2 text-default-600"
         isDisabled={loading}
-        onClick={onRefetch}
+        onPress={onRefetch}
         size="sm"
-        title="Actualizar lista"
         type="button"
         variant="ghost"
       >
@@ -58,8 +56,8 @@ export function ClassificationToolbar({
       {/* Action Buttons */}
       <Button
         className="relative gap-2 overflow-hidden"
-        disabled={reclassifyPending || isJobRunning}
-        onClick={onReclassify}
+        isDisabled={reclassifyPending || isJobRunning}
+        onPress={onReclassify}
         type="button"
         variant="tertiary"
       >

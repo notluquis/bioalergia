@@ -1,7 +1,7 @@
-import { StatCard } from "@/components/ui/StatCard";
 import type { CalendarEventDetail } from "@/features/calendar/types";
 import { currencyFormatter, numberFormatter } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { MetricCard } from "./MetricCard";
 
 interface DailyStatsCardsProps {
   amountExpected: number;
@@ -30,14 +30,14 @@ export function DailyStatsCards({
 
   return (
     <div className={cn("grid gap-3 sm:grid-cols-3 xl:grid-cols-5", className)}>
-      <StatCard
+      <MetricCard
         className="transition-transform hover:scale-[1.02]"
         title="Eventos"
         tone="primary"
         value={numberFormatter.format(eventsCount)}
       />
 
-      <StatCard
+      <MetricCard
         className="transition-transform hover:scale-[1.02]"
         subtitle={`No show: ${numberFormatter.format(noShowCount)}`}
         title="Confirmados"
@@ -45,7 +45,7 @@ export function DailyStatsCards({
         value={numberFormatter.format(confirmedCount)}
       />
 
-      <StatCard
+      <MetricCard
         className="transition-transform hover:scale-[1.02]"
         subtitle={`${eventsCount > 0 ? ((noShowCount / eventsCount) * 100).toFixed(1) : "0.0"}% del día`}
         title="No Show"
@@ -53,7 +53,7 @@ export function DailyStatsCards({
         value={numberFormatter.format(noShowCount)}
       />
 
-      <StatCard
+      <MetricCard
         className="transition-transform hover:scale-[1.02]"
         subtitle={`${currencyFormatter.format(amountPaid)} de ${currencyFormatter.format(amountExpected)}`}
         suffix="%"
@@ -62,7 +62,7 @@ export function DailyStatsCards({
         value={collectionRate.toFixed(1)}
       />
 
-      <StatCard
+      <MetricCard
         className="transition-transform hover:scale-[1.02]"
         subtitle={`Inducción ${inductionCount} · Mantención ${maintenanceCount} · Sin etapa ${withoutStageCount}`}
         title="Mix Etapa"
@@ -70,21 +70,21 @@ export function DailyStatsCards({
         value={`${inductionCount}/${maintenanceCount}`}
       />
 
-      <StatCard
+      <MetricCard
         className="transition-transform hover:scale-[1.02]"
         subtitle={`${eventsCount > 0 ? (totalDosageMl / eventsCount).toFixed(2) : "0.00"} ml promedio por evento`}
         title="Dosis Total Día"
         value={`${totalDosageMl.toFixed(2)} ml`}
       />
 
-      <StatCard
+      <MetricCard
         className="transition-transform hover:scale-[1.02]"
         title="Esperado"
         tone="warning"
         value={currencyFormatter.format(amountExpected)}
       />
 
-      <StatCard
+      <MetricCard
         className="transition-transform hover:scale-[1.02]"
         title="Pagado"
         tone="success"

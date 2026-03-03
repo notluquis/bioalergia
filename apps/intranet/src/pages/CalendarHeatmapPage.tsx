@@ -3,10 +3,10 @@ import { getRouteApi } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { StatCard } from "@/components/ui/StatCard";
 import { CalendarFiltersPopover } from "@/features/calendar/components/CalendarFiltersPopover";
 import { DailyEventCard } from "@/features/calendar/components/DailyEventCard";
 import { HeatmapMonth } from "@/features/calendar/components/HeatmapMonth";
+import { MetricCard } from "@/features/calendar/components/MetricCard";
 import { useCalendarEvents } from "@/features/calendar/hooks/use-calendar-events";
 import type { CalendarSummary } from "@/features/calendar/types";
 import { useDisclosure } from "@/hooks/use-disclosure";
@@ -286,28 +286,28 @@ function CalendarHeatmapPage() {
           </Card.Header>
           <Card.Content>
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-              <StatCard
+              <MetricCard
                 size="sm"
                 subtitle="Eventos del mes"
                 title="Eventos"
                 tone="primary"
                 value={numberFormatter.format(activeMonthlyKpi.events)}
               />
-              <StatCard
+              <MetricCard
                 size="sm"
                 subtitle="Total esperado"
                 title="Monto Esperado"
                 tone="warning"
                 value={currencyFormatter.format(activeMonthlyKpi.amountExpected)}
               />
-              <StatCard
+              <MetricCard
                 size="sm"
                 subtitle="Total pagado"
                 title="Monto Pagado"
                 tone="success"
                 value={currencyFormatter.format(activeMonthlyKpi.amountPaid)}
               />
-              <StatCard
+              <MetricCard
                 size="sm"
                 subtitle="Pagado / esperado"
                 suffix="%"
@@ -321,13 +321,13 @@ function CalendarHeatmapPage() {
                 }
                 value={activeMonthlyKpi.collectionRate.toFixed(1)}
               />
-              <StatCard
+              <MetricCard
                 size="sm"
                 subtitle="Esperado por evento"
                 title="Ticket Prom."
                 value={currencyFormatter.format(activeMonthlyKpi.avgTicket)}
               />
-              <StatCard
+              <MetricCard
                 size="sm"
                 subtitle="Esperado - pagado"
                 title="Brecha"
