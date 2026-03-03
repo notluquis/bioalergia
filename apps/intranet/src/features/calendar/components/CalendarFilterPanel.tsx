@@ -152,13 +152,15 @@ export function CalendarFilterPanel({
             >
               <Label className="sr-only">Rango de fechas</Label>
               <DateField.Group className="h-9 text-sm" fullWidth variant="secondary">
-                <DateField.Input slot="start">
-                  {(segment) => <DateField.Segment segment={segment} />}
-                </DateField.Input>
-                <DateRangePicker.RangeSeparator />
-                <DateField.Input slot="end">
-                  {(segment) => <DateField.Segment segment={segment} />}
-                </DateField.Input>
+                <DateField.InputContainer>
+                  <DateField.Input slot="start">
+                    {(segment) => <DateField.Segment segment={segment} />}
+                  </DateField.Input>
+                  <DateRangePicker.RangeSeparator />
+                  <DateField.Input slot="end">
+                    {(segment) => <DateField.Segment segment={segment} />}
+                  </DateField.Input>
+                </DateField.InputContainer>
                 <DateField.Suffix>
                   <DateRangePicker.Trigger>
                     <DateRangePicker.TriggerIndicator />

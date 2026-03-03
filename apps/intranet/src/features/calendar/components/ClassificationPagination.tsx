@@ -1,4 +1,4 @@
-import { Button } from "@heroui/react";
+import { Pagination } from "@heroui/react";
 
 interface ClassificationPaginationProps {
   loading: boolean;
@@ -21,99 +21,78 @@ export function ClassificationPagination({
     return null;
   }
 
+  const currentPage = page + 1;
+  const canPrevious = currentPage > 1;
+  const canNext = currentPage < totalPages;
+  const pages: Array<"ellipsis" | number> = [];
+  if (totalPages <= 7) {
+    for (let p = 1; p <= totalPages; p += 1) {
+      pages.push(p);
+    }
+  } else {
+    pages.push(1);
+    if (currentPage > 3) {
+      pages.push("ellipsis");
+    }
+    const start = Math.max(2, currentPage - 1);
+    const end = Math.min(totalPages - 1, currentPage + 1);
+    for (let p = start; p <= end; p += 1) {
+      pages.push(p);
+    }
+    if (currentPage < totalPages - 2) {
+      pages.push("ellipsis");
+    }
+    pages.push(totalPages);
+  }
+  const pageItems = pages.reduce<Array<{ key: string; type: "ellipsis" | "page"; value?: number }>>(
+    (acc, value) => {
+      if (value === "ellipsis") {
+        const ellipsisIndex = acc.filter((item) => item.type === "ellipsis").length + 1;
+        acc.push({ key: `ellipsis-${ellipsisIndex}`, type: "ellipsis" });
+      } else {
+        acc.push({ key: `page-${value}`, type: "page", value });
+      }
+      return acc;
+    },
+    [],
+  );
+
   return (
-    <div className="flex items-center justify-center gap-2 pt-4">
-      <Button
-        className="disabled:opacity-30"
-        isDisabled={page === 0 || loading}
-        isIconOnly
-        onPress={() => onPageChange(0)}
-        size="sm"
-        type="button"
-        variant="ghost"
-      >
-        <svg
-          aria-hidden="true"
-          className="h-4 w-4"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-          />
-        </svg>
-      </Button>
-      <Button
-        className="disabled:opacity-30"
-        isDisabled={page === 0 || loading}
-        isIconOnly
-        onPress={() => onPageChange(Math.max(0, page - 1))}
-        size="sm"
-        type="button"
-        variant="ghost"
-      >
-        <svg
-          aria-hidden="true"
-          className="h-4 w-4"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path d="M15 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} />
-        </svg>
-      </Button>
-      <div className="flex items-center gap-2 rounded-lg bg-default-50 px-4 py-2 text-sm">
-        <span className="text-default-500">Página</span>
-        <span className="font-semibold text-foreground tabular-nums">{page + 1}</span>
-        <span className="text-default-500">de {totalPages}</span>
-      </div>
-      <Button
-        className="disabled:opacity-30"
-        isDisabled={(page + 1) * pageSize >= totalCount || loading}
-        isIconOnly
-        onPress={() => onPageChange(page + 1)}
-        size="sm"
-        type="button"
-        variant="ghost"
-      >
-        <svg
-          aria-hidden="true"
-          className="h-4 w-4"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path d="M9 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} />
-        </svg>
-      </Button>
-      <Button
-        className="disabled:opacity-30"
-        isDisabled={(page + 1) * pageSize >= totalCount || loading}
-        isIconOnly
-        onPress={() => onPageChange(totalPages - 1)}
-        size="sm"
-        type="button"
-        variant="ghost"
-      >
-        <svg
-          aria-hidden="true"
-          className="h-4 w-4"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M13 5l7 7-7 7M5 5l7 7-7 7"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-          />
-        </svg>
-      </Button>
-    </div>
+    <Pagination className="justify-center pt-4" size="sm">
+      <Pagination.Summary>{`Página ${currentPage} de ${totalPages}`}</Pagination.Summary>
+      <Pagination.Content>
+        <Pagination.Item>
+          <Pagination.Previous
+            isDisabled={!canPrevious || loading}
+            onPress={() => onPageChange(Math.max(0, page - 1))}
+          >
+            <Pagination.PreviousIcon />
+            <span>Anterior</span>
+          </Pagination.Previous>
+        </Pagination.Item>
+        {pageItems.map((item) =>
+          item.type === "ellipsis" ? (
+            <Pagination.Item key={item.key}>
+              <Pagination.Ellipsis />
+            </Pagination.Item>
+          ) : (
+            <Pagination.Item key={item.key}>
+              <Pagination.Link
+                isActive={item.value === currentPage}
+                onPress={() => onPageChange((item.value ?? 1) - 1)}
+              >
+                {item.value}
+              </Pagination.Link>
+            </Pagination.Item>
+          ),
+        )}
+        <Pagination.Item>
+          <Pagination.Next isDisabled={!canNext || loading} onPress={() => onPageChange(page + 1)}>
+            <span>Siguiente</span>
+            <Pagination.NextIcon />
+          </Pagination.Next>
+        </Pagination.Item>
+      </Pagination.Content>
+    </Pagination>
   );
 }

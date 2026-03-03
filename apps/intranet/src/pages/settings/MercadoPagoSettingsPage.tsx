@@ -1,14 +1,4 @@
-import {
-  Button,
-  Card,
-  Description,
-  Label,
-  ListBox,
-  Modal,
-  Select,
-  Tabs,
-  Tooltip,
-} from "@heroui/react";
+import { Button, Card, Description, Modal, Tabs, Tooltip } from "@heroui/react";
 import {
   keepPreviousData,
   type QueryClient,
@@ -64,27 +54,6 @@ const resolveReportTypeFromTab = (tab: MpTab): MpReportType => (tab === "sync" ?
 const resolveSyncRefetchInterval = (isSyncTab: boolean) => (isSyncTab ? 30_000 : false);
 const resolveReportTypeLabel = (reportType: MpReportType) =>
   reportType === "release" ? "Liberación" : "Conciliación";
-
-const parsePageSizeKey = (key: React.Key | null) => {
-  if (key === null) {
-    return null;
-  }
-  const value = Number(key);
-  return Number.isNaN(value) ? null : value;
-};
-
-const updatePageSize =
-  (setPagination: React.Dispatch<React.SetStateAction<PaginationState>>) =>
-  (key: React.Key | null) => {
-    const nextPageSize = parsePageSizeKey(key);
-    if (!nextPageSize) {
-      return;
-    }
-    setPagination(() => ({
-      pageIndex: 0,
-      pageSize: nextPageSize,
-    }));
-  };
 
 const useReportActions = ({
   queryClient,
@@ -235,8 +204,6 @@ export function MercadoPagoSettingsPage() {
   const onTabChange = (key: React.Key) => setActiveTab(key as MpTab);
   const closeImportStatsModal = () => setLastImportStats(null);
   const openGenerateModal = () => setIsGenerateModalOpen(true);
-  const handleReportPageSizeChange = updatePageSize(setReportPagination);
-  const handleSyncPageSizeChange = updatePageSize(setSyncPagination);
 
   return (
     <div className="space-y-5">
@@ -427,36 +394,16 @@ export function MercadoPagoSettingsPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <Select
-                aria-label="Cantidad de filas"
-                value={String(reportPagination.pageSize)}
-                onChange={handleReportPageSizeChange}
-                className="w-28"
-              >
-                <Label className="sr-only">Cantidad de filas</Label>
-                <Select.Trigger>
-                  <Select.Value />
-                  <Select.Indicator />
-                </Select.Trigger>
-                <Select.Popover>
-                  <ListBox>
-                    <ListBox.Item id="10">10</ListBox.Item>
-                    <ListBox.Item id="25">25</ListBox.Item>
-                    <ListBox.Item id="50">50</ListBox.Item>
-                  </ListBox>
-                </Select.Popover>
-              </Select>
-            </div>
+            <div className="text-default-500 text-xs">Control de filas en paginación inferior</div>
           </div>
 
           <DataTable
             columns={columns}
             columnVisibility={columnVisibility}
             data={reports}
-            enablePageSizeSelector={false}
             enableExport={false}
             enableGlobalFilter={false}
+            pageSizeOptions={[10, 25, 50]}
             pagination={reportPagination}
             onPaginationChange={setReportPagination}
             onColumnVisibilityChange={setColumnVisibility}
@@ -477,32 +424,14 @@ export function MercadoPagoSettingsPage() {
                 <span className="block text-default-500 text-xs">Total: {syncTotal}</span>
               </div>
             </div>
-            <Select
-              aria-label="Cantidad de filas"
-              value={String(syncPagination.pageSize)}
-              onChange={handleSyncPageSizeChange}
-              className="w-28"
-            >
-              <Label className="sr-only">Cantidad de filas</Label>
-              <Select.Trigger>
-                <Select.Value />
-                <Select.Indicator />
-              </Select.Trigger>
-              <Select.Popover>
-                <ListBox>
-                  <ListBox.Item id="10">10</ListBox.Item>
-                  <ListBox.Item id="25">25</ListBox.Item>
-                  <ListBox.Item id="50">50</ListBox.Item>
-                </ListBox>
-              </Select.Popover>
-            </Select>
+            <div className="text-default-500 text-xs">Control de filas en paginación inferior</div>
           </div>
           <DataTable
             columns={syncColumns}
             data={syncLogs}
-            enablePageSizeSelector={false}
             enableExport={false}
             enableGlobalFilter={false}
+            pageSizeOptions={[10, 25, 50]}
             pagination={syncPagination}
             onPaginationChange={setSyncPagination}
             pageCount={syncPageCount}

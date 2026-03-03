@@ -190,9 +190,11 @@ export function TransactionForm({ isOpen, onClose, initialData }: Props) {
                     >
                       <Label>Fecha</Label>
                       <DateField.Group>
-                        <DateField.Input>
-                          {(segment) => <DateField.Segment segment={segment} />}
-                        </DateField.Input>
+                        <DateField.InputContainer>
+                          <DateField.Input>
+                            {(segment) => <DateField.Segment segment={segment} />}
+                          </DateField.Input>
+                        </DateField.InputContainer>
                       </DateField.Group>
                       <FieldError>{errors.date}</FieldError>
                     </DateField>

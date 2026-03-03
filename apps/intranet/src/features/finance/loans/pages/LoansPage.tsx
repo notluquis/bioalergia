@@ -320,9 +320,11 @@ export function LoansPage() {
                     >
                       <Label>Fecha de pago</Label>
                       <DateField.Group>
-                        <DateField.Input>
-                          {(segment) => <DateField.Segment segment={segment} />}
-                        </DateField.Input>
+                        <DateField.InputContainer>
+                          <DateField.Input>
+                            {(segment) => <DateField.Segment segment={segment} />}
+                          </DateField.Input>
+                        </DateField.InputContainer>
                         <DateField.Suffix>
                           <DatePicker.Trigger>
                             <DatePicker.TriggerIndicator />
