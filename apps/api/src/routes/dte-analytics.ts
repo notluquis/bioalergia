@@ -62,6 +62,15 @@ const yearlyComparisonSchema = z.object({
   type: z.enum(["purchases", "sales"]),
 });
 
+const detailsQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(500).default(100),
+  period: z
+    .string()
+    .regex(/^\d{4}-\d{2}$/)
+    .optional(),
+});
+
 /**
  * GET /purchases/summary - Get purchase summary by period
  */
@@ -358,3 +367,264 @@ dteAnalyticsRoutes.get(
     }
   },
 );
+
+/**
+ * GET /sales/available-periods - List available periods (YYYY-MM) for sales details
+ */
+dteAnalyticsRoutes.get("/sales/available-periods", async (c) => {
+  const user = await getSessionUser(c);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
+
+  const canRead = await hasPermission(user.id, "read", "DTEPurchaseDetail");
+  if (!canRead) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
+
+  try {
+    const rows = await db.$qb
+      .selectFrom("DTESaleDetail as s")
+      .select(sql<string>`to_char(s.document_date, 'YYYY-MM')`.as("period"))
+      .where(sql<boolean>`s.document_type <> 61`)
+      .where(excludeAnnulledByNCE("s", "DTESaleDetail"))
+      .groupBy(sql`to_char(s.document_date, 'YYYY-MM')`)
+      .orderBy(sql`to_char(s.document_date, 'YYYY-MM')`, "desc")
+      .execute();
+
+    const periods = rows.map((row) => row.period).filter(Boolean);
+    return reply(c, { status: "success", data: periods });
+  } catch (error) {
+    console.error("Error fetching sales available periods:", error);
+    return reply(c, { status: "error", message: "Failed to retrieve sales periods" }, 500);
+  }
+});
+
+/**
+ * GET /purchases/available-periods - List available periods (YYYY-MM) for purchases details
+ */
+dteAnalyticsRoutes.get("/purchases/available-periods", async (c) => {
+  const user = await getSessionUser(c);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
+
+  const canRead = await hasPermission(user.id, "read", "DTEPurchaseDetail");
+  if (!canRead) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
+
+  try {
+    const rows = await db.$qb
+      .selectFrom("DTEPurchaseDetail as p")
+      .select(sql<string>`to_char(p.document_date, 'YYYY-MM')`.as("period"))
+      .where(excludeAnnulledByNCE("p", "DTEPurchaseDetail"))
+      .groupBy(sql`to_char(p.document_date, 'YYYY-MM')`)
+      .orderBy(sql`to_char(p.document_date, 'YYYY-MM')`, "desc")
+      .execute();
+
+    const periods = rows.map((row) => row.period).filter(Boolean);
+    return reply(c, { status: "success", data: periods });
+  } catch (error) {
+    console.error("Error fetching purchase available periods:", error);
+    return reply(c, { status: "error", message: "Failed to retrieve purchase periods" }, 500);
+  }
+});
+
+/**
+ * GET /sales/details - Get paginated sale details by period
+ */
+dteAnalyticsRoutes.get("/sales/details", zValidator("query", detailsQuerySchema), async (c) => {
+  const user = await getSessionUser(c);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
+
+  const canRead = await hasPermission(user.id, "read", "DTEPurchaseDetail");
+  if (!canRead) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
+
+  const { page, pageSize, period } = c.req.valid("query");
+  const offset = (page - 1) * pageSize;
+
+  try {
+    let countQuery = db.$qb
+      .selectFrom("DTESaleDetail as s")
+      .where(sql<boolean>`s.document_type <> 61`)
+      .where(excludeAnnulledByNCE("s", "DTESaleDetail"));
+
+    let dataQuery = db.$qb
+      .selectFrom("DTESaleDetail as s")
+      .where(sql<boolean>`s.document_type <> 61`)
+      .where(excludeAnnulledByNCE("s", "DTESaleDetail"));
+
+    if (period) {
+      const startDate = dayjs(period).startOf("month").toISOString();
+      const endDate = dayjs(period).endOf("month").toISOString();
+      countQuery = countQuery
+        .where(sql<boolean>`s.document_date >= ${startDate}`)
+        .where(sql<boolean>`s.document_date <= ${endDate}`);
+      dataQuery = dataQuery
+        .where(sql<boolean>`s.document_date >= ${startDate}`)
+        .where(sql<boolean>`s.document_date <= ${endDate}`);
+    }
+
+    const totalResult = await countQuery
+      .select(sql<number>`count(s.id)::int`.as("total"))
+      .executeTakeFirst();
+
+    const rows = await dataQuery
+      .select([
+        sql<string>`s.id`.as("id"),
+        sql<number>`s.register_number`.as("registerNumber"),
+        sql<number>`s.document_type`.as("documentType"),
+        sql<string>`s.sale_type`.as("saleType"),
+        sql<string>`s.client_rut`.as("clientRUT"),
+        sql<string>`s.client_name`.as("clientName"),
+        sql<string>`s.folio`.as("folio"),
+        sql<Date>`s.document_date`.as("documentDate"),
+        sql<number>`coalesce(s.exempt_amount, 0)`.as("exemptAmount"),
+        sql<number>`coalesce(s.net_amount, 0)`.as("netAmount"),
+        sql<number>`coalesce(s.iva_amount, 0)`.as("ivaAmount"),
+        sql<number>`coalesce(s.total_amount, 0)`.as("totalAmount"),
+        sql<null | string>`s.emitter_rut`.as("emitterRUT"),
+        sql<null | string>`s.reference_doc_type`.as("referenceDocType"),
+        sql<null | string>`s.reference_doc_folio`.as("referenceDocFolio"),
+      ])
+      .orderBy(sql`s.document_date`, "desc")
+      .orderBy(sql`s.register_number`, "desc")
+      .limit(pageSize)
+      .offset(offset)
+      .execute();
+
+    const total = Number(totalResult?.total ?? 0);
+
+    return reply(c, {
+      status: "success",
+      data: rows.map((row) => ({
+        clientName: row.clientName,
+        clientRUT: row.clientRUT,
+        documentDate: dayjs(row.documentDate).format("YYYY-MM-DD"),
+        documentType: Number(row.documentType),
+        emitterRUT: row.emitterRUT,
+        exemptAmount: Number(row.exemptAmount),
+        folio: row.folio,
+        id: row.id,
+        ivaAmount: Number(row.ivaAmount),
+        netAmount: Number(row.netAmount),
+        referenceDocFolio: row.referenceDocFolio,
+        referenceDocType: row.referenceDocType,
+        registerNumber: Number(row.registerNumber),
+        saleType: row.saleType,
+        totalAmount: Number(row.totalAmount),
+      })),
+      meta: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.ceil(total / pageSize),
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching sale details:", error);
+    return reply(c, { status: "error", message: "Failed to retrieve sale details" }, 500);
+  }
+});
+
+/**
+ * GET /purchases/details - Get paginated purchase details by period
+ */
+dteAnalyticsRoutes.get("/purchases/details", zValidator("query", detailsQuerySchema), async (c) => {
+  const user = await getSessionUser(c);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
+
+  const canRead = await hasPermission(user.id, "read", "DTEPurchaseDetail");
+  if (!canRead) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
+
+  const { page, pageSize, period } = c.req.valid("query");
+  const offset = (page - 1) * pageSize;
+
+  try {
+    let countQuery = db.$qb
+      .selectFrom("DTEPurchaseDetail as p")
+      .where(excludeAnnulledByNCE("p", "DTEPurchaseDetail"));
+
+    let dataQuery = db.$qb
+      .selectFrom("DTEPurchaseDetail as p")
+      .where(excludeAnnulledByNCE("p", "DTEPurchaseDetail"));
+
+    if (period) {
+      const startDate = dayjs(period).startOf("month").toISOString();
+      const endDate = dayjs(period).endOf("month").toISOString();
+      countQuery = countQuery
+        .where(sql<boolean>`p.document_date >= ${startDate}`)
+        .where(sql<boolean>`p.document_date <= ${endDate}`);
+      dataQuery = dataQuery
+        .where(sql<boolean>`p.document_date >= ${startDate}`)
+        .where(sql<boolean>`p.document_date <= ${endDate}`);
+    }
+
+    const totalResult = await countQuery
+      .select(sql<number>`count(p.id)::int`.as("total"))
+      .executeTakeFirst();
+
+    const rows = await dataQuery
+      .select([
+        sql<string>`p.id`.as("id"),
+        sql<number>`p.register_number`.as("registerNumber"),
+        sql<number>`p.document_type`.as("documentType"),
+        sql<string>`p.purchase_type`.as("purchaseType"),
+        sql<string>`p.provider_rut`.as("providerRUT"),
+        sql<string>`p.provider_name`.as("providerName"),
+        sql<string>`p.folio`.as("folio"),
+        sql<Date>`p.document_date`.as("documentDate"),
+        sql<Date>`p.receipt_date`.as("receiptDate"),
+        sql<number>`coalesce(p.exempt_amount, 0)`.as("exemptAmount"),
+        sql<number>`coalesce(p.net_amount, 0)`.as("netAmount"),
+        sql<number>`coalesce(p.recoverable_iva, 0)`.as("recoverableIVA"),
+        sql<number>`coalesce(p.non_recoverable_iva, 0)`.as("nonRecoverableIVA"),
+        sql<number>`coalesce(p.total_amount, 0)`.as("totalAmount"),
+      ])
+      .orderBy(sql`p.document_date`, "desc")
+      .orderBy(sql`p.register_number`, "desc")
+      .limit(pageSize)
+      .offset(offset)
+      .execute();
+
+    const total = Number(totalResult?.total ?? 0);
+
+    return reply(c, {
+      status: "success",
+      data: rows.map((row) => ({
+        documentDate: dayjs(row.documentDate).format("YYYY-MM-DD"),
+        documentType: Number(row.documentType),
+        exemptAmount: Number(row.exemptAmount),
+        folio: row.folio,
+        id: row.id,
+        netAmount: Number(row.netAmount),
+        nonRecoverableIVA: Number(row.nonRecoverableIVA),
+        providerName: row.providerName,
+        providerRUT: row.providerRUT,
+        purchaseType: row.purchaseType,
+        receiptDate: dayjs(row.receiptDate).format("YYYY-MM-DD"),
+        recoverableIVA: Number(row.recoverableIVA),
+        registerNumber: Number(row.registerNumber),
+        totalAmount: Number(row.totalAmount),
+      })),
+      meta: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.ceil(total / pageSize),
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching purchase details:", error);
+    return reply(c, { status: "error", message: "Failed to retrieve purchase details" }, 500);
+  }
+});

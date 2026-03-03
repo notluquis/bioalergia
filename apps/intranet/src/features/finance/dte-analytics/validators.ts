@@ -4,7 +4,7 @@
  */
 
 import { z } from "zod";
-import type { DTESummaryRaw } from "./types";
+import type { DTEPurchaseDetail, DTESalesDetail, DTESummaryRaw } from "./types";
 
 /**
  * Period validator: ensures YYYY-MM format where MM is 01-12
@@ -56,6 +56,68 @@ export const DTESummaryArraySchema = z.array(DTESummaryRawSchema);
 export const DTESummaryResponseSchema = z.object({
   status: z.literal("success"),
   data: DTESummaryArraySchema,
+});
+
+const DTEListMetaSchema = z.object({
+  page: z.number().int().positive(),
+  pageSize: z.number().int().positive(),
+  total: z.number().int().nonnegative(),
+  totalPages: z.number().int().nonnegative(),
+});
+
+export const DTESalesDetailSchema = z.object({
+  id: z.string().min(1),
+  registerNumber: z.number().int(),
+  documentType: z.number().int(),
+  saleType: z.string(),
+  clientRUT: z.string(),
+  clientName: z.string(),
+  folio: z.string(),
+  documentDate: z.string(),
+  exemptAmount: AmountValidator,
+  netAmount: AmountValidator,
+  ivaAmount: AmountValidator,
+  totalAmount: AmountValidator,
+  emitterRUT: z.string().nullable(),
+  referenceDocType: z.string().nullable(),
+  referenceDocFolio: z.string().nullable(),
+}) satisfies z.ZodType<DTESalesDetail>;
+
+export const DTEPurchaseDetailSchema = z.object({
+  id: z.string().min(1),
+  registerNumber: z.number().int(),
+  documentType: z.number().int(),
+  purchaseType: z.string(),
+  providerRUT: z.string(),
+  providerName: z.string(),
+  folio: z.string(),
+  documentDate: z.string(),
+  receiptDate: z.string(),
+  exemptAmount: AmountValidator,
+  netAmount: AmountValidator,
+  recoverableIVA: AmountValidator,
+  nonRecoverableIVA: AmountValidator,
+  totalAmount: AmountValidator,
+}) satisfies z.ZodType<DTEPurchaseDetail>;
+
+export const DTESalesDetailArraySchema = z.array(DTESalesDetailSchema);
+export const DTEPurchaseDetailArraySchema = z.array(DTEPurchaseDetailSchema);
+
+export const DTESalesDetailResponseSchema = z.object({
+  status: z.literal("success"),
+  data: DTESalesDetailArraySchema,
+  meta: DTEListMetaSchema,
+});
+
+export const DTEPurchaseDetailResponseSchema = z.object({
+  status: z.literal("success"),
+  data: DTEPurchaseDetailArraySchema,
+  meta: DTEListMetaSchema,
+});
+
+export const DTEPeriodsResponseSchema = z.object({
+  status: z.literal("success"),
+  data: z.array(PeriodValidator),
 });
 
 /**

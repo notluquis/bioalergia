@@ -23,6 +23,48 @@ export interface DTESummaryRaw {
   averageAmount: number; // Average per document
 }
 
+export interface DTEListMeta {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface DTESalesDetail {
+  id: string;
+  registerNumber: number;
+  documentType: number;
+  saleType: string;
+  clientRUT: string;
+  clientName: string;
+  folio: string;
+  documentDate: string;
+  exemptAmount: number;
+  netAmount: number;
+  ivaAmount: number;
+  totalAmount: number;
+  emitterRUT: null | string;
+  referenceDocType: null | string;
+  referenceDocFolio: null | string;
+}
+
+export interface DTEPurchaseDetail {
+  id: string;
+  registerNumber: number;
+  documentType: number;
+  purchaseType: string;
+  providerRUT: string;
+  providerName: string;
+  folio: string;
+  documentDate: string;
+  receiptDate: string;
+  exemptAmount: number;
+  netAmount: number;
+  recoverableIVA: number;
+  nonRecoverableIVA: number;
+  totalAmount: number;
+}
+
 /**
  * Validated DTE Summary after Zod parsing
  * Guarantees all numeric values are valid numbers

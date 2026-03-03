@@ -18,14 +18,36 @@ const LazyDteComparisonPanel = lazy(() =>
   })),
 );
 
+const LazyDteSalesDetailsPanel = lazy(() =>
+  import("@/features/finance/dte-analytics/components/DteSalesDetailsPanel").then((module) => ({
+    default: module.DteSalesDetailsPanel,
+  })),
+);
+
+const LazyDtePurchasesDetailsPanel = lazy(() =>
+  import("@/features/finance/dte-analytics/components/DtePurchasesDetailsPanel").then((module) => ({
+    default: module.DtePurchasesDetailsPanel,
+  })),
+);
+
 export function DTEAnalyticsPage() {
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear.toString());
   const [selectedTab, setSelectedTab] = useState<
-    "purchases-comparison" | "purchases-monthly" | "sales-comparison" | "sales-monthly"
+    | "purchases-comparison"
+    | "purchases-details"
+    | "purchases-monthly"
+    | "sales-comparison"
+    | "sales-details"
+    | "sales-monthly"
   >("purchases-monthly");
   const { isTabMounted, markTabAsMounted } = useLazyTabs<
-    "purchases-comparison" | "purchases-monthly" | "sales-comparison" | "sales-monthly"
+    | "purchases-comparison"
+    | "purchases-details"
+    | "purchases-monthly"
+    | "sales-comparison"
+    | "sales-details"
+    | "sales-monthly"
   >("purchases-monthly");
 
   // Load all purchases and sales data to extract years with actual data
@@ -74,6 +96,14 @@ export function DTEAnalyticsPage() {
             <BarChart3 className="size-4" />
             Ventas Mensual
           </Tabs.Tab>
+          <Tabs.Tab id="purchases-details" className="gap-2">
+            <BarChart3 className="size-4" />
+            Compras Detalle
+          </Tabs.Tab>
+          <Tabs.Tab id="sales-details" className="gap-2">
+            <BarChart3 className="size-4" />
+            Ventas Detalle
+          </Tabs.Tab>
           <Tabs.Tab id="purchases-comparison" className="gap-2">
             <TrendingUp className="size-4" />
             Compras Comparativa
@@ -114,6 +144,22 @@ export function DTEAnalyticsPage() {
           {isTabMounted("purchases-comparison") ? (
             <Suspense fallback={<div className="py-2 text-default-500 text-sm">Cargando...</div>}>
               <LazyDteComparisonPanel kind="purchases" />
+            </Suspense>
+          ) : null}
+        </Tabs.Panel>
+
+        <Tabs.Panel id="purchases-details">
+          {isTabMounted("purchases-details") ? (
+            <Suspense fallback={<div className="py-2 text-default-500 text-sm">Cargando...</div>}>
+              <LazyDtePurchasesDetailsPanel />
+            </Suspense>
+          ) : null}
+        </Tabs.Panel>
+
+        <Tabs.Panel id="sales-details">
+          {isTabMounted("sales-details") ? (
+            <Suspense fallback={<div className="py-2 text-default-500 text-sm">Cargando...</div>}>
+              <LazyDteSalesDetailsPanel />
             </Suspense>
           ) : null}
         </Tabs.Panel>
