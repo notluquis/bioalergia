@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
 import { Filter } from "lucide-react";
+import { Button } from "@/components/ui/Button";
 import { useToast } from "@/context/ToastContext";
 import { autoLinkEventDteByDay, fetchEventDteLinksByDay } from "@/features/calendar/api";
 import { CalendarFiltersPopover } from "@/features/calendar/components/CalendarFiltersPopover";
@@ -93,14 +94,14 @@ function CalendarDailyPage() {
           allowedWeekdays={[1, 2, 3, 4, 5, 6]}
           rightSlot={
             <div className="flex items-center gap-2">
-              <button
-                className="rounded-md border border-default-200 px-2 py-1 text-default-600 text-xs hover:bg-default-50"
-                disabled={autoLinkMutation.isPending}
-                onClick={() => autoLinkMutation.mutate()}
-                type="button"
+              <Button
+                isDisabled={autoLinkMutation.isPending}
+                size="sm"
+                variant="secondary"
+                onPress={() => autoLinkMutation.mutate()}
               >
                 {autoLinkMutation.isPending ? "Auto-vinculando..." : "Auto-vincular DTE"}
-              </button>
+              </Button>
               <CalendarFiltersPopover
                 applyCount={daily?.totals.events}
                 availableCategories={availableCategories}

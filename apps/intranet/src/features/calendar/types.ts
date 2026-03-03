@@ -390,3 +390,44 @@ export interface ReclassifyJob {
   progress: number;
   total: number;
 }
+
+export interface EventDteOverviewSuggestion extends EventDteSuggestion {
+  amountDiff: null | number;
+}
+
+export interface EventDteOverviewItem {
+  amountExpected: null | number;
+  amountPaid: null | number;
+  calendarId: string;
+  confidenceScore: null | number;
+  eventDate: string;
+  eventId: string;
+  linked: boolean;
+  linkedClientName: null | string;
+  linkedClientRUT: null | string;
+  linkedDteSaleDetailId: null | string;
+  linkedFolio: null | string;
+  linkedMatchedBy: null | string;
+  linkedTotalAmount: null | number;
+  summary: null | string;
+  topSuggestion: EventDteOverviewSuggestion | null;
+}
+
+export interface EventDteOverviewStats {
+  avgLinkedScore: number;
+  linkRate: number;
+  linkedEvents: number;
+  totalEvents: number;
+  unlinkedEvents: number;
+  withPerfectScore: number;
+}
+
+export interface EventDteOverviewResponseData {
+  items: EventDteOverviewItem[];
+  page: number;
+  pageSize: number;
+  period: string;
+  stats: EventDteOverviewStats;
+  totalCount: number;
+  totalPages: number;
+}

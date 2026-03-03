@@ -387,6 +387,46 @@ export const EventDteAutoLinkResponseSchema = z.strictObject({
   status: z.literal("success"),
 });
 
+export const EventDteOverviewResponseSchema = z.strictObject({
+  data: z.strictObject({
+    items: z.array(
+      z.strictObject({
+        amountExpected: z.number().nullable(),
+        amountPaid: z.number().nullable(),
+        calendarId: z.string(),
+        confidenceScore: z.number().nullable(),
+        eventDate: z.string(),
+        eventId: z.string(),
+        linked: z.boolean(),
+        linkedClientName: z.string().nullable(),
+        linkedClientRUT: z.string().nullable(),
+        linkedDteSaleDetailId: z.string().nullable(),
+        linkedFolio: z.string().nullable(),
+        linkedMatchedBy: z.string().nullable(),
+        linkedTotalAmount: z.number().nullable(),
+        summary: z.string().nullable(),
+        topSuggestion: EventDteSuggestionSchema.extend({
+          amountDiff: z.number().nullable(),
+        }).nullable(),
+      }),
+    ),
+    page: z.number(),
+    pageSize: z.number(),
+    period: z.string(),
+    stats: z.strictObject({
+      avgLinkedScore: z.number(),
+      linkRate: z.number(),
+      linkedEvents: z.number(),
+      totalEvents: z.number(),
+      unlinkedEvents: z.number(),
+      withPerfectScore: z.number(),
+    }),
+    totalCount: z.number(),
+    totalPages: z.number(),
+  }),
+  status: z.literal("success"),
+});
+
 const TreatmentAnalyticsPeriodSchema = z.strictObject({
   amountExpected: z.number(),
   amountPaid: z.number(),

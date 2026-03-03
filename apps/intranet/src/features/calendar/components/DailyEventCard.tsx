@@ -234,23 +234,33 @@ export function DailyEventCard({ event, eventDteLink, onLinkClick }: DailyEventC
             </Chip>
           ))}
           {eventDteLink ? (
-            <Chip
-              className="h-6 font-medium text-[10px] uppercase tracking-wide"
-              color="success"
-              size="sm"
-              variant="soft"
-            >
-              DTE: {eventDteLink.folio}
-            </Chip>
+            <>
+              <Chip
+                className="h-6 font-medium text-[10px] uppercase tracking-wide"
+                color="success"
+                size="sm"
+                variant="soft"
+              >
+                DTE: {eventDteLink.folio}
+              </Chip>
+              <Chip
+                className="h-6 font-medium text-[10px] uppercase tracking-wide"
+                color="success"
+                size="sm"
+                variant="soft"
+              >
+                Score {Math.round(eventDteLink.confidenceScore)}%
+              </Chip>
+            </>
           ) : null}
           {onLinkClick ? (
             <Button
               className="h-6 px-2 text-[10px] uppercase tracking-wide"
               size="sm"
-              variant="ghost"
+              variant={eventDteLink ? "secondary" : "ghost"}
               onPress={() => onLinkClick(event)}
             >
-              Vincular DTE
+              {eventDteLink ? "Ver vínculo DTE" : "Vincular DTE"}
             </Button>
           ) : null}
         </div>

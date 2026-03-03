@@ -100,6 +100,22 @@ interface DteSaleRow {
   totalAmount: number;
 }
 
+interface EventDteOverviewRow {
+  amountExpected: null | number;
+  amountPaid: null | number;
+  calendarId: string;
+  confidenceScore: null | number;
+  eventDate: string;
+  eventId: string;
+  linkedClientName: null | string;
+  linkedClientRUT: null | string;
+  linkedDteSaleDetailId: null | string;
+  linkedFolio: null | string;
+  linkedMatchedBy: null | string;
+  linkedTotalAmount: null | number;
+  summary: null | string;
+}
+
 function normalizeText(value: string): string {
   return value
     .normalize("NFKD")
@@ -482,6 +498,176 @@ export async function listEventDteLinksByDate(date: string) {
   `;
 
   return rows;
+}
+
+export async function listEventDteLinkOverview(params: {
+  page?: number;
+  pageSize?: number;
+  period: string;
+  query?: string;
+  status?: "all" | "linked" | "unlinked";
+}) {
+  const page = Math.max(0, params.page ?? 0);
+  const pageSize = Math.min(100, Math.max(10, params.pageSize ?? 25));
+  const status = params.status ?? "all";
+  const trimmedQuery = params.query?.trim() ?? "";
+  const hasSearch = trimmedQuery.length > 0;
+  const offset = page * pageSize;
+  const periodDate = dayjs(`${params.period}-01`, "YYYY-MM-DD", true);
+
+  if (!periodDate.isValid()) {
+    throw new Error("Periodo inválido. Usa formato YYYY-MM");
+  }
+
+  const periodStart = periodDate.startOf("month").format("YYYY-MM-DD");
+  const periodEnd = periodDate.endOf("month").format("YYYY-MM-DD");
+
+  const searchLike = `%${trimmedQuery}%`;
+
+  const statsRows = await db.$queryRaw<
+    Array<{
+      avgLinkedScore: null | number;
+      linkedEvents: number;
+      totalEvents: number;
+      withPerfectScore: number;
+    }>
+  >`
+    SELECT
+      COUNT(*)::int AS "totalEvents",
+      COUNT(l.id)::int AS "linkedEvents",
+      COUNT(*) FILTER (WHERE l.confidence_score::float = 100)::int AS "withPerfectScore",
+      AVG(l.confidence_score::float) AS "avgLinkedScore"
+    FROM events e
+    LEFT JOIN event_dte_sale_links l ON l.event_id = e.id
+    WHERE COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date)
+      BETWEEN ${periodStart}::date AND ${periodEnd}::date
+  `;
+
+  const totalCountRows = await db.$queryRaw<Array<{ count: number }>>`
+    SELECT COUNT(*)::int AS "count"
+    FROM events e
+    LEFT JOIN event_dte_sale_links l ON l.event_id = e.id
+    WHERE COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date)
+      BETWEEN ${periodStart}::date AND ${periodEnd}::date
+      AND (
+        ${status} = 'all'
+        OR (${status} = 'linked' AND l.id IS NOT NULL)
+        OR (${status} = 'unlinked' AND l.id IS NULL)
+      )
+      AND (
+        ${hasSearch} = false
+        OR COALESCE(e.summary, '') ILIKE ${searchLike}
+        OR COALESCE(e.description, '') ILIKE ${searchLike}
+      )
+  `;
+  const totalCount = totalCountRows[0]?.count ?? 0;
+
+  const rows = await db.$queryRaw<EventDteOverviewRow[]>`
+    SELECT
+      c.google_id AS "calendarId",
+      e.external_event_id AS "eventId",
+      e.summary AS "summary",
+      COALESCE(to_char(e.start_date, 'YYYY-MM-DD'), to_char((e.start_date_time AT TIME ZONE ${TIMEZONE})::date, 'YYYY-MM-DD')) AS "eventDate",
+      e.amount_expected AS "amountExpected",
+      e.amount_paid AS "amountPaid",
+      l.dte_sale_detail_id AS "linkedDteSaleDetailId",
+      l.matched_by AS "linkedMatchedBy",
+      l.confidence_score::float AS "confidenceScore",
+      s.client_name AS "linkedClientName",
+      s.client_rut AS "linkedClientRUT",
+      s.folio AS "linkedFolio",
+      COALESCE(s.total_amount, 0)::float AS "linkedTotalAmount"
+    FROM events e
+    JOIN calendars c ON c.id = e.calendar_id
+    LEFT JOIN event_dte_sale_links l ON l.event_id = e.id
+    LEFT JOIN dte_sale_details s ON s.id = l.dte_sale_detail_id
+    WHERE COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date)
+      BETWEEN ${periodStart}::date AND ${periodEnd}::date
+      AND (
+        ${status} = 'all'
+        OR (${status} = 'linked' AND l.id IS NOT NULL)
+        OR (${status} = 'unlinked' AND l.id IS NULL)
+      )
+      AND (
+        ${hasSearch} = false
+        OR COALESCE(e.summary, '') ILIKE ${searchLike}
+        OR COALESCE(e.description, '') ILIKE ${searchLike}
+      )
+    ORDER BY COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) DESC, e.id DESC
+    LIMIT ${pageSize} OFFSET ${offset}
+  `;
+
+  const items = await Promise.all(
+    rows.map(async (row) => {
+      let topSuggestion: null | (EventDteSuggestion & { amountDiff: null | number }) = null;
+
+      if (!row.linkedDteSaleDetailId) {
+        const suggestions = await getEventDteSuggestions({
+          calendarId: row.calendarId,
+          eventId: row.eventId,
+          limit: 1,
+        });
+        const first = suggestions.suggestions[0];
+        if (first) {
+          const amountHint =
+            row.amountPaid != null && Number.isFinite(row.amountPaid)
+              ? Number(row.amountPaid)
+              : row.amountExpected != null && Number.isFinite(row.amountExpected)
+                ? Number(row.amountExpected)
+                : null;
+          topSuggestion = {
+            ...first,
+            amountDiff: amountHint != null ? Math.abs(amountHint - first.totalAmount) : null,
+          };
+        }
+      }
+
+      return {
+        amountExpected: row.amountExpected,
+        amountPaid: row.amountPaid,
+        calendarId: row.calendarId,
+        confidenceScore: row.confidenceScore,
+        eventDate: row.eventDate,
+        eventId: row.eventId,
+        linked: Boolean(row.linkedDteSaleDetailId),
+        linkedClientName: row.linkedClientName,
+        linkedClientRUT: row.linkedClientRUT,
+        linkedDteSaleDetailId: row.linkedDteSaleDetailId,
+        linkedFolio: row.linkedFolio,
+        linkedMatchedBy: row.linkedMatchedBy,
+        linkedTotalAmount: row.linkedTotalAmount,
+        summary: row.summary,
+        topSuggestion,
+      };
+    }),
+  );
+
+  const stats = statsRows[0] ?? {
+    avgLinkedScore: null,
+    linkedEvents: 0,
+    totalEvents: 0,
+    withPerfectScore: 0,
+  };
+
+  return {
+    items,
+    page,
+    pageSize,
+    period: params.period,
+    stats: {
+      avgLinkedScore: stats.avgLinkedScore ?? 0,
+      linkedEvents: stats.linkedEvents,
+      linkRate:
+        stats.totalEvents > 0
+          ? Number(((stats.linkedEvents / stats.totalEvents) * 100).toFixed(1))
+          : 0,
+      totalEvents: stats.totalEvents,
+      unlinkedEvents: Math.max(0, stats.totalEvents - stats.linkedEvents),
+      withPerfectScore: stats.withPerfectScore,
+    },
+    totalCount,
+    totalPages: Math.max(1, Math.ceil(totalCount / pageSize)),
+  };
 }
 
 export async function getEventDteLinkByInternalEventId(

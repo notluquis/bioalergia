@@ -1,0 +1,463 @@
+import {
+  ButtonGroup,
+  Card,
+  Chip,
+  Description,
+  Input,
+  Label,
+  ListBox,
+  ScrollShadow,
+  Select,
+  Skeleton,
+  Spinner,
+  Tabs,
+} from "@heroui/react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { getRouteApi } from "@tanstack/react-router";
+import dayjs from "dayjs";
+import "dayjs/locale/es";
+import { useMemo, useState } from "react";
+import { Button } from "@/components/ui/Button";
+import { useToast } from "@/context/ToastContext";
+import {
+  confirmEventDteLink,
+  fetchEventDteLinksOverview,
+  unlinkEventDteLink,
+} from "@/features/calendar/api";
+import type { EventDteOverviewItem } from "@/features/calendar/types";
+import { currencyFormatter } from "@/lib/format";
+
+const routeApi = getRouteApi("/_authed/calendar/dte-links");
+const OVERVIEW_SKELETON_KEYS = [
+  "overview-skeleton-1",
+  "overview-skeleton-2",
+  "overview-skeleton-3",
+  "overview-skeleton-4",
+  "overview-skeleton-5",
+  "overview-skeleton-6",
+] as const;
+
+type LinkStatusFilter = "all" | "linked" | "unlinked";
+
+function buildPeriodOptions(count = 24): Array<{ label: string; value: string }> {
+  dayjs.locale("es");
+  return Array.from({ length: count }, (_, index) => {
+    const period = dayjs().subtract(index, "month");
+    return {
+      label: period.format("MMMM YYYY"),
+      value: period.format("YYYY-MM"),
+    };
+  });
+}
+
+function scoreColor(score: null | number): "danger" | "success" | "warning" {
+  if (score == null) return "warning";
+  if (score >= 90) return "success";
+  if (score >= 70) return "warning";
+  return "danger";
+}
+
+function scoreLabel(score: null | number): string {
+  if (score == null) return "-";
+  return `${Math.round(score)}%`;
+}
+
+function amountHint(item: EventDteOverviewItem): null | number {
+  if (item.amountPaid != null && Number.isFinite(item.amountPaid)) {
+    return item.amountPaid;
+  }
+  if (item.amountExpected != null && Number.isFinite(item.amountExpected)) {
+    return item.amountExpected;
+  }
+  return null;
+}
+
+export function CalendarDteLinksPage() {
+  const queryClient = useQueryClient();
+  const navigate = routeApi.useNavigate();
+  const search = routeApi.useSearch();
+  const toast = useToast();
+
+  const page = search.page ?? 0;
+  const pageSize = search.pageSize ?? 25;
+  const period = search.period ?? dayjs().format("YYYY-MM");
+  const status = (search.status ?? "all") as LinkStatusFilter;
+  const query = search.query ?? "";
+
+  const [queryDraft, setQueryDraft] = useState(query);
+
+  const overviewQuery = useQuery({
+    queryFn: () =>
+      fetchEventDteLinksOverview({
+        page,
+        pageSize,
+        period,
+        query: query || undefined,
+        status,
+      }),
+    queryKey: ["calendar", "dte-link", "overview", period, status, page, pageSize, query],
+  });
+
+  const refetchOverview = async () => {
+    await queryClient.invalidateQueries({ queryKey: ["calendar", "dte-link", "overview"] });
+  };
+
+  const confirmMutation = useMutation({
+    mutationFn: async (item: EventDteOverviewItem) => {
+      if (!item.topSuggestion) {
+        throw new Error("No hay sugerencia para vincular");
+      }
+      await confirmEventDteLink({
+        calendarId: item.calendarId,
+        confidenceScore: item.topSuggestion.confidenceScore,
+        dteSaleDetailId: item.topSuggestion.dteSaleDetailId,
+        eventId: item.eventId,
+        matchedBy: item.topSuggestion.method,
+        matchedName: item.topSuggestion.clientName,
+        matchedRUT: item.topSuggestion.clientRUT,
+      });
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "No se pudo vincular");
+    },
+    onSuccess: async () => {
+      toast.success("Vínculo confirmado");
+      await refetchOverview();
+    },
+  });
+
+  const unlinkMutation = useMutation({
+    mutationFn: async (item: EventDteOverviewItem) => {
+      await unlinkEventDteLink({
+        calendarId: item.calendarId,
+        eventId: item.eventId,
+      });
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "No se pudo desvincular");
+    },
+    onSuccess: async () => {
+      toast.success("Vínculo eliminado");
+      await refetchOverview();
+    },
+  });
+
+  const periodOptions = useMemo(() => buildPeriodOptions(30), []);
+
+  const setSearch = (next: Partial<typeof search>) => {
+    void navigate({
+      search: (prev) => ({
+        ...prev,
+        ...next,
+      }),
+    });
+  };
+
+  const stats = overviewQuery.data?.stats;
+  const items = overviewQuery.data?.items ?? [];
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <Card.Header className="flex flex-col items-start gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <Card.Title>Vínculos Evento ↔ DTE</Card.Title>
+            <Card.Description>
+              Revisión mensual de vinculadas/no vinculadas, score y estado de sugerencias.
+            </Card.Description>
+          </div>
+          <div className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">
+            <Select
+              className="w-full sm:w-56"
+              value={period}
+              onChange={(value) =>
+                setSearch({ page: 0, period: value ? String(value) : dayjs().format("YYYY-MM") })
+              }
+            >
+              <Label>Periodo</Label>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  {periodOptions.map((option) => (
+                    <ListBox.Item id={option.value} key={option.value} textValue={option.label}>
+                      {option.label}
+                      <ListBox.ItemIndicator />
+                    </ListBox.Item>
+                  ))}
+                </ListBox>
+              </Select.Popover>
+            </Select>
+            <div className="flex gap-2">
+              <Input
+                className="min-w-60"
+                placeholder="Buscar por título/descripción"
+                value={queryDraft}
+                onChange={(event) => setQueryDraft(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    setSearch({ page: 0, query: queryDraft.trim() || undefined });
+                  }
+                }}
+              />
+              <Button
+                variant="secondary"
+                onPress={() => setSearch({ page: 0, query: queryDraft.trim() || undefined })}
+              >
+                Filtrar
+              </Button>
+            </div>
+          </div>
+        </Card.Header>
+      </Card>
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+        <Card variant="secondary">
+          <Card.Header>
+            <Card.Title className="text-sm">Eventos</Card.Title>
+            <Card.Description className="text-2xl font-semibold">
+              {stats?.totalEvents ?? 0}
+            </Card.Description>
+          </Card.Header>
+        </Card>
+        <Card variant="secondary">
+          <Card.Header>
+            <Card.Title className="text-sm">Vinculados</Card.Title>
+            <Card.Description className="text-2xl font-semibold">
+              {stats?.linkedEvents ?? 0}
+            </Card.Description>
+          </Card.Header>
+        </Card>
+        <Card variant="secondary">
+          <Card.Header>
+            <Card.Title className="text-sm">No Vinculados</Card.Title>
+            <Card.Description className="text-2xl font-semibold">
+              {stats?.unlinkedEvents ?? 0}
+            </Card.Description>
+          </Card.Header>
+        </Card>
+        <Card variant="secondary">
+          <Card.Header>
+            <Card.Title className="text-sm">Tasa Vinculación</Card.Title>
+            <Card.Description className="text-2xl font-semibold">
+              {stats?.linkRate ?? 0}%
+            </Card.Description>
+          </Card.Header>
+        </Card>
+        <Card variant="secondary">
+          <Card.Header>
+            <Card.Title className="text-sm">Promedio Score</Card.Title>
+            <Card.Description className="text-2xl font-semibold">
+              {Math.round(stats?.avgLinkedScore ?? 0)}
+            </Card.Description>
+          </Card.Header>
+        </Card>
+      </div>
+
+      <Card>
+        <Card.Header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <Tabs
+            selectedKey={status}
+            onSelectionChange={(key) =>
+              setSearch({ page: 0, status: String(key) as LinkStatusFilter })
+            }
+          >
+            <Tabs.ListContainer>
+              <Tabs.List aria-label="Filtro de estado" className="w-fit">
+                <Tabs.Tab id="all">
+                  Todos
+                  <Tabs.Indicator />
+                </Tabs.Tab>
+                <Tabs.Tab id="linked">
+                  Vinculados
+                  <Tabs.Separator />
+                  <Tabs.Indicator />
+                </Tabs.Tab>
+                <Tabs.Tab id="unlinked">
+                  No vinculados
+                  <Tabs.Separator />
+                  <Tabs.Indicator />
+                </Tabs.Tab>
+              </Tabs.List>
+            </Tabs.ListContainer>
+          </Tabs>
+          <Description>
+            Página {page + 1} de {overviewQuery.data?.totalPages ?? 1} ·{" "}
+            {overviewQuery.data?.totalCount ?? 0} filas
+          </Description>
+        </Card.Header>
+        <Card.Content className="p-0">
+          {overviewQuery.isLoading ? (
+            <div className="space-y-2 p-4">
+              {OVERVIEW_SKELETON_KEYS.map((key) => (
+                <Skeleton className="h-24 rounded-xl" key={key} />
+              ))}
+            </div>
+          ) : null}
+
+          {overviewQuery.isError ? (
+            <div className="p-4">
+              <Description className="text-danger">No se pudo cargar el overview.</Description>
+            </div>
+          ) : null}
+
+          {!overviewQuery.isLoading && !overviewQuery.isError ? (
+            <ScrollShadow className="max-h-[64dvh] p-4" size={80}>
+              <div className="space-y-3">
+                {items.length === 0 ? (
+                  <Card variant="transparent">
+                    <Card.Header>
+                      <Card.Title className="text-base">Sin resultados</Card.Title>
+                      <Card.Description>Ajusta los filtros o prueba otro período.</Card.Description>
+                    </Card.Header>
+                  </Card>
+                ) : null}
+
+                {items.map((item) => {
+                  const displayAmount = item.linked
+                    ? item.linkedTotalAmount
+                    : (item.topSuggestion?.totalAmount ?? null);
+                  const currentHint = amountHint(item);
+                  const localDiff =
+                    currentHint != null && displayAmount != null
+                      ? Math.abs(currentHint - displayAmount)
+                      : (item.topSuggestion?.amountDiff ?? null);
+
+                  return (
+                    <Card
+                      className="gap-2"
+                      key={`${item.calendarId}:${item.eventId}`}
+                      variant="secondary"
+                    >
+                      <Card.Header className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                        <div className="space-y-1">
+                          <Card.Title className="text-base">
+                            {item.summary ?? "(Sin título)"}
+                          </Card.Title>
+                          <Card.Description>
+                            {dayjs(item.eventDate).format("DD-MM-YYYY")} · {item.eventId}
+                          </Card.Description>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Chip color={item.linked ? "success" : "warning"} variant="soft">
+                            {item.linked ? "Vinculado" : "No vinculado"}
+                          </Chip>
+                          <Chip
+                            color={scoreColor(
+                              item.linked
+                                ? item.confidenceScore
+                                : (item.topSuggestion?.confidenceScore ?? null),
+                            )}
+                            variant="soft"
+                          >
+                            Score{" "}
+                            {scoreLabel(
+                              item.linked
+                                ? item.confidenceScore
+                                : (item.topSuggestion?.confidenceScore ?? null),
+                            )}
+                          </Chip>
+                          {item.linked && (item.confidenceScore ?? 0) === 100 ? (
+                            <Chip color="success" variant="soft">
+                              Perfecto 100
+                            </Chip>
+                          ) : null}
+                        </div>
+                      </Card.Header>
+
+                      <Card.Content className="grid grid-cols-1 gap-2 text-sm lg:grid-cols-3">
+                        <div className="rounded-lg border border-default-200 p-2">
+                          <p className="text-default-500 text-xs uppercase">Monto evento</p>
+                          <p className="font-medium">
+                            {currencyFormatter.format(currentHint ?? 0)}
+                          </p>
+                        </div>
+                        <div className="rounded-lg border border-default-200 p-2">
+                          <p className="text-default-500 text-xs uppercase">
+                            {item.linked ? "DTE vinculado" : "Mejor sugerencia"}
+                          </p>
+                          <p className="font-medium">
+                            {displayAmount != null ? currencyFormatter.format(displayAmount) : "-"}
+                          </p>
+                        </div>
+                        <div className="rounded-lg border border-default-200 p-2">
+                          <p className="text-default-500 text-xs uppercase">Diferencia</p>
+                          <p className="font-medium">
+                            {localDiff != null ? currencyFormatter.format(localDiff) : "-"}
+                          </p>
+                        </div>
+                      </Card.Content>
+
+                      <Card.Footer className="flex flex-col items-start justify-between gap-2 md:flex-row md:items-center">
+                        <Description>
+                          {item.linked
+                            ? `${item.linkedClientName ?? "-"} · ${item.linkedClientRUT ?? "-"} · Folio ${item.linkedFolio ?? "-"}`
+                            : item.topSuggestion
+                              ? `${item.topSuggestion.clientName} · ${item.topSuggestion.clientRUT} · Folio ${item.topSuggestion.folio}`
+                              : "Sin sugerencias para este evento"}
+                        </Description>
+                        <div className="flex gap-2">
+                          {item.linked ? (
+                            <Button
+                              isLoading={unlinkMutation.isPending}
+                              size="sm"
+                              variant="danger"
+                              onPress={() => unlinkMutation.mutate(item)}
+                            >
+                              Desvincular
+                            </Button>
+                          ) : (
+                            <Button
+                              color="primary"
+                              isDisabled={!item.topSuggestion}
+                              isLoading={confirmMutation.isPending}
+                              size="sm"
+                              variant="primary"
+                              onPress={() => confirmMutation.mutate(item)}
+                            >
+                              Vincular sugerencia
+                            </Button>
+                          )}
+                        </div>
+                      </Card.Footer>
+                    </Card>
+                  );
+                })}
+              </div>
+            </ScrollShadow>
+          ) : null}
+        </Card.Content>
+        <Card.Footer className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <Description>Perfect score 100: {stats?.withPerfectScore ?? 0}</Description>
+          <ButtonGroup size="sm" variant="secondary">
+            <Button
+              isDisabled={page <= 0 || overviewQuery.isFetching}
+              onPress={() => setSearch({ page: Math.max(0, page - 1) })}
+            >
+              Anterior
+            </Button>
+            <Button isDisabled>
+              {overviewQuery.isFetching ? (
+                <span className="inline-flex items-center gap-2">
+                  <Spinner size="sm" /> Cargando
+                </span>
+              ) : (
+                `Página ${page + 1}/${overviewQuery.data?.totalPages ?? 1}`
+              )}
+            </Button>
+            <Button
+              isDisabled={
+                overviewQuery.isFetching || page + 1 >= (overviewQuery.data?.totalPages ?? 1)
+              }
+              onPress={() => setSearch({ page: page + 1 })}
+            >
+              Siguiente
+            </Button>
+          </ButtonGroup>
+        </Card.Footer>
+      </Card>
+    </div>
+  );
+}

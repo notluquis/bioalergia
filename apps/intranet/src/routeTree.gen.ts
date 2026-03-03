@@ -62,6 +62,7 @@ import { Route as AuthedCertificatesMedicalRouteImport } from "./routes/_authed/
 import { Route as AuthedCalendarSyncHistoryRouteImport } from "./routes/_authed/calendar/sync-history"
 import { Route as AuthedCalendarScheduleRouteImport } from "./routes/_authed/calendar/schedule"
 import { Route as AuthedCalendarHeatmapRouteImport } from "./routes/_authed/calendar/heatmap"
+import { Route as AuthedCalendarDteLinksRouteImport } from "./routes/_authed/calendar/dte-links"
 import { Route as AuthedCalendarDailyRouteImport } from "./routes/_authed/calendar/daily"
 import { Route as AuthedCalendarClassifyRouteImport } from "./routes/_authed/calendar/classify"
 import { Route as AuthedSettingsUsersIndexRouteImport } from "./routes/_authed/settings/users/index"
@@ -319,6 +320,11 @@ const AuthedCalendarHeatmapRoute = AuthedCalendarHeatmapRouteImport.update({
   path: "/heatmap",
   getParentRoute: () => AuthedCalendarRoute,
 } as any)
+const AuthedCalendarDteLinksRoute = AuthedCalendarDteLinksRouteImport.update({
+  id: "/dte-links",
+  path: "/dte-links",
+  getParentRoute: () => AuthedCalendarRoute,
+} as any)
 const AuthedCalendarDailyRoute = AuthedCalendarDailyRouteImport.update({
   id: "/daily",
   path: "/daily",
@@ -390,6 +396,7 @@ export interface FileRoutesByFullPath {
   "/verify/$id": typeof VerifyIdRoute
   "/calendar/classify": typeof AuthedCalendarClassifyRoute
   "/calendar/daily": typeof AuthedCalendarDailyRoute
+  "/calendar/dte-links": typeof AuthedCalendarDteLinksRoute
   "/calendar/heatmap": typeof AuthedCalendarHeatmapRoute
   "/calendar/schedule": typeof AuthedCalendarScheduleRoute
   "/calendar/sync-history": typeof AuthedCalendarSyncHistoryRoute
@@ -445,6 +452,7 @@ export interface FileRoutesByTo {
   "/": typeof AuthedIndexRoute
   "/calendar/classify": typeof AuthedCalendarClassifyRoute
   "/calendar/daily": typeof AuthedCalendarDailyRoute
+  "/calendar/dte-links": typeof AuthedCalendarDteLinksRoute
   "/calendar/heatmap": typeof AuthedCalendarHeatmapRoute
   "/calendar/schedule": typeof AuthedCalendarScheduleRoute
   "/calendar/sync-history": typeof AuthedCalendarSyncHistoryRoute
@@ -505,6 +513,7 @@ export interface FileRoutesById {
   "/_authed/": typeof AuthedIndexRoute
   "/_authed/calendar/classify": typeof AuthedCalendarClassifyRoute
   "/_authed/calendar/daily": typeof AuthedCalendarDailyRoute
+  "/_authed/calendar/dte-links": typeof AuthedCalendarDteLinksRoute
   "/_authed/calendar/heatmap": typeof AuthedCalendarHeatmapRoute
   "/_authed/calendar/schedule": typeof AuthedCalendarScheduleRoute
   "/_authed/calendar/sync-history": typeof AuthedCalendarSyncHistoryRoute
@@ -565,6 +574,7 @@ export interface FileRouteTypes {
     | "/verify/$id"
     | "/calendar/classify"
     | "/calendar/daily"
+    | "/calendar/dte-links"
     | "/calendar/heatmap"
     | "/calendar/schedule"
     | "/calendar/sync-history"
@@ -620,6 +630,7 @@ export interface FileRouteTypes {
     | "/"
     | "/calendar/classify"
     | "/calendar/daily"
+    | "/calendar/dte-links"
     | "/calendar/heatmap"
     | "/calendar/schedule"
     | "/calendar/sync-history"
@@ -679,6 +690,7 @@ export interface FileRouteTypes {
     | "/_authed/"
     | "/_authed/calendar/classify"
     | "/_authed/calendar/daily"
+    | "/_authed/calendar/dte-links"
     | "/_authed/calendar/heatmap"
     | "/_authed/calendar/schedule"
     | "/_authed/calendar/sync-history"
@@ -1061,6 +1073,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedCalendarHeatmapRouteImport
       parentRoute: typeof AuthedCalendarRoute
     }
+    "/_authed/calendar/dte-links": {
+      id: "/_authed/calendar/dte-links"
+      path: "/dte-links"
+      fullPath: "/calendar/dte-links"
+      preLoaderRoute: typeof AuthedCalendarDteLinksRouteImport
+      parentRoute: typeof AuthedCalendarRoute
+    }
     "/_authed/calendar/daily": {
       id: "/_authed/calendar/daily"
       path: "/daily"
@@ -1137,6 +1156,7 @@ declare module "@tanstack/react-router" {
 interface AuthedCalendarRouteChildren {
   AuthedCalendarClassifyRoute: typeof AuthedCalendarClassifyRoute
   AuthedCalendarDailyRoute: typeof AuthedCalendarDailyRoute
+  AuthedCalendarDteLinksRoute: typeof AuthedCalendarDteLinksRoute
   AuthedCalendarHeatmapRoute: typeof AuthedCalendarHeatmapRoute
   AuthedCalendarScheduleRoute: typeof AuthedCalendarScheduleRoute
   AuthedCalendarSyncHistoryRoute: typeof AuthedCalendarSyncHistoryRoute
@@ -1145,6 +1165,7 @@ interface AuthedCalendarRouteChildren {
 const AuthedCalendarRouteChildren: AuthedCalendarRouteChildren = {
   AuthedCalendarClassifyRoute: AuthedCalendarClassifyRoute,
   AuthedCalendarDailyRoute: AuthedCalendarDailyRoute,
+  AuthedCalendarDteLinksRoute: AuthedCalendarDteLinksRoute,
   AuthedCalendarHeatmapRoute: AuthedCalendarHeatmapRoute,
   AuthedCalendarScheduleRoute: AuthedCalendarScheduleRoute,
   AuthedCalendarSyncHistoryRoute: AuthedCalendarSyncHistoryRoute,

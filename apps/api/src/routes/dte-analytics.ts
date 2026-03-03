@@ -15,6 +15,7 @@ import {
   autoLinkEventDate,
   confirmEventDteLink,
   getEventDteSuggestions,
+  listEventDteLinkOverview,
   listEventDteLinksByDate,
   normalizeLinkDate,
   unlinkEventDteLink,
@@ -81,6 +82,14 @@ const detailsQuerySchema = z.object({
 
 const eventLinkByDayQuerySchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+});
+
+const eventLinkOverviewQuerySchema = z.object({
+  page: z.coerce.number().int().min(0).default(0),
+  pageSize: z.coerce.number().int().min(10).max(100).default(25),
+  period: z.string().regex(/^\d{4}-\d{2}$/),
+  query: z.string().optional(),
+  status: z.enum(["all", "linked", "unlinked"]).default("all"),
 });
 
 const eventLinkSuggestionsQuerySchema = z.object({
@@ -402,6 +411,47 @@ dteAnalyticsRoutes.get(
     } catch (error) {
       console.error("Error fetching yearly comparison:", error);
       return reply(c, { status: "error", message: "Failed to retrieve yearly comparison" }, 500);
+    }
+  },
+);
+
+/**
+ * GET /event-links/overview - List monthly event links and top scores
+ */
+dteAnalyticsRoutes.get(
+  "/event-links/overview",
+  zValidator("query", eventLinkOverviewQuerySchema),
+  async (c) => {
+    const user = await getSessionUser(c);
+    if (!user) {
+      return reply(c, { status: "error", message: "Unauthorized" }, 401);
+    }
+
+    const canReadCalendar = await hasPermission(user.id, "read", "CalendarDaily");
+    const canReadDte = await hasPermission(user.id, "read", "DTEPurchaseDetail");
+    if (!canReadCalendar || !canReadDte) {
+      return reply(c, { status: "error", message: "Forbidden" }, 403);
+    }
+
+    try {
+      const { page, pageSize, period, query, status } = c.req.valid("query");
+      const data = await listEventDteLinkOverview({
+        page,
+        pageSize,
+        period,
+        query,
+        status,
+      });
+      return reply(c, { status: "success", data });
+    } catch (error) {
+      return reply(
+        c,
+        {
+          status: "error",
+          message: error instanceof Error ? error.message : "Failed to list event links overview",
+        },
+        400,
+      );
     }
   },
 );

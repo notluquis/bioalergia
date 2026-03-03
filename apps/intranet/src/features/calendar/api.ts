@@ -9,6 +9,7 @@ import {
   EventDteAutoLinkResponseSchema,
   EventDteByDayResponseSchema,
   EventDteConfirmResponseSchema,
+  EventDteOverviewResponseSchema,
   EventDteSuggestionResponseSchema,
   ReclassifyJobResponseSchema,
   StatusOkSchema,
@@ -24,6 +25,7 @@ import type {
   CalendarSyncLog,
   CalendarUnclassifiedEvent,
   EventDteConfirmedLink,
+  EventDteOverviewResponseData,
   EventDteSuggestion,
   TreatmentAnalytics,
   TreatmentAnalyticsFilters,
@@ -344,6 +346,24 @@ export async function autoLinkEventDteByDay(payload: { date: string; minScore?: 
   }>("/api/dte-analytics/event-links/auto-link-day", payload, {
     responseSchema: EventDteAutoLinkResponseSchema,
   });
+  return response.data;
+}
+
+export async function fetchEventDteLinksOverview(params: {
+  page?: number;
+  pageSize?: number;
+  period: string;
+  query?: string;
+  status?: "all" | "linked" | "unlinked";
+}): Promise<EventDteOverviewResponseData> {
+  const response = await apiClient.get<{ data: EventDteOverviewResponseData; status: "success" }>(
+    "/api/dte-analytics/event-links/overview",
+    {
+      query: params,
+      responseSchema: EventDteOverviewResponseSchema,
+    },
+  );
+
   return response.data;
 }
 
