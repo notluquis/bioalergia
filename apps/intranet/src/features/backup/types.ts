@@ -24,7 +24,7 @@ export interface BackupJob {
     webViewLink?: string;
   };
   startedAt: Date;
-  status: "completed" | "failed" | "pending" | "running";
+  status: "completed" | "failed" | "pending" | "running" | "uploading";
   type: "full" | "scheduled";
 }
 

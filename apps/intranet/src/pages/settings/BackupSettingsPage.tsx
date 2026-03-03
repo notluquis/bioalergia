@@ -16,7 +16,6 @@ import {
   Clock,
   Database,
   Download,
-  FileText,
   HardDrive,
   Loader2,
   Lock,
@@ -56,6 +55,9 @@ type BackupProgressMessage = {
 
 const isJobFinished = (status: BackupJob["status"] | RestoreJob["status"]) =>
   status === "completed" || status === "failed";
+
+const isJobActive = (status: BackupJob["status"] | RestoreJob["status"] | undefined) =>
+  status === "pending" || status === "running" || status === "uploading";
 
 function applyBackupProgressMessage(params: {
   data: BackupProgressMessage;
@@ -140,13 +142,26 @@ function useBackupProgress(onRefreshBackups: () => void) {
 function RunningJobProgressCard({
   currentBackup,
   currentRestore,
+  isBackupStarting,
 }: {
   currentBackup: BackupJob | null;
   currentRestore: null | RestoreJob;
+  isBackupStarting: boolean;
 }) {
-  if (currentBackup?.status !== "running" && currentRestore?.status !== "running") {
+  const hasActiveBackup = isJobActive(currentBackup?.status);
+  const hasActiveRestore = isJobActive(currentRestore?.status);
+  const shouldShow = hasActiveBackup || hasActiveRestore || isBackupStarting;
+  if (!shouldShow) {
     return null;
   }
+
+  const isBackupFlow = hasActiveBackup || isBackupStarting;
+  const progress =
+    currentBackup?.progress ?? currentRestore?.progress ?? (isBackupStarting ? 8 : 0);
+  const stepLabel =
+    currentBackup?.currentStep ??
+    currentRestore?.currentStep ??
+    (isBackupStarting ? "Inicializando backup..." : "En cola...");
 
   return (
     <Surface aria-live="polite" className="rounded-[28px] p-6 shadow-inner" variant="secondary">
@@ -154,19 +169,17 @@ function RunningJobProgressCard({
         <div className="flex items-center gap-3">
           <Loader2 className="size-5 animate-spin text-primary" />
           <span className="font-medium">
-            {currentBackup?.status === "running"
-              ? "Backup en progreso"
-              : "Restauración en progreso"}
+            {isBackupFlow ? "Backup en progreso" : "Restauración en progreso"}
           </span>
         </div>
-        <span className="font-mono text-default-500 text-sm">
-          {currentBackup?.currentStep ?? currentRestore?.currentStep}
-        </span>
+        <span className="font-mono text-default-500 text-sm">{stepLabel}</span>
       </div>
       <div className="h-2 overflow-hidden rounded-full bg-default-100">
         <div
-          className="h-full bg-primary transition-all duration-300"
-          style={{ width: `${currentBackup?.progress ?? currentRestore?.progress ?? 0}%` }}
+          className={cn("h-full bg-primary transition-all duration-300", {
+            "animate-pulse": progress < 12,
+          })}
+          style={{ width: `${progress}%` }}
         />
       </div>
     </Surface>
@@ -240,30 +253,21 @@ function LastCompletedBackupCard({ result }: { result: BackupJob["result"] | nul
 }
 
 function BackupSummaryCards({
-  auditExportsCount,
   fullBackupsLength,
   latestBackupCreatedTime,
   totalSize,
 }: {
-  auditExportsCount: number;
   fullBackupsLength: number;
   latestBackupCreatedTime: Date | undefined;
   totalSize: number;
 }) {
   return (
-    <div className="grid gap-4 md:grid-cols-4">
+    <div className="grid gap-4 md:grid-cols-3">
       <StatCard
         color="primary"
         icon={<HardDrive className="size-5 text-primary" />}
-        label="Backups completos"
+        label="Backups"
         value={String(fullBackupsLength)}
-      />
-
-      <StatCard
-        color="info"
-        icon={<FileText className="size-5 text-info" />}
-        label="Exports incrementales"
-        value={String(auditExportsCount)}
       />
 
       <StatCard
@@ -294,6 +298,7 @@ export function BackupSettingsPage() {
 
   // Permissions
   const canCreate = can("create", "Backup");
+  const [isBackupStarting, setIsBackupStarting] = useState(false);
   const { lastCompletedBackupResult, liveJobs } = useBackupProgress(refreshBackups);
 
   // Queries
@@ -302,22 +307,28 @@ export function BackupSettingsPage() {
   // Mutations
   const backupMutation = useMutation({
     mutationFn: triggerBackup,
+    onMutate: () => {
+      setIsBackupStarting(true);
+    },
     onError: (e) => {
+      setIsBackupStarting(false);
       showError(e.message);
     },
     onSuccess: () => {
       success("Backup iniciado");
+    },
+    onSettled: () => {
+      setIsBackupStarting(false);
     },
   });
 
   // Computed
   const currentBackup = liveJobs.backup;
   const currentRestore = liveJobs.restore;
-  const isRunning = currentBackup?.status === "running" || currentRestore?.status === "running";
+  const isRunning = isJobActive(currentBackup?.status) || isJobActive(currentRestore?.status);
 
-  // Separate full backups from audit exports
+  // Keep only full backups in this view
   const fullBackups = backups.filter((b) => !b.name.startsWith("audit_"));
-  const auditExports = backups.filter((b) => b.name.startsWith("audit_"));
 
   const totalSize = backups.reduce((acc, b) => {
     const sizeStr = b.size ?? "0";
@@ -352,7 +363,11 @@ export function BackupSettingsPage() {
 
   return (
     <div className="space-y-6">
-      <RunningJobProgressCard currentBackup={currentBackup} currentRestore={currentRestore} />
+      <RunningJobProgressCard
+        currentBackup={currentBackup}
+        currentRestore={currentRestore}
+        isBackupStarting={isBackupStarting}
+      />
 
       {/* Google Drive Connection */}
       <GoogleDriveConnect />
@@ -360,20 +375,15 @@ export function BackupSettingsPage() {
       <LastCompletedBackupCard result={lastCompletedBackupResult} />
 
       <BackupSummaryCards
-        auditExportsCount={auditExports.length}
         fullBackupsLength={fullBackups.length}
         latestBackupCreatedTime={fullBackups[0]?.createdTime}
         totalSize={totalSize}
       />
 
-      <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
-        {/* Full Backups List */}
-        <Surface className="rounded-[28px] p-0" variant="secondary">
+      <div className="grid gap-6">
+        <Surface className="overflow-hidden rounded-[28px] p-0" variant="secondary">
           <div className="flex items-center justify-between border-default-100 border-b px-5 py-4">
-            <div>
-              <span className="font-semibold text-lg">Backups Completos</span>
-              <span className="block text-default-500 text-sm">Snapshots completos</span>
-            </div>
+            <span className="font-semibold text-lg">Backups</span>
             <div className="flex items-center gap-2">
               <Button
                 className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full p-0"
@@ -385,7 +395,7 @@ export function BackupSettingsPage() {
                 <RefreshCw className={cn("size-5")} />
               </Button>
               <Button
-                className="h-8 font-medium text-xs"
+                className="h-9 gap-2 rounded-full px-4 font-semibold text-sm"
                 disabled={!canCreate || isRunning || backupMutation.isPending}
                 isLoading={backupMutation.isPending}
                 onClick={() => {
@@ -396,11 +406,7 @@ export function BackupSettingsPage() {
                 variant="primary"
               >
                 {!backupMutation.isPending &&
-                  (canCreate ? (
-                    <Upload className="mr-1.5 size-4" />
-                  ) : (
-                    <Lock className="mr-1.5 size-4" />
-                  ))}
+                  (canCreate ? <Upload className="size-4" /> : <Lock className="size-4" />)}
                 Crear Backup
               </Button>
             </div>
@@ -408,66 +414,6 @@ export function BackupSettingsPage() {
           <ScrollShadow className="max-h-125 divide-y divide-default-100" hideScrollBar size={56}>
             {renderBackupListContent()}
           </ScrollShadow>
-        </Surface>
-
-        {/* Incremental Exports */}
-        <Surface className="rounded-[28px] p-0" variant="secondary">
-          <div className="border-default-100 border-b px-5 py-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="font-semibold text-lg">Exports Incrementales</span>
-                <span className="block text-default-500 text-sm">Cambios por hora</span>
-              </div>
-              <span className="rounded-full bg-default-100 px-2 py-1 font-medium text-xs">
-                {auditExports.length}
-              </span>
-            </div>
-          </div>
-          {auditExports.length > 0 ? (
-            <ScrollShadow className="max-h-125 divide-y divide-default-100" hideScrollBar size={56}>
-              {auditExports.slice(0, 50).map((backup) => (
-                <div
-                  className="flex items-center justify-between px-4 py-3 text-sm transition-colors hover:bg-default-50"
-                  key={backup.id}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="rounded-lg bg-info/10 p-1.5 text-info">
-                      <FileText className="size-4" />
-                    </div>
-                    <div>
-                      <span className="block font-medium">{backup.name}</span>
-                      <Description className="text-default-500 text-xs">
-                        {dayjs(backup.createdTime).format("DD MMM HH:mm")}
-                      </Description>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="rounded bg-background/50 px-1.5 py-0.5 font-mono text-xs opacity-60">
-                      {formatFileSize(Number(backup.size))}
-                    </span>
-                    {backup.webViewLink && (
-                      <Button
-                        isIconOnly
-                        onPress={() => window.open(backup.webViewLink, "_blank")}
-                        size="sm"
-                        variant="ghost"
-                      >
-                        <Download className="size-4" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </ScrollShadow>
-          ) : (
-            <div className="flex flex-col items-center justify-center gap-2 px-4 py-12 text-center">
-              <FileText className="size-6 text-default-400" />
-              <p className="font-medium text-default-700 text-sm">No hay exports incrementales</p>
-              <Description className="max-w-sm text-xs">
-                Los cambios horarios aparecerán aquí cuando exista actividad en tablas auditadas.
-              </Description>
-            </div>
-          )}
         </Surface>
       </div>
     </div>
@@ -567,10 +513,10 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
             <Suspense
               fallback={
                 <div className="space-y-2 py-2">
-                  {Array.from({ length: 4 }).map((_, index) => (
+                  {["a", "b", "c", "d"].map((slot) => (
                     <Skeleton
                       className="h-8 w-full rounded-md"
-                      key={`backup-table-skeleton-${index + 1}`}
+                      key={`backup-table-skeleton-${slot}`}
                     />
                   ))}
                 </div>
