@@ -1,9 +1,7 @@
-import { FieldError, Label, ListBox, Select } from "@heroui/react";
+import { Button, FieldError, Label, ListBox, Select } from "@heroui/react";
 import { useForm, useStore } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
-
-import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { useToast } from "@/context/ToastContext";
 import { queryKeys } from "@/lib/query-keys";
@@ -263,7 +261,7 @@ export function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyRequestFo
       </form.Field>
 
       <div className="flex justify-end md:col-span-2">
-        <Button disabled={form.state.isSubmitting} type="submit">
+        <Button isDisabled={form.state.isSubmitting} type="submit">
           {form.state.isSubmitting ? "Enviando..." : "Enviar solicitud"}
         </Button>
       </div>

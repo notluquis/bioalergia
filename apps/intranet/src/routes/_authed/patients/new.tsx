@@ -1,11 +1,19 @@
-import { Calendar, Card, DateField, DatePicker, Label, ListBox, Select } from "@heroui/react";
+import {
+  Button,
+  Calendar,
+  Card,
+  DateField,
+  DatePicker,
+  Label,
+  ListBox,
+  Select,
+} from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Save, User, UserPlus, X } from "lucide-react";
 import { z } from "zod";
-import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { useToast } from "@/context/ToastContext";
 import { apiClient } from "@/lib/api-client";
@@ -328,8 +336,8 @@ function AddPatientPage() {
                 type="submit"
                 variant="primary"
                 className="min-w-37.5 shadow-md"
-                disabled={!canSubmit || createPatientMutation.isPending}
-                isLoading={isSubmitting || createPatientMutation.isPending}
+                isDisabled={!canSubmit || createPatientMutation.isPending}
+                isPending={isSubmitting || createPatientMutation.isPending}
               >
                 Registrar Paciente
               </Button>

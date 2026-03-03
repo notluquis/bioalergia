@@ -1,10 +1,8 @@
 import { schema as schemaLite } from "@finanzas/db/schema-lite";
-import { Description, Skeleton } from "@heroui/react";
+import { Button, Description, Skeleton } from "@heroui/react";
 import { useClientQueries } from "@zenstackhq/tanstack-query/react";
 import { PlusCircle } from "lucide-react";
 import { useState } from "react";
-
-import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
 import type { InventoryCategory } from "../types";
@@ -80,7 +78,7 @@ export function InventoryCategoryManager() {
         />
         <Button
           className="inline-flex items-center gap-2"
-          disabled={createMutation.isPending || !newCategoryName.trim()}
+          isDisabled={createMutation.isPending || !newCategoryName.trim()}
           size="sm"
           type="submit"
           variant="primary"

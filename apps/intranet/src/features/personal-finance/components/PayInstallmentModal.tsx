@@ -1,11 +1,10 @@
-import { Calendar, DateField, DatePicker, Label, Modal } from "@heroui/react";
+import { Button, Calendar, DateField, DatePicker, Label, Modal } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { Check } from "lucide-react";
 import { useState } from "react";
-import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { toast } from "@/lib/toast-interceptor";
 
@@ -183,7 +182,7 @@ export function PayInstallmentModal({
 
                   <div className="mt-6 flex justify-end gap-3">
                     <Button
-                      disabled={mutation.isPending}
+                      isDisabled={mutation.isPending}
                       onClick={() => {
                         setOpen(false);
                       }}
@@ -191,7 +190,7 @@ export function PayInstallmentModal({
                     >
                       Cancelar
                     </Button>
-                    <Button isLoading={mutation.isPending} type="submit">
+                    <Button isPending={mutation.isPending} type="submit">
                       {mutation.isPending ? "Pagando..." : "Confirmar Pago"}
                     </Button>
                   </div>

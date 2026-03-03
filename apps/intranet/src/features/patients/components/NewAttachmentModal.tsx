@@ -1,8 +1,7 @@
-import { Label, ListBox, Modal, Select } from "@heroui/react";
+import { Button, Label, ListBox, Modal, Select } from "@heroui/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FileUp, Save, X } from "lucide-react";
 import { useState } from "react";
-import { Button } from "@/components/ui/Button";
 import { FileInput } from "@/components/ui/FileInput";
 import { Input } from "@/components/ui/Input";
 import { AttachmentSchema } from "@/features/patients/schemas";
@@ -157,7 +156,7 @@ export function NewAttachmentModal({ isOpen, onClose, patientId }: NewAttachment
                     Cancelar
                   </Button>
                   <Button
-                    isLoading={mutation.isPending}
+                    isPending={mutation.isPending}
                     className="gap-2"
                     isDisabled={!file}
                     onClick={() => mutation.mutate()}

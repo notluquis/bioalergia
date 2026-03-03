@@ -1,8 +1,16 @@
-import { Alert, FieldError, Label, ListBox, Select, Skeleton, Surface } from "@heroui/react";
+import {
+  Alert,
+  Button,
+  FieldError,
+  Label,
+  ListBox,
+  Select,
+  Skeleton,
+  Surface,
+} from "@heroui/react";
 import { useForm } from "@tanstack/react-form";
 import { useEffect } from "react";
 import { z } from "zod";
-import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { GRID_2_COL_MD } from "@/lib/styles";
 import type { CounterpartCategory } from "@/types/schema";
@@ -223,7 +231,7 @@ export function CounterpartForm({
           <div className="flex flex-col gap-3 md:col-span-2">
             {error && <Alert status="danger">{error}</Alert>}
             <div className="flex flex-wrap justify-end gap-2">
-              <Button disabled={busy} type="submit">
+              <Button isDisabled={busy} type="submit">
                 {busy ? "Guardando..." : "Guardar"}
               </Button>
             </div>

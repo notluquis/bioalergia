@@ -1,9 +1,7 @@
-import { Avatar, Dropdown, Label, Separator } from "@heroui/react";
+import { Avatar, Button, Dropdown, Label, Separator } from "@heroui/react";
 import { useRouter } from "@tanstack/react-router";
 import { LogOut, User } from "lucide-react";
-
 import { Backdrop } from "@/components/ui/Backdrop";
-import { Button } from "@/components/ui/Button";
 
 import { useAuth } from "@/context/AuthContext";
 import { useCan } from "@/hooks/use-can";

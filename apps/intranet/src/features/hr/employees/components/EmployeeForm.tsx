@@ -1,8 +1,7 @@
-import { Label, ListBox, Select } from "@heroui/react";
+import { Button, Label, ListBox, Select } from "@heroui/react";
 import { useMutation } from "@tanstack/react-query";
 import type React from "react";
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
@@ -453,7 +452,7 @@ function EmployeeFormContent({
         <Button onClick={onCancel} type="button" variant="secondary">
           Cancelar
         </Button>
-        <Button disabled={isMutating} type="submit">
+        <Button isDisabled={isMutating} type="submit">
           {isMutating ? "Guardando..." : isEditing ? "Actualizar empleado" : "Agregar empleado"}
         </Button>
       </div>

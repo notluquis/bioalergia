@@ -1,4 +1,5 @@
 import {
+  Button,
   Calendar,
   Card,
   DateField,
@@ -16,7 +17,6 @@ import { useMutation } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { z } from "zod";
-import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { apiClient } from "@/lib/api-client";
 import { toast } from "@/lib/toast-interceptor";
@@ -467,7 +467,7 @@ function MedicalCertificatePage() {
             >
               Limpiar
             </Button>
-            <Button type="submit" isLoading={generateMutation.isPending}>
+            <Button type="submit" isPending={generateMutation.isPending}>
               {generateMutation.isPending ? "Generando..." : "Generar Certificado"}
             </Button>
           </div>

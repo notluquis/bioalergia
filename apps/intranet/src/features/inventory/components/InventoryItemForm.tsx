@@ -1,8 +1,6 @@
-import { Label, ListBox, Select } from "@heroui/react";
+import { Button, Label, ListBox, Select } from "@heroui/react";
 import type React from "react";
 import { useEffect, useState } from "react";
-
-import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
 import { getInventoryCategories } from "../api";
@@ -99,7 +97,7 @@ export function InventoryItemForm({ item, onCancel, onSave, saving }: InventoryI
         <Button onClick={onCancel} type="button" variant="secondary">
           Cancelar
         </Button>
-        <Button disabled={saving} type="submit" variant="primary">
+        <Button isDisabled={saving} type="submit" variant="primary">
           {saving ? "Guardando..." : "Guardar Item"}
         </Button>
       </div>

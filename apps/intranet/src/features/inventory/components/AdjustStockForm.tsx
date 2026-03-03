@@ -1,8 +1,6 @@
-import { Description } from "@heroui/react";
+import { Button, Description } from "@heroui/react";
 import type React from "react";
 import { useState } from "react";
-
-import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
 import type { InventoryItem, InventoryMovement } from "../types";
@@ -59,7 +57,7 @@ export function AdjustStockForm({ item, onCancel, onSave, saving }: AdjustStockF
         <Button onClick={onCancel} type="button" variant="secondary">
           Cancelar
         </Button>
-        <Button disabled={saving} type="submit" variant="primary">
+        <Button isDisabled={saving} type="submit" variant="primary">
           {saving ? "Guardando..." : "Ajustar Stock"}
         </Button>
       </div>

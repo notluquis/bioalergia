@@ -1,4 +1,4 @@
-import { Card, Chip, Tabs } from "@heroui/react";
+import { Button, Card, Chip, Tabs } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import type { ColumnDef, PaginationState } from "@tanstack/react-table";
@@ -8,7 +8,6 @@ import { lazy, Suspense, useMemo, useState } from "react";
 import { z } from "zod";
 import { DataTable } from "@/components/data-table/DataTable";
 import { TableRegion } from "@/components/data-table/TableRegion";
-import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { PatientListSchema } from "@/features/patients/schemas";
 import { useDisclosure } from "@/hooks/use-disclosure";
@@ -244,7 +243,7 @@ function PatientsListPage() {
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
           <Button
             className="w-full sm:w-auto"
-            isLoading={syncDteSourcesMutation.isPending}
+            isPending={syncDteSourcesMutation.isPending}
             onClick={() => syncDteSourcesMutation.mutate()}
             variant="secondary"
           >

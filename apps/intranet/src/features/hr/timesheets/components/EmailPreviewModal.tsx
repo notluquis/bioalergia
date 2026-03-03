@@ -1,7 +1,6 @@
-import { Chip, Description, Modal, Spinner } from "@heroui/react";
+import { Button, Chip, Description, Modal, Spinner } from "@heroui/react";
 import dayjs from "dayjs";
 import { useCallback, useEffect, useState } from "react";
-import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import type { Employee } from "@/features/hr/employees/types";
 import { fmtCLP } from "@/lib/format";
@@ -234,12 +233,12 @@ export function EmailPreviewModal({
                 {getPrepareStatusMessage(prepareStatus)}
               </Description>
               <div className="flex shrink-0 gap-3">
-                <Button disabled={isPreparing} onClick={onClose} variant="secondary">
+                <Button isDisabled={isPreparing} onClick={onClose} variant="secondary">
                   {prepareStatus === "done" ? "Cerrar" : "Cancelar"}
                 </Button>
                 <Button
                   className="min-w-44"
-                  disabled={isPreparing || !employeeEmail || prepareStatus === "done"}
+                  isDisabled={isPreparing || !employeeEmail || prepareStatus === "done"}
                   onClick={onPrepare}
                   variant="primary"
                 >
@@ -279,18 +278,18 @@ function LocalAgentPanel({ isHttpsPage, state }: { isHttpsPage: boolean; state: 
         />
       </div>
       <div className="flex items-center gap-3">
-        <Button disabled={state.checkingAgent} onClick={state.verifyAgent} variant="secondary">
+        <Button isDisabled={state.checkingAgent} onClick={state.verifyAgent} variant="secondary">
           {state.checkingAgent ? "Verificando..." : "Verificar agente"}
         </Button>
         <Button
-          disabled={state.checkingSmtp || !state.agentToken}
+          isDisabled={state.checkingSmtp || !state.agentToken}
           onClick={state.verifySmtp}
           variant="secondary"
         >
           {state.checkingSmtp ? "Validando SMTP..." : "Verificar SMTP"}
         </Button>
         <Button
-          disabled={state.stoppingAgent || !state.agentToken}
+          isDisabled={state.stoppingAgent || !state.agentToken}
           onClick={state.stopAgent}
           variant="secondary"
         >

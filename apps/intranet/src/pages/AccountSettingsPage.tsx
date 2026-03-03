@@ -1,9 +1,8 @@
+import { Button } from "@heroui/react";
 import { startRegistration } from "@simplewebauthn/browser";
 import { useMutation } from "@tanstack/react-query";
 import { Check, Fingerprint, Loader2, Smartphone } from "lucide-react";
 import { useEffect, useState } from "react";
-
-import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
@@ -190,7 +189,7 @@ export function AccountSettingsPage() {
                 <div className="ml-auto">
                   <Button
                     className="text-danger hover:bg-danger/10"
-                    disabled={disableMfaMutation.isPending}
+                    isDisabled={disableMfaMutation.isPending}
                     onClick={handleDisableMfa}
                     size="sm"
                     variant="ghost"
@@ -233,7 +232,7 @@ export function AccountSettingsPage() {
                         />
 
                         <Button
-                          disabled={enableMfaMutation.isPending || mfaToken.length !== 6}
+                          isDisabled={enableMfaMutation.isPending || mfaToken.length !== 6}
                           onClick={() => {
                             enableMfaMutation.mutate(mfaToken);
                           }}
@@ -260,7 +259,7 @@ export function AccountSettingsPage() {
                   </div>
                 ) : (
                   <Button
-                    disabled={setupMfaMutation.isPending}
+                    isDisabled={setupMfaMutation.isPending}
                     onClick={() => {
                       setupMfaMutation.mutate();
                     }}
@@ -299,7 +298,7 @@ export function AccountSettingsPage() {
                 <div className="ml-auto flex gap-2">
                   <Button
                     className="text-danger hover:bg-danger/10"
-                    disabled={deletePasskeyMutation.isPending}
+                    isDisabled={deletePasskeyMutation.isPending}
                     onClick={handleDeletePasskey}
                     size="sm"
                     variant="ghost"
@@ -307,7 +306,7 @@ export function AccountSettingsPage() {
                     Eliminar
                   </Button>
                   <Button
-                    disabled={registerPasskeyMutation.isPending}
+                    isDisabled={registerPasskeyMutation.isPending}
                     onClick={() => {
                       registerPasskeyMutation.mutate();
                     }}
@@ -321,7 +320,7 @@ export function AccountSettingsPage() {
             ) : (
               <div className="flex items-center gap-4">
                 <Button
-                  disabled={registerPasskeyMutation.isPending}
+                  isDisabled={registerPasskeyMutation.isPending}
                   onClick={() => {
                     registerPasskeyMutation.mutate();
                   }}

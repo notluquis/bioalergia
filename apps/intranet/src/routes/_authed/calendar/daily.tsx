@@ -35,7 +35,7 @@ export const Route = createFileRoute("/_authed/calendar/daily")({
   component: () => (
     <Suspense
       fallback={
-        <div className="space-y-3 p-4">
+        <div className="space-y-3">
           <Skeleton className="h-10 w-52 rounded-lg" />
           <Skeleton className="h-80 w-full rounded-xl" />
         </div>

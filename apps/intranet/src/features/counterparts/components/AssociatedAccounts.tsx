@@ -1,4 +1,4 @@
-import { Alert, Card, Modal, Surface } from "@heroui/react";
+import { Alert, Button, Card, Modal, Surface } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
@@ -6,7 +6,6 @@ import { Lock } from "lucide-react";
 import type { ChangeEvent } from "react";
 import { useEffect, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
-import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { useToast } from "@/context/ToastContext";
 import { CATEGORY_LABELS } from "@/features/counterparts/constants";
@@ -542,12 +541,11 @@ function ActiveCounterpartCard({
             )}
           </div>
           <Button
-            disabled={!canUpdate}
+            isDisabled={!canUpdate}
             onClick={() => {
               onEdit(counterpart);
             }}
             size="sm"
-            title={canUpdate ? undefined : "No tienes permisos para editar"}
             variant="ghost"
           >
             {!canUpdate && <Lock className="mr-2 h-3 w-3" />}
@@ -722,7 +720,7 @@ function SuggestionList({
             </Button>
             {selectedId && suggestion.identificationNumber && (
               <Button
-                disabled={attachPending}
+                isDisabled={attachPending}
                 onClick={() => {
                   onAttachRut(suggestion.identificationNumber);
                 }}
@@ -819,7 +817,7 @@ function AddAccountModal({
                   <Button onClick={onClose} variant="ghost">
                     Cancelar
                   </Button>
-                  <Button disabled={addPending} onClick={onAddAccount}>
+                  <Button isDisabled={addPending} onClick={onAddAccount}>
                     {addPending ? "Guardando..." : "Agregar cuenta"}
                   </Button>
                 </div>

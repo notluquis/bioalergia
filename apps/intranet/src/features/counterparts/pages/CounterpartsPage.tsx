@@ -1,4 +1,5 @@
 import {
+  Button,
   Checkbox,
   Chip,
   ComboBox,
@@ -21,7 +22,6 @@ import { Check, Filter, Plus, RefreshCcw } from "lucide-react";
 import { Suspense, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { TableRegion } from "@/components/data-table/TableRegion";
-import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
@@ -680,7 +680,7 @@ export function CounterpartsPage() {
                       Cancelar
                     </Button>
                     <Button
-                      disabled={!derived.assignRutIsValid}
+                      isDisabled={!derived.assignRutIsValid}
                       onClick={actions.handleAssignRutToPayout}
                     >
                       Confirmar asignación
@@ -843,7 +843,7 @@ function UnassignedPayoutAccountsTable({
       <div className="mb-3 flex items-center justify-between gap-2">
         <span className="text-default-500 text-xs">{selectedAccounts.length} seleccionadas</span>
         <Button
-          disabled={!canCreate || selectedAccounts.length === 0}
+          isDisabled={!canCreate || selectedAccounts.length === 0}
           onClick={onBulkAssign}
           size="sm"
         >
@@ -954,24 +954,17 @@ function CounterpartsToolbar({
                   aria-label={
                     syncLoading ? "Sincronizando contrapartes" : "Sincronizar contrapartes"
                   }
-                  disabled={syncLoading}
+                  isDisabled={syncLoading}
                   isIconOnly
                   onClick={onSync}
                   size="sm"
-                  title={syncLoading ? "Sincronizando..." : "Sincronizar"}
                   variant="secondary"
                 >
                   <RefreshCcw className={`h-4 w-4 ${syncLoading ? "animate-spin" : ""}`} />
                 </Button>
               ) : null}
               {canCreate ? (
-                <Button
-                  aria-label="Nueva contraparte"
-                  isIconOnly
-                  onClick={onCreate}
-                  size="sm"
-                  title="Nueva contraparte"
-                >
+                <Button aria-label="Nueva contraparte" isIconOnly onClick={onCreate} size="sm">
                   <Plus className="h-4 w-4" />
                 </Button>
               ) : null}
@@ -1053,7 +1046,7 @@ function CounterpartsToolbar({
 
               <div className="flex flex-wrap items-center gap-2">
                 <Button
-                  disabled={!selectedCounterpart}
+                  isDisabled={!selectedCounterpart}
                   onClick={onClearSelection}
                   size="sm"
                   variant="ghost"

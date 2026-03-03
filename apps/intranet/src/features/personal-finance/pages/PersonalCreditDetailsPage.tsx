@@ -1,4 +1,4 @@
-import { Card, Chip, Skeleton } from "@heroui/react";
+import { Button, Card, Chip, Skeleton } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -6,7 +6,6 @@ import dayjs from "dayjs";
 import { ArrowLeftIcon } from "lucide-react";
 import { Suspense } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
-import { Button } from "@/components/ui/Button";
 import { formatCurrency } from "@/lib/utils";
 
 import { PayInstallmentModal } from "../components/PayInstallmentModal";
@@ -78,7 +77,6 @@ export function PersonalCreditDetailsPage({ creditId }: { creditId: number }) {
       <div className="flex items-center gap-4">
         <Link to="/finanzas/personal-credits">
           <Button
-            as="div"
             isIconOnly
             size="sm"
             variant="ghost"

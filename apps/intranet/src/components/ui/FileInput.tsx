@@ -1,9 +1,7 @@
-import { Description, Label, Surface } from "@heroui/react";
+import { Button, Description, Label, Surface } from "@heroui/react";
 import { Upload } from "lucide-react";
 import type React from "react";
 import { useRef, useState } from "react";
-
-import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 
 interface FileInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -102,13 +100,8 @@ export function FileInput({ className, label, multiple, ...props }: Readonly<Fil
             {props.accept ? `Formatos: ${props.accept}` : "Todos los formatos"}
           </Description>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleClick}
-          isDisabled={props.disabled}
-          startContent={<Upload className="h-4 w-4" />}
-        >
+        <Button variant="ghost" size="sm" onClick={handleClick} isDisabled={props.disabled}>
+          <Upload className="h-4 w-4" />
           Seleccionar archivos
         </Button>
         {/* Hidden native input - required for file upload functionality */}

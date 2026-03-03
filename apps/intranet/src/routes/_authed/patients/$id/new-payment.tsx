@@ -1,4 +1,5 @@
 import {
+  Button,
   Calendar,
   Card,
   DateField,
@@ -15,7 +16,6 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { ChevronLeft, Save } from "lucide-react";
 import { z } from "zod";
-import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { MoneyInput } from "@/components/ui/MoneyInput";
 import { PatientBudgetListSchema, PatientPaymentSchema } from "@/features/patients/schemas";
@@ -316,7 +316,7 @@ function NewPaymentPage() {
             >
               Cancelar
             </Button>
-            <Button type="submit" isLoading={mutation.isPending} className="gap-2">
+            <Button type="submit" isPending={mutation.isPending} className="gap-2">
               <Save size={18} />
               Registrar Pago
             </Button>

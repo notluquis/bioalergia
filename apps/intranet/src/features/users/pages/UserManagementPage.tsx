@@ -1,5 +1,5 @@
 import { schema as schemaLite } from "@finanzas/db/schema-lite";
-import { Description, Label, ListBox, Modal, Select, Switch } from "@heroui/react";
+import { Button, Description, Label, ListBox, Modal, Select, Switch } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useClientQueries } from "@zenstackhq/tanstack-query/react";
 import dayjs from "dayjs";
@@ -7,7 +7,6 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import { Copy, Key, Shield, UserCog, UserPlus } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
-import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
@@ -665,8 +664,8 @@ function EditRoleModalContent({
                     Cancelar
                   </Button>
                   <Button
-                    disabled={!selectedRole || selectedRole === editingUser?.role}
-                    isLoading={isSaving}
+                    isDisabled={!selectedRole || selectedRole === editingUser?.role}
+                    isPending={isSaving}
                     onClick={onSave}
                     variant="primary"
                   >
@@ -813,10 +812,10 @@ function EditUserDetailsModalContent({
                   Cancelar
                 </Button>
                 <Button
-                  disabled={
+                  isDisabled={
                     !form?.names.trim() || !form?.notificationEmail.trim() || !form?.position.trim()
                   }
-                  isLoading={isSaving}
+                  isPending={isSaving}
                   onClick={() => void onSave()}
                   variant="primary"
                 >
@@ -872,11 +871,8 @@ function ResetPasswordModalContent({
                 </div>
 
                 <div className="flex justify-end gap-2">
-                  <Button
-                    onClick={() => void onCopy()}
-                    startContent={<Copy size={16} />}
-                    variant="ghost"
-                  >
+                  <Button onClick={() => void onCopy()} variant="ghost">
+                    <Copy size={16} />
                     Copiar
                   </Button>
                   <Button onClick={onClose} variant="primary">

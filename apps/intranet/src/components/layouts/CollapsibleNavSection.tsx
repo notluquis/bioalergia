@@ -1,8 +1,7 @@
+import { Button } from "@heroui/react";
 import { ChevronDown } from "lucide-react";
 import type React from "react";
 import { useState } from "react";
-
-import { Button } from "@/components/ui/Button";
 import { SmoothCollapse } from "@/components/ui/SmoothCollapse";
 import { cn } from "@/lib/utils";
 

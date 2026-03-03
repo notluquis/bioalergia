@@ -1,10 +1,9 @@
 import { schema as schemaLite } from "@finanzas/db/schema-lite";
-import { Checkbox, Description, FieldError, Label, ListBox, Select } from "@heroui/react";
+import { Button, Checkbox, Description, FieldError, Label, ListBox, Select } from "@heroui/react";
 import { type ReactFormExtendedApi, useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useClientQueries } from "@zenstackhq/tanstack-query/react";
 import { Shield, UserPlus, Users } from "lucide-react";
-import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { PageLoader } from "@/components/ui/PageLoader";
 import { useToast } from "@/context/ToastContext";
@@ -257,7 +256,7 @@ function AddUserFormCard({
           </Button>
           <form.Subscribe selector={(state) => [state.isSubmitting]}>
             {([isSubmitting]) => (
-              <Button className="gap-2" disabled={isSubmitting || isSubmitPending} type="submit">
+              <Button className="gap-2" isDisabled={isSubmitting || isSubmitPending} type="submit">
                 <UserPlus size={18} />
                 {isSubmitting || isSubmitPending ? "Creando..." : "Crear usuario"}
               </Button>

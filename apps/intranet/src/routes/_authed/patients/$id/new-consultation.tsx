@@ -1,4 +1,4 @@
-import { Calendar, Card, DateField, DatePicker, FieldError, Label } from "@heroui/react";
+import { Button, Calendar, Card, DateField, DatePicker, FieldError, Label } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -6,7 +6,6 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { ChevronLeft, Save } from "lucide-react";
 import { z } from "zod";
-import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { ConsultationSchema } from "@/features/patients/schemas";
 import { apiClient } from "@/lib/api-client";
@@ -216,7 +215,7 @@ function NewConsultationPage() {
               >
                 Cancelar
               </Button>
-              <Button type="submit" isLoading={mutation.isPending} className="gap-2">
+              <Button type="submit" isPending={mutation.isPending} className="gap-2">
                 <Save size={18} />
                 Guardar Consulta
               </Button>

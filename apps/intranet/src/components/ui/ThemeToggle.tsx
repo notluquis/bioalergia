@@ -1,5 +1,5 @@
+import { Button } from "@heroui/react";
 import { Moon, Sun } from "lucide-react";
-import { Button } from "@/components/ui/Button";
 import { useTheme } from "@/hooks/use-theme";
 export function ThemeToggle() {
   const { toggleTheme, isDark, resolvedTheme } = useTheme();

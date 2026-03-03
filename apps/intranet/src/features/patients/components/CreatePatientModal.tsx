@@ -1,10 +1,18 @@
-import { Calendar, DateField, DatePicker, Label, ListBox, Modal, Select } from "@heroui/react";
+import {
+  Button,
+  Calendar,
+  DateField,
+  DatePicker,
+  Label,
+  ListBox,
+  Modal,
+  Select,
+} from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Save, User, UserPlus } from "lucide-react";
 import { z } from "zod";
-import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { useToast } from "@/context/ToastContext";
 import { apiClient } from "@/lib/api-client";
@@ -322,7 +330,7 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
 
                 <div className="flex justify-end gap-3 pt-2">
                   <Button
-                    disabled={createPatientMutation.isPending}
+                    isDisabled={createPatientMutation.isPending}
                     onClick={handleClose}
                     type="button"
                     variant="ghost"
@@ -333,8 +341,8 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
                     {([canSubmit, isSubmitting]) => (
                       <Button
                         className="min-w-37.5"
-                        disabled={!canSubmit || createPatientMutation.isPending}
-                        isLoading={isSubmitting || createPatientMutation.isPending}
+                        isDisabled={!canSubmit || createPatientMutation.isPending}
+                        isPending={isSubmitting || createPatientMutation.isPending}
                         type="submit"
                         variant="primary"
                       >

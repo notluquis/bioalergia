@@ -63,6 +63,11 @@ function AuthedLayout() {
 
   // Navigation state from TanStack Router
   const isNavigating = useRouterState({ select: (s) => s.status === "pending" });
+  const contentPaddingClass = useRouterState({
+    select: (s) => {
+      return s.location.pathname.startsWith("/calendar/daily") ? "p-1 md:p-2" : "p-3 md:p-5";
+    },
+  });
 
   // Sidebar state: visible/hidden
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
@@ -284,7 +289,9 @@ function AuthedLayout() {
             tabIndex={-1}
           >
             <div className="surface-recessed h-full w-full overflow-hidden rounded-3xl border border-default-100/50 bg-background/50 shadow-inner">
-              <div className="h-full w-full overflow-y-auto overflow-x-hidden p-3 md:p-5">
+              <div
+                className={`h-full w-full overflow-y-auto overflow-x-hidden ${contentPaddingClass}`}
+              >
                 <Outlet />
               </div>
             </div>
