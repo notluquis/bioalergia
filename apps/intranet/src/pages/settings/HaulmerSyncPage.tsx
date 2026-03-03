@@ -1,4 +1,4 @@
-import { Card, Checkbox, Chip, Description, Modal, Skeleton, Spinner } from "@heroui/react";
+import { Card, Checkbox, Chip, Description, Label, Modal, Skeleton, Spinner } from "@heroui/react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import localeEs from "dayjs/locale/es";
@@ -695,20 +695,36 @@ export function HaulmerSyncPage() {
 
                 <div className="space-y-2 rounded-lg border border-default-200 p-3">
                   <Checkbox
+                    id="sync-sales-checkbox"
+                    className="w-full rounded-md px-2 py-2 hover:bg-default-50"
                     isSelected={syncSalesSelected}
-                    onChange={() => {
-                      setSyncSalesSelected((value) => !value);
-                    }}
+                    onChange={setSyncSalesSelected}
+                    variant="secondary"
                   >
-                    Ventas
+                    <Checkbox.Control>
+                      <Checkbox.Indicator />
+                    </Checkbox.Control>
+                    <Checkbox.Content>
+                      <Label className="cursor-pointer" htmlFor="sync-sales-checkbox">
+                        Ventas
+                      </Label>
+                    </Checkbox.Content>
                   </Checkbox>
                   <Checkbox
+                    id="sync-purchases-checkbox"
+                    className="w-full rounded-md px-2 py-2 hover:bg-default-50"
                     isSelected={syncPurchasesSelected}
-                    onChange={() => {
-                      setSyncPurchasesSelected((value) => !value);
-                    }}
+                    onChange={setSyncPurchasesSelected}
+                    variant="secondary"
                   >
-                    Compras
+                    <Checkbox.Control>
+                      <Checkbox.Indicator />
+                    </Checkbox.Control>
+                    <Checkbox.Content>
+                      <Label className="cursor-pointer" htmlFor="sync-purchases-checkbox">
+                        Compras
+                      </Label>
+                    </Checkbox.Content>
                   </Checkbox>
                 </div>
               </Modal.Body>
