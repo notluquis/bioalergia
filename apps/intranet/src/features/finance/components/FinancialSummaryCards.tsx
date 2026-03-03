@@ -15,7 +15,7 @@ export function FinancialSummaryCards({
     return (
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {[1, 2, 3].map((i) => (
-          <div className="space-y-3 rounded-2xl border border-default-200 p-3" key={i}>
+          <div className="space-y-3 rounded-2xl border border-default-200 p-2.5" key={i}>
             <Skeleton className="h-4 w-28 rounded-md" />
             <Skeleton className="h-8 w-40 rounded-md" />
             <Skeleton className="h-3 w-24 rounded-md" />
@@ -27,7 +27,7 @@ export function FinancialSummaryCards({
 
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-      <Card className="p-3" variant="secondary">
+      <Card className="p-2.5" variant="secondary">
         <Card.Header className="items-center justify-between p-0">
           <Card.Title className="text-sm">Ingresos Totales</Card.Title>
           <DollarSign className="h-4 w-4 text-success" />
@@ -39,7 +39,7 @@ export function FinancialSummaryCards({
           <Card.Description>Desde Calendario</Card.Description>
         </Card.Content>
       </Card>
-      <Card className="p-3" variant="secondary">
+      <Card className="p-2.5" variant="secondary">
         <Card.Header className="items-center justify-between p-0">
           <Card.Title className="text-sm">Gastos Totales</Card.Title>
           <TrendingDown className="h-4 w-4 text-danger" />
@@ -51,7 +51,7 @@ export function FinancialSummaryCards({
           <Card.Description>Proyectado</Card.Description>
         </Card.Content>
       </Card>
-      <Card className="p-3" variant="secondary">
+      <Card className="p-2.5" variant="secondary">
         <Card.Header className="items-center justify-between p-0">
           <Card.Title className="text-sm">Utilidad Neta</Card.Title>
           <TrendingUp className="h-4 w-4 text-primary" />

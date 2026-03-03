@@ -402,7 +402,7 @@ export function CalendarDteLinksOverview({
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
         <Card variant="secondary">
-          <Card.Header className="gap-1 p-3">
+          <Card.Header className="gap-1 p-2.5">
             <Card.Title className="text-sm">Eventos</Card.Title>
             <Card.Description className="text-2xl font-semibold">
               {stats?.totalEvents ?? 0}
@@ -410,7 +410,7 @@ export function CalendarDteLinksOverview({
           </Card.Header>
         </Card>
         <Card variant="secondary">
-          <Card.Header className="gap-1 p-3">
+          <Card.Header className="gap-1 p-2.5">
             <Card.Title className="text-sm">Vinculados</Card.Title>
             <Card.Description className="text-2xl font-semibold">
               {stats?.linkedEvents ?? 0}
@@ -418,7 +418,7 @@ export function CalendarDteLinksOverview({
           </Card.Header>
         </Card>
         <Card variant="secondary">
-          <Card.Header className="gap-1 p-3">
+          <Card.Header className="gap-1 p-2.5">
             <Card.Title className="text-sm">No Vinculados (Hasta Hoy)</Card.Title>
             <Card.Description className="text-2xl font-semibold">
               {stats?.unlinkedEvents ?? 0}
@@ -426,7 +426,7 @@ export function CalendarDteLinksOverview({
           </Card.Header>
         </Card>
         <Card variant="secondary">
-          <Card.Header className="gap-1 p-3">
+          <Card.Header className="gap-1 p-2.5">
             <Card.Title className="text-sm">Pendiente Emisión</Card.Title>
             <Card.Description className="text-2xl font-semibold">
               {stats?.pendingIssuanceEvents ?? 0}
@@ -434,7 +434,7 @@ export function CalendarDteLinksOverview({
           </Card.Header>
         </Card>
         <Card variant="secondary">
-          <Card.Header className="gap-1 p-3">
+          <Card.Header className="gap-1 p-2.5">
             <Card.Title className="text-sm">Tasa Vinculación (Hasta Hoy)</Card.Title>
             <Card.Description className="text-2xl font-semibold">
               {stats?.linkRate ?? 0}%
@@ -445,7 +445,7 @@ export function CalendarDteLinksOverview({
           </Card.Header>
         </Card>
         <Card variant="secondary">
-          <Card.Header className="gap-1 p-3">
+          <Card.Header className="gap-1 p-2.5">
             <Card.Title className="text-sm">Promedio Score</Card.Title>
             <Card.Description className="text-2xl font-semibold">
               {Math.round(stats?.avgLinkedScore ?? 0)}

@@ -1,4 +1,4 @@
-import { Button } from "@heroui/react";
+import { Button, Link } from "@heroui/react";
 import { useLocation } from "@tanstack/react-router";
 import { Fingerprint, Mail } from "lucide-react";
 import type { ChangeEvent, SubmitEvent } from "react";
@@ -402,9 +402,9 @@ function LoginFooter({ supportEmail }: { supportEmail: string }) {
   return (
     <div className="mt-6 text-center text-default-500 text-xs">
       ¿Problemas?{" "}
-      <a className="font-semibold text-primary hover:underline" href={`mailto:${supportEmail}`}>
+      <Link className="font-semibold text-primary hover:underline" href={`mailto:${supportEmail}`}>
         Contacta aquí
-      </a>
+      </Link>
     </div>
   );
 }

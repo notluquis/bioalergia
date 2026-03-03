@@ -3,6 +3,7 @@
  *
  * Used for closing dropdowns, modals, etc. when clicking outside.
  */
+import { Button } from "@heroui/react";
 import { cn } from "@/lib/utils";
 
 interface BackdropProps {
@@ -17,12 +18,15 @@ export function Backdrop({ className, isVisible, onClose, zIndex = 40 }: Readonl
   }
 
   return (
-    <button
+    <Button
       aria-label="Close"
       className={cn("fixed inset-0", className)}
-      onClick={() => onClose?.()}
+      onPress={() => onClose?.()}
       style={{ zIndex }}
       type="button"
-    />
+      variant="ghost"
+    >
+      <span className="sr-only">Close</span>
+    </Button>
   );
 }

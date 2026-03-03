@@ -68,7 +68,7 @@ export function MetricCard({
         className={`pointer-events-none absolute inset-0 rounded-3xl bg-linear-to-br ${theme.gradient}`}
       />
 
-      <Card.Content className="relative flex flex-col gap-2 p-3">
+      <Card.Content className="relative flex flex-col gap-2 p-2.5">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2">
             <div

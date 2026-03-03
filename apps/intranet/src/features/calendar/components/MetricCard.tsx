@@ -41,7 +41,7 @@ export function MetricCard({
 
   return (
     <Card className={cn("border border-default-200 bg-background shadow-sm", className)}>
-      <Card.Content className="p-3">
+      <Card.Content className="p-2.5">
         <Description
           className={cn(
             "font-semibold text-default-500 uppercase tracking-wide",

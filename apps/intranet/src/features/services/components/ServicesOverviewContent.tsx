@@ -10,12 +10,13 @@ import {
   Input,
   Label,
   Modal,
+  TextArea,
   TextField,
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { useStore } from "@tanstack/react-store";
 import dayjs from "dayjs";
-import { type ChangeEvent, useState } from "react";
+import { useState } from "react";
 import { EditScheduleModal } from "@/features/services/components/EditScheduleModal";
 import { ServiceDetail } from "@/features/services/components/ServiceDetail";
 import { ServiceForm } from "@/features/services/components/ServiceForm";
@@ -288,7 +289,7 @@ export function ServicesOverviewContent() {
                   <TextField isRequired name="transactionId">
                     <Label>ID transacción</Label>
                     <Input
-                      onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                      onChange={(event) => {
                         handlePaymentFieldChange("transactionId", event.target.value);
                       }}
                       type="number"
@@ -301,7 +302,7 @@ export function ServicesOverviewContent() {
                     <Label>Monto pagado</Label>
                     <Input
                       min={0}
-                      onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                      onChange={(event) => {
                         handlePaymentFieldChange("paidAmount", event.target.value);
                       }}
                       step="0.01"
@@ -360,14 +361,14 @@ export function ServicesOverviewContent() {
 
                   <TextField name="note">
                     <Label>Nota</Label>
-                    <textarea
-                      className="w-full rounded-lg border border-default-200 bg-default-50 px-3 py-2 text-sm text-foreground placeholder-default-400 focus:border-primary focus:outline-none"
+                    <TextArea
                       name="note"
-                      onChange={(event: ChangeEvent<HTMLTextAreaElement>) => {
+                      onChange={(event) => {
                         handlePaymentFieldChange("note", event.target.value);
                       }}
                       rows={2}
                       value={paymentForm.note}
+                      variant="secondary"
                     />
                   </TextField>
 

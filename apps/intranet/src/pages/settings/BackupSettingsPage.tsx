@@ -642,7 +642,7 @@ function StatCard({
   };
 
   return (
-    <Card className="rounded-xl bg-default-50/50 p-3" variant="secondary">
+    <Card className="rounded-xl bg-default-50/50 p-2.5" variant="secondary">
       <Card.Content className="p-0">
         <div className="flex items-center gap-3">
           <div className={cn("rounded-lg p-2", bgColors[color])}>{icon}</div>

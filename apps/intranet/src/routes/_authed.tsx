@@ -1,4 +1,4 @@
-import { Button, Tooltip } from "@heroui/react";
+import { Button, Link, Tooltip } from "@heroui/react";
 import { useDebouncedValue } from "@tanstack/react-pacer";
 import { createFileRoute, getRouteApi, Outlet, useRouterState } from "@tanstack/react-router";
 import React from "react";
@@ -210,12 +210,12 @@ function AuthedLayout() {
 
   return (
     <>
-      <a
+      <Link
         className="sr-only fixed top-3 left-3 z-110 rounded-md bg-background px-3 py-2 font-semibold text-foreground shadow-lg focus:not-sr-only focus:outline-none focus:ring-2 focus:ring-primary/70"
         href="#main-content"
       >
         Saltar al contenido principal
-      </a>
+      </Link>
       {impersonatedRole && (
         <div className="sticky top-0 z-100 flex h-10 w-full items-center justify-center gap-4 bg-warning px-4 font-bold text-warning-foreground text-xs shadow-md">
           <span>VISTA PREVIA: {impersonatedRole.name}</span>
