@@ -53,7 +53,9 @@ export function TimeInput({
     >
       <Label className="hidden">Hora</Label>
       <TimeField.Group>
-        <TimeField.Input>{(segment) => <TimeField.Segment segment={segment} />}</TimeField.Input>
+        <TimeField.InputContainer>
+          <TimeField.Input>{(segment) => <TimeField.Segment segment={segment} />}</TimeField.Input>
+        </TimeField.InputContainer>
       </TimeField.Group>
     </TimeField>
   );
