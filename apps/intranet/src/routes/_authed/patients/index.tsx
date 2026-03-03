@@ -269,10 +269,12 @@ function PatientsListPage() {
               markTabAsMounted(nextTab);
             }}
           >
-            <Tabs.List className="w-fit rounded-xl bg-default-100 p-1">
-              <Tabs.Tab id="clinical">Ficha clínica</Tabs.Tab>
-              <Tabs.Tab id="dte">Fuentes DTE</Tabs.Tab>
-            </Tabs.List>
+            <Tabs.ListContainer className="muted-scrollbar overflow-x-auto pb-1">
+              <Tabs.List className="w-max min-w-full rounded-xl bg-default-100 p-1 whitespace-nowrap">
+                <Tabs.Tab id="clinical">Ficha clínica</Tabs.Tab>
+                <Tabs.Tab id="dte">Fuentes DTE</Tabs.Tab>
+              </Tabs.List>
+            </Tabs.ListContainer>
 
             <Tabs.Panel className="space-y-4 pt-4" id="clinical">
               {isTabMounted("clinical") ? (
