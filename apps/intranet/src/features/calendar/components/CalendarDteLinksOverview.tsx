@@ -55,6 +55,13 @@ interface CalendarDteLinksOverviewProps {
 }
 
 type AutoLinkMode = "all_periods" | "selected_period";
+interface AutoLinkRunSummary {
+  linked: number;
+  modeLabel: string;
+  processedLabel: string;
+  skipped: number;
+  skippedByReason: Array<{ count: number; reason: string }>;
+}
 
 function buildPeriodOptions(count = 24): Array<{ label: string; value: string }> {
   dayjs.locale("es");
@@ -107,6 +114,7 @@ export function CalendarDteLinksOverview({
   const queryClient = useQueryClient();
   const toast = useToast();
   const [queryDraft, setQueryDraft] = useState(search.query ?? "");
+  const [autoLinkSummary, setAutoLinkSummary] = useState<AutoLinkRunSummary | null>(null);
 
   useEffect(() => {
     setQueryDraft(search.query ?? "");
@@ -187,10 +195,24 @@ export function CalendarDteLinksOverview({
     },
     onSuccess: async (result) => {
       if ("periodsProcessed" in result) {
+        setAutoLinkSummary({
+          linked: result.linked,
+          modeLabel: "Todos los períodos",
+          processedLabel: `${result.periodsProcessed} períodos`,
+          skipped: result.skipped,
+          skippedByReason: result.skippedByReason,
+        });
         toast.success(
           `Auto-vinculación completa: ${result.linked} vinculados, ${result.skipped} omitidos (${result.periodsProcessed} períodos)`,
         );
       } else {
+        setAutoLinkSummary({
+          linked: result.linked,
+          modeLabel: `Período ${result.period}`,
+          processedLabel: `${result.daysProcessed} días`,
+          skipped: result.skipped,
+          skippedByReason: result.skippedByReason,
+        });
         toast.success(
           `Auto-vinculación ${result.period}: ${result.linked} vinculados, ${result.skipped} omitidos (${result.daysProcessed} días)`,
         );
@@ -266,7 +288,7 @@ export function CalendarDteLinksOverview({
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </Dropdown.Trigger>
-                <Dropdown.Popover className="min-w-[300px]" placement="bottom end">
+                <Dropdown.Popover className="min-w-75" placement="bottom end">
                   <Dropdown.Menu
                     aria-label="Opciones de auto-vinculación"
                     onAction={(key) => autoLinkPeriodMutation.mutate(String(key) as AutoLinkMode)}
@@ -346,6 +368,29 @@ export function CalendarDteLinksOverview({
           </Card.Header>
         </Card>
       </div>
+
+      {autoLinkSummary ? (
+        <Card variant="secondary">
+          <Card.Header>
+            <Card.Title className="text-sm">Resultado última auto-vinculación</Card.Title>
+            <Card.Description>
+              {autoLinkSummary.modeLabel} · {autoLinkSummary.processedLabel} ·{" "}
+              {autoLinkSummary.linked} vinculados · {autoLinkSummary.skipped} omitidos
+            </Card.Description>
+          </Card.Header>
+          <Card.Content className="flex flex-wrap gap-2">
+            {autoLinkSummary.skippedByReason.length > 0 ? (
+              autoLinkSummary.skippedByReason.map((entry) => (
+                <Chip key={entry.reason} variant="soft">
+                  {entry.reason}: {entry.count}
+                </Chip>
+              ))
+            ) : (
+              <Description>Sin omitidos en esta ejecución.</Description>
+            )}
+          </Card.Content>
+        </Card>
+      ) : null}
 
       <Card>
         <Card.Header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">

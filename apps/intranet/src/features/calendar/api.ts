@@ -334,6 +334,7 @@ export async function autoLinkEventDteByDay(payload: { date: string; minScore?: 
   details: Array<{ eventId: string; reason: string }>;
   linked: number;
   skipped: number;
+  skippedByReason: Array<{ count: number; reason: string }>;
   totalEvents: number;
 }> {
   const response = await apiClient.post<{
@@ -342,6 +343,7 @@ export async function autoLinkEventDteByDay(payload: { date: string; minScore?: 
       details: Array<{ eventId: string; reason: string }>;
       linked: number;
       skipped: number;
+      skippedByReason: Array<{ count: number; reason: string }>;
       totalEvents: number;
     };
     status: "success";
@@ -360,6 +362,7 @@ export async function autoLinkEventDteByPeriod(payload: {
   linked: number;
   period: string;
   skipped: number;
+  skippedByReason: Array<{ count: number; reason: string }>;
   totalEvents: number;
 }> {
   const response = await apiClient.post<{
@@ -369,6 +372,7 @@ export async function autoLinkEventDteByPeriod(payload: {
       linked: number;
       period: string;
       skipped: number;
+      skippedByReason: Array<{ count: number; reason: string }>;
       totalEvents: number;
     };
     status: "success";
@@ -389,6 +393,7 @@ export async function autoLinkEventDteByAllPeriods(payload?: { minScore?: number
   linked: number;
   periodsProcessed: number;
   skipped: number;
+  skippedByReason: Array<{ count: number; reason: string }>;
   totalEvents: number;
 }> {
   const response = await apiClient.post<{
@@ -403,6 +408,7 @@ export async function autoLinkEventDteByAllPeriods(payload?: { minScore?: number
       linked: number;
       periodsProcessed: number;
       skipped: number;
+      skippedByReason: Array<{ count: number; reason: string }>;
       totalEvents: number;
     };
     status: "success";

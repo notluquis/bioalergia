@@ -382,6 +382,12 @@ export const EventDteAutoLinkResponseSchema = z.strictObject({
     ),
     linked: z.number(),
     skipped: z.number(),
+    skippedByReason: z.array(
+      z.strictObject({
+        count: z.number(),
+        reason: z.string(),
+      }),
+    ),
     totalEvents: z.number(),
   }),
   status: z.literal("success"),
@@ -401,6 +407,12 @@ export const EventDteAutoLinkPeriodResponseSchema = z.strictObject({
     linked: z.number(),
     period: z.string(),
     skipped: z.number(),
+    skippedByReason: z.array(
+      z.strictObject({
+        count: z.number(),
+        reason: z.string(),
+      }),
+    ),
     totalEvents: z.number(),
   }),
   status: z.literal("success"),
@@ -420,6 +432,12 @@ export const EventDteAutoLinkAllPeriodsResponseSchema = z.strictObject({
     linked: z.number(),
     periodsProcessed: z.number(),
     skipped: z.number(),
+    skippedByReason: z.array(
+      z.strictObject({
+        count: z.number(),
+        reason: z.string(),
+      }),
+    ),
     totalEvents: z.number(),
   }),
   status: z.literal("success"),

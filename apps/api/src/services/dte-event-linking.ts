@@ -35,6 +35,21 @@ const EVENT_NOISE_TOKENS = new Set([
 const MIN_AUTO_LINK_SCORE = 90;
 const MAX_AUTO_LINK_AMOUNT_DIFF = 5000;
 
+interface SkipReasonCount {
+  count: number;
+  reason: string;
+}
+
+function incrementReason(counter: Map<string, number>, reason: string, increment = 1) {
+  counter.set(reason, (counter.get(reason) ?? 0) + increment);
+}
+
+function normalizeReasonCounts(counter: Map<string, number>): SkipReasonCount[] {
+  return [...counter.entries()]
+    .map(([reason, count]) => ({ reason, count }))
+    .sort((a, b) => b.count - a.count || a.reason.localeCompare(b.reason));
+}
+
 export interface EventDteSuggestion {
   dteSaleDetailId: string;
   registerNumber: number;
@@ -908,6 +923,7 @@ export async function autoLinkEventDate(params: {
   let linked = 0;
   let skipped = 0;
   const details: Array<{ eventId: string; reason: string }> = [];
+  const skippedByReason = new Map<string, number>();
 
   for (const event of events) {
     const suggestionsResponse = await getEventDteSuggestions({
@@ -920,15 +936,19 @@ export async function autoLinkEventDate(params: {
 
     if (!top) {
       skipped += 1;
-      details.push({ eventId: event.externalEventId, reason: "Sin candidatos" });
+      const reason = "Sin candidatos";
+      incrementReason(skippedByReason, reason);
+      details.push({ eventId: event.externalEventId, reason });
       continue;
     }
 
     if (top.confidenceScore < minScore) {
       skipped += 1;
+      const reason = `Score bajo (${top.confidenceScore})`;
+      incrementReason(skippedByReason, reason);
       details.push({
         eventId: event.externalEventId,
-        reason: `Score bajo (${top.confidenceScore})`,
+        reason,
       });
       continue;
     }
@@ -938,9 +958,11 @@ export async function autoLinkEventDate(params: {
       const amountDiff = Math.abs(amountHint - top.totalAmount);
       if (amountDiff > MAX_AUTO_LINK_AMOUNT_DIFF) {
         skipped += 1;
+        const reason = `Monto no coincide (dif ${Math.round(amountDiff)})`;
+        incrementReason(skippedByReason, reason);
         details.push({
           eventId: event.externalEventId,
-          reason: `Monto no coincide (dif ${Math.round(amountDiff)})`,
+          reason,
         });
         continue;
       }
@@ -949,7 +971,9 @@ export async function autoLinkEventDate(params: {
     const isPerfectScore = top.confidenceScore === 100;
     if (!isPerfectScore && isAmbiguous(top, second)) {
       skipped += 1;
-      details.push({ eventId: event.externalEventId, reason: "Ambiguo" });
+      const reason = "Ambiguo";
+      incrementReason(skippedByReason, reason);
+      details.push({ eventId: event.externalEventId, reason });
       continue;
     }
 
@@ -976,6 +1000,7 @@ export async function autoLinkEventDate(params: {
     totalEvents: events.length,
     linked,
     skipped,
+    skippedByReason: normalizeReasonCounts(skippedByReason),
     details,
   };
 }
@@ -1002,6 +1027,7 @@ export async function autoLinkEventPeriod(params: {
       linked: 0,
       skipped: 0,
       daysProcessed: 0,
+      skippedByReason: [] as SkipReasonCount[],
       details: [] as Array<{ date: string; linked: number; skipped: number; totalEvents: number }>,
     };
   }
@@ -1022,6 +1048,7 @@ export async function autoLinkEventPeriod(params: {
   let totalEvents = 0;
   let linked = 0;
   let skipped = 0;
+  const skippedByReason = new Map<string, number>();
 
   for (const row of dateRows) {
     const result = await autoLinkEventDate({
@@ -1032,6 +1059,9 @@ export async function autoLinkEventPeriod(params: {
     totalEvents += result.totalEvents;
     linked += result.linked;
     skipped += result.skipped;
+    for (const reasonCount of result.skippedByReason) {
+      incrementReason(skippedByReason, reasonCount.reason, reasonCount.count);
+    }
     details.push({
       date: row.eventDate,
       linked: result.linked,
@@ -1046,6 +1076,7 @@ export async function autoLinkEventPeriod(params: {
     linked,
     skipped,
     daysProcessed: details.length,
+    skippedByReason: normalizeReasonCounts(skippedByReason),
     details,
   };
 }
@@ -1071,6 +1102,7 @@ export async function autoLinkAllEventPeriods(params: { minScore?: number; userI
   let totalEvents = 0;
   let linked = 0;
   let skipped = 0;
+  const skippedByReason = new Map<string, number>();
 
   for (const row of periodRows) {
     const result = await autoLinkEventPeriod({
@@ -1081,6 +1113,9 @@ export async function autoLinkAllEventPeriods(params: { minScore?: number; userI
     totalEvents += result.totalEvents;
     linked += result.linked;
     skipped += result.skipped;
+    for (const reasonCount of result.skippedByReason) {
+      incrementReason(skippedByReason, reasonCount.reason, reasonCount.count);
+    }
     details.push({
       period: row.period,
       linked: result.linked,
@@ -1095,6 +1130,7 @@ export async function autoLinkAllEventPeriods(params: { minScore?: number; userI
     totalEvents,
     linked,
     skipped,
+    skippedByReason: normalizeReasonCounts(skippedByReason),
     details,
   };
 }
