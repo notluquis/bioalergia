@@ -1,4 +1,4 @@
-import { Card, Chip } from "@heroui/react";
+import { Button, Card, Chip, Input, Label, TextField } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import {
   Box,
@@ -11,8 +11,6 @@ import {
   Trash2,
 } from "lucide-react";
 import { useState } from "react";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
 import { useToast } from "@/context/ToastContext";
 import { createInventoryCategory, deleteInventoryCategory } from "@/features/inventory/api";
 import { inventoryKeys } from "@/features/inventory/queries";
@@ -120,7 +118,7 @@ export function InventorySettingsPage() {
           </div>
           <Button
             className="gap-2"
-            onClick={() => {
+            onPress={() => {
               setIsCreating(true);
             }}
           >
@@ -133,21 +131,22 @@ export function InventorySettingsPage() {
             <div className="fade-in slide-in-from-top-2 animate-in border-b bg-default-50/30 p-4">
               <form className="flex items-end gap-3" onSubmit={handleCreate}>
                 <div className="flex-1">
-                  <Input
-                    containerClassName="gap-1"
-                    id="category-name"
-                    label="Nombre de la categoría"
-                    onChange={(e) => {
-                      setNewCategoryName(e.target.value);
-                    }}
-                    placeholder="Ej: Antibióticos"
-                    value={newCategoryName}
-                  />
+                  <TextField className="gap-1" id="category-name">
+                    <Label>Nombre de la categoría</Label>
+                    <Input
+                      onChange={(e) => {
+                        setNewCategoryName(e.target.value);
+                      }}
+                      placeholder="Ej: Antibióticos"
+                      value={newCategoryName}
+                      variant="secondary"
+                    />
+                  </TextField>
                 </div>
                 <div className="flex gap-2">
                   <Button
-                    disabled={createMutation.isPending}
-                    onClick={() => {
+                    isDisabled={createMutation.isPending}
+                    onPress={() => {
                       setIsCreating(false);
                     }}
                     type="button"
@@ -156,7 +155,7 @@ export function InventorySettingsPage() {
                     Cancelar
                   </Button>
                   <Button
-                    disabled={createMutation.isPending || !newCategoryName.trim()}
+                    isDisabled={createMutation.isPending || !newCategoryName.trim()}
                     type="submit"
                   >
                     {createMutation.isPending ? <Loader2 className="animate-spin" /> : "Guardar"}
@@ -249,7 +248,7 @@ function InventoryList({
                 <Button
                   isIconOnly
                   className="text-danger hover:bg-danger/10"
-                  onClick={() => {
+                  onPress={() => {
                     onDeleteCategory(category.id);
                   }}
                   size="sm"

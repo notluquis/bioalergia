@@ -1,12 +1,19 @@
-import { Calendar, DateField, DatePicker, Label, Modal } from "@heroui/react";
+import {
+  Alert,
+  Button,
+  Calendar,
+  DateField,
+  DatePicker,
+  Input,
+  Label,
+  Modal,
+  TextField,
+} from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 import { Suspense, useEffect, useMemo, useState } from "react";
-import { Alert } from "@/components/ui/Alert";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
 import { useAuth } from "@/context/AuthContext";
 import {
   createLoan,
@@ -270,29 +277,36 @@ export function LoansPage() {
               <Modal.Body className="mt-2 max-h-[80vh] overflow-y-auto overscroll-contain text-foreground">
                 {paymentSchedule && (
                   <form className="space-y-4" onSubmit={handlePaymentSubmit}>
-                    <Input
-                      inputMode="numeric"
-                      label="ID transacción"
-                      onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                        setPaymentForm((prev) => ({ ...prev, transactionId: event.target.value }));
-                      }}
-                      required
-                      type="number"
-                      value={paymentForm.transactionId}
-                    />
+                    <TextField isRequired>
+                      <Label>ID transacción</Label>
+                      <Input
+                        inputMode="numeric"
+                        onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                          setPaymentForm((prev) => ({
+                            ...prev,
+                            transactionId: event.target.value,
+                          }));
+                        }}
+                        type="number"
+                        value={paymentForm.transactionId}
+                        variant="secondary"
+                      />
+                    </TextField>
 
-                    <Input
-                      inputMode="decimal"
-                      label="Monto pagado"
-                      min={0}
-                      onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                        setPaymentForm((prev) => ({ ...prev, paidAmount: event.target.value }));
-                      }}
-                      required
-                      step="0.01"
-                      type="number"
-                      value={paymentForm.paidAmount}
-                    />
+                    <TextField isRequired>
+                      <Label>Monto pagado</Label>
+                      <Input
+                        inputMode="decimal"
+                        min={0}
+                        onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                          setPaymentForm((prev) => ({ ...prev, paidAmount: event.target.value }));
+                        }}
+                        step="0.01"
+                        type="number"
+                        value={paymentForm.paidAmount}
+                        variant="secondary"
+                      />
+                    </TextField>
 
                     <DatePicker
                       isRequired
@@ -349,7 +363,7 @@ export function LoansPage() {
                     )}
                     <div className="flex justify-end gap-3">
                       <Button
-                        onClick={() => {
+                        onPress={() => {
                           setPaymentSchedule(null);
                         }}
                         type="button"
@@ -357,7 +371,7 @@ export function LoansPage() {
                       >
                         Cancelar
                       </Button>
-                      <Button disabled={registerPaymentMutation.isPending} type="submit">
+                      <Button isDisabled={registerPaymentMutation.isPending} type="submit">
                         {registerPaymentMutation.isPending ? "Guardando..." : "Guardar pago"}
                       </Button>
                     </div>

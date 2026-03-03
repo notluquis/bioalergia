@@ -1,20 +1,20 @@
 import {
+  Button,
   Calendar,
   DateField,
   DatePicker,
   Description,
+  Input,
   Label,
   ListBox,
   Modal,
   Select,
+  TextField,
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 import { useState } from "react";
-
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
 
 import type { LoanSchedule, LoanSummary, RegenerateSchedulePayload } from "../types";
 
@@ -127,7 +127,7 @@ export function LoanDetail({
           </span>
           {canManage && (
             <Button
-              onClick={() => {
+              onPress={() => {
                 setRegenerateOpen(true);
               }}
               type="button"
@@ -207,19 +207,22 @@ export function LoanDetail({
               </Modal.Header>
               <Modal.Body className="mt-2 max-h-[80vh] overflow-y-auto overscroll-contain text-foreground">
                 <form className="space-y-4" onSubmit={handleRegenerate}>
-                  <Input
-                    label="Nuevo total de cuotas"
-                    max={360}
-                    min={1}
-                    onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                      setRegenerateForm((prev) => ({
-                        ...prev,
-                        totalInstallments: Number(event.target.value),
-                      }));
-                    }}
-                    type="number"
-                    value={regenerateForm.totalInstallments ?? loan.total_installments}
-                  />
+                  <TextField>
+                    <Label>Nuevo total de cuotas</Label>
+                    <Input
+                      max={360}
+                      min={1}
+                      onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                        setRegenerateForm((prev) => ({
+                          ...prev,
+                          totalInstallments: Number(event.target.value),
+                        }));
+                      }}
+                      type="number"
+                      value={regenerateForm.totalInstallments ?? loan.total_installments}
+                      variant="secondary"
+                    />
+                  </TextField>
 
                   <DatePicker
                     onChange={(value) => {
@@ -268,19 +271,22 @@ export function LoanDetail({
                     </DatePicker.Popover>
                   </DatePicker>
 
-                  <Input
-                    label="Tasa de interés (%)"
-                    min={0}
-                    onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                      setRegenerateForm((prev) => ({
-                        ...prev,
-                        interestRate: Number(event.target.value),
-                      }));
-                    }}
-                    step="0.01"
-                    type="number"
-                    value={regenerateForm.interestRate ?? loan.interest_rate}
-                  />
+                  <TextField>
+                    <Label>Tasa de interés (%)</Label>
+                    <Input
+                      min={0}
+                      onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                        setRegenerateForm((prev) => ({
+                          ...prev,
+                          interestRate: Number(event.target.value),
+                        }));
+                      }}
+                      step="0.01"
+                      type="number"
+                      value={regenerateForm.interestRate ?? loan.interest_rate}
+                      variant="secondary"
+                    />
+                  </TextField>
 
                   <Select
                     onChange={(key) => {
@@ -311,8 +317,8 @@ export function LoanDetail({
                   )}
                   <div className="flex justify-end gap-3">
                     <Button
-                      disabled={regenerating}
-                      onClick={() => {
+                      isDisabled={regenerating}
+                      onPress={() => {
                         setRegenerateOpen(false);
                       }}
                       type="button"
@@ -320,7 +326,7 @@ export function LoanDetail({
                     >
                       Cancelar
                     </Button>
-                    <Button disabled={regenerating} type="submit">
+                    <Button isDisabled={regenerating} type="submit">
                       {regenerating ? "Actualizando..." : "Regenerar"}
                     </Button>
                   </div>

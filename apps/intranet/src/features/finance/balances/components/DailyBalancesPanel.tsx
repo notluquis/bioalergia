@@ -1,8 +1,7 @@
-import { Chip, Skeleton } from "@heroui/react";
+import { Alert, Chip, Skeleton } from "@heroui/react";
 import dayjs from "dayjs";
 
 import { DataTable } from "@/components/data-table/DataTable";
-import { Alert } from "@/components/ui/Alert";
 import { fmtCLP } from "@/lib/format";
 
 import type { BalanceDraft, BalancesApiResponse } from "../types";

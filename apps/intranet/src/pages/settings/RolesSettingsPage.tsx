@@ -1,11 +1,10 @@
-import { Card, Label, ListBox, Select } from "@heroui/react";
+import { Button, Card, Label, ListBox, Select } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import type { AnyRoute } from "@tanstack/react-router";
 import { useRouter } from "@tanstack/react-router";
 import { Plus, RotateCw, Shield } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
-import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { syncPermissions, updateRolePermissions } from "@/features/roles/api";
@@ -229,7 +228,6 @@ export function RolesSettingsPage() {
                 onPress={() => {
                   syncMutation.mutate();
                 }}
-                title="Sincronizar permisos"
               >
                 <RotateCw className={cn("h-4 w-4", isSyncing && "animate-spin")} />
               </Button>

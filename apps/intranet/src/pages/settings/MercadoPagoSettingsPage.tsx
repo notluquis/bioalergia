@@ -1,4 +1,14 @@
-import { Description, Label, ListBox, Modal, Select, Tabs, Tooltip } from "@heroui/react";
+import {
+  Button,
+  Card,
+  Description,
+  Label,
+  ListBox,
+  Modal,
+  Select,
+  Tabs,
+  Tooltip,
+} from "@heroui/react";
 import {
   keepPreviousData,
   type QueryClient,
@@ -13,8 +23,6 @@ import { useMemo, useState } from "react";
 
 import { DataTable } from "@/components/data-table/DataTable";
 import { GenerateReportModal } from "@/components/mercadopago/GenerateReportModal";
-import { Button } from "@/components/ui/Button";
-import { StatCard } from "@/components/ui/StatCard";
 import { useToast } from "@/context/ToastContext";
 import { getMpReportColumns } from "@/features/finance/mercadopago/components/MpReportColumns";
 import { mercadoPagoKeys } from "@/features/finance/mercadopago/queries";
@@ -263,7 +271,7 @@ export function MercadoPagoSettingsPage() {
         {!isSyncTab && (
           <Button
             className="w-full sm:w-auto"
-            onClick={openGenerateModal}
+            onPress={openGenerateModal}
             size="sm"
             variant="primary"
           >
@@ -355,7 +363,7 @@ export function MercadoPagoSettingsPage() {
                     )}
 
                     <div className="flex justify-end">
-                      <Button onClick={closeImportStatsModal} variant="primary">
+                      <Button onPress={closeImportStatsModal} variant="primary">
                         Cerrar
                       </Button>
                     </div>
@@ -392,14 +400,18 @@ export function MercadoPagoSettingsPage() {
           </article>
 
           {/* Total Reports Card */}
-          <StatCard
-            className="h-full"
-            icon={FileText}
-            subtitle={`Tipo: ${resolveReportTypeLabel(reportType)}`}
-            title="Total Reportes"
-            tone="default"
-            value={reportTotal}
-          />
+          <Card className="h-full p-6" variant="secondary">
+            <Card.Header className="items-start justify-between p-0">
+              <div>
+                <Card.Title className="text-sm">Total Reportes</Card.Title>
+                <Card.Description>{`Tipo: ${resolveReportTypeLabel(reportType)}`}</Card.Description>
+              </div>
+              <FileText className="h-5 w-5 text-primary" />
+            </Card.Header>
+            <Card.Content className="p-0 pt-3">
+              <p className="font-semibold text-3xl">{reportTotal}</p>
+            </Card.Content>
+          </Card>
         </div>
       )}
 

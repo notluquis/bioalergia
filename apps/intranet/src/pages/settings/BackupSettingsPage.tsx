@@ -1,4 +1,6 @@
 import {
+  Button,
+  Card,
   Checkbox,
   Description,
   Disclosure,
@@ -33,7 +35,6 @@ import {
   useState,
 } from "react";
 import { GoogleDriveConnect } from "@/components/backup/GoogleDriveConnect";
-import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { triggerBackup, triggerRestore } from "@/features/backup/api";
@@ -387,22 +388,20 @@ export function BackupSettingsPage() {
             <div className="flex items-center gap-2">
               <Button
                 className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full p-0"
-                onClick={() => void queryClient.invalidateQueries({ queryKey: ["backups"] })}
+                onPress={() => void queryClient.invalidateQueries({ queryKey: ["backups"] })}
                 size="sm"
-                title="Actualizar lista"
                 variant="outline"
               >
                 <RefreshCw className={cn("size-5")} />
               </Button>
               <Button
                 className="h-9 gap-2 rounded-full px-4 font-semibold text-sm"
-                disabled={!canCreate || isRunning || backupMutation.isPending}
-                isLoading={backupMutation.isPending}
-                onClick={() => {
+                isDisabled={!canCreate || isRunning || backupMutation.isPending}
+                isPending={backupMutation.isPending}
+                onPress={() => {
                   backupMutation.mutate();
                 }}
                 size="sm"
-                title={canCreate ? "Crear nuevo backup" : "No tienes permisos para crear backups"}
                 variant="primary"
               >
                 {!backupMutation.isPending &&
@@ -492,12 +491,11 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
 
           <div className="mb-4 flex gap-3">
             <Button
-              disabled={!canRestore || restoreMutation.isPending}
-              isLoading={restoreMutation.isPending}
-              onClick={() => {
+              isDisabled={!canRestore || restoreMutation.isPending}
+              isPending={restoreMutation.isPending}
+              onPress={() => {
                 restoreMutation.mutate(undefined);
               }}
-              title={canRestore ? undefined : "Requiere permiso para restaurar"}
               variant="primary"
             >
               {!restoreMutation.isPending &&
@@ -605,13 +603,12 @@ function BackupTablesList({
 
       {selectedTables.length > 0 && (
         <Button
-          disabled={!canRestore || isRestoring}
-          isLoading={isRestoring}
-          onClick={() => {
+          isDisabled={!canRestore || isRestoring}
+          isPending={isRestoring}
+          onPress={() => {
             onRestore(selectedTables);
           }}
           size="sm"
-          title={canRestore ? undefined : "Requiere permiso para restaurar"}
           variant="outline"
         >
           {!isRestoring && (canRestore ? <Play className="size-4" /> : <Lock className="size-4" />)}
@@ -641,14 +638,16 @@ function StatCard({
   };
 
   return (
-    <div className="rounded-xl bg-default-50/50 p-4">
-      <div className="flex items-center gap-3">
-        <div className={cn("rounded-lg p-2", bgColors[color])}>{icon}</div>
-        <div>
-          <span className="block text-default-500 text-sm">{label}</span>
-          <span className="block font-bold text-2xl">{value}</span>
+    <Card className="rounded-xl bg-default-50/50 p-4" variant="secondary">
+      <Card.Content className="p-0">
+        <div className="flex items-center gap-3">
+          <div className={cn("rounded-lg p-2", bgColors[color])}>{icon}</div>
+          <div>
+            <span className="block text-default-500 text-sm">{label}</span>
+            <span className="block font-bold text-2xl">{value}</span>
+          </div>
         </div>
-      </div>
-    </div>
+      </Card.Content>
+    </Card>
   );
 }

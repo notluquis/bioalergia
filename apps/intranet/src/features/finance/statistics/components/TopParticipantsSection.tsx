@@ -51,7 +51,7 @@ export function TopParticipantsSection({ data, error, loading }: TopParticipants
         </div>
       )}
 
-      {error && <Alert color="danger">{error}</Alert>}
+      {error && <Alert status="danger">{error}</Alert>}
 
       {!loading && !error && data.length === 0 && (
         <div className="py-8 text-center text-default-500 text-sm">

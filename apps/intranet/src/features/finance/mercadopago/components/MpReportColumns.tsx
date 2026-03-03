@@ -1,8 +1,7 @@
-import { Chip } from "@heroui/react";
+import { Button, Chip } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { Download, Loader2, RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui/Button";
 import type { MPReport } from "@/services/mercadopago";
 
 const REPORT_PENDING_REGEX = /processing|pending|in_progress|waiting|generating|queued|creating/i;
@@ -107,13 +106,12 @@ export const getMpReportColumns = (
         <div className="flex justify-end gap-1 text-right">
           <Button
             className="h-9 w-9 p-0 transition-opacity sm:opacity-70 sm:group-hover:opacity-100"
-            disabled={downloadPending || pending || !report.file_name}
-            onClick={(e) => {
+            isDisabled={downloadPending || pending || !report.file_name}
+            onPress={(e) => {
               if (report.file_name) {
-                handleDownload(e, report.file_name);
+                handleDownload(e as unknown as React.MouseEvent, report.file_name);
               }
             }}
-            title={pending ? "Reporte aún generándose" : "Descargar"}
             variant="ghost"
           >
             {downloadPending ? (
@@ -124,13 +122,12 @@ export const getMpReportColumns = (
           </Button>
           <Button
             className="h-9 w-9 p-0 transition-opacity sm:opacity-70 sm:group-hover:opacity-100"
-            disabled={processPending || pending || !report.file_name}
-            onClick={(e) => {
+            isDisabled={processPending || pending || !report.file_name}
+            onPress={(e) => {
               if (report.file_name) {
-                handleProcess(e, report.file_name);
+                handleProcess(e as unknown as React.MouseEvent, report.file_name);
               }
             }}
-            title={pending ? "Reporte aún generándose" : "Sincronizar a BD"}
             variant="ghost"
           >
             {processPending && processingFile === (report.file_name ?? null) ? (

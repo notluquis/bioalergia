@@ -1,8 +1,7 @@
-import { Chip, type ChipProps } from "@heroui/react";
+import { Button, Chip, type ChipProps } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 
-import { Button } from "@/components/ui/Button";
 import { currencyFormatter } from "@/lib/format";
 
 import type { LoanSchedule } from "../types";
@@ -141,19 +140,18 @@ export const getColumns = (
               <div className="flex justify-end">
                 {schedule.status === "PAID" || schedule.status === "PARTIAL" ? (
                   <Button
-                    onClick={() => {
+                    onPress={() => {
                       actions.onUnlinkPayment(schedule);
                     }}
                     size="sm"
-                    title="Desvincular pago"
                     variant="ghost"
                   >
                     Desvincular
                   </Button>
                 ) : (
                   <Button
-                    disabled={schedule.loan_id === 0}
-                    onClick={() => {
+                    isDisabled={schedule.loan_id === 0}
+                    onPress={() => {
                       actions.onRegisterPayment(schedule);
                     }}
                     size="sm"

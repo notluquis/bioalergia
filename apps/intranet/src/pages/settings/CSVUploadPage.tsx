@@ -1,4 +1,4 @@
-import { Card, Chip, Label, ListBox, Select, Tooltip } from "@heroui/react";
+import { Alert, Button, Card, Chip, Label, ListBox, Select, Tooltip } from "@heroui/react";
 import { useMutation } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { AlertCircle, CheckCircle, FileUp, Loader2, Lock } from "lucide-react";
@@ -6,8 +6,6 @@ import Papa from "papaparse";
 import { useState } from "react";
 
 import { DataTable } from "@/components/data-table/DataTable";
-import { Alert } from "@/components/ui/Alert";
-import { Button } from "@/components/ui/Button";
 import { FileInput } from "@/components/ui/FileInput";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
@@ -1276,8 +1274,8 @@ function ImportActionsBar(props: {
   return (
     <div className="sticky bottom-0 z-10 -mx-4 flex justify-end gap-3 border-default-100 border-t bg-background/80 p-4 shadow-lg backdrop-blur-md sm:mx-0 sm:rounded-xl sm:border">
       <Button
-        disabled={!props.isValidMapping || props.isProcessing || props.uploadedFilesCount === 0}
-        onClick={props.onPreview}
+        isDisabled={!props.isValidMapping || props.isProcessing || props.uploadedFilesCount === 0}
+        onPress={props.onPreview}
         variant="secondary"
       >
         {props.isProcessing ? (
@@ -1289,14 +1287,14 @@ function ImportActionsBar(props: {
       </Button>
 
       <Button
-        disabled={
+        isDisabled={
           !props.hasPreviewData ||
           !props.isValidMapping ||
           props.isProcessing ||
           props.uploadedFilesCount === 0 ||
           (props.batchPreviewData?.errors?.length ?? 0) > 0
         }
-        onClick={props.onImport}
+        onPress={props.onImport}
       >
         {props.isProcessing ? (
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />

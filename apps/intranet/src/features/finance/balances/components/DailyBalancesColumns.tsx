@@ -1,9 +1,6 @@
-import { Chip } from "@heroui/react";
+import { Button, Chip, Input, TextArea } from "@heroui/react";
 import type { ColumnDef, Row, Table } from "@tanstack/react-table";
 import dayjs from "dayjs";
-
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
 import { fmtCLP } from "@/lib/format";
 
 import type { BalanceDraft, DailyBalanceDay } from "../types";
@@ -41,7 +38,7 @@ const RecordedBalanceCell = ({
 
   return (
     <Input
-      className="input-xs w-28"
+      className="w-28 text-xs"
       inputMode="decimal"
       onChange={(event) => {
         meta.onDraftChange(day.date, { value: event.target.value });
@@ -61,9 +58,8 @@ const NoteCell = ({ row, table }: { row: Row<DailyBalanceDay>; table: Table<Dail
   const draft = meta.drafts[dateKey] ?? { note: "", value: "" };
 
   return (
-    <Input
-      as="textarea"
-      className="textarea-xs w-32 text-xs"
+    <TextArea
+      className="w-32 text-xs"
       onChange={(event) => {
         meta.onDraftChange(day.date, { note: event.target.value });
       }}
@@ -95,8 +91,8 @@ const ActionsCell = ({
 
   return (
     <Button
-      disabled={!canSave}
-      onClick={() => {
+      isDisabled={!canSave}
+      onPress={() => {
         meta.onSave(day.date);
       }}
       size="sm"

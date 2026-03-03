@@ -6,13 +6,13 @@ import {
   DateRangePicker,
   Label,
   ListBox,
+  RangeCalendar,
   Select,
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
-import { DateRangeCalendar } from "@/components/ui/DateRangeCalendar";
 import { useAuth } from "@/context/AuthContext";
 import { BalanceSummary } from "@/features/finance/balances/components/BalanceSummary";
 import { DailyBalancesPanel } from "@/features/finance/balances/components/DailyBalancesPanel";
@@ -108,7 +108,21 @@ export function DailyBalances() {
                     </DateField.Suffix>
                   </DateField.Group>
                   <DateRangePicker.Popover>
-                    <DateRangeCalendar visibleDuration={{ months: 2 }} />
+                    <RangeCalendar visibleDuration={{ months: 2 }}>
+                      <RangeCalendar.Header>
+                        <RangeCalendar.Heading />
+                        <RangeCalendar.NavButton slot="previous" />
+                        <RangeCalendar.NavButton slot="next" />
+                      </RangeCalendar.Header>
+                      <RangeCalendar.Grid>
+                        <RangeCalendar.GridHeader>
+                          {(day) => <RangeCalendar.HeaderCell>{day}</RangeCalendar.HeaderCell>}
+                        </RangeCalendar.GridHeader>
+                        <RangeCalendar.GridBody>
+                          {(date) => <RangeCalendar.Cell date={date} />}
+                        </RangeCalendar.GridBody>
+                      </RangeCalendar.Grid>
+                    </RangeCalendar>
                   </DateRangePicker.Popover>
                 </DateRangePicker>
                 <Select
@@ -173,7 +187,7 @@ export function DailyBalances() {
           />
         </>
       ) : (
-        <Alert color="danger">No tienes permisos para ver los saldos diarios.</Alert>
+        <Alert status="danger">No tienes permisos para ver los saldos diarios.</Alert>
       )}
     </section>
   );

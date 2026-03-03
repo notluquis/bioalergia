@@ -1,6 +1,5 @@
+import { Button } from "@heroui/react";
 import dayjs from "dayjs";
-
-import { Button } from "@/components/ui/Button";
 
 import type { LoanSummary } from "../types";
 
@@ -29,7 +28,7 @@ export function LoanList({
           <p className="text-default-500 text-xs">Resumen rápido de capital y estado.</p>
         </div>
         {canManage && (
-          <Button onClick={onCreateRequest} size="sm" type="button" variant="primary">
+          <Button onPress={onCreateRequest} size="sm" type="button" variant="primary">
             Nuevo préstamo
           </Button>
         )}

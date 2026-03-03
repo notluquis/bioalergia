@@ -1,8 +1,7 @@
-import { Chip } from "@heroui/react";
+import { Button, Chip } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/Button";
 
 import { formatAmount } from "@/features/finance/utils";
 

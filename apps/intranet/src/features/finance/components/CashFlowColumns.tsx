@@ -1,10 +1,9 @@
 import type { Counterpart, FinancialTransaction, TransactionCategory } from "@finanzas/db";
-import { Autocomplete, Chip, EmptyState, ListBox, SearchField } from "@heroui/react";
+import { Autocomplete, Button, Chip, EmptyState, ListBox, SearchField } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { ArrowRightLeft, ArrowUpDown, Pencil } from "lucide-react";
 import type { ReactNode } from "react";
-import { Button } from "@/components/ui/Button";
 import { isNonAccountableCategory } from "../utils/non-accountable-category";
 
 // Extend with relations
@@ -139,7 +138,7 @@ export const columns: ColumnDef<TransactionWithRelations>[] = [
       return (
         <Button
           variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          onPress={() => column.toggleSorting(column.getIsSorted() === "asc")}
           className="-ml-3 h-8 data-[state=open]:bg-accent"
         >
           Fecha
@@ -436,9 +435,8 @@ export const columns: ColumnDef<TransactionWithRelations>[] = [
             className="h-7 w-7 min-w-7 p-0"
             isIconOnly
             size="sm"
-            title="Reasignar periodo"
             variant="ghost"
-            onClick={() => table.options.meta?.onReallocate?.(row.original)}
+            onPress={() => table.options.meta?.onReallocate?.(row.original)}
           >
             <ArrowRightLeft className="h-3.5 w-3.5" />
           </Button>
@@ -447,9 +445,8 @@ export const columns: ColumnDef<TransactionWithRelations>[] = [
             className="h-7 w-7 min-w-7 p-0"
             isIconOnly
             size="sm"
-            title="Editar"
             variant="ghost"
-            onClick={() => table.options.meta?.onEdit?.(row.original)}
+            onPress={() => table.options.meta?.onEdit?.(row.original)}
           >
             <Pencil className="h-3.5 w-3.5" />
           </Button>

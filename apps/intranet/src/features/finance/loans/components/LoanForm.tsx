@@ -1,21 +1,24 @@
 import {
+  Alert,
+  Button,
   Calendar,
   Checkbox,
   DateField,
   DatePicker,
   FieldError,
+  Input as HeroInput,
   Label,
   ListBox,
   Select,
+  TextArea,
+  TextField,
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { useForm, useStore } from "@tanstack/react-form";
 import dayjs from "dayjs";
+import type React from "react";
 import { z } from "zod";
 
-import { Alert } from "@/components/ui/Alert";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
 import { zDateString } from "@/lib/api-validate";
 import { GRID_2_COL_MD } from "@/lib/styles";
 
@@ -43,6 +46,31 @@ type LoanFormData = z.infer<typeof loanFormSchema>;
 interface LoanFormProps {
   readonly onCancel: () => void;
   readonly onSubmit: (payload: CreateLoanPayload) => Promise<void>;
+}
+
+type LoanInputProps = {
+  as?: "input" | "textarea";
+  label: string;
+} & React.InputHTMLAttributes<HTMLInputElement> &
+  React.TextareaHTMLAttributes<HTMLTextAreaElement>;
+
+function LoanInputField({ as = "input", label, ...props }: LoanInputProps) {
+  return (
+    <TextField>
+      <Label>{label}</Label>
+      {as === "textarea" ? (
+        <TextArea
+          {...(props as React.TextareaHTMLAttributes<HTMLTextAreaElement>)}
+          variant="secondary"
+        />
+      ) : (
+        <HeroInput
+          {...(props as React.InputHTMLAttributes<HTMLInputElement>)}
+          variant="secondary"
+        />
+      )}
+    </TextField>
+  );
 }
 
 export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
@@ -84,7 +112,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
         <form.Field name="title">
           {(field) => (
             <div>
-              <Input
+              <LoanInputField
                 label="Título"
                 onBlur={field.handleBlur}
                 onChange={(e) => {
@@ -104,7 +132,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
         <form.Field name="borrowerName">
           {(field) => (
             <div>
-              <Input
+              <LoanInputField
                 label="Beneficiario"
                 onBlur={field.handleBlur}
                 onChange={(e) => {
@@ -158,7 +186,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
         <form.Field name="principalAmount">
           {(field) => (
             <div>
-              <Input
+              <LoanInputField
                 label="Monto Principal"
                 min={0}
                 onBlur={field.handleBlur}
@@ -181,7 +209,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
         <form.Field name="interestRate">
           {(field) => (
             <div>
-              <Input
+              <LoanInputField
                 label="Tasa de Interés Anual (%)"
                 min={0}
                 onBlur={field.handleBlur}
@@ -275,7 +303,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
         <form.Field name="totalInstallments">
           {(field) => (
             <div>
-              <Input
+              <LoanInputField
                 label="Número de Términos"
                 max={360}
                 min={1}
@@ -369,7 +397,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
       <form.Field name="notes">
         {(field) => (
           <div>
-            <Input
+            <LoanInputField
               as="textarea"
               label="Descripción"
               onBlur={field.handleBlur}
@@ -395,14 +423,14 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
 
       <div className="flex justify-end gap-3">
         <Button
-          disabled={form.state.isSubmitting}
-          onClick={onCancel}
+          isDisabled={form.state.isSubmitting}
+          onPress={onCancel}
           type="button"
           variant="secondary"
         >
           Cancelar
         </Button>
-        <Button disabled={form.state.isSubmitting || !form.state.canSubmit} type="submit">
+        <Button isDisabled={form.state.isSubmitting || !form.state.canSubmit} type="submit">
           {form.state.isSubmitting ? "Creando..." : "Crear préstamo"}
         </Button>
       </div>

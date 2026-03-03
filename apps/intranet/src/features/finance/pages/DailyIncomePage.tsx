@@ -1,11 +1,19 @@
 import type { Event } from "@finanzas/db/models";
 import { schema as schemaLite } from "@finanzas/db/schema-lite";
-import { Alert, Card, Chip, DateField, DateRangePicker, Label, Skeleton } from "@heroui/react";
+import {
+  Alert,
+  Card,
+  Chip,
+  DateField,
+  DateRangePicker,
+  Label,
+  RangeCalendar,
+  Skeleton,
+} from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { useClientQueries } from "@zenstackhq/tanstack-query/react";
 import dayjs from "dayjs";
 import { useState } from "react";
-import { DateRangeCalendar } from "@/components/ui/DateRangeCalendar";
 
 type EventForDaily = Pick<
   Event,
@@ -74,7 +82,21 @@ export function DailyIncomePage() {
             </DateField.Suffix>
           </DateField.Group>
           <DateRangePicker.Popover>
-            <DateRangeCalendar visibleDuration={{ months: 2 }} />
+            <RangeCalendar visibleDuration={{ months: 2 }}>
+              <RangeCalendar.Header>
+                <RangeCalendar.Heading />
+                <RangeCalendar.NavButton slot="previous" />
+                <RangeCalendar.NavButton slot="next" />
+              </RangeCalendar.Header>
+              <RangeCalendar.Grid>
+                <RangeCalendar.GridHeader>
+                  {(day) => <RangeCalendar.HeaderCell>{day}</RangeCalendar.HeaderCell>}
+                </RangeCalendar.GridHeader>
+                <RangeCalendar.GridBody>
+                  {(date) => <RangeCalendar.Cell date={date} />}
+                </RangeCalendar.GridBody>
+              </RangeCalendar.Grid>
+            </RangeCalendar>
           </DateRangePicker.Popover>
         </DateRangePicker>
       </div>
@@ -107,7 +129,7 @@ export function DailyIncomePage() {
         )}
 
         {!isLoading && sortedDates.length === 0 && (
-          <Alert color="warning">No se encontraron eventos para este periodo.</Alert>
+          <Alert status="warning">No se encontraron eventos para este periodo.</Alert>
         )}
 
         {sortedDates.map((date) => {

@@ -1,3 +1,4 @@
+import { Input } from "@heroui/react";
 import { useDebouncedValue } from "@tanstack/react-pacer";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import type { PaginationState, Updater } from "@tanstack/react-table";
@@ -6,7 +7,6 @@ import { type ChangeEvent, useState } from "react";
 
 import { DataTable } from "@/components/data-table/DataTable";
 import { TableRegion } from "@/components/data-table/TableRegion";
-import { Input } from "@/components/ui/Input";
 import { financeKeys } from "@/features/finance/queries";
 
 import { columns } from "../components/ReleaseColumns";
