@@ -3,6 +3,7 @@ import {
   Card,
   Chip,
   Description,
+  Dropdown,
   Input,
   Label,
   ListBox,
@@ -15,6 +16,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
+import { ChevronDown } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/context/ToastContext";
@@ -105,7 +107,6 @@ export function CalendarDteLinksOverview({
   const queryClient = useQueryClient();
   const toast = useToast();
   const [queryDraft, setQueryDraft] = useState(search.query ?? "");
-  const [autoLinkMode, setAutoLinkMode] = useState<AutoLinkMode>("selected_period");
 
   useEffect(() => {
     setQueryDraft(search.query ?? "");
@@ -177,21 +178,21 @@ export function CalendarDteLinksOverview({
   });
 
   const autoLinkPeriodMutation = useMutation({
-    mutationFn: async () =>
-      autoLinkMode === "all_periods"
+    mutationFn: async (mode: AutoLinkMode) =>
+      mode === "all_periods"
         ? autoLinkEventDteByAllPeriods()
         : autoLinkEventDteByPeriod({ period: search.period }),
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "No se pudo auto-vincular");
     },
     onSuccess: async (result) => {
-      if ("period" in result) {
+      if ("periodsProcessed" in result) {
         toast.success(
-          `Auto-vinculación ${result.period}: ${result.linked} vinculados, ${result.skipped} omitidos (${result.daysProcessed} días)`,
+          `Auto-vinculación completa: ${result.linked} vinculados, ${result.skipped} omitidos (${result.periodsProcessed} períodos)`,
         );
       } else {
         toast.success(
-          `Auto-vinculación completa: ${result.linked} vinculados, ${result.skipped} omitidos (${result.periodsProcessed} períodos)`,
+          `Auto-vinculación ${result.period}: ${result.linked} vinculados, ${result.skipped} omitidos (${result.daysProcessed} días)`,
         );
       }
       await refetchOverview();
@@ -258,38 +259,35 @@ export function CalendarDteLinksOverview({
               >
                 Filtrar
               </Button>
-              <Select
-                className="min-w-56"
-                value={autoLinkMode}
-                onChange={(value) =>
-                  setAutoLinkMode((value ? String(value) : "selected_period") as AutoLinkMode)
-                }
-              >
-                <Label>Modo auto-vinculación</Label>
-                <Select.Trigger>
-                  <Select.Value />
-                  <Select.Indicator />
-                </Select.Trigger>
-                <Select.Popover>
-                  <ListBox>
-                    <ListBox.Item id="selected_period" textValue="Solo período seleccionado">
-                      Solo período seleccionado ({search.period})
-                      <ListBox.ItemIndicator />
-                    </ListBox.Item>
-                    <ListBox.Item id="all_periods" textValue="Todos los períodos">
-                      Todos los períodos disponibles (hasta hoy)
-                      <ListBox.ItemIndicator />
-                    </ListBox.Item>
-                  </ListBox>
-                </Select.Popover>
-              </Select>
-              <Button
-                isLoading={autoLinkPeriodMutation.isPending}
-                variant="primary"
-                onPress={() => autoLinkPeriodMutation.mutate()}
-              >
-                {autoLinkMode === "all_periods" ? "Auto-vincular todos" : "Auto-vincular período"}
-              </Button>
+              <Dropdown>
+                <Dropdown.Trigger>
+                  <Button isLoading={autoLinkPeriodMutation.isPending} variant="primary">
+                    Auto-vincular
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </Dropdown.Trigger>
+                <Dropdown.Popover className="min-w-[300px]" placement="bottom end">
+                  <Dropdown.Menu
+                    aria-label="Opciones de auto-vinculación"
+                    onAction={(key) => autoLinkPeriodMutation.mutate(String(key) as AutoLinkMode)}
+                  >
+                    <Dropdown.Item
+                      id="selected_period"
+                      isDisabled={autoLinkPeriodMutation.isPending}
+                      textValue={`Solo período seleccionado (${search.period})`}
+                    >
+                      <Label>Solo período seleccionado ({search.period})</Label>
+                    </Dropdown.Item>
+                    <Dropdown.Item
+                      id="all_periods"
+                      isDisabled={autoLinkPeriodMutation.isPending}
+                      textValue="Todos los períodos disponibles (hasta hoy)"
+                    >
+                      <Label>Todos los períodos disponibles (hasta hoy)</Label>
+                    </Dropdown.Item>
+                  </Dropdown.Menu>
+                </Dropdown.Popover>
+              </Dropdown>
             </div>
           </div>
         </Card.Header>
@@ -360,7 +358,7 @@ export function CalendarDteLinksOverview({
             <Tabs.ListContainer>
               <Tabs.List aria-label="Filtro de estado" className="w-fit">
                 <Tabs.Tab id="all">
-                  Todos
+                  Todos (sin pendientes)
                   <Tabs.Indicator />
                 </Tabs.Tab>
                 <Tabs.Tab id="linked">

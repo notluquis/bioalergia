@@ -569,7 +569,13 @@ export async function listEventDteLinkOverview(params: {
     WHERE COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date)
       BETWEEN ${periodStart}::date AND ${periodEnd}::date
       AND (
-        ${status} = 'all'
+        (
+          ${status} = 'all'
+          AND (
+            l.id IS NOT NULL
+            OR COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
+          )
+        )
         OR (${status} = 'linked' AND l.id IS NOT NULL)
         OR (
           ${status} = 'unlinked'
@@ -612,7 +618,13 @@ export async function listEventDteLinkOverview(params: {
     WHERE COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date)
       BETWEEN ${periodStart}::date AND ${periodEnd}::date
       AND (
-        ${status} = 'all'
+        (
+          ${status} = 'all'
+          AND (
+            l.id IS NOT NULL
+            OR COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
+          )
+        )
         OR (${status} = 'linked' AND l.id IS NOT NULL)
         OR (
           ${status} = 'unlinked'
