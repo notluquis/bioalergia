@@ -68,7 +68,7 @@ export function PermissionsMatrixTable({
 
   return (
     <ScrollShadow className="w-full border-default-200 border-t" orientation="horizontal" size={56}>
-      <div className="min-w-fit" style={{ display: "grid", gridTemplateColumns }}>
+      <div className="grid min-w-fit" style={{ gridTemplateColumns }}>
         {/* Header Row */}
         <div className="sticky top-0 left-0 z-20 border-default-200 border-r border-b bg-default-50/70 px-4 py-4 text-left font-semibold">
           Permiso / acción

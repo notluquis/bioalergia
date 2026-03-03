@@ -78,7 +78,7 @@ export function EntryForm({ disabled = false, onChange, values }: EntryFormProps
               Nota (opcional)
             </Label>
             <TextArea
-              className="w-full"
+              className="w-full resize-none"
               disabled={disabled}
               id="input-nota"
               onChange={(e) => {
@@ -86,7 +86,6 @@ export function EntryForm({ disabled = false, onChange, values }: EntryFormProps
               }}
               placeholder="Detalles o comentarios..."
               rows={2}
-              style={{ resize: "none" }}
               value={values.nota}
               variant="secondary"
             />
