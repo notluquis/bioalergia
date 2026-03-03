@@ -1,8 +1,6 @@
-import { Label, ListBox, Select } from "@heroui/react";
+import { Button, Label, ListBox, Select } from "@heroui/react";
 import type { PaginationState, Table } from "@tanstack/react-table";
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
-
-import { Button } from "@/components/ui/Button";
 
 interface DataTablePaginationProps<TData> {
   readonly enablePageSizeSelector?: boolean;
@@ -76,8 +74,8 @@ export function DataTablePagination<TData>({
         <div className="flex items-center space-x-2">
           <Button
             className="hidden h-8 w-8 p-0 lg:flex"
-            disabled={!canPrevious}
-            onClick={() => {
+            isDisabled={!canPrevious}
+            onPress={() => {
               table.setPageIndex(0);
             }}
             variant="outline"
@@ -88,8 +86,8 @@ export function DataTablePagination<TData>({
           </Button>
           <Button
             className="h-8 w-8 p-0"
-            disabled={!canPrevious}
-            onClick={() => {
+            isDisabled={!canPrevious}
+            onPress={() => {
               table.setPageIndex(Math.max(0, currentPageIndex - 1));
             }}
             variant="outline"
@@ -100,8 +98,8 @@ export function DataTablePagination<TData>({
           </Button>
           <Button
             className="h-8 w-8 p-0"
-            disabled={!canNext}
-            onClick={() => {
+            isDisabled={!canNext}
+            onPress={() => {
               table.setPageIndex(canNext ? currentPageIndex + 1 : currentPageIndex);
             }}
             variant="outline"
@@ -112,8 +110,8 @@ export function DataTablePagination<TData>({
           </Button>
           <Button
             className="hidden h-8 w-8 p-0 lg:flex"
-            disabled={!canNext || !hasKnownTotalPages}
-            onClick={() => {
+            isDisabled={!canNext || !hasKnownTotalPages}
+            onPress={() => {
               const lastIndex = Math.max(1, totalPages) - 1;
               table.setPageIndex(lastIndex);
             }}

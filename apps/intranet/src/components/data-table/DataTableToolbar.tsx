@@ -1,9 +1,7 @@
+import { Button, Input, TextField } from "@heroui/react";
 import type { Table } from "@tanstack/react-table";
 import { Download, X } from "lucide-react";
 import Papa from "papaparse";
-
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
 
 import { DataTableFacetedFilter } from "./DataTableFacetedFilter";
 import { DataTableViewOptions } from "./DataTableViewOptions";
@@ -82,14 +80,16 @@ export function DataTableToolbar<TData>({
     <div className="flex flex-col items-start justify-between gap-4 py-1 sm:flex-row sm:items-center">
       <div className="flex w-full flex-1 flex-col items-start space-y-2 sm:flex-row sm:items-center sm:space-x-2 sm:space-y-0">
         {enableGlobalFilter && (
-          <Input
-            className="h-9 w-full sm:w-62.5 lg:w-87.5"
-            onChange={(event) => {
-              table.setGlobalFilter(event.target.value);
-            }}
-            placeholder="Filtrar..."
-            value={globalFilter ?? ""}
-          />
+          <TextField className="w-full sm:w-62.5 lg:w-87.5">
+            <Input
+              className="h-9"
+              onChange={(event) => {
+                table.setGlobalFilter(event.target.value);
+              }}
+              placeholder="Filtrar..."
+              value={globalFilter ?? ""}
+            />
+          </TextField>
         )}
         {filters.map((filter) => {
           const column = table.getColumn(filter.columnId);
@@ -107,7 +107,7 @@ export function DataTableToolbar<TData>({
         {isFiltered && (
           <Button
             className="h-8 px-2 lg:px-3"
-            onClick={() => {
+            onPress={() => {
               table.resetColumnFilters();
             }}
             variant="ghost"
@@ -119,7 +119,7 @@ export function DataTableToolbar<TData>({
       </div>
       <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-end">
         {enableExport && (
-          <Button className="h-8" onClick={handleExport} size="sm" variant="outline">
+          <Button className="h-8" onPress={handleExport} size="sm" variant="outline">
             <Download className="mr-2 h-4 w-4" />
             Exportar CSV
           </Button>

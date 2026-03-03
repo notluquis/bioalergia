@@ -1,9 +1,8 @@
-import { Chip, Description, Popover, ScrollShadow } from "@heroui/react";
+import { Button, Chip, Description, Popover, ScrollShadow } from "@heroui/react";
 import { useStore } from "@tanstack/react-store";
 import dayjs from "dayjs";
 import { Bell, CheckCheck, Trash2, X } from "lucide-react";
 import { useState } from "react";
-import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import {
   clearAll,
@@ -60,23 +59,23 @@ export function NotificationHistory() {
           <div className="flex gap-1">
             {unreadCount > 0 && (
               <Button
+                aria-label="Marcar todas como leídas"
                 size="sm"
                 variant="ghost"
                 isIconOnly
-                title="Marcar todas como leídas"
-                onClick={() => markAllAsRead()}
+                onPress={() => markAllAsRead()}
               >
                 <CheckCheck className="h-4 w-4 text-primary" />
               </Button>
             )}
             {hasNotifications && (
               <Button
+                aria-label="Borrar historial"
                 size="sm"
                 variant="ghost"
                 isIconOnly
-                title="Borrar historial"
                 className="text-danger"
-                onClick={() => clearAll()}
+                onPress={() => clearAll()}
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
@@ -164,13 +163,13 @@ function NotificationItem({ notification, onRead, onRemove }: Readonly<Notificat
         </div>
 
         <Button
+          aria-label="Eliminar notificación"
           type="button"
           onClick={(e) => {
             e.stopPropagation();
             onRemove(notification.id);
           }}
           className="absolute top-2 right-2 rounded-full p-1 text-default-400 opacity-0 transition-opacity hover:text-danger group-hover:opacity-100"
-          title="Eliminar notificación"
           variant="ghost"
           isIconOnly
           size="sm"

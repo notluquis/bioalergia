@@ -1,4 +1,4 @@
-import { Skeleton } from "@heroui/react";
+import { Button, Skeleton } from "@heroui/react";
 import {
   type Column,
   type ColumnDef,
@@ -25,7 +25,6 @@ import { useVirtualizer, type VirtualItem } from "@tanstack/react-virtual";
 import { ArrowUpDown, ChevronDown, ChevronUp } from "lucide-react";
 import React, { type CSSProperties, useRef, useState } from "react";
 
-import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 
 import { DataTablePagination } from "./DataTablePagination";

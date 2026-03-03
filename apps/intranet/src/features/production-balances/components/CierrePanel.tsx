@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/Button";
+import { Button } from "@heroui/react";
 import { fmtCLP } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -108,7 +108,7 @@ export function CierrePanel({
         <Button
           variant="outline"
           className="flex-1 rounded-xl"
-          isLoading={isSaving}
+          isPending={isSaving}
           isDisabled={isSaving}
           onPress={onSaveDraft}
         >

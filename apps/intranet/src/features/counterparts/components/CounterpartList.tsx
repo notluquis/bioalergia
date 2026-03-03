@@ -1,5 +1,4 @@
-import { Chip, ScrollShadow } from "@heroui/react";
-import { Button } from "@/components/ui/Button";
+import { Button, Chip, ScrollShadow } from "@heroui/react";
 
 import type { Counterpart, CounterpartCategory } from "../types";
 

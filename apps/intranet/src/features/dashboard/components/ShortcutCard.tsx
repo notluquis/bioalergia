@@ -1,6 +1,5 @@
+import { Button } from "@heroui/react";
 import { useNavigate } from "@tanstack/react-router";
-
-import { Button } from "@/components/ui/Button";
 export function ShortcutCard({
   accent,
   description,
@@ -28,7 +27,7 @@ export function ShortcutCard({
 function ShortcutButton({ to }: { to: string }) {
   const navigate = useNavigate();
   return (
-    <Button className="mt-5" onClick={() => navigate({ to: to })} type="button" variant="primary">
+    <Button className="mt-5" onPress={() => navigate({ to: to })} type="button" variant="primary">
       Abrir
     </Button>
   );

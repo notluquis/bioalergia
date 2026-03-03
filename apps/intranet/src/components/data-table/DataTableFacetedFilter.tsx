@@ -1,10 +1,7 @@
-import { Dropdown, Label, type Selection } from "@heroui/react";
+import { Button, Dropdown, Input, Label, type Selection, TextField } from "@heroui/react";
 import type { Column } from "@tanstack/react-table";
 import { PlusCircle } from "lucide-react";
 import { type ComponentType, useState } from "react";
-
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
 
 interface DataTableFacetedFilterProps<TData, TValue> {
   readonly column?: Column<TData, TValue>;
@@ -62,17 +59,19 @@ export function DataTableFacetedFilter<TData, TValue>({
       </Dropdown.Trigger>
       <Dropdown.Popover className="w-50 p-0" placement="bottom start">
         <div className="border-default-200/60 border-b p-2">
-          <Input
-            className="h-8"
-            onChange={(e) => {
-              setSearch(e.target.value);
-            }}
-            onKeyDown={(e) => {
-              e.stopPropagation();
-            }}
-            placeholder={title}
-            value={search}
-          />
+          <TextField>
+            <Input
+              className="h-8"
+              onChange={(e) => {
+                setSearch(e.target.value);
+              }}
+              onKeyDown={(e) => {
+                e.stopPropagation();
+              }}
+              placeholder={title}
+              value={search}
+            />
+          </TextField>
         </div>
         <Dropdown.Menu
           aria-label={title}

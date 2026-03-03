@@ -1,7 +1,7 @@
+import { Button } from "@heroui/react";
 import dayjs from "dayjs";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useMemo } from "react";
-import { Button } from "@/components/ui/Button";
 
 import { fmtCLP } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -39,10 +39,10 @@ export function WeekStrip({
       <div className="mb-4 flex items-center justify-between rounded-2xl border border-default-100 bg-default-50/30 px-4 py-2">
         <span className="text-default-500 text-sm">{weekData?.weekLabel ?? "Cargando..."}</span>
         <div className="flex items-center gap-2">
-          <Button isIconOnly size="sm" variant="ghost" onClick={onPrevWeek}>
+          <Button isIconOnly size="sm" variant="ghost" onPress={onPrevWeek}>
             <ChevronLeft className="size-4" />
           </Button>
-          <Button isIconOnly size="sm" variant="ghost" onClick={onNextWeek}>
+          <Button isIconOnly size="sm" variant="ghost" onPress={onNextWeek}>
             <ChevronRight className="size-4" />
           </Button>
         </div>
@@ -55,19 +55,19 @@ export function WeekStrip({
       {/* Week header */}
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Button isIconOnly size="sm" variant="ghost" onClick={onPrevWeek}>
+          <Button isIconOnly size="sm" variant="ghost" onPress={onPrevWeek}>
             <ChevronLeft className="size-4" />
           </Button>
           <span className="font-medium text-default-700 text-sm">
             SEM {weekData?.weekLabel ?? "..."}
           </span>
-          <Button isIconOnly size="sm" variant="ghost" onClick={onNextWeek}>
+          <Button isIconOnly size="sm" variant="ghost" onPress={onNextWeek}>
             <ChevronRight className="size-4" />
           </Button>
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={onGoToToday}>
+          <Button variant="outline" size="sm" onPress={onGoToToday}>
             Hoy
           </Button>
         </div>

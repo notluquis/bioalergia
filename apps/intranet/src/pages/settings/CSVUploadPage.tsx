@@ -1,4 +1,15 @@
-import { Alert, Button, Card, Chip, Label, ListBox, Select, Tooltip } from "@heroui/react";
+import {
+  Alert,
+  Button,
+  Card,
+  Chip,
+  Input,
+  Label,
+  ListBox,
+  Select,
+  TextField,
+  Tooltip,
+} from "@heroui/react";
 import { useMutation } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { AlertCircle, CheckCircle, FileUp, Loader2, Lock } from "lucide-react";
@@ -6,7 +17,6 @@ import Papa from "papaparse";
 import { useState } from "react";
 
 import { DataTable } from "@/components/data-table/DataTable";
-import { FileInput } from "@/components/ui/FileInput";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import type { AuthContextType } from "@/features/auth/hooks/use-auth";
@@ -624,7 +634,9 @@ function FileUploadSection({
         </Card.Description>
       </Card.Header>
       <Card.Content>
-        <FileInput accept=".csv" disabled={disabled} multiple onChange={onFileChange} />
+        <TextField>
+          <Input accept=".csv" disabled={disabled} multiple onChange={onFileChange} type="file" />
+        </TextField>
       </Card.Content>
     </Card>
   );
