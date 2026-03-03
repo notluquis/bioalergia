@@ -6,6 +6,7 @@ import {
   Description,
   Label,
   Popover,
+  RangeCalendar,
   Skeleton,
   Spinner,
 } from "@heroui/react";
@@ -42,7 +43,6 @@ dayjs.locale("es");
 
 import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/data-table/DataTable";
-import { DateRangeCalendar } from "@/components/ui/DateRangeCalendar";
 import { calendarQueries } from "@/features/calendar/queries";
 import type { TreatmentAnalytics, TreatmentAnalyticsFilters } from "@/features/calendar/types";
 import { formatCurrency } from "@/lib/utils";
@@ -918,13 +918,15 @@ function AnalyticsFilters({
           >
             <Label>Rango personalizado</Label>
             <DateField.Group>
-              <DateField.Input slot="start">
-                {(segment) => <DateField.Segment segment={segment} />}
-              </DateField.Input>
-              <DateRangePicker.RangeSeparator />
-              <DateField.Input slot="end">
-                {(segment) => <DateField.Segment segment={segment} />}
-              </DateField.Input>
+              <DateField.InputContainer>
+                <DateField.Input slot="start">
+                  {(segment) => <DateField.Segment segment={segment} />}
+                </DateField.Input>
+                <DateRangePicker.RangeSeparator />
+                <DateField.Input slot="end">
+                  {(segment) => <DateField.Segment segment={segment} />}
+                </DateField.Input>
+              </DateField.InputContainer>
               <DateField.Suffix>
                 <DateRangePicker.Trigger>
                   <DateRangePicker.TriggerIndicator />
@@ -932,7 +934,29 @@ function AnalyticsFilters({
               </DateField.Suffix>
             </DateField.Group>
             <DateRangePicker.Popover>
-              <DateRangeCalendar visibleDuration={{ months: 2 }} />
+              <RangeCalendar aria-label="Rango personalizado" visibleDuration={{ months: 2 }}>
+                <RangeCalendar.Header>
+                  <RangeCalendar.YearPickerTrigger>
+                    <RangeCalendar.YearPickerTriggerHeading />
+                    <RangeCalendar.YearPickerTriggerIndicator />
+                  </RangeCalendar.YearPickerTrigger>
+                  <RangeCalendar.NavButton slot="previous" />
+                  <RangeCalendar.NavButton slot="next" />
+                </RangeCalendar.Header>
+                <RangeCalendar.Grid>
+                  <RangeCalendar.GridHeader>
+                    {(day) => <RangeCalendar.HeaderCell>{day}</RangeCalendar.HeaderCell>}
+                  </RangeCalendar.GridHeader>
+                  <RangeCalendar.GridBody>
+                    {(date) => <RangeCalendar.Cell date={date} />}
+                  </RangeCalendar.GridBody>
+                </RangeCalendar.Grid>
+                <RangeCalendar.YearPickerGrid>
+                  <RangeCalendar.YearPickerGridBody>
+                    {({ year }) => <RangeCalendar.YearPickerCell year={year} />}
+                  </RangeCalendar.YearPickerGridBody>
+                </RangeCalendar.YearPickerGrid>
+              </RangeCalendar>
             </DateRangePicker.Popover>
           </DateRangePicker>
 

@@ -7,6 +7,7 @@ import {
   FieldError,
   Label,
   ListBox,
+  RangeCalendar,
   Select,
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
@@ -16,7 +17,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { z } from "zod";
 import { Button } from "@/components/ui/Button";
-import { DateRangeCalendar } from "@/components/ui/DateRangeCalendar";
 import { Input } from "@/components/ui/Input";
 import { apiClient } from "@/lib/api-client";
 import { toast } from "@/lib/toast-interceptor";
@@ -347,13 +347,15 @@ function MedicalCertificatePage() {
                       >
                         <Label>Reposo: Desde / Hasta</Label>
                         <DateField.Group>
-                          <DateField.Input slot="start">
-                            {(segment) => <DateField.Segment segment={segment} />}
-                          </DateField.Input>
-                          <DateRangePicker.RangeSeparator />
-                          <DateField.Input slot="end">
-                            {(segment) => <DateField.Segment segment={segment} />}
-                          </DateField.Input>
+                          <DateField.InputContainer>
+                            <DateField.Input slot="start">
+                              {(segment) => <DateField.Segment segment={segment} />}
+                            </DateField.Input>
+                            <DateRangePicker.RangeSeparator />
+                            <DateField.Input slot="end">
+                              {(segment) => <DateField.Segment segment={segment} />}
+                            </DateField.Input>
+                          </DateField.InputContainer>
                           <DateField.Suffix>
                             <DateRangePicker.Trigger>
                               <DateRangePicker.TriggerIndicator />
@@ -361,7 +363,34 @@ function MedicalCertificatePage() {
                           </DateField.Suffix>
                         </DateField.Group>
                         <DateRangePicker.Popover>
-                          <DateRangeCalendar visibleDuration={{ months: 2 }} />
+                          <RangeCalendar
+                            aria-label="Reposo médico: desde y hasta"
+                            visibleDuration={{ months: 2 }}
+                          >
+                            <RangeCalendar.Header>
+                              <RangeCalendar.YearPickerTrigger>
+                                <RangeCalendar.YearPickerTriggerHeading />
+                                <RangeCalendar.YearPickerTriggerIndicator />
+                              </RangeCalendar.YearPickerTrigger>
+                              <RangeCalendar.NavButton slot="previous" />
+                              <RangeCalendar.NavButton slot="next" />
+                            </RangeCalendar.Header>
+                            <RangeCalendar.Grid>
+                              <RangeCalendar.GridHeader>
+                                {(day) => (
+                                  <RangeCalendar.HeaderCell>{day}</RangeCalendar.HeaderCell>
+                                )}
+                              </RangeCalendar.GridHeader>
+                              <RangeCalendar.GridBody>
+                                {(date) => <RangeCalendar.Cell date={date} />}
+                              </RangeCalendar.GridBody>
+                            </RangeCalendar.Grid>
+                            <RangeCalendar.YearPickerGrid>
+                              <RangeCalendar.YearPickerGridBody>
+                                {({ year }) => <RangeCalendar.YearPickerCell year={year} />}
+                              </RangeCalendar.YearPickerGridBody>
+                            </RangeCalendar.YearPickerGrid>
+                          </RangeCalendar>
                         </DateRangePicker.Popover>
                       </DateRangePicker>
                     )}

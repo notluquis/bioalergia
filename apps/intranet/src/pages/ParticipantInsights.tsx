@@ -1,9 +1,16 @@
-import { Card, DateField, DateRangePicker, Label, ListBox, Select } from "@heroui/react";
+import {
+  Card,
+  DateField,
+  DateRangePicker,
+  Label,
+  ListBox,
+  RangeCalendar,
+  Select,
+} from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { DataTable } from "@/components/data-table/DataTable";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
-import { DateRangeCalendar } from "@/components/ui/DateRangeCalendar";
 import { Input } from "@/components/ui/Input";
 import {
   getCounterpartsColumns,
@@ -113,7 +120,29 @@ export function ParticipantInsightsPage() {
                 </DateField.Suffix>
               </DateField.Group>
               <DateRangePicker.Popover>
-                <DateRangeCalendar visibleDuration={{ months: 2 }} />
+                <RangeCalendar aria-label="Rango personalizado" visibleDuration={{ months: 2 }}>
+                  <RangeCalendar.Header>
+                    <RangeCalendar.YearPickerTrigger>
+                      <RangeCalendar.YearPickerTriggerHeading />
+                      <RangeCalendar.YearPickerTriggerIndicator />
+                    </RangeCalendar.YearPickerTrigger>
+                    <RangeCalendar.NavButton slot="previous" />
+                    <RangeCalendar.NavButton slot="next" />
+                  </RangeCalendar.Header>
+                  <RangeCalendar.Grid>
+                    <RangeCalendar.GridHeader>
+                      {(day) => <RangeCalendar.HeaderCell>{day}</RangeCalendar.HeaderCell>}
+                    </RangeCalendar.GridHeader>
+                    <RangeCalendar.GridBody>
+                      {(date) => <RangeCalendar.Cell date={date} />}
+                    </RangeCalendar.GridBody>
+                  </RangeCalendar.Grid>
+                  <RangeCalendar.YearPickerGrid>
+                    <RangeCalendar.YearPickerGridBody>
+                      {({ year }) => <RangeCalendar.YearPickerCell year={year} />}
+                    </RangeCalendar.YearPickerGridBody>
+                  </RangeCalendar.YearPickerGrid>
+                </RangeCalendar>
               </DateRangePicker.Popover>
             </DateRangePicker>
 
