@@ -1,4 +1,4 @@
-import { Button, Chip } from "@heroui/react";
+import { Badge, Button } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { ChevronDown, ChevronRight } from "lucide-react";
@@ -94,9 +94,9 @@ export const columns: ColumnDef<SettlementTransaction, unknown>[] = [
   {
     accessorKey: "transactionType",
     cell: ({ row }) => (
-      <Chip className="whitespace-nowrap" size="sm" variant="tertiary">
+      <Badge className="whitespace-nowrap" size="sm" variant="secondary">
         {row.original.transactionType}
-      </Chip>
+      </Badge>
     ),
 
     header: "Tipo",
@@ -151,13 +151,13 @@ export const columns: ColumnDef<SettlementTransaction, unknown>[] = [
     cell: ({ row }) => (
       <div className="text-center">
         {row.original.isReleased ? (
-          <Chip className="font-bold" color="success" size="sm" variant="soft">
+          <Badge className="font-bold" color="success" size="sm" variant="soft">
             SÍ
-          </Chip>
+          </Badge>
         ) : (
-          <Chip color="warning" size="sm" variant="soft">
+          <Badge color="warning" size="sm" variant="soft">
             NO
-          </Chip>
+          </Badge>
         )}
       </div>
     ),

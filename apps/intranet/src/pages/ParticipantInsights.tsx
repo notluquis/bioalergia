@@ -97,13 +97,15 @@ export function ParticipantInsightsPage() {
             >
               <Label>Rango personalizado</Label>
               <DateField.Group>
-                <DateField.Input slot="start">
-                  {(segment) => <DateField.Segment segment={segment} />}
-                </DateField.Input>
-                <DateRangePicker.RangeSeparator />
-                <DateField.Input slot="end">
-                  {(segment) => <DateField.Segment segment={segment} />}
-                </DateField.Input>
+                <DateField.InputContainer>
+                  <DateField.Input slot="start">
+                    {(segment) => <DateField.Segment segment={segment} />}
+                  </DateField.Input>
+                  <DateRangePicker.RangeSeparator />
+                  <DateField.Input slot="end">
+                    {(segment) => <DateField.Segment segment={segment} />}
+                  </DateField.Input>
+                </DateField.InputContainer>
                 <DateField.Suffix>
                   <DateRangePicker.Trigger>
                     <DateRangePicker.TriggerIndicator />

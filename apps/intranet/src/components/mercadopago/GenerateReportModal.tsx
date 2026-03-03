@@ -168,9 +168,11 @@ export function GenerateReportModal({ onClose, open, reportType }: Props) {
                     >
                       <Label>Fecha Inicio</Label>
                       <DateField.Group>
-                        <DateField.Input>
-                          {(segment) => <DateField.Segment segment={segment} />}
-                        </DateField.Input>
+                        <DateField.InputContainer>
+                          <DateField.Input>
+                            {(segment) => <DateField.Segment segment={segment} />}
+                          </DateField.Input>
+                        </DateField.InputContainer>
                         <DateField.Suffix>
                           <DatePicker.Trigger>
                             <DatePicker.TriggerIndicator />
@@ -226,9 +228,11 @@ export function GenerateReportModal({ onClose, open, reportType }: Props) {
                     >
                       <Label>Fecha Fin</Label>
                       <DateField.Group>
-                        <DateField.Input>
-                          {(segment) => <DateField.Segment segment={segment} />}
-                        </DateField.Input>
+                        <DateField.InputContainer>
+                          <DateField.Input>
+                            {(segment) => <DateField.Segment segment={segment} />}
+                          </DateField.Input>
+                        </DateField.InputContainer>
                         <DateField.Suffix>
                           <DatePicker.Trigger>
                             <DatePicker.TriggerIndicator />

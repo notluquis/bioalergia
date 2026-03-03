@@ -1,4 +1,4 @@
-import { Button, Chip } from "@heroui/react";
+import { Badge, Button } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { ArrowDownToLine, ArrowUpFromLine, ChevronDown, ChevronRight } from "lucide-react";
@@ -76,9 +76,9 @@ export const columns: ColumnDef<ReleaseTransaction>[] = [
   {
     accessorKey: "recordType",
     cell: ({ row }) => (
-      <Chip className="whitespace-nowrap" size="sm" variant="tertiary">
+      <Badge className="whitespace-nowrap" size="sm" variant="secondary">
         {row.original.recordType}
-      </Chip>
+      </Badge>
     ),
 
     header: "Tipo",
