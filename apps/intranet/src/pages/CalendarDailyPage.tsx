@@ -1,9 +1,7 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
 import { Filter } from "lucide-react";
-import { Button } from "@/components/ui/Button";
-import { useToast } from "@/context/ToastContext";
-import { autoLinkEventDteByDay, fetchEventDteLinksByDay } from "@/features/calendar/api";
+import { fetchEventDteLinksByDay } from "@/features/calendar/api";
 import { CalendarFiltersPopover } from "@/features/calendar/components/CalendarFiltersPopover";
 import { CalendarSkeleton } from "@/features/calendar/components/CalendarSkeleton";
 import { DailyEventCard } from "@/features/calendar/components/DailyEventCard";
@@ -24,7 +22,6 @@ function CalendarDailyPage() {
   const navigate = routeApi.useNavigate();
   const search = routeApi.useSearch();
   const queryClient = useQueryClient();
-  const toast = useToast();
 
   const { appliedFilters, availableCategories, currentSelectedDate, daily, defaults, loading } =
     useCalendarEvents();
@@ -52,27 +49,10 @@ function CalendarDailyPage() {
 
   const hasEvents = (selectedDayEntry?.events.length ?? 0) > 0;
   const selectedDateString = dayjs(currentSelectedDate).format("YYYY-MM-DD");
-  const todayString = dayjs().format("YYYY-MM-DD");
-  const isFutureDay = selectedDateString > todayString;
 
   const linksByDayQuery = useQuery({
     queryFn: () => fetchEventDteLinksByDay(selectedDateString),
     queryKey: ["calendar", "dte-link", "by-day", selectedDateString],
-  });
-
-  const autoLinkMutation = useMutation({
-    mutationFn: () => autoLinkEventDteByDay({ date: selectedDateString }),
-    onSuccess: async (result) => {
-      toast.success(
-        `Auto-vinculación completada: ${result.linked} vinculados, ${result.skipped} omitidos`,
-      );
-      await queryClient.invalidateQueries({
-        queryKey: ["calendar", "dte-link", "by-day", selectedDateString],
-      });
-    },
-    onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "No se pudo auto-vincular");
-    },
   });
 
   const linksByEvent = new Map(
@@ -96,18 +76,6 @@ function CalendarDailyPage() {
           allowedWeekdays={[1, 2, 3, 4, 5, 6]}
           rightSlot={
             <div className="flex items-center gap-2">
-              <Button
-                isDisabled={autoLinkMutation.isPending || isFutureDay}
-                size="sm"
-                variant="secondary"
-                onPress={() => autoLinkMutation.mutate()}
-              >
-                {isFutureDay
-                  ? "Auto-vincular DTE (disponible al llegar la fecha)"
-                  : autoLinkMutation.isPending
-                    ? "Auto-vinculando..."
-                    : "Auto-vincular DTE"}
-              </Button>
               <CalendarFiltersPopover
                 applyCount={daily?.totals.events}
                 availableCategories={availableCategories}

@@ -1,9 +1,42 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
+import dayjs from "dayjs";
 import { lazy } from "react";
+import { z } from "zod";
 
 const DTEAnalyticsPage = lazy(() =>
   import("@/pages/finanzas/DTEAnalyticsPage").then((m) => ({ default: m.DTEAnalyticsPage })),
 );
+
+const dteAnalyticsSearchSchema = z
+  .object({
+    page: z.coerce.number().int().min(0).optional().catch(0),
+    pageSize: z.coerce.number().int().min(10).max(100).optional().catch(25),
+    period: z
+      .string()
+      .regex(/^\d{4}-\d{2}$/)
+      .optional(),
+    query: z.string().optional(),
+    status: z.enum(["all", "linked", "pending_issuance", "unlinked"]).optional(),
+    tab: z
+      .enum([
+        "event-links",
+        "purchases-comparison",
+        "purchases-details",
+        "purchases-monthly",
+        "sales-comparison",
+        "sales-details",
+        "sales-monthly",
+      ])
+      .optional(),
+  })
+  .transform((search) => ({
+    page: search.page ?? 0,
+    pageSize: search.pageSize ?? 25,
+    period: search.period ?? dayjs().format("YYYY-MM"),
+    query: search.query,
+    status: search.status ?? "all",
+    tab: search.tab ?? "purchases-monthly",
+  }));
 
 export const Route = createFileRoute("/_authed/finanzas/dte-analytics")({
   component: DTEAnalyticsPage,
@@ -24,4 +57,5 @@ export const Route = createFileRoute("/_authed/finanzas/dte-analytics")({
       throw routeApi.redirect({ to: "/" });
     }
   },
+  validateSearch: (search: Record<string, unknown>) => dteAnalyticsSearchSchema.parse(search),
 });

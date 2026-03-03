@@ -968,6 +968,125 @@ export async function autoLinkEventDate(params: {
   };
 }
 
+export async function autoLinkEventPeriod(params: {
+  minScore?: number;
+  period: string;
+  userId: number;
+}) {
+  const periodDate = dayjs(`${params.period}-01`, "YYYY-MM-DD", true);
+  if (!periodDate.isValid()) {
+    throw new Error("Periodo inválido. Usa formato YYYY-MM");
+  }
+
+  const today = dayjs().tz(TIMEZONE).format("YYYY-MM-DD");
+  const periodStart = periodDate.startOf("month").format("YYYY-MM-DD");
+  const periodEnd = periodDate.endOf("month").format("YYYY-MM-DD");
+  const maxDate = periodEnd < today ? periodEnd : today;
+
+  if (periodStart > maxDate) {
+    return {
+      period: params.period,
+      totalEvents: 0,
+      linked: 0,
+      skipped: 0,
+      daysProcessed: 0,
+      details: [] as Array<{ date: string; linked: number; skipped: number; totalEvents: number }>,
+    };
+  }
+
+  const dateRows = await db.$queryRaw<Array<{ eventDate: string }>>`
+    SELECT DISTINCT
+      COALESCE(
+        to_char(e.start_date, 'YYYY-MM-DD'),
+        to_char((e.start_date_time AT TIME ZONE ${TIMEZONE})::date, 'YYYY-MM-DD')
+      ) AS "eventDate"
+    FROM events e
+    WHERE COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date)
+      BETWEEN ${periodStart}::date AND ${maxDate}::date
+    ORDER BY "eventDate" ASC
+  `;
+
+  const details: Array<{ date: string; linked: number; skipped: number; totalEvents: number }> = [];
+  let totalEvents = 0;
+  let linked = 0;
+  let skipped = 0;
+
+  for (const row of dateRows) {
+    const result = await autoLinkEventDate({
+      date: row.eventDate,
+      minScore: params.minScore,
+      userId: params.userId,
+    });
+    totalEvents += result.totalEvents;
+    linked += result.linked;
+    skipped += result.skipped;
+    details.push({
+      date: row.eventDate,
+      linked: result.linked,
+      skipped: result.skipped,
+      totalEvents: result.totalEvents,
+    });
+  }
+
+  return {
+    period: params.period,
+    totalEvents,
+    linked,
+    skipped,
+    daysProcessed: details.length,
+    details,
+  };
+}
+
+export async function autoLinkAllEventPeriods(params: { minScore?: number; userId: number }) {
+  const today = dayjs().tz(TIMEZONE).format("YYYY-MM-DD");
+
+  const periodRows = await db.$queryRaw<Array<{ period: string }>>`
+    SELECT DISTINCT
+      to_char(COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date), 'YYYY-MM') AS "period"
+    FROM events e
+    WHERE COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
+    ORDER BY "period" DESC
+  `;
+
+  const details: Array<{
+    daysProcessed: number;
+    linked: number;
+    period: string;
+    skipped: number;
+    totalEvents: number;
+  }> = [];
+  let totalEvents = 0;
+  let linked = 0;
+  let skipped = 0;
+
+  for (const row of periodRows) {
+    const result = await autoLinkEventPeriod({
+      minScore: params.minScore,
+      period: row.period,
+      userId: params.userId,
+    });
+    totalEvents += result.totalEvents;
+    linked += result.linked;
+    skipped += result.skipped;
+    details.push({
+      period: row.period,
+      linked: result.linked,
+      skipped: result.skipped,
+      totalEvents: result.totalEvents,
+      daysProcessed: result.daysProcessed,
+    });
+  }
+
+  return {
+    periodsProcessed: details.length,
+    totalEvents,
+    linked,
+    skipped,
+    details,
+  };
+}
+
 export function normalizeLinkDate(input: string): string {
   const parsed = dayjs(input, "YYYY-MM-DD", true);
   if (!parsed.isValid()) {

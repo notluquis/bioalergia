@@ -387,6 +387,44 @@ export const EventDteAutoLinkResponseSchema = z.strictObject({
   status: z.literal("success"),
 });
 
+export const EventDteAutoLinkPeriodResponseSchema = z.strictObject({
+  data: z.strictObject({
+    daysProcessed: z.number(),
+    details: z.array(
+      z.strictObject({
+        date: z.string(),
+        linked: z.number(),
+        skipped: z.number(),
+        totalEvents: z.number(),
+      }),
+    ),
+    linked: z.number(),
+    period: z.string(),
+    skipped: z.number(),
+    totalEvents: z.number(),
+  }),
+  status: z.literal("success"),
+});
+
+export const EventDteAutoLinkAllPeriodsResponseSchema = z.strictObject({
+  data: z.strictObject({
+    details: z.array(
+      z.strictObject({
+        daysProcessed: z.number(),
+        linked: z.number(),
+        period: z.string(),
+        skipped: z.number(),
+        totalEvents: z.number(),
+      }),
+    ),
+    linked: z.number(),
+    periodsProcessed: z.number(),
+    skipped: z.number(),
+    totalEvents: z.number(),
+  }),
+  status: z.literal("success"),
+});
+
 export const EventDteOverviewResponseSchema = z.strictObject({
   data: z.strictObject({
     items: z.array(

@@ -1,14 +1,6 @@
-import { Skeleton } from "@heroui/react";
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import dayjs from "dayjs";
-import { lazy, Suspense } from "react";
 import { z } from "zod";
-
-import { fetchEventDteLinksOverview } from "@/features/calendar/api";
-
-const CalendarDteLinksPage = lazy(() =>
-  import("@/pages/CalendarDteLinksPage").then((m) => ({ default: m.CalendarDteLinksPage })),
-);
 
 const routeApi = getRouteApi("/_authed/calendar/dte-links");
 
@@ -35,38 +27,31 @@ type DteLinksSearchParams = z.infer<typeof dteLinksSearchSchema>;
 
 export const Route = createFileRoute("/_authed/calendar/dte-links")({
   staticData: {
-    nav: { iconKey: "Link2", label: "Vínculos DTE", order: 3, section: "Calendario" },
-    permission: { action: "read", subject: "CalendarDaily" },
-    title: "Vínculos DTE",
+    permission: { action: "read", subject: "DTEPurchaseDetail" },
+    title: "Vínculos DTE (legacy)",
   },
   beforeLoad: ({ context }) => {
-    if (!context.can("read", "CalendarDaily")) {
+    if (!context.can("read", "DTEPurchaseDetail")) {
       // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw routeApi.redirect({ to: "/" });
     }
   },
-  validateSearch: (search: Record<string, unknown>): DteLinksSearchParams =>
-    dteLinksSearchSchema.parse(search),
-  loaderDeps: ({ search }) => search,
-  component: () => (
-    <Suspense
-      fallback={
-        <div className="space-y-3 p-4">
-          <Skeleton className="h-12 w-56 rounded-lg" />
-          <Skeleton className="h-80 w-full rounded-xl" />
-        </div>
-      }
-    >
-      <CalendarDteLinksPage />
-    </Suspense>
-  ),
-  loader: async ({ deps }) => {
-    await fetchEventDteLinksOverview({
-      page: deps.page,
-      pageSize: deps.pageSize,
-      period: deps.period,
-      query: deps.query,
-      status: deps.status,
+  loader: ({ location }) => {
+    const parsed = dteLinksSearchSchema.parse(location.search);
+    // eslint-disable-next-line @typescript-eslint/only-throw-error
+    throw routeApi.redirect({
+      to: "/finanzas/dte-analytics",
+      search: {
+        page: parsed.page,
+        pageSize: parsed.pageSize,
+        period: parsed.period,
+        query: parsed.query,
+        status: parsed.status,
+        tab: "event-links",
+      },
     });
   },
+  validateSearch: (search: Record<string, unknown>): DteLinksSearchParams =>
+    dteLinksSearchSchema.parse(search),
+  component: () => null,
 });

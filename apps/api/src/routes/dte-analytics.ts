@@ -12,7 +12,9 @@ import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { zValidator } from "../lib/zod-validator";
 import {
+  autoLinkAllEventPeriods,
   autoLinkEventDate,
+  autoLinkEventPeriod,
   confirmEventDteLink,
   getEventDteSuggestions,
   listEventDteLinkOverview,
@@ -115,6 +117,15 @@ const unlinkEventLinkSchema = z.object({
 
 const autoLinkDaySchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  minScore: z.number().min(0).max(100).optional(),
+});
+
+const autoLinkPeriodSchema = z.object({
+  minScore: z.number().min(0).max(100).optional(),
+  period: z.string().regex(/^\d{4}-\d{2}$/),
+});
+
+const autoLinkAllPeriodsSchema = z.object({
   minScore: z.number().min(0).max(100).optional(),
 });
 
@@ -552,6 +563,83 @@ dteAnalyticsRoutes.post(
         {
           status: "error",
           message: error instanceof Error ? error.message : "Failed to confirm link",
+        },
+        400,
+      );
+    }
+  },
+);
+
+/**
+ * POST /event-links/auto-link-period - Auto-link confident matches for a whole month (up to today)
+ */
+dteAnalyticsRoutes.post(
+  "/event-links/auto-link-period",
+  zValidator("json", autoLinkPeriodSchema),
+  async (c) => {
+    const user = await getSessionUser(c);
+    if (!user) {
+      return reply(c, { status: "error", message: "Unauthorized" }, 401);
+    }
+
+    const canWriteCalendar = await hasPermission(user.id, "update", "CalendarEvent");
+    const canReadDte = await hasPermission(user.id, "read", "DTEPurchaseDetail");
+    if (!canWriteCalendar || !canReadDte) {
+      return reply(c, { status: "error", message: "Forbidden" }, 403);
+    }
+
+    try {
+      const { minScore, period } = c.req.valid("json");
+      const data = await autoLinkEventPeriod({
+        minScore,
+        period,
+        userId: user.id,
+      });
+      return reply(c, { status: "success", data });
+    } catch (error) {
+      return reply(
+        c,
+        {
+          status: "error",
+          message: error instanceof Error ? error.message : "Failed to auto link event period",
+        },
+        400,
+      );
+    }
+  },
+);
+
+/**
+ * POST /event-links/auto-link-all-periods - Auto-link confident matches across all periods up to today
+ */
+dteAnalyticsRoutes.post(
+  "/event-links/auto-link-all-periods",
+  zValidator("json", autoLinkAllPeriodsSchema),
+  async (c) => {
+    const user = await getSessionUser(c);
+    if (!user) {
+      return reply(c, { status: "error", message: "Unauthorized" }, 401);
+    }
+
+    const canWriteCalendar = await hasPermission(user.id, "update", "CalendarEvent");
+    const canReadDte = await hasPermission(user.id, "read", "DTEPurchaseDetail");
+    if (!canWriteCalendar || !canReadDte) {
+      return reply(c, { status: "error", message: "Forbidden" }, 403);
+    }
+
+    try {
+      const { minScore } = c.req.valid("json");
+      const data = await autoLinkAllEventPeriods({
+        minScore,
+        userId: user.id,
+      });
+      return reply(c, { status: "success", data });
+    } catch (error) {
+      return reply(
+        c,
+        {
+          status: "error",
+          message: error instanceof Error ? error.message : "Failed to auto link all event periods",
         },
         400,
       );

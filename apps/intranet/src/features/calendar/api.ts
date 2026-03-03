@@ -6,6 +6,8 @@ import {
   CalendarSyncResponseSchema,
   CalendarsResponseSchema,
   ClassificationOptionsSchema,
+  EventDteAutoLinkAllPeriodsResponseSchema,
+  EventDteAutoLinkPeriodResponseSchema,
   EventDteAutoLinkResponseSchema,
   EventDteByDayResponseSchema,
   EventDteConfirmResponseSchema,
@@ -345,6 +347,67 @@ export async function autoLinkEventDteByDay(payload: { date: string; minScore?: 
     status: "success";
   }>("/api/dte-analytics/event-links/auto-link-day", payload, {
     responseSchema: EventDteAutoLinkResponseSchema,
+  });
+  return response.data;
+}
+
+export async function autoLinkEventDteByPeriod(payload: {
+  minScore?: number;
+  period: string;
+}): Promise<{
+  daysProcessed: number;
+  details: Array<{ date: string; linked: number; skipped: number; totalEvents: number }>;
+  linked: number;
+  period: string;
+  skipped: number;
+  totalEvents: number;
+}> {
+  const response = await apiClient.post<{
+    data: {
+      daysProcessed: number;
+      details: Array<{ date: string; linked: number; skipped: number; totalEvents: number }>;
+      linked: number;
+      period: string;
+      skipped: number;
+      totalEvents: number;
+    };
+    status: "success";
+  }>("/api/dte-analytics/event-links/auto-link-period", payload, {
+    responseSchema: EventDteAutoLinkPeriodResponseSchema,
+  });
+  return response.data;
+}
+
+export async function autoLinkEventDteByAllPeriods(payload?: { minScore?: number }): Promise<{
+  details: Array<{
+    daysProcessed: number;
+    linked: number;
+    period: string;
+    skipped: number;
+    totalEvents: number;
+  }>;
+  linked: number;
+  periodsProcessed: number;
+  skipped: number;
+  totalEvents: number;
+}> {
+  const response = await apiClient.post<{
+    data: {
+      details: Array<{
+        daysProcessed: number;
+        linked: number;
+        period: string;
+        skipped: number;
+        totalEvents: number;
+      }>;
+      linked: number;
+      periodsProcessed: number;
+      skipped: number;
+      totalEvents: number;
+    };
+    status: "success";
+  }>("/api/dte-analytics/event-links/auto-link-all-periods", payload ?? {}, {
+    responseSchema: EventDteAutoLinkAllPeriodsResponseSchema,
   });
   return response.data;
 }

@@ -1,7 +1,8 @@
 import { Tabs } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
+import { getRouteApi } from "@tanstack/react-router";
 import { BarChart3, TrendingUp } from "lucide-react";
-import { lazy, Suspense, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { dteAnalyticsKeys } from "@/features/finance/dte-analytics/queries";
 import { extractYearsFromSummary, safeYearSelection } from "@/features/finance/dte-analytics/utils";
 import { useLazyTabs } from "@/hooks/use-lazy-tabs";
@@ -30,25 +31,40 @@ const LazyDtePurchasesDetailsPanel = lazy(() =>
   })),
 );
 
+const LazyCalendarDteLinksOverview = lazy(() =>
+  import("@/features/calendar/components/CalendarDteLinksOverview").then((module) => ({
+    default: module.CalendarDteLinksOverview,
+  })),
+);
+
+const routeApi = getRouteApi("/_authed/finanzas/dte-analytics");
+
 export function DTEAnalyticsPage() {
+  const navigate = routeApi.useNavigate();
+  const search = routeApi.useSearch();
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear.toString());
-  const [selectedTab, setSelectedTab] = useState<
+  const selectedTab = (search.tab ?? "purchases-monthly") as
     | "purchases-comparison"
+    | "event-links"
     | "purchases-details"
     | "purchases-monthly"
     | "sales-comparison"
     | "sales-details"
-    | "sales-monthly"
-  >("purchases-monthly");
+    | "sales-monthly";
   const { isTabMounted, markTabAsMounted } = useLazyTabs<
     | "purchases-comparison"
+    | "event-links"
     | "purchases-details"
     | "purchases-monthly"
     | "sales-comparison"
     | "sales-details"
     | "sales-monthly"
-  >("purchases-monthly");
+  >(selectedTab);
+
+  useEffect(() => {
+    markTabAsMounted(selectedTab);
+  }, [markTabAsMounted, selectedTab]);
 
   // Load all purchases and sales data to extract years with actual data
   const { data: allPurchases } = useSuspenseQuery(dteAnalyticsKeys.purchases());
@@ -78,11 +94,16 @@ export function DTEAnalyticsPage() {
         onSelectionChange={(key) => {
           const nextTab = String(key) as
             | "purchases-comparison"
+            | "event-links"
             | "purchases-monthly"
             | "sales-comparison"
             | "sales-monthly";
-          setSelectedTab(nextTab);
-          markTabAsMounted(nextTab);
+          void navigate({
+            search: (prev) => ({
+              ...prev,
+              tab: nextTab,
+            }),
+          });
         }}
       >
         <Tabs.ListContainer className="muted-scrollbar overflow-x-auto pb-1">
@@ -113,6 +134,10 @@ export function DTEAnalyticsPage() {
             <Tabs.Tab id="sales-comparison" className="gap-2">
               <TrendingUp className="size-4" />
               Ventas Comparativa
+            </Tabs.Tab>
+            <Tabs.Tab id="event-links" className="gap-2">
+              <TrendingUp className="size-4" />
+              Vínculos DTE
             </Tabs.Tab>
           </Tabs.List>
         </Tabs.ListContainer>
@@ -171,6 +196,31 @@ export function DTEAnalyticsPage() {
           {isTabMounted("sales-comparison") ? (
             <Suspense fallback={<div className="py-2 text-default-500 text-sm">Cargando...</div>}>
               <LazyDteComparisonPanel kind="sales" />
+            </Suspense>
+          ) : null}
+        </Tabs.Panel>
+
+        <Tabs.Panel className="min-h-0 flex-1 pt-2 sm:pt-4" id="event-links">
+          {isTabMounted("event-links") ? (
+            <Suspense fallback={<div className="py-2 text-default-500 text-sm">Cargando...</div>}>
+              <LazyCalendarDteLinksOverview
+                search={{
+                  page: search.page ?? 0,
+                  pageSize: search.pageSize ?? 25,
+                  period: search.period ?? new Date().toISOString().slice(0, 7),
+                  query: search.query,
+                  status: search.status ?? "all",
+                }}
+                onSearchChange={(next) => {
+                  void navigate({
+                    search: (prev) => ({
+                      ...prev,
+                      ...next,
+                      tab: "event-links",
+                    }),
+                  });
+                }}
+              />
             </Suspense>
           ) : null}
         </Tabs.Panel>
