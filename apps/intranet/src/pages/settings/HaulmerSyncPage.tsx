@@ -1,4 +1,4 @@
-import { Card, Chip, Description, Skeleton, Spinner } from "@heroui/react";
+import { Card, Checkbox, Chip, Description, Modal, Skeleton, Spinner } from "@heroui/react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import localeEs from "dayjs/locale/es";
@@ -169,11 +169,19 @@ function SyncStatusIcon({ result }: { result: SyncResult | null | undefined }) {
 
 interface SyncAllCardProps {
   isSyncingAll: boolean;
+  isSyncingIncremental: boolean;
   availablePeriods: AvailablePeriodsData | undefined;
-  onSyncAll: () => void;
+  onOpenSyncModal: () => void;
+  onSyncIncremental: () => void;
 }
 
-function SyncAllCard({ isSyncingAll, availablePeriods, onSyncAll }: SyncAllCardProps) {
+function SyncAllCard({
+  isSyncingAll,
+  isSyncingIncremental,
+  availablePeriods,
+  onOpenSyncModal,
+  onSyncIncremental,
+}: SyncAllCardProps) {
   if (!availablePeriods) {
     return null;
   }
@@ -189,7 +197,7 @@ function SyncAllCard({ isSyncingAll, availablePeriods, onSyncAll }: SyncAllCardP
       <div className="space-y-3 p-3">
         <div className="flex items-center justify-between">
           <div>
-            <span className="block font-semibold text-default-700">Sincronización Incremental</span>
+            <span className="block font-semibold text-default-700">Sincronización Masiva</span>
             <div className="mt-0.5">
               <Description className="text-default-500 text-sm">
                 Datos disponibles: {availablePeriods.sales.length} períodos de ventas +{" "}
@@ -197,15 +205,26 @@ function SyncAllCard({ isSyncingAll, availablePeriods, onSyncAll }: SyncAllCardP
               </Description>
             </div>
           </div>
-          <Button
-            isDisabled={isSyncingAll}
-            isLoading={isSyncingAll}
-            color="primary"
-            onClick={onSyncAll}
-            startContent={isSyncingAll ? undefined : <RefreshCw className="h-4 w-4" />}
-          >
-            {isSyncingAll ? "Sincronizando..." : "Sincronizar incremental"}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              isDisabled={isSyncingAll || isSyncingIncremental}
+              isLoading={isSyncingAll}
+              color="primary"
+              onClick={onOpenSyncModal}
+              startContent={isSyncingAll ? undefined : <Download className="h-4 w-4" />}
+            >
+              {isSyncingAll ? "Sincronizando..." : "Sincronizar"}
+            </Button>
+            <Button
+              isDisabled={isSyncingAll || isSyncingIncremental}
+              isLoading={isSyncingIncremental}
+              color="secondary"
+              onClick={onSyncIncremental}
+              startContent={isSyncingIncremental ? undefined : <RefreshCw className="h-4 w-4" />}
+            >
+              {isSyncingIncremental ? "Sincronizando..." : "Incremental"}
+            </Button>
+          </div>
         </div>
       </div>
     </Card>
@@ -353,6 +372,10 @@ export function HaulmerSyncPage() {
   const { error: showError, success: showSuccess } = useToast();
   const [lastSyncs, setLastSyncs] = useState<LastSyncState>({});
   const [isSyncingAll, setIsSyncingAll] = useState(false);
+  const [isSyncingIncremental, setIsSyncingIncremental] = useState(false);
+  const [isSyncScopeModalOpen, setIsSyncScopeModalOpen] = useState(false);
+  const [syncSalesSelected, setSyncSalesSelected] = useState(true);
+  const [syncPurchasesSelected, setSyncPurchasesSelected] = useState(true);
 
   // Fetch available periods
   const {
@@ -421,14 +444,107 @@ export function HaulmerSyncPage() {
     }
   };
 
-  const handleSyncAll = async () => {
+  const handleSyncAll = async (docTypes: Array<"sales" | "purchases">) => {
+    const includeSales = docTypes.includes("sales");
+    const includePurchases = docTypes.includes("purchases");
+    const salesPeriods = includeSales
+      ? (availablePeriods?.sales ?? []).map((item) => item.periodo)
+      : [];
+    const purchasesPeriods = includePurchases
+      ? (availablePeriods?.purchases ?? []).map((item) => item.periodo)
+      : [];
+    const totalPeriods = salesPeriods.length + purchasesPeriods.length;
+
+    if (totalPeriods === 0) {
+      showSuccess("No hay períodos disponibles para sincronizar");
+      return;
+    }
+
+    setIsSyncingAll(true);
+
+    try {
+      const responses: Array<z.infer<typeof SyncResponseSchema>> = [];
+
+      if (salesPeriods.length > 0) {
+        responses.push(
+          await apiClient.post<z.infer<typeof SyncResponseSchema>>(
+            "/api/haulmer/sync",
+            {
+              periods: salesPeriods,
+              docTypes: ["sales"],
+            },
+            { responseSchema: SyncResponseSchema },
+          ),
+        );
+      }
+
+      if (purchasesPeriods.length > 0) {
+        responses.push(
+          await apiClient.post<z.infer<typeof SyncResponseSchema>>(
+            "/api/haulmer/sync",
+            {
+              periods: purchasesPeriods,
+              docTypes: ["purchases"],
+            },
+            { responseSchema: SyncResponseSchema },
+          ),
+        );
+      }
+
+      let successCount = 0;
+      let failedCount = 0;
+      for (const response of responses) {
+        successCount += response.summary?.success ?? 0;
+        failedCount += response.summary?.failed ?? 0;
+        for (const result of response.results ?? []) {
+          const key = `${result.period}-${result.docType}`;
+          setLastSyncs((prev) => ({
+            ...prev,
+            [key]: result,
+          }));
+        }
+      }
+
+      showSuccess(`Sync total completado: ${successCount} OK, ${failedCount} con error`);
+    } catch (error) {
+      showError(
+        `Error durante sincronización total: ${error instanceof Error ? error.message : "Desconocido"}`,
+      );
+    } finally {
+      setIsSyncingAll(false);
+    }
+  };
+
+  const handleOpenSyncScopeModal = () => {
+    setSyncSalesSelected(true);
+    setSyncPurchasesSelected(true);
+    setIsSyncScopeModalOpen(true);
+  };
+
+  const handleConfirmSyncScope = () => {
+    const docTypes: Array<"sales" | "purchases"> = [];
+    if (syncSalesSelected) {
+      docTypes.push("sales");
+    }
+    if (syncPurchasesSelected) {
+      docTypes.push("purchases");
+    }
+    if (docTypes.length === 0) {
+      return;
+    }
+
+    setIsSyncScopeModalOpen(false);
+    void handleSyncAll(docTypes);
+  };
+
+  const handleSyncIncremental = async () => {
     const message =
       "¿Sincronizar incremental? Se traerán solo períodos nuevos y el más reciente para refresco.";
     if (!confirm(message)) {
       return;
     }
 
-    setIsSyncingAll(true);
+    setIsSyncingIncremental(true);
 
     try {
       const response = await apiClient.post<z.infer<typeof SyncResponseSchema>>(
@@ -460,7 +576,7 @@ export function HaulmerSyncPage() {
         `Error durante sincronización incremental: ${error instanceof Error ? error.message : "Desconocido"}`,
       );
     } finally {
-      setIsSyncingAll(false);
+      setIsSyncingIncremental(false);
     }
   };
 
@@ -527,8 +643,10 @@ export function HaulmerSyncPage() {
       {!isLoadingPeriods && !periodsError && availablePeriods && (
         <SyncAllCard
           isSyncingAll={isSyncingAll}
+          isSyncingIncremental={isSyncingIncremental}
           availablePeriods={availablePeriods}
-          onSyncAll={handleSyncAll}
+          onOpenSyncModal={handleOpenSyncScopeModal}
+          onSyncIncremental={handleSyncIncremental}
         />
       )}
 
@@ -555,6 +673,67 @@ export function HaulmerSyncPage() {
           </div>
         ))}
       </div>
+
+      <Modal>
+        <Modal.Backdrop
+          isOpen={isSyncScopeModalOpen}
+          onOpenChange={(open) => {
+            setIsSyncScopeModalOpen(open);
+          }}
+        >
+          <Modal.Container placement="center">
+            <Modal.Dialog className="w-full max-w-lg">
+              <Modal.CloseTrigger />
+              <Modal.Header>
+                <Modal.Heading>Configurar sincronización</Modal.Heading>
+              </Modal.Header>
+              <Modal.Body className="space-y-4">
+                <Description className="text-default-600 text-sm">
+                  Elige si quieres sincronizar todo, solo ventas o solo compras. Marcando ambas
+                  opciones se ejecuta sincronización completa.
+                </Description>
+
+                <div className="space-y-2 rounded-lg border border-default-200 p-3">
+                  <Checkbox
+                    isSelected={syncSalesSelected}
+                    onChange={() => {
+                      setSyncSalesSelected((value) => !value);
+                    }}
+                  >
+                    Ventas
+                  </Checkbox>
+                  <Checkbox
+                    isSelected={syncPurchasesSelected}
+                    onChange={() => {
+                      setSyncPurchasesSelected((value) => !value);
+                    }}
+                  >
+                    Compras
+                  </Checkbox>
+                </div>
+              </Modal.Body>
+              <Modal.Footer className="gap-2">
+                <Button
+                  onClick={() => {
+                    setIsSyncScopeModalOpen(false);
+                  }}
+                  variant="secondary"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  disabled={!syncSalesSelected && !syncPurchasesSelected}
+                  isLoading={isSyncingAll}
+                  onClick={handleConfirmSyncScope}
+                  variant="primary"
+                >
+                  Sincronizar seleccionado
+                </Button>
+              </Modal.Footer>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal>
     </div>
   );
 }
