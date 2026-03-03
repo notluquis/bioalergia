@@ -1,7 +1,5 @@
-import { Description, Skeleton } from "@heroui/react";
+import { Alert, Description, Skeleton } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
-
-import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { fmtCLP, formatDate } from "@/lib/format";
 import { inventoryKeys } from "../queries";

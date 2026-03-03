@@ -9,9 +9,7 @@
  * - Autosave
  */
 
-import { Skeleton } from "@heroui/react";
-
-import { Alert } from "@/components/ui/Alert";
+import { Alert, Skeleton } from "@heroui/react";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
 

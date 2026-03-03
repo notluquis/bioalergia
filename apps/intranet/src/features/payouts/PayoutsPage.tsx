@@ -1,5 +1,5 @@
+import { Alert } from "@heroui/react";
 import { DataTable } from "@/components/data-table/DataTable";
-import { Alert } from "@/components/ui/Alert";
 import { useAuth } from "@/context/AuthContext";
 
 import { columns } from "./components/columns";
