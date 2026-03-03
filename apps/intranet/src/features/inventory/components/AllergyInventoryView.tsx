@@ -1,6 +1,5 @@
-import { Alert, Description, Skeleton } from "@heroui/react";
+import { Alert, Button, Description, Skeleton } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { Button } from "@/components/ui/Button";
 import { fmtCLP, formatDate } from "@/lib/format";
 import { inventoryKeys } from "../queries";
 import type { AllergyInventoryOverview } from "../types";
@@ -52,7 +51,7 @@ function AllergyInventoryView() {
             Agrupados por tipo/categoría. Revisa stock, precio y cuentas disponibles.
           </Description>
         </div>
-        <Button disabled={isFetching} onClick={() => void refetch()} size="sm" variant="ghost">
+        <Button isDisabled={isFetching} onPress={() => void refetch()} size="sm" variant="ghost">
           {isFetching ? "Actualizando" : "Refrescar"}
         </Button>
       </div>

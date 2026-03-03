@@ -1,7 +1,5 @@
-import { Modal } from "@heroui/react";
+import { Button, Modal } from "@heroui/react";
 import { useEffect, useMemo, useState } from "react";
-
-import { Button } from "@/components/ui/Button";
 import { type AppFallbackReason, clearAppCaches, onAppFallback } from "@/lib/app-recovery";
 
 const PRE_MOUNT_SHELL_ID = "app-fallback";
@@ -139,10 +137,10 @@ export function AppFallback() {
               <Modal.Body className="mt-2 max-h-[80vh] overflow-y-auto overscroll-contain text-foreground">
                 <div className="text-default-600 text-sm">{content.body}</div>
                 <div className="mt-6 flex flex-wrap gap-3">
-                  <Button onClick={handleReload} size="sm" variant="primary">
+                  <Button onPress={handleReload} size="sm" variant="primary">
                     {content.primary}
                   </Button>
-                  <Button onClick={() => setIsConfirmOpen(true)} size="sm" variant="secondary">
+                  <Button onPress={() => setIsConfirmOpen(true)} size="sm" variant="secondary">
                     Limpiar caché
                   </Button>
                 </div>
@@ -174,14 +172,14 @@ export function AppFallback() {
                 </div>
                 <div className="mt-6 flex flex-wrap gap-3">
                   <Button
-                    onClick={handleCleanReload}
+                    onPress={handleCleanReload}
                     size="sm"
                     variant="primary"
-                    disabled={isWorking}
+                    isDisabled={isWorking}
                   >
                     {isWorking ? "Limpiando..." : "Limpiar y recargar"}
                   </Button>
-                  <Button onClick={() => setIsConfirmOpen(false)} size="sm" variant="ghost">
+                  <Button onPress={() => setIsConfirmOpen(false)} size="sm" variant="ghost">
                     Cancelar
                   </Button>
                 </div>

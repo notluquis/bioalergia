@@ -1,6 +1,5 @@
-import { Alert, Description, Skeleton } from "@heroui/react";
+import { Alert, Button, Description, Skeleton } from "@heroui/react";
 import dayjs from "dayjs";
-import { Button } from "@/components/ui/Button";
 
 import type { MonthlyExpenseDetail as MonthlyExpenseDetailData } from "../types";
 

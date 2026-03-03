@@ -1,6 +1,6 @@
 import { Button, Dropdown, Input, Label, type Selection, TextField } from "@heroui/react";
 import type { Column } from "@tanstack/react-table";
-import { PlusCircle } from "lucide-react";
+import { Check, PlusCircle } from "lucide-react";
 import { type ComponentType, useState } from "react";
 
 interface DataTableFacetedFilterProps<TData, TValue> {
@@ -87,7 +87,11 @@ export function DataTableFacetedFilter<TData, TValue>({
           )}
           {filteredOptions.map((option) => (
             <Dropdown.Item id={option.value} key={option.value} textValue={option.label}>
-              <Dropdown.ItemIndicator />
+              <Dropdown.ItemIndicator>
+                {({ isSelected }) =>
+                  isSelected ? <Check className="h-4 w-4 text-primary" /> : null
+                }
+              </Dropdown.ItemIndicator>
               {option.icon && <option.icon className="mr-2 h-4 w-4 opacity-50" />}
               <Label>{option.label}</Label>
               {facets?.get(option.value) && (

@@ -747,6 +747,7 @@ function UnassignedPayoutAccountsTable({
               setSelectedAccounts([...selectedAccounts, account]);
             }
           }}
+          slot="selection"
           variant="secondary"
         >
           <Checkbox.Control>
@@ -773,6 +774,7 @@ function UnassignedPayoutAccountsTable({
               setSelectedAccounts([...merged]);
             }
           }}
+          slot="selection"
           variant="secondary"
         >
           <Checkbox.Control>

@@ -1,7 +1,7 @@
 import type { Selection } from "@heroui/react";
 import { Button, Dropdown, Input, Label, TextField } from "@heroui/react";
 import type { Table } from "@tanstack/react-table";
-import { Settings2 } from "lucide-react";
+import { Check, Settings2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
 interface DataTableViewOptionsProps<TData> {
@@ -44,7 +44,7 @@ export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps
           Columnas
         </Button>
       </Dropdown.Trigger>
-      <Dropdown.Popover className="min-w-[220px]" placement="bottom end">
+      <Dropdown.Popover className="min-w-55" placement="bottom end">
         <div className="border-default-200/60 border-b p-2">
           <TextField>
             <Input
@@ -71,7 +71,11 @@ export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps
               typeof column.columnDef.header === "string" ? column.columnDef.header : column.id;
             return (
               <Dropdown.Item id={column.id} key={column.id} textValue={label}>
-                <Dropdown.ItemIndicator />
+                <Dropdown.ItemIndicator>
+                  {({ isSelected }) =>
+                    isSelected ? <Check className="h-4 w-4 text-primary" /> : null
+                  }
+                </Dropdown.ItemIndicator>
                 <Label>{label}</Label>
               </Dropdown.Item>
             );

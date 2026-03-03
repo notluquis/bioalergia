@@ -9,8 +9,7 @@
  * - Autosave
  */
 
-import { Alert, Skeleton } from "@heroui/react";
-import { Button } from "@/components/ui/Button";
+import { Alert, Button, Skeleton } from "@heroui/react";
 import { useAuth } from "@/context/AuthContext";
 
 import { CierrePanel } from "./components/CierrePanel";
@@ -97,7 +96,7 @@ export function DailyBalancePage() {
           <Button
             className="flex-1 rounded-xl"
             isDisabled={isSaving}
-            isLoading={isSaving}
+            isPending={isSaving}
             onPress={save}
             variant="outline"
           >

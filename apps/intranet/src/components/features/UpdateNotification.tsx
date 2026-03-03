@@ -1,9 +1,7 @@
 import { useRegisterSW } from "virtual:pwa-register/react";
-import { Modal } from "@heroui/react";
+import { Button, Modal } from "@heroui/react";
 import { X } from "lucide-react";
 import { useState } from "react";
-
-import { Button } from "@/components/ui/Button";
 import { clearOnlyCaches } from "@/lib/app-recovery";
 
 export function UpdateNotification() {
@@ -134,15 +132,15 @@ export function UpdateNotification() {
                 Actualiza cuando estés listo. No perderás tu progreso.
               </p>
               <div className="mt-3 flex gap-2">
-                <Button className="flex-1" disabled={isUpdating} onClick={handleUpdate} size="sm">
+                <Button className="flex-1" isDisabled={isUpdating} onPress={handleUpdate} size="sm">
                   {isUpdating ? "Actualizando..." : "Actualizar"}
                 </Button>
-                <Button onClick={() => setIsConfirmOpen(true)} size="sm" variant="secondary">
+                <Button onPress={() => setIsConfirmOpen(true)} size="sm" variant="secondary">
                   Limpiar caché
                 </Button>
                 <Button
                   className="px-3"
-                  onClick={() => {
+                  onPress={() => {
                     setNeedRefresh(false);
                   }}
                   size="sm"
@@ -178,14 +176,14 @@ export function UpdateNotification() {
                 </p>
                 <div className="mt-6 flex flex-wrap gap-3">
                   <Button
-                    onClick={handleCleanUpdate}
+                    onPress={handleCleanUpdate}
                     size="sm"
                     variant="primary"
-                    disabled={isUpdating}
+                    isDisabled={isUpdating}
                   >
                     {isUpdating ? "Actualizando..." : "Limpiar y actualizar"}
                   </Button>
-                  <Button onClick={() => setIsConfirmOpen(false)} size="sm" variant="ghost">
+                  <Button onPress={() => setIsConfirmOpen(false)} size="sm" variant="ghost">
                     Cancelar
                   </Button>
                 </div>

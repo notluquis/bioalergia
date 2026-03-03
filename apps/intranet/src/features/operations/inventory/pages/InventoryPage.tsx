@@ -1,11 +1,10 @@
 import { schema as schemaLite } from "@finanzas/db/schema-lite";
-import { Alert, Modal, Surface } from "@heroui/react";
+import { Alert, Button, Modal, Surface } from "@heroui/react";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useClientQueries } from "@zenstackhq/tanstack-query/react";
 import { Lock, PlusCircle } from "lucide-react";
 import { useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
-import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { AdjustStockForm } from "@/features/inventory/components/AdjustStockForm";
@@ -136,9 +135,8 @@ export function InventoryPage() {
         <div className="mb-4 flex justify-end">
           <Button
             className="w-full sm:w-auto"
-            disabled={!canCreateItem}
-            onClick={openCreateModal}
-            title={canCreateItem ? undefined : "Requiere permiso para crear ítems"}
+            isDisabled={!canCreateItem}
+            onPress={openCreateModal}
           >
             {canCreateItem ? <PlusCircle size={16} /> : <Lock size={16} />}
             Agregar item

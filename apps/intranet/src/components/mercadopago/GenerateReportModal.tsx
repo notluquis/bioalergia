@@ -1,4 +1,4 @@
-import { Calendar, DateField, DatePicker, FieldError, Label, Modal } from "@heroui/react";
+import { Button, Calendar, DateField, DatePicker, FieldError, Label, Modal } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -6,8 +6,6 @@ import dayjs from "dayjs";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
-
-import { Button } from "@/components/ui/Button";
 import { useToast } from "@/context/ToastContext";
 import { MPService, type MpReportType } from "@/services/mercadopago";
 
@@ -136,8 +134,8 @@ export function GenerateReportModal({ onClose, open, reportType }: Props) {
 
                 <div className="flex items-center gap-3">
                   <Button
-                    disabled={mutation.isPending}
-                    onClick={() => {
+                    isDisabled={mutation.isPending}
+                    onPress={() => {
                       setUseNowAsEndDate((prev) => !prev);
                     }}
                     type="button"
@@ -273,14 +271,14 @@ export function GenerateReportModal({ onClose, open, reportType }: Props) {
 
                 <div className="mt-6 flex justify-end gap-3">
                   <Button
-                    disabled={mutation.isPending}
-                    onClick={handleClose}
+                    isDisabled={mutation.isPending}
+                    onPress={handleClose}
                     type="button"
                     variant="ghost"
                   >
                     Cancelar
                   </Button>
-                  <Button disabled={mutation.isPending} type="submit" variant="primary">
+                  <Button isDisabled={mutation.isPending} type="submit" variant="primary">
                     {mutation.isPending ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />

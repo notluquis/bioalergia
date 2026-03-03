@@ -1,9 +1,8 @@
+import { Button } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Key, Loader2, LogOut, ShieldCheck } from "lucide-react";
 import { Suspense, useEffect } from "react";
 import { z } from "zod";
-
-import { Button } from "@/components/ui/Button";
 import { useToast } from "@/context/ToastContext";
 import { apiClient } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
@@ -189,8 +188,8 @@ function GoogleDriveConnect() {
               {!status.valid && (
                 <Button
                   className="gap-2"
-                  isLoading={connectMutation.isPending}
-                  onClick={() => {
+                  isPending={connectMutation.isPending}
+                  onPress={() => {
                     connectMutation.mutate();
                   }}
                   variant="primary"
@@ -201,8 +200,8 @@ function GoogleDriveConnect() {
               )}
               <Button
                 className="gap-2 hover:border-danger hover:bg-danger/10 hover:text-danger"
-                disabled={isEnv || disconnectMutation.isPending}
-                onClick={() => {
+                isDisabled={isEnv || disconnectMutation.isPending}
+                onPress={() => {
                   if (
                     confirm(
                       "¿Estás seguro de desconectar Google Drive? Los backups automáticos dejarán de funcionar.",
@@ -211,11 +210,6 @@ function GoogleDriveConnect() {
                     disconnectMutation.mutate();
                   }
                 }}
-                title={
-                  isEnv
-                    ? "No se puede desconectar porque está configurado por variables de entorno"
-                    : "Desconectar cuenta"
-                }
                 variant="outline"
               >
                 <LogOut className="size-4" />
@@ -225,8 +219,8 @@ function GoogleDriveConnect() {
           ) : (
             <Button
               className="gap-2"
-              isLoading={connectMutation.isPending}
-              onClick={() => {
+              isPending={connectMutation.isPending}
+              onPress={() => {
                 connectMutation.mutate();
               }}
               variant="primary"

@@ -1,8 +1,7 @@
-import { Alert } from "@heroui/react";
+import { Alert, Button } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { lazy, Suspense, useState } from "react";
-import { Button } from "@/components/ui/Button";
 import { useToast } from "@/context/ToastContext";
 import {
   bulkUpsertTimesheets,
@@ -260,13 +259,8 @@ function TimesheetHeaderActions({
     <div className="mb-4 flex justify-end gap-2">
       <Button
         className="gap-2"
-        disabled={!summaryRow || !employeeEmail}
-        onClick={onOpenEmailModal}
-        title={
-          employeeEmail
-            ? "Preparar boleta para enviar por email"
-            : "El empleado no tiene email registrado"
-        }
+        isDisabled={!summaryRow || !employeeEmail}
+        onPress={onOpenEmailModal}
         type="button"
         variant="secondary"
       >
@@ -275,7 +269,7 @@ function TimesheetHeaderActions({
       <Suspense
         fallback={
           <div className="flex items-center gap-2">
-            <Button className="cursor-wait bg-primary/70" disabled variant="primary">
+            <Button className="cursor-wait bg-primary/70" isDisabled variant="primary">
               Cargando exportador...
             </Button>
           </div>
