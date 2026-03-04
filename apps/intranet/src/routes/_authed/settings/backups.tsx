@@ -1,8 +1,6 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
-import { PageLoader } from "@/components/ui/PageLoader";
-
 const BackupSettingsPage = lazy(() =>
   import("@/pages/settings/BackupSettingsPage").then((m) => ({ default: m.BackupSettingsPage })),
 );
@@ -21,7 +19,7 @@ export const Route = createFileRoute("/_authed/settings/backups")({
     }
   },
   component: () => (
-    <Suspense fallback={<PageLoader />}>
+    <Suspense fallback={null}>
       <BackupSettingsPage />
     </Suspense>
   ),

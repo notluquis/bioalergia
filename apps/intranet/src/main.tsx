@@ -5,6 +5,7 @@
  * The old React Router v7 routes have been migrated to file-based routing in src/routes/.
  */
 
+import { Spinner } from "@heroui/react";
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { QuerySettingsProvider } from "@zenstackhq/tanstack-query/react";
@@ -17,7 +18,6 @@ import { AppFallback } from "./components/features/AppFallback";
 import { Button } from "./components/ui/Button";
 import { ChunkErrorBoundary } from "./components/ui/ChunkErrorBoundary";
 import { GlobalError } from "./components/ui/GlobalError";
-import { PageLoader } from "./components/ui/PageLoader";
 import { useAuth } from "./context/AuthContext";
 import { SettingsProvider } from "./context/SettingsContext";
 import { ToastProvider } from "./context/ToastContext";
@@ -137,7 +137,11 @@ const router = createRouter({
     auth: undefined as unknown as AuthContextType,
     queryClient,
   },
-  defaultPendingComponent: PageLoader,
+  defaultPendingComponent: () => (
+    <div className="flex min-h-[50vh] items-center justify-center">
+      <Spinner aria-label="Cargando" color="accent" size="lg" />
+    </div>
+  ),
   defaultPreload: "intent",
   // Integrate with React Query for cache invalidation on navigation
   defaultPreloadStaleTime: 0,

@@ -1,8 +1,6 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
-import { PageLoader } from "@/components/ui/PageLoader";
-
 const HaulmerSyncPage = lazy(() =>
   import("@/pages/settings/HaulmerSyncPage").then((m) => ({ default: m.HaulmerSyncPage })),
 );
@@ -19,7 +17,7 @@ export const Route = createFileRoute("/_authed/settings/haulmer")({
     }
   },
   component: () => (
-    <Suspense fallback={<PageLoader />}>
+    <Suspense fallback={null}>
       <HaulmerSyncPage />
     </Suspense>
   ),

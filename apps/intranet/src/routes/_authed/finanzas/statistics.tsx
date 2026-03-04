@@ -1,8 +1,6 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
-import { PageLoader } from "@/components/ui/PageLoader";
-
 const FinanzasStatsPage = lazy(() =>
   import("@/features/finance/statistics/pages/FinanzasStatsPage").then((m) => ({
     default: m.FinanzasStatsPage,
@@ -23,7 +21,7 @@ export const Route = createFileRoute("/_authed/finanzas/statistics")({
     }
   },
   component: () => (
-    <Suspense fallback={<PageLoader />}>
+    <Suspense fallback={null}>
       <FinanzasStatsPage />
     </Suspense>
   ),

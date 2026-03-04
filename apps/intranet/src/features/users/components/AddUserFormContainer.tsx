@@ -1,11 +1,19 @@
 import { schema as schemaLite } from "@finanzas/db/schema-lite";
-import { Button, Checkbox, Description, FieldError, Label, ListBox, Select } from "@heroui/react";
+import {
+  Button,
+  Checkbox,
+  Description,
+  FieldError,
+  Label,
+  ListBox,
+  Select,
+  Spinner,
+} from "@heroui/react";
 import { type ReactFormExtendedApi, useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useClientQueries } from "@zenstackhq/tanstack-query/react";
 import { Shield, UserPlus, Users } from "lucide-react";
 import { TanStackInputField } from "@/components/forms/TanStackFieldControls";
-import { PageLoader } from "@/components/ui/PageLoader";
 import { useToast } from "@/context/ToastContext";
 import { fetchPeople, type PersonWithExtras } from "@/features/people/api";
 import { inviteUser } from "@/features/users/api";
@@ -142,7 +150,11 @@ export function AddUserFormContainer({
   const { handleLinkPerson } = usePersonLinking(form, availablePeople);
 
   if (isPeopleLoading) {
-    return <PageLoader />;
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <Spinner aria-label="Cargando" color="accent" size="lg" />
+      </div>
+    );
   }
 
   if (peopleError) {

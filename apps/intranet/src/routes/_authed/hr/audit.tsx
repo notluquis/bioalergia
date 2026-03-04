@@ -1,8 +1,6 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
-import { PageLoader } from "@/components/ui/PageLoader";
-
 const TimesheetAuditPage = lazy(() =>
   import("@/features/hr/timesheets-audit/pages/TimesheetAuditPage").then((m) => ({
     default: m.TimesheetAuditPage,
@@ -21,7 +19,7 @@ export const Route = createFileRoute("/_authed/hr/audit")({
     }
   },
   component: () => (
-    <Suspense fallback={<PageLoader />}>
+    <Suspense fallback={null}>
       <TimesheetAuditPage />
     </Suspense>
   ),

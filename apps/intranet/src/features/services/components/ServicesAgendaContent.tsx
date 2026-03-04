@@ -1,7 +1,6 @@
-import { Skeleton, Surface } from "@heroui/react";
+import { Card, Skeleton, Surface } from "@heroui/react";
 import { useStore } from "@tanstack/react-store";
 import dayjs from "dayjs";
-import { StatCard } from "@/components/ui/StatCard";
 import { EditScheduleModal } from "@/features/services/components/EditScheduleModal";
 import { ServicesUnifiedAgenda } from "@/features/services/components/ServicesUnifiedAgenda";
 import { SkipScheduleModal } from "@/features/services/components/SkipScheduleModal";
@@ -70,9 +69,45 @@ export function ServicesAgendaContent() {
     <section className="space-y-8">
       <Surface className="space-y-6 rounded-[28px] p-6 shadow-inner">
         <div className="grid gap-4 sm:grid-cols-3">
-          <StatCard title="Pagos hoy" value={currencyFormatter.format(totals.day)} />
-          <StatCard title="Semana en curso" value={currencyFormatter.format(totals.week)} />
-          <StatCard title="Mes en curso" value={currencyFormatter.format(totals.month)} />
+          <Card
+            className="rounded-2xl border border-default-200 bg-background p-4 shadow-sm"
+            variant="secondary"
+          >
+            <Card.Content className="p-0">
+              <Card.Title className="font-semibold text-default-500 text-xs uppercase tracking-wide">
+                Pagos hoy
+              </Card.Title>
+              <Card.Description className="mt-2 block font-semibold text-2xl text-foreground">
+                {currencyFormatter.format(totals.day)}
+              </Card.Description>
+            </Card.Content>
+          </Card>
+          <Card
+            className="rounded-2xl border border-default-200 bg-background p-4 shadow-sm"
+            variant="secondary"
+          >
+            <Card.Content className="p-0">
+              <Card.Title className="font-semibold text-default-500 text-xs uppercase tracking-wide">
+                Semana en curso
+              </Card.Title>
+              <Card.Description className="mt-2 block font-semibold text-2xl text-foreground">
+                {currencyFormatter.format(totals.week)}
+              </Card.Description>
+            </Card.Content>
+          </Card>
+          <Card
+            className="rounded-2xl border border-default-200 bg-background p-4 shadow-sm"
+            variant="secondary"
+          >
+            <Card.Content className="p-0">
+              <Card.Title className="font-semibold text-default-500 text-xs uppercase tracking-wide">
+                Mes en curso
+              </Card.Title>
+              <Card.Description className="mt-2 block font-semibold text-2xl text-foreground">
+                {currencyFormatter.format(totals.month)}
+              </Card.Description>
+            </Card.Content>
+          </Card>
         </div>
 
         <ServicesUnifiedAgenda

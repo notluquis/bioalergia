@@ -1,6 +1,7 @@
 import {
   Alert,
   Button,
+  Card,
   Chip,
   DateField,
   DateRangePicker,
@@ -21,7 +22,6 @@ import { BarChart2, BarChart3, Calendar, Clock, Filter, List, TrendingUp, X } fr
 import { lazy, Suspense, useEffect, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 
-import { StatCard } from "@/components/ui/StatCard";
 import { useAuth } from "@/context/AuthContext";
 import { EmployeeMultiSelectPopover } from "@/features/hr/components/EmployeeMultiSelectPopover";
 import { employeeKeys } from "@/features/hr/employees/queries";
@@ -593,46 +593,84 @@ function ReportsResultsPanel({
       ) : (
         <>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <StatCard
-              className="text-primary"
-              icon={Clock}
-              title="TOTAL HORAS"
-              value={stats?.totalHours ?? 0}
-            />
+            <Card
+              className="rounded-2xl border border-default-200 bg-background p-4 shadow-sm"
+              variant="secondary"
+            >
+              <Card.Content className="p-0">
+                <Card.Title className="flex items-center gap-1.5 font-semibold text-default-500 text-xs uppercase tracking-wide">
+                  <Clock className="h-4 w-4" />
+                  TOTAL HORAS
+                </Card.Title>
+                <Card.Description className="mt-2 block font-semibold text-2xl text-primary">
+                  {stats?.totalHours ?? 0}
+                </Card.Description>
+              </Card.Content>
+            </Card>
 
-            <StatCard
-              className="text-secondary"
-              icon={BarChart3}
-              subtitle={`Por ${granularityLabel}`}
-              title="PROMEDIO"
-              value={stats?.averageHours ?? 0}
-            />
+            <Card
+              className="rounded-2xl border border-default-200 bg-background p-4 shadow-sm"
+              variant="secondary"
+            >
+              <Card.Content className="p-0">
+                <Card.Title className="flex items-center gap-1.5 font-semibold text-default-500 text-xs uppercase tracking-wide">
+                  <BarChart3 className="h-4 w-4" />
+                  PROMEDIO
+                </Card.Title>
+                <Card.Description className="mt-2 block font-semibold text-2xl text-secondary">
+                  {stats?.averageHours ?? 0}
+                </Card.Description>
+                <Card.Description className="mt-1 block text-default-400 text-xs">
+                  Por {granularityLabel}
+                </Card.Description>
+              </Card.Content>
+            </Card>
 
-            <StatCard
-              className="text-accent"
-              icon={Calendar}
-              subtitle="Total asistencias"
-              title="DÍAS TRAB."
-              value={reportData.reduce((acc, e) => acc + e.totalDays, 0)}
-            />
+            <Card
+              className="rounded-2xl border border-default-200 bg-background p-4 shadow-sm"
+              variant="secondary"
+            >
+              <Card.Content className="p-0">
+                <Card.Title className="flex items-center gap-1.5 font-semibold text-default-500 text-xs uppercase tracking-wide">
+                  <Calendar className="h-4 w-4" />
+                  DÍAS TRAB.
+                </Card.Title>
+                <Card.Description className="mt-2 block font-semibold text-2xl text-accent">
+                  {reportData.reduce((acc, e) => acc + e.totalDays, 0)}
+                </Card.Description>
+                <Card.Description className="mt-1 block text-default-400 text-xs">
+                  Total asistencias
+                </Card.Description>
+              </Card.Content>
+            </Card>
 
-            <StatCard
-              className="text-success"
-              icon={TrendingUp}
-              subtitle="Horas/día asis."
-              suffix="h"
-              title="PROM. DIARIO"
-              value={(() => {
-                if (reportData.length === 0) {
-                  return 0;
-                }
-                const avg =
-                  reportData.reduce((acc, e) => acc + e.avgDailyMinutes, 0) /
-                  reportData.length /
-                  60;
-                return Number.parseFloat(avg.toFixed(1));
-              })()}
-            />
+            <Card
+              className="rounded-2xl border border-default-200 bg-background p-4 shadow-sm"
+              variant="secondary"
+            >
+              <Card.Content className="p-0">
+                <Card.Title className="flex items-center gap-1.5 font-semibold text-default-500 text-xs uppercase tracking-wide">
+                  <TrendingUp className="h-4 w-4" />
+                  PROM. DIARIO
+                </Card.Title>
+                <Card.Description className="mt-2 block font-semibold text-2xl text-success">
+                  {(() => {
+                    if (reportData.length === 0) {
+                      return 0;
+                    }
+                    const avg =
+                      reportData.reduce((acc, e) => acc + e.avgDailyMinutes, 0) /
+                      reportData.length /
+                      60;
+                    return Number.parseFloat(avg.toFixed(1));
+                  })()}
+                  <span className="ml-1 font-normal text-default-400 text-sm">h</span>
+                </Card.Description>
+                <Card.Description className="mt-1 block text-default-400 text-xs">
+                  Horas/día asis.
+                </Card.Description>
+              </Card.Content>
+            </Card>
           </div>
 
           <Suspense

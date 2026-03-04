@@ -1,7 +1,6 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
-import { PageLoader } from "@/components/ui/PageLoader";
 import { fetchLoans } from "@/features/finance/loans/api";
 import { loanKeys } from "@/features/finance/loans/queries";
 
@@ -23,7 +22,7 @@ export const Route = createFileRoute("/_authed/finanzas/loans")({
     }
   },
   component: () => (
-    <Suspense fallback={<PageLoader />}>
+    <Suspense fallback={null}>
       <LoansPage />
     </Suspense>
   ),

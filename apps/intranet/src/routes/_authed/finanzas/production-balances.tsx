@@ -1,8 +1,6 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
-import { PageLoader } from "@/components/ui/PageLoader";
-
 const DailyBalancePage = lazy(() =>
   import("@/features/production-balances/DailyBalancePage").then((m) => ({
     default: m.DailyBalancePage,
@@ -23,7 +21,7 @@ export const Route = createFileRoute("/_authed/finanzas/production-balances")({
     }
   },
   component: () => (
-    <Suspense fallback={<PageLoader />}>
+    <Suspense fallback={null}>
       <DailyBalancePage />
     </Suspense>
   ),

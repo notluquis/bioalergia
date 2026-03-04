@@ -3,8 +3,6 @@ import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 import { z } from "zod";
 
-import { PageLoader } from "@/components/ui/PageLoader";
-
 const TreatmentAnalyticsPage = lazy(() =>
   import("@/features/operations/supplies/pages/TreatmentAnalyticsPage").then((m) => ({
     default: m.TreatmentAnalyticsPage,
@@ -52,7 +50,7 @@ export const Route = createFileRoute("/_authed/operations/supplies-analytics")({
   },
   validateSearch: analyticsSearchSchema,
   component: () => (
-    <Suspense fallback={<PageLoader />}>
+    <Suspense fallback={null}>
       <TreatmentAnalyticsPage />
     </Suspense>
   ),

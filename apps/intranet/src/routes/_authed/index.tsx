@@ -1,8 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
-import { PageLoader } from "@/components/ui/PageLoader";
-
 // Lazy load the Home component for code splitting
 const Home = lazy(() => import("@/pages/Home").then((m) => ({ default: m.Home })));
 
@@ -13,7 +11,7 @@ export const Route = createFileRoute("/_authed/")({
 
 function DashboardPage() {
   return (
-    <Suspense fallback={<PageLoader />}>
+    <Suspense fallback={null}>
       <Home />
     </Suspense>
   );

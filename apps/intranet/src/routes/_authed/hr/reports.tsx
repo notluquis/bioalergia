@@ -1,8 +1,6 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
-import { PageLoader } from "@/components/ui/PageLoader";
-
 import { employeeKeys } from "@/features/hr/employees/queries";
 import { timesheetQueries } from "@/features/hr/timesheets/queries";
 
@@ -22,7 +20,7 @@ export const Route = createFileRoute("/_authed/hr/reports")({
     }
   },
   component: () => (
-    <Suspense fallback={<PageLoader />}>
+    <Suspense fallback={null}>
       <ReportsPage />
     </Suspense>
   ),

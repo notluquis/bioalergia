@@ -1,7 +1,6 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
-import { PageLoader } from "@/components/ui/PageLoader";
 import { personalFinanceQueries } from "@/features/personal-finance/queries";
 
 const PersonalCreditDetailsPage = lazy(() =>
@@ -28,7 +27,7 @@ export const Route = createFileRoute("/_authed/finanzas/personal-credits/$credit
     }
   },
   component: () => (
-    <Suspense fallback={<PageLoader />}>
+    <Suspense fallback={null}>
       <PersonalCreditDetailsPage />
     </Suspense>
   ),

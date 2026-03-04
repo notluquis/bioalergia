@@ -1,8 +1,6 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
-import { PageLoader } from "@/components/ui/PageLoader";
-
 const CSVUploadPage = lazy(() =>
   import("@/pages/settings/CSVUploadPage").then((m) => ({ default: m.CSVUploadPage })),
 );
@@ -19,7 +17,7 @@ export const Route = createFileRoute("/_authed/settings/csv-upload")({
     }
   },
   component: () => (
-    <Suspense fallback={<PageLoader />}>
+    <Suspense fallback={null}>
       <CSVUploadPage />
     </Suspense>
   ),

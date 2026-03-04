@@ -1,8 +1,6 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
-import { PageLoader } from "@/components/ui/PageLoader";
-
 const SuppliesPage = lazy(() =>
   import("@/features/operations/supplies/pages/SuppliesPage").then((m) => ({
     default: m.Supplies,
@@ -23,7 +21,7 @@ export const Route = createFileRoute("/_authed/operations/supplies")({
     }
   },
   component: () => (
-    <Suspense fallback={<PageLoader />}>
+    <Suspense fallback={null}>
       <SuppliesPage />
     </Suspense>
   ),

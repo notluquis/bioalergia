@@ -1,7 +1,6 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
-import { PageLoader } from "@/components/ui/PageLoader";
 import { employeeKeys } from "@/features/hr/employees/queries";
 
 const EmployeesPage = lazy(() =>
@@ -20,7 +19,7 @@ export const Route = createFileRoute("/_authed/hr/employees")({
     }
   },
   component: () => (
-    <Suspense fallback={<PageLoader />}>
+    <Suspense fallback={null}>
       <EmployeesPage />
     </Suspense>
   ),
