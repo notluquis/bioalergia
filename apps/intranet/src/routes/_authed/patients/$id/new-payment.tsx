@@ -284,6 +284,7 @@ function NewPaymentPage() {
               <form.Field name="reference">
                 {(field) => (
                   <TanStackInputField
+                    emptyAsUndefined
                     field={field}
                     label="Referencia / N° Operación"
                     placeholder="Ej: Transferencia 123456"
@@ -296,6 +297,7 @@ function NewPaymentPage() {
               <form.Field name="notes">
                 {(field) => (
                   <TanStackTextAreaField
+                    emptyAsUndefined
                     field={field}
                     label="Observaciones"
                     placeholder="Detalles adicionales del pago..."

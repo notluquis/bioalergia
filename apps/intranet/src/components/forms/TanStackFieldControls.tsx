@@ -22,6 +22,7 @@ interface TanStackFieldLike<TValue> {
 interface TanStackInputFieldProps<TValue> {
   className?: string;
   description?: string;
+  emptyAsUndefined?: boolean;
   field: TanStackFieldLike<TValue>;
   label: string;
   onBlur?: () => void;
@@ -41,6 +42,7 @@ interface TanStackSelectFieldProps<TValue> {
 
 interface TanStackTextAreaFieldProps<TValue> {
   className?: string;
+  emptyAsUndefined?: boolean;
   field: TanStackFieldLike<TValue>;
   label: string;
   placeholder?: string;
@@ -59,6 +61,7 @@ const getFieldError = (errors: unknown[]) => {
 export function TanStackInputField<TValue>({
   className,
   description,
+  emptyAsUndefined = false,
   field,
   label,
   onBlur,
@@ -82,7 +85,9 @@ export function TanStackInputField<TValue>({
           const nextValue = transformOnChange
             ? transformOnChange(event.target.value)
             : event.target.value;
-          field.handleChange(() => nextValue as TValue);
+          const normalizedValue =
+            emptyAsUndefined && nextValue.length === 0 ? undefined : nextValue;
+          field.handleChange(() => normalizedValue as TValue);
         }}
         placeholder={placeholder}
         value={inputValue}
@@ -95,6 +100,7 @@ export function TanStackInputField<TValue>({
 
 export function TanStackTextAreaField<TValue>({
   className,
+  emptyAsUndefined = false,
   field,
   label,
   placeholder,
@@ -109,7 +115,12 @@ export function TanStackTextAreaField<TValue>({
       <TextArea
         className={className}
         onBlur={field.handleBlur}
-        onChange={(event) => field.handleChange(() => event.target.value as TValue)}
+        onChange={(event) => {
+          const nextValue = event.target.value;
+          const normalizedValue =
+            emptyAsUndefined && nextValue.length === 0 ? undefined : nextValue;
+          field.handleChange(() => normalizedValue as TValue);
+        }}
         placeholder={placeholder}
         rows={rows}
         value={textValue}

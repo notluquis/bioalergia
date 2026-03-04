@@ -166,6 +166,7 @@ function NewConsultationPage() {
                   field={field}
                   label="Diagnóstico"
                   placeholder="Diagnóstico presuntivo o confirmado..."
+                  emptyAsUndefined
                   rows={2}
                 />
               )}
@@ -177,6 +178,7 @@ function NewConsultationPage() {
                   field={field}
                   label="Tratamiento indicado"
                   placeholder="Medicamentos, dosis, indicaciones generales..."
+                  emptyAsUndefined
                   rows={3}
                 />
               )}
@@ -188,6 +190,7 @@ function NewConsultationPage() {
                   field={field}
                   label="Notas privadas"
                   placeholder="Observaciones adicionales no visibles en certificados..."
+                  emptyAsUndefined
                   rows={2}
                 />
               )}

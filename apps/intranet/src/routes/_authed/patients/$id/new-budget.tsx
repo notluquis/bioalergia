@@ -137,6 +137,7 @@ function NewBudgetPage() {
           <form.Field name="notes">
             {(field) => (
               <TanStackTextAreaField
+                emptyAsUndefined
                 field={field}
                 label="Notas / Observaciones"
                 placeholder="Información adicional para el paciente..."
