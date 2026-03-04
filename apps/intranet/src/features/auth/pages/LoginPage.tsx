@@ -1,8 +1,7 @@
-import { Button, Link } from "@heroui/react";
+import { Button, Input, Label, Link, TextField } from "@heroui/react";
 import { useLocation } from "@tanstack/react-router";
 import { Fingerprint, Mail } from "lucide-react";
 import type { ChangeEvent, SubmitEvent } from "react";
-import { Input } from "@/components/ui/Input";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useSettings } from "@/context/SettingsContext";
 import { useLoginLogic } from "@/features/auth/hooks/useLoginLogic";
@@ -175,28 +174,29 @@ function CredentialsStep({
   return (
     <form className="w-full space-y-4" onSubmit={handleCredentialsSubmit}>
       <div className="mx-auto w-full max-w-xs">
-        <Input
-          autoComplete="username"
-          label="Correo electrónico"
-          onChange={handleEmailChange}
-          placeholder="usuario@bioalergia.cl"
-          required
-          type="email"
-          value={email}
-          disabled={isLoading}
-        />
+        <TextField isRequired name="email" type="email">
+          <Label>Correo electrónico</Label>
+          <Input
+            autoComplete="username"
+            disabled={isLoading}
+            onChange={handleEmailChange}
+            placeholder="usuario@bioalergia.cl"
+            value={email}
+          />
+        </TextField>
       </div>
       <div className="mx-auto w-full max-w-xs">
-        <Input
-          autoComplete="current-password"
-          enterKeyHint="go"
-          label="Contraseña"
-          onChange={handlePasswordChange}
-          placeholder="••••••••"
-          type="password"
-          value={password}
-          disabled={isLoading}
-        />
+        <TextField name="password" type="password">
+          <Label>Contraseña</Label>
+          <Input
+            autoComplete="current-password"
+            disabled={isLoading}
+            enterKeyHint="go"
+            onChange={handlePasswordChange}
+            placeholder="••••••••"
+            value={password}
+          />
+        </TextField>
       </div>
 
       <div className="mx-auto w-full max-w-xs">
@@ -243,20 +243,20 @@ function MfaStep({
   return (
     <form className="w-full space-y-4" onSubmit={handleMfaSubmit}>
       <div className="mx-auto w-full max-w-xs">
-        <Input
-          autoComplete="one-time-code"
-          className="text-center text-2xl tracking-widest"
-          inputMode="numeric"
-          label="Código de seguridad"
-          maxLength={6}
-          onChange={handleMfaCodeChange}
-          pattern="[0-9]*"
-          placeholder="000000"
-          required
-          type="text"
-          value={mfaCode}
-          disabled={isLoading}
-        />
+        <TextField isRequired name="mfaCode" type="text">
+          <Label>Código de seguridad</Label>
+          <Input
+            autoComplete="one-time-code"
+            className="text-center text-2xl tracking-widest"
+            disabled={isLoading}
+            inputMode="numeric"
+            maxLength={6}
+            onChange={handleMfaCodeChange}
+            pattern="[0-9]*"
+            placeholder="000000"
+            value={mfaCode}
+          />
+        </TextField>
       </div>
 
       <div className="mx-auto w-full max-w-xs">

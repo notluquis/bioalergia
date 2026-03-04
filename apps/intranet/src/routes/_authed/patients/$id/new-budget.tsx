@@ -1,10 +1,13 @@
-import { Button, Card } from "@heroui/react";
+import { Button, Card, Input, Label, TextField } from "@heroui/react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft, Plus, Save, Trash2 } from "lucide-react";
 import { z } from "zod";
-import { Input } from "@/components/ui/Input";
+import {
+  TanStackInputField,
+  TanStackTextAreaField,
+} from "@/components/forms/TanStackFieldControls";
 import { MoneyInput } from "@/components/ui/MoneyInput";
 import { BudgetSchema } from "@/features/patients/schemas";
 import { apiClient } from "@/lib/api-client";
@@ -111,13 +114,10 @@ function NewBudgetPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <form.Field name="title">
               {(field) => (
-                <Input
+                <TanStackInputField
+                  field={field}
                   label="Título del Presupuesto"
                   placeholder="Ej: Tratamiento Ortodoncia"
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  onBlur={field.handleBlur}
-                  error={field.state.meta.errors.join(", ")}
                 />
               )}
             </form.Field>
@@ -136,13 +136,11 @@ function NewBudgetPage() {
 
           <form.Field name="notes">
             {(field) => (
-              <Input
-                as="textarea"
+              <TanStackTextAreaField
+                field={field}
                 label="Notas / Observaciones"
-                onChange={(e) => field.handleChange(e.target.value)}
                 placeholder="Información adicional para el paciente..."
                 rows={2}
-                value={field.state.value}
               />
             )}
           </form.Field>
@@ -174,12 +172,10 @@ function NewBudgetPage() {
                       <div className="col-span-12 sm:col-span-6">
                         <form.Field name={`items[${index}].description`}>
                           {(subField) => (
-                            <Input
+                            <TanStackInputField
+                              field={subField}
                               label="Descripción"
                               placeholder="Servicio o producto"
-                              value={subField.state.value}
-                              onChange={(e) => subField.handleChange(e.target.value)}
-                              error={subField.state.meta.errors.join(", ")}
                             />
                           )}
                         </form.Field>
@@ -187,12 +183,14 @@ function NewBudgetPage() {
                       <div className="col-span-4 sm:col-span-2">
                         <form.Field name={`items[${index}].quantity`}>
                           {(subField) => (
-                            <Input
-                              type="number"
-                              label="Cant."
-                              value={subField.state.value}
-                              onChange={(e) => subField.handleChange(Number(e.target.value))}
-                            />
+                            <TextField name={`items[${index}].quantity`} type="number">
+                              <Label>Cant.</Label>
+                              <Input
+                                type="number"
+                                value={String(subField.state.value)}
+                                onChange={(e) => subField.handleChange(Number(e.target.value))}
+                              />
+                            </TextField>
                           )}
                         </form.Field>
                       </div>

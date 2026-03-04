@@ -1,4 +1,4 @@
-import { Alert, Button, Card, Modal, Surface } from "@heroui/react";
+import { Alert, Button, Card, Input, Label, Modal, Surface, TextField } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
@@ -6,7 +6,6 @@ import { Lock } from "lucide-react";
 import type { ChangeEvent } from "react";
 import { useEffect, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
-import { Input } from "@/components/ui/Input";
 import { useToast } from "@/context/ToastContext";
 import { CATEGORY_LABELS } from "@/features/counterparts/constants";
 import { fetchTransactions } from "@/features/finance/api";
@@ -787,31 +786,34 @@ function AddAccountModal({
             </Modal.Header>
             <Modal.Body className="mt-2 max-h-[80vh] overflow-y-auto overscroll-contain text-foreground">
               <div className="space-y-4 text-sm">
-                <Input
-                  label="Número de cuenta"
-                  onChange={onAccountIdentifierChange}
-                  placeholder="Ej. 124282432930"
-                  type="text"
-                  value={accountForm.accountNumber}
-                />
+                <TextField name="accountNumber" type="text">
+                  <Label>Número de cuenta</Label>
+                  <Input
+                    onChange={onAccountIdentifierChange}
+                    placeholder="Ej. 124282432930"
+                    value={accountForm.accountNumber}
+                  />
+                </TextField>
 
                 {renderSuggestions}
                 <div className="grid gap-3 md:grid-cols-2">
-                  <Input
-                    label="Banco"
-                    onChange={updateAccountForm("bankName")}
-                    placeholder="Banco"
-                    type="text"
-                    value={accountForm.bankName}
-                  />
+                  <TextField name="bankName" type="text">
+                    <Label>Banco</Label>
+                    <Input
+                      onChange={updateAccountForm("bankName")}
+                      placeholder="Banco"
+                      value={accountForm.bankName}
+                    />
+                  </TextField>
 
-                  <Input
-                    label="Tipo de cuenta"
-                    onChange={updateAccountForm("accountType")}
-                    placeholder="Ej. Cuenta corriente"
-                    type="text"
-                    value={accountForm.accountType}
-                  />
+                  <TextField name="accountType" type="text">
+                    <Label>Tipo de cuenta</Label>
+                    <Input
+                      onChange={updateAccountForm("accountType")}
+                      placeholder="Ej. Cuenta corriente"
+                      value={accountForm.accountType}
+                    />
+                  </TextField>
                 </div>
                 <div className="flex justify-end gap-2">
                   <Button onClick={onClose} variant="ghost">

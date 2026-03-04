@@ -1,6 +1,5 @@
-import { Button, Separator } from "@heroui/react";
+import { Button, Input, Label, Separator, TextField } from "@heroui/react";
 import { Fingerprint, Loader2, Smartphone } from "lucide-react";
-import { Input } from "@/components/ui/Input";
 
 interface MfaSecretData {
   qrCodeUrl: string;
@@ -81,17 +80,18 @@ export function MfaStep({
         </div>
 
         <div className="w-full max-w-xs">
-          <Input
-            className="text-center text-2xl tracking-widest"
-            inputMode="numeric"
-            label="Ingresa el código de 6 dígitos"
-            maxLength={6}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => onMfaCodeChange(e.target.value)}
-            pattern="[0-9]*"
-            placeholder="000000"
-            type="text"
-            value={mfaCode}
-          />
+          <TextField name="mfaCode" type="text">
+            <Label>Ingresa el código de 6 dígitos</Label>
+            <Input
+              className="text-center text-2xl tracking-widest"
+              inputMode="numeric"
+              maxLength={6}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => onMfaCodeChange(e.target.value)}
+              pattern="[0-9]*"
+              placeholder="000000"
+              value={mfaCode}
+            />
+          </TextField>
         </div>
 
         <div className="flex justify-center">

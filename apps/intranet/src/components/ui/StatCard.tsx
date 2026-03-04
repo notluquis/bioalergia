@@ -1,3 +1,4 @@
+import { Card } from "@heroui/react";
 import type { LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -68,28 +69,37 @@ export function StatCard({
   const sizes = sizeClasses[size];
 
   return (
-    <article
+    <Card
       className={cn(
         "rounded-2xl border border-default-200 bg-background shadow-sm",
         sizes.container,
         className,
       )}
+      variant="secondary"
     >
-      <span
-        className={cn(
-          "flex items-center gap-1.5 font-semibold text-default-500 text-xs uppercase tracking-wide",
-          sizes.title,
-        )}
-      >
-        {Icon && <Icon className="h-4 w-4" />}
-        {title}
-      </span>
-      {/* eslint-disable-next-line security/detect-object-injection */}
-      <span className={cn("mt-2 block", toneClasses[tone], sizes.value)}>
-        {value}
-        {suffix && <span className="ml-1 font-normal text-default-400 text-sm">{suffix}</span>}
-      </span>
-      {subtitle && <span className="mt-1 block text-default-400 text-xs">{subtitle}</span>}
-    </article>
+      <Card.Content className="p-0">
+        <Card.Title
+          className={cn(
+            "flex items-center gap-1.5 font-semibold text-default-500 text-xs uppercase tracking-wide",
+            sizes.title,
+          )}
+        >
+          {Icon ? <Icon className="h-4 w-4" /> : null}
+          {title}
+        </Card.Title>
+        {/* eslint-disable-next-line security/detect-object-injection */}
+        <Card.Description className={cn("mt-2 block", toneClasses[tone], sizes.value)}>
+          {value}
+          {suffix ? (
+            <span className="ml-1 font-normal text-default-400 text-sm">{suffix}</span>
+          ) : null}
+        </Card.Description>
+        {subtitle ? (
+          <Card.Description className="mt-1 block text-default-400 text-xs">
+            {subtitle}
+          </Card.Description>
+        ) : null}
+      </Card.Content>
+    </Card>
   );
 }

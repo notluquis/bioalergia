@@ -14,6 +14,7 @@ import {
   Skeleton,
   Surface,
   Tabs,
+  TextField,
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
@@ -22,7 +23,6 @@ import { Check, Filter, Plus, RefreshCcw } from "lucide-react";
 import { Suspense, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { TableRegion } from "@/components/data-table/TableRegion";
-import { Input } from "@/components/ui/Input";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import {
@@ -645,27 +645,30 @@ export function CounterpartsPage() {
               </Modal.Header>
               <Modal.Body className="mt-2 max-h-[80vh] overflow-y-auto overscroll-contain text-foreground">
                 <div className="space-y-4">
-                  <Input
-                    readOnly
-                    label="Cuentas payout seleccionadas"
-                    value={String(state.assigningPayoutAccounts.length)}
-                  />
-                  <Input
-                    label="RUT de contraparte"
-                    onChange={(event) => {
-                      state.setAssignRutValue(event.target.value);
-                    }}
-                    placeholder="12.345.678-5"
-                    value={state.assignRutValue}
-                  />
-                  <Input
-                    label="Titular (opcional)"
-                    onChange={(event) => {
-                      state.setAssignHolderValue(event.target.value);
-                    }}
-                    placeholder="Nombre contraparte"
-                    value={state.assignHolderValue}
-                  />
+                  <TextField isReadOnly>
+                    <Label>Cuentas payout seleccionadas</Label>
+                    <HeroInput readOnly value={String(state.assigningPayoutAccounts.length)} />
+                  </TextField>
+                  <TextField>
+                    <Label>RUT de contraparte</Label>
+                    <HeroInput
+                      onChange={(event) => {
+                        state.setAssignRutValue(event.target.value);
+                      }}
+                      placeholder="12.345.678-5"
+                      value={state.assignRutValue}
+                    />
+                  </TextField>
+                  <TextField>
+                    <Label>Titular (opcional)</Label>
+                    <HeroInput
+                      onChange={(event) => {
+                        state.setAssignHolderValue(event.target.value);
+                      }}
+                      placeholder="Nombre contraparte"
+                      value={state.assignHolderValue}
+                    />
+                  </TextField>
                   <p
                     className={`text-xs ${
                       derived.assignRutIsValid || state.assignRutValue.trim().length === 0

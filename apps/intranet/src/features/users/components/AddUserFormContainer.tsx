@@ -4,7 +4,7 @@ import { type ReactFormExtendedApi, useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useClientQueries } from "@zenstackhq/tanstack-query/react";
 import { Shield, UserPlus, Users } from "lucide-react";
-import { Input } from "@/components/ui/Input";
+import { TanStackInputField } from "@/components/forms/TanStackFieldControls";
 import { PageLoader } from "@/components/ui/PageLoader";
 import { useToast } from "@/context/ToastContext";
 import { fetchPeople, type PersonWithExtras } from "@/features/people/api";
@@ -354,45 +354,41 @@ function UserDataFields({
               </div>
               <form.Field name="names">
                 {(field) => (
-                  <Input
+                  <TanStackInputField
+                    field={field}
                     label="Nombres"
-                    onChange={(e) => field.handleChange(e.target.value)}
                     placeholder="Ej: Juan Andrés"
                     required
-                    value={field.state.value}
                   />
                 )}
               </form.Field>
               <form.Field name="fatherName">
                 {(field) => (
-                  <Input
+                  <TanStackInputField
+                    field={field}
                     label="Primer apellido"
-                    onChange={(e) => field.handleChange(e.target.value)}
                     placeholder="Ej: Pérez"
                     required
-                    value={field.state.value}
                   />
                 )}
               </form.Field>
               <form.Field name="motherName">
                 {(field) => (
-                  <Input
+                  <TanStackInputField
+                    field={field}
                     label="Segundo apellido"
-                    onChange={(e) => field.handleChange(e.target.value)}
                     placeholder="Ej: González"
                     required
-                    value={field.state.value}
                   />
                 )}
               </form.Field>
               <form.Field name="rut">
                 {(field) => (
-                  <Input
+                  <TanStackInputField
+                    field={field}
                     label="RUT"
-                    onChange={(e) => field.handleChange(e.target.value)}
                     placeholder="12.345.678-9"
                     required
-                    value={field.state.value}
                   />
                 )}
               </form.Field>
@@ -411,14 +407,13 @@ function UserDataFields({
           {(field) => (
             <form.Subscribe selector={(state) => [state.values.personId]}>
               {([personId]) => (
-                <Input
-                  helper={personId ? "Verifica o actualiza el correo asociado" : undefined}
+                <TanStackInputField
+                  description={personId ? "Verifica o actualiza el correo asociado" : undefined}
+                  field={field}
                   label="Correo electrónico"
-                  onChange={(e) => field.handleChange(e.target.value)}
                   placeholder="usuario@bioalergia.cl"
                   required
                   type="email"
-                  value={field.state.value}
                 />
               )}
             </form.Subscribe>
@@ -428,12 +423,11 @@ function UserDataFields({
 
       <form.Field name="position">
         {(field) => (
-          <Input
+          <TanStackInputField
+            field={field}
             label="Cargo / posición"
-            onChange={(e) => field.handleChange(e.target.value)}
             placeholder="Ej: Enfermera, Administrativo"
             required
-            value={field.state.value}
           />
         )}
       </form.Field>

@@ -1,17 +1,12 @@
-import {
-  Alert,
-  Button,
-  FieldError,
-  Label,
-  ListBox,
-  Select,
-  Skeleton,
-  Surface,
-} from "@heroui/react";
+import { Alert, Button, Skeleton, Surface } from "@heroui/react";
 import { useForm } from "@tanstack/react-form";
 import { useEffect } from "react";
 import { z } from "zod";
-import { Input } from "@/components/ui/Input";
+import {
+  TanStackInputField,
+  TanStackSelectField,
+  TanStackTextAreaField,
+} from "@/components/forms/TanStackFieldControls";
 import { GRID_2_COL_MD } from "@/lib/styles";
 import type { CounterpartCategory } from "@/types/schema";
 
@@ -43,24 +38,6 @@ interface CounterpartFormProps {
 }
 
 type CounterpartFormValues = z.infer<typeof counterpartFormSchema>;
-
-function normalizeFieldErrors(errors: unknown[]): string {
-  return errors
-    .map((error) => {
-      if (typeof error === "string") {
-        return error;
-      }
-      if (error && typeof error === "object" && "message" in error) {
-        const message = (error as { message?: unknown }).message;
-        if (typeof message === "string") {
-          return message;
-        }
-      }
-      return "";
-    })
-    .filter((message) => message.length > 0)
-    .join(", ");
-}
 
 export function CounterpartForm({
   counterpart,
@@ -128,103 +105,48 @@ export function CounterpartForm({
       >
         <fieldset className="contents" disabled={busy}>
           <form.Field name="identificationNumber">
-            {(field) => {
-              const fieldError = normalizeFieldErrors(field.state.meta.errors);
-              return (
-                <div>
-                  <Input
-                    error={fieldError || undefined}
-                    label="RUT"
-                    onBlur={field.handleBlur}
-                    onChange={(e) => {
-                      field.handleChange(e.target.value);
-                    }}
-                    placeholder="12345678-9"
-                    type="text"
-                    value={field.state.value}
-                  />
-                </div>
-              );
-            }}
+            {(field) => (
+              <TanStackInputField field={field} label="RUT" placeholder="12345678-9" type="text" />
+            )}
           </form.Field>
 
           <form.Field name="bankAccountHolder">
-            {(field) => {
-              const fieldError = normalizeFieldErrors(field.state.meta.errors);
-              return (
-                <div>
-                  <Input
-                    error={fieldError || undefined}
-                    label="Nombre del titular"
-                    onBlur={field.handleBlur}
-                    onChange={(e) => {
-                      field.handleChange(e.target.value);
-                    }}
-                    placeholder="Juan Pérez"
-                    required
-                    type="text"
-                    value={field.state.value}
-                  />
-                </div>
-              );
-            }}
+            {(field) => (
+              <TanStackInputField
+                field={field}
+                label="Nombre del titular"
+                placeholder="Juan Pérez"
+                required
+                type="text"
+              />
+            )}
           </form.Field>
 
           <form.Field name="category">
-            {(field) => {
-              const fieldError = normalizeFieldErrors(field.state.meta.errors);
-              return (
-                <div>
-                  <Select
-                    isInvalid={Boolean(fieldError)}
-                    onBlur={field.handleBlur}
-                    onChange={(key) => {
-                      field.handleChange(key as CounterpartCategory);
-                    }}
-                    value={field.state.value}
-                  >
-                    <Label>Clasificación</Label>
-                    <Select.Trigger>
-                      <Select.Value />
-                      <Select.Indicator />
-                    </Select.Trigger>
-                    <Select.Popover>
-                      <ListBox>
-                        {CATEGORY_OPTIONS.map((option) => (
-                          <ListBox.Item id={option.value} key={option.value}>
-                            {option.label}
-                          </ListBox.Item>
-                        ))}
-                      </ListBox>
-                    </Select.Popover>
-                    {fieldError && <FieldError>{fieldError}</FieldError>}
-                  </Select>
-                </div>
-              );
-            }}
+            {(field) => (
+              <TanStackSelectField
+                field={field}
+                label="Clasificación"
+                options={CATEGORY_OPTIONS.map((option) => ({
+                  label: option.label,
+                  value: option.value,
+                }))}
+              />
+            )}
           </form.Field>
 
           {!counterpart && (
             <form.Field name="notes">
-              {(field) => {
-                const fieldError = normalizeFieldErrors(field.state.meta.errors);
-                return (
-                  <div className="md:col-span-2">
-                    <Input
-                      as="textarea"
-                      error={fieldError || undefined}
-                      label="Notas"
-                      onBlur={field.handleBlur}
-                      onChange={(e) => {
-                        field.handleChange(e.target.value);
-                      }}
-                      placeholder="Información adicional..."
-                      rows={4}
-                      value={field.state.value}
-                    />
-                  </div>
-                );
-              }}
+              {(field) => (
+                <div className="md:col-span-2">
+                  <TanStackTextAreaField
+                    field={field}
+                    label="Notas"
+                    placeholder="Información adicional..."
+                    rows={4}
+                  />
+                </div>
+              )}
             </form.Field>
           )}
 

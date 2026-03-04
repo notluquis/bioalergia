@@ -6,7 +6,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { ChevronLeft, Save } from "lucide-react";
 import { z } from "zod";
-import { Input } from "@/components/ui/Input";
+import { TanStackTextAreaField } from "@/components/forms/TanStackFieldControls";
 import { ConsultationSchema } from "@/features/patients/schemas";
 import { apiClient } from "@/lib/api-client";
 import { PAGE_CONTAINER } from "@/lib/styles";
@@ -150,58 +150,45 @@ function NewConsultationPage() {
 
             <form.Field name="reason">
               {(field) => (
-                <Input
-                  as="textarea"
+                <TanStackTextAreaField
+                  field={field}
                   label="Motivo de consulta"
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
                   placeholder="Escriba el motivo principal de la atención..."
                   required
                   rows={3}
-                  value={field.state.value}
-                  error={field.state.meta.errors.join(", ")}
                 />
               )}
             </form.Field>
 
             <form.Field name="diagnosis">
               {(field) => (
-                <Input
-                  as="textarea"
+                <TanStackTextAreaField
+                  field={field}
                   label="Diagnóstico"
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
                   placeholder="Diagnóstico presuntivo o confirmado..."
                   rows={2}
-                  value={field.state.value}
                 />
               )}
             </form.Field>
 
             <form.Field name="treatment">
               {(field) => (
-                <Input
-                  as="textarea"
+                <TanStackTextAreaField
+                  field={field}
                   label="Tratamiento indicado"
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
                   placeholder="Medicamentos, dosis, indicaciones generales..."
                   rows={3}
-                  value={field.state.value}
                 />
               )}
             </form.Field>
 
             <form.Field name="notes">
               {(field) => (
-                <Input
-                  as="textarea"
+                <TanStackTextAreaField
+                  field={field}
                   label="Notas privadas"
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
                   placeholder="Observaciones adicionales no visibles en certificados..."
                   rows={2}
-                  value={field.state.value}
                 />
               )}
             </form.Field>

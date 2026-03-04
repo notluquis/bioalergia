@@ -1,6 +1,5 @@
-import { Button } from "@heroui/react";
+import { Button, Description, FieldError, Input, Label, TextField } from "@heroui/react";
 import { User } from "lucide-react";
-import { Input } from "@/components/ui/Input";
 import { formatRut, validateRut } from "@/lib/rut";
 
 interface ProfileStepProps {
@@ -37,57 +36,62 @@ export function ProfileStep(props: ProfileStepProps) {
         <p className="text-default-500 text-sm">Información básica para tu perfil.</p>
       </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <Input
-          label="Nombres"
-          onChange={(e) => onProfileChange("names", e.target.value)}
-          required
-          value={profile.names}
-        />
+        <TextField isRequired name="names">
+          <Label>Nombres</Label>
+          <Input onChange={(e) => onProfileChange("names", e.target.value)} value={profile.names} />
+        </TextField>
 
-        <Input
-          helper="Puedes usar otro correo solo para iniciar sesión. Si no, usa el mismo actual."
-          label="Correo de login"
-          onChange={(e) => onProfileChange("loginEmail", e.target.value)}
-          required
-          type="email"
-          value={profile.loginEmail}
-        />
+        <TextField isRequired name="loginEmail" type="email">
+          <Label>Correo de login</Label>
+          <Input
+            onChange={(e) => onProfileChange("loginEmail", e.target.value)}
+            value={profile.loginEmail}
+          />
+          <Description>
+            Puedes usar otro correo solo para iniciar sesión. Si no, usa el mismo actual.
+          </Description>
+        </TextField>
 
-        <Input
-          label="RUT"
-          error={error?.includes("RUT") ? "RUT inválido" : undefined}
-          onChange={(e) => onProfileChange("rut", e.target.value)}
-          onBlur={() => onProfileChange("rut", formatRut(profile.rut))}
-          placeholder="12.345.678-9"
-          required
-          value={profile.rut}
-        />
+        <TextField isInvalid={Boolean(error?.includes("RUT"))} isRequired name="rut" type="text">
+          <Label>RUT</Label>
+          <Input
+            onBlur={() => onProfileChange("rut", formatRut(profile.rut))}
+            onChange={(e) => onProfileChange("rut", e.target.value)}
+            placeholder="12.345.678-9"
+            value={profile.rut}
+          />
+          <FieldError>RUT inválido</FieldError>
+        </TextField>
 
-        <Input
-          label="Primer apellido"
-          onChange={(e) => onProfileChange("fatherName", e.target.value)}
-          value={profile.fatherName}
-        />
+        <TextField name="fatherName">
+          <Label>Primer apellido</Label>
+          <Input
+            onChange={(e) => onProfileChange("fatherName", e.target.value)}
+            value={profile.fatherName}
+          />
+        </TextField>
 
-        <Input
-          label="Segundo apellido"
-          onChange={(e) => onProfileChange("motherName", e.target.value)}
-          value={profile.motherName}
-        />
+        <TextField name="motherName">
+          <Label>Segundo apellido</Label>
+          <Input
+            onChange={(e) => onProfileChange("motherName", e.target.value)}
+            value={profile.motherName}
+          />
+        </TextField>
 
-        <Input
-          label="Teléfono"
-          onChange={(e) => onProfileChange("phone", e.target.value)}
-          type="tel"
-          value={profile.phone}
-        />
+        <TextField name="phone" type="tel">
+          <Label>Teléfono</Label>
+          <Input onChange={(e) => onProfileChange("phone", e.target.value)} value={profile.phone} />
+        </TextField>
 
         <div className="md:col-span-2">
-          <Input
-            label="Dirección"
-            onChange={(e) => onProfileChange("address", e.target.value)}
-            value={profile.address}
-          />
+          <TextField name="address">
+            <Label>Dirección</Label>
+            <Input
+              onChange={(e) => onProfileChange("address", e.target.value)}
+              value={profile.address}
+            />
+          </TextField>
         </div>
       </div>
       <div className="mt-6 flex justify-end">

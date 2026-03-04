@@ -1,6 +1,5 @@
-import { Button } from "@heroui/react";
+import { Button, FieldError, Input, Label, TextField } from "@heroui/react";
 import { Key } from "lucide-react";
-import { Input } from "@/components/ui/Input";
 
 interface PasswordStepProps {
   password: string;
@@ -45,31 +44,37 @@ export function PasswordStep({
       </div>
 
       <div className="space-y-4">
-        <Input
-          label="Nueva contraseña"
+        <TextField
+          isInvalid={Boolean(error && password.length < 8)}
+          isRequired
           minLength={8}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => onPasswordChange(e.target.value)}
-          required
+          name="password"
           type="password"
-          value={password}
-          error={error && password.length < 8 ? "Mínimo 8 caracteres" : undefined}
-        />
+        >
+          <Label>Nueva contraseña</Label>
+          <Input
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => onPasswordChange(e.target.value)}
+            value={password}
+          />
+          <FieldError>Mínimo 8 caracteres</FieldError>
+        </TextField>
 
-        <Input
-          label="Confirmar contraseña"
+        <TextField
+          isInvalid={Boolean(password !== confirmPassword && confirmPassword)}
+          isRequired
           minLength={8}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            onConfirmPasswordChange(e.target.value)
-          }
-          required
+          name="confirmPassword"
           type="password"
-          value={confirmPassword}
-          error={
-            password !== confirmPassword && confirmPassword
-              ? "Las contraseñas no coinciden"
-              : undefined
-          }
-        />
+        >
+          <Label>Confirmar contraseña</Label>
+          <Input
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              onConfirmPasswordChange(e.target.value)
+            }
+            value={confirmPassword}
+          />
+          <FieldError>Las contraseñas no coinciden</FieldError>
+        </TextField>
       </div>
 
       <div className="mt-6 flex justify-end gap-3">

@@ -1,6 +1,5 @@
-import { Button, Label, ListBox, Select } from "@heroui/react";
+import { Button, Input, Label, ListBox, Select, TextField } from "@heroui/react";
 import { CreditCard } from "lucide-react";
-import { Input } from "@/components/ui/Input";
 
 interface FinancialStepProps {
   profile: {
@@ -39,14 +38,16 @@ export function FinancialStep({
       </div>
 
       <div className="space-y-4">
-        <Input
-          label="Banco"
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            onProfileChange("bankName", e.target.value)
-          }
-          placeholder="Ej: Banco de Chile"
-          value={profile.bankName}
-        />
+        <TextField name="bankName">
+          <Label>Banco</Label>
+          <Input
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              onProfileChange("bankName", e.target.value)
+            }
+            placeholder="Ej: Banco de Chile"
+            value={profile.bankName}
+          />
+        </TextField>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <Select
@@ -77,13 +78,15 @@ export function FinancialStep({
               </ListBox>
             </Select.Popover>
           </Select>
-          <Input
-            label="Número de cuenta"
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              onProfileChange("bankAccountNumber", e.target.value)
-            }
-            value={profile.bankAccountNumber}
-          />
+          <TextField name="bankAccountNumber">
+            <Label>Número de cuenta</Label>
+            <Input
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                onProfileChange("bankAccountNumber", e.target.value)
+              }
+              value={profile.bankAccountNumber}
+            />
+          </TextField>
         </div>
       </div>
 

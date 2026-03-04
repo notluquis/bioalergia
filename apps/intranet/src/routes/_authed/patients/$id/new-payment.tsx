@@ -16,7 +16,10 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { ChevronLeft, Save } from "lucide-react";
 import { z } from "zod";
-import { Input } from "@/components/ui/Input";
+import {
+  TanStackInputField,
+  TanStackTextAreaField,
+} from "@/components/forms/TanStackFieldControls";
 import { MoneyInput } from "@/components/ui/MoneyInput";
 import { PatientBudgetListSchema, PatientPaymentSchema } from "@/features/patients/schemas";
 import { apiClient } from "@/lib/api-client";
@@ -280,12 +283,10 @@ function NewPaymentPage() {
             <div className="sm:col-span-2">
               <form.Field name="reference">
                 {(field) => (
-                  <Input
+                  <TanStackInputField
+                    field={field}
                     label="Referencia / N° Operación"
                     placeholder="Ej: Transferencia 123456"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
                   />
                 )}
               </form.Field>
@@ -294,13 +295,11 @@ function NewPaymentPage() {
             <div className="sm:col-span-2">
               <form.Field name="notes">
                 {(field) => (
-                  <Input
-                    as="textarea"
+                  <TanStackTextAreaField
+                    field={field}
                     label="Observaciones"
-                    onChange={(e) => field.handleChange(e.target.value)}
                     placeholder="Detalles adicionales del pago..."
                     rows={2}
-                    value={field.state.value}
                   />
                 )}
               </form.Field>

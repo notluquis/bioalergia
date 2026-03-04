@@ -1,5 +1,15 @@
 import { schema as schemaLite } from "@finanzas/db/schema-lite";
-import { Button, Description, Label, ListBox, Modal, Select, Switch } from "@heroui/react";
+import {
+  Button,
+  Description,
+  Input,
+  Label,
+  ListBox,
+  Modal,
+  Select,
+  Switch,
+  TextField,
+} from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useClientQueries } from "@zenstackhq/tanstack-query/react";
 import dayjs from "dayjs";
@@ -7,7 +17,6 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import { Copy, Key, Shield, UserCog, UserPlus } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
-import { Input } from "@/components/ui/Input";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import {
@@ -720,77 +729,105 @@ function EditUserDetailsModalContent({
             <Modal.Body className="mt-2 max-h-[80vh] overflow-y-auto overscroll-contain text-foreground">
               {form && (
                 <div className="grid gap-4 md:grid-cols-2">
-                  <Input
-                    label="Nombres"
-                    onChange={(event) => onChange("names", event.target.value)}
-                    value={form.names}
-                  />
-                  <Input
-                    label="Primer apellido"
-                    onChange={(event) => onChange("fatherName", event.target.value)}
-                    value={form.fatherName}
-                  />
-                  <Input
-                    label="Segundo apellido"
-                    onChange={(event) => onChange("motherName", event.target.value)}
-                    value={form.motherName}
-                  />
-                  <Input
-                    label="RUT"
-                    onChange={(event) => onChange("rut", event.target.value)}
-                    value={form.rut}
-                  />
-                  <Input
-                    label="Correo de notificación"
-                    onChange={(event) => onChange("notificationEmail", event.target.value)}
-                    type="email"
-                    value={form.notificationEmail}
-                  />
-                  <Input
-                    helper="Si lo dejas igual al de notificación, se usa ese por defecto para login."
-                    label="Correo de login"
-                    onChange={(event) => onChange("loginEmail", event.target.value)}
-                    type="email"
-                    value={form.loginEmail}
-                  />
-                  <Input
-                    label="Teléfono"
-                    onChange={(event) => onChange("phone", event.target.value)}
-                    value={form.phone}
-                  />
-                  <div className="md:col-span-2">
+                  <TextField>
+                    <Label>Nombres</Label>
                     <Input
-                      label="Dirección"
-                      onChange={(event) => onChange("address", event.target.value)}
-                      value={form.address}
+                      onChange={(event) => onChange("names", event.target.value)}
+                      value={form.names}
                     />
+                  </TextField>
+                  <TextField>
+                    <Label>Primer apellido</Label>
+                    <Input
+                      onChange={(event) => onChange("fatherName", event.target.value)}
+                      value={form.fatherName}
+                    />
+                  </TextField>
+                  <TextField>
+                    <Label>Segundo apellido</Label>
+                    <Input
+                      onChange={(event) => onChange("motherName", event.target.value)}
+                      value={form.motherName}
+                    />
+                  </TextField>
+                  <TextField>
+                    <Label>RUT</Label>
+                    <Input
+                      onChange={(event) => onChange("rut", event.target.value)}
+                      value={form.rut}
+                    />
+                  </TextField>
+                  <TextField type="email">
+                    <Label>Correo de notificación</Label>
+                    <Input
+                      onChange={(event) => onChange("notificationEmail", event.target.value)}
+                      type="email"
+                      value={form.notificationEmail}
+                    />
+                  </TextField>
+                  <TextField type="email">
+                    <Label>Correo de login</Label>
+                    <Input
+                      onChange={(event) => onChange("loginEmail", event.target.value)}
+                      type="email"
+                      value={form.loginEmail}
+                    />
+                    <Description className="text-xs">
+                      Si lo dejas igual al de notificación, se usa ese por defecto para login.
+                    </Description>
+                  </TextField>
+                  <TextField>
+                    <Label>Teléfono</Label>
+                    <Input
+                      onChange={(event) => onChange("phone", event.target.value)}
+                      value={form.phone}
+                    />
+                  </TextField>
+                  <div className="md:col-span-2">
+                    <TextField>
+                      <Label>Dirección</Label>
+                      <Input
+                        onChange={(event) => onChange("address", event.target.value)}
+                        value={form.address}
+                      />
+                    </TextField>
                   </div>
-                  <Input
-                    label="Cargo"
-                    onChange={(event) => onChange("position", event.target.value)}
-                    value={form.position}
-                  />
-                  <Input
-                    label="Departamento"
-                    onChange={(event) => onChange("department", event.target.value)}
-                    value={form.department}
-                  />
-                  <Input
-                    label="Banco"
-                    onChange={(event) => onChange("bankName", event.target.value)}
-                    value={form.bankName}
-                  />
-                  <Input
-                    label="Tipo de cuenta"
-                    onChange={(event) => onChange("bankAccountType", event.target.value)}
-                    value={form.bankAccountType}
-                  />
-                  <div className="md:col-span-2">
+                  <TextField>
+                    <Label>Cargo</Label>
                     <Input
-                      label="Número de cuenta"
-                      onChange={(event) => onChange("bankAccountNumber", event.target.value)}
-                      value={form.bankAccountNumber}
+                      onChange={(event) => onChange("position", event.target.value)}
+                      value={form.position}
                     />
+                  </TextField>
+                  <TextField>
+                    <Label>Departamento</Label>
+                    <Input
+                      onChange={(event) => onChange("department", event.target.value)}
+                      value={form.department}
+                    />
+                  </TextField>
+                  <TextField>
+                    <Label>Banco</Label>
+                    <Input
+                      onChange={(event) => onChange("bankName", event.target.value)}
+                      value={form.bankName}
+                    />
+                  </TextField>
+                  <TextField>
+                    <Label>Tipo de cuenta</Label>
+                    <Input
+                      onChange={(event) => onChange("bankAccountType", event.target.value)}
+                      value={form.bankAccountType}
+                    />
+                  </TextField>
+                  <div className="md:col-span-2">
+                    <TextField>
+                      <Label>Número de cuenta</Label>
+                      <Input
+                        onChange={(event) => onChange("bankAccountNumber", event.target.value)}
+                        value={form.bankAccountNumber}
+                      />
+                    </TextField>
                   </div>
                   <div className="md:col-span-2">
                     <Switch
