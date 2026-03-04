@@ -1,9 +1,17 @@
-import { Calendar, DateField, DatePicker, FieldError, Label, ListBox, Select } from "@heroui/react";
+import {
+  Calendar,
+  DateField,
+  DatePicker,
+  FieldError,
+  Input,
+  Label,
+  ListBox,
+  Select,
+  TextField,
+} from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
-
-import { Input } from "@/components/ui/Input";
 
 import type { ServiceEmissionMode } from "../../types";
 import type { ServiceFormState } from "../ServiceForm";
@@ -64,40 +72,46 @@ export function EmissionSection({
         {errors.emissionMode?.message && <FieldError>{errors.emissionMode.message}</FieldError>}
       </Select>
       {(emissionMode ?? "FIXED_DAY") === "FIXED_DAY" && (
-        <Input
-          label="Día emisión"
-          max={31}
-          min={1}
-          onChange={(event: ChangeEvent<HTMLInputElement>) => {
-            onChange("emissionDay", event.target.value ? Number(event.target.value) : null);
-          }}
-          type="number"
-          value={emissionDay ?? ""}
-        />
+        <TextField type="number">
+          <Label>Día emisión</Label>
+          <Input
+            max={31}
+            min={1}
+            onChange={(event: ChangeEvent<HTMLInputElement>) => {
+              onChange("emissionDay", event.target.value ? Number(event.target.value) : null);
+            }}
+            value={emissionDay == null ? "" : String(emissionDay)}
+          />
+        </TextField>
       )}
       {(emissionMode ?? "FIXED_DAY") === "DATE_RANGE" && (
         <>
-          <Input
-            label="Día inicio emisión"
-            max={31}
-            min={1}
-            onChange={(event: ChangeEvent<HTMLInputElement>) => {
-              onChange("emissionStartDay", event.target.value ? Number(event.target.value) : null);
-            }}
-            type="number"
-            value={emissionStartDay ?? ""}
-          />
+          <TextField type="number">
+            <Label>Día inicio emisión</Label>
+            <Input
+              max={31}
+              min={1}
+              onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                onChange(
+                  "emissionStartDay",
+                  event.target.value ? Number(event.target.value) : null,
+                );
+              }}
+              value={emissionStartDay == null ? "" : String(emissionStartDay)}
+            />
+          </TextField>
 
-          <Input
-            label="Día término emisión"
-            max={31}
-            min={1}
-            onChange={(event: ChangeEvent<HTMLInputElement>) => {
-              onChange("emissionEndDay", event.target.value ? Number(event.target.value) : null);
-            }}
-            type="number"
-            value={emissionEndDay ?? ""}
-          />
+          <TextField type="number">
+            <Label>Día término emisión</Label>
+            <Input
+              max={31}
+              min={1}
+              onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                onChange("emissionEndDay", event.target.value ? Number(event.target.value) : null);
+              }}
+              value={emissionEndDay == null ? "" : String(emissionEndDay)}
+            />
+          </TextField>
         </>
       )}
       {(emissionMode ?? "FIXED_DAY") === "SPECIFIC_DATE" && (

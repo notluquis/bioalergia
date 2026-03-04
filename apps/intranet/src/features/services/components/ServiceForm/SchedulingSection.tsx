@@ -1,9 +1,17 @@
-import { Calendar, DateField, DatePicker, Label, ListBox, Select } from "@heroui/react";
+import {
+  Calendar,
+  DateField,
+  DatePicker,
+  Description,
+  Input,
+  Label,
+  ListBox,
+  Select,
+  TextField,
+} from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
-
-import { Input } from "@/components/ui/Input";
 import { GRID_2_COL_MD } from "@/lib/styles";
 
 import type { ServiceFrequency, ServiceRecurrenceType } from "../../types";
@@ -105,33 +113,32 @@ export function SchedulingSection({
         </DatePicker.Popover>
       </DatePicker>
 
-      <Input
-        disabled={recurrenceType === "ONE_OFF" || frequency === "ONCE"}
-        helper={
-          recurrenceType === "ONE_OFF" || frequency === "ONCE"
-            ? "Para servicios puntuales se genera un único periodo"
-            : undefined
-        }
-        label="Meses a generar"
-        max={60}
-        min={1}
-        onChange={(event: ChangeEvent<HTMLInputElement>) => {
-          onChange("monthsToGenerate", Number(event.target.value));
-        }}
-        type="number"
-        value={effectiveMonths}
-      />
+      <TextField isDisabled={recurrenceType === "ONE_OFF" || frequency === "ONCE"} type="number">
+        <Label>Meses a generar</Label>
+        <Input
+          max={60}
+          min={1}
+          onChange={(event: ChangeEvent<HTMLInputElement>) => {
+            onChange("monthsToGenerate", Number(event.target.value));
+          }}
+          value={String(effectiveMonths)}
+        />
+        {recurrenceType === "ONE_OFF" || frequency === "ONCE" ? (
+          <Description>Para servicios puntuales se genera un único periodo</Description>
+        ) : null}
+      </TextField>
 
-      <Input
-        label="Día de vencimiento"
-        max={31}
-        min={1}
-        onChange={(event: ChangeEvent<HTMLInputElement>) => {
-          onChange("dueDay", event.target.value ? Number(event.target.value) : null);
-        }}
-        type="number"
-        value={dueDay ?? ""}
-      />
+      <TextField type="number">
+        <Label>Día de vencimiento</Label>
+        <Input
+          max={31}
+          min={1}
+          onChange={(event: ChangeEvent<HTMLInputElement>) => {
+            onChange("dueDay", event.target.value ? Number(event.target.value) : null);
+          }}
+          value={dueDay == null ? "" : String(dueDay)}
+        />
+      </TextField>
     </section>
   );
 }

@@ -232,6 +232,7 @@ const NOT_ATTENDED_PATTERNS = [
   /\bno\s+asisti[oó]\b/i,
   /\bno\s+podr[áa]\s+asistir\b/i,
   /\bno\s+podr[áa]\s+venir\b/i,
+  /\bcancel[oó]\s+la\s+hora\b/i,
 ];
 /** Patterns for confirmation of future attendance (not attended yet) */
 const PENDING_CONFIRMATION_PATTERNS = [/\bconfirma\b/i, /\bconfirmado\b/i, /\bconfirmada\b/i];

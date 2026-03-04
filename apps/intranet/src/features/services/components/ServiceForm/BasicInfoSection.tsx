@@ -1,7 +1,6 @@
-import { Label, ListBox, Select } from "@heroui/react";
+import { Input, Label, ListBox, Select, TextArea, TextField } from "@heroui/react";
 import type { ChangeEvent } from "react";
 import { z } from "zod";
-import { Input } from "@/components/ui/Input";
 import { SelectWithCreateNew } from "@/components/ui/SelectWithCreateNew";
 import { GRID_2_COL_MD } from "@/lib/styles";
 
@@ -38,14 +37,15 @@ export function BasicInfoSection({
 }: BasicInfoSectionProps) {
   return (
     <section className={GRID_2_COL_MD}>
-      <Input
-        label="Nombre"
-        onChange={(event: ChangeEvent<HTMLInputElement>) => {
-          onChange("name", event.target.value);
-        }}
-        required
-        value={name}
-      />
+      <TextField isRequired>
+        <Label>Nombre</Label>
+        <Input
+          onChange={(event: ChangeEvent<HTMLInputElement>) => {
+            onChange("name", event.target.value);
+          }}
+          value={name}
+        />
+      </TextField>
 
       <SelectWithCreateNew
         createButtonLabel="+ Nueva categoría"
@@ -92,37 +92,40 @@ export function BasicInfoSection({
         </Select.Popover>
       </Select>
 
-      <Input
-        label="Recordar (días antes)"
-        max={90}
-        min={0}
-        onChange={(event: ChangeEvent<HTMLInputElement>) => {
-          onChange("reminderDaysBefore", Number(event.target.value || 0));
-        }}
-        type="number"
-        value={reminderDaysBefore}
-      />
+      <TextField type="number">
+        <Label>Recordar (días antes)</Label>
+        <Input
+          max={90}
+          min={0}
+          onChange={(event: ChangeEvent<HTMLInputElement>) => {
+            onChange("reminderDaysBefore", Number(event.target.value || 0));
+          }}
+          value={String(reminderDaysBefore)}
+        />
+      </TextField>
 
-      <Input
-        as="textarea"
-        helper="Describe qué cubre el servicio o condiciones especiales"
-        label="Detalle"
-        onChange={(event: ChangeEvent<HTMLTextAreaElement>) => {
-          onChange("detail", event.target.value);
-        }}
-        rows={3}
-        value={detail ?? ""}
-      />
+      <TextField>
+        <Label>Detalle</Label>
+        <TextArea
+          onChange={(event: ChangeEvent<HTMLTextAreaElement>) => {
+            onChange("detail", event.target.value);
+          }}
+          placeholder="Describe qué cubre el servicio o condiciones especiales"
+          rows={3}
+          value={detail ?? ""}
+        />
+      </TextField>
 
-      <Input
-        as="textarea"
-        label="Notas"
-        onChange={(event: ChangeEvent<HTMLTextAreaElement>) => {
-          onChange("notes", event.target.value);
-        }}
-        rows={3}
-        value={notes ?? ""}
-      />
+      <TextField>
+        <Label>Notas</Label>
+        <TextArea
+          onChange={(event: ChangeEvent<HTMLTextAreaElement>) => {
+            onChange("notes", event.target.value);
+          }}
+          rows={3}
+          value={notes ?? ""}
+        />
+      </TextField>
     </section>
   );
 }

@@ -1,7 +1,6 @@
-import { Button, Chip, Description, Modal, Spinner } from "@heroui/react";
+import { Button, Chip, Description, Input, Label, Modal, Spinner, TextField } from "@heroui/react";
 import dayjs from "dayjs";
 import { useCallback, useEffect, useState } from "react";
-import { Input } from "@/components/ui/Input";
 import type { Employee } from "@/features/hr/employees/types";
 import { fmtCLP } from "@/lib/format";
 import { formatRetentionPercent, getEffectiveRetentionRate } from "~/shared/retention";
@@ -258,24 +257,24 @@ function LocalAgentPanel({ isHttpsPage, state }: { isHttpsPage: boolean; state: 
     <>
       <span className="mb-3 block font-semibold text-sm">Agente local</span>
       <div className="mb-3">
-        <Input
-          id="local-agent-url"
-          label="URL del agente"
-          onChange={(event) => state.setAgentUrlValue(event.target.value)}
-          placeholder="https://127.0.0.1:3333"
-          type="text"
-          value={state.agentUrl}
-        />
+        <TextField id="local-agent-url" type="text">
+          <Label>URL del agente</Label>
+          <Input
+            onChange={(event) => state.setAgentUrlValue(event.target.value)}
+            placeholder="https://127.0.0.1:3333"
+            value={state.agentUrl}
+          />
+        </TextField>
       </div>
       <div className="mb-3">
-        <Input
-          id="local-agent-token"
-          label="Token"
-          onChange={(event) => state.setAgentTokenValue(event.target.value)}
-          placeholder="Token del agente local"
-          type="password"
-          value={state.agentToken}
-        />
+        <TextField id="local-agent-token" type="password">
+          <Label>Token</Label>
+          <Input
+            onChange={(event) => state.setAgentTokenValue(event.target.value)}
+            placeholder="Token del agente local"
+            value={state.agentToken}
+          />
+        </TextField>
       </div>
       <div className="flex items-center gap-3">
         <Button isDisabled={state.checkingAgent} onClick={state.verifyAgent} variant="secondary">

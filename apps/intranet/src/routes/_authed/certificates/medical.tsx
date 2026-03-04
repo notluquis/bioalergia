@@ -6,10 +6,12 @@ import {
   DatePicker,
   DateRangePicker,
   FieldError,
+  Input,
   Label,
   ListBox,
   RangeCalendar,
   Select,
+  TextField,
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { useForm } from "@tanstack/react-form";
@@ -17,7 +19,10 @@ import { useMutation } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { z } from "zod";
-import { Input } from "@/components/ui/Input";
+import {
+  TanStackInputField,
+  TanStackTextAreaField,
+} from "@/components/forms/TanStackFieldControls";
 import { apiClient } from "@/lib/api-client";
 import { toast } from "@/lib/toast-interceptor";
 
@@ -118,29 +123,12 @@ function MedicalCertificatePage() {
             <h3 className="mb-4 font-semibold text-foreground text-lg">Datos del Paciente</h3>
             <div className="grid gap-4 sm:grid-cols-2">
               <form.Field name="patientName">
-                {(field) => (
-                  <Input
-                    label="Nombre Completo"
-                    id="patientName"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                    error={field.state.meta.errors.join(", ")}
-                  />
-                )}
+                {(field) => <TanStackInputField field={field} label="Nombre Completo" />}
               </form.Field>
 
               <form.Field name="rut">
                 {(field) => (
-                  <Input
-                    label="RUT"
-                    id="rut"
-                    placeholder="12.345.678-9"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                    error={field.state.meta.errors.join(", ")}
-                  />
+                  <TanStackInputField field={field} label="RUT" placeholder="12.345.678-9" />
                 )}
               </form.Field>
 
@@ -198,16 +186,7 @@ function MedicalCertificatePage() {
               </form.Field>
 
               <form.Field name="address">
-                {(field) => (
-                  <Input
-                    label="Domicilio"
-                    id="address"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                    error={field.state.meta.errors.join(", ")}
-                  />
-                )}
+                {(field) => <TanStackInputField field={field} label="Domicilio" />}
               </form.Field>
             </div>
           </div>
@@ -272,15 +251,10 @@ function MedicalCertificatePage() {
 
               <form.Field name="diagnosis">
                 {(field) => (
-                  <Input
-                    as="textarea"
-                    id="diagnosis"
+                  <TanStackTextAreaField
+                    field={field}
                     label="Diagnóstico *"
                     rows={3}
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                    error={field.state.meta.errors.join(", ")}
                     placeholder="Ej: cuadro compatible con reacción alérgica"
                   />
                 )}
@@ -288,14 +262,10 @@ function MedicalCertificatePage() {
 
               <form.Field name="symptoms">
                 {(field) => (
-                  <Input
-                    as="textarea"
-                    id="symptoms"
+                  <TanStackTextAreaField
+                    field={field}
                     label="Síntomas (opcional)"
                     rows={2}
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
                     placeholder="Ej: dolor en diversas zonas, predominio de cefalea intensa"
                   />
                 )}
@@ -309,15 +279,15 @@ function MedicalCertificatePage() {
             <div className="grid gap-4 sm:grid-cols-3">
               <form.Field name="restDays">
                 {(field) => (
-                  <Input
-                    type="number"
-                    label="Días de Reposo"
-                    id="restDays"
-                    value={field.state.value?.toString() || "0"}
-                    onChange={(e) => field.handleChange(Number(e.target.value))}
-                    onBlur={field.handleBlur}
-                    min={0}
-                  />
+                  <TextField type="number">
+                    <Label>Días de Reposo</Label>
+                    <Input
+                      min={0}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(Number(e.target.value))}
+                      value={field.state.value?.toString() || "0"}
+                    />
+                  </TextField>
                 )}
               </form.Field>
 
@@ -441,15 +411,7 @@ function MedicalCertificatePage() {
                 {(purpose) =>
                   purpose === "otro" && (
                     <form.Field name="purposeDetail">
-                      {(field) => (
-                        <Input
-                          label="Especificar"
-                          id="purposeDetail"
-                          value={field.state.value}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                          onBlur={field.handleBlur}
-                        />
-                      )}
+                      {(field) => <TanStackInputField field={field} label="Especificar" />}
                     </form.Field>
                   )
                 }

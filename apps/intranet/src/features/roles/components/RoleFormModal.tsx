@@ -4,7 +4,10 @@ import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-q
 import { AlertCircle, User as UserIcon } from "lucide-react";
 import { Suspense } from "react";
 import { z } from "zod";
-import { Input } from "@/components/ui/Input";
+import {
+  TanStackInputField,
+  TanStackTextAreaField,
+} from "@/components/forms/TanStackFieldControls";
 import { useToast } from "@/context/ToastContext";
 import { createRole, type RoleUser, roleKeys, roleQueries, updateRole } from "@/features/roles/api";
 import type { Role } from "@/types/roles";
@@ -155,28 +158,21 @@ function RoleBaseForm({ onClose, roleEntity, userData }: RoleBaseFormProps) {
     >
       <form.Field name="name">
         {(field) => (
-          <Input
+          <TanStackInputField
+            field={field}
             label="Nombre del Rol"
             placeholder="Ej. Supervisor de Finanzas"
-            onBlur={field.handleBlur}
-            onChange={(e) => field.handleChange(e.target.value)}
-            value={field.state.value}
-            error={field.state.meta.errors[0]?.message}
           />
         )}
       </form.Field>
 
       <form.Field name="description">
         {(field) => (
-          <Input
-            as="textarea"
+          <TanStackTextAreaField
+            field={field}
             label="Descripción"
             placeholder="Descripción breve de las responsabilidades"
             rows={3}
-            onBlur={field.handleBlur}
-            onChange={(e) => field.handleChange(e.target.value)}
-            value={field.state.value ?? ""}
-            error={field.state.meta.errors[0]?.message}
           />
         )}
       </form.Field>

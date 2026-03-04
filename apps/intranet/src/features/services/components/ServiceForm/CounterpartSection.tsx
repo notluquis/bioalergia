@@ -1,7 +1,5 @@
-import { Description, Label, ListBox, Select } from "@heroui/react";
+import { Description, Input, Label, ListBox, Select, TextField } from "@heroui/react";
 import type { ChangeEvent } from "react";
-
-import { Input } from "@/components/ui/Input";
 import { GRID_2_COL_MD } from "@/lib/styles";
 
 import type { Counterpart, CounterpartAccount } from "../../../counterparts/types";
@@ -99,14 +97,16 @@ export function CounterpartSection({
         </Select.Popover>
         {accountsHelper && <Description>{accountsHelper}</Description>}
       </Select>
-      <Input
-        helper="Usa este campo si necesitas un alias o número distinto a las cuentas registradas"
-        label="Referencia de cuenta"
-        onChange={(event: ChangeEvent<HTMLInputElement>) => {
-          onChange("accountReference", event.target.value);
-        }}
-        value={accountReference ?? ""}
-      />
+      <TextField>
+        <Label>Referencia de cuenta</Label>
+        <Input
+          onChange={(event: ChangeEvent<HTMLInputElement>) => {
+            onChange("accountReference", event.target.value);
+          }}
+          placeholder="Usa este campo si necesitas un alias o número distinto a las cuentas registradas"
+          value={accountReference ?? ""}
+        />
+      </TextField>
     </section>
   );
 }

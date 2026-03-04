@@ -1,9 +1,8 @@
-import { Button } from "@heroui/react";
+import { Button, Input, TextField } from "@heroui/react";
 import { startRegistration } from "@simplewebauthn/browser";
 import { useMutation } from "@tanstack/react-query";
 import { Check, Fingerprint, Loader2, Smartphone } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Input } from "@/components/ui/Input";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import {
@@ -220,16 +219,18 @@ export function AccountSettingsPage() {
                     <div className="mx-auto max-w-xs space-y-3">
                       <p className="font-medium text-sm">2. Ingresa el código de 6 dígitos:</p>
                       <div className="flex gap-2">
-                        <Input
-                          autoComplete="one-time-code"
-                          className="text-center tracking-widest"
-                          maxLength={6}
-                          onChange={(e) => {
-                            setMfaToken(e.target.value);
-                          }}
-                          placeholder="000000"
-                          value={mfaToken}
-                        />
+                        <TextField>
+                          <Input
+                            autoComplete="one-time-code"
+                            className="text-center tracking-widest"
+                            maxLength={6}
+                            onChange={(e) => {
+                              setMfaToken(e.target.value);
+                            }}
+                            placeholder="000000"
+                            value={mfaToken}
+                          />
+                        </TextField>
 
                         <Button
                           isDisabled={enableMfaMutation.isPending || mfaToken.length !== 6}

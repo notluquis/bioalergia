@@ -1,9 +1,8 @@
-import { Card, Chip } from "@heroui/react";
+import { Card, Chip, InputGroup, TextField } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { AlertCircle, CheckCircle, Search, Settings, ShieldAlert } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Input } from "@/components/ui/Input";
 // Import dynamically to avoid bundling in prod if not tree-shaken correctly by router
 // But for this dev page we can import directly for simplicity as the route itself should be dev-only
 import { auditRouteNavigation } from "@/lib/route-utils";
@@ -146,15 +145,18 @@ function RoutesAuditPage() {
 
       <div className="space-y-4">
         <div className="flex items-center gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute top-2.5 left-2 size-4 text-muted-foreground" />
-            <Input
-              placeholder="Search routes..."
-              className="pl-8"
-              value={searchTerm}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
-            />
-          </div>
+          <TextField className="flex-1">
+            <InputGroup>
+              <InputGroup.Prefix className="text-muted-foreground">
+                <Search className="size-4" />
+              </InputGroup.Prefix>
+              <InputGroup.Input
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
+                placeholder="Search routes..."
+                value={searchTerm}
+              />
+            </InputGroup>
+          </TextField>
           <div className="flex items-center gap-2">
             <Chip
               color={filter === "all" ? "accent" : "default"}

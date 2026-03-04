@@ -1,8 +1,16 @@
-import { Button, Label, ListBox, Select } from "@heroui/react";
+import {
+  Button,
+  Description,
+  FieldError,
+  Input,
+  Label,
+  ListBox,
+  Select,
+  TextField,
+} from "@heroui/react";
 import { useMutation } from "@tanstack/react-query";
 import type React from "react";
 import { useEffect, useState } from "react";
-import { Input } from "@/components/ui/Input";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { formatRut, normalizeRut, validateRut } from "@/lib/rut";
@@ -302,84 +310,90 @@ function EmployeeFormContent({
             </Select.Popover>
           </Select>
         </div>
-        <Input
-          label="Nombres"
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-            setForm((prev) => ({ ...prev, names: event.target.value }));
-          }}
-          required
-          type="text"
-          value={form.names}
-        />
+        <TextField isRequired type="text">
+          <Label>Nombres</Label>
+          <Input
+            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+              setForm((prev) => ({ ...prev, names: event.target.value }));
+            }}
+            value={form.names}
+          />
+        </TextField>
 
-        <Input
-          label="Primer apellido"
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-            setForm((prev) => ({ ...prev, firstLastName: event.target.value }));
-          }}
-          type="text"
-          value={form.firstLastName}
-        />
+        <TextField type="text">
+          <Label>Primer apellido</Label>
+          <Input
+            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+              setForm((prev) => ({ ...prev, firstLastName: event.target.value }));
+            }}
+            value={form.firstLastName}
+          />
+        </TextField>
 
-        <Input
-          label="Segundo apellido"
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-            setForm((prev) => ({ ...prev, secondLastName: event.target.value }));
-          }}
-          type="text"
-          value={form.secondLastName}
-        />
+        <TextField type="text">
+          <Label>Segundo apellido</Label>
+          <Input
+            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+              setForm((prev) => ({ ...prev, secondLastName: event.target.value }));
+            }}
+            value={form.secondLastName}
+          />
+        </TextField>
 
-        <Input
-          label="Cargo"
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-            setForm((prev) => ({ ...prev, role: event.target.value }));
-          }}
-          required
-          type="text"
-          value={form.role}
-        />
+        <TextField isRequired type="text">
+          <Label>Cargo</Label>
+          <Input
+            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+              setForm((prev) => ({ ...prev, role: event.target.value }));
+            }}
+            value={form.role}
+          />
+        </TextField>
 
-        <Input
-          label="Correo"
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-            setForm((prev) => ({ ...prev, email: event.target.value }));
-          }}
-          placeholder="correo@bioalergia.cl"
-          type="email"
-          value={form.email}
-        />
+        <TextField type="email">
+          <Label>Correo</Label>
+          <Input
+            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+              setForm((prev) => ({ ...prev, email: event.target.value }));
+            }}
+            placeholder="correo@bioalergia.cl"
+            value={form.email}
+          />
+        </TextField>
 
-        <Input
-          error={rutError || undefined}
-          label="RUT"
-          onBlur={handleRutBlur}
-          onChange={handleRutChange}
-          placeholder="12.345.678-9"
-          type="text"
-          value={form.rut}
-        />
+        <TextField isInvalid={Boolean(rutError)} type="text">
+          <Label>RUT</Label>
+          <Input
+            onBlur={handleRutBlur}
+            onChange={handleRutChange}
+            placeholder="12.345.678-9"
+            value={form.rut}
+          />
+          {rutError ? <FieldError>{rutError}</FieldError> : null}
+        </TextField>
 
-        <Input
-          label="Banco"
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-            setForm((prev) => ({ ...prev, bankName: event.target.value }));
-          }}
-          placeholder="BancoEstado"
-          type="text"
-          value={form.bankName}
-        />
+        <TextField type="text">
+          <Label>Banco</Label>
+          <Input
+            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+              setForm((prev) => ({ ...prev, bankName: event.target.value }));
+            }}
+            placeholder="BancoEstado"
+            value={form.bankName}
+          />
+        </TextField>
 
-        <Input
-          label="Tipo de cuenta"
-          list="bank-account-type-options"
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-            setForm((prev) => ({ ...prev, bankAccountType: event.target.value }));
-          }}
-          placeholder="RUT / VISTA / CORRIENTE / AHORRO"
-          type="text"
-          value={form.bankAccountType}
-        />
+        <TextField type="text">
+          <Label>Tipo de cuenta</Label>
+          <Input
+            list="bank-account-type-options"
+            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+              setForm((prev) => ({ ...prev, bankAccountType: event.target.value }));
+            }}
+            placeholder="RUT / VISTA / CORRIENTE / AHORRO"
+            value={form.bankAccountType}
+          />
+        </TextField>
 
         <datalist id="bank-account-type-options">
           <option value="RUT" />
@@ -387,66 +401,75 @@ function EmployeeFormContent({
           <option value="CORRIENTE" />
           <option value="AHORRO" />
         </datalist>
-        <Input
-          label="N° de cuenta"
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-            setForm((prev) => ({ ...prev, bankAccountNumber: event.target.value }));
-          }}
-          placeholder="12345678"
-          type="text"
-          value={form.bankAccountNumber}
-        />
+        <TextField type="text">
+          <Label>N° de cuenta</Label>
+          <Input
+            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+              setForm((prev) => ({ ...prev, bankAccountNumber: event.target.value }));
+            }}
+            placeholder="12345678"
+            value={form.bankAccountNumber}
+          />
+        </TextField>
 
-        <Input
-          disabled={form.salaryType !== "HOURLY"}
-          label="Valor hora (CLP)"
-          min="0"
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-            setForm((prev) => ({ ...prev, hourlyRate: event.target.value }));
-          }}
-          placeholder="$ 0"
-          required={form.salaryType === "HOURLY"}
+        <TextField
+          isDisabled={form.salaryType !== "HOURLY"}
+          isRequired={form.salaryType === "HOURLY"}
           type="number"
-          value={form.hourlyRate}
-        />
+        >
+          <Label>Valor hora (CLP)</Label>
+          <Input
+            min="0"
+            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+              setForm((prev) => ({ ...prev, hourlyRate: event.target.value }));
+            }}
+            placeholder="$ 0"
+            value={form.hourlyRate}
+          />
+        </TextField>
 
         {form.salaryType === "FIXED" && (
-          <Input
-            inputMode="numeric"
-            label="Sueldo fijo mensual (CLP)"
-            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-              const rawValue = parseCLP(event.target.value);
-              setForm((prev) => ({ ...prev, fixedSalary: rawValue }));
-            }}
-            placeholder="$ 1.500.000"
-            required
-            type="text"
-            value={formatCLP(form.fixedSalary)}
-          />
+          <TextField isRequired type="text">
+            <Label>Sueldo fijo mensual (CLP)</Label>
+            <Input
+              inputMode="numeric"
+              onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                const rawValue = parseCLP(event.target.value);
+                setForm((prev) => ({ ...prev, fixedSalary: rawValue }));
+              }}
+              placeholder="$ 1.500.000"
+              value={formatCLP(form.fixedSalary)}
+            />
+          </TextField>
         )}
-        <Input
-          label="Valor hora extra (CLP)"
-          min="0"
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-            setForm((prev) => ({ ...prev, overtimeRate: event.target.value }));
-          }}
-          placeholder="Opcional - dejar vacío si no aplica"
-          type="number"
-          value={form.overtimeRate}
-        />
+        <TextField type="number">
+          <Label>Valor hora extra (CLP)</Label>
+          <Input
+            min="0"
+            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+              setForm((prev) => ({ ...prev, overtimeRate: event.target.value }));
+            }}
+            placeholder="Opcional - dejar vacío si no aplica"
+            value={form.overtimeRate}
+          />
+        </TextField>
 
-        <Input
-          helper="Dejar vacío para usar tasa por año: 2025=14,5% | 2026=15,25%. Si se ingresa un valor, este se aplica para TODOS los años."
-          inputMode="decimal"
-          label="Retención (%) - Personalizada"
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-            const value = event.target.value.replaceAll(/[^\d.,]/g, "");
-            setForm((prev) => ({ ...prev, retentionRate: value }));
-          }}
-          placeholder="Ej: 14.5 (opcional - usa tasa por año si está vacío)"
-          type="text"
-          value={form.retentionRate}
-        />
+        <TextField type="text">
+          <Label>Retención (%) - Personalizada</Label>
+          <Input
+            inputMode="decimal"
+            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+              const value = event.target.value.replaceAll(/[^\d.,]/g, "");
+              setForm((prev) => ({ ...prev, retentionRate: value }));
+            }}
+            placeholder="Ej: 14.5 (opcional - usa tasa por año si está vacío)"
+            value={form.retentionRate}
+          />
+          <Description>
+            Dejar vacío para usar tasa por año: 2025=14,5% | 2026=15,25%. Si se ingresa un valor,
+            este se aplica para TODOS los años.
+          </Description>
+        </TextField>
       </div>
       <div className="flex items-center justify-end gap-3">
         <Button onClick={onCancel} type="button" variant="secondary">

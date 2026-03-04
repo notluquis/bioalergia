@@ -1,9 +1,8 @@
 import { schema as schemaLite } from "@finanzas/db/schema-lite";
-import { Button, Description, Skeleton } from "@heroui/react";
+import { Button, Description, Input, Label, Skeleton, TextField } from "@heroui/react";
 import { useClientQueries } from "@zenstackhq/tanstack-query/react";
 import { PlusCircle } from "lucide-react";
 import { useState } from "react";
-import { Input } from "@/components/ui/Input";
 
 import type { InventoryCategory } from "../types";
 export function InventoryCategoryManager() {
@@ -62,20 +61,18 @@ export function InventoryCategoryManager() {
       </div>
 
       <form className="flex flex-col gap-3 sm:flex-row sm:items-end" onSubmit={handleAddCategory}>
-        <Input
-          className="w-full flex-1"
-          containerClassName="gap-1"
-          disabled={createMutation.isPending}
-          enterKeyHint="done"
-          id="new-category-name"
-          label="Nueva categoría"
-          onChange={(e) => {
-            setNewCategoryName(e.target.value);
-          }}
-          placeholder="Ej: Insumos Médicos"
-          type="text"
-          value={newCategoryName}
-        />
+        <TextField className="w-full flex-1" isDisabled={createMutation.isPending} type="text">
+          <Label htmlFor="new-category-name">Nueva categoría</Label>
+          <Input
+            enterKeyHint="done"
+            id="new-category-name"
+            onChange={(e) => {
+              setNewCategoryName(e.target.value);
+            }}
+            placeholder="Ej: Insumos Médicos"
+            value={newCategoryName}
+          />
+        </TextField>
         <Button
           className="inline-flex items-center gap-2"
           isDisabled={createMutation.isPending || !newCategoryName.trim()}

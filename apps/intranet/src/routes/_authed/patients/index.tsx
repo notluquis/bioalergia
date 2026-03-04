@@ -1,4 +1,4 @@
-import { Button, Card, Chip, Tabs } from "@heroui/react";
+import { Button, Card, Chip, InputGroup, Tabs, TextField } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import type { ColumnDef, PaginationState } from "@tanstack/react-table";
@@ -8,7 +8,6 @@ import { lazy, Suspense, useMemo, useState } from "react";
 import { z } from "zod";
 import { DataTable } from "@/components/data-table/DataTable";
 import { TableRegion } from "@/components/data-table/TableRegion";
-import { Input } from "@/components/ui/Input";
 import { PatientListSchema } from "@/features/patients/schemas";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { useLazyTabs } from "@/hooks/use-lazy-tabs";
@@ -278,16 +277,21 @@ function PatientsListPage() {
             <Tabs.Panel className="space-y-4 pt-4" id="clinical">
               {isTabMounted("clinical") ? (
                 <>
-                  <Input
-                    className="max-w-md"
-                    onChange={(e) => {
-                      setSearchClinical(e.target.value);
-                      setPaginationClinical((prev) => ({ ...prev, pageIndex: 0 }));
-                    }}
-                    placeholder="Buscar ficha clínica por nombre o RUT..."
-                    rightElement={<Search className="text-default-300" size={18} />}
-                    value={searchClinical}
-                  />
+                  <TextField className="max-w-md">
+                    <InputGroup>
+                      <InputGroup.Input
+                        onChange={(e) => {
+                          setSearchClinical(e.target.value);
+                          setPaginationClinical((prev) => ({ ...prev, pageIndex: 0 }));
+                        }}
+                        placeholder="Buscar ficha clínica por nombre o RUT..."
+                        value={searchClinical}
+                      />
+                      <InputGroup.Suffix>
+                        <Search className="text-default-300" size={18} />
+                      </InputGroup.Suffix>
+                    </InputGroup>
+                  </TextField>
                   <TableRegion>
                     <DataTable
                       columns={patientColumns}
@@ -311,16 +315,21 @@ function PatientsListPage() {
             <Tabs.Panel className="space-y-4 pt-4" id="dte">
               {isTabMounted("dte") ? (
                 <>
-                  <Input
-                    className="max-w-md"
-                    onChange={(e) => {
-                      setSearchDte(e.target.value);
-                      setPaginationDte((prev) => ({ ...prev, pageIndex: 0 }));
-                    }}
-                    placeholder="Buscar en fuente DTE por nombre o RUT..."
-                    rightElement={<Search className="text-default-300" size={18} />}
-                    value={searchDte}
-                  />
+                  <TextField className="max-w-md">
+                    <InputGroup>
+                      <InputGroup.Input
+                        onChange={(e) => {
+                          setSearchDte(e.target.value);
+                          setPaginationDte((prev) => ({ ...prev, pageIndex: 0 }));
+                        }}
+                        placeholder="Buscar en fuente DTE por nombre o RUT..."
+                        value={searchDte}
+                      />
+                      <InputGroup.Suffix>
+                        <Search className="text-default-300" size={18} />
+                      </InputGroup.Suffix>
+                    </InputGroup>
+                  </TextField>
                   <TableRegion>
                     <DataTable
                       columns={dteColumns}

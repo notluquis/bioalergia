@@ -4,14 +4,15 @@ import {
   Card,
   DateField,
   DateRangePicker,
+  Input,
   Label,
   ListBox,
   RangeCalendar,
   Select,
+  TextField,
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { DataTable } from "@/components/data-table/DataTable";
-import { Input } from "@/components/ui/Input";
 import {
   getCounterpartsColumns,
   getLeaderboardColumns,
@@ -58,17 +59,18 @@ export function ParticipantInsightsPage() {
             className="grid items-end gap-6 sm:grid-cols-2 lg:grid-cols-4"
             onSubmit={handleSubmit}
           >
-            <Input
-              enterKeyHint="search"
-              inputMode="numeric"
-              label="ID participante"
-              onChange={(e) => {
-                setParticipantId(e.target.value);
-              }}
-              placeholder="123861706983"
-              type="text"
-              value={participantId}
-            />
+            <TextField name="participantId" type="text">
+              <Label>ID participante</Label>
+              <Input
+                enterKeyHint="search"
+                inputMode="numeric"
+                onChange={(e) => {
+                  setParticipantId(e.target.value);
+                }}
+                placeholder="123861706983"
+                value={participantId}
+              />
+            </TextField>
 
             <Select
               onChange={(value) => {

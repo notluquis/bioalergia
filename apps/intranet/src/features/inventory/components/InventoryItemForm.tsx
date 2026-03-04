@@ -1,7 +1,6 @@
-import { Button, Label, ListBox, Select } from "@heroui/react";
+import { Button, Input, Label, ListBox, Select, TextArea, TextField } from "@heroui/react";
 import type React from "react";
 import { useEffect, useState } from "react";
-import { Input } from "@/components/ui/Input";
 
 import { getInventoryCategories } from "../api";
 import type { InventoryCategory, InventoryItem } from "../types";
@@ -34,15 +33,15 @@ export function InventoryItemForm({ item, onCancel, onSave, saving }: InventoryI
   return (
     <form className="space-y-4 text-sm" onSubmit={handleSubmit}>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <Input
-          label="Nombre del item"
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-            setForm({ ...form, name: event.target.value });
-          }}
-          required
-          type="text"
-          value={form.name ?? ""}
-        />
+        <TextField isRequired type="text">
+          <Label>Nombre del item</Label>
+          <Input
+            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+              setForm({ ...form, name: event.target.value });
+            }}
+            value={form.name ?? ""}
+          />
+        </TextField>
 
         <Select
           onChange={(key) => {
@@ -72,26 +71,26 @@ export function InventoryItemForm({ item, onCancel, onSave, saving }: InventoryI
           </Select.Popover>
         </Select>
       </div>
-      <Input
-        as="textarea"
-        label="Descripción"
-        onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => {
-          setForm({ ...form, description: event.target.value });
-        }}
-        rows={3}
-        value={form.description ?? ""}
-      />
+      <TextField>
+        <Label>Descripción</Label>
+        <TextArea
+          onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => {
+            setForm({ ...form, description: event.target.value });
+          }}
+          rows={3}
+          value={form.description ?? ""}
+        />
+      </TextField>
 
-      <Input
-        disabled={Boolean(item)} // Disable if editing
-        label="Stock inicial"
-        onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-          setForm({ ...form, current_stock: Number(event.target.value) });
-        }}
-        required
-        type="number"
-        value={form.current_stock ?? 0}
-      />
+      <TextField isDisabled={Boolean(item)} isRequired type="number">
+        <Label>Stock inicial</Label>
+        <Input
+          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+            setForm({ ...form, current_stock: Number(event.target.value) });
+          }}
+          value={String(form.current_stock ?? 0)}
+        />
+      </TextField>
 
       <div className="flex items-center justify-end gap-3 pt-4">
         <Button onClick={onCancel} type="button" variant="secondary">

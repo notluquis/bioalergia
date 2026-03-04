@@ -1,9 +1,8 @@
-import { Button, Label, ListBox, Modal, Select } from "@heroui/react";
+import { Button, Input, Label, ListBox, Modal, Select, TextField } from "@heroui/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FileUp, Save, X } from "lucide-react";
 import { useState } from "react";
 import { FileInput } from "@/components/ui/FileInput";
-import { Input } from "@/components/ui/Input";
 import { AttachmentSchema } from "@/features/patients/schemas";
 import { apiClient } from "@/lib/api-client";
 import { toast } from "@/lib/toast-interceptor";
@@ -112,12 +111,14 @@ export function NewAttachmentModal({ isOpen, onClose, patientId }: NewAttachment
                     )}
                   </div>
 
-                  <Input
-                    label="Nombre del Documento"
-                    placeholder="Ej: Consentimiento informado"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                  />
+                  <TextField>
+                    <Label>Nombre del Documento</Label>
+                    <Input
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Ej: Consentimiento informado"
+                      value={name}
+                    />
+                  </TextField>
 
                   <Select
                     value={type}

@@ -1,8 +1,7 @@
-import { Button, ListBox, Popover, type Selection } from "@heroui/react";
+import { Button, InputGroup, ListBox, Popover, type Selection, TextField } from "@heroui/react";
 import { useDebouncedValue } from "@tanstack/react-pacer";
 import { Check, Search } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Input } from "@/components/ui/Input";
 import { cn } from "@/lib/utils";
 
 export interface EmployeeMultiSelectOption {
@@ -80,13 +79,18 @@ export function EmployeeMultiSelectPopover({
         placement="bottom"
       >
         <Popover.Dialog className="space-y-2 p-3">
-          <Input
-            className="w-full"
-            placeholder={placeholder}
-            size="sm"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-          />
+          <TextField className="w-full">
+            <InputGroup>
+              <InputGroup.Prefix className="text-default-400">
+                <Search className="h-4 w-4" />
+              </InputGroup.Prefix>
+              <InputGroup.Input
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder={placeholder}
+                value={search}
+              />
+            </InputGroup>
+          </TextField>
 
           <div className="max-h-72 overflow-y-auto">
             {filteredOptions.length === 0 ? (

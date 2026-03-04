@@ -1,7 +1,5 @@
-import { Label, ListBox, Select } from "@heroui/react";
+import { Input, Label, ListBox, Select, TextField } from "@heroui/react";
 import type { ChangeEvent } from "react";
-
-import { Input } from "@/components/ui/Input";
 
 import type { ServiceAmountIndexation, ServiceLateFeeMode } from "../../types";
 import type { ServiceFormState } from "../ServiceForm";
@@ -36,17 +34,17 @@ export function FinancialSection({
 }: FinancialSectionProps) {
   return (
     <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      <Input
-        label="Monto base"
-        min={0}
-        onChange={(event: ChangeEvent<HTMLInputElement>) => {
-          onChange("defaultAmount", Number(event.target.value));
-        }}
-        required
-        step="0.01"
-        type="number"
-        value={defaultAmount ?? 0}
-      />
+      <TextField isRequired type="number">
+        <Label>Monto base</Label>
+        <Input
+          min={0}
+          step="0.01"
+          onChange={(event: ChangeEvent<HTMLInputElement>) => {
+            onChange("defaultAmount", Number(event.target.value));
+          }}
+          value={String(defaultAmount ?? 0)}
+        />
+      </TextField>
 
       <Select
         // errorMessage={errors.amountIndexation?.message} // Removed as errors is not defined
@@ -92,27 +90,34 @@ export function FinancialSection({
       </Select>
       {(lateFeeMode ?? "NONE") !== "NONE" && (
         <>
-          <Input
-            label={(lateFeeMode ?? "NONE") === "PERCENTAGE" ? "% recargo" : "Monto recargo"}
-            min={0}
-            onChange={(event: ChangeEvent<HTMLInputElement>) => {
-              onChange("lateFeeValue", Number(event.target.value));
-            }}
-            step="0.01"
-            type="number"
-            value={lateFeeValue ?? ""}
-          />
+          <TextField type="number">
+            <Label>
+              {(lateFeeMode ?? "NONE") === "PERCENTAGE" ? "% recargo" : "Monto recargo"}
+            </Label>
+            <Input
+              min={0}
+              step="0.01"
+              onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                onChange("lateFeeValue", Number(event.target.value));
+              }}
+              value={lateFeeValue == null ? "" : String(lateFeeValue)}
+            />
+          </TextField>
 
-          <Input
-            label="Días de gracia"
-            max={31}
-            min={0}
-            onChange={(event: ChangeEvent<HTMLInputElement>) => {
-              onChange("lateFeeGraceDays", event.target.value ? Number(event.target.value) : null);
-            }}
-            type="number"
-            value={lateFeeGraceDays ?? ""}
-          />
+          <TextField type="number">
+            <Label>Días de gracia</Label>
+            <Input
+              max={31}
+              min={0}
+              onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                onChange(
+                  "lateFeeGraceDays",
+                  event.target.value ? Number(event.target.value) : null,
+                );
+              }}
+              value={lateFeeGraceDays == null ? "" : String(lateFeeGraceDays)}
+            />
+          </TextField>
         </>
       )}
     </section>

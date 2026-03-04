@@ -13,7 +13,10 @@ import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Save, User, UserPlus } from "lucide-react";
 import { z } from "zod";
-import { Input } from "@/components/ui/Input";
+import {
+  TanStackInputField,
+  TanStackTextAreaField,
+} from "@/components/forms/TanStackFieldControls";
 import { useToast } from "@/context/ToastContext";
 import { apiClient } from "@/lib/api-client";
 import { formatRut, validateRut } from "@/lib/rut";
@@ -133,50 +136,45 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
                       }}
                     >
                       {(field) => (
-                        <Input
-                          error={field.state.meta.errors.join(", ")}
+                        <TanStackInputField
+                          field={field}
                           label="RUT"
-                          onBlur={field.handleBlur}
-                          onChange={(e) => field.handleChange(formatRut(e.target.value))}
                           placeholder="12.345.678-9"
                           required
-                          value={field.state.value}
+                          transformOnChange={formatRut}
                         />
                       )}
                     </form.Field>
 
                     <form.Field name="names">
                       {(field) => (
-                        <Input
+                        <TanStackInputField
+                          field={field}
                           label="Nombres"
-                          onChange={(e) => field.handleChange(e.target.value)}
                           placeholder="Ej: Juan Andres"
                           required
-                          value={field.state.value}
                         />
                       )}
                     </form.Field>
 
                     <form.Field name="fatherName">
                       {(field) => (
-                        <Input
+                        <TanStackInputField
+                          field={field}
                           label="Primer apellido"
-                          onChange={(e) => field.handleChange(e.target.value)}
                           placeholder="Ej: Perez"
                           required
-                          value={field.state.value}
                         />
                       )}
                     </form.Field>
 
                     <form.Field name="motherName">
                       {(field) => (
-                        <Input
+                        <TanStackInputField
+                          field={field}
                           label="Segundo apellido"
-                          onChange={(e) => field.handleChange(e.target.value)}
                           placeholder="Ej: Gonzalez"
                           required
-                          value={field.state.value}
                         />
                       )}
                     </form.Field>
@@ -273,23 +271,21 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <form.Field name="email">
                       {(field) => (
-                        <Input
+                        <TanStackInputField
+                          field={field}
                           label="Correo Electronico"
-                          onChange={(e) => field.handleChange(e.target.value)}
                           placeholder="paciente@ejemplo.com"
                           type="email"
-                          value={field.state.value}
                         />
                       )}
                     </form.Field>
 
                     <form.Field name="phone">
                       {(field) => (
-                        <Input
+                        <TanStackInputField
+                          field={field}
                           label="Telefono"
-                          onChange={(e) => field.handleChange(e.target.value)}
                           placeholder="+56 9 1234 5678"
-                          value={field.state.value}
                         />
                       )}
                     </form.Field>
@@ -297,11 +293,10 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
                     <div className="md:col-span-2">
                       <form.Field name="address">
                         {(field) => (
-                          <Input
+                          <TanStackInputField
+                            field={field}
                             label="Direccion"
-                            onChange={(e) => field.handleChange(e.target.value)}
                             placeholder="Calle, Numero, Depto, Comuna"
-                            value={field.state.value}
                           />
                         )}
                       </form.Field>
@@ -316,13 +311,11 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
                   </div>
                   <form.Field name="notes">
                     {(field) => (
-                      <Input
-                        as="textarea"
+                      <TanStackTextAreaField
+                        field={field}
                         className="h-28"
                         label="Notas clinicas / Antecedentes"
-                        onChange={(e) => field.handleChange(e.target.value)}
                         placeholder="Ingrese cualquier antecedente relevante o notas generales..."
-                        value={field.state.value}
                       />
                     )}
                   </form.Field>

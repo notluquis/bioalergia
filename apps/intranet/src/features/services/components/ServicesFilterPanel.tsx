@@ -1,6 +1,5 @@
-import { Button, Description } from "@heroui/react";
+import { Button, Description, Input, Label, TextField } from "@heroui/react";
 import type { ChangeEvent } from "react";
-import { Input } from "@/components/ui/Input";
 
 import type { ServiceSummary, ServiceType } from "../types";
 
@@ -82,14 +81,16 @@ export function ServicesFilterPanel({ filters, onChange, services }: ServicesFil
 
       <div className="grid gap-4 md:grid-cols-3">
         <div className="md:col-span-1">
-          <Input
-            label="Buscar"
-            onChange={(event: ChangeEvent<HTMLInputElement>) => {
-              handleSearchChange(event.target.value);
-            }}
-            placeholder="Nombre, detalle, contraparte..."
-            value={filters.search}
-          />
+          <TextField>
+            <Label>Buscar</Label>
+            <Input
+              onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                handleSearchChange(event.target.value);
+              }}
+              placeholder="Nombre, detalle, contraparte..."
+              value={filters.search}
+            />
+          </TextField>
         </div>
 
         <div>

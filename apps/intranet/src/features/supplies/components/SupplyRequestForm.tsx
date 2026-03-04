@@ -1,8 +1,8 @@
-import { Button, FieldError, Label, ListBox, Select } from "@heroui/react";
+import { Button, FieldError, Input, Label, ListBox, Select, TextField } from "@heroui/react";
 import { useForm, useStore } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
-import { Input } from "@/components/ui/Input";
+import { TanStackTextAreaField } from "@/components/forms/TanStackFieldControls";
 import { useToast } from "@/context/ToastContext";
 import { queryKeys } from "@/lib/query-keys";
 import { createSupplyRequest, type SupplyRequestPayload } from "../api";
@@ -147,22 +147,21 @@ export function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyRequestFo
       <form.Field name="quantity">
         {(field) => (
           <div>
-            <Input
-              inputMode="numeric"
-              label="Cantidad"
-              min="1"
-              onBlur={field.handleBlur}
-              onChange={(e) => {
-                field.handleChange(Number.parseInt(e.target.value, 10) || 1);
-              }}
-              required
-              type="number"
-              value={field.state.value}
-            />
-
-            {field.state.meta.errors.length > 0 && (
-              <p className="mt-1 text-danger text-xs">{field.state.meta.errors.join(", ")}</p>
-            )}
+            <TextField isInvalid={field.state.meta.errors.length > 0} isRequired type="number">
+              <Label>Cantidad</Label>
+              <Input
+                inputMode="numeric"
+                min="1"
+                onBlur={field.handleBlur}
+                onChange={(e) => {
+                  field.handleChange(Number.parseInt(e.target.value, 10) || 1);
+                }}
+                value={String(field.state.value)}
+              />
+              {field.state.meta.errors.length > 0 && (
+                <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
+              )}
+            </TextField>
           </div>
         )}
       </form.Field>
@@ -241,21 +240,7 @@ export function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyRequestFo
       <form.Field name="notes">
         {(field) => (
           <div className="md:col-span-2">
-            <Input
-              as="textarea"
-              enterKeyHint="done"
-              label="Notas (opcional)"
-              onBlur={field.handleBlur}
-              onChange={(e) => {
-                field.handleChange(e.target.value);
-              }}
-              rows={3}
-              value={field.state.value ?? ""}
-            />
-
-            {field.state.meta.errors.length > 0 && (
-              <p className="mt-1 text-danger text-xs">{field.state.meta.errors.join(", ")}</p>
-            )}
+            <TanStackTextAreaField field={field} label="Notas (opcional)" rows={3} />
           </div>
         )}
       </form.Field>

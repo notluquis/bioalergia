@@ -1,11 +1,20 @@
-import { Button, Calendar, DateField, DatePicker, Label, Modal } from "@heroui/react";
+import {
+  Button,
+  Calendar,
+  DateField,
+  DatePicker,
+  FieldError,
+  Input,
+  Label,
+  Modal,
+  TextField,
+} from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { Check } from "lucide-react";
 import { useState } from "react";
-import { Input } from "@/components/ui/Input";
 import { toast } from "@/lib/toast-interceptor";
 
 import { personalFinanceApi } from "../api";
@@ -102,22 +111,23 @@ export function PayInstallmentModal({
                   <form.Field name="amount">
                     {(field) => (
                       <div>
-                        <Input
-                          label="Monto Pagado"
-                          onBlur={field.handleBlur}
-                          onChange={(e) => {
-                            field.handleChange(Number.parseFloat(e.target.value));
-                          }}
-                          required
+                        <TextField
+                          isInvalid={field.state.meta.errors.length > 0}
+                          isRequired
                           type="number"
-                          value={field.state.value}
-                        />
-
-                        {field.state.meta.errors.length > 0 && (
-                          <p className="mt-1 text-danger text-xs">
-                            {field.state.meta.errors.join(", ")}
-                          </p>
-                        )}
+                        >
+                          <Label>Monto Pagado</Label>
+                          <Input
+                            onBlur={field.handleBlur}
+                            onChange={(e) => {
+                              field.handleChange(Number.parseFloat(e.target.value));
+                            }}
+                            value={String(field.state.value)}
+                          />
+                          {field.state.meta.errors.length > 0 && (
+                            <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
+                          )}
+                        </TextField>
                       </div>
                     )}
                   </form.Field>
