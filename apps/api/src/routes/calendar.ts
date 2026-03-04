@@ -155,7 +155,7 @@ type PartialReclassifyUpdateData = {
   amountPaid?: number;
   controlIncluded?: boolean;
   isDomicilio?: boolean;
-  testMetadata?: null | TestMetadata;
+  testMetadata?: TestMetadata;
 };
 
 type FullReclassifyUpdateData = {
@@ -168,7 +168,7 @@ type FullReclassifyUpdateData = {
   amountPaid: null | number;
   controlIncluded: boolean;
   isDomicilio: boolean;
-  testMetadata: null | TestMetadata;
+  testMetadata?: TestMetadata;
 };
 
 type PartialFieldCounts = {
@@ -403,7 +403,7 @@ const buildFullUpdateData = (
     amountPaid: metadata.amountPaid,
     controlIncluded: metadata.controlIncluded,
     isDomicilio: metadata.isDomicilio,
-    testMetadata: metadata.testMetadata,
+    ...(metadata.testMetadata ? { testMetadata: metadata.testMetadata } : {}),
   };
 };
 
