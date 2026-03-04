@@ -299,6 +299,7 @@ const DOMICILIO_PATTERNS = [
   /\bse\s+lo\s+llevo\b/i, // "se lo llevo" (masculine variant)
   /\bse\s+lo\s+llev[oó]\b/i,
   /\bse\s+llev[oó]\b/i, // "se llevo ..."
+  /\bse\s+envia\b/i, // "se envia ..."
   /\bse\s+envi[oó]\b/i, // "se envio ..."
   /\bse\s+envi[oó]\s+pagad[ao]\b/i, // "se envio pagada/o"
 ];
@@ -313,6 +314,7 @@ const PHONE_PATTERNS = [
 /** Amount parsing helper patterns */
 const SLASH_FORMAT_PATTERN = /^\d+\s*\/\s*\d+$/; // Detect "paid/expected" format like "25/50"
 const PAGADO_KEYWORD_PATTERN = /pagado/i; // Detect "pagado" keyword in parenthesized amounts
+const PAREN_DECIMAL_DOSAGE_PATTERN = /^\s*0[.,]\d+\s*$/; // "(0,5)" is dosage, not amount
 const AMOUNT_AT_END_PATTERN = /\s(\d{2,3})\s*\)?\s*$/; // Detect amount at end of text, with optional trailing ')'
 const DATE_PATTERN = /\b\d{1,2}[-]\d{1,2}\b/g; // Date pattern to remove from amount content
 const AMOUNT_CONTEXT_PATTERN =
@@ -446,6 +448,9 @@ function applyParenAmounts(text: string, amounts: AmountExtraction) {
   for (let match = parenPattern.exec(text); match !== null; match = parenPattern.exec(text)) {
     let content = match[1];
     if (SLASH_FORMAT_PATTERN.test(content)) {
+      continue;
+    }
+    if (PAREN_DECIMAL_DOSAGE_PATTERN.test(content)) {
       continue;
     }
 
@@ -840,7 +845,7 @@ export function parseCalendarMetadata(input: {
   );
   const hasReadyKeyword = READY_KEYWORD_PATTERN.test(text);
   const isRoxair = category === "Roxair";
-  const finalAttended = attended ?? (hasReadyKeyword ? true : null);
+  const finalAttended = attended ?? (isDomicilio || hasReadyKeyword ? true : null);
 
   // Logic: Dosage and Treatment Stage only apply to "Tratamiento subcutáneo"
   const isSubcut = category === "Tratamiento subcutáneo";

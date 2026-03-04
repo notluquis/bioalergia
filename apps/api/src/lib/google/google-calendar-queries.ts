@@ -164,6 +164,13 @@ const buildEventBaseQuery = () =>
 type EventBaseQuery = ReturnType<typeof buildEventBaseQuery>;
 
 const toNumber = (value: number | string | null | undefined) => Number(value ?? 0);
+const toNullableNumber = (value: number | string | null | undefined): null | number => {
+  if (value == null) {
+    return null;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
 
 function buildByYearFromMonths(months: MonthRow[]) {
   const totalsByYear = new Map<
@@ -701,8 +708,8 @@ export async function getCalendarEventsByDate(
       eventCreatedAt: toIsoString(ev.eventCreatedAt),
       eventUpdatedAt: toIsoString(ev.eventUpdatedAt),
       rawEvent: null, // we don't select raw json to save bandwidth
-      amountExpected: Number(ev.amountExpected || 0),
-      amountPaid: Number(ev.amountPaid || 0),
+      amountExpected: toNullableNumber(ev.amountExpected),
+      amountPaid: toNullableNumber(ev.amountPaid),
       attended: ev.attended,
       dosageValue: ev.dosageValue,
       dosageUnit: ev.dosageUnit,
@@ -714,12 +721,12 @@ export async function getCalendarEventsByDate(
 
     grouped[dateKey].events.push(detail);
     grouped[dateKey].total++;
-    grouped[dateKey].amountExpected += Number(ev.amountExpected || 0);
-    grouped[dateKey].amountPaid += Number(ev.amountPaid || 0);
+    grouped[dateKey].amountExpected += toNumber(ev.amountExpected);
+    grouped[dateKey].amountPaid += toNumber(ev.amountPaid);
 
     totalEvents++;
-    totalAmountExpected += Number(ev.amountExpected || 0);
-    totalAmountPaid += Number(ev.amountPaid || 0);
+    totalAmountExpected += toNumber(ev.amountExpected);
+    totalAmountPaid += toNumber(ev.amountPaid);
   });
 
   return {

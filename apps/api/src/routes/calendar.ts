@@ -293,7 +293,13 @@ const applyPartialAmountPaidUpdate = (
   updateData: PartialReclassifyUpdateData,
   fieldCounts: PartialFieldCounts,
 ) => {
-  if (event.amountPaid === null && metadata.amountPaid !== null) {
+  const shouldRepairLegacyZero =
+    event.amountPaid === 0 &&
+    event.attended === true &&
+    metadata.amountPaid !== null &&
+    metadata.amountPaid > 0;
+
+  if ((event.amountPaid === null || shouldRepairLegacyZero) && metadata.amountPaid !== null) {
     updateData.amountPaid = metadata.amountPaid;
     fieldCounts.amountPaid++;
   }
@@ -1143,9 +1149,8 @@ calendarRoutes.get(
       status: "ok",
       events: events.map((e) => ({
         ...e,
-        // Ensure strict typing for response
-        amountExpected: e.amountExpected || 0,
-        amountPaid: e.amountPaid || 0,
+        amountExpected: e.amountExpected ?? null,
+        amountPaid: e.amountPaid ?? null,
       })),
     });
   },

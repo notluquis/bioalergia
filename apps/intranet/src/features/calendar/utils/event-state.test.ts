@@ -46,6 +46,11 @@ describe("getCalendarEventStates", () => {
     expect(states[0]).toMatchObject({ key: "attendance", label: "Asistió", tone: "success" });
   });
 
+  it("returns domicilio state when attended is true and isDomicilio is true", () => {
+    const states = getCalendarEventStates(makeEvent({ attended: true, isDomicilio: true }));
+    expect(states[0]).toMatchObject({ key: "attendance", label: "Domicilio", tone: "success" });
+  });
+
   it("returns no-show state when attended is false", () => {
     const states = getCalendarEventStates(makeEvent({ attended: false }));
     expect(states[0]).toMatchObject({ key: "attendance", label: "No asistió", tone: "danger" });

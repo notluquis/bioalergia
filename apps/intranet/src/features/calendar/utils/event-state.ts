@@ -15,6 +15,9 @@ function getAttendanceState(event: CalendarEventDetail): CalendarEventState {
   const isPastOrNow = start ? !start.isAfter(dayjs()) : false;
 
   if (event.attended === true) {
+    if (event.isDomicilio === true) {
+      return { key: "attendance", label: "Domicilio", tone: "success" };
+    }
     return { key: "attendance", label: "Asistió", tone: "success" };
   }
   if (event.attended === false) {
