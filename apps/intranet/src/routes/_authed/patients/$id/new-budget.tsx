@@ -89,7 +89,7 @@ function NewBudgetPage() {
       <header className="mb-6 flex items-center gap-4">
         <Button
           variant="ghost"
-          onClick={() => navigate({ to: "/patients/$id", params: { id: String(id) } })}
+          onPress={() => navigate({ to: "/patients/$id", params: { id: String(id) } })}
           className="gap-2"
         >
           <ChevronLeft size={20} />
@@ -168,7 +168,7 @@ function NewBudgetPage() {
               size="sm"
               variant="outline"
               className="gap-2"
-              onClick={() => form.pushFieldValue("items", createBudgetItem())}
+              onPress={() => form.pushFieldValue("items", createBudgetItem())}
             >
               <Plus size={16} />
               Agregar Ítem
@@ -243,7 +243,7 @@ function NewBudgetPage() {
                           isIconOnly
                           className="text-danger"
                           isDisabled={field.state.value.length === 1}
-                          onClick={() => form.removeFieldValue("items", index)}
+                          onPress={() => form.removeFieldValue("items", index)}
                         >
                           <Trash2 size={18} />
                         </Button>
@@ -260,7 +260,7 @@ function NewBudgetPage() {
           <Button
             type="button"
             variant="ghost"
-            onClick={() => navigate({ to: "/patients/$id", params: { id: String(id) } })}
+            onPress={() => navigate({ to: "/patients/$id", params: { id: String(id) } })}
           >
             Cancelar
           </Button>

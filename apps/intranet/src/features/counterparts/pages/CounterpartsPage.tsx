@@ -679,12 +679,12 @@ export function CounterpartsPage() {
                     {derived.assignPreviewMessage}
                   </p>
                   <div className="flex justify-end gap-2">
-                    <Button onClick={state.resetAssignRutModalState} variant="ghost">
+                    <Button onPress={state.resetAssignRutModalState} variant="ghost">
                       Cancelar
                     </Button>
                     <Button
                       isDisabled={!derived.assignRutIsValid}
-                      onClick={actions.handleAssignRutToPayout}
+                      onPress={actions.handleAssignRutToPayout}
                     >
                       Confirmar asignación
                     </Button>
@@ -818,7 +818,7 @@ function UnassignedPayoutAccountsTable({
         canCreate ? (
           <Button
             size="sm"
-            onClick={() => {
+            onPress={() => {
               onCreateFromPayout(row.original.payoutBankAccountNumber);
             }}
           >
@@ -847,7 +847,7 @@ function UnassignedPayoutAccountsTable({
         <span className="text-default-500 text-xs">{selectedAccounts.length} seleccionadas</span>
         <Button
           isDisabled={!canCreate || selectedAccounts.length === 0}
-          onClick={onBulkAssign}
+          onPress={onBulkAssign}
           size="sm"
         >
           Asignar RUT en lote
@@ -935,7 +935,7 @@ function CounterpartsToolbar({
                 {CATEGORY_FILTERS.map((filter) => (
                   <Button
                     key={filter.value}
-                    onClick={() => {
+                    onPress={() => {
                       onCategoryFilterChange(filter.value);
                     }}
                     size="sm"
@@ -959,7 +959,7 @@ function CounterpartsToolbar({
                   }
                   isDisabled={syncLoading}
                   isIconOnly
-                  onClick={onSync}
+                  onPress={onSync}
                   size="sm"
                   variant="secondary"
                 >
@@ -967,7 +967,7 @@ function CounterpartsToolbar({
                 </Button>
               ) : null}
               {canCreate ? (
-                <Button aria-label="Nueva contraparte" isIconOnly onClick={onCreate} size="sm">
+                <Button aria-label="Nueva contraparte" isIconOnly onPress={onCreate} size="sm">
                   <Plus className="h-4 w-4" />
                 </Button>
               ) : null}
@@ -1050,13 +1050,13 @@ function CounterpartsToolbar({
               <div className="flex flex-wrap items-center gap-2">
                 <Button
                   isDisabled={!selectedCounterpart}
-                  onClick={onClearSelection}
+                  onPress={onClearSelection}
                   size="sm"
                   variant="ghost"
                 >
                   Limpiar selección
                 </Button>
-                <Button onClick={onResetFilters} size="sm" variant="ghost">
+                <Button onPress={onResetFilters} size="sm" variant="ghost">
                   <Filter className="mr-1.5 h-3.5 w-3.5" />
                   Limpiar filtros
                 </Button>
@@ -1095,7 +1095,7 @@ function CounterpartDetailPane({
             Selecciona una contraparte para revisar su resumen, movimientos y cuentas asociadas.
           </p>
           {canCreate ? (
-            <Button onClick={onCreate} size="sm" variant="ghost">
+            <Button onPress={onCreate} size="sm" variant="ghost">
               Crear nueva contraparte
             </Button>
           ) : null}

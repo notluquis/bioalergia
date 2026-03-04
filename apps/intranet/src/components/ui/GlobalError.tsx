@@ -95,14 +95,14 @@ export class GlobalError extends Component<Props, State> {
 
             <div className="flex justify-center gap-4">
               <Button
-                onClick={() => this.handleAutoReload()}
+                onPress={() => this.handleAutoReload()}
                 isLoading={this.state.isReloading}
                 variant="primary"
               >
                 {this.state.isReloading ? "Recargando..." : "Recargar página"}
               </Button>
               {!isDeployIssue && (
-                <Button onClick={() => (globalThis.location.href = "/")} variant="secondary">
+                <Button onPress={() => (globalThis.location.href = "/")} variant="secondary">
                   Ir al inicio
                 </Button>
               )}

@@ -189,7 +189,7 @@ export function AccountSettingsPage() {
                   <Button
                     className="text-danger hover:bg-danger/10"
                     isDisabled={disableMfaMutation.isPending}
-                    onClick={handleDisableMfa}
+                    onPress={handleDisableMfa}
                     size="sm"
                     variant="ghost"
                   >
@@ -234,7 +234,7 @@ export function AccountSettingsPage() {
 
                         <Button
                           isDisabled={enableMfaMutation.isPending || mfaToken.length !== 6}
-                          onClick={() => {
+                          onPress={() => {
                             enableMfaMutation.mutate(mfaToken);
                           }}
                         >
@@ -247,7 +247,7 @@ export function AccountSettingsPage() {
                       </div>
                       <Button
                         className="w-full text-default-400"
-                        onClick={() => {
+                        onPress={() => {
                           setQrCodeUrl(null);
                           setMfaSecret(null);
                         }}
@@ -261,7 +261,7 @@ export function AccountSettingsPage() {
                 ) : (
                   <Button
                     isDisabled={setupMfaMutation.isPending}
-                    onClick={() => {
+                    onPress={() => {
                       setupMfaMutation.mutate();
                     }}
                   >
@@ -298,7 +298,7 @@ export function AccountSettingsPage() {
                   <Button
                     className="text-danger hover:bg-danger/10"
                     isDisabled={deletePasskeyMutation.isPending}
-                    onClick={handleDeletePasskey}
+                    onPress={handleDeletePasskey}
                     size="sm"
                     variant="ghost"
                   >
@@ -306,7 +306,7 @@ export function AccountSettingsPage() {
                   </Button>
                   <Button
                     isDisabled={registerPasskeyMutation.isPending}
-                    onClick={() => {
+                    onPress={() => {
                       registerPasskeyMutation.mutate();
                     }}
                     size="sm"
@@ -320,7 +320,7 @@ export function AccountSettingsPage() {
               <div className="flex items-center gap-4">
                 <Button
                   isDisabled={registerPasskeyMutation.isPending}
-                  onClick={() => {
+                  onPress={() => {
                     registerPasskeyMutation.mutate();
                   }}
                   variant="outline"

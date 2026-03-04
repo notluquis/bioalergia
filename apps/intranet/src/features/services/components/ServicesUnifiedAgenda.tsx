@@ -211,7 +211,7 @@ export function ServicesUnifiedAgenda({
               >
                 <Button
                   className="flex w-full items-center justify-between gap-4 px-4 py-3 text-left"
-                  onClick={() => {
+                  onPress={() => {
                     toggle(group.dateKey);
                   }}
                   type="button"
@@ -279,7 +279,7 @@ export function ServicesUnifiedAgenda({
                               {(schedule.status === "PENDING" || schedule.status === "PARTIAL") && (
                                 <>
                                   <Button
-                                    onClick={() => {
+                                    onPress={() => {
                                       onRegisterPayment(service.publicId, schedule);
                                     }}
                                     size="sm"
@@ -287,7 +287,7 @@ export function ServicesUnifiedAgenda({
                                     Registrar pago
                                   </Button>
                                   <Button
-                                    onClick={() => {
+                                    onPress={() => {
                                       onEditSchedule(service.publicId, schedule);
                                     }}
                                     size="sm"
@@ -296,7 +296,7 @@ export function ServicesUnifiedAgenda({
                                     Editar
                                   </Button>
                                   <Button
-                                    onClick={() => {
+                                    onPress={() => {
                                       onSkipSchedule(service.publicId, schedule);
                                     }}
                                     size="sm"
@@ -308,7 +308,7 @@ export function ServicesUnifiedAgenda({
                               )}
                               {schedule.transactionId && schedule.status === "PAID" && (
                                 <Button
-                                  onClick={() => {
+                                  onPress={() => {
                                     onUnlinkPayment(service.publicId, schedule);
                                   }}
                                   size="sm"

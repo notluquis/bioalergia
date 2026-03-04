@@ -409,7 +409,7 @@ export function UserManagementPage() {
             <Button
               variant="primary"
               className="gap-2"
-              onClick={() => {
+              onPress={() => {
                 setIsCreateUserOpen(true);
               }}
             >
@@ -669,13 +669,13 @@ function EditRoleModalContent({
                 </div>
 
                 <div className="modal-action mt-6">
-                  <Button onClick={onCancel} variant="ghost">
+                  <Button onPress={onCancel} variant="ghost">
                     Cancelar
                   </Button>
                   <Button
                     isDisabled={!selectedRole || selectedRole === editingUser?.role}
                     isPending={isSaving}
-                    onClick={onSave}
+                    onPress={onSave}
                     variant="primary"
                   >
                     Guardar cambios
@@ -845,7 +845,7 @@ function EditUserDetailsModalContent({
                 </div>
               )}
               <div className="mt-6 flex justify-end gap-2">
-                <Button onClick={onCancel} variant="ghost">
+                <Button onPress={onCancel} variant="ghost">
                   Cancelar
                 </Button>
                 <Button
@@ -853,7 +853,7 @@ function EditUserDetailsModalContent({
                     !form?.names.trim() || !form?.notificationEmail.trim() || !form?.position.trim()
                   }
                   isPending={isSaving}
-                  onClick={() => void onSave()}
+                  onPress={() => void onSave()}
                   variant="primary"
                 >
                   Guardar cambios
@@ -908,11 +908,11 @@ function ResetPasswordModalContent({
                 </div>
 
                 <div className="flex justify-end gap-2">
-                  <Button onClick={() => void onCopy()} variant="ghost">
+                  <Button onPress={() => void onCopy()} variant="ghost">
                     <Copy size={16} />
                     Copiar
                   </Button>
-                  <Button onClick={onClose} variant="primary">
+                  <Button onPress={onClose} variant="primary">
                     Cerrar
                   </Button>
                 </div>

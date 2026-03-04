@@ -472,7 +472,7 @@ function EmployeeFormContent({
         </TextField>
       </div>
       <div className="flex items-center justify-end gap-3">
-        <Button onClick={onCancel} type="button" variant="secondary">
+        <Button onPress={onCancel} type="button" variant="secondary">
           Cancelar
         </Button>
         <Button isDisabled={isMutating} type="submit">

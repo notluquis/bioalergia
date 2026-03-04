@@ -149,7 +149,7 @@ export function ServiceEditPage() {
       <Surface className="space-y-6 rounded-[28px] p-6 shadow-inner">
         <div className="flex justify-end">
           <Button
-            onClick={() => {
+            onPress={() => {
               void navigate({ to: "/services" });
             }}
             variant="ghost"

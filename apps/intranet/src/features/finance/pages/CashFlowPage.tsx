@@ -2114,7 +2114,7 @@ export function CashFlowPage() {
                       className="h-10 rounded-xl border-default-300/60 bg-default-100/40 px-3 text-default-700 hover:bg-default-100/70"
                       size="sm"
                       variant="outline"
-                      onClick={() => {
+                      onPress={() => {
                         setSelectedCategoryFilters([]);
                         setCategoryFilterSearch("");
                         setColumnFilters(DEFAULT_COLUMN_FILTERS);
@@ -2192,7 +2192,7 @@ export function CashFlowPage() {
                         className="h-7 rounded-full border-default-300/70 bg-default-100/40 px-3"
                         size="sm"
                         variant="outline"
-                        onClick={() => {
+                        onPress={() => {
                           setSelectedCategoryFilters((prev) =>
                             prev.filter((key) => key !== categoryKey),
                           );
@@ -2209,7 +2209,7 @@ export function CashFlowPage() {
                         className="h-7 rounded-full px-3"
                         size="sm"
                         variant="outline"
-                        onClick={() => updateColumnFilter("type", "ALL")}
+                        onPress={() => updateColumnFilter("type", "ALL")}
                       >
                         {columnFilters.type === "INCOME" ? "Ingreso" : "Egreso"}
                         <X className="h-3.5 w-3.5" />
@@ -2221,7 +2221,7 @@ export function CashFlowPage() {
                         className="h-7 rounded-full px-3"
                         size="sm"
                         variant="outline"
-                        onClick={() => updateColumnFilter("fromCounterpart", "")}
+                        onPress={() => updateColumnFilter("fromCounterpart", "")}
                       >
                         Desde: {columnFilters.fromCounterpart}
                         <X className="h-3.5 w-3.5" />
@@ -2233,7 +2233,7 @@ export function CashFlowPage() {
                         className="h-7 rounded-full px-3"
                         size="sm"
                         variant="outline"
-                        onClick={() => updateColumnFilter("toCounterpart", "")}
+                        onPress={() => updateColumnFilter("toCounterpart", "")}
                       >
                         Hacia: {columnFilters.toCounterpart}
                         <X className="h-3.5 w-3.5" />
@@ -2245,7 +2245,7 @@ export function CashFlowPage() {
                         className="h-7 rounded-full px-3"
                         size="sm"
                         variant="outline"
-                        onClick={() => updateColumnFilter("amount", "")}
+                        onPress={() => updateColumnFilter("amount", "")}
                       >
                         Monto: {columnFilters.amount}
                         <X className="h-3.5 w-3.5" />
@@ -2257,7 +2257,7 @@ export function CashFlowPage() {
                         className="h-7 rounded-full px-3"
                         size="sm"
                         variant="outline"
-                        onClick={() => updateColumnFilter("comment", "")}
+                        onPress={() => updateColumnFilter("comment", "")}
                       >
                         Comentario: {columnFilters.comment}
                         <X className="h-3.5 w-3.5" />
@@ -2269,7 +2269,7 @@ export function CashFlowPage() {
                         className="h-7 rounded-full px-3"
                         size="sm"
                         variant="outline"
-                        onClick={() => {
+                        onPress={() => {
                           setShowNonAccountableMovements(false);
                           setPage(1);
                         }}
@@ -2284,7 +2284,7 @@ export function CashFlowPage() {
                         className="h-7 rounded-full px-3"
                         size="sm"
                         variant="outline"
-                        onClick={() => {
+                        onPress={() => {
                           setShowOnlyUncategorizedMovements(false);
                           setPage(1);
                         }}

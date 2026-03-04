@@ -80,7 +80,7 @@ export function NewAttachmentModal({ isOpen, onClose, patientId }: NewAttachment
                         <div className="flex-1 truncate rounded-lg bg-primary/10 p-3 font-bold text-primary text-sm">
                           {file.name}
                         </div>
-                        <Button variant="ghost" size="sm" isIconOnly onClick={() => setFile(null)}>
+                        <Button variant="ghost" size="sm" isIconOnly onPress={() => setFile(null)}>
                           <X size={18} />
                         </Button>
                       </div>
@@ -162,14 +162,14 @@ export function NewAttachmentModal({ isOpen, onClose, patientId }: NewAttachment
                 </div>
 
                 <div className="flex justify-end gap-3 border-default-100 border-t pt-4">
-                  <Button variant="ghost" onClick={handleClose} isDisabled={mutation.isPending}>
+                  <Button variant="ghost" onPress={handleClose} isDisabled={mutation.isPending}>
                     Cancelar
                   </Button>
                   <Button
                     isPending={mutation.isPending}
                     className="gap-2"
                     isDisabled={!file}
-                    onClick={() => mutation.mutate()}
+                    onPress={() => mutation.mutate()}
                   >
                     <Save size={18} />
                     Subir Documento

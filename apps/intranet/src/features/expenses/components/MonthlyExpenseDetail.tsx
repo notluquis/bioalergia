@@ -49,11 +49,11 @@ export function MonthlyExpenseDetail({
         {canManage && (
           <div className="flex gap-2">
             {onEdit && (
-              <Button onClick={onEdit} size="sm" variant="secondary">
+              <Button onPress={onEdit} size="sm" variant="secondary">
                 Editar
               </Button>
             )}
-            <Button onClick={onLinkTransaction} size="sm">
+            <Button onPress={onLinkTransaction} size="sm">
               Vincular transacción
             </Button>
           </div>
@@ -114,7 +114,7 @@ export function MonthlyExpenseDetail({
               {canManage && (
                 <div className="mt-2 flex justify-end">
                   <Button
-                    onClick={() => {
+                    onPress={() => {
                       onUnlinkTransaction(tx.transactionId);
                     }}
                     size="sm"

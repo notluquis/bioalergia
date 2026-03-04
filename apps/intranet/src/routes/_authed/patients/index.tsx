@@ -172,7 +172,7 @@ function PatientsListPage() {
         cell: ({ row }) => (
           <Button
             className="h-8 w-8 min-w-0 p-0"
-            onClick={() =>
+            onPress={() =>
               void navigate({
                 params: { id: String(row.original.id) },
                 to: "/patients/$id",
@@ -243,13 +243,13 @@ function PatientsListPage() {
           <Button
             className="w-full sm:w-auto"
             isPending={syncDteSourcesMutation.isPending}
-            onClick={() => syncDteSourcesMutation.mutate()}
+            onPress={() => syncDteSourcesMutation.mutate()}
             variant="secondary"
           >
             <RefreshCw className="mr-2" size={16} />
             Sincronizar fuente DTE
           </Button>
-          <Button className="w-full sm:w-auto" onClick={openCreateModal} variant="primary">
+          <Button className="w-full sm:w-auto" onPress={openCreateModal} variant="primary">
             <UserPlus className="mr-2" size={18} />
             Registrar paciente
           </Button>

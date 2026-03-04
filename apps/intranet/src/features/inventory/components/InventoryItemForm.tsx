@@ -93,7 +93,7 @@ export function InventoryItemForm({ item, onCancel, onSave, saving }: InventoryI
       </TextField>
 
       <div className="flex items-center justify-end gap-3 pt-4">
-        <Button onClick={onCancel} type="button" variant="secondary">
+        <Button onPress={onCancel} type="button" variant="secondary">
           Cancelar
         </Button>
         <Button isDisabled={saving} type="submit" variant="primary">

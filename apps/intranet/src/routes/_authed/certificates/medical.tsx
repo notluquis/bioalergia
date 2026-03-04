@@ -428,7 +428,7 @@ function MedicalCertificatePage() {
             <Button
               type="button"
               variant="ghost"
-              onClick={() => form.reset()}
+              onPress={() => form.reset()}
               isDisabled={generateMutation.isPending}
             >
               Limpiar

@@ -112,7 +112,7 @@ export function EmployeesPage() {
           {canEdit && (
             <Button
               className="w-full sm:w-auto"
-              onClick={() => {
+              onPress={() => {
                 if (showForm) {
                   handleCancel();
                 } else {
@@ -146,7 +146,7 @@ export function EmployeesPage() {
             <h2 className="font-semibold text-lg text-primary">
               {editingEmployee ? "Editar empleado" : "Agregar nuevo empleado"}
             </h2>
-            <Button onClick={handleCancel} size="sm" variant="ghost">
+            <Button onPress={handleCancel} size="sm" variant="ghost">
               <ChevronUp className="h-4 w-4" />
               Cerrar
             </Button>

@@ -69,7 +69,7 @@ export function PayInstallmentModal({
   return (
     <>
       <Button
-        onClick={() => {
+        onPress={() => {
           setOpen(true);
         }}
         size="sm"
@@ -195,7 +195,7 @@ export function PayInstallmentModal({
                   <div className="mt-6 flex justify-end gap-3">
                     <Button
                       isDisabled={mutation.isPending}
-                      onClick={() => {
+                      onPress={() => {
                         setOpen(false);
                       }}
                       variant="ghost"

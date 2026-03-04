@@ -541,7 +541,7 @@ function ActiveCounterpartCard({
           </div>
           <Button
             isDisabled={!canUpdate}
-            onClick={() => {
+            onPress={() => {
               onEdit(counterpart);
             }}
             size="sm"
@@ -573,7 +573,7 @@ function AssociatedAccountsHeader({ onAddAccount }: { onAddAccount: () => void }
           Identificadores detectados en los movimientos y asignados a esta contraparte.
         </p>
       </div>
-      <Button onClick={onAddAccount} size="sm" variant="secondary">
+      <Button onPress={onAddAccount} size="sm" variant="secondary">
         + Agregar cuenta
       </Button>
     </header>
@@ -709,7 +709,7 @@ function SuggestionList({
           </span>
           <div className="flex flex-wrap gap-2 pt-1">
             <Button
-              onClick={() => {
+              onPress={() => {
                 onSuggestionClick(suggestion);
               }}
               size="sm"
@@ -720,7 +720,7 @@ function SuggestionList({
             {selectedId && suggestion.identificationNumber && (
               <Button
                 isDisabled={attachPending}
-                onClick={() => {
+                onPress={() => {
                   onAttachRut(suggestion.identificationNumber);
                 }}
                 size="sm"
@@ -731,7 +731,7 @@ function SuggestionList({
             )}
             {!selectedId && (
               <Button
-                onClick={() => {
+                onPress={() => {
                   onSuggestionCreate(suggestion);
                 }}
                 size="sm"
@@ -816,10 +816,10 @@ function AddAccountModal({
                   </TextField>
                 </div>
                 <div className="flex justify-end gap-2">
-                  <Button onClick={onClose} variant="ghost">
+                  <Button onPress={onClose} variant="ghost">
                     Cancelar
                   </Button>
-                  <Button isDisabled={addPending} onClick={onAddAccount}>
+                  <Button isDisabled={addPending} onPress={onAddAccount}>
                     {addPending ? "Guardando..." : "Agregar cuenta"}
                   </Button>
                 </div>

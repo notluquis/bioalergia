@@ -72,7 +72,7 @@ function NewConsultationPage() {
       <header className="mb-6 flex items-center gap-4">
         <Button
           variant="ghost"
-          onClick={() => navigate({ to: "/patients/$id", params: { id: String(id) } })}
+          onPress={() => navigate({ to: "/patients/$id", params: { id: String(id) } })}
           className="gap-2"
         >
           <ChevronLeft size={20} />
@@ -202,7 +202,7 @@ function NewConsultationPage() {
               <Button
                 type="button"
                 variant="ghost"
-                onClick={() => navigate({ to: "/patients/$id", params: { id: String(id) } })}
+                onPress={() => navigate({ to: "/patients/$id", params: { id: String(id) } })}
                 isDisabled={mutation.isPending}
               >
                 Cancelar

@@ -232,14 +232,14 @@ export function EmailPreviewModal({
                 {getPrepareStatusMessage(prepareStatus)}
               </Description>
               <div className="flex shrink-0 gap-3">
-                <Button isDisabled={isPreparing} onClick={onClose} variant="secondary">
+                <Button isDisabled={isPreparing} onPress={onClose} variant="secondary">
                   {prepareStatus === "done" ? "Cerrar" : "Cancelar"}
                 </Button>
                 <Button
                   className="min-w-44"
                   isDisabled={isPreparing || !employeeEmail || prepareStatus === "done"}
                   isPending={isPreparing}
-                  onClick={onPrepare}
+                  onPress={onPrepare}
                   variant="primary"
                 >
                   {renderPrepareButtonContent(prepareStatus)}
@@ -278,19 +278,19 @@ function LocalAgentPanel({ isHttpsPage, state }: { isHttpsPage: boolean; state: 
         </TextField>
       </div>
       <div className="flex items-center gap-3">
-        <Button isDisabled={state.checkingAgent} onClick={state.verifyAgent} variant="secondary">
+        <Button isDisabled={state.checkingAgent} onPress={state.verifyAgent} variant="secondary">
           {state.checkingAgent ? "Verificando..." : "Verificar agente"}
         </Button>
         <Button
           isDisabled={state.checkingSmtp || !state.agentToken}
-          onClick={state.verifySmtp}
+          onPress={state.verifySmtp}
           variant="secondary"
         >
           {state.checkingSmtp ? "Validando SMTP..." : "Verificar SMTP"}
         </Button>
         <Button
           isDisabled={state.stoppingAgent || !state.agentToken}
-          onClick={state.stopAgent}
+          onPress={state.stopAgent}
           variant="secondary"
         >
           {state.stoppingAgent ? "Apagando..." : "Apagar agente"}

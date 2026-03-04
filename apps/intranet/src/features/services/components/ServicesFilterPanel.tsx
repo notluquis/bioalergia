@@ -70,7 +70,7 @@ export function ServicesFilterPanel({ filters, onChange, services }: ServicesFil
         </div>
         <Button
           className="font-semibold text-primary text-xs uppercase tracking-wide hover:underline"
-          onClick={resetFilters}
+          onPress={resetFilters}
           size="sm"
           type="button"
           variant="secondary"
@@ -106,7 +106,7 @@ export function ServicesFilterPanel({ filters, onChange, services }: ServicesFil
                     : "border-default-200 bg-default-50 text-default-500 hover:border-primary/35 hover:text-primary"
                 }`}
                 key={status}
-                onClick={() => {
+                onPress={() => {
                   handleStatusToggle(status);
                 }}
                 size="sm"
@@ -134,7 +134,7 @@ export function ServicesFilterPanel({ filters, onChange, services }: ServicesFil
                       : "border-default-200 bg-default-50 text-default-500 hover:border-secondary/35 hover:text-secondary"
                   }`}
                   key={type}
-                  onClick={() => {
+                  onPress={() => {
                     handleTypeToggle(type);
                   }}
                   size="sm"

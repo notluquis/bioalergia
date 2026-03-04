@@ -326,7 +326,7 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
                 <div className="flex justify-end gap-3 pt-2">
                   <Button
                     isDisabled={createPatientMutation.isPending}
-                    onClick={handleClose}
+                    onPress={handleClose}
                     type="button"
                     variant="ghost"
                   >

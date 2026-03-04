@@ -177,7 +177,7 @@ const OvertimeCell = ({
             <Button
               aria-label="Agregar horas extra"
               className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-default-200 bg-default-50 text-primary shadow hover:bg-default-50"
-              onClick={() => {
+              onPress={() => {
                 if (row.date) {
                   meta.onOpenOvertime(row.date);
                 }

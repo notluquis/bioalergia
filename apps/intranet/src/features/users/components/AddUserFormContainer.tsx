@@ -165,7 +165,7 @@ export function AddUserFormContainer({
           <Description className="text-danger">
             Error al cargar datos: {String(peopleError)}
           </Description>
-          <Button onClick={onCancel} className="mt-4">
+          <Button onPress={onCancel} className="mt-4">
             Volver
           </Button>
         </div>
@@ -263,7 +263,7 @@ function AddUserFormCard({
         <SecuritySection form={form} />
 
         <div className="flex justify-end gap-3 pt-4">
-          <Button onClick={onCancel} type="button" variant="secondary">
+          <Button onPress={onCancel} type="button" variant="secondary">
             Cancelar
           </Button>
           <form.Subscribe selector={(state) => [state.isSubmitting]}>
