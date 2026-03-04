@@ -1,4 +1,4 @@
-import { Accordion, Button, Card, Chip, Description, Skeleton, Spinner } from "@heroui/react";
+import { Accordion, Button, Card, Chip, Description, Skeleton } from "@heroui/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -137,13 +137,14 @@ export function DTESyncHistoryPage() {
           </div>
           <Button
             isIconOnly
+            isPending={isLoading}
             variant="ghost"
             onPress={() => {
               queryClient.invalidateQueries({ queryKey: ["dte-sync-history"] });
             }}
             isDisabled={isLoading}
           >
-            {isLoading ? <Spinner size="sm" color="current" /> : <RefreshCw className="h-4 w-4" />}
+            <RefreshCw className="h-4 w-4" />
           </Button>
         </Card.Header>
       </Card>

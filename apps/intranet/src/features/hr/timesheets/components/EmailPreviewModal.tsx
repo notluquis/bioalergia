@@ -1,4 +1,4 @@
-import { Button, Chip, Description, Input, Label, Modal, Spinner, TextField } from "@heroui/react";
+import { Button, Chip, Description, Input, Label, Modal, TextField } from "@heroui/react";
 import dayjs from "dayjs";
 import { useCallback, useEffect, useState } from "react";
 import type { Employee } from "@/features/hr/employees/types";
@@ -238,6 +238,7 @@ export function EmailPreviewModal({
                 <Button
                   className="min-w-44"
                   isDisabled={isPreparing || !employeeEmail || prepareStatus === "done"}
+                  isPending={isPreparing}
                   onClick={onPrepare}
                   variant="primary"
                 >
@@ -499,28 +500,13 @@ function getPrepareStatusMessage(status: PrepareStatus) {
 
 function renderPrepareButtonContent(status: PrepareStatus) {
   if (status === "generating-pdf") {
-    return (
-      <span className="flex items-center gap-2">
-        <Spinner size="sm" />
-        Generando PDF...
-      </span>
-    );
+    return "Generando PDF...";
   }
   if (status === "preparing-payload") {
-    return (
-      <span className="flex items-center gap-2">
-        <Spinner size="sm" />
-        Preparando...
-      </span>
-    );
+    return "Preparando...";
   }
   if (status === "sending") {
-    return (
-      <span className="flex items-center gap-2">
-        <Spinner size="sm" />
-        Enviando...
-      </span>
-    );
+    return "Enviando...";
   }
   if (status === "done") {
     return (

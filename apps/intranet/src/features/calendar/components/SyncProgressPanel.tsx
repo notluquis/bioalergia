@@ -1,4 +1,4 @@
-import { Button, Card, Chip, Spinner } from "@heroui/react";
+import { Button, Card, Chip } from "@heroui/react";
 import dayjs from "dayjs";
 import type { CalendarSyncStep } from "@/features/calendar/types";
 import { numberFormatter } from "@/lib/format";
@@ -145,7 +145,11 @@ export function SyncProgressPanel({
             </p>
             <p className="text-foreground-500 text-xs">{getPanelSubtitle(syncError, syncing)}</p>
           </div>
-          {syncing && <Spinner size="sm" aria-label="Sincronizando" />}
+          {syncing && (
+            <Chip color="warning" size="sm" variant="soft" className="text-xs">
+              Sincronizando...
+            </Chip>
+          )}
           {syncError && (
             <span className="font-semibold text-danger text-xs">Revisa los detalles abajo.</span>
           )}
