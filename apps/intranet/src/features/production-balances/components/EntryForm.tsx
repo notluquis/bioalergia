@@ -1,7 +1,6 @@
-import { Label, TextArea } from "@heroui/react";
+import { Label, NumberField, TextArea } from "@heroui/react";
 import { CreditCard, Receipt } from "lucide-react";
-
-import { MoneyInput } from "@/components/ui/MoneyInput";
+import type { ReactNode } from "react";
 
 import type { DailyBalanceFormData } from "../types";
 
@@ -12,6 +11,43 @@ interface EntryFormProps {
     value: DailyBalanceFormData[K],
   ) => void;
   values: DailyBalanceFormData;
+}
+
+function CurrencyInput({
+  disabled,
+  icon,
+  label,
+  onValueChange,
+  value,
+}: Readonly<{
+  disabled?: boolean;
+  icon?: ReactNode;
+  label: string;
+  onValueChange: (next: number | null) => void;
+  value: number;
+}>) {
+  return (
+    <NumberField
+      formatOptions={{
+        currency: "CLP",
+        currencyDisplay: "symbol",
+        maximumFractionDigits: 0,
+        minimumFractionDigits: 0,
+        style: "currency",
+      }}
+      isDisabled={disabled}
+      onChange={(next) => onValueChange(next ?? null)}
+      value={value}
+    >
+      <Label className="flex items-center gap-1.5 font-medium text-xs sm:text-sm">
+        {icon}
+        {label}
+      </Label>
+      <NumberField.Group>
+        <NumberField.Input />
+      </NumberField.Group>
+    </NumberField>
+  );
 }
 
 /**
@@ -28,7 +64,7 @@ export function EntryForm({ disabled = false, onChange, values }: EntryFormProps
           <h3 className="font-semibold text-base">Ingresos por método</h3>
         </div>
         <div className="grid gap-3 sm:grid-cols-3">
-          <MoneyInput
+          <CurrencyInput
             disabled={disabled}
             icon={<span className="text-xs">💳</span>}
             label="Tarjetas"
@@ -37,7 +73,7 @@ export function EntryForm({ disabled = false, onChange, values }: EntryFormProps
             }}
             value={values.tarjeta}
           />
-          <MoneyInput
+          <CurrencyInput
             disabled={disabled}
             icon={<span className="text-xs">📲</span>}
             label="Transferencia"
@@ -46,7 +82,7 @@ export function EntryForm({ disabled = false, onChange, values }: EntryFormProps
             }}
             value={values.transferencia}
           />
-          <MoneyInput
+          <CurrencyInput
             disabled={disabled}
             icon={<span className="text-xs">💵</span>}
             label="Efectivo"
@@ -65,7 +101,7 @@ export function EntryForm({ disabled = false, onChange, values }: EntryFormProps
           <h3 className="font-semibold text-base">Gastos</h3>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
-          <MoneyInput
+          <CurrencyInput
             disabled={disabled}
             label="Gastos del día"
             onValueChange={(v) => {
@@ -97,7 +133,7 @@ export function EntryForm({ disabled = false, onChange, values }: EntryFormProps
       <section className="mt-4 rounded-2xl border border-default-100 bg-default-50/30 p-4">
         <h3 className="mb-4 font-semibold text-base">Desglose por servicio</h3>
         <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          <MoneyInput
+          <CurrencyInput
             disabled={disabled}
             label="Consultas"
             onValueChange={(v) => {
@@ -105,7 +141,7 @@ export function EntryForm({ disabled = false, onChange, values }: EntryFormProps
             }}
             value={values.consultas}
           />
-          <MoneyInput
+          <CurrencyInput
             disabled={disabled}
             label="Controles"
             onValueChange={(v) => {
@@ -113,7 +149,7 @@ export function EntryForm({ disabled = false, onChange, values }: EntryFormProps
             }}
             value={values.controles}
           />
-          <MoneyInput
+          <CurrencyInput
             disabled={disabled}
             label="Tests"
             onValueChange={(v) => {
@@ -121,7 +157,7 @@ export function EntryForm({ disabled = false, onChange, values }: EntryFormProps
             }}
             value={values.tests}
           />
-          <MoneyInput
+          <CurrencyInput
             disabled={disabled}
             label="Vacunas"
             onValueChange={(v) => {
@@ -129,7 +165,7 @@ export function EntryForm({ disabled = false, onChange, values }: EntryFormProps
             }}
             value={values.vacunas}
           />
-          <MoneyInput
+          <CurrencyInput
             disabled={disabled}
             label="Licencias"
             onValueChange={(v) => {
@@ -137,7 +173,7 @@ export function EntryForm({ disabled = false, onChange, values }: EntryFormProps
             }}
             value={values.licencias}
           />
-          <MoneyInput
+          <CurrencyInput
             disabled={disabled}
             label="Roxair"
             onValueChange={(v) => {
@@ -145,7 +181,7 @@ export function EntryForm({ disabled = false, onChange, values }: EntryFormProps
             }}
             value={values.roxair}
           />
-          <MoneyInput
+          <CurrencyInput
             disabled={disabled}
             label="Otros"
             onValueChange={(v) => {

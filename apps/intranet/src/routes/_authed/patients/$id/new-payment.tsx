@@ -7,6 +7,7 @@ import {
   FieldError,
   Label,
   ListBox,
+  NumberField,
   Select,
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
@@ -20,7 +21,6 @@ import {
   TanStackInputField,
   TanStackTextAreaField,
 } from "@/components/forms/TanStackFieldControls";
-import { MoneyInput } from "@/components/ui/MoneyInput";
 import { PatientBudgetListSchema, PatientPaymentSchema } from "@/features/patients/schemas";
 import { apiClient } from "@/lib/api-client";
 import { zDateString } from "@/lib/api-validate";
@@ -157,9 +157,11 @@ function NewPaymentPage() {
                 >
                   <Label>Fecha de Pago</Label>
                   <DateField.Group>
-                    <DateField.Input>
-                      {(segment) => <DateField.Segment segment={segment} />}
-                    </DateField.Input>
+                    <DateField.InputContainer>
+                      <DateField.Input>
+                        {(segment) => <DateField.Segment segment={segment} />}
+                      </DateField.Input>
+                    </DateField.InputContainer>
                     <DateField.Suffix>
                       <DatePicker.Trigger>
                         <DatePicker.TriggerIndicator />
@@ -200,12 +202,27 @@ function NewPaymentPage() {
 
             <form.Field name="amount">
               {(field) => (
-                <MoneyInput
-                  label="Monto Pagado"
+                <NumberField
+                  formatOptions={{
+                    currency: "CLP",
+                    currencyDisplay: "symbol",
+                    maximumFractionDigits: 0,
+                    minimumFractionDigits: 0,
+                    style: "currency",
+                  }}
+                  isInvalid={field.state.meta.errors.length > 0}
+                  onBlur={field.handleBlur}
+                  onChange={(value) => field.handleChange(value ?? 0)}
                   value={field.state.value}
-                  onValueChange={(v: number | null) => field.handleChange(v || 0)}
-                  error={field.state.meta.errors.join(", ")}
-                />
+                >
+                  <Label>Monto Pagado</Label>
+                  <NumberField.Group>
+                    <NumberField.Input />
+                  </NumberField.Group>
+                  {field.state.meta.errors.length > 0 ? (
+                    <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
+                  ) : null}
+                </NumberField>
               )}
             </form.Field>
 

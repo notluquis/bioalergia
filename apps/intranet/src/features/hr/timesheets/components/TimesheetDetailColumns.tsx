@@ -1,7 +1,7 @@
-import { Button, Dropdown, Tooltip } from "@heroui/react";
+import { Button, Dropdown, Label, TimeField, Tooltip } from "@heroui/react";
+import { parseTime, type Time } from "@internationalized/date";
 import { createColumnHelper } from "@tanstack/react-table";
 import dayjs from "dayjs";
-import { TimeInput } from "@/components/ui/TimeInput";
 
 import type { BulkRow } from "../types";
 
@@ -30,6 +30,57 @@ export interface TimesheetTableMeta {
   openOvertimeEditors: Set<string>;
   setCommentPreview: (data: null | { date: Date; text: string }) => void;
   setNotWorkedDays: (cb: (prev: Set<string>) => Set<string>) => void;
+}
+
+function TimeFieldInput({
+  className,
+  disabled,
+  onBlur,
+  onChange,
+  value,
+}: Readonly<{
+  className?: string;
+  disabled?: boolean;
+  onBlur?: () => void;
+  onChange: (next: string) => void;
+  value: string;
+}>) {
+  const formatTimeValue = (time: Time) => {
+    const hours = String(time.hour).padStart(2, "0");
+    const minutes = String(time.minute).padStart(2, "0");
+    return `${hours}:${minutes}`;
+  };
+
+  let timeValue: Time | null = null;
+  try {
+    if (value) {
+      timeValue = parseTime(value);
+    }
+  } catch {
+    timeValue = null;
+  }
+
+  return (
+    <TimeField
+      aria-label="Hora"
+      className={className}
+      granularity="minute"
+      hourCycle={24}
+      isDisabled={disabled}
+      onBlur={onBlur}
+      onChange={(next) => onChange(next ? formatTimeValue(next) : "")}
+      placeholderValue={parseTime("00:00")}
+      shouldForceLeadingZeros
+      value={timeValue}
+    >
+      <Label className="hidden">Hora</Label>
+      <TimeField.Group>
+        <TimeField.InputContainer>
+          <TimeField.Input>{(segment) => <TimeField.Segment segment={segment} />}</TimeField.Input>
+        </TimeField.InputContainer>
+      </TimeField.Group>
+    </TimeField>
+  );
 }
 
 const DateCell = ({ meta, row }: { meta: TimesheetTableMeta; row: BulkRow }) => {
@@ -73,14 +124,13 @@ const InputCell = ({
 
   return (
     <div className={isMarkedNotWorked ? "pointer-events-none opacity-60" : ""}>
-      <TimeInput
+      <TimeFieldInput
         className="w-24 sm:w-28"
         disabled={!canEditRow}
         onBlur={() => field === "salida" && meta.onSalidaBlur(index)}
         onChange={(value) => {
           meta.onRowChange(index, field, value);
         }}
-        placeholder="HH:MM"
         value={row[field]}
       />
     </div>
@@ -147,7 +197,7 @@ const OvertimeCell = ({
   }
 
   return (
-    <TimeInput
+    <TimeFieldInput
       className="w-24 sm:w-28"
       disabled={!canEditRow}
       onChange={(value) => {
@@ -158,7 +208,6 @@ const OvertimeCell = ({
           }
         }
       }}
-      placeholder="HH:MM"
       value={row.overtime}
     />
   );

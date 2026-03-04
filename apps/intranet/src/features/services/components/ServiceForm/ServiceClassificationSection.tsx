@@ -1,8 +1,6 @@
 import { Label, ListBox, Select } from "@heroui/react";
 import { z } from "zod";
-import { SelectWithCreateNew } from "@/components/ui/SelectWithCreateNew";
 import { GRID_2_COL_MD } from "@/lib/styles";
-
 import type {
   ServiceObligationType,
   ServiceOwnership,
@@ -10,6 +8,7 @@ import type {
   ServiceType,
 } from "../../types";
 import type { ServiceFormState } from "../ServiceForm";
+import { CreatableSelectField } from "./CreatableSelectField";
 
 interface ServiceClassificationSectionProps {
   obligationType?: ServiceObligationType;
@@ -45,7 +44,7 @@ export function ServiceClassificationSection({
 }: ServiceClassificationSectionProps) {
   return (
     <section className={GRID_2_COL_MD}>
-      <SelectWithCreateNew
+      <CreatableSelectField
         createSchema={z.string().min(1, "El tipo es obligatorio").max(50)}
         description="Ej: Negocio, Proveedor, Servicio Básico"
         label="Tipo"
@@ -58,7 +57,7 @@ export function ServiceClassificationSection({
         onCreateNew={onCreateServiceType}
       />
 
-      <SelectWithCreateNew
+      <CreatableSelectField
         createSchema={z.string().min(1, "La propiedad es obligatoria").max(50)}
         description="Ej: Empresa, Dueño, Mixto"
         label="Propiedad"
@@ -71,7 +70,7 @@ export function ServiceClassificationSection({
         onCreateNew={onCreateOwnership}
       />
 
-      <SelectWithCreateNew
+      <CreatableSelectField
         createSchema={z.string().min(1, "La obligación es obligatoria").max(50)}
         description="Ej: Servicio, Deuda, Préstamo"
         label="Naturaleza"

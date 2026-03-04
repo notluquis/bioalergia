@@ -1,13 +1,14 @@
 import { Button, Input, Label, Link, TextField } from "@heroui/react";
 import { useLocation } from "@tanstack/react-router";
-import { Fingerprint, Mail } from "lucide-react";
+import { Fingerprint, Mail, Moon, Sun } from "lucide-react";
 import type { ChangeEvent, SubmitEvent } from "react";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useSettings } from "@/context/SettingsContext";
 import { useLoginLogic } from "@/features/auth/hooks/useLoginLogic";
+import { useTheme } from "@/hooks/use-theme";
 
 type LoginStep = "credentials" | "mfa" | "passkey";
 export function LoginPage() {
+  const { isDark, resolvedTheme, toggleTheme } = useTheme();
   const { settings } = useSettings();
   const location = useLocation();
   const from = (location.state as null | { from?: string })?.from ?? "/";
@@ -25,7 +26,15 @@ export function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
       <div className="fixed top-4 right-4 z-10">
-        <ThemeToggle />
+        <Button
+          aria-label={resolvedTheme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+          className="rounded-full border border-default-200/70 bg-background/80 text-foreground shadow-sm"
+          isIconOnly
+          onPress={toggleTheme}
+          variant="ghost"
+        >
+          {isDark ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+        </Button>
       </div>
       <div className="w-full max-w-sm">
         <LoginHeader

@@ -1,4 +1,4 @@
-import { Button, Card, Input, Label, TextField } from "@heroui/react";
+import { Button, Card, FieldError, Input, Label, NumberField, TextField } from "@heroui/react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
@@ -8,7 +8,6 @@ import {
   TanStackInputField,
   TanStackTextAreaField,
 } from "@/components/forms/TanStackFieldControls";
-import { MoneyInput } from "@/components/ui/MoneyInput";
 import { BudgetSchema } from "@/features/patients/schemas";
 import { apiClient } from "@/lib/api-client";
 import { PAGE_CONTAINER } from "@/lib/styles";
@@ -124,12 +123,27 @@ function NewBudgetPage() {
 
             <form.Field name="discount">
               {(field) => (
-                <MoneyInput
-                  label="Descuento Global"
+                <NumberField
+                  formatOptions={{
+                    currency: "CLP",
+                    currencyDisplay: "symbol",
+                    maximumFractionDigits: 0,
+                    minimumFractionDigits: 0,
+                    style: "currency",
+                  }}
+                  isInvalid={field.state.meta.errors.length > 0}
+                  onBlur={field.handleBlur}
+                  onChange={(value) => field.handleChange(value ?? 0)}
                   value={field.state.value}
-                  onValueChange={(v: number | null) => field.handleChange(v || 0)}
-                  error={field.state.meta.errors.join(", ")}
-                />
+                >
+                  <Label>Descuento Global</Label>
+                  <NumberField.Group>
+                    <NumberField.Input />
+                  </NumberField.Group>
+                  {field.state.meta.errors.length > 0 ? (
+                    <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
+                  ) : null}
+                </NumberField>
               )}
             </form.Field>
           </div>
@@ -198,11 +212,27 @@ function NewBudgetPage() {
                       <div className="col-span-6 sm:col-span-3">
                         <form.Field name={`items[${index}].unitPrice`}>
                           {(subField) => (
-                            <MoneyInput
-                              label="Precio Unit."
+                            <NumberField
+                              formatOptions={{
+                                currency: "CLP",
+                                currencyDisplay: "symbol",
+                                maximumFractionDigits: 0,
+                                minimumFractionDigits: 0,
+                                style: "currency",
+                              }}
+                              isInvalid={subField.state.meta.errors.length > 0}
+                              onBlur={subField.handleBlur}
+                              onChange={(value) => subField.handleChange(value ?? 0)}
                               value={subField.state.value}
-                              onValueChange={(v: number | null) => subField.handleChange(v || 0)}
-                            />
+                            >
+                              <Label>Precio Unit.</Label>
+                              <NumberField.Group>
+                                <NumberField.Input />
+                              </NumberField.Group>
+                              {subField.state.meta.errors.length > 0 ? (
+                                <FieldError>{subField.state.meta.errors.join(", ")}</FieldError>
+                              ) : null}
+                            </NumberField>
                           )}
                         </form.Field>
                       </div>

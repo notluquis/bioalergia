@@ -1,7 +1,6 @@
 import { Avatar, Button, Dropdown, Label, Separator } from "@heroui/react";
 import { useRouter } from "@tanstack/react-router";
 import { LogOut, User } from "lucide-react";
-import { Backdrop } from "@/components/ui/Backdrop";
 
 import { useAuth } from "@/context/AuthContext";
 import { useCan } from "@/hooks/use-can";
@@ -44,12 +43,17 @@ export function Sidebar({ isMobile, isOpen, onClose, sidebarId }: SidebarProps) 
 
   return (
     <>
-      <Backdrop
-        className="bg-default-300/60 backdrop-blur-[1px]"
-        isVisible={isMobile && isOpen}
-        onClose={onClose}
-        zIndex={40}
-      />
+      {isMobile && isOpen ? (
+        <Button
+          aria-label="Cerrar menú lateral"
+          className="fixed inset-0 z-40 bg-default-300/60 backdrop-blur-[1px]"
+          onPress={() => onClose?.()}
+          type="button"
+          variant="ghost"
+        >
+          <span className="sr-only">Close</span>
+        </Button>
+      ) : null}
 
       <div
         className={cn(

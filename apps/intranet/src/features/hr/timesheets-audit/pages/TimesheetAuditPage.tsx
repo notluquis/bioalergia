@@ -10,6 +10,7 @@ import {
   Card,
   Chip,
   Description,
+  Disclosure,
   Label,
   ListBox,
   Select,
@@ -18,9 +19,8 @@ import {
 import { useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
-import { ChevronDown, Users, X } from "lucide-react";
+import { Users, X } from "lucide-react";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
-import { SmoothCollapse } from "@/components/ui/SmoothCollapse";
 import { useAuth } from "@/context/AuthContext";
 import { EmployeeMultiSelectPopover } from "@/features/hr/components/EmployeeMultiSelectPopover";
 import { employeeKeys } from "@/features/hr/employees/queries";
@@ -249,7 +249,7 @@ export function TimesheetAuditPage() {
       <LegendPanel
         entriesCount={entries.length}
         isOpen={legendOpen}
-        onToggle={() => setLegendOpen(!legendOpen)}
+        onToggle={setLegendOpen}
         show={canShowCalendar}
       />
     </section>
@@ -313,17 +313,15 @@ function PeriodSelectionPanel({
       </div>
 
       {quickRange === "custom" && (
-        <div className="mt-4 rounded-xl bg-default-50/50">
-          <Button
-            className="w-full justify-between px-4 py-3"
-            onPress={() => setCustomWeeksOpen(!customWeeksOpen)}
-            variant="ghost"
-          >
-            <span>Personalizar semanas específicas</span>
-            <ChevronDown className={cn("transform ", customWeeksOpen && "rotate-180")} size={16} />
-          </Button>
-          <SmoothCollapse isOpen={customWeeksOpen}>
-            <div className="space-y-4 px-4 pt-0 pb-4">
+        <Disclosure isExpanded={customWeeksOpen} onExpandedChange={setCustomWeeksOpen}>
+          <Disclosure.Heading className="mt-4 rounded-xl bg-default-50/50">
+            <Button className="w-full justify-between px-4 py-3" slot="trigger" variant="ghost">
+              <span>Personalizar semanas específicas</span>
+              <Disclosure.Indicator />
+            </Button>
+          </Disclosure.Heading>
+          <Disclosure.Content>
+            <Disclosure.Body className="space-y-4 px-4 pt-0 pb-4">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                 <Select
                   aria-label="Seleccionar mes"
@@ -392,9 +390,9 @@ function PeriodSelectionPanel({
                   Selecciona al menos una semana
                 </Description>
               )}
-            </div>
-          </SmoothCollapse>
-        </div>
+            </Disclosure.Body>
+          </Disclosure.Content>
+        </Disclosure>
       )}
     </div>
   );
@@ -627,20 +625,26 @@ function LegendPanel({
 }: {
   entriesCount: number;
   isOpen: boolean;
-  onToggle: () => void;
+  onToggle: (next: boolean) => void;
   show: boolean;
 }) {
   if (!show || entriesCount === 0) {
     return null;
   }
   return (
-    <div className="rounded-2xl border border-default-200 bg-background shadow-sm">
-      <Button className="w-full justify-between px-4 py-3" onPress={onToggle} variant="ghost">
-        <span>📋 Guía de interpretación</span>
-        <ChevronDown className={cn("transform ", isOpen && "rotate-180")} size={16} />
-      </Button>
-      <SmoothCollapse isOpen={isOpen}>
-        <div className="px-4 pt-0 pb-4">
+    <Disclosure
+      className="rounded-2xl border border-default-200 bg-background shadow-sm"
+      isExpanded={isOpen}
+      onExpandedChange={onToggle}
+    >
+      <Disclosure.Heading>
+        <Button className="w-full justify-between px-4 py-3" slot="trigger" variant="ghost">
+          <span>📋 Guía de interpretación</span>
+          <Disclosure.Indicator />
+        </Button>
+      </Disclosure.Heading>
+      <Disclosure.Content>
+        <Disclosure.Body className="px-4 pt-0 pb-4">
           <div className="grid gap-6 pt-4 sm:grid-cols-2">
             <div className="flex items-start gap-3">
               <div className="mt-1 h-4 w-4 shrink-0 rounded bg-success" />
@@ -679,9 +683,9 @@ function LegendPanel({
               </div>
             </div>
           </div>
-        </div>
-      </SmoothCollapse>
-    </div>
+        </Disclosure.Body>
+      </Disclosure.Content>
+    </Disclosure>
   );
 }
 function buildWeeksForMonth(month: string): WeekDefinition[] {

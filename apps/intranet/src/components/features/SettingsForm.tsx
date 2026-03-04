@@ -1,4 +1,13 @@
-import { ButtonGroup, Skeleton } from "@heroui/react";
+import {
+  Alert,
+  Button,
+  ButtonGroup,
+  Description,
+  Input,
+  Label,
+  Skeleton,
+  TextField,
+} from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import type React from "react";
 import { Suspense, useEffect, useRef, useState } from "react";
@@ -11,11 +20,6 @@ import {
   uploadBrandingAsset,
 } from "@/features/settings/api";
 import { GRID_2_COL_MD } from "@/lib/styles";
-
-import { Alert } from "../ui/Alert";
-import { Button } from "../ui/Button";
-import { FileInput } from "../ui/FileInput";
-import { Input } from "../ui/Input";
 
 const FALLBACK_LOGO_PATH = "/logo192.png";
 const FALLBACK_FAVICON_PATH = "/icons/icon-192.png";
@@ -62,6 +66,54 @@ async function resolveAssetUrlIfNeeded(params: {
     endpoint: params.endpoint,
     file: params.file,
   });
+}
+
+function BrandingFilePicker({
+  accept,
+  label,
+  onChange,
+}: Readonly<{
+  accept: string;
+  label: string;
+  onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+}>) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  return (
+    <div className="space-y-2">
+      <span className="font-semibold text-sm">{label}</span>
+      <Button
+        className="w-fit"
+        onClick={() => inputRef.current?.click()}
+        size="sm"
+        type="button"
+        variant="secondary"
+      >
+        Seleccionar archivo
+      </Button>
+      <input ref={inputRef} accept={accept} className="hidden" onChange={onChange} type="file" />
+    </div>
+  );
+}
+
+function SettingsInputField({
+  className,
+  helper,
+  label,
+  ...inputProps
+}: Readonly<
+  {
+    className?: string;
+    helper?: string;
+    label: string;
+  } & React.InputHTMLAttributes<HTMLInputElement>
+>) {
+  return (
+    <TextField>
+      <Label>{label}</Label>
+      <Input className={className} {...inputProps} />
+      {helper ? <Description>{helper}</Description> : null}
+    </TextField>
+  );
 }
 export function SettingsForm() {
   const { settings, updateSettings } = useSettings();
@@ -280,7 +332,7 @@ export function SettingsForm() {
         </div>
       )}
       <div className="flex justify-end">
-        <Button disabled={uploadMutation.isPending || status === "saving"} type="submit">
+        <Button isDisabled={uploadMutation.isPending || status === "saving"} type="submit">
           {status === "saving" || uploadMutation.isPending ? "Guardando..." : "Guardar cambios"}
         </Button>
       </div>
@@ -319,7 +371,7 @@ function GeneralSettingsFields({
             {label}
           </span>
           {type === "color" ? (
-            <Input
+            <SettingsInputField
               className="h-12 w-20 cursor-pointer px-0"
               helper={helper}
               label={label}
@@ -366,7 +418,7 @@ function TextSettingInput({
   const autoComplete = isEmail ? "email" : isPhone ? "tel" : isName ? "name" : "off";
 
   return (
-    <Input
+    <SettingsInputField
       autoComplete={autoComplete}
       helper={helper}
       id={fieldKey}
@@ -431,7 +483,7 @@ function LogoSection({
       </div>
       {logoMode === "url" ? (
         <div className="flex flex-col gap-2">
-          <Input
+          <SettingsInputField
             helper="Puedes usar una URL pública (https://) o una ruta interna generada tras subir un archivo (ej: /uploads/branding/logo.png)."
             label="URL del logo"
             onChange={(event) => {
@@ -443,9 +495,8 @@ function LogoSection({
         </div>
       ) : (
         <div className="space-y-3 text-foreground text-sm">
-          <FileInput
+          <BrandingFilePicker
             accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif"
-            className="min-h-20"
             label="Logo"
             onChange={onFileChange}
           />
@@ -516,7 +567,7 @@ function FaviconSection({
       </div>
       {faviconMode === "url" ? (
         <div className="flex flex-col gap-2">
-          <Input
+          <SettingsInputField
             helper="Puedes usar una URL pública (https://) o una ruta interna generada tras subir un archivo (ej: /uploads/branding/favicon.png)."
             label="URL del favicon"
             onChange={(event) => {
@@ -528,9 +579,8 @@ function FaviconSection({
         </div>
       ) : (
         <div className="space-y-3 text-foreground text-sm">
-          <FileInput
+          <BrandingFilePicker
             accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif,image/x-icon,image/vnd.microsoft.icon"
-            className="min-h-20"
             label="Favicon"
             onChange={onFileChange}
           />
@@ -599,7 +649,7 @@ function InternalSettingsSection() {
         Variables internas editables (prefijo BIOALERGIA_X_). Solo administradores.
       </p>
       <div className="mt-3 grid gap-3 md:grid-cols-3">
-        <Input
+        <SettingsInputField
           helper={`Env var: ${envUpsertChunkSize ?? "(no definido)"}`}
           inputMode="numeric"
           label="Tamaño de chunk para retiros"
@@ -614,7 +664,7 @@ function InternalSettingsSection() {
 
         <div className="flex items-end gap-2 md:col-span-2">
           <Button
-            disabled={internalMutation.isPending}
+            isDisabled={internalMutation.isPending}
             onClick={() => {
               const body =
                 upsertChunkSize === "" ? {} : { upsertChunkSize: Number(upsertChunkSize) };

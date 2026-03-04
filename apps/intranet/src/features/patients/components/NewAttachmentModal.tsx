@@ -1,8 +1,7 @@
 import { Button, Input, Label, ListBox, Modal, Select, TextField } from "@heroui/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FileUp, Save, X } from "lucide-react";
-import { useState } from "react";
-import { FileInput } from "@/components/ui/FileInput";
+import { useRef, useState } from "react";
 import { AttachmentSchema } from "@/features/patients/schemas";
 import { apiClient } from "@/lib/api-client";
 import { toast } from "@/lib/toast-interceptor";
@@ -14,6 +13,7 @@ interface NewAttachmentModalProps {
 }
 export function NewAttachmentModal({ isOpen, onClose, patientId }: NewAttachmentModalProps) {
   const queryClient = useQueryClient();
+  const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [name, setName] = useState("");
   const [type, setType] = useState("OTHER");
@@ -93,19 +93,28 @@ export function NewAttachmentModal({ isOpen, onClose, patientId }: NewAttachment
                           Haga clic para seleccionar un archivo
                         </span>
                         <span className="text-default-300 text-xs">PDF, Imágenes, etc.</span>
-                        <FileInput
-                          className="min-h-0 border-none bg-transparent p-0"
-                          label=""
-                          onChange={(e) => {
-                            const f = e.target.files?.[0];
-                            if (f) {
-                              setFile(f);
+                        <Button
+                          onPress={() => inputRef.current?.click()}
+                          size="sm"
+                          type="button"
+                          variant="ghost"
+                        >
+                          Seleccionar archivo
+                        </Button>
+                        <input
+                          ref={inputRef}
+                          accept="application/pdf,image/*"
+                          className="hidden"
+                          onChange={(event) => {
+                            const selected = event.target.files?.[0];
+                            if (selected) {
+                              setFile(selected);
                               if (!name) {
-                                setName(f.name);
+                                setName(selected.name);
                               }
                             }
                           }}
-                          accept="application/pdf,image/*"
+                          type="file"
                         />
                       </div>
                     )}

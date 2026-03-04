@@ -1,13 +1,12 @@
-import { Breadcrumbs } from "@heroui/react";
+import { Breadcrumbs, Button } from "@heroui/react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Loader2, LogOut } from "lucide-react";
+import { Loader2, LogOut, Moon, Sun } from "lucide-react";
 
 import { useAuth } from "@/context/AuthContext";
 import { NotificationHistory } from "@/features/notifications/components/NotificationHistory";
+import { useTheme } from "@/hooks/use-theme";
 
 import { Clock } from "../features/Clock";
-import { Button } from "../ui/Button";
-import { ThemeToggle } from "../ui/ThemeToggle";
 
 const getMatchLabel = (match: {
   context: Record<string, unknown>;
@@ -38,6 +37,7 @@ const getMatchLabel = (match: {
 };
 
 export function Header() {
+  const { isDark, resolvedTheme, toggleTheme } = useTheme();
   const routerStatus = useRouterState({ select: (s) => s.status });
   const navigate = useNavigate();
   const { logout } = useAuth();
@@ -108,15 +108,26 @@ export function Header() {
               <Clock />
             </div>
             <NotificationHistory />
-            <ThemeToggle />
+            <Button
+              aria-label={
+                resolvedTheme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"
+              }
+              className="rounded-full border border-default-200/70 bg-background/80 text-foreground shadow-sm"
+              isIconOnly
+              onPress={toggleTheme}
+              variant="ghost"
+            >
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-default-50/50 shadow-inner">
+                {isDark ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+              </span>
+            </Button>
             <Button
               isIconOnly
               aria-label="Cerrar sesión"
               className="rounded-full border border-default-200/70 bg-background/80 text-foreground shadow-sm hover:border-danger/40 hover:bg-danger/10 hover:text-danger"
-              onClick={() => {
+              onPress={() => {
                 void handleLogout();
               }}
-              title="Cerrar sesión"
               variant="ghost"
             >
               <span className="flex h-6 w-6 items-center justify-center rounded-full bg-default-50/50 shadow-inner ">

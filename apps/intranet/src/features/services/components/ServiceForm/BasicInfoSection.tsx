@@ -1,10 +1,9 @@
 import { Input, Label, ListBox, Select, TextArea, TextField } from "@heroui/react";
 import type { ChangeEvent } from "react";
 import { z } from "zod";
-import { SelectWithCreateNew } from "@/components/ui/SelectWithCreateNew";
 import { GRID_2_COL_MD } from "@/lib/styles";
-
 import type { ServiceFormState } from "../ServiceForm";
+import { CreatableSelectField } from "./CreatableSelectField";
 
 interface BasicInfoSectionProps {
   category?: null | string;
@@ -47,7 +46,7 @@ export function BasicInfoSection({
         />
       </TextField>
 
-      <SelectWithCreateNew
+      <CreatableSelectField
         createButtonLabel="+ Nueva categoría"
         createSchema={z.string().min(1, "La categoría es obligatoria").max(50)}
         description="Ej: Utilidades, Marketing, Arriendo"

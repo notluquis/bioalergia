@@ -11,25 +11,25 @@ import {
 } from "@heroui/react";
 import type { ChangeEvent, KeyboardEvent, ReactNode } from "react";
 import { useState } from "react";
-import { z } from "zod";
+import type { z } from "zod";
 
-interface SelectWithCreateNewProps {
-  label: string;
-  options: Array<{ id: string; label: string }>;
-  value: string | null;
-  onChange: (value: string) => void;
-  onBlur?: () => void;
-  placeholder?: string;
-  createSchema: z.ZodSchema;
-  onCreateNew: (value: string) => void;
-  errors?: string[];
-  isRequired?: boolean;
+interface CreatableSelectFieldProps {
   createButtonLabel?: string;
+  createSchema: z.ZodSchema;
   description?: ReactNode;
+  errors?: string[];
   isDisabled?: boolean;
+  isRequired?: boolean;
+  label: string;
+  onBlur?: () => void;
+  onChange: (value: string) => void;
+  onCreateNew: (value: string) => void;
+  options: Array<{ id: string; label: string }>;
+  placeholder?: string;
+  value: null | string;
 }
 
-export function SelectWithCreateNew({
+export function CreatableSelectField({
   createButtonLabel = "+ Nueva opción",
   createSchema,
   description,
@@ -37,61 +37,52 @@ export function SelectWithCreateNew({
   isDisabled = false,
   isRequired = false,
   label,
-  onChange,
   onBlur,
+  onChange,
   onCreateNew,
   options,
   placeholder = "Selecciona...",
   value,
-}: SelectWithCreateNewProps) {
+}: Readonly<CreatableSelectFieldProps>) {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newValue, setNewValue] = useState("");
-  const [createError, setCreateError] = useState<string | null>(null);
+  const [createError, setCreateError] = useState<null | string>(null);
   const [isCreating, setIsCreating] = useState(false);
 
-  const handleCreateNew = async () => {
+  const handleCreateNew = () => {
     setCreateError(null);
-
-    try {
-      const validated = createSchema.parse(newValue) as string;
-      setIsCreating(true);
-
-      onCreateNew(validated);
-      onChange(validated);
-
-      setNewValue("");
-      setIsCreateOpen(false);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        setCreateError(error.issues[0]?.message || "Error de validación");
-      } else {
-        setCreateError("Error al crear la opción");
-      }
-    } finally {
-      setIsCreating(false);
+    const parsed = createSchema.safeParse(newValue);
+    if (!parsed.success) {
+      setCreateError(parsed.error.issues[0]?.message || "Error de validación");
+      return;
     }
+    setIsCreating(true);
+    const validated = parsed.data as string;
+    onCreateNew(validated);
+    onChange(validated);
+    setNewValue("");
+    setIsCreateOpen(false);
+    setIsCreating(false);
   };
-
-  const selectedOption = options.find((opt) => opt.id === value);
 
   return (
     <div className="space-y-2">
       <Select
         isDisabled={isDisabled}
         isRequired={isRequired}
+        onBlur={onBlur}
         onChange={(key) => {
           if (key) {
             onChange(String(key));
             onBlur?.();
           }
         }}
-        onBlur={onBlur}
         placeholder={placeholder}
         value={value || null}
       >
         <Label>{label}</Label>
         <Select.Trigger>
-          <Select.Value>{selectedOption?.label || placeholder}</Select.Value>
+          <Select.Value />
           <Select.Indicator />
         </Select.Trigger>
         <Select.Popover>
@@ -104,10 +95,10 @@ export function SelectWithCreateNew({
             ))}
           </ListBox>
         </Select.Popover>
-        {errors.length > 0 && <FieldError>{errors.join(", ")}</FieldError>}
+        {errors.length > 0 ? <FieldError>{errors.join(", ")}</FieldError> : null}
       </Select>
 
-      {description && <Description className="text-xs">{description}</Description>}
+      {description ? <Description className="text-xs">{description}</Description> : null}
 
       <Button
         isDisabled={isDisabled}
@@ -131,20 +122,20 @@ export function SelectWithCreateNew({
                   <Label>{label}</Label>
                   <Input
                     disabled={isCreating}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                      setNewValue(e.target.value);
+                    onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                      setNewValue(event.target.value);
                       setCreateError(null);
                     }}
-                    onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
-                      if (e.key === "Enter" && !isCreating) {
-                        void handleCreateNew();
+                    onKeyDown={(event: KeyboardEvent<HTMLInputElement>) => {
+                      if (event.key === "Enter" && !isCreating) {
+                        handleCreateNew();
                       }
                     }}
                     placeholder={`Ej: ${label}`}
                     type="text"
                     value={newValue}
                   />
-                  {createError && <FieldError>{createError}</FieldError>}
+                  {createError ? <FieldError>{createError}</FieldError> : null}
                 </TextField>
               </Modal.Body>
               <Modal.Footer className="gap-2">

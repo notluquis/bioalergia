@@ -204,7 +204,7 @@ export function ServiceForm({ initialValues, onCancel, onSubmit, submitLabel }: 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<null | string>(null);
 
-  // Dynamic options for SelectWithCreateNew
+  // Dynamic options for creatable select fields
   const [categoryOptions, setCategoryOptions] = useState<Array<{ id: string; label: string }>>([
     { id: "Servicios básicos", label: "Servicios básicos" },
     { id: "Marketing", label: "Marketing" },
