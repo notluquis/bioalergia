@@ -83,7 +83,7 @@ function BrandingFilePicker({
       <span className="font-semibold text-sm">{label}</span>
       <Button
         className="w-fit"
-        onClick={() => inputRef.current?.click()}
+        onPress={() => inputRef.current?.click()}
         size="sm"
         type="button"
         variant="secondary"
@@ -460,7 +460,7 @@ function LogoSection({
         </span>
         <ButtonGroup>
           <Button
-            onClick={() => {
+            onPress={() => {
               onModeChange("url");
             }}
             size="sm"
@@ -470,7 +470,7 @@ function LogoSection({
             Usar URL
           </Button>
           <Button
-            onClick={() => {
+            onPress={() => {
               onModeChange("upload");
             }}
             size="sm"
@@ -544,7 +544,7 @@ function FaviconSection({
         </span>
         <ButtonGroup>
           <Button
-            onClick={() => {
+            onPress={() => {
               onModeChange("url");
             }}
             size="sm"
@@ -554,7 +554,7 @@ function FaviconSection({
             Usar URL
           </Button>
           <Button
-            onClick={() => {
+            onPress={() => {
               onModeChange("upload");
             }}
             size="sm"
@@ -665,7 +665,7 @@ function InternalSettingsSection() {
         <div className="flex items-end gap-2 md:col-span-2">
           <Button
             isDisabled={internalMutation.isPending}
-            onClick={() => {
+            onPress={() => {
               const body =
                 upsertChunkSize === "" ? {} : { upsertChunkSize: Number(upsertChunkSize) };
               internalMutation.mutate(body);
@@ -676,7 +676,7 @@ function InternalSettingsSection() {
             {internalMutation.isPending ? "Guardando..." : "Guardar ajuste interno"}
           </Button>
           <Button
-            onClick={() => {
+            onPress={() => {
               internalMutation.mutate({});
             }}
             type="button"

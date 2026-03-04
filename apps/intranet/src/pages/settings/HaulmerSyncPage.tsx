@@ -4,6 +4,7 @@ import {
   Checkbox,
   Chip,
   Description,
+  Disclosure,
   Label,
   Modal,
   Skeleton,
@@ -680,23 +681,35 @@ export function HaulmerSyncPage() {
                 {periodsError instanceof Error ? periodsError.message : "Error desconocido"}
               </Description>
             </div>
-            <details className="mt-1.5">
-              <summary className="cursor-pointer font-mono text-danger text-xs">
-                Respuesta del servidor
-              </summary>
-              <pre className="mt-1 overflow-auto rounded bg-danger-soft-hover p-1.5 font-mono text-danger text-xs">
-                {(() => {
-                  if (!(periodsError instanceof Error)) {
-                    return String(periodsError);
-                  }
-                  if (!("details" in periodsError)) {
-                    return String(periodsError);
-                  }
-                  const details = (periodsError as Record<string, unknown>).details;
-                  return JSON.stringify(details, null, 2);
-                })()}
-              </pre>
-            </details>
+            <Disclosure className="mt-1.5">
+              <Disclosure.Heading>
+                <Button
+                  slot="trigger"
+                  className="w-fit px-0 font-mono text-danger text-xs"
+                  size="sm"
+                  variant="ghost"
+                >
+                  Respuesta del servidor
+                  <Disclosure.Indicator />
+                </Button>
+              </Disclosure.Heading>
+              <Disclosure.Content>
+                <Disclosure.Body className="p-0">
+                  <pre className="mt-1 overflow-auto rounded bg-danger-soft-hover p-1.5 font-mono text-danger text-xs">
+                    {(() => {
+                      if (!(periodsError instanceof Error)) {
+                        return String(periodsError);
+                      }
+                      if (!("details" in periodsError)) {
+                        return String(periodsError);
+                      }
+                      const details = (periodsError as Record<string, unknown>).details;
+                      return JSON.stringify(details, null, 2);
+                    })()}
+                  </pre>
+                </Disclosure.Body>
+              </Disclosure.Content>
+            </Disclosure>
           </div>
         </Card>
       )}
