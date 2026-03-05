@@ -226,10 +226,7 @@ function LastCompletedBackupCard({ result }: { result: BackupJob["result"] | nul
           <span className="mb-2 block font-medium text-sm">Conteo por tabla</span>
           <Table variant="secondary">
             <Table.ScrollContainer className="max-h-56">
-              <Table.Content
-                aria-label="Conteo por tabla del último backup"
-                className="min-w-[360px]"
-              >
+              <Table.Content aria-label="Conteo por tabla del último backup" className="min-w-90">
                 <Table.Header>
                   <Table.Column isRowHeader>Tabla</Table.Column>
                   <Table.Column className="text-right">Registros</Table.Column>
