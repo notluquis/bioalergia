@@ -21,6 +21,7 @@
     "build-storybook": "storybook build",
     "chromatic": "chromatic --project-token=$CHROMATIC_PROJECT_TOKEN --exit-once-uploaded",
     "lint": "biome lint .",
+    "lint:heroui-composition": "node ./scripts/check-heroui-composition.mjs",
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
     "format:check": "biome check .",
