@@ -366,6 +366,17 @@ function useAvailableFinancialMonths() {
   });
 }
 
+function isFinancialTransactionsPayload(
+  payload: unknown,
+): payload is FinancialTransactionsResponse & { data: TransactionWithRelations[] } {
+  return (
+    typeof payload === "object" &&
+    payload !== null &&
+    "data" in payload &&
+    Array.isArray((payload as { data?: unknown }).data)
+  );
+}
+
 type CashFlowTab = "cash-flow" | "categories" | "movements";
 
 const formatCurrency = (amount: number) =>
@@ -981,17 +992,55 @@ export function CashFlowPage() {
           responseSchema: UpdateTransactionResponseSchema,
         },
       ),
-    onMutate: ({ transactionId }) => {
+    onMutate: async ({ categoryId, transactionId }) => {
+      await queryClient.cancelQueries({ queryKey: ["FinancialTransaction"] });
+      const previousFinancialTransactions =
+        queryClient.getQueriesData<FinancialTransactionsResponse>({
+          queryKey: ["FinancialTransaction"],
+        });
+      const nextCategory =
+        categoryId == null
+          ? null
+          : (categories.find((category) => category.id === categoryId) ?? null);
+
+      queryClient.setQueriesData<FinancialTransactionsResponse>(
+        { queryKey: ["FinancialTransaction"] },
+        (current) => {
+          if (!isFinancialTransactionsPayload(current)) {
+            return current;
+          }
+          return {
+            ...current,
+            data: current.data.map((transaction) =>
+              transaction.id === transactionId
+                ? {
+                    ...transaction,
+                    category: nextCategory,
+                    categoryId,
+                  }
+                : transaction,
+            ),
+          };
+        },
+      );
+
       setUpdatingCategoryIds((prev) => {
         const next = new Set(prev);
         next.add(transactionId);
         return next;
       });
+      return { previousFinancialTransactions };
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["FinancialTransaction"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["FinancialTransaction"],
+        refetchType: "active",
+      });
     },
-    onError: () => {
+    onError: (_error, _variables, context) => {
+      context?.previousFinancialTransactions.forEach(([queryKey, snapshot]) => {
+        queryClient.setQueryData(queryKey, snapshot);
+      });
       toast.error("No se pudo actualizar la categoría");
     },
     onSettled: (_data, _error, variables) => {
@@ -1048,12 +1097,91 @@ export function CashFlowPage() {
           responseSchema: UpdateTransactionCategoryResponseSchema,
         },
       ),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["TransactionCategory"] });
+    onMutate: async (payload) => {
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: ["TransactionCategory"] }),
+        queryClient.cancelQueries({ queryKey: ["FinancialTransaction"] }),
+      ]);
+      const previousTransactionCategories = queryClient.getQueriesData<TransactionCategory[]>({
+        queryKey: ["TransactionCategory"],
+      });
+      const previousFinancialTransactions =
+        queryClient.getQueriesData<FinancialTransactionsResponse>({
+          queryKey: ["FinancialTransaction"],
+        });
+
+      queryClient.setQueriesData<TransactionCategory[]>(
+        { queryKey: ["TransactionCategory"] },
+        (current) => {
+          if (!Array.isArray(current)) {
+            return current;
+          }
+          return current.map((category) =>
+            category.id === payload.id
+              ? {
+                  ...category,
+                  color: payload.color ?? null,
+                  name: payload.name,
+                  type: payload.type,
+                }
+              : category,
+          );
+        },
+      );
+
+      queryClient.setQueriesData<FinancialTransactionsResponse>(
+        { queryKey: ["FinancialTransaction"] },
+        (current) => {
+          if (!isFinancialTransactionsPayload(current)) {
+            return current;
+          }
+          return {
+            ...current,
+            data: current.data.map((transaction) =>
+              transaction.categoryId === payload.id
+                ? {
+                    ...transaction,
+                    category: transaction.category
+                      ? {
+                          ...transaction.category,
+                          color: payload.color ?? null,
+                          name: payload.name,
+                          type: payload.type,
+                        }
+                      : transaction.category,
+                  }
+                : transaction,
+            ),
+          };
+        },
+      );
+
+      return {
+        previousFinancialTransactions,
+        previousTransactionCategories,
+      };
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ["TransactionCategory"],
+          refetchType: "active",
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["FinancialTransaction"],
+          refetchType: "active",
+        }),
+      ]);
       setEditingCategoryId(null);
       toast.success("Categoría actualizada");
     },
-    onError: (error) => {
+    onError: (error, _variables, context) => {
+      context?.previousTransactionCategories.forEach(([queryKey, snapshot]) => {
+        queryClient.setQueryData(queryKey, snapshot);
+      });
+      context?.previousFinancialTransactions.forEach(([queryKey, snapshot]) => {
+        queryClient.setQueryData(queryKey, snapshot);
+      });
       const message =
         error instanceof ApiError ? error.message : "Error inesperado al actualizar categoría";
       toast.error(message);
