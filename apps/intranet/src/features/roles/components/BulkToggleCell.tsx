@@ -38,7 +38,7 @@ export function BulkToggleCell({
           onToggle(role, permissionIds);
         }}
       >
-        <Checkbox.Control>
+        <Checkbox.Control className="size-4 rounded-md border border-default-300 bg-background shadow-xs data-[selected=true]:border-primary data-[selected=true]:bg-primary data-[indeterminate=true]:border-primary data-[indeterminate=true]:bg-primary">
           {isUpdating ? <Loader2 className="h-4 w-4 text-default-300" /> : <Checkbox.Indicator />}
         </Checkbox.Control>
       </Checkbox>

@@ -167,8 +167,10 @@ async function ensureDailyReport(
   type: ReportType,
   reports: MPReportSummary[],
 ): Promise<MPReportSummary[]> {
-  const targetDate = getYesterdayDate();
-  const existing = reports.find((report) => reportCoversDate(report, targetDate));
+  const range = getAutoSyncReportRange();
+  const existing = reports.find((report) =>
+    reportCoversRange(report, range.beginDate, range.endDate),
+  );
   if (existing) {
     if (existing.file_name && isReportReady(existing.status)) {
       logEvent("mp.autoSync.reportSkipped", {
@@ -176,6 +178,8 @@ async function ensureDailyReport(
         reason: "already_exists",
         begin: existing.begin_date,
         end: existing.end_date,
+        targetBegin: range.beginDate.toISOString(),
+        targetEnd: range.endDate.toISOString(),
       });
       return reports;
     }
@@ -186,17 +190,20 @@ async function ensureDailyReport(
       status: existing.status,
       begin: existing.begin_date,
       end: existing.end_date,
+      targetBegin: range.beginDate.toISOString(),
+      targetEnd: range.endDate.toISOString(),
     });
     return reports;
   }
 
   const lastGenerated = await getValidSettingDate(SETTINGS_KEYS.lastGenerated(type));
-  if (lastGenerated && isSameDay(lastGenerated, targetDate)) {
+  if (lastGenerated && isSameDay(lastGenerated, range.endDate)) {
     logWarn("mp.autoSync.reportSkipped", {
       type,
-      reason: "last_generated_same_day_missing_report",
+      reason: "already_generated_for_end_day",
       lastGenerated: lastGenerated.toISOString(),
-      targetDate: targetDate.toISOString(),
+      targetBegin: range.beginDate.toISOString(),
+      targetEnd: range.endDate.toISOString(),
     });
   }
 
@@ -211,21 +218,27 @@ async function ensureDailyReport(
     return reports;
   }
 
-  const { beginDate, endDate } = toDayRange(targetDate);
   logEvent("mp.autoSync.reportCreating", {
     type,
-    begin: beginDate.toISOString(),
-    end: endDate.toISOString(),
+    begin: range.beginDate.toISOString(),
+    end: range.endDate.toISOString(),
   });
   await updateSetting(SETTINGS_KEYS.lastCreateAttempt(type), new Date().toISOString());
   await MercadoPagoService.createReport(type, {
-    begin_date: formatMpDate(beginDate),
-    end_date: formatMpDate(endDate),
+    begin_date: formatMpDate(range.beginDate),
+    end_date: formatMpDate(range.endDate),
   });
-  await updateSetting(SETTINGS_KEYS.lastGenerated(type), targetDate.toISOString());
-  logEvent("mp.autoSync.reportCreated", { type, begin: beginDate, end: endDate });
+  await updateSetting(SETTINGS_KEYS.lastGenerated(type), range.endDate.toISOString());
+  logEvent("mp.autoSync.reportCreated", {
+    type,
+    begin: range.beginDate.toISOString(),
+    end: range.endDate.toISOString(),
+  });
 
-  return reports;
+  const refreshed = (await MercadoPagoService.listReports(type, {
+    silent: true,
+  })) as MPReportSummary[];
+  return refreshed;
 }
 
 async function processReadyReports(
@@ -411,13 +424,13 @@ function isReportReady(status?: string) {
   return REPORT_READY_REGEX.test(status);
 }
 
-function reportCoversDate(report: MPReportSummary, targetDate: Date) {
+function reportCoversRange(report: MPReportSummary, targetBegin: Date, targetEnd: Date) {
   const begin = parseDate(report.begin_date);
   const end = parseDate(report.end_date);
   if (!begin || !end) {
     return false;
   }
-  return begin.getTime() <= targetDate.getTime() && targetDate.getTime() <= end.getTime();
+  return begin.getTime() <= targetBegin.getTime() && end.getTime() >= targetEnd.getTime();
 }
 
 function parseDate(value?: string) {
@@ -428,19 +441,19 @@ function parseDate(value?: string) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function getYesterdayDate() {
-  const date = new Date();
-  date.setDate(date.getDate() - 1);
-  date.setHours(12, 0, 0, 0);
-  return date;
-}
+function getAutoSyncReportRange() {
+  const today = new Date();
+  const todayEnd = new Date(today);
+  todayEnd.setHours(23, 59, 59, 999);
 
-function toDayRange(date: Date) {
-  const beginDate = new Date(date);
-  beginDate.setHours(0, 0, 0, 0);
-  const endDate = new Date(date);
-  endDate.setHours(23, 59, 59, 999);
-  return { beginDate, endDate };
+  const yesterdayStart = new Date(today);
+  yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+  yesterdayStart.setHours(0, 0, 0, 0);
+
+  return {
+    beginDate: yesterdayStart,
+    endDate: todayEnd,
+  };
 }
 
 function isSameDay(a: Date, b: Date) {
