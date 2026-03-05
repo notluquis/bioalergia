@@ -451,19 +451,19 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
     <Disclosure className="bg-transparent">
       <Disclosure.Heading>
         <Button
-          className="flex w-full cursor-pointer items-center justify-between px-5 py-2.5 text-left hover:bg-default-50/60 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-inset"
+          className="flex h-auto min-h-16 w-full cursor-pointer items-start justify-between px-5 py-3.5 text-left hover:bg-default-50/60 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-inset"
           slot="trigger"
           type="button"
           variant="ghost"
         >
-          <div className="flex items-center gap-3">
-            <Disclosure.Indicator className="size-4 text-default-300" />
-            <div>
+          <div className="flex min-w-0 flex-1 items-start gap-3">
+            <Disclosure.Indicator className="mt-1 size-4 shrink-0 text-default-300" />
+            <div className="min-w-0 space-y-0.5">
               <div className="flex items-center gap-2">
-                <CheckCircle className="size-4 text-success" />
-                <span className="font-medium">{backup.name}</span>
+                <CheckCircle className="size-4 shrink-0 text-success" />
+                <span className="truncate font-medium">{backup.name}</span>
               </div>
-              <Description className="mt-0.5 text-default-500 text-xs">
+              <Description className="leading-5 text-default-500 text-xs">
                 {dayjs(backup.createdTime).format("DD MMM YYYY, HH:mm")} •{" "}
                 {formatFileSize(Number(backup.size))}
               </Description>
