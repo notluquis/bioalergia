@@ -10,6 +10,16 @@ export interface CalendarEventState {
   tone: CalendarEventStateTone;
 }
 
+const REAGENDAR_PATTERNS = [
+  /\breagend(?:ar|a|e|o|ado|ada|ará|aran)\b/i,
+  /\bllamar[áa]\s+para\s+reagend(?:ar|arlo|arla)?\b/i,
+];
+
+function isRescheduleEvent(event: CalendarEventDetail): boolean {
+  const text = `${event.summary ?? ""} ${event.description ?? ""}`;
+  return REAGENDAR_PATTERNS.some((pattern) => pattern.test(text));
+}
+
 function getAttendanceState(event: CalendarEventDetail): CalendarEventState {
   const start = event.startDateTime ? dayjs(event.startDateTime) : null;
   const isPastOrNow = start ? !start.isAfter(dayjs()) : false;
@@ -22,6 +32,9 @@ function getAttendanceState(event: CalendarEventDetail): CalendarEventState {
   }
   if (event.attended === false) {
     return { key: "attendance", label: "No asistió", tone: "danger" };
+  }
+  if (isRescheduleEvent(event)) {
+    return { key: "attendance", label: "Reagendar", tone: "warning" };
   }
   return {
     key: "attendance",

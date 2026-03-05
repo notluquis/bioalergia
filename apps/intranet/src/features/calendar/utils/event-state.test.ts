@@ -67,6 +67,34 @@ describe("getCalendarEventStates", () => {
     });
   });
 
+  it("returns reschedule state when summary indicates 'reagendar'", () => {
+    const states = getCalendarEventStates(
+      makeEvent({
+        attended: null,
+        summary: "le surgio un inconveniente, llamara para reagendar",
+      }),
+    );
+    expect(states[0]).toMatchObject({
+      key: "attendance",
+      label: "Reagendar",
+      tone: "warning",
+    });
+  });
+
+  it("keeps no-show precedence even if text includes 'reagendar'", () => {
+    const states = getCalendarEventStates(
+      makeEvent({
+        attended: false,
+        summary: "no viene hoy, llamara para reagendar",
+      }),
+    );
+    expect(states[0]).toMatchObject({
+      key: "attendance",
+      label: "No asistió",
+      tone: "danger",
+    });
+  });
+
   it("maps confirmed status", () => {
     const states = getCalendarEventStates(makeEvent({ status: "confirmed" }));
     expect(states).toContainEqual(
