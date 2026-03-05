@@ -414,7 +414,11 @@ export function BackupSettingsPage() {
               </Button>
             </div>
           </div>
-          <ScrollShadow className="max-h-125 space-y-2 p-2" hideScrollBar size={56}>
+          <ScrollShadow
+            className="max-h-125 divide-y divide-default-100/70"
+            hideScrollBar
+            size={56}
+          >
             {renderBackupListContent()}
           </ScrollShadow>
         </Surface>
@@ -444,22 +448,22 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
   });
 
   return (
-    <Disclosure>
+    <Disclosure className="bg-transparent">
       <Disclosure.Heading>
         <Button
-          className="flex w-full cursor-pointer items-center justify-between rounded-xl border border-default-100 bg-background px-4 py-3.5 text-left hover:bg-default-50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-inset"
+          className="flex w-full cursor-pointer items-center justify-between px-5 py-2.5 text-left hover:bg-default-50/60 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-inset"
           slot="trigger"
           type="button"
           variant="ghost"
         >
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <Disclosure.Indicator className="size-4 text-default-300" />
             <div>
               <div className="flex items-center gap-2">
                 <CheckCircle className="size-4 text-success" />
                 <span className="font-medium">{backup.name}</span>
               </div>
-              <Description className="mt-0.5 text-default-500 text-sm">
+              <Description className="mt-0.5 text-default-500 text-xs">
                 {dayjs(backup.createdTime).format("DD MMM YYYY, HH:mm")} •{" "}
                 {formatFileSize(Number(backup.size))}
               </Description>
@@ -484,7 +488,7 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
       </Disclosure.Heading>
 
       <Disclosure.Content>
-        <Disclosure.Body className="bg-default-100/30 px-6 py-4">
+        <Disclosure.Body className="border-default-100 border-t bg-default-50/40 px-5 py-4">
           <div className="mb-4 flex items-start gap-2 rounded-lg bg-warning/10 p-3 text-sm text-warning">
             <AlertTriangle className="mt-0.5 size-4 shrink-0" />
             <span>
