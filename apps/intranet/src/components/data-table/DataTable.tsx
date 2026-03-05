@@ -137,9 +137,8 @@ interface DataTableProps<TData, TValue, TMeta extends TableMeta<TData> = TableMe
   readonly virtualizationThreshold?: number;
 }
 
-interface DataTableContentProps<TData, TValue> {
+interface DataTableContentProps<TData> {
   readonly autoFitColumns: boolean;
-  readonly columns: ColumnDef<TData, TValue>[];
   readonly containerVariant: "default" | "plain";
   readonly enableVirtualization: boolean;
   readonly isLoading?: boolean;
@@ -154,9 +153,8 @@ interface DataTableContentProps<TData, TValue> {
   readonly virtualizationMaxHeight: number | string;
 }
 
-function DataTableContent<TData, TValue>({
+function DataTableContent<TData>({
   autoFitColumns,
-  columns,
   containerVariant,
   enableVirtualization,
   isLoading,
@@ -169,7 +167,7 @@ function DataTableContent<TData, TValue>({
   sorting,
   table,
   virtualizationMaxHeight,
-}: DataTableContentProps<TData, TValue>) {
+}: DataTableContentProps<TData>) {
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const rows = table.getRowModel().rows;
   const shouldEnableInternalVerticalScroll =
@@ -245,15 +243,8 @@ function DataTableContent<TData, TValue>({
               <Table.Body>
                 {["1", "2", "3", "4", "5", "6"].map((rowKey) => (
                   <Table.Row id={`skeleton-row-${rowKey}`} key={`skeleton-row-${rowKey}`}>
-                    {columns.map((column) => {
-                      const accessorKey =
-                        "accessorKey" in column && typeof column.accessorKey === "string"
-                          ? column.accessorKey
-                          : null;
-                      const headerKey = typeof column.header === "string" ? column.header : null;
-                      const loadingColumnKey = String(
-                        column.id ?? accessorKey ?? headerKey ?? "column",
-                      );
+                    {activeHeaderGroup.headers.map((header) => {
+                      const loadingColumnKey = String(header.column.id ?? header.id ?? "column");
                       return (
                         <Table.Cell key={`skeleton-cell-${rowKey}-${loadingColumnKey}`}>
                           <Skeleton className="h-4 w-full max-w-36 rounded-md" />
@@ -410,7 +401,6 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
       )}
       <DataTableContent
         autoFitColumns={autoFitColumns}
-        columns={columns}
         containerVariant={containerVariant}
         enableVirtualization={shouldVirtualize}
         isLoading={isLoading}

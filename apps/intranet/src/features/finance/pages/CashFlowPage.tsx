@@ -850,15 +850,18 @@ export function CashFlowPage() {
     const amountFilter = columnFilters.amount.replace(/[^\d-]/g, "").trim();
 
     return monthTransactions.filter((tx) => {
+      const resolvedCategoryId = tx.categoryId ?? tx.category?.id ?? null;
+      const txCategoryKey = resolvedCategoryId == null ? "__none__" : String(resolvedCategoryId);
+
       if (
         !showNonAccountableMovements &&
-        tx.categoryId != null &&
-        nonAccountableCategoryIds.has(tx.categoryId)
+        resolvedCategoryId != null &&
+        nonAccountableCategoryIds.has(resolvedCategoryId)
       ) {
         return false;
       }
 
-      if (showOnlyUncategorizedMovements && tx.categoryId != null) {
+      if (showOnlyUncategorizedMovements && txCategoryKey !== "__none__") {
         return false;
       }
 
@@ -867,7 +870,6 @@ export function CashFlowPage() {
       }
 
       if (selectedCategoryFilters.length > 0) {
-        const txCategoryKey = tx.categoryId == null ? "__none__" : String(tx.categoryId);
         if (!selectedCategoryFilters.includes(txCategoryKey)) {
           return false;
         }
