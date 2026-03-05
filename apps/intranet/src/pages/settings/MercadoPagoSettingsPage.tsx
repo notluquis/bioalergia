@@ -34,8 +34,8 @@ type ToastFn = (message: string, title?: string) => void;
 
 type ReportActions = {
   downloadPending: boolean;
-  handleDownload: (event: React.MouseEvent, fileName: string) => void;
-  handleProcess: (event: React.MouseEvent, fileName: string) => void;
+  handleDownload: (fileName: string) => void;
+  handleProcess: (fileName: string) => void;
   processPending: boolean;
   processingFile: null | string;
 };
@@ -104,13 +104,11 @@ const useReportActions = ({
     },
   });
 
-  const handleDownload = (event: React.MouseEvent, fileName: string) => {
-    event.preventDefault();
+  const handleDownload = (fileName: string) => {
     downloadMutation.mutate(fileName);
   };
 
-  const handleProcess = (event: React.MouseEvent, fileName: string) => {
-    event.preventDefault();
+  const handleProcess = (fileName: string) => {
     if (
       confirm(
         `¿Estás seguro de sincronizar el reporte ${fileName}? Esto podría duplicar datos si no se detecta correctamente.`,

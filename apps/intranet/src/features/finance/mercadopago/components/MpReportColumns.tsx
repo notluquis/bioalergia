@@ -7,8 +7,8 @@ import type { MPReport } from "@/services/mercadopago";
 const REPORT_PENDING_REGEX = /processing|pending|in_progress|waiting|generating|queued|creating/i;
 
 export const getMpReportColumns = (
-  handleDownload: (e: React.MouseEvent, fileName: string) => void,
-  handleProcess: (e: React.MouseEvent, fileName: string) => void,
+  handleDownload: (fileName: string) => void,
+  handleProcess: (fileName: string) => void,
   downloadPending: boolean,
   processPending: boolean,
   processingFile: null | string,
@@ -107,9 +107,9 @@ export const getMpReportColumns = (
           <Button
             className="h-9 w-9 p-0 sm:opacity-70 sm:group-hover:opacity-100"
             isDisabled={downloadPending || pending || !report.file_name}
-            onPress={(e) => {
+            onPress={() => {
               if (report.file_name) {
-                handleDownload(e as unknown as React.MouseEvent, report.file_name);
+                handleDownload(report.file_name);
               }
             }}
             variant="ghost"
@@ -119,9 +119,9 @@ export const getMpReportColumns = (
           <Button
             className="h-9 w-9 p-0 sm:opacity-70 sm:group-hover:opacity-100"
             isDisabled={processPending || pending || !report.file_name}
-            onPress={(e) => {
+            onPress={() => {
               if (report.file_name) {
-                handleProcess(e as unknown as React.MouseEvent, report.file_name);
+                handleProcess(report.file_name);
               }
             }}
             variant="ghost"
