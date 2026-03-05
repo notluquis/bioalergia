@@ -1,7 +1,6 @@
 import type { FinancialTransaction, TransactionCategory } from "@finanzas/db";
 import {
   Button,
-  Card,
   Chip,
   ColorField,
   ColorPicker,
@@ -19,6 +18,7 @@ import {
   Select,
   type Selection,
   Skeleton,
+  Surface,
   Switch,
   Tabs,
   TextField,
@@ -1592,7 +1592,7 @@ export function CashFlowPage() {
         <Tabs.Panel id="cash-flow" className="space-y-3 pt-3">
           {isTabMounted("cash-flow") ? (
             <>
-              <Card className="border border-default-200/70 bg-linear-to-b from-default-100/40 to-default-50/10 shadow-sm">
+              <Surface className="border border-default-200/70 bg-linear-to-b from-default-100/40 to-default-50/10 shadow-sm">
                 <div className="space-y-3 p-3">
                   <div className="w-full md:max-w-xs">
                     <Select
@@ -1808,9 +1808,9 @@ export function CashFlowPage() {
                     </div>
                   </div>
                 </div>
-              </Card>
+              </Surface>
 
-              <Card className="border border-default-200/70 bg-linear-to-b from-default-100/40 to-default-50/10 shadow-sm">
+              <Surface className="border border-default-200/70 bg-linear-to-b from-default-100/40 to-default-50/10 shadow-sm">
                 <div className="space-y-3 p-3">
                   <p className="text-sm font-medium">Distribución por categoría</p>
                   <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
@@ -1927,14 +1927,14 @@ export function CashFlowPage() {
                     </div>
                   </div>
                 </div>
-              </Card>
+              </Surface>
             </>
           ) : null}
         </Tabs.Panel>
 
         <Tabs.Panel id="movements" className="space-y-3 pt-3">
           {isTabMounted("movements") ? (
-            <Card className="overflow-hidden border border-default-200/70 bg-linear-to-b from-default-100/35 via-default-50/15 to-transparent shadow-sm">
+            <Surface className="overflow-hidden border border-default-200/70 bg-linear-to-b from-default-100/35 via-default-50/15 to-transparent shadow-sm">
               <div className="border-b border-default-200/70 px-4 py-3">
                 <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-12">
                   <div className="lg:col-span-2">
@@ -2315,14 +2315,14 @@ export function CashFlowPage() {
                   />
                 </Suspense>
               </div>
-            </Card>
+            </Surface>
           ) : null}
         </Tabs.Panel>
 
         <Tabs.Panel id="categories" className="space-y-3 pt-3">
           {isTabMounted("categories") ? (
             <>
-              <Card className="border border-default-200/70 bg-linear-to-b from-default-100/35 to-default-50/10 shadow-sm">
+              <Surface className="border border-default-200/70 bg-linear-to-b from-default-100/35 to-default-50/10 shadow-sm">
                 <div className="flex flex-wrap gap-2 p-2">
                   <Button
                     size="sm"
@@ -2346,11 +2346,11 @@ export function CashFlowPage() {
                     Perfiles de compensación
                   </Button>
                 </div>
-              </Card>
+              </Surface>
 
               {activeCategorySection === "catalog" ? (
                 <>
-                  <Card className="border border-default-200/70 bg-linear-to-b from-default-100/40 to-default-50/10 shadow-sm">
+                  <Surface className="border border-default-200/70 bg-linear-to-b from-default-100/40 to-default-50/10 shadow-sm">
                     <div className="p-3">
                       <form
                         className="grid grid-cols-1 gap-4 md:grid-cols-5 md:items-end"
@@ -2418,9 +2418,9 @@ export function CashFlowPage() {
                         </div>
                       </form>
                     </div>
-                  </Card>
+                  </Surface>
 
-                  <Card className="border border-default-200/70 bg-linear-to-b from-default-100/40 to-default-50/10 shadow-sm">
+                  <Surface className="border border-default-200/70 bg-linear-to-b from-default-100/40 to-default-50/10 shadow-sm">
                     <div className="p-3">
                       {categories.length === 0 ? (
                         <p className="text-default-500 text-sm">No hay categorías creadas.</p>
@@ -2546,12 +2546,12 @@ export function CashFlowPage() {
                         </div>
                       )}
                     </div>
-                  </Card>
+                  </Surface>
                 </>
               ) : null}
 
               {activeCategorySection === "compensation" ? (
-                <Card className="border border-default-200/70 bg-linear-to-b from-default-100/40 to-default-50/10 shadow-sm">
+                <Surface className="border border-default-200/70 bg-linear-to-b from-default-100/40 to-default-50/10 shadow-sm">
                   <div className="space-y-3 p-3">
                     <h3 className="text-sm font-semibold">Perfiles de compensación (sueldos)</h3>
                     <form
@@ -2726,11 +2726,11 @@ export function CashFlowPage() {
                       </div>
                     )}
                   </div>
-                </Card>
+                </Surface>
               ) : null}
 
               {activeCategorySection === "rules" ? (
-                <Card>
+                <Surface>
                   <div className="space-y-3 p-3">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <h3 className="text-sm font-semibold">Reglas automáticas por contraparte</h3>
@@ -3147,7 +3147,7 @@ export function CashFlowPage() {
                       </div>
                     )}
                   </div>
-                </Card>
+                </Surface>
               ) : null}
             </>
           ) : null}
