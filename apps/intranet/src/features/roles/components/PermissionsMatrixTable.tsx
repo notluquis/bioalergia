@@ -316,7 +316,7 @@ function PermissionCell({
           onToggle(role, permissionId);
         }}
       >
-        <Checkbox.Control className="size-4 rounded-md border border-default-300 bg-background shadow-xs data-[selected=true]:border-primary data-[selected=true]:bg-primary">
+        <Checkbox.Control>
           <Checkbox.Indicator>
             {({ isSelected }) => (isSelected ? <Check className="h-3.5 w-3.5" /> : null)}
           </Checkbox.Indicator>
