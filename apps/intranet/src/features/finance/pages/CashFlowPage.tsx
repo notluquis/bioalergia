@@ -1594,7 +1594,7 @@ export function CashFlowPage() {
             <>
               <Card className="border border-default-200/70 bg-linear-to-b from-default-100/40 to-default-50/10 shadow-sm">
                 <div className="space-y-3 p-3">
-                  <div className="max-w-xs">
+                  <div className="w-full md:max-w-xs">
                     <Select
                       value={selectedMonth}
                       onChange={(key) => {

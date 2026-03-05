@@ -207,7 +207,7 @@ function DataTableContent<TData, TValue>({
         >
           <Table.Content
             aria-label="Tabla de datos"
-            className={cn(autoFitColumns ? undefined : "min-w-max")}
+            className={cn("w-full", autoFitColumns ? "min-w-full" : "min-w-max")}
             sortDescriptor={sortDescriptor}
             onSortChange={(descriptor) => {
               if (!descriptor?.column) {
