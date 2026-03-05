@@ -43,7 +43,7 @@ export function CashFlowTable({
 
   return (
     <DataTable
-      autoFitColumns={false}
+      autoFitColumns
       columns={columns}
       columnVisibility={columnVisibility}
       containerVariant="plain"
