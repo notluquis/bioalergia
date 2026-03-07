@@ -231,13 +231,13 @@ model Employee {
 }
 
 model Counterpart {
-  id                     Int                     @id @default(autoincrement())
-  identificationNumber   String                  @unique @map("identification_number") @db.VarChar(50)
-  bankAccountHolder      String                  @map("bank_account_holder") @db.VarChar(255)
-  category               CounterpartCategory     @default(SUPPLIER)
+  id                     Int                         @id @default(autoincrement())
+  identificationNumber   String                      @unique @map("identification_number") @db.VarChar(50)
+  bankAccountHolder      String                      @map("bank_account_holder") @db.VarChar(255)
+  category               CounterpartCategory         @default(SUPPLIER)
   notes                  String?
-  createdAt              DateTime                @default(now()) @map("created_at")
-  updatedAt              DateTime                @default(now()) @updatedAt @map("updated_at")
+  createdAt              DateTime                    @default(now()) @map("created_at")
+  updatedAt              DateTime                    @default(now()) @updatedAt @map("updated_at")
   
   // Relations
   accounts               CounterpartAccount[]
@@ -525,62 +525,6 @@ model WithdrawTransaction {
   @@map("withdraw_transactions")
 }
 
-// TODO: Re-enable views when Prisma feature is enabled
-// Temporarily disabled to allow other schema changes to be applied
-/*
-view SettlementReleaseTransaction {
-  id String @unique @map("row_id")
-  sourceId String @map("source_id")
-  origin String @map("origin")
-  effectiveDate DateTime @map("effective_date")
-  settlementExternalReference String? @map("settlement_external_reference")
-  settlementPaymentMethodType String? @map("settlement_payment_method_type")
-  settlementPaymentMethod String? @map("settlement_payment_method")
-  settlementTransactionType String? @map("settlement_transaction_type")
-  settlementTransactionAmount Decimal? @map("settlement_transaction_amount")
-  settlementFeeAmount Decimal? @map("settlement_fee_amount")
-  settlementSettlementNetAmount Decimal? @map("settlement_settlement_net_amount")
-  settlementRealAmount Decimal? @map("settlement_real_amount")
-  settlementFinancingFeeAmount Decimal? @map("settlement_financing_fee_amount")
-  settlementInstallments Int? @map("settlement_installments")
-  settlementBusinessUnit String? @map("settlement_business_unit")
-  settlementSubUnit String? @map("settlement_sub_unit")
-  settlementPayBankTransferId String? @map("settlement_pay_bank_transfer_id")
-  settlementMetadata Json? @map("settlement_metadata")
-  releaseExternalReference String? @map("release_external_reference")
-  releaseDescription String? @map("release_description")
-  releaseNetDebitAmount Decimal? @map("release_net_debit_amount")
-  releaseGrossAmount Decimal? @map("release_gross_amount")
-  releaseBalanceAmount Decimal? @map("release_balance_amount")
-  releasePayoutBankAccountNumber String? @map("release_payout_bank_account_number")
-  releaseBusinessUnit String? @map("release_business_unit")
-  releaseIssuerName String? @map("release_issuer_name")
-  releaseMetadata Json? @map("release_metadata")
-  withdrawId String? @map("withdraw_id")
-  withdrawDateCreated DateTime? @map("withdraw_date_created")
-  withdrawStatus String? @map("withdraw_status")
-  withdrawStatusDetail String? @map("withdraw_status_detail")
-  withdrawAmount Decimal? @map("withdraw_amount")
-  withdrawFee Decimal? @map("withdraw_fee")
-  withdrawActivityUrl String? @map("withdraw_activity_url")
-  withdrawPayoutDesc String? @map("withdraw_payout_desc")
-  withdrawBankAccountHolder String? @map("withdraw_bank_account_holder")
-  withdrawIdentificationType String? @map("withdraw_identification_type")
-  withdrawIdentificationNumber String? @map("withdraw_identification_number")
-  withdrawBankId String? @map("withdraw_bank_id")
-  withdrawBankName String? @map("withdraw_bank_name")
-  withdrawBankBranch String? @map("withdraw_bank_branch")
-  withdrawBankAccountType String? @map("withdraw_bank_account_type")
-  withdrawBankAccountNumber String? @map("withdraw_bank_account_number")
-
-  // Access policies
-  @@deny('all', auth() == null)
-  @@allow('read', true)
-  @@allow('create,update,delete', auth().status == 'ACTIVE')
-
-  @@map("settlement_release_transactions")
-}
-*/
 
 model DailyBalance {
   id        Int      @id @default(autoincrement())
@@ -598,41 +542,41 @@ model DailyBalance {
 }
 
 model Service {
-  id                   Int                     @id @default(autoincrement())
-  publicId             String                  @unique @map("public_id")
-  name                 String
-  detail               String?
-  category             String?
-  transactionCategoryId Int?                   @map("transaction_category_id")
-  reminderDaysBefore   Int                     @default(3) @map("reminder_days_before")
-  autoLinkTransactions Boolean                 @default(true) @map("auto_link_transactions")
-  counterpartId        Int?                    @map("counterpart_id")
-  type                 ServiceType             @default(BUSINESS)
-  recurrenceType       ServiceRecurrenceType   @default(RECURRING) @map("recurrence_type")
-  frequency            ServiceFrequency        @default(MONTHLY)
-  startDate            DateTime                @map("start_date") @db.Date
-  endDate              DateTime?               @map("end_date") @db.Date
-  dueDay               Int?                    @map("due_day")
-  emissionMode         ServiceEmissionMode     @default(FIXED_DAY) @map("emission_mode")
-  emissionDay          Int?                    @map("emission_day")
-  emissionStartDay     Int?                    @map("emission_start_day")
-  emissionEndDay       Int?                    @map("emission_end_day")
-  emissionExactDate    DateTime?               @map("emission_exact_date") @db.Date
-  ownership            ServiceOwnership        @default(COMPANY)
-  obligationType       ServiceObligationType   @default(SERVICE) @map("obligation_type")
-  defaultAmount        Decimal                 @default(0) @map("default_amount") @db.Decimal(15, 2)
-  amountIndexation     ServiceAmountIndexation @default(NONE) @map("amount_indexation")
-  lateFeeMode          ServiceLateFeeMode      @default(NONE) @map("late_fee_mode")
-  lateFeeValue         Decimal?                @map("late_fee_value") @db.Decimal(15, 2)
-  lateFeeGraceDays     Int?                    @map("late_fee_grace_days")
-  nextGenerationMonths Int                     @default(12) @map("next_generation_months")
-  notes                String?
-  status               ServiceStatus           @default(ACTIVE)
-  createdAt            DateTime                @default(now()) @map("created_at")
-  updatedAt            DateTime                @default(now()) @updatedAt @map("updated_at")
-  counterpart          Counterpart?            @relation(fields: [counterpartId], references: [id])
-  transactionCategory  TransactionCategory?    @relation(fields: [transactionCategoryId], references: [id], onDelete: SetNull)
-  schedules            ServiceSchedule[]
+  id                    Int                     @id @default(autoincrement())
+  publicId              String                  @unique @map("public_id")
+  name                  String
+  detail                String?
+  category              String?
+  transactionCategoryId Int?                    @map("transaction_category_id")
+  reminderDaysBefore    Int                     @default(3) @map("reminder_days_before")
+  autoLinkTransactions  Boolean                 @default(true) @map("auto_link_transactions")
+  counterpartId         Int?                    @map("counterpart_id")
+  type                  ServiceType             @default(BUSINESS)
+  recurrenceType        ServiceRecurrenceType   @default(RECURRING) @map("recurrence_type")
+  frequency             ServiceFrequency        @default(MONTHLY)
+  startDate             DateTime                @map("start_date") @db.Date
+  endDate               DateTime?               @map("end_date") @db.Date
+  dueDay                Int?                    @map("due_day")
+  emissionMode          ServiceEmissionMode     @default(FIXED_DAY) @map("emission_mode")
+  emissionDay           Int?                    @map("emission_day")
+  emissionStartDay      Int?                    @map("emission_start_day")
+  emissionEndDay        Int?                    @map("emission_end_day")
+  emissionExactDate     DateTime?               @map("emission_exact_date") @db.Date
+  ownership             ServiceOwnership        @default(COMPANY)
+  obligationType        ServiceObligationType   @default(SERVICE) @map("obligation_type")
+  defaultAmount         Decimal                 @default(0) @map("default_amount") @db.Decimal(15, 2)
+  amountIndexation      ServiceAmountIndexation @default(NONE) @map("amount_indexation")
+  lateFeeMode           ServiceLateFeeMode      @default(NONE) @map("late_fee_mode")
+  lateFeeValue          Decimal?                @map("late_fee_value") @db.Decimal(15, 2)
+  lateFeeGraceDays      Int?                    @map("late_fee_grace_days")
+  nextGenerationMonths  Int                     @default(12) @map("next_generation_months")
+  notes                 String?
+  status                ServiceStatus           @default(ACTIVE)
+  createdAt             DateTime                @default(now()) @map("created_at")
+  updatedAt             DateTime                @default(now()) @updatedAt @map("updated_at")
+  counterpart           Counterpart?            @relation(fields: [counterpartId], references: [id])
+  transactionCategory   TransactionCategory?    @relation(fields: [transactionCategoryId], references: [id], onDelete: SetNull)
+  schedules             ServiceSchedule[]
 
   //Access policies
   @@deny('all', auth() == null)
@@ -1955,18 +1899,18 @@ enum CompensationAllocationType {
 }
 
 model TransactionCategory {
-  id           Int                    @id @default(autoincrement())
-  name         String
-  type         TransactionType
-  color        String?
-  icon         String?
-  createdAt    DateTime               @default(now()) @map("created_at")
-  updatedAt    DateTime               @updatedAt @map("updated_at")
+  id                   Int                         @id @default(autoincrement())
+  name                 String
+  type                 TransactionType
+  color                String?
+  icon                 String?
+  createdAt            DateTime                    @default(now()) @map("created_at")
+  updatedAt            DateTime                    @updatedAt @map("updated_at")
 
-  transactions FinancialTransaction[]
-  autoRules    FinancialAutoCategoryRule[]
+  transactions         FinancialTransaction[]
+  autoRules            FinancialAutoCategoryRule[]
   compensationProfiles CompensationProfile[]
-  services     Service[]
+  services             Service[]
 
   // Access policies
   @@allow('all', auth().status == 'ACTIVE')
@@ -1975,22 +1919,22 @@ model TransactionCategory {
 }
 
 model FinancialAutoCategoryRule {
-  id              Int                  @id @default(autoincrement())
-  name            String
-  type            TransactionType      @default(EXPENSE)
-  counterpartId   Int?                 @map("counterpart_id")
-  categoryId      Int                  @map("category_id")
-  minAmount       Decimal?             @map("min_amount") @db.Decimal(19, 4)
-  maxAmount       Decimal?             @map("max_amount") @db.Decimal(19, 4)
-  commentContains String?              @map("comment_contains")
-  descriptionContains String?          @map("description_contains")
-  isActive        Boolean              @default(true) @map("is_active")
-  priority        Int                  @default(0)
-  createdAt       DateTime             @default(now()) @map("created_at")
-  updatedAt       DateTime             @updatedAt @map("updated_at")
+  id                  Int                 @id @default(autoincrement())
+  name                String
+  type                TransactionType     @default(EXPENSE)
+  counterpartId       Int?                @map("counterpart_id")
+  categoryId          Int                 @map("category_id")
+  minAmount           Decimal?            @map("min_amount") @db.Decimal(19, 4)
+  maxAmount           Decimal?            @map("max_amount") @db.Decimal(19, 4)
+  commentContains     String?             @map("comment_contains")
+  descriptionContains String?             @map("description_contains")
+  isActive            Boolean             @default(true) @map("is_active")
+  priority            Int                 @default(0)
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @updatedAt @map("updated_at")
 
-  counterpart  Counterpart?        @relation(fields: [counterpartId], references: [id], onDelete: Cascade)
-  category     TransactionCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  counterpart         Counterpart?        @relation(fields: [counterpartId], references: [id], onDelete: Cascade)
+  category            TransactionCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   // Access policies
   @@allow('all', auth().status == 'ACTIVE')
@@ -2002,22 +1946,22 @@ model FinancialAutoCategoryRule {
 }
 
 model FinancialTransaction {
-  id          Int                  @id @default(autoincrement())
-  date        DateTime
-  description String
-  amount      Decimal              @db.Decimal(19, 4)
-  type        TransactionType
-  sourceId    String?              @map("source_id")
-  categoryId  Int?                 @map("category_id")
-  counterpartId Int?               @map("counterpart_id")
-  category    TransactionCategory? @relation(fields: [categoryId], references: [id])
-  counterpart Counterpart?         @relation(fields: [counterpartId], references: [id])
-  allocations FinancialTransactionAllocation[]
+  id               Int                              @id @default(autoincrement())
+  date             DateTime
+  description      String
+  amount           Decimal                          @db.Decimal(19, 4)
+  type             TransactionType
+  sourceId         String?                          @map("source_id")
+  categoryId       Int?                             @map("category_id")
+  counterpartId    Int?                             @map("counterpart_id")
+  category         TransactionCategory?             @relation(fields: [categoryId], references: [id])
+  counterpart      Counterpart?                     @relation(fields: [counterpartId], references: [id])
+  allocations      FinancialTransactionAllocation[]
   serviceSchedules ServiceSchedule[]
-  comment     String?
+  comment          String?
 
-  createdAt   DateTime             @default(now()) @map("created_at")
-  updatedAt   DateTime             @updatedAt @map("updated_at")
+  createdAt        DateTime                         @default(now()) @map("created_at")
+  updatedAt        DateTime                         @updatedAt @map("updated_at")
 
   // Access policies
   @@allow('all', auth().status == 'ACTIVE')
@@ -2030,17 +1974,17 @@ model FinancialTransaction {
 }
 
 model CompensationProfile {
-  id            Int                     @id @default(autoincrement())
+  id            Int                              @id @default(autoincrement())
   name          String
-  categoryId    Int                     @map("category_id")
-  counterpartId Int?                    @map("counterpart_id")
-  isActive      Boolean                 @default(true) @map("is_active")
-  timezone      String                  @default("America/Santiago")
-  createdAt     DateTime                @default(now()) @map("created_at")
-  updatedAt     DateTime                @updatedAt @map("updated_at")
+  categoryId    Int                              @map("category_id")
+  counterpartId Int?                             @map("counterpart_id")
+  isActive      Boolean                          @default(true) @map("is_active")
+  timezone      String                           @default("America/Santiago")
+  createdAt     DateTime                         @default(now()) @map("created_at")
+  updatedAt     DateTime                         @updatedAt @map("updated_at")
 
-  category      TransactionCategory     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  counterpart   Counterpart?            @relation(fields: [counterpartId], references: [id], onDelete: SetNull)
+  category      TransactionCategory              @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  counterpart   Counterpart?                     @relation(fields: [counterpartId], references: [id], onDelete: SetNull)
   budgets       CompensationPeriodBudget[]
   allocations   FinancialTransactionAllocation[]
 
@@ -2054,15 +1998,15 @@ model CompensationProfile {
 }
 
 model CompensationPeriodBudget {
-  id            Int                 @id @default(autoincrement())
-  profileId     Int                 @map("profile_id")
-  period        String              @db.VarChar(7) // YYYY-MM
-  baseAmount    Decimal             @map("base_amount") @db.Decimal(19, 4)
-  isLocked      Boolean             @default(false) @map("is_locked")
-  createdAt     DateTime            @default(now()) @map("created_at")
-  updatedAt     DateTime            @updatedAt @map("updated_at")
+  id         Int                 @id @default(autoincrement())
+  profileId  Int                 @map("profile_id")
+  period     String              @db.VarChar(7) // YYYY-MM
+  baseAmount Decimal             @map("base_amount") @db.Decimal(19, 4)
+  isLocked   Boolean             @default(false) @map("is_locked")
+  createdAt  DateTime            @default(now()) @map("created_at")
+  updatedAt  DateTime            @updatedAt @map("updated_at")
 
-  profile       CompensationProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profile    CompensationProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
   // Access policies
   @@allow('all', auth().status == 'ACTIVE')
@@ -2074,19 +2018,19 @@ model CompensationPeriodBudget {
 }
 
 model FinancialTransactionAllocation {
-  id               Int                        @id @default(autoincrement())
-  transactionId    Int                        @map("transaction_id")
-  profileId        Int                        @map("profile_id")
-  period           String                     @db.VarChar(7) // YYYY-MM
-  amount           Decimal                    @db.Decimal(19, 4)
-  allocationType   CompensationAllocationType @default(MANUAL_ADJUST) @map("allocation_type")
-  sourceAllocationId Int?                     @map("source_allocation_id")
-  createdAt        DateTime                   @default(now()) @map("created_at")
-  updatedAt        DateTime                   @updatedAt @map("updated_at")
+  id                 Int                              @id @default(autoincrement())
+  transactionId      Int                              @map("transaction_id")
+  profileId          Int                              @map("profile_id")
+  period             String                           @db.VarChar(7) // YYYY-MM
+  amount             Decimal                          @db.Decimal(19, 4)
+  allocationType     CompensationAllocationType       @default(MANUAL_ADJUST) @map("allocation_type")
+  sourceAllocationId Int?                             @map("source_allocation_id")
+  createdAt          DateTime                         @default(now()) @map("created_at")
+  updatedAt          DateTime                         @updatedAt @map("updated_at")
 
-  transaction      FinancialTransaction       @relation(fields: [transactionId], references: [id], onDelete: Cascade)
-  profile          CompensationProfile        @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  sourceAllocation FinancialTransactionAllocation? @relation("AllocationSource", fields: [sourceAllocationId], references: [id], onDelete: SetNull)
+  transaction        FinancialTransaction             @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  profile            CompensationProfile              @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  sourceAllocation   FinancialTransactionAllocation?  @relation("AllocationSource", fields: [sourceAllocationId], references: [id], onDelete: SetNull)
   derivedAllocations FinancialTransactionAllocation[] @relation("AllocationSource")
 
   // Access policies

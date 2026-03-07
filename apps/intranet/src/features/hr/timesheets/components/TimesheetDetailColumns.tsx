@@ -51,10 +51,15 @@ function TimeFieldInput({
     return `${hours}:${minutes}`;
   };
 
-  // TimeField handles all validation natively - just pass the value directly
+  // TimeField handles all validation natively
   let timeValue: Time | null = null;
   if (value) {
-    timeValue = parseTime(value);
+    try {
+      timeValue = parseTime(value);
+    } catch {
+      // If value is invalid, TimeField will handle it gracefully
+      timeValue = null;
+    }
   }
 
   return (
