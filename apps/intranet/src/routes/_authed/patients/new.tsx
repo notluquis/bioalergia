@@ -101,9 +101,7 @@ function AddPatientPage() {
       </div>
 
       <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
+        onSubmit={() => {
           void form.handleSubmit();
         }}
         className="space-y-6"

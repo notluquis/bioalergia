@@ -473,9 +473,6 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
                 href={backup.webViewLink}
                 rel="noreferrer"
                 target="_blank"
-                onClick={(event) => {
-                  event.stopPropagation();
-                }}
               >
                 <Download className="size-4" />
               </Link>

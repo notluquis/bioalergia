@@ -165,8 +165,7 @@ function NotificationItem({ notification, onRead, onRemove }: Readonly<Notificat
         <Button
           aria-label="Eliminar notificación"
           type="button"
-          onClick={(e) => {
-            e.stopPropagation();
+          onPress={() => {
             onRemove(notification.id);
           }}
           className="absolute top-2 right-2 rounded-full p-1 text-default-400 opacity-0 hover:text-danger group-hover:opacity-100"

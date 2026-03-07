@@ -81,7 +81,7 @@ export function WeekStrip({
             isSelected={dayjs(day.date).isSame(currentDate, "day")}
             isToday={dayjs(day.date).isSame(today, "day")}
             key={day.date.toISOString()}
-            onClick={() => {
+            onPress={() => {
               onSelectDate(day.date);
             }}
           />
@@ -99,12 +99,12 @@ function DayCellButton({
   day,
   isSelected,
   isToday,
-  onClick,
+  onPress,
 }: {
   day: DayCell;
   isSelected: boolean;
   isToday: boolean;
-  onClick: () => void;
+  onPress: () => void;
 }) {
   const statusColors = {
     balanced: "bg-success",
@@ -122,7 +122,7 @@ function DayCellButton({
         isToday && !isSelected && "ring-1 ring-primary/30",
       )}
       fullWidth
-      onPress={onClick}
+      onPress={onPress}
       type="button"
       variant="ghost"
     >
