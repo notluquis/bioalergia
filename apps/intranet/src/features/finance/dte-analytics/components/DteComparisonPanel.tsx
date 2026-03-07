@@ -48,11 +48,9 @@ export function DteComparisonPanel({ kind }: DteComparisonPanelProps) {
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
-              <YAxis tickFormatter={formatCurrencyCompact} />
+              <YAxis niceTicks="auto" tickFormatter={formatCurrencyCompact} />
               <Tooltip
-                formatter={(value: number | undefined) =>
-                  value !== undefined ? formatCurrency(value) : "N/A"
-                }
+                formatter={(value) => (typeof value === "number" ? formatCurrency(value) : "N/A")}
                 labelStyle={{ color: "#000" }}
               />
               <Legend />

@@ -13,8 +13,7 @@ plugin policy {
 }
 
 plugin hooks {
-  provider = '@zenstackhq/tanstack-query'
-  target = 'react'
+  provider = '@zenstackhq/tanstack-query/react'
   output = "../src/zenstack/hooks"
 }
 
