@@ -34,7 +34,7 @@ export const loanCreateSchema = z.object({
   borrowerName: z.string().min(1).max(191),
   borrowerType: z.enum(["PERSON", "COMPANY"]).default("PERSON"),
   principalAmount: moneySchema,
-  interestRate: z.coerce.number().min(0),
+  interestRate: z.coerce.number().min(0).max(100),
   interestType: z.enum(["SIMPLE", "COMPOUND"]).default("SIMPLE"),
   frequency: z.enum(["WEEKLY", "BIWEEKLY", "MONTHLY"]),
   totalInstallments: z.coerce.number().int().positive().max(360),
@@ -46,7 +46,7 @@ export const loanCreateSchema = z.object({
 export const loanScheduleRegenerateSchema = z.object({
   totalInstallments: z.coerce.number().int().positive().max(360).optional(),
   startDate: z.string().regex(dateRegex).optional(),
-  interestRate: z.coerce.number().min(0).optional(),
+  interestRate: z.coerce.number().min(0).max(100).optional(),
   frequency: z.enum(["WEEKLY", "BIWEEKLY", "MONTHLY"]).optional(),
 });
 

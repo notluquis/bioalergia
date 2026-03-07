@@ -9,6 +9,7 @@ import {
   Input as HeroInput,
   Label,
   ListBox,
+  NumberField,
   Select,
   TextArea,
   TextField,
@@ -29,10 +30,7 @@ const loanFormSchema = z.object({
   borrowerType: z.enum(["PERSON", "COMPANY"]),
   frequency: z.enum(["WEEKLY", "BIWEEKLY", "MONTHLY"]),
   generateSchedule: z.boolean(),
-  interestRate: z
-    .number()
-    .min(0, "La tasa de interés debe ser mayor o igual a 0")
-    .max(100, "La tasa no puede ser mayor a 100%"),
+  interestRate: z.number(), // Range validation (0-100%) delegated to NumberField component
   interestType: z.enum(["SIMPLE", "COMPOUND"]),
   notes: z.string().optional(),
   principalAmount: z.number().positive("El monto principal debe ser mayor a 0"),
@@ -208,24 +206,21 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
 
         <form.Field name="interestRate">
           {(field) => (
-            <div>
-              <LoanInputField
-                label="Tasa de Interés Anual (%)"
-                min={0}
-                onBlur={field.handleBlur}
-                onChange={(e) => {
-                  field.handleChange(Number.parseFloat(e.target.value) || 0);
-                }}
-                required
-                step="0.01"
-                type="number"
-                value={field.state.value}
-              />
-
+            <NumberField
+              isInvalid={field.state.meta.errors.length > 0}
+              minValue={0}
+              maxValue={100}
+              step={0.01}
+              value={field.state.value || 0}
+              onChange={(value) => field.handleChange(value)}
+              onBlur={field.handleBlur}
+            >
+              <Label>Tasa de Interés Anual (%)</Label>
+              <HeroInput variant="secondary" />
               {field.state.meta.errors.length > 0 && (
-                <p className="mt-1 text-danger text-xs">{field.state.meta.errors.join(", ")}</p>
+                <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
               )}
-            </div>
+            </NumberField>
           )}
         </form.Field>
 

@@ -9,31 +9,13 @@ import { z } from "zod";
 import { useToast } from "@/context/ToastContext";
 import { MPService, type MpReportType } from "@/services/mercadopago";
 
-const schema = z
-  .object({
-    begin_date: z.coerce.date(),
-    end_date: z.coerce.date(),
-  })
-  .refine((data) => data.begin_date.getTime() <= data.end_date.getTime(), {
-    message: "La fecha de inicio debe ser anterior a la de fin",
-    path: ["end_date"],
-  });
+const schema = z.object({
+  begin_date: z.coerce.date(),
+  end_date: z.coerce.date(),
+});
+// Date range validation (begin < end) is handled by DatePicker components + browser
 
 type FormData = z.infer<typeof schema>;
-
-const getFieldErrorMessage = (error: unknown) => {
-  if (!error) {
-    return undefined;
-  }
-  if (typeof error === "string") {
-    return error;
-  }
-  if (typeof error === "object" && "message" in error) {
-    const message = (error as { message?: unknown }).message;
-    return typeof message === "string" ? message : undefined;
-  }
-  return undefined;
-};
 
 interface Props {
   readonly onClose: () => void;
@@ -84,14 +66,6 @@ export function GenerateReportModal({ onClose, open, reportType }: Props) {
         ...value,
         end_date: useNowAsEndDate ? new Date() : value.end_date,
       };
-
-      // Manual validation
-      const result = schema.safeParse(payload);
-      if (!result.success) {
-        const firstError = result.error.issues[0]?.message || "Datos inválidos";
-        showError(firstError);
-        return;
-      }
 
       await mutation.mutateAsync(payload);
     },
@@ -178,7 +152,7 @@ export function GenerateReportModal({ onClose, open, reportType }: Props) {
                         </DateField.Suffix>
                       </DateField.Group>
                       {field.state.meta.errors.length > 0 && (
-                        <FieldError>{getFieldErrorMessage(field.state.meta.errors[0])}</FieldError>
+                        <FieldError>{String(field.state.meta.errors[0])}</FieldError>
                       )}
                       <DatePicker.Popover>
                         <Calendar aria-label="Fecha inicio">
@@ -238,7 +212,7 @@ export function GenerateReportModal({ onClose, open, reportType }: Props) {
                         </DateField.Suffix>
                       </DateField.Group>
                       {field.state.meta.errors.length > 0 && (
-                        <FieldError>{getFieldErrorMessage(field.state.meta.errors[0])}</FieldError>
+                        <FieldError>{String(field.state.meta.errors[0])}</FieldError>
                       )}
                       <DatePicker.Popover>
                         <Calendar aria-label="Fecha fin">

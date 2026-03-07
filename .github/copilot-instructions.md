@@ -258,6 +258,34 @@ Located in `packages/db/.env`:
 4. Load analytics page and verify calculations
 5. Test with different date ranges and filtering
 
+## ✅ Audit Commands
+
+### Frontend Validation Patterns (NEW - March 7, 2026)
+```bash
+cd apps/intranet && pnpm audit:validations
+```
+**Purpose:** Identifies manual validation code that HeroUI v3 provides natively
+- Detects string length checks that should use `minLength`/`maxLength` props
+- Finds custom error handling that HeroUI manages via `FieldError` component
+- Highlights Zod schemas with basic type validation (email, number constraints)
+- Reports opportunities to leverage React Aria native validation
+
+**Output:** Quick summary + reference to `/docs/HEROUI_V3_INTERNAL_VALIDATIONS_AUDIT.md`
+
+### HeroUI v3 Validation Opportunities
+**Documentation:** `/docs/HEROUI_V3_INTERNAL_VALIDATIONS_AUDIT.md`
+
+Key validation patterns that HeroUI v3 handles natively:
+- ✅ Email/phone/URL format via `type` prop
+- ✅ Min/max ranges via `min`/`max` props  
+- ✅ String length via `minLength`/`maxLength` props
+- ✅ Required fields via `required` prop + `aria-required`
+- ✅ Date bounds via `minValue`/`maxValue` in DateField
+- ✅ Date range enforcement via DateRangePicker
+- ✅ Time segment validation via TimeField (FIXED March 7)
+- ❌ Domain-specific validation (RUT, CIN, etc.) - must keep manual
+- ❌ Cross-field validation (passwords match, etc.) - must keep manual
+
 ---
 **Maintainer Notes:** This file should be updated whenever:
 - New architectural decisions are made

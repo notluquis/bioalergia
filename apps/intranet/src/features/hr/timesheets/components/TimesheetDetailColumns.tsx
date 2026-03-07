@@ -75,7 +75,7 @@ function TimeFieldInput({
       shouldForceLeadingZeros
       value={timeValue}
     >
-      <TimeField.Group>
+      <TimeField.Group key={value}>
         <TimeField.Input>{(segment) => <TimeField.Segment segment={segment} />}</TimeField.Input>
       </TimeField.Group>
     </TimeField>

@@ -22,6 +22,7 @@
     "chromatic": "chromatic --project-token=$CHROMATIC_PROJECT_TOKEN --exit-once-uploaded",
     "lint": "biome lint .",
     "lint:heroui-composition": "node ./scripts/check-heroui-composition.mjs",
+    "audit:validations": "node ./scripts/audit-validations.mjs",
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
     "format:check": "biome check .",

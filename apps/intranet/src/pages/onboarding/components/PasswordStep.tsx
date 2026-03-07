@@ -24,9 +24,8 @@ export function PasswordStep({
 }: PasswordStepProps) {
   const handleSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (password.length < 8) {
-      return;
-    }
+    // Browser validation (validationBehavior="native") ensures password.length >= 8
+    // This custom validation is for cross-field logic only
     if (password !== confirmPassword) {
       return;
     }
@@ -45,11 +44,12 @@ export function PasswordStep({
 
       <div className="space-y-4">
         <TextField
-          isInvalid={Boolean(error && password.length < 8)}
+          isInvalid={Boolean(error)}
           isRequired
           minLength={8}
           name="password"
           type="password"
+          validationBehavior="native"
         >
           <Label>Nueva contraseña</Label>
           <Input
@@ -85,7 +85,7 @@ export function PasswordStep({
           className="px-8"
           type="submit"
           variant="primary"
-          isDisabled={isLoading || password.length < 8 || password !== confirmPassword}
+          isDisabled={isLoading || password !== confirmPassword}
         >
           Siguiente
         </Button>
