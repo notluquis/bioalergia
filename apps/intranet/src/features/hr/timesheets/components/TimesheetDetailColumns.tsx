@@ -1,4 +1,4 @@
-import { Button, Dropdown, Label, TimeField, Tooltip } from "@heroui/react";
+import { Button, Dropdown, TimeField, Tooltip } from "@heroui/react";
 import { parseTime, type Time } from "@internationalized/date";
 import { createColumnHelper } from "@tanstack/react-table";
 import dayjs from "dayjs";
@@ -68,16 +68,13 @@ function TimeFieldInput({
       hourCycle={24}
       isDisabled={disabled}
       onBlur={onBlur}
-      onChange={(next) => onChange(next ? formatTimeValue(next) : "")}
+      onChange={(next: Time | null) => onChange(next ? formatTimeValue(next) : "")}
       placeholderValue={parseTime("00:00")}
       shouldForceLeadingZeros
       value={timeValue}
     >
-      <Label className="hidden">Hora</Label>
       <TimeField.Group>
-        <TimeField.InputContainer>
-          <TimeField.Input>{(segment) => <TimeField.Segment segment={segment} />}</TimeField.Input>
-        </TimeField.InputContainer>
+        <TimeField.Input>{(segment) => <TimeField.Segment segment={segment} />}</TimeField.Input>
       </TimeField.Group>
     </TimeField>
   );
