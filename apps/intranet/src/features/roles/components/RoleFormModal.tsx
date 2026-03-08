@@ -1,4 +1,4 @@
-import { Button, Description, Modal, Skeleton } from "@heroui/react";
+import { Button, Description, Form, Modal, Skeleton } from "@heroui/react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { AlertCircle, User as UserIcon } from "lucide-react";
@@ -149,12 +149,13 @@ function RoleBaseForm({ onClose, roleEntity, userData }: RoleBaseFormProps) {
   };
 
   return (
-    <form
+    <Form
       className="flex flex-col gap-4"
-      onSubmit={(e) => {
+      onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         void form.handleSubmit();
       }}
+      validationBehavior="aria"
     >
       <form.Field name="name">
         {(field) => (
@@ -205,7 +206,7 @@ function RoleBaseForm({ onClose, roleEntity, userData }: RoleBaseFormProps) {
           {roleEntity ? "Guardar Cambios" : "Crear Rol"}
         </Button>
       </div>
-    </form>
+    </Form>
   );
 }
 

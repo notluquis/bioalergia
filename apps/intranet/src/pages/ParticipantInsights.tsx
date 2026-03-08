@@ -4,6 +4,7 @@ import {
   Card,
   DateField,
   DateRangePicker,
+  Form,
   Input,
   Label,
   ListBox,
@@ -55,9 +56,10 @@ export function ParticipantInsightsPage() {
     <section className={PAGE_CONTAINER}>
       <Card>
         <Card.Content className="p-6">
-          <form
+          <Form
             className="grid items-end gap-6 sm:grid-cols-2 lg:grid-cols-4"
             onSubmit={handleSubmit}
+            validationBehavior="aria"
           >
             <TextField name="participantId" type="text">
               <Label>ID participante</Label>
@@ -153,7 +155,7 @@ export function ParticipantInsightsPage() {
                 Consultar
               </Button>
             </div>
-          </form>
+          </Form>
         </Card.Content>
       </Card>
 

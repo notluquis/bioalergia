@@ -5,6 +5,7 @@ import {
   DatePicker,
   Description,
   FieldError,
+  Form,
   Input,
   Label,
   ListBox,
@@ -17,6 +18,7 @@ import { parseDate } from "@internationalized/date";
 import { useNavigate } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { useState } from "react";
+import { z } from "zod";
 
 import type {
   RegenerateServicePayload,
@@ -31,6 +33,16 @@ import type {
 
 import { ServiceScheduleAccordion } from "./ServiceScheduleAccordion";
 import { ServiceScheduleTable } from "./ServiceScheduleTable";
+
+// Validation schema for regenerate modal
+const regenerateSchema = z.object({
+  months: z.coerce.number().min(1, "Meses debe ser al menos 1").max(60, "Máximo 60 meses"),
+  startDate: z.string().min(1, "Fecha requerida"),
+  defaultAmount: z.coerce.number().min(0).optional(),
+  dueDay: z.coerce.number().min(1).max(31).optional(),
+  frequency: z.string().optional(),
+  emissionDay: z.coerce.number().min(1).max(31).optional(),
+});
 
 interface ServiceDetailProps {
   canManage: boolean;
@@ -152,7 +164,7 @@ export function ServiceDetail({
   const [regenerateError, setRegenerateError] = useState<null | string>(null);
   const navigate = useNavigate({ from: "/services" });
 
-  const handleRegenerate = async (event: React.SubmitEvent<HTMLFormElement>) => {
+  const handleRegenerate = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!service) {
       return;
@@ -161,19 +173,30 @@ export function ServiceDetail({
     setRegenerateError(null);
     try {
       const formData = new FormData(event.currentTarget);
+      const formValues = {
+        months: formData.get("months"),
+        startDate: formData.get("startDate"),
+        defaultAmount: formData.get("defaultAmount"),
+        dueDay: formData.get("dueDay"),
+        frequency: formData.get("frequency"),
+        emissionDay: formData.get("emissionDay"),
+      };
+
+      // Validate with Zod
+      const result = regenerateSchema.safeParse(formValues);
+      if (!result.success) {
+        const errors = result.error.issues.map((issue) => issue.message).join(", ");
+        setRegenerateError(errors);
+        return;
+      }
+
       const payload: RegenerateServicePayload = {};
-      const months = formData.get("months");
-      const startDate = formData.get("startDate");
-      const defaultAmount = formData.get("defaultAmount");
-      const dueDay = formData.get("dueDay");
-      const frequency = formData.get("frequency");
-      const emissionDay = formData.get("emissionDay");
-      if (months) payload.months = Number(months);
-      if (startDate) payload.startDate = new Date(startDate as string);
-      if (defaultAmount) payload.defaultAmount = Number(defaultAmount);
-      if (dueDay) payload.dueDay = Number(dueDay);
-      if (frequency) payload.frequency = frequency as ServiceFrequency;
-      if (emissionDay) payload.emissionDay = Number(emissionDay);
+      if (result.data.months) payload.months = result.data.months;
+      if (result.data.startDate) payload.startDate = new Date(result.data.startDate);
+      if (result.data.defaultAmount) payload.defaultAmount = result.data.defaultAmount;
+      if (result.data.dueDay) payload.dueDay = result.data.dueDay;
+      if (result.data.frequency) payload.frequency = result.data.frequency as ServiceFrequency;
+      if (result.data.emissionDay) payload.emissionDay = result.data.emissionDay;
       await onRegenerate(payload);
       setRegenerateOpen(false);
     } catch (error) {
@@ -407,7 +430,7 @@ function RegenerateServiceModal({
   error: string | null;
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (event: React.SubmitEvent<HTMLFormElement>) => void;
+  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
   regenerating: boolean;
   service: ServiceSummary;
 }) {
@@ -420,19 +443,12 @@ function RegenerateServiceModal({
             <Modal.Heading>Regenerar cronograma</Modal.Heading>
           </Modal.Header>
           <Modal.Body>
-            <form className="space-y-4" onSubmit={onSubmit}>
+            <Form className="space-y-4" onSubmit={onSubmit} validationBehavior="aria">
               <TextField
                 defaultValue={String(service.nextGenerationMonths)}
                 isRequired
                 name="months"
                 type="number"
-                validate={(value) => {
-                  const num = Number(value);
-                  if (Number.isNaN(num) || num < 1 || num > 60) {
-                    return "Debe estar entre 1 y 60";
-                  }
-                  return null;
-                }}
               >
                 <Label>Meses a generar</Label>
                 <Input min={1} max={60} />
@@ -490,13 +506,6 @@ function RegenerateServiceModal({
                 isRequired
                 name="defaultAmount"
                 type="number"
-                validate={(value) => {
-                  const num = Number(value);
-                  if (Number.isNaN(num) || num < 0) {
-                    return "Monto debe ser mayor o igual a 0";
-                  }
-                  return null;
-                }}
               >
                 <Label>Monto base</Label>
                 <Input min={0} step="0.01" />
@@ -564,7 +573,7 @@ function RegenerateServiceModal({
                   {regenerating ? "Actualizando..." : "Regenerar"}
                 </Button>
               </div>
-            </form>
+            </Form>
           </Modal.Body>
         </Modal.Dialog>
       </Modal.Container>

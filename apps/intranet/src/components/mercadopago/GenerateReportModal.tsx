@@ -1,4 +1,13 @@
-import { Button, Calendar, DateField, DatePicker, FieldError, Label, Modal } from "@heroui/react";
+import {
+  Button,
+  Calendar,
+  DateField,
+  DatePicker,
+  FieldError,
+  Form,
+  Label,
+  Modal,
+} from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -93,12 +102,13 @@ export function GenerateReportModal({ onClose, open, reportType }: Props) {
               <Modal.Heading>{`Generar Reporte: ${reportType === "release" ? "Liberación" : "Conciliación"}`}</Modal.Heading>
             </Modal.Header>
             <Modal.Body className="mt-2 max-h-[80vh] overflow-y-auto overscroll-contain text-foreground">
-              <form
+              <Form
                 className="space-y-4"
-                onSubmit={(e) => {
+                onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
                   e.preventDefault();
                   void form.handleSubmit();
                 }}
+                validationBehavior="aria"
               >
                 <p className="text-default-600 text-sm">
                   Selecciona el rango de fechas para generar el reporte de{" "}
@@ -265,7 +275,7 @@ export function GenerateReportModal({ onClose, open, reportType }: Props) {
                     )}
                   </Button>
                 </div>
-              </form>
+              </Form>
             </Modal.Body>
           </Modal.Dialog>
         </Modal.Container>

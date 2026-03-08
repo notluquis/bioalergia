@@ -1,4 +1,4 @@
-import { Button, Description, Switch } from "@heroui/react";
+import { Button, Description, Form, Switch } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
@@ -352,7 +352,7 @@ export function ServiceForm({ initialValues, onCancel, onSubmit, submitLabel }: 
       ? 1
       : (form.monthsToGenerate ?? 12);
 
-  const handleSubmit = async (event: React.SubmitEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSubmitting(true);
     setError(null);
@@ -374,7 +374,7 @@ export function ServiceForm({ initialValues, onCancel, onSubmit, submitLabel }: 
   };
 
   return (
-    <form className="space-y-6" onSubmit={handleSubmit}>
+    <Form className="space-y-6" onSubmit={handleSubmit} validationBehavior="aria">
       <BasicInfoSection
         category={form.category}
         categoryOptions={categoryOptions}
@@ -473,6 +473,6 @@ export function ServiceForm({ initialValues, onCancel, onSubmit, submitLabel }: 
           {submitting ? submittingLabel : effectiveSubmitLabel}
         </Button>
       </div>
-    </form>
+    </Form>
   );
 }

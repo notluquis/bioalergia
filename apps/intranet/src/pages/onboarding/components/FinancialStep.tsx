@@ -1,4 +1,4 @@
-import { Button, Input, Label, ListBox, Select, TextField } from "@heroui/react";
+import { Button, Form, Input, Label, ListBox, Select, TextField } from "@heroui/react";
 import { CreditCard } from "lucide-react";
 
 interface FinancialStepProps {
@@ -22,13 +22,13 @@ export function FinancialStep({
 }: FinancialStepProps) {
   const NO_ACCOUNT_TYPE_KEY = "__no_account_type__";
 
-  const handleSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     onNext();
   };
 
   return (
-    <form className="space-y-6" onSubmit={handleSubmit}>
+    <Form className="space-y-6" onSubmit={handleSubmit} validationBehavior="aria">
       <div className="mb-6 text-center">
         <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-secondary/10 text-secondary">
           <CreditCard size={24} />
@@ -98,6 +98,6 @@ export function FinancialStep({
           Siguiente
         </Button>
       </div>
-    </form>
+    </Form>
   );
 }

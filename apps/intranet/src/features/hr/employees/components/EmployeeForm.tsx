@@ -2,6 +2,7 @@ import {
   Button,
   Description,
   FieldError,
+  Form,
   Input,
   Label,
   ListBox,
@@ -191,7 +192,7 @@ export function EmployeeForm({ employee, onCancel, onSave }: EmployeeFormProps) 
   });
 
   const isMutating = createMutation.isPending || updateMutation.isPending;
-  const handleSubmit = (event: React.SubmitEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!hasPermission) {
       return;
@@ -259,7 +260,7 @@ function EmployeeFormContent({
   isEditing: boolean;
   isMutating: boolean;
   onCancel: () => void;
-  onSubmit: (event: React.SubmitEvent<HTMLFormElement>) => void;
+  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
   setForm: React.Dispatch<
     React.SetStateAction<{
       bankAccountNumber: string;
@@ -281,7 +282,7 @@ function EmployeeFormContent({
   rutError: null | string;
 }) {
   return (
-    <form className="space-y-4" onSubmit={onSubmit}>
+    <Form className="space-y-4" onSubmit={onSubmit} validationBehavior="aria">
       <div className="grid gap-4 md:grid-cols-3">
         <div className="md:col-span-3">
           <Select
@@ -479,7 +480,7 @@ function EmployeeFormContent({
           {isMutating ? "Guardando..." : isEditing ? "Actualizar empleado" : "Agregar empleado"}
         </Button>
       </div>
-    </form>
+    </Form>
   );
 }
 

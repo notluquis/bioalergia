@@ -7,6 +7,7 @@ import {
   DatePicker,
   Description,
   FieldError,
+  Form,
   Input,
   Label,
   Modal,
@@ -285,7 +286,11 @@ export function ServicesOverviewContent() {
             </Modal.Header>
             <Modal.Body>
               {paymentSchedule && (
-                <form className="space-y-4" onSubmit={handlePaymentSubmit}>
+                <Form
+                  className="space-y-4"
+                  onSubmit={handlePaymentSubmit}
+                  validationBehavior="aria"
+                >
                   <TextField isRequired name="transactionId">
                     <Label>ID transacción</Label>
                     <Input
@@ -392,7 +397,7 @@ export function ServicesOverviewContent() {
                       {processingPayment ? "Registrando..." : "Registrar pago"}
                     </Button>
                   </div>
-                </form>
+                </Form>
               )}
             </Modal.Body>
           </Modal.Dialog>

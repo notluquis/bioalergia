@@ -3,6 +3,7 @@ import {
   Calendar,
   DateField,
   DatePicker,
+  Form,
   Label,
   ListBox,
   Modal,
@@ -115,13 +116,14 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
               <Modal.Heading>Registrar Nuevo Paciente</Modal.Heading>
             </Modal.Header>
             <Modal.Body className="mt-2 max-h-[80vh] overflow-y-auto overscroll-contain text-foreground">
-              <form
+              <Form
                 className="space-y-6 pb-2"
-                onSubmit={(e) => {
+                onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
                   e.preventDefault();
                   e.stopPropagation();
                   void form.handleSubmit();
                 }}
+                validationBehavior="aria"
               >
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 border-default-100 border-b pb-2 font-semibold text-primary">
@@ -346,7 +348,7 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
                     )}
                   </form.Subscribe>
                 </div>
-              </form>
+              </Form>
             </Modal.Body>
           </Modal.Dialog>
         </Modal.Container>

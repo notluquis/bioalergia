@@ -8,6 +8,7 @@ import {
   Label,
   ListBox,
   Modal,
+  NumberField,
   Select,
   TextArea,
   TextField,
@@ -24,7 +25,7 @@ import { isNonAccountableCategory } from "../utils/non-accountable-category";
 const schema = z.object({
   date: z.string(),
   description: z.string().min(1, "Descripción requerida"),
-  amount: z.coerce.number().refine((val) => val !== 0, "Monto no puede ser 0"),
+  amount: z.coerce.number().positive("Monto debe ser mayor a 0"), // UI enforces via minValue={0.01}
   type: z.enum(["INCOME", "EXPENSE"]),
   categoryId: z.number().nullable().optional(),
   comment: z.string().optional(),
@@ -232,33 +233,39 @@ export function TransactionForm({ isOpen, onClose, initialData }: Props) {
                 <TextField isInvalid={!!errors.description}>
                   <Label>Descripción</Label>
                   <Input
+                    aria-invalid={!!errors.description}
+                    aria-describedby={errors.description ? "description-error" : undefined}
                     value={formData.description}
                     onChange={(e: ChangeEvent<HTMLInputElement>) =>
                       handleChange("description", e.target.value)
                     }
                     placeholder="Descripción del movimiento"
                   />
-                  <FieldError>{errors.description}</FieldError>
+                  <FieldError id="description-error">{errors.description}</FieldError>
                 </TextField>
 
                 <div className="grid grid-cols-2 gap-4">
                   {/* Monto */}
                   {!isEditMode ? (
-                    <TextField isInvalid={!!errors.amount}>
+                    <NumberField
+                      formatOptions={{
+                        currency: "CLP",
+                        currencyDisplay: "symbol",
+                        maximumFractionDigits: 0,
+                        minimumFractionDigits: 0,
+                        style: "currency",
+                      }}
+                      isInvalid={!!errors.amount}
+                      minValue={0.01}
+                      onChange={(value) => handleChange("amount", value ?? 0)}
+                      value={formData.amount}
+                    >
                       <Label>Monto</Label>
-                      <div className="flex items-center gap-1">
-                        <span className="text-default-500 text-sm">$</span>
-                        <Input
-                          type="number"
-                          value={formData.amount.toString()}
-                          onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                            handleChange("amount", Number(e.target.value))
-                          }
-                          placeholder="0"
-                        />
-                      </div>
+                      <NumberField.Group>
+                        <NumberField.Input />
+                      </NumberField.Group>
                       <FieldError>{errors.amount}</FieldError>
-                    </TextField>
+                    </NumberField>
                   ) : null}
 
                   {/* Categoría */}

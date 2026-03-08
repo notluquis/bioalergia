@@ -1,4 +1,4 @@
-import { Button, FieldError, Input, Label, TextField } from "@heroui/react";
+import { Button, FieldError, Form, Input, Label, TextField } from "@heroui/react";
 import { Key } from "lucide-react";
 
 interface PasswordStepProps {
@@ -22,7 +22,7 @@ export function PasswordStep({
   isLoading,
   error,
 }: PasswordStepProps) {
-  const handleSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     // Browser validation (validationBehavior="native") ensures password.length >= 8
     // This custom validation is for cross-field logic only
@@ -33,7 +33,7 @@ export function PasswordStep({
   };
 
   return (
-    <form className="space-y-6" onSubmit={handleSubmit}>
+    <Form className="space-y-6" onSubmit={handleSubmit} validationBehavior="aria">
       <div className="mb-6 text-center">
         <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-secondary/10 text-secondary">
           <Key size={24} />
@@ -90,6 +90,6 @@ export function PasswordStep({
           Siguiente
         </Button>
       </div>
-    </form>
+    </Form>
   );
 }

@@ -3,6 +3,7 @@ import {
   Button,
   ButtonGroup,
   Description,
+  Form,
   Input,
   Label,
   Skeleton,
@@ -242,7 +243,7 @@ export function SettingsForm() {
   const displayedLogo = logoPreview ?? (form.logoUrl || FALLBACK_LOGO_PATH);
   const displayedFavicon = faviconPreview ?? (form.faviconUrl || FALLBACK_FAVICON_PATH);
 
-  const handleSubmit = async (event: React.SubmitEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setStatus("saving");
     setError(null);
@@ -292,7 +293,7 @@ export function SettingsForm() {
   };
 
   return (
-    <form className="space-y-6 bg-background p-6" onSubmit={handleSubmit}>
+    <Form className="space-y-6 bg-background p-6" onSubmit={handleSubmit} validationBehavior="aria">
       <div className="space-y-1">
         <h2 className="font-semibold text-lg text-primary drop-shadow-sm">Configuración General</h2>
         <p className="text-default-600 text-sm">
@@ -352,7 +353,7 @@ export function SettingsForm() {
           <InternalSettingsSection />
         </Suspense>
       )}
-    </form>
+    </Form>
   );
 }
 

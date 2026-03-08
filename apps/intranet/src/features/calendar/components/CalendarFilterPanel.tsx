@@ -7,6 +7,7 @@ import {
   Button,
   DateField,
   DateRangePicker,
+  Form,
   Input,
   Label,
   RangeCalendar,
@@ -14,7 +15,7 @@ import {
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { RotateCcw } from "lucide-react";
-import React, { type SubmitEvent } from "react";
+import React from "react";
 
 import { cn } from "@/lib/utils";
 import { NULL_CATEGORY_VALUE } from "../constants";
@@ -70,7 +71,7 @@ export function CalendarFilterPanel({
   showSearch = false,
   variant: _variant = "card",
 }: Readonly<CalendarFilterPanelProps>) {
-  const handleSubmit = (event: SubmitEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     onApply();
   };
@@ -94,7 +95,11 @@ export function CalendarFilterPanel({
   // If layout is dropdown, use the new specific vertical design
   if (isDropdownLayout) {
     return (
-      <form onSubmit={handleSubmit} className={cn("space-y-3.5 p-3", formClassName, className)}>
+      <Form
+        onSubmit={handleSubmit}
+        validationBehavior="aria"
+        className={cn("space-y-3.5 p-3", formClassName, className)}
+      >
         {/* Categories Select */}
         <div className="space-y-1.5">
           <MultiSelectFilter
@@ -221,15 +226,16 @@ export function CalendarFilterPanel({
             {applyLabel}
           </Button>
         </div>
-      </form>
+      </Form>
     );
   }
 
   // Fallback for non-dropdown layout
   return (
-    <form
+    <Form
       className={cn("flex flex-wrap items-end gap-3 p-3", formClassName, className)}
       onSubmit={handleSubmit}
+      validationBehavior="aria"
     >
       <MultiSelectFilter
         className="min-w-64"
@@ -246,6 +252,6 @@ export function CalendarFilterPanel({
       <Button size="sm" type="submit" variant="primary">
         Actualizar
       </Button>
-    </form>
+    </Form>
   );
 }

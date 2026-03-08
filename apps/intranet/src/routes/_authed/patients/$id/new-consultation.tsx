@@ -1,4 +1,13 @@
-import { Button, Calendar, Card, DateField, DatePicker, FieldError, Label } from "@heroui/react";
+import {
+  Button,
+  Calendar,
+  Card,
+  DateField,
+  DatePicker,
+  FieldError,
+  Form,
+  Label,
+} from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -85,12 +94,13 @@ function NewConsultationPage() {
       </header>
 
       <Card className="p-6">
-        <form
-          onSubmit={(e) => {
+        <Form
+          onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
             e.preventDefault();
             e.stopPropagation();
             form.handleSubmit();
           }}
+          validationBehavior="aria"
         >
           <div className="space-y-6">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -213,7 +223,7 @@ function NewConsultationPage() {
               </Button>
             </div>
           </div>
-        </form>
+        </Form>
       </Card>
     </div>
   );

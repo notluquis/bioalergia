@@ -10,8 +10,6 @@ import { getCalendarEventStates } from "../utils/event-state";
 
 dayjs.extend(isoWeek);
 
-// TODO(calendar): normalize all calendar times to America/Santiago using @internationalized/date
-
 // Event with layout info for overlapping display
 interface EventWithLayout extends CalendarEventDetail {
   column: number;

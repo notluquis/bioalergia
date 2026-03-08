@@ -1,4 +1,4 @@
-import { Button, Card, FieldError, Input, Label, NumberField, TextField } from "@heroui/react";
+import { Button, Card, FieldError, Form, Label, NumberField } from "@heroui/react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
@@ -25,13 +25,13 @@ export const Route = createFileRoute("/_authed/patients/$id/new-budget")({
 const budgetItemSchema = z.object({
   clientId: z.string().optional(),
   description: z.string().min(1, "Descripción requerida"),
-  quantity: z.number().min(1),
-  unitPrice: z.number().min(0),
+  quantity: z.number().min(1, "Cantidad debe ser al menos 1"), // UI + Zod validation
+  unitPrice: z.number().min(0, "Precio unitario debe ser mayor o igual a 0"), // UI + Zod validation
 });
 
 const budgetSchema = z.object({
   title: z.string().min(1, "Título requerido"),
-  discount: z.number().min(0),
+  discount: z.number().min(0, "Descuento debe ser mayor o igual a 0"), // UI + Zod validation
   notes: z.string().optional(),
   items: z.array(budgetItemSchema).min(1, "Debe agregar al menos un ítem"),
 });
@@ -101,13 +101,14 @@ function NewBudgetPage() {
         </div>
       </header>
 
-      <form
-        onSubmit={(e) => {
+      <Form
+        onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
           e.preventDefault();
           e.stopPropagation();
           form.handleSubmit();
         }}
         className="space-y-6"
+        validationBehavior="aria"
       >
         <Card className="space-y-4 p-6">
           <div className="grid gap-4 sm:grid-cols-2">
@@ -132,6 +133,7 @@ function NewBudgetPage() {
                     style: "currency",
                   }}
                   isInvalid={field.state.meta.errors.length > 0}
+                  minValue={0}
                   onBlur={field.handleBlur}
                   onChange={(value) => field.handleChange(value ?? 0)}
                   value={field.state.value}
@@ -198,14 +200,20 @@ function NewBudgetPage() {
                       <div className="col-span-4 sm:col-span-2">
                         <form.Field name={`items[${index}].quantity`}>
                           {(subField) => (
-                            <TextField name={`items[${index}].quantity`} type="number">
+                            <NumberField
+                              isInvalid={subField.state.meta.errors.length > 0}
+                              minValue={1}
+                              onChange={(value) => subField.handleChange(value ?? 1)}
+                              value={subField.state.value}
+                            >
                               <Label>Cant.</Label>
-                              <Input
-                                type="number"
-                                value={String(subField.state.value)}
-                                onChange={(e) => subField.handleChange(Number(e.target.value))}
-                              />
-                            </TextField>
+                              <NumberField.Group>
+                                <NumberField.Input />
+                              </NumberField.Group>
+                              {subField.state.meta.errors.length > 0 ? (
+                                <FieldError>{subField.state.meta.errors.join(", ")}</FieldError>
+                              ) : null}
+                            </NumberField>
                           )}
                         </form.Field>
                       </div>
@@ -221,6 +229,7 @@ function NewBudgetPage() {
                                 style: "currency",
                               }}
                               isInvalid={subField.state.meta.errors.length > 0}
+                              minValue={0}
                               onBlur={subField.handleBlur}
                               onChange={(value) => subField.handleChange(value ?? 0)}
                               value={subField.state.value}
@@ -269,7 +278,7 @@ function NewBudgetPage() {
             Crear Presupuesto
           </Button>
         </div>
-      </form>
+      </Form>
     </div>
   );
 }

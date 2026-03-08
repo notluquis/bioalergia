@@ -4,6 +4,7 @@ import {
   Calendar,
   DateField,
   DatePicker,
+  Form,
   Input,
   Label,
   Modal,
@@ -132,7 +133,7 @@ export function LoansPage() {
     setPaymentError(null);
   };
 
-  const handlePaymentSubmit = async (event: React.SubmitEvent<HTMLFormElement>) => {
+  const handlePaymentSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!paymentSchedule) {
       return;
@@ -276,7 +277,11 @@ export function LoansPage() {
               </Modal.Header>
               <Modal.Body className="mt-2 max-h-[80vh] overflow-y-auto overscroll-contain text-foreground">
                 {paymentSchedule && (
-                  <form className="space-y-4" onSubmit={handlePaymentSubmit}>
+                  <Form
+                    className="space-y-4"
+                    onSubmit={handlePaymentSubmit}
+                    validationBehavior="aria"
+                  >
                     <TextField isRequired>
                       <Label>ID transacción</Label>
                       <Input
@@ -377,7 +382,7 @@ export function LoansPage() {
                         {registerPaymentMutation.isPending ? "Guardando..." : "Guardar pago"}
                       </Button>
                     </div>
-                  </form>
+                  </Form>
                 )}
               </Modal.Body>
             </Modal.Dialog>

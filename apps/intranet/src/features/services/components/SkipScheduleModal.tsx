@@ -64,19 +64,7 @@ export function SkipScheduleModal({ isOpen, onClose, schedule }: SkipScheduleMod
                 onSubmit={handleSubmit}
                 validationBehavior="aria"
               >
-                <TextField
-                  isRequired
-                  name="reason"
-                  validate={(value) => {
-                    if (!value || value.trim().length === 0) {
-                      return "El motivo es obligatorio";
-                    }
-                    if (value.length > 500) {
-                      return "El motivo no puede exceder 500 caracteres";
-                    }
-                    return null;
-                  }}
-                >
+                <TextField isRequired name="reason" maxLength={500}>
                   <Label>Motivo</Label>
                   <Input placeholder="Servicio suspendido temporalmente" />
                   <Description>

@@ -1,4 +1,4 @@
-import { Button, Card, Chip, Input, Label, TextField } from "@heroui/react";
+import { Button, Card, Chip, Form, Input, Label, TextField } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import {
   Box,
@@ -86,7 +86,7 @@ export function InventorySettingsPage() {
     },
   });
 
-  const handleCreate = (e: React.SubmitEvent<HTMLFormElement>) => {
+  const handleCreate = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!newCategoryName.trim()) {
       return;
@@ -129,7 +129,11 @@ export function InventorySettingsPage() {
         <Card.Content className="p-0">
           {isCreating && (
             <div className="fade-in slide-in-from-top-2 border-b bg-default-50/30 p-4">
-              <form className="flex items-end gap-3" onSubmit={handleCreate}>
+              <Form
+                className="flex items-end gap-3"
+                onSubmit={handleCreate}
+                validationBehavior="aria"
+              >
                 <div className="flex-1">
                   <TextField className="gap-1" id="category-name">
                     <Label>Nombre de la categoría</Label>
@@ -161,7 +165,7 @@ export function InventorySettingsPage() {
                     {createMutation.isPending ? <Loader2 className="" /> : "Guardar"}
                   </Button>
                 </div>
-              </form>
+              </Form>
             </div>
           )}
 

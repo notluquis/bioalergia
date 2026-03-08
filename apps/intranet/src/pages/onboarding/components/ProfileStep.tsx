@@ -1,4 +1,4 @@
-import { Button, Description, FieldError, Input, Label, TextField } from "@heroui/react";
+import { Button, Description, FieldError, Form, Input, Label, TextField } from "@heroui/react";
 import { User } from "lucide-react";
 import { formatRut, validateRut } from "@/lib/rut";
 
@@ -20,14 +20,14 @@ interface ProfileStepProps {
 
 export function ProfileStep(props: ProfileStepProps) {
   const { profile, onProfileChange, onNext, isLoading, error } = props;
-  const handleSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (profile.names && validateRut(profile.rut)) {
       onNext();
     }
   };
   return (
-    <form className="space-y-6" onSubmit={handleSubmit}>
+    <Form className="space-y-6" onSubmit={handleSubmit} validationBehavior="aria">
       <div className="mb-6 text-center">
         <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
           <User size={24} />
@@ -104,6 +104,6 @@ export function ProfileStep(props: ProfileStepProps) {
           Siguiente
         </Button>
       </div>
-    </form>
+    </Form>
   );
 }

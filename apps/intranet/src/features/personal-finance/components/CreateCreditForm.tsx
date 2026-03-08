@@ -8,6 +8,7 @@ import {
   Label,
   ListBox,
   Modal,
+  NumberField,
   Select,
   TextField,
 } from "@heroui/react";
@@ -135,21 +136,29 @@ export function CreateCreditForm() {
                 <div className="grid grid-cols-2 gap-4">
                   <form.Field name="totalAmount">
                     {(field) => (
-                      <TextField isRequired name="totalAmount">
+                      <NumberField
+                        isRequired
+                        formatOptions={{
+                          currency: "CLP",
+                          currencyDisplay: "symbol",
+                          maximumFractionDigits: 0,
+                          minimumFractionDigits: 0,
+                          style: "currency",
+                        }}
+                        isInvalid={field.state.meta.errors.length > 0}
+                        minValue={0.01}
+                        onBlur={field.handleBlur}
+                        onChange={(value) => field.handleChange(value ?? 0)}
+                        value={field.state.value}
+                      >
                         <Label>Monto Total</Label>
-                        <Input
-                          type="number"
-                          placeholder="0"
-                          value={field.state.value.toString()}
-                          onChange={(e) =>
-                            field.handleChange(Number.parseFloat(e.target.value) || 0)
-                          }
-                          onBlur={field.handleBlur}
-                        />
+                        <NumberField.Group>
+                          <NumberField.Input />
+                        </NumberField.Group>
                         {field.state.meta.errors.length > 0 && (
                           <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
                         )}
-                      </TextField>
+                      </NumberField>
                     )}
                   </form.Field>
 
@@ -196,22 +205,22 @@ export function CreateCreditForm() {
                 <div className="grid grid-cols-2 gap-4">
                   <form.Field name="totalInstallments">
                     {(field) => (
-                      <TextField isRequired name="totalInstallments">
+                      <NumberField
+                        isRequired
+                        isInvalid={field.state.meta.errors.length > 0}
+                        minValue={1}
+                        onBlur={field.handleBlur}
+                        onChange={(value) => field.handleChange(value ?? 1)}
+                        value={field.state.value}
+                      >
                         <Label>Cuotas</Label>
-                        <Input
-                          type="number"
-                          placeholder="1"
-                          min="1"
-                          value={field.state.value.toString()}
-                          onChange={(e) =>
-                            field.handleChange(Number.parseInt(e.target.value, 10) || 1)
-                          }
-                          onBlur={field.handleBlur}
-                        />
+                        <NumberField.Group>
+                          <NumberField.Input />
+                        </NumberField.Group>
                         {field.state.meta.errors.length > 0 && (
                           <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
                         )}
-                      </TextField>
+                      </NumberField>
                     )}
                   </form.Field>
 

@@ -13,8 +13,15 @@ import {
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import dayjs from "dayjs";
+import { z } from "zod";
 import { useServiceMutations } from "../hooks/use-service-mutations";
 import type { ServiceSchedule } from "../types";
+
+const editScheduleSchema = z.object({
+  dueDate: z.string().min(1, "Fecha requerida"),
+  expectedAmount: z.coerce.number().min(0, "Monto debe ser mayor o igual a 0"),
+  note: z.string().optional(),
+});
 
 interface EditScheduleModalProps {
   isOpen: boolean;
@@ -33,9 +40,22 @@ export function EditScheduleModal({ isOpen, onClose, schedule }: EditScheduleMod
     }
 
     const formData = new FormData(e.currentTarget);
-    const dueDate = new Date(formData.get("dueDate") as string);
-    const expectedAmount = Number(formData.get("expectedAmount"));
-    const note = formData.get("note") as string;
+    const formValues = {
+      dueDate: formData.get("dueDate"),
+      expectedAmount: formData.get("expectedAmount"),
+      note: formData.get("note"),
+    };
+
+    // Validate with Zod
+    const result = editScheduleSchema.safeParse(formValues);
+    if (!result.success) {
+      // Client-side validation failed - HeroUI FieldError should show messages
+      return;
+    }
+
+    const dueDate = new Date(result.data.dueDate);
+    const expectedAmount = result.data.expectedAmount;
+    const note = result.data.note;
 
     await editSchedule(schedule.id, {
       dueDate,
@@ -109,13 +129,6 @@ export function EditScheduleModal({ isOpen, onClose, schedule }: EditScheduleMod
                 isRequired
                 name="expectedAmount"
                 type="number"
-                validate={(value) => {
-                  const num = Number(value);
-                  if (Number.isNaN(num) || num < 0) {
-                    return "Monto debe ser mayor o igual a 0";
-                  }
-                  return null;
-                }}
               >
                 <Label>Monto esperado</Label>
                 <Input min={0} step="0.01" />

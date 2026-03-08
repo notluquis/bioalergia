@@ -1,7 +1,7 @@
-import { Button, Input, Label, Link, TextField } from "@heroui/react";
+import { Button, Form, Input, Label, Link, TextField } from "@heroui/react";
 import { useLocation } from "@tanstack/react-router";
 import { Fingerprint, Mail, Moon, Sun } from "lucide-react";
-import type { ChangeEvent, SubmitEvent } from "react";
+import type { ChangeEvent, FormEvent } from "react";
 import { useSettings } from "@/context/SettingsContext";
 import { useLoginLogic } from "@/features/auth/hooks/useLoginLogic";
 import { useTheme } from "@/hooks/use-theme";
@@ -57,7 +57,7 @@ export function LoginPage() {
               passkeyMutation.mutate();
             }}
             switchToCredentials={() => updateState({ step: "credentials", formError: null })}
-            handleCredentialsSubmit={(e) => {
+            handleCredentialsSubmit={(e: React.FormEvent<HTMLFormElement>) => {
               e.preventDefault();
               clearError();
               credentialsMutation.mutate();
@@ -65,7 +65,7 @@ export function LoginPage() {
             handleEmailChange={(e) => updateState({ email: e.target.value })}
             handlePasswordChange={(e) => updateState({ password: e.target.value })}
             switchToPasskey={() => updateState({ step: "passkey", formError: null })}
-            handleMfaSubmit={(e) => {
+            handleMfaSubmit={(e: React.FormEvent<HTMLFormElement>) => {
               e.preventDefault();
               clearError();
               mfaMutation.mutate();
@@ -165,7 +165,7 @@ interface CredentialsStepProps {
   isLoading: boolean;
   email: string;
   password: string;
-  handleCredentialsSubmit: (e: SubmitEvent<HTMLFormElement>) => void;
+  handleCredentialsSubmit: (e: FormEvent<HTMLFormElement>) => void;
   handleEmailChange: (e: ChangeEvent<HTMLInputElement>) => void;
   handlePasswordChange: (e: ChangeEvent<HTMLInputElement>) => void;
   switchToPasskey: () => void;
@@ -181,7 +181,7 @@ function CredentialsStep({
   switchToPasskey,
 }: CredentialsStepProps) {
   return (
-    <form className="w-full space-y-4" onSubmit={handleCredentialsSubmit}>
+    <Form className="w-full space-y-4" onSubmit={handleCredentialsSubmit} validationBehavior="aria">
       <div className="mx-auto w-full max-w-xs">
         <TextField isRequired name="email" type="email">
           <Label>Correo electrónico</Label>
@@ -230,14 +230,14 @@ function CredentialsStep({
           </Button>
         </div>
       </div>
-    </form>
+    </Form>
   );
 }
 
 interface MfaStepProps {
   isLoading: boolean;
   mfaCode: string;
-  handleMfaSubmit: (e: SubmitEvent<HTMLFormElement>) => void;
+  handleMfaSubmit: (e: FormEvent<HTMLFormElement>) => void;
   handleMfaCodeChange: (e: ChangeEvent<HTMLInputElement>) => void;
   switchToCredentialsFromMfa: () => void;
 }
@@ -250,7 +250,7 @@ function MfaStep({
   switchToCredentialsFromMfa,
 }: MfaStepProps) {
   return (
-    <form className="w-full space-y-4" onSubmit={handleMfaSubmit}>
+    <Form className="w-full space-y-4" onSubmit={handleMfaSubmit} validationBehavior="aria">
       <div className="mx-auto w-full max-w-xs">
         <TextField isRequired name="mfaCode" type="text">
           <Label>Código de seguridad</Label>
@@ -290,7 +290,7 @@ function MfaStep({
           </Button>
         </div>
       </div>
-    </form>
+    </Form>
   );
 }
 
@@ -303,11 +303,11 @@ interface LoginContentProps {
   passkeyMutation: { isPending: boolean };
   handlePasskeyLogin: () => void;
   switchToCredentials: () => void;
-  handleCredentialsSubmit: (e: SubmitEvent<HTMLFormElement>) => void;
+  handleCredentialsSubmit: (e: FormEvent<HTMLFormElement>) => void;
   handleEmailChange: (e: ChangeEvent<HTMLInputElement>) => void;
   handlePasswordChange: (e: ChangeEvent<HTMLInputElement>) => void;
   switchToPasskey: () => void;
-  handleMfaSubmit: (e: SubmitEvent<HTMLFormElement>) => void;
+  handleMfaSubmit: (e: FormEvent<HTMLFormElement>) => void;
   handleMfaCodeChange: (e: ChangeEvent<HTMLInputElement>) => void;
   switchToCredentialsFromMfa: () => void;
 }

@@ -6,6 +6,7 @@ import {
   DatePicker,
   DateRangePicker,
   FieldError,
+  Form,
   Input,
   Label,
   ListBox,
@@ -110,12 +111,13 @@ function MedicalCertificatePage() {
 
   return (
     <Card className="p-6">
-      <form
-        onSubmit={(e) => {
+      <Form
+        onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
           e.preventDefault();
           e.stopPropagation();
           form.handleSubmit();
         }}
+        validationBehavior="aria"
       >
         <div className="space-y-6">
           {/* Patient Information */}
@@ -438,7 +440,7 @@ function MedicalCertificatePage() {
             </Button>
           </div>
         </div>
-      </form>
+      </Form>
     </Card>
   );
 }

@@ -1,4 +1,4 @@
-import { Alert, Button, Skeleton, Surface } from "@heroui/react";
+import { Alert, Button, Form, Skeleton, Surface } from "@heroui/react";
 import { useForm } from "@tanstack/react-form";
 import { useEffect } from "react";
 import { z } from "zod";
@@ -96,12 +96,13 @@ export function CounterpartForm({
           </div>
         </div>
       )}
-      <form
+      <Form
         className={GRID_2_COL_MD}
-        onSubmit={(e) => {
+        onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
           e.preventDefault();
           void form.handleSubmit();
         }}
+        validationBehavior="aria"
       >
         <fieldset className="contents" disabled={busy}>
           <form.Field name="identificationNumber">
@@ -159,7 +160,7 @@ export function CounterpartForm({
             </div>
           </div>
         </fieldset>
-      </form>
+      </Form>
     </Surface>
   );
 }
