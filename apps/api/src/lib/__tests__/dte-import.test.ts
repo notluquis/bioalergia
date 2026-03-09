@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { buildDtePurchaseDetail, parseAmount, parseDate } from "../dte-import";
+import { buildDtePurchaseDetail, buildDteSaleDetail, parseAmount, parseDate } from "../dte-import";
 
 describe("parseDate", () => {
   describe("Haulmer CSV format (YYYY-MM-DD)", () => {
@@ -24,6 +24,12 @@ describe("parseDate", () => {
       const result = parseDate("2026-02-06 11:19:56");
       expect(result).toBeTruthy();
       expect(result?.toISOString()).toBe("2026-02-06T00:00:00.000Z");
+    });
+
+    it("should parse ISO timestamp with timezone", () => {
+      const result = parseDate("2022-06-01T11:49:01.000Z");
+      expect(result).toBeTruthy();
+      expect(result?.toISOString()).toBe("2022-06-01T00:00:00.000Z");
     });
 
     it("should handle Haulmer null marker -/-/-", () => {
@@ -177,5 +183,28 @@ describe("buildDtePurchaseDetail", () => {
     });
 
     expect(detail.providerName).toBe("MercadoLibre Chile Ltda.");
+  });
+});
+
+describe("buildDteSaleDetail", () => {
+  it("should support compact sales CSV aliases and defaults", () => {
+    const detail = buildDteSaleDetail({
+      folio: "4477",
+      neto: "0",
+      iva: "0",
+      total: "40000",
+      dte: "41",
+      fecha: "2022-06-01T11:49:01.000Z",
+    });
+
+    expect(detail.documentType).toBe(41);
+    expect(detail.documentDate).toBeInstanceOf(Date);
+    expect((detail.documentDate as Date).toISOString()).toBe("2022-06-01T00:00:00.000Z");
+    expect((detail.receiptDate as Date).toISOString()).toBe("2022-06-01T00:00:00.000Z");
+    expect(detail.clientRUT).toBe("66666666-6");
+    expect(detail.clientName).toBe("Cliente sin identificar");
+    expect(String(detail.netAmount)).toBe("0");
+    expect(String(detail.ivaAmount)).toBe("0");
+    expect(String(detail.totalAmount)).toBe("40000");
   });
 });

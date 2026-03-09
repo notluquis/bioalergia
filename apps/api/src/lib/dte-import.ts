@@ -10,6 +10,8 @@ import { Decimal } from "decimal.js";
 export const DATE_REGEX = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
 const DATE_DASH_DOT_REGEX = /^(\d{1,2})[-.](\d{1,2})[-.](\d{4})$/;
 const DATE_ISO_REGEX = /^(\d{4})-(\d{1,2})-(\d{1,2})$/;
+const DATE_ISO_TIMESTAMP_REGEX =
+  /^(\d{4})-(\d{1,2})-(\d{1,2})[T\s]\d{1,2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:\d{2})?$/;
 
 /**
  * Parse currency amount from CSV (handles "$", ".", "," conversions)
@@ -41,8 +43,16 @@ export function parseDate(value: unknown): Date | null {
     return null;
   }
 
-  // Extract only date portion if timestamp exists (YYYY-MM-DD HH:MM:SS → YYYY-MM-DD)
-  const dateOnly = str.split(" ")[0];
+  // Extract only date portion if timestamp exists.
+  const dateOnly = str.split(/[T\s]/)[0];
+
+  // Try ISO timestamp first (e.g. 2022-06-01T11:49:01.000Z)
+  if (DATE_ISO_TIMESTAMP_REGEX.test(str)) {
+    const date = new Date(str);
+    if (date.toString() !== "Invalid Date") {
+      return new Date(date.toISOString().slice(0, 10));
+    }
+  }
 
   // Try YYYY-MM-DD format first (Haulmer primary format)
   let match = dateOnly.match(DATE_ISO_REGEX);
@@ -75,7 +85,7 @@ export function parseDate(value: unknown): Date | null {
   }
 
   console.warn(
-    `[Date Parse] Could not parse date: "${str}" (tried YYYY-MM-DD, DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY)`,
+    `[Date Parse] Could not parse date: "${str}" (tried ISO timestamp, YYYY-MM-DD, DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY)`,
   );
   return null;
 }
@@ -111,22 +121,25 @@ function isDecimalLike(value: unknown): value is { constructor: { name: string }
  * Build DTESaleDetail data from CSV/Haulmer row
  */
 export function buildDteSaleDetail(row: Record<string, unknown>): Record<string, unknown> {
+  const documentDate = parseDate(row.documentDate ?? row.fecha);
+  const receiptDate = parseDate(row.receiptDate ?? row.fecha) ?? documentDate;
+
   return {
     registerNumber: toNumber(row.registerNumber),
-    documentType: toNumber(row.documentType, 41),
+    documentType: toNumber(row.documentType ?? row.dte, 41),
     saleType: toRequiredString(row.saleType, "Del Giro"),
-    clientRUT: toRequiredString(row.clientRUT),
-    clientName: toRequiredString(row.clientName),
+    clientRUT: toRequiredString(row.clientRUT, "66666666-6"),
+    clientName: toRequiredString(row.clientName, "Cliente sin identificar"),
     folio: toRequiredString(row.folio),
-    documentDate: parseDate(row.documentDate),
-    receiptDate: parseDate(row.receiptDate),
+    documentDate,
+    receiptDate,
     receiptAcknowledgeDate: parseDate(row.receiptAcknowledgeDate),
     claimDate: parseDate(row.claimDate),
     period: toRequiredString(row.period),
     exemptAmount: toDecimalOrZero(row.exemptAmount),
-    netAmount: toDecimalOrZero(row.netAmount),
-    ivaAmount: toDecimalOrZero(row.ivaAmount),
-    totalAmount: toDecimalOrZero(row.totalAmount),
+    netAmount: toDecimalOrZero(row.netAmount ?? row.neto),
+    ivaAmount: toDecimalOrZero(row.ivaAmount ?? row.iva),
+    totalAmount: toDecimalOrZero(row.totalAmount ?? row.total),
     totalRetainedIVA: toDecimalOrZero(row.totalRetainedIVA),
     partialRetainedIVA: toDecimalOrZero(row.partialRetainedIVA),
     nonRetainedIVA: toDecimalOrZero(row.nonRetainedIVA),

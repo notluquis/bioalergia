@@ -143,6 +143,11 @@ interface CSVRow {
   saleType?: unknown;
   clientRUT?: unknown;
   clientName?: unknown;
+  fecha?: unknown;
+  dte?: unknown;
+  neto?: unknown;
+  iva?: unknown;
+  total?: unknown;
   ivaAmount?: unknown;
   receiptAcknowledgeDate?: unknown;
   claimDate?: unknown;
@@ -463,22 +468,14 @@ async function previewDtePurchaseRow(row: CSVRow, mode: PreviewMode) {
 }
 
 async function previewDteSaleRow(row: CSVRow, mode: PreviewMode) {
-  if (!row.clientRUT || !row.folio) {
+  if (!row.folio) {
     return { counters: { toInsert: 1, toSkip: 0, toUpdate: 0 } };
   }
-  const dateStr = parseFlexibleDate(row.documentDate);
-  if (!dateStr) {
-    return {
-      counters: { toInsert: 0, toSkip: 1, toUpdate: 0 },
-      error: "Fecha de documento inválida",
-    };
-  }
+
   const exists = Boolean(
     await db.dTESaleDetail.findFirst({
       where: {
-        clientRUT: String(row.clientRUT),
         folio: String(row.folio),
-        documentDate: new Date(dateStr),
       },
     }),
   );
