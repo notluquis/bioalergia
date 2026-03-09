@@ -126,7 +126,11 @@ type PartialReclassifyEvent = {
   id: number;
   summary: null | string;
   description: null | string;
+  clinicalSeriesId: null | number;
   category: null | string;
+  seriesStageKind: "DOSE" | "INSTALLATION" | "MAINTENANCE" | "READING" | null;
+  seriesStageLabel: null | string;
+  seriesStageNumber: null | number;
   dosageValue: null | number;
   dosageUnit: null | string;
   treatmentStage: null | string;
@@ -142,11 +146,16 @@ type FullReclassifyEvent = {
   id: number;
   summary: null | string;
   description: null | string;
+  clinicalSeriesId: null | number;
   controlIncluded: boolean;
 };
 
 type PartialReclassifyUpdateData = {
+  clinicalSeriesId?: number | null;
   category?: string;
+  seriesStageKind?: "DOSE" | "INSTALLATION" | "MAINTENANCE" | "READING" | null;
+  seriesStageLabel?: string | null;
+  seriesStageNumber?: number | null;
   dosageValue?: number;
   dosageUnit?: string;
   treatmentStage?: string;
@@ -159,7 +168,11 @@ type PartialReclassifyUpdateData = {
 };
 
 type FullReclassifyUpdateData = {
+  clinicalSeriesId: null | number;
   category: null | string;
+  seriesStageKind: "DOSE" | "INSTALLATION" | "MAINTENANCE" | "READING" | null;
+  seriesStageLabel: null | string;
+  seriesStageNumber: null | number;
   dosageValue: null | number;
   dosageUnit: null | string;
   treatmentStage: null | string;
@@ -235,6 +248,22 @@ const applyPartialCategoryUpdate = (
   if ((event.category === null || event.category === "") && metadata.category) {
     updateData.category = metadata.category;
     fieldCounts.category++;
+  }
+};
+
+const applyPartialSeriesStageUpdate = (
+  event: PartialReclassifyEvent,
+  metadata: ParsedCalendarMetadata,
+  updateData: PartialReclassifyUpdateData,
+) => {
+  if (event.seriesStageKind == null && metadata.seriesStageKind) {
+    updateData.seriesStageKind = metadata.seriesStageKind;
+  }
+  if (event.seriesStageLabel == null && metadata.seriesStageLabel) {
+    updateData.seriesStageLabel = metadata.seriesStageLabel;
+  }
+  if (event.seriesStageNumber == null && metadata.seriesStageNumber != null) {
+    updateData.seriesStageNumber = metadata.seriesStageNumber;
   }
 };
 
@@ -347,6 +376,7 @@ const buildPartialUpdateData = (
   const metadata = parseMetadata(event);
 
   applyPartialCategoryUpdate(event, metadata, updateData, fieldCounts);
+  applyPartialSeriesStageUpdate(event, metadata, updateData);
   applyPartialDosageUpdate(event, metadata, updateData, fieldCounts);
   applyPartialTreatmentStageUpdate(event, metadata, updateData, fieldCounts);
   applyPartialAttendedUpdate(event, metadata, updateData, fieldCounts);
@@ -394,7 +424,11 @@ const buildFullUpdateData = (
   }
 
   return {
+    clinicalSeriesId: event.clinicalSeriesId ?? null,
     category: metadata.category,
+    seriesStageKind: metadata.seriesStageKind,
+    seriesStageLabel: metadata.seriesStageLabel,
+    seriesStageNumber: metadata.seriesStageNumber,
     dosageValue: metadata.dosageValue,
     dosageUnit: metadata.dosageUnit,
     treatmentStage: metadata.treatmentStage,
@@ -957,11 +991,15 @@ calendarRoutes.get(
         endDate: row.endDate ?? null,
         endDateTime: row.endDateTime ?? null,
         category: row.category ?? null,
+        clinicalSeriesId: row.clinicalSeriesId ?? null,
         amountExpected: row.amountExpected ?? null,
         amountPaid: row.amountPaid ?? null,
         attended: row.attended ?? null,
         dosageValue: row.dosageValue ?? null,
         dosageUnit: row.dosageUnit ?? null,
+        seriesStageKind: row.seriesStageKind ?? null,
+        seriesStageLabel: row.seriesStageLabel ?? null,
+        seriesStageNumber: row.seriesStageNumber ?? null,
         testMetadata: toTestMetadata(row.testMetadata),
         treatmentStage: row.treatmentStage ?? null,
       })),
@@ -997,10 +1035,14 @@ calendarRoutes.post(
     const payload = c.req.valid("json");
 
     await updateCalendarEventClassification(payload.calendarId, payload.eventId, {
+      clinicalSeriesId: payload.clinicalSeriesId ?? undefined,
       category: sanitizeOptionalSelectionValue(payload.category),
       amountExpected: payload.amountExpected ?? null,
       amountPaid: payload.amountPaid ?? null,
       attended: payload.attended ?? null,
+      seriesStageKind: payload.seriesStageKind ?? null,
+      seriesStageLabel: sanitizeOptionalSelectionValue(payload.seriesStageLabel),
+      seriesStageNumber: payload.seriesStageNumber ?? null,
       dosageValue: payload.dosageValue ?? null,
       dosageUnit: sanitizeOptionalSelectionValue(payload.dosageUnit),
       treatmentStage: sanitizeOptionalSelectionValue(payload.treatmentStage),
@@ -1387,9 +1429,13 @@ calendarRoutes.post(
         id: true,
         summary: true,
         description: true,
+        clinicalSeriesId: true,
         category: true,
         dosageValue: true,
         dosageUnit: true,
+        seriesStageKind: true,
+        seriesStageLabel: true,
+        seriesStageNumber: true,
         treatmentStage: true,
         attended: true,
         amountExpected: true,
@@ -1435,6 +1481,7 @@ calendarRoutes.post("/events/reclassify-all", requireAuth, async (c) => {
       id: true,
       summary: true,
       description: true,
+      clinicalSeriesId: true,
       controlIncluded: true,
     },
   });
@@ -1453,6 +1500,9 @@ calendarRoutes.post("/events/reclassify-all", requireAuth, async (c) => {
 calendarRoutes.get("/events/job/:jobId", requireAuth, async (c) => {
   const { getJobStatus } = await import("../lib/jobQueue");
   const jobId = c.req.param("jobId");
+  if (!jobId) {
+    return reply(c, { status: "error", message: "Missing job ID" }, 400);
+  }
   const job = getJobStatus(jobId);
 
   if (!job) {

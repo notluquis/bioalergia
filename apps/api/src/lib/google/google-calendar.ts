@@ -39,6 +39,10 @@ export type CalendarEventRecord = {
   amountExpected?: number | null;
   amountPaid?: number | null;
   attended?: boolean | null;
+  clinicalSeriesKind?: "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT" | null;
+  seriesStageKind?: "DOSE" | "INSTALLATION" | "MAINTENANCE" | "READING" | null;
+  seriesStageLabel?: string | null;
+  seriesStageNumber?: number | null;
   dosageValue?: number | null;
   dosageUnit?: string | null;
   treatmentStage?: string | null;
@@ -299,6 +303,10 @@ async function fetchCalendarEventsForId(
       amountExpected,
       amountPaid,
       attended: metadata.attended,
+      clinicalSeriesKind: metadata.clinicalSeriesKind,
+      seriesStageKind: metadata.seriesStageKind,
+      seriesStageLabel: metadata.seriesStageLabel,
+      seriesStageNumber: metadata.seriesStageNumber,
       dosageValue: metadata.dosageValue,
       dosageUnit: metadata.dosageUnit,
       treatmentStage: metadata.treatmentStage,

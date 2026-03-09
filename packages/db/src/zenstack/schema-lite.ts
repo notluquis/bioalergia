@@ -2301,6 +2301,12 @@ export class SchemaType implements SchemaDef {
           type: "Int",
           foreignKeyFor: ["calendar"],
         },
+        clinicalSeriesId: {
+          name: "clinicalSeriesId",
+          type: "Int",
+          optional: true,
+          foreignKeyFor: ["clinicalSeries"],
+        },
         externalEventId: {
           name: "externalEventId",
           type: "String",
@@ -2445,6 +2451,21 @@ export class SchemaType implements SchemaDef {
           type: "String",
           optional: true,
         },
+        seriesStageKind: {
+          name: "seriesStageKind",
+          type: "ClinicalSeriesStageKind",
+          optional: true,
+        },
+        seriesStageNumber: {
+          name: "seriesStageNumber",
+          type: "Int",
+          optional: true,
+        },
+        seriesStageLabel: {
+          name: "seriesStageLabel",
+          type: "String",
+          optional: true,
+        },
         testMetadata: {
           name: "testMetadata",
           type: "Json",
@@ -2471,6 +2492,17 @@ export class SchemaType implements SchemaDef {
             onDelete: "Cascade",
           },
         },
+        clinicalSeries: {
+          name: "clinicalSeries",
+          type: "ClinicalSeries",
+          optional: true,
+          relation: {
+            opposite: "events",
+            fields: ["clinicalSeriesId"],
+            references: ["id"],
+            onDelete: "SetNull",
+          },
+        },
         consultations: {
           name: "consultations",
           type: "Consultation",
@@ -2485,6 +2517,77 @@ export class SchemaType implements SchemaDef {
           calendarId: { type: "Int" },
           externalEventId: { type: "String" },
         },
+      },
+    },
+    ClinicalSeries: {
+      name: "ClinicalSeries",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        kind: {
+          name: "kind",
+          type: "ClinicalSeriesKind",
+        },
+        status: {
+          name: "status",
+          type: "ClinicalSeriesStatus",
+          default: "ACTIVE",
+        },
+        displayName: {
+          name: "displayName",
+          type: "String",
+          optional: true,
+        },
+        patientName: {
+          name: "patientName",
+          type: "String",
+          optional: true,
+        },
+        patientRut: {
+          name: "patientRut",
+          type: "String",
+          optional: true,
+        },
+        expectedSessions: {
+          name: "expectedSessions",
+          type: "Int",
+          optional: true,
+        },
+        notes: {
+          name: "notes",
+          type: "String",
+          optional: true,
+        },
+        completedAt: {
+          name: "completedAt",
+          type: "DateTime",
+          optional: true,
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          default: ExpressionUtils.call("now"),
+        },
+        events: {
+          name: "events",
+          type: "Event",
+          array: true,
+          relation: { opposite: "clinicalSeries" },
+        },
+      },
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
       },
     },
     SyncLog: {
@@ -6001,6 +6104,31 @@ export class SchemaType implements SchemaDef {
         PENDING_SETUP: "PENDING_SETUP",
         ACTIVE: "ACTIVE",
         SUSPENDED: "SUSPENDED",
+      },
+    },
+    ClinicalSeriesKind: {
+      name: "ClinicalSeriesKind",
+      values: {
+        PATCH_TEST: "PATCH_TEST",
+        SKIN_TEST: "SKIN_TEST",
+        SUBCUTANEOUS_TREATMENT: "SUBCUTANEOUS_TREATMENT",
+      },
+    },
+    ClinicalSeriesStatus: {
+      name: "ClinicalSeriesStatus",
+      values: {
+        ACTIVE: "ACTIVE",
+        COMPLETED: "COMPLETED",
+        CANCELLED: "CANCELLED",
+      },
+    },
+    ClinicalSeriesStageKind: {
+      name: "ClinicalSeriesStageKind",
+      values: {
+        INSTALLATION: "INSTALLATION",
+        READING: "READING",
+        DOSE: "DOSE",
+        MAINTENANCE: "MAINTENANCE",
       },
     },
     BudgetStatus: {

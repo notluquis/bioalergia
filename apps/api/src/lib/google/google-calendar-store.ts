@@ -96,6 +96,9 @@ function buildEventUpsertData(event: CalendarEventRecord, calendarInternalId: nu
     amountExpected: event.amountExpected,
     amountPaid: event.amountPaid,
     attended: event.attended,
+    seriesStageKind: event.seriesStageKind,
+    seriesStageLabel: event.seriesStageLabel,
+    seriesStageNumber: event.seriesStageNumber,
     dosageValue: event.dosageValue,
     dosageUnit: event.dosageUnit,
     treatmentStage: event.treatmentStage,
@@ -130,6 +133,9 @@ async function findExistingEvent(calendarInternalId: number, eventId: string) {
       amountExpected: true,
       amountPaid: true,
       attended: true,
+      seriesStageKind: true,
+      seriesStageLabel: true,
+      seriesStageNumber: true,
       dosageValue: true,
       dosageUnit: true,
       treatmentStage: true,
@@ -323,6 +329,9 @@ interface DiffableEvent {
   amountExpected?: number | null;
   amountPaid?: number | null;
   attended?: boolean | null;
+  seriesStageKind?: "DOSE" | "INSTALLATION" | "MAINTENANCE" | "READING" | null;
+  seriesStageLabel?: string | null;
+  seriesStageNumber?: number | null;
   dosageValue?: number | null;
   dosageUnit?: string | null;
   treatmentStage?: string | null;
@@ -379,6 +388,9 @@ function computeEventDiff(existing: DiffableEvent, incoming: DiffableEvent): str
   diff("Monto esperado", existing.amountExpected, incoming.amountExpected);
   diff("Monto pagado", existing.amountPaid, incoming.amountPaid);
   diff("Asistió", existing.attended, incoming.attended);
+  diff("Etapa serie", existing.seriesStageKind, incoming.seriesStageKind);
+  diff("Orden serie", existing.seriesStageNumber, incoming.seriesStageNumber);
+  diff("Etiqueta serie", existing.seriesStageLabel, incoming.seriesStageLabel);
   diff("Dosis", existing.dosageValue, incoming.dosageValue);
   diff("Unidad dosis", existing.dosageUnit, incoming.dosageUnit);
   diff("Etapa tratamiento", existing.treatmentStage, incoming.treatmentStage);

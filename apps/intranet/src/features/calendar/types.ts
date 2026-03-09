@@ -111,10 +111,14 @@ export interface CalendarEventClassificationPayload {
   attended?: boolean | null;
   calendarId: string;
   category?: null | string;
+  clinicalSeriesId?: null | number;
   controlIncluded?: boolean | null;
   dosageValue?: null | number;
   dosageUnit?: null | string;
   eventId: string;
+  seriesStageKind?: null | "DOSE" | "INSTALLATION" | "MAINTENANCE" | "READING";
+  seriesStageLabel?: null | string;
+  seriesStageNumber?: null | number;
   testMetadata?: null | {
     firstReading: boolean;
     patchTest: boolean;
@@ -131,11 +135,15 @@ export interface CalendarEventDetail {
   attended?: boolean | null;
   calendarId: string;
   category?: null | string;
+  clinicalSeriesId?: null | number;
   colorId: null | string;
   controlIncluded?: boolean | null;
   description: null | string;
   dosageValue?: null | number;
   dosageUnit?: null | string;
+  seriesStageKind?: null | "DOSE" | "INSTALLATION" | "MAINTENANCE" | "READING";
+  seriesStageLabel?: null | string;
+  seriesStageNumber?: null | number;
   endDate: null | string;
   endDateTime: null | string;
   endTimeZone: null | string;
@@ -270,9 +278,13 @@ export interface CalendarUnclassifiedEvent {
   attended: boolean | null;
   calendarId: string;
   category: null | string;
+  clinicalSeriesId?: null | number;
   description: null | string;
   dosageValue: null | number;
   dosageUnit: null | string;
+  seriesStageKind?: null | "DOSE" | "INSTALLATION" | "MAINTENANCE" | "READING";
+  seriesStageLabel?: null | string;
+  seriesStageNumber?: null | number;
   endDate: null | string;
   endDateTime: null | string;
   eventId: string;
@@ -296,8 +308,12 @@ export interface ClassificationFormValues {
   amountPaid: string;
   attended: boolean;
   category: string;
+  clinicalSeriesId?: null | number;
   dosageValue: string;
   dosageUnit: string;
+  seriesStageKind?: null | "DOSE" | "INSTALLATION" | "MAINTENANCE" | "READING";
+  seriesStageLabel?: null | string;
+  seriesStageNumber?: null | number;
   testPatchFirstReading: boolean;
   testPatchSecondReading: boolean;
   testPatchThirdReading: boolean;

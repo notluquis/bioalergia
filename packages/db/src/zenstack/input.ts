@@ -697,6 +697,36 @@ export type EventGetPayload<
   Args extends $SelectIncludeOmit<$Schema, "Event", true>,
   Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>,
 > = $Result<$Schema, "Event", Args, Options>;
+export type ClinicalSeriesFindManyArgs = $FindManyArgs<$Schema, "ClinicalSeries">;
+export type ClinicalSeriesFindUniqueArgs = $FindUniqueArgs<$Schema, "ClinicalSeries">;
+export type ClinicalSeriesFindFirstArgs = $FindFirstArgs<$Schema, "ClinicalSeries">;
+export type ClinicalSeriesExistsArgs = $ExistsArgs<$Schema, "ClinicalSeries">;
+export type ClinicalSeriesCreateArgs = $CreateArgs<$Schema, "ClinicalSeries">;
+export type ClinicalSeriesCreateManyArgs = $CreateManyArgs<$Schema, "ClinicalSeries">;
+export type ClinicalSeriesCreateManyAndReturnArgs = $CreateManyAndReturnArgs<
+  $Schema,
+  "ClinicalSeries"
+>;
+export type ClinicalSeriesUpdateArgs = $UpdateArgs<$Schema, "ClinicalSeries">;
+export type ClinicalSeriesUpdateManyArgs = $UpdateManyArgs<$Schema, "ClinicalSeries">;
+export type ClinicalSeriesUpdateManyAndReturnArgs = $UpdateManyAndReturnArgs<
+  $Schema,
+  "ClinicalSeries"
+>;
+export type ClinicalSeriesUpsertArgs = $UpsertArgs<$Schema, "ClinicalSeries">;
+export type ClinicalSeriesDeleteArgs = $DeleteArgs<$Schema, "ClinicalSeries">;
+export type ClinicalSeriesDeleteManyArgs = $DeleteManyArgs<$Schema, "ClinicalSeries">;
+export type ClinicalSeriesCountArgs = $CountArgs<$Schema, "ClinicalSeries">;
+export type ClinicalSeriesAggregateArgs = $AggregateArgs<$Schema, "ClinicalSeries">;
+export type ClinicalSeriesGroupByArgs = $GroupByArgs<$Schema, "ClinicalSeries">;
+export type ClinicalSeriesWhereInput = $WhereInput<$Schema, "ClinicalSeries">;
+export type ClinicalSeriesSelect = $SelectInput<$Schema, "ClinicalSeries">;
+export type ClinicalSeriesInclude = $IncludeInput<$Schema, "ClinicalSeries">;
+export type ClinicalSeriesOmit = $OmitInput<$Schema, "ClinicalSeries">;
+export type ClinicalSeriesGetPayload<
+  Args extends $SelectIncludeOmit<$Schema, "ClinicalSeries", true>,
+  Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>,
+> = $Result<$Schema, "ClinicalSeries", Args, Options>;
 export type SyncLogFindManyArgs = $FindManyArgs<$Schema, "SyncLog">;
 export type SyncLogFindUniqueArgs = $FindUniqueArgs<$Schema, "SyncLog">;
 export type SyncLogFindFirstArgs = $FindFirstArgs<$Schema, "SyncLog">;

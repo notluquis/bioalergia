@@ -738,6 +738,7 @@ model CalendarWatchChannel {
 model Event {
   id              Int            @id @default(autoincrement())
   calendarId      Int            @map("calendar_id")
+  clinicalSeriesId Int?          @map("clinical_series_id")
   externalEventId String         @map("external_event_id")
   eventStatus     String?        @map("event_status")
   eventType       String?        @map("event_type")
@@ -770,10 +771,14 @@ model Event {
 
   dosageValue     Float?         @map("dosage_value")
   dosageUnit      String?        @map("dosage_unit")
+  seriesStageKind ClinicalSeriesStageKind? @map("series_stage_kind")
+  seriesStageNumber Int?         @map("series_stage_number")
+  seriesStageLabel String?       @map("series_stage_label")
   testMetadata    Json?          @map("test_metadata")
   createdAt       DateTime       @default(now()) @map("created_at")
   updatedAt       DateTime       @default(now()) @updatedAt @map("updated_at")
   calendar        Calendar       @relation(fields: [calendarId], references: [id], onDelete: Cascade)
+  clinicalSeries  ClinicalSeries? @relation(fields: [clinicalSeriesId], references: [id], onDelete: SetNull)
   consultations   Consultation[]
 
   // Access policies
@@ -783,7 +788,31 @@ model Event {
 
   @@unique([calendarId, externalEventId])
   @@index([calendarId])
+  @@index([clinicalSeriesId])
   @@map("events")
+}
+
+model ClinicalSeries {
+  id               Int                     @id @default(autoincrement())
+  kind             ClinicalSeriesKind
+  status           ClinicalSeriesStatus    @default(ACTIVE)
+  displayName      String?                 @map("display_name")
+  patientName      String?                 @map("patient_name")
+  patientRut       String?                 @map("patient_rut")
+  expectedSessions Int?                    @map("expected_sessions")
+  notes            String?
+  completedAt      DateTime?               @map("completed_at")
+  createdAt        DateTime                @default(now()) @map("created_at")
+  updatedAt        DateTime                @default(now()) @updatedAt @map("updated_at")
+  events           Event[]
+
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([kind, status])
+  @@index([patientRut])
+  @@map("clinical_series")
 }
 
 model SyncLog {
@@ -1448,6 +1477,25 @@ enum UserStatus {
   PENDING_SETUP
   ACTIVE
   SUSPENDED
+}
+
+enum ClinicalSeriesKind {
+  PATCH_TEST
+  SKIN_TEST
+  SUBCUTANEOUS_TREATMENT
+}
+
+enum ClinicalSeriesStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum ClinicalSeriesStageKind {
+  INSTALLATION
+  READING
+  DOSE
+  MAINTENANCE
 }
 
 // ============================================================

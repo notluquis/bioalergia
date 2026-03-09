@@ -363,8 +363,12 @@ export type CalendarEventDetail = {
   amountExpected?: number | null;
   amountPaid?: number | null;
   attended?: boolean | null;
+  clinicalSeriesId?: number | null;
   dosageValue?: number | null;
   dosageUnit?: string | null;
+  seriesStageKind?: "DOSE" | "INSTALLATION" | "MAINTENANCE" | "READING" | null;
+  seriesStageLabel?: string | null;
+  seriesStageNumber?: number | null;
   testMetadata?: {
     firstReading: boolean;
     patchTest: boolean;
@@ -587,6 +591,10 @@ export async function getCalendarEventsByDate(
       "e.amountExpected as amountExpected",
       "e.amountPaid as amountPaid",
       "e.attended",
+      sql<number | null>`e.clinical_series_id`.as("clinicalSeriesId"),
+      sql<string | null>`e.series_stage_kind`.as("seriesStageKind"),
+      sql<string | null>`e.series_stage_label`.as("seriesStageLabel"),
+      sql<number | null>`e.series_stage_number`.as("seriesStageNumber"),
       "e.dosageValue as dosageValue",
       "e.dosageUnit as dosageUnit",
       sql<unknown>`e.test_metadata`.as("testMetadata"),
@@ -640,6 +648,10 @@ export async function getCalendarEventsByDate(
     amountExpected: number | string | null;
     amountPaid: number | string | null;
     attended: boolean | null;
+    clinicalSeriesId: number | null;
+    seriesStageKind: "DOSE" | "INSTALLATION" | "MAINTENANCE" | "READING" | null;
+    seriesStageLabel: string | null;
+    seriesStageNumber: number | null;
     dosageValue: number | null;
     dosageUnit: string | null;
     testMetadata: {
@@ -711,8 +723,12 @@ export async function getCalendarEventsByDate(
       amountExpected: toNullableNumber(ev.amountExpected),
       amountPaid: toNullableNumber(ev.amountPaid),
       attended: ev.attended,
+      clinicalSeriesId: ev.clinicalSeriesId,
       dosageValue: ev.dosageValue,
       dosageUnit: ev.dosageUnit,
+      seriesStageKind: ev.seriesStageKind ?? parsedMetadata?.seriesStageKind ?? null,
+      seriesStageLabel: ev.seriesStageLabel ?? parsedMetadata?.seriesStageLabel ?? null,
+      seriesStageNumber: ev.seriesStageNumber ?? parsedMetadata?.seriesStageNumber ?? null,
       testMetadata: ev.testMetadata ?? parsedMetadata?.testMetadata ?? null,
       treatmentStage: ev.treatmentStage ?? parsedMetadata?.treatmentStage ?? null,
       controlIncluded: ev.controlIncluded ?? parsedMetadata?.controlIncluded ?? false,

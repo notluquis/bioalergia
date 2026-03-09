@@ -5941,6 +5941,18 @@ export class SchemaType implements SchemaDef {
           ],
           foreignKeyFor: ["calendar"],
         },
+        clinicalSeriesId: {
+          name: "clinicalSeriesId",
+          type: "Int",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("clinical_series_id") }],
+            },
+          ],
+          foreignKeyFor: ["clinicalSeries"],
+        },
         externalEventId: {
           name: "externalEventId",
           type: "String",
@@ -6212,6 +6224,39 @@ export class SchemaType implements SchemaDef {
             },
           ],
         },
+        seriesStageKind: {
+          name: "seriesStageKind",
+          type: "ClinicalSeriesStageKind",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("series_stage_kind") }],
+            },
+          ],
+        },
+        seriesStageNumber: {
+          name: "seriesStageNumber",
+          type: "Int",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("series_stage_number") }],
+            },
+          ],
+        },
+        seriesStageLabel: {
+          name: "seriesStageLabel",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("series_stage_label") }],
+            },
+          ],
+        },
         testMetadata: {
           name: "testMetadata",
           type: "Json",
@@ -6273,6 +6318,33 @@ export class SchemaType implements SchemaDef {
             fields: ["calendarId"],
             references: ["id"],
             onDelete: "Cascade",
+          },
+        },
+        clinicalSeries: {
+          name: "clinicalSeries",
+          type: "ClinicalSeries",
+          optional: true,
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("clinicalSeriesId")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+                { name: "onDelete", value: ExpressionUtils.literal("SetNull") },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "events",
+            fields: ["clinicalSeriesId"],
+            references: ["id"],
+            onDelete: "SetNull",
           },
         },
         consultations: {
@@ -6339,6 +6411,15 @@ export class SchemaType implements SchemaDef {
             },
           ],
         },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("clinicalSeriesId")]),
+            },
+          ],
+        },
         { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("events") }] },
       ],
       idFields: ["id"],
@@ -6348,6 +6429,197 @@ export class SchemaType implements SchemaDef {
           calendarId: { type: "Int" },
           externalEventId: { type: "String" },
         },
+      },
+    },
+    ClinicalSeries: {
+      name: "ClinicalSeries",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        kind: {
+          name: "kind",
+          type: "ClinicalSeriesKind",
+        },
+        status: {
+          name: "status",
+          type: "ClinicalSeriesStatus",
+          attributes: [
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.literal("ACTIVE") }],
+            },
+          ],
+          default: "ACTIVE",
+        },
+        displayName: {
+          name: "displayName",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("display_name") }],
+            },
+          ],
+        },
+        patientName: {
+          name: "patientName",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("patient_name") }],
+            },
+          ],
+        },
+        patientRut: {
+          name: "patientRut",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("patient_rut") }],
+            },
+          ],
+        },
+        expectedSessions: {
+          name: "expectedSessions",
+          type: "Int",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("expected_sessions") }],
+            },
+          ],
+        },
+        notes: {
+          name: "notes",
+          type: "String",
+          optional: true,
+        },
+        completedAt: {
+          name: "completedAt",
+          type: "DateTime",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("completed_at") }],
+            },
+          ],
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            { name: "@updatedAt" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        events: {
+          name: "events",
+          type: "Event",
+          array: true,
+          relation: { opposite: "clinicalSeries" },
+        },
+      },
+      attributes: [
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("ClinicalSeriesKind", [
+                ExpressionUtils.field("kind"),
+                ExpressionUtils.field("status"),
+              ]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("String", [ExpressionUtils.field("patientRut")]),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("clinical_series") }],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
       },
     },
     SyncLog: {
@@ -15758,6 +16030,31 @@ export class SchemaType implements SchemaDef {
         PENDING_SETUP: "PENDING_SETUP",
         ACTIVE: "ACTIVE",
         SUSPENDED: "SUSPENDED",
+      },
+    },
+    ClinicalSeriesKind: {
+      name: "ClinicalSeriesKind",
+      values: {
+        PATCH_TEST: "PATCH_TEST",
+        SKIN_TEST: "SKIN_TEST",
+        SUBCUTANEOUS_TREATMENT: "SUBCUTANEOUS_TREATMENT",
+      },
+    },
+    ClinicalSeriesStatus: {
+      name: "ClinicalSeriesStatus",
+      values: {
+        ACTIVE: "ACTIVE",
+        COMPLETED: "COMPLETED",
+        CANCELLED: "CANCELLED",
+      },
+    },
+    ClinicalSeriesStageKind: {
+      name: "ClinicalSeriesStageKind",
+      values: {
+        INSTALLATION: "INSTALLATION",
+        READING: "READING",
+        DOSE: "DOSE",
+        MAINTENANCE: "MAINTENANCE",
       },
     },
     BudgetStatus: {

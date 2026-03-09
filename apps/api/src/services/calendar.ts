@@ -316,6 +316,10 @@ export async function updateCalendarEventClassification(
     amountExpected?: number | null;
     amountPaid?: number | null;
     attended?: boolean | null;
+    clinicalSeriesId?: number | null;
+    seriesStageKind?: "DOSE" | "INSTALLATION" | "MAINTENANCE" | "READING" | null;
+    seriesStageLabel?: string | null;
+    seriesStageNumber?: number | null;
     dosageValue?: number | null;
     dosageUnit?: string | null;
     treatmentStage?: string | null;
@@ -352,6 +356,18 @@ export async function updateCalendarEventClassification(
       amountExpected: data.amountExpected,
       amountPaid: data.amountPaid,
       attended: data.attended,
+      clinicalSeries: data.clinicalSeriesId
+        ? {
+            connect: {
+              id: data.clinicalSeriesId,
+            },
+          }
+        : data.clinicalSeriesId === null
+          ? { disconnect: true }
+          : undefined,
+      seriesStageKind: data.seriesStageKind,
+      seriesStageLabel: data.seriesStageLabel,
+      seriesStageNumber: data.seriesStageNumber,
       dosageValue: data.dosageValue,
       dosageUnit: data.dosageUnit,
       treatmentStage: data.treatmentStage,
@@ -398,6 +414,9 @@ export async function createCalendarEvent(data: CalendarEventRecord) {
     amountExpected: data.amountExpected ?? null,
     amountPaid: data.amountPaid ?? null,
     attended: data.attended ?? null,
+    seriesStageKind: data.seriesStageKind ?? null,
+    seriesStageLabel: data.seriesStageLabel ?? null,
+    seriesStageNumber: data.seriesStageNumber ?? null,
     dosageValue: data.dosageValue,
     dosageUnit: data.dosageUnit,
     controlIncluded: data.controlIncluded ?? false,

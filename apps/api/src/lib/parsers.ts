@@ -48,6 +48,10 @@ export type ParsedCalendarMetadata = {
   treatmentStage: string | null;
   controlIncluded: boolean;
   isDomicilio: boolean;
+  clinicalSeriesKind: "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT" | null;
+  seriesStageKind: "DOSE" | "INSTALLATION" | "MAINTENANCE" | "READING" | null;
+  seriesStageLabel: string | null;
+  seriesStageNumber: number | null;
   testMetadata: {
     firstReading: boolean;
     patchTest: boolean;
@@ -56,6 +60,9 @@ export type ParsedCalendarMetadata = {
     thirdReading: boolean;
   } | null;
 };
+
+type ClinicalSeriesKind = ParsedCalendarMetadata["clinicalSeriesKind"];
+type ClinicalSeriesStageKind = ParsedCalendarMetadata["seriesStageKind"];
 
 // ============================================================================
 // PATTERN DEFINITIONS (by category, ordered by priority)
@@ -330,6 +337,18 @@ const DECIMAL_STANDALONE_PATTERN = /\b(0[.,]\d+)\b/; // Standalone decimal like 
 
 /** Treatment stage helper patterns */
 const HALF_ML_PATTERN = /0[.,]5(\s*ml)?\b/i; // 0.5 ml indicator for maintenance
+
+const ORDINAL_TEXT_TO_NUMBER: Array<[number, RegExp]> = [
+  [1, /\b(?:1[º°]?(?:era|ra|er)?|prim(?:er)?a?|pr[im]+[er]*a)\b/i],
+  [2, /\b(?:2[º°]?(?:da|a)?|segunda)\b/i],
+  [3, /\b(?:3[º°]?(?:ra|era|a)?|tercera)\b/i],
+  [4, /\b(?:4[º°]?(?:ta|a)?|cuarta)\b/i],
+  [5, /\b(?:5[º°]?(?:ta|va|a)?|quinta)\b/i],
+  [6, /\b(?:6[º°]?(?:ta|a)?|sexta)\b/i],
+  [7, /\b(?:7[º°]?(?:ma|a)?|septima|séptima)\b/i],
+  [8, /\b(?:8[º°]?(?:va|a)?|octava)\b/i],
+  [9, /\b(?:9[º°]?(?:na|a)?|novena)\b/i],
+];
 
 /** Dosage parsing pattern */
 
@@ -820,6 +839,131 @@ function detectTestMetadata(
   };
 }
 
+function detectOrdinalNumber(text: string, nounPattern: RegExp): number | null {
+  const directMatch = text.match(
+    new RegExp(
+      String.raw`\b(\d{1,2})[º°]?(?:era|ra|da|ta|va|ma|na|a)?\s*${nounPattern.source}\b`,
+      "i",
+    ),
+  );
+  if (directMatch?.[1]) {
+    const parsed = Number.parseInt(directMatch[1], 10);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  for (const [value, pattern] of ORDINAL_TEXT_TO_NUMBER) {
+    if (pattern.test(text) && nounPattern.test(text)) {
+      return value;
+    }
+  }
+
+  return null;
+}
+
+function formatOrdinalLabel(value: number, noun: string): string {
+  const suffix =
+    value === 1
+      ? "ra"
+      : value === 2
+        ? "da"
+        : value === 3
+          ? "ra"
+          : value === 4
+            ? "ta"
+            : value === 5
+              ? "ta"
+              : "a";
+  return `${value}${suffix} ${noun}`;
+}
+
+function buildSeriesMetadata(params: {
+  category: string | null;
+  summary: string;
+  description: string;
+  testMetadata: ParsedCalendarMetadata["testMetadata"];
+  treatmentStage: string | null;
+}): {
+  clinicalSeriesKind: ClinicalSeriesKind;
+  seriesStageKind: ClinicalSeriesStageKind;
+  seriesStageLabel: string | null;
+  seriesStageNumber: number | null;
+} {
+  const text = `${params.summary} ${params.description}`;
+  const isTest = params.category === "Test y exámenes";
+  const isSubcut = params.category === "Tratamiento subcutáneo";
+
+  if (isTest) {
+    const readingNumber = params.testMetadata?.firstReading
+      ? 1
+      : params.testMetadata?.secondReading
+        ? 2
+        : params.testMetadata?.thirdReading
+          ? 3
+          : detectOrdinalNumber(text, /lectura/);
+
+    const clinicalSeriesKind: ClinicalSeriesKind = params.testMetadata?.patchTest
+      ? "PATCH_TEST"
+      : params.testMetadata?.skinTest
+        ? "SKIN_TEST"
+        : null;
+
+    if (readingNumber != null) {
+      return {
+        clinicalSeriesKind,
+        seriesStageKind: "READING" as const,
+        seriesStageLabel: formatOrdinalLabel(readingNumber, "lectura"),
+        seriesStageNumber: readingNumber,
+      };
+    }
+
+    if (clinicalSeriesKind) {
+      return {
+        clinicalSeriesKind,
+        seriesStageKind: "INSTALLATION" as const,
+        seriesStageLabel: "Instalación",
+        seriesStageNumber: 0,
+      };
+    }
+  }
+
+  if (isSubcut) {
+    const doseNumber = detectOrdinalNumber(text, /dosis/);
+    if (doseNumber != null) {
+      return {
+        clinicalSeriesKind: "SUBCUTANEOUS_TREATMENT" as const,
+        seriesStageKind: "DOSE" as const,
+        seriesStageLabel: formatOrdinalLabel(doseNumber, "dosis"),
+        seriesStageNumber: doseNumber,
+      };
+    }
+
+    if (params.treatmentStage === "Mantención") {
+      return {
+        clinicalSeriesKind: "SUBCUTANEOUS_TREATMENT" as const,
+        seriesStageKind: "MAINTENANCE" as const,
+        seriesStageLabel: "Mantención",
+        seriesStageNumber: null,
+      };
+    }
+
+    if (params.treatmentStage === "Inducción") {
+      return {
+        clinicalSeriesKind: "SUBCUTANEOUS_TREATMENT" as const,
+        seriesStageKind: "DOSE" as const,
+        seriesStageLabel: "Dosis de inducción",
+        seriesStageNumber: null,
+      };
+    }
+  }
+
+  return {
+    clinicalSeriesKind: null,
+    seriesStageKind: null,
+    seriesStageLabel: null,
+    seriesStageNumber: null,
+  };
+}
+
 // ============================================================================
 // MAIN EXPORT
 // ============================================================================
@@ -904,14 +1048,25 @@ export function parseCalendarMetadata(input: {
       : category === "Test y exámenes" && hasPatchReading
         ? 0
         : (amounts.amountPaid ?? (roxairLikelyPaid ? testReadingExpectedAmount : null));
+  const seriesMetadata = buildSeriesMetadata({
+    category,
+    summary,
+    description,
+    testMetadata,
+    treatmentStage: finalTreatmentStage,
+  });
 
   return {
     category,
+    clinicalSeriesKind: seriesMetadata.clinicalSeriesKind,
     amountExpected: testReadingExpectedAmount,
     amountPaid: finalAmountPaid,
     attended: finalAttended,
     dosageValue: finalDosageValue,
     dosageUnit: finalDosageUnit,
+    seriesStageKind: seriesMetadata.seriesStageKind,
+    seriesStageLabel: seriesMetadata.seriesStageLabel,
+    seriesStageNumber: seriesMetadata.seriesStageNumber,
     treatmentStage: finalTreatmentStage,
     controlIncluded,
     isDomicilio,

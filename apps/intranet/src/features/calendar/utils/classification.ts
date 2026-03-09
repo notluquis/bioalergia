@@ -7,8 +7,12 @@ export interface ParsedPayload {
   amountPaid: null | number;
   attended: boolean | null;
   category: null | string;
+  clinicalSeriesId: null | number;
   dosageValue: null | number;
   dosageUnit: null | string;
+  seriesStageKind: null | "DOSE" | "INSTALLATION" | "MAINTENANCE" | "READING";
+  seriesStageLabel: null | string;
+  seriesStageNumber: null | number;
   testMetadata: null | {
     firstReading: boolean;
     patchTest: boolean;
@@ -84,8 +88,12 @@ export function buildDefaultEntry(event: CalendarUnclassifiedEvent) {
     amountPaid: event.amountPaid == null ? "" : String(event.amountPaid),
     attended: inferredAttended,
     category: resolvedCategory,
+    clinicalSeriesId: event.clinicalSeriesId ?? null,
     dosageValue: event.dosageValue != null ? String(event.dosageValue) : "",
     dosageUnit: event.dosageUnit ?? "",
+    seriesStageKind: event.seriesStageKind ?? null,
+    seriesStageLabel: event.seriesStageLabel ?? null,
+    seriesStageNumber: event.seriesStageNumber ?? null,
     testSubtypeSkin: event.testMetadata?.skinTest ?? false,
     testSubtypePatch: event.testMetadata?.patchTest ?? false,
     testPatchFirstReading: event.testMetadata?.firstReading ?? false,
@@ -143,8 +151,12 @@ export function buildPayload(
     amountPaid,
     attended,
     category: resolvedCategory,
+    clinicalSeriesId: entry.clinicalSeriesId ?? event.clinicalSeriesId ?? null,
     dosageValue: dosageValue ?? null,
     dosageUnit,
+    seriesStageKind: entry.seriesStageKind ?? event.seriesStageKind ?? null,
+    seriesStageLabel: entry.seriesStageLabel ?? event.seriesStageLabel ?? null,
+    seriesStageNumber: entry.seriesStageNumber ?? event.seriesStageNumber ?? null,
     testMetadata,
     treatmentStage,
   };
