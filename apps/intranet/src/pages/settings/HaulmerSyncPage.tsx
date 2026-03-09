@@ -18,6 +18,7 @@ import { useMemo, useState } from "react";
 import { z } from "zod";
 
 import { useToast } from "@/context/ToastContext";
+import { autoLinkEventDteByPeriod } from "@/features/calendar/api";
 import { apiClient } from "@/lib/api-client";
 
 dayjs.locale(localeEs);
@@ -108,6 +109,10 @@ function periodToMonthPeriod(
   };
 }
 
+function formatPeriodLabel(period: string): string {
+  return dayjs(period, "YYYYMM").format("MMMM YYYY");
+}
+
 interface AvailablePeriodsData extends z.infer<typeof AvailablePeriodsSchema> {}
 
 /**
@@ -171,6 +176,11 @@ interface SyncAllProgressState {
   isOpen: boolean;
   success: number;
   total: number;
+}
+
+interface PostSyncAutoLinkState {
+  periods: string[];
+  sourceLabel: string;
 }
 
 // Helper component for sync status icon
@@ -393,7 +403,9 @@ export function HaulmerSyncPage() {
   const [lastSyncs, setLastSyncs] = useState<LastSyncState>({});
   const [isSyncingAll, setIsSyncingAll] = useState(false);
   const [isSyncingIncremental, setIsSyncingIncremental] = useState(false);
+  const [isAutoLinking, setIsAutoLinking] = useState(false);
   const [isSyncScopeModalOpen, setIsSyncScopeModalOpen] = useState(false);
+  const [postSyncAutoLink, setPostSyncAutoLink] = useState<null | PostSyncAutoLinkState>(null);
   const [syncSalesSelected, setSyncSalesSelected] = useState(true);
   const [syncPurchasesSelected, setSyncPurchasesSelected] = useState(true);
   const [syncAllProgress, setSyncAllProgress] = useState<SyncAllProgressState>({
@@ -405,6 +417,65 @@ export function HaulmerSyncPage() {
     success: 0,
     total: 0,
   });
+
+  const autoLinkEligiblePeriodsLabel = useMemo(() => {
+    if (!postSyncAutoLink) {
+      return "";
+    }
+    return postSyncAutoLink.periods.map((period) => formatPeriodLabel(period)).join(", ");
+  }, [postSyncAutoLink]);
+
+  const queuePostSyncAutoLink = (results: Array<SyncResult>, sourceLabel: string) => {
+    const periods = Array.from(
+      new Set(
+        results
+          .filter((result) => result.docType === "sales" && result.status === "success")
+          .map((result) => result.period),
+      ),
+    ).sort((a, b) => b.localeCompare(a));
+
+    if (periods.length === 0) {
+      return;
+    }
+
+    setPostSyncAutoLink({ periods, sourceLabel });
+  };
+
+  const handleRunAutoLink = async () => {
+    if (!postSyncAutoLink || isAutoLinking) {
+      return;
+    }
+
+    setIsAutoLinking(true);
+
+    try {
+      let linked = 0;
+      let skipped = 0;
+      let processed = 0;
+
+      for (const period of postSyncAutoLink.periods) {
+        const result = await autoLinkEventDteByPeriod({
+          period: dayjs(period, "YYYYMM").format("YYYY-MM"),
+        });
+        linked += result.linked;
+        skipped += result.skipped;
+        processed += 1;
+      }
+
+      showSuccess(
+        `Auto-vinculación completada: ${linked} vinculados, ${skipped} omitidos (${processed} períodos)`,
+      );
+      setPostSyncAutoLink(null);
+    } catch (error) {
+      showError(
+        error instanceof Error
+          ? `No se pudo auto-vincular DTE: ${error.message}`
+          : "No se pudo auto-vincular DTE",
+      );
+    } finally {
+      setIsAutoLinking(false);
+    }
+  };
 
   // Fetch available periods
   const {
@@ -459,6 +530,10 @@ export function HaulmerSyncPage() {
       if (result.status === "success") {
         const msg = `${result.rowsInserted} creados, ${result.rowsUpdated} actualizados`;
         showSuccess(`Sync completado: ${msg}`);
+        queuePostSyncAutoLink(
+          [result],
+          `${docType === "sales" ? "ventas" : "compras"} ${formatPeriodLabel(period)}`,
+        );
       } else if (result.error) {
         showError(`Sync fallido: ${result.error}`);
       }
@@ -506,6 +581,7 @@ export function HaulmerSyncPage() {
     try {
       let successCount = 0;
       let failedCount = 0;
+      const batchResults: SyncResult[] = [];
       for (const [index, task] of tasks.entries()) {
         setSyncAllProgress((prev) => ({
           ...prev,
@@ -526,6 +602,7 @@ export function HaulmerSyncPage() {
 
           const result = response.results?.[0];
           if (result) {
+            batchResults.push(result);
             const key = `${result.period}-${result.docType}`;
             setLastSyncs((prev) => ({
               ...prev,
@@ -553,6 +630,15 @@ export function HaulmerSyncPage() {
               status: "failed",
             },
           }));
+          batchResults.push({
+            docType: task.docType,
+            error: message,
+            period: task.period,
+            rowsInserted: 0,
+            rowsProcessed: 0,
+            rowsUpdated: 0,
+            status: "failed",
+          });
         }
 
         setSyncAllProgress((prev) => ({
@@ -563,6 +649,7 @@ export function HaulmerSyncPage() {
       }
 
       showSuccess(`Sync total completado: ${successCount} OK, ${failedCount} con error`);
+      queuePostSyncAutoLink(batchResults, "sincronización masiva");
     } catch (error) {
       showError(
         `Error durante sincronización total: ${error instanceof Error ? error.message : "Desconocido"}`,
@@ -633,6 +720,7 @@ export function HaulmerSyncPage() {
         showSuccess(
           `Sync incremental completado: ${response.summary.success} OK, ${response.summary.failed} con error`,
         );
+        queuePostSyncAutoLink(response.results ?? [], "sincronización incremental");
       }
     } catch (error) {
       showError(
@@ -748,6 +836,61 @@ export function HaulmerSyncPage() {
           </div>
         ))}
       </div>
+
+      <Modal>
+        <Modal.Backdrop
+          isOpen={postSyncAutoLink != null}
+          onOpenChange={(open) => {
+            if (!open && !isAutoLinking) {
+              setPostSyncAutoLink(null);
+            }
+          }}
+        >
+          <Modal.Container placement="center">
+            <Modal.Dialog className="w-full max-w-lg">
+              <Modal.CloseTrigger />
+              <Modal.Header>
+                <Modal.Heading>Auto-vincular DTE sincronizados</Modal.Heading>
+              </Modal.Header>
+              <Modal.Body className="space-y-3">
+                <Description className="text-default-600 text-sm">
+                  {postSyncAutoLink == null
+                    ? ""
+                    : `Terminó la ${postSyncAutoLink.sourceLabel}. ¿Quieres auto-vincular ahora los eventos del calendario con los DTE de ventas importados?`}
+                </Description>
+                {postSyncAutoLink ? (
+                  <div className="rounded-lg border border-default-200 bg-default-50 p-3">
+                    <span className="block font-medium text-default-700 text-sm">
+                      Períodos a vincular
+                    </span>
+                    <Description className="mt-1 text-default-500 text-sm">
+                      {autoLinkEligiblePeriodsLabel}
+                    </Description>
+                  </div>
+                ) : null}
+              </Modal.Body>
+              <Modal.Footer className="gap-2">
+                <Button
+                  isDisabled={isAutoLinking}
+                  onPress={() => {
+                    setPostSyncAutoLink(null);
+                  }}
+                  variant="secondary"
+                >
+                  Omitir
+                </Button>
+                <Button
+                  isPending={isAutoLinking}
+                  onPress={() => void handleRunAutoLink()}
+                  variant="primary"
+                >
+                  Vincular ahora
+                </Button>
+              </Modal.Footer>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal>
 
       <Modal>
         <Modal.Backdrop
