@@ -22,7 +22,7 @@
     "check": "biome check . --write",
     "ci:check": "biome ci . --reporter=default --reporter=github",
     "clean": "pnpm -r --if-present clean",
-    "type-check": "pnpm -r --if-present type-check",
+    "type-check": "pnpm -r --if-present --workspace-concurrency=1 type-check",
     "devtools": "turbo devtools",
     "prepare": "husky || true"
   },
