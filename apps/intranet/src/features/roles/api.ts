@@ -1,8 +1,8 @@
 import { queryOptions } from "@tanstack/react-query";
 import { z } from "zod";
 import { fetchEmployees } from "@/features/hr/employees/api";
-import { apiClient } from "@/lib/api-client";
 import type { Permission, Role } from "@/types/roles";
+import { type RoleMapping, type RoleUser, rolesORPCClient, toRolesApiError } from "./orpc";
 
 export const roleKeys = {
   all: ["roles"] as const,
@@ -31,22 +31,6 @@ export const roleQueries = {
     }),
 };
 
-// --- Role Mappings ---
-
-export interface RoleMapping {
-  app_role: string;
-  employee_role: string;
-}
-
-export interface RoleUser {
-  email: string;
-  id: number;
-  person: null | {
-    fatherName: string;
-    names: string;
-  };
-}
-
 interface ReassignParams {
   roleId: number;
   targetRoleId: number;
@@ -64,94 +48,127 @@ interface UpdateRolePermissionsParams {
   roleId: number;
 }
 
-const StatusResponseSchema = z.union([z.null(), z.looseObject({ status: z.string().optional() })]);
-const PermissionsResponseSchema = z.object({
-  permissions: z.array(z.unknown()),
-  status: z.string(),
-});
-const RolesResponseSchema = z.object({
-  roles: z.array(z.unknown()),
-  status: z.string(),
-});
-const RoleUsersResponseSchema = z.object({
-  users: z.array(z.unknown()),
-});
-const RoleMappingsResponseSchema = z.object({
-  data: z.array(z.unknown()),
+const StatusResponseSchema = z.object({ status: z.literal("ok") });
+const PermissionsResponseSchema = z.object({ permissions: z.array(z.unknown()) });
+const RolesResponseSchema = z.object({ roles: z.array(z.unknown()) });
+const RoleUsersResponseSchema = z.object({ users: z.array(z.unknown()) });
+const RoleMappingsResponseSchema = z.object({ data: z.array(z.unknown()) });
+const RolesTelemetryResponseSchema = z.object({
+  skipped: z.boolean().optional(),
+  status: z.literal("ok"),
 });
 
 export async function createRole(data: RoleFormData) {
-  return apiClient.post("/api/roles", data, { responseSchema: StatusResponseSchema });
+  try {
+    return StatusResponseSchema.parse(await rolesORPCClient.create(data));
+  } catch (error) {
+    throw toRolesApiError(error);
+  }
 }
 
 export async function deleteRole(id: number) {
-  return apiClient.delete(`/api/roles/${id}`, { responseSchema: StatusResponseSchema });
+  try {
+    return StatusResponseSchema.parse(await rolesORPCClient.delete({ id }));
+  } catch (error) {
+    throw toRolesApiError(error);
+  }
 }
 
 export async function fetchPermissions() {
-  const res = await apiClient.get<{ permissions: Permission[]; status: string }>(
-    "/api/roles/permissions",
-    { responseSchema: PermissionsResponseSchema },
-  );
-  return res.permissions;
+  try {
+    const res = PermissionsResponseSchema.parse(await rolesORPCClient.permissions());
+    return res.permissions as Permission[];
+  } catch (error) {
+    throw toRolesApiError(error);
+  }
 }
 
 // --- CRUD & Users ---
 
 export async function fetchRoles() {
-  const res = await apiClient.get<{ roles: Role[]; status: string }>("/api/roles", {
-    responseSchema: RolesResponseSchema,
-  });
-  return res.roles;
+  try {
+    const res = RolesResponseSchema.parse(await rolesORPCClient.list());
+    return res.roles as Role[];
+  } catch (error) {
+    throw toRolesApiError(error);
+  }
 }
 
 export async function fetchRoleUsers(roleId: number) {
-  const res = await apiClient.get<{ users: RoleUser[] }>(`/api/roles/${roleId}/users`, {
-    responseSchema: RoleUsersResponseSchema,
-  });
-  return res.users;
+  try {
+    const res = RoleUsersResponseSchema.parse(await rolesORPCClient.roleUsers({ id: roleId }));
+    return res.users as RoleUser[];
+  } catch (error) {
+    throw toRolesApiError(error);
+  }
 }
 
 export async function getRoleMappings(): Promise<RoleMapping[]> {
-  const res = await apiClient.get<{ data: RoleMapping[] }>("/api/roles/mappings", {
-    responseSchema: RoleMappingsResponseSchema,
-  });
-  return res.data;
+  try {
+    const res = RoleMappingsResponseSchema.parse(await rolesORPCClient.listMappings());
+    return res.data as RoleMapping[];
+  } catch (error) {
+    throw toRolesApiError(error);
+  }
 }
 
 export async function reassignRoleUsers({ roleId, targetRoleId }: ReassignParams) {
-  return apiClient.post(
-    `/api/roles/${roleId}/reassign`,
-    {
-      targetRoleId,
-    },
-    { responseSchema: StatusResponseSchema },
-  );
+  try {
+    return await rolesORPCClient.reassignUsers({ id: roleId, targetRoleId });
+  } catch (error) {
+    throw toRolesApiError(error);
+  }
 }
 
 export async function saveRoleMapping(mapping: RoleMapping): Promise<void> {
-  await apiClient.post("/api/roles/mappings", mapping, { responseSchema: StatusResponseSchema });
+  try {
+    await rolesORPCClient.saveMapping(mapping);
+  } catch (error) {
+    throw toRolesApiError(error);
+  }
 }
 
 export async function syncPermissions() {
-  return apiClient.post(
-    "/api/roles/permissions/sync",
-    {},
-    { responseSchema: StatusResponseSchema },
-  );
+  try {
+    return await rolesORPCClient.syncPermissions();
+  } catch (error) {
+    throw toRolesApiError(error);
+  }
 }
 
 export async function updateRole(id: number, data: RoleFormData) {
-  return apiClient.put(`/api/roles/${id}`, data, { responseSchema: StatusResponseSchema });
+  try {
+    return StatusResponseSchema.parse(await rolesORPCClient.update({ id, payload: data }));
+  } catch (error) {
+    throw toRolesApiError(error);
+  }
 }
 
 export async function updateRolePermissions({
   permissionIds,
   roleId,
 }: UpdateRolePermissionsParams) {
-  return apiClient.post(
-    `/api/roles/${roleId}/permissions`,
-    { permissionIds },
-    { responseSchema: StatusResponseSchema },
-  );
+  try {
+    return StatusResponseSchema.parse(
+      await rolesORPCClient.updatePermissions({ id: roleId, permissionIds }),
+    );
+  } catch (error) {
+    throw toRolesApiError(error);
+  }
 }
+
+export async function sendUnmappedSubjectsTelemetry(payload: {
+  subjects?: string[];
+  timestamp?: string;
+  total?: number;
+}) {
+  try {
+    return RolesTelemetryResponseSchema.parse(
+      await rolesORPCClient.telemetryUnmappedSubjects(payload),
+    );
+  } catch (error) {
+    throw toRolesApiError(error);
+  }
+}
+
+export type { RoleMapping, RoleUser };

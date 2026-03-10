@@ -1,10 +1,17 @@
 import { db, schema } from "@finanzas/db";
 import type { RoleCreateArgs, RoleUpdateArgs } from "@finanzas/db/input";
 import { filterSafePermissions } from "../lib/permission-validator";
+import { getSetting, updateSetting } from "./settings";
 
 // Extract input types from Zenstack args
 type RoleCreateInput = NonNullable<RoleCreateArgs["data"]>;
 type RoleUpdateInput = NonNullable<RoleUpdateArgs["data"]>;
+export interface RoleMapping {
+  app_role: string;
+  employee_role: string;
+}
+
+const ROLE_MAPPINGS_SETTING_KEY = "roles:employee-role-mappings";
 
 export async function listRoles() {
   return await db.role.findMany({
@@ -53,6 +60,148 @@ export async function deleteRole(id: number) {
   return await db.role.delete({
     where: { id },
   });
+}
+
+export async function listRoleUsers(roleId: number) {
+  const users = await db.user.findMany({
+    where: {
+      roles: {
+        some: {
+          roleId,
+        },
+      },
+    },
+    orderBy: {
+      person: {
+        names: "asc",
+      },
+    },
+    select: {
+      id: true,
+      loginEmail: true,
+      person: {
+        select: {
+          email: true,
+          fatherName: true,
+          names: true,
+        },
+      },
+    },
+  });
+
+  return users.map((user) => ({
+    email: user.loginEmail || user.person?.email || "",
+    id: user.id,
+    person: user.person
+      ? {
+          fatherName: user.person.fatherName ?? "",
+          names: user.person.names,
+        }
+      : null,
+  }));
+}
+
+export async function reassignRoleUsers(roleId: number, targetRoleId: number) {
+  if (roleId === targetRoleId) {
+    throw new Error("El rol de destino debe ser distinto al rol actual");
+  }
+
+  const [sourceRole, targetRole] = await Promise.all([
+    db.role.findUnique({ where: { id: roleId }, select: { id: true } }),
+    db.role.findUnique({ where: { id: targetRoleId }, select: { id: true } }),
+  ]);
+
+  if (!sourceRole) {
+    throw new Error("Rol de origen no encontrado");
+  }
+
+  if (!targetRole) {
+    throw new Error("Rol de destino no encontrado");
+  }
+
+  return await db.$transaction(async (tx) => {
+    const assignments = await tx.userRoleAssignment.findMany({
+      where: { roleId },
+      select: { userId: true },
+    });
+
+    if (assignments.length === 0) {
+      return { reassigned: 0 };
+    }
+
+    await tx.userRoleAssignment.createMany({
+      data: assignments.map((assignment) => ({
+        roleId: targetRoleId,
+        userId: assignment.userId,
+      })),
+      skipDuplicates: true,
+    });
+
+    await tx.userRoleAssignment.deleteMany({
+      where: { roleId },
+    });
+
+    return { reassigned: assignments.length };
+  });
+}
+
+export async function getRoleMappings(): Promise<RoleMapping[]> {
+  const raw = await getSetting(ROLE_MAPPINGS_SETTING_KEY);
+  if (!raw) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed
+      .filter(
+        (item): item is RoleMapping =>
+          typeof item === "object" &&
+          item !== null &&
+          typeof item.app_role === "string" &&
+          typeof item.employee_role === "string",
+      )
+      .map((item) => ({
+        app_role: item.app_role.trim(),
+        employee_role: item.employee_role.trim(),
+      }))
+      .filter((item) => item.app_role.length > 0 && item.employee_role.length > 0)
+      .sort((a, b) => a.employee_role.localeCompare(b.employee_role));
+  } catch {
+    return [];
+  }
+}
+
+export async function saveRoleMapping(mapping: RoleMapping) {
+  const appRole = mapping.app_role.trim();
+  const employeeRole = mapping.employee_role.trim();
+
+  if (!appRole || !employeeRole) {
+    throw new Error("Mapeo inválido");
+  }
+
+  const role = await db.role.findUnique({
+    where: { name: appRole },
+    select: { id: true },
+  });
+
+  if (!role) {
+    throw new Error("El rol de aplicación no existe");
+  }
+
+  const existing = await getRoleMappings();
+  const next = [
+    ...existing.filter((item) => item.employee_role !== employeeRole),
+    { app_role: appRole, employee_role: employeeRole },
+  ].sort((a, b) => a.employee_role.localeCompare(b.employee_role));
+
+  await updateSetting(ROLE_MAPPINGS_SETTING_KEY, JSON.stringify(next));
+
+  return { status: "ok" as const };
 }
 
 export async function assignPermissionsToRole(roleId: number, permissionIds: number[]) {

@@ -37,6 +37,9 @@
                │ HTTP(S) POST
                │ /api/orpc/calendar/rpc/*
                │ /api/orpc/dte-analytics/event-links/rpc/*
+               │ /api/orpc/employees/rpc/*
+               │ /api/orpc/inventory/rpc/*
+               │ /api/orpc/roles/rpc/*
                ▼
 ┌──────────────────────────────────────────────┐
 │ Backend (Hono 4.12.5 + oRPC 1.13.6)          │
@@ -44,18 +47,32 @@
 │ ├─ SuperJSONRPCHandler                       │
 │ │  └─ Handles Date/BigInt/Special types      │
 │ │                                            │
-│ ├─ Calendar Router (13 endpoints)            │
+│ ├─ Calendar Router                           │
 │ │  • /events/classify                        │
 │ │  • /events/unclassified                    │
 │ │  • /events/reclassify (jobs)               │
 │ │  • /events/sync (async)                    │
 │ │  • More...                                 │
 │ │                                            │
-│ ├─ DTE Event Links Router (9 endpoints)      │
+│ ├─ DTE Event Links Router                    │
 │ │  • /suggestions                            │
 │ │  • /auto-link                              │
 │ │  • /confirm-link                           │
 │ │  • More...                                 │
+│ │                                            │
+│ ├─ Employees Router                          │
+│ │  • /                                       │
+│ │  • /{id}                                   │
+│ │                                            │
+│ ├─ Inventory Router                          │
+│ │  • /categories                             │
+│ │  • /items                                  │
+│ │  • /movements                              │
+│ │                                            │
+│ ├─ Roles Router                              │
+│ │  • /permissions                            │
+│ │  • /{id}/users                             │
+│ │  • /mappings                               │
 │ │                                            │
 │ └─ Service Layer                             │
 │    └─ Use db/authDb from Zenstack             │
@@ -240,8 +257,11 @@ const mutation = useMutation({
 ```
 apps/api/src/
 ├── orpc/
-│   ├── calendar.ts              ← Calendar endpoints (1,047 lines)
-│   ├── dte-event-links.ts       ← DTE links endpoints (616 lines)
+│   ├── calendar.ts
+│   ├── dte-event-links.ts
+│   ├── employees.ts
+│   ├── inventory.ts
+│   ├── roles.ts
 │   └── superjson.ts             ← SuperJSON serializer (custom)
 │
 ├── services/
@@ -269,7 +289,9 @@ apps/api/src/
 |------|--------|-------------------|
 | 2026-03-10 | ✅ Done | Calendar endpoints (all 13) |
 | 2026-03-10 | ✅ Done | DTE Event Links (all 9) |
-| Next Phase | 🔄 Pending | Employees or Inventory are the best next small modules |
+| 2026-03-10 | ✅ Done | Employees |
+| 2026-03-10 | ✅ Done | Inventory |
+| 2026-03-10 | ✅ Done | Roles |
 
 ---
 
