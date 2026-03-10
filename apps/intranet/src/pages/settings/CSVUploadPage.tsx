@@ -1,6 +1,17 @@
-import { Alert, Button, Card, Chip, Input, Label, ListBox, Select, Tooltip } from "@heroui/react";
+import {
+  Alert,
+  Button,
+  Card,
+  Checkbox,
+  Chip,
+  Input,
+  Label,
+  ListBox,
+  Select,
+  Tooltip,
+} from "@heroui/react";
 import { useMutation } from "@tanstack/react-query";
-import type { ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef, RowSelectionState } from "@tanstack/react-table";
 import { AlertCircle, CheckCircle, FileUp, Loader2, Lock } from "lucide-react";
 import Papa from "papaparse";
 import { useState } from "react";
@@ -12,6 +23,7 @@ import type { AuthContextType } from "@/features/auth/hooks/use-auth";
 import {
   type CsvImportPayload,
   type CsvPreviewResponse,
+  type CsvPreviewUpdateRow,
   importCsvData,
   previewCsvImport,
 } from "@/features/data-import/api";
@@ -43,6 +55,10 @@ interface UploadedFile {
   progress?: number;
   rowCount: number;
   status: FileStatus;
+}
+
+interface PreviewUpdateCandidateRow extends CsvPreviewUpdateRow {
+  id: string;
 }
 
 const HEADER_ALIAS_REGEX = /\(([^)]+)\)/;
@@ -143,11 +159,19 @@ function chunkRows<T>(rows: T[], size: number): T[][] {
 function mergePreviewResponses(
   accumulated: CsvPreviewResponse,
   current: CsvPreviewResponse,
+  rowOffset = 0,
 ): CsvPreviewResponse {
   const errors = [...(accumulated.errors ?? []), ...(current.errors ?? [])].slice(
     0,
     MAX_PREVIEW_ERRORS,
   );
+  const updateRows = [
+    ...(accumulated.updateRows ?? []),
+    ...((current.updateRows ?? []).map((row) => ({
+      ...row,
+      rowIndex: row.rowIndex + rowOffset,
+    })) as CsvPreviewUpdateRow[]),
+  ];
 
   return {
     errors,
@@ -156,8 +180,13 @@ function mergePreviewResponses(
     toInsert: accumulated.toInsert + current.toInsert,
     toSkip: accumulated.toSkip + current.toSkip,
     toUpdate: accumulated.toUpdate + current.toUpdate,
+    updateRows,
     updated: (accumulated.updated ?? 0) + (current.updated ?? 0),
   };
+}
+
+function buildUpdateSelectionState(rows: CsvPreviewUpdateRow[]): RowSelectionState {
+  return Object.fromEntries(rows.map((row) => [String(row.rowIndex), true]));
 }
 
 const isValidColumnMapping = (
@@ -808,6 +837,131 @@ function ImportSummaryCard({
   );
 }
 
+function UpdateSelectionCard({
+  onSelectionChange,
+  rowSelection,
+  rows,
+}: {
+  onSelectionChange: React.Dispatch<React.SetStateAction<RowSelectionState>>;
+  rowSelection: RowSelectionState;
+  rows: PreviewUpdateCandidateRow[];
+}) {
+  if (rows.length === 0) {
+    return null;
+  }
+
+  const selectedIds = new Set(
+    Object.entries(rowSelection)
+      .filter(([, isSelected]) => Boolean(isSelected))
+      .map(([rowId]) => rowId),
+  );
+  const selectedCount = rows.filter((row) => selectedIds.has(row.id)).length;
+  const allSelected = rows.length > 0 && selectedCount === rows.length;
+  const partiallySelected = selectedCount > 0 && selectedCount < rows.length;
+
+  const columns: ColumnDef<PreviewUpdateCandidateRow>[] = [
+    {
+      cell: ({ row }) => (
+        <Checkbox
+          aria-label={`Seleccionar fila ${row.original.rowIndex + 1}`}
+          isSelected={selectedIds.has(row.original.id)}
+          onChange={() => {
+            const rowId = row.original.id;
+            onSelectionChange((prev) => ({
+              ...prev,
+              [rowId]: !prev[rowId],
+            }));
+          }}
+          slot="selection"
+          variant="secondary"
+        >
+          <Checkbox.Control>
+            <Checkbox.Indicator />
+          </Checkbox.Control>
+        </Checkbox>
+      ),
+      header: () => (
+        <Checkbox
+          aria-label="Seleccionar todas las filas a actualizar"
+          isIndeterminate={partiallySelected}
+          isSelected={allSelected}
+          onChange={() => {
+            onSelectionChange(allSelected ? {} : buildUpdateSelectionState(rows));
+          }}
+          slot="selection"
+          variant="secondary"
+        >
+          <Checkbox.Control>
+            <Checkbox.Indicator />
+          </Checkbox.Control>
+        </Checkbox>
+      ),
+      id: "select",
+    },
+    {
+      accessorKey: "rowIndex",
+      cell: ({ row }) => row.original.rowIndex + 1,
+      header: "Fila CSV",
+    },
+    {
+      accessorKey: "key",
+      cell: ({ row }) => <span className="font-mono text-xs">{row.original.key}</span>,
+      header: "Clave",
+    },
+    {
+      accessorKey: "summary",
+      header: "Resumen",
+    },
+  ];
+
+  return (
+    <Card>
+      <Card.Header>
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <Card.Title>Filas a actualizar</Card.Title>
+            <Card.Description>
+              Selecciona cuáles filas existentes quieres actualizar. Las filas nuevas se importan
+              igual.
+            </Card.Description>
+          </div>
+          <Chip color={selectedCount === rows.length ? "success" : "warning"} variant="soft">
+            <Chip.Label>
+              {selectedCount}/{rows.length} seleccionadas
+            </Chip.Label>
+          </Chip>
+        </div>
+      </Card.Header>
+      <Card.Content className="space-y-3">
+        <div className="flex gap-2">
+          <Button
+            onPress={() => onSelectionChange(buildUpdateSelectionState(rows))}
+            size="sm"
+            variant="secondary"
+          >
+            Seleccionar todas
+          </Button>
+          <Button onPress={() => onSelectionChange({})} size="sm" variant="ghost">
+            Limpiar selección
+          </Button>
+        </div>
+
+        <DataTable
+          columns={columns}
+          data={rows}
+          containerVariant="plain"
+          enableExport={false}
+          enablePagination={false}
+          enableToolbar
+          noDataMessage="No hay filas para actualizar."
+          rowSelection={rowSelection}
+          scrollMaxHeight="min(40dvh, 420px)"
+        />
+      </Card.Content>
+    </Card>
+  );
+}
+
 function ImportModeCard({
   importMode,
   onModeChange,
@@ -1076,6 +1230,8 @@ export function CSVUploadPage() {
   const [processingLabel, setProcessingLabel] = useState("");
   const [batchDroppedDuplicates, setBatchDroppedDuplicates] = useState(0);
   const [batchPreviewData, setBatchPreviewData] = useState<CsvPreviewResponse | null>(null);
+  const [previewBatchRows, setPreviewBatchRows] = useState<Record<string, number | string>[]>([]);
+  const [updateRowSelection, setUpdateRowSelection] = useState<RowSelectionState>({});
   const [importMode, setImportMode] = useState<"insert-only" | "insert-or-update">(
     "insert-or-update",
   );
@@ -1098,6 +1254,8 @@ export function CSVUploadPage() {
     setUploadedFiles([]);
     setBatchDroppedDuplicates(0);
     setBatchPreviewData(null);
+    setPreviewBatchRows([]);
+    setUpdateRowSelection({});
   };
 
   const handleTableChange = (value: string) => {
@@ -1117,6 +1275,8 @@ export function CSVUploadPage() {
 
     setBatchDroppedDuplicates(0);
     setBatchPreviewData(null);
+    setPreviewBatchRows([]);
+    setUpdateRowSelection({});
     setUploadedFiles((prev) => [...prev, ...newFiles]);
     e.target.value = "";
   };
@@ -1125,6 +1285,8 @@ export function CSVUploadPage() {
     setUploadedFiles((prev) => prev.filter((f) => f.id !== id));
     setBatchDroppedDuplicates(0);
     setBatchPreviewData(null);
+    setPreviewBatchRows([]);
+    setUpdateRowSelection({});
   };
 
   const updateBatchFileState = (status: FileStatus, progress?: number, error?: string) => {
@@ -1174,6 +1336,7 @@ export function CSVUploadPage() {
 
     updateBatchFileState(status, 0);
     setProcessingLabel(`${actionLabel} 0/${chunks.length} lotes`);
+    let rowOffset = 0;
 
     for (const [index, chunk] of chunks.entries()) {
       const response = await runChunk({
@@ -1182,7 +1345,8 @@ export function CSVUploadPage() {
         table: selectedTable,
       });
 
-      aggregated = mergePreviewResponses(aggregated, response);
+      aggregated = mergePreviewResponses(aggregated, response, rowOffset);
+      rowOffset += chunk.length;
 
       const progress = Math.round(((index + 1) / chunks.length) * 100);
       updateBatchFileState(status, progress);
@@ -1199,6 +1363,8 @@ export function CSVUploadPage() {
 
     setIsProcessing(true);
     setBatchPreviewData(null);
+    setPreviewBatchRows([]);
+    setUpdateRowSelection({});
 
     try {
       const batch = buildBatchRows(selectedTable, uploadedFiles);
@@ -1212,6 +1378,8 @@ export function CSVUploadPage() {
 
       setBatchDroppedDuplicates(batch.droppedDuplicates);
       setBatchPreviewData(previewData);
+      setPreviewBatchRows(batch.rows);
+      setUpdateRowSelection(buildUpdateSelectionState(previewData.updateRows ?? []));
       updateBatchFileState("ready");
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : "Error en vista previa";
@@ -1234,6 +1402,8 @@ export function CSVUploadPage() {
     void (async () => {
       setIsProcessing(true);
       setBatchPreviewData(null);
+      setPreviewBatchRows([]);
+      setUpdateRowSelection({});
 
       try {
         const batch = buildBatchRows(selectedTable, uploadedFiles);
@@ -1247,6 +1417,8 @@ export function CSVUploadPage() {
 
         setBatchDroppedDuplicates(batch.droppedDuplicates);
         setBatchPreviewData(previewData);
+        setPreviewBatchRows(batch.rows);
+        setUpdateRowSelection(buildUpdateSelectionState(previewData.updateRows ?? []));
         updateBatchFileState("ready");
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : "Error en vista previa";
@@ -1266,16 +1438,26 @@ export function CSVUploadPage() {
     setIsProcessing(true);
 
     try {
-      const batch = buildBatchRows(selectedTable, uploadedFiles);
+      const updateIndexes = new Set((batchPreviewData.updateRows ?? []).map((row) => row.rowIndex));
+      const selectedUpdateIndexes = new Set(
+        Object.entries(updateRowSelection)
+          .filter(([, isSelected]) => Boolean(isSelected))
+          .map(([rowIndex]) => Number(rowIndex)),
+      );
+      const rowsToImport =
+        importMode === "insert-or-update" && updateIndexes.size > 0
+          ? previewBatchRows.filter(
+              (_row, index) => !updateIndexes.has(index) || selectedUpdateIndexes.has(index),
+            )
+          : previewBatchRows;
       const totals = await runBatchedMutation({
         actionLabel: "Importando",
         mode: importMode,
-        rows: batch.rows,
+        rows: rowsToImport,
         runChunk: importMutateAsync,
         status: "importing",
       });
 
-      setBatchDroppedDuplicates(batch.droppedDuplicates);
       setBatchPreviewData(totals);
       updateBatchFileState("success");
       success(
@@ -1297,12 +1479,27 @@ export function CSVUploadPage() {
   const isValidMapping =
     firstFile && currentTable ? isValidColumnMapping(currentTable, firstFile.columnMapping) : false;
   const hasPreviewData = batchPreviewData !== null;
+  const updateCandidateRows: PreviewUpdateCandidateRow[] = (batchPreviewData?.updateRows ?? []).map(
+    (row) => ({
+      ...row,
+      id: String(row.rowIndex),
+    }),
+  );
+  const selectedUpdateCount = updateCandidateRows.filter(
+    (row) => updateRowSelection[row.id],
+  ).length;
+  const pendingImportCount =
+    importMode === "insert-or-update"
+      ? (batchPreviewData?.toInsert ?? 0) + selectedUpdateCount
+      : (batchPreviewData?.toInsert ?? 0);
 
   const columns = buildMappingColumns({
     firstFile,
     onMappingChanged: () => {
       setBatchDroppedDuplicates(0);
       setBatchPreviewData(null);
+      setPreviewBatchRows([]);
+      setUpdateRowSelection({});
     },
     setUploadedFiles,
   });
@@ -1343,6 +1540,14 @@ export function CSVUploadPage() {
         previewData={batchPreviewData}
       />
 
+      {hasPreviewData && importMode === "insert-or-update" && updateCandidateRows.length > 0 && (
+        <UpdateSelectionCard
+          onSelectionChange={setUpdateRowSelection}
+          rowSelection={updateRowSelection}
+          rows={updateCandidateRows}
+        />
+      )}
+
       {/* 6. Import Mode Selection */}
       {hasPreviewData && (
         <ImportModeCard importMode={importMode} onModeChange={handleImportModeChange} />
@@ -1357,6 +1562,7 @@ export function CSVUploadPage() {
           isValidMapping={isValidMapping}
           onImport={handleImport}
           onPreview={handlePreview}
+          pendingImportCount={pendingImportCount}
           processingLabel={processingLabel}
           uploadedFilesCount={uploadedFiles.length}
         />
@@ -1372,6 +1578,7 @@ function ImportActionsBar(props: {
   isValidMapping: boolean;
   onImport: () => void;
   onPreview: () => void;
+  pendingImportCount: number;
   processingLabel?: string;
   uploadedFilesCount: number;
 }) {
@@ -1400,6 +1607,7 @@ function ImportActionsBar(props: {
             !props.hasPreviewData ||
             !props.isValidMapping ||
             props.isProcessing ||
+            props.pendingImportCount === 0 ||
             props.uploadedFilesCount === 0 ||
             (props.batchPreviewData?.errors?.length ?? 0) > 0
           }
@@ -1410,7 +1618,7 @@ function ImportActionsBar(props: {
           ) : (
             <CheckCircle className="mr-2 h-4 w-4" />
           )}
-          Confirmar Importación
+          Confirmar Importación ({props.pendingImportCount})
         </Button>
       </div>
     </div>

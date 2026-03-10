@@ -83,6 +83,8 @@ interface CSVRow {
   defaultAmount?: unknown;
   description?: unknown;
   currentStock?: unknown;
+  unit?: unknown;
+  category?: unknown;
   categoryId?: unknown;
   workDate?: unknown;
   startTime?: unknown;
@@ -267,6 +269,11 @@ const TABLE_PERMISSIONS: Record<TableName, { action: string; subject: string }> 
 
 type PreviewMode = "insert-only" | "insert-or-update";
 type PreviewCounters = { toInsert: number; toSkip: number; toUpdate: number };
+type PreviewUpdateCandidate = {
+  key: string;
+  rowIndex: number;
+  summary: string;
+};
 type PreviewRuntime = {
   existingWithdrawIds: Set<string>;
   mode: PreviewMode;
@@ -336,12 +343,100 @@ function countersFromExisting(exists: boolean, mode: PreviewMode): PreviewCounte
   return { toInsert: 1, toSkip: 0, toUpdate: 0 };
 }
 
+function buildPreviewCandidateKey(table: TableName, row: CSVRow): string {
+  switch (table) {
+    case "people":
+    case "employees":
+    case "counterparts":
+      return `rut:${String(row.rut ?? "").trim() || "sin-rut"}`;
+    case "daily_balances":
+      return `date:${String(row.date ?? "").trim() || "sin-fecha"}`;
+    case "daily_production_balances":
+      return `balanceDate:${String(row.balanceDate ?? row.Fecha ?? "").trim() || "sin-fecha"}`;
+    case "inventory_items":
+      return `item:${String(row.name ?? "").trim() || "sin-nombre"}`;
+    case "employee_timesheets":
+      return `timesheet:${String(row.rut ?? "").trim() || "sin-rut"}:${String(row.workDate ?? "").trim() || "sin-fecha"}`;
+    case "dte_purchases":
+      return `purchase:${String(row.providerRUT ?? "").trim() || "sin-rut"}:${String(row.folio ?? "").trim() || "sin-folio"}`;
+    case "dte_sales":
+      return `sale:${String(row.documentType ?? row.dte ?? 41).trim() || "sin-tipo"}:${String(row.folio ?? "").trim() || "sin-folio"}`;
+    case "services":
+      return `service:${String(row.name ?? "").trim() || "sin-nombre"}`;
+    case "withdrawals":
+      return `withdraw:${normalizeWithdrawId(row.withdrawId) || "sin-id"}`;
+    case "transactions":
+      return `transaction:${String(row.date ?? "").trim() || "sin-fecha"}:${String(row.amount ?? "").trim() || "sin-monto"}`;
+  }
+}
+
+function buildPreviewCandidateSummary(table: TableName, row: CSVRow): string {
+  switch (table) {
+    case "people":
+      return [row.rut, row.names].filter(Boolean).join(" • ") || "Persona existente";
+    case "employees":
+      return [row.rut, row.position].filter(Boolean).join(" • ") || "Empleado existente";
+    case "counterparts":
+      return [row.rut, row.category].filter(Boolean).join(" • ") || "Contraparte existente";
+    case "daily_balances":
+      return [row.date, row.amount].filter(Boolean).join(" • ") || "Saldo diario existente";
+    case "daily_production_balances":
+      return (
+        [row.balanceDate || row.Fecha, row.comentarios || row.Comentarios]
+          .filter(Boolean)
+          .join(" • ") || "Saldo de producción existente"
+      );
+    case "inventory_items":
+      return [row.name, row.unit, row.currentStock].filter(Boolean).join(" • ") || "Ítem existente";
+    case "employee_timesheets":
+      return [row.rut, row.workDate, row.startTime, row.endTime].filter(Boolean).join(" • ");
+    case "dte_purchases":
+      return (
+        [row.providerRUT, row.folio, row.documentDate, row.totalAmount]
+          .filter(Boolean)
+          .join(" • ") || "DTE compra existente"
+      );
+    case "dte_sales":
+      return (
+        [row.documentType || row.dte || 41, row.folio, row.documentDate || row.fecha, row.totalAmount || row.total]
+          .filter(Boolean)
+          .join(" • ") || "DTE venta existente"
+      );
+    case "services":
+      return [row.name, row.frequency, row.defaultAmount].filter(Boolean).join(" • ");
+    case "withdrawals":
+      return [row.withdrawId, row.amount, row.dateCreated].filter(Boolean).join(" • ");
+    case "transactions":
+      return [row.date, row.amount, row.description].filter(Boolean).join(" • ");
+  }
+}
+
+function previewResultFromExisting(
+  table: TableName,
+  row: CSVRow,
+  exists: boolean,
+  mode: PreviewMode,
+): PreviewRowResult {
+  const counters = countersFromExisting(exists, mode);
+  if (!exists || mode === "insert-only") {
+    return { counters };
+  }
+
+  return {
+    counters,
+    updateCandidate: {
+      key: buildPreviewCandidateKey(table, row),
+      summary: buildPreviewCandidateSummary(table, row),
+    },
+  };
+}
+
 async function previewPeopleRow(row: CSVRow, mode: PreviewMode) {
   if (!row.rut) {
     return { counters: { toInsert: 1, toSkip: 0, toUpdate: 0 } };
   }
   const exists = Boolean(await findPersonByRut(String(row.rut)));
-  return { counters: countersFromExisting(exists, mode) };
+  return previewResultFromExisting("people", row, exists, mode);
 }
 
 async function previewEmployeesOrCounterpartsRow(
@@ -362,7 +457,7 @@ async function previewEmployeesOrCounterpartsRow(
 
   if (table === "employees") {
     const exists = Boolean(await db.employee.findFirst({ where: { personId: person.id } }));
-    return { counters: countersFromExisting(exists, mode) };
+    return previewResultFromExisting("employees", row, exists, mode);
   }
 
   const identNumber = String(row.rut).replace(/[^0-9k]/gi, "");
@@ -371,7 +466,7 @@ async function previewEmployeesOrCounterpartsRow(
       where: { identificationNumber: identNumber },
     } as never),
   );
-  return { counters: countersFromExisting(exists, mode) };
+  return previewResultFromExisting("counterparts", row, exists, mode);
 }
 
 async function previewDailyBalanceRow(row: CSVRow, mode: PreviewMode) {
@@ -380,7 +475,7 @@ async function previewDailyBalanceRow(row: CSVRow, mode: PreviewMode) {
   }
   const dateStr = dayjs(String(row.date)).format("YYYY-MM-DD");
   const exists = Boolean(await db.dailyBalance.findUnique({ where: { date: new Date(dateStr) } }));
-  return { counters: countersFromExisting(exists, mode) };
+  return previewResultFromExisting("daily_balances", row, exists, mode);
 }
 
 async function previewDailyProductionBalanceRow(row: CSVRow, mode: PreviewMode) {
@@ -391,7 +486,7 @@ async function previewDailyProductionBalanceRow(row: CSVRow, mode: PreviewMode) 
   const exists = Boolean(
     await db.dailyProductionBalance.findUnique({ where: { balanceDate: new Date(dateStr) } }),
   );
-  return { counters: countersFromExisting(exists, mode) };
+  return previewResultFromExisting("daily_production_balances", row, exists, mode);
 }
 
 function previewWithdrawRow(runtime: PreviewRuntime, row: CSVRow) {
@@ -404,7 +499,7 @@ function previewWithdrawRow(runtime: PreviewRuntime, row: CSVRow) {
   }
   runtime.seenWithdrawIds.add(withdrawId);
   const exists = runtime.existingWithdrawIds.has(withdrawId);
-  return { counters: countersFromExisting(exists, runtime.mode) };
+  return previewResultFromExisting("withdrawals", row, exists, runtime.mode);
 }
 
 async function previewInventoryItemRow(row: CSVRow, mode: PreviewMode) {
@@ -412,7 +507,7 @@ async function previewInventoryItemRow(row: CSVRow, mode: PreviewMode) {
     return { counters: { toInsert: 1, toSkip: 0, toUpdate: 0 } };
   }
   const exists = Boolean(await db.inventoryItem.findFirst({ where: { name: String(row.name) } }));
-  return { counters: countersFromExisting(exists, mode) };
+  return previewResultFromExisting("inventory_items", row, exists, mode);
 }
 
 async function previewEmployeeTimesheetRow(row: CSVRow, mode: PreviewMode) {
@@ -441,7 +536,7 @@ async function previewEmployeeTimesheetRow(row: CSVRow, mode: PreviewMode) {
       },
     }),
   );
-  return { counters: countersFromExisting(exists, mode) };
+  return previewResultFromExisting("employee_timesheets", row, exists, mode);
 }
 
 async function previewDtePurchaseRow(row: CSVRow, mode: PreviewMode) {
@@ -464,7 +559,7 @@ async function previewDtePurchaseRow(row: CSVRow, mode: PreviewMode) {
       },
     }),
   );
-  return { counters: countersFromExisting(exists, mode) };
+  return previewResultFromExisting("dte_purchases", row, exists, mode);
 }
 
 async function previewDteSaleRow(row: CSVRow, mode: PreviewMode) {
@@ -472,17 +567,24 @@ async function previewDteSaleRow(row: CSVRow, mode: PreviewMode) {
     return { counters: { toInsert: 1, toSkip: 0, toUpdate: 0 } };
   }
 
+  const documentType = Number(row.documentType ?? row.dte ?? 41);
+
   const exists = Boolean(
     await db.dTESaleDetail.findFirst({
       where: {
         folio: String(row.folio),
+        documentType,
       },
     }),
   );
-  return { counters: countersFromExisting(exists, mode) };
+  return previewResultFromExisting("dte_sales", row, exists, mode);
 }
 
-type PreviewRowResult = { counters: PreviewCounters; error?: string };
+type PreviewRowResult = {
+  counters: PreviewCounters;
+  error?: string;
+  updateCandidate?: Omit<PreviewUpdateCandidate, "rowIndex">;
+};
 
 const previewRowHandlers: Record<
   TableName,
@@ -553,6 +655,7 @@ csvUploadRoutes.post("/preview", async (c) => {
 
   const errors: string[] = [];
   const counters = emptyPreviewCounters();
+  const updateRows: PreviewUpdateCandidate[] = [];
   const runtime: PreviewRuntime = {
     mode: mode ?? "insert-or-update",
     seenWithdrawIds: new Set<string>(),
@@ -569,6 +672,12 @@ csvUploadRoutes.post("/preview", async (c) => {
       if (result.error) {
         errors.push(`Fila ${i + 1}: ${result.error}`);
       }
+      if (result.updateCandidate) {
+        updateRows.push({
+          ...result.updateCandidate,
+          rowIndex: i,
+        });
+      }
     } catch (_e) {
       errors.push(`Fila ${i + 1}: Error de validación`);
       counters.toSkip += 1;
@@ -580,6 +689,7 @@ csvUploadRoutes.post("/preview", async (c) => {
     toInsert: counters.toInsert,
     toUpdate: counters.toUpdate,
     toSkip: counters.toSkip,
+    updateRows,
     errors: errors.slice(0, 20), // Limit errors
   });
 });

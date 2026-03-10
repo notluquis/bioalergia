@@ -8,6 +8,12 @@ export interface CsvImportPayload {
   mode?: "insert-only" | "insert-or-update"; // Import mode: insert new only or upsert
 }
 
+export interface CsvPreviewUpdateRow {
+  key: string;
+  rowIndex: number;
+  summary: string;
+}
+
 export interface CsvPreviewResponse {
   [key: string]: unknown;
   errors?: string[];
@@ -16,6 +22,7 @@ export interface CsvPreviewResponse {
   toInsert: number;
   toSkip: number;
   toUpdate: number;
+  updateRows?: CsvPreviewUpdateRow[];
   updated?: number;
 }
 
@@ -26,6 +33,15 @@ const CsvPreviewResponseSchema = z.looseObject({
   toInsert: z.number(),
   toSkip: z.number(),
   toUpdate: z.number(),
+  updateRows: z
+    .array(
+      z.object({
+        key: z.string(),
+        rowIndex: z.number(),
+        summary: z.string(),
+      }),
+    )
+    .optional(),
   updated: z.number().optional(),
 });
 
