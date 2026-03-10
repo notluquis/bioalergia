@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { apiClient } from "@/lib/api-client";
+import { notificationsORPCClient, toNotificationsApiError } from "./orpc";
 
 export interface SendTestPayload {
   userId: number;
@@ -17,19 +17,30 @@ export interface UnsubscribePayload {
 const StatusResponseSchema = z.looseObject({ status: z.string().optional() });
 
 export async function sendTestNotification(payload: SendTestPayload) {
-  return apiClient.post("/api/notifications/send-test", payload, {
-    responseSchema: StatusResponseSchema,
-  });
+  try {
+    return StatusResponseSchema.parse(await notificationsORPCClient.sendTest(payload));
+  } catch (error) {
+    throw toNotificationsApiError(error);
+  }
 }
 
 export async function subscribeToNotifications(payload: SubscribePayload) {
-  return apiClient.post("/api/notifications/subscribe", payload, {
-    responseSchema: StatusResponseSchema,
-  });
+  try {
+    return StatusResponseSchema.parse(
+      await notificationsORPCClient.subscribe({
+        subscription: payload.subscription.toJSON(),
+        userId: payload.userId,
+      }),
+    );
+  } catch (error) {
+    throw toNotificationsApiError(error);
+  }
 }
 
 export async function unsubscribeFromNotifications(payload: UnsubscribePayload) {
-  return apiClient.post("/api/notifications/unsubscribe", payload, {
-    responseSchema: StatusResponseSchema,
-  });
+  try {
+    return StatusResponseSchema.parse(await notificationsORPCClient.unsubscribe(payload));
+  } catch (error) {
+    throw toNotificationsApiError(error);
+  }
 }

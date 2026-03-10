@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { apiClient } from "@/lib/api-client";
+import { settingsORPCClient, toSettingsApiError } from "./orpc";
 
 export interface InternalSettings {
   envUpsertChunkSize?: string;
@@ -35,28 +35,34 @@ const UploadResponseSchema = z.object({
 });
 
 export async function fetchInternalSettings() {
-  const res = await apiClient.get<InternalSettingsResponse>("/api/settings/internal", {
-    responseSchema: InternalSettingsResponseSchema,
-  });
-  return res;
+  try {
+    return InternalSettingsResponseSchema.parse(await settingsORPCClient.internal());
+  } catch (error) {
+    throw toSettingsApiError(error);
+  }
 }
 
 export async function updateInternalSettings(data: object) {
-  return apiClient.put<{ message?: string; status: string }>("/api/settings/internal", data, {
-    responseSchema: StatusResponseSchema,
-  });
+  try {
+    return StatusResponseSchema.parse(
+      await settingsORPCClient.updateInternal(data as { upsertChunkSize?: number }),
+    );
+  } catch (error) {
+    throw toSettingsApiError(error);
+  }
 }
 
 export async function uploadBrandingAsset(file: File, endpoint: string): Promise<string> {
-  const formData = new FormData();
-  // Determine field name based on endpoint or just default to something consistent if backend handles it
-  // The original component logic checked endpoint content
-  const fieldName = endpoint.includes("logo") ? "logo" : "favicon";
-  formData.append(fieldName, file);
+  void file;
 
-  const data = await apiClient.post<UploadResponse>(endpoint, formData, {
-    responseSchema: UploadResponseSchema,
-  });
+  const assetType = endpoint.includes("logo") ? "logo" : "favicon";
+
+  let data: UploadResponse;
+  try {
+    data = UploadResponseSchema.parse(await settingsORPCClient.uploadAsset({ assetType }));
+  } catch (error) {
+    throw toSettingsApiError(error);
+  }
 
   if (data.status !== "ok" || !data.url) {
     throw new Error(data.message || "Error al subir archivo");

@@ -20,9 +20,11 @@ import { dteEventLinksOpenAPIHandler, dteEventLinksORPCHandler } from "./orpc/dt
 import { employeesOpenAPIHandler, employeesORPCHandler } from "./orpc/employees";
 import { financeOpenAPIHandler, financeORPCHandler } from "./orpc/finance";
 import { inventoryOpenAPIHandler, inventoryORPCHandler } from "./orpc/inventory";
+import { notificationsOpenAPIHandler, notificationsORPCHandler } from "./orpc/notifications";
 import { peopleOpenAPIHandler, peopleORPCHandler } from "./orpc/people";
 import { personalFinanceOpenAPIHandler, personalFinanceORPCHandler } from "./orpc/personal-finance";
 import { rolesOpenAPIHandler, rolesORPCHandler } from "./orpc/roles";
+import { settingsOpenAPIHandler, settingsORPCHandler } from "./orpc/settings";
 import { createHonoORPCRequest } from "./orpc/superjson";
 import { usersOpenAPIHandler, usersORPCHandler } from "./orpc/users";
 import { authRoutes } from "./routes/auth";
@@ -373,6 +375,24 @@ app.get("/api/orpc", (c) =>
             <li><code>/api/orpc/personal-finance/rpc/*</code></li>
           </ul>
         </section>
+        <section class="card">
+          <h2>Settings</h2>
+          <p>Configuración interna y contratos de branding.</p>
+          <ul>
+            <li><a href="/api/orpc/settings/docs">Reference UI</a></li>
+            <li><a href="/api/orpc/settings/openapi.json">OpenAPI JSON</a></li>
+            <li><code>/api/orpc/settings/rpc/*</code></li>
+          </ul>
+        </section>
+        <section class="card">
+          <h2>Notifications</h2>
+          <p>Suscripciones push y envío de notificaciones de prueba.</p>
+          <ul>
+            <li><a href="/api/orpc/notifications/docs">Reference UI</a></li>
+            <li><a href="/api/orpc/notifications/openapi.json">OpenAPI JSON</a></li>
+            <li><code>/api/orpc/notifications/rpc/*</code></li>
+          </ul>
+        </section>
       </div>
     </main>
   </body>
@@ -509,6 +529,32 @@ app.use("/api/orpc/personal-finance/rpc/*", async (c, next) => {
   await next();
 });
 
+app.use("/api/orpc/settings/rpc/*", async (c, next) => {
+  const { matched, response } = await settingsORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/settings/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
+app.use("/api/orpc/notifications/rpc/*", async (c, next) => {
+  const { matched, response } = await notificationsORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/notifications/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
 app.use("/api/orpc/dte-analytics/event-links/*", async (c, next) => {
   const { matched, response } = await dteEventLinksOpenAPIHandler.handle(createHonoORPCRequest(c), {
     context: { hono: c },
@@ -612,6 +658,30 @@ app.use("/api/orpc/personal-finance/*", async (c, next) => {
       context: { hono: c },
     },
   );
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
+app.use("/api/orpc/settings/*", async (c, next) => {
+  const { matched, response } = await settingsOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
+app.use("/api/orpc/notifications/*", async (c, next) => {
+  const { matched, response } = await notificationsOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
 
   if (matched) {
     return c.newResponse(response.body, response);

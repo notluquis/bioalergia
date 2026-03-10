@@ -33,6 +33,15 @@ export async function subscribeToPush(
   });
 }
 
+export async function unsubscribeFromPush(userId: number, endpoint: string) {
+  return await db.pushSubscription.deleteMany({
+    where: {
+      endpoint,
+      userId,
+    },
+  });
+}
+
 export async function sendPushNotification(
   userId: number,
   payload: { title: string; body: string; icon?: string; url?: string },
