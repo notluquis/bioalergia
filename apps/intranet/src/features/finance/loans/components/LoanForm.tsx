@@ -6,6 +6,7 @@ import {
   DateField,
   DatePicker,
   FieldError,
+  Form,
   Input as HeroInput,
   Label,
   ListBox,
@@ -48,13 +49,21 @@ interface LoanFormProps {
 
 type LoanInputProps = {
   as?: "input" | "textarea";
+  error?: string;
+  isInvalid?: boolean;
   label: string;
 } & React.InputHTMLAttributes<HTMLInputElement> &
   React.TextareaHTMLAttributes<HTMLTextAreaElement>;
 
-function LoanInputField({ as = "input", label, ...props }: LoanInputProps) {
+function LoanInputField({
+  as = "input",
+  error,
+  isInvalid = false,
+  label,
+  ...props
+}: LoanInputProps) {
   return (
-    <TextField>
+    <TextField isInvalid={isInvalid}>
       <Label>{label}</Label>
       {as === "textarea" ? (
         <TextArea
@@ -67,6 +76,7 @@ function LoanInputField({ as = "input", label, ...props }: LoanInputProps) {
           variant="secondary"
         />
       )}
+      {error ? <FieldError>{error}</FieldError> : null}
     </TextField>
   );
 }
@@ -99,51 +109,46 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
   );
 
   return (
-    <form
+    <Form
       className="space-y-4"
-      onSubmit={(e) => {
+      onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         void form.handleSubmit();
       }}
+      validationBehavior="aria"
     >
       <div className={GRID_2_COL_MD}>
         <form.Field name="title">
           {(field) => (
-            <div>
-              <LoanInputField
-                label="Título"
-                onBlur={field.handleBlur}
-                onChange={(e) => {
-                  field.handleChange(e.target.value);
-                }}
-                required
-                value={field.state.value}
-              />
-
-              {field.state.meta.errors.length > 0 && (
-                <p className="mt-1 text-danger text-xs">{field.state.meta.errors.join(", ")}</p>
-              )}
-            </div>
+            <LoanInputField
+              error={field.state.meta.errors.join(", ") || undefined}
+              isInvalid={field.state.meta.errors.length > 0}
+              label="Título"
+              minLength={1}
+              onBlur={field.handleBlur}
+              onChange={(e) => {
+                field.handleChange(e.target.value);
+              }}
+              required
+              value={field.state.value}
+            />
           )}
         </form.Field>
 
         <form.Field name="borrowerName">
           {(field) => (
-            <div>
-              <LoanInputField
-                label="Beneficiario"
-                onBlur={field.handleBlur}
-                onChange={(e) => {
-                  field.handleChange(e.target.value);
-                }}
-                required
-                value={field.state.value}
-              />
-
-              {field.state.meta.errors.length > 0 && (
-                <p className="mt-1 text-danger text-xs">{field.state.meta.errors.join(", ")}</p>
-              )}
-            </div>
+            <LoanInputField
+              error={field.state.meta.errors.join(", ") || undefined}
+              isInvalid={field.state.meta.errors.length > 0}
+              label="Beneficiario"
+              minLength={1}
+              onBlur={field.handleBlur}
+              onChange={(e) => {
+                field.handleChange(e.target.value);
+              }}
+              required
+              value={field.state.value}
+            />
           )}
         </form.Field>
 
@@ -183,24 +188,22 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
 
         <form.Field name="principalAmount">
           {(field) => (
-            <div>
-              <LoanInputField
-                label="Monto Principal"
-                min={0}
-                onBlur={field.handleBlur}
-                onChange={(e) => {
-                  field.handleChange(Number.parseFloat(e.target.value) || 0);
-                }}
-                required
-                step="0.01"
-                type="number"
-                value={field.state.value}
-              />
-
+            <NumberField
+              isInvalid={field.state.meta.errors.length > 0}
+              minValue={0.01}
+              onBlur={field.handleBlur}
+              onChange={(value) => {
+                field.handleChange(value ?? 0);
+              }}
+              step={0.01}
+              value={field.state.value || 0}
+            >
+              <Label>Monto Principal</Label>
+              <HeroInput variant="secondary" />
               {field.state.meta.errors.length > 0 && (
-                <p className="mt-1 text-danger text-xs">{field.state.meta.errors.join(", ")}</p>
+                <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
               )}
-            </div>
+            </NumberField>
           )}
         </form.Field>
 
@@ -297,82 +300,77 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
 
         <form.Field name="totalInstallments">
           {(field) => (
-            <div>
-              <LoanInputField
-                label="Número de Términos"
-                max={360}
-                min={1}
-                onBlur={field.handleBlur}
-                onChange={(e) => {
-                  field.handleChange(Number.parseInt(e.target.value, 10) || 1);
-                }}
-                required
-                type="number"
-                value={field.state.value}
-              />
-
+            <NumberField
+              isInvalid={field.state.meta.errors.length > 0}
+              maxValue={360}
+              minValue={1}
+              onBlur={field.handleBlur}
+              onChange={(value) => {
+                field.handleChange(value ?? 1);
+              }}
+              step={1}
+              value={field.state.value || 1}
+            >
+              <Label>Número de Términos</Label>
+              <HeroInput variant="secondary" />
               {field.state.meta.errors.length > 0 && (
-                <p className="mt-1 text-danger text-xs">{field.state.meta.errors.join(", ")}</p>
+                <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
               )}
-            </div>
+            </NumberField>
           )}
         </form.Field>
 
         <form.Field name="startDate">
           {(field) => (
-            <div>
-              <DatePicker
-                isRequired
-                onBlur={field.handleBlur}
-                onChange={(value) => {
-                  field.handleChange(value?.toString() ?? "");
-                }}
-                value={field.state.value ? parseDate(field.state.value) : undefined}
-              >
-                <Label>Fecha de Inicio</Label>
-                <DateField.Group>
-                  <DateField.InputContainer>
-                    <DateField.Input>
-                      {(segment) => <DateField.Segment segment={segment} />}
-                    </DateField.Input>
-                  </DateField.InputContainer>
-                  <DateField.Suffix>
-                    <DatePicker.Trigger>
-                      <DatePicker.TriggerIndicator />
-                    </DatePicker.Trigger>
-                  </DateField.Suffix>
-                </DateField.Group>
-                <DatePicker.Popover>
-                  <Calendar aria-label="Fecha de inicio">
-                    <Calendar.Header>
-                      <Calendar.YearPickerTrigger>
-                        <Calendar.YearPickerTriggerHeading />
-                        <Calendar.YearPickerTriggerIndicator />
-                      </Calendar.YearPickerTrigger>
-                      <Calendar.NavButton slot="previous" />
-                      <Calendar.NavButton slot="next" />
-                    </Calendar.Header>
-                    <Calendar.Grid>
-                      <Calendar.GridHeader>
-                        {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
-                      </Calendar.GridHeader>
-                      <Calendar.GridBody>
-                        {(date) => <Calendar.Cell date={date} />}
-                      </Calendar.GridBody>
-                    </Calendar.Grid>
-                    <Calendar.YearPickerGrid>
-                      <Calendar.YearPickerGridBody>
-                        {({ year }) => <Calendar.YearPickerCell year={year} />}
-                      </Calendar.YearPickerGridBody>
-                    </Calendar.YearPickerGrid>
-                  </Calendar>
-                </DatePicker.Popover>
-              </DatePicker>
-
+            <DatePicker
+              isInvalid={field.state.meta.errors.length > 0}
+              isRequired
+              onBlur={field.handleBlur}
+              onChange={(value) => {
+                field.handleChange(value?.toString() ?? "");
+              }}
+              value={field.state.value ? parseDate(field.state.value) : undefined}
+            >
+              <Label>Fecha de Inicio</Label>
+              <DateField.Group>
+                <DateField.InputContainer>
+                  <DateField.Input>
+                    {(segment) => <DateField.Segment segment={segment} />}
+                  </DateField.Input>
+                </DateField.InputContainer>
+                <DateField.Suffix>
+                  <DatePicker.Trigger>
+                    <DatePicker.TriggerIndicator />
+                  </DatePicker.Trigger>
+                </DateField.Suffix>
+              </DateField.Group>
               {field.state.meta.errors.length > 0 && (
-                <p className="mt-1 text-danger text-xs">{field.state.meta.errors.join(", ")}</p>
+                <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
               )}
-            </div>
+              <DatePicker.Popover>
+                <Calendar aria-label="Fecha de inicio">
+                  <Calendar.Header>
+                    <Calendar.YearPickerTrigger>
+                      <Calendar.YearPickerTriggerHeading />
+                      <Calendar.YearPickerTriggerIndicator />
+                    </Calendar.YearPickerTrigger>
+                    <Calendar.NavButton slot="previous" />
+                    <Calendar.NavButton slot="next" />
+                  </Calendar.Header>
+                  <Calendar.Grid>
+                    <Calendar.GridHeader>
+                      {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
+                    </Calendar.GridHeader>
+                    <Calendar.GridBody>{(date) => <Calendar.Cell date={date} />}</Calendar.GridBody>
+                  </Calendar.Grid>
+                  <Calendar.YearPickerGrid>
+                    <Calendar.YearPickerGridBody>
+                      {({ year }) => <Calendar.YearPickerCell year={year} />}
+                    </Calendar.YearPickerGridBody>
+                  </Calendar.YearPickerGrid>
+                </Calendar>
+              </DatePicker.Popover>
+            </DatePicker>
           )}
         </form.Field>
 
@@ -384,7 +382,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
               </Checkbox>
 
               {field.state.meta.errors.length > 0 && (
-                <p className="mt-1 text-danger text-xs">{field.state.meta.errors.join(", ")}</p>
+                <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
               )}
             </div>
           )}
@@ -393,22 +391,18 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
 
       <form.Field name="notes">
         {(field) => (
-          <div>
-            <LoanInputField
-              as="textarea"
-              label="Descripción"
-              onBlur={field.handleBlur}
-              onChange={(e) => {
-                field.handleChange(e.target.value);
-              }}
-              rows={3}
-              value={field.state.value ?? ""}
-            />
-
-            {field.state.meta.errors.length > 0 && (
-              <p className="mt-1 text-danger text-xs">{field.state.meta.errors.join(", ")}</p>
-            )}
-          </div>
+          <LoanInputField
+            as="textarea"
+            error={field.state.meta.errors.join(", ") || undefined}
+            isInvalid={field.state.meta.errors.length > 0}
+            label="Descripción"
+            onBlur={field.handleBlur}
+            onChange={(e) => {
+              field.handleChange(e.target.value);
+            }}
+            rows={3}
+            value={field.state.value ?? ""}
+          />
         )}
       </form.Field>
 
@@ -431,6 +425,6 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
           {form.state.isSubmitting ? "Creando..." : "Crear préstamo"}
         </Button>
       </div>
-    </form>
+    </Form>
   );
 }

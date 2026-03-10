@@ -10,7 +10,7 @@
 
 HeroUI v3 (built on React Aria Components) provides **native validation capabilities** that we're currently duplicating with manual code:
 
-- ✅ **Type validation** (email, number, password, tel, url, etc.)
+- ✅ **Type validation** (email, number, password, tel, URL, etc.)
 - ✅ **Min/Max constraints** (numeric ranges, length constraints)
 - ✅ **Required field enforcement**
 - ✅ **Pattern matching** (via HTML5 pattern attribute)
@@ -59,7 +59,7 @@ if (password.length < 8) {
 
 ---
 
-### 2. **NumberField**
+### 2. **Number Field**
 **HeroUI v3 Native Capabilities:**
 - Auto-parses and validates numeric input
 - Built-in `min` / `max` enforcement

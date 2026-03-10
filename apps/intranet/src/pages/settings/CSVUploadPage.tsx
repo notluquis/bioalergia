@@ -771,14 +771,35 @@ function FilesListSection({
 
 function ImportSummaryCard({
   droppedDuplicates,
+  importMode,
   previewData,
 }: {
   droppedDuplicates: number;
+  importMode: "insert-only" | "insert-or-update" | "update-only";
   previewData: CsvPreviewResponse | null;
 }) {
   if (!previewData) {
     return null;
   }
+
+  const summary =
+    importMode === "insert-only"
+      ? {
+          toInsert: previewData.toInsert ?? 0,
+          toSkip: (previewData.toUpdate ?? 0) + (previewData.toSkip ?? 0),
+          toUpdate: 0,
+        }
+      : importMode === "update-only"
+        ? {
+            toInsert: 0,
+            toSkip: (previewData.toInsert ?? 0) + (previewData.toSkip ?? 0),
+            toUpdate: previewData.toUpdate ?? 0,
+          }
+        : {
+            toInsert: previewData.toInsert ?? 0,
+            toSkip: previewData.toSkip ?? 0,
+            toUpdate: previewData.toUpdate ?? 0,
+          };
 
   const errorOccurrences = new Map<string, number>();
   const validationErrors = (previewData.errors ?? []).slice(0, 50).map((err) => {
@@ -800,15 +821,15 @@ function ImportSummaryCard({
         <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-3">
           <div className="rounded-lg border border-default-100 bg-background p-2.5 shadow-sm">
             <div className="mb-1 text-xs uppercase tracking-wider opacity-70">Insertar</div>
-            <div className="font-bold text-2xl text-success">{previewData.toInsert ?? 0}</div>
+            <div className="font-bold text-2xl text-success">{summary.toInsert}</div>
           </div>
           <div className="rounded-lg border border-default-100 bg-background p-2.5 shadow-sm">
             <div className="mb-1 text-xs uppercase tracking-wider opacity-70">Actualizar</div>
-            <div className="font-bold text-2xl text-info">{previewData.toUpdate ?? 0}</div>
+            <div className="font-bold text-2xl text-info">{summary.toUpdate}</div>
           </div>
           <div className="rounded-lg border border-default-100 bg-background p-2.5 shadow-sm">
             <div className="mb-1 text-xs uppercase tracking-wider opacity-70">Omitir</div>
-            <div className="font-bold text-2xl text-warning">{previewData.toSkip ?? 0}</div>
+            <div className="font-bold text-2xl text-warning">{summary.toSkip}</div>
           </div>
         </div>
 
@@ -1536,6 +1557,7 @@ export function CSVUploadPage() {
     setIsProcessing(true);
 
     try {
+      let workingPreviewData = batchPreviewData;
       const updateIndexes = new Set((batchPreviewData.updateRows ?? []).map((row) => row.rowIndex));
       const selectedUpdateIndexes = new Set(
         Object.entries(updateRowSelection)
@@ -1545,7 +1567,47 @@ export function CSVUploadPage() {
 
       // Filter rows based on import mode
       let rowsToImport = previewBatchRows;
-      if (importMode === "update-only") {
+      if (importMode === "insert-only") {
+        if (
+          (workingPreviewData.insertRowIndexes ?? []).length === 0 &&
+          (workingPreviewData.toInsert ?? 0) > 0
+        ) {
+          setProcessingLabel("Preparando filas nuevas...");
+          const insertPreview = await runBatchedMutation({
+            actionLabel: "Identificando nuevas",
+            mode: importMode,
+            rows: previewBatchRows,
+            runChunk: (payload) =>
+              previewMutateAsync({
+                ...payload,
+                includeInsertRowIndexes: true,
+              }),
+            status: "previewing",
+          });
+
+          const insertRowIndexes = insertPreview.insertRowIndexes ?? [];
+          workingPreviewData = {
+            ...workingPreviewData,
+            insertRowIndexes,
+          };
+          setBatchPreviewData((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  insertRowIndexes,
+                }
+              : workingPreviewData,
+          );
+        }
+
+        const insertIndexes = new Set(workingPreviewData.insertRowIndexes ?? []);
+        rowsToImport =
+          insertIndexes.size > 0
+            ? previewBatchRows.filter((_row, index) => insertIndexes.has(index))
+            : (workingPreviewData.toInsert ?? 0) === 0
+              ? []
+              : previewBatchRows;
+      } else if (importMode === "update-only") {
         // For update-only: only send rows that are updates AND selected
         rowsToImport = previewBatchRows.filter(
           (_, index) => updateIndexes.has(index) && selectedUpdateIndexes.has(index),
@@ -1649,6 +1711,7 @@ export function CSVUploadPage() {
       {/* 5. Preview Summary */}
       <ImportSummaryCard
         droppedDuplicates={batchDroppedDuplicates}
+        importMode={importMode}
         previewData={batchPreviewData}
       />
 

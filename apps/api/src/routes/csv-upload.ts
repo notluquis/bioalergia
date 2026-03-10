@@ -268,6 +268,7 @@ const TABLE_PERMISSIONS: Record<TableName, { action: string; subject: string }> 
 };
 
 type PreviewMode = "insert-only" | "insert-or-update" | "update-only";
+type ImportMode = PreviewMode;
 type PreviewCounters = { toInsert: number; toSkip: number; toUpdate: number };
 type PreviewUpdateCandidate = {
   key: string;
@@ -628,9 +629,10 @@ csvUploadRoutes.post("/preview", async (c) => {
     return reply(c, { status: "error", message: "No autorizado" }, 401);
   }
 
-  const { table, data, mode, includeUpdateRows } = await c.req.json<{
+  const { table, data, mode, includeInsertRowIndexes, includeUpdateRows } = await c.req.json<{
     table: TableName;
     data: object[];
+    includeInsertRowIndexes?: boolean;
     includeUpdateRows?: boolean;
     mode?: "insert-only" | "insert-or-update" | "update-only";
   }>();
@@ -661,6 +663,7 @@ csvUploadRoutes.post("/preview", async (c) => {
 
   const errors: string[] = [];
   const counters = emptyPreviewCounters();
+  const insertRowIndexes: number[] = [];
   const updateRows: PreviewUpdateCandidate[] = [];
   const runtime: PreviewRuntime = {
     mode: mode ?? "insert-or-update",
@@ -675,6 +678,9 @@ csvUploadRoutes.post("/preview", async (c) => {
     try {
       const result = await previewRowByTable(table, row, runtime);
       addPreviewCounters(counters, result.counters);
+      if (includeInsertRowIndexes && result.counters.toInsert > 0) {
+        insertRowIndexes.push(i);
+      }
       if (result.error) {
         errors.push(`Fila ${i + 1}: ${result.error}`);
       }
@@ -695,6 +701,7 @@ csvUploadRoutes.post("/preview", async (c) => {
     toInsert: counters.toInsert,
     toUpdate: counters.toUpdate,
     toSkip: counters.toSkip,
+    ...(includeInsertRowIndexes ? { insertRowIndexes } : {}),
     ...(includeUpdateRows ? { updateRows } : {}),
     errors: errors.slice(0, 20), // Limit errors
   });
@@ -713,7 +720,7 @@ csvUploadRoutes.post("/import", async (c) => {
   const { table, data, mode } = await c.req.json<{
     table: TableName;
     data: object[];
-    mode?: "insert-only" | "insert-or-update";
+    mode?: "insert-only" | "insert-or-update" | "update-only";
   }>();
 
   if (!table || !data || !Array.isArray(data)) {
@@ -785,7 +792,7 @@ async function importCsvRows(
   table: TableName,
   data: object[],
   auth: AuthContext,
-  mode: "insert-only" | "insert-or-update" = "insert-or-update",
+  mode: ImportMode = "insert-or-update",
 ): Promise<ImportResult> {
   if (table === "transactions") {
     return {
@@ -818,7 +825,7 @@ async function importCsvRows(
 type ImportRowHandler = (
   row: CSVRow,
   auth: AuthContext,
-  mode: "insert-only" | "insert-or-update",
+  mode: ImportMode,
 ) => Promise<ImportOutcome>;
 
 type ImportRowTable = Exclude<TableName, "transactions" | "withdrawals">;
@@ -841,15 +848,12 @@ async function importCsvRow(
   table: ImportRowTable,
   row: CSVRow,
   auth: AuthContext,
-  mode: "insert-only" | "insert-or-update",
+  mode: ImportMode,
 ): Promise<ImportOutcome> {
   return await importRowHandlers[table](row, auth, mode);
 }
 
-async function importPeopleRow(
-  row: CSVRow,
-  mode: "insert-only" | "insert-or-update",
-): Promise<ImportOutcome> {
+async function importPeopleRow(row: CSVRow, mode: ImportMode): Promise<ImportOutcome> {
   const existing = await findPersonByRut(String(row.rut));
   const personData = {
     names: String(row.names || ""),
@@ -877,10 +881,7 @@ async function importPeopleRow(
   return { inserted: 1, updated: 0, skipped: 0 };
 }
 
-async function importEmployeesRow(
-  row: CSVRow,
-  mode: "insert-only" | "insert-or-update",
-): Promise<ImportOutcome> {
+async function importEmployeesRow(row: CSVRow, mode: ImportMode): Promise<ImportOutcome> {
   const person = await findPersonByRut(String(row.rut));
   if (!person) {
     throw new Error(`Persona con RUT ${row.rut} no existe`);
@@ -916,10 +917,7 @@ async function importEmployeesRow(
   return { inserted: 1, updated: 0, skipped: 0 };
 }
 
-async function importCounterpartsRow(
-  row: CSVRow,
-  mode: "insert-only" | "insert-or-update",
-): Promise<ImportOutcome> {
+async function importCounterpartsRow(row: CSVRow, mode: ImportMode): Promise<ImportOutcome> {
   const person = await findPersonByRut(String(row.rut));
   if (!person) {
     throw new Error(`Persona con RUT ${row.rut} no existe`);
@@ -959,10 +957,7 @@ async function importCounterpartsRow(
   return { inserted: 1, updated: 0, skipped: 0 };
 }
 
-async function importDailyBalancesRow(
-  row: CSVRow,
-  mode: "insert-only" | "insert-or-update",
-): Promise<ImportOutcome> {
+async function importDailyBalancesRow(row: CSVRow, mode: ImportMode): Promise<ImportOutcome> {
   const dateStr = dayjs(String(row.date)).format("YYYY-MM-DD");
   const date = new Date(dateStr);
   const amountNum = Number(row.amount) || Number(row.closingBalance) || 0;
@@ -987,7 +982,7 @@ async function importDailyBalancesRow(
 async function importDailyProductionBalancesRow(
   row: CSVRow,
   userId: number,
-  mode: "insert-only" | "insert-or-update",
+  mode: ImportMode,
 ): Promise<ImportOutcome> {
   const balanceDate = parseProductionBalanceDate(row);
   const productionData = buildProductionBalanceData(row);
@@ -1070,10 +1065,7 @@ function normalizeIdentificationNumber(value: null | string | undefined) {
   return normalized.length > 0 ? normalized : null;
 }
 
-async function importWithdrawalsRowsBatch(
-  data: object[],
-  mode: "insert-only" | "insert-or-update",
-): Promise<ImportResult> {
+async function importWithdrawalsRowsBatch(data: object[], mode: ImportMode): Promise<ImportResult> {
   const prepared = prepareWithdrawBatchRows(data);
   const totals = emptyOutcome();
   totals.skipped += prepared.skipped;
@@ -1154,7 +1146,7 @@ async function findExistingWithdrawIds(withdrawIds: string[]) {
 async function applyWithdrawBatchRows(
   rows: PreparedWithdrawBatch["rows"],
   existingIds: Set<string>,
-  mode: "insert-only" | "insert-or-update",
+  mode: ImportMode,
 ): Promise<ImportOutcome> {
   const totals = emptyOutcome();
 
@@ -1275,10 +1267,7 @@ async function importServicesRow(row: CSVRow): Promise<ImportOutcome> {
   return { inserted: 1, updated: 0, skipped: 0 };
 }
 
-async function importInventoryItemsRow(
-  row: CSVRow,
-  mode: "insert-only" | "insert-or-update",
-): Promise<ImportOutcome> {
+async function importInventoryItemsRow(row: CSVRow, mode: ImportMode): Promise<ImportOutcome> {
   const itemData = {
     name: String(row.name),
     description: row.description ? String(row.description) : null,
@@ -1383,10 +1372,7 @@ function calculateWorkedMinutes(
   return workedMinutes;
 }
 
-async function importEmployeeTimesheetsRow(
-  row: CSVRow,
-  mode: "insert-only" | "insert-or-update",
-): Promise<ImportOutcome> {
+async function importEmployeeTimesheetsRow(row: CSVRow, mode: ImportMode): Promise<ImportOutcome> {
   const person = await findPersonByRut(String(row.rut));
   if (!person) {
     throw new Error(`Empleado con RUT ${row.rut} no existe`);

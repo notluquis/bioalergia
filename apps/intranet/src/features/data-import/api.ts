@@ -3,6 +3,7 @@ import { apiClient } from "@/lib/api-client";
 
 export interface CsvImportPayload {
   data: Record<string, number | string>[];
+  includeInsertRowIndexes?: boolean;
   includeUpdateRows?: boolean;
   table: string;
   period?: string; // Extracted from filename (YYYYMM format)
@@ -18,6 +19,7 @@ export interface CsvPreviewUpdateRow {
 export interface CsvPreviewResponse {
   [key: string]: unknown;
   errors?: string[];
+  insertRowIndexes?: number[];
   inserted?: number;
   skipped?: number;
   toInsert: number;
@@ -29,6 +31,7 @@ export interface CsvPreviewResponse {
 
 const CsvPreviewResponseSchema = z.looseObject({
   errors: z.array(z.string()).optional(),
+  insertRowIndexes: z.array(z.number()).optional(),
   inserted: z.number().optional(),
   skipped: z.number().optional(),
   toInsert: z.number(),

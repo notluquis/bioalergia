@@ -76,7 +76,7 @@ export function SyncDetailModal({ isOpen, log, onClose }: Readonly<SyncDetailMod
                 </div>
 
                 {log.errorMessage && (
-                  <div className="rounded-lg border border-danger/20 bg-danger/5 p-3 text-danger text-sm">
+                  <div className="rounded-lg border border-danger-soft-hover bg-danger/5 p-3 text-danger text-sm">
                     <p className="font-semibold">Error reportado:</p>
                     <p className="mt-1 font-mono text-xs opacity-90">{log.errorMessage}</p>
                   </div>

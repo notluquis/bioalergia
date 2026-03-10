@@ -31,11 +31,12 @@
 ┌─────────────────────────────────────────┐
 │ Frontend (React 19 + TanStack Query)    │
 │ • useQuery / useMutation                │
-│ • @orpc/client → type-safe calls        │
+│ • createORPCClient + SuperJSONLink      │
+│ • feature api.ts normalizes transport   │
 └──────────────┬──────────────────────────┘
                │ HTTP(S) POST
                │ /api/orpc/calendar/rpc/*
-               │ /api/orpc/dte-links/rpc/*
+               │ /api/orpc/dte-analytics/event-links/rpc/*
                ▼
 ┌──────────────────────────────────────────────┐
 │ Backend (Hono 4.12.5 + oRPC 1.13.6)          │
@@ -184,48 +185,52 @@ export const calendarORPCHandler = new SuperJSONRPCHandler(
 // Automatically handles:
 // ✅ Date → ISO string (transfer) → Date (client)
 // ✅ BigInt → string (transfer) → BigInt (client)
-// ✅ Decimal → number (transfer) → number (client)
+// ✅ Decimal.js → string (transfer) → Decimal.js (client)
 ```
 
 ---
 
-## Frontend Integration (TanStack Query)
+## Frontend Integration
 
 ### Setup
 
 ```typescript
-import { createTanstackQueryUtils } from '@orpc/tanstack-query'
-import { calendarORPCRouter } from '@/api'
+import { createORPCClient } from "@orpc/client";
+import { SuperJSONLink } from "./orpc";
 
-export const orpc = createTanstackQueryUtils(calendarORPCRouter)
+const calendarORPCLink = new SuperJSONLink({
+  fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),
+  url: () => window.location.origin,
+});
+
+export const calendarORPCClient = createORPCClient<CalendarORPCClient>(
+  calendarORPCLink,
+  {
+    path: ["api", "orpc", "calendar", "rpc"],
+  },
+);
 ```
+
+TanStack Query stays one layer above that typed client. Feature `api.ts` files are the
+normalization boundary: they call oRPC, validate with Zod where needed, and return UI/domain
+shapes instead of raw transport envelopes.
 
 ### Usage
 
 ```typescript
 // Query
-const { data } = useQuery(
-  orpc.classificationOptions.queryOptions()
-)
+const { data } = useQuery({
+  queryKey: ["calendar", "classification-options"],
+  queryFn: fetchClassificationOptions,
+})
 
 // Mutation with cache invalidation
 const mutation = useMutation({
-  mutationFn: () => orpc.classifyEvent.mutate({ ... }),
+  mutationFn: () => classifyCalendarEvent({ ... }),
   onSuccess: () => {
-    queryClient.invalidateQueries({
-      queryKey: orpc.unclassifiedEvents.key()
-    })
+    queryClient.invalidateQueries({ queryKey: ["calendar", "unclassified"] })
   },
 })
-
-// Infinite query (pagination)
-const { data, fetchNextPage } = useInfiniteQuery(
-  orpc.listEventDteLinks.infiniteOptions({
-    input: (pageParam) => ({ limit: 25, offset: pageParam }),
-    initialPageParam: 0,
-    getNextPageParam: (last) => last.nextOffset,
-  })
-)
 ```
 
 ---
@@ -252,7 +257,7 @@ apps/api/src/
 │   └── ... other utilities
 │
 └── routes/
-    ├── calendar.ts              ← ⚠️ DEPRECATED (moved to oRPC)
+    ├── calendar.ts              ← Legacy file, not mounted in app.ts
     └── ... other REST routes
 ```
 
@@ -264,7 +269,7 @@ apps/api/src/
 |------|--------|-------------------|
 | 2026-03-10 | ✅ Done | Calendar endpoints (all 13) |
 | 2026-03-10 | ✅ Done | DTE Event Links (all 9) |
-| Next Phase | 🔄 Pending | Employees, Finances, Other |
+| Next Phase | 🔄 Pending | Employees or Inventory are the best next small modules |
 
 ---
 
@@ -314,4 +319,3 @@ pnpm build
 - [oRPC Docs](https://orpc.io)
 - [Hono Docs](https://hono.dev)
 - [PostgreSQL Dialects](https://zenstack.io/docs/orms)
-
