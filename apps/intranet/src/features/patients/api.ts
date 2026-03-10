@@ -1,6 +1,8 @@
 import Decimal from "decimal.js";
+import { apiClient } from "@/lib/api-client";
 import { patientsORPCClient, toPatientsApiError } from "./orpc";
 import {
+  AttachmentSchema,
   BudgetSchema,
   ConsultationSchema,
   PatientBudgetListSchema,
@@ -96,6 +98,29 @@ export async function createPatientPayment(input: {
   try {
     const response = await patientsORPCClient.createPayment(input);
     return PatientPaymentSchema.parse(normalizeDecimalValues(response.payment));
+  } catch (error) {
+    throw toPatientsApiError(error);
+  }
+}
+
+export async function uploadPatientAttachment(input: {
+  file: File;
+  name?: string;
+  patientId: string;
+  type: string;
+}) {
+  const formData = new FormData();
+  formData.append("file", input.file);
+  formData.append("name", input.name || input.file.name);
+  formData.append("type", input.type);
+
+  try {
+    return await apiClient.post(`/api/patients/${input.patientId}/attachments`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+      responseSchema: AttachmentSchema,
+    });
   } catch (error) {
     throw toPatientsApiError(error);
   }

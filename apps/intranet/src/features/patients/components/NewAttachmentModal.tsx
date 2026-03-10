@@ -2,8 +2,7 @@ import { Button, Input, Label, ListBox, Modal, Select, TextField } from "@heroui
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FileUp, Save, X } from "lucide-react";
 import { useRef, useState } from "react";
-import { AttachmentSchema } from "@/features/patients/schemas";
-import { apiClient } from "@/lib/api-client";
+import { uploadPatientAttachment } from "@/features/patients/api";
 import { toast } from "@/lib/toast-interceptor";
 
 interface NewAttachmentModalProps {
@@ -24,16 +23,11 @@ export function NewAttachmentModal({ isOpen, onClose, patientId }: NewAttachment
         throw new Error("Debe seleccionar un archivo");
       }
 
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("name", name || file.name);
-      formData.append("type", type);
-
-      return await apiClient.post(`/api/patients/${patientId}/attachments`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-        responseSchema: AttachmentSchema,
+      return await uploadPatientAttachment({
+        file,
+        name: name || file.name,
+        patientId,
+        type,
       });
     },
     onSuccess: () => {
