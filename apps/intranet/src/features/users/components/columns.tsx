@@ -62,7 +62,8 @@ export const getColumns = (actions: {
     },
     filterFn: (row, _id, value) => {
       const user = row.original;
-      const search = value.toLowerCase();
+      // Type-safe filter: ensure value is string before calling toLowerCase
+      const search = typeof value === "string" ? value.toLowerCase() : String(value).toLowerCase();
       return (
         user.email.toLowerCase().includes(search) ||
         getPersonFullName(user.person).toLowerCase().includes(search)

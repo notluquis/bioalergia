@@ -153,7 +153,9 @@ function useScheduleRange(params: {
 }) {
   const { navigate, search } = params;
   const actualWeekStart = getActualWeekStart();
-  const currentWeekStartStr = search.from ?? actualWeekStart.format(DATE_FORMAT);
+  // Type-safe: ensure search.from is string or fallback to current week
+  const currentWeekStartStr: string =
+    (typeof search?.from === "string" ? search.from : null) ?? actualWeekStart.format(DATE_FORMAT);
   const currentDisplayed = dayjs(currentWeekStartStr, DATE_FORMAT);
 
   const rangeLabel = currentDisplayed.isValid()

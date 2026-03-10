@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { TanStackTextAreaField } from "@/components/forms/TanStackFieldControls";
 import { useToast } from "@/context/ToastContext";
+import { formatErrors } from "@/lib/form-errors";
 import { queryKeys } from "@/lib/query-keys";
 import { createSupplyRequest, type SupplyRequestPayload } from "../api";
 import type { CommonSupply, StructuredSupplies } from "../types";
@@ -139,14 +140,7 @@ export function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyRequestFo
                 </ListBox>
               </Select.Popover>
               {field.state.meta.errors.length > 0 && (
-                <FieldError>
-                  {(() => {
-                    const msgs = field.state.meta.errors.map((e) =>
-                      typeof e === "string" ? e : String(e),
-                    );
-                    return msgs.join(", ");
-                  })()}
-                </FieldError>
+                <FieldError>{formatErrors(field.state.meta.errors)}</FieldError>
               )}
             </Select>
           </div>
@@ -168,14 +162,7 @@ export function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyRequestFo
                 value={String(field.state.value)}
               />
               {field.state.meta.errors.length > 0 && (
-                <FieldError>
-                  {(() => {
-                    const msgs = field.state.meta.errors.map((e) =>
-                      typeof e === "string" ? e : String(e),
-                    );
-                    return msgs.join(", ");
-                  })()}
-                </FieldError>
+                <FieldError>{formatErrors(field.state.meta.errors)}</FieldError>
               )}
             </TextField>
           </div>
@@ -211,14 +198,7 @@ export function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyRequestFo
                 </ListBox>
               </Select.Popover>
               {field.state.meta.errors.length > 0 && (
-                <FieldError>
-                  {(() => {
-                    const msgs = field.state.meta.errors.map((e) =>
-                      typeof e === "string" ? e : String(e),
-                    );
-                    return msgs.join(", ");
-                  })()}
-                </FieldError>
+                <FieldError>{formatErrors(field.state.meta.errors)}</FieldError>
               )}
             </Select>
           </div>
@@ -253,14 +233,7 @@ export function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyRequestFo
                 </ListBox>
               </Select.Popover>
               {field.state.meta.errors.length > 0 && (
-                <FieldError>
-                  {(() => {
-                    const msgs = field.state.meta.errors.map((e) =>
-                      typeof e === "string" ? e : String(e),
-                    );
-                    return msgs.join(", ");
-                  })()}
-                </FieldError>
+                <FieldError>{formatErrors(field.state.meta.errors)}</FieldError>
               )}
             </Select>
           </div>

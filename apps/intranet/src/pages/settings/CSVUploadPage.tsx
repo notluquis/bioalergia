@@ -112,7 +112,11 @@ const buildTransformedData = (
 const normalizeWithdrawIdForBatch = (value: unknown) => {
   if (typeof value === "string") return value.trim();
   if (value === null || value === undefined) return "";
-  return String(value).trim();
+  // Type narrowing: only process primitive values as strings
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value).trim();
+  }
+  return "";
 };
 
 function buildBatchRows(

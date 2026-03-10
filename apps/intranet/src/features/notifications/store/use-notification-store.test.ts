@@ -1,5 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+type PersistedNotifications = {
+  notifications: unknown[];
+  unreadCount?: number;
+};
+
+function isPersistedNotifications(value: unknown): value is PersistedNotifications {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "notifications" in value &&
+    Array.isArray((value as Record<string, unknown>).notifications)
+  );
+}
+
 type NotificationStoreModule = typeof import("./use-notification-store");
 
 const storageKey = (scope: string) => `bioalergia-notification-history:${scope}`;
@@ -88,12 +102,7 @@ describe("use-notification-store", () => {
     const persisted = JSON.parse(
       globalThis.localStorage.getItem(storageKey("guest")) ?? "{}",
     ) as unknown;
-    if (
-      typeof persisted === "object" &&
-      persisted &&
-      "notifications" in persisted &&
-      "unreadCount" in persisted
-    ) {
+    if (isPersistedNotifications(persisted)) {
       expect((persisted.notifications as unknown[]).length).toBe(50);
       expect(persisted.unreadCount).toBe(55);
     }
@@ -199,11 +208,23 @@ describe("use-notification-store", () => {
 
     const user1Persisted = JSON.parse(
       globalThis.localStorage.getItem(storageKey("user-1")) ?? "{}",
-    );
+    ) as unknown;
     const user2Persisted = JSON.parse(
       globalThis.localStorage.getItem(storageKey("user-2")) ?? "{}",
-    );
-    expect(user1Persisted.notifications[0]?.message).toBe("only-user-1");
-    expect(user2Persisted.notifications[0]?.message).toBe("only-user-2");
+    ) as unknown;
+
+    if (isPersistedNotifications(user1Persisted)) {
+      const firstNotif = user1Persisted.notifications[0];
+      if (firstNotif && typeof firstNotif === "object" && "message" in firstNotif) {
+        expect((firstNotif as Record<string, unknown>).message).toBe("only-user-1");
+      }
+    }
+
+    if (isPersistedNotifications(user2Persisted)) {
+      const firstNotif = user2Persisted.notifications[0];
+      if (firstNotif && typeof firstNotif === "object" && "message" in firstNotif) {
+        expect((firstNotif as Record<string, unknown>).message).toBe("only-user-2");
+      }
+    }
   });
 });

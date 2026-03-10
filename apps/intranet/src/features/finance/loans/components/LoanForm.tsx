@@ -20,8 +20,8 @@ import { useForm, useStore } from "@tanstack/react-form";
 import dayjs from "dayjs";
 import type React from "react";
 import { z } from "zod";
-
 import { zDateString } from "@/lib/api-validate";
+import { formatErrors } from "@/lib/form-errors";
 import { GRID_2_COL_MD } from "@/lib/styles";
 
 import type { CreateLoanPayload } from "../types";
@@ -121,7 +121,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
         <form.Field name="title">
           {(field) => (
             <LoanInputField
-              error={field.state.meta.errors.join(", ") || undefined}
+              error={formatErrors(field.state.meta.errors) || undefined}
               isInvalid={field.state.meta.errors.length > 0}
               label="Título"
               minLength={1}
@@ -138,7 +138,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
         <form.Field name="borrowerName">
           {(field) => (
             <LoanInputField
-              error={field.state.meta.errors.join(", ") || undefined}
+              error={formatErrors(field.state.meta.errors) || undefined}
               isInvalid={field.state.meta.errors.length > 0}
               label="Beneficiario"
               minLength={1}
@@ -179,7 +179,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
                   </ListBox>
                 </Select.Popover>
                 {field.state.meta.errors.length > 0 && (
-                  <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
+                  <FieldError>{formatErrors(field.state.meta.errors)}</FieldError>
                 )}
               </Select>
             </div>
@@ -201,7 +201,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
               <Label>Monto Principal</Label>
               <HeroInput variant="secondary" />
               {field.state.meta.errors.length > 0 && (
-                <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
+                <FieldError>{formatErrors(field.state.meta.errors)}</FieldError>
               )}
             </NumberField>
           )}
@@ -221,7 +221,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
               <Label>Tasa de Interés Anual (%)</Label>
               <HeroInput variant="secondary" />
               {field.state.meta.errors.length > 0 && (
-                <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
+                <FieldError>{formatErrors(field.state.meta.errors)}</FieldError>
               )}
             </NumberField>
           )}
@@ -254,7 +254,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
                   </ListBox>
                 </Select.Popover>
                 {field.state.meta.errors.length > 0 && (
-                  <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
+                  <FieldError>{formatErrors(field.state.meta.errors)}</FieldError>
                 )}
               </Select>
             </div>
@@ -291,7 +291,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
                   </ListBox>
                 </Select.Popover>
                 {field.state.meta.errors.length > 0 && (
-                  <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
+                  <FieldError>{formatErrors(field.state.meta.errors)}</FieldError>
                 )}
               </Select>
             </div>
@@ -314,7 +314,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
               <Label>Número de Términos</Label>
               <HeroInput variant="secondary" />
               {field.state.meta.errors.length > 0 && (
-                <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
+                <FieldError>{formatErrors(field.state.meta.errors)}</FieldError>
               )}
             </NumberField>
           )}
@@ -345,7 +345,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
                 </DateField.Suffix>
               </DateField.Group>
               {field.state.meta.errors.length > 0 && (
-                <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
+                <FieldError>{formatErrors(field.state.meta.errors)}</FieldError>
               )}
               <DatePicker.Popover>
                 <Calendar aria-label="Fecha de inicio">
@@ -382,7 +382,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
               </Checkbox>
 
               {field.state.meta.errors.length > 0 && (
-                <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
+                <FieldError>{formatErrors(field.state.meta.errors)}</FieldError>
               )}
             </div>
           )}
@@ -393,7 +393,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
         {(field) => (
           <LoanInputField
             as="textarea"
-            error={field.state.meta.errors.join(", ") || undefined}
+            error={formatErrors(field.state.meta.errors) || undefined}
             isInvalid={field.state.meta.errors.length > 0}
             label="Descripción"
             onBlur={field.handleBlur}
