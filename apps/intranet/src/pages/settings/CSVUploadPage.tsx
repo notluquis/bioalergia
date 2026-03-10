@@ -40,11 +40,14 @@ interface UploadedFile {
   file: File;
   id: string;
   previewData?: CsvPreviewResponse;
+  progress?: number;
   rowCount: number;
   status: FileStatus;
 }
 
 const HEADER_ALIAS_REGEX = /\(([^)]+)\)/;
+const CSV_BATCH_SIZE = 500;
+const MAX_PREVIEW_ERRORS = 100;
 const normalizeKey = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, "");
 
 const extractHeaderAliases = (header: string) => {
@@ -123,6 +126,38 @@ function buildBatchRows(
   }
 
   return { droppedDuplicates, rows: deduped };
+}
+
+function chunkRows<T>(rows: T[], size: number): T[][] {
+  if (rows.length === 0) {
+    return [];
+  }
+
+  const chunks: T[][] = [];
+  for (let index = 0; index < rows.length; index += size) {
+    chunks.push(rows.slice(index, index + size));
+  }
+  return chunks;
+}
+
+function mergePreviewResponses(
+  accumulated: CsvPreviewResponse,
+  current: CsvPreviewResponse,
+): CsvPreviewResponse {
+  const errors = [...(accumulated.errors ?? []), ...(current.errors ?? [])].slice(
+    0,
+    MAX_PREVIEW_ERRORS,
+  );
+
+  return {
+    errors,
+    inserted: (accumulated.inserted ?? 0) + (current.inserted ?? 0),
+    skipped: (accumulated.skipped ?? 0) + (current.skipped ?? 0),
+    toInsert: accumulated.toInsert + current.toInsert,
+    toSkip: accumulated.toSkip + current.toSkip,
+    toUpdate: accumulated.toUpdate + current.toUpdate,
+    updated: (accumulated.updated ?? 0) + (current.updated ?? 0),
+  };
 }
 
 const isValidColumnMapping = (
@@ -694,6 +729,7 @@ function FilesListSection({
             file={uploadedFile.file}
             id={uploadedFile.id}
             onRemove={onRemove}
+            progress={uploadedFile.progress}
             rowCount={uploadedFile.rowCount}
             status={uploadedFile.status}
             statusMessage={uploadedFile.error}
@@ -1037,6 +1073,7 @@ export function CSVUploadPage() {
   const [selectedTable, setSelectedTable] = useState<string>("");
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [processingLabel, setProcessingLabel] = useState("");
   const [batchDroppedDuplicates, setBatchDroppedDuplicates] = useState(0);
   const [batchPreviewData, setBatchPreviewData] = useState<CsvPreviewResponse | null>(null);
   const [importMode, setImportMode] = useState<"insert-only" | "insert-or-update">(
@@ -1090,37 +1127,99 @@ export function CSVUploadPage() {
     setBatchPreviewData(null);
   };
 
+  const updateBatchFileState = (status: FileStatus, progress?: number, error?: string) => {
+    setUploadedFiles((prev) =>
+      prev.map((file) => {
+        if (file.status === "error" && !error) {
+          return file;
+        }
+
+        return {
+          ...file,
+          error: error ?? (status === "error" ? file.error : undefined),
+          progress,
+          status,
+        };
+      }),
+    );
+  };
+
+  const runBatchedMutation = async ({
+    actionLabel,
+    mode,
+    rows,
+    runChunk,
+    status,
+  }: {
+    actionLabel: string;
+    mode: "insert-only" | "insert-or-update";
+    rows: Record<string, number | string>[];
+    runChunk: (payload: CsvImportPayload) => Promise<CsvPreviewResponse>;
+    status: FileStatus;
+  }) => {
+    const chunks = chunkRows(rows, CSV_BATCH_SIZE);
+    let aggregated: CsvPreviewResponse = {
+      errors: [],
+      inserted: 0,
+      skipped: 0,
+      toInsert: 0,
+      toSkip: 0,
+      toUpdate: 0,
+      updated: 0,
+    };
+
+    if (chunks.length === 0) {
+      return aggregated;
+    }
+
+    updateBatchFileState(status, 0);
+    setProcessingLabel(`${actionLabel} 0/${chunks.length} lotes`);
+
+    for (const [index, chunk] of chunks.entries()) {
+      const response = await runChunk({
+        data: chunk,
+        mode,
+        table: selectedTable,
+      });
+
+      aggregated = mergePreviewResponses(aggregated, response);
+
+      const progress = Math.round(((index + 1) / chunks.length) * 100);
+      updateBatchFileState(status, progress);
+      setProcessingLabel(`${actionLabel} ${index + 1}/${chunks.length} lotes`);
+    }
+
+    return aggregated;
+  };
+
   const handlePreview = async () => {
     if (!selectedTable || uploadedFiles.length === 0) {
       return;
     }
 
     setIsProcessing(true);
-    setUploadedFiles((prev) =>
-      prev.map((f) => (f.status === "error" ? f : { ...f, status: "previewing" as FileStatus })),
-    );
+    setBatchPreviewData(null);
 
     try {
       const batch = buildBatchRows(selectedTable, uploadedFiles);
-      const previewData = await previewMutateAsync({
-        data: batch.rows,
-        table: selectedTable,
+      const previewData = await runBatchedMutation({
+        actionLabel: "Previsualizando",
         mode: importMode,
+        rows: batch.rows,
+        runChunk: previewMutateAsync,
+        status: "previewing",
       });
 
       setBatchDroppedDuplicates(batch.droppedDuplicates);
       setBatchPreviewData(previewData);
-      setUploadedFiles((prev) =>
-        prev.map((f) => (f.status === "error" ? f : { ...f, status: "ready" as FileStatus })),
-      );
+      updateBatchFileState("ready");
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : "Error en vista previa";
       toastError(errorMsg);
-      setUploadedFiles((prev) =>
-        prev.map((f) => (f.status === "error" ? f : { ...f, status: "error" as FileStatus })),
-      );
+      updateBatchFileState("ready", undefined, errorMsg);
     } finally {
       setIsProcessing(false);
+      setProcessingLabel("");
     }
   };
 
@@ -1134,31 +1233,28 @@ export function CSVUploadPage() {
     }
     void (async () => {
       setIsProcessing(true);
-      setUploadedFiles((prev) =>
-        prev.map((f) => (f.status === "error" ? f : { ...f, status: "previewing" as FileStatus })),
-      );
+      setBatchPreviewData(null);
 
       try {
         const batch = buildBatchRows(selectedTable, uploadedFiles);
-        const previewData = await previewMutateAsync({
-          data: batch.rows,
-          table: selectedTable,
+        const previewData = await runBatchedMutation({
+          actionLabel: "Recalculando vista previa",
           mode,
+          rows: batch.rows,
+          runChunk: previewMutateAsync,
+          status: "previewing",
         });
 
         setBatchDroppedDuplicates(batch.droppedDuplicates);
         setBatchPreviewData(previewData);
-        setUploadedFiles((prev) =>
-          prev.map((f) => (f.status === "error" ? f : { ...f, status: "ready" as FileStatus })),
-        );
+        updateBatchFileState("ready");
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : "Error en vista previa";
         toastError(errorMsg);
-        setUploadedFiles((prev) =>
-          prev.map((f) => (f.status === "error" ? f : { ...f, status: "error" as FileStatus })),
-        );
+        updateBatchFileState("ready", undefined, errorMsg);
       } finally {
         setIsProcessing(false);
+        setProcessingLabel("");
       }
     })();
   };
@@ -1169,23 +1265,19 @@ export function CSVUploadPage() {
     }
     setIsProcessing(true);
 
-    setUploadedFiles((prev) =>
-      prev.map((f) => (f.status === "error" ? f : { ...f, status: "importing" as FileStatus })),
-    );
-
     try {
       const batch = buildBatchRows(selectedTable, uploadedFiles);
-      const totals = await importMutateAsync({
-        data: batch.rows,
-        table: selectedTable,
+      const totals = await runBatchedMutation({
+        actionLabel: "Importando",
         mode: importMode,
+        rows: batch.rows,
+        runChunk: importMutateAsync,
+        status: "importing",
       });
 
       setBatchDroppedDuplicates(batch.droppedDuplicates);
       setBatchPreviewData(totals);
-      setUploadedFiles((prev) =>
-        prev.map((f) => (f.status === "error" ? f : { ...f, status: "success" as FileStatus })),
-      );
+      updateBatchFileState("success");
       success(
         `Completado: ${totals.inserted ?? 0} insertados, ${totals.updated ?? 0} actualizados, ${totals.skipped ?? 0} omitidos.`,
         "Importación",
@@ -1193,11 +1285,10 @@ export function CSVUploadPage() {
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : "Error al importar";
       toastError(errorMsg);
-      setUploadedFiles((prev) =>
-        prev.map((f) => (f.status === "error" ? f : { ...f, status: "error" as FileStatus })),
-      );
+      updateBatchFileState("ready", undefined, errorMsg);
     } finally {
       setIsProcessing(false);
+      setProcessingLabel("");
     }
   };
 
@@ -1266,6 +1357,7 @@ export function CSVUploadPage() {
           isValidMapping={isValidMapping}
           onImport={handleImport}
           onPreview={handlePreview}
+          processingLabel={processingLabel}
           uploadedFilesCount={uploadedFiles.length}
         />
       )}
@@ -1280,40 +1372,47 @@ function ImportActionsBar(props: {
   isValidMapping: boolean;
   onImport: () => void;
   onPreview: () => void;
+  processingLabel?: string;
   uploadedFilesCount: number;
 }) {
   return (
-    <div className="sticky bottom-0 z-10 -mx-4 flex justify-end gap-3 border-default-100 border-t bg-background/80 p-4 shadow-lg backdrop-blur-md sm:mx-0 sm:rounded-xl sm:border">
-      <Button
-        isDisabled={!props.isValidMapping || props.isProcessing || props.uploadedFilesCount === 0}
-        onPress={props.onPreview}
-        variant="secondary"
-      >
-        {props.isProcessing ? (
-          <Loader2 className="mr-2 h-4 w-4 " />
-        ) : (
-          <FileUp className="mr-2 h-4 w-4" />
-        )}
-        {props.hasPreviewData ? "Recalcular vista previa" : "Generar vista previa"}
-      </Button>
+    <div className="sticky bottom-0 z-10 -mx-4 flex flex-col gap-3 border-default-100 border-t bg-background/80 p-4 shadow-lg backdrop-blur-md sm:mx-0 sm:rounded-xl sm:border">
+      {props.processingLabel ? (
+        <div className="text-default-500 text-sm">{props.processingLabel}</div>
+      ) : null}
 
-      <Button
-        isDisabled={
-          !props.hasPreviewData ||
-          !props.isValidMapping ||
-          props.isProcessing ||
-          props.uploadedFilesCount === 0 ||
-          (props.batchPreviewData?.errors?.length ?? 0) > 0
-        }
-        onPress={props.onImport}
-      >
-        {props.isProcessing ? (
-          <Loader2 className="mr-2 h-4 w-4 " />
-        ) : (
-          <CheckCircle className="mr-2 h-4 w-4" />
-        )}
-        Confirmar Importación
-      </Button>
+      <div className="flex justify-end gap-3">
+        <Button
+          isDisabled={!props.isValidMapping || props.isProcessing || props.uploadedFilesCount === 0}
+          onPress={props.onPreview}
+          variant="secondary"
+        >
+          {props.isProcessing ? (
+            <Loader2 className="mr-2 h-4 w-4 " />
+          ) : (
+            <FileUp className="mr-2 h-4 w-4" />
+          )}
+          {props.hasPreviewData ? "Recalcular vista previa" : "Generar vista previa"}
+        </Button>
+
+        <Button
+          isDisabled={
+            !props.hasPreviewData ||
+            !props.isValidMapping ||
+            props.isProcessing ||
+            props.uploadedFilesCount === 0 ||
+            (props.batchPreviewData?.errors?.length ?? 0) > 0
+          }
+          onPress={props.onImport}
+        >
+          {props.isProcessing ? (
+            <Loader2 className="mr-2 h-4 w-4 " />
+          ) : (
+            <CheckCircle className="mr-2 h-4 w-4" />
+          )}
+          Confirmar Importación
+        </Button>
+      </div>
     </div>
   );
 }

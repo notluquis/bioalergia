@@ -32,11 +32,13 @@ const CsvPreviewResponseSchema = z.looseObject({
 export async function importCsvData(payload: CsvImportPayload) {
   return apiClient.post<CsvPreviewResponse>("/api/csv-upload/import", payload, {
     responseSchema: CsvPreviewResponseSchema,
+    timeout: false,
   });
 }
 
 export async function previewCsvImport(payload: CsvImportPayload) {
   return apiClient.post<CsvPreviewResponse>("/api/csv-upload/preview", payload, {
     responseSchema: CsvPreviewResponseSchema,
+    timeout: false,
   });
 }
