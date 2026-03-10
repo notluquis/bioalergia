@@ -12,7 +12,8 @@ const DATE_DASH_DOT_REGEX = /^(\d{1,2})[-.](\d{1,2})[-.](\d{4})$/;
 const DATE_ISO_REGEX = /^(\d{4})-(\d{1,2})-(\d{1,2})$/;
 const DATE_ISO_TIMESTAMP_REGEX =
   /^(\d{4})-(\d{1,2})-(\d{1,2})[T\s]\d{1,2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:\d{2})?$/;
-
+const DOT_THOUSANDS_PATTERN = /^\d{1,3}(?:\.\d{3})+$/;
+const DATE_SPLIT_PATTERN = /[T\s]/;
 /**
  * Parse currency amount from CSV (handles "$", ".", "," conversions)
  */
@@ -22,7 +23,6 @@ export function parseAmount(value: unknown): Decimal | null {
   }
   const raw = String(value).trim().replace(/\$/g, "").replace(/\s+/g, "");
   let str = raw;
-  const dotThousandsPattern = /^\d{1,3}(?:\.\d{3})+$/;
 
   if (raw.includes(",") && raw.includes(".")) {
     if (raw.lastIndexOf(",") > raw.lastIndexOf(".")) {
@@ -32,7 +32,7 @@ export function parseAmount(value: unknown): Decimal | null {
     }
   } else if (raw.includes(",")) {
     str = raw.replace(/\./g, "").replace(/,/g, ".");
-  } else if (dotThousandsPattern.test(raw)) {
+  } else if (DOT_THOUSANDS_PATTERN.test(raw)) {
     str = raw.replace(/\./g, "");
   }
 
@@ -56,7 +56,7 @@ export function parseDate(value: unknown): Date | null {
   }
 
   // Extract only date portion if timestamp exists.
-  const dateOnly = str.split(/[T\s]/)[0];
+  const dateOnly = str.split(DATE_SPLIT_PATTERN)[0];
 
   // Try ISO timestamp first (e.g. 2022-06-01T11:49:01.000Z)
   if (DATE_ISO_TIMESTAMP_REGEX.test(str)) {
