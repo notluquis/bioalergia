@@ -20,7 +20,6 @@ import { createHonoORPCRequest } from "./orpc/superjson";
 import { authRoutes } from "./routes/auth";
 import { backupRoutes } from "./routes/backups";
 import { balanceRoutes } from "./routes/balances";
-import { calendarRoutes } from "./routes/calendar";
 import { counterpartRoutes } from "./routes/counterparts";
 import { csvUploadRoutes } from "./routes/csv-upload";
 import { dailyProductionRoutes } from "./routes/daily-production-balances";
@@ -174,8 +173,8 @@ app.route("/api/dte", dteRoutes);
 
 // Haulmer DTE sync routes (CSV downloads, imports)
 app.route("/api/haulmer", haulmerRoutes);
-// Calendar routes (events, sync, logs)
-app.route("/api/calendar", calendarRoutes);
+
+// Calendar routes moved to oRPC: /api/orpc/calendar/rpc/*
 app.get("/api/orpc", (c) =>
   c.html(`<!doctype html>
 <html lang="es">
