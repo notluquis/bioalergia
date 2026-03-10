@@ -2,6 +2,7 @@ import { db } from "@finanzas/db";
 
 import type { CalendarEventRecord } from "../lib/google/google-calendar";
 import { calendarSyncService } from "../modules/calendar/service";
+import { syncClinicalSeriesForExternalEvents } from "./clinical-series";
 
 export async function loadSettings() {
   const settings = await db.setting.findMany();
@@ -376,6 +377,8 @@ export async function updateCalendarEventClassification(
       testMetadata: data.testMetadata || undefined,
     },
   });
+
+  await syncClinicalSeriesForExternalEvents([{ calendarId, eventId }]);
 }
 
 import type { EventCreateInput } from "../lib/db-types";

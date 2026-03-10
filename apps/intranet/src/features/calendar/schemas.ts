@@ -352,6 +352,48 @@ export const EventDteSuggestionSchema = z.strictObject({
   totalAmount: z.number(),
 });
 
+export const ClinicalSeriesLinkedDocumentSchema = z.strictObject({
+  clientName: z.string(),
+  clientRUT: z.string(),
+  confidenceScore: z.number(),
+  documentDate: z.string(),
+  dteSaleDetailId: z.string(),
+  folio: z.string(),
+  matchedBy: z.string(),
+  totalAmount: z.number(),
+});
+
+export const ClinicalSeriesEventSchema = z.strictObject({
+  amountExpected: z.number().nullable(),
+  amountPaid: z.number().nullable(),
+  calendarGoogleId: z.string(),
+  eventDate: z.string(),
+  eventId: z.number(),
+  externalEventId: z.string(),
+  seriesStageKind: z.enum(["DOSE", "INSTALLATION", "MAINTENANCE", "READING"]).nullable(),
+  seriesStageLabel: z.string().nullable(),
+  seriesStageNumber: z.number().nullable(),
+  summary: z.string().nullable(),
+});
+
+export const ClinicalSeriesSnapshotSchema = z.strictObject({
+  displayName: z.string().nullable(),
+  eligibleDocumentDateFrom: z.string(),
+  eligibleDocumentDateTo: z.string(),
+  events: z.array(ClinicalSeriesEventSchema),
+  id: z.number(),
+  kind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT"]),
+  linkedDocuments: z.array(ClinicalSeriesLinkedDocumentSchema),
+  patientName: z.string().nullable(),
+  patientRut: z.string().nullable(),
+  remainingExpected: z.number(),
+  remainingPaid: z.number(),
+  status: z.enum(["ACTIVE", "CANCELLED", "COMPLETED"]),
+  totalExpected: z.number(),
+  totalLinkedAmount: z.number(),
+  totalPaid: z.number(),
+});
+
 export const EventDteSuggestionResponseSchema = z.strictObject({
   data: z.strictObject({
     event: z
@@ -370,6 +412,7 @@ export const EventDteSuggestionResponseSchema = z.strictObject({
       })
       .nullable(),
     linked: z.unknown().nullable(),
+    series: ClinicalSeriesSnapshotSchema.nullable(),
     suggestions: z.array(EventDteSuggestionSchema),
   }),
   status: z.literal("success"),

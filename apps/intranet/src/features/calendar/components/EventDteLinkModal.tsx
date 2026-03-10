@@ -76,6 +76,16 @@ export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDte
     () => suggestionsQuery.data?.suggestions ?? [],
     [suggestionsQuery.data],
   );
+  const series = suggestionsQuery.data?.series ?? null;
+
+  const seriesKindLabel = useMemo(() => {
+    if (!series) {
+      return null;
+    }
+    if (series.kind === "PATCH_TEST") return "Test de parche";
+    if (series.kind === "SKIN_TEST") return "Test cutáneo";
+    return "Tratamiento subcutáneo";
+  }, [series]);
 
   const suggestionColumns = useMemo<ColumnDef<EventDteSuggestion>[]>(
     () => [
@@ -148,6 +158,117 @@ export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDte
                   {event?.description ?? "Sin descripción"}
                 </p>
               </div>
+
+              {series ? (
+                <div className="space-y-3 rounded-lg border border-primary/20 bg-primary/5 p-3">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-sm">
+                        {series.displayName ?? `Serie clínica #${series.id}`}
+                      </p>
+                      <p className="text-default-500 text-xs">
+                        {seriesKindLabel}
+                        {series.patientRut ? ` · ${series.patientRut}` : ""}
+                        {series.patientName ? ` · ${series.patientName}` : ""}
+                      </p>
+                    </div>
+                    <div className="text-right text-xs">
+                      <p>
+                        Vinculado:{" "}
+                        <span className="font-semibold">
+                          {currencyFormatter.format(series.totalLinkedAmount)}
+                        </span>
+                      </p>
+                      <p>
+                        Saldo esperado:{" "}
+                        <span className="font-semibold">
+                          {currencyFormatter.format(series.remainingExpected)}
+                        </span>
+                      </p>
+                      <p>
+                        Saldo pagado:{" "}
+                        <span className="font-semibold">
+                          {currencyFormatter.format(series.remainingPaid)}
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-2 md:grid-cols-2">
+                    <div className="rounded-lg border border-default-200 bg-background p-3">
+                      <p className="mb-2 font-semibold text-xs uppercase tracking-wide text-default-600">
+                        Eventos de la serie
+                      </p>
+                      <div className="space-y-2 text-xs">
+                        {series.events.map((seriesEvent) => (
+                          <div
+                            className="flex items-center justify-between gap-2"
+                            key={`${seriesEvent.calendarGoogleId}-${seriesEvent.externalEventId}`}
+                          >
+                            <div className="min-w-0">
+                              <p className="truncate font-medium">
+                                {seriesEvent.seriesStageLabel ?? seriesEvent.summary ?? "Evento"}
+                              </p>
+                              <p className="truncate text-default-500">
+                                {seriesEvent.eventDate}
+                                {seriesEvent.summary ? ` · ${seriesEvent.summary}` : ""}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              {seriesEvent.amountExpected != null ? (
+                                <p>{currencyFormatter.format(seriesEvent.amountExpected)}</p>
+                              ) : null}
+                              {seriesEvent.amountPaid != null ? (
+                                <p className="text-success">
+                                  {currencyFormatter.format(seriesEvent.amountPaid)}
+                                </p>
+                              ) : null}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="rounded-lg border border-default-200 bg-background p-3">
+                      <p className="mb-2 font-semibold text-xs uppercase tracking-wide text-default-600">
+                        Documentos ya vinculados
+                      </p>
+                      <div className="space-y-2 text-xs">
+                        {series.linkedDocuments.length === 0 ? (
+                          <p className="text-default-500">
+                            Todavía no hay DTE asociados a esta serie.
+                          </p>
+                        ) : (
+                          series.linkedDocuments.map((doc) => (
+                            <div
+                              className="flex items-center justify-between gap-2"
+                              key={doc.dteSaleDetailId}
+                            >
+                              <div className="min-w-0">
+                                <p className="truncate font-medium">
+                                  {doc.clientName} · Folio {doc.folio}
+                                </p>
+                                <p className="truncate text-default-500">
+                                  {doc.documentDate} · {doc.matchedBy}
+                                </p>
+                              </div>
+                              <p className="font-medium">
+                                {currencyFormatter.format(doc.totalAmount)}
+                              </p>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <Description className="text-default-600">
+                    Las sugerencias consideran toda la ventana de la serie (
+                    {series.eligibleDocumentDateFrom} a {series.eligibleDocumentDateTo}) y excluyen
+                    DTE ya vinculados dentro del mismo cluster.
+                  </Description>
+                </div>
+              ) : null}
 
               {suggestionsQuery.isError ? (
                 <Description className="text-danger">

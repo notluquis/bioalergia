@@ -127,6 +127,13 @@ function buildRightSideBadges(event: CalendarEventDetail) {
       label: "3ra lectura",
     });
   }
+  if (event.seriesStageLabel) {
+    badges.push({
+      className: "h-6 font-medium text-[10px] uppercase tracking-wide",
+      color: "accent",
+      label: event.seriesStageLabel,
+    });
+  }
 
   return badges;
 }
@@ -236,7 +243,7 @@ export function DailyEventCard({ event, eventDteLink, onLinkClick }: DailyEventC
             </Chip>
           ))}
           {eventDteLink ? (
-            <Card className="w-full min-w-[240px] max-w-[320px] border border-success-200/70 bg-success-50/40 p-2.5">
+            <Card className="w-full min-w-60 max-w-[320px] border border-success-200/70 bg-success-50/40 p-2.5">
               <Card.Header className="flex items-center justify-between gap-2 p-0">
                 <Card.Title className="text-success-700 text-xs uppercase tracking-wide">
                   DTE Vinculado

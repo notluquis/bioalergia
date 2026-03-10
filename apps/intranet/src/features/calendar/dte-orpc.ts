@@ -1,6 +1,7 @@
 import { createORPCClient } from "@orpc/client";
 import { SuperJSONLink } from "./orpc";
 import type {
+  ClinicalSeriesSnapshot,
   EventDteConfirmedLink,
   EventDteOverviewResponseData,
   EventDteSuggestion,
@@ -79,6 +80,7 @@ type DteEventLinksORPCClient = {
       summary: null | string;
     };
     linked: unknown;
+    series: ClinicalSeriesSnapshot | null;
     suggestions: EventDteSuggestion[];
   }>;
   startAutoLinkAllPeriods: (input?: { minScore?: number; periodConcurrency?: number }) => Promise<{

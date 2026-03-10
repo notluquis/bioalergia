@@ -186,6 +186,49 @@ const suggestionsResponseSchema = z.object({
     })
     .nullable(),
   linked: z.unknown().nullable(),
+  series: z
+    .object({
+      displayName: z.string().nullable(),
+      eligibleDocumentDateFrom: z.string(),
+      eligibleDocumentDateTo: z.string(),
+      events: z.array(
+        z.object({
+          amountExpected: z.number().nullable(),
+          amountPaid: z.number().nullable(),
+          calendarGoogleId: z.string(),
+          eventDate: z.string(),
+          eventId: z.number(),
+          externalEventId: z.string(),
+          seriesStageKind: z.enum(["DOSE", "INSTALLATION", "MAINTENANCE", "READING"]).nullable(),
+          seriesStageLabel: z.string().nullable(),
+          seriesStageNumber: z.number().nullable(),
+          summary: z.string().nullable(),
+        }),
+      ),
+      id: z.number(),
+      kind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT"]),
+      linkedDocuments: z.array(
+        z.object({
+          clientName: z.string(),
+          clientRUT: z.string(),
+          confidenceScore: z.number(),
+          documentDate: z.string(),
+          dteSaleDetailId: z.string(),
+          folio: z.string(),
+          matchedBy: z.string(),
+          totalAmount: z.number(),
+        }),
+      ),
+      patientName: z.string().nullable(),
+      patientRut: z.string().nullable(),
+      remainingExpected: z.number(),
+      remainingPaid: z.number(),
+      status: z.enum(["ACTIVE", "CANCELLED", "COMPLETED"]),
+      totalExpected: z.number(),
+      totalLinkedAmount: z.number(),
+      totalPaid: z.number(),
+    })
+    .nullable(),
   suggestions: z.array(eventDteSuggestionSchema),
 });
 

@@ -191,6 +191,48 @@ export interface EventDteSuggestion {
   totalAmount: number;
 }
 
+export interface ClinicalSeriesLinkedDocument {
+  clientName: string;
+  clientRUT: string;
+  confidenceScore: number;
+  documentDate: string;
+  dteSaleDetailId: string;
+  folio: string;
+  matchedBy: string;
+  totalAmount: number;
+}
+
+export interface ClinicalSeriesEvent {
+  amountExpected: null | number;
+  amountPaid: null | number;
+  calendarGoogleId: string;
+  eventDate: string;
+  eventId: number;
+  externalEventId: string;
+  seriesStageKind: null | "DOSE" | "INSTALLATION" | "MAINTENANCE" | "READING";
+  seriesStageLabel: null | string;
+  seriesStageNumber: null | number;
+  summary: null | string;
+}
+
+export interface ClinicalSeriesSnapshot {
+  displayName: null | string;
+  eligibleDocumentDateFrom: string;
+  eligibleDocumentDateTo: string;
+  events: ClinicalSeriesEvent[];
+  id: number;
+  kind: "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT";
+  linkedDocuments: ClinicalSeriesLinkedDocument[];
+  patientName: null | string;
+  patientRut: null | string;
+  remainingExpected: number;
+  remainingPaid: number;
+  status: "ACTIVE" | "CANCELLED" | "COMPLETED";
+  totalExpected: number;
+  totalLinkedAmount: number;
+  totalPaid: number;
+}
+
 export interface EventDteConfirmedLink {
   calendarId: string;
   clientName: string;

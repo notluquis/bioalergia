@@ -3,6 +3,11 @@ import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone.js";
 import utc from "dayjs/plugin/utc.js";
 import { normalizeRut } from "../lib/rut";
+import {
+  type ClinicalSeriesSnapshot,
+  getClinicalSeriesSnapshotByExternalEvent,
+  syncClinicalSeriesForInternalEventId,
+} from "./clinical-series";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -110,11 +115,15 @@ export interface EventDteLinkRecord {
 interface EventRow {
   amountExpected: null | number;
   amountPaid: null | number;
+  clinicalSeriesId: null | number;
   description: null | string;
   eventDate: string;
   eventId: number;
   externalEventId: string;
   googleCalendarId: string;
+  seriesStageKind: null | "DOSE" | "INSTALLATION" | "MAINTENANCE" | "READING";
+  seriesStageLabel: null | string;
+  seriesStageNumber: null | number;
   summary: null | string;
 }
 
@@ -266,6 +275,22 @@ function computeAmountHint(event: EventRow): null | number {
   return Number.isFinite(first) ? first : null;
 }
 
+function computeSeriesAmountHint(
+  series: ClinicalSeriesSnapshot | null,
+  event: EventRow,
+): null | number {
+  if (series) {
+    if (series.remainingPaid > 0) {
+      return series.remainingPaid;
+    }
+    if (series.remainingExpected > 0) {
+      return series.remainingExpected;
+    }
+  }
+
+  return computeAmountHint(event);
+}
+
 function scoreCandidate(params: {
   amountHint: null | number;
   dte: DteSaleRow;
@@ -368,6 +393,10 @@ async function getEventByExternalIds(
       COALESCE(to_char(e.start_date, 'YYYY-MM-DD'), to_char((e.start_date_time AT TIME ZONE ${TIMEZONE})::date, 'YYYY-MM-DD')) AS "eventDate",
       e.summary AS "summary",
       e.description AS "description",
+      e.clinical_series_id AS "clinicalSeriesId",
+      e.series_stage_kind AS "seriesStageKind",
+      e.series_stage_label AS "seriesStageLabel",
+      e.series_stage_number AS "seriesStageNumber",
       e.amount_expected AS "amountExpected",
       e.amount_paid AS "amountPaid"
     FROM events e
@@ -389,6 +418,10 @@ async function getEventsByDate(date: string): Promise<EventRow[]> {
       COALESCE(to_char(e.start_date, 'YYYY-MM-DD'), to_char((e.start_date_time AT TIME ZONE ${TIMEZONE})::date, 'YYYY-MM-DD')) AS "eventDate",
       e.summary AS "summary",
       e.description AS "description",
+      e.clinical_series_id AS "clinicalSeriesId",
+      e.series_stage_kind AS "seriesStageKind",
+      e.series_stage_label AS "seriesStageLabel",
+      e.series_stage_number AS "seriesStageNumber",
       e.amount_expected AS "amountExpected",
       e.amount_paid AS "amountPaid"
     FROM events e
@@ -426,29 +459,102 @@ async function getSalesCandidatesByDate(date: string): Promise<DteSaleRow[]> {
   `;
 }
 
+async function getSalesCandidatesByDateRange(params: {
+  excludeDteSaleDetailIds?: string[];
+  from: string;
+  to: string;
+}): Promise<DteSaleRow[]> {
+  const excludedIds = params.excludeDteSaleDetailIds ?? [];
+
+  return db.$queryRaw<DteSaleRow[]>`
+    SELECT
+      s.id AS "dteSaleDetailId",
+      s.register_number AS "registerNumber",
+      s.document_type AS "documentType",
+      s.client_rut AS "clientRUT",
+      s.client_name AS "clientName",
+      s.folio AS "folio",
+      to_char(s.document_date, 'YYYY-MM-DD') AS "documentDate",
+      COALESCE(s.exempt_amount, 0)::float AS "exemptAmount",
+      COALESCE(s.net_amount, 0)::float AS "netAmount",
+      COALESCE(s.iva_amount, 0)::float AS "ivaAmount",
+      COALESCE(s.total_amount, 0)::float AS "totalAmount"
+    FROM dte_sale_details s
+    WHERE s.document_date BETWEEN ${params.from}::date AND ${params.to}::date
+      AND s.document_type <> 61
+      AND (
+        cardinality(${excludedIds}::text[]) = 0
+        OR s.id <> ALL(${excludedIds}::text[])
+      )
+      AND NOT EXISTS (
+        SELECT 1
+        FROM dte_sale_details nce
+        WHERE nce.document_type = 61
+          AND nce.reference_doc_type = s.document_type::varchar
+          AND nce.reference_doc_folio = s.folio
+      )
+    ORDER BY s.document_date DESC, s.register_number DESC
+  `;
+}
+
 export async function getEventDteSuggestions(params: {
   calendarId: string;
   eventId: string;
   limit?: number;
 }) {
-  const event = await getEventByExternalIds(params.calendarId, params.eventId);
+  let event = await getEventByExternalIds(params.calendarId, params.eventId);
   if (!event) {
     return {
       event: null,
+      series: null as ClinicalSeriesSnapshot | null,
       suggestions: [] as EventDteSuggestion[],
       linked: null as EventDteLinkRecord | null,
     };
   }
 
-  const [candidates, linked] = await Promise.all([
-    getSalesCandidatesByDate(event.eventDate),
+  if (event.clinicalSeriesId == null) {
+    await syncClinicalSeriesForInternalEventId(event.eventId);
+    event = await getEventByExternalIds(params.calendarId, params.eventId);
+    if (!event) {
+      return {
+        event: null,
+        series: null as ClinicalSeriesSnapshot | null,
+        suggestions: [] as EventDteSuggestion[],
+        linked: null as EventDteLinkRecord | null,
+      };
+    }
+  }
+
+  const [linked, series] = await Promise.all([
     getEventDteLinkByInternalEventId(event.eventId),
+    getClinicalSeriesSnapshotByExternalEvent({
+      calendarId: params.calendarId,
+      eventId: params.eventId,
+    }),
   ]);
 
+  const candidates = series
+    ? await getSalesCandidatesByDateRange({
+        excludeDteSaleDetailIds: series.linkedDocuments.map((item) => item.dteSaleDetailId),
+        from: series.eligibleDocumentDateFrom,
+        to: series.eligibleDocumentDateTo,
+      })
+    : await getSalesCandidatesByDate(event.eventDate);
+
   const mergedText = `${event.summary ?? ""} ${event.description ?? ""}`;
-  const rutHints = extractRutHints(mergedText);
-  const nameHints = extractNameHints(mergedText);
-  const amountHint = computeAmountHint(event);
+  const rutHints = [
+    ...new Set([
+      ...extractRutHints(mergedText),
+      ...(series?.patientRut ? [series.patientRut] : []),
+    ]),
+  ];
+  const nameHints = [
+    ...new Set([
+      ...extractNameHints(mergedText),
+      ...(series?.patientName ? [series.patientName] : []),
+    ]),
+  ];
+  const amountHint = computeSeriesAmountHint(series, event);
 
   let suggestions = candidates
     .map((candidate) =>
@@ -490,6 +596,7 @@ export async function getEventDteSuggestions(params: {
         rutHints,
       },
     },
+    series,
     suggestions,
     linked,
   };

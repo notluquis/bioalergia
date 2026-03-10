@@ -1,4 +1,5 @@
 import { db } from "@finanzas/db";
+import { syncClinicalSeriesForExternalEvents } from "../../services/clinical-series";
 
 import type { CalendarEventRecord } from "./google-calendar";
 
@@ -241,6 +242,19 @@ export async function upsertGoogleCalendarEvents(events: CalendarEventRecord[]) 
         }
         await processEventUpsert(event, calendarInternalId, stats);
       }),
+    );
+  }
+
+  const relevantEvents = events.filter(
+    (event) => event.category === "Test y exámenes" || event.category === "Tratamiento subcutáneo",
+  );
+
+  if (relevantEvents.length > 0) {
+    await syncClinicalSeriesForExternalEvents(
+      relevantEvents.map((event) => ({
+        calendarId: event.calendarId,
+        eventId: event.eventId,
+      })),
     );
   }
 

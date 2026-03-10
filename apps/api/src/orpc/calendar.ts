@@ -43,6 +43,7 @@ import {
   loadSettings,
   updateCalendarEventClassification,
 } from "../services/calendar";
+import { rebuildClinicalSeries } from "../services/clinical-series";
 import { SuperJSONRPCHandler } from "./superjson";
 
 configureSuperjson();
@@ -485,6 +486,23 @@ const syncLogsInputSchema = z.object({
   limit: z.coerce.number().int().min(1).max(200).default(50).optional(),
 });
 
+const rebuildClinicalSeriesInputSchema = z.object({
+  from: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  to: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+});
+
+const rebuildClinicalSeriesResponseSchema = z.object({
+  from: z.string().nullable(),
+  processed: z.number(),
+  to: z.string().nullable(),
+});
+
 const missingClassificationFilterKeySchema = z.enum([
   "missingCategory",
   "missingAmountExpected",
@@ -824,6 +842,16 @@ const listSyncLogs = authed
     }));
   });
 
+const rebuildClinicalSeriesRoute = requirePermission("CalendarEvent", "update")
+  .route({
+    method: "POST",
+    path: "/series/rebuild",
+    summary: "Reagrupar series clinicas para tests y tratamientos subcutaneos",
+  })
+  .input(rebuildClinicalSeriesInputSchema)
+  .output(rebuildClinicalSeriesResponseSchema)
+  .handler(async ({ input }) => rebuildClinicalSeries(input));
+
 const unclassifiedEvents = requirePermission("CalendarEvent", "update")
   .route({
     method: "GET",
@@ -975,6 +1003,7 @@ const calendarORPCRouterBase = {
   jobStatus,
   reclassifyAllEvents,
   reclassifyEvents,
+  rebuildClinicalSeries: rebuildClinicalSeriesRoute,
   summaryEvents,
   syncEvents: syncCalendarEvents,
   syncLogs: listSyncLogs,

@@ -29,6 +29,7 @@ import type {
   CalendarSummary,
   CalendarSyncLog,
   CalendarUnclassifiedEvent,
+  ClinicalSeriesSnapshot,
   EventDteConfirmedLink,
   EventDteOverviewResponseData,
   EventDteSuggestion,
@@ -306,6 +307,7 @@ export async function fetchEventDteSuggestions(params: {
     summary: null | string;
   };
   linked: unknown;
+  series: ClinicalSeriesSnapshot | null;
   suggestions: EventDteSuggestion[];
 }> {
   try {
