@@ -7,6 +7,12 @@ import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
 import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
+import { googleCalendarConfig } from "../config";
+import {
+  type CalendarEventFilters,
+  getCalendarAggregates,
+  getCalendarEventsByDate,
+} from "../lib/google/google-calendar-queries";
 import { logError } from "../lib/logger";
 import {
   CATEGORY_CHOICES,
@@ -21,6 +27,7 @@ import {
   createCalendarSyncLogEntry,
   finalizeCalendarSyncLogEntry,
   listCalendarSyncLogs,
+  loadSettings,
   updateCalendarEventClassification,
 } from "../services/calendar";
 import { SuperJSONRPCHandler } from "./superjson";
@@ -79,6 +86,172 @@ const classificationOptionsSchema = z.object({
   treatmentStages: z.array(z.string()),
 });
 
+const calendarQueryInputSchema = z.object({
+  from: z.string().optional(),
+  to: z.string().optional(),
+  calendarIds: z.array(z.string()).optional(),
+  eventTypes: z.array(z.string()).optional(),
+  categories: z.array(z.string()).optional(),
+  search: z.string().optional(),
+  maxDays: z.coerce.number().positive().int().optional(),
+});
+
+const testMetadataSchema = z.object({
+  firstReading: z.boolean(),
+  patchTest: z.boolean(),
+  secondReading: z.boolean(),
+  skinTest: z.boolean(),
+  thirdReading: z.boolean(),
+});
+
+const calendarEventDetailSchema = z.object({
+  amountExpected: z.number().nullable().optional(),
+  amountPaid: z.number().nullable().optional(),
+  attended: z.boolean().nullable().optional(),
+  calendarId: z.string(),
+  category: z.string().nullable().optional(),
+  clinicalSeriesId: z.number().nullable().optional(),
+  colorId: z.string().nullable(),
+  controlIncluded: z.boolean().nullable().optional(),
+  description: z.string().nullable(),
+  dosageValue: z.number().nullable().optional(),
+  dosageUnit: z.string().nullable().optional(),
+  seriesStageKind: z.enum(["DOSE", "INSTALLATION", "MAINTENANCE", "READING"]).nullable().optional(),
+  seriesStageLabel: z.string().nullable().optional(),
+  seriesStageNumber: z.number().nullable().optional(),
+  testMetadata: testMetadataSchema.nullable().optional(),
+  endDate: z.string().nullable(),
+  endDateTime: z.string().nullable(),
+  endTimeZone: z.string().nullable(),
+  eventCreatedAt: z.string().nullable(),
+  eventDate: z.string(),
+  eventDateTime: z.string().nullable(),
+  eventId: z.string(),
+  eventType: z.string().nullable(),
+  eventUpdatedAt: z.string().nullable(),
+  hangoutLink: z.string().nullable(),
+  isDomicilio: z.boolean().nullable().optional(),
+  location: z.string().nullable(),
+  rawEvent: z.unknown(),
+  startDate: z.string().nullable(),
+  startDateTime: z.string().nullable(),
+  startTimeZone: z.string().nullable(),
+  status: z.string().nullable(),
+  summary: z.string().nullable(),
+  transparency: z.string().nullable(),
+  treatmentStage: z.string().nullable().optional(),
+  visibility: z.string().nullable(),
+});
+
+const calendarDayEventsSchema = z.object({
+  amountExpected: z.number(),
+  amountPaid: z.number(),
+  date: z.string(),
+  events: z.array(calendarEventDetailSchema),
+  total: z.number(),
+});
+
+const calendarFiltersOutputSchema = z.object({
+  calendarIds: z.array(z.string()),
+  categories: z.array(z.string()),
+  eventTypes: z.array(z.string()).optional(),
+  from: z.string(),
+  maxDays: z.number(),
+  search: z.string().optional(),
+  to: z.string(),
+});
+
+const calendarTotalsSchema = z.object({
+  amountExpected: z.number(),
+  amountPaid: z.number(),
+  days: z.number(),
+  events: z.number(),
+});
+
+const calendarDailySchema = z.object({
+  days: z.array(calendarDayEventsSchema),
+  filters: calendarFiltersOutputSchema,
+  totals: calendarTotalsSchema,
+});
+
+const calendarSummarySchemaWithAggregates = z.object({
+  aggregates: z.object({
+    byDate: z.array(
+      z.object({
+        amountExpected: z.number(),
+        amountPaid: z.number(),
+        date: z.string(),
+        total: z.number(),
+      }),
+    ),
+    byDateType: z.array(
+      z.object({
+        date: z.string(),
+        eventType: z.string().nullable(),
+        total: z.number(),
+      }),
+    ),
+    byMonth: z.array(
+      z.object({
+        amountExpected: z.number(),
+        amountPaid: z.number(),
+        month: z.number(),
+        total: z.number(),
+        year: z.number(),
+      }),
+    ),
+    byWeek: z.array(
+      z.object({
+        amountExpected: z.number(),
+        amountPaid: z.number(),
+        isoWeek: z.number(),
+        isoYear: z.number(),
+        total: z.number(),
+      }),
+    ),
+    byWeekday: z.array(
+      z.object({
+        amountExpected: z.number(),
+        amountPaid: z.number(),
+        total: z.number(),
+        weekday: z.number(),
+      }),
+    ),
+    byYear: z.array(
+      z.object({
+        amountExpected: z.number(),
+        amountPaid: z.number(),
+        total: z.number(),
+        year: z.number(),
+      }),
+    ),
+  }),
+  available: z.object({
+    calendars: z.array(
+      z.object({
+        calendarId: z.string(),
+        total: z.number(),
+      }),
+    ),
+    eventTypes: z.array(
+      z.object({
+        eventType: z.string().nullable(),
+        total: z.number(),
+      }),
+    ),
+    categories: z.array(
+      z.object({
+        category: z.string().nullable(),
+        total: z.number(),
+      }),
+    ),
+  }),
+  filters: calendarFiltersOutputSchema.omit({ maxDays: true }),
+  totals: calendarTotalsSchema.extend({
+    maxEventCount: z.number().optional(),
+  }),
+});
+
 function sanitizeOptionalSelectionValue(value: null | string | undefined): null | string {
   if (!value) {
     return null;
@@ -86,6 +259,70 @@ function sanitizeOptionalSelectionValue(value: null | string | undefined): null 
 
   const trimmed = value.trim();
   return trimmed || null;
+}
+
+function parsePositiveCappedInt(value: number, fallback: number, cap: number) {
+  if (!Number.isFinite(value) || value <= 0) {
+    return fallback;
+  }
+
+  return Math.min(Math.floor(value), cap);
+}
+
+function toOptionalFilter<T>(values: T[]) {
+  return values.length > 0 ? values : undefined;
+}
+
+function normalizeDateRange(from: string, to: string) {
+  if (from <= to) {
+    return { from, to };
+  }
+
+  return { from, to: from };
+}
+
+async function buildCalendarFiltersFromInput(input: z.infer<typeof calendarQueryInputSchema>) {
+  const settings = await loadSettings();
+  const configStart =
+    settings["calendar.syncStart"]?.trim() || googleCalendarConfig?.syncStartDate || "2000-01-01";
+
+  const lookaheadRaw = Number(settings["calendar.syncLookaheadDays"] ?? "365");
+  const lookaheadDays = parsePositiveCappedInt(lookaheadRaw, 365, 1095);
+  const defaultEnd = new Date(Date.now() + lookaheadDays * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
+
+  const normalizedRange = normalizeDateRange(input.from ?? configStart, input.to ?? defaultEnd);
+
+  const calendarIds = input.calendarIds ?? [];
+  const eventTypes = input.eventTypes ?? [];
+  const categories = input.categories ?? [];
+  const search = input.search?.trim() || undefined;
+
+  const defaultMaxDays = Number(settings["calendar.dailyMaxDays"] ?? "31");
+  const maxDays = input.maxDays ?? parsePositiveCappedInt(defaultMaxDays, 31, 120);
+
+  const filters: CalendarEventFilters = {
+    from: normalizedRange.from,
+    to: normalizedRange.to,
+    calendarIds: toOptionalFilter(calendarIds),
+    eventTypes: toOptionalFilter(eventTypes),
+    categories: toOptionalFilter(categories),
+    search,
+  };
+
+  return {
+    filters,
+    applied: {
+      from: normalizedRange.from,
+      to: normalizedRange.to,
+      calendarIds,
+      eventTypes,
+      categories,
+      search,
+    },
+    maxDays,
+  };
 }
 
 const base = os.$context<CalendarORPCContext>();
@@ -193,6 +430,69 @@ const listCalendars = authed
       createdAt: calendar.createdAt,
       updatedAt: calendar.updatedAt,
     }));
+  });
+
+const summaryEvents = authed
+  .use(async ({ context, next }) => {
+    const canReadSchedule = await hasPermission(context.user.id, "read", "CalendarSchedule");
+    const canReadHeatmap = await hasPermission(context.user.id, "read", "CalendarHeatmap");
+    const canReadEvents = await hasPermission(context.user.id, "read", "CalendarEvent");
+
+    if (!canReadSchedule && !canReadHeatmap && !canReadEvents) {
+      throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
+    }
+
+    return next();
+  })
+  .route({
+    method: "GET",
+    path: "/events/summary",
+    summary: "Resumen agregado de eventos calendario",
+  })
+  .input(calendarQueryInputSchema)
+  .output(calendarSummarySchemaWithAggregates)
+  .handler(async ({ input }) => {
+    const { filters, applied } = await buildCalendarFiltersFromInput(input);
+    const aggregates = await getCalendarAggregates(filters);
+
+    return {
+      filters: applied,
+      totals: aggregates.totals,
+      aggregates: aggregates.aggregates,
+      available: aggregates.available,
+    };
+  });
+
+const dailyEvents = authed
+  .use(async ({ context, next }) => {
+    const canReadDaily = await hasPermission(context.user.id, "read", "CalendarDaily");
+    const canReadEvents = await hasPermission(context.user.id, "read", "CalendarEvent");
+
+    if (!canReadDaily && !canReadEvents) {
+      throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
+    }
+
+    return next();
+  })
+  .route({
+    method: "GET",
+    path: "/events/daily",
+    summary: "Eventos agrupados por dia",
+  })
+  .input(calendarQueryInputSchema)
+  .output(calendarDailySchema)
+  .handler(async ({ input }) => {
+    const { filters, applied, maxDays } = await buildCalendarFiltersFromInput(input);
+    const events = await getCalendarEventsByDate(filters, { maxDays });
+
+    return {
+      filters: {
+        ...applied,
+        maxDays,
+      },
+      totals: events.totals,
+      days: events.days,
+    };
   });
 
 const classifyEvent = requirePermission("CalendarEvent", "update")
@@ -327,9 +627,11 @@ const listSyncLogs = authed
   });
 
 const calendarORPCRouterBase = {
+  dailyEvents,
   classificationOptions,
   calendars: listCalendars,
   classifyEvent,
+  summaryEvents,
   syncEvents: syncCalendarEvents,
   syncLogs: listSyncLogs,
 };

@@ -20,7 +20,14 @@ import { isAsyncIteratorObject } from "@orpc/shared";
 import { createTanstackQueryUtils } from "@orpc/tanstack-query";
 import { ApiError } from "@/lib/api-client";
 import { configureSuperjson } from "@/lib/superjson-config";
-import type { CalendarData, CalendarEventClassificationPayload, CalendarSyncLog } from "./types";
+import type {
+  CalendarDaily,
+  CalendarData,
+  CalendarEventClassificationPayload,
+  CalendarFilters,
+  CalendarSummary,
+  CalendarSyncLog,
+} from "./types";
 
 type ClassificationOptions = {
   categories: readonly string[];
@@ -93,11 +100,15 @@ class SuperJSONLink<T extends ClientContext> extends StandardLink<T> {
 }
 
 type CalendarORPCClient = {
+  dailyEvents: (input: CalendarFilters) => Promise<CalendarDaily>;
   calendars: () => Promise<CalendarData[]>;
   classificationOptions: () => Promise<ClassificationOptions>;
   classifyEvent: (input: CalendarEventClassificationPayload) => Promise<{
     ok: true;
   }>;
+  summaryEvents: (
+    input: Omit<CalendarFilters, "maxDays"> & { maxDays?: number },
+  ) => Promise<CalendarSummary>;
   syncEvents: () => Promise<{
     logId: number;
     message: string;

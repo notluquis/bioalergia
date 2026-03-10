@@ -76,14 +76,22 @@ export interface UnclassifiedEventsResponse {
   totalCount: number;
 }
 
-type CalendarDailyResponse = CalendarDaily & { status: "ok" };
-
-type CalendarSummaryResponse = CalendarSummary & { status: "ok" };
-
 interface CalendarSyncResponse {
   logId: number;
   message: string;
   status: "accepted";
+}
+
+function normalizeCalendarORPCFilters(filters: CalendarFilters) {
+  return {
+    calendarIds: filters.calendarIds ?? [],
+    categories: filters.categories,
+    eventTypes: filters.eventTypes,
+    from: filters.from,
+    maxDays: filters.maxDays,
+    search: filters.search,
+    to: filters.to,
+  };
 }
 
 export async function classifyCalendarEvent(
@@ -97,16 +105,23 @@ export async function classifyCalendarEvent(
 }
 
 export async function fetchCalendarDaily(filters: CalendarFilters): Promise<CalendarDaily> {
-  const response = await apiClient.get<CalendarDailyResponse>("/api/calendar/events/daily", {
-    query: buildQuery(filters, { includeMaxDays: true }),
-    responseSchema: CalendarDailyResponseSchema,
-  });
+  try {
+    const response = CalendarDailyResponseSchema.parse({
+      status: "ok",
+      ...(await calendarORPCClient.dailyEvents(normalizeCalendarORPCFilters(filters))),
+    });
 
-  return {
-    days: response.days,
-    filters: response.filters,
-    totals: response.totals,
-  };
+    return {
+      days: response.days.map((day) => ({
+        ...day,
+        date: new Date(`${day.date}T00:00:00`),
+      })),
+      filters: response.filters,
+      totals: response.totals,
+    };
+  } catch (error) {
+    throw toCalendarApiError(error);
+  }
 }
 
 export async function fetchCalendars(): Promise<CalendarData[]> {
@@ -119,17 +134,21 @@ export async function fetchCalendars(): Promise<CalendarData[]> {
 }
 
 export async function fetchCalendarSummary(filters: CalendarFilters): Promise<CalendarSummary> {
-  const response = await apiClient.get<CalendarSummaryResponse>("/api/calendar/events/summary", {
-    query: buildQuery(filters),
-    responseSchema: CalendarSummaryResponseSchema,
-  });
+  try {
+    const response = CalendarSummaryResponseSchema.parse({
+      status: "ok",
+      ...(await calendarORPCClient.summaryEvents(normalizeCalendarORPCFilters(filters))),
+    });
 
-  return {
-    aggregates: response.aggregates,
-    available: response.available,
-    filters: response.filters,
-    totals: response.totals,
-  };
+    return {
+      aggregates: response.aggregates,
+      available: response.available,
+      filters: response.filters,
+      totals: response.totals,
+    };
+  } catch (error) {
+    throw toCalendarApiError(error);
+  }
 }
 
 export async function fetchCalendarSyncLogs(limit = 50): Promise<CalendarSyncLog[]> {
@@ -466,33 +485,4 @@ export async function fetchEventDteLinksOverview(params: {
   );
 
   return response.data;
-}
-
-function buildQuery(filters: CalendarFilters, options?: { includeMaxDays?: boolean }) {
-  const query: Record<string, unknown> = {
-    from: filters.from,
-    to: filters.to,
-  };
-
-  if (filters.calendarIds?.length) {
-    query.calendarId = filters.calendarIds;
-  }
-
-  if (filters.eventTypes?.length) {
-    query.eventType = filters.eventTypes;
-  }
-
-  if (filters.categories.length > 0) {
-    query.category = filters.categories;
-  }
-
-  if (filters.search?.trim()) {
-    query.search = filters.search.trim();
-  }
-
-  if (options?.includeMaxDays) {
-    query.maxDays = filters.maxDays;
-  }
-
-  return query;
 }
