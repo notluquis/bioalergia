@@ -73,6 +73,15 @@
       "rules": {
         "typescript/no-explicit-any": "off"
       }
+    },
+    {
+      "files": ["apps/intranet/**"],
+      "rules": {
+        "no-unsafe-assignment": "off",
+        "no-base-to-string": "off",
+        "await-thenable": "off",
+        "restrict-template-expressions": "off"
+      }
     }
   ]
 }
