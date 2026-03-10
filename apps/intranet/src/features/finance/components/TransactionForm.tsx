@@ -1,4 +1,4 @@
-import type { FinancialTransaction, TransactionCategory } from "@finanzas/db";
+import type { FinancialTransaction } from "@finanzas/db";
 import {
   Button,
   Chip,
@@ -18,8 +18,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { type ChangeEvent, useEffect, useState } from "react";
 import { z } from "zod";
-import { apiClient } from "@/lib/api-client";
 import { toast } from "@/lib/toast-interceptor";
+import { financeORPCClient, toFinanceApiError } from "../orpc";
 import { isNonAccountableCategory } from "../utils/non-accountable-category";
 
 const schema = z.object({
@@ -53,20 +53,19 @@ const TransactionCategoriesResponseSchema = z.object({
   status: z.literal("ok"),
 });
 
+type TransactionCategoryOption = z.infer<typeof TransactionCategorySchema>;
+
 const SaveTransactionResponseSchema = z.object({
   data: z.unknown().optional(),
   status: z.literal("ok"),
 });
 
 function useTransactionCategories() {
-  return useQuery<TransactionCategory[]>({
+  return useQuery<TransactionCategoryOption[]>({
     queryKey: ["TransactionCategory"],
     queryFn: async () => {
-      const payload = await apiClient.get<{ data: TransactionCategory[] }>(
-        "/api/finance/categories",
-        {
-          responseSchema: TransactionCategoriesResponseSchema,
-        },
+      const payload = TransactionCategoriesResponseSchema.parse(
+        await financeORPCClient.categoriesList(),
       );
       return payload.data;
     },
@@ -115,14 +114,18 @@ export function TransactionForm({ isOpen, onClose, initialData }: Props) {
 
   const mutation = useMutation({
     mutationFn: async (data: FormValues) => {
-      if (initialData) {
-        return apiClient.put(`/api/finance/transactions/${initialData.id}`, data, {
-          responseSchema: SaveTransactionResponseSchema,
-        });
+      try {
+        if (initialData) {
+          return SaveTransactionResponseSchema.parse(
+            await financeORPCClient.transactionsUpdate({ id: initialData.id, payload: data }),
+          );
+        }
+        return SaveTransactionResponseSchema.parse(
+          await financeORPCClient.transactionsCreate(data),
+        );
+      } catch (error) {
+        throw toFinanceApiError(error);
       }
-      return apiClient.post("/api/finance/transactions", data, {
-        responseSchema: SaveTransactionResponseSchema,
-      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["FinancialTransaction"] });
@@ -302,7 +305,7 @@ export function TransactionForm({ isOpen, onClose, initialData }: Props) {
                             No hay categorías disponibles
                           </ListBox.Item>
                         ) : null}
-                        {(categories ?? []).map((cat: TransactionCategory) => (
+                        {(categories ?? []).map((cat: TransactionCategoryOption) => (
                           <ListBox.Item key={cat.id} id={cat.id.toString()} textValue={cat.name}>
                             <div className="flex items-center gap-2">
                               <div

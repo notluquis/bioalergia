@@ -12,6 +12,8 @@ import type {
   UnassignedPayoutAccount,
 } from "./types";
 
+export type { CounterpartUpsertPayload } from "./orpc";
+
 const AccountsResponseSchema = z.object({
   accounts: z.array(z.unknown()),
 });

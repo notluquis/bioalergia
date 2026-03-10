@@ -1,4 +1,4 @@
-import type { FinancialTransaction, TransactionCategory } from "@finanzas/db";
+import type { FinancialTransaction } from "@finanzas/db";
 import {
   Button,
   Chip,
@@ -29,10 +29,12 @@ import { X } from "lucide-react";
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { z } from "zod";
+import { fetchCounterparts } from "@/features/counterparts/api";
 import { useLazyTabs } from "@/hooks/use-lazy-tabs";
-import { ApiError, apiClient } from "@/lib/api-client";
+import { ApiError } from "@/lib/api-client";
 import { toast } from "@/lib/toast-interceptor";
 import type { TransactionWithRelations } from "../components/CashFlowColumns";
+import { financeORPCClient, toFinanceApiError } from "../orpc";
 import { isNonAccountableCategory } from "../utils/non-accountable-category";
 
 const CashFlowTable = lazy(() =>
@@ -65,28 +67,6 @@ type FinancialTransactionsResponse = {
     total?: number;
     totalPages?: number;
   };
-};
-
-type CounterpartOption = {
-  bankAccountHolder: string;
-  id: number;
-  identificationNumber: string;
-};
-
-type FinancialAutoCategoryRule = {
-  category: TransactionCategory;
-  categoryId: number;
-  commentContains?: null | string;
-  counterpart?: CounterpartOption | null;
-  counterpartId?: null | number;
-  descriptionContains?: null | string;
-  id: number;
-  isActive: boolean;
-  maxAmount?: null | number;
-  minAmount?: null | number;
-  name: string;
-  priority: number;
-  type: "EXPENSE" | "INCOME";
 };
 
 const CashFlowTransactionSchema = z
@@ -134,11 +114,15 @@ const TransactionCategoriesResponseSchema = z.object({
   status: z.literal("ok"),
 });
 
+type TransactionCategoryOption = z.infer<typeof TransactionCategorySchema>;
+
 const CounterpartSchema = z.object({
   bankAccountHolder: z.string(),
   id: z.number(),
   identificationNumber: z.string(),
 });
+
+type CounterpartOption = z.infer<typeof CounterpartSchema>;
 
 const CounterpartsResponseSchema = z.object({
   counterparts: z.array(CounterpartSchema),
@@ -209,6 +193,8 @@ const AutoCategoryRulesResponseSchema = z.object({
   status: z.literal("ok"),
 });
 
+type FinancialAutoCategoryRule = z.infer<typeof FinancialAutoCategoryRuleSchema>;
+
 const CreateTransactionCategoryResponseSchema = z.object({
   data: TransactionCategorySchema,
   status: z.literal("ok"),
@@ -255,30 +241,31 @@ const UpdateTransactionResponseSchema = z.object({
 function useFinancialTransactions(params: TransactionQueryParams) {
   return useQuery({
     queryKey: ["FinancialTransaction", params],
-    queryFn: () =>
-      apiClient.get<FinancialTransactionsResponse>("/api/finance/transactions", {
-        query: {
-          effectivePeriod: params.effectivePeriod,
-          from: params.from,
-          page: params.page,
-          pageSize: params.pageSize,
-          search: params.search,
-          to: params.to,
-        },
-        responseSchema: FinancialTransactionsResponseSchema,
-      }),
+    queryFn: async () => {
+      try {
+        return FinancialTransactionsResponseSchema.parse(
+          await financeORPCClient.transactionsList({
+            effectivePeriod: params.effectivePeriod,
+            from: params.from,
+            page: params.page,
+            pageSize: params.pageSize,
+            search: params.search,
+            to: params.to,
+          }),
+        ) as FinancialTransactionsResponse;
+      } catch (error) {
+        throw toFinanceApiError(error);
+      }
+    },
   });
 }
 
 function useTransactionCategories() {
-  return useQuery<TransactionCategory[]>({
+  return useQuery<TransactionCategoryOption[]>({
     queryKey: ["TransactionCategory"],
     queryFn: async () => {
-      const payload = await apiClient.get<{ data: TransactionCategory[] }>(
-        "/api/finance/categories",
-        {
-          responseSchema: TransactionCategoriesResponseSchema,
-        },
+      const payload = TransactionCategoriesResponseSchema.parse(
+        await financeORPCClient.categoriesList(),
       );
       return payload.data;
     },
@@ -289,12 +276,10 @@ function useCounterparts() {
   return useQuery<CounterpartOption[]>({
     queryKey: ["Counterpart"],
     queryFn: async () => {
-      const payload = await apiClient.get<{ counterparts: CounterpartOption[] }>(
-        "/api/counterparts",
-        {
-          responseSchema: CounterpartsResponseSchema,
-        },
-      );
+      const payload = CounterpartsResponseSchema.parse({
+        counterparts: await fetchCounterparts(),
+        status: "ok" as const,
+      });
       return payload.counterparts;
     },
   });
@@ -306,11 +291,8 @@ function useCompensationProfiles() {
   return useQuery<CompensationProfileOption[]>({
     queryKey: ["CompensationProfile"],
     queryFn: async () => {
-      const payload = await apiClient.get<{ data: CompensationProfileOption[] }>(
-        "/api/finance/compensation-profiles",
-        {
-          responseSchema: CompensationProfilesResponseSchema,
-        },
+      const payload = CompensationProfilesResponseSchema.parse(
+        await financeORPCClient.compensationProfilesList(),
       );
       return payload.data;
     },
@@ -324,12 +306,13 @@ function useCompensationLedger(profileId: null | number, period: string) {
     enabled: profileId != null,
     queryKey: ["CompensationLedger", profileId, fromPeriod, toPeriod],
     queryFn: async () => {
-      const payload = await apiClient.get<{
-        data: z.infer<typeof CompensationLedgerEntrySchema>[];
-      }>(`/api/finance/compensation-profiles/${profileId}/ledger`, {
-        query: { fromPeriod, toPeriod },
-        responseSchema: CompensationLedgerResponseSchema,
-      });
+      const payload = CompensationLedgerResponseSchema.parse(
+        await financeORPCClient.compensationProfilesLedger({
+          fromPeriod,
+          id: profileId as number,
+          toPeriod,
+        }),
+      );
       return payload.data;
     },
   });
@@ -339,11 +322,8 @@ function useFinancialAutoCategoryRules() {
   return useQuery<FinancialAutoCategoryRule[]>({
     queryKey: ["FinancialAutoCategoryRule"],
     queryFn: async () => {
-      const payload = await apiClient.get<{ data: FinancialAutoCategoryRule[] }>(
-        "/api/finance/auto-category-rules",
-        {
-          responseSchema: AutoCategoryRulesResponseSchema,
-        },
+      const payload = AutoCategoryRulesResponseSchema.parse(
+        await financeORPCClient.autoCategoryRulesList(),
       );
       return payload.data;
     },
@@ -354,11 +334,8 @@ function useAvailableFinancialMonths() {
   return useQuery<string[]>({
     queryKey: ["FinancialTransaction", "available-months"],
     queryFn: async () => {
-      const payload = await apiClient.get<{ data: string[] }>(
-        "/api/finance/transactions/available-months",
-        {
-          responseSchema: AvailableMonthsResponseSchema,
-        },
+      const payload = AvailableMonthsResponseSchema.parse(
+        await financeORPCClient.transactionsAvailableMonths(),
       );
       return payload.data;
     },
@@ -986,14 +963,18 @@ export function CashFlowPage() {
     }: {
       categoryId: null | number;
       transactionId: number;
-    }) =>
-      apiClient.put(
-        `/api/finance/transactions/${transactionId}`,
-        { categoryId },
-        {
-          responseSchema: UpdateTransactionResponseSchema,
-        },
-      ),
+    }) => {
+      try {
+        return UpdateTransactionResponseSchema.parse(
+          await financeORPCClient.transactionsUpdate({
+            id: transactionId,
+            payload: { categoryId },
+          }),
+        );
+      } catch (error) {
+        throw toFinanceApiError(error);
+      }
+    },
     onMutate: async ({ categoryId, transactionId }) => {
       await queryClient.cancelQueries({ queryKey: ["FinancialTransaction"] });
       const previousFinancialTransactions =
@@ -1060,10 +1041,15 @@ export function CashFlowPage() {
       isNonAccountable?: boolean;
       name: string;
       type: "EXPENSE" | "INCOME";
-    }) =>
-      apiClient.post("/api/finance/categories", payload, {
-        responseSchema: CreateTransactionCategoryResponseSchema,
-      }),
+    }) => {
+      try {
+        return CreateTransactionCategoryResponseSchema.parse(
+          await financeORPCClient.categoriesCreate(payload),
+        );
+      } catch (error) {
+        throw toFinanceApiError(error);
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["TransactionCategory"] });
       setNewCategoryName("");
@@ -1086,19 +1072,23 @@ export function CashFlowPage() {
       isNonAccountable?: boolean;
       name: string;
       type: "EXPENSE" | "INCOME";
-    }) =>
-      apiClient.put(
-        `/api/finance/categories/${payload.id}`,
-        {
-          color: payload.color,
-          isNonAccountable: payload.isNonAccountable,
-          name: payload.name,
-          type: payload.type,
-        },
-        {
-          responseSchema: UpdateTransactionCategoryResponseSchema,
-        },
-      ),
+    }) => {
+      try {
+        return UpdateTransactionCategoryResponseSchema.parse(
+          await financeORPCClient.categoriesUpdate({
+            id: payload.id,
+            payload: {
+              color: payload.color,
+              isNonAccountable: payload.isNonAccountable,
+              name: payload.name,
+              type: payload.type,
+            },
+          }),
+        );
+      } catch (error) {
+        throw toFinanceApiError(error);
+      }
+    },
     onMutate: async (payload) => {
       await Promise.all([
         queryClient.cancelQueries({ queryKey: ["TransactionCategory"] }),
@@ -1191,10 +1181,15 @@ export function CashFlowPage() {
   });
 
   const deleteCategoryMutation = useMutation({
-    mutationFn: async (id: number) =>
-      apiClient.delete(`/api/finance/categories/${id}`, {
-        responseSchema: DeleteTransactionCategoryResponseSchema,
-      }),
+    mutationFn: async (id: number) => {
+      try {
+        return DeleteTransactionCategoryResponseSchema.parse(
+          await financeORPCClient.categoriesDelete({ id }),
+        );
+      } catch (error) {
+        throw toFinanceApiError(error);
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["TransactionCategory"] });
       queryClient.invalidateQueries({ queryKey: ["FinancialTransaction"] });
@@ -1213,10 +1208,15 @@ export function CashFlowPage() {
       counterpartId?: null | number;
       isActive?: boolean;
       name: string;
-    }) =>
-      apiClient.post("/api/finance/compensation-profiles", payload, {
-        responseSchema: z.object({ data: CompensationProfileSchema, status: z.literal("ok") }),
-      }),
+    }) => {
+      try {
+        return z
+          .object({ data: CompensationProfileSchema, status: z.literal("ok") })
+          .parse(await financeORPCClient.compensationProfilesCreate(payload));
+      } catch (error) {
+        throw toFinanceApiError(error);
+      }
+    },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["CompensationProfile"] });
       setNewCompensationName("");
@@ -1232,20 +1232,26 @@ export function CashFlowPage() {
   });
 
   const upsertCompensationBudgetMutation = useMutation({
-    mutationFn: async (payload: { baseAmount: number; period: string; profileId: number }) =>
-      apiClient.put(
-        `/api/finance/compensation-profiles/${payload.profileId}/budget`,
-        {
-          baseAmount: payload.baseAmount,
-          period: payload.period,
-        },
-        {
-          responseSchema: z.object({
+    mutationFn: async (payload: { baseAmount: number; period: string; profileId: number }) => {
+      try {
+        return z
+          .object({
             data: z.unknown(),
             status: z.literal("ok"),
-          }),
-        },
-      ),
+          })
+          .parse(
+            await financeORPCClient.compensationProfilesUpsertBudget({
+              id: payload.profileId,
+              payload: {
+                baseAmount: payload.baseAmount,
+                period: payload.period,
+              },
+            }),
+          );
+      } catch (error) {
+        throw toFinanceApiError(error);
+      }
+    },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["CompensationLedger"] });
       toast.success("Presupuesto de período actualizado");
@@ -1263,19 +1269,21 @@ export function CashFlowPage() {
       profileId: number;
       targetPeriod: string;
       transactionId: number;
-    }) =>
-      apiClient.post(
-        `/api/finance/transactions/${payload.transactionId}/reallocate`,
-        {
-          amount: payload.amount,
-          fromPeriod: payload.fromPeriod,
-          profileId: payload.profileId,
-          targetPeriod: payload.targetPeriod,
-        },
-        {
-          responseSchema: ReallocationResponseSchema,
-        },
-      ),
+    }) => {
+      try {
+        return ReallocationResponseSchema.parse(
+          await financeORPCClient.transactionsReallocate({
+            amount: payload.amount,
+            fromPeriod: payload.fromPeriod,
+            id: payload.transactionId,
+            profileId: payload.profileId,
+            targetPeriod: payload.targetPeriod,
+          }),
+        );
+      } catch (error) {
+        throw toFinanceApiError(error);
+      }
+    },
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["FinancialTransaction"] }),
@@ -1304,10 +1312,15 @@ export function CashFlowPage() {
       name: string;
       priority: number;
       type: "EXPENSE" | "INCOME";
-    }) =>
-      apiClient.post("/api/finance/auto-category-rules", payload, {
-        responseSchema: CreateAutoCategoryRuleResponseSchema,
-      }),
+    }) => {
+      try {
+        return CreateAutoCategoryRuleResponseSchema.parse(
+          await financeORPCClient.autoCategoryRulesCreate(payload),
+        );
+      } catch (error) {
+        throw toFinanceApiError(error);
+      }
+    },
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["FinancialAutoCategoryRule"] }),
@@ -1348,10 +1361,15 @@ export function CashFlowPage() {
         priority: number;
         type: "EXPENSE" | "INCOME";
       }>;
-    }) =>
-      apiClient.put(`/api/finance/auto-category-rules/${id}`, payload, {
-        responseSchema: UpdateAutoCategoryRuleResponseSchema,
-      }),
+    }) => {
+      try {
+        return UpdateAutoCategoryRuleResponseSchema.parse(
+          await financeORPCClient.autoCategoryRulesUpdate({ id, payload }),
+        );
+      } catch (error) {
+        throw toFinanceApiError(error);
+      }
+    },
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["FinancialAutoCategoryRule"] }),
@@ -1367,10 +1385,15 @@ export function CashFlowPage() {
   });
 
   const deleteAutoCategoryRuleMutation = useMutation({
-    mutationFn: async (id: number) =>
-      apiClient.delete(`/api/finance/auto-category-rules/${id}`, {
-        responseSchema: DeleteAutoCategoryRuleResponseSchema,
-      }),
+    mutationFn: async (id: number) => {
+      try {
+        return DeleteAutoCategoryRuleResponseSchema.parse(
+          await financeORPCClient.autoCategoryRulesDelete({ id }),
+        );
+      } catch (error) {
+        throw toFinanceApiError(error);
+      }
+    },
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["FinancialAutoCategoryRule"] }),
@@ -1385,14 +1408,15 @@ export function CashFlowPage() {
   });
 
   const syncUncategorizedByPatternsMutation = useMutation({
-    mutationFn: async (): Promise<SyncUncategorizedByPatternsResponse> =>
-      apiClient.post(
-        "/api/finance/sync/uncategorized-patterns",
-        {},
-        {
-          responseSchema: SyncUncategorizedByPatternsResponseSchema,
-        },
-      ),
+    mutationFn: async (): Promise<SyncUncategorizedByPatternsResponse> => {
+      try {
+        return SyncUncategorizedByPatternsResponseSchema.parse(
+          await financeORPCClient.syncUncategorizedPatterns(),
+        );
+      } catch (error) {
+        throw toFinanceApiError(error);
+      }
+    },
     onSuccess: async (response) => {
       await queryClient.invalidateQueries({ queryKey: ["FinancialTransaction"] });
       toast.success(`Sincronización completada: ${response.data.updated} categorizados`);
