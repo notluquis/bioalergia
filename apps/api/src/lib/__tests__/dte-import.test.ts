@@ -165,6 +165,11 @@ describe("parseAmount", () => {
       expect(result?.toString()).toBe("100000.5"); // Converted to 100000.5
     });
 
+    it("should preserve single-dot decimal values from Haulmer exports", () => {
+      const result = parseAmount("8500000.000");
+      expect(result?.toString()).toBe("8500000");
+    });
+
     it("should handle null/undefined amounts", () => {
       expect(parseAmount(null)).toBeNull();
       expect(parseAmount(undefined)).toBeNull();

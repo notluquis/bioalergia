@@ -20,10 +20,22 @@ export function parseAmount(value: unknown): Decimal | null {
   if (!value || value === "") {
     return null;
   }
-  const str = String(value)
-    .replace(/\$/g, "") // Remove $
-    .replace(/\./g, "") // Remove thousands separator (.)
-    .replace(/,/g, "."); // Convert decimal comma to dot
+  const raw = String(value).trim().replace(/\$/g, "").replace(/\s+/g, "");
+  let str = raw;
+  const dotThousandsPattern = /^\d{1,3}(?:\.\d{3})+$/;
+
+  if (raw.includes(",") && raw.includes(".")) {
+    if (raw.lastIndexOf(",") > raw.lastIndexOf(".")) {
+      str = raw.replace(/\./g, "").replace(/,/g, ".");
+    } else {
+      str = raw.replace(/,/g, "");
+    }
+  } else if (raw.includes(",")) {
+    str = raw.replace(/\./g, "").replace(/,/g, ".");
+  } else if (dotThousandsPattern.test(raw)) {
+    str = raw.replace(/\./g, "");
+  }
+
   const num = Number(str);
   return Number.isNaN(num) ? null : new Decimal(num);
 }
@@ -115,6 +127,16 @@ function toDecimalOrZero(value: unknown) {
 
 function isDecimalLike(value: unknown): value is { constructor: { name: string } } {
   return value instanceof Object && value.constructor.name === "Decimal";
+}
+
+function getSaleLookup(row: Record<string, unknown>) {
+  const saleData = buildDteSaleDetail(row);
+
+  return {
+    saleData,
+    folio: String(saleData.folio),
+    documentType: Number(saleData.documentType),
+  };
 }
 
 /**
@@ -264,10 +286,13 @@ export async function importDteSaleRow(
       );
       return { inserted: 0, updated: 0, skipped: 1 };
     }
-    const saleData = buildDteSaleDetail(row);
+    const { saleData, folio, documentType } = getSaleLookup(row);
 
     const existing = await db.dTESaleDetail.findFirst({
-      where: { folio: String(saleData.folio) },
+      where: {
+        folio,
+        documentType,
+      },
     });
 
     if (existing) {
@@ -291,7 +316,7 @@ export async function importDteSaleRow(
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     console.error(
-      `[DTE] Failed to import sale row [folio=${row.folio}, period=${row.period}]: ${msg}`,
+      `[DTE] Failed to import sale row [folio=${row.folio}, documentType=${row.documentType ?? row.dte}, period=${row.period}]: ${msg}`,
     );
     return { inserted: 0, updated: 0, skipped: 1 };
   }
