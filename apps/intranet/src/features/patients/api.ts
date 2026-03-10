@@ -2,7 +2,10 @@ import Decimal from "decimal.js";
 import { patientsORPCClient, toPatientsApiError } from "./orpc";
 import {
   BudgetSchema,
+  ConsultationSchema,
   PatientBudgetListSchema,
+  PatientDetailSchema,
+  PatientListSchema,
   PatientPaymentListSchema,
   PatientPaymentSchema,
 } from "./schemas";
@@ -44,6 +47,43 @@ export async function createPatientBudget(input: {
   }
 }
 
+export async function createPatient(input: {
+  address?: string;
+  birthDate?: string;
+  bloodType?: string;
+  email?: string;
+  fatherName?: string;
+  motherName?: string;
+  names: string;
+  notes?: string;
+  phone?: string;
+  rut: string;
+}) {
+  try {
+    const response = await patientsORPCClient.create(input);
+    return PatientListSchema.element.parse(normalizeDecimalValues(response.patient));
+  } catch (error) {
+    throw toPatientsApiError(error);
+  }
+}
+
+export async function createPatientConsultation(input: {
+  date: string;
+  diagnosis?: string;
+  eventId?: number;
+  notes?: string;
+  patientId: number;
+  reason: string;
+  treatment?: string;
+}) {
+  try {
+    const response = await patientsORPCClient.createConsultation(input);
+    return ConsultationSchema.parse(normalizeDecimalValues(response.consultation));
+  } catch (error) {
+    throw toPatientsApiError(error);
+  }
+}
+
 export async function createPatientPayment(input: {
   amount: number;
   budgetId?: number;
@@ -61,6 +101,15 @@ export async function createPatientPayment(input: {
   }
 }
 
+export async function fetchPatient(patientId: number) {
+  try {
+    const response = await patientsORPCClient.detail({ patientId });
+    return PatientDetailSchema.parse(normalizeDecimalValues(response.patient));
+  } catch (error) {
+    throw toPatientsApiError(error);
+  }
+}
+
 export async function fetchPatientBudgets(patientId: number) {
   try {
     const response = await patientsORPCClient.listBudgets({ patientId });
@@ -70,10 +119,43 @@ export async function fetchPatientBudgets(patientId: number) {
   }
 }
 
+export async function fetchPatientDteSources(
+  input: { limit?: number; period?: string; q?: string } = {},
+) {
+  try {
+    const response = await patientsORPCClient.listDteSources(input);
+    return normalizeDecimalValues(response.rows);
+  } catch (error) {
+    throw toPatientsApiError(error);
+  }
+}
+
+export async function fetchPatients(q?: string) {
+  try {
+    const response = await patientsORPCClient.list(q ? { q } : undefined);
+    return PatientListSchema.parse(normalizeDecimalValues(response.patients));
+  } catch (error) {
+    throw toPatientsApiError(error);
+  }
+}
+
 export async function fetchPatientPayments(patientId: number) {
   try {
     const response = await patientsORPCClient.listPayments({ patientId });
     return PatientPaymentListSchema.parse(normalizeDecimalValues(response.payments));
+  } catch (error) {
+    throw toPatientsApiError(error);
+  }
+}
+
+export async function syncPatientDteSources(input: {
+  documentTypes?: number[];
+  dryRun?: boolean;
+  limit?: number;
+  period?: string;
+}) {
+  try {
+    return await patientsORPCClient.syncDteSources(input);
   } catch (error) {
     throw toPatientsApiError(error);
   }

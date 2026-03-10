@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { apiClient } from "@/lib/api-client";
+import { ApiError } from "@/lib/api-client";
 import { formatISO } from "@/lib/dates";
-
+import { expensesORPCClient, toExpensesApiError } from "./orpc";
 import type {
   CreateMonthlyExpensePayload,
   LinkMonthlyExpenseTransactionPayload,
@@ -9,11 +9,6 @@ import type {
   MonthlyExpenseDetail,
   MonthlyExpenseStatsRow,
 } from "./types";
-
-const ExpenseDetailResponseSchema = z.object({
-  expense: z.unknown(),
-  status: z.literal("ok"),
-});
 
 const ExpensesResponseSchema = z.object({
   expenses: z.array(z.unknown()),
@@ -26,22 +21,26 @@ const ExpenseStatsResponseSchema = z.object({
 });
 
 export async function createMonthlyExpense(payload: CreateMonthlyExpensePayload) {
-  const requestPayload = { ...payload, expenseDate: formatISO(payload.expenseDate) };
-  return apiClient.post<{ expense: MonthlyExpenseDetail; status: "ok" }>(
-    "/api/expenses",
-    requestPayload,
-    {
-      responseSchema: ExpenseDetailResponseSchema,
-    },
-  );
+  try {
+    const response = await expensesORPCClient.create({
+      ...payload,
+      expenseDate: formatISO(payload.expenseDate),
+    });
+    throw new ApiError(response.message, 501);
+  } catch (error) {
+    throw toExpensesApiError(error);
+  }
 }
 
 export async function fetchMonthlyExpenseDetail(
   publicId: string,
 ): Promise<{ expense: MonthlyExpenseDetail; status: "ok" }> {
-  return apiClient.get(`/api/expenses/${publicId}`, {
-    responseSchema: ExpenseDetailResponseSchema,
-  });
+  try {
+    const response = await expensesORPCClient.detail({ publicId });
+    throw new ApiError(response.message, 501);
+  } catch (error) {
+    throw toExpensesApiError(error);
+  }
 }
 
 export async function fetchMonthlyExpenses(params?: {
@@ -50,7 +49,11 @@ export async function fetchMonthlyExpenses(params?: {
   status?: string;
   to?: string;
 }): Promise<{ expenses: MonthlyExpense[]; status: "ok" }> {
-  return apiClient.get("/api/expenses", { query: params, responseSchema: ExpensesResponseSchema });
+  try {
+    return ExpensesResponseSchema.parse(await expensesORPCClient.list(params));
+  } catch (error) {
+    throw toExpensesApiError(error);
+  }
 }
 
 export async function fetchMonthlyExpenseStats(params?: {
@@ -59,38 +62,45 @@ export async function fetchMonthlyExpenseStats(params?: {
   groupBy?: "day" | "month" | "quarter" | "week" | "year";
   to?: string;
 }): Promise<{ stats: MonthlyExpenseStatsRow[]; status: "ok" }> {
-  return apiClient.get("/api/expenses/stats", {
-    query: params,
-    responseSchema: ExpenseStatsResponseSchema,
-  });
+  try {
+    return ExpenseStatsResponseSchema.parse(await expensesORPCClient.stats(params));
+  } catch (error) {
+    throw toExpensesApiError(error);
+  }
 }
 
 export async function linkMonthlyExpenseTransaction(
   publicId: string,
   payload: LinkMonthlyExpenseTransactionPayload,
 ) {
-  return apiClient.post<{ expense: MonthlyExpenseDetail; status: "ok" }>(
-    `/api/expenses/${publicId}/link`,
-    payload,
-    { responseSchema: ExpenseDetailResponseSchema },
-  );
+  try {
+    const response = await expensesORPCClient.linkTransaction({ publicId, ...payload });
+    throw new ApiError(response.message, 501);
+  } catch (error) {
+    throw toExpensesApiError(error);
+  }
 }
 
 export async function unlinkMonthlyExpenseTransaction(publicId: string, transactionId: number) {
-  return apiClient.post<{ expense: MonthlyExpenseDetail; status: "ok" }>(
-    `/api/expenses/${publicId}/unlink`,
-    {
-      transactionId,
-    },
-    { responseSchema: ExpenseDetailResponseSchema },
-  );
+  try {
+    const response = await expensesORPCClient.unlinkTransaction({ publicId, transactionId });
+    throw new ApiError(response.message, 501);
+  } catch (error) {
+    throw toExpensesApiError(error);
+  }
 }
 
 export async function updateMonthlyExpense(publicId: string, payload: CreateMonthlyExpensePayload) {
-  const requestPayload = { ...payload, expenseDate: formatISO(payload.expenseDate) };
-  return apiClient.put<{ expense: MonthlyExpenseDetail; status: "ok" }>(
-    `/api/expenses/${publicId}`,
-    requestPayload,
-    { responseSchema: ExpenseDetailResponseSchema },
-  );
+  try {
+    const response = await expensesORPCClient.update({
+      publicId,
+      payload: {
+        ...payload,
+        expenseDate: formatISO(payload.expenseDate),
+      },
+    });
+    throw new ApiError(response.message, 501);
+  } catch (error) {
+    throw toExpensesApiError(error);
+  }
 }

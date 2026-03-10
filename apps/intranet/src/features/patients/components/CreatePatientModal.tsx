@@ -13,17 +13,15 @@ import { parseDate } from "@internationalized/date";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Save, User, UserPlus } from "lucide-react";
-import { z } from "zod";
 import {
   TanStackInputField,
   TanStackTextAreaField,
 } from "@/components/forms/TanStackFieldControls";
 import { useToast } from "@/context/ToastContext";
-import { apiClient } from "@/lib/api-client";
+import { createPatient } from "@/features/patients/api";
 import { formatRut, validateRut } from "@/lib/rut";
 
 const BLOOD_TYPES = ["O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-"];
-const StatusResponseSchema = z.looseObject({ status: z.string().optional() });
 
 interface PatientFormState {
   rut: string;
@@ -50,11 +48,7 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
   const { error: toastError, success } = useToast();
 
   const createPatientMutation = useMutation({
-    mutationFn: async (payload: PatientPayload) => {
-      return await apiClient.post("/api/patients", payload, {
-        responseSchema: StatusResponseSchema,
-      });
-    },
+    mutationFn: async (payload: PatientPayload) => createPatient(payload),
     onError: (err) => {
       toastError(err instanceof Error ? err.message : "Error al registrar paciente");
     },

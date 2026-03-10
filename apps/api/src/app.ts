@@ -23,6 +23,7 @@ import { doctoraliaOpenAPIHandler, doctoraliaORPCHandler } from "./orpc/doctoral
 import { dteAnalyticsOpenAPIHandler, dteAnalyticsORPCHandler } from "./orpc/dte-analytics";
 import { dteEventLinksOpenAPIHandler, dteEventLinksORPCHandler } from "./orpc/dte-event-links";
 import { employeesOpenAPIHandler, employeesORPCHandler } from "./orpc/employees";
+import { expensesOpenAPIHandler, expensesORPCHandler } from "./orpc/expenses";
 import { financeOpenAPIHandler, financeORPCHandler } from "./orpc/finance";
 import { integrationsOpenAPIHandler, integrationsORPCHandler } from "./orpc/integrations";
 import { inventoryOpenAPIHandler, inventoryORPCHandler } from "./orpc/inventory";
@@ -365,6 +366,15 @@ app.get("/api/orpc", (c) =>
           </ul>
         </section>
         <section class="card">
+          <h2>Expenses</h2>
+          <p>Lista/estadísticas activas y contratos placeholder coherentes para la feature.</p>
+          <ul>
+            <li><a href="/api/orpc/expenses/docs">Reference UI</a></li>
+            <li><a href="/api/orpc/expenses/openapi.json">OpenAPI JSON</a></li>
+            <li><code>/api/orpc/expenses/rpc/*</code></li>
+          </ul>
+        </section>
+        <section class="card">
           <h2>Integrations</h2>
           <p>OAuth, estado y desconexión de Google Drive.</p>
           <ul>
@@ -667,6 +677,19 @@ app.use("/api/orpc/employees/rpc/*", async (c, next) => {
   await next();
 });
 
+app.use("/api/orpc/expenses/rpc/*", async (c, next) => {
+  const { matched, response } = await expensesORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/expenses/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
 app.use("/api/orpc/integrations/rpc/*", async (c, next) => {
   const { matched, response } = await integrationsORPCHandler.handle(createHonoORPCRequest(c), {
     prefix: "/api/orpc/integrations/rpc",
@@ -916,6 +939,18 @@ app.use("/api/orpc/inventory/*", async (c, next) => {
 
 app.use("/api/orpc/employees/*", async (c, next) => {
   const { matched, response } = await employeesOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
+app.use("/api/orpc/expenses/*", async (c, next) => {
+  const { matched, response } = await expensesOpenAPIHandler.handle(createHonoORPCRequest(c), {
     context: { hono: c },
   });
 

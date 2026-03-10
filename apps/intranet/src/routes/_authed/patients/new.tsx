@@ -4,14 +4,13 @@ import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Save, User, UserPlus, X } from "lucide-react";
-import { z } from "zod";
 import {
   TanStackInputField,
   TanStackSelectField,
   TanStackTextAreaField,
 } from "@/components/forms/TanStackFieldControls";
 import { useToast } from "@/context/ToastContext";
-import { apiClient } from "@/lib/api-client";
+import { createPatient } from "@/features/patients/api";
 import { formatRut, validateRut } from "@/lib/rut";
 import { TITLE_LG } from "@/lib/styles";
 
@@ -24,7 +23,6 @@ export const Route = createFileRoute("/_authed/patients/new")({
 });
 
 const BLOOD_TYPES = ["O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-"];
-const StatusResponseSchema = z.looseObject({ status: z.string().optional() });
 
 interface PatientFormState {
   rut: string;
@@ -47,11 +45,7 @@ function AddPatientPage() {
   const { error: toastError, success } = useToast();
 
   const createPatientMutation = useMutation({
-    mutationFn: async (payload: PatientPayload) => {
-      return await apiClient.post("/api/patients", payload, {
-        responseSchema: StatusResponseSchema,
-      });
-    },
+    mutationFn: async (payload: PatientPayload) => createPatient(payload),
     onError: (err) => {
       toastError(err instanceof Error ? err.message : "Error al registrar paciente");
     },

@@ -16,8 +16,7 @@ import dayjs from "dayjs";
 import { ChevronLeft, Save } from "lucide-react";
 import { z } from "zod";
 import { TanStackTextAreaField } from "@/components/forms/TanStackFieldControls";
-import { ConsultationSchema } from "@/features/patients/schemas";
-import { apiClient } from "@/lib/api-client";
+import { createPatientConsultation } from "@/features/patients/api";
 import { PAGE_CONTAINER } from "@/lib/styles";
 import { toast } from "@/lib/toast-interceptor";
 
@@ -46,11 +45,11 @@ function NewConsultationPage() {
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
-    mutationFn: async (data: ConsultationForm) => {
-      return await apiClient.post(`/api/patients/${id}/consultations`, data, {
-        responseSchema: ConsultationSchema,
-      });
-    },
+    mutationFn: async (data: ConsultationForm) =>
+      createPatientConsultation({
+        patientId: Number(id),
+        ...data,
+      }),
     onSuccess: () => {
       toast.success("Consulta registrada exitosamente");
       queryClient.invalidateQueries({ queryKey: ["patient", id] });

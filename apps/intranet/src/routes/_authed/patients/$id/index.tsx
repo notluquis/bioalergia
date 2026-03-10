@@ -20,9 +20,8 @@ import {
 } from "lucide-react";
 import { lazy, Suspense, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
-import { PatientDetailSchema } from "@/features/patients/schemas";
+import { fetchPatient } from "@/features/patients/api";
 import { useLazyTabs } from "@/hooks/use-lazy-tabs";
-import { apiClient } from "@/lib/api-client";
 
 const NewAttachmentModal = lazy(() =>
   import("@/features/patients/components/NewAttachmentModal").then((module) => ({
@@ -30,82 +29,13 @@ const NewAttachmentModal = lazy(() =>
   })),
 );
 
-interface Person {
-  rut: string;
-  names: string;
-  fatherName?: string;
-  motherName?: string;
-  email?: string;
-  phone?: string;
-  address?: string;
-}
-
-interface Consultation {
-  id: number;
-  date: string;
-  reason: string;
-  diagnosis?: string;
-  treatment?: string;
-  notes?: string;
-}
-
-interface MedicalCertificate {
-  id: string;
-  issuedAt: string;
-  diagnosis: string;
-}
-
-interface BudgetItem {
-  id: number;
-  description: string;
-  quantity: number;
-  unitPrice: number;
-  totalPrice: number;
-}
-
-interface Budget {
-  id: number;
-  title: string;
-  totalAmount: number;
-  discount: number;
-  finalAmount: number;
-  status: string;
-  notes?: string;
-  updatedAt: Date;
-  items: BudgetItem[];
-}
-
-interface PatientPayment {
-  id: number;
-  amount: number;
-  paymentDate: string;
-  paymentMethod: string;
-  reference?: string;
-  notes?: string;
-}
-
-interface PatientAttachment {
-  id: number;
-  name: string;
-  type: string;
-  uploadedAt: Date;
-  driveFileId: string;
-}
-
-interface Patient {
-  id: number;
-  personId: number;
-  birthDate?: string | null;
-  bloodType?: string;
-  notes?: string;
-  createdAt: Date;
-  person: Person;
-  consultations: Consultation[];
-  medicalCertificates: MedicalCertificate[];
-  budgets: Budget[];
-  payments: PatientPayment[];
-  attachments: PatientAttachment[];
-}
+type Patient = Awaited<ReturnType<typeof fetchPatient>>;
+type Person = Patient["person"];
+type Consultation = Patient["consultations"][number];
+type MedicalCertificate = Patient["medicalCertificates"][number];
+type Budget = Patient["budgets"][number];
+type PatientPayment = Patient["payments"][number];
+type PatientAttachment = Patient["attachments"][number];
 
 export const Route = createFileRoute("/_authed/patients/$id/")({
   staticData: {
@@ -118,11 +48,7 @@ export const Route = createFileRoute("/_authed/patients/$id/")({
   loader: async ({ context: { queryClient }, params: { id } }) => {
     return await queryClient.ensureQueryData({
       queryKey: ["patient", id],
-      queryFn: async () => {
-        return await apiClient.get<Patient>(`/api/patients/${id}`, {
-          responseSchema: PatientDetailSchema,
-        });
-      },
+      queryFn: async () => fetchPatient(Number(id)),
     });
   },
   component: PatientDetailsPage,
@@ -141,11 +67,7 @@ function PatientDetailsPage() {
 
   const { data: patientData, isLoading } = useQuery({
     queryKey: ["patient", id],
-    queryFn: async () => {
-      return await apiClient.get<Patient>(`/api/patients/${id}`, {
-        responseSchema: PatientDetailSchema,
-      });
-    },
+    queryFn: async () => fetchPatient(Number(id)),
   });
 
   const queryStateView = renderPatientQueryState({

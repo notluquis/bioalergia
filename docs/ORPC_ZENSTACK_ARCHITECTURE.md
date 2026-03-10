@@ -41,6 +41,7 @@
                │ /api/orpc/dte-analytics/event-links/rpc/*
                │ /api/orpc/doctoralia/rpc/*
                │ /api/orpc/employees/rpc/*
+               │ /api/orpc/expenses/rpc/*
                │ /api/orpc/integrations/rpc/*
                │ /api/orpc/inventory/rpc/*
                │ /api/orpc/roles/rpc/*
@@ -106,6 +107,11 @@
 │ │  • /                                       │
 │ │  • /{id}                                   │
 │ │                                            │
+│ ├─ Expenses Router                           │
+│ │  • /                                       │
+│ │  • /stats                                  │
+│ │  • resto sigue placeholder                 │
+│ │                                            │
 │ ├─ Integrations Router                       │
 │ │  • /google/url                             │
 │ │  • /google/status                          │
@@ -144,9 +150,13 @@
 │ │  • /{id}                                   │
 │ │                                            │
 │ ├─ Patients Router                           │
+│ │  • /                                       │
+│ │  • /{patientId}                            │
+│ │  • /consultations                          │
 │ │  • /{patientId}/budgets                    │
 │ │  • /payments                               │
 │ │  • /{patientId}/payments                   │
+│ │  • /sources/dte                            │
 │ │                                            │
 │ ├─ Personal Finance Router                   │
 │ │  • /credits                                │
@@ -462,6 +472,18 @@ prisma.event.findMany()                        // Wrong ORM
 import { db } from '@finanzas/db'              // Zenstack v3
 db.event.findMany()                            // Correct ORM
 ```
+
+---
+
+## Intentional REST Exceptions
+
+The frontend should use oRPC by default. The remaining direct REST/SSE flows are intentional:
+
+- `patients` attachments stay on REST because they upload `multipart/form-data`
+- `doctoralia` OAuth start/redirect/callback stay on REST because they are browser redirect flows
+- `backups` progress stays on `EventSource`/SSE at `/api/backups/progress`
+
+Everything else should migrate through feature-level `orpc.ts` + `api.ts` boundaries.
 
 ---
 

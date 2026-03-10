@@ -5,13 +5,15 @@ import type { ColumnDef, PaginationState } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { ArrowRight, Database, RefreshCw, Search, User, UserPlus } from "lucide-react";
 import { lazy, Suspense, useMemo, useState } from "react";
-import { z } from "zod";
 import { DataTable } from "@/components/data-table/DataTable";
 import { TableRegion } from "@/components/data-table/TableRegion";
-import { PatientListSchema } from "@/features/patients/schemas";
+import {
+  fetchPatientDteSources,
+  fetchPatients,
+  syncPatientDteSources,
+} from "@/features/patients/api";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { useLazyTabs } from "@/hooks/use-lazy-tabs";
-import { apiClient } from "@/lib/api-client";
 import { PAGE_CONTAINER_RELAXED } from "@/lib/styles";
 
 const CreatePatientModal = lazy(() =>
@@ -28,42 +30,8 @@ export const Route = createFileRoute("/_authed/patients/")({
   component: PatientsListPage,
 });
 
-interface Patient {
-  id: number;
-  personId: number;
-  birthDate?: null | string;
-  person: {
-    rut: string;
-    names: string;
-    fatherName?: string;
-    motherName?: string;
-    email?: string;
-  };
-}
-
-interface DtePatientSource {
-  clientName: string;
-  clientRUT: string;
-  documentDate?: Date | null | string;
-  documentType: number;
-  folio?: null | string;
-  period?: null | string;
-  sourceUpdatedAt?: Date | null | string;
-  updatedAt?: Date | null | string;
-}
-
-const DtePatientSourceSchema = z.array(
-  z.object({
-    clientName: z.string(),
-    clientRUT: z.string(),
-    documentDate: z.union([z.coerce.date(), z.null()]).optional(),
-    documentType: z.number(),
-    folio: z.string().nullable().optional(),
-    period: z.string().nullable().optional(),
-    sourceUpdatedAt: z.union([z.coerce.date(), z.null()]).optional(),
-    updatedAt: z.union([z.coerce.date(), z.null()]).optional(),
-  }),
-);
+type Patient = Awaited<ReturnType<typeof fetchPatients>>[number];
+type DtePatientSource = Awaited<ReturnType<typeof fetchPatientDteSources>>[number];
 
 function PatientsListPage() {
   const navigate = useNavigate();
@@ -84,33 +52,16 @@ function PatientsListPage() {
 
   const { data: patients = [], isLoading: isLoadingPatients } = useQuery({
     queryKey: ["patients", searchClinical],
-    queryFn: async () =>
-      apiClient.get<Patient[]>(`/api/patients?q=${encodeURIComponent(searchClinical)}`, {
-        responseSchema: PatientListSchema,
-      }),
+    queryFn: async () => fetchPatients(searchClinical),
   });
 
   const { data: dteSources = [], isLoading: isLoadingDteSources } = useQuery({
     queryKey: ["patients", "dte-sources", searchDte],
-    queryFn: async () =>
-      apiClient.get<DtePatientSource[]>(
-        `/api/patients/sources/dte?q=${encodeURIComponent(searchDte)}&limit=300`,
-        { responseSchema: DtePatientSourceSchema },
-      ),
+    queryFn: async () => fetchPatientDteSources({ limit: 300, q: searchDte }),
   });
 
   const syncDteSourcesMutation = useMutation({
-    mutationFn: async () =>
-      apiClient.post(
-        "/api/patients/sources/dte/sync",
-        { dryRun: false },
-        {
-          responseSchema: z.object({
-            selected: z.number().optional(),
-            updated: z.number().optional(),
-          }),
-        },
-      ),
+    mutationFn: async () => syncPatientDteSources({ dryRun: false }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["patients", "dte-sources"] });
     },

@@ -40,6 +40,29 @@ const createBudgetInputSchema = z.object({
   title: z.string().min(1),
 });
 
+const createPatientInputSchema = z.object({
+  address: z.string().optional(),
+  birthDate: z.string().optional(),
+  bloodType: z.string().optional(),
+  email: z.string().optional(),
+  fatherName: z.string().optional(),
+  motherName: z.string().optional(),
+  names: z.string().min(1),
+  notes: z.string().optional(),
+  phone: z.string().optional(),
+  rut: z.string().min(1),
+});
+
+const createConsultationInputSchema = z.object({
+  date: z.string().min(1),
+  diagnosis: z.string().optional(),
+  eventId: z.number().int().optional(),
+  notes: z.string().optional(),
+  patientId: z.number().int(),
+  reason: z.string().min(1),
+  treatment: z.string().optional(),
+});
+
 const patientIdInputSchema = z.object({
   patientId: z.number().int(),
 });
@@ -52,6 +75,23 @@ const createPaymentInputSchema = z.object({
   paymentDate: z.string().min(1),
   paymentMethod: z.enum(["Transferencia", "Efectivo", "Tarjeta", "Otro"]),
   reference: z.string().optional(),
+});
+
+const listPatientsInputSchema = z.object({
+  q: z.string().optional(),
+});
+
+const listPatientDteSourcesInputSchema = z.object({
+  limit: z.number().int().positive().max(1000).optional(),
+  period: z.string().optional(),
+  q: z.string().optional(),
+});
+
+const syncPatientDteSourcesInputSchema = z.object({
+  documentTypes: z.array(z.number().int().positive()).optional(),
+  dryRun: z.boolean().optional(),
+  limit: z.number().int().positive().max(5000).optional(),
+  period: z.string().optional(),
 });
 
 const patientPaymentSchema = z.object({
@@ -81,6 +121,104 @@ const budgetSchema = z.object({
   updatedAt: z.date(),
 });
 
+const personSchema = z.object({
+  address: z.string().nullable().optional(),
+  createdAt: z.date(),
+  email: z.string().nullable().optional(),
+  fatherName: z.string().nullable().optional(),
+  id: z.number().int(),
+  motherName: z.string().nullable().optional(),
+  names: z.string(),
+  personType: z.string(),
+  phone: z.string().nullable().optional(),
+  rut: z.string(),
+  updatedAt: z.date(),
+});
+
+const consultationSchema = z.object({
+  createdAt: z.date(),
+  date: z.date(),
+  diagnosis: z.string().nullable().optional(),
+  eventId: z.number().nullable().optional(),
+  id: z.number().int(),
+  notes: z.string().nullable().optional(),
+  patientId: z.number().int(),
+  reason: z.string(),
+  treatment: z.string().nullable().optional(),
+  updatedAt: z.date(),
+});
+
+const attachmentSchema = z.object({
+  driveFileId: z.string(),
+  id: z.string(),
+  mimeType: z.string().nullable().optional(),
+  name: z.string(),
+  patientId: z.number().int(),
+  type: z.string(),
+  uploadedAt: z.date(),
+  uploadedBy: z.number().int(),
+  webViewLink: z.string().optional(),
+});
+
+const medicalCertificateSchema = z.object({
+  address: z.string(),
+  birthDate: z.date(),
+  diagnosis: z.string(),
+  driveFileId: z.string(),
+  id: z.string(),
+  issuedAt: z.date(),
+  issuedBy: z.number().int(),
+  metadata: z.unknown().nullable().optional(),
+  patientId: z.number().nullable().optional(),
+  patientName: z.string(),
+  patientRut: z.string(),
+  pdfHash: z.string(),
+  purpose: z.string(),
+  purposeDetail: z.string().nullable().optional(),
+  restDays: z.number().nullable().optional(),
+  restEndDate: z.date().nullable().optional(),
+  restStartDate: z.date().nullable().optional(),
+  symptoms: z.string().nullable().optional(),
+});
+
+const patientListItemSchema = z.object({
+  birthDate: z.date().nullable().optional(),
+  bloodType: z.string().nullable().optional(),
+  createdAt: z.date(),
+  id: z.number().int(),
+  notes: z.string().nullable().optional(),
+  person: personSchema,
+  personId: z.number().int(),
+  updatedAt: z.date(),
+});
+
+const patientDetailSchema = z.object({
+  attachments: z.array(attachmentSchema),
+  birthDate: z.date().nullable().optional(),
+  bloodType: z.string().nullable().optional(),
+  budgets: z.array(budgetSchema),
+  consultations: z.array(consultationSchema),
+  createdAt: z.date(),
+  id: z.number().int(),
+  medicalCertificates: z.array(medicalCertificateSchema),
+  notes: z.string().nullable().optional(),
+  payments: z.array(patientPaymentSchema),
+  person: personSchema,
+  personId: z.number().int(),
+  updatedAt: z.date(),
+});
+
+const patientDteSourceSchema = z.object({
+  clientName: z.string(),
+  clientRUT: z.string(),
+  documentDate: z.date().nullable().optional(),
+  documentType: z.number(),
+  folio: z.string().nullable().optional(),
+  period: z.string().nullable().optional(),
+  sourceUpdatedAt: z.date().nullable().optional(),
+  updatedAt: z.date().nullable().optional(),
+});
+
 const budgetListResponseSchema = z.object({
   budgets: z.array(budgetSchema),
   status: z.literal("ok"),
@@ -99,6 +237,41 @@ const paymentResponseSchema = z.object({
 const paymentListResponseSchema = z.object({
   payments: z.array(patientPaymentSchema),
   status: z.literal("ok"),
+});
+
+const patientListResponseSchema = z.object({
+  patients: z.array(patientListItemSchema),
+  status: z.literal("ok"),
+});
+
+const patientDetailResponseSchema = z.object({
+  patient: patientDetailSchema,
+  status: z.literal("ok"),
+});
+
+const patientResponseSchema = z.object({
+  patient: patientListItemSchema,
+  status: z.literal("ok"),
+});
+
+const consultationResponseSchema = z.object({
+  consultation: consultationSchema,
+  status: z.literal("ok"),
+});
+
+const patientDteSourceListResponseSchema = z.object({
+  rows: z.array(patientDteSourceSchema),
+  status: z.literal("ok"),
+});
+
+const patientDteSyncResponseSchema = z.object({
+  dryRun: z.boolean(),
+  inserted: z.number(),
+  message: z.string(),
+  selected: z.number(),
+  skipped: z.number(),
+  status: z.literal("ok"),
+  updated: z.number(),
 });
 
 function parseDateOnly(value: string) {
@@ -124,6 +297,36 @@ const readBudgets = authed.use(async ({ context, next }) => {
   const canRead = await hasPermission(context.user.id, "read", "Budget");
 
   if (!canRead) {
+    throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
+  }
+
+  return next();
+});
+
+const readPatients = authed.use(async ({ context, next }) => {
+  const canRead = await hasPermission(context.user.id, "read", "Patient");
+
+  if (!canRead) {
+    throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
+  }
+
+  return next();
+});
+
+const createPatients = authed.use(async ({ context, next }) => {
+  const canCreate = await hasPermission(context.user.id, "create", "Patient");
+
+  if (!canCreate) {
+    throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
+  }
+
+  return next();
+});
+
+const createConsultations = authed.use(async ({ context, next }) => {
+  const canCreate = await hasPermission(context.user.id, "create", "Consultation");
+
+  if (!canCreate) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
   }
 
@@ -161,6 +364,72 @@ const createPayments = authed.use(async ({ context, next }) => {
 });
 
 const patientsORPCRouterBase = {
+  create: createPatients
+    .route({
+      method: "POST",
+      path: "/",
+      summary: "Create patient",
+      tags: ["Patients"],
+    })
+    .input(createPatientInputSchema)
+    .output(patientResponseSchema)
+    .handler(async ({ input }) => {
+      let person = await db.person.findUnique({
+        where: { rut: input.rut },
+      });
+
+      if (person) {
+        const existingPatient = await db.patient.findUnique({
+          where: { personId: person.id },
+        });
+
+        if (existingPatient) {
+          throw new ORPCError("CONFLICT", { message: "El paciente ya está registrado" });
+        }
+
+        person = await db.person.update({
+          where: { id: person.id },
+          data: {
+            names: input.names,
+            fatherName: input.fatherName,
+            motherName: input.motherName,
+            email: input.email || person.email,
+            phone: input.phone || person.phone,
+            address: input.address || person.address,
+          },
+        });
+      } else {
+        person = await db.person.create({
+          data: {
+            rut: input.rut,
+            names: input.names,
+            fatherName: input.fatherName,
+            motherName: input.motherName,
+            email: input.email,
+            phone: input.phone,
+            address: input.address,
+          },
+        });
+      }
+
+      const patient = await db.patient.create({
+        data: {
+          personId: person.id,
+          birthDate: input.birthDate ? parseDateOnly(input.birthDate) : null,
+          bloodType: input.bloodType,
+          notes: input.notes,
+        },
+        include: {
+          person: true,
+        },
+      });
+
+      return {
+        patient,
+        status: "ok",
+      };
+    }),
+
   createBudget: createBudgets
     .route({
       method: "POST",
@@ -196,6 +465,42 @@ const patientsORPCRouterBase = {
           ...budget,
           items: [],
         },
+        status: "ok",
+      };
+    }),
+
+  createConsultation: createConsultations
+    .route({
+      method: "POST",
+      path: "/consultations",
+      summary: "Create patient consultation",
+      tags: ["Patients"],
+    })
+    .input(createConsultationInputSchema)
+    .output(consultationResponseSchema)
+    .handler(async ({ input }) => {
+      const patient = await db.patient.findUnique({
+        where: { id: input.patientId },
+      });
+
+      if (!patient) {
+        throw new ORPCError("NOT_FOUND", { message: "Paciente no encontrado" });
+      }
+
+      const consultation = await db.consultation.create({
+        data: {
+          patientId: input.patientId,
+          date: parseDateOnly(input.date),
+          reason: input.reason,
+          diagnosis: input.diagnosis,
+          treatment: input.treatment,
+          notes: input.notes,
+          eventId: input.eventId,
+        },
+      });
+
+      return {
+        consultation,
         status: "ok",
       };
     }),
@@ -270,6 +575,148 @@ const patientsORPCRouterBase = {
 
       return {
         payments,
+        status: "ok",
+      };
+    }),
+
+  detail: readPatients
+    .route({
+      method: "GET",
+      path: "/{patientId}",
+      summary: "Get patient detail",
+      tags: ["Patients"],
+    })
+    .input(patientIdInputSchema)
+    .output(patientDetailResponseSchema)
+    .handler(async ({ input }) => {
+      const patient = await db.patient.findUnique({
+        where: { id: input.patientId },
+        include: {
+          person: true,
+          consultations: {
+            orderBy: { date: "desc" },
+            take: 10,
+          },
+          medicalCertificates: {
+            orderBy: { issuedAt: "desc" },
+            take: 10,
+          },
+          budgets: {
+            orderBy: { updatedAt: "desc" },
+          },
+          payments: {
+            orderBy: { paymentDate: "desc" },
+          },
+          attachments: {
+            orderBy: { uploadedAt: "desc" },
+          },
+        },
+      });
+
+      if (!patient) {
+        throw new ORPCError("NOT_FOUND", { message: "Paciente no encontrado" });
+      }
+
+      return {
+        patient: withBudgetItems(patient),
+        status: "ok",
+      };
+    }),
+
+  list: readPatients
+    .route({
+      method: "GET",
+      path: "/",
+      summary: "List patients",
+      tags: ["Patients"],
+    })
+    .input(listPatientsInputSchema)
+    .output(patientListResponseSchema)
+    .handler(async ({ input }) => {
+      const where = input.q
+        ? {
+            person: {
+              OR: [
+                { names: { contains: input.q, mode: "insensitive" } },
+                { fatherName: { contains: input.q, mode: "insensitive" } },
+                { motherName: { contains: input.q, mode: "insensitive" } },
+                { rut: { contains: input.q, mode: "insensitive" } },
+              ],
+            },
+          }
+        : {};
+
+      const patients = await db.patient.findMany({
+        where,
+        include: {
+          person: true,
+        },
+        orderBy: {
+          updatedAt: "desc",
+        },
+        take: 50,
+      });
+
+      return {
+        patients,
+        status: "ok",
+      };
+    }),
+
+  listDteSources: readPatients
+    .route({
+      method: "GET",
+      path: "/sources/dte",
+      summary: "List patient DTE sources",
+      tags: ["Patients"],
+    })
+    .input(listPatientDteSourcesInputSchema)
+    .output(patientDteSourceListResponseSchema)
+    .handler(async ({ input }) => {
+      const maxRows = Math.min(input.limit || 100, 1000);
+      const rows = await db.patientDteSaleSource.findMany({
+        where: {
+          AND: [
+            input.period ? { period: input.period } : {},
+            input.q
+              ? {
+                  OR: [
+                    { clientRUT: { contains: input.q, mode: "insensitive" } },
+                    { clientName: { contains: input.q, mode: "insensitive" } },
+                  ],
+                }
+              : {},
+          ],
+        },
+        orderBy: [{ updatedAt: "desc" }],
+        take: maxRows,
+      });
+
+      return {
+        rows,
+        status: "ok",
+      };
+    }),
+
+  syncDteSources: readPatients
+    .route({
+      method: "POST",
+      path: "/sources/dte/sync",
+      summary: "Sync patient DTE sources",
+      tags: ["Patients"],
+    })
+    .input(syncPatientDteSourcesInputSchema)
+    .output(patientDteSyncResponseSchema)
+    .handler(async ({ input }) => {
+      const result = await syncPatientDteSaleSources({
+        dryRun: input.dryRun ?? false,
+        documentTypes: input.documentTypes,
+        limit: input.limit,
+        period: input.period,
+      });
+
+      return {
+        ...result,
         status: "ok",
       };
     }),
