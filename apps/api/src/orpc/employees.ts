@@ -49,7 +49,7 @@ const employeeSchema = z
     endDate: z.date().nullable().optional(),
     hourlyRate: z.number().nullable(),
     id: z.number().int(),
-    metadata: z.record(z.string(), z.unknown()).nullable().optional(),
+    metadata: z.unknown().nullable().optional(),
     overtimeRate: z.number().nullable().optional(),
     person: personSchema.nullable().optional(),
     personId: z.number().int(),
@@ -181,7 +181,7 @@ const deleteEmployees = authed.use(async ({ context, next }) => {
   return next();
 });
 
-export const employeesORPCRouter = {
+const employeesORPCRouterBase = {
   create: createEmployees
     .route({
       method: "POST",
@@ -263,6 +263,11 @@ export const employeesORPCRouter = {
     }),
 };
 
+export const employeesORPCRouter = base
+  .prefix("/api/orpc/employees")
+  .tag("Employees")
+  .router(employeesORPCRouterBase);
+
 export const employeesORPCHandler = new SuperJSONRPCHandler(employeesORPCRouter, {
   interceptors: [
     onError((error) => {
@@ -274,19 +279,23 @@ export const employeesORPCHandler = new SuperJSONRPCHandler(employeesORPCRouter,
 export const employeesOpenAPIHandler = new OpenAPIHandler(employeesORPCRouter, {
   plugins: [
     new OpenAPIReferencePlugin({
+      docsPath: "/api/orpc/employees/docs",
+      docsTitle: "Bioalergia Employees API Reference",
+      schemaConverters: [new ZodToJsonSchemaConverter()],
       specGenerateOptions: {
         info: {
-          title: "Bioalergia Employees oRPC API",
+          title: "Bioalergia Employees API",
           version: "1.0.0",
         },
-        servers: [{ url: "/api/orpc/employees" }],
       },
+      specPath: "/api/orpc/employees/openapi.json",
     }),
   ],
-  schemaConverters: [new ZodToJsonSchemaConverter()],
   interceptors: [
     onError((error) => {
       logError("employees.orpc.openapi", error, {});
     }),
   ],
 });
+
+export type EmployeesORPCRouter = typeof employeesORPCRouter;

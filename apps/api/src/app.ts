@@ -17,6 +17,7 @@ import { patientsRoutes } from "./modules/patients/index.js";
 import { calendarOpenAPIHandler, calendarORPCHandler } from "./orpc/calendar";
 import { dteEventLinksOpenAPIHandler, dteEventLinksORPCHandler } from "./orpc/dte-event-links";
 import { employeesOpenAPIHandler, employeesORPCHandler } from "./orpc/employees";
+import { inventoryOpenAPIHandler, inventoryORPCHandler } from "./orpc/inventory";
 import { createHonoORPCRequest } from "./orpc/superjson";
 import { authRoutes } from "./routes/auth";
 import { backupRoutes } from "./routes/backups";
@@ -303,6 +304,15 @@ app.get("/api/orpc", (c) =>
             <li><code>/api/orpc/employees/rpc/*</code></li>
           </ul>
         </section>
+        <section class="card">
+          <h2>Inventory</h2>
+          <p>Categorías, items, movimientos y overview de inventario.</p>
+          <ul>
+            <li><a href="/api/orpc/inventory/docs">Reference UI</a></li>
+            <li><a href="/api/orpc/inventory/openapi.json">OpenAPI JSON</a></li>
+            <li><code>/api/orpc/inventory/rpc/*</code></li>
+          </ul>
+        </section>
       </div>
     </main>
   </body>
@@ -348,8 +358,33 @@ app.use("/api/orpc/employees/rpc/*", async (c, next) => {
   await next();
 });
 
+app.use("/api/orpc/inventory/rpc/*", async (c, next) => {
+  const { matched, response } = await inventoryORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/inventory/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
 app.use("/api/orpc/dte-analytics/event-links/*", async (c, next) => {
   const { matched, response } = await dteEventLinksOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
+app.use("/api/orpc/inventory/*", async (c, next) => {
+  const { matched, response } = await inventoryOpenAPIHandler.handle(createHonoORPCRequest(c), {
     context: { hono: c },
   });
 

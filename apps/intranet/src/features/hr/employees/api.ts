@@ -35,8 +35,9 @@ export async function fetchEmployees(includeInactive = false): Promise<Employee[
     const res = EmployeesResponseSchema.parse(
       await employeesORPCClient.list(includeInactive ? { includeInactive } : undefined),
     );
+    const employees = res.employees as Employee[];
 
-    return res.employees.map((emp) => {
+    return employees.map((emp) => {
       if (!emp.full_name && emp.person) {
         return {
           ...emp,
