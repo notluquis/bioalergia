@@ -683,6 +683,12 @@ export async function listEventDteLinkOverview(params: {
       let topSuggestion: null | (EventDteSuggestion & { amountDiff: null | number }) = null;
 
       const isDueForEmission = row.eventDate <= today;
+      const linkStatus: "linked" | "pending_issuance" | "unlinked" = row.linkedDteSaleDetailId
+        ? "linked"
+        : isDueForEmission
+          ? "unlinked"
+          : "pending_issuance";
+
       if (!row.linkedDteSaleDetailId && isDueForEmission) {
         const suggestions = await getEventDteSuggestions({
           calendarId: row.calendarId,
@@ -711,11 +717,7 @@ export async function listEventDteLinkOverview(params: {
         confidenceScore: row.confidenceScore,
         eventDate: row.eventDate,
         eventId: row.eventId,
-        linkStatus: row.linkedDteSaleDetailId
-          ? "linked"
-          : isDueForEmission
-            ? "unlinked"
-            : "pending_issuance",
+        linkStatus,
         linked: Boolean(row.linkedDteSaleDetailId),
         linkedClientName: row.linkedClientName,
         linkedClientRUT: row.linkedClientRUT,

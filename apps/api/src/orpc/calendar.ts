@@ -1,7 +1,7 @@
 import type { CalendarSyncLog } from "@finanzas/db";
 import { db } from "@finanzas/db";
-import { OpenAPIGenerator } from "@orpc/openapi";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
+import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
@@ -996,30 +996,25 @@ export const calendarORPCHandler = new SuperJSONRPCHandler(calendarORPCRouter, {
 });
 
 export const calendarOpenAPIHandler = new OpenAPIHandler(calendarORPCRouter, {
+  plugins: [
+    new OpenAPIReferencePlugin({
+      docsPath: "/api/orpc/calendar/docs",
+      docsTitle: "Bioalergia Calendar API Reference",
+      schemaConverters: [new ZodToJsonSchemaConverter()],
+      specGenerateOptions: {
+        info: {
+          title: "Bioalergia Calendar API",
+          version: "1.0.0",
+        },
+      },
+      specPath: "/api/orpc/calendar/openapi.json",
+    }),
+  ],
   interceptors: [
     onError((error) => {
       logError("calendar.orpc.openapi", error, {});
     }),
   ],
 });
-
-const calendarOpenAPIGenerator = new OpenAPIGenerator({
-  schemaConverters: [new ZodToJsonSchemaConverter()],
-});
-
-let openAPISpecPromise: Promise<unknown> | null = null;
-
-export async function getCalendarOpenAPISpec() {
-  if (!openAPISpecPromise) {
-    openAPISpecPromise = calendarOpenAPIGenerator.generate(calendarORPCRouter, {
-      info: {
-        title: "Bioalergia Calendar API",
-        version: "1.0.0",
-      },
-    });
-  }
-
-  return openAPISpecPromise;
-}
 
 export type CalendarORPCRouter = typeof calendarORPCRouter;

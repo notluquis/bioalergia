@@ -1,5 +1,5 @@
-import { OpenAPIGenerator } from "@orpc/openapi";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
+import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
@@ -549,30 +549,25 @@ export const dteEventLinksORPCHandler = new SuperJSONRPCHandler(dteEventLinksORP
 });
 
 export const dteEventLinksOpenAPIHandler = new OpenAPIHandler(dteEventLinksORPCRouter, {
+  plugins: [
+    new OpenAPIReferencePlugin({
+      docsPath: "/api/orpc/dte-analytics/event-links/docs",
+      docsTitle: "Bioalergia DTE Event Links API Reference",
+      schemaConverters: [new ZodToJsonSchemaConverter()],
+      specGenerateOptions: {
+        info: {
+          title: "Bioalergia DTE Event Links API",
+          version: "1.0.0",
+        },
+      },
+      specPath: "/api/orpc/dte-analytics/event-links/openapi.json",
+    }),
+  ],
   interceptors: [
     onError((error) => {
       logError("dte-event-links.orpc.openapi", error, {});
     }),
   ],
 });
-
-const dteEventLinksOpenAPIGenerator = new OpenAPIGenerator({
-  schemaConverters: [new ZodToJsonSchemaConverter()],
-});
-
-let openAPISpecPromise: Promise<unknown> | null = null;
-
-export async function getDteEventLinksOpenAPISpec() {
-  if (!openAPISpecPromise) {
-    openAPISpecPromise = dteEventLinksOpenAPIGenerator.generate(dteEventLinksORPCRouter, {
-      info: {
-        title: "Bioalergia DTE Event Links API",
-        version: "1.0.0",
-      },
-    });
-  }
-
-  return openAPISpecPromise;
-}
 
 export type DteEventLinksORPCRouter = typeof dteEventLinksORPCRouter;

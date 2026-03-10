@@ -1,6 +1,5 @@
 // apps/api/src/app.ts
 import { authDb, schema } from "@finanzas/db";
-import type { OpenAPI } from "@orpc/openapi";
 import { RPCApiHandler } from "@zenstackhq/server/api";
 import { createHonoHandler } from "@zenstackhq/server/hono";
 import { Hono } from "hono";
@@ -15,16 +14,8 @@ import { logError } from "./lib/logger";
 import { configureSuperjson } from "./lib/superjson-config";
 import { certificatesRoutes } from "./modules/certificates/index.js";
 import { patientsRoutes } from "./modules/patients/index.js";
-import {
-  calendarOpenAPIHandler,
-  calendarORPCHandler,
-  getCalendarOpenAPISpec,
-} from "./orpc/calendar";
-import {
-  dteEventLinksOpenAPIHandler,
-  dteEventLinksORPCHandler,
-  getDteEventLinksOpenAPISpec,
-} from "./orpc/dte-event-links";
+import { calendarOpenAPIHandler, calendarORPCHandler } from "./orpc/calendar";
+import { dteEventLinksOpenAPIHandler, dteEventLinksORPCHandler } from "./orpc/dte-event-links";
 import { createHonoORPCRequest } from "./orpc/superjson";
 import { authRoutes } from "./routes/auth";
 import { backupRoutes } from "./routes/backups";
@@ -185,15 +176,129 @@ app.route("/api/dte", dteRoutes);
 app.route("/api/haulmer", haulmerRoutes);
 // Calendar routes (events, sync, logs)
 app.route("/api/calendar", calendarRoutes);
-app.get("/api/orpc/calendar/openapi.json", async (c) => {
-  const spec = (await getCalendarOpenAPISpec()) as OpenAPI.Document;
-  return replyRaw(c, spec);
-});
-
-app.get("/api/orpc/dte-analytics/event-links/openapi.json", async (c) => {
-  const spec = (await getDteEventLinksOpenAPISpec()) as OpenAPI.Document;
-  return replyRaw(c, spec);
-});
+app.get("/api/orpc", (c) =>
+  c.html(`<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bioalergia oRPC</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f5f7f4;
+        --panel: #ffffff;
+        --text: #16302b;
+        --muted: #5f7a72;
+        --accent: #0f766e;
+        --accent-soft: #ccfbf1;
+        --border: #d8e4de;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+        background:
+          radial-gradient(circle at top left, #ccfbf1 0, transparent 28rem),
+          linear-gradient(180deg, #f9fbfa 0%, var(--bg) 100%);
+        color: var(--text);
+      }
+      main {
+        max-width: 60rem;
+        margin: 0 auto;
+        padding: 3rem 1.5rem 4rem;
+      }
+      h1 {
+        margin: 0 0 0.75rem;
+        font-size: clamp(2rem, 4vw, 3.25rem);
+        line-height: 1;
+      }
+      p {
+        color: var(--muted);
+        max-width: 42rem;
+      }
+      .grid {
+        display: grid;
+        gap: 1rem;
+        margin-top: 2rem;
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 1.25rem;
+        padding: 1.25rem;
+        box-shadow: 0 18px 50px rgba(15, 23, 42, 0.06);
+      }
+      .eyebrow {
+        display: inline-block;
+        margin-bottom: 0.75rem;
+        padding: 0.3rem 0.6rem;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+      h2 {
+        margin: 0 0 0.5rem;
+        font-size: 1.2rem;
+      }
+      ul {
+        margin: 1rem 0 0;
+        padding: 0;
+        list-style: none;
+      }
+      li + li {
+        margin-top: 0.6rem;
+      }
+      a {
+        color: var(--accent);
+        text-decoration: none;
+        font-weight: 600;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      code {
+        font-family: "IBM Plex Mono", "SFMono-Regular", monospace;
+        font-size: 0.9em;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <span class="eyebrow">oRPC + OpenAPI</span>
+      <h1>Bioalergia API Contracts</h1>
+      <p>
+        Referencia viva de los módulos publicados con oRPC. Cada módulo expone RPC,
+        REST OpenAPI y documentación navegable.
+      </p>
+      <div class="grid">
+        <section class="card">
+          <h2>Calendar</h2>
+          <p>Clasificación, sync, analytics y jobs de calendario.</p>
+          <ul>
+            <li><a href="/api/orpc/calendar/docs">Reference UI</a></li>
+            <li><a href="/api/orpc/calendar/openapi.json">OpenAPI JSON</a></li>
+            <li><code>/api/orpc/calendar/rpc/*</code></li>
+          </ul>
+        </section>
+        <section class="card">
+          <h2>DTE Event Links</h2>
+          <p>Vínculos, sugerencias y auto-link entre eventos y DTE.</p>
+          <ul>
+            <li><a href="/api/orpc/dte-analytics/event-links/docs">Reference UI</a></li>
+            <li><a href="/api/orpc/dte-analytics/event-links/openapi.json">OpenAPI JSON</a></li>
+            <li><code>/api/orpc/dte-analytics/event-links/rpc/*</code></li>
+          </ul>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>`),
+);
 
 app.use("/api/orpc/calendar/rpc/*", async (c, next) => {
   const { matched, response } = await calendarORPCHandler.handle(createHonoORPCRequest(c), {
