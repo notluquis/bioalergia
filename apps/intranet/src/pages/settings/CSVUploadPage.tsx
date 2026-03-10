@@ -1424,40 +1424,9 @@ export function CSVUploadPage() {
     if (mode === importMode) {
       return;
     }
+    // Solo cambiar el modo: no recalcular el preview
+    // El preview ya es válido, solo cambia el método de procesamiento
     setImportMode(mode);
-    if (!selectedTable || uploadedFiles.length === 0) {
-      return;
-    }
-    void (async () => {
-      setIsProcessing(true);
-      setBatchPreviewData(null);
-      setPreviewBatchRows([]);
-      setUpdateRowSelection({});
-
-      try {
-        const batch = buildBatchRows(selectedTable, uploadedFiles);
-        const previewData = await runBatchedMutation({
-          actionLabel: "Recalculando vista previa",
-          mode,
-          rows: batch.rows,
-          runChunk: previewMutateAsync,
-          status: "previewing",
-        });
-
-        setBatchDroppedDuplicates(batch.droppedDuplicates);
-        setBatchPreviewData(previewData);
-        setPreviewBatchRows(batch.rows);
-        setUpdateRowSelection(buildUpdateSelectionState(previewData.updateRows ?? []));
-        updateBatchFileState("ready");
-      } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : "Error en vista previa";
-        toastError(errorMsg);
-        updateBatchFileState("ready", undefined, errorMsg);
-      } finally {
-        setIsProcessing(false);
-        setProcessingLabel("");
-      }
-    })();
   };
 
   const handleImport = async () => {
