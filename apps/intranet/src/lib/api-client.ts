@@ -1,8 +1,10 @@
 import ky, { HTTPError, type Options } from "ky";
-import superjson from "superjson";
 import { z } from "zod";
 
 import { logger } from "./logger";
+import { configureSuperjson } from "./superjson-config";
+
+const superjson = configureSuperjson();
 
 // Helper to convert Decimal objects to numbers recursively
 function convertDecimalsToNumbers(obj: unknown): unknown {

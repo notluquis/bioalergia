@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api-client";
+import { calendarORPCClient, toCalendarApiError } from "./orpc";
 import {
   CalendarDailyResponseSchema,
   CalendarSummaryResponseSchema,
@@ -16,7 +17,6 @@ import {
   EventDteOverviewResponseSchema,
   EventDteSuggestionResponseSchema,
   ReclassifyJobResponseSchema,
-  StatusOkSchema,
   TreatmentAnalyticsResponseSchema,
   UnclassifiedEventsResponseSchema,
 } from "./schemas";
@@ -89,9 +89,11 @@ interface CalendarSyncResponse {
 export async function classifyCalendarEvent(
   payload: CalendarEventClassificationPayload,
 ): Promise<void> {
-  await apiClient.post<{ status: "ok" }>("/api/calendar/events/classify", payload, {
-    responseSchema: StatusOkSchema,
-  });
+  try {
+    await calendarORPCClient.classifyEvent(payload);
+  } catch (error) {
+    throw toCalendarApiError(error);
+  }
 }
 
 export async function fetchCalendarDaily(filters: CalendarFilters): Promise<CalendarDaily> {
@@ -108,10 +110,12 @@ export async function fetchCalendarDaily(filters: CalendarFilters): Promise<Cale
 }
 
 export async function fetchCalendars(): Promise<CalendarData[]> {
-  const response = await apiClient.get<{ calendars: CalendarData[] }>("/api/calendar/calendars", {
-    responseSchema: CalendarsResponseSchema,
-  });
-  return response.calendars;
+  try {
+    const calendars = await calendarORPCClient.calendars();
+    return CalendarsResponseSchema.parse({ calendars, status: "ok" }).calendars;
+  } catch (error) {
+    throw toCalendarApiError(error);
+  }
 }
 
 export async function fetchCalendarSummary(filters: CalendarFilters): Promise<CalendarSummary> {
@@ -129,31 +133,20 @@ export async function fetchCalendarSummary(filters: CalendarFilters): Promise<Ca
 }
 
 export async function fetchCalendarSyncLogs(limit = 50): Promise<CalendarSyncLog[]> {
-  const response = await apiClient.get<{ logs: CalendarSyncLog[]; status: "ok" }>(
-    `/api/calendar/events/sync/logs?limit=${limit}`,
-    { responseSchema: CalendarSyncLogsResponseSchema },
-  );
-
-  return response.logs;
+  try {
+    const logs = await calendarORPCClient.syncLogs({ limit });
+    return CalendarSyncLogsResponseSchema.parse({ logs, status: "ok" }).logs;
+  } catch (error) {
+    throw toCalendarApiError(error);
+  }
 }
 
 export async function fetchClassificationOptions(): Promise<ClassificationOptions> {
-  const response = await apiClient.get<{
-    categories: readonly string[];
-    missingFilters: readonly { key: string; label: string }[];
-    patchReadings: readonly string[];
-    status: "ok";
-    testSubtypes: readonly string[];
-    treatmentStages: readonly string[];
-  }>("/api/calendar/classification-options", { responseSchema: ClassificationOptionsSchema });
-
-  return {
-    categories: response.categories,
-    missingFilters: response.missingFilters,
-    patchReadings: response.patchReadings,
-    testSubtypes: response.testSubtypes,
-    treatmentStages: response.treatmentStages,
-  };
+  try {
+    return ClassificationOptionsSchema.parse(await calendarORPCClient.classificationOptions());
+  } catch (error) {
+    throw toCalendarApiError(error);
+  }
 }
 
 export async function fetchUnclassifiedCalendarEvents(
@@ -214,12 +207,11 @@ export async function reclassifyCalendarEvents(): Promise<ReclassifyJobResponse>
 }
 
 export async function syncCalendarEvents(): Promise<CalendarSyncResponse> {
-  const response = await apiClient.post<CalendarSyncResponse>(
-    "/api/calendar/events/sync",
-    {},
-    { responseSchema: CalendarSyncResponseSchema },
-  );
-  return response;
+  try {
+    return CalendarSyncResponseSchema.parse(await calendarORPCClient.syncEvents());
+  } catch (error) {
+    throw toCalendarApiError(error);
+  }
 }
 
 export async function fetchTreatmentAnalytics(

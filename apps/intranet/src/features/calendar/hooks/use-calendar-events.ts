@@ -44,6 +44,9 @@ const hasFreshRunningSync = (logs: CalendarSyncLog[] | undefined) => {
     if (log.status !== "RUNNING") {
       return false;
     }
+    if (!log.startedAt) {
+      return false;
+    }
     const started = dayjs(log.startedAt);
     return started.isValid() && Date.now() - started.valueOf() < STALE_SYNC_WINDOW_MS;
   });

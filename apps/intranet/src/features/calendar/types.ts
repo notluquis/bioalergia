@@ -257,7 +257,7 @@ export interface CalendarSyncLog {
   id: number;
   inserted: number;
   skipped: number;
-  startedAt: Date;
+  startedAt: Date | null;
   status: "ERROR" | "RUNNING" | "SUCCESS";
   triggerLabel: null | string;
   triggerSource: string;

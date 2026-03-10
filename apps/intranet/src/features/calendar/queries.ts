@@ -2,13 +2,11 @@ import { queryOptions } from "@tanstack/react-query";
 import {
   fetchCalendarDaily,
   fetchCalendarSummary,
-  fetchCalendarSyncLogs,
-  fetchCalendars,
-  fetchClassificationOptions,
   fetchTreatmentAnalytics,
   fetchUnclassifiedCalendarEvents,
   type MissingFieldFilters,
 } from "./api";
+import { calendarORPCUtils } from "./orpc";
 import type { CalendarFilters, TreatmentAnalyticsFilters } from "./types";
 import { normalizeFilters } from "./utils/filters";
 
@@ -34,8 +32,8 @@ export const calendarKeys = {
 
 export const calendarSyncQueries = {
   logs: (limit = 50) =>
-    queryOptions({
-      queryFn: () => fetchCalendarSyncLogs(limit),
+    calendarORPCUtils.syncLogs.queryOptions({
+      input: { limit },
       queryKey: calendarSyncKeys.logs(limit),
       staleTime: 60 * 1000,
     }),
@@ -48,13 +46,11 @@ export const calendarQueries = {
       queryKey: calendarKeys.daily(filters),
     }),
   list: () =>
-    queryOptions({
-      queryFn: fetchCalendars,
+    calendarORPCUtils.calendars.queryOptions({
       queryKey: calendarKeys.list,
     }),
   options: () =>
-    queryOptions({
-      queryFn: fetchClassificationOptions,
+    calendarORPCUtils.classificationOptions.queryOptions({
       queryKey: calendarKeys.options,
       staleTime: 1000 * 60 * 60, // 1 hour
     }),

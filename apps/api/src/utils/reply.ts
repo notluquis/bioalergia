@@ -2,11 +2,19 @@ import type { Context } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import superjson from "superjson";
 
-export const reply = <T = unknown>(c: Context, data: T, status: ContentfulStatusCode = 200) => {
+export const reply = <T = unknown>(
+  c: Context,
+  data: T,
+  status: ContentfulStatusCode = 200,
+): Response => {
   const serialized = superjson.serialize(data);
   return c.json(serialized, status);
 };
 
-export const replyRaw = <T = unknown>(c: Context, data: T, status: ContentfulStatusCode = 200) => {
+export const replyRaw = <T = unknown>(
+  c: Context,
+  data: T,
+  status: ContentfulStatusCode = 200,
+): Response => {
   return c.json(data, status);
 };

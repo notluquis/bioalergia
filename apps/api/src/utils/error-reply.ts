@@ -22,7 +22,7 @@ export function errorReply(
   status: ContentfulStatusCode,
   message: string,
   options?: ErrorReplyOptions,
-) {
+): Response {
   return reply(
     c,
     {

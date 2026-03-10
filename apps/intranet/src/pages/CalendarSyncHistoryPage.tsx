@@ -37,6 +37,9 @@ export function CalendarSyncHistoryPage() {
     if (log.status !== "RUNNING") {
       return false;
     }
+    if (!log.startedAt) {
+      return false;
+    }
     const started = dayjs(log.startedAt);
     // Match backend stale timeout: 15 minutes
     return started.isValid() && Date.now() - started.valueOf() < 15 * 60 * 1000;
@@ -187,7 +190,8 @@ function SyncHistoryItem({
   defaultExpanded: boolean;
   log: CalendarSyncLog;
 }) {
-  const duration = log.finishedAt ? dayjs(log.finishedAt).diff(dayjs(log.startedAt), "s") : null;
+  const startedAt = log.startedAt ? dayjs(log.startedAt) : null;
+  const duration = log.finishedAt && startedAt ? dayjs(log.finishedAt).diff(startedAt, "s") : null;
   const isEmptyChange =
     log.inserted === 0 && log.updated === 0 && log.excluded === 0 && log.skipped === 0;
 
@@ -197,9 +201,11 @@ function SyncHistoryItem({
         <Accordion.Trigger className="flex w-full flex-wrap items-center gap-3 px-4 py-3 text-left hover:bg-default-50/50 sm:flex-nowrap">
           <StatusBadge status={log.status} />
           <div className="min-w-24">
-            <div className="font-medium text-sm">{dayjs(log.startedAt).format("DD/MM/YYYY")}</div>
+            <div className="font-medium text-sm">
+              {startedAt?.isValid() ? startedAt.format("DD/MM/YYYY") : "-"}
+            </div>
             <div className="text-default-400 text-xs">
-              {dayjs(log.startedAt).format("HH:mm:ss")}
+              {startedAt?.isValid() ? startedAt.format("HH:mm:ss") : "-"}
             </div>
           </div>
           <div className="flex min-w-40 flex-1 flex-wrap items-center gap-2">

@@ -1,20 +1,26 @@
 // apps/api/src/app.ts
 import { authDb, schema } from "@finanzas/db";
+import type { OpenAPI } from "@orpc/openapi";
 import { RPCApiHandler } from "@zenstackhq/server/api";
 import { createHonoHandler } from "@zenstackhq/server/hono";
-import { Decimal } from "decimal.js";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { rateLimiter } from "hono-rate-limiter";
-import superjson from "superjson";
 import { createAuthContext, getSessionUser } from "./auth";
 import { AppError } from "./lib/app-error";
 import { htmlSanitizerMiddleware } from "./lib/html-sanitizer";
 import { logError } from "./lib/logger";
+import { configureSuperjson } from "./lib/superjson-config";
 import { certificatesRoutes } from "./modules/certificates/index.js";
 import { patientsRoutes } from "./modules/patients/index.js";
+import {
+  calendarOpenAPIHandler,
+  calendarORPCHandler,
+  getCalendarOpenAPISpec,
+} from "./orpc/calendar";
+import { createHonoORPCRequest } from "./orpc/superjson";
 import { authRoutes } from "./routes/auth";
 import { backupRoutes } from "./routes/backups";
 import { balanceRoutes } from "./routes/balances";
@@ -52,15 +58,7 @@ import { errorReply } from "./utils/error-reply";
 import { normalizeErrorResponse } from "./utils/normalize-error-response";
 import { reply, replyRaw } from "./utils/reply";
 
-// Register Decimal.js serialization for superjson
-superjson.registerCustom<Decimal, string>(
-  {
-    isApplicable: (v): v is Decimal => Decimal.isDecimal(v),
-    serialize: (v) => v.toJSON(),
-    deserialize: (v) => new Decimal(v),
-  },
-  "decimal.js",
-);
+configureSuperjson();
 
 export const app = new Hono();
 
@@ -182,6 +180,35 @@ app.route("/api/dte", dteRoutes);
 app.route("/api/haulmer", haulmerRoutes);
 // Calendar routes (events, sync, logs)
 app.route("/api/calendar", calendarRoutes);
+app.get("/api/orpc/calendar/openapi.json", async (c) => {
+  const spec = (await getCalendarOpenAPISpec()) as OpenAPI.Document;
+  return replyRaw(c, spec);
+});
+
+app.use("/api/orpc/calendar/rpc/*", async (c, next) => {
+  const { matched, response } = await calendarORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/calendar/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
+app.use("/api/orpc/calendar/*", async (c, next) => {
+  const { matched, response } = await calendarOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
 
 // Share Target (PWA)
 app.route("/api/share-target", shareTargetRoutes);
