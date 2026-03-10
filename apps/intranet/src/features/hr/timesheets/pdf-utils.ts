@@ -113,7 +113,7 @@ export async function generateTimesheetPdfBase64(
     doc.setFont("helvetica", "normal");
     const noteText =
       "Nota: Este resumen se emite exclusivamente para fines de respaldo, conciliación y cálculo de honorarios del periodo indicado. Los tramos horarios consignados corresponden a la planificación y coordinación de las prestaciones y no constituyen control de jornada, asistencia ni implican vínculo de subordinación o dependencia.";
-    const splitNote = doc.splitTextToSize(noteText, 190);
+    const splitNote = doc.splitTextToSize(noteText, 190) as string[];
     doc.text(splitNote, margin, noteY);
 
     // Convert to base64

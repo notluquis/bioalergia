@@ -51,7 +51,7 @@ globalThis.addEventListener("error", (event) => {
 });
 
 globalThis.addEventListener("unhandledrejection", (event) => {
-  const message = event.reason?.message ?? String(event.reason);
+  const message = (event.reason?.message ?? String(event.reason)) as string;
   if (CHUNK_ERROR_REGEX.test(message)) {
     event.preventDefault();
     log.warn("Chunk load rejection detected. Awaiting user recovery action.");

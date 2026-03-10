@@ -56,12 +56,12 @@ function NewBudgetPage() {
         title: data.title,
         discount: data.discount,
         notes: data.notes,
-        items: data.items.map(({ clientId, ...item }) => item),
+        items: data.items.map(({ clientId: _clientId, ...item }) => item),
       });
     },
     onSuccess: () => {
       toast.success("Presupuesto creado exitosamente");
-      queryClient.invalidateQueries({ queryKey: ["patient", id] });
+      void Promise.all([queryClient.invalidateQueries({ queryKey: ["patient", id] })]);
       void navigate({ to: "/patients/$id", params: { id: String(id) } });
     },
     onError: (error) => {
@@ -104,7 +104,7 @@ function NewBudgetPage() {
         onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
           e.preventDefault();
           e.stopPropagation();
-          form.handleSubmit();
+          void form.handleSubmit();
         }}
         className="space-y-6"
         validationBehavior="aria"

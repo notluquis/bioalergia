@@ -58,7 +58,7 @@ export function useSupplyManagement(): UseSupplyManagementResult {
       toastError(message);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: supplyKeys.requests() });
+      void Promise.all([queryClient.invalidateQueries({ queryKey: supplyKeys.requests() })]);
       toastSuccess("Estado de solicitud actualizado");
     },
   });

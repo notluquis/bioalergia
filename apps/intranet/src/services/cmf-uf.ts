@@ -42,7 +42,8 @@ export async function getUFValue(date: string): Promise<number> {
     const [year, month, day] = date.split("-");
 
     // API CMF - formato JSON
-    const apiKey = import.meta.env.VITE_CMF_API_KEY || "37849dd7e45182bc8882322036016466dec20efc";
+    const apiKey = (import.meta.env.VITE_CMF_API_KEY ||
+      "37849dd7e45182bc8882322036016466dec20efc") as string;
     const url = `https://api.cmfchile.cl/api-sbifv3/recursos_api/uf/${year}/${month}/dias/${day}?apikey=${apiKey}&formato=json`;
 
     const data = await apiClient.get<{ UFs: Array<{ Fecha: string; Valor: string }> }>(url, {

@@ -35,7 +35,10 @@ export function AuthListener() {
       : (sessionData?.abilityRules ?? []);
 
     const rulesKey = rules
-      .map((rule) => `${rule.action}:${String(rule.subject)}:${JSON.stringify(rule.conditions)}`)
+      .map(
+        (rule) =>
+          `${Array.isArray(rule.action) ? (rule.action as string[]).join(",") : String(rule.action)}:${Array.isArray(rule.subject) ? (rule.subject as string[]).join(",") : String(rule.subject)}:${JSON.stringify(rule.conditions)}`,
+      )
       .join("|");
 
     if (rulesKey === lastRulesKeyRef.current) {

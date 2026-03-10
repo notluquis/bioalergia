@@ -101,8 +101,10 @@ export function AddUserFormContainer({
     },
     onSuccess: async () => {
       success("Usuario creado exitosamente");
-      queryClient.invalidateQueries({ queryKey: ["users"] });
-      queryClient.invalidateQueries({ queryKey: ["people"] });
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["users"] }),
+        queryClient.invalidateQueries({ queryKey: ["people"] }),
+      ]);
       onCreated?.();
     },
   });

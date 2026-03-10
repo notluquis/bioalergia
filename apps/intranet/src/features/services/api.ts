@@ -92,7 +92,7 @@ export function extractErrorMessage(error: unknown): null | string {
   if (!error) {
     return null;
   }
-  return error instanceof Error ? error.message : String(error);
+  return error instanceof Error ? error.message : JSON.stringify(error);
 }
 
 export async function fetchServiceDetail(publicId: string): Promise<ServiceDetailResponse> {

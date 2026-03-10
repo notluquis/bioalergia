@@ -115,7 +115,7 @@ function MedicalCertificatePage() {
         onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
           e.preventDefault();
           e.stopPropagation();
-          form.handleSubmit();
+          void form.handleSubmit();
         }}
         validationBehavior="aria"
       >

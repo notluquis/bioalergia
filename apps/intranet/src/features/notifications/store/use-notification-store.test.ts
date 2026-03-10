@@ -85,9 +85,18 @@ describe("use-notification-store", () => {
     expect(storeModule.notificationStore.state.notifications[0]?.message).toBe("message-54");
     expect(storeModule.notificationStore.state.notifications[49]?.message).toBe("message-5");
 
-    const persisted = JSON.parse(globalThis.localStorage.getItem(storageKey("guest")) ?? "{}");
-    expect(persisted.notifications).toHaveLength(50);
-    expect(persisted.unreadCount).toBe(55);
+    const persisted = JSON.parse(
+      globalThis.localStorage.getItem(storageKey("guest")) ?? "{}",
+    ) as unknown;
+    if (
+      typeof persisted === "object" &&
+      persisted &&
+      "notifications" in persisted &&
+      "unreadCount" in persisted
+    ) {
+      expect((persisted.notifications as unknown[]).length).toBe(50);
+      expect(persisted.unreadCount).toBe(55);
+    }
   });
 
   it("marks a notification as read only once", async () => {

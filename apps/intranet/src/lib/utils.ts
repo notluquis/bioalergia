@@ -22,7 +22,7 @@ export function formatCurrency(amount: number, currency = "CLP") {
       currency: currency,
       style: "currency",
     }).format(amount);
-  } catch (_error) {
+  } catch {
     // Fallback to CLP if currency code is invalid/malformed
     return new Intl.NumberFormat("es-CL", {
       currency: "CLP",

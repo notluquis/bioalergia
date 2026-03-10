@@ -33,7 +33,7 @@ function asMessage(value: unknown, fallback: string, input?: unknown): string {
 }
 
 function getTitle(description: unknown, fallback: string): string {
-  return description ? String(description) : fallback;
+  return description ? JSON.stringify(description) : fallback;
 }
 
 /**

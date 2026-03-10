@@ -46,7 +46,7 @@ export const coerceAmount = (v?: unknown): number => {
   if (typeof v === "number") {
     return v;
   }
-  const s = String(v)
+  const s = JSON.stringify(v)
     .replaceAll("$", "")
     .replaceAll(".", "")
     .replaceAll(/\s/g, "")

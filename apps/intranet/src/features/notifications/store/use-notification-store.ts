@@ -43,7 +43,7 @@ function loadState(scope: string): NotificationState {
     if (!raw) {
       return INITIAL_STATE;
     }
-    const parsed = JSON.parse(raw);
+    const parsed = JSON.parse(raw) as unknown;
     if (!isNotificationState(parsed)) {
       return INITIAL_STATE;
     }

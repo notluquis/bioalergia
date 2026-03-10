@@ -221,9 +221,7 @@ export async function updateCounterpartAccount(
   }>,
 ) {
   try {
-    await StatusResponseSchema.parse(
-      await counterpartsORPCClient.updateAccount({ accountId, payload }),
-    );
+    StatusResponseSchema.parse(await counterpartsORPCClient.updateAccount({ accountId, payload }));
   } catch (error) {
     throw toCounterpartsApiError(error);
   }

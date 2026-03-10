@@ -115,7 +115,7 @@ export function DTESyncHistoryPage() {
             isPending={isLoading}
             variant="ghost"
             onPress={() => {
-              queryClient.invalidateQueries({ queryKey: ["dte-sync-history"] });
+              void Promise.all([queryClient.invalidateQueries({ queryKey: ["dte-sync-history"] })]);
             }}
             isDisabled={isLoading}
           >

@@ -92,13 +92,13 @@ export function auditRouteNavigation(routeTree: RouteTreeNode): {
   const validRoutes: string[] = [];
 
   function traverse(route: RouteTreeNode) {
-    const fullPath = route.fullPath || route.path || "/";
+    const fullPath = (route.fullPath || route.path || "/") as string;
     const hasNav = Boolean(route.options?.staticData?.nav);
     const hasPermission = Boolean(route.options?.staticData?.permission);
     const hideFromNav = route.options?.staticData?.hideFromNav === true;
 
     const validation = validateRouteNavigation({
-      fullPath,
+      fullPath: fullPath as string,
       hasNav,
       hasPermission,
       hideFromNav,

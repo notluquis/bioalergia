@@ -109,7 +109,11 @@ const buildTransformedData = (
     return transformed;
   });
 
-const normalizeWithdrawIdForBatch = (value: unknown) => String(value ?? "").trim();
+const normalizeWithdrawIdForBatch = (value: unknown) => {
+  if (typeof value === "string") return value.trim();
+  if (value === null || value === undefined) return "";
+  return String(value).trim();
+};
 
 function buildBatchRows(
   selectedTable: string,

@@ -52,8 +52,9 @@
 - **Never use** `npx prisma db push` or `npx prisma migrate` - use Zenstack CLI instead
 - **No @prisma/client imports** - Use `@finanzas/db` exports (Kysely ORM powered)
 
-### 2. Oxlint Consolidation (Completed March 10, 2026)
-**Migration:** Replaced Biome + tsc with unified Oxlint toolchain
+### 2. Oxlint Consolidation (Completed March 10, 2026) - OXC ECOSYSTEM STANDARDIZED
+
+**Migration:** Replaced Biome + tsc with unified OXC ecosystem (Rust-based toolchain)
 
 **Problem Solved:**
 - ✅ `tsc --noEmit` was hitting OOM (>4GB heap) on API type-checking
@@ -69,6 +70,48 @@
 - `.oxlintrc.json` - Oxlint rules (typescript plugin enabled, type-aware rules)
 - `.oxfmtrc.jsonc` - Formatting config (indentWidth 2, lineWidth 100, single quotes off)
 
+**Type Safety Policies (Enforced via Oxlint):**
+
+**Scoped Rule: `typescript/no-explicit-any: "error"`**
+- **Frontend (`apps/intranet`)**: ❌ **NO `any`** — Use `unknown` instead
+- **Backend & Libraries (`apps/api`, `packages`)**: ✅ **`any` ALLOWED** — Higher flexibility for type-heavy patterns
+- **Config Override**: `.oxlintrc.json` overrides disable the rule for `apps/api/**` and `packages/**`
+
+**Pattern Guidelines:**
+
+- ✅ **`void` ALLOWED**: Only for Promise.all pattern (golden standard 2026)
+  ```typescript
+  // ✅ GOOD: void Promise.all([...])
+  void Promise.all([queryClient.invalidateQueries(...)]);
+  
+  // ❌ BAD: standalone void
+  void someFunction(); // should handle promise properly
+  ```
+
+- ✅ **`unknown` ALLOWED**: Safe for parsers and JSON.parse (frontend & backend)
+  ```typescript
+  const data = JSON.parse(raw) as unknown; // ✅ Good everywhere
+  const data = JSON.parse(raw) as any;     // ❌ Bad in frontend, ✅ OK in backend
+  ```
+
+- **`any` in Frontend**: Use only in exceptional cases (document why)
+  ```typescript
+  // ❌ BAD: Frontend should avoid
+  const data = JSON.parse(raw) as any;
+  
+  // ✅ GOOD: Frontend should use unknown + type guard
+  const data = JSON.parse(raw) as unknown;
+  if (typeof data === 'object' && 'field' in data) {
+    console.log(data.field); // now safe
+  }
+  ```
+
+- **`any` in Backend**: Use when necessary for type-heavy patterns
+  ```typescript
+  // ✅ OK in backend when typing is too complex
+  const rules = await getAbilityRulesForUser(userId) as RawRuleOf<any>[];
+  ```
+
 **Migration Impact:**
 | Metric | Before | After |
 |--------|--------|-------|
@@ -77,14 +120,27 @@
 | Memory usage | >4GB | <100MB |
 | Tool consolidation | 3 tools | 1 tool |
 
-**Commands:**
+**Commands (ALWAYS use these):**
 ```bash
-pnpm lint           # oxlint (all files)
-pnpm lint:fix       # oxlint --fix
-pnpm format         # oxfmt
-pnpm format:check   # oxfmt --check
-pnpm type-check     # oxlint --type-aware --type-check (via turbo)
+pnpm lint              # oxlint (linting + rules)
+pnpm lint:fix          # oxlint --fix (auto-fix)
+pnpm format            # oxfmt (formatting)
+pnpm format:check      # oxfmt --check (verify format)
+pnpm type-check        # oxlint --type-aware --type-check (unified type-checking)
 ```
+
+⚠️ **RULE:** Never use `tsc --noEmit`, `prettier`, or `biome` directly. Always use oxlint ecosystem.
+
+**Standardized OXC Ecosystem Tools:**
+| Tool | Purpose | Status |
+|------|---------|--------|
+| oxlint v1.52.0 | Linting + Type-checking | ✅ Active |
+| oxfmt v0.37.0 | Formatting | ✅ Active |
+| oxlint-tsgolint v0.16.0 | Go-based type-aware checking | ✅ Active |
+| oxc-minify v0.x | Production minification (Terser replacement) | ⏳ Planned v2 |
+| oxc-transform | AST transformations (TypeScript/JSX) | ⏳ Research |
+| oxc-parser | Custom code analysis | ⏳ Research |
+| oxc-resolver | Module resolution analysis | ⏳ Research |
 
 **Critical tsconfig.json Change:**
 - ⚠️ Removed `baseUrl: "."` from `apps/intranet/tsconfig.json`
@@ -92,14 +148,18 @@ pnpm type-check     # oxlint --type-aware --type-check (via turbo)
 - `paths` configuration still works without `baseUrl`
 
 **Files Modified:**
-- `.oxlintrc.json` (created)
-- `.oxfmtrc.jsonc` (created)
+- `.oxlintrc.json` (created) - Oxlint rules configuration
+- `.oxfmtrc.jsonc` (created) - Formatting rules
 - `package.json` (root + apps/api + apps/intranet) - script updates
 - `lint-staged.config.cjs` - updated to use oxlint + oxfmt
 - `apps/intranet/tsconfig.json` - removed baseUrl line
-- `biome.json` (no longer used, can archive)
+- `biome.json` (archived, no longer used)
 
-**Next Step:** Fix 35 type-check errors in @finanzas/intranet (mostly no-floating-promises)
+**Next Steps:**
+1. ✅ Fix floating-promises errors (~20) by applying Promise.all pattern
+2. ⏳ Evaluate oxc-minify for production builds optimization
+3. ⏳ Research oxc-transform for TypeScript transpilation pipelines
+4. ⏳ Consider oxc-resolver for dependency analysis tooling
 
 ### 3. Dosage Field Refactoring (Completed Jan 29, 2026)
 **Problem:** Dosage stored as concatenated strings ("0,5 ml") made SQL aggregation complex and didn't handle locale variations (0.5 vs 0,5)

@@ -55,7 +55,7 @@ const getFieldError = (errors: unknown[]) => {
   if (typeof firstError === "string") {
     return firstError;
   }
-  return firstError ? String(firstError) : "";
+  return firstError ? JSON.stringify(firstError) : "";
 };
 
 export function TanStackInputField<TValue>({

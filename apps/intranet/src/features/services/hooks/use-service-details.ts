@@ -38,8 +38,9 @@ export function useServiceDetails(services: ServiceListResponse["services"]) {
           detailsMap[result.value.service.publicId] = result.value;
         } else {
           const serviceId = services[index]?.publicId ?? "unknown";
-          failures.push({ id: serviceId, reason: result.reason });
-          logger.error("[services] aggregated:error", { error: result.reason, serviceId });
+          const errorReason = String(result.reason ?? "unknown");
+          failures.push({ id: serviceId, reason: errorReason });
+          logger.error("[services] aggregated:error", { error: errorReason, serviceId });
         }
       }
 

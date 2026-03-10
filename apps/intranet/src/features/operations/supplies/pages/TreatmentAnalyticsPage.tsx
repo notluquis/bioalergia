@@ -142,7 +142,7 @@ function resolveRange(searchParams: AnalyticsSearchParams, selectedMonth: string
     return getMonthRange(selectedMonth);
   }
   if (searchParams.from && searchParams.to) {
-    return { from: searchParams.from, to: searchParams.to };
+    return { from: searchParams.from as string, to: searchParams.to as string };
   }
   return getDefaultRange();
 }
@@ -188,8 +188,8 @@ export function TreatmentAnalyticsPage() {
   const resolvedRange = resolveRange(searchParams, selectedMonth);
 
   const filters: TreatmentAnalyticsFilters = {
-    from: resolvedRange.from,
-    to: resolvedRange.to,
+    from: resolvedRange.from as string,
+    to: resolvedRange.to as string,
     calendarIds: searchParams.calendarId,
   };
 
@@ -274,8 +274,8 @@ export function TreatmentAnalyticsPage() {
 
       <PeriodIndicator
         selectedMonth={selectedMonth}
-        from={resolvedRange.from}
-        to={resolvedRange.to}
+        from={resolvedRange.from as string}
+        to={resolvedRange.to as string}
         isMonthSelected={isMonthSelected}
       />
 

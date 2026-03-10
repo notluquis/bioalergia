@@ -41,7 +41,7 @@ export function useWakeLock() {
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       if (wakeLockRef.current) {
-        wakeLockRef.current.release();
+        void Promise.all([wakeLockRef.current.release()]);
         wakeLockRef.current = null;
       }
     };

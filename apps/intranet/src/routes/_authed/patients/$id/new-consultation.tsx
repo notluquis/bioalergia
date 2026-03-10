@@ -52,7 +52,7 @@ function NewConsultationPage() {
       }),
     onSuccess: () => {
       toast.success("Consulta registrada exitosamente");
-      queryClient.invalidateQueries({ queryKey: ["patient", id] });
+      void Promise.all([queryClient.invalidateQueries({ queryKey: ["patient", id] })]);
       void navigate({ to: "/patients/$id", params: { id: String(id) } });
     },
     onError: (error) => {
@@ -97,7 +97,7 @@ function NewConsultationPage() {
           onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
             e.preventDefault();
             e.stopPropagation();
-            form.handleSubmit();
+            void Promise.all([form.handleSubmit()]);
           }}
           validationBehavior="aria"
         >

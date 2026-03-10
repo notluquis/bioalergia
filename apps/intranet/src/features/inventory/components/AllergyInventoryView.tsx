@@ -26,7 +26,7 @@ function AllergyInventoryView() {
       const typeName = item.allergy_type.type?.name ?? "Otros";
       const categoryName = item.allergy_type.category?.name ?? "Sin categoría";
       const entry = map.get(typeName) ?? { categories: new Map(), typeName };
-      const categoryItems = entry.categories.get(categoryName) ?? [];
+      const categoryItems = (entry.categories.get(categoryName) ?? []) as typeof data;
       categoryItems.push(item);
       entry.categories.set(categoryName, categoryItems);
       map.set(typeName, entry);

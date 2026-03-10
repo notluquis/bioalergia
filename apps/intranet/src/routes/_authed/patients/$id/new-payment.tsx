@@ -72,7 +72,7 @@ function NewPaymentPage() {
     },
     onSuccess: () => {
       toast.success("Pago registrado exitosamente");
-      queryClient.invalidateQueries({ queryKey: ["patient", id] });
+      void Promise.all([queryClient.invalidateQueries({ queryKey: ["patient", id] })]);
       void navigate({ to: "/patients/$id", params: { id: String(id) } });
     },
     onError: (error) => {
@@ -131,7 +131,7 @@ function NewPaymentPage() {
           onSubmit={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            form.handleSubmit();
+            void form.handleSubmit();
           }}
           className="space-y-6"
         >

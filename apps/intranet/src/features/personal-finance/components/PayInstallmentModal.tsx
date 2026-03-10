@@ -125,7 +125,9 @@ export function PayInstallmentModal({
                             value={String(field.state.value)}
                           />
                           {field.state.meta.errors.length > 0 && (
-                            <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
+                            <FieldError>
+                              {field.state.meta.errors.map(String).join(", ")}
+                            </FieldError>
                           )}
                         </TextField>
                       </div>
@@ -185,7 +187,7 @@ export function PayInstallmentModal({
 
                         {field.state.meta.errors.length > 0 && (
                           <p className="mt-1 text-danger text-xs">
-                            {field.state.meta.errors.join(", ")}
+                            {field.state.meta.errors.map(String).join(", ")}
                           </p>
                         )}
                       </div>

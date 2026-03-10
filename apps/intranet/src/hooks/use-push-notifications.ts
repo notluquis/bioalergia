@@ -9,7 +9,7 @@ import {
   unsubscribeFromNotifications,
 } from "@/features/notifications/api";
 
-const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+const VAPID_PUBLIC_KEY = (import.meta.env.VITE_VAPID_PUBLIC_KEY || "") as string;
 
 export function usePushNotifications() {
   const [isSubscribed, setIsSubscribed] = useState(false);
@@ -21,7 +21,9 @@ export function usePushNotifications() {
     const checkSubscription = async () => {
       if ("serviceWorker" in navigator) {
         const registration = await navigator.serviceWorker.ready;
-        const subscription = await registration.pushManager.getSubscription();
+        const subscription = await (
+          registration as ServiceWorkerRegistration & { pushManager: PushManager }
+        ).pushManager.getSubscription();
         setIsSubscribed(Boolean(subscription));
       }
     };
@@ -84,7 +86,9 @@ export function usePushNotifications() {
 
     try {
       const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.subscribe({
+      const subscription = await (
+        registration as ServiceWorkerRegistration & { pushManager: PushManager }
+      ).pushManager.subscribe({
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
         userVisibleOnly: true,
       });
@@ -99,7 +103,9 @@ export function usePushNotifications() {
   const unsubscribeUser = async () => {
     try {
       const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.getSubscription();
+      const subscription = await (
+        registration as ServiceWorkerRegistration & { pushManager: PushManager }
+      ).pushManager.getSubscription();
       if (subscription) {
         await subscription.unsubscribe();
         unsubscribeMutation.mutate(subscription.endpoint);

@@ -114,7 +114,7 @@ function CalendarClassificationPage() {
     onSettled: () => setSavingKey(null),
     onSuccess: () => {
       toast.success("Clasificación actualizada");
-      queryClient.invalidateQueries({ queryKey: ["calendar-unclassified"] });
+      void Promise.all([queryClient.invalidateQueries({ queryKey: ["calendar-unclassified"] })]);
     },
   });
 
@@ -152,8 +152,10 @@ function CalendarClassificationPage() {
           response.from && response.to ? ` (${response.from} - ${response.to})` : ""
         }`,
       );
-      queryClient.invalidateQueries({ queryKey: ["calendar"] });
-      queryClient.invalidateQueries({ queryKey: ["calendar-unclassified"] });
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["calendar"] }),
+        queryClient.invalidateQueries({ queryKey: ["calendar-unclassified"] }),
+      ]);
     },
     onSettled: () => setPendingAction(null),
   });

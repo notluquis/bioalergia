@@ -54,7 +54,7 @@ export function RolesSettingsPage() {
     },
     onSuccess: () => {
       toast.success("Permisos sincronizados con el sistema");
-      queryClient.invalidateQueries({ queryKey: ["permissions"] });
+      void Promise.all([queryClient.invalidateQueries({ queryKey: ["roles"] })]);
     },
   });
 
@@ -81,7 +81,7 @@ export function RolesSettingsPage() {
       }
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["roles"] });
+      void Promise.all([queryClient.invalidateQueries({ queryKey: ["roles"] })]);
     },
   });
 

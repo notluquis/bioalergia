@@ -18,7 +18,7 @@ export function Home() {
   const { can } = useAuth();
 
   useEffect(() => {
-    clearBadge();
+    void clearBadge();
   }, [clearBadge]);
 
   // Permissions

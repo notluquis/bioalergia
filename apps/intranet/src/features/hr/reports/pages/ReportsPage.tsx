@@ -306,7 +306,8 @@ function ReportsFiltersPanel({
   startDate: string;
   viewMode: ViewMode;
 }) {
-  const errorMessage = error instanceof Error ? error.message : error ? String(error) : null;
+  const errorMessage =
+    error instanceof Error ? error.message : error ? JSON.stringify(error) : null;
 
   return (
     <div className="space-y-6 lg:col-span-4">

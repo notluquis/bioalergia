@@ -13,7 +13,8 @@
   },
   "rules": {
     "typescript/no-floating-promises": "error",
-    "typescript/no-unsafe-assignment": "warn"
+    "typescript/no-unsafe-assignment": "warn",
+    "typescript/no-explicit-any": "error"
   },
   "ignorePatterns": [
     "**/dist",
@@ -65,6 +66,12 @@
       "files": ["packages/db/src/client.ts", "packages/db/src/input.ts"],
       "rules": {
         "oxc/prefer-barrel": "off"
+      }
+    },
+    {
+      "files": ["apps/api/**", "packages/**"],
+      "rules": {
+        "typescript/no-explicit-any": "off"
       }
     }
   ]

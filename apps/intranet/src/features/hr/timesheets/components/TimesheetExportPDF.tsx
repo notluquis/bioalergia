@@ -394,7 +394,7 @@ function addLegalNote(doc: import("jspdf").default, pageWidth: number, margin: n
   doc.setFont("helvetica", "normal");
   const noteText =
     "Nota: Este resumen se emite exclusivamente para fines de respaldo, conciliación y cálculo de honorarios del periodo indicado. Los tramos horarios consignados corresponden a la planificación y coordinación de las prestaciones y no constituyen control de jornada, asistencia ni implican vínculo de subordinación o dependencia.";
-  const splitNote = doc.splitTextToSize(noteText, pageWidth - margin * 2);
+  const splitNote = doc.splitTextToSize(noteText, pageWidth - margin * 2) as string[];
   doc.text(splitNote, margin, noteY);
 }
 

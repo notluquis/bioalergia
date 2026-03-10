@@ -79,7 +79,7 @@ function buildUrlWithQuery(url: string, query?: Record<string, unknown>) {
 
   const appendParam = (params: URLSearchParams, key: string, value: unknown) => {
     if (value !== undefined && value !== null) {
-      params.append(key, String(value));
+      params.append(key, typeof value === "string" ? value : JSON.stringify(value));
     }
   };
 
@@ -154,9 +154,11 @@ async function handleKyError(error: HTTPError) {
 // SuperJSON Parser
 const superJsonParser = (text: string) => {
   try {
-    const jsonData = JSON.parse(text);
+    const jsonData = JSON.parse(text) as unknown;
     if (jsonData && typeof jsonData === "object" && "json" in jsonData) {
-      const deserialized = superjson.deserialize(jsonData);
+      const deserialized = superjson.deserialize(
+        jsonData as Parameters<typeof superjson.deserialize>[0],
+      );
       return convertDecimalsToNumbers(deserialized);
     }
     return jsonData;

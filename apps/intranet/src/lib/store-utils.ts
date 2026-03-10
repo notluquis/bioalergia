@@ -22,7 +22,7 @@ export function createPersistentStore<T>(
     try {
       const saved = localStorage.getItem(key);
       if (saved) {
-        startState = JSON.parse(saved);
+        startState = JSON.parse(saved) as typeof initialState;
         // Deep merge could be added here if needed, but for now strict replace or basic merge
         // For robustness, ensure we don't drop new keys from initialState if saved state is partial?
         // Simple approach: Use saved as is.

@@ -1055,7 +1055,7 @@ export function CashFlowPage() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["TransactionCategory"] });
+      void Promise.all([queryClient.invalidateQueries({ queryKey: ["TransactionCategory"] })]);
       setNewCategoryName("");
       setNewCategoryType("EXPENSE");
       setNewCategoryColor("#64748b");

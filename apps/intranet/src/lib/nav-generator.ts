@@ -141,7 +141,7 @@ function extractNavItems(route: RouteTreeNode): ExtractedNavItem[] {
     // routeTree nodes usually have fullPath available if flattened or built correctly
     // If not, we might need to rely on the "path" and build it up, but generated tree usually has fullPath
     // Let's assume for now route.fullPath exists on the plain object structure from .gen.ts
-    const to = route.fullPath || route.path || "/";
+    const to = (route.fullPath || route.path || "/") as string;
 
     items.push({
       iconKey: nav.iconKey,
@@ -154,7 +154,7 @@ function extractNavItems(route: RouteTreeNode): ExtractedNavItem[] {
   }
   // In development, warn about routes that might be missing nav
   else if (process.env.NODE_ENV === "development") {
-    const fullPath = route.fullPath || route.path;
+    const fullPath = (route.fullPath || route.path) as string;
     const hasPermission = Boolean(route.options?.staticData?.permission);
     const hideFromNav = route.options?.staticData?.hideFromNav === true;
 

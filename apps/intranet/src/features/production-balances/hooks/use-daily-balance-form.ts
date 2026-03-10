@@ -219,7 +219,7 @@ export function useDailyBalanceForm() {
       }
 
       try {
-        await toast.promise(operation, {
+        void toast.promise(operation, {
           error: (err: unknown) =>
             options?.errorMessage ??
             (err instanceof Error ? err.message : "Error al guardar el balance"),

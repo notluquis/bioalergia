@@ -29,7 +29,9 @@ export function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyRequestFo
   const createRequestMutation = useMutation<void, Error, SupplyRequestPayload>({
     mutationFn: createSupplyRequest,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.supplies.requests() });
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.supplies.requests() }),
+      ]);
     },
   });
 
@@ -104,7 +106,7 @@ export function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyRequestFo
       className="grid grid-cols-1 gap-4 md:grid-cols-2"
       onSubmit={(e) => {
         e.preventDefault();
-        form.handleSubmit();
+        void Promise.all([form.handleSubmit()]);
       }}
     >
       <form.Field name="selectedSupply">
@@ -137,7 +139,14 @@ export function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyRequestFo
                 </ListBox>
               </Select.Popover>
               {field.state.meta.errors.length > 0 && (
-                <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
+                <FieldError>
+                  {(() => {
+                    const msgs = field.state.meta.errors.map((e) =>
+                      typeof e === "string" ? e : String(e),
+                    );
+                    return msgs.join(", ");
+                  })()}
+                </FieldError>
               )}
             </Select>
           </div>
@@ -159,7 +168,14 @@ export function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyRequestFo
                 value={String(field.state.value)}
               />
               {field.state.meta.errors.length > 0 && (
-                <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
+                <FieldError>
+                  {(() => {
+                    const msgs = field.state.meta.errors.map((e) =>
+                      typeof e === "string" ? e : String(e),
+                    );
+                    return msgs.join(", ");
+                  })()}
+                </FieldError>
               )}
             </TextField>
           </div>
@@ -195,7 +211,14 @@ export function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyRequestFo
                 </ListBox>
               </Select.Popover>
               {field.state.meta.errors.length > 0 && (
-                <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
+                <FieldError>
+                  {(() => {
+                    const msgs = field.state.meta.errors.map((e) =>
+                      typeof e === "string" ? e : String(e),
+                    );
+                    return msgs.join(", ");
+                  })()}
+                </FieldError>
               )}
             </Select>
           </div>
@@ -230,7 +253,14 @@ export function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyRequestFo
                 </ListBox>
               </Select.Popover>
               {field.state.meta.errors.length > 0 && (
-                <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
+                <FieldError>
+                  {(() => {
+                    const msgs = field.state.meta.errors.map((e) =>
+                      typeof e === "string" ? e : String(e),
+                    );
+                    return msgs.join(", ");
+                  })()}
+                </FieldError>
               )}
             </Select>
           </div>

@@ -41,7 +41,7 @@ export function useFileUpload({
       setResults(uploadResults);
       setError(null);
       for (const key of invalidateKeys) {
-        queryClient.invalidateQueries({ queryKey: key });
+        void Promise.all([queryClient.invalidateQueries({ queryKey: key })]);
       }
       onUploadSuccess?.(uploadResults);
     },
