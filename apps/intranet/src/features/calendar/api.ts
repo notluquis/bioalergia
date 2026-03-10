@@ -173,56 +173,60 @@ export async function fetchUnclassifiedCalendarEvents(
   offset = 0,
   filters?: MissingFieldFilters,
 ): Promise<UnclassifiedEventsResponse> {
-  const params = new URLSearchParams();
-  params.set("limit", String(limit));
-  params.set("offset", String(offset));
-  if (filters?.missing?.length) {
-    const uniqueMissing = [...new Set(filters.missing)];
-    for (const key of uniqueMissing) {
-      params.append("missing", key);
-    }
-  }
-  if (filters?.filterMode) {
-    params.set("filterMode", filters.filterMode);
-  }
+  try {
+    const response = await calendarORPCClient.unclassifiedEvents({
+      filterMode: filters?.filterMode,
+      limit,
+      missing: filters?.missing ? [...new Set(filters.missing)] : undefined,
+      offset,
+    });
 
-  const response = await apiClient.get<{
-    events: CalendarUnclassifiedEvent[];
-    status: "ok";
-    totalCount: number;
-  }>(`/api/calendar/events/unclassified?${params.toString()}`, {
-    responseSchema: UnclassifiedEventsResponseSchema,
-  });
+    const parsed = UnclassifiedEventsResponseSchema.parse({
+      status: "ok",
+      ...response,
+    });
 
-  return { events: response.events, totalCount: response.totalCount };
+    return { events: parsed.events, totalCount: parsed.totalCount };
+  } catch (error) {
+    throw toCalendarApiError(error);
+  }
 }
 
 /** Start reclassification of ALL events (returns immediately with jobId) */
 export async function reclassifyAllCalendarEvents(): Promise<ReclassifyJobResponse> {
-  const response = await apiClient.post<{
-    jobId: string;
-    status: "accepted";
-    totalEvents: number;
-  }>("/api/calendar/events/reclassify-all", {}, { responseSchema: ReclassifyJobResponseSchema });
-
-  return {
-    jobId: response.jobId,
-    totalEvents: response.totalEvents,
-  };
+  try {
+    const response = ReclassifyJobResponseSchema.parse(
+      await calendarORPCClient.reclassifyAllEvents(),
+    );
+    return { jobId: response.jobId, totalEvents: response.totalEvents };
+  } catch (error) {
+    throw toCalendarApiError(error);
+  }
 }
 
 /** Start reclassification job for all pending events (returns immediately with jobId) */
-export async function reclassifyCalendarEvents(): Promise<ReclassifyJobResponse> {
-  const response = await apiClient.post<{
-    jobId: string;
-    status: "accepted";
-    totalEvents: number;
-  }>("/api/calendar/events/reclassify", {}, { responseSchema: ReclassifyJobResponseSchema });
+export async function reclassifyCalendarEvents(
+  filters?: MissingFieldFilters,
+): Promise<ReclassifyJobResponse> {
+  try {
+    const response = ReclassifyJobResponseSchema.parse(
+      await calendarORPCClient.reclassifyEvents(
+        filters
+          ? {
+              filterMode: filters.filterMode,
+              missing: filters.missing ? [...new Set(filters.missing)] : undefined,
+            }
+          : undefined,
+      ),
+    );
 
-  return {
-    jobId: response.jobId,
-    totalEvents: response.totalEvents,
-  };
+    return {
+      jobId: response.jobId,
+      totalEvents: response.totalEvents,
+    };
+  } catch (error) {
+    throw toCalendarApiError(error);
+  }
 }
 
 export async function syncCalendarEvents(): Promise<CalendarSyncResponse> {

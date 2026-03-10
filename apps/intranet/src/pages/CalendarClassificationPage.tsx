@@ -114,7 +114,7 @@ function CalendarClassificationPage() {
   });
 
   const reclassifyMutation = useMutation({
-    mutationFn: reclassifyCalendarEvents,
+    mutationFn: () => reclassifyCalendarEvents(filters),
     onError: (err) =>
       toast.error(`Error: ${err instanceof Error ? err.message : "Error desconocido"}`),
     onSuccess: (response) => {

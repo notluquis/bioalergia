@@ -27,6 +27,7 @@ import type {
   CalendarFilters,
   CalendarSummary,
   CalendarSyncLog,
+  CalendarUnclassifiedEvent,
 } from "./types";
 
 type ClassificationOptions = {
@@ -35,6 +36,22 @@ type ClassificationOptions = {
   patchReadings: readonly string[];
   testSubtypes: readonly string[];
   treatmentStages: readonly string[];
+};
+
+type JobState = {
+  error: null | string;
+  id: string;
+  message: string;
+  progress: number;
+  result: unknown;
+  status: "completed" | "failed" | "pending" | "running";
+  total: number;
+  type: string;
+};
+
+type MissingFieldFilters = {
+  filterMode?: "AND" | "OR";
+  missing?: string[];
 };
 
 const superjson = configureSuperjson();
@@ -106,6 +123,17 @@ type CalendarORPCClient = {
   classifyEvent: (input: CalendarEventClassificationPayload) => Promise<{
     ok: true;
   }>;
+  jobStatus: (input: { jobId: string }) => Promise<{ job: JobState }>;
+  reclassifyAllEvents: () => Promise<{
+    jobId: string;
+    status: "accepted";
+    totalEvents: number;
+  }>;
+  reclassifyEvents: (input?: MissingFieldFilters) => Promise<{
+    jobId: string;
+    status: "accepted";
+    totalEvents: number;
+  }>;
   summaryEvents: (
     input: Omit<CalendarFilters, "maxDays"> & { maxDays?: number },
   ) => Promise<CalendarSummary>;
@@ -115,6 +143,15 @@ type CalendarORPCClient = {
     status: "accepted";
   }>;
   syncLogs: (input?: { limit?: number }) => Promise<CalendarSyncLog[]>;
+  unclassifiedEvents: (input?: {
+    filterMode?: "AND" | "OR";
+    limit?: number;
+    missing?: string[];
+    offset?: number;
+  }) => Promise<{
+    events: CalendarUnclassifiedEvent[];
+    totalCount: number;
+  }>;
 };
 
 const calendarORPCLink = new SuperJSONLink({

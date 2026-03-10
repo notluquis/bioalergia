@@ -1,8 +1,7 @@
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { z } from "zod";
-
-import { apiClient } from "@/lib/api-client";
+import { calendarORPCClient, toCalendarApiError } from "@/features/calendar/orpc";
 
 export interface JobState {
   error: null | string;
@@ -35,7 +34,6 @@ const JobStateSchema = z.object({
 
 const JobStatusResponseSchema = z.object({
   job: JobStateSchema,
-  status: z.string(),
 });
 
 /**
@@ -52,14 +50,14 @@ export function useJobProgress(jobId: null | string, options: UseJobProgressOpti
       if (!jobId) {
         return null;
       }
-      const response = await apiClient.get<{ job: JobState; status: string }>(
-        `/api/calendar/events/job/${jobId}`,
-        { responseSchema: JobStatusResponseSchema },
-      );
-      if (response.status !== "ok") {
-        throw new Error("Failed to fetch job status");
+      try {
+        const response = JobStatusResponseSchema.parse(
+          await calendarORPCClient.jobStatus({ jobId }),
+        );
+        return response.job;
+      } catch (error) {
+        throw toCalendarApiError(error);
       }
-      return response.job;
     },
     queryKey: ["job-status", jobId],
 

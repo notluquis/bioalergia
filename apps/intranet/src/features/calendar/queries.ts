@@ -3,7 +3,6 @@ import {
   fetchCalendarDaily,
   fetchCalendarSummary,
   fetchTreatmentAnalytics,
-  fetchUnclassifiedCalendarEvents,
   type MissingFieldFilters,
 } from "./api";
 import { calendarORPCUtils } from "./orpc";
@@ -69,8 +68,13 @@ export const calendarQueries = {
       staleTime: 5 * 60 * 1000, // 5 minutes
     }),
   unclassified: (page: number, pageSize: number, filters: MissingFieldFilters = {}) =>
-    queryOptions({
-      queryFn: () => fetchUnclassifiedCalendarEvents(pageSize, page * pageSize, filters),
+    calendarORPCUtils.unclassifiedEvents.queryOptions({
+      input: {
+        filterMode: filters.filterMode,
+        limit: pageSize,
+        missing: filters.missing ? [...new Set(filters.missing)] : undefined,
+        offset: page * pageSize,
+      },
       queryKey: calendarKeys.unclassified(page, pageSize, filters),
     }),
 };

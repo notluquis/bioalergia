@@ -9,6 +9,14 @@ import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { googleCalendarConfig } from "../config";
 import {
+  getCalendarJobStatus,
+  isMissingClassificationFilterKey,
+  type MissingClassificationFilterKey,
+  startReclassifyAllEventsJob,
+  startReclassifyMissingFieldsJob,
+  toTestMetadata,
+} from "../lib/calendar-reclassify";
+import {
   type CalendarEventFilters,
   getCalendarAggregates,
   getCalendarEventsByDate,
@@ -16,6 +24,7 @@ import {
 import { logError } from "../lib/logger";
 import {
   CATEGORY_CHOICES,
+  isIgnoredEvent,
   PATCH_READING_CHOICES,
   TEST_SUBTYPE_CHOICES,
   TREATMENT_STAGE_CHOICES,
@@ -27,6 +36,7 @@ import {
   createCalendarSyncLogEntry,
   finalizeCalendarSyncLogEntry,
   listCalendarSyncLogs,
+  listUnclassifiedCalendarEvents,
   loadSettings,
   updateCalendarEventClassification,
 } from "../services/calendar";
@@ -392,6 +402,86 @@ const syncLogsInputSchema = z.object({
   limit: z.coerce.number().int().min(1).max(200).default(50).optional(),
 });
 
+const missingClassificationFilterKeySchema = z.enum([
+  "missingCategory",
+  "missingAmountExpected",
+  "missingAmountPaid",
+  "missingAttended",
+  "missingDosage",
+  "missingTreatmentStage",
+]);
+
+const unclassifiedEventsInputSchema = z.object({
+  filterMode: z.enum(["AND", "OR"]).default("OR").optional(),
+  limit: z.coerce.number().int().min(1).max(500).default(50).optional(),
+  missing: z.array(missingClassificationFilterKeySchema).optional(),
+  offset: z.coerce.number().int().min(0).default(0).optional(),
+});
+
+const reclassifyMissingInputSchema = z.object({
+  filterMode: z.enum(["AND", "OR"]).optional(),
+  missing: z.array(missingClassificationFilterKeySchema).optional(),
+});
+
+const reclassifyJobResponseSchema = z.object({
+  jobId: z.string(),
+  status: z.literal("accepted"),
+  totalEvents: z.number(),
+});
+
+const jobStatusInputSchema = z.object({
+  jobId: z.string().min(1),
+});
+
+const jobStateSchema = z.object({
+  error: z.string().nullable(),
+  id: z.string(),
+  message: z.string(),
+  progress: z.number(),
+  result: z.unknown(),
+  status: z.enum(["completed", "failed", "pending", "running"]),
+  total: z.number(),
+  type: z.string(),
+});
+
+const unclassifiedCalendarEventSchema = z.object({
+  amountExpected: z.number().nullable(),
+  amountPaid: z.number().nullable(),
+  attended: z.boolean().nullable(),
+  calendarId: z.string(),
+  category: z.string().nullable(),
+  clinicalSeriesId: z.number().nullable().optional(),
+  description: z.string().nullable(),
+  dosageValue: z.number().nullable(),
+  dosageUnit: z.string().nullable(),
+  endDate: z.string().nullable(),
+  endDateTime: z.string().nullable(),
+  eventId: z.string(),
+  eventType: z.string().nullable(),
+  seriesStageKind: z.enum(["DOSE", "INSTALLATION", "MAINTENANCE", "READING"]).nullable().optional(),
+  seriesStageLabel: z.string().nullable().optional(),
+  seriesStageNumber: z.number().nullable().optional(),
+  startDate: z.string().nullable(),
+  startDateTime: z.string().nullable(),
+  status: z.string().nullable(),
+  summary: z.string().nullable(),
+  testMetadata: testMetadataSchema.nullable(),
+  treatmentStage: z.string().nullable(),
+});
+
+const unclassifiedEventsResponseSchema = z.object({
+  events: z.array(unclassifiedCalendarEventSchema),
+  totalCount: z.number(),
+});
+
+function toUniqueMissingFilters(values: MissingClassificationFilterKey[] | undefined) {
+  if (!values?.length) {
+    return undefined;
+  }
+
+  return [...new Set(values)].filter(isMissingClassificationFilterKey);
+}
+
 const listCalendars = authed
   .use(async ({ context, next }) => {
     const canReadSchedule = await hasPermission(context.user.id, "read", "CalendarSchedule");
@@ -626,14 +716,161 @@ const listSyncLogs = authed
     }));
   });
 
+const unclassifiedEvents = requirePermission("CalendarEvent", "update")
+  .route({
+    method: "GET",
+    path: "/events/unclassified",
+    summary: "Lista eventos con clasificacion incompleta",
+  })
+  .input(unclassifiedEventsInputSchema)
+  .output(unclassifiedEventsResponseSchema)
+  .handler(async ({ input }) => {
+    const selectedMissingFilters = new Set<MissingClassificationFilterKey>(
+      toUniqueMissingFilters(input.missing),
+    );
+
+    const mappedFilters = Object.fromEntries(
+      [
+        ["missingAmountExpected", "amountExpected"],
+        ["missingAmountPaid", "amountPaid"],
+        ["missingAttended", "attended"],
+        ["missingCategory", "category"],
+        ["missingDosage", "dosageValue"],
+        ["missingTreatmentStage", "treatmentStage"],
+      ].map(([queryKey, serviceKey]) => [
+        serviceKey,
+        selectedMissingFilters.has(queryKey as MissingClassificationFilterKey),
+      ]),
+    ) as {
+      amountExpected: boolean;
+      amountPaid: boolean;
+      attended: boolean;
+      category: boolean;
+      dosageValue: boolean;
+      treatmentStage: boolean;
+    };
+
+    const filters = {
+      ...mappedFilters,
+      filterMode: input.filterMode ?? "OR",
+    };
+
+    const { events: rows, totalCount } = await listUnclassifiedCalendarEvents(
+      input.limit ?? 50,
+      input.offset ?? 0,
+      selectedMissingFilters.size > 0 ? filters : undefined,
+    );
+
+    const filteredRows = rows.filter((row) => !isIgnoredEvent(row.summary));
+
+    return {
+      totalCount,
+      events: filteredRows.map((row) => ({
+        calendarId: row.calendar.googleId,
+        eventId: row.externalEventId,
+        status: row.eventStatus ?? null,
+        eventType: row.eventType ?? null,
+        summary: row.summary ?? null,
+        description: row.description ?? null,
+        startDate: row.startDate ?? null,
+        startDateTime: row.startDateTime ?? null,
+        endDate: row.endDate ?? null,
+        endDateTime: row.endDateTime ?? null,
+        category: row.category ?? null,
+        clinicalSeriesId: row.clinicalSeriesId ?? null,
+        amountExpected: row.amountExpected ?? null,
+        amountPaid: row.amountPaid ?? null,
+        attended: row.attended ?? null,
+        dosageValue: row.dosageValue ?? null,
+        dosageUnit: row.dosageUnit ?? null,
+        seriesStageKind: row.seriesStageKind ?? null,
+        seriesStageLabel: row.seriesStageLabel ?? null,
+        seriesStageNumber: row.seriesStageNumber ?? null,
+        testMetadata: toTestMetadata(row.testMetadata),
+        treatmentStage: row.treatmentStage ?? null,
+      })),
+    };
+  });
+
+const reclassifyEvents = requirePermission("CalendarEvent", "update")
+  .route({
+    method: "POST",
+    path: "/events/reclassify",
+    successStatus: 202,
+    summary: "Inicia reclasificacion de eventos pendientes",
+  })
+  .input(reclassifyMissingInputSchema)
+  .output(reclassifyJobResponseSchema)
+  .handler(async ({ input }) => {
+    const result = await startReclassifyMissingFieldsJob({
+      filterMode: input.filterMode,
+      missing: toUniqueMissingFilters(input.missing),
+    });
+
+    return {
+      status: "accepted" as const,
+      ...result,
+    };
+  });
+
+const reclassifyAllEvents = requirePermission("CalendarEvent", "update")
+  .route({
+    method: "POST",
+    path: "/events/reclassify-all",
+    successStatus: 202,
+    summary: "Inicia reclasificacion completa de eventos",
+  })
+  .output(reclassifyJobResponseSchema)
+  .handler(async () => {
+    const result = await startReclassifyAllEventsJob();
+
+    return {
+      status: "accepted" as const,
+      ...result,
+    };
+  });
+
+const jobStatus = requirePermission("CalendarEvent", "update")
+  .route({
+    method: "GET",
+    path: "/events/job/{jobId}",
+    summary: "Consulta estado de job de calendario",
+  })
+  .input(jobStatusInputSchema)
+  .output(z.object({ job: jobStateSchema }))
+  .handler(async ({ input }) => {
+    const job = await getCalendarJobStatus(input.jobId);
+
+    if (!job) {
+      throw new ORPCError("NOT_FOUND", { message: "Job not found or expired" });
+    }
+
+    return {
+      job: {
+        id: job.id,
+        type: job.type,
+        status: job.status,
+        progress: job.progress,
+        total: job.total,
+        message: job.message,
+        result: job.result,
+        error: job.error,
+      },
+    };
+  });
+
 const calendarORPCRouterBase = {
   dailyEvents,
   classificationOptions,
   calendars: listCalendars,
   classifyEvent,
+  jobStatus,
+  reclassifyAllEvents,
+  reclassifyEvents,
   summaryEvents,
   syncEvents: syncCalendarEvents,
   syncLogs: listSyncLogs,
+  unclassifiedEvents,
 };
 
 export const calendarORPCRouter = base
