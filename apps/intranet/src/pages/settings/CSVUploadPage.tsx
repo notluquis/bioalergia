@@ -1442,12 +1442,22 @@ export function CSVUploadPage() {
           .filter(([, isSelected]) => Boolean(isSelected))
           .map(([rowIndex]) => Number(rowIndex)),
       );
-      const rowsToImport =
-        importMode === "insert-or-update" && updateIndexes.size > 0
-          ? previewBatchRows.filter(
-              (_row, index) => !updateIndexes.has(index) || selectedUpdateIndexes.has(index),
-            )
-          : previewBatchRows;
+
+      // Filter rows based on import mode
+      let rowsToImport = previewBatchRows;
+      if (importMode === "update-only") {
+        // For update-only: only send rows that are updates AND selected
+        rowsToImport = previewBatchRows.filter(
+          (_, index) => updateIndexes.has(index) && selectedUpdateIndexes.has(index),
+        );
+      } else if (importMode === "insert-or-update" && updateIndexes.size > 0) {
+        // For insert-or-update: send all rows except unselected updates
+        rowsToImport = previewBatchRows.filter(
+          (_row, index) => !updateIndexes.has(index) || selectedUpdateIndexes.has(index),
+        );
+      }
+      // For insert-only: send all rows (backend will skip existing ones)
+
       const totals = await runBatchedMutation({
         actionLabel: "Importando",
         mode: importMode,
@@ -1487,9 +1497,11 @@ export function CSVUploadPage() {
     (row) => updateRowSelection[row.id],
   ).length;
   const pendingImportCount =
-    importMode === "insert-or-update"
-      ? (batchPreviewData?.toInsert ?? 0) + selectedUpdateCount
-      : (batchPreviewData?.toInsert ?? 0);
+    importMode === "insert-only"
+      ? (batchPreviewData?.toInsert ?? 0)
+      : importMode === "update-only"
+        ? (batchPreviewData?.toUpdate ?? 0)
+        : (batchPreviewData?.toInsert ?? 0) + selectedUpdateCount;
 
   const columns = buildMappingColumns({
     firstFile,
