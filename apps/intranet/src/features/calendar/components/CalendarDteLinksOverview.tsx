@@ -23,11 +23,10 @@ import { useToast } from "@/context/ToastContext";
 import {
   autoLinkEventDteByPeriod,
   confirmEventDteLink,
-  fetchAutoLinkEventDteJobStatus,
-  fetchEventDteLinksOverview,
   startAutoLinkEventDteAllPeriodsJob,
   unlinkEventDteLink,
 } from "@/features/calendar/api";
+import { calendarDteLinkKeys, calendarDteLinkQueries } from "@/features/calendar/queries";
 import type { EventDteOverviewItem } from "@/features/calendar/types";
 import { currencyFormatter } from "@/lib/format";
 
@@ -122,35 +121,23 @@ export function CalendarDteLinksOverview({
     setQueryDraft(search.query ?? "");
   }, [search.query]);
 
-  const overviewQuery = useQuery({
-    queryFn: () =>
-      fetchEventDteLinksOverview({
-        page: search.page,
-        pageSize: search.pageSize,
-        period: search.period,
-        query: search.query || undefined,
-        status: search.status,
-      }),
-    queryKey: [
-      "calendar",
-      "dte-link",
-      "overview",
-      search.period,
-      search.status,
-      search.page,
-      search.pageSize,
-      search.query ?? "",
-    ],
-  });
+  const overviewQuery = useQuery(
+    calendarDteLinkQueries.overview({
+      page: search.page,
+      pageSize: search.pageSize,
+      period: search.period,
+      query: search.query || undefined,
+      status: search.status,
+    }),
+  );
 
   const refetchOverview = useCallback(async () => {
-    await queryClient.invalidateQueries({ queryKey: ["calendar", "dte-link", "overview"] });
+    await queryClient.invalidateQueries({ queryKey: calendarDteLinkKeys.all });
   }, [queryClient]);
 
   const autoLinkJobQuery = useQuery({
+    ...calendarDteLinkQueries.autoLinkJob(activeAutoLinkJobId),
     enabled: Boolean(activeAutoLinkJobId),
-    queryFn: () => fetchAutoLinkEventDteJobStatus(activeAutoLinkJobId ?? ""),
-    queryKey: ["calendar", "dte-link", "auto-link-job", activeAutoLinkJobId],
     refetchInterval: (query) => {
       const status = query.state.data?.status;
       if (status === "completed" || status === "failed") {

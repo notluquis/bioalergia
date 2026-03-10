@@ -1,7 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
 import { Filter } from "lucide-react";
-import { fetchEventDteLinksByDay } from "@/features/calendar/api";
 import { CalendarFiltersPopover } from "@/features/calendar/components/CalendarFiltersPopover";
 import { CalendarSkeleton } from "@/features/calendar/components/CalendarSkeleton";
 import { DailyEventCard } from "@/features/calendar/components/DailyEventCard";
@@ -10,6 +9,7 @@ import { DailyStatsCards } from "@/features/calendar/components/DailyStatsCards"
 import { DayNavigation } from "@/features/calendar/components/DayNavigation";
 import { EventDteLinkModal } from "@/features/calendar/components/EventDteLinkModal";
 import { useCalendarEvents } from "@/features/calendar/hooks/use-calendar-events";
+import { calendarDteLinkQueries } from "@/features/calendar/queries";
 import type { CalendarEventDetail } from "@/features/calendar/types";
 import { useDisclosure } from "@/hooks/use-disclosure";
 
@@ -50,10 +50,7 @@ function CalendarDailyPage() {
   const hasEvents = (selectedDayEntry?.events.length ?? 0) > 0;
   const selectedDateString = dayjs(currentSelectedDate).format("YYYY-MM-DD");
 
-  const linksByDayQuery = useQuery({
-    queryFn: () => fetchEventDteLinksByDay(selectedDateString),
-    queryKey: ["calendar", "dte-link", "by-day", selectedDateString],
-  });
+  const linksByDayQuery = useQuery(calendarDteLinkQueries.byDay(selectedDateString));
 
   const linksByEvent = new Map(
     (linksByDayQuery.data ?? []).map((item) => [`${item.calendarId}:::${item.eventId}`, item]),

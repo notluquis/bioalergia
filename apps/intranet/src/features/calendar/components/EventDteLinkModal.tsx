@@ -5,11 +5,8 @@ import dayjs from "dayjs";
 import { useMemo } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { useToast } from "@/context/ToastContext";
-import {
-  confirmEventDteLink,
-  fetchEventDteSuggestions,
-  unlinkEventDteLink,
-} from "@/features/calendar/api";
+import { confirmEventDteLink, unlinkEventDteLink } from "@/features/calendar/api";
+import { calendarDteLinkKeys, calendarDteLinkQueries } from "@/features/calendar/queries";
 import type { CalendarEventDetail, EventDteSuggestion } from "@/features/calendar/types";
 import { currencyFormatter } from "@/lib/format";
 
@@ -27,14 +24,12 @@ export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDte
   const isPendingEmission = Boolean(event?.eventDate && event.eventDate > today);
 
   const suggestionsQuery = useQuery({
+    ...calendarDteLinkQueries.suggestions({
+      calendarId: event?.calendarId ?? "",
+      eventId: event?.eventId ?? "",
+      limit: 12,
+    }),
     enabled: isOpen && Boolean(event?.calendarId && event?.eventId) && !isPendingEmission,
-    queryFn: () =>
-      fetchEventDteSuggestions({
-        calendarId: event?.calendarId ?? "",
-        eventId: event?.eventId ?? "",
-        limit: 12,
-      }),
-    queryKey: ["calendar", "dte-link", "suggestions", event?.calendarId, event?.eventId],
   });
 
   const confirmMutation = useMutation({
@@ -50,9 +45,9 @@ export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDte
       }),
     onSuccess: async () => {
       toast.success("Vínculo DTE confirmado");
-      await queryClient.invalidateQueries({ queryKey: ["calendar", "dte-link", "by-day"] });
+      await queryClient.invalidateQueries({ queryKey: calendarDteLinkKeys.all });
       await queryClient.invalidateQueries({
-        queryKey: ["calendar", "dte-link", "suggestions", event?.calendarId, event?.eventId],
+        queryKey: calendarDteLinkKeys.suggestions(event?.calendarId, event?.eventId),
       });
       onLinked();
     },
@@ -69,7 +64,7 @@ export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDte
       }),
     onSuccess: async () => {
       toast.success("Vínculo eliminado");
-      await queryClient.invalidateQueries({ queryKey: ["calendar", "dte-link", "by-day"] });
+      await queryClient.invalidateQueries({ queryKey: calendarDteLinkKeys.all });
       onLinked();
     },
     onError: (error) => {
