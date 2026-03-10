@@ -2,21 +2,19 @@
  * Statistics API
  */
 
-import { apiClient } from "@/lib/api-client";
+import {
+  toTransactionsInsightsApiError,
+  transactionsInsightsORPCClient,
+} from "../transactions-insights-orpc";
 import { StatsResponseSchema, TopParticipantsResponseSchema } from "./schemas";
 import type { StatsResponse, TopParticipantData } from "./types";
 
 export async function fetchStats(from: string, to: string): Promise<StatsResponse> {
-  const params = new URLSearchParams();
-  if (from) {
-    params.set("from", from);
+  try {
+    return StatsResponseSchema.parse(await transactionsInsightsORPCClient.stats({ from, to }));
+  } catch (error) {
+    throw toTransactionsInsightsApiError(error);
   }
-  if (to) {
-    params.set("to", to);
-  }
-  return apiClient.get<StatsResponse>(`/api/transactions/stats?${params.toString()}`, {
-    responseSchema: StatsResponseSchema,
-  });
 }
 
 export async function fetchTopParticipants(
@@ -24,19 +22,13 @@ export async function fetchTopParticipants(
   to: string,
   limit = 5,
 ): Promise<TopParticipantData[]> {
-  const params = new URLSearchParams();
-  if (from) {
-    params.set("from", from);
-  }
-  if (to) {
-    params.set("to", to);
-  }
-  params.set("limit", String(limit));
+  try {
+    const response = TopParticipantsResponseSchema.parse(
+      await transactionsInsightsORPCClient.participants({ from, limit, to }),
+    );
 
-  const response = await apiClient.get<{ data: TopParticipantData[] }>(
-    `/api/transactions/participants?${params.toString()}`,
-    { responseSchema: TopParticipantsResponseSchema },
-  );
-
-  return response.data ?? [];
+    return response.data ?? [];
+  } catch (error) {
+    throw toTransactionsInsightsApiError(error);
+  }
 }

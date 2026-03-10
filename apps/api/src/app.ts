@@ -41,6 +41,11 @@ import {
   settlementTransactionsORPCHandler,
 } from "./orpc/settlement-transactions";
 import { createHonoORPCRequest } from "./orpc/superjson";
+import { suppliesOpenAPIHandler, suppliesORPCHandler } from "./orpc/supplies";
+import {
+  transactionsInsightsOpenAPIHandler,
+  transactionsInsightsORPCHandler,
+} from "./orpc/transactions-insights";
 import { usersOpenAPIHandler, usersORPCHandler } from "./orpc/users";
 import { authRoutes } from "./routes/auth";
 import { backupRoutes } from "./routes/backups";
@@ -418,6 +423,15 @@ app.get("/api/orpc", (c) =>
           </ul>
         </section>
         <section class="card">
+          <h2>Supplies</h2>
+          <p>Common supplies y solicitudes internas de insumos.</p>
+          <ul>
+            <li><a href="/api/orpc/supplies/docs">Reference UI</a></li>
+            <li><a href="/api/orpc/supplies/openapi.json">OpenAPI JSON</a></li>
+            <li><code>/api/orpc/supplies/rpc/*</code></li>
+          </ul>
+        </section>
+        <section class="card">
           <h2>Production Balances</h2>
           <p>Balances diarios de producción y sus totales operativos.</p>
           <ul>
@@ -460,6 +474,15 @@ app.get("/api/orpc", (c) =>
             <li><a href="/api/orpc/backups/docs">Reference UI</a></li>
             <li><a href="/api/orpc/backups/openapi.json">OpenAPI JSON</a></li>
             <li><code>/api/orpc/backups/rpc/*</code></li>
+          </ul>
+        </section>
+        <section class="card">
+          <h2>Transactions Insights</h2>
+          <p>Estadísticas, leaderboard e insight por participante para transacciones.</p>
+          <ul>
+            <li><a href="/api/orpc/transactions-insights/docs">Reference UI</a></li>
+            <li><a href="/api/orpc/transactions-insights/openapi.json">OpenAPI JSON</a></li>
+            <li><code>/api/orpc/transactions-insights/rpc/*</code></li>
           </ul>
         </section>
       </div>
@@ -528,6 +551,22 @@ app.use("/api/orpc/settlement-transactions/rpc/*", async (c, next) => {
     createHonoORPCRequest(c),
     {
       prefix: "/api/orpc/settlement-transactions/rpc",
+      context: { hono: c },
+    },
+  );
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
+app.use("/api/orpc/transactions-insights/rpc/*", async (c, next) => {
+  const { matched, response } = await transactionsInsightsORPCHandler.handle(
+    createHonoORPCRequest(c),
+    {
+      prefix: "/api/orpc/transactions-insights/rpc",
       context: { hono: c },
     },
   );
@@ -685,6 +724,19 @@ app.use("/api/orpc/notifications/rpc/*", async (c, next) => {
 app.use("/api/orpc/services/rpc/*", async (c, next) => {
   const { matched, response } = await servicesORPCHandler.handle(createHonoORPCRequest(c), {
     prefix: "/api/orpc/services/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
+app.use("/api/orpc/supplies/rpc/*", async (c, next) => {
+  const { matched, response } = await suppliesORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/supplies/rpc",
     context: { hono: c },
   });
 
@@ -858,6 +910,18 @@ app.use("/api/orpc/services/*", async (c, next) => {
   await next();
 });
 
+app.use("/api/orpc/supplies/*", async (c, next) => {
+  const { matched, response } = await suppliesOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
 app.use("/api/orpc/production-balances/*", async (c, next) => {
   const { matched, response } = await productionBalancesOpenAPIHandler.handle(
     createHonoORPCRequest(c),
@@ -926,6 +990,21 @@ app.use("/api/orpc/release-transactions/*", async (c, next) => {
 
 app.use("/api/orpc/settlement-transactions/*", async (c, next) => {
   const { matched, response } = await settlementTransactionsOpenAPIHandler.handle(
+    createHonoORPCRequest(c),
+    {
+      context: { hono: c },
+    },
+  );
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
+app.use("/api/orpc/transactions-insights/*", async (c, next) => {
+  const { matched, response } = await transactionsInsightsOpenAPIHandler.handle(
     createHonoORPCRequest(c),
     {
       context: { hono: c },

@@ -48,11 +48,13 @@
                │ /api/orpc/settings/rpc/*
                │ /api/orpc/notifications/rpc/*
                │ /api/orpc/services/rpc/*
+               │ /api/orpc/supplies/rpc/*
                │ /api/orpc/production-balances/rpc/*
                │ /api/orpc/balances/rpc/*
                │ /api/orpc/release-transactions/rpc/*
                │ /api/orpc/settlement-transactions/rpc/*
                │ /api/orpc/backups/rpc/*
+               │ /api/orpc/transactions-insights/rpc/*
                ▼
 ┌──────────────────────────────────────────────┐
 │ Backend (Hono 4.12.5 + oRPC 1.13.6)          │
@@ -130,6 +132,11 @@
 │ │  • /schedules/{id}/pay                     │
 │ │  • /schedules/{id}/unlink                  │
 │ │                                            │
+│ ├─ Supplies Router                           │
+│ │  • /common                                 │
+│ │  • /requests                               │
+│ │  • /requests/{id}/status                   │
+│ │                                            │
 │ ├─ Production Balances Router                │
 │ │  • /                                       │
 │ │  • /{id}                                   │
@@ -137,6 +144,11 @@
 │ ├─ Balances Router                           │
 │ │  • /                                       │
 │ │  • Guarda saldo diario y reporte por fecha │
+│ │                                            │
+│ ├─ Transactions Insights Router              │
+│ │  • /stats                                  │
+│ │  • /participants                           │
+│ │  • /participants/{id}                      │
 │ │                                            │
 │ ├─ Release Transactions Router               │
 │ │  • /                                       │
@@ -389,7 +401,11 @@ apps/api/src/
 | 2026-03-10 | ✅ Done | Settings |
 | 2026-03-10 | ✅ Done | Notifications |
 | 2026-03-10 | ✅ Done | Services |
+| 2026-03-10 | ✅ Done | Supplies |
 | 2026-03-10 | ✅ Done | Production Balances |
+| 2026-03-10 | ✅ Done | Balances + Release/Settlement Transactions |
+| 2026-03-10 | ✅ Done | Backups |
+| 2026-03-10 | ✅ Done | Transactions Insights |
 
 ---
 

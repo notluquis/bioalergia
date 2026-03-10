@@ -1,5 +1,8 @@
 import { z } from "zod";
-import { apiClient } from "@/lib/api-client";
+import {
+  toTransactionsInsightsApiError,
+  transactionsInsightsORPCClient,
+} from "@/features/finance/transactions-insights-orpc";
 
 import type { ParticipantInsightResponse, ParticipantLeaderboardResponse } from "./types";
 
@@ -17,17 +20,23 @@ export async function fetchParticipantInsight(
   participantId: string,
   params?: { from?: string; to?: string },
 ): Promise<ParticipantInsightResponse> {
-  const data = await apiClient.get<
-    ParticipantInsightResponse & { message?: string; status: string }
-  >(`/api/transactions/participants/${encodeURIComponent(participantId)}`, {
-    query: params,
-    responseSchema: ParticipantInsightResponseSchema,
-  });
+  try {
+    const data = ParticipantInsightResponseSchema.parse(
+      await transactionsInsightsORPCClient.participantInsight({
+        from: params?.from,
+        id: participantId,
+        to: params?.to,
+      }),
+    );
 
-  if (data.status !== "ok") {
-    throw new Error(data.message || "No se pudo obtener la información del participante");
+    if (data.status !== "ok") {
+      throw new Error("No se pudo obtener la información del participante");
+    }
+
+    return data as ParticipantInsightResponse;
+  } catch (error) {
+    throw toTransactionsInsightsApiError(error);
   }
-  return data;
 }
 
 export async function fetchParticipantLeaderboard(params?: {
@@ -36,27 +45,26 @@ export async function fetchParticipantLeaderboard(params?: {
   mode?: "combined" | "incoming" | "outgoing";
   to?: string;
 }): Promise<ParticipantLeaderboardResponse> {
-  const data = await apiClient.get<
-    | (ParticipantLeaderboardResponse & { message?: string; status: string })
-    | { data?: ParticipantLeaderboardResponse["participants"]; message?: string; status: string }
-  >("/api/transactions/participants", {
-    query: params,
-    responseSchema: ParticipantLeaderboardResponseSchema,
-  });
+  try {
+    const data = ParticipantLeaderboardResponseSchema.parse(
+      await transactionsInsightsORPCClient.participants(params),
+    );
 
-  if (data.status !== "ok") {
-    throw new Error(data.message || "No se pudo obtener la información del participante");
+    if (data.status !== "ok") {
+      throw new Error("No se pudo obtener la información del participante");
+    }
+
+    if ("participants" in data && Array.isArray(data.participants)) {
+      return data as ParticipantLeaderboardResponse;
+    }
+
+    return {
+      participants: ("data" in data && Array.isArray(data.data) ? data.data : []) as
+        | ParticipantLeaderboardResponse["participants"]
+        | [],
+      status: "ok",
+    };
+  } catch (error) {
+    throw toTransactionsInsightsApiError(error);
   }
-
-  // Backend returns { data: [...] } for this endpoint. Keep a stable frontend contract.
-  if ("participants" in data && Array.isArray(data.participants)) {
-    return data as ParticipantLeaderboardResponse;
-  }
-
-  return {
-    participants: ("data" in data && Array.isArray(data.data) ? data.data : []) as
-      | ParticipantLeaderboardResponse["participants"]
-      | [],
-    status: "ok",
-  };
 }

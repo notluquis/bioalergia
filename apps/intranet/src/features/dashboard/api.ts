@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { apiClient } from "@/lib/api-client";
+import { financeORPCClient } from "@/features/finance/orpc";
+import {
+  toTransactionsInsightsApiError,
+  transactionsInsightsORPCClient,
+} from "@/features/finance/transactions-insights-orpc";
 
 import type { Transaction } from "../finance/types";
 
@@ -33,17 +37,20 @@ const StatsResponseSchema = z.object({
 });
 
 export async function fetchRecentMovements(): Promise<Transaction[]> {
-  const data = await apiClient.get<{ data: Transaction[] }>("/api/transactions?limit=5", {
-    responseSchema: RecentMovementsResponseSchema,
-  });
-  return data.data;
+  const data = RecentMovementsResponseSchema.parse(
+    await financeORPCClient.transactionsList({
+      page: 1,
+      pageSize: 5,
+    }),
+  );
+
+  return data.data as Transaction[];
 }
 
 export async function fetchStats(from: string, to: string): Promise<StatsResponse> {
-  const searchParams = new URLSearchParams({ from, to });
-  const res = await apiClient.get<StatsResponse>(
-    `/api/transactions/stats?${searchParams.toString()}`,
-    { responseSchema: StatsResponseSchema },
-  );
-  return res;
+  try {
+    return StatsResponseSchema.parse(await transactionsInsightsORPCClient.stats({ from, to }));
+  } catch (error) {
+    throw toTransactionsInsightsApiError(error);
+  }
 }
