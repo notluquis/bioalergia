@@ -1,15 +1,4 @@
-import {
-  Alert,
-  Button,
-  Card,
-  Chip,
-  Input,
-  Label,
-  ListBox,
-  Select,
-  TextField,
-  Tooltip,
-} from "@heroui/react";
+import { Alert, Button, Card, Chip, Input, Label, ListBox, Select, Tooltip } from "@heroui/react";
 import { useMutation } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { AlertCircle, CheckCircle, FileUp, Loader2, Lock } from "lucide-react";
@@ -634,9 +623,19 @@ function FileUploadSection({
         </Card.Description>
       </Card.Header>
       <Card.Content>
-        <TextField>
-          <Input accept=".csv" disabled={disabled} multiple onChange={onFileChange} type="file" />
-        </TextField>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="csv-upload-input">Archivos CSV</Label>
+          <Input
+            id="csv-upload-input"
+            accept=".csv,text/csv"
+            disabled={disabled}
+            fullWidth
+            multiple
+            onChange={onFileChange}
+            type="file"
+            variant="secondary"
+          />
+        </div>
       </Card.Content>
     </Card>
   );
