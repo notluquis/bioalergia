@@ -334,7 +334,6 @@ export const haulmerORPCHandler = new SuperJSONRPCHandler(haulmerORPCRouter, {
 export const haulmerOpenAPIHandler = new OpenAPIHandler(haulmerORPCRouter, {
   plugins: [
     new OpenAPIReferencePlugin({
-      docsPath: "/api/orpc/haulmer/docs",
       docsTitle: "Bioalergia Haulmer API Reference",
       schemaConverters: [new ZodToJsonSchemaConverter()],
       specGenerateOptions: {
@@ -343,7 +342,6 @@ export const haulmerOpenAPIHandler = new OpenAPIHandler(haulmerORPCRouter, {
           version: "1.0.0",
         },
       },
-      specPath: "/api/orpc/haulmer/openapi.json",
     }),
   ],
   interceptors: [

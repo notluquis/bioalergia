@@ -348,7 +348,6 @@ export const mercadopagoORPCHandler = new SuperJSONRPCHandler(mercadopagoORPCRou
 export const mercadopagoOpenAPIHandler = new OpenAPIHandler(mercadopagoORPCRouter, {
   plugins: [
     new OpenAPIReferencePlugin({
-      docsPath: "/api/orpc/mercadopago/docs",
       docsTitle: "Bioalergia MercadoPago API Reference",
       schemaConverters: [new ZodToJsonSchemaConverter()],
       specGenerateOptions: {
@@ -357,7 +356,6 @@ export const mercadopagoOpenAPIHandler = new OpenAPIHandler(mercadopagoORPCRoute
           version: "1.0.0",
         },
       },
-      specPath: "/api/orpc/mercadopago/openapi.json",
     }),
   ],
   interceptors: [

@@ -738,14 +738,13 @@ export const patientsORPCHandler = new SuperJSONRPCHandler(patientsORPCRouter, {
 export const patientsOpenAPIHandler = new OpenAPIHandler(patientsORPCRouter, {
   plugins: [
     new OpenAPIReferencePlugin({
-      docsPath: "/api/orpc/patients/docs",
-      specPath: "/api/orpc/patients/openapi.json",
-      theme: "saturn",
-      favicon: "https://orpc.dev/icon.svg",
-      layout: "modern",
-      meta: {
-        title: "Bioalergia Patients oRPC",
-        description: "Contratos oRPC/OpenAPI para presupuestos y pagos de pacientes.",
+      schemaConverters: [new ZodToJsonSchemaConverter()],
+      specGenerateOptions: {
+        info: {
+          title: "Bioalergia Patients oRPC",
+          description: "Contratos oRPC/OpenAPI para presupuestos y pagos de pacientes.",
+          version: "1.0.0",
+        },
       },
     }),
   ],
@@ -757,5 +756,4 @@ export const patientsOpenAPIHandler = new OpenAPIHandler(patientsORPCRouter, {
       });
     }),
   ],
-  schemaConverters: [new ZodToJsonSchemaConverter()],
 });

@@ -242,14 +242,13 @@ export const suppliesORPCHandler = new SuperJSONRPCHandler(suppliesORPCRouter, {
 export const suppliesOpenAPIHandler = new OpenAPIHandler(suppliesORPCRouter, {
   plugins: [
     new OpenAPIReferencePlugin({
-      docsPath: "/api/orpc/supplies/docs",
-      specPath: "/api/orpc/supplies/openapi.json",
-      theme: "saturn",
-      favicon: "https://orpc.dev/icon.svg",
-      layout: "modern",
-      meta: {
-        title: "Bioalergia Supplies oRPC",
-        description: "Contratos oRPC/OpenAPI para common supplies y supply requests.",
+      schemaConverters: [new ZodToJsonSchemaConverter()],
+      specGenerateOptions: {
+        info: {
+          title: "Bioalergia Supplies oRPC",
+          description: "Contratos oRPC/OpenAPI para common supplies y supply requests.",
+          version: "1.0.0",
+        },
       },
     }),
   ],
@@ -261,5 +260,4 @@ export const suppliesOpenAPIHandler = new OpenAPIHandler(suppliesORPCRouter, {
       });
     }),
   ],
-  schemaConverters: [new ZodToJsonSchemaConverter()],
 });

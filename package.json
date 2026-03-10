@@ -1,11 +1,6 @@
 {
   "name": "finanzas-monorepo",
   "private": true,
-  "engines": {
-    "node": ">=25.3.0",
-    "pnpm": ">=10.28.0"
-  },
-  "packageManager": "pnpm@10.28.2+sha512.41872f037ad22f7348e3b1debbaf7e867cfd448f2726d9cf74c08f19507c31d2c8e7a11525b983febc2df640b5438dee6023ebb1f84ed43cc2d654d2bc326264",
   "scripts": {
     "dev": "pnpm -r --if-present dev",
     "mail:start": "node scripts/mail-agent.mjs start",
@@ -14,20 +9,26 @@
     "mail:logs": "node scripts/mail-agent.mjs logs",
     "build": "pnpm -r --if-present build",
     "test": "pnpm -r --if-present test",
-    "lint": "biome lint .",
-    "lint:ci": "biome ci . --reporter=default --reporter=github",
-    "lint:ci:sarif": "biome ci . --reporter=sarif --reporter-file=./reports/biome.sarif",
-    "lint:profile": "biome check . --profile-rules",
-    "format": "biome format . --write",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "lint:ci": "oxlint --format=github",
+    "lint:ci:sarif": "oxlint --format=sarif --reporter-file=./reports/oxlint.sarif",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
     "check": "pnpm lint && pnpm type-check",
-    "check:fix": "biome check . --write",
+    "check:fix": "oxlint --fix && oxfmt",
     "check:full": "pnpm check && pnpm test && pnpm build",
-    "ci:check": "biome ci . --reporter=default --reporter=github",
+    "ci:check": "oxlint --format=github",
     "ci": "pnpm lint:ci && pnpm type-check && pnpm test && pnpm build",
     "clean": "pnpm -r --if-present clean",
     "type-check": "turbo run type-check --continue=never",
     "devtools": "turbo devtools",
     "prepare": "husky || true"
+  },
+  "dependencies": {
+    "isomorphic-dompurify": "3.0.0",
+    "papaparse": "^5.5.3",
+    "superjson": "^2.2.6"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.6",
@@ -36,11 +37,14 @@
     "@zenstackhq/sdk": "3.4.4",
     "husky": "^9.1.7",
     "lint-staged": "^16.3.2",
+    "oxfmt": "^0.37.0",
+    "oxlint": "^1.52.0",
+    "oxlint-tsgolint": "^0.16.0",
     "turbo": "^2.8.14"
   },
-  "dependencies": {
-    "isomorphic-dompurify": "3.0.0",
-    "papaparse": "^5.5.3",
-    "superjson": "^2.2.6"
-  }
+  "engines": {
+    "node": ">=25.3.0",
+    "pnpm": ">=10.28.0"
+  },
+  "packageManager": "pnpm@10.28.2+sha512.41872f037ad22f7348e3b1debbaf7e867cfd448f2726d9cf74c08f19507c31d2c8e7a11525b983febc2df640b5438dee6023ebb1f84ed43cc2d654d2bc326264"
 }

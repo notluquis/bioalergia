@@ -146,7 +146,6 @@ export const csvUploadORPCHandler = new SuperJSONRPCHandler(csvUploadORPCRouter,
 export const csvUploadOpenAPIHandler = new OpenAPIHandler(csvUploadORPCRouter, {
   plugins: [
     new OpenAPIReferencePlugin({
-      docsPath: "/api/orpc/csv-upload/docs",
       docsTitle: "Bioalergia CSV Upload API Reference",
       schemaConverters: [new ZodToJsonSchemaConverter()],
       specGenerateOptions: {
@@ -155,7 +154,6 @@ export const csvUploadOpenAPIHandler = new OpenAPIHandler(csvUploadORPCRouter, {
           version: "1.0.0",
         },
       },
-      specPath: "/api/orpc/csv-upload/openapi.json",
     }),
   ],
   interceptors: [

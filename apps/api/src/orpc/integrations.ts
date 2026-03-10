@@ -131,14 +131,13 @@ export const integrationsORPCHandler = new SuperJSONRPCHandler(integrationsORPCR
 export const integrationsOpenAPIHandler = new OpenAPIHandler(integrationsORPCRouter, {
   plugins: [
     new OpenAPIReferencePlugin({
-      docsPath: "/api/orpc/integrations/docs",
-      specPath: "/api/orpc/integrations/openapi.json",
-      theme: "saturn",
-      favicon: "https://orpc.dev/icon.svg",
-      layout: "modern",
-      meta: {
-        title: "Bioalergia Integrations oRPC",
-        description: "Contratos oRPC/OpenAPI para integraciones OAuth y estado de conectividad.",
+      schemaConverters: [new ZodToJsonSchemaConverter()],
+      specGenerateOptions: {
+        info: {
+          title: "Bioalergia Integrations oRPC",
+          description: "Contratos oRPC/OpenAPI para integraciones OAuth y estado de conectividad.",
+          version: "1.0.0",
+        },
       },
     }),
   ],
@@ -150,5 +149,4 @@ export const integrationsOpenAPIHandler = new OpenAPIHandler(integrationsORPCRou
       });
     }),
   ],
-  schemaConverters: [new ZodToJsonSchemaConverter()],
 });

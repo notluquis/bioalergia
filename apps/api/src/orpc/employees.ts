@@ -279,7 +279,6 @@ export const employeesORPCHandler = new SuperJSONRPCHandler(employeesORPCRouter,
 export const employeesOpenAPIHandler = new OpenAPIHandler(employeesORPCRouter, {
   plugins: [
     new OpenAPIReferencePlugin({
-      docsPath: "/api/orpc/employees/docs",
       docsTitle: "Bioalergia Employees API Reference",
       schemaConverters: [new ZodToJsonSchemaConverter()],
       specGenerateOptions: {
@@ -288,7 +287,6 @@ export const employeesOpenAPIHandler = new OpenAPIHandler(employeesORPCRouter, {
           version: "1.0.0",
         },
       },
-      specPath: "/api/orpc/employees/openapi.json",
     }),
   ],
   interceptors: [

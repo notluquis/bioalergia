@@ -391,14 +391,13 @@ export const personalFinanceORPCHandler = new SuperJSONRPCHandler(personalFinanc
 export const personalFinanceOpenAPIHandler = new OpenAPIHandler(personalFinanceORPCRouter, {
   plugins: [
     new OpenAPIReferencePlugin({
-      docsPath: "/api/orpc/personal-finance/docs",
-      specPath: "/api/orpc/personal-finance/openapi.json",
-      theme: "saturn",
-      favicon: "https://orpc.dev/icon.svg",
-      layout: "modern",
-      meta: {
-        title: "Bioalergia Personal Finance oRPC",
-        description: "Contratos oRPC/OpenAPI para créditos personales.",
+      schemaConverters: [new ZodToJsonSchemaConverter()],
+      specGenerateOptions: {
+        info: {
+          title: "Bioalergia Personal Finance oRPC",
+          description: "Contratos oRPC/OpenAPI para créditos personales.",
+          version: "1.0.0",
+        },
       },
     }),
   ],
@@ -410,5 +409,4 @@ export const personalFinanceOpenAPIHandler = new OpenAPIHandler(personalFinanceO
       });
     }),
   ],
-  schemaConverters: [new ZodToJsonSchemaConverter()],
 });

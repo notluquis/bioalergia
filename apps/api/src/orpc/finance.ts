@@ -418,7 +418,6 @@ export const financeORPCHandler = new SuperJSONRPCHandler(financeORPCRouter, {
 export const financeOpenAPIHandler = new OpenAPIHandler(financeORPCRouter, {
   plugins: [
     new OpenAPIReferencePlugin({
-      docsPath: "/api/orpc/finance/docs",
       docsTitle: "Bioalergia Finance API Reference",
       schemaConverters: [new ZodToJsonSchemaConverter()],
       specGenerateOptions: {
@@ -427,7 +426,6 @@ export const financeOpenAPIHandler = new OpenAPIHandler(financeORPCRouter, {
           version: "1.0.0",
         },
       },
-      specPath: "/api/orpc/finance/openapi.json",
     }),
   ],
   interceptors: [

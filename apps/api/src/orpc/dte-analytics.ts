@@ -526,14 +526,13 @@ export const dteAnalyticsORPCHandler = new SuperJSONRPCHandler(dteAnalyticsORPCR
 export const dteAnalyticsOpenAPIHandler = new OpenAPIHandler(dteAnalyticsORPCRouter, {
   plugins: [
     new OpenAPIReferencePlugin({
-      docsPath: "/api/orpc/dte-analytics/docs",
-      specPath: "/api/orpc/dte-analytics/openapi.json",
-      theme: "saturn",
-      favicon: "https://orpc.dev/icon.svg",
-      layout: "modern",
-      meta: {
-        title: "Bioalergia DTE Analytics oRPC",
-        description: "Contratos oRPC/OpenAPI para resúmenes y detalles DTE.",
+      schemaConverters: [new ZodToJsonSchemaConverter()],
+      specGenerateOptions: {
+        info: {
+          title: "Bioalergia DTE Analytics oRPC",
+          description: "Contratos oRPC/OpenAPI para resúmenes y detalles DTE.",
+          version: "1.0.0",
+        },
       },
     }),
   ],
@@ -545,5 +544,4 @@ export const dteAnalyticsOpenAPIHandler = new OpenAPIHandler(dteAnalyticsORPCRou
       });
     }),
   ],
-  schemaConverters: [new ZodToJsonSchemaConverter()],
 });

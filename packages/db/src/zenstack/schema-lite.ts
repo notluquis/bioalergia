@@ -5,6176 +5,6031 @@
 
 /* eslint-disable */
 
-import { ExpressionUtils, type SchemaDef } from "@zenstackhq/schema";
+import { type SchemaDef, ExpressionUtils } from "@zenstackhq/schema";
 export class SchemaType implements SchemaDef {
-  provider = {
-    type: "postgresql",
-  } as const;
-  models = {
-    Person: {
-      name: "Person",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        rut: {
-          name: "rut",
-          type: "String",
-          unique: true,
-        },
-        names: {
-          name: "names",
-          type: "String",
-        },
-        fatherName: {
-          name: "fatherName",
-          type: "String",
-          optional: true,
-        },
-        motherName: {
-          name: "motherName",
-          type: "String",
-          optional: true,
-        },
-        email: {
-          name: "email",
-          type: "String",
-          unique: true,
-          optional: true,
-        },
-        phone: {
-          name: "phone",
-          type: "String",
-          optional: true,
-        },
-        address: {
-          name: "address",
-          type: "String",
-          optional: true,
-        },
-        personType: {
-          name: "personType",
-          type: "PersonType",
-          default: "NATURAL",
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-          default: ExpressionUtils.call("now"),
-        },
-        employee: {
-          name: "employee",
-          type: "Employee",
-          optional: true,
-          relation: { opposite: "person" },
-        },
-        user: {
-          name: "user",
-          type: "User",
-          optional: true,
-          relation: { opposite: "person" },
-        },
-        patient: {
-          name: "patient",
-          type: "Patient",
-          optional: true,
-          relation: { opposite: "person" },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-        rut: { type: "String" },
-        email: { type: "String" },
-      },
-    },
-    User: {
-      name: "User",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        personId: {
-          name: "personId",
-          type: "Int",
-          unique: true,
-          foreignKeyFor: ["person"],
-        },
-        loginEmail: {
-          name: "loginEmail",
-          type: "String",
-          unique: true,
-          optional: true,
-        },
-        passwordHash: {
-          name: "passwordHash",
-          type: "String",
-          optional: true,
-        },
-        status: {
-          name: "status",
-          type: "UserStatus",
-          default: "PENDING_SETUP",
-        },
-        mfaSecret: {
-          name: "mfaSecret",
-          type: "String",
-          optional: true,
-        },
-        mfaEnabled: {
-          name: "mfaEnabled",
-          type: "Boolean",
-          default: false,
-        },
-        sessionVersion: {
-          name: "sessionVersion",
-          type: "Int",
-          default: 1,
-        },
-        passkeys: {
-          name: "passkeys",
-          type: "Passkey",
-          array: true,
-          relation: { opposite: "user" },
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-          default: ExpressionUtils.call("now"),
-        },
-        mfaEnforced: {
-          name: "mfaEnforced",
-          type: "Boolean",
-          default: true,
-        },
-        dailyProductionBalances: {
-          name: "dailyProductionBalances",
-          type: "DailyProductionBalance",
-          array: true,
-          relation: { opposite: "user" },
-        },
-        pushSubscriptions: {
-          name: "pushSubscriptions",
-          type: "PushSubscription",
-          array: true,
-          relation: { opposite: "user" },
-        },
-        supplyRequests: {
-          name: "supplyRequests",
-          type: "SupplyRequest",
-          array: true,
-          relation: { opposite: "user" },
-        },
-        permissionVersion: {
-          name: "permissionVersion",
-          type: "UserPermissionVersion",
-          optional: true,
-          relation: { opposite: "user" },
-        },
-        roles: {
-          name: "roles",
-          type: "UserRoleAssignment",
-          array: true,
-          relation: { opposite: "user" },
-        },
-        medicalCertificates: {
-          name: "medicalCertificates",
-          type: "MedicalCertificate",
-          array: true,
-          relation: { opposite: "issuer" },
-        },
-        patientAttachments: {
-          name: "patientAttachments",
-          type: "PatientAttachment",
-          array: true,
-          relation: { opposite: "uploader" },
-        },
-        person: {
-          name: "person",
-          type: "Person",
-          relation: {
-            opposite: "user",
-            fields: ["personId"],
-            references: ["id"],
-            onDelete: "Cascade",
-          },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-        personId: { type: "Int" },
-        loginEmail: { type: "String" },
-      },
-    },
-    Passkey: {
-      name: "Passkey",
-      fields: {
-        id: {
-          name: "id",
-          type: "String",
-          id: true,
-          default: ExpressionUtils.call("cuid"),
-        },
-        userId: {
-          name: "userId",
-          type: "Int",
-          foreignKeyFor: ["user"],
-        },
-        credentialId: {
-          name: "credentialId",
-          type: "String",
-          unique: true,
-        },
-        publicKey: {
-          name: "publicKey",
-          type: "Bytes",
-        },
-        counter: {
-          name: "counter",
-          type: "BigInt",
-          default: 0,
-        },
-        transports: {
-          name: "transports",
-          type: "Json",
-          optional: true,
-        },
-        webAuthnUserID: {
-          name: "webAuthnUserID",
-          type: "String",
-        },
-        deviceType: {
-          name: "deviceType",
-          type: "String",
-        },
-        backedUp: {
-          name: "backedUp",
-          type: "Boolean",
-          default: false,
-        },
-        friendlyName: {
-          name: "friendlyName",
-          type: "String",
-          optional: true,
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        lastUsedAt: {
-          name: "lastUsedAt",
-          type: "DateTime",
-          optional: true,
-        },
-        user: {
-          name: "user",
-          type: "User",
-          relation: {
-            opposite: "passkeys",
-            fields: ["userId"],
-            references: ["id"],
-            onDelete: "Cascade",
-          },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "String" },
-        credentialId: { type: "String" },
-      },
-    },
-    Role: {
-      name: "Role",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        name: {
-          name: "name",
-          type: "String",
-          unique: true,
-        },
-        description: {
-          name: "description",
-          type: "String",
-          optional: true,
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-          default: ExpressionUtils.call("now"),
-        },
-        isSystem: {
-          name: "isSystem",
-          type: "Boolean",
-          default: false,
-        },
-        permissions: {
-          name: "permissions",
-          type: "RolePermission",
-          array: true,
-          relation: { opposite: "role" },
-        },
-        users: {
-          name: "users",
-          type: "UserRoleAssignment",
-          array: true,
-          relation: { opposite: "role" },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-        name: { type: "String" },
-      },
-    },
-    Permission: {
-      name: "Permission",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        action: {
-          name: "action",
-          type: "String",
-        },
-        subject: {
-          name: "subject",
-          type: "String",
-        },
-        description: {
-          name: "description",
-          type: "String",
-          optional: true,
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-          default: ExpressionUtils.call("now"),
-        },
-        roles: {
-          name: "roles",
-          type: "RolePermission",
-          array: true,
-          relation: { opposite: "permission" },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-        action_subject: { action: { type: "String" }, subject: { type: "String" } },
-      },
-    },
-    RolePermission: {
-      name: "RolePermission",
-      fields: {
-        roleId: {
-          name: "roleId",
-          type: "Int",
-          id: true,
-          foreignKeyFor: ["role"],
-        },
-        permissionId: {
-          name: "permissionId",
-          type: "Int",
-          id: true,
-          foreignKeyFor: ["permission"],
-        },
-        conditions: {
-          name: "conditions",
-          type: "Json",
-          optional: true,
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        permission: {
-          name: "permission",
-          type: "Permission",
-          relation: {
-            opposite: "roles",
-            fields: ["permissionId"],
-            references: ["id"],
-            onDelete: "Cascade",
-          },
-        },
-        role: {
-          name: "role",
-          type: "Role",
-          relation: {
-            opposite: "permissions",
-            fields: ["roleId"],
-            references: ["id"],
-            onDelete: "Cascade",
-          },
-        },
-      },
-      idFields: ["roleId", "permissionId"],
-      uniqueFields: {
-        roleId_permissionId: { roleId: { type: "Int" }, permissionId: { type: "Int" } },
-      },
-    },
-    UserRoleAssignment: {
-      name: "UserRoleAssignment",
-      fields: {
-        userId: {
-          name: "userId",
-          type: "Int",
-          id: true,
-          foreignKeyFor: ["user"],
-        },
-        roleId: {
-          name: "roleId",
-          type: "Int",
-          id: true,
-          foreignKeyFor: ["role"],
-        },
-        assignedAt: {
-          name: "assignedAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        role: {
-          name: "role",
-          type: "Role",
-          relation: {
-            opposite: "users",
-            fields: ["roleId"],
-            references: ["id"],
-            onDelete: "Cascade",
-          },
-        },
-        user: {
-          name: "user",
-          type: "User",
-          relation: {
-            opposite: "roles",
-            fields: ["userId"],
-            references: ["id"],
-            onDelete: "Cascade",
-          },
-        },
-      },
-      idFields: ["userId", "roleId"],
-      uniqueFields: {
-        userId_roleId: { userId: { type: "Int" }, roleId: { type: "Int" } },
-      },
-    },
-    UserPermissionVersion: {
-      name: "UserPermissionVersion",
-      fields: {
-        userId: {
-          name: "userId",
-          type: "Int",
-          id: true,
-          foreignKeyFor: ["user"],
-        },
-        version: {
-          name: "version",
-          type: "Int",
-          default: 1,
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-          default: ExpressionUtils.call("now"),
-        },
-        user: {
-          name: "user",
-          type: "User",
-          relation: {
-            opposite: "permissionVersion",
-            fields: ["userId"],
-            references: ["id"],
-            onDelete: "Cascade",
-          },
-        },
-      },
-      idFields: ["userId"],
-      uniqueFields: {
-        userId: { type: "Int" },
-      },
-    },
-    Employee: {
-      name: "Employee",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        personId: {
-          name: "personId",
-          type: "Int",
-          unique: true,
-          foreignKeyFor: ["person"],
-        },
-        position: {
-          name: "position",
-          type: "String",
-        },
-        department: {
-          name: "department",
-          type: "String",
-          optional: true,
-        },
-        startDate: {
-          name: "startDate",
-          type: "DateTime",
-        },
-        endDate: {
-          name: "endDate",
-          type: "DateTime",
-          optional: true,
-        },
-        status: {
-          name: "status",
-          type: "EmployeeStatus",
-          default: "ACTIVE",
-        },
-        salaryType: {
-          name: "salaryType",
-          type: "EmployeeSalaryType",
-          default: "FIXED",
-        },
-        baseSalary: {
-          name: "baseSalary",
-          type: "Decimal",
-          default: 0,
-        },
-        hourlyRate: {
-          name: "hourlyRate",
-          type: "Decimal",
-          optional: true,
-        },
-        bankName: {
-          name: "bankName",
-          type: "String",
-          optional: true,
-        },
-        bankAccountType: {
-          name: "bankAccountType",
-          type: "String",
-          optional: true,
-        },
-        bankAccountNumber: {
-          name: "bankAccountNumber",
-          type: "String",
-          optional: true,
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-          default: ExpressionUtils.call("now"),
-        },
-        metadata: {
-          name: "metadata",
-          type: "Json",
-          optional: true,
-        },
-        overtimeRate: {
-          name: "overtimeRate",
-          type: "Decimal",
-          optional: true,
-        },
-        retentionRate: {
-          name: "retentionRate",
-          type: "Decimal",
-          default: 0.145,
-        },
-        timesheets: {
-          name: "timesheets",
-          type: "EmployeeTimesheet",
-          array: true,
-          relation: { opposite: "employee" },
-        },
-        person: {
-          name: "person",
-          type: "Person",
-          relation: {
-            opposite: "employee",
-            fields: ["personId"],
-            references: ["id"],
-            onDelete: "Cascade",
-          },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-        personId: { type: "Int" },
-      },
-    },
-    Counterpart: {
-      name: "Counterpart",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        identificationNumber: {
-          name: "identificationNumber",
-          type: "String",
-          unique: true,
-        },
-        bankAccountHolder: {
-          name: "bankAccountHolder",
-          type: "String",
-        },
-        category: {
-          name: "category",
-          type: "CounterpartCategory",
-          default: "SUPPLIER",
-        },
-        notes: {
-          name: "notes",
-          type: "String",
-          optional: true,
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-          default: ExpressionUtils.call("now"),
-        },
-        accounts: {
-          name: "accounts",
-          type: "CounterpartAccount",
-          array: true,
-          relation: { opposite: "counterpart" },
-        },
-        autoCategoryRules: {
-          name: "autoCategoryRules",
-          type: "FinancialAutoCategoryRule",
-          array: true,
-          relation: { opposite: "counterpart" },
-        },
-        compensationProfiles: {
-          name: "compensationProfiles",
-          type: "CompensationProfile",
-          array: true,
-          relation: { opposite: "counterpart" },
-        },
-        financialTransactions: {
-          name: "financialTransactions",
-          type: "FinancialTransaction",
-          array: true,
-          relation: { opposite: "counterpart" },
-        },
-        withdrawTransactions: {
-          name: "withdrawTransactions",
-          type: "WithdrawTransaction",
-          array: true,
-          relation: { opposite: "counterpart" },
-        },
-        releaseTransactions: {
-          name: "releaseTransactions",
-          type: "ReleaseTransaction",
-          array: true,
-          relation: { opposite: "counterpart" },
-        },
-        settlementTransactions: {
-          name: "settlementTransactions",
-          type: "SettlementTransaction",
-          array: true,
-          relation: { opposite: "counterpart" },
-        },
-        services: {
-          name: "services",
-          type: "Service",
-          array: true,
-          relation: { opposite: "counterpart" },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-        identificationNumber: { type: "String" },
-      },
-    },
-    CounterpartAccount: {
-      name: "CounterpartAccount",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        counterpartId: {
-          name: "counterpartId",
-          type: "Int",
-          foreignKeyFor: ["counterpart"],
-        },
-        bankName: {
-          name: "bankName",
-          type: "String",
-          optional: true,
-        },
-        accountType: {
-          name: "accountType",
-          type: "String",
-          optional: true,
-        },
-        accountNumber: {
-          name: "accountNumber",
-          type: "String",
-        },
-        counterpart: {
-          name: "counterpart",
-          type: "Counterpart",
-          relation: {
-            opposite: "accounts",
-            fields: ["counterpartId"],
-            references: ["id"],
-            onDelete: "Cascade",
-          },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-        accountNumber: { type: "String" },
-      },
-    },
-    EmployeeTimesheet: {
-      name: "EmployeeTimesheet",
-      fields: {
-        id: {
-          name: "id",
-          type: "BigInt",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        employeeId: {
-          name: "employeeId",
-          type: "Int",
-          foreignKeyFor: ["employee"],
-        },
-        workDate: {
-          name: "workDate",
-          type: "DateTime",
-        },
-        startTime: {
-          name: "startTime",
-          type: "DateTime",
-          optional: true,
-        },
-        endTime: {
-          name: "endTime",
-          type: "DateTime",
-          optional: true,
-        },
-        workedMinutes: {
-          name: "workedMinutes",
-          type: "Int",
-        },
-        overtimeMinutes: {
-          name: "overtimeMinutes",
-          type: "Int",
-          default: 0,
-        },
-        comment: {
-          name: "comment",
-          type: "String",
-          optional: true,
-        },
-        employee: {
-          name: "employee",
-          type: "Employee",
-          relation: {
-            opposite: "timesheets",
-            fields: ["employeeId"],
-            references: ["id"],
-            onDelete: "Cascade",
-          },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "BigInt" },
-        employeeId_workDate: { employeeId: { type: "Int" }, workDate: { type: "DateTime" } },
-      },
-    },
-    SettlementTransaction: {
-      name: "SettlementTransaction",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        sourceId: {
-          name: "sourceId",
-          type: "String",
-          unique: true,
-        },
-        identificationNumber: {
-          name: "identificationNumber",
-          type: "String",
-          optional: true,
-          foreignKeyFor: ["counterpart"],
-        },
-        transactionDate: {
-          name: "transactionDate",
-          type: "DateTime",
-        },
-        settlementDate: {
-          name: "settlementDate",
-          type: "DateTime",
-          optional: true,
-        },
-        moneyReleaseDate: {
-          name: "moneyReleaseDate",
-          type: "DateTime",
-          optional: true,
-        },
-        externalReference: {
-          name: "externalReference",
-          type: "String",
-          optional: true,
-        },
-        userId: {
-          name: "userId",
-          type: "String",
-          optional: true,
-        },
-        paymentMethodType: {
-          name: "paymentMethodType",
-          type: "String",
-          optional: true,
-        },
-        paymentMethod: {
-          name: "paymentMethod",
-          type: "String",
-          optional: true,
-        },
-        site: {
-          name: "site",
-          type: "String",
-          optional: true,
-        },
-        transactionType: {
-          name: "transactionType",
-          type: "String",
-        },
-        transactionAmount: {
-          name: "transactionAmount",
-          type: "Decimal",
-        },
-        transactionCurrency: {
-          name: "transactionCurrency",
-          type: "String",
-        },
-        sellerAmount: {
-          name: "sellerAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        feeAmount: {
-          name: "feeAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        settlementNetAmount: {
-          name: "settlementNetAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        settlementCurrency: {
-          name: "settlementCurrency",
-          type: "String",
-          optional: true,
-        },
-        realAmount: {
-          name: "realAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        couponAmount: {
-          name: "couponAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        metadata: {
-          name: "metadata",
-          type: "Json",
-          optional: true,
-        },
-        mkpFeeAmount: {
-          name: "mkpFeeAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        financingFeeAmount: {
-          name: "financingFeeAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        shippingFeeAmount: {
-          name: "shippingFeeAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        taxesAmount: {
-          name: "taxesAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        installments: {
-          name: "installments",
-          type: "Int",
-          optional: true,
-        },
-        taxDetail: {
-          name: "taxDetail",
-          type: "String",
-          optional: true,
-        },
-        taxesDisaggregated: {
-          name: "taxesDisaggregated",
-          type: "Json",
-          optional: true,
-        },
-        description: {
-          name: "description",
-          type: "String",
-          optional: true,
-        },
-        cardInitialNumber: {
-          name: "cardInitialNumber",
-          type: "String",
-          optional: true,
-        },
-        operationTags: {
-          name: "operationTags",
-          type: "Json",
-          optional: true,
-        },
-        businessUnit: {
-          name: "businessUnit",
-          type: "String",
-          optional: true,
-        },
-        subUnit: {
-          name: "subUnit",
-          type: "String",
-          optional: true,
-        },
-        productSku: {
-          name: "productSku",
-          type: "String",
-          optional: true,
-        },
-        saleDetail: {
-          name: "saleDetail",
-          type: "String",
-          optional: true,
-        },
-        transactionIntentId: {
-          name: "transactionIntentId",
-          type: "String",
-          optional: true,
-        },
-        franchise: {
-          name: "franchise",
-          type: "String",
-          optional: true,
-        },
-        issuerName: {
-          name: "issuerName",
-          type: "String",
-          optional: true,
-        },
-        lastFourDigits: {
-          name: "lastFourDigits",
-          type: "String",
-          optional: true,
-        },
-        orderMp: {
-          name: "orderMp",
-          type: "String",
-          optional: true,
-        },
-        invoicingPeriod: {
-          name: "invoicingPeriod",
-          type: "String",
-          optional: true,
-        },
-        payBankTransferId: {
-          name: "payBankTransferId",
-          type: "String",
-          optional: true,
-        },
-        isReleased: {
-          name: "isReleased",
-          type: "Boolean",
-          optional: true,
-        },
-        tipAmount: {
-          name: "tipAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        purchaseId: {
-          name: "purchaseId",
-          type: "String",
-          optional: true,
-        },
-        totalCouponAmount: {
-          name: "totalCouponAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        posId: {
-          name: "posId",
-          type: "String",
-          optional: true,
-        },
-        posName: {
-          name: "posName",
-          type: "String",
-          optional: true,
-        },
-        externalPosId: {
-          name: "externalPosId",
-          type: "String",
-          optional: true,
-        },
-        storeId: {
-          name: "storeId",
-          type: "String",
-          optional: true,
-        },
-        storeName: {
-          name: "storeName",
-          type: "String",
-          optional: true,
-        },
-        externalStoreId: {
-          name: "externalStoreId",
-          type: "String",
-          optional: true,
-        },
-        poiId: {
-          name: "poiId",
-          type: "String",
-          optional: true,
-        },
-        orderId: {
-          name: "orderId",
-          type: "BigInt",
-          optional: true,
-        },
-        shippingId: {
-          name: "shippingId",
-          type: "BigInt",
-          optional: true,
-        },
-        shipmentMode: {
-          name: "shipmentMode",
-          type: "String",
-          optional: true,
-        },
-        packId: {
-          name: "packId",
-          type: "BigInt",
-          optional: true,
-        },
-        shippingOrderId: {
-          name: "shippingOrderId",
-          type: "String",
-          optional: true,
-        },
-        poiWalletName: {
-          name: "poiWalletName",
-          type: "String",
-          optional: true,
-        },
-        poiBankName: {
-          name: "poiBankName",
-          type: "String",
-          optional: true,
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-          default: ExpressionUtils.call("now"),
-        },
-        counterpart: {
-          name: "counterpart",
-          type: "Counterpart",
-          optional: true,
-          relation: {
-            opposite: "settlementTransactions",
-            fields: ["identificationNumber"],
-            references: ["identificationNumber"],
-          },
-        },
-        serviceSchedules: {
-          name: "serviceSchedules",
-          type: "ServiceSchedule",
-          array: true,
-          relation: { opposite: "settlementTransaction" },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-        sourceId: { type: "String" },
-      },
-    },
-    ReleaseTransaction: {
-      name: "ReleaseTransaction",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        sourceId: {
-          name: "sourceId",
-          type: "String",
-          unique: true,
-        },
-        identificationNumber: {
-          name: "identificationNumber",
-          type: "String",
-          optional: true,
-          foreignKeyFor: ["counterpart"],
-        },
-        date: {
-          name: "date",
-          type: "DateTime",
-        },
-        externalReference: {
-          name: "externalReference",
-          type: "String",
-          optional: true,
-        },
-        recordType: {
-          name: "recordType",
-          type: "String",
-          optional: true,
-        },
-        description: {
-          name: "description",
-          type: "String",
-          optional: true,
-        },
-        netCreditAmount: {
-          name: "netCreditAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        netDebitAmount: {
-          name: "netDebitAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        grossAmount: {
-          name: "grossAmount",
-          type: "Decimal",
-        },
-        sellerAmount: {
-          name: "sellerAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        mpFeeAmount: {
-          name: "mpFeeAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        financingFeeAmount: {
-          name: "financingFeeAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        shippingFeeAmount: {
-          name: "shippingFeeAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        taxesAmount: {
-          name: "taxesAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        couponAmount: {
-          name: "couponAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        effectiveCouponAmount: {
-          name: "effectiveCouponAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        balanceAmount: {
-          name: "balanceAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        taxAmountTelco: {
-          name: "taxAmountTelco",
-          type: "Decimal",
-          optional: true,
-        },
-        installments: {
-          name: "installments",
-          type: "Int",
-          optional: true,
-        },
-        paymentMethod: {
-          name: "paymentMethod",
-          type: "String",
-          optional: true,
-        },
-        paymentMethodType: {
-          name: "paymentMethodType",
-          type: "String",
-          optional: true,
-        },
-        taxDetail: {
-          name: "taxDetail",
-          type: "String",
-          optional: true,
-        },
-        taxesDisaggregated: {
-          name: "taxesDisaggregated",
-          type: "Json",
-          optional: true,
-        },
-        transactionApprovalDate: {
-          name: "transactionApprovalDate",
-          type: "DateTime",
-          optional: true,
-        },
-        transactionIntentId: {
-          name: "transactionIntentId",
-          type: "String",
-          optional: true,
-        },
-        posId: {
-          name: "posId",
-          type: "String",
-          optional: true,
-        },
-        posName: {
-          name: "posName",
-          type: "String",
-          optional: true,
-        },
-        externalPosId: {
-          name: "externalPosId",
-          type: "String",
-          optional: true,
-        },
-        storeId: {
-          name: "storeId",
-          type: "String",
-          optional: true,
-        },
-        storeName: {
-          name: "storeName",
-          type: "String",
-          optional: true,
-        },
-        externalStoreId: {
-          name: "externalStoreId",
-          type: "String",
-          optional: true,
-        },
-        currency: {
-          name: "currency",
-          type: "String",
-          optional: true,
-        },
-        shippingId: {
-          name: "shippingId",
-          type: "BigInt",
-          optional: true,
-        },
-        shipmentMode: {
-          name: "shipmentMode",
-          type: "String",
-          optional: true,
-        },
-        shippingOrderId: {
-          name: "shippingOrderId",
-          type: "String",
-          optional: true,
-        },
-        orderId: {
-          name: "orderId",
-          type: "BigInt",
-          optional: true,
-        },
-        packId: {
-          name: "packId",
-          type: "BigInt",
-          optional: true,
-        },
-        poiId: {
-          name: "poiId",
-          type: "String",
-          optional: true,
-        },
-        itemId: {
-          name: "itemId",
-          type: "String",
-          optional: true,
-        },
-        metadata: {
-          name: "metadata",
-          type: "Json",
-          optional: true,
-        },
-        cardInitialNumber: {
-          name: "cardInitialNumber",
-          type: "String",
-          optional: true,
-        },
-        operationTags: {
-          name: "operationTags",
-          type: "Json",
-          optional: true,
-        },
-        lastFourDigits: {
-          name: "lastFourDigits",
-          type: "String",
-          optional: true,
-        },
-        franchise: {
-          name: "franchise",
-          type: "String",
-          optional: true,
-        },
-        issuerName: {
-          name: "issuerName",
-          type: "String",
-          optional: true,
-        },
-        poiBankName: {
-          name: "poiBankName",
-          type: "String",
-          optional: true,
-        },
-        poiWalletName: {
-          name: "poiWalletName",
-          type: "String",
-          optional: true,
-        },
-        businessUnit: {
-          name: "businessUnit",
-          type: "String",
-          optional: true,
-        },
-        subUnit: {
-          name: "subUnit",
-          type: "String",
-          optional: true,
-        },
-        payoutBankAccountNumber: {
-          name: "payoutBankAccountNumber",
-          type: "String",
-          optional: true,
-        },
-        productSku: {
-          name: "productSku",
-          type: "String",
-          optional: true,
-        },
-        saleDetail: {
-          name: "saleDetail",
-          type: "String",
-          optional: true,
-        },
-        orderMp: {
-          name: "orderMp",
-          type: "String",
-          optional: true,
-        },
-        purchaseId: {
-          name: "purchaseId",
-          type: "String",
-          optional: true,
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-          default: ExpressionUtils.call("now"),
-        },
-        counterpart: {
-          name: "counterpart",
-          type: "Counterpart",
-          optional: true,
-          relation: {
-            opposite: "releaseTransactions",
-            fields: ["identificationNumber"],
-            references: ["identificationNumber"],
-          },
-        },
-        serviceSchedules: {
-          name: "serviceSchedules",
-          type: "ServiceSchedule",
-          array: true,
-          relation: { opposite: "releaseTransaction" },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-        sourceId: { type: "String" },
-      },
-    },
-    WithdrawTransaction: {
-      name: "WithdrawTransaction",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        withdrawId: {
-          name: "withdrawId",
-          type: "String",
-          unique: true,
-        },
-        dateCreated: {
-          name: "dateCreated",
-          type: "DateTime",
-        },
-        status: {
-          name: "status",
-          type: "String",
-          optional: true,
-        },
-        statusDetail: {
-          name: "statusDetail",
-          type: "String",
-          optional: true,
-        },
-        amount: {
-          name: "amount",
-          type: "Decimal",
-          optional: true,
-        },
-        fee: {
-          name: "fee",
-          type: "Decimal",
-          optional: true,
-        },
-        activityUrl: {
-          name: "activityUrl",
-          type: "String",
-          optional: true,
-        },
-        payoutDescription: {
-          name: "payoutDescription",
-          type: "String",
-          optional: true,
-        },
-        bankAccountHolder: {
-          name: "bankAccountHolder",
-          type: "String",
-          optional: true,
-        },
-        identificationType: {
-          name: "identificationType",
-          type: "String",
-          optional: true,
-        },
-        identificationNumber: {
-          name: "identificationNumber",
-          type: "String",
-          optional: true,
-          foreignKeyFor: ["counterpart"],
-        },
-        bankId: {
-          name: "bankId",
-          type: "String",
-          optional: true,
-        },
-        bankName: {
-          name: "bankName",
-          type: "String",
-          optional: true,
-        },
-        bankBranch: {
-          name: "bankBranch",
-          type: "String",
-          optional: true,
-        },
-        bankAccountType: {
-          name: "bankAccountType",
-          type: "String",
-          optional: true,
-        },
-        bankAccountNumber: {
-          name: "bankAccountNumber",
-          type: "String",
-          optional: true,
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-          default: ExpressionUtils.call("now"),
-        },
-        counterpart: {
-          name: "counterpart",
-          type: "Counterpart",
-          optional: true,
-          relation: {
-            opposite: "withdrawTransactions",
-            fields: ["identificationNumber"],
-            references: ["identificationNumber"],
-          },
-        },
-        serviceSchedules: {
-          name: "serviceSchedules",
-          type: "ServiceSchedule",
-          array: true,
-          relation: { opposite: "withdrawTransaction" },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-        withdrawId: { type: "String" },
-      },
-    },
-    DailyBalance: {
-      name: "DailyBalance",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        date: {
-          name: "date",
-          type: "DateTime",
-          unique: true,
-        },
-        amount: {
-          name: "amount",
-          type: "Decimal",
-        },
-        note: {
-          name: "note",
-          type: "String",
-          optional: true,
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-          default: ExpressionUtils.call("now"),
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-        date: { type: "DateTime" },
-      },
-    },
-    Service: {
-      name: "Service",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        publicId: {
-          name: "publicId",
-          type: "String",
-          unique: true,
-        },
-        name: {
-          name: "name",
-          type: "String",
-        },
-        detail: {
-          name: "detail",
-          type: "String",
-          optional: true,
-        },
-        category: {
-          name: "category",
-          type: "String",
-          optional: true,
-        },
-        transactionCategoryId: {
-          name: "transactionCategoryId",
-          type: "Int",
-          optional: true,
-          foreignKeyFor: ["transactionCategory"],
-        },
-        reminderDaysBefore: {
-          name: "reminderDaysBefore",
-          type: "Int",
-          default: 3,
-        },
-        autoLinkTransactions: {
-          name: "autoLinkTransactions",
-          type: "Boolean",
-          default: true,
-        },
-        counterpartId: {
-          name: "counterpartId",
-          type: "Int",
-          optional: true,
-          foreignKeyFor: ["counterpart"],
-        },
-        type: {
-          name: "type",
-          type: "ServiceType",
-          default: "BUSINESS",
-        },
-        recurrenceType: {
-          name: "recurrenceType",
-          type: "ServiceRecurrenceType",
-          default: "RECURRING",
-        },
-        frequency: {
-          name: "frequency",
-          type: "ServiceFrequency",
-          default: "MONTHLY",
-        },
-        startDate: {
-          name: "startDate",
-          type: "DateTime",
-        },
-        endDate: {
-          name: "endDate",
-          type: "DateTime",
-          optional: true,
-        },
-        dueDay: {
-          name: "dueDay",
-          type: "Int",
-          optional: true,
-        },
-        emissionMode: {
-          name: "emissionMode",
-          type: "ServiceEmissionMode",
-          default: "FIXED_DAY",
-        },
-        emissionDay: {
-          name: "emissionDay",
-          type: "Int",
-          optional: true,
-        },
-        emissionStartDay: {
-          name: "emissionStartDay",
-          type: "Int",
-          optional: true,
-        },
-        emissionEndDay: {
-          name: "emissionEndDay",
-          type: "Int",
-          optional: true,
-        },
-        emissionExactDate: {
-          name: "emissionExactDate",
-          type: "DateTime",
-          optional: true,
-        },
-        ownership: {
-          name: "ownership",
-          type: "ServiceOwnership",
-          default: "COMPANY",
-        },
-        obligationType: {
-          name: "obligationType",
-          type: "ServiceObligationType",
-          default: "SERVICE",
-        },
-        defaultAmount: {
-          name: "defaultAmount",
-          type: "Decimal",
-          default: 0,
-        },
-        amountIndexation: {
-          name: "amountIndexation",
-          type: "ServiceAmountIndexation",
-          default: "NONE",
-        },
-        lateFeeMode: {
-          name: "lateFeeMode",
-          type: "ServiceLateFeeMode",
-          default: "NONE",
-        },
-        lateFeeValue: {
-          name: "lateFeeValue",
-          type: "Decimal",
-          optional: true,
-        },
-        lateFeeGraceDays: {
-          name: "lateFeeGraceDays",
-          type: "Int",
-          optional: true,
-        },
-        nextGenerationMonths: {
-          name: "nextGenerationMonths",
-          type: "Int",
-          default: 12,
-        },
-        notes: {
-          name: "notes",
-          type: "String",
-          optional: true,
-        },
-        status: {
-          name: "status",
-          type: "ServiceStatus",
-          default: "ACTIVE",
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-          default: ExpressionUtils.call("now"),
-        },
-        counterpart: {
-          name: "counterpart",
-          type: "Counterpart",
-          optional: true,
-          relation: { opposite: "services", fields: ["counterpartId"], references: ["id"] },
-        },
-        transactionCategory: {
-          name: "transactionCategory",
-          type: "TransactionCategory",
-          optional: true,
-          relation: {
-            opposite: "services",
-            fields: ["transactionCategoryId"],
-            references: ["id"],
-            onDelete: "SetNull",
-          },
-        },
-        schedules: {
-          name: "schedules",
-          type: "ServiceSchedule",
-          array: true,
-          relation: { opposite: "service" },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-        publicId: { type: "String" },
-      },
-    },
-    ServiceSchedule: {
-      name: "ServiceSchedule",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        serviceId: {
-          name: "serviceId",
-          type: "Int",
-          foreignKeyFor: ["service"],
-        },
-        periodStart: {
-          name: "periodStart",
-          type: "DateTime",
-        },
-        periodEnd: {
-          name: "periodEnd",
-          type: "DateTime",
-        },
-        dueDate: {
-          name: "dueDate",
-          type: "DateTime",
-        },
-        expectedAmount: {
-          name: "expectedAmount",
-          type: "Decimal",
-        },
-        lateFeeAmount: {
-          name: "lateFeeAmount",
-          type: "Decimal",
-          default: 0,
-        },
-        effectiveAmount: {
-          name: "effectiveAmount",
-          type: "Decimal",
-        },
-        status: {
-          name: "status",
-          type: "ServiceScheduleStatus",
-          default: "PENDING",
-        },
-        paidAmount: {
-          name: "paidAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        paidDate: {
-          name: "paidDate",
-          type: "DateTime",
-          optional: true,
-        },
-        financialTransactionId: {
-          name: "financialTransactionId",
-          type: "Int",
-          optional: true,
-          foreignKeyFor: ["financialTransaction"],
-        },
-        settlementTransactionId: {
-          name: "settlementTransactionId",
-          type: "Int",
-          optional: true,
-          foreignKeyFor: ["settlementTransaction"],
-        },
-        releaseTransactionId: {
-          name: "releaseTransactionId",
-          type: "Int",
-          optional: true,
-          foreignKeyFor: ["releaseTransaction"],
-        },
-        withdrawTransactionId: {
-          name: "withdrawTransactionId",
-          type: "Int",
-          optional: true,
-          foreignKeyFor: ["withdrawTransaction"],
-        },
-        note: {
-          name: "note",
-          type: "String",
-          optional: true,
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-          default: ExpressionUtils.call("now"),
-        },
-        service: {
-          name: "service",
-          type: "Service",
-          relation: {
-            opposite: "schedules",
-            fields: ["serviceId"],
-            references: ["id"],
-            onDelete: "Cascade",
-          },
-        },
-        financialTransaction: {
-          name: "financialTransaction",
-          type: "FinancialTransaction",
-          optional: true,
-          relation: {
-            opposite: "serviceSchedules",
-            fields: ["financialTransactionId"],
-            references: ["id"],
-            onDelete: "SetNull",
-          },
-        },
-        settlementTransaction: {
-          name: "settlementTransaction",
-          type: "SettlementTransaction",
-          optional: true,
-          relation: {
-            opposite: "serviceSchedules",
-            fields: ["settlementTransactionId"],
-            references: ["id"],
-          },
-        },
-        releaseTransaction: {
-          name: "releaseTransaction",
-          type: "ReleaseTransaction",
-          optional: true,
-          relation: {
-            opposite: "serviceSchedules",
-            fields: ["releaseTransactionId"],
-            references: ["id"],
-          },
-        },
-        withdrawTransaction: {
-          name: "withdrawTransaction",
-          type: "WithdrawTransaction",
-          optional: true,
-          relation: {
-            opposite: "serviceSchedules",
-            fields: ["withdrawTransactionId"],
-            references: ["id"],
-          },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-        serviceId_periodStart: { serviceId: { type: "Int" }, periodStart: { type: "DateTime" } },
-      },
-    },
-    Loan: {
-      name: "Loan",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        title: {
-          name: "title",
-          type: "String",
-        },
-        principalAmount: {
-          name: "principalAmount",
-          type: "Decimal",
-        },
-        interestRate: {
-          name: "interestRate",
-          type: "Decimal",
-        },
-        startDate: {
-          name: "startDate",
-          type: "DateTime",
-        },
-        status: {
-          name: "status",
-          type: "LoanStatus",
-          default: "ACTIVE",
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-          default: ExpressionUtils.call("now"),
-        },
-        schedules: {
-          name: "schedules",
-          type: "LoanSchedule",
-          array: true,
-          relation: { opposite: "loan" },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-      },
-    },
-    LoanSchedule: {
-      name: "LoanSchedule",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        loanId: {
-          name: "loanId",
-          type: "Int",
-          foreignKeyFor: ["loan"],
-        },
-        installmentNumber: {
-          name: "installmentNumber",
-          type: "Int",
-        },
-        dueDate: {
-          name: "dueDate",
-          type: "DateTime",
-        },
-        expectedAmount: {
-          name: "expectedAmount",
-          type: "Decimal",
-        },
-        status: {
-          name: "status",
-          type: "LoanScheduleStatus",
-          default: "PENDING",
-        },
-        loan: {
-          name: "loan",
-          type: "Loan",
-          relation: {
-            opposite: "schedules",
-            fields: ["loanId"],
-            references: ["id"],
-            onDelete: "Cascade",
-          },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-      },
-    },
-    Setting: {
-      name: "Setting",
-      fields: {
-        key: {
-          name: "key",
-          type: "String",
-          id: true,
-        },
-        value: {
-          name: "value",
-          type: "String",
-          optional: true,
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-          default: ExpressionUtils.call("now"),
-        },
-      },
-      idFields: ["key"],
-      uniqueFields: {
-        key: { type: "String" },
-      },
-    },
-    PushSubscription: {
-      name: "PushSubscription",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        userId: {
-          name: "userId",
-          type: "Int",
-          foreignKeyFor: ["user"],
-        },
-        endpoint: {
-          name: "endpoint",
-          type: "String",
-          unique: true,
-        },
-        keys: {
-          name: "keys",
-          type: "Json",
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        user: {
-          name: "user",
-          type: "User",
-          relation: {
-            opposite: "pushSubscriptions",
-            fields: ["userId"],
-            references: ["id"],
-            onDelete: "Cascade",
-          },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-        endpoint: { type: "String" },
-      },
-    },
-    Calendar: {
-      name: "Calendar",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        googleId: {
-          name: "googleId",
-          type: "String",
-          unique: true,
-        },
-        name: {
-          name: "name",
-          type: "String",
-          optional: true,
-        },
-        syncToken: {
-          name: "syncToken",
-          type: "String",
-          optional: true,
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-          default: ExpressionUtils.call("now"),
-        },
-        watchChannels: {
-          name: "watchChannels",
-          type: "CalendarWatchChannel",
-          array: true,
-          relation: { opposite: "calendar" },
-        },
-        events: {
-          name: "events",
-          type: "Event",
-          array: true,
-          relation: { opposite: "calendar" },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-        googleId: { type: "String" },
-      },
-    },
-    CalendarWatchChannel: {
-      name: "CalendarWatchChannel",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        calendarId: {
-          name: "calendarId",
-          type: "Int",
-          foreignKeyFor: ["calendar"],
-        },
-        channelId: {
-          name: "channelId",
-          type: "String",
-          unique: true,
-        },
-        resourceId: {
-          name: "resourceId",
-          type: "String",
-        },
-        expiration: {
-          name: "expiration",
-          type: "DateTime",
-        },
-        webhookUrl: {
-          name: "webhookUrl",
-          type: "String",
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-          default: ExpressionUtils.call("now"),
-        },
-        calendar: {
-          name: "calendar",
-          type: "Calendar",
-          relation: {
-            opposite: "watchChannels",
-            fields: ["calendarId"],
-            references: ["id"],
-            onDelete: "Cascade",
-          },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-        channelId: { type: "String" },
-      },
-    },
-    Event: {
-      name: "Event",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        calendarId: {
-          name: "calendarId",
-          type: "Int",
-          foreignKeyFor: ["calendar"],
-        },
-        clinicalSeriesId: {
-          name: "clinicalSeriesId",
-          type: "Int",
-          optional: true,
-          foreignKeyFor: ["clinicalSeries"],
-        },
-        externalEventId: {
-          name: "externalEventId",
-          type: "String",
-        },
-        eventStatus: {
-          name: "eventStatus",
-          type: "String",
-          optional: true,
-        },
-        eventType: {
-          name: "eventType",
-          type: "String",
-          optional: true,
-        },
-        summary: {
-          name: "summary",
-          type: "String",
-          optional: true,
-        },
-        description: {
-          name: "description",
-          type: "String",
-          optional: true,
-        },
-        startDate: {
-          name: "startDate",
-          type: "DateTime",
-          optional: true,
-        },
-        startDateTime: {
-          name: "startDateTime",
-          type: "DateTime",
-          optional: true,
-        },
-        startTimeZone: {
-          name: "startTimeZone",
-          type: "String",
-          optional: true,
-        },
-        endDate: {
-          name: "endDate",
-          type: "DateTime",
-          optional: true,
-        },
-        endDateTime: {
-          name: "endDateTime",
-          type: "DateTime",
-          optional: true,
-        },
-        endTimeZone: {
-          name: "endTimeZone",
-          type: "String",
-          optional: true,
-        },
-        eventCreatedAt: {
-          name: "eventCreatedAt",
-          type: "DateTime",
-          optional: true,
-        },
-        eventUpdatedAt: {
-          name: "eventUpdatedAt",
-          type: "DateTime",
-          optional: true,
-        },
-        colorId: {
-          name: "colorId",
-          type: "String",
-          optional: true,
-        },
-        location: {
-          name: "location",
-          type: "String",
-          optional: true,
-        },
-        transparency: {
-          name: "transparency",
-          type: "String",
-          optional: true,
-        },
-        visibility: {
-          name: "visibility",
-          type: "String",
-          optional: true,
-        },
-        hangoutLink: {
-          name: "hangoutLink",
-          type: "String",
-          optional: true,
-        },
-        category: {
-          name: "category",
-          type: "String",
-          optional: true,
-        },
-        amountExpected: {
-          name: "amountExpected",
-          type: "Int",
-          optional: true,
-        },
-        amountPaid: {
-          name: "amountPaid",
-          type: "Int",
-          optional: true,
-        },
-        attended: {
-          name: "attended",
-          type: "Boolean",
-          optional: true,
-        },
-        treatmentStage: {
-          name: "treatmentStage",
-          type: "String",
-          optional: true,
-        },
-        controlIncluded: {
-          name: "controlIncluded",
-          type: "Boolean",
-          default: false,
-        },
-        isDomicilio: {
-          name: "isDomicilio",
-          type: "Boolean",
-          default: false,
-        },
-        rawEvent: {
-          name: "rawEvent",
-          type: "Json",
-          optional: true,
-        },
-        lastSyncedAt: {
-          name: "lastSyncedAt",
-          type: "DateTime",
-          optional: true,
-        },
-        dosageValue: {
-          name: "dosageValue",
-          type: "Float",
-          optional: true,
-        },
-        dosageUnit: {
-          name: "dosageUnit",
-          type: "String",
-          optional: true,
-        },
-        seriesStageKind: {
-          name: "seriesStageKind",
-          type: "ClinicalSeriesStageKind",
-          optional: true,
-        },
-        seriesStageNumber: {
-          name: "seriesStageNumber",
-          type: "Int",
-          optional: true,
-        },
-        seriesStageLabel: {
-          name: "seriesStageLabel",
-          type: "String",
-          optional: true,
-        },
-        testMetadata: {
-          name: "testMetadata",
-          type: "Json",
-          optional: true,
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-          default: ExpressionUtils.call("now"),
-        },
-        calendar: {
-          name: "calendar",
-          type: "Calendar",
-          relation: {
-            opposite: "events",
-            fields: ["calendarId"],
-            references: ["id"],
-            onDelete: "Cascade",
-          },
-        },
-        clinicalSeries: {
-          name: "clinicalSeries",
-          type: "ClinicalSeries",
-          optional: true,
-          relation: {
-            opposite: "events",
-            fields: ["clinicalSeriesId"],
-            references: ["id"],
-            onDelete: "SetNull",
-          },
-        },
-        consultations: {
-          name: "consultations",
-          type: "Consultation",
-          array: true,
-          relation: { opposite: "event" },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-        calendarId_externalEventId: {
-          calendarId: { type: "Int" },
-          externalEventId: { type: "String" },
-        },
-      },
-    },
-    ClinicalSeries: {
-      name: "ClinicalSeries",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        kind: {
-          name: "kind",
-          type: "ClinicalSeriesKind",
-        },
-        status: {
-          name: "status",
-          type: "ClinicalSeriesStatus",
-          default: "ACTIVE",
-        },
-        displayName: {
-          name: "displayName",
-          type: "String",
-          optional: true,
-        },
-        patientName: {
-          name: "patientName",
-          type: "String",
-          optional: true,
-        },
-        patientRut: {
-          name: "patientRut",
-          type: "String",
-          optional: true,
-        },
-        expectedSessions: {
-          name: "expectedSessions",
-          type: "Int",
-          optional: true,
-        },
-        notes: {
-          name: "notes",
-          type: "String",
-          optional: true,
-        },
-        completedAt: {
-          name: "completedAt",
-          type: "DateTime",
-          optional: true,
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-          default: ExpressionUtils.call("now"),
-        },
-        events: {
-          name: "events",
-          type: "Event",
-          array: true,
-          relation: { opposite: "clinicalSeries" },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-      },
-    },
-    SyncLog: {
-      name: "SyncLog",
-      fields: {
-        id: {
-          name: "id",
-          type: "BigInt",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        triggerSource: {
-          name: "triggerSource",
-          type: "String",
-        },
-        triggerUserId: {
-          name: "triggerUserId",
-          type: "Int",
-          optional: true,
-        },
-        triggerLabel: {
-          name: "triggerLabel",
-          type: "String",
-          optional: true,
-        },
-        status: {
-          name: "status",
-          type: "String",
-          default: "SUCCESS",
-        },
-        startedAt: {
-          name: "startedAt",
-          type: "DateTime",
-        },
-        finishedAt: {
-          name: "finishedAt",
-          type: "DateTime",
-          optional: true,
-        },
-        fetchedAt: {
-          name: "fetchedAt",
-          type: "DateTime",
-          optional: true,
-        },
-        inserted: {
-          name: "inserted",
-          type: "Int",
-          optional: true,
-          default: 0,
-        },
-        updated: {
-          name: "updated",
-          type: "Int",
-          optional: true,
-          default: 0,
-        },
-        skipped: {
-          name: "skipped",
-          type: "Int",
-          optional: true,
-          default: 0,
-        },
-        excluded: {
-          name: "excluded",
-          type: "Int",
-          optional: true,
-          default: 0,
-        },
-        errorMessage: {
-          name: "errorMessage",
-          type: "String",
-          optional: true,
-        },
-        changeDetails: {
-          name: "changeDetails",
-          type: "Json",
-          optional: true,
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "BigInt" },
-      },
-    },
-    BackupLog: {
-      name: "BackupLog",
-      fields: {
-        id: {
-          name: "id",
-          type: "String",
-          id: true,
-        },
-        timestamp: {
-          name: "timestamp",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        level: {
-          name: "level",
-          type: "String",
-        },
-        message: {
-          name: "message",
-          type: "String",
-        },
-        context: {
-          name: "context",
-          type: "Json",
-          optional: true,
-        },
-        jobId: {
-          name: "jobId",
-          type: "String",
-          optional: true,
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "String" },
-      },
-    },
-    InventoryCategory: {
-      name: "InventoryCategory",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        name: {
-          name: "name",
-          type: "String",
-          unique: true,
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-          default: ExpressionUtils.call("now"),
-        },
-        items: {
-          name: "items",
-          type: "InventoryItem",
-          array: true,
-          relation: { opposite: "category" },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-        name: { type: "String" },
-      },
-    },
-    InventoryItem: {
-      name: "InventoryItem",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        categoryId: {
-          name: "categoryId",
-          type: "Int",
-          optional: true,
-          foreignKeyFor: ["category"],
-        },
-        name: {
-          name: "name",
-          type: "String",
-        },
-        description: {
-          name: "description",
-          type: "String",
-          optional: true,
-        },
-        currentStock: {
-          name: "currentStock",
-          type: "Int",
-          default: 0,
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-          default: ExpressionUtils.call("now"),
-        },
-        category: {
-          name: "category",
-          type: "InventoryCategory",
-          optional: true,
-          relation: { opposite: "items", fields: ["categoryId"], references: ["id"] },
-        },
-        movements: {
-          name: "movements",
-          type: "InventoryMovement",
-          array: true,
-          relation: { opposite: "item" },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-      },
-    },
-    InventoryMovement: {
-      name: "InventoryMovement",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        itemId: {
-          name: "itemId",
-          type: "Int",
-          foreignKeyFor: ["item"],
-        },
-        quantityChange: {
-          name: "quantityChange",
-          type: "Int",
-        },
-        reason: {
-          name: "reason",
-          type: "String",
-          optional: true,
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        item: {
-          name: "item",
-          type: "InventoryItem",
-          relation: {
-            opposite: "movements",
-            fields: ["itemId"],
-            references: ["id"],
-            onDelete: "Cascade",
-          },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-      },
-    },
-    DailyProductionBalance: {
-      name: "DailyProductionBalance",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        balanceDate: {
-          name: "balanceDate",
-          type: "DateTime",
-          unique: true,
-        },
-        ingresoTarjetas: {
-          name: "ingresoTarjetas",
-          type: "Int",
-          default: 0,
-        },
-        ingresoTransferencias: {
-          name: "ingresoTransferencias",
-          type: "Int",
-          default: 0,
-        },
-        ingresoEfectivo: {
-          name: "ingresoEfectivo",
-          type: "Int",
-          default: 0,
-        },
-        gastosDiarios: {
-          name: "gastosDiarios",
-          type: "Int",
-          default: 0,
-        },
-        otrosAbonos: {
-          name: "otrosAbonos",
-          type: "Int",
-          default: 0,
-        },
-        comentarios: {
-          name: "comentarios",
-          type: "String",
-          optional: true,
-        },
-        status: {
-          name: "status",
-          type: "String",
-          default: "DRAFT",
-        },
-        changeReason: {
-          name: "changeReason",
-          type: "String",
-          optional: true,
-        },
-        createdBy: {
-          name: "createdBy",
-          type: "Int",
-          foreignKeyFor: ["user"],
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-          default: ExpressionUtils.call("now"),
-        },
-        consultasMonto: {
-          name: "consultasMonto",
-          type: "Int",
-          default: 0,
-        },
-        controlesMonto: {
-          name: "controlesMonto",
-          type: "Int",
-          default: 0,
-        },
-        licenciasMonto: {
-          name: "licenciasMonto",
-          type: "Int",
-          default: 0,
-        },
-        roxairMonto: {
-          name: "roxairMonto",
-          type: "Int",
-          default: 0,
-        },
-        testsMonto: {
-          name: "testsMonto",
-          type: "Int",
-          default: 0,
-        },
-        vacunasMonto: {
-          name: "vacunasMonto",
-          type: "Int",
-          default: 0,
-        },
-        user: {
-          name: "user",
-          type: "User",
-          relation: {
-            opposite: "dailyProductionBalances",
-            fields: ["createdBy"],
-            references: ["id"],
-          },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-        balanceDate: { type: "DateTime" },
-      },
-    },
-    SupplyRequest: {
-      name: "SupplyRequest",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        userId: {
-          name: "userId",
-          type: "Int",
-          foreignKeyFor: ["user"],
-        },
-        supplyName: {
-          name: "supplyName",
-          type: "String",
-        },
-        quantity: {
-          name: "quantity",
-          type: "Int",
-        },
-        brand: {
-          name: "brand",
-          type: "String",
-          optional: true,
-        },
-        model: {
-          name: "model",
-          type: "String",
-          optional: true,
-        },
-        notes: {
-          name: "notes",
-          type: "String",
-          optional: true,
-        },
-        status: {
-          name: "status",
-          type: "String",
-          default: "PENDING",
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-          default: ExpressionUtils.call("now"),
-        },
-        user: {
-          name: "user",
-          type: "User",
-          relation: { opposite: "supplyRequests", fields: ["userId"], references: ["id"] },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-      },
-    },
-    CommonSupply: {
-      name: "CommonSupply",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        name: {
-          name: "name",
-          type: "String",
-        },
-        brand: {
-          name: "brand",
-          type: "String",
-          optional: true,
-        },
-        model: {
-          name: "model",
-          type: "String",
-          optional: true,
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-        name_brand_model: {
-          name: { type: "String" },
-          brand: { type: "String" },
-          model: { type: "String" },
-        },
-      },
-    },
-    CalendarSyncLog: {
-      name: "CalendarSyncLog",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        triggerSource: {
-          name: "triggerSource",
-          type: "String",
-          optional: true,
-        },
-        triggerUserId: {
-          name: "triggerUserId",
-          type: "Int",
-          optional: true,
-        },
-        triggerLabel: {
-          name: "triggerLabel",
-          type: "String",
-          optional: true,
-        },
-        status: {
-          name: "status",
-          type: "String",
-          default: "PENDING",
-        },
-        startedAt: {
-          name: "startedAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        endedAt: {
-          name: "endedAt",
-          type: "DateTime",
-          optional: true,
-        },
-        fetchedAt: {
-          name: "fetchedAt",
-          type: "DateTime",
-          optional: true,
-        },
-        eventsSynced: {
-          name: "eventsSynced",
-          type: "Int",
-          default: 0,
-        },
-        inserted: {
-          name: "inserted",
-          type: "Int",
-          optional: true,
-          default: 0,
-        },
-        updated: {
-          name: "updated",
-          type: "Int",
-          optional: true,
-          default: 0,
-        },
-        skipped: {
-          name: "skipped",
-          type: "Int",
-          optional: true,
-          default: 0,
-        },
-        excluded: {
-          name: "excluded",
-          type: "Int",
-          optional: true,
-          default: 0,
-        },
-        errorMessage: {
-          name: "errorMessage",
-          type: "String",
-          optional: true,
-        },
-        changeDetails: {
-          name: "changeDetails",
-          type: "Json",
-          optional: true,
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-      },
-    },
-    DoctoraliaFacility: {
-      name: "DoctoraliaFacility",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        externalId: {
-          name: "externalId",
-          type: "String",
-          unique: true,
-        },
-        name: {
-          name: "name",
-          type: "String",
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-          default: ExpressionUtils.call("now"),
-        },
-        doctors: {
-          name: "doctors",
-          type: "DoctoraliaDoctor",
-          array: true,
-          relation: { opposite: "facility" },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-        externalId: { type: "String" },
-      },
-    },
-    DoctoraliaDoctor: {
-      name: "DoctoraliaDoctor",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        facilityId: {
-          name: "facilityId",
-          type: "Int",
-          foreignKeyFor: ["facility"],
-        },
-        externalId: {
-          name: "externalId",
-          type: "String",
-        },
-        name: {
-          name: "name",
-          type: "String",
-        },
-        surname: {
-          name: "surname",
-          type: "String",
-        },
-        profileUrl: {
-          name: "profileUrl",
-          type: "String",
-          optional: true,
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-          default: ExpressionUtils.call("now"),
-        },
-        facility: {
-          name: "facility",
-          type: "DoctoraliaFacility",
-          relation: {
-            opposite: "doctors",
-            fields: ["facilityId"],
-            references: ["id"],
-            onDelete: "Cascade",
-          },
-        },
-        addresses: {
-          name: "addresses",
-          type: "DoctoraliaAddress",
-          array: true,
-          relation: { opposite: "doctor" },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-        facilityId_externalId: { facilityId: { type: "Int" }, externalId: { type: "String" } },
-      },
-    },
-    DoctoraliaAddress: {
-      name: "DoctoraliaAddress",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        doctorId: {
-          name: "doctorId",
-          type: "Int",
-          foreignKeyFor: ["doctor"],
-        },
-        externalId: {
-          name: "externalId",
-          type: "String",
-        },
-        name: {
-          name: "name",
-          type: "String",
-          optional: true,
-        },
-        cityName: {
-          name: "cityName",
-          type: "String",
-          optional: true,
-        },
-        postCode: {
-          name: "postCode",
-          type: "String",
-          optional: true,
-        },
-        street: {
-          name: "street",
-          type: "String",
-          optional: true,
-        },
-        onlineOnly: {
-          name: "onlineOnly",
-          type: "Boolean",
-          default: false,
-        },
-        calendarEnabled: {
-          name: "calendarEnabled",
-          type: "Boolean",
-          default: true,
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-          default: ExpressionUtils.call("now"),
-        },
-        doctor: {
-          name: "doctor",
-          type: "DoctoraliaDoctor",
-          relation: {
-            opposite: "addresses",
-            fields: ["doctorId"],
-            references: ["id"],
-            onDelete: "Cascade",
-          },
-        },
-        services: {
-          name: "services",
-          type: "DoctoraliaService",
-          array: true,
-          relation: { opposite: "address" },
-        },
-        insuranceProviders: {
-          name: "insuranceProviders",
-          type: "DoctoraliaInsuranceProvider",
-          array: true,
-          relation: { opposite: "address" },
-        },
-        slots: {
-          name: "slots",
-          type: "DoctoraliaSlot",
-          array: true,
-          relation: { opposite: "address" },
-        },
-        bookings: {
-          name: "bookings",
-          type: "DoctoraliaBooking",
-          array: true,
-          relation: { opposite: "address" },
-        },
-        breaks: {
-          name: "breaks",
-          type: "DoctoraliaCalendarBreak",
-          array: true,
-          relation: { opposite: "address" },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-        doctorId_externalId: { doctorId: { type: "Int" }, externalId: { type: "String" } },
-      },
-    },
-    DoctoraliaService: {
-      name: "DoctoraliaService",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        addressId: {
-          name: "addressId",
-          type: "Int",
-          foreignKeyFor: ["address"],
-        },
-        externalId: {
-          name: "externalId",
-          type: "String",
-        },
-        serviceId: {
-          name: "serviceId",
-          type: "String",
-          optional: true,
-        },
-        name: {
-          name: "name",
-          type: "String",
-        },
-        price: {
-          name: "price",
-          type: "Int",
-          optional: true,
-        },
-        isPriceFrom: {
-          name: "isPriceFrom",
-          type: "Boolean",
-          default: false,
-        },
-        isDefault: {
-          name: "isDefault",
-          type: "Boolean",
-          default: false,
-        },
-        isVisible: {
-          name: "isVisible",
-          type: "Boolean",
-          default: true,
-        },
-        description: {
-          name: "description",
-          type: "String",
-          optional: true,
-        },
-        defaultDuration: {
-          name: "defaultDuration",
-          type: "Int",
-          optional: true,
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-          default: ExpressionUtils.call("now"),
-        },
-        address: {
-          name: "address",
-          type: "DoctoraliaAddress",
-          relation: {
-            opposite: "services",
-            fields: ["addressId"],
-            references: ["id"],
-            onDelete: "Cascade",
-          },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-        addressId_externalId: { addressId: { type: "Int" }, externalId: { type: "String" } },
-      },
-    },
-    DoctoraliaInsuranceProvider: {
-      name: "DoctoraliaInsuranceProvider",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        addressId: {
-          name: "addressId",
-          type: "Int",
-          foreignKeyFor: ["address"],
-        },
-        insuranceProviderId: {
-          name: "insuranceProviderId",
-          type: "String",
-        },
-        name: {
-          name: "name",
-          type: "String",
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        address: {
-          name: "address",
-          type: "DoctoraliaAddress",
-          relation: {
-            opposite: "insuranceProviders",
-            fields: ["addressId"],
-            references: ["id"],
-            onDelete: "Cascade",
-          },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-        addressId_insuranceProviderId: {
-          addressId: { type: "Int" },
-          insuranceProviderId: { type: "String" },
-        },
-      },
-    },
-    DoctoraliaSlot: {
-      name: "DoctoraliaSlot",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        addressId: {
-          name: "addressId",
-          type: "Int",
-          foreignKeyFor: ["address"],
-        },
-        startAt: {
-          name: "startAt",
-          type: "DateTime",
-        },
-        endAt: {
-          name: "endAt",
-          type: "DateTime",
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        address: {
-          name: "address",
-          type: "DoctoraliaAddress",
-          relation: {
-            opposite: "slots",
-            fields: ["addressId"],
-            references: ["id"],
-            onDelete: "Cascade",
-          },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-      },
-    },
-    DoctoraliaBooking: {
-      name: "DoctoraliaBooking",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        addressId: {
-          name: "addressId",
-          type: "Int",
-          foreignKeyFor: ["address"],
-        },
-        externalId: {
-          name: "externalId",
-          type: "String",
-        },
-        status: {
-          name: "status",
-          type: "String",
-          default: "booked",
-        },
-        startAt: {
-          name: "startAt",
-          type: "DateTime",
-        },
-        endAt: {
-          name: "endAt",
-          type: "DateTime",
-        },
-        duration: {
-          name: "duration",
-          type: "Int",
-        },
-        bookedBy: {
-          name: "bookedBy",
-          type: "String",
-          optional: true,
-        },
-        bookedAt: {
-          name: "bookedAt",
-          type: "DateTime",
-          optional: true,
-        },
-        canceledBy: {
-          name: "canceledBy",
-          type: "String",
-          optional: true,
-        },
-        canceledAt: {
-          name: "canceledAt",
-          type: "DateTime",
-          optional: true,
-        },
-        patientName: {
-          name: "patientName",
-          type: "String",
-          optional: true,
-        },
-        patientSurname: {
-          name: "patientSurname",
-          type: "String",
-          optional: true,
-        },
-        patientEmail: {
-          name: "patientEmail",
-          type: "String",
-          optional: true,
-        },
-        patientPhone: {
-          name: "patientPhone",
-          type: "String",
-          optional: true,
-        },
-        comment: {
-          name: "comment",
-          type: "String",
-          optional: true,
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-          default: ExpressionUtils.call("now"),
-        },
-        address: {
-          name: "address",
-          type: "DoctoraliaAddress",
-          relation: {
-            opposite: "bookings",
-            fields: ["addressId"],
-            references: ["id"],
-            onDelete: "Cascade",
-          },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-        addressId_externalId: { addressId: { type: "Int" }, externalId: { type: "String" } },
-      },
-    },
-    DoctoraliaCalendarBreak: {
-      name: "DoctoraliaCalendarBreak",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        addressId: {
-          name: "addressId",
-          type: "Int",
-          foreignKeyFor: ["address"],
-        },
-        externalId: {
-          name: "externalId",
-          type: "String",
-        },
-        since: {
-          name: "since",
-          type: "DateTime",
-        },
-        till: {
-          name: "till",
-          type: "DateTime",
-        },
-        description: {
-          name: "description",
-          type: "String",
-          optional: true,
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        address: {
-          name: "address",
-          type: "DoctoraliaAddress",
-          relation: {
-            opposite: "breaks",
-            fields: ["addressId"],
-            references: ["id"],
-            onDelete: "Cascade",
-          },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-        addressId_externalId: { addressId: { type: "Int" }, externalId: { type: "String" } },
-      },
-    },
-    DoctoraliaSyncLog: {
-      name: "DoctoraliaSyncLog",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        triggerSource: {
-          name: "triggerSource",
-          type: "String",
-          optional: true,
-        },
-        triggerUserId: {
-          name: "triggerUserId",
-          type: "Int",
-          optional: true,
-        },
-        status: {
-          name: "status",
-          type: "String",
-          default: "PENDING",
-        },
-        startedAt: {
-          name: "startedAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        endedAt: {
-          name: "endedAt",
-          type: "DateTime",
-          optional: true,
-        },
-        facilitiesSynced: {
-          name: "facilitiesSynced",
-          type: "Int",
-          default: 0,
-        },
-        doctorsSynced: {
-          name: "doctorsSynced",
-          type: "Int",
-          default: 0,
-        },
-        slotsSynced: {
-          name: "slotsSynced",
-          type: "Int",
-          default: 0,
-        },
-        bookingsSynced: {
-          name: "bookingsSynced",
-          type: "Int",
-          default: 0,
-        },
-        errorMessage: {
-          name: "errorMessage",
-          type: "String",
-          optional: true,
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-      },
-    },
-    DoctoraliaSchedule: {
-      name: "DoctoraliaSchedule",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        externalId: {
-          name: "externalId",
-          type: "Int",
-          unique: true,
-        },
-        name: {
-          name: "name",
-          type: "String",
-        },
-        displayName: {
-          name: "displayName",
-          type: "String",
-        },
-        facilityId: {
-          name: "facilityId",
-          type: "Int",
-          optional: true,
-        },
-        specialityId: {
-          name: "specialityId",
-          type: "Int",
-          optional: true,
-        },
-        doctorId: {
-          name: "doctorId",
-          type: "Int",
-          optional: true,
-        },
-        provinceId: {
-          name: "provinceId",
-          type: "Int",
-          optional: true,
-        },
-        cityId: {
-          name: "cityId",
-          type: "Int",
-          optional: true,
-        },
-        hasWaitingRoom: {
-          name: "hasWaitingRoom",
-          type: "Boolean",
-          optional: true,
-        },
-        scheduleType: {
-          name: "scheduleType",
-          type: "Int",
-          default: 0,
-        },
-        colorSchemaId: {
-          name: "colorSchemaId",
-          type: "Int",
-          optional: true,
-        },
-        isVirtual: {
-          name: "isVirtual",
-          type: "Boolean",
-          default: false,
-        },
-        patientsNotificationType: {
-          name: "patientsNotificationType",
-          type: "Int",
-          default: 1,
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-          default: ExpressionUtils.call("now"),
-        },
-        appointments: {
-          name: "appointments",
-          type: "DoctoraliaCalendarAppointment",
-          array: true,
-          relation: { opposite: "schedule" },
-        },
-        workPeriods: {
-          name: "workPeriods",
-          type: "DoctoraliaWorkPeriod",
-          array: true,
-          relation: { opposite: "schedule" },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-        externalId: { type: "Int" },
-      },
-    },
-    DoctoraliaCalendarAppointment: {
-      name: "DoctoraliaCalendarAppointment",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        scheduleId: {
-          name: "scheduleId",
-          type: "Int",
-          foreignKeyFor: ["schedule"],
-        },
-        externalId: {
-          name: "externalId",
-          type: "Int",
-          unique: true,
-        },
-        title: {
-          name: "title",
-          type: "String",
-        },
-        startAt: {
-          name: "startAt",
-          type: "DateTime",
-        },
-        endAt: {
-          name: "endAt",
-          type: "DateTime",
-        },
-        isBlock: {
-          name: "isBlock",
-          type: "Boolean",
-          default: false,
-        },
-        eventType: {
-          name: "eventType",
-          type: "Int",
-        },
-        scheduledBy: {
-          name: "scheduledBy",
-          type: "Int",
-        },
-        status: {
-          name: "status",
-          type: "Int",
-        },
-        hasPatient: {
-          name: "hasPatient",
-          type: "Boolean",
-        },
-        hasWaitingRoom: {
-          name: "hasWaitingRoom",
-          type: "Boolean",
-          optional: true,
-        },
-        insuranceId: {
-          name: "insuranceId",
-          type: "Int",
-          optional: true,
-        },
-        insuranceName: {
-          name: "insuranceName",
-          type: "String",
-          optional: true,
-        },
-        comments: {
-          name: "comments",
-          type: "String",
-          optional: true,
-        },
-        serviceId: {
-          name: "serviceId",
-          type: "Int",
-        },
-        serviceName: {
-          name: "serviceName",
-          type: "String",
-        },
-        eventServices: {
-          name: "eventServices",
-          type: "Json",
-          optional: true,
-        },
-        serviceColorSchemaId: {
-          name: "serviceColorSchemaId",
-          type: "Int",
-        },
-        serviceIsDeleted: {
-          name: "serviceIsDeleted",
-          type: "Boolean",
-          default: false,
-        },
-        attendance: {
-          name: "attendance",
-          type: "Int",
-          default: 0,
-        },
-        patientExternalId: {
-          name: "patientExternalId",
-          type: "Int",
-        },
-        patientReferenceId: {
-          name: "patientReferenceId",
-          type: "String",
-        },
-        patientPhone: {
-          name: "patientPhone",
-          type: "String",
-          optional: true,
-        },
-        patientEmail: {
-          name: "patientEmail",
-          type: "String",
-          optional: true,
-        },
-        patientBirthDate: {
-          name: "patientBirthDate",
-          type: "DateTime",
-          optional: true,
-        },
-        patientArrivalTime: {
-          name: "patientArrivalTime",
-          type: "DateTime",
-          optional: true,
-        },
-        isPatientFirstTime: {
-          name: "isPatientFirstTime",
-          type: "Boolean",
-          default: false,
-        },
-        isPatientFirstAdminBooking: {
-          name: "isPatientFirstAdminBooking",
-          type: "Boolean",
-          default: false,
-        },
-        isBookedViaSecretaryAi: {
-          name: "isBookedViaSecretaryAi",
-          type: "Boolean",
-          default: false,
-        },
-        onlinePaymentType: {
-          name: "onlinePaymentType",
-          type: "String",
-          optional: true,
-        },
-        onlinePaymentStatus: {
-          name: "onlinePaymentStatus",
-          type: "String",
-          optional: true,
-        },
-        isPaidOnline: {
-          name: "isPaidOnline",
-          type: "Boolean",
-          default: false,
-        },
-        communicationChannel: {
-          name: "communicationChannel",
-          type: "String",
-          optional: true,
-        },
-        fake: {
-          name: "fake",
-          type: "Boolean",
-          default: false,
-        },
-        isEventWithVoucher: {
-          name: "isEventWithVoucher",
-          type: "Boolean",
-          default: false,
-        },
-        duration: {
-          name: "duration",
-          type: "Int",
-        },
-        canNotifyPatient: {
-          name: "canNotifyPatient",
-          type: "Boolean",
-        },
-        noShowProtection: {
-          name: "noShowProtection",
-          type: "Boolean",
-          default: false,
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-          default: ExpressionUtils.call("now"),
-        },
-        schedule: {
-          name: "schedule",
-          type: "DoctoraliaSchedule",
-          relation: {
-            opposite: "appointments",
-            fields: ["scheduleId"],
-            references: ["id"],
-            onDelete: "Cascade",
-          },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-        externalId: { type: "Int" },
-        scheduleId_externalId: { scheduleId: { type: "Int" }, externalId: { type: "Int" } },
-      },
-    },
-    DoctoraliaWorkPeriod: {
-      name: "DoctoraliaWorkPeriod",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        scheduleId: {
-          name: "scheduleId",
-          type: "Int",
-          foreignKeyFor: ["schedule"],
-        },
-        startAt: {
-          name: "startAt",
-          type: "DateTime",
-        },
-        endAt: {
-          name: "endAt",
-          type: "DateTime",
-        },
-        isPrivate: {
-          name: "isPrivate",
-          type: "Boolean",
-          default: false,
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        schedule: {
-          name: "schedule",
-          type: "DoctoraliaSchedule",
-          relation: {
-            opposite: "workPeriods",
-            fields: ["scheduleId"],
-            references: ["id"],
-            onDelete: "Cascade",
-          },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-      },
-    },
-    DoctoraliaCalendarSyncLog: {
-      name: "DoctoraliaCalendarSyncLog",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        triggerSource: {
-          name: "triggerSource",
-          type: "String",
-          optional: true,
-        },
-        triggerUserId: {
-          name: "triggerUserId",
-          type: "Int",
-          optional: true,
-        },
-        status: {
-          name: "status",
-          type: "String",
-          default: "PENDING",
-        },
-        startedAt: {
-          name: "startedAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        endedAt: {
-          name: "endedAt",
-          type: "DateTime",
-          optional: true,
-        },
-        schedulesSynced: {
-          name: "schedulesSynced",
-          type: "Int",
-          default: 0,
-        },
-        appointmentsSynced: {
-          name: "appointmentsSynced",
-          type: "Int",
-          default: 0,
-        },
-        workPeriodsSynced: {
-          name: "workPeriodsSynced",
-          type: "Int",
-          default: 0,
-        },
-        errorMessage: {
-          name: "errorMessage",
-          type: "String",
-          optional: true,
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-      },
-    },
-    HaulmerSyncLog: {
-      name: "HaulmerSyncLog",
-      fields: {
-        id: {
-          name: "id",
-          type: "String",
-          id: true,
-          default: ExpressionUtils.call("uuid"),
-        },
-        period: {
-          name: "period",
-          type: "String",
-        },
-        rut: {
-          name: "rut",
-          type: "String",
-        },
-        docType: {
-          name: "docType",
-          type: "String",
-        },
-        status: {
-          name: "status",
-          type: "String",
-          default: "PENDING",
-        },
-        rowsCreated: {
-          name: "rowsCreated",
-          type: "Int",
-          default: 0,
-        },
-        rowsUpdated: {
-          name: "rowsUpdated",
-          type: "Int",
-          default: 0,
-        },
-        rowsSkipped: {
-          name: "rowsSkipped",
-          type: "Int",
-          default: 0,
-        },
-        csvSize: {
-          name: "csvSize",
-          type: "Int",
-          optional: true,
-        },
-        errorMessage: {
-          name: "errorMessage",
-          type: "String",
-          optional: true,
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-          default: ExpressionUtils.call("now"),
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "String" },
-        period_rut_docType: {
-          period: { type: "String" },
-          rut: { type: "String" },
-          docType: { type: "String" },
-        },
-      },
-    },
-    PersonalCredit: {
-      name: "PersonalCredit",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        bankName: {
-          name: "bankName",
-          type: "String",
-        },
-        creditNumber: {
-          name: "creditNumber",
-          type: "String",
-          unique: true,
-        },
-        description: {
-          name: "description",
-          type: "String",
-          optional: true,
-        },
-        totalAmount: {
-          name: "totalAmount",
-          type: "Decimal",
-        },
-        currency: {
-          name: "currency",
-          type: "String",
-          default: "CLP",
-        },
-        interestRate: {
-          name: "interestRate",
-          type: "Decimal",
-          optional: true,
-        },
-        startDate: {
-          name: "startDate",
-          type: "DateTime",
-        },
-        totalInstallments: {
-          name: "totalInstallments",
-          type: "Int",
-        },
-        status: {
-          name: "status",
-          type: "String",
-          default: "ACTIVE",
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-          default: ExpressionUtils.call("now"),
-        },
-        installments: {
-          name: "installments",
-          type: "PersonalCreditInstallment",
-          array: true,
-          relation: { opposite: "credit" },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-        creditNumber: { type: "String" },
-      },
-    },
-    PersonalCreditInstallment: {
-      name: "PersonalCreditInstallment",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        creditId: {
-          name: "creditId",
-          type: "Int",
-          foreignKeyFor: ["credit"],
-        },
-        installmentNumber: {
-          name: "installmentNumber",
-          type: "Int",
-        },
-        dueDate: {
-          name: "dueDate",
-          type: "DateTime",
-        },
-        amount: {
-          name: "amount",
-          type: "Decimal",
-        },
-        capitalAmount: {
-          name: "capitalAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        interestAmount: {
-          name: "interestAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        otherCharges: {
-          name: "otherCharges",
-          type: "Decimal",
-          optional: true,
-        },
-        status: {
-          name: "status",
-          type: "String",
-          default: "PENDING",
-        },
-        paidAt: {
-          name: "paidAt",
-          type: "DateTime",
-          optional: true,
-        },
-        paidAmount: {
-          name: "paidAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        paidAmountCLP: {
-          name: "paidAmountCLP",
-          type: "Decimal",
-          optional: true,
-        },
-        credit: {
-          name: "credit",
-          type: "PersonalCredit",
-          relation: {
-            opposite: "installments",
-            fields: ["creditId"],
-            references: ["id"],
-            onDelete: "Cascade",
-          },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-        creditId_installmentNumber: {
-          creditId: { type: "Int" },
-          installmentNumber: { type: "Int" },
-        },
-      },
-    },
-    MedicalCertificate: {
-      name: "MedicalCertificate",
-      fields: {
-        id: {
-          name: "id",
-          type: "String",
-          id: true,
-          default: ExpressionUtils.call("cuid"),
-        },
-        patientName: {
-          name: "patientName",
-          type: "String",
-        },
-        patientRut: {
-          name: "patientRut",
-          type: "String",
-        },
-        birthDate: {
-          name: "birthDate",
-          type: "DateTime",
-        },
-        address: {
-          name: "address",
-          type: "String",
-        },
-        diagnosis: {
-          name: "diagnosis",
-          type: "String",
-        },
-        symptoms: {
-          name: "symptoms",
-          type: "String",
-          optional: true,
-        },
-        restDays: {
-          name: "restDays",
-          type: "Int",
-          optional: true,
-        },
-        restStartDate: {
-          name: "restStartDate",
-          type: "DateTime",
-          optional: true,
-        },
-        restEndDate: {
-          name: "restEndDate",
-          type: "DateTime",
-          optional: true,
-        },
-        purpose: {
-          name: "purpose",
-          type: "String",
-        },
-        purposeDetail: {
-          name: "purposeDetail",
-          type: "String",
-          optional: true,
-        },
-        issuedBy: {
-          name: "issuedBy",
-          type: "Int",
-          foreignKeyFor: ["issuer"],
-        },
-        issuedAt: {
-          name: "issuedAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        patientId: {
-          name: "patientId",
-          type: "Int",
-          optional: true,
-          foreignKeyFor: ["patient"],
-        },
-        driveFileId: {
-          name: "driveFileId",
-          type: "String",
-        },
-        pdfHash: {
-          name: "pdfHash",
-          type: "String",
-        },
-        metadata: {
-          name: "metadata",
-          type: "Json",
-          optional: true,
-        },
-        issuer: {
-          name: "issuer",
-          type: "User",
-          relation: { opposite: "medicalCertificates", fields: ["issuedBy"], references: ["id"] },
-        },
-        patient: {
-          name: "patient",
-          type: "Patient",
-          optional: true,
-          relation: { opposite: "medicalCertificates", fields: ["patientId"], references: ["id"] },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "String" },
-      },
-    },
-    Patient: {
-      name: "Patient",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        personId: {
-          name: "personId",
-          type: "Int",
-          unique: true,
-          foreignKeyFor: ["person"],
-        },
-        birthDate: {
-          name: "birthDate",
-          type: "DateTime",
-          optional: true,
-        },
-        bloodType: {
-          name: "bloodType",
-          type: "String",
-          optional: true,
-        },
-        notes: {
-          name: "notes",
-          type: "String",
-          optional: true,
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-          default: ExpressionUtils.call("now"),
-        },
-        person: {
-          name: "person",
-          type: "Person",
-          relation: {
-            opposite: "patient",
-            fields: ["personId"],
-            references: ["id"],
-            onDelete: "Cascade",
-          },
-        },
-        consultations: {
-          name: "consultations",
-          type: "Consultation",
-          array: true,
-          relation: { opposite: "patient" },
-        },
-        medicalCertificates: {
-          name: "medicalCertificates",
-          type: "MedicalCertificate",
-          array: true,
-          relation: { opposite: "patient" },
-        },
-        budgets: {
-          name: "budgets",
-          type: "Budget",
-          array: true,
-          relation: { opposite: "patient" },
-        },
-        payments: {
-          name: "payments",
-          type: "PatientPayment",
-          array: true,
-          relation: { opposite: "patient" },
-        },
-        attachments: {
-          name: "attachments",
-          type: "PatientAttachment",
-          array: true,
-          relation: { opposite: "patient" },
-        },
-        dteSaleSources: {
-          name: "dteSaleSources",
-          type: "PatientDteSaleSource",
-          array: true,
-          relation: { opposite: "patient" },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-        personId: { type: "Int" },
-      },
-    },
-    PatientDteSaleSource: {
-      name: "PatientDteSaleSource",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        patientId: {
-          name: "patientId",
-          type: "Int",
-          optional: true,
-          foreignKeyFor: ["patient"],
-        },
-        clientRUT: {
-          name: "clientRUT",
-          type: "String",
-          unique: true,
-        },
-        clientName: {
-          name: "clientName",
-          type: "String",
-        },
-        documentType: {
-          name: "documentType",
-          type: "Int",
-        },
-        documentDate: {
-          name: "documentDate",
-          type: "DateTime",
-          optional: true,
-        },
-        folio: {
-          name: "folio",
-          type: "String",
-          optional: true,
-        },
-        period: {
-          name: "period",
-          type: "String",
-          optional: true,
-        },
-        sourceUpdatedAt: {
-          name: "sourceUpdatedAt",
-          type: "DateTime",
-          optional: true,
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-          default: ExpressionUtils.call("now"),
-        },
-        patient: {
-          name: "patient",
-          type: "Patient",
-          optional: true,
-          relation: {
-            opposite: "dteSaleSources",
-            fields: ["patientId"],
-            references: ["id"],
-            onDelete: "SetNull",
-          },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-        clientRUT: { type: "String" },
-      },
-    },
-    Consultation: {
-      name: "Consultation",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        patientId: {
-          name: "patientId",
-          type: "Int",
-          foreignKeyFor: ["patient"],
-        },
-        eventId: {
-          name: "eventId",
-          type: "Int",
-          optional: true,
-          foreignKeyFor: ["event"],
-        },
-        date: {
-          name: "date",
-          type: "DateTime",
-        },
-        reason: {
-          name: "reason",
-          type: "String",
-        },
-        diagnosis: {
-          name: "diagnosis",
-          type: "String",
-          optional: true,
-        },
-        treatment: {
-          name: "treatment",
-          type: "String",
-          optional: true,
-        },
-        notes: {
-          name: "notes",
-          type: "String",
-          optional: true,
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-          default: ExpressionUtils.call("now"),
-        },
-        patient: {
-          name: "patient",
-          type: "Patient",
-          relation: {
-            opposite: "consultations",
-            fields: ["patientId"],
-            references: ["id"],
-            onDelete: "Cascade",
-          },
-        },
-        event: {
-          name: "event",
-          type: "Event",
-          optional: true,
-          relation: { opposite: "consultations", fields: ["eventId"], references: ["id"] },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-      },
-    },
-    Budget: {
-      name: "Budget",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        patientId: {
-          name: "patientId",
-          type: "Int",
-          foreignKeyFor: ["patient"],
-        },
-        title: {
-          name: "title",
-          type: "String",
-        },
-        totalAmount: {
-          name: "totalAmount",
-          type: "Decimal",
-        },
-        discount: {
-          name: "discount",
-          type: "Decimal",
-          default: 0,
-        },
-        finalAmount: {
-          name: "finalAmount",
-          type: "Decimal",
-        },
-        status: {
-          name: "status",
-          type: "BudgetStatus",
-          default: "DRAFT",
-        },
-        notes: {
-          name: "notes",
-          type: "String",
-          optional: true,
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-          default: ExpressionUtils.call("now"),
-        },
-        patient: {
-          name: "patient",
-          type: "Patient",
-          relation: {
-            opposite: "budgets",
-            fields: ["patientId"],
-            references: ["id"],
-            onDelete: "Cascade",
-          },
-        },
-        payments: {
-          name: "payments",
-          type: "PatientPayment",
-          array: true,
-          relation: { opposite: "budget" },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-      },
-    },
-    PatientPayment: {
-      name: "PatientPayment",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        patientId: {
-          name: "patientId",
-          type: "Int",
-          foreignKeyFor: ["patient"],
-        },
-        budgetId: {
-          name: "budgetId",
-          type: "Int",
-          optional: true,
-          foreignKeyFor: ["budget"],
-        },
-        amount: {
-          name: "amount",
-          type: "Decimal",
-        },
-        paymentDate: {
-          name: "paymentDate",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        paymentMethod: {
-          name: "paymentMethod",
-          type: "String",
-        },
-        reference: {
-          name: "reference",
-          type: "String",
-          optional: true,
-        },
-        notes: {
-          name: "notes",
-          type: "String",
-          optional: true,
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        patient: {
-          name: "patient",
-          type: "Patient",
-          relation: {
-            opposite: "payments",
-            fields: ["patientId"],
-            references: ["id"],
-            onDelete: "Cascade",
-          },
-        },
-        budget: {
-          name: "budget",
-          type: "Budget",
-          optional: true,
-          relation: { opposite: "payments", fields: ["budgetId"], references: ["id"] },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-      },
-    },
-    PatientAttachment: {
-      name: "PatientAttachment",
-      fields: {
-        id: {
-          name: "id",
-          type: "String",
-          id: true,
-          default: ExpressionUtils.call("cuid"),
-        },
-        patientId: {
-          name: "patientId",
-          type: "Int",
-          foreignKeyFor: ["patient"],
-        },
-        name: {
-          name: "name",
-          type: "String",
-        },
-        type: {
-          name: "type",
-          type: "AttachmentType",
-          default: "OTHER",
-        },
-        driveFileId: {
-          name: "driveFileId",
-          type: "String",
-        },
-        mimeType: {
-          name: "mimeType",
-          type: "String",
-          optional: true,
-        },
-        uploadedBy: {
-          name: "uploadedBy",
-          type: "Int",
-          foreignKeyFor: ["uploader"],
-        },
-        uploadedAt: {
-          name: "uploadedAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        patient: {
-          name: "patient",
-          type: "Patient",
-          relation: {
-            opposite: "attachments",
-            fields: ["patientId"],
-            references: ["id"],
-            onDelete: "Cascade",
-          },
-        },
-        uploader: {
-          name: "uploader",
-          type: "User",
-          relation: { opposite: "patientAttachments", fields: ["uploadedBy"], references: ["id"] },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "String" },
-      },
-    },
-    DTEPurchaseDetail: {
-      name: "DTEPurchaseDetail",
-      fields: {
-        id: {
-          name: "id",
-          type: "String",
-          id: true,
-          default: ExpressionUtils.call("uuid"),
-        },
-        registerNumber: {
-          name: "registerNumber",
-          type: "Int",
-        },
-        documentType: {
-          name: "documentType",
-          type: "Int",
-          default: 33,
-        },
-        purchaseType: {
-          name: "purchaseType",
-          type: "String",
-        },
-        providerRUT: {
-          name: "providerRUT",
-          type: "String",
-        },
-        providerName: {
-          name: "providerName",
-          type: "String",
-        },
-        folio: {
-          name: "folio",
-          type: "String",
-        },
-        documentDate: {
-          name: "documentDate",
-          type: "DateTime",
-        },
-        receiptDate: {
-          name: "receiptDate",
-          type: "DateTime",
-        },
-        acknowledgeDate: {
-          name: "acknowledgeDate",
-          type: "DateTime",
-          optional: true,
-        },
-        period: {
-          name: "period",
-          type: "String",
-          optional: true,
-        },
-        exemptAmount: {
-          name: "exemptAmount",
-          type: "Decimal",
-          default: 0,
-        },
-        netAmount: {
-          name: "netAmount",
-          type: "Decimal",
-          default: 0,
-        },
-        recoverableIVA: {
-          name: "recoverableIVA",
-          type: "Decimal",
-          default: 0,
-        },
-        nonRecoverableIVA: {
-          name: "nonRecoverableIVA",
-          type: "Decimal",
-          default: 0,
-        },
-        nonRecoverableIVACode: {
-          name: "nonRecoverableIVACode",
-          type: "String",
-          optional: true,
-        },
-        totalAmount: {
-          name: "totalAmount",
-          type: "Decimal",
-          default: 0,
-        },
-        fixedAssetNetAmount: {
-          name: "fixedAssetNetAmount",
-          type: "Decimal",
-          default: 0,
-        },
-        commonUseIVA: {
-          name: "commonUseIVA",
-          type: "Decimal",
-          default: 0,
-        },
-        nonCreditableTax: {
-          name: "nonCreditableTax",
-          type: "Decimal",
-          default: 0,
-        },
-        nonRetainedIVA: {
-          name: "nonRetainedIVA",
-          type: "Decimal",
-          default: 0,
-        },
-        pureTobacco: {
-          name: "pureTobacco",
-          type: "Decimal",
-          default: 0,
-        },
-        cigaretteTobacco: {
-          name: "cigaretteTobacco",
-          type: "Decimal",
-          default: 0,
-        },
-        elaboratedTobacco: {
-          name: "elaboratedTobacco",
-          type: "Decimal",
-          default: 0,
-        },
-        otherTaxCode: {
-          name: "otherTaxCode",
-          type: "String",
-          optional: true,
-        },
-        otherTaxAmount: {
-          name: "otherTaxAmount",
-          type: "Decimal",
-          default: 0,
-        },
-        otherTaxRate: {
-          name: "otherTaxRate",
-          type: "Decimal",
-          optional: true,
-        },
-        referenceDocNote: {
-          name: "referenceDocNote",
-          type: "String",
-          optional: true,
-        },
-        notes: {
-          name: "notes",
-          type: "String",
-          optional: true,
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-          default: ExpressionUtils.call("now"),
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "String" },
-        providerRUT_folio: { providerRUT: { type: "String" }, folio: { type: "String" } },
-      },
-    },
-    DTESaleDetail: {
-      name: "DTESaleDetail",
-      fields: {
-        id: {
-          name: "id",
-          type: "String",
-          id: true,
-          default: ExpressionUtils.call("uuid"),
-        },
-        registerNumber: {
-          name: "registerNumber",
-          type: "Int",
-        },
-        documentType: {
-          name: "documentType",
-          type: "Int",
-        },
-        saleType: {
-          name: "saleType",
-          type: "String",
-        },
-        clientRUT: {
-          name: "clientRUT",
-          type: "String",
-        },
-        clientName: {
-          name: "clientName",
-          type: "String",
-        },
-        folio: {
-          name: "folio",
-          type: "String",
-        },
-        documentDate: {
-          name: "documentDate",
-          type: "DateTime",
-        },
-        receiptDate: {
-          name: "receiptDate",
-          type: "DateTime",
-        },
-        receiptAcknowledgeDate: {
-          name: "receiptAcknowledgeDate",
-          type: "DateTime",
-          optional: true,
-        },
-        claimDate: {
-          name: "claimDate",
-          type: "DateTime",
-          optional: true,
-        },
-        period: {
-          name: "period",
-          type: "String",
-          optional: true,
-        },
-        exemptAmount: {
-          name: "exemptAmount",
-          type: "Decimal",
-          default: 0,
-        },
-        netAmount: {
-          name: "netAmount",
-          type: "Decimal",
-          default: 0,
-        },
-        ivaAmount: {
-          name: "ivaAmount",
-          type: "Decimal",
-          default: 0,
-        },
-        totalAmount: {
-          name: "totalAmount",
-          type: "Decimal",
-          default: 0,
-        },
-        totalRetainedIVA: {
-          name: "totalRetainedIVA",
-          type: "Decimal",
-          default: 0,
-        },
-        partialRetainedIVA: {
-          name: "partialRetainedIVA",
-          type: "Decimal",
-          default: 0,
-        },
-        nonRetainedIVA: {
-          name: "nonRetainedIVA",
-          type: "Decimal",
-          default: 0,
-        },
-        ownIVA: {
-          name: "ownIVA",
-          type: "Decimal",
-          default: 0,
-        },
-        thirdPartyIVA: {
-          name: "thirdPartyIVA",
-          type: "Decimal",
-          default: 0,
-        },
-        lateIVA: {
-          name: "lateIVA",
-          type: "Decimal",
-          default: 0,
-        },
-        emitterRUT: {
-          name: "emitterRUT",
-          type: "String",
-          optional: true,
-        },
-        commissionNetAmount: {
-          name: "commissionNetAmount",
-          type: "Decimal",
-          default: 0,
-        },
-        commissionExemptAmount: {
-          name: "commissionExemptAmount",
-          type: "Decimal",
-          default: 0,
-        },
-        commissionIVA: {
-          name: "commissionIVA",
-          type: "Decimal",
-          default: 0,
-        },
-        referenceDocType: {
-          name: "referenceDocType",
-          type: "String",
-          optional: true,
-        },
-        referenceDocFolio: {
-          name: "referenceDocFolio",
-          type: "String",
-          optional: true,
-        },
-        foreignBuyerIdentifier: {
-          name: "foreignBuyerIdentifier",
-          type: "String",
-          optional: true,
-        },
-        foreignBuyerNationality: {
-          name: "foreignBuyerNationality",
-          type: "String",
-          optional: true,
-        },
-        constructorCreditAmount: {
-          name: "constructorCreditAmount",
-          type: "Decimal",
-          default: 0,
-        },
-        freeTradeZoneAmount: {
-          name: "freeTradeZoneAmount",
-          type: "Decimal",
-          default: 0,
-        },
-        containerGuaranteeAmount: {
-          name: "containerGuaranteeAmount",
-          type: "Decimal",
-          default: 0,
-        },
-        nonBillableAmount: {
-          name: "nonBillableAmount",
-          type: "Decimal",
-          default: 0,
-        },
-        internationalTransportAmount: {
-          name: "internationalTransportAmount",
-          type: "Decimal",
-          default: 0,
-        },
-        nonCostSaleIndicator: {
-          name: "nonCostSaleIndicator",
-          type: "Int",
-          default: 0,
-        },
-        periodicServiceIndicator: {
-          name: "periodicServiceIndicator",
-          type: "Int",
-          default: 0,
-        },
-        totalPeriodAmount: {
-          name: "totalPeriodAmount",
-          type: "Decimal",
-          default: 0,
-        },
-        nationalTransportPassageAmount: {
-          name: "nationalTransportPassageAmount",
-          type: "Decimal",
-          default: 0,
-        },
-        internalNumber: {
-          name: "internalNumber",
-          type: "Int",
-          optional: true,
-        },
-        branchCode: {
-          name: "branchCode",
-          type: "String",
-          optional: true,
-        },
-        origin: {
-          name: "origin",
-          type: "String",
-          optional: true,
-        },
-        informativeNote: {
-          name: "informativeNote",
-          type: "String",
-          optional: true,
-        },
-        paymentNote: {
-          name: "paymentNote",
-          type: "String",
-          optional: true,
-        },
-        notes: {
-          name: "notes",
-          type: "String",
-          optional: true,
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-          default: ExpressionUtils.call("now"),
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "String" },
-        folio_documentType: { folio: { type: "String" }, documentType: { type: "Int" } },
-      },
-    },
-    DTESyncLog: {
-      name: "DTESyncLog",
-      fields: {
-        id: {
-          name: "id",
-          type: "String",
-          id: true,
-          default: ExpressionUtils.call("uuid"),
-        },
-        period: {
-          name: "period",
-          type: "String",
-        },
-        docTypes: {
-          name: "docTypes",
-          type: "String",
-        },
-        status: {
-          name: "status",
-          type: "String",
-          default: "PENDING",
-        },
-        totalProcessed: {
-          name: "totalProcessed",
-          type: "Int",
-          default: 0,
-        },
-        totalInserted: {
-          name: "totalInserted",
-          type: "Int",
-          default: 0,
-        },
-        totalUpdated: {
-          name: "totalUpdated",
-          type: "Int",
-          default: 0,
-        },
-        totalSkipped: {
-          name: "totalSkipped",
-          type: "Int",
-          default: 0,
-        },
-        salesInserted: {
-          name: "salesInserted",
-          type: "Int",
-          default: 0,
-        },
-        purchasesInserted: {
-          name: "purchasesInserted",
-          type: "Int",
-          default: 0,
-        },
-        errorMessage: {
-          name: "errorMessage",
-          type: "String",
-          optional: true,
-        },
-        triggerSource: {
-          name: "triggerSource",
-          type: "String",
-          optional: true,
-        },
-        triggerUserId: {
-          name: "triggerUserId",
-          type: "String",
-          optional: true,
-        },
-        startedAt: {
-          name: "startedAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        completedAt: {
-          name: "completedAt",
-          type: "DateTime",
-          optional: true,
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "String" },
-      },
-    },
-    TransactionCategory: {
-      name: "TransactionCategory",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        name: {
-          name: "name",
-          type: "String",
-        },
-        type: {
-          name: "type",
-          type: "TransactionType",
-        },
-        color: {
-          name: "color",
-          type: "String",
-          optional: true,
-        },
-        icon: {
-          name: "icon",
-          type: "String",
-          optional: true,
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-        },
-        transactions: {
-          name: "transactions",
-          type: "FinancialTransaction",
-          array: true,
-          relation: { opposite: "category" },
-        },
-        autoRules: {
-          name: "autoRules",
-          type: "FinancialAutoCategoryRule",
-          array: true,
-          relation: { opposite: "category" },
-        },
-        compensationProfiles: {
-          name: "compensationProfiles",
-          type: "CompensationProfile",
-          array: true,
-          relation: { opposite: "category" },
-        },
-        services: {
-          name: "services",
-          type: "Service",
-          array: true,
-          relation: { opposite: "transactionCategory" },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-      },
-    },
-    FinancialAutoCategoryRule: {
-      name: "FinancialAutoCategoryRule",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        name: {
-          name: "name",
-          type: "String",
-        },
-        type: {
-          name: "type",
-          type: "TransactionType",
-          default: "EXPENSE",
-        },
-        counterpartId: {
-          name: "counterpartId",
-          type: "Int",
-          optional: true,
-          foreignKeyFor: ["counterpart"],
-        },
-        categoryId: {
-          name: "categoryId",
-          type: "Int",
-          foreignKeyFor: ["category"],
-        },
-        minAmount: {
-          name: "minAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        maxAmount: {
-          name: "maxAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        commentContains: {
-          name: "commentContains",
-          type: "String",
-          optional: true,
-        },
-        descriptionContains: {
-          name: "descriptionContains",
-          type: "String",
-          optional: true,
-        },
-        isActive: {
-          name: "isActive",
-          type: "Boolean",
-          default: true,
-        },
-        priority: {
-          name: "priority",
-          type: "Int",
-          default: 0,
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-        },
-        counterpart: {
-          name: "counterpart",
-          type: "Counterpart",
-          optional: true,
-          relation: {
-            opposite: "autoCategoryRules",
-            fields: ["counterpartId"],
-            references: ["id"],
-            onDelete: "Cascade",
-          },
-        },
-        category: {
-          name: "category",
-          type: "TransactionCategory",
-          relation: {
-            opposite: "autoRules",
-            fields: ["categoryId"],
-            references: ["id"],
-            onDelete: "Cascade",
-          },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-      },
-    },
-    FinancialTransaction: {
-      name: "FinancialTransaction",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        date: {
-          name: "date",
-          type: "DateTime",
-        },
-        description: {
-          name: "description",
-          type: "String",
-        },
-        amount: {
-          name: "amount",
-          type: "Decimal",
-        },
-        type: {
-          name: "type",
-          type: "TransactionType",
-        },
-        sourceId: {
-          name: "sourceId",
-          type: "String",
-          optional: true,
-        },
-        categoryId: {
-          name: "categoryId",
-          type: "Int",
-          optional: true,
-          foreignKeyFor: ["category"],
-        },
-        counterpartId: {
-          name: "counterpartId",
-          type: "Int",
-          optional: true,
-          foreignKeyFor: ["counterpart"],
-        },
-        category: {
-          name: "category",
-          type: "TransactionCategory",
-          optional: true,
-          relation: { opposite: "transactions", fields: ["categoryId"], references: ["id"] },
-        },
-        counterpart: {
-          name: "counterpart",
-          type: "Counterpart",
-          optional: true,
-          relation: {
-            opposite: "financialTransactions",
-            fields: ["counterpartId"],
-            references: ["id"],
-          },
-        },
-        allocations: {
-          name: "allocations",
-          type: "FinancialTransactionAllocation",
-          array: true,
-          relation: { opposite: "transaction" },
-        },
-        serviceSchedules: {
-          name: "serviceSchedules",
-          type: "ServiceSchedule",
-          array: true,
-          relation: { opposite: "financialTransaction" },
-        },
-        comment: {
-          name: "comment",
-          type: "String",
-          optional: true,
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-      },
-    },
-    CompensationProfile: {
-      name: "CompensationProfile",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        name: {
-          name: "name",
-          type: "String",
-        },
-        categoryId: {
-          name: "categoryId",
-          type: "Int",
-          foreignKeyFor: ["category"],
-        },
-        counterpartId: {
-          name: "counterpartId",
-          type: "Int",
-          optional: true,
-          foreignKeyFor: ["counterpart"],
-        },
-        isActive: {
-          name: "isActive",
-          type: "Boolean",
-          default: true,
-        },
-        timezone: {
-          name: "timezone",
-          type: "String",
-          default: "America/Santiago",
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-        },
-        category: {
-          name: "category",
-          type: "TransactionCategory",
-          relation: {
-            opposite: "compensationProfiles",
-            fields: ["categoryId"],
-            references: ["id"],
-            onDelete: "Cascade",
-          },
-        },
-        counterpart: {
-          name: "counterpart",
-          type: "Counterpart",
-          optional: true,
-          relation: {
-            opposite: "compensationProfiles",
-            fields: ["counterpartId"],
-            references: ["id"],
-            onDelete: "SetNull",
-          },
-        },
-        budgets: {
-          name: "budgets",
-          type: "CompensationPeriodBudget",
-          array: true,
-          relation: { opposite: "profile" },
-        },
-        allocations: {
-          name: "allocations",
-          type: "FinancialTransactionAllocation",
-          array: true,
-          relation: { opposite: "profile" },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-      },
-    },
-    CompensationPeriodBudget: {
-      name: "CompensationPeriodBudget",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        profileId: {
-          name: "profileId",
-          type: "Int",
-          foreignKeyFor: ["profile"],
-        },
-        period: {
-          name: "period",
-          type: "String",
-        },
-        baseAmount: {
-          name: "baseAmount",
-          type: "Decimal",
-        },
-        isLocked: {
-          name: "isLocked",
-          type: "Boolean",
-          default: false,
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-        },
-        profile: {
-          name: "profile",
-          type: "CompensationProfile",
-          relation: {
-            opposite: "budgets",
-            fields: ["profileId"],
-            references: ["id"],
-            onDelete: "Cascade",
-          },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-        profileId_period: { profileId: { type: "Int" }, period: { type: "String" } },
-      },
-    },
-    FinancialTransactionAllocation: {
-      name: "FinancialTransactionAllocation",
-      fields: {
-        id: {
-          name: "id",
-          type: "Int",
-          id: true,
-          default: ExpressionUtils.call("autoincrement"),
-        },
-        transactionId: {
-          name: "transactionId",
-          type: "Int",
-          foreignKeyFor: ["transaction"],
-        },
-        profileId: {
-          name: "profileId",
-          type: "Int",
-          foreignKeyFor: ["profile"],
-        },
-        period: {
-          name: "period",
-          type: "String",
-        },
-        amount: {
-          name: "amount",
-          type: "Decimal",
-        },
-        allocationType: {
-          name: "allocationType",
-          type: "CompensationAllocationType",
-          default: "MANUAL_ADJUST",
-        },
-        sourceAllocationId: {
-          name: "sourceAllocationId",
-          type: "Int",
-          optional: true,
-          foreignKeyFor: ["sourceAllocation"],
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-        },
-        transaction: {
-          name: "transaction",
-          type: "FinancialTransaction",
-          relation: {
-            opposite: "allocations",
-            fields: ["transactionId"],
-            references: ["id"],
-            onDelete: "Cascade",
-          },
-        },
-        profile: {
-          name: "profile",
-          type: "CompensationProfile",
-          relation: {
-            opposite: "allocations",
-            fields: ["profileId"],
-            references: ["id"],
-            onDelete: "Cascade",
-          },
-        },
-        sourceAllocation: {
-          name: "sourceAllocation",
-          type: "FinancialTransactionAllocation",
-          optional: true,
-          relation: {
-            opposite: "derivedAllocations",
-            name: "AllocationSource",
-            fields: ["sourceAllocationId"],
-            references: ["id"],
-            onDelete: "SetNull",
-          },
-        },
-        derivedAllocations: {
-          name: "derivedAllocations",
-          type: "FinancialTransactionAllocation",
-          array: true,
-          relation: { opposite: "sourceAllocation", name: "AllocationSource" },
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "Int" },
-      },
-    },
-  } as const;
-  enums = {
-    PersonType: {
-      name: "PersonType",
-      values: {
-        NATURAL: "NATURAL",
-        JURIDICAL: "JURIDICAL",
-      },
-    },
-    CounterpartCategory: {
-      name: "CounterpartCategory",
-      values: {
-        SUPPLIER: "SUPPLIER",
-        CLIENT: "CLIENT",
-        EMPLOYEE: "EMPLOYEE",
-        PARTNER: "PARTNER",
-        LENDER: "LENDER",
-        PERSONAL_EXPENSE: "PERSONAL_EXPENSE",
-        OTHER: "OTHER",
-      },
-    },
-    EmployeeStatus: {
-      name: "EmployeeStatus",
-      values: {
-        ACTIVE: "ACTIVE",
-        INACTIVE: "INACTIVE",
-        TERMINATED: "TERMINATED",
-      },
-    },
-    EmployeeSalaryType: {
-      name: "EmployeeSalaryType",
-      values: {
-        HOURLY: "HOURLY",
-        FIXED: "FIXED",
-      },
-    },
-    TransactionDirection: {
-      name: "TransactionDirection",
-      values: {
-        IN: "IN",
-        OUT: "OUT",
-        NEUTRO: "NEUTRO",
-      },
-    },
-    ServiceType: {
-      name: "ServiceType",
-      values: {
-        BUSINESS: "BUSINESS",
-        PERSONAL: "PERSONAL",
-        SUPPLIER: "SUPPLIER",
-        TAX: "TAX",
-        UTILITY: "UTILITY",
-        LEASE: "LEASE",
-        SOFTWARE: "SOFTWARE",
-        OTHER: "OTHER",
-      },
-    },
-    ServiceFrequency: {
-      name: "ServiceFrequency",
-      values: {
-        WEEKLY: "WEEKLY",
-        BIWEEKLY: "BIWEEKLY",
-        MONTHLY: "MONTHLY",
-        BIMONTHLY: "BIMONTHLY",
-        QUARTERLY: "QUARTERLY",
-        SEMIANNUAL: "SEMIANNUAL",
-        ANNUAL: "ANNUAL",
-        ONCE: "ONCE",
-      },
-    },
-    ServiceStatus: {
-      name: "ServiceStatus",
-      values: {
-        ACTIVE: "ACTIVE",
-        INACTIVE: "INACTIVE",
-        ARCHIVED: "ARCHIVED",
-      },
-    },
-    ServiceRecurrenceType: {
-      name: "ServiceRecurrenceType",
-      values: {
-        RECURRING: "RECURRING",
-        ONE_OFF: "ONE_OFF",
-      },
-    },
-    ServiceOwnership: {
-      name: "ServiceOwnership",
-      values: {
-        COMPANY: "COMPANY",
-        OWNER: "OWNER",
-        MIXED: "MIXED",
-        THIRD_PARTY: "THIRD_PARTY",
-      },
-    },
-    ServiceObligationType: {
-      name: "ServiceObligationType",
-      values: {
-        SERVICE: "SERVICE",
-        DEBT: "DEBT",
-        LOAN: "LOAN",
-        OTHER: "OTHER",
-      },
-    },
-    ServiceAmountIndexation: {
-      name: "ServiceAmountIndexation",
-      values: {
-        NONE: "NONE",
-        UF: "UF",
-      },
-    },
-    ServiceLateFeeMode: {
-      name: "ServiceLateFeeMode",
-      values: {
-        NONE: "NONE",
-        FIXED: "FIXED",
-        PERCENTAGE: "PERCENTAGE",
-      },
-    },
-    ServiceEmissionMode: {
-      name: "ServiceEmissionMode",
-      values: {
-        FIXED_DAY: "FIXED_DAY",
-        DATE_RANGE: "DATE_RANGE",
-        SPECIFIC_DATE: "SPECIFIC_DATE",
-      },
-    },
-    ServiceScheduleStatus: {
-      name: "ServiceScheduleStatus",
-      values: {
-        PENDING: "PENDING",
-        PARTIAL: "PARTIAL",
-        PAID: "PAID",
-        SKIPPED: "SKIPPED",
-      },
-    },
-    LoanStatus: {
-      name: "LoanStatus",
-      values: {
-        ACTIVE: "ACTIVE",
-        COMPLETED: "COMPLETED",
-        DEFAULTED: "DEFAULTED",
-      },
-    },
-    LoanScheduleStatus: {
-      name: "LoanScheduleStatus",
-      values: {
-        PENDING: "PENDING",
-        PARTIAL: "PARTIAL",
-        PAID: "PAID",
-        OVERDUE: "OVERDUE",
-      },
-    },
-    UserStatus: {
-      name: "UserStatus",
-      values: {
-        PENDING_SETUP: "PENDING_SETUP",
-        ACTIVE: "ACTIVE",
-        SUSPENDED: "SUSPENDED",
-      },
-    },
-    ClinicalSeriesKind: {
-      name: "ClinicalSeriesKind",
-      values: {
-        PATCH_TEST: "PATCH_TEST",
-        SKIN_TEST: "SKIN_TEST",
-        SUBCUTANEOUS_TREATMENT: "SUBCUTANEOUS_TREATMENT",
-      },
-    },
-    ClinicalSeriesStatus: {
-      name: "ClinicalSeriesStatus",
-      values: {
-        ACTIVE: "ACTIVE",
-        COMPLETED: "COMPLETED",
-        CANCELLED: "CANCELLED",
-      },
-    },
-    ClinicalSeriesStageKind: {
-      name: "ClinicalSeriesStageKind",
-      values: {
-        INSTALLATION: "INSTALLATION",
-        READING: "READING",
-        DOSE: "DOSE",
-        MAINTENANCE: "MAINTENANCE",
-      },
-    },
-    BudgetStatus: {
-      name: "BudgetStatus",
-      values: {
-        DRAFT: "DRAFT",
-        SENT: "SENT",
-        ACCEPTED: "ACCEPTED",
-        REJECTED: "REJECTED",
-        EXPIRED: "EXPIRED",
-      },
-    },
-    AttachmentType: {
-      name: "AttachmentType",
-      values: {
-        CONSENT: "CONSENT",
-        EXAM: "EXAM",
-        RECIPE: "RECIPE",
-        OTHER: "OTHER",
-      },
-    },
-    DTEType: {
-      name: "DTEType",
-      values: {
-        PURCHASE: "PURCHASE",
-        SALE: "SALE",
-      },
-    },
-    TransactionType: {
-      name: "TransactionType",
-      values: {
-        INCOME: "INCOME",
-        EXPENSE: "EXPENSE",
-      },
-    },
-    CompensationAllocationType: {
-      name: "CompensationAllocationType",
-      values: {
-        MANUAL_ADJUST: "MANUAL_ADJUST",
-        ORIGINAL: "ORIGINAL",
-        ROLLOVER_IN: "ROLLOVER_IN",
-        ROLLOVER_OUT: "ROLLOVER_OUT",
-      },
-    },
-  } as const;
-  authType = "User" as const;
-  plugins = {};
+    provider = {
+        type: "postgresql"
+    } as const;
+    models = {
+        Person: {
+            name: "Person",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                rut: {
+                    name: "rut",
+                    type: "String",
+                    unique: true
+                },
+                names: {
+                    name: "names",
+                    type: "String"
+                },
+                fatherName: {
+                    name: "fatherName",
+                    type: "String",
+                    optional: true
+                },
+                motherName: {
+                    name: "motherName",
+                    type: "String",
+                    optional: true
+                },
+                email: {
+                    name: "email",
+                    type: "String",
+                    unique: true,
+                    optional: true
+                },
+                phone: {
+                    name: "phone",
+                    type: "String",
+                    optional: true
+                },
+                address: {
+                    name: "address",
+                    type: "String",
+                    optional: true
+                },
+                personType: {
+                    name: "personType",
+                    type: "PersonType",
+                    default: "NATURAL"
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now")
+                },
+                employee: {
+                    name: "employee",
+                    type: "Employee",
+                    optional: true,
+                    relation: { opposite: "person" }
+                },
+                user: {
+                    name: "user",
+                    type: "User",
+                    optional: true,
+                    relation: { opposite: "person" }
+                },
+                patient: {
+                    name: "patient",
+                    type: "Patient",
+                    optional: true,
+                    relation: { opposite: "person" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                rut: { type: "String" },
+                email: { type: "String" }
+            }
+        },
+        User: {
+            name: "User",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                personId: {
+                    name: "personId",
+                    type: "Int",
+                    unique: true,
+                    foreignKeyFor: [
+                        "person"
+                    ]
+                },
+                loginEmail: {
+                    name: "loginEmail",
+                    type: "String",
+                    unique: true,
+                    optional: true
+                },
+                passwordHash: {
+                    name: "passwordHash",
+                    type: "String",
+                    optional: true
+                },
+                status: {
+                    name: "status",
+                    type: "UserStatus",
+                    default: "PENDING_SETUP"
+                },
+                mfaSecret: {
+                    name: "mfaSecret",
+                    type: "String",
+                    optional: true
+                },
+                mfaEnabled: {
+                    name: "mfaEnabled",
+                    type: "Boolean",
+                    default: false
+                },
+                sessionVersion: {
+                    name: "sessionVersion",
+                    type: "Int",
+                    default: 1
+                },
+                passkeys: {
+                    name: "passkeys",
+                    type: "Passkey",
+                    array: true,
+                    relation: { opposite: "user" }
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now")
+                },
+                mfaEnforced: {
+                    name: "mfaEnforced",
+                    type: "Boolean",
+                    default: true
+                },
+                dailyProductionBalances: {
+                    name: "dailyProductionBalances",
+                    type: "DailyProductionBalance",
+                    array: true,
+                    relation: { opposite: "user" }
+                },
+                pushSubscriptions: {
+                    name: "pushSubscriptions",
+                    type: "PushSubscription",
+                    array: true,
+                    relation: { opposite: "user" }
+                },
+                supplyRequests: {
+                    name: "supplyRequests",
+                    type: "SupplyRequest",
+                    array: true,
+                    relation: { opposite: "user" }
+                },
+                permissionVersion: {
+                    name: "permissionVersion",
+                    type: "UserPermissionVersion",
+                    optional: true,
+                    relation: { opposite: "user" }
+                },
+                roles: {
+                    name: "roles",
+                    type: "UserRoleAssignment",
+                    array: true,
+                    relation: { opposite: "user" }
+                },
+                medicalCertificates: {
+                    name: "medicalCertificates",
+                    type: "MedicalCertificate",
+                    array: true,
+                    relation: { opposite: "issuer" }
+                },
+                patientAttachments: {
+                    name: "patientAttachments",
+                    type: "PatientAttachment",
+                    array: true,
+                    relation: { opposite: "uploader" }
+                },
+                person: {
+                    name: "person",
+                    type: "Person",
+                    relation: { opposite: "user", fields: ["personId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                personId: { type: "Int" },
+                loginEmail: { type: "String" }
+            }
+        },
+        Passkey: {
+            name: "Passkey",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    default: ExpressionUtils.call("cuid")
+                },
+                userId: {
+                    name: "userId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "user"
+                    ]
+                },
+                credentialId: {
+                    name: "credentialId",
+                    type: "String",
+                    unique: true
+                },
+                publicKey: {
+                    name: "publicKey",
+                    type: "Bytes"
+                },
+                counter: {
+                    name: "counter",
+                    type: "BigInt",
+                    default: 0
+                },
+                transports: {
+                    name: "transports",
+                    type: "Json",
+                    optional: true
+                },
+                webAuthnUserID: {
+                    name: "webAuthnUserID",
+                    type: "String"
+                },
+                deviceType: {
+                    name: "deviceType",
+                    type: "String"
+                },
+                backedUp: {
+                    name: "backedUp",
+                    type: "Boolean",
+                    default: false
+                },
+                friendlyName: {
+                    name: "friendlyName",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                lastUsedAt: {
+                    name: "lastUsedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                user: {
+                    name: "user",
+                    type: "User",
+                    relation: { opposite: "passkeys", fields: ["userId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" },
+                credentialId: { type: "String" }
+            }
+        },
+        Role: {
+            name: "Role",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                name: {
+                    name: "name",
+                    type: "String",
+                    unique: true
+                },
+                description: {
+                    name: "description",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now")
+                },
+                isSystem: {
+                    name: "isSystem",
+                    type: "Boolean",
+                    default: false
+                },
+                permissions: {
+                    name: "permissions",
+                    type: "RolePermission",
+                    array: true,
+                    relation: { opposite: "role" }
+                },
+                users: {
+                    name: "users",
+                    type: "UserRoleAssignment",
+                    array: true,
+                    relation: { opposite: "role" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                name: { type: "String" }
+            }
+        },
+        Permission: {
+            name: "Permission",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                action: {
+                    name: "action",
+                    type: "String"
+                },
+                subject: {
+                    name: "subject",
+                    type: "String"
+                },
+                description: {
+                    name: "description",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now")
+                },
+                roles: {
+                    name: "roles",
+                    type: "RolePermission",
+                    array: true,
+                    relation: { opposite: "permission" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                action_subject: { action: { type: "String" }, subject: { type: "String" } }
+            }
+        },
+        RolePermission: {
+            name: "RolePermission",
+            fields: {
+                roleId: {
+                    name: "roleId",
+                    type: "Int",
+                    id: true,
+                    foreignKeyFor: [
+                        "role"
+                    ]
+                },
+                permissionId: {
+                    name: "permissionId",
+                    type: "Int",
+                    id: true,
+                    foreignKeyFor: [
+                        "permission"
+                    ]
+                },
+                conditions: {
+                    name: "conditions",
+                    type: "Json",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                permission: {
+                    name: "permission",
+                    type: "Permission",
+                    relation: { opposite: "roles", fields: ["permissionId"], references: ["id"], onDelete: "Cascade" }
+                },
+                role: {
+                    name: "role",
+                    type: "Role",
+                    relation: { opposite: "permissions", fields: ["roleId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["roleId", "permissionId"],
+            uniqueFields: {
+                roleId_permissionId: { roleId: { type: "Int" }, permissionId: { type: "Int" } }
+            }
+        },
+        UserRoleAssignment: {
+            name: "UserRoleAssignment",
+            fields: {
+                userId: {
+                    name: "userId",
+                    type: "Int",
+                    id: true,
+                    foreignKeyFor: [
+                        "user"
+                    ]
+                },
+                roleId: {
+                    name: "roleId",
+                    type: "Int",
+                    id: true,
+                    foreignKeyFor: [
+                        "role"
+                    ]
+                },
+                assignedAt: {
+                    name: "assignedAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                role: {
+                    name: "role",
+                    type: "Role",
+                    relation: { opposite: "users", fields: ["roleId"], references: ["id"], onDelete: "Cascade" }
+                },
+                user: {
+                    name: "user",
+                    type: "User",
+                    relation: { opposite: "roles", fields: ["userId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["userId", "roleId"],
+            uniqueFields: {
+                userId_roleId: { userId: { type: "Int" }, roleId: { type: "Int" } }
+            }
+        },
+        UserPermissionVersion: {
+            name: "UserPermissionVersion",
+            fields: {
+                userId: {
+                    name: "userId",
+                    type: "Int",
+                    id: true,
+                    foreignKeyFor: [
+                        "user"
+                    ]
+                },
+                version: {
+                    name: "version",
+                    type: "Int",
+                    default: 1
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now")
+                },
+                user: {
+                    name: "user",
+                    type: "User",
+                    relation: { opposite: "permissionVersion", fields: ["userId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["userId"],
+            uniqueFields: {
+                userId: { type: "Int" }
+            }
+        },
+        Employee: {
+            name: "Employee",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                personId: {
+                    name: "personId",
+                    type: "Int",
+                    unique: true,
+                    foreignKeyFor: [
+                        "person"
+                    ]
+                },
+                position: {
+                    name: "position",
+                    type: "String"
+                },
+                department: {
+                    name: "department",
+                    type: "String",
+                    optional: true
+                },
+                startDate: {
+                    name: "startDate",
+                    type: "DateTime"
+                },
+                endDate: {
+                    name: "endDate",
+                    type: "DateTime",
+                    optional: true
+                },
+                status: {
+                    name: "status",
+                    type: "EmployeeStatus",
+                    default: "ACTIVE"
+                },
+                salaryType: {
+                    name: "salaryType",
+                    type: "EmployeeSalaryType",
+                    default: "FIXED"
+                },
+                baseSalary: {
+                    name: "baseSalary",
+                    type: "Decimal",
+                    default: 0
+                },
+                hourlyRate: {
+                    name: "hourlyRate",
+                    type: "Decimal",
+                    optional: true
+                },
+                bankName: {
+                    name: "bankName",
+                    type: "String",
+                    optional: true
+                },
+                bankAccountType: {
+                    name: "bankAccountType",
+                    type: "String",
+                    optional: true
+                },
+                bankAccountNumber: {
+                    name: "bankAccountNumber",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now")
+                },
+                metadata: {
+                    name: "metadata",
+                    type: "Json",
+                    optional: true
+                },
+                overtimeRate: {
+                    name: "overtimeRate",
+                    type: "Decimal",
+                    optional: true
+                },
+                retentionRate: {
+                    name: "retentionRate",
+                    type: "Decimal",
+                    default: 0.145
+                },
+                timesheets: {
+                    name: "timesheets",
+                    type: "EmployeeTimesheet",
+                    array: true,
+                    relation: { opposite: "employee" }
+                },
+                person: {
+                    name: "person",
+                    type: "Person",
+                    relation: { opposite: "employee", fields: ["personId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                personId: { type: "Int" }
+            }
+        },
+        Counterpart: {
+            name: "Counterpart",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                identificationNumber: {
+                    name: "identificationNumber",
+                    type: "String",
+                    unique: true
+                },
+                bankAccountHolder: {
+                    name: "bankAccountHolder",
+                    type: "String"
+                },
+                category: {
+                    name: "category",
+                    type: "CounterpartCategory",
+                    default: "SUPPLIER"
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now")
+                },
+                accounts: {
+                    name: "accounts",
+                    type: "CounterpartAccount",
+                    array: true,
+                    relation: { opposite: "counterpart" }
+                },
+                autoCategoryRules: {
+                    name: "autoCategoryRules",
+                    type: "FinancialAutoCategoryRule",
+                    array: true,
+                    relation: { opposite: "counterpart" }
+                },
+                compensationProfiles: {
+                    name: "compensationProfiles",
+                    type: "CompensationProfile",
+                    array: true,
+                    relation: { opposite: "counterpart" }
+                },
+                financialTransactions: {
+                    name: "financialTransactions",
+                    type: "FinancialTransaction",
+                    array: true,
+                    relation: { opposite: "counterpart" }
+                },
+                withdrawTransactions: {
+                    name: "withdrawTransactions",
+                    type: "WithdrawTransaction",
+                    array: true,
+                    relation: { opposite: "counterpart" }
+                },
+                releaseTransactions: {
+                    name: "releaseTransactions",
+                    type: "ReleaseTransaction",
+                    array: true,
+                    relation: { opposite: "counterpart" }
+                },
+                settlementTransactions: {
+                    name: "settlementTransactions",
+                    type: "SettlementTransaction",
+                    array: true,
+                    relation: { opposite: "counterpart" }
+                },
+                services: {
+                    name: "services",
+                    type: "Service",
+                    array: true,
+                    relation: { opposite: "counterpart" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                identificationNumber: { type: "String" }
+            }
+        },
+        CounterpartAccount: {
+            name: "CounterpartAccount",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                counterpartId: {
+                    name: "counterpartId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "counterpart"
+                    ]
+                },
+                bankName: {
+                    name: "bankName",
+                    type: "String",
+                    optional: true
+                },
+                accountType: {
+                    name: "accountType",
+                    type: "String",
+                    optional: true
+                },
+                accountNumber: {
+                    name: "accountNumber",
+                    type: "String"
+                },
+                counterpart: {
+                    name: "counterpart",
+                    type: "Counterpart",
+                    relation: { opposite: "accounts", fields: ["counterpartId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                accountNumber: { type: "String" }
+            }
+        },
+        EmployeeTimesheet: {
+            name: "EmployeeTimesheet",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "BigInt",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                employeeId: {
+                    name: "employeeId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "employee"
+                    ]
+                },
+                workDate: {
+                    name: "workDate",
+                    type: "DateTime"
+                },
+                startTime: {
+                    name: "startTime",
+                    type: "DateTime",
+                    optional: true
+                },
+                endTime: {
+                    name: "endTime",
+                    type: "DateTime",
+                    optional: true
+                },
+                workedMinutes: {
+                    name: "workedMinutes",
+                    type: "Int"
+                },
+                overtimeMinutes: {
+                    name: "overtimeMinutes",
+                    type: "Int",
+                    default: 0
+                },
+                comment: {
+                    name: "comment",
+                    type: "String",
+                    optional: true
+                },
+                employee: {
+                    name: "employee",
+                    type: "Employee",
+                    relation: { opposite: "timesheets", fields: ["employeeId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "BigInt" },
+                employeeId_workDate: { employeeId: { type: "Int" }, workDate: { type: "DateTime" } }
+            }
+        },
+        SettlementTransaction: {
+            name: "SettlementTransaction",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                sourceId: {
+                    name: "sourceId",
+                    type: "String",
+                    unique: true
+                },
+                identificationNumber: {
+                    name: "identificationNumber",
+                    type: "String",
+                    optional: true,
+                    foreignKeyFor: [
+                        "counterpart"
+                    ]
+                },
+                transactionDate: {
+                    name: "transactionDate",
+                    type: "DateTime"
+                },
+                settlementDate: {
+                    name: "settlementDate",
+                    type: "DateTime",
+                    optional: true
+                },
+                moneyReleaseDate: {
+                    name: "moneyReleaseDate",
+                    type: "DateTime",
+                    optional: true
+                },
+                externalReference: {
+                    name: "externalReference",
+                    type: "String",
+                    optional: true
+                },
+                userId: {
+                    name: "userId",
+                    type: "String",
+                    optional: true
+                },
+                paymentMethodType: {
+                    name: "paymentMethodType",
+                    type: "String",
+                    optional: true
+                },
+                paymentMethod: {
+                    name: "paymentMethod",
+                    type: "String",
+                    optional: true
+                },
+                site: {
+                    name: "site",
+                    type: "String",
+                    optional: true
+                },
+                transactionType: {
+                    name: "transactionType",
+                    type: "String"
+                },
+                transactionAmount: {
+                    name: "transactionAmount",
+                    type: "Decimal"
+                },
+                transactionCurrency: {
+                    name: "transactionCurrency",
+                    type: "String"
+                },
+                sellerAmount: {
+                    name: "sellerAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                feeAmount: {
+                    name: "feeAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                settlementNetAmount: {
+                    name: "settlementNetAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                settlementCurrency: {
+                    name: "settlementCurrency",
+                    type: "String",
+                    optional: true
+                },
+                realAmount: {
+                    name: "realAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                couponAmount: {
+                    name: "couponAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                metadata: {
+                    name: "metadata",
+                    type: "Json",
+                    optional: true
+                },
+                mkpFeeAmount: {
+                    name: "mkpFeeAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                financingFeeAmount: {
+                    name: "financingFeeAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                shippingFeeAmount: {
+                    name: "shippingFeeAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                taxesAmount: {
+                    name: "taxesAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                installments: {
+                    name: "installments",
+                    type: "Int",
+                    optional: true
+                },
+                taxDetail: {
+                    name: "taxDetail",
+                    type: "String",
+                    optional: true
+                },
+                taxesDisaggregated: {
+                    name: "taxesDisaggregated",
+                    type: "Json",
+                    optional: true
+                },
+                description: {
+                    name: "description",
+                    type: "String",
+                    optional: true
+                },
+                cardInitialNumber: {
+                    name: "cardInitialNumber",
+                    type: "String",
+                    optional: true
+                },
+                operationTags: {
+                    name: "operationTags",
+                    type: "Json",
+                    optional: true
+                },
+                businessUnit: {
+                    name: "businessUnit",
+                    type: "String",
+                    optional: true
+                },
+                subUnit: {
+                    name: "subUnit",
+                    type: "String",
+                    optional: true
+                },
+                productSku: {
+                    name: "productSku",
+                    type: "String",
+                    optional: true
+                },
+                saleDetail: {
+                    name: "saleDetail",
+                    type: "String",
+                    optional: true
+                },
+                transactionIntentId: {
+                    name: "transactionIntentId",
+                    type: "String",
+                    optional: true
+                },
+                franchise: {
+                    name: "franchise",
+                    type: "String",
+                    optional: true
+                },
+                issuerName: {
+                    name: "issuerName",
+                    type: "String",
+                    optional: true
+                },
+                lastFourDigits: {
+                    name: "lastFourDigits",
+                    type: "String",
+                    optional: true
+                },
+                orderMp: {
+                    name: "orderMp",
+                    type: "String",
+                    optional: true
+                },
+                invoicingPeriod: {
+                    name: "invoicingPeriod",
+                    type: "String",
+                    optional: true
+                },
+                payBankTransferId: {
+                    name: "payBankTransferId",
+                    type: "String",
+                    optional: true
+                },
+                isReleased: {
+                    name: "isReleased",
+                    type: "Boolean",
+                    optional: true
+                },
+                tipAmount: {
+                    name: "tipAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                purchaseId: {
+                    name: "purchaseId",
+                    type: "String",
+                    optional: true
+                },
+                totalCouponAmount: {
+                    name: "totalCouponAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                posId: {
+                    name: "posId",
+                    type: "String",
+                    optional: true
+                },
+                posName: {
+                    name: "posName",
+                    type: "String",
+                    optional: true
+                },
+                externalPosId: {
+                    name: "externalPosId",
+                    type: "String",
+                    optional: true
+                },
+                storeId: {
+                    name: "storeId",
+                    type: "String",
+                    optional: true
+                },
+                storeName: {
+                    name: "storeName",
+                    type: "String",
+                    optional: true
+                },
+                externalStoreId: {
+                    name: "externalStoreId",
+                    type: "String",
+                    optional: true
+                },
+                poiId: {
+                    name: "poiId",
+                    type: "String",
+                    optional: true
+                },
+                orderId: {
+                    name: "orderId",
+                    type: "BigInt",
+                    optional: true
+                },
+                shippingId: {
+                    name: "shippingId",
+                    type: "BigInt",
+                    optional: true
+                },
+                shipmentMode: {
+                    name: "shipmentMode",
+                    type: "String",
+                    optional: true
+                },
+                packId: {
+                    name: "packId",
+                    type: "BigInt",
+                    optional: true
+                },
+                shippingOrderId: {
+                    name: "shippingOrderId",
+                    type: "String",
+                    optional: true
+                },
+                poiWalletName: {
+                    name: "poiWalletName",
+                    type: "String",
+                    optional: true
+                },
+                poiBankName: {
+                    name: "poiBankName",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now")
+                },
+                counterpart: {
+                    name: "counterpart",
+                    type: "Counterpart",
+                    optional: true,
+                    relation: { opposite: "settlementTransactions", fields: ["identificationNumber"], references: ["identificationNumber"] }
+                },
+                serviceSchedules: {
+                    name: "serviceSchedules",
+                    type: "ServiceSchedule",
+                    array: true,
+                    relation: { opposite: "settlementTransaction" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                sourceId: { type: "String" }
+            }
+        },
+        ReleaseTransaction: {
+            name: "ReleaseTransaction",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                sourceId: {
+                    name: "sourceId",
+                    type: "String",
+                    unique: true
+                },
+                identificationNumber: {
+                    name: "identificationNumber",
+                    type: "String",
+                    optional: true,
+                    foreignKeyFor: [
+                        "counterpart"
+                    ]
+                },
+                date: {
+                    name: "date",
+                    type: "DateTime"
+                },
+                externalReference: {
+                    name: "externalReference",
+                    type: "String",
+                    optional: true
+                },
+                recordType: {
+                    name: "recordType",
+                    type: "String",
+                    optional: true
+                },
+                description: {
+                    name: "description",
+                    type: "String",
+                    optional: true
+                },
+                netCreditAmount: {
+                    name: "netCreditAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                netDebitAmount: {
+                    name: "netDebitAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                grossAmount: {
+                    name: "grossAmount",
+                    type: "Decimal"
+                },
+                sellerAmount: {
+                    name: "sellerAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                mpFeeAmount: {
+                    name: "mpFeeAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                financingFeeAmount: {
+                    name: "financingFeeAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                shippingFeeAmount: {
+                    name: "shippingFeeAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                taxesAmount: {
+                    name: "taxesAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                couponAmount: {
+                    name: "couponAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                effectiveCouponAmount: {
+                    name: "effectiveCouponAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                balanceAmount: {
+                    name: "balanceAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                taxAmountTelco: {
+                    name: "taxAmountTelco",
+                    type: "Decimal",
+                    optional: true
+                },
+                installments: {
+                    name: "installments",
+                    type: "Int",
+                    optional: true
+                },
+                paymentMethod: {
+                    name: "paymentMethod",
+                    type: "String",
+                    optional: true
+                },
+                paymentMethodType: {
+                    name: "paymentMethodType",
+                    type: "String",
+                    optional: true
+                },
+                taxDetail: {
+                    name: "taxDetail",
+                    type: "String",
+                    optional: true
+                },
+                taxesDisaggregated: {
+                    name: "taxesDisaggregated",
+                    type: "Json",
+                    optional: true
+                },
+                transactionApprovalDate: {
+                    name: "transactionApprovalDate",
+                    type: "DateTime",
+                    optional: true
+                },
+                transactionIntentId: {
+                    name: "transactionIntentId",
+                    type: "String",
+                    optional: true
+                },
+                posId: {
+                    name: "posId",
+                    type: "String",
+                    optional: true
+                },
+                posName: {
+                    name: "posName",
+                    type: "String",
+                    optional: true
+                },
+                externalPosId: {
+                    name: "externalPosId",
+                    type: "String",
+                    optional: true
+                },
+                storeId: {
+                    name: "storeId",
+                    type: "String",
+                    optional: true
+                },
+                storeName: {
+                    name: "storeName",
+                    type: "String",
+                    optional: true
+                },
+                externalStoreId: {
+                    name: "externalStoreId",
+                    type: "String",
+                    optional: true
+                },
+                currency: {
+                    name: "currency",
+                    type: "String",
+                    optional: true
+                },
+                shippingId: {
+                    name: "shippingId",
+                    type: "BigInt",
+                    optional: true
+                },
+                shipmentMode: {
+                    name: "shipmentMode",
+                    type: "String",
+                    optional: true
+                },
+                shippingOrderId: {
+                    name: "shippingOrderId",
+                    type: "String",
+                    optional: true
+                },
+                orderId: {
+                    name: "orderId",
+                    type: "BigInt",
+                    optional: true
+                },
+                packId: {
+                    name: "packId",
+                    type: "BigInt",
+                    optional: true
+                },
+                poiId: {
+                    name: "poiId",
+                    type: "String",
+                    optional: true
+                },
+                itemId: {
+                    name: "itemId",
+                    type: "String",
+                    optional: true
+                },
+                metadata: {
+                    name: "metadata",
+                    type: "Json",
+                    optional: true
+                },
+                cardInitialNumber: {
+                    name: "cardInitialNumber",
+                    type: "String",
+                    optional: true
+                },
+                operationTags: {
+                    name: "operationTags",
+                    type: "Json",
+                    optional: true
+                },
+                lastFourDigits: {
+                    name: "lastFourDigits",
+                    type: "String",
+                    optional: true
+                },
+                franchise: {
+                    name: "franchise",
+                    type: "String",
+                    optional: true
+                },
+                issuerName: {
+                    name: "issuerName",
+                    type: "String",
+                    optional: true
+                },
+                poiBankName: {
+                    name: "poiBankName",
+                    type: "String",
+                    optional: true
+                },
+                poiWalletName: {
+                    name: "poiWalletName",
+                    type: "String",
+                    optional: true
+                },
+                businessUnit: {
+                    name: "businessUnit",
+                    type: "String",
+                    optional: true
+                },
+                subUnit: {
+                    name: "subUnit",
+                    type: "String",
+                    optional: true
+                },
+                payoutBankAccountNumber: {
+                    name: "payoutBankAccountNumber",
+                    type: "String",
+                    optional: true
+                },
+                productSku: {
+                    name: "productSku",
+                    type: "String",
+                    optional: true
+                },
+                saleDetail: {
+                    name: "saleDetail",
+                    type: "String",
+                    optional: true
+                },
+                orderMp: {
+                    name: "orderMp",
+                    type: "String",
+                    optional: true
+                },
+                purchaseId: {
+                    name: "purchaseId",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now")
+                },
+                counterpart: {
+                    name: "counterpart",
+                    type: "Counterpart",
+                    optional: true,
+                    relation: { opposite: "releaseTransactions", fields: ["identificationNumber"], references: ["identificationNumber"] }
+                },
+                serviceSchedules: {
+                    name: "serviceSchedules",
+                    type: "ServiceSchedule",
+                    array: true,
+                    relation: { opposite: "releaseTransaction" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                sourceId: { type: "String" }
+            }
+        },
+        WithdrawTransaction: {
+            name: "WithdrawTransaction",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                withdrawId: {
+                    name: "withdrawId",
+                    type: "String",
+                    unique: true
+                },
+                dateCreated: {
+                    name: "dateCreated",
+                    type: "DateTime"
+                },
+                status: {
+                    name: "status",
+                    type: "String",
+                    optional: true
+                },
+                statusDetail: {
+                    name: "statusDetail",
+                    type: "String",
+                    optional: true
+                },
+                amount: {
+                    name: "amount",
+                    type: "Decimal",
+                    optional: true
+                },
+                fee: {
+                    name: "fee",
+                    type: "Decimal",
+                    optional: true
+                },
+                activityUrl: {
+                    name: "activityUrl",
+                    type: "String",
+                    optional: true
+                },
+                payoutDescription: {
+                    name: "payoutDescription",
+                    type: "String",
+                    optional: true
+                },
+                bankAccountHolder: {
+                    name: "bankAccountHolder",
+                    type: "String",
+                    optional: true
+                },
+                identificationType: {
+                    name: "identificationType",
+                    type: "String",
+                    optional: true
+                },
+                identificationNumber: {
+                    name: "identificationNumber",
+                    type: "String",
+                    optional: true,
+                    foreignKeyFor: [
+                        "counterpart"
+                    ]
+                },
+                bankId: {
+                    name: "bankId",
+                    type: "String",
+                    optional: true
+                },
+                bankName: {
+                    name: "bankName",
+                    type: "String",
+                    optional: true
+                },
+                bankBranch: {
+                    name: "bankBranch",
+                    type: "String",
+                    optional: true
+                },
+                bankAccountType: {
+                    name: "bankAccountType",
+                    type: "String",
+                    optional: true
+                },
+                bankAccountNumber: {
+                    name: "bankAccountNumber",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now")
+                },
+                counterpart: {
+                    name: "counterpart",
+                    type: "Counterpart",
+                    optional: true,
+                    relation: { opposite: "withdrawTransactions", fields: ["identificationNumber"], references: ["identificationNumber"] }
+                },
+                serviceSchedules: {
+                    name: "serviceSchedules",
+                    type: "ServiceSchedule",
+                    array: true,
+                    relation: { opposite: "withdrawTransaction" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                withdrawId: { type: "String" }
+            }
+        },
+        DailyBalance: {
+            name: "DailyBalance",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                date: {
+                    name: "date",
+                    type: "DateTime",
+                    unique: true
+                },
+                amount: {
+                    name: "amount",
+                    type: "Decimal"
+                },
+                note: {
+                    name: "note",
+                    type: "String",
+                    optional: true
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now")
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                date: { type: "DateTime" }
+            }
+        },
+        Service: {
+            name: "Service",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                publicId: {
+                    name: "publicId",
+                    type: "String",
+                    unique: true
+                },
+                name: {
+                    name: "name",
+                    type: "String"
+                },
+                detail: {
+                    name: "detail",
+                    type: "String",
+                    optional: true
+                },
+                category: {
+                    name: "category",
+                    type: "String",
+                    optional: true
+                },
+                transactionCategoryId: {
+                    name: "transactionCategoryId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "transactionCategory"
+                    ]
+                },
+                reminderDaysBefore: {
+                    name: "reminderDaysBefore",
+                    type: "Int",
+                    default: 3
+                },
+                autoLinkTransactions: {
+                    name: "autoLinkTransactions",
+                    type: "Boolean",
+                    default: true
+                },
+                counterpartId: {
+                    name: "counterpartId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "counterpart"
+                    ]
+                },
+                type: {
+                    name: "type",
+                    type: "ServiceType",
+                    default: "BUSINESS"
+                },
+                recurrenceType: {
+                    name: "recurrenceType",
+                    type: "ServiceRecurrenceType",
+                    default: "RECURRING"
+                },
+                frequency: {
+                    name: "frequency",
+                    type: "ServiceFrequency",
+                    default: "MONTHLY"
+                },
+                startDate: {
+                    name: "startDate",
+                    type: "DateTime"
+                },
+                endDate: {
+                    name: "endDate",
+                    type: "DateTime",
+                    optional: true
+                },
+                dueDay: {
+                    name: "dueDay",
+                    type: "Int",
+                    optional: true
+                },
+                emissionMode: {
+                    name: "emissionMode",
+                    type: "ServiceEmissionMode",
+                    default: "FIXED_DAY"
+                },
+                emissionDay: {
+                    name: "emissionDay",
+                    type: "Int",
+                    optional: true
+                },
+                emissionStartDay: {
+                    name: "emissionStartDay",
+                    type: "Int",
+                    optional: true
+                },
+                emissionEndDay: {
+                    name: "emissionEndDay",
+                    type: "Int",
+                    optional: true
+                },
+                emissionExactDate: {
+                    name: "emissionExactDate",
+                    type: "DateTime",
+                    optional: true
+                },
+                ownership: {
+                    name: "ownership",
+                    type: "ServiceOwnership",
+                    default: "COMPANY"
+                },
+                obligationType: {
+                    name: "obligationType",
+                    type: "ServiceObligationType",
+                    default: "SERVICE"
+                },
+                defaultAmount: {
+                    name: "defaultAmount",
+                    type: "Decimal",
+                    default: 0
+                },
+                amountIndexation: {
+                    name: "amountIndexation",
+                    type: "ServiceAmountIndexation",
+                    default: "NONE"
+                },
+                lateFeeMode: {
+                    name: "lateFeeMode",
+                    type: "ServiceLateFeeMode",
+                    default: "NONE"
+                },
+                lateFeeValue: {
+                    name: "lateFeeValue",
+                    type: "Decimal",
+                    optional: true
+                },
+                lateFeeGraceDays: {
+                    name: "lateFeeGraceDays",
+                    type: "Int",
+                    optional: true
+                },
+                nextGenerationMonths: {
+                    name: "nextGenerationMonths",
+                    type: "Int",
+                    default: 12
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                status: {
+                    name: "status",
+                    type: "ServiceStatus",
+                    default: "ACTIVE"
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now")
+                },
+                counterpart: {
+                    name: "counterpart",
+                    type: "Counterpart",
+                    optional: true,
+                    relation: { opposite: "services", fields: ["counterpartId"], references: ["id"] }
+                },
+                transactionCategory: {
+                    name: "transactionCategory",
+                    type: "TransactionCategory",
+                    optional: true,
+                    relation: { opposite: "services", fields: ["transactionCategoryId"], references: ["id"], onDelete: "SetNull" }
+                },
+                schedules: {
+                    name: "schedules",
+                    type: "ServiceSchedule",
+                    array: true,
+                    relation: { opposite: "service" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                publicId: { type: "String" }
+            }
+        },
+        ServiceSchedule: {
+            name: "ServiceSchedule",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                serviceId: {
+                    name: "serviceId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "service"
+                    ]
+                },
+                periodStart: {
+                    name: "periodStart",
+                    type: "DateTime"
+                },
+                periodEnd: {
+                    name: "periodEnd",
+                    type: "DateTime"
+                },
+                dueDate: {
+                    name: "dueDate",
+                    type: "DateTime"
+                },
+                expectedAmount: {
+                    name: "expectedAmount",
+                    type: "Decimal"
+                },
+                lateFeeAmount: {
+                    name: "lateFeeAmount",
+                    type: "Decimal",
+                    default: 0
+                },
+                effectiveAmount: {
+                    name: "effectiveAmount",
+                    type: "Decimal"
+                },
+                status: {
+                    name: "status",
+                    type: "ServiceScheduleStatus",
+                    default: "PENDING"
+                },
+                paidAmount: {
+                    name: "paidAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                paidDate: {
+                    name: "paidDate",
+                    type: "DateTime",
+                    optional: true
+                },
+                financialTransactionId: {
+                    name: "financialTransactionId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "financialTransaction"
+                    ]
+                },
+                settlementTransactionId: {
+                    name: "settlementTransactionId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "settlementTransaction"
+                    ]
+                },
+                releaseTransactionId: {
+                    name: "releaseTransactionId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "releaseTransaction"
+                    ]
+                },
+                withdrawTransactionId: {
+                    name: "withdrawTransactionId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "withdrawTransaction"
+                    ]
+                },
+                note: {
+                    name: "note",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now")
+                },
+                service: {
+                    name: "service",
+                    type: "Service",
+                    relation: { opposite: "schedules", fields: ["serviceId"], references: ["id"], onDelete: "Cascade" }
+                },
+                financialTransaction: {
+                    name: "financialTransaction",
+                    type: "FinancialTransaction",
+                    optional: true,
+                    relation: { opposite: "serviceSchedules", fields: ["financialTransactionId"], references: ["id"], onDelete: "SetNull" }
+                },
+                settlementTransaction: {
+                    name: "settlementTransaction",
+                    type: "SettlementTransaction",
+                    optional: true,
+                    relation: { opposite: "serviceSchedules", fields: ["settlementTransactionId"], references: ["id"] }
+                },
+                releaseTransaction: {
+                    name: "releaseTransaction",
+                    type: "ReleaseTransaction",
+                    optional: true,
+                    relation: { opposite: "serviceSchedules", fields: ["releaseTransactionId"], references: ["id"] }
+                },
+                withdrawTransaction: {
+                    name: "withdrawTransaction",
+                    type: "WithdrawTransaction",
+                    optional: true,
+                    relation: { opposite: "serviceSchedules", fields: ["withdrawTransactionId"], references: ["id"] }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                serviceId_periodStart: { serviceId: { type: "Int" }, periodStart: { type: "DateTime" } }
+            }
+        },
+        Loan: {
+            name: "Loan",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                title: {
+                    name: "title",
+                    type: "String"
+                },
+                principalAmount: {
+                    name: "principalAmount",
+                    type: "Decimal"
+                },
+                interestRate: {
+                    name: "interestRate",
+                    type: "Decimal"
+                },
+                startDate: {
+                    name: "startDate",
+                    type: "DateTime"
+                },
+                status: {
+                    name: "status",
+                    type: "LoanStatus",
+                    default: "ACTIVE"
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now")
+                },
+                schedules: {
+                    name: "schedules",
+                    type: "LoanSchedule",
+                    array: true,
+                    relation: { opposite: "loan" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        LoanSchedule: {
+            name: "LoanSchedule",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                loanId: {
+                    name: "loanId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "loan"
+                    ]
+                },
+                installmentNumber: {
+                    name: "installmentNumber",
+                    type: "Int"
+                },
+                dueDate: {
+                    name: "dueDate",
+                    type: "DateTime"
+                },
+                expectedAmount: {
+                    name: "expectedAmount",
+                    type: "Decimal"
+                },
+                status: {
+                    name: "status",
+                    type: "LoanScheduleStatus",
+                    default: "PENDING"
+                },
+                loan: {
+                    name: "loan",
+                    type: "Loan",
+                    relation: { opposite: "schedules", fields: ["loanId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        Setting: {
+            name: "Setting",
+            fields: {
+                key: {
+                    name: "key",
+                    type: "String",
+                    id: true
+                },
+                value: {
+                    name: "value",
+                    type: "String",
+                    optional: true
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now")
+                }
+            },
+            idFields: ["key"],
+            uniqueFields: {
+                key: { type: "String" }
+            }
+        },
+        PushSubscription: {
+            name: "PushSubscription",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                userId: {
+                    name: "userId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "user"
+                    ]
+                },
+                endpoint: {
+                    name: "endpoint",
+                    type: "String",
+                    unique: true
+                },
+                keys: {
+                    name: "keys",
+                    type: "Json"
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                user: {
+                    name: "user",
+                    type: "User",
+                    relation: { opposite: "pushSubscriptions", fields: ["userId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                endpoint: { type: "String" }
+            }
+        },
+        Calendar: {
+            name: "Calendar",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                googleId: {
+                    name: "googleId",
+                    type: "String",
+                    unique: true
+                },
+                name: {
+                    name: "name",
+                    type: "String",
+                    optional: true
+                },
+                syncToken: {
+                    name: "syncToken",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now")
+                },
+                watchChannels: {
+                    name: "watchChannels",
+                    type: "CalendarWatchChannel",
+                    array: true,
+                    relation: { opposite: "calendar" }
+                },
+                events: {
+                    name: "events",
+                    type: "Event",
+                    array: true,
+                    relation: { opposite: "calendar" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                googleId: { type: "String" }
+            }
+        },
+        CalendarWatchChannel: {
+            name: "CalendarWatchChannel",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                calendarId: {
+                    name: "calendarId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "calendar"
+                    ]
+                },
+                channelId: {
+                    name: "channelId",
+                    type: "String",
+                    unique: true
+                },
+                resourceId: {
+                    name: "resourceId",
+                    type: "String"
+                },
+                expiration: {
+                    name: "expiration",
+                    type: "DateTime"
+                },
+                webhookUrl: {
+                    name: "webhookUrl",
+                    type: "String"
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now")
+                },
+                calendar: {
+                    name: "calendar",
+                    type: "Calendar",
+                    relation: { opposite: "watchChannels", fields: ["calendarId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                channelId: { type: "String" }
+            }
+        },
+        Event: {
+            name: "Event",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                calendarId: {
+                    name: "calendarId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "calendar"
+                    ]
+                },
+                clinicalSeriesId: {
+                    name: "clinicalSeriesId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "clinicalSeries"
+                    ]
+                },
+                externalEventId: {
+                    name: "externalEventId",
+                    type: "String"
+                },
+                eventStatus: {
+                    name: "eventStatus",
+                    type: "String",
+                    optional: true
+                },
+                eventType: {
+                    name: "eventType",
+                    type: "String",
+                    optional: true
+                },
+                summary: {
+                    name: "summary",
+                    type: "String",
+                    optional: true
+                },
+                description: {
+                    name: "description",
+                    type: "String",
+                    optional: true
+                },
+                startDate: {
+                    name: "startDate",
+                    type: "DateTime",
+                    optional: true
+                },
+                startDateTime: {
+                    name: "startDateTime",
+                    type: "DateTime",
+                    optional: true
+                },
+                startTimeZone: {
+                    name: "startTimeZone",
+                    type: "String",
+                    optional: true
+                },
+                endDate: {
+                    name: "endDate",
+                    type: "DateTime",
+                    optional: true
+                },
+                endDateTime: {
+                    name: "endDateTime",
+                    type: "DateTime",
+                    optional: true
+                },
+                endTimeZone: {
+                    name: "endTimeZone",
+                    type: "String",
+                    optional: true
+                },
+                eventCreatedAt: {
+                    name: "eventCreatedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                eventUpdatedAt: {
+                    name: "eventUpdatedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                colorId: {
+                    name: "colorId",
+                    type: "String",
+                    optional: true
+                },
+                location: {
+                    name: "location",
+                    type: "String",
+                    optional: true
+                },
+                transparency: {
+                    name: "transparency",
+                    type: "String",
+                    optional: true
+                },
+                visibility: {
+                    name: "visibility",
+                    type: "String",
+                    optional: true
+                },
+                hangoutLink: {
+                    name: "hangoutLink",
+                    type: "String",
+                    optional: true
+                },
+                category: {
+                    name: "category",
+                    type: "String",
+                    optional: true
+                },
+                amountExpected: {
+                    name: "amountExpected",
+                    type: "Int",
+                    optional: true
+                },
+                amountPaid: {
+                    name: "amountPaid",
+                    type: "Int",
+                    optional: true
+                },
+                attended: {
+                    name: "attended",
+                    type: "Boolean",
+                    optional: true
+                },
+                treatmentStage: {
+                    name: "treatmentStage",
+                    type: "String",
+                    optional: true
+                },
+                controlIncluded: {
+                    name: "controlIncluded",
+                    type: "Boolean",
+                    default: false
+                },
+                isDomicilio: {
+                    name: "isDomicilio",
+                    type: "Boolean",
+                    default: false
+                },
+                rawEvent: {
+                    name: "rawEvent",
+                    type: "Json",
+                    optional: true
+                },
+                lastSyncedAt: {
+                    name: "lastSyncedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                dosageValue: {
+                    name: "dosageValue",
+                    type: "Float",
+                    optional: true
+                },
+                dosageUnit: {
+                    name: "dosageUnit",
+                    type: "String",
+                    optional: true
+                },
+                seriesStageKind: {
+                    name: "seriesStageKind",
+                    type: "ClinicalSeriesStageKind",
+                    optional: true
+                },
+                seriesStageNumber: {
+                    name: "seriesStageNumber",
+                    type: "Int",
+                    optional: true
+                },
+                seriesStageLabel: {
+                    name: "seriesStageLabel",
+                    type: "String",
+                    optional: true
+                },
+                testMetadata: {
+                    name: "testMetadata",
+                    type: "Json",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now")
+                },
+                calendar: {
+                    name: "calendar",
+                    type: "Calendar",
+                    relation: { opposite: "events", fields: ["calendarId"], references: ["id"], onDelete: "Cascade" }
+                },
+                clinicalSeries: {
+                    name: "clinicalSeries",
+                    type: "ClinicalSeries",
+                    optional: true,
+                    relation: { opposite: "events", fields: ["clinicalSeriesId"], references: ["id"], onDelete: "SetNull" }
+                },
+                consultations: {
+                    name: "consultations",
+                    type: "Consultation",
+                    array: true,
+                    relation: { opposite: "event" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                calendarId_externalEventId: { calendarId: { type: "Int" }, externalEventId: { type: "String" } }
+            }
+        },
+        ClinicalSeries: {
+            name: "ClinicalSeries",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                kind: {
+                    name: "kind",
+                    type: "ClinicalSeriesKind"
+                },
+                status: {
+                    name: "status",
+                    type: "ClinicalSeriesStatus",
+                    default: "ACTIVE"
+                },
+                displayName: {
+                    name: "displayName",
+                    type: "String",
+                    optional: true
+                },
+                patientName: {
+                    name: "patientName",
+                    type: "String",
+                    optional: true
+                },
+                patientRut: {
+                    name: "patientRut",
+                    type: "String",
+                    optional: true
+                },
+                expectedSessions: {
+                    name: "expectedSessions",
+                    type: "Int",
+                    optional: true
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                completedAt: {
+                    name: "completedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now")
+                },
+                events: {
+                    name: "events",
+                    type: "Event",
+                    array: true,
+                    relation: { opposite: "clinicalSeries" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        SyncLog: {
+            name: "SyncLog",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "BigInt",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                triggerSource: {
+                    name: "triggerSource",
+                    type: "String"
+                },
+                triggerUserId: {
+                    name: "triggerUserId",
+                    type: "Int",
+                    optional: true
+                },
+                triggerLabel: {
+                    name: "triggerLabel",
+                    type: "String",
+                    optional: true
+                },
+                status: {
+                    name: "status",
+                    type: "String",
+                    default: "SUCCESS"
+                },
+                startedAt: {
+                    name: "startedAt",
+                    type: "DateTime"
+                },
+                finishedAt: {
+                    name: "finishedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                fetchedAt: {
+                    name: "fetchedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                inserted: {
+                    name: "inserted",
+                    type: "Int",
+                    optional: true,
+                    default: 0
+                },
+                updated: {
+                    name: "updated",
+                    type: "Int",
+                    optional: true,
+                    default: 0
+                },
+                skipped: {
+                    name: "skipped",
+                    type: "Int",
+                    optional: true,
+                    default: 0
+                },
+                excluded: {
+                    name: "excluded",
+                    type: "Int",
+                    optional: true,
+                    default: 0
+                },
+                errorMessage: {
+                    name: "errorMessage",
+                    type: "String",
+                    optional: true
+                },
+                changeDetails: {
+                    name: "changeDetails",
+                    type: "Json",
+                    optional: true
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "BigInt" }
+            }
+        },
+        BackupLog: {
+            name: "BackupLog",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true
+                },
+                timestamp: {
+                    name: "timestamp",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                level: {
+                    name: "level",
+                    type: "String"
+                },
+                message: {
+                    name: "message",
+                    type: "String"
+                },
+                context: {
+                    name: "context",
+                    type: "Json",
+                    optional: true
+                },
+                jobId: {
+                    name: "jobId",
+                    type: "String",
+                    optional: true
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" }
+            }
+        },
+        InventoryCategory: {
+            name: "InventoryCategory",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                name: {
+                    name: "name",
+                    type: "String",
+                    unique: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now")
+                },
+                items: {
+                    name: "items",
+                    type: "InventoryItem",
+                    array: true,
+                    relation: { opposite: "category" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                name: { type: "String" }
+            }
+        },
+        InventoryItem: {
+            name: "InventoryItem",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                categoryId: {
+                    name: "categoryId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "category"
+                    ]
+                },
+                name: {
+                    name: "name",
+                    type: "String"
+                },
+                description: {
+                    name: "description",
+                    type: "String",
+                    optional: true
+                },
+                currentStock: {
+                    name: "currentStock",
+                    type: "Int",
+                    default: 0
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now")
+                },
+                category: {
+                    name: "category",
+                    type: "InventoryCategory",
+                    optional: true,
+                    relation: { opposite: "items", fields: ["categoryId"], references: ["id"] }
+                },
+                movements: {
+                    name: "movements",
+                    type: "InventoryMovement",
+                    array: true,
+                    relation: { opposite: "item" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        InventoryMovement: {
+            name: "InventoryMovement",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                itemId: {
+                    name: "itemId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "item"
+                    ]
+                },
+                quantityChange: {
+                    name: "quantityChange",
+                    type: "Int"
+                },
+                reason: {
+                    name: "reason",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                item: {
+                    name: "item",
+                    type: "InventoryItem",
+                    relation: { opposite: "movements", fields: ["itemId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        DailyProductionBalance: {
+            name: "DailyProductionBalance",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                balanceDate: {
+                    name: "balanceDate",
+                    type: "DateTime",
+                    unique: true
+                },
+                ingresoTarjetas: {
+                    name: "ingresoTarjetas",
+                    type: "Int",
+                    default: 0
+                },
+                ingresoTransferencias: {
+                    name: "ingresoTransferencias",
+                    type: "Int",
+                    default: 0
+                },
+                ingresoEfectivo: {
+                    name: "ingresoEfectivo",
+                    type: "Int",
+                    default: 0
+                },
+                gastosDiarios: {
+                    name: "gastosDiarios",
+                    type: "Int",
+                    default: 0
+                },
+                otrosAbonos: {
+                    name: "otrosAbonos",
+                    type: "Int",
+                    default: 0
+                },
+                comentarios: {
+                    name: "comentarios",
+                    type: "String",
+                    optional: true
+                },
+                status: {
+                    name: "status",
+                    type: "String",
+                    default: "DRAFT"
+                },
+                changeReason: {
+                    name: "changeReason",
+                    type: "String",
+                    optional: true
+                },
+                createdBy: {
+                    name: "createdBy",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "user"
+                    ]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now")
+                },
+                consultasMonto: {
+                    name: "consultasMonto",
+                    type: "Int",
+                    default: 0
+                },
+                controlesMonto: {
+                    name: "controlesMonto",
+                    type: "Int",
+                    default: 0
+                },
+                licenciasMonto: {
+                    name: "licenciasMonto",
+                    type: "Int",
+                    default: 0
+                },
+                roxairMonto: {
+                    name: "roxairMonto",
+                    type: "Int",
+                    default: 0
+                },
+                testsMonto: {
+                    name: "testsMonto",
+                    type: "Int",
+                    default: 0
+                },
+                vacunasMonto: {
+                    name: "vacunasMonto",
+                    type: "Int",
+                    default: 0
+                },
+                user: {
+                    name: "user",
+                    type: "User",
+                    relation: { opposite: "dailyProductionBalances", fields: ["createdBy"], references: ["id"] }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                balanceDate: { type: "DateTime" }
+            }
+        },
+        SupplyRequest: {
+            name: "SupplyRequest",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                userId: {
+                    name: "userId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "user"
+                    ]
+                },
+                supplyName: {
+                    name: "supplyName",
+                    type: "String"
+                },
+                quantity: {
+                    name: "quantity",
+                    type: "Int"
+                },
+                brand: {
+                    name: "brand",
+                    type: "String",
+                    optional: true
+                },
+                model: {
+                    name: "model",
+                    type: "String",
+                    optional: true
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                status: {
+                    name: "status",
+                    type: "String",
+                    default: "PENDING"
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now")
+                },
+                user: {
+                    name: "user",
+                    type: "User",
+                    relation: { opposite: "supplyRequests", fields: ["userId"], references: ["id"] }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        CommonSupply: {
+            name: "CommonSupply",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                name: {
+                    name: "name",
+                    type: "String"
+                },
+                brand: {
+                    name: "brand",
+                    type: "String",
+                    optional: true
+                },
+                model: {
+                    name: "model",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                name_brand_model: { name: { type: "String" }, brand: { type: "String" }, model: { type: "String" } }
+            }
+        },
+        CalendarSyncLog: {
+            name: "CalendarSyncLog",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                triggerSource: {
+                    name: "triggerSource",
+                    type: "String",
+                    optional: true
+                },
+                triggerUserId: {
+                    name: "triggerUserId",
+                    type: "Int",
+                    optional: true
+                },
+                triggerLabel: {
+                    name: "triggerLabel",
+                    type: "String",
+                    optional: true
+                },
+                status: {
+                    name: "status",
+                    type: "String",
+                    default: "PENDING"
+                },
+                startedAt: {
+                    name: "startedAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                endedAt: {
+                    name: "endedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                fetchedAt: {
+                    name: "fetchedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                eventsSynced: {
+                    name: "eventsSynced",
+                    type: "Int",
+                    default: 0
+                },
+                inserted: {
+                    name: "inserted",
+                    type: "Int",
+                    optional: true,
+                    default: 0
+                },
+                updated: {
+                    name: "updated",
+                    type: "Int",
+                    optional: true,
+                    default: 0
+                },
+                skipped: {
+                    name: "skipped",
+                    type: "Int",
+                    optional: true,
+                    default: 0
+                },
+                excluded: {
+                    name: "excluded",
+                    type: "Int",
+                    optional: true,
+                    default: 0
+                },
+                errorMessage: {
+                    name: "errorMessage",
+                    type: "String",
+                    optional: true
+                },
+                changeDetails: {
+                    name: "changeDetails",
+                    type: "Json",
+                    optional: true
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        DoctoraliaFacility: {
+            name: "DoctoraliaFacility",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                externalId: {
+                    name: "externalId",
+                    type: "String",
+                    unique: true
+                },
+                name: {
+                    name: "name",
+                    type: "String"
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now")
+                },
+                doctors: {
+                    name: "doctors",
+                    type: "DoctoraliaDoctor",
+                    array: true,
+                    relation: { opposite: "facility" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                externalId: { type: "String" }
+            }
+        },
+        DoctoraliaDoctor: {
+            name: "DoctoraliaDoctor",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                facilityId: {
+                    name: "facilityId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "facility"
+                    ]
+                },
+                externalId: {
+                    name: "externalId",
+                    type: "String"
+                },
+                name: {
+                    name: "name",
+                    type: "String"
+                },
+                surname: {
+                    name: "surname",
+                    type: "String"
+                },
+                profileUrl: {
+                    name: "profileUrl",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now")
+                },
+                facility: {
+                    name: "facility",
+                    type: "DoctoraliaFacility",
+                    relation: { opposite: "doctors", fields: ["facilityId"], references: ["id"], onDelete: "Cascade" }
+                },
+                addresses: {
+                    name: "addresses",
+                    type: "DoctoraliaAddress",
+                    array: true,
+                    relation: { opposite: "doctor" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                facilityId_externalId: { facilityId: { type: "Int" }, externalId: { type: "String" } }
+            }
+        },
+        DoctoraliaAddress: {
+            name: "DoctoraliaAddress",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                doctorId: {
+                    name: "doctorId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "doctor"
+                    ]
+                },
+                externalId: {
+                    name: "externalId",
+                    type: "String"
+                },
+                name: {
+                    name: "name",
+                    type: "String",
+                    optional: true
+                },
+                cityName: {
+                    name: "cityName",
+                    type: "String",
+                    optional: true
+                },
+                postCode: {
+                    name: "postCode",
+                    type: "String",
+                    optional: true
+                },
+                street: {
+                    name: "street",
+                    type: "String",
+                    optional: true
+                },
+                onlineOnly: {
+                    name: "onlineOnly",
+                    type: "Boolean",
+                    default: false
+                },
+                calendarEnabled: {
+                    name: "calendarEnabled",
+                    type: "Boolean",
+                    default: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now")
+                },
+                doctor: {
+                    name: "doctor",
+                    type: "DoctoraliaDoctor",
+                    relation: { opposite: "addresses", fields: ["doctorId"], references: ["id"], onDelete: "Cascade" }
+                },
+                services: {
+                    name: "services",
+                    type: "DoctoraliaService",
+                    array: true,
+                    relation: { opposite: "address" }
+                },
+                insuranceProviders: {
+                    name: "insuranceProviders",
+                    type: "DoctoraliaInsuranceProvider",
+                    array: true,
+                    relation: { opposite: "address" }
+                },
+                slots: {
+                    name: "slots",
+                    type: "DoctoraliaSlot",
+                    array: true,
+                    relation: { opposite: "address" }
+                },
+                bookings: {
+                    name: "bookings",
+                    type: "DoctoraliaBooking",
+                    array: true,
+                    relation: { opposite: "address" }
+                },
+                breaks: {
+                    name: "breaks",
+                    type: "DoctoraliaCalendarBreak",
+                    array: true,
+                    relation: { opposite: "address" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                doctorId_externalId: { doctorId: { type: "Int" }, externalId: { type: "String" } }
+            }
+        },
+        DoctoraliaService: {
+            name: "DoctoraliaService",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                addressId: {
+                    name: "addressId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "address"
+                    ]
+                },
+                externalId: {
+                    name: "externalId",
+                    type: "String"
+                },
+                serviceId: {
+                    name: "serviceId",
+                    type: "String",
+                    optional: true
+                },
+                name: {
+                    name: "name",
+                    type: "String"
+                },
+                price: {
+                    name: "price",
+                    type: "Int",
+                    optional: true
+                },
+                isPriceFrom: {
+                    name: "isPriceFrom",
+                    type: "Boolean",
+                    default: false
+                },
+                isDefault: {
+                    name: "isDefault",
+                    type: "Boolean",
+                    default: false
+                },
+                isVisible: {
+                    name: "isVisible",
+                    type: "Boolean",
+                    default: true
+                },
+                description: {
+                    name: "description",
+                    type: "String",
+                    optional: true
+                },
+                defaultDuration: {
+                    name: "defaultDuration",
+                    type: "Int",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now")
+                },
+                address: {
+                    name: "address",
+                    type: "DoctoraliaAddress",
+                    relation: { opposite: "services", fields: ["addressId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                addressId_externalId: { addressId: { type: "Int" }, externalId: { type: "String" } }
+            }
+        },
+        DoctoraliaInsuranceProvider: {
+            name: "DoctoraliaInsuranceProvider",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                addressId: {
+                    name: "addressId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "address"
+                    ]
+                },
+                insuranceProviderId: {
+                    name: "insuranceProviderId",
+                    type: "String"
+                },
+                name: {
+                    name: "name",
+                    type: "String"
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                address: {
+                    name: "address",
+                    type: "DoctoraliaAddress",
+                    relation: { opposite: "insuranceProviders", fields: ["addressId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                addressId_insuranceProviderId: { addressId: { type: "Int" }, insuranceProviderId: { type: "String" } }
+            }
+        },
+        DoctoraliaSlot: {
+            name: "DoctoraliaSlot",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                addressId: {
+                    name: "addressId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "address"
+                    ]
+                },
+                startAt: {
+                    name: "startAt",
+                    type: "DateTime"
+                },
+                endAt: {
+                    name: "endAt",
+                    type: "DateTime"
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                address: {
+                    name: "address",
+                    type: "DoctoraliaAddress",
+                    relation: { opposite: "slots", fields: ["addressId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        DoctoraliaBooking: {
+            name: "DoctoraliaBooking",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                addressId: {
+                    name: "addressId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "address"
+                    ]
+                },
+                externalId: {
+                    name: "externalId",
+                    type: "String"
+                },
+                status: {
+                    name: "status",
+                    type: "String",
+                    default: "booked"
+                },
+                startAt: {
+                    name: "startAt",
+                    type: "DateTime"
+                },
+                endAt: {
+                    name: "endAt",
+                    type: "DateTime"
+                },
+                duration: {
+                    name: "duration",
+                    type: "Int"
+                },
+                bookedBy: {
+                    name: "bookedBy",
+                    type: "String",
+                    optional: true
+                },
+                bookedAt: {
+                    name: "bookedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                canceledBy: {
+                    name: "canceledBy",
+                    type: "String",
+                    optional: true
+                },
+                canceledAt: {
+                    name: "canceledAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                patientName: {
+                    name: "patientName",
+                    type: "String",
+                    optional: true
+                },
+                patientSurname: {
+                    name: "patientSurname",
+                    type: "String",
+                    optional: true
+                },
+                patientEmail: {
+                    name: "patientEmail",
+                    type: "String",
+                    optional: true
+                },
+                patientPhone: {
+                    name: "patientPhone",
+                    type: "String",
+                    optional: true
+                },
+                comment: {
+                    name: "comment",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now")
+                },
+                address: {
+                    name: "address",
+                    type: "DoctoraliaAddress",
+                    relation: { opposite: "bookings", fields: ["addressId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                addressId_externalId: { addressId: { type: "Int" }, externalId: { type: "String" } }
+            }
+        },
+        DoctoraliaCalendarBreak: {
+            name: "DoctoraliaCalendarBreak",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                addressId: {
+                    name: "addressId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "address"
+                    ]
+                },
+                externalId: {
+                    name: "externalId",
+                    type: "String"
+                },
+                since: {
+                    name: "since",
+                    type: "DateTime"
+                },
+                till: {
+                    name: "till",
+                    type: "DateTime"
+                },
+                description: {
+                    name: "description",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                address: {
+                    name: "address",
+                    type: "DoctoraliaAddress",
+                    relation: { opposite: "breaks", fields: ["addressId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                addressId_externalId: { addressId: { type: "Int" }, externalId: { type: "String" } }
+            }
+        },
+        DoctoraliaSyncLog: {
+            name: "DoctoraliaSyncLog",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                triggerSource: {
+                    name: "triggerSource",
+                    type: "String",
+                    optional: true
+                },
+                triggerUserId: {
+                    name: "triggerUserId",
+                    type: "Int",
+                    optional: true
+                },
+                status: {
+                    name: "status",
+                    type: "String",
+                    default: "PENDING"
+                },
+                startedAt: {
+                    name: "startedAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                endedAt: {
+                    name: "endedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                facilitiesSynced: {
+                    name: "facilitiesSynced",
+                    type: "Int",
+                    default: 0
+                },
+                doctorsSynced: {
+                    name: "doctorsSynced",
+                    type: "Int",
+                    default: 0
+                },
+                slotsSynced: {
+                    name: "slotsSynced",
+                    type: "Int",
+                    default: 0
+                },
+                bookingsSynced: {
+                    name: "bookingsSynced",
+                    type: "Int",
+                    default: 0
+                },
+                errorMessage: {
+                    name: "errorMessage",
+                    type: "String",
+                    optional: true
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        DoctoraliaSchedule: {
+            name: "DoctoraliaSchedule",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                externalId: {
+                    name: "externalId",
+                    type: "Int",
+                    unique: true
+                },
+                name: {
+                    name: "name",
+                    type: "String"
+                },
+                displayName: {
+                    name: "displayName",
+                    type: "String"
+                },
+                facilityId: {
+                    name: "facilityId",
+                    type: "Int",
+                    optional: true
+                },
+                specialityId: {
+                    name: "specialityId",
+                    type: "Int",
+                    optional: true
+                },
+                doctorId: {
+                    name: "doctorId",
+                    type: "Int",
+                    optional: true
+                },
+                provinceId: {
+                    name: "provinceId",
+                    type: "Int",
+                    optional: true
+                },
+                cityId: {
+                    name: "cityId",
+                    type: "Int",
+                    optional: true
+                },
+                hasWaitingRoom: {
+                    name: "hasWaitingRoom",
+                    type: "Boolean",
+                    optional: true
+                },
+                scheduleType: {
+                    name: "scheduleType",
+                    type: "Int",
+                    default: 0
+                },
+                colorSchemaId: {
+                    name: "colorSchemaId",
+                    type: "Int",
+                    optional: true
+                },
+                isVirtual: {
+                    name: "isVirtual",
+                    type: "Boolean",
+                    default: false
+                },
+                patientsNotificationType: {
+                    name: "patientsNotificationType",
+                    type: "Int",
+                    default: 1
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now")
+                },
+                appointments: {
+                    name: "appointments",
+                    type: "DoctoraliaCalendarAppointment",
+                    array: true,
+                    relation: { opposite: "schedule" }
+                },
+                workPeriods: {
+                    name: "workPeriods",
+                    type: "DoctoraliaWorkPeriod",
+                    array: true,
+                    relation: { opposite: "schedule" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                externalId: { type: "Int" }
+            }
+        },
+        DoctoraliaCalendarAppointment: {
+            name: "DoctoraliaCalendarAppointment",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                scheduleId: {
+                    name: "scheduleId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "schedule"
+                    ]
+                },
+                externalId: {
+                    name: "externalId",
+                    type: "Int",
+                    unique: true
+                },
+                title: {
+                    name: "title",
+                    type: "String"
+                },
+                startAt: {
+                    name: "startAt",
+                    type: "DateTime"
+                },
+                endAt: {
+                    name: "endAt",
+                    type: "DateTime"
+                },
+                isBlock: {
+                    name: "isBlock",
+                    type: "Boolean",
+                    default: false
+                },
+                eventType: {
+                    name: "eventType",
+                    type: "Int"
+                },
+                scheduledBy: {
+                    name: "scheduledBy",
+                    type: "Int"
+                },
+                status: {
+                    name: "status",
+                    type: "Int"
+                },
+                hasPatient: {
+                    name: "hasPatient",
+                    type: "Boolean"
+                },
+                hasWaitingRoom: {
+                    name: "hasWaitingRoom",
+                    type: "Boolean",
+                    optional: true
+                },
+                insuranceId: {
+                    name: "insuranceId",
+                    type: "Int",
+                    optional: true
+                },
+                insuranceName: {
+                    name: "insuranceName",
+                    type: "String",
+                    optional: true
+                },
+                comments: {
+                    name: "comments",
+                    type: "String",
+                    optional: true
+                },
+                serviceId: {
+                    name: "serviceId",
+                    type: "Int"
+                },
+                serviceName: {
+                    name: "serviceName",
+                    type: "String"
+                },
+                eventServices: {
+                    name: "eventServices",
+                    type: "Json",
+                    optional: true
+                },
+                serviceColorSchemaId: {
+                    name: "serviceColorSchemaId",
+                    type: "Int"
+                },
+                serviceIsDeleted: {
+                    name: "serviceIsDeleted",
+                    type: "Boolean",
+                    default: false
+                },
+                attendance: {
+                    name: "attendance",
+                    type: "Int",
+                    default: 0
+                },
+                patientExternalId: {
+                    name: "patientExternalId",
+                    type: "Int"
+                },
+                patientReferenceId: {
+                    name: "patientReferenceId",
+                    type: "String"
+                },
+                patientPhone: {
+                    name: "patientPhone",
+                    type: "String",
+                    optional: true
+                },
+                patientEmail: {
+                    name: "patientEmail",
+                    type: "String",
+                    optional: true
+                },
+                patientBirthDate: {
+                    name: "patientBirthDate",
+                    type: "DateTime",
+                    optional: true
+                },
+                patientArrivalTime: {
+                    name: "patientArrivalTime",
+                    type: "DateTime",
+                    optional: true
+                },
+                isPatientFirstTime: {
+                    name: "isPatientFirstTime",
+                    type: "Boolean",
+                    default: false
+                },
+                isPatientFirstAdminBooking: {
+                    name: "isPatientFirstAdminBooking",
+                    type: "Boolean",
+                    default: false
+                },
+                isBookedViaSecretaryAi: {
+                    name: "isBookedViaSecretaryAi",
+                    type: "Boolean",
+                    default: false
+                },
+                onlinePaymentType: {
+                    name: "onlinePaymentType",
+                    type: "String",
+                    optional: true
+                },
+                onlinePaymentStatus: {
+                    name: "onlinePaymentStatus",
+                    type: "String",
+                    optional: true
+                },
+                isPaidOnline: {
+                    name: "isPaidOnline",
+                    type: "Boolean",
+                    default: false
+                },
+                communicationChannel: {
+                    name: "communicationChannel",
+                    type: "String",
+                    optional: true
+                },
+                fake: {
+                    name: "fake",
+                    type: "Boolean",
+                    default: false
+                },
+                isEventWithVoucher: {
+                    name: "isEventWithVoucher",
+                    type: "Boolean",
+                    default: false
+                },
+                duration: {
+                    name: "duration",
+                    type: "Int"
+                },
+                canNotifyPatient: {
+                    name: "canNotifyPatient",
+                    type: "Boolean"
+                },
+                noShowProtection: {
+                    name: "noShowProtection",
+                    type: "Boolean",
+                    default: false
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now")
+                },
+                schedule: {
+                    name: "schedule",
+                    type: "DoctoraliaSchedule",
+                    relation: { opposite: "appointments", fields: ["scheduleId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                externalId: { type: "Int" },
+                scheduleId_externalId: { scheduleId: { type: "Int" }, externalId: { type: "Int" } }
+            }
+        },
+        DoctoraliaWorkPeriod: {
+            name: "DoctoraliaWorkPeriod",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                scheduleId: {
+                    name: "scheduleId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "schedule"
+                    ]
+                },
+                startAt: {
+                    name: "startAt",
+                    type: "DateTime"
+                },
+                endAt: {
+                    name: "endAt",
+                    type: "DateTime"
+                },
+                isPrivate: {
+                    name: "isPrivate",
+                    type: "Boolean",
+                    default: false
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                schedule: {
+                    name: "schedule",
+                    type: "DoctoraliaSchedule",
+                    relation: { opposite: "workPeriods", fields: ["scheduleId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        DoctoraliaCalendarSyncLog: {
+            name: "DoctoraliaCalendarSyncLog",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                triggerSource: {
+                    name: "triggerSource",
+                    type: "String",
+                    optional: true
+                },
+                triggerUserId: {
+                    name: "triggerUserId",
+                    type: "Int",
+                    optional: true
+                },
+                status: {
+                    name: "status",
+                    type: "String",
+                    default: "PENDING"
+                },
+                startedAt: {
+                    name: "startedAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                endedAt: {
+                    name: "endedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                schedulesSynced: {
+                    name: "schedulesSynced",
+                    type: "Int",
+                    default: 0
+                },
+                appointmentsSynced: {
+                    name: "appointmentsSynced",
+                    type: "Int",
+                    default: 0
+                },
+                workPeriodsSynced: {
+                    name: "workPeriodsSynced",
+                    type: "Int",
+                    default: 0
+                },
+                errorMessage: {
+                    name: "errorMessage",
+                    type: "String",
+                    optional: true
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        HaulmerSyncLog: {
+            name: "HaulmerSyncLog",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    default: ExpressionUtils.call("uuid")
+                },
+                period: {
+                    name: "period",
+                    type: "String"
+                },
+                rut: {
+                    name: "rut",
+                    type: "String"
+                },
+                docType: {
+                    name: "docType",
+                    type: "String"
+                },
+                status: {
+                    name: "status",
+                    type: "String",
+                    default: "PENDING"
+                },
+                rowsCreated: {
+                    name: "rowsCreated",
+                    type: "Int",
+                    default: 0
+                },
+                rowsUpdated: {
+                    name: "rowsUpdated",
+                    type: "Int",
+                    default: 0
+                },
+                rowsSkipped: {
+                    name: "rowsSkipped",
+                    type: "Int",
+                    default: 0
+                },
+                csvSize: {
+                    name: "csvSize",
+                    type: "Int",
+                    optional: true
+                },
+                errorMessage: {
+                    name: "errorMessage",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now")
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" },
+                period_rut_docType: { period: { type: "String" }, rut: { type: "String" }, docType: { type: "String" } }
+            }
+        },
+        PersonalCredit: {
+            name: "PersonalCredit",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                bankName: {
+                    name: "bankName",
+                    type: "String"
+                },
+                creditNumber: {
+                    name: "creditNumber",
+                    type: "String",
+                    unique: true
+                },
+                description: {
+                    name: "description",
+                    type: "String",
+                    optional: true
+                },
+                totalAmount: {
+                    name: "totalAmount",
+                    type: "Decimal"
+                },
+                currency: {
+                    name: "currency",
+                    type: "String",
+                    default: "CLP"
+                },
+                interestRate: {
+                    name: "interestRate",
+                    type: "Decimal",
+                    optional: true
+                },
+                startDate: {
+                    name: "startDate",
+                    type: "DateTime"
+                },
+                totalInstallments: {
+                    name: "totalInstallments",
+                    type: "Int"
+                },
+                status: {
+                    name: "status",
+                    type: "String",
+                    default: "ACTIVE"
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now")
+                },
+                installments: {
+                    name: "installments",
+                    type: "PersonalCreditInstallment",
+                    array: true,
+                    relation: { opposite: "credit" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                creditNumber: { type: "String" }
+            }
+        },
+        PersonalCreditInstallment: {
+            name: "PersonalCreditInstallment",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                creditId: {
+                    name: "creditId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "credit"
+                    ]
+                },
+                installmentNumber: {
+                    name: "installmentNumber",
+                    type: "Int"
+                },
+                dueDate: {
+                    name: "dueDate",
+                    type: "DateTime"
+                },
+                amount: {
+                    name: "amount",
+                    type: "Decimal"
+                },
+                capitalAmount: {
+                    name: "capitalAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                interestAmount: {
+                    name: "interestAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                otherCharges: {
+                    name: "otherCharges",
+                    type: "Decimal",
+                    optional: true
+                },
+                status: {
+                    name: "status",
+                    type: "String",
+                    default: "PENDING"
+                },
+                paidAt: {
+                    name: "paidAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                paidAmount: {
+                    name: "paidAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                paidAmountCLP: {
+                    name: "paidAmountCLP",
+                    type: "Decimal",
+                    optional: true
+                },
+                credit: {
+                    name: "credit",
+                    type: "PersonalCredit",
+                    relation: { opposite: "installments", fields: ["creditId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                creditId_installmentNumber: { creditId: { type: "Int" }, installmentNumber: { type: "Int" } }
+            }
+        },
+        MedicalCertificate: {
+            name: "MedicalCertificate",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    default: ExpressionUtils.call("cuid")
+                },
+                patientName: {
+                    name: "patientName",
+                    type: "String"
+                },
+                patientRut: {
+                    name: "patientRut",
+                    type: "String"
+                },
+                birthDate: {
+                    name: "birthDate",
+                    type: "DateTime"
+                },
+                address: {
+                    name: "address",
+                    type: "String"
+                },
+                diagnosis: {
+                    name: "diagnosis",
+                    type: "String"
+                },
+                symptoms: {
+                    name: "symptoms",
+                    type: "String",
+                    optional: true
+                },
+                restDays: {
+                    name: "restDays",
+                    type: "Int",
+                    optional: true
+                },
+                restStartDate: {
+                    name: "restStartDate",
+                    type: "DateTime",
+                    optional: true
+                },
+                restEndDate: {
+                    name: "restEndDate",
+                    type: "DateTime",
+                    optional: true
+                },
+                purpose: {
+                    name: "purpose",
+                    type: "String"
+                },
+                purposeDetail: {
+                    name: "purposeDetail",
+                    type: "String",
+                    optional: true
+                },
+                issuedBy: {
+                    name: "issuedBy",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "issuer"
+                    ]
+                },
+                issuedAt: {
+                    name: "issuedAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                patientId: {
+                    name: "patientId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "patient"
+                    ]
+                },
+                driveFileId: {
+                    name: "driveFileId",
+                    type: "String"
+                },
+                pdfHash: {
+                    name: "pdfHash",
+                    type: "String"
+                },
+                metadata: {
+                    name: "metadata",
+                    type: "Json",
+                    optional: true
+                },
+                issuer: {
+                    name: "issuer",
+                    type: "User",
+                    relation: { opposite: "medicalCertificates", fields: ["issuedBy"], references: ["id"] }
+                },
+                patient: {
+                    name: "patient",
+                    type: "Patient",
+                    optional: true,
+                    relation: { opposite: "medicalCertificates", fields: ["patientId"], references: ["id"] }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" }
+            }
+        },
+        Patient: {
+            name: "Patient",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                personId: {
+                    name: "personId",
+                    type: "Int",
+                    unique: true,
+                    foreignKeyFor: [
+                        "person"
+                    ]
+                },
+                birthDate: {
+                    name: "birthDate",
+                    type: "DateTime",
+                    optional: true
+                },
+                bloodType: {
+                    name: "bloodType",
+                    type: "String",
+                    optional: true
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now")
+                },
+                person: {
+                    name: "person",
+                    type: "Person",
+                    relation: { opposite: "patient", fields: ["personId"], references: ["id"], onDelete: "Cascade" }
+                },
+                consultations: {
+                    name: "consultations",
+                    type: "Consultation",
+                    array: true,
+                    relation: { opposite: "patient" }
+                },
+                medicalCertificates: {
+                    name: "medicalCertificates",
+                    type: "MedicalCertificate",
+                    array: true,
+                    relation: { opposite: "patient" }
+                },
+                budgets: {
+                    name: "budgets",
+                    type: "Budget",
+                    array: true,
+                    relation: { opposite: "patient" }
+                },
+                payments: {
+                    name: "payments",
+                    type: "PatientPayment",
+                    array: true,
+                    relation: { opposite: "patient" }
+                },
+                attachments: {
+                    name: "attachments",
+                    type: "PatientAttachment",
+                    array: true,
+                    relation: { opposite: "patient" }
+                },
+                dteSaleSources: {
+                    name: "dteSaleSources",
+                    type: "PatientDteSaleSource",
+                    array: true,
+                    relation: { opposite: "patient" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                personId: { type: "Int" }
+            }
+        },
+        PatientDteSaleSource: {
+            name: "PatientDteSaleSource",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                patientId: {
+                    name: "patientId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "patient"
+                    ]
+                },
+                clientRUT: {
+                    name: "clientRUT",
+                    type: "String",
+                    unique: true
+                },
+                clientName: {
+                    name: "clientName",
+                    type: "String"
+                },
+                documentType: {
+                    name: "documentType",
+                    type: "Int"
+                },
+                documentDate: {
+                    name: "documentDate",
+                    type: "DateTime",
+                    optional: true
+                },
+                folio: {
+                    name: "folio",
+                    type: "String",
+                    optional: true
+                },
+                period: {
+                    name: "period",
+                    type: "String",
+                    optional: true
+                },
+                sourceUpdatedAt: {
+                    name: "sourceUpdatedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now")
+                },
+                patient: {
+                    name: "patient",
+                    type: "Patient",
+                    optional: true,
+                    relation: { opposite: "dteSaleSources", fields: ["patientId"], references: ["id"], onDelete: "SetNull" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                clientRUT: { type: "String" }
+            }
+        },
+        Consultation: {
+            name: "Consultation",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                patientId: {
+                    name: "patientId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "patient"
+                    ]
+                },
+                eventId: {
+                    name: "eventId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "event"
+                    ]
+                },
+                date: {
+                    name: "date",
+                    type: "DateTime"
+                },
+                reason: {
+                    name: "reason",
+                    type: "String"
+                },
+                diagnosis: {
+                    name: "diagnosis",
+                    type: "String",
+                    optional: true
+                },
+                treatment: {
+                    name: "treatment",
+                    type: "String",
+                    optional: true
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now")
+                },
+                patient: {
+                    name: "patient",
+                    type: "Patient",
+                    relation: { opposite: "consultations", fields: ["patientId"], references: ["id"], onDelete: "Cascade" }
+                },
+                event: {
+                    name: "event",
+                    type: "Event",
+                    optional: true,
+                    relation: { opposite: "consultations", fields: ["eventId"], references: ["id"] }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        Budget: {
+            name: "Budget",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                patientId: {
+                    name: "patientId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "patient"
+                    ]
+                },
+                title: {
+                    name: "title",
+                    type: "String"
+                },
+                totalAmount: {
+                    name: "totalAmount",
+                    type: "Decimal"
+                },
+                discount: {
+                    name: "discount",
+                    type: "Decimal",
+                    default: 0
+                },
+                finalAmount: {
+                    name: "finalAmount",
+                    type: "Decimal"
+                },
+                status: {
+                    name: "status",
+                    type: "BudgetStatus",
+                    default: "DRAFT"
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now")
+                },
+                patient: {
+                    name: "patient",
+                    type: "Patient",
+                    relation: { opposite: "budgets", fields: ["patientId"], references: ["id"], onDelete: "Cascade" }
+                },
+                payments: {
+                    name: "payments",
+                    type: "PatientPayment",
+                    array: true,
+                    relation: { opposite: "budget" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        PatientPayment: {
+            name: "PatientPayment",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                patientId: {
+                    name: "patientId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "patient"
+                    ]
+                },
+                budgetId: {
+                    name: "budgetId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "budget"
+                    ]
+                },
+                amount: {
+                    name: "amount",
+                    type: "Decimal"
+                },
+                paymentDate: {
+                    name: "paymentDate",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                paymentMethod: {
+                    name: "paymentMethod",
+                    type: "String"
+                },
+                reference: {
+                    name: "reference",
+                    type: "String",
+                    optional: true
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                patient: {
+                    name: "patient",
+                    type: "Patient",
+                    relation: { opposite: "payments", fields: ["patientId"], references: ["id"], onDelete: "Cascade" }
+                },
+                budget: {
+                    name: "budget",
+                    type: "Budget",
+                    optional: true,
+                    relation: { opposite: "payments", fields: ["budgetId"], references: ["id"] }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        PatientAttachment: {
+            name: "PatientAttachment",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    default: ExpressionUtils.call("cuid")
+                },
+                patientId: {
+                    name: "patientId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "patient"
+                    ]
+                },
+                name: {
+                    name: "name",
+                    type: "String"
+                },
+                type: {
+                    name: "type",
+                    type: "AttachmentType",
+                    default: "OTHER"
+                },
+                driveFileId: {
+                    name: "driveFileId",
+                    type: "String"
+                },
+                mimeType: {
+                    name: "mimeType",
+                    type: "String",
+                    optional: true
+                },
+                uploadedBy: {
+                    name: "uploadedBy",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "uploader"
+                    ]
+                },
+                uploadedAt: {
+                    name: "uploadedAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                patient: {
+                    name: "patient",
+                    type: "Patient",
+                    relation: { opposite: "attachments", fields: ["patientId"], references: ["id"], onDelete: "Cascade" }
+                },
+                uploader: {
+                    name: "uploader",
+                    type: "User",
+                    relation: { opposite: "patientAttachments", fields: ["uploadedBy"], references: ["id"] }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" }
+            }
+        },
+        DTEPurchaseDetail: {
+            name: "DTEPurchaseDetail",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    default: ExpressionUtils.call("uuid")
+                },
+                registerNumber: {
+                    name: "registerNumber",
+                    type: "Int"
+                },
+                documentType: {
+                    name: "documentType",
+                    type: "Int",
+                    default: 33
+                },
+                purchaseType: {
+                    name: "purchaseType",
+                    type: "String"
+                },
+                providerRUT: {
+                    name: "providerRUT",
+                    type: "String"
+                },
+                providerName: {
+                    name: "providerName",
+                    type: "String"
+                },
+                folio: {
+                    name: "folio",
+                    type: "String"
+                },
+                documentDate: {
+                    name: "documentDate",
+                    type: "DateTime"
+                },
+                receiptDate: {
+                    name: "receiptDate",
+                    type: "DateTime"
+                },
+                acknowledgeDate: {
+                    name: "acknowledgeDate",
+                    type: "DateTime",
+                    optional: true
+                },
+                period: {
+                    name: "period",
+                    type: "String",
+                    optional: true
+                },
+                exemptAmount: {
+                    name: "exemptAmount",
+                    type: "Decimal",
+                    default: 0
+                },
+                netAmount: {
+                    name: "netAmount",
+                    type: "Decimal",
+                    default: 0
+                },
+                recoverableIVA: {
+                    name: "recoverableIVA",
+                    type: "Decimal",
+                    default: 0
+                },
+                nonRecoverableIVA: {
+                    name: "nonRecoverableIVA",
+                    type: "Decimal",
+                    default: 0
+                },
+                nonRecoverableIVACode: {
+                    name: "nonRecoverableIVACode",
+                    type: "String",
+                    optional: true
+                },
+                totalAmount: {
+                    name: "totalAmount",
+                    type: "Decimal",
+                    default: 0
+                },
+                fixedAssetNetAmount: {
+                    name: "fixedAssetNetAmount",
+                    type: "Decimal",
+                    default: 0
+                },
+                commonUseIVA: {
+                    name: "commonUseIVA",
+                    type: "Decimal",
+                    default: 0
+                },
+                nonCreditableTax: {
+                    name: "nonCreditableTax",
+                    type: "Decimal",
+                    default: 0
+                },
+                nonRetainedIVA: {
+                    name: "nonRetainedIVA",
+                    type: "Decimal",
+                    default: 0
+                },
+                pureTobacco: {
+                    name: "pureTobacco",
+                    type: "Decimal",
+                    default: 0
+                },
+                cigaretteTobacco: {
+                    name: "cigaretteTobacco",
+                    type: "Decimal",
+                    default: 0
+                },
+                elaboratedTobacco: {
+                    name: "elaboratedTobacco",
+                    type: "Decimal",
+                    default: 0
+                },
+                otherTaxCode: {
+                    name: "otherTaxCode",
+                    type: "String",
+                    optional: true
+                },
+                otherTaxAmount: {
+                    name: "otherTaxAmount",
+                    type: "Decimal",
+                    default: 0
+                },
+                otherTaxRate: {
+                    name: "otherTaxRate",
+                    type: "Decimal",
+                    optional: true
+                },
+                referenceDocNote: {
+                    name: "referenceDocNote",
+                    type: "String",
+                    optional: true
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now")
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" },
+                providerRUT_folio: { providerRUT: { type: "String" }, folio: { type: "String" } }
+            }
+        },
+        DTESaleDetail: {
+            name: "DTESaleDetail",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    default: ExpressionUtils.call("uuid")
+                },
+                registerNumber: {
+                    name: "registerNumber",
+                    type: "Int"
+                },
+                documentType: {
+                    name: "documentType",
+                    type: "Int"
+                },
+                saleType: {
+                    name: "saleType",
+                    type: "String"
+                },
+                clientRUT: {
+                    name: "clientRUT",
+                    type: "String"
+                },
+                clientName: {
+                    name: "clientName",
+                    type: "String"
+                },
+                folio: {
+                    name: "folio",
+                    type: "String"
+                },
+                documentDate: {
+                    name: "documentDate",
+                    type: "DateTime"
+                },
+                receiptDate: {
+                    name: "receiptDate",
+                    type: "DateTime"
+                },
+                receiptAcknowledgeDate: {
+                    name: "receiptAcknowledgeDate",
+                    type: "DateTime",
+                    optional: true
+                },
+                claimDate: {
+                    name: "claimDate",
+                    type: "DateTime",
+                    optional: true
+                },
+                period: {
+                    name: "period",
+                    type: "String",
+                    optional: true
+                },
+                exemptAmount: {
+                    name: "exemptAmount",
+                    type: "Decimal",
+                    default: 0
+                },
+                netAmount: {
+                    name: "netAmount",
+                    type: "Decimal",
+                    default: 0
+                },
+                ivaAmount: {
+                    name: "ivaAmount",
+                    type: "Decimal",
+                    default: 0
+                },
+                totalAmount: {
+                    name: "totalAmount",
+                    type: "Decimal",
+                    default: 0
+                },
+                totalRetainedIVA: {
+                    name: "totalRetainedIVA",
+                    type: "Decimal",
+                    default: 0
+                },
+                partialRetainedIVA: {
+                    name: "partialRetainedIVA",
+                    type: "Decimal",
+                    default: 0
+                },
+                nonRetainedIVA: {
+                    name: "nonRetainedIVA",
+                    type: "Decimal",
+                    default: 0
+                },
+                ownIVA: {
+                    name: "ownIVA",
+                    type: "Decimal",
+                    default: 0
+                },
+                thirdPartyIVA: {
+                    name: "thirdPartyIVA",
+                    type: "Decimal",
+                    default: 0
+                },
+                lateIVA: {
+                    name: "lateIVA",
+                    type: "Decimal",
+                    default: 0
+                },
+                emitterRUT: {
+                    name: "emitterRUT",
+                    type: "String",
+                    optional: true
+                },
+                commissionNetAmount: {
+                    name: "commissionNetAmount",
+                    type: "Decimal",
+                    default: 0
+                },
+                commissionExemptAmount: {
+                    name: "commissionExemptAmount",
+                    type: "Decimal",
+                    default: 0
+                },
+                commissionIVA: {
+                    name: "commissionIVA",
+                    type: "Decimal",
+                    default: 0
+                },
+                referenceDocType: {
+                    name: "referenceDocType",
+                    type: "String",
+                    optional: true
+                },
+                referenceDocFolio: {
+                    name: "referenceDocFolio",
+                    type: "String",
+                    optional: true
+                },
+                foreignBuyerIdentifier: {
+                    name: "foreignBuyerIdentifier",
+                    type: "String",
+                    optional: true
+                },
+                foreignBuyerNationality: {
+                    name: "foreignBuyerNationality",
+                    type: "String",
+                    optional: true
+                },
+                constructorCreditAmount: {
+                    name: "constructorCreditAmount",
+                    type: "Decimal",
+                    default: 0
+                },
+                freeTradeZoneAmount: {
+                    name: "freeTradeZoneAmount",
+                    type: "Decimal",
+                    default: 0
+                },
+                containerGuaranteeAmount: {
+                    name: "containerGuaranteeAmount",
+                    type: "Decimal",
+                    default: 0
+                },
+                nonBillableAmount: {
+                    name: "nonBillableAmount",
+                    type: "Decimal",
+                    default: 0
+                },
+                internationalTransportAmount: {
+                    name: "internationalTransportAmount",
+                    type: "Decimal",
+                    default: 0
+                },
+                nonCostSaleIndicator: {
+                    name: "nonCostSaleIndicator",
+                    type: "Int",
+                    default: 0
+                },
+                periodicServiceIndicator: {
+                    name: "periodicServiceIndicator",
+                    type: "Int",
+                    default: 0
+                },
+                totalPeriodAmount: {
+                    name: "totalPeriodAmount",
+                    type: "Decimal",
+                    default: 0
+                },
+                nationalTransportPassageAmount: {
+                    name: "nationalTransportPassageAmount",
+                    type: "Decimal",
+                    default: 0
+                },
+                internalNumber: {
+                    name: "internalNumber",
+                    type: "Int",
+                    optional: true
+                },
+                branchCode: {
+                    name: "branchCode",
+                    type: "String",
+                    optional: true
+                },
+                origin: {
+                    name: "origin",
+                    type: "String",
+                    optional: true
+                },
+                informativeNote: {
+                    name: "informativeNote",
+                    type: "String",
+                    optional: true
+                },
+                paymentNote: {
+                    name: "paymentNote",
+                    type: "String",
+                    optional: true
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now")
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" },
+                folio_documentType: { folio: { type: "String" }, documentType: { type: "Int" } }
+            }
+        },
+        DTESyncLog: {
+            name: "DTESyncLog",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    default: ExpressionUtils.call("uuid")
+                },
+                period: {
+                    name: "period",
+                    type: "String"
+                },
+                docTypes: {
+                    name: "docTypes",
+                    type: "String"
+                },
+                status: {
+                    name: "status",
+                    type: "String",
+                    default: "PENDING"
+                },
+                totalProcessed: {
+                    name: "totalProcessed",
+                    type: "Int",
+                    default: 0
+                },
+                totalInserted: {
+                    name: "totalInserted",
+                    type: "Int",
+                    default: 0
+                },
+                totalUpdated: {
+                    name: "totalUpdated",
+                    type: "Int",
+                    default: 0
+                },
+                totalSkipped: {
+                    name: "totalSkipped",
+                    type: "Int",
+                    default: 0
+                },
+                salesInserted: {
+                    name: "salesInserted",
+                    type: "Int",
+                    default: 0
+                },
+                purchasesInserted: {
+                    name: "purchasesInserted",
+                    type: "Int",
+                    default: 0
+                },
+                errorMessage: {
+                    name: "errorMessage",
+                    type: "String",
+                    optional: true
+                },
+                triggerSource: {
+                    name: "triggerSource",
+                    type: "String",
+                    optional: true
+                },
+                triggerUserId: {
+                    name: "triggerUserId",
+                    type: "String",
+                    optional: true
+                },
+                startedAt: {
+                    name: "startedAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                completedAt: {
+                    name: "completedAt",
+                    type: "DateTime",
+                    optional: true
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" }
+            }
+        },
+        TransactionCategory: {
+            name: "TransactionCategory",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                name: {
+                    name: "name",
+                    type: "String"
+                },
+                type: {
+                    name: "type",
+                    type: "TransactionType"
+                },
+                color: {
+                    name: "color",
+                    type: "String",
+                    optional: true
+                },
+                icon: {
+                    name: "icon",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true
+                },
+                transactions: {
+                    name: "transactions",
+                    type: "FinancialTransaction",
+                    array: true,
+                    relation: { opposite: "category" }
+                },
+                autoRules: {
+                    name: "autoRules",
+                    type: "FinancialAutoCategoryRule",
+                    array: true,
+                    relation: { opposite: "category" }
+                },
+                compensationProfiles: {
+                    name: "compensationProfiles",
+                    type: "CompensationProfile",
+                    array: true,
+                    relation: { opposite: "category" }
+                },
+                services: {
+                    name: "services",
+                    type: "Service",
+                    array: true,
+                    relation: { opposite: "transactionCategory" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        FinancialAutoCategoryRule: {
+            name: "FinancialAutoCategoryRule",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                name: {
+                    name: "name",
+                    type: "String"
+                },
+                type: {
+                    name: "type",
+                    type: "TransactionType",
+                    default: "EXPENSE"
+                },
+                counterpartId: {
+                    name: "counterpartId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "counterpart"
+                    ]
+                },
+                categoryId: {
+                    name: "categoryId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "category"
+                    ]
+                },
+                minAmount: {
+                    name: "minAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                maxAmount: {
+                    name: "maxAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                commentContains: {
+                    name: "commentContains",
+                    type: "String",
+                    optional: true
+                },
+                descriptionContains: {
+                    name: "descriptionContains",
+                    type: "String",
+                    optional: true
+                },
+                isActive: {
+                    name: "isActive",
+                    type: "Boolean",
+                    default: true
+                },
+                priority: {
+                    name: "priority",
+                    type: "Int",
+                    default: 0
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true
+                },
+                counterpart: {
+                    name: "counterpart",
+                    type: "Counterpart",
+                    optional: true,
+                    relation: { opposite: "autoCategoryRules", fields: ["counterpartId"], references: ["id"], onDelete: "Cascade" }
+                },
+                category: {
+                    name: "category",
+                    type: "TransactionCategory",
+                    relation: { opposite: "autoRules", fields: ["categoryId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        FinancialTransaction: {
+            name: "FinancialTransaction",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                date: {
+                    name: "date",
+                    type: "DateTime"
+                },
+                description: {
+                    name: "description",
+                    type: "String"
+                },
+                amount: {
+                    name: "amount",
+                    type: "Decimal"
+                },
+                type: {
+                    name: "type",
+                    type: "TransactionType"
+                },
+                sourceId: {
+                    name: "sourceId",
+                    type: "String",
+                    optional: true
+                },
+                categoryId: {
+                    name: "categoryId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "category"
+                    ]
+                },
+                counterpartId: {
+                    name: "counterpartId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "counterpart"
+                    ]
+                },
+                category: {
+                    name: "category",
+                    type: "TransactionCategory",
+                    optional: true,
+                    relation: { opposite: "transactions", fields: ["categoryId"], references: ["id"] }
+                },
+                counterpart: {
+                    name: "counterpart",
+                    type: "Counterpart",
+                    optional: true,
+                    relation: { opposite: "financialTransactions", fields: ["counterpartId"], references: ["id"] }
+                },
+                allocations: {
+                    name: "allocations",
+                    type: "FinancialTransactionAllocation",
+                    array: true,
+                    relation: { opposite: "transaction" }
+                },
+                serviceSchedules: {
+                    name: "serviceSchedules",
+                    type: "ServiceSchedule",
+                    array: true,
+                    relation: { opposite: "financialTransaction" }
+                },
+                comment: {
+                    name: "comment",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        CompensationProfile: {
+            name: "CompensationProfile",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                name: {
+                    name: "name",
+                    type: "String"
+                },
+                categoryId: {
+                    name: "categoryId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "category"
+                    ]
+                },
+                counterpartId: {
+                    name: "counterpartId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "counterpart"
+                    ]
+                },
+                isActive: {
+                    name: "isActive",
+                    type: "Boolean",
+                    default: true
+                },
+                timezone: {
+                    name: "timezone",
+                    type: "String",
+                    default: "America/Santiago"
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true
+                },
+                category: {
+                    name: "category",
+                    type: "TransactionCategory",
+                    relation: { opposite: "compensationProfiles", fields: ["categoryId"], references: ["id"], onDelete: "Cascade" }
+                },
+                counterpart: {
+                    name: "counterpart",
+                    type: "Counterpart",
+                    optional: true,
+                    relation: { opposite: "compensationProfiles", fields: ["counterpartId"], references: ["id"], onDelete: "SetNull" }
+                },
+                budgets: {
+                    name: "budgets",
+                    type: "CompensationPeriodBudget",
+                    array: true,
+                    relation: { opposite: "profile" }
+                },
+                allocations: {
+                    name: "allocations",
+                    type: "FinancialTransactionAllocation",
+                    array: true,
+                    relation: { opposite: "profile" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        CompensationPeriodBudget: {
+            name: "CompensationPeriodBudget",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                profileId: {
+                    name: "profileId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "profile"
+                    ]
+                },
+                period: {
+                    name: "period",
+                    type: "String"
+                },
+                baseAmount: {
+                    name: "baseAmount",
+                    type: "Decimal"
+                },
+                isLocked: {
+                    name: "isLocked",
+                    type: "Boolean",
+                    default: false
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true
+                },
+                profile: {
+                    name: "profile",
+                    type: "CompensationProfile",
+                    relation: { opposite: "budgets", fields: ["profileId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                profileId_period: { profileId: { type: "Int" }, period: { type: "String" } }
+            }
+        },
+        FinancialTransactionAllocation: {
+            name: "FinancialTransactionAllocation",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                transactionId: {
+                    name: "transactionId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "transaction"
+                    ]
+                },
+                profileId: {
+                    name: "profileId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "profile"
+                    ]
+                },
+                period: {
+                    name: "period",
+                    type: "String"
+                },
+                amount: {
+                    name: "amount",
+                    type: "Decimal"
+                },
+                allocationType: {
+                    name: "allocationType",
+                    type: "CompensationAllocationType",
+                    default: "MANUAL_ADJUST"
+                },
+                sourceAllocationId: {
+                    name: "sourceAllocationId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "sourceAllocation"
+                    ]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true
+                },
+                transaction: {
+                    name: "transaction",
+                    type: "FinancialTransaction",
+                    relation: { opposite: "allocations", fields: ["transactionId"], references: ["id"], onDelete: "Cascade" }
+                },
+                profile: {
+                    name: "profile",
+                    type: "CompensationProfile",
+                    relation: { opposite: "allocations", fields: ["profileId"], references: ["id"], onDelete: "Cascade" }
+                },
+                sourceAllocation: {
+                    name: "sourceAllocation",
+                    type: "FinancialTransactionAllocation",
+                    optional: true,
+                    relation: { opposite: "derivedAllocations", name: "AllocationSource", fields: ["sourceAllocationId"], references: ["id"], onDelete: "SetNull" }
+                },
+                derivedAllocations: {
+                    name: "derivedAllocations",
+                    type: "FinancialTransactionAllocation",
+                    array: true,
+                    relation: { opposite: "sourceAllocation", name: "AllocationSource" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        }
+    } as const;
+    enums = {
+        PersonType: {
+            name: "PersonType",
+            values: {
+                NATURAL: "NATURAL",
+                JURIDICAL: "JURIDICAL"
+            }
+        },
+        CounterpartCategory: {
+            name: "CounterpartCategory",
+            values: {
+                SUPPLIER: "SUPPLIER",
+                CLIENT: "CLIENT",
+                EMPLOYEE: "EMPLOYEE",
+                PARTNER: "PARTNER",
+                LENDER: "LENDER",
+                PERSONAL_EXPENSE: "PERSONAL_EXPENSE",
+                OTHER: "OTHER"
+            }
+        },
+        EmployeeStatus: {
+            name: "EmployeeStatus",
+            values: {
+                ACTIVE: "ACTIVE",
+                INACTIVE: "INACTIVE",
+                TERMINATED: "TERMINATED"
+            }
+        },
+        EmployeeSalaryType: {
+            name: "EmployeeSalaryType",
+            values: {
+                HOURLY: "HOURLY",
+                FIXED: "FIXED"
+            }
+        },
+        TransactionDirection: {
+            name: "TransactionDirection",
+            values: {
+                IN: "IN",
+                OUT: "OUT",
+                NEUTRO: "NEUTRO"
+            }
+        },
+        ServiceType: {
+            name: "ServiceType",
+            values: {
+                BUSINESS: "BUSINESS",
+                PERSONAL: "PERSONAL",
+                SUPPLIER: "SUPPLIER",
+                TAX: "TAX",
+                UTILITY: "UTILITY",
+                LEASE: "LEASE",
+                SOFTWARE: "SOFTWARE",
+                OTHER: "OTHER"
+            }
+        },
+        ServiceFrequency: {
+            name: "ServiceFrequency",
+            values: {
+                WEEKLY: "WEEKLY",
+                BIWEEKLY: "BIWEEKLY",
+                MONTHLY: "MONTHLY",
+                BIMONTHLY: "BIMONTHLY",
+                QUARTERLY: "QUARTERLY",
+                SEMIANNUAL: "SEMIANNUAL",
+                ANNUAL: "ANNUAL",
+                ONCE: "ONCE"
+            }
+        },
+        ServiceStatus: {
+            name: "ServiceStatus",
+            values: {
+                ACTIVE: "ACTIVE",
+                INACTIVE: "INACTIVE",
+                ARCHIVED: "ARCHIVED"
+            }
+        },
+        ServiceRecurrenceType: {
+            name: "ServiceRecurrenceType",
+            values: {
+                RECURRING: "RECURRING",
+                ONE_OFF: "ONE_OFF"
+            }
+        },
+        ServiceOwnership: {
+            name: "ServiceOwnership",
+            values: {
+                COMPANY: "COMPANY",
+                OWNER: "OWNER",
+                MIXED: "MIXED",
+                THIRD_PARTY: "THIRD_PARTY"
+            }
+        },
+        ServiceObligationType: {
+            name: "ServiceObligationType",
+            values: {
+                SERVICE: "SERVICE",
+                DEBT: "DEBT",
+                LOAN: "LOAN",
+                OTHER: "OTHER"
+            }
+        },
+        ServiceAmountIndexation: {
+            name: "ServiceAmountIndexation",
+            values: {
+                NONE: "NONE",
+                UF: "UF"
+            }
+        },
+        ServiceLateFeeMode: {
+            name: "ServiceLateFeeMode",
+            values: {
+                NONE: "NONE",
+                FIXED: "FIXED",
+                PERCENTAGE: "PERCENTAGE"
+            }
+        },
+        ServiceEmissionMode: {
+            name: "ServiceEmissionMode",
+            values: {
+                FIXED_DAY: "FIXED_DAY",
+                DATE_RANGE: "DATE_RANGE",
+                SPECIFIC_DATE: "SPECIFIC_DATE"
+            }
+        },
+        ServiceScheduleStatus: {
+            name: "ServiceScheduleStatus",
+            values: {
+                PENDING: "PENDING",
+                PARTIAL: "PARTIAL",
+                PAID: "PAID",
+                SKIPPED: "SKIPPED"
+            }
+        },
+        LoanStatus: {
+            name: "LoanStatus",
+            values: {
+                ACTIVE: "ACTIVE",
+                COMPLETED: "COMPLETED",
+                DEFAULTED: "DEFAULTED"
+            }
+        },
+        LoanScheduleStatus: {
+            name: "LoanScheduleStatus",
+            values: {
+                PENDING: "PENDING",
+                PARTIAL: "PARTIAL",
+                PAID: "PAID",
+                OVERDUE: "OVERDUE"
+            }
+        },
+        UserStatus: {
+            name: "UserStatus",
+            values: {
+                PENDING_SETUP: "PENDING_SETUP",
+                ACTIVE: "ACTIVE",
+                SUSPENDED: "SUSPENDED"
+            }
+        },
+        ClinicalSeriesKind: {
+            name: "ClinicalSeriesKind",
+            values: {
+                PATCH_TEST: "PATCH_TEST",
+                SKIN_TEST: "SKIN_TEST",
+                SUBCUTANEOUS_TREATMENT: "SUBCUTANEOUS_TREATMENT"
+            }
+        },
+        ClinicalSeriesStatus: {
+            name: "ClinicalSeriesStatus",
+            values: {
+                ACTIVE: "ACTIVE",
+                COMPLETED: "COMPLETED",
+                CANCELLED: "CANCELLED"
+            }
+        },
+        ClinicalSeriesStageKind: {
+            name: "ClinicalSeriesStageKind",
+            values: {
+                INSTALLATION: "INSTALLATION",
+                READING: "READING",
+                DOSE: "DOSE",
+                MAINTENANCE: "MAINTENANCE"
+            }
+        },
+        BudgetStatus: {
+            name: "BudgetStatus",
+            values: {
+                DRAFT: "DRAFT",
+                SENT: "SENT",
+                ACCEPTED: "ACCEPTED",
+                REJECTED: "REJECTED",
+                EXPIRED: "EXPIRED"
+            }
+        },
+        AttachmentType: {
+            name: "AttachmentType",
+            values: {
+                CONSENT: "CONSENT",
+                EXAM: "EXAM",
+                RECIPE: "RECIPE",
+                OTHER: "OTHER"
+            }
+        },
+        DTEType: {
+            name: "DTEType",
+            values: {
+                PURCHASE: "PURCHASE",
+                SALE: "SALE"
+            }
+        },
+        TransactionType: {
+            name: "TransactionType",
+            values: {
+                INCOME: "INCOME",
+                EXPENSE: "EXPENSE"
+            }
+        },
+        CompensationAllocationType: {
+            name: "CompensationAllocationType",
+            values: {
+                MANUAL_ADJUST: "MANUAL_ADJUST",
+                ORIGINAL: "ORIGINAL",
+                ROLLOVER_IN: "ROLLOVER_IN",
+                ROLLOVER_OUT: "ROLLOVER_OUT"
+            }
+        }
+    } as const;
+    authType = "User" as const;
+    plugins = {};
 }
 export const schema = new SchemaType();

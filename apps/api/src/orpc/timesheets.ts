@@ -742,7 +742,6 @@ export const timesheetsORPCHandler = new SuperJSONRPCHandler(timesheetsORPCRoute
 export const timesheetsOpenAPIHandler = new OpenAPIHandler(timesheetsORPCRouter, {
   plugins: [
     new OpenAPIReferencePlugin({
-      docsPath: "/api/orpc/timesheets/docs",
       docsTitle: "Bioalergia Timesheets API Reference",
       schemaConverters: [new ZodToJsonSchemaConverter()],
       specGenerateOptions: {
@@ -751,7 +750,6 @@ export const timesheetsOpenAPIHandler = new OpenAPIHandler(timesheetsORPCRouter,
           version: "1.0.0",
         },
       },
-      specPath: "/api/orpc/timesheets/openapi.json",
     }),
   ],
   interceptors: [

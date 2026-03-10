@@ -1064,7 +1064,6 @@ export const calendarORPCHandler = new SuperJSONRPCHandler(calendarORPCRouter, {
 export const calendarOpenAPIHandler = new OpenAPIHandler(calendarORPCRouter, {
   plugins: [
     new OpenAPIReferencePlugin({
-      docsPath: "/api/orpc/calendar/docs",
       docsTitle: "Bioalergia Calendar API Reference",
       schemaConverters: [new ZodToJsonSchemaConverter()],
       specGenerateOptions: {
@@ -1073,7 +1072,6 @@ export const calendarOpenAPIHandler = new OpenAPIHandler(calendarORPCRouter, {
           version: "1.0.0",
         },
       },
-      specPath: "/api/orpc/calendar/openapi.json",
     }),
   ],
   interceptors: [

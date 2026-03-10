@@ -394,7 +394,6 @@ export const inventoryORPCHandler = new SuperJSONRPCHandler(inventoryORPCRouter,
 export const inventoryOpenAPIHandler = new OpenAPIHandler(inventoryORPCRouter, {
   plugins: [
     new OpenAPIReferencePlugin({
-      docsPath: "/api/orpc/inventory/docs",
       docsTitle: "Bioalergia Inventory API Reference",
       schemaConverters: [new ZodToJsonSchemaConverter()],
       specGenerateOptions: {
@@ -403,7 +402,6 @@ export const inventoryOpenAPIHandler = new OpenAPIHandler(inventoryORPCRouter, {
           version: "1.0.0",
         },
       },
-      specPath: "/api/orpc/inventory/openapi.json",
     }),
   ],
   interceptors: [

@@ -25,7 +25,6 @@
     "noUncheckedIndexedAccess": true,
 
     "types": ["vite/client"],
-    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
       "@shared/*": ["./shared/*"],

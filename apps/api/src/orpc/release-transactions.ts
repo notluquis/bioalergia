@@ -197,14 +197,13 @@ export const releaseTransactionsORPCHandler = new SuperJSONRPCHandler(
 export const releaseTransactionsOpenAPIHandler = new OpenAPIHandler(releaseTransactionsORPCRouter, {
   plugins: [
     new OpenAPIReferencePlugin({
-      docsPath: "/api/orpc/release-transactions/docs",
-      specPath: "/api/orpc/release-transactions/openapi.json",
-      theme: "saturn",
-      favicon: "https://orpc.dev/icon.svg",
-      layout: "modern",
-      meta: {
-        title: "Bioalergia Release Transactions oRPC",
-        description: "Contratos oRPC/OpenAPI para release transactions de Mercado Pago.",
+      schemaConverters: [new ZodToJsonSchemaConverter()],
+      specGenerateOptions: {
+        info: {
+          title: "Bioalergia Release Transactions oRPC",
+          description: "Contratos oRPC/OpenAPI para release transactions de Mercado Pago.",
+          version: "1.0.0",
+        },
       },
     }),
   ],
@@ -216,5 +215,4 @@ export const releaseTransactionsOpenAPIHandler = new OpenAPIHandler(releaseTrans
       });
     }),
   ],
-  schemaConverters: [new ZodToJsonSchemaConverter()],
 });

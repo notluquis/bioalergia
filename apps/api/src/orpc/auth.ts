@@ -166,7 +166,7 @@ const passkeyRegistrationOptionsSchema = z.object({
 function authError(
   status: "BAD_REQUEST" | "FORBIDDEN" | "INTERNAL_SERVER_ERROR" | "UNAUTHORIZED",
   message: string,
-) {
+): never {
   throw new ORPCError(status, { message });
 }
 
@@ -311,7 +311,11 @@ const authORPCRouterBase = {
         },
       });
 
-      if (!user?.passwordHash) {
+      if (!user) {
+        authError("UNAUTHORIZED", "Credenciales incorrectas");
+      }
+
+      if (!user.passwordHash) {
         authError("UNAUTHORIZED", "Credenciales incorrectas");
       }
 
@@ -350,7 +354,7 @@ const authORPCRouterBase = {
       setCookie(context.hono, COOKIE_NAME, token, COOKIE_OPTIONS);
 
       const { getAbilityRulesForUser } = await import("../services/authz.js");
-      const abilityRules = (await getAbilityRulesForUser(user.id)) as RawRuleOf<unknown>[];
+      const abilityRules = (await getAbilityRulesForUser(user.id)) as RawRuleOf<any>[];
 
       return {
         abilityRules,
@@ -404,7 +408,7 @@ const authORPCRouterBase = {
       setCookie(context.hono, COOKIE_NAME, token, COOKIE_OPTIONS);
 
       const { getAbilityRulesForUser } = await import("../services/authz.js");
-      const abilityRules = (await getAbilityRulesForUser(user.id)) as RawRuleOf<unknown>[];
+      const abilityRules = (await getAbilityRulesForUser(user.id)) as RawRuleOf<any>[];
 
       return {
         abilityRules,
@@ -462,7 +466,7 @@ const authORPCRouterBase = {
         }
 
         const { getAbilityRulesForUser } = await import("../services/authz.js");
-        const abilityRules = (await getAbilityRulesForUser(user.id)) as RawRuleOf<unknown>[];
+        const abilityRules = (await getAbilityRulesForUser(user.id)) as RawRuleOf<any>[];
         const notificationEmail = user.person?.email ?? "";
         const loginEmail = await getEffectiveLoginEmailByUserId(user.id, notificationEmail);
 
@@ -520,7 +524,11 @@ const authORPCRouterBase = {
       }
 
       const user = await db.user.findUnique({ where: { id: session.userId } });
-      if (!user?.mfaSecret) {
+      if (!user) {
+        authError("BAD_REQUEST", "Usuario no encontrado");
+      }
+
+      if (!user.mfaSecret) {
         authError("BAD_REQUEST", "MFA setup no iniciado");
       }
 
@@ -661,7 +669,7 @@ const authORPCRouterBase = {
       setCookie(context.hono, COOKIE_NAME, token, COOKIE_OPTIONS);
 
       const { getAbilityRulesForUser } = await import("../services/authz.js");
-      const abilityRules = (await getAbilityRulesForUser(user.id)) as RawRuleOf<unknown>[];
+      const abilityRules = (await getAbilityRulesForUser(user.id)) as RawRuleOf<any>[];
 
       return {
         abilityRules,
@@ -821,14 +829,13 @@ export const authORPCHandler = new SuperJSONRPCHandler(authORPCRouter, {
 export const authOpenAPIHandler = new OpenAPIHandler(authORPCRouter, {
   plugins: [
     new OpenAPIReferencePlugin({
-      docsPath: "/api/orpc/auth/docs",
-      specPath: "/api/orpc/auth/openapi.json",
-      theme: "saturn",
-      favicon: "https://orpc.dev/icon.svg",
-      layout: "modern",
-      meta: {
-        title: "Bioalergia Auth oRPC",
-        description: "Contratos oRPC/OpenAPI para login, sesión, MFA y passkeys.",
+      schemaConverters: [new ZodToJsonSchemaConverter()],
+      specGenerateOptions: {
+        info: {
+          title: "Bioalergia Auth oRPC",
+          description: "Contratos oRPC/OpenAPI para login, sesión, MFA y passkeys.",
+          version: "1.0.0",
+        },
       },
     }),
   ],
@@ -840,5 +847,4 @@ export const authOpenAPIHandler = new OpenAPIHandler(authORPCRouter, {
       });
     }),
   ],
-  schemaConverters: [new ZodToJsonSchemaConverter()],
 });

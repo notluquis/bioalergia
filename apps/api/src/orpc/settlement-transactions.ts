@@ -197,14 +197,13 @@ export const settlementTransactionsOpenAPIHandler = new OpenAPIHandler(
   {
     plugins: [
       new OpenAPIReferencePlugin({
-        docsPath: "/api/orpc/settlement-transactions/docs",
-        specPath: "/api/orpc/settlement-transactions/openapi.json",
-        theme: "saturn",
-        favicon: "https://orpc.dev/icon.svg",
-        layout: "modern",
-        meta: {
-          title: "Bioalergia Settlement Transactions oRPC",
-          description: "Contratos oRPC/OpenAPI para settlement transactions de Mercado Pago.",
+        schemaConverters: [new ZodToJsonSchemaConverter()],
+        specGenerateOptions: {
+          info: {
+            title: "Bioalergia Settlement Transactions oRPC",
+            description: "Contratos oRPC/OpenAPI para settlement transactions de Mercado Pago.",
+          version: "1.0.0",
+          },
         },
       }),
     ],
@@ -216,6 +215,5 @@ export const settlementTransactionsOpenAPIHandler = new OpenAPIHandler(
         });
       }),
     ],
-    schemaConverters: [new ZodToJsonSchemaConverter()],
   },
 );

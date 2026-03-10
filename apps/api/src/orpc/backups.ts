@@ -266,15 +266,13 @@ export const backupsORPCHandler = new SuperJSONRPCHandler(backupsORPCRouter, {
 export const backupsOpenAPIHandler = new OpenAPIHandler(backupsORPCRouter, {
   plugins: [
     new OpenAPIReferencePlugin({
-      docsPath: "/api/orpc/backups/docs",
-      specPath: "/api/orpc/backups/openapi.json",
-      theme: "saturn",
-      favicon: "https://orpc.dev/icon.svg",
-      layout: "modern",
-      meta: {
-        title: "Bioalergia Backups oRPC",
-        description:
-          "Contratos oRPC/OpenAPI para backups. El stream de progreso SSE sigue en /api/backups/progress.",
+      schemaConverters: [new ZodToJsonSchemaConverter()],
+      specGenerateOptions: {
+        info: {
+          title: "Bioalergia Backups oRPC",
+          description:
+            "Contratos oRPC/OpenAPI para backups. El stream de progreso SSE sigue en /api/backups/progress.",
+        },
       },
     }),
   ],
@@ -286,5 +284,4 @@ export const backupsOpenAPIHandler = new OpenAPIHandler(backupsORPCRouter, {
       });
     }),
   ],
-  schemaConverters: [new ZodToJsonSchemaConverter()],
 });

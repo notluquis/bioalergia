@@ -146,14 +146,13 @@ export const transactionsInsightsOpenAPIHandler = new OpenAPIHandler(
   {
     plugins: [
       new OpenAPIReferencePlugin({
-        docsPath: "/api/orpc/transactions-insights/docs",
-        specPath: "/api/orpc/transactions-insights/openapi.json",
-        theme: "saturn",
-        favicon: "https://orpc.dev/icon.svg",
-        layout: "modern",
-        meta: {
-          title: "Bioalergia Transactions Insights oRPC",
-          description: "Contratos oRPC/OpenAPI para estadísticas y participants de transacciones.",
+        schemaConverters: [new ZodToJsonSchemaConverter()],
+        specGenerateOptions: {
+          info: {
+            title: "Bioalergia Transactions Insights oRPC",
+            description:
+              "Contratos oRPC/OpenAPI para estadísticas y participants de transacciones.",
+          },
         },
       }),
     ],
@@ -165,6 +164,5 @@ export const transactionsInsightsOpenAPIHandler = new OpenAPIHandler(
         });
       }),
     ],
-    schemaConverters: [new ZodToJsonSchemaConverter()],
   },
 );

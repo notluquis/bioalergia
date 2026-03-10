@@ -130,14 +130,13 @@ export const balancesORPCHandler = new SuperJSONRPCHandler(balancesORPCRouter, {
 export const balancesOpenAPIHandler = new OpenAPIHandler(balancesORPCRouter, {
   plugins: [
     new OpenAPIReferencePlugin({
-      docsPath: "/api/orpc/balances/docs",
-      specPath: "/api/orpc/balances/openapi.json",
-      theme: "saturn",
-      favicon: "https://orpc.dev/icon.svg",
-      layout: "modern",
-      meta: {
-        title: "Bioalergia Balances oRPC",
-        description: "Contratos oRPC/OpenAPI para balances diarios de caja.",
+      schemaConverters: [new ZodToJsonSchemaConverter()],
+      specGenerateOptions: {
+        info: {
+          title: "Bioalergia Balances oRPC",
+          description: "Contratos oRPC/OpenAPI para balances diarios de caja.",
+          version: "1.0.0",
+        },
       },
     }),
   ],
@@ -149,5 +148,4 @@ export const balancesOpenAPIHandler = new OpenAPIHandler(balancesORPCRouter, {
       });
     }),
   ],
-  schemaConverters: [new ZodToJsonSchemaConverter()],
 });

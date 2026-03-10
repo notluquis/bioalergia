@@ -407,7 +407,6 @@ export const rolesORPCHandler = new SuperJSONRPCHandler(rolesORPCRouter, {
 export const rolesOpenAPIHandler = new OpenAPIHandler(rolesORPCRouter, {
   plugins: [
     new OpenAPIReferencePlugin({
-      docsPath: "/api/orpc/roles/docs",
       docsTitle: "Bioalergia Roles API Reference",
       schemaConverters: [new ZodToJsonSchemaConverter()],
       specGenerateOptions: {
@@ -416,7 +415,6 @@ export const rolesOpenAPIHandler = new OpenAPIHandler(rolesORPCRouter, {
           version: "1.0.0",
         },
       },
-      specPath: "/api/orpc/roles/openapi.json",
     }),
   ],
   interceptors: [

@@ -170,14 +170,13 @@ export const peopleORPCHandler = new SuperJSONRPCHandler(peopleORPCRouter, {
 export const peopleOpenAPIHandler = new OpenAPIHandler(peopleORPCRouter, {
   plugins: [
     new OpenAPIReferencePlugin({
-      docsPath: "/api/orpc/people/docs",
-      specPath: "/api/orpc/people/openapi.json",
-      theme: "saturn",
-      favicon: "https://orpc.dev/icon.svg",
-      layout: "modern",
-      meta: {
-        title: "Bioalergia People oRPC",
-        description: "Contratos oRPC/OpenAPI para personas.",
+      schemaConverters: [new ZodToJsonSchemaConverter()],
+      specGenerateOptions: {
+        info: {
+          title: "Bioalergia People oRPC",
+          description: "Contratos oRPC/OpenAPI para personas.",
+          version: "1.0.0",
+        },
       },
     }),
   ],
@@ -189,5 +188,4 @@ export const peopleOpenAPIHandler = new OpenAPIHandler(peopleORPCRouter, {
       });
     }),
   ],
-  schemaConverters: [new ZodToJsonSchemaConverter()],
 });

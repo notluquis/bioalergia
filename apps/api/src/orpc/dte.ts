@@ -168,7 +168,6 @@ export const dteORPCHandler = new SuperJSONRPCHandler(dteORPCRouter, {
 export const dteOpenAPIHandler = new OpenAPIHandler(dteORPCRouter, {
   plugins: [
     new OpenAPIReferencePlugin({
-      docsPath: "/api/orpc/dte/docs",
       docsTitle: "Bioalergia DTE API Reference",
       schemaConverters: [new ZodToJsonSchemaConverter()],
       specGenerateOptions: {
@@ -177,7 +176,6 @@ export const dteOpenAPIHandler = new OpenAPIHandler(dteORPCRouter, {
           version: "1.0.0",
         },
       },
-      specPath: "/api/orpc/dte/openapi.json",
     }),
   ],
   interceptors: [

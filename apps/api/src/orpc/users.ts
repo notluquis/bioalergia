@@ -510,6 +510,10 @@ const usersORPCRouterBase = {
         throw new ORPCError("NOT_FOUND", { message: "Usuario no encontrado" });
       }
 
+      if (!user.person) {
+        throw new ORPCError("NOT_FOUND", { message: "Datos personales no encontrados" });
+      }
+
       const loginEmailRow = await db.$queryRaw<Array<{ loginEmail: null | string }>>`
         SELECT u.login_email AS "loginEmail"
         FROM users u
@@ -518,7 +522,7 @@ const usersORPCRouterBase = {
       `;
 
       const explicitLoginEmail = loginEmailRow[0]?.loginEmail?.trim() || null;
-      const notificationEmail = user.person?.email ?? "";
+      const notificationEmail = user.person.email ?? "";
       const effectiveLoginEmail = explicitLoginEmail || notificationEmail;
 
       return {
@@ -907,14 +911,13 @@ export const usersORPCHandler = new SuperJSONRPCHandler(usersORPCRouter, {
 export const usersOpenAPIHandler = new OpenAPIHandler(usersORPCRouter, {
   plugins: [
     new OpenAPIReferencePlugin({
-      docsPath: "/api/orpc/users/docs",
-      specPath: "/api/orpc/users/openapi.json",
-      theme: "saturn",
-      favicon: "https://orpc.dev/icon.svg",
-      layout: "modern",
-      meta: {
-        title: "Bioalergia Users oRPC",
-        description: "Contratos oRPC/OpenAPI para gestión de usuarios.",
+      schemaConverters: [new ZodToJsonSchemaConverter()],
+      specGenerateOptions: {
+        info: {
+          title: "Bioalergia Users oRPC",
+          description: "Contratos oRPC/OpenAPI para gestión de usuarios.",
+          version: "1.0.0",
+        },
       },
     }),
   ],
@@ -926,5 +929,4 @@ export const usersOpenAPIHandler = new OpenAPIHandler(usersORPCRouter, {
       });
     }),
   ],
-  schemaConverters: [new ZodToJsonSchemaConverter()],
 });

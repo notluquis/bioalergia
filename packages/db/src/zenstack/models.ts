@@ -5,8 +5,8 @@
 
 /* eslint-disable */
 
+import { schema as $schema, type SchemaType as $Schema } from "./schema-lite.js";
 import type { ModelResult as $ModelResult } from "@zenstackhq/orm";
-import { type SchemaType as $Schema, schema as $schema } from "./schema-lite.js";
 export type Person = $ModelResult<$Schema, "Person">;
 export type User = $ModelResult<$Schema, "User">;
 export type Passkey = $ModelResult<$Schema, "Passkey">;
@@ -73,10 +73,7 @@ export type FinancialAutoCategoryRule = $ModelResult<$Schema, "FinancialAutoCate
 export type FinancialTransaction = $ModelResult<$Schema, "FinancialTransaction">;
 export type CompensationProfile = $ModelResult<$Schema, "CompensationProfile">;
 export type CompensationPeriodBudget = $ModelResult<$Schema, "CompensationPeriodBudget">;
-export type FinancialTransactionAllocation = $ModelResult<
-  $Schema,
-  "FinancialTransactionAllocation"
->;
+export type FinancialTransactionAllocation = $ModelResult<$Schema, "FinancialTransactionAllocation">;
 export const PersonType = $schema.enums.PersonType.values;
 export type PersonType = (typeof PersonType)[keyof typeof PersonType];
 export const CounterpartCategory = $schema.enums.CounterpartCategory.values;
@@ -94,23 +91,19 @@ export type ServiceFrequency = (typeof ServiceFrequency)[keyof typeof ServiceFre
 export const ServiceStatus = $schema.enums.ServiceStatus.values;
 export type ServiceStatus = (typeof ServiceStatus)[keyof typeof ServiceStatus];
 export const ServiceRecurrenceType = $schema.enums.ServiceRecurrenceType.values;
-export type ServiceRecurrenceType =
-  (typeof ServiceRecurrenceType)[keyof typeof ServiceRecurrenceType];
+export type ServiceRecurrenceType = (typeof ServiceRecurrenceType)[keyof typeof ServiceRecurrenceType];
 export const ServiceOwnership = $schema.enums.ServiceOwnership.values;
 export type ServiceOwnership = (typeof ServiceOwnership)[keyof typeof ServiceOwnership];
 export const ServiceObligationType = $schema.enums.ServiceObligationType.values;
-export type ServiceObligationType =
-  (typeof ServiceObligationType)[keyof typeof ServiceObligationType];
+export type ServiceObligationType = (typeof ServiceObligationType)[keyof typeof ServiceObligationType];
 export const ServiceAmountIndexation = $schema.enums.ServiceAmountIndexation.values;
-export type ServiceAmountIndexation =
-  (typeof ServiceAmountIndexation)[keyof typeof ServiceAmountIndexation];
+export type ServiceAmountIndexation = (typeof ServiceAmountIndexation)[keyof typeof ServiceAmountIndexation];
 export const ServiceLateFeeMode = $schema.enums.ServiceLateFeeMode.values;
 export type ServiceLateFeeMode = (typeof ServiceLateFeeMode)[keyof typeof ServiceLateFeeMode];
 export const ServiceEmissionMode = $schema.enums.ServiceEmissionMode.values;
 export type ServiceEmissionMode = (typeof ServiceEmissionMode)[keyof typeof ServiceEmissionMode];
 export const ServiceScheduleStatus = $schema.enums.ServiceScheduleStatus.values;
-export type ServiceScheduleStatus =
-  (typeof ServiceScheduleStatus)[keyof typeof ServiceScheduleStatus];
+export type ServiceScheduleStatus = (typeof ServiceScheduleStatus)[keyof typeof ServiceScheduleStatus];
 export const LoanStatus = $schema.enums.LoanStatus.values;
 export type LoanStatus = (typeof LoanStatus)[keyof typeof LoanStatus];
 export const LoanScheduleStatus = $schema.enums.LoanScheduleStatus.values;
@@ -122,8 +115,7 @@ export type ClinicalSeriesKind = (typeof ClinicalSeriesKind)[keyof typeof Clinic
 export const ClinicalSeriesStatus = $schema.enums.ClinicalSeriesStatus.values;
 export type ClinicalSeriesStatus = (typeof ClinicalSeriesStatus)[keyof typeof ClinicalSeriesStatus];
 export const ClinicalSeriesStageKind = $schema.enums.ClinicalSeriesStageKind.values;
-export type ClinicalSeriesStageKind =
-  (typeof ClinicalSeriesStageKind)[keyof typeof ClinicalSeriesStageKind];
+export type ClinicalSeriesStageKind = (typeof ClinicalSeriesStageKind)[keyof typeof ClinicalSeriesStageKind];
 export const BudgetStatus = $schema.enums.BudgetStatus.values;
 export type BudgetStatus = (typeof BudgetStatus)[keyof typeof BudgetStatus];
 export const AttachmentType = $schema.enums.AttachmentType.values;
@@ -133,5 +125,4 @@ export type DTEType = (typeof DTEType)[keyof typeof DTEType];
 export const TransactionType = $schema.enums.TransactionType.values;
 export type TransactionType = (typeof TransactionType)[keyof typeof TransactionType];
 export const CompensationAllocationType = $schema.enums.CompensationAllocationType.values;
-export type CompensationAllocationType =
-  (typeof CompensationAllocationType)[keyof typeof CompensationAllocationType];
+export type CompensationAllocationType = (typeof CompensationAllocationType)[keyof typeof CompensationAllocationType];

@@ -139,14 +139,13 @@ export const notificationsORPCHandler = new SuperJSONRPCHandler(notificationsORP
 export const notificationsOpenAPIHandler = new OpenAPIHandler(notificationsORPCRouter, {
   plugins: [
     new OpenAPIReferencePlugin({
-      docsPath: "/api/orpc/notifications/docs",
-      specPath: "/api/orpc/notifications/openapi.json",
-      theme: "saturn",
-      favicon: "https://orpc.dev/icon.svg",
-      layout: "modern",
-      meta: {
-        title: "Bioalergia Notifications oRPC",
-        description: "Contratos oRPC/OpenAPI para push notifications.",
+      schemaConverters: [new ZodToJsonSchemaConverter()],
+      specGenerateOptions: {
+        info: {
+          title: "Bioalergia Notifications oRPC",
+          description: "Contratos oRPC/OpenAPI para push notifications.",
+          version: "1.0.0",
+        },
       },
     }),
   ],
@@ -158,5 +157,4 @@ export const notificationsOpenAPIHandler = new OpenAPIHandler(notificationsORPCR
       });
     }),
   ],
-  schemaConverters: [new ZodToJsonSchemaConverter()],
 });

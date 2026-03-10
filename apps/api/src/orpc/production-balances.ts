@@ -278,14 +278,13 @@ export const productionBalancesORPCHandler = new SuperJSONRPCHandler(productionB
 export const productionBalancesOpenAPIHandler = new OpenAPIHandler(productionBalancesORPCRouter, {
   plugins: [
     new OpenAPIReferencePlugin({
-      docsPath: "/api/orpc/production-balances/docs",
-      specPath: "/api/orpc/production-balances/openapi.json",
-      theme: "saturn",
-      favicon: "https://orpc.dev/icon.svg",
-      layout: "modern",
-      meta: {
-        title: "Bioalergia Production Balances oRPC",
-        description: "Contratos oRPC/OpenAPI para balances diarios de producción.",
+      schemaConverters: [new ZodToJsonSchemaConverter()],
+      specGenerateOptions: {
+        info: {
+          title: "Bioalergia Production Balances oRPC",
+          description: "Contratos oRPC/OpenAPI para balances diarios de producción.",
+          version: "1.0.0",
+        },
       },
     }),
   ],
@@ -297,5 +296,4 @@ export const productionBalancesOpenAPIHandler = new OpenAPIHandler(productionBal
       });
     }),
   ],
-  schemaConverters: [new ZodToJsonSchemaConverter()],
 });

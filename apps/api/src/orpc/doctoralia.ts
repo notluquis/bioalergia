@@ -537,14 +537,13 @@ export const doctoraliaORPCHandler = new SuperJSONRPCHandler(doctoraliaORPCRoute
 export const doctoraliaOpenAPIHandler = new OpenAPIHandler(doctoraliaORPCRouter, {
   plugins: [
     new OpenAPIReferencePlugin({
-      docsPath: "/api/orpc/doctoralia/docs",
-      specPath: "/api/orpc/doctoralia/openapi.json",
-      theme: "saturn",
-      favicon: "https://orpc.dev/icon.svg",
-      layout: "modern",
-      meta: {
-        title: "Bioalergia Doctoralia oRPC",
-        description: "Contratos oRPC/OpenAPI para catálogo, reservas y sync de Doctoralia.",
+      schemaConverters: [new ZodToJsonSchemaConverter()],
+      specGenerateOptions: {
+        info: {
+          title: "Bioalergia Doctoralia oRPC",
+          description: "Contratos oRPC/OpenAPI para catálogo, reservas y sync de Doctoralia.",
+          version: "1.0.0",
+        },
       },
     }),
   ],
@@ -556,5 +555,4 @@ export const doctoraliaOpenAPIHandler = new OpenAPIHandler(doctoraliaORPCRouter,
       });
     }),
   ],
-  schemaConverters: [new ZodToJsonSchemaConverter()],
 });

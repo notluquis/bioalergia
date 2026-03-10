@@ -28,7 +28,11 @@
 - **Styling:** Tailwind CSS v4.1.18
 
 #### Important Tools
-- **Linter:** Biome (replaces ESLint/Prettier)
+- **Linter:** Oxlint v1.52.0 (Rust-based linting, 50-100x faster than ESLint)
+- **Formatter:** Oxfmt v0.37.0 (Rust-based, 95% Prettier compatible)
+- **Type-Checker:** Oxlint `--type-aware --type-check` (via oxlint-tsgolint v0.16.0)
+  - Replaces `tsc --noEmit` (eliminated OOM issue)
+  - All packages type-check in 7-8 seconds total (no memory exhaustion)
 - **Build Tool:** turbo monorepo
 - **Package Manager:** pnpm (NOT npm or yarn)
 
@@ -48,7 +52,56 @@
 - **Never use** `npx prisma db push` or `npx prisma migrate` - use Zenstack CLI instead
 - **No @prisma/client imports** - Use `@finanzas/db` exports (Kysely ORM powered)
 
-### 2. Dosage Field Refactoring (Completed Jan 29, 2026)
+### 2. Oxlint Consolidation (Completed March 10, 2026)
+**Migration:** Replaced Biome + tsc with unified Oxlint toolchain
+
+**Problem Solved:**
+- ✅ `tsc --noEmit` was hitting OOM (>4GB heap) on API type-checking
+- ✅ Tool redundancy: Separate linter (Biome) + formatter (Biome) + type-checker (tsc)
+- ✅ Slow turnaround: Type-checking blocked CI/CD
+
+**Solution Implemented:**
+- **Linting:** `oxlint` (Rust-based, replaces ESLint)
+- **Formatting:** `oxfmt` (Rust-based, 95% Prettier compatible)
+- **Type-Checking:** `oxlint --type-aware --type-check` (via oxlint-tsgolint, replaces tsc)
+
+**Configuration Files:**
+- `.oxlintrc.json` - Oxlint rules (typescript plugin enabled, type-aware rules)
+- `.oxfmtrc.jsonc` - Formatting config (indentWidth 2, lineWidth 100, single quotes off)
+
+**Migration Impact:**
+| Metric | Before | After |
+|--------|--------|-------|
+| Type-check time | OOM (4GB+) | 7.3s |
+| API type-check | Failed | ~2s (silent success) |
+| Memory usage | >4GB | <100MB |
+| Tool consolidation | 3 tools | 1 tool |
+
+**Commands:**
+```bash
+pnpm lint           # oxlint (all files)
+pnpm lint:fix       # oxlint --fix
+pnpm format         # oxfmt
+pnpm format:check   # oxfmt --check
+pnpm type-check     # oxlint --type-aware --type-check (via turbo)
+```
+
+**Critical tsconfig.json Change:**
+- ⚠️ Removed `baseUrl: "."` from `apps/intranet/tsconfig.json`
+- tsgolint doesn't support `baseUrl` (deprecated in newer TypeScript)
+- `paths` configuration still works without `baseUrl`
+
+**Files Modified:**
+- `.oxlintrc.json` (created)
+- `.oxfmtrc.jsonc` (created)
+- `package.json` (root + apps/api + apps/intranet) - script updates
+- `lint-staged.config.cjs` - updated to use oxlint + oxfmt
+- `apps/intranet/tsconfig.json` - removed baseUrl line
+- `biome.json` (no longer used, can archive)
+
+**Next Step:** Fix 35 type-check errors in @finanzas/intranet (mostly no-floating-promises)
+
+### 3. Dosage Field Refactoring (Completed Jan 29, 2026)
 **Problem:** Dosage stored as concatenated strings ("0,5 ml") made SQL aggregation complex and didn't handle locale variations (0.5 vs 0,5)
 
 **Solution - Completed:**
@@ -66,14 +119,14 @@
 
 **Next Step:** Re-sync calendar events with `POST /calendar/events/sync` to populate new fields
 
-### 3. Analytics Page (TreatmentAnalyticsPage.tsx)
+### 4. Analytics Page (TreatmentAnalyticsPage.tsx)
 - **Location:** `/apps/intranet/src/features/operations/supplies/pages/TreatmentAnalyticsPage.tsx`
 - **Components:** HeroUI DateField + DateInputGroup for date inputs (dark mode compatible)
 - **Quick Ranges:** Responsive grid (1 col mobile → 3 col desktop) with inline labels
 - **Layout:** Compact spacing (p-4, gap-3, space-y-4)
 - **Data Source:** Backend queries via `/calendar/events/treatment-analytics`
 
-### 4. Parser Architecture
+### 5. Parser Architecture
 - **Module:** `/apps/api/src/modules/calendar/parsers.ts`
 - **Purpose:** Extract metadata from Google Calendar event summaries/descriptions
 - **Key Functions:**
@@ -84,7 +137,7 @@
 - **Pattern Matching:** Regex-based extraction from docstrings
 - **Fallback Logic:** Treatment stage inference for missing dosages
 
-### 5. Calendar Sync Service
+### 6. Calendar Sync Service
 - **Location:** `/apps/api/src/services/calendar.ts`
 - **Entry Point:** `calendarSyncService.syncAll()`
 - **Endpoint:** `POST /calendar/events/sync` (requires auth)

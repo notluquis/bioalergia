@@ -213,15 +213,13 @@ export const expensesORPCHandler = new SuperJSONRPCHandler(expensesORPCRouter, {
 export const expensesOpenAPIHandler = new OpenAPIHandler(expensesORPCRouter, {
   plugins: [
     new OpenAPIReferencePlugin({
-      docsPath: "/api/orpc/expenses/docs",
-      specPath: "/api/orpc/expenses/openapi.json",
-      theme: "saturn",
-      favicon: "https://orpc.dev/icon.svg",
-      layout: "modern",
-      meta: {
-        title: "Bioalergia Expenses oRPC",
-        description:
-          "Contratos oRPC/OpenAPI para monthly expenses. La feature sigue placeholder en backend.",
+      schemaConverters: [new ZodToJsonSchemaConverter()],
+      specGenerateOptions: {
+        info: {
+          title: "Bioalergia Expenses oRPC",
+          description:
+            "Contratos oRPC/OpenAPI para monthly expenses. La feature sigue placeholder en backend.",
+        },
       },
     }),
   ],
@@ -233,5 +231,4 @@ export const expensesOpenAPIHandler = new OpenAPIHandler(expensesORPCRouter, {
       });
     }),
   ],
-  schemaConverters: [new ZodToJsonSchemaConverter()],
 });

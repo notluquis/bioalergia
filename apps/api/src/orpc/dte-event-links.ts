@@ -597,7 +597,6 @@ export const dteEventLinksORPCHandler = new SuperJSONRPCHandler(dteEventLinksORP
 export const dteEventLinksOpenAPIHandler = new OpenAPIHandler(dteEventLinksORPCRouter, {
   plugins: [
     new OpenAPIReferencePlugin({
-      docsPath: "/api/orpc/dte-analytics/event-links/docs",
       docsTitle: "Bioalergia DTE Event Links API Reference",
       schemaConverters: [new ZodToJsonSchemaConverter()],
       specGenerateOptions: {
@@ -606,7 +605,6 @@ export const dteEventLinksOpenAPIHandler = new OpenAPIHandler(dteEventLinksORPCR
           version: "1.0.0",
         },
       },
-      specPath: "/api/orpc/dte-analytics/event-links/openapi.json",
     }),
   ],
   interceptors: [

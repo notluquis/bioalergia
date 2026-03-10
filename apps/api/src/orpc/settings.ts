@@ -160,14 +160,13 @@ export const settingsORPCHandler = new SuperJSONRPCHandler(settingsORPCRouter, {
 export const settingsOpenAPIHandler = new OpenAPIHandler(settingsORPCRouter, {
   plugins: [
     new OpenAPIReferencePlugin({
-      docsPath: "/api/orpc/settings/docs",
-      specPath: "/api/orpc/settings/openapi.json",
-      theme: "saturn",
-      favicon: "https://orpc.dev/icon.svg",
-      layout: "modern",
-      meta: {
-        title: "Bioalergia Settings oRPC",
-        description: "Contratos oRPC/OpenAPI para configuración interna.",
+      schemaConverters: [new ZodToJsonSchemaConverter()],
+      specGenerateOptions: {
+        info: {
+          title: "Bioalergia Settings oRPC",
+          description: "Contratos oRPC/OpenAPI para configuración interna.",
+          version: "1.0.0",
+        },
       },
     }),
   ],
@@ -179,5 +178,4 @@ export const settingsOpenAPIHandler = new OpenAPIHandler(settingsORPCRouter, {
       });
     }),
   ],
-  schemaConverters: [new ZodToJsonSchemaConverter()],
 });

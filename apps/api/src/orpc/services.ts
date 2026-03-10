@@ -576,14 +576,13 @@ export const servicesORPCHandler = new SuperJSONRPCHandler(servicesORPCRouter, {
 export const servicesOpenAPIHandler = new OpenAPIHandler(servicesORPCRouter, {
   plugins: [
     new OpenAPIReferencePlugin({
-      docsPath: "/api/orpc/services/docs",
-      specPath: "/api/orpc/services/openapi.json",
-      theme: "saturn",
-      favicon: "https://orpc.dev/icon.svg",
-      layout: "modern",
-      meta: {
-        title: "Bioalergia Services oRPC",
-        description: "Contratos oRPC/OpenAPI para servicios recurrentes y sus schedules.",
+      schemaConverters: [new ZodToJsonSchemaConverter()],
+      specGenerateOptions: {
+        info: {
+          title: "Bioalergia Services oRPC",
+          description: "Contratos oRPC/OpenAPI para servicios recurrentes y sus schedules.",
+          version: "1.0.0",
+        },
       },
     }),
   ],
@@ -595,5 +594,4 @@ export const servicesOpenAPIHandler = new OpenAPIHandler(servicesORPCRouter, {
       });
     }),
   ],
-  schemaConverters: [new ZodToJsonSchemaConverter()],
 });

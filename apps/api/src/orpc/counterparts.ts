@@ -431,7 +431,6 @@ export const counterpartsORPCHandler = new SuperJSONRPCHandler(counterpartsORPCR
 export const counterpartsOpenAPIHandler = new OpenAPIHandler(counterpartsORPCRouter, {
   plugins: [
     new OpenAPIReferencePlugin({
-      docsPath: "/api/orpc/counterparts/docs",
       docsTitle: "Bioalergia Counterparts API Reference",
       schemaConverters: [new ZodToJsonSchemaConverter()],
       specGenerateOptions: {
@@ -440,7 +439,6 @@ export const counterpartsOpenAPIHandler = new OpenAPIHandler(counterpartsORPCRou
           version: "1.0.0",
         },
       },
-      specPath: "/api/orpc/counterparts/openapi.json",
     }),
   ],
   interceptors: [
