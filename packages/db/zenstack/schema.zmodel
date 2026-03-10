@@ -736,50 +736,50 @@ model CalendarWatchChannel {
 }
 
 model Event {
-  id              Int            @id @default(autoincrement())
-  calendarId      Int            @map("calendar_id")
-  clinicalSeriesId Int?          @map("clinical_series_id")
-  externalEventId String         @map("external_event_id")
-  eventStatus     String?        @map("event_status")
-  eventType       String?        @map("event_type")
-  summary         String?
-  description     String?
-  startDate       DateTime?      @map("start_date") @db.Date
-  startDateTime   DateTime?      @map("start_date_time")
-  startTimeZone   String?        @map("start_time_zone")
-  endDate         DateTime?      @map("end_date") @db.Date
-  endDateTime     DateTime?      @map("end_date_time")
-  endTimeZone     String?        @map("end_time_zone")
-  eventCreatedAt  DateTime?      @map("event_created_at")
-  eventUpdatedAt  DateTime?      @map("event_updated_at")
-  colorId         String?        @map("color_id")
-  location        String?
-  transparency    String?
-  visibility      String?
-  hangoutLink     String?        @map("hangout_link")
-  category        String?
-  amountExpected  Int?           @map("amount_expected")
-  amountPaid      Int?           @map("amount_paid")
-  attended        Boolean?
+  id                Int                      @id @default(autoincrement())
+  calendarId        Int                      @map("calendar_id")
+  clinicalSeriesId  Int?                     @map("clinical_series_id")
+  externalEventId   String                   @map("external_event_id")
+  eventStatus       String?                  @map("event_status")
+  eventType         String?                  @map("event_type")
+  summary           String?
+  description       String?
+  startDate         DateTime?                @map("start_date") @db.Date
+  startDateTime     DateTime?                @map("start_date_time")
+  startTimeZone     String?                  @map("start_time_zone")
+  endDate           DateTime?                @map("end_date") @db.Date
+  endDateTime       DateTime?                @map("end_date_time")
+  endTimeZone       String?                  @map("end_time_zone")
+  eventCreatedAt    DateTime?                @map("event_created_at")
+  eventUpdatedAt    DateTime?                @map("event_updated_at")
+  colorId           String?                  @map("color_id")
+  location          String?
+  transparency      String?
+  visibility        String?
+  hangoutLink       String?                  @map("hangout_link")
+  category          String?
+  amountExpected    Int?                     @map("amount_expected")
+  amountPaid        Int?                     @map("amount_paid")
+  attended          Boolean?
   
   // Custom tracking fields
-  treatmentStage  String?        @map("treatment_stage")
-  controlIncluded Boolean        @default(false) @map("control_included")
-  isDomicilio     Boolean        @default(false) @map("is_domicilio")
-  rawEvent        Json?          @map("raw_event")
-  lastSyncedAt    DateTime?      @map("last_synced_at")
+  treatmentStage    String?                  @map("treatment_stage")
+  controlIncluded   Boolean                  @default(false) @map("control_included")
+  isDomicilio       Boolean                  @default(false) @map("is_domicilio")
+  rawEvent          Json?                    @map("raw_event")
+  lastSyncedAt      DateTime?                @map("last_synced_at")
 
-  dosageValue     Float?         @map("dosage_value")
-  dosageUnit      String?        @map("dosage_unit")
-  seriesStageKind ClinicalSeriesStageKind? @map("series_stage_kind")
-  seriesStageNumber Int?         @map("series_stage_number")
-  seriesStageLabel String?       @map("series_stage_label")
-  testMetadata    Json?          @map("test_metadata")
-  createdAt       DateTime       @default(now()) @map("created_at")
-  updatedAt       DateTime       @default(now()) @updatedAt @map("updated_at")
-  calendar        Calendar       @relation(fields: [calendarId], references: [id], onDelete: Cascade)
-  clinicalSeries  ClinicalSeries? @relation(fields: [clinicalSeriesId], references: [id], onDelete: SetNull)
-  consultations   Consultation[]
+  dosageValue       Float?                   @map("dosage_value")
+  dosageUnit        String?                  @map("dosage_unit")
+  seriesStageKind   ClinicalSeriesStageKind? @map("series_stage_kind")
+  seriesStageNumber Int?                     @map("series_stage_number")
+  seriesStageLabel  String?                  @map("series_stage_label")
+  testMetadata      Json?                    @map("test_metadata")
+  createdAt         DateTime                 @default(now()) @map("created_at")
+  updatedAt         DateTime                 @default(now()) @updatedAt @map("updated_at")
+  calendar          Calendar                 @relation(fields: [calendarId], references: [id], onDelete: Cascade)
+  clinicalSeries    ClinicalSeries?          @relation(fields: [clinicalSeriesId], references: [id], onDelete: SetNull)
+  consultations     Consultation[]
 
   // Access policies
   @@deny('all', auth() == null)
@@ -793,17 +793,17 @@ model Event {
 }
 
 model ClinicalSeries {
-  id               Int                     @id @default(autoincrement())
+  id               Int                  @id @default(autoincrement())
   kind             ClinicalSeriesKind
-  status           ClinicalSeriesStatus    @default(ACTIVE)
-  displayName      String?                 @map("display_name")
-  patientName      String?                 @map("patient_name")
-  patientRut       String?                 @map("patient_rut")
-  expectedSessions Int?                    @map("expected_sessions")
+  status           ClinicalSeriesStatus @default(ACTIVE)
+  displayName      String?              @map("display_name")
+  patientName      String?              @map("patient_name")
+  patientRut       String?              @map("patient_rut")
+  expectedSessions Int?                 @map("expected_sessions")
   notes            String?
-  completedAt      DateTime?               @map("completed_at")
-  createdAt        DateTime                @default(now()) @map("created_at")
-  updatedAt        DateTime                @default(now()) @updatedAt @map("updated_at")
+  completedAt      DateTime?            @map("completed_at")
+  createdAt        DateTime             @default(now()) @map("created_at")
+  updatedAt        DateTime             @default(now()) @updatedAt @map("updated_at")
   events           Event[]
 
   @@deny('all', auth() == null)
@@ -1890,7 +1890,7 @@ model DTESaleDetail {
   @@allow('read', auth().status == 'ACTIVE')
   @@allow('create,update,delete', auth().status == 'ACTIVE')
 
-  @@unique([folio])
+  @@unique([folio, documentType])
   @@index([clientRUT])
   @@index([documentDate])
   @@index([documentType])

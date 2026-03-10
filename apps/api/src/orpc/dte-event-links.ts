@@ -238,7 +238,9 @@ const overviewResponseSchema = z.object({
       amountExpected: z.number().nullable(),
       amountPaid: z.number().nullable(),
       calendarId: z.string(),
+      clinicalSeriesId: z.number().nullable(),
       confidenceScore: z.number().nullable(),
+      displayName: z.string().nullable(),
       eventDate: z.string(),
       eventId: z.string(),
       linkStatus: z.enum(["linked", "pending_issuance", "unlinked"]),
@@ -249,6 +251,7 @@ const overviewResponseSchema = z.object({
       linkedFolio: z.string().nullable(),
       linkedMatchedBy: z.string().nullable(),
       linkedTotalAmount: z.number().nullable(),
+      seriesKind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT"]).nullable(),
       summary: z.string().nullable(),
       topSuggestion: eventDteSuggestionSchema
         .extend({

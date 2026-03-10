@@ -557,6 +557,11 @@ export function CalendarDteLinksOverview({
                           <Chip color={linkStatusColor(item.linkStatus)} variant="soft">
                             {linkStatusLabel(item.linkStatus)}
                           </Chip>
+                          {item.displayName ? (
+                            <Chip color="default" variant="soft" size="sm">
+                              {item.displayName}
+                            </Chip>
+                          ) : null}
                           {item.linkStatus !== "pending_issuance" ? (
                             <Chip
                               color={scoreColor(

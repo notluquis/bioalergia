@@ -129,6 +129,43 @@ function isDecimalLike(value: unknown): value is { constructor: { name: string }
   return value instanceof Object && value.constructor.name === "Decimal";
 }
 
+/**
+ * Calculate exempt amount when not provided in CSV
+ * Logic: Total = Exempt + Net + IVA
+ * If exempt is missing but we have net + iva + total, calculate: exempt = total - net - iva
+ * Special case: if net=0 and iva=0 and total>0, then all amount is exempt
+ */
+function calculateExemptAmount(
+  providedExempt: Decimal,
+  netAmount: Decimal,
+  ivaAmount: Decimal,
+  totalAmount: Decimal,
+): Decimal {
+  // If exempt amount is already provided (not zero), use it
+  if (providedExempt.greaterThan(0)) {
+    return providedExempt;
+  }
+
+  // If net + iva equals total, then no exempt (all taxed)
+  const netPlusIva = netAmount.plus(ivaAmount);
+  if (netPlusIva.equals(totalAmount)) {
+    return new Decimal(0);
+  }
+
+  // Calculate exempt as: total - net - iva
+  const calculated = totalAmount.minus(netAmount).minus(ivaAmount);
+
+  // Ensure we never return negative values
+  if (calculated.isNegative()) {
+    console.warn(
+      `[DTE] Calculated exempt amount is negative (${calculated}). Capping to 0. Net: ${netAmount}, IVA: ${ivaAmount}, Total: ${totalAmount}`,
+    );
+    return new Decimal(0);
+  }
+
+  return calculated;
+}
+
 function getSaleLookup(row: Record<string, unknown>) {
   const saleData = buildDteSaleDetail(row);
 
@@ -146,6 +183,13 @@ export function buildDteSaleDetail(row: Record<string, unknown>): Record<string,
   const documentDate = parseDate(row.documentDate ?? row.fecha);
   const receiptDate = parseDate(row.receiptDate ?? row.fecha) ?? documentDate;
 
+  const providedExempt = toDecimalOrZero(row.exemptAmount);
+  const netAmount = toDecimalOrZero(row.netAmount ?? row.neto);
+  const ivaAmount = toDecimalOrZero(row.ivaAmount ?? row.iva);
+  const totalAmount = toDecimalOrZero(row.totalAmount ?? row.total);
+
+  const exemptAmount = calculateExemptAmount(providedExempt, netAmount, ivaAmount, totalAmount);
+
   return {
     registerNumber: toNumber(row.registerNumber),
     documentType: toNumber(row.documentType ?? row.dte, 41),
@@ -158,10 +202,10 @@ export function buildDteSaleDetail(row: Record<string, unknown>): Record<string,
     receiptAcknowledgeDate: parseDate(row.receiptAcknowledgeDate),
     claimDate: parseDate(row.claimDate),
     period: toRequiredString(row.period),
-    exemptAmount: toDecimalOrZero(row.exemptAmount),
-    netAmount: toDecimalOrZero(row.netAmount ?? row.neto),
-    ivaAmount: toDecimalOrZero(row.ivaAmount ?? row.iva),
-    totalAmount: toDecimalOrZero(row.totalAmount ?? row.total),
+    exemptAmount,
+    netAmount,
+    ivaAmount,
+    totalAmount,
     totalRetainedIVA: toDecimalOrZero(row.totalRetainedIVA),
     partialRetainedIVA: toDecimalOrZero(row.partialRetainedIVA),
     nonRetainedIVA: toDecimalOrZero(row.nonRetainedIVA),
@@ -273,10 +317,14 @@ export function areDataDifferent(
 
 /**
  * Import a DTESaleDetail row
+ * Modes:
+ *   - insert-only: Insert new records, skip existing
+ *   - insert-or-update: Insert new or update existing (upsert)
+ *   - update-only: Only update existing records, skip new ones
  */
 export async function importDteSaleRow(
   row: Record<string, unknown>,
-  mode: "insert-only" | "insert-or-update" = "insert-or-update",
+  mode: "insert-only" | "insert-or-update" | "update-only" = "insert-or-update",
 ): Promise<{ inserted: number; updated: number; skipped: number }> {
   try {
     // Validate required field
@@ -299,13 +347,21 @@ export async function importDteSaleRow(
       if (mode === "insert-only") {
         return { inserted: 0, updated: 0, skipped: 1 };
       }
-      if (areDataDifferent(existing, saleData)) {
-        await db.dTESaleDetail.update({
-          where: { id: existing.id },
-          data: saleData,
-        });
-        return { inserted: 0, updated: 1, skipped: 0 };
+      if (mode === "update-only" || mode === "insert-or-update") {
+        if (areDataDifferent(existing, saleData)) {
+          await db.dTESaleDetail.update({
+            where: { id: existing.id },
+            data: saleData,
+          });
+          return { inserted: 0, updated: 1, skipped: 0 };
+        }
       }
+      return { inserted: 0, updated: 0, skipped: 1 };
+    }
+
+    // Record does not exist
+    if (mode === "update-only") {
+      // Skip new records in update-only mode
       return { inserted: 0, updated: 0, skipped: 1 };
     }
 
@@ -324,10 +380,14 @@ export async function importDteSaleRow(
 
 /**
  * Import a DTEPurchaseDetail row
+ * Modes:
+ *   - insert-only: Insert new records, skip existing
+ *   - insert-or-update: Insert new or update existing (upsert)
+ *   - update-only: Only update existing records, skip new ones
  */
 export async function importDtePurchaseRow(
   row: Record<string, unknown>,
-  mode: "insert-only" | "insert-or-update" = "insert-or-update",
+  mode: "insert-only" | "insert-or-update" | "update-only" = "insert-or-update",
 ): Promise<{ inserted: number; updated: number; skipped: number }> {
   try {
     // Validate required fields
@@ -357,13 +417,21 @@ export async function importDtePurchaseRow(
       if (mode === "insert-only") {
         return { inserted: 0, updated: 0, skipped: 1 };
       }
-      if (areDataDifferent(existing, purchaseData)) {
-        await db.dTEPurchaseDetail.update({
-          where: { id: existing.id },
-          data: purchaseData,
-        });
-        return { inserted: 0, updated: 1, skipped: 0 };
+      if (mode === "update-only" || mode === "insert-or-update") {
+        if (areDataDifferent(existing, purchaseData)) {
+          await db.dTEPurchaseDetail.update({
+            where: { id: existing.id },
+            data: purchaseData,
+          });
+          return { inserted: 0, updated: 1, skipped: 0 };
+        }
       }
+      return { inserted: 0, updated: 0, skipped: 1 };
+    }
+
+    // Record does not exist
+    if (mode === "update-only") {
+      // Skip new records in update-only mode
       return { inserted: 0, updated: 0, skipped: 1 };
     }
 

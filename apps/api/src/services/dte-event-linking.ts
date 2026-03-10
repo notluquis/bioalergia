@@ -145,7 +145,9 @@ interface EventDteOverviewRow {
   amountExpected: null | number;
   amountPaid: null | number;
   calendarId: string;
+  clinicalSeriesId: null | number;
   confidenceScore: null | number;
+  displayName: null | string;
   eventDate: string;
   eventId: string;
   linkedClientName: null | string;
@@ -154,6 +156,7 @@ interface EventDteOverviewRow {
   linkedFolio: null | string;
   linkedMatchedBy: null | string;
   linkedTotalAmount: null | number;
+  seriesKind: null | "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT";
   summary: null | string;
 }
 
@@ -743,17 +746,21 @@ export async function listEventDteLinkOverview(params: {
       COALESCE(to_char(e.start_date, 'YYYY-MM-DD'), to_char((e.start_date_time AT TIME ZONE ${TIMEZONE})::date, 'YYYY-MM-DD')) AS "eventDate",
       e.amount_expected AS "amountExpected",
       e.amount_paid AS "amountPaid",
+      e.clinical_series_id AS "clinicalSeriesId",
       l.dte_sale_detail_id AS "linkedDteSaleDetailId",
       l.matched_by AS "linkedMatchedBy",
       l.confidence_score::float AS "confidenceScore",
       s.client_name AS "linkedClientName",
       s.client_rut AS "linkedClientRUT",
       s.folio AS "linkedFolio",
-      COALESCE(s.total_amount, 0)::float AS "linkedTotalAmount"
+      COALESCE(s.total_amount, 0)::float AS "linkedTotalAmount",
+      cs.display_name AS "displayName",
+      cs.kind AS "seriesKind"
     FROM events e
     JOIN calendars c ON c.id = e.calendar_id
     LEFT JOIN event_dte_sale_links l ON l.event_id = e.id
     LEFT JOIN dte_sale_details s ON s.id = l.dte_sale_detail_id
+    LEFT JOIN clinical_series cs ON e.clinical_series_id = cs.id
     WHERE COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date)
       BETWEEN ${periodStart}::date AND ${periodEnd}::date
       AND (
@@ -821,7 +828,9 @@ export async function listEventDteLinkOverview(params: {
         amountExpected: row.amountExpected,
         amountPaid: row.amountPaid,
         calendarId: row.calendarId,
+        clinicalSeriesId: row.clinicalSeriesId,
         confidenceScore: row.confidenceScore,
+        displayName: row.displayName,
         eventDate: row.eventDate,
         eventId: row.eventId,
         linkStatus,
@@ -832,6 +841,7 @@ export async function listEventDteLinkOverview(params: {
         linkedFolio: row.linkedFolio,
         linkedMatchedBy: row.linkedMatchedBy,
         linkedTotalAmount: row.linkedTotalAmount,
+        seriesKind: row.seriesKind,
         summary: row.summary,
         topSuggestion,
       };

@@ -457,7 +457,9 @@ export interface EventDteOverviewItem {
   amountExpected: null | number;
   amountPaid: null | number;
   calendarId: string;
+  clinicalSeriesId: null | number;
   confidenceScore: null | number;
+  displayName: null | string;
   eventDate: string;
   eventId: string;
   linkStatus: "linked" | "pending_issuance" | "unlinked";
@@ -468,6 +470,7 @@ export interface EventDteOverviewItem {
   linkedFolio: null | string;
   linkedMatchedBy: null | string;
   linkedTotalAmount: null | number;
+  seriesKind: null | "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT";
   summary: null | string;
   topSuggestion: EventDteOverviewSuggestion | null;
 }

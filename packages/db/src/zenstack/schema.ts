@@ -14356,7 +14356,10 @@ export class SchemaType implements SchemaDef {
           args: [
             {
               name: "fields",
-              value: ExpressionUtils.array("String", [ExpressionUtils.field("folio")]),
+              value: ExpressionUtils.array("String", [
+                ExpressionUtils.field("folio"),
+                ExpressionUtils.field("documentType"),
+              ]),
             },
           ],
         },
@@ -14395,7 +14398,7 @@ export class SchemaType implements SchemaDef {
       idFields: ["id"],
       uniqueFields: {
         id: { type: "String" },
-        folio: { type: "String" },
+        folio_documentType: { folio: { type: "String" }, documentType: { type: "Int" } },
       },
     },
     DTESyncLog: {

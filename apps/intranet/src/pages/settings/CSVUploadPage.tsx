@@ -966,8 +966,8 @@ function ImportModeCard({
   importMode,
   onModeChange,
 }: {
-  importMode: "insert-only" | "insert-or-update";
-  onModeChange: (mode: "insert-only" | "insert-or-update") => void;
+  importMode: "insert-only" | "insert-or-update" | "update-only";
+  onModeChange: (mode: "insert-only" | "insert-or-update" | "update-only") => void;
 }) {
   return (
     <Card>
@@ -1035,6 +1035,35 @@ function ImportModeCard({
                 <div className="font-semibold text-sm">Insertar o actualizar</div>
                 <div className="text-xs opacity-60">
                   Inserta registros nuevos y actualiza los existentes.
+                </div>
+              </div>
+            </div>
+          </Button>
+
+          <Button
+            className={cn(
+              "flex-1 rounded-lg border-2 p-4 text-left ",
+              importMode === "update-only"
+                ? "border-primary/50 bg-primary/5"
+                : "border-default-200 hover:border-default-300",
+            )}
+            onPress={() => onModeChange("update-only")}
+            type="button"
+            variant="ghost"
+          >
+            <div className="flex items-center gap-3">
+              <Chip
+                className="min-w-24 justify-center text-center"
+                color={importMode === "update-only" ? "accent" : "default"}
+                size="sm"
+                variant={importMode === "update-only" ? "primary" : "tertiary"}
+              >
+                {importMode === "update-only" ? "Seleccionado" : "Elegir"}
+              </Chip>
+              <div className="flex-1">
+                <div className="font-semibold text-sm">Solo actualizar</div>
+                <div className="text-xs opacity-60">
+                  Actualiza solo registros existentes. Los nuevos se omiten.
                 </div>
               </div>
             </div>
@@ -1232,7 +1261,7 @@ export function CSVUploadPage() {
   const [batchPreviewData, setBatchPreviewData] = useState<CsvPreviewResponse | null>(null);
   const [previewBatchRows, setPreviewBatchRows] = useState<Record<string, number | string>[]>([]);
   const [updateRowSelection, setUpdateRowSelection] = useState<RowSelectionState>({});
-  const [importMode, setImportMode] = useState<"insert-only" | "insert-or-update">(
+  const [importMode, setImportMode] = useState<"insert-only" | "insert-or-update" | "update-only">(
     "insert-or-update",
   );
 
@@ -1314,7 +1343,7 @@ export function CSVUploadPage() {
     status,
   }: {
     actionLabel: string;
-    mode: "insert-only" | "insert-or-update";
+    mode: "insert-only" | "insert-or-update" | "update-only";
     rows: Record<string, number | string>[];
     runChunk: (payload: CsvImportPayload) => Promise<CsvPreviewResponse>;
     status: FileStatus;
@@ -1391,7 +1420,7 @@ export function CSVUploadPage() {
     }
   };
 
-  const handleImportModeChange = (mode: "insert-only" | "insert-or-update") => {
+  const handleImportModeChange = (mode: "insert-only" | "insert-or-update" | "update-only") => {
     if (mode === importMode) {
       return;
     }

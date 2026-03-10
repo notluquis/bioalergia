@@ -5377,7 +5377,7 @@ export class SchemaType implements SchemaDef {
       idFields: ["id"],
       uniqueFields: {
         id: { type: "String" },
-        folio: { type: "String" },
+        folio_documentType: { folio: { type: "String" }, documentType: { type: "Int" } },
       },
     },
     DTESyncLog: {
