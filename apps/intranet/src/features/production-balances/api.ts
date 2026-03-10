@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { apiClient } from "@/lib/api-client";
 import { parseOrThrow, zApiDateOnly, zStatusOk } from "@/lib/api-validate";
+import { productionBalancesORPCClient, toProductionBalancesApiError } from "./orpc";
 
 export interface DailyBalancePayload {
   date: string;
@@ -47,18 +47,6 @@ export interface ProductionBalanceApiItem {
   vacunasMonto: number; // was vacunas
 }
 
-interface ApiListResponse<T> {
-  from: string;
-  items: T[];
-  status: "ok";
-  to: string;
-}
-
-interface ApiSuccessResponse<T> {
-  item: T;
-  status: "ok";
-}
-
 const ProductionBalanceApiItemSchema = z.strictObject({
   changeReason: z.string().nullable(),
   comentarios: z.string().nullable(),
@@ -99,40 +87,41 @@ const ApiSuccessResponseSchema = z.strictObject({
 
 export const dailyBalanceApi = {
   createBalance: async (data: DailyBalancePayload) => {
-    const response = await apiClient.post<ApiSuccessResponse<ProductionBalanceApiItem>>(
-      "/api/daily-production-balances",
-      data,
-      { responseSchema: ApiSuccessResponseSchema },
-    );
-    return parseOrThrow(
-      ApiSuccessResponseSchema,
-      response,
-      "Respuesta inválida al crear balance diario",
-    );
+    try {
+      const response = await productionBalancesORPCClient.create(data);
+      return parseOrThrow(
+        ApiSuccessResponseSchema,
+        response,
+        "Respuesta inválida al crear balance diario",
+      );
+    } catch (error) {
+      throw toProductionBalancesApiError(error);
+    }
   },
 
   getBalances: async (from: string, to: string) => {
-    const response = await apiClient.get<ApiListResponse<ProductionBalanceApiItem>>(
-      `/api/daily-production-balances?from=${from}&to=${to}`,
-      { responseSchema: ApiListResponseSchema },
-    );
-    return parseOrThrow(
-      ApiListResponseSchema,
-      response,
-      "Respuesta inválida al listar balances diarios",
-    );
+    try {
+      const response = await productionBalancesORPCClient.list({ from, to });
+      return parseOrThrow(
+        ApiListResponseSchema,
+        response,
+        "Respuesta inválida al listar balances diarios",
+      );
+    } catch (error) {
+      throw toProductionBalancesApiError(error);
+    }
   },
 
   updateBalance: async (id: number, data: DailyBalancePayload) => {
-    const response = await apiClient.put<ApiSuccessResponse<ProductionBalanceApiItem>>(
-      `/api/daily-production-balances/${id}`,
-      data,
-      { responseSchema: ApiSuccessResponseSchema },
-    );
-    return parseOrThrow(
-      ApiSuccessResponseSchema,
-      response,
-      "Respuesta inválida al actualizar balance diario",
-    );
+    try {
+      const response = await productionBalancesORPCClient.update({ id, ...data });
+      return parseOrThrow(
+        ApiSuccessResponseSchema,
+        response,
+        "Respuesta inválida al actualizar balance diario",
+      );
+    } catch (error) {
+      throw toProductionBalancesApiError(error);
+    }
   },
 };

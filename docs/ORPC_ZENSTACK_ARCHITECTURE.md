@@ -48,6 +48,7 @@
                │ /api/orpc/settings/rpc/*
                │ /api/orpc/notifications/rpc/*
                │ /api/orpc/services/rpc/*
+               │ /api/orpc/production-balances/rpc/*
                ▼
 ┌──────────────────────────────────────────────┐
 │ Backend (Hono 4.12.5 + oRPC 1.13.6)          │
@@ -124,6 +125,10 @@
 │ │  • /{id}/schedules                         │
 │ │  • /schedules/{id}/pay                     │
 │ │  • /schedules/{id}/unlink                  │
+│ │                                            │
+│ ├─ Production Balances Router                │
+│ │  • /                                       │
+│ │  • /{id}                                   │
 │ │                                            │
 │ └─ Service Layer                             │
 │    └─ Use db/authDb from Zenstack             │
@@ -318,6 +323,7 @@ apps/api/src/
 │   ├── notifications.ts
 │   ├── people.ts
 │   ├── personal-finance.ts
+│   ├── production-balances.ts
 │   ├── settings.ts
 │   ├── services.ts
 │   ├── users.ts
@@ -359,6 +365,7 @@ apps/api/src/
 | 2026-03-10 | ✅ Done | Settings |
 | 2026-03-10 | ✅ Done | Notifications |
 | 2026-03-10 | ✅ Done | Services |
+| 2026-03-10 | ✅ Done | Production Balances |
 
 ---
 

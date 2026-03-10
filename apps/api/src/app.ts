@@ -23,6 +23,10 @@ import { inventoryOpenAPIHandler, inventoryORPCHandler } from "./orpc/inventory"
 import { notificationsOpenAPIHandler, notificationsORPCHandler } from "./orpc/notifications";
 import { peopleOpenAPIHandler, peopleORPCHandler } from "./orpc/people";
 import { personalFinanceOpenAPIHandler, personalFinanceORPCHandler } from "./orpc/personal-finance";
+import {
+  productionBalancesOpenAPIHandler,
+  productionBalancesORPCHandler,
+} from "./orpc/production-balances";
 import { rolesOpenAPIHandler, rolesORPCHandler } from "./orpc/roles";
 import { servicesOpenAPIHandler, servicesORPCHandler } from "./orpc/services";
 import { settingsOpenAPIHandler, settingsORPCHandler } from "./orpc/settings";
@@ -403,6 +407,15 @@ app.get("/api/orpc", (c) =>
             <li><code>/api/orpc/services/rpc/*</code></li>
           </ul>
         </section>
+        <section class="card">
+          <h2>Production Balances</h2>
+          <p>Balances diarios de producción y sus totales operativos.</p>
+          <ul>
+            <li><a href="/api/orpc/production-balances/docs">Reference UI</a></li>
+            <li><a href="/api/orpc/production-balances/openapi.json">OpenAPI JSON</a></li>
+            <li><code>/api/orpc/production-balances/rpc/*</code></li>
+          </ul>
+        </section>
       </div>
     </main>
   </body>
@@ -578,6 +591,22 @@ app.use("/api/orpc/services/rpc/*", async (c, next) => {
   await next();
 });
 
+app.use("/api/orpc/production-balances/rpc/*", async (c, next) => {
+  const { matched, response } = await productionBalancesORPCHandler.handle(
+    createHonoORPCRequest(c),
+    {
+      prefix: "/api/orpc/production-balances/rpc",
+      context: { hono: c },
+    },
+  );
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
 app.use("/api/orpc/dte-analytics/event-links/*", async (c, next) => {
   const { matched, response } = await dteEventLinksOpenAPIHandler.handle(createHonoORPCRequest(c), {
     context: { hono: c },
@@ -717,6 +746,21 @@ app.use("/api/orpc/services/*", async (c, next) => {
   const { matched, response } = await servicesOpenAPIHandler.handle(createHonoORPCRequest(c), {
     context: { hono: c },
   });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
+app.use("/api/orpc/production-balances/*", async (c, next) => {
+  const { matched, response } = await productionBalancesOpenAPIHandler.handle(
+    createHonoORPCRequest(c),
+    {
+      context: { hono: c },
+    },
+  );
 
   if (matched) {
     return c.newResponse(response.body, response);
