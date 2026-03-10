@@ -36,8 +36,10 @@
 └──────────────┬──────────────────────────┘
                │ HTTP(S) POST
                │ /api/orpc/calendar/rpc/*
+               │ /api/orpc/dte-analytics/rpc/*
                │ /api/orpc/dte-analytics/event-links/rpc/*
                │ /api/orpc/employees/rpc/*
+               │ /api/orpc/integrations/rpc/*
                │ /api/orpc/inventory/rpc/*
                │ /api/orpc/roles/rpc/*
                │ /api/orpc/counterparts/rpc/*
@@ -75,9 +77,22 @@
 │ │  • /confirm-link                           │
 │ │  • More...                                 │
 │ │                                            │
+│ ├─ DTE Analytics Router                      │
+│ │  • /sales/summary                          │
+│ │  • /purchases/summary                      │
+│ │  • /sales/details                          │
+│ │  • /purchases/details                      │
+│ │  • /sales/available-periods                │
+│ │  • /purchases/available-periods            │
+│ │                                            │
 │ ├─ Employees Router                          │
 │ │  • /                                       │
 │ │  • /{id}                                   │
+│ │                                            │
+│ ├─ Integrations Router                       │
+│ │  • /google/url                             │
+│ │  • /google/status                          │
+│ │  • /google/disconnect                      │
 │ │                                            │
 │ ├─ Inventory Router                          │
 │ │  • /categories                             │
@@ -390,7 +405,9 @@ apps/api/src/
 |------|--------|-------------------|
 | 2026-03-10 | ✅ Done | Calendar endpoints (all 13) |
 | 2026-03-10 | ✅ Done | DTE Event Links (all 9) |
+| 2026-03-10 | ✅ Done | DTE Analytics (summary/details/periods) |
 | 2026-03-10 | ✅ Done | Employees |
+| 2026-03-10 | ✅ Done | Integrations (Google Drive) |
 | 2026-03-10 | ✅ Done | Inventory |
 | 2026-03-10 | ✅ Done | Roles |
 | 2026-03-10 | ✅ Done | Counterparts |

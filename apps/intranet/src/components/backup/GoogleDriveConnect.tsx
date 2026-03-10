@@ -2,39 +2,13 @@ import { Button } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Key, Loader2, LogOut, ShieldCheck } from "lucide-react";
 import { Suspense, useEffect } from "react";
-import { z } from "zod";
 import { useToast } from "@/context/ToastContext";
-import { apiClient } from "@/lib/api-client";
+import {
+  disconnectGoogleDrive,
+  fetchGoogleDriveAuthUrl,
+  fetchGoogleDriveStatus,
+} from "@/features/settings/google-drive-api";
 import { cn } from "@/lib/utils";
-
-interface AuthUrlResponse {
-  url: string;
-}
-
-interface GoogleStatus {
-  configured: boolean;
-  error?: string;
-  errorCode?: "invalid_grant" | "token_expired" | "token_revoked" | "unknown";
-  source: "db" | "env" | "none";
-  valid: boolean;
-}
-
-const GoogleStatusSchema = z.object({
-  configured: z.boolean(),
-  error: z.string().optional(),
-  errorCode: z.enum(["invalid_grant", "token_expired", "token_revoked", "unknown"]).optional(),
-  source: z.enum(["db", "env", "none"]),
-  valid: z.boolean(),
-});
-
-const AuthUrlResponseSchema = z.object({
-  url: z.url(),
-});
-
-const DisconnectResponseSchema = z.looseObject({
-  status: z.string().optional(),
-  message: z.string().optional(),
-});
 
 // Error message mapping for user-friendly display
 const ERROR_MESSAGES: Record<string, string> = {
@@ -95,21 +69,13 @@ function GoogleDriveConnect() {
 
   // Status Query
   const { data: status } = useSuspenseQuery({
-    queryFn: async () => {
-      return apiClient.get<GoogleStatus>("/api/integrations/google/status", {
-        responseSchema: GoogleStatusSchema,
-      });
-    },
+    queryFn: fetchGoogleDriveStatus,
     queryKey: ["google-status"],
   });
 
   // Get Auth URL and redirect (no modal needed!)
   const connectMutation = useMutation({
-    mutationFn: async () => {
-      return apiClient.get<AuthUrlResponse>("/api/integrations/google/url", {
-        responseSchema: AuthUrlResponseSchema,
-      });
-    },
+    mutationFn: fetchGoogleDriveAuthUrl,
     onError: (e) => {
       showError(e.message);
     },
@@ -122,11 +88,7 @@ function GoogleDriveConnect() {
 
   // Disconnect Mutation
   const disconnectMutation = useMutation({
-    mutationFn: async () => {
-      return apiClient.delete("/api/integrations/google/disconnect", {
-        responseSchema: DisconnectResponseSchema,
-      });
-    },
+    mutationFn: disconnectGoogleDrive,
     onError: (e) => {
       showError(e.message);
     },

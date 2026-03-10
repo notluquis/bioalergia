@@ -1,4 +1,4 @@
-import { apiClient } from "@/lib/api-client";
+import { dteAnalyticsORPCClient, toDteAnalyticsApiError } from "./orpc";
 import type { DTEPurchaseDetail, DTESalesDetail, DTESummaryRaw } from "./types";
 import {
   DTEPeriodsResponseSchema,
@@ -16,22 +16,15 @@ import {
  * Returns raw DTE summaries with validated period format
  */
 export async function fetchPurchasesSummary(year?: number): Promise<DTESummaryRaw[]> {
-  const params = new URLSearchParams();
-  if (year !== undefined) {
-    params.set("year", year.toString());
+  try {
+    const response = DTESummaryResponseSchema.parse(
+      await dteAnalyticsORPCClient.purchasesSummary(year !== undefined ? { year } : undefined),
+    );
+
+    return DTESummaryArraySchema.parse(response.data);
+  } catch (error) {
+    throw toDteAnalyticsApiError(error);
   }
-
-  const url = `/api/dte-analytics/purchases/summary${
-    params.toString() ? `?${params.toString()}` : ""
-  }`;
-
-  const response = await apiClient.get(url, {
-    responseType: "json",
-    responseSchema: DTESummaryResponseSchema,
-  });
-
-  const data = (response as unknown as { data: unknown }).data;
-  return DTESummaryArraySchema.parse(data);
 }
 
 /**
@@ -39,20 +32,15 @@ export async function fetchPurchasesSummary(year?: number): Promise<DTESummaryRa
  * Optionally filtered by year
  */
 export async function fetchSalesSummary(year?: number): Promise<DTESummaryRaw[]> {
-  const params = new URLSearchParams();
-  if (year !== undefined) {
-    params.set("year", year.toString());
+  try {
+    const response = DTESummaryResponseSchema.parse(
+      await dteAnalyticsORPCClient.salesSummary(year !== undefined ? { year } : undefined),
+    );
+
+    return DTESummaryArraySchema.parse(response.data);
+  } catch (error) {
+    throw toDteAnalyticsApiError(error);
   }
-
-  const url = `/api/dte-analytics/sales/summary${params.toString() ? `?${params.toString()}` : ""}`;
-
-  const response = await apiClient.get(url, {
-    responseType: "json",
-    responseSchema: DTESummaryResponseSchema,
-  });
-
-  const data = (response as unknown as { data: unknown }).data;
-  return DTESummaryArraySchema.parse(data);
 }
 
 export interface DTEListParams {
@@ -72,65 +60,65 @@ export interface DTEListResponse<TItem> {
 }
 
 export async function fetchSalesAvailablePeriods(): Promise<string[]> {
-  const response = await apiClient.get("/api/dte-analytics/sales/available-periods", {
-    responseType: "json",
-    responseSchema: DTEPeriodsResponseSchema,
-  });
-
-  const data = (response as unknown as { data: unknown }).data;
-  return DTEPeriodsResponseSchema.shape.data.parse(data);
+  try {
+    const response = DTEPeriodsResponseSchema.parse(
+      await dteAnalyticsORPCClient.salesAvailablePeriods(),
+    );
+    return DTEPeriodsResponseSchema.shape.data.parse(response.data);
+  } catch (error) {
+    throw toDteAnalyticsApiError(error);
+  }
 }
 
 export async function fetchPurchasesAvailablePeriods(): Promise<string[]> {
-  const response = await apiClient.get("/api/dte-analytics/purchases/available-periods", {
-    responseType: "json",
-    responseSchema: DTEPeriodsResponseSchema,
-  });
-
-  const data = (response as unknown as { data: unknown }).data;
-  return DTEPeriodsResponseSchema.shape.data.parse(data);
+  try {
+    const response = DTEPeriodsResponseSchema.parse(
+      await dteAnalyticsORPCClient.purchasesAvailablePeriods(),
+    );
+    return DTEPeriodsResponseSchema.shape.data.parse(response.data);
+  } catch (error) {
+    throw toDteAnalyticsApiError(error);
+  }
 }
 
 export async function fetchSalesDetails(
   params: DTEListParams,
 ): Promise<DTEListResponse<DTESalesDetail>> {
-  const query = new URLSearchParams();
-  query.set("page", String(params.page ?? 1));
-  query.set("pageSize", String(params.pageSize ?? 50));
-  if (params.period) {
-    query.set("period", params.period);
+  try {
+    const response = DTESalesDetailResponseSchema.parse(
+      await dteAnalyticsORPCClient.salesDetails({
+        page: params.page ?? 1,
+        pageSize: params.pageSize ?? 50,
+        period: params.period,
+      }),
+    );
+
+    return {
+      data: DTESalesDetailArraySchema.parse(response.data),
+      meta: DTESalesDetailResponseSchema.shape.meta.parse(response.meta),
+    };
+  } catch (error) {
+    throw toDteAnalyticsApiError(error);
   }
-
-  const response = await apiClient.get(`/api/dte-analytics/sales/details?${query.toString()}`, {
-    responseType: "json",
-    responseSchema: DTESalesDetailResponseSchema,
-  });
-
-  const payload = response as unknown as { data: unknown; meta: unknown };
-  return {
-    data: DTESalesDetailArraySchema.parse(payload.data),
-    meta: DTESalesDetailResponseSchema.shape.meta.parse(payload.meta),
-  };
 }
 
 export async function fetchPurchasesDetails(
   params: DTEListParams,
 ): Promise<DTEListResponse<DTEPurchaseDetail>> {
-  const query = new URLSearchParams();
-  query.set("page", String(params.page ?? 1));
-  query.set("pageSize", String(params.pageSize ?? 50));
-  if (params.period) {
-    query.set("period", params.period);
+  try {
+    const response = DTEPurchaseDetailResponseSchema.parse(
+      await dteAnalyticsORPCClient.purchasesDetails({
+        page: params.page ?? 1,
+        pageSize: params.pageSize ?? 50,
+        period: params.period,
+      }),
+    );
+
+    return {
+      data: DTEPurchaseDetailArraySchema.parse(response.data),
+      meta: DTEPurchaseDetailResponseSchema.shape.meta.parse(response.meta),
+    };
+  } catch (error) {
+    throw toDteAnalyticsApiError(error);
   }
-
-  const response = await apiClient.get(`/api/dte-analytics/purchases/details?${query.toString()}`, {
-    responseType: "json",
-    responseSchema: DTEPurchaseDetailResponseSchema,
-  });
-
-  const payload = response as unknown as { data: unknown; meta: unknown };
-  return {
-    data: DTEPurchaseDetailArraySchema.parse(payload.data),
-    meta: DTEPurchaseDetailResponseSchema.shape.meta.parse(payload.meta),
-  };
 }
