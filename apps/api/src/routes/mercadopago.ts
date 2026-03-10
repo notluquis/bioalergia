@@ -26,6 +26,16 @@ import { reply } from "../utils/reply";
 
 export const mercadopagoRoutes = new Hono();
 
+function isMpDownloadMissing(error: unknown) {
+  return error instanceof Error && error.message.includes("Download failed: 404");
+}
+
+function toMpDownloadErrorMessage(type: "release" | "settlement") {
+  return type === "settlement"
+    ? "El archivo de conciliación aún no está disponible para descarga en MercadoPago."
+    : "El archivo de liberación aún no está disponible para descarga en MercadoPago.";
+}
+
 // Helper to get auth
 async function getAuth(c: Context) {
   const user = await getSessionUser(c);
@@ -128,6 +138,9 @@ mercadopagoRoutes.get("/reports/download/:fileName", async (c) => {
       }
     });
   } catch (e) {
+    if (isMpDownloadMissing(e)) {
+      return reply(c, { status: "error", message: toMpDownloadErrorMessage("release") }, 404);
+    }
     return reply(c, { status: "error", message: String(e) }, 500);
   }
 });
@@ -225,6 +238,9 @@ mercadopagoRoutes.get("/settlement/reports/download/:fileName", async (c) => {
       }
     });
   } catch (e) {
+    if (isMpDownloadMissing(e)) {
+      return reply(c, { status: "error", message: toMpDownloadErrorMessage("settlement") }, 404);
+    }
     return reply(c, { status: "error", message: String(e) }, 500);
   }
 });
@@ -268,6 +284,15 @@ mercadopagoRoutes.post("/process-report", async (c) => {
     const stats = await MercadoPagoService.processReport(reportType, {
       fileName,
     });
+    if (stats.sourceUnavailable) {
+      const message = toMpDownloadErrorMessage(reportType);
+      await finalizeMpSyncLogEntry(logId, {
+        status: "ERROR",
+        errorMessage: message,
+        changeDetails: { reportType, fileName, sourceUnavailable: true },
+      });
+      return reply(c, { status: "error", message }, 409);
+    }
     const sourceIds = Array.from(
       new Set(stats.processedSourceIds.map((id) => id.trim()).filter((id) => id.length > 0)),
     );

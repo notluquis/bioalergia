@@ -1,4 +1,4 @@
-import { Button, Card, Description, Modal, Tabs, Tooltip } from "@heroui/react";
+import { Alert, Button, Card, Description, Modal, Tabs, Tooltip } from "@heroui/react";
 import {
   keepPreviousData,
   type QueryClient,
@@ -158,7 +158,11 @@ export function MercadoPagoSettingsPage() {
   // Queries
   const reportType = resolveReportTypeFromTab(activeTab);
   const { limit: reportLimit, offset: reportOffset } = getPagination(reportPagination);
-  const { data: reportResponse } = useQuery({
+  const {
+    data: reportResponse,
+    error: reportError,
+    isPending: isReportPending,
+  } = useQuery({
     ...mercadoPagoKeys.lists(reportType, { limit: reportLimit, offset: reportOffset }),
     refetchInterval: getMpReportsRefetchInterval,
     refetchIntervalInBackground: false,
@@ -168,9 +172,16 @@ export function MercadoPagoSettingsPage() {
   });
   const reports = reportResponse?.reports ?? [];
   const reportTotal = reportResponse?.total ?? reports.length;
+  const reportErrorMessage =
+    reportError instanceof Error ? reportError.message : reportError ? String(reportError) : null;
+  const isReportLoading = isReportPending && !reportResponse;
 
   const { limit: syncLimit, offset: syncOffset } = getPagination(syncPagination);
-  const { data: syncResponse } = useQuery({
+  const {
+    data: syncResponse,
+    error: syncError,
+    isPending: isSyncPending,
+  } = useQuery({
     ...mercadoPagoKeys.syncLogs({ limit: syncLimit, offset: syncOffset }),
     refetchInterval: resolveSyncRefetchInterval(isSyncTab),
     refetchIntervalInBackground: false,
@@ -178,6 +189,9 @@ export function MercadoPagoSettingsPage() {
   });
   const syncLogs = syncResponse?.logs ?? [];
   const syncTotal = syncResponse?.total ?? syncLogs.length;
+  const syncErrorMessage =
+    syncError instanceof Error ? syncError.message : syncError ? String(syncError) : null;
+  const isSyncLoading = isSyncPending && !syncResponse;
 
   const { downloadPending, handleDownload, handleProcess, processPending, processingFile } =
     useReportActions({
@@ -350,7 +364,7 @@ export function MercadoPagoSettingsPage() {
                   Último Reporte
                 </span>
                 <span className="mt-2 line-clamp-1 block font-semibold text-lg">
-                  {resolveLastReportLabel(reports)}
+                  {isReportLoading ? "Cargando..." : resolveLastReportLabel(reports)}
                 </span>
               </div>
               <div className="rounded-lg bg-primary/10 p-2 text-primary">
@@ -359,7 +373,9 @@ export function MercadoPagoSettingsPage() {
             </div>
             <div className="mt-4 border-default-200/50 border-t pt-4">
               <Description className="truncate text-default-400 text-xs">
-                {reports[0]?.file_name ?? "Sin reportes recientes"}
+                {isReportLoading
+                  ? "Obteniendo últimos reportes..."
+                  : (reports[0]?.file_name ?? "Sin reportes recientes")}
               </Description>
             </div>
           </article>
@@ -374,11 +390,14 @@ export function MercadoPagoSettingsPage() {
               <FileText className="h-5 w-5 text-primary" />
             </Card.Header>
             <Card.Content className="p-0 pt-3">
-              <p className="font-semibold text-3xl">{reportTotal}</p>
+              <p className="font-semibold text-3xl">{isReportLoading ? "..." : reportTotal}</p>
             </Card.Content>
           </Card>
         </div>
       )}
+
+      {!isSyncTab && reportErrorMessage && <Alert status="danger">{reportErrorMessage}</Alert>}
+      {isSyncTab && syncErrorMessage && <Alert status="danger">{syncErrorMessage}</Alert>}
 
       {/* Reports List */}
       {activeTab !== "sync" && (
@@ -395,16 +414,23 @@ export function MercadoPagoSettingsPage() {
 
           <DataTable
             columns={columns}
+            containerVariant="plain"
             columnVisibility={columnVisibility}
             data={reports}
             enableExport={false}
             enableGlobalFilter={false}
+            isLoading={isReportLoading}
+            key={`mp-reports-${reportType}-${reportPagination.pageIndex}-${reports.length}`}
             pageSizeOptions={[10, 25, 50]}
             pagination={reportPagination}
             onPaginationChange={setReportPagination}
             onColumnVisibilityChange={setColumnVisibility}
             pageCount={reportPageCount}
-            noDataMessage="Aún no hay reportes. Genera uno para comenzar."
+            noDataMessage={
+              isReportLoading
+                ? "Cargando reportes de MercadoPago..."
+                : "Aún no hay reportes. Genera uno para comenzar."
+            }
             scrollMaxHeight="min(68dvh, 760px)"
           />
         </div>
@@ -423,14 +449,21 @@ export function MercadoPagoSettingsPage() {
           </div>
           <DataTable
             columns={syncColumns}
+            containerVariant="plain"
             data={syncLogs}
             enableExport={false}
             enableGlobalFilter={false}
+            isLoading={isSyncLoading}
+            key={`mp-sync-${syncPagination.pageIndex}-${syncLogs.length}`}
             pageSizeOptions={[10, 25, 50]}
             pagination={syncPagination}
             onPaginationChange={setSyncPagination}
             pageCount={syncPageCount}
-            noDataMessage="Aún no hay sincronizaciones registradas."
+            noDataMessage={
+              isSyncLoading
+                ? "Cargando historial de sincronización..."
+                : "Aún no hay sincronizaciones registradas."
+            }
             scrollMaxHeight="min(68dvh, 760px)"
           />
         </div>

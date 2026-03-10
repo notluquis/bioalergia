@@ -65,6 +65,7 @@ export interface ImportStats {
   duplicateRows: number;
   errors: string[];
   processedSourceIds: string[];
+  sourceUnavailable?: boolean;
 }
 
 type MpJsonDocumentGroup = {
@@ -93,6 +94,7 @@ export async function processReportUrl(url: string, reportType: string): Promise
     duplicateRows: 0,
     errors: [],
     processedSourceIds: [],
+    sourceUnavailable: false,
   };
 
   try {
@@ -106,6 +108,7 @@ export async function processReportUrl(url: string, reportType: string): Promise
     // Handle 404 gracefully - report doesn't exist yet
     if (res.status === 404) {
       console.log(`[MP Ingest] Report not found (404): ${url}`);
+      stats.sourceUnavailable = true;
       return stats; // Return empty stats - nothing to process
     }
 
