@@ -17,7 +17,6 @@ import type {
 } from "@orpc/client/standard";
 import { StandardLink, StandardRPCLinkCodec } from "@orpc/client/standard";
 import { isAsyncIteratorObject } from "@orpc/shared";
-import { createTanstackQueryUtils } from "@orpc/tanstack-query";
 import { ApiError } from "@/lib/api-client";
 import { configureSuperjson } from "@/lib/superjson-config";
 import type {
@@ -172,8 +171,6 @@ const calendarORPCLink = new SuperJSONLink({
 export const calendarORPCClient = createORPCClient<CalendarORPCClient>(calendarORPCLink, {
   path: ["api", "orpc", "calendar", "rpc"],
 });
-
-export const calendarORPCUtils = createTanstackQueryUtils(calendarORPCClient);
 
 export function toCalendarApiError(error: unknown): ApiError {
   if (error instanceof ApiError) {

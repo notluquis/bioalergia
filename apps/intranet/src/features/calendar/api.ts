@@ -2,6 +2,7 @@ import { dteEventLinksORPCClient } from "./dte-orpc";
 import { calendarORPCClient, toCalendarApiError } from "./orpc";
 import {
   CalendarDailyResponseSchema,
+  CalendarJobStatusResponseSchema,
   CalendarSummaryResponseSchema,
   CalendarSyncLogsResponseSchema,
   CalendarSyncResponseSchema,
@@ -62,6 +63,17 @@ export interface MissingFieldFilters {
 export interface ReclassifyJobResponse {
   jobId: string;
   totalEvents: number;
+}
+
+export interface CalendarJobState {
+  error: null | string;
+  id: string;
+  message: string;
+  progress: number;
+  result: unknown;
+  status: "completed" | "failed" | "pending" | "running";
+  total: number;
+  type: string;
 }
 
 export interface ReclassifyResult {
@@ -232,6 +244,17 @@ export async function reclassifyCalendarEvents(
 export async function syncCalendarEvents(): Promise<CalendarSyncResponse> {
   try {
     return CalendarSyncResponseSchema.parse(await calendarORPCClient.syncEvents());
+  } catch (error) {
+    throw toCalendarApiError(error);
+  }
+}
+
+export async function fetchCalendarJobStatus(jobId: string): Promise<CalendarJobState> {
+  try {
+    const response = CalendarJobStatusResponseSchema.parse(
+      await calendarORPCClient.jobStatus({ jobId }),
+    );
+    return response.job;
   } catch (error) {
     throw toCalendarApiError(error);
   }

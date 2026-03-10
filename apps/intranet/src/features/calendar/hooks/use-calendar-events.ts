@@ -5,18 +5,11 @@ import { type Dispatch, type SetStateAction, useState } from "react";
 import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/context/ToastContext";
 import { today } from "@/lib/dates";
+import { fetchCalendarSyncLogs, syncCalendarEvents } from "../api";
+import { calendarQueries, calendarSyncQueries } from "../queries";
 import {
-  fetchCalendarDaily,
-  fetchCalendarSummary,
-  fetchCalendarSyncLogs,
-  syncCalendarEvents,
-} from "../api";
-import { calendarSyncQueries } from "../queries";
-import {
-  type CalendarDaily,
   type CalendarFilters,
   type CalendarSearchParams,
-  type CalendarSummary,
   type CalendarSyncLog,
   type CalendarSyncStep,
   calendarSearchSchema,
@@ -288,14 +281,19 @@ export function useCalendarEvents(options?: { enabled?: boolean }) {
   const normalizedApplied = normalizeFilters(effectiveApplied);
   const shouldFetch = enabled && Boolean(normalizedApplied.from && normalizedApplied.to);
 
-  const summaryQuery = useQuery<CalendarSummary>({
-    queryFn: shouldFetch ? () => fetchCalendarSummary(normalizedApplied) : skipToken,
-    queryKey: ["calendar", "summary", normalizedApplied],
+  const summaryOptions = calendarQueries.summary(normalizedApplied);
+  const dailyOptions = calendarQueries.daily(normalizedApplied);
+
+  const summaryQuery = useQuery({
+    ...summaryOptions,
+    enabled: shouldFetch,
+    queryFn: shouldFetch ? summaryOptions.queryFn : skipToken,
   });
 
-  const dailyQuery = useQuery<CalendarDaily>({
-    queryFn: shouldFetch ? () => fetchCalendarDaily(normalizedApplied) : skipToken,
-    queryKey: ["calendar", "daily", normalizedApplied],
+  const dailyQuery = useQuery({
+    ...dailyOptions,
+    enabled: shouldFetch,
+    queryFn: shouldFetch ? dailyOptions.queryFn : skipToken,
   });
 
   // Single source of truth for sync logs (shared across pages)

@@ -1,12 +1,18 @@
 import { queryOptions } from "@tanstack/react-query";
 import {
+  fetchAutoLinkEventDteJobStatus,
   fetchCalendarDaily,
   fetchCalendarSummary,
+  fetchCalendarSyncLogs,
+  fetchCalendars,
+  fetchClassificationOptions,
+  fetchEventDteLinksByDay,
+  fetchEventDteLinksOverview,
+  fetchEventDteSuggestions,
   fetchTreatmentAnalytics,
+  fetchUnclassifiedCalendarEvents,
   type MissingFieldFilters,
 } from "./api";
-import { dteEventLinksORPCUtils } from "./dte-orpc";
-import { calendarORPCUtils } from "./orpc";
 import type { CalendarFilters, TreatmentAnalyticsFilters } from "./types";
 import { normalizeFilters } from "./utils/filters";
 
@@ -57,8 +63,8 @@ export const calendarDteLinkKeys = {
 
 export const calendarSyncQueries = {
   logs: (limit = 50) =>
-    calendarORPCUtils.syncLogs.queryOptions({
-      input: { limit },
+    queryOptions({
+      queryFn: () => fetchCalendarSyncLogs(limit),
       queryKey: calendarSyncKeys.logs(limit),
       staleTime: 60 * 1000,
     }),
@@ -71,11 +77,13 @@ export const calendarQueries = {
       queryKey: calendarKeys.daily(filters),
     }),
   list: () =>
-    calendarORPCUtils.calendars.queryOptions({
+    queryOptions({
+      queryFn: fetchCalendars,
       queryKey: calendarKeys.list,
     }),
   options: () =>
-    calendarORPCUtils.classificationOptions.queryOptions({
+    queryOptions({
+      queryFn: fetchClassificationOptions,
       queryKey: calendarKeys.options,
       staleTime: 1000 * 60 * 60, // 1 hour
     }),
@@ -94,27 +102,22 @@ export const calendarQueries = {
       staleTime: 5 * 60 * 1000, // 5 minutes
     }),
   unclassified: (page: number, pageSize: number, filters: MissingFieldFilters = {}) =>
-    calendarORPCUtils.unclassifiedEvents.queryOptions({
-      input: {
-        filterMode: filters.filterMode,
-        limit: pageSize,
-        missing: filters.missing ? [...new Set(filters.missing)] : undefined,
-        offset: page * pageSize,
-      },
+    queryOptions({
+      queryFn: () => fetchUnclassifiedCalendarEvents(pageSize, page * pageSize, filters),
       queryKey: calendarKeys.unclassified(page, pageSize, filters),
     }),
 };
 
 export const calendarDteLinkQueries = {
   autoLinkJob: (jobId: null | string) =>
-    dteEventLinksORPCUtils.autoLinkJobStatus.queryOptions({
-      input: { jobId: jobId ?? "" },
+    queryOptions({
+      queryFn: () => fetchAutoLinkEventDteJobStatus(jobId ?? ""),
       queryKey: calendarDteLinkKeys.autoLinkJob(jobId),
       staleTime: 0,
     }),
   byDay: (date: string) =>
-    dteEventLinksORPCUtils.byDay.queryOptions({
-      input: { date },
+    queryOptions({
+      queryFn: () => fetchEventDteLinksByDay(date),
       queryKey: calendarDteLinkKeys.byDay(date),
     }),
   overview: (params: {
@@ -124,13 +127,13 @@ export const calendarDteLinkQueries = {
     query?: string;
     status?: "all" | "linked" | "pending_issuance" | "unlinked";
   }) =>
-    dteEventLinksORPCUtils.overview.queryOptions({
-      input: params,
+    queryOptions({
+      queryFn: () => fetchEventDteLinksOverview(params),
       queryKey: calendarDteLinkKeys.overview(params),
     }),
   suggestions: (params: { calendarId: string; eventId: string; limit?: number }) =>
-    dteEventLinksORPCUtils.suggestions.queryOptions({
-      input: params,
+    queryOptions({
+      queryFn: () => fetchEventDteSuggestions(params),
       queryKey: calendarDteLinkKeys.suggestions(params.calendarId, params.eventId),
     }),
 };

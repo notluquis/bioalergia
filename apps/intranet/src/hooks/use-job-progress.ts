@@ -1,18 +1,6 @@
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { z } from "zod";
-import { calendarORPCClient, toCalendarApiError } from "@/features/calendar/orpc";
-
-export interface JobState {
-  error: null | string;
-  id: string;
-  message: string;
-  progress: number;
-  result: unknown;
-  status: "completed" | "failed" | "pending" | "running";
-  total: number;
-  type: string;
-}
+import { type CalendarJobState, fetchCalendarJobStatus } from "@/features/calendar/api";
 
 interface UseJobProgressOptions {
   onComplete?: (result: unknown) => void;
@@ -20,21 +8,6 @@ interface UseJobProgressOptions {
   /** Polling interval in ms (default: 500) */
   pollInterval?: number;
 }
-
-const JobStateSchema = z.object({
-  error: z.string().nullable(),
-  id: z.string(),
-  message: z.string(),
-  progress: z.number(),
-  result: z.unknown(),
-  status: z.enum(["completed", "failed", "pending", "running"]),
-  total: z.number(),
-  type: z.string(),
-});
-
-const JobStatusResponseSchema = z.object({
-  job: JobStateSchema,
-});
 
 /**
  * Hook to track background job progress via polling.
@@ -50,14 +23,7 @@ export function useJobProgress(jobId: null | string, options: UseJobProgressOpti
       if (!jobId) {
         return null;
       }
-      try {
-        const response = JobStatusResponseSchema.parse(
-          await calendarORPCClient.jobStatus({ jobId }),
-        );
-        return response.job;
-      } catch (error) {
-        throw toCalendarApiError(error);
-      }
+      return fetchCalendarJobStatus(jobId);
     },
     queryKey: ["job-status", jobId],
 
@@ -102,7 +68,7 @@ export function useJobProgress(jobId: null | string, options: UseJobProgressOpti
     isComplete: query.data?.status === "completed",
     isFailed: query.data?.status === "failed",
     isPolling: query.isFetching && query.data?.status === "running",
-    job: query.data,
+    job: query.data as CalendarJobState | null,
     progress: query.data ? Math.round((query.data.progress / query.data.total) * 100) : 0,
     reset,
   };

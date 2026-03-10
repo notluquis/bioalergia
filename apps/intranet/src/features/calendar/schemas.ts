@@ -320,6 +320,21 @@ export const ReclassifyJobResponseSchema = z.strictObject({
   totalEvents: z.number(),
 });
 
+export const CalendarJobStatusSchema = z.strictObject({
+  error: z.string().nullable(),
+  id: z.string(),
+  message: z.string(),
+  progress: z.number(),
+  result: z.unknown(),
+  status: z.enum(["completed", "failed", "pending", "running"]),
+  total: z.number(),
+  type: z.string(),
+});
+
+export const CalendarJobStatusResponseSchema = z.strictObject({
+  job: CalendarJobStatusSchema,
+});
+
 export const EventDteSuggestionSchema = z.strictObject({
   clientName: z.string(),
   clientRUT: z.string(),
