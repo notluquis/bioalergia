@@ -1,0 +1,71 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript"],
+  "env": {
+    "browser": true,
+    "node": true,
+    "es2021": true
+  },
+  "settings": {
+    "import/resolver": {
+      "typescript": true
+    }
+  },
+  "rules": {
+    "typescript/no-floating-promises": "error",
+    "typescript/no-unsafe-assignment": "warn"
+  },
+  "ignorePatterns": [
+    "**/dist",
+    "**/.turbo",
+    "**/node_modules",
+    "**/public/mockServiceWorker.js",
+    "**/routeTree.gen.ts"
+  ],
+  "overrides": [
+    {
+      "files": ["**/*.stories.*"],
+      "rules": {
+        "import/no-default-export": "off"
+      }
+    },
+    {
+      "files": [
+        "**/*.d.ts",
+        "**/vite.config.*",
+        "**/vitest.config.*",
+        "**/lint-staged.config.*",
+        "**/.storybook/**/*"
+      ],
+      "rules": {
+        "import/no-default-export": "off"
+      }
+    },
+    {
+      "files": ["packages/db/src/zenstack/schema.ts", "packages/db/src/zenstack/schema-lite.ts"],
+      "rules": {
+        "no-secrets": "off"
+      }
+    },
+    {
+      "files": ["apps/api/src/config.ts", "apps/api/src/lib/mercadopago/mercadopago-scheduler.ts"],
+      "rules": {
+        "no-secrets": "off"
+      }
+    },
+    {
+      "files": [
+        "apps/intranet/src/features/finance/mercadopago/components/SettlementReleaseColumns.tsx"
+      ],
+      "rules": {
+        "no-secrets": "off"
+      }
+    },
+    {
+      "files": ["packages/db/src/client.ts", "packages/db/src/input.ts"],
+      "rules": {
+        "oxc/prefer-barrel": "off"
+      }
+    }
+  ]
+}
