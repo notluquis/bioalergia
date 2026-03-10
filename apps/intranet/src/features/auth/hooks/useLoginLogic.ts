@@ -87,11 +87,11 @@ export function useLoginLogic(from: string) {
   const passkeyMutation = useMutation({
     mutationFn: async () => {
       const o = await fetchPasskeyLoginOptions();
-      if (!o?.challenge) {
+      if (!o || "status" in o) {
         throw new Error("Invalid");
       }
-      const a = await startAuthentication({ optionsJSON: o });
-      await loginWithPasskey(a, o.challenge);
+      const a = await startAuthentication({ optionsJSON: o as any });
+      await loginWithPasskey(a, (o as any).challenge);
     },
     onSuccess: () => {
       logger.info("[login-page] passkey success");

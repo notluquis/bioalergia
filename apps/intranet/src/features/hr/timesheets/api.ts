@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { apiClient } from "@/lib/api-client";
 import { zDateString } from "@/lib/api-validate";
-
+import { timesheetsORPCClient, toTimesheetsApiError } from "./orpc";
 import type {
   TimesheetEntry,
   TimesheetPayload,
@@ -114,25 +114,38 @@ const TimesheetEntryResponseSchema = z.object({
   status: z.string(),
 });
 
+function normalizeTimesheetEntry(entry: Record<string, unknown>) {
+  const workDate = entry.work_date;
+  return {
+    ...entry,
+    work_date:
+      workDate instanceof Date ? workDate.toISOString().slice(0, 10) : (workDate as string),
+  };
+}
+
+function normalizeTimesheetEntries(entries: TimesheetEntry[]) {
+  return entries.map((entry) =>
+    normalizeTimesheetEntry(entry as unknown as Record<string, unknown>),
+  );
+}
+
 export async function bulkUpsertTimesheets(
   employeeId: number,
   entries: TimesheetUpsertEntry[] = [],
   removeIds: number[] = [],
 ) {
-  const data = await apiClient.post<{
-    inserted: number;
-    message?: string;
-    removed: number;
-    status: string;
-  }>(
-    "/api/timesheets/bulk",
-    {
-      employee_id: employeeId,
-      entries,
-      remove_ids: removeIds.length > 0 ? removeIds : undefined,
-    },
-    { responseSchema: BulkUpsertResponseSchema },
-  );
+  let data: { inserted: number; message?: string; removed: number; status: string };
+  try {
+    data = BulkUpsertResponseSchema.parse(
+      await timesheetsORPCClient.bulkUpsert({
+        employee_id: employeeId,
+        entries,
+        remove_ids: removeIds.length > 0 ? removeIds : undefined,
+      }),
+    );
+  } catch (error) {
+    throw toTimesheetsApiError(error);
+  }
 
   if (data.status !== "ok") {
     throw new Error(data.message || "Error al procesar registros");
@@ -141,10 +154,12 @@ export async function bulkUpsertTimesheets(
 }
 
 export async function deleteTimesheet(id: number) {
-  const data = await apiClient.delete<{ message?: string; status: string }>(
-    `/api/timesheets/${id}`,
-    { responseSchema: StatusResponseSchema },
-  );
+  let data: { message?: string; status: string };
+  try {
+    data = StatusResponseSchema.parse(await timesheetsORPCClient.remove({ id }));
+  } catch (error) {
+    throw toTimesheetsApiError(error);
+  }
 
   if (data.status !== "ok") {
     throw new Error(data.message || "Error al eliminar registro");
@@ -156,16 +171,22 @@ export async function fetchImageBlob(url: string) {
 }
 
 export async function fetchTimesheetDetail(employeeId: number, month: string) {
-  const data = await apiClient.get<{
+  let data: {
     entries: TimesheetEntry[];
     from: string;
     message?: string;
     status: string;
     to: string;
-  }>(`/api/timesheets/${employeeId}/detail`, {
-    query: { month },
-    responseSchema: TimesheetDetailResponseSchema,
-  });
+  };
+  try {
+    const response = await timesheetsORPCClient.employeeDetail({ employeeId, month });
+    data = TimesheetDetailResponseSchema.parse({
+      ...response,
+      entries: normalizeTimesheetEntries(response.entries),
+    });
+  } catch (error) {
+    throw toTimesheetsApiError(error);
+  }
 
   if (data.status !== "ok") {
     throw new Error(data.message || "Error al cargar detalle");
@@ -174,10 +195,12 @@ export async function fetchTimesheetDetail(employeeId: number, month: string) {
 }
 
 export async function fetchTimesheetMonths() {
-  const data = await apiClient.get<{ months: string[]; monthsWithData: string[]; status: string }>(
-    "/api/timesheets/months",
-    { responseSchema: TimesheetMonthsResponseSchema },
-  );
+  let data: { months: string[]; monthsWithData: string[]; status: string };
+  try {
+    data = TimesheetMonthsResponseSchema.parse(await timesheetsORPCClient.months());
+  } catch (error) {
+    throw toTimesheetsApiError(error);
+  }
   if (data.status !== "ok") {
     throw new Error("No se pudieron cargar los meses");
   }
@@ -188,15 +211,17 @@ export async function fetchTimesheetMonths() {
 }
 
 export async function fetchTimesheetSummary(month: string, employeeId?: null | number) {
-  const query: Record<string, string> = { month };
-  if (employeeId) {
-    query.employeeId = String(employeeId);
+  let data: TimesheetSummaryResponse & { message?: string; status: string };
+  try {
+    data = TimesheetSummaryResponseSchema.parse(
+      await timesheetsORPCClient.summary({
+        employeeId: employeeId ?? undefined,
+        month,
+      }),
+    ) as TimesheetSummaryResponse & { message?: string; status: string };
+  } catch (error) {
+    throw toTimesheetsApiError(error);
   }
-
-  const data = await apiClient.get<TimesheetSummaryResponse & { message?: string; status: string }>(
-    "/api/timesheets/summary",
-    { query, responseSchema: TimesheetSummaryResponseSchema },
-  );
 
   if (data.status !== "ok") {
     throw new Error(data.message || "Error al cargar resumen");
@@ -223,13 +248,18 @@ export async function prepareTimesheetEmailPayload(payload: {
     workedMinutes: number;
   };
 }) {
-  const data = await apiClient.post<{
+  let data: {
     payload: z.infer<typeof PrepareEmailPayloadSchema>;
     message?: string;
     status: string;
-  }>("/api/timesheets/prepare-email-payload", payload, {
-    responseSchema: PrepareEmailPayloadResponseSchema,
-  });
+  };
+  try {
+    data = PrepareEmailPayloadResponseSchema.parse(
+      await timesheetsORPCClient.prepareEmailPayload(payload),
+    );
+  } catch (error) {
+    throw toTimesheetsApiError(error);
+  }
 
   if (data.status !== "ok") {
     throw new Error(data.message || "Error al preparar el email");
@@ -239,11 +269,16 @@ export async function prepareTimesheetEmailPayload(payload: {
 }
 
 export async function updateTimesheet(id: number, payload: Partial<TimesheetPayload>) {
-  const data = await apiClient.put<{ entry: TimesheetEntry; message?: string; status: string }>(
-    `/api/timesheets/${id}`,
-    payload,
-    { responseSchema: TimesheetEntryResponseSchema },
-  );
+  let data: { entry: TimesheetEntry; message?: string; status: string };
+  try {
+    const response = await timesheetsORPCClient.update({ id, payload });
+    data = TimesheetEntryResponseSchema.parse({
+      ...response,
+      entry: normalizeTimesheetEntry(response.entry as Record<string, unknown>),
+    });
+  } catch (error) {
+    throw toTimesheetsApiError(error);
+  }
 
   if (data.status !== "ok") {
     throw new Error(data.message || "Error al actualizar registro");
@@ -252,11 +287,16 @@ export async function updateTimesheet(id: number, payload: Partial<TimesheetPayl
 }
 
 export async function upsertTimesheet(payload: TimesheetPayload) {
-  const data = await apiClient.post<{ entry: TimesheetEntry; message?: string; status: string }>(
-    "/api/timesheets",
-    payload,
-    { responseSchema: TimesheetEntryResponseSchema },
-  );
+  let data: { entry: TimesheetEntry; message?: string; status: string };
+  try {
+    const response = await timesheetsORPCClient.create(payload);
+    data = TimesheetEntryResponseSchema.parse({
+      ...response,
+      entry: normalizeTimesheetEntry(response.entry as Record<string, unknown>),
+    });
+  } catch (error) {
+    throw toTimesheetsApiError(error);
+  }
 
   if (data.status !== "ok") {
     throw new Error(data.message || "Error al guardar registro");

@@ -24,6 +24,7 @@ import { getEmployeeById, listEmployees } from "./employees";
 
 // Types
 export interface TimesheetEntry {
+  [x: string]: unknown;
   id: number;
   employee_id: number;
   work_date: string;

@@ -132,8 +132,8 @@ export function useOnboardingForm() {
   const passkeyRegister = useMutation({
     mutationFn: async () => {
       const options = await fetchPasskeyRegistrationOptions();
-      if (!options?.challenge) {
-        throw new Error("No se pudieron obtener opciones de passkey");
+      if (!options || "challenge" in options === false) {
+        throw new Error(options?.message ?? "No se pudieron obtener opciones de passkey");
       }
 
       const { startRegistration } = await import("@simplewebauthn/browser");

@@ -185,6 +185,22 @@ interface CSVRow {
   elaboratedTobacco?: unknown;
 }
 
+export interface CsvUploadPreviewInput {
+  auth: AuthContext;
+  data: object[];
+  includeInsertRowIndexes?: boolean;
+  includeUpdateRows?: boolean;
+  mode?: "insert-only" | "insert-or-update" | "update-only";
+  table: TableName;
+}
+
+export interface CsvUploadImportInput {
+  auth: AuthContext;
+  data: object[];
+  mode?: "insert-only" | "insert-or-update" | "update-only";
+  table: TableName;
+}
+
 // ============================================================
 // Zenstack v3 Helper Functions - Only include actual CSV fields
 // ============================================================
@@ -629,31 +645,66 @@ csvUploadRoutes.post("/preview", async (c) => {
     return reply(c, { status: "error", message: "No autorizado" }, 401);
   }
 
-  const { table, data, mode, includeInsertRowIndexes, includeUpdateRows } = await c.req.json<{
-    table: TableName;
-    data: object[];
-    includeInsertRowIndexes?: boolean;
-    includeUpdateRows?: boolean;
-    mode?: "insert-only" | "insert-or-update" | "update-only";
-  }>();
+  const body = await c.req.json<Omit<CsvUploadPreviewInput, "auth">>();
 
+  try {
+    const result = await previewCsvUpload({
+      auth,
+      ...body,
+    });
+    return reply(c, result);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Error al previsualizar CSV";
+    const status = message === "Forbidden" ? 403 : message.includes("required") ? 400 : 500;
+    return reply(c, { status: "error", message }, status as 400 | 403 | 500);
+  }
+});
+
+// ============================================================
+// IMPORT (INSERT/UPDATE DATA)
+// ============================================================
+
+csvUploadRoutes.post("/import", async (c) => {
+  const auth = await getAuth(c);
+  if (!auth) {
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  }
+
+  const body = await c.req.json<Omit<CsvUploadImportInput, "auth">>();
+
+  try {
+    const result = await importCsvUpload({
+      auth,
+      ...body,
+    });
+    return reply(c, result);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Error al importar CSV";
+    const status = message === "Forbidden" ? 403 : message.includes("required") ? 400 : 500;
+    return reply(c, { status: "error", message }, status as 400 | 403 | 500);
+  }
+});
+
+export async function previewCsvUpload({
+  auth,
+  table,
+  data,
+  mode,
+  includeInsertRowIndexes,
+  includeUpdateRows,
+}: CsvUploadPreviewInput) {
   if (!table || !data || !Array.isArray(data)) {
-    return reply(c, { status: "error", message: "Table and data array required" }, 400);
+    throw new Error("Table and data array required");
   }
   if (table === "transactions") {
-    return reply(
-      c,
-      { status: "error", message: "Table 'transactions' is no longer supported" },
-      400,
-    );
+    throw new Error("Table 'transactions' is no longer supported");
   }
 
-  // Check permissions
   const required = TABLE_PERMISSIONS[table];
   if (required) {
     const hasPerm = await hasPermission(auth.userId, required.action, required.subject);
     if (!hasPerm) {
-      return reply(c, { status: "error", message: "Forbidden" }, 403);
+      throw new Error("Forbidden");
     }
   }
 
@@ -690,56 +741,36 @@ csvUploadRoutes.post("/preview", async (c) => {
           rowIndex: i,
         });
       }
-    } catch (_e) {
+    } catch {
       errors.push(`Fila ${i + 1}: Error de validación`);
       counters.toSkip += 1;
     }
   }
 
-  return reply(c, {
-    status: "ok",
+  return {
+    status: "ok" as const,
     toInsert: counters.toInsert,
     toUpdate: counters.toUpdate,
     toSkip: counters.toSkip,
     ...(includeInsertRowIndexes ? { insertRowIndexes } : {}),
     ...(includeUpdateRows ? { updateRows } : {}),
-    errors: errors.slice(0, 20), // Limit errors
-  });
-});
+    errors: errors.slice(0, 20),
+  };
+}
 
-// ============================================================
-// IMPORT (INSERT/UPDATE DATA)
-// ============================================================
-
-csvUploadRoutes.post("/import", async (c) => {
-  const auth = await getAuth(c);
-  if (!auth) {
-    return reply(c, { status: "error", message: "No autorizado" }, 401);
-  }
-
-  const { table, data, mode } = await c.req.json<{
-    table: TableName;
-    data: object[];
-    mode?: "insert-only" | "insert-or-update" | "update-only";
-  }>();
-
+export async function importCsvUpload({ auth, table, data, mode }: CsvUploadImportInput) {
   if (!table || !data || !Array.isArray(data)) {
-    return reply(c, { status: "error", message: "Table and data array required" }, 400);
+    throw new Error("Table and data array required");
   }
   if (table === "transactions") {
-    return reply(
-      c,
-      { status: "error", message: "Table 'transactions' is no longer supported" },
-      400,
-    );
+    throw new Error("Table 'transactions' is no longer supported");
   }
 
-  // Check permissions
   const required = TABLE_PERMISSIONS[table];
   if (required) {
     const hasPerm = await hasPermission(auth.userId, required.action, required.subject);
     if (!hasPerm) {
-      return reply(c, { status: "error", message: "Forbidden" }, 403);
+      throw new Error("Forbidden");
     }
   }
 
@@ -764,8 +795,9 @@ csvUploadRoutes.post("/import", async (c) => {
     "skipped:",
     skipped,
   );
-  return reply(c, {
-    status: "ok",
+
+  return {
+    status: "ok" as const,
     inserted,
     sync: syncResult,
     updated,
@@ -774,8 +806,8 @@ csvUploadRoutes.post("/import", async (c) => {
     toUpdate: updated,
     toSkip: skipped,
     errors: errors.slice(0, 20),
-  });
-});
+  };
+}
 
 type ImportOutcome = { inserted: number; skipped: number; updated: number };
 type ImportResult = ImportOutcome & { errors: string[] };

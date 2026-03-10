@@ -4,8 +4,7 @@ import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import "dayjs/locale/es";
 import { AlertCircle, CheckCircle2, Clock, RefreshCw } from "lucide-react";
-import { z } from "zod";
-import { apiClient } from "@/lib/api-client";
+import { fetchDTESyncHistory } from "@/features/settings/dte-sync-api";
 
 dayjs.extend(relativeTime);
 dayjs.locale("es");
@@ -15,13 +14,13 @@ interface DTESyncLog {
   period: string;
   docTypes: string;
   status: "PENDING" | "IN_PROGRESS" | "SUCCESS" | "PARTIAL" | "FAILED";
-  triggerSource?: string;
-  startedAt: string;
-  endedAt?: string;
-  rowsInserted: number;
-  rowsUpdated: number;
-  rowsSkipped: number;
-  errorMessage?: string;
+  triggerSource?: null | string;
+  startedAt: Date;
+  completedAt?: Date | null;
+  totalInserted?: null | number;
+  totalUpdated?: null | number;
+  totalSkipped?: null | number;
+  errorMessage?: null | string;
 }
 
 interface SyncHistoryResponse {
@@ -29,36 +28,12 @@ interface SyncHistoryResponse {
   total: number;
 }
 
-const DTE_SYNC_LOG_SCHEMA = z.object({
-  id: z.string(),
-  period: z.string(),
-  docTypes: z.string(),
-  status: z.enum(["PENDING", "IN_PROGRESS", "SUCCESS", "PARTIAL", "FAILED"]),
-  triggerSource: z.string().optional(),
-  startedAt: z.string(),
-  endedAt: z.string().optional(),
-  rowsInserted: z.number(),
-  rowsUpdated: z.number(),
-  rowsSkipped: z.number(),
-  errorMessage: z.string().optional(),
-});
-
-const SYNC_HISTORY_RESPONSE_SCHEMA = z.object({
-  logs: z.array(DTE_SYNC_LOG_SCHEMA),
-  total: z.number(),
-});
-
 export function DTESyncHistoryPage() {
   const queryClient = useQueryClient();
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["dte-sync-history"],
-    queryFn: async (): Promise<SyncHistoryResponse> => {
-      return apiClient.get<SyncHistoryResponse>("/api/dte/sync-history", {
-        query: { limit: 50, offset: 0 },
-        responseSchema: SYNC_HISTORY_RESPONSE_SCHEMA,
-      });
-    },
+    queryFn: async (): Promise<SyncHistoryResponse> => fetchDTESyncHistory(50, 0),
   });
 
   const getStatusColor = (status: string) => {
@@ -92,13 +67,13 @@ export function DTESyncHistoryPage() {
     return triggers[source || ""] || "—";
   };
 
-  const getDuration = (startedAt: string, endedAt?: string) => {
-    if (!endedAt) {
+  const getDuration = (startedAt: Date, completedAt?: Date | null) => {
+    if (!completedAt) {
       return "—";
     }
 
     const start = dayjs(startedAt);
-    const end = dayjs(endedAt);
+    const end = dayjs(completedAt);
     const seconds = end.diff(start, "second");
 
     if (seconds < 60) {
@@ -229,13 +204,13 @@ export function DTESyncHistoryPage() {
                             {dayjs(log.startedAt).format("DD/MM/YYYY HH:mm:ss")}
                           </span>
                         </div>
-                        {log.endedAt && (
+                        {log.completedAt && (
                           <div>
                             <span className="mb-1 block text-default-500 text-xs">Finalizado</span>
                             <span className="block font-mono text-sm">
-                              {dayjs(log.endedAt).format("DD/MM/YYYY HH:mm:ss")}
+                              {dayjs(log.completedAt).format("DD/MM/YYYY HH:mm:ss")}
                               <span className="ml-2 text-default-500">
-                                ({getDuration(log.startedAt, log.endedAt)})
+                                ({getDuration(log.startedAt, log.completedAt)})
                               </span>
                             </span>
                           </div>
@@ -249,7 +224,7 @@ export function DTESyncHistoryPage() {
                             Insertados
                           </span>
                           <span className="block font-bold font-mono text-lg text-success">
-                            +{log.rowsInserted}
+                            +{log.totalInserted ?? 0}
                           </span>
                         </div>
                         <div className="rounded-lg bg-background p-3">
@@ -257,7 +232,7 @@ export function DTESyncHistoryPage() {
                             Actualizados
                           </span>
                           <span className="block font-bold font-mono text-info text-lg">
-                            ~{log.rowsUpdated}
+                            ~{log.totalUpdated ?? 0}
                           </span>
                         </div>
                         <div className="rounded-lg bg-background p-3">
@@ -265,7 +240,7 @@ export function DTESyncHistoryPage() {
                             Omitidos
                           </span>
                           <span className="block font-bold font-mono text-lg text-warning">
-                            {log.rowsSkipped}
+                            {log.totalSkipped ?? 0}
                           </span>
                         </div>
                         <div className="rounded-lg bg-background p-3">
@@ -273,7 +248,9 @@ export function DTESyncHistoryPage() {
                             Total
                           </span>
                           <span className="block font-bold font-mono text-lg">
-                            {log.rowsInserted + log.rowsUpdated + log.rowsSkipped}
+                            {(log.totalInserted ?? 0) +
+                              (log.totalUpdated ?? 0) +
+                              (log.totalSkipped ?? 0)}
                           </span>
                         </div>
                       </div>

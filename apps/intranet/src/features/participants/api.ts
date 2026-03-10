@@ -33,7 +33,7 @@ export async function fetchParticipantInsight(
       throw new Error("No se pudo obtener la información del participante");
     }
 
-    return data as ParticipantInsightResponse;
+    return data as unknown as ParticipantInsightResponse;
   } catch (error) {
     throw toTransactionsInsightsApiError(error);
   }

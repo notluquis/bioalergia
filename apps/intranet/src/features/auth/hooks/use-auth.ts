@@ -27,8 +27,10 @@ export function useAuth() {
 
         if (payload.status === "ok" && payload.user) {
           // Note: ability update is handled in AuthListener
+          // Cast unknown[] to proper rule type since backend provides correctly formatted CASL rules
           return {
-            abilityRules: payload.abilityRules ?? [],
+            abilityRules:
+              (payload.abilityRules as unknown as AuthSessionData["abilityRules"]) ?? [],
             permissionVersion: payload.permissionVersion ?? 0,
             user: payload.user,
           };
@@ -68,7 +70,7 @@ export function useAuth() {
 
     if (payload.status === "mfa_required") {
       logger.info("[auth] login:mfa_required", { userId: payload.userId });
-      return { status: "mfa_required", userId: payload.userId };
+      return { status: "mfa_required", userId: payload.userId ?? 0 };
     }
 
     if (payload.status === "ok" && payload.user) {

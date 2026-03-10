@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { apiClient } from "@/lib/api-client";
+import { csvUploadORPCClient, toCsvUploadApiError } from "./orpc";
 
 export interface CsvImportPayload {
   data: Record<string, number | string>[];
@@ -50,15 +50,23 @@ const CsvPreviewResponseSchema = z.looseObject({
 });
 
 export async function importCsvData(payload: CsvImportPayload) {
-  return apiClient.post<CsvPreviewResponse>("/api/csv-upload/import", payload, {
-    responseSchema: CsvPreviewResponseSchema,
-    timeout: false,
-  });
+  try {
+    return CsvPreviewResponseSchema.parse(
+      await csvUploadORPCClient.import({
+        data: payload.data,
+        mode: payload.mode,
+        table: payload.table,
+      }),
+    );
+  } catch (error) {
+    throw toCsvUploadApiError(error);
+  }
 }
 
 export async function previewCsvImport(payload: CsvImportPayload) {
-  return apiClient.post<CsvPreviewResponse>("/api/csv-upload/preview", payload, {
-    responseSchema: CsvPreviewResponseSchema,
-    timeout: false,
-  });
+  try {
+    return CsvPreviewResponseSchema.parse(await csvUploadORPCClient.preview(payload));
+  } catch (error) {
+    throw toCsvUploadApiError(error);
+  }
 }

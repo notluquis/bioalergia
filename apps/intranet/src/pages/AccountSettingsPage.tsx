@@ -102,8 +102,8 @@ export function AccountSettingsPage() {
   const registerPasskeyMutation = useMutation({
     mutationFn: async () => {
       const options = await fetchPasskeyRegistrationOptions();
-      if (options.status === "error") {
-        throw new Error(options.message);
+      if (!options || "challenge" in options === false) {
+        throw new Error(options?.message ?? "Error al obtener opciones de registro");
       }
 
       const attResp = await startRegistration({ optionsJSON: options });

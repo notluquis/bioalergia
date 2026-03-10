@@ -1,7 +1,6 @@
 import { z } from "zod";
-import { apiClient } from "@/lib/api-client";
 import { zDateString } from "@/lib/api-validate";
-
+import { timesheetsORPCClient, toTimesheetsApiError } from "../timesheets/orpc";
 import type { TimesheetEntry } from "../timesheets/types";
 
 const TimesheetEntrySchema = z.looseObject({
@@ -59,24 +58,46 @@ const SalarySummarySchema = z.object({
   to: zDateString,
 });
 
+function normalizeTimesheetEntry(entry: Record<string, unknown>) {
+  const workDate = entry.work_date;
+  return {
+    ...entry,
+    work_date:
+      workDate instanceof Date ? workDate.toISOString().slice(0, 10) : (workDate as string),
+  };
+}
+
+function normalizeTimesheetEntries(entries: TimesheetEntry[]) {
+  return entries.map((entry) =>
+    normalizeTimesheetEntry(entry as unknown as Record<string, unknown>),
+  );
+}
+
 export async function fetchEmployeeTimesheets(
   employeeId: number,
   startDate: string,
   endDate: string,
 ) {
-  const data = await apiClient.get<{
+  let data: {
     entries: TimesheetEntry[];
     from: string;
     message?: string;
     status: "ok";
     to: string;
-  }>(`/api/timesheets/${employeeId}/range`, {
-    query: {
+  };
+  try {
+    const response = await timesheetsORPCClient.employeeRange({
+      employeeId,
       endDate,
       startDate,
-    },
-    responseSchema: EmployeeTimesheetsResponseSchema,
-  });
+    });
+    data = EmployeeTimesheetsResponseSchema.parse({
+      ...response,
+      entries: normalizeTimesheetEntries(response.entries),
+    });
+  } catch (error) {
+    throw toTimesheetsApiError(error);
+  }
 
   if (data.status !== "ok") {
     throw new Error(data.message || "Error fetching employee timesheets");
@@ -86,17 +107,23 @@ export async function fetchEmployeeTimesheets(
 }
 
 export async function fetchGlobalTimesheetRange(startDate: string, endDate: string) {
-  const data = await apiClient.get<{
+  let data: {
     entries: TimesheetEntry[];
     message?: string;
     status: "ok";
-  }>("/api/timesheets", {
-    query: {
+  };
+  try {
+    const response = await timesheetsORPCClient.listRange({
       from: startDate,
       to: endDate,
-    },
-    responseSchema: GlobalTimesheetsResponseSchema,
-  });
+    });
+    data = GlobalTimesheetsResponseSchema.parse({
+      ...response,
+      entries: normalizeTimesheetEntries(response.entries),
+    });
+  } catch (error) {
+    throw toTimesheetsApiError(error);
+  }
 
   if (data.status !== "ok") {
     throw new Error(data.message || `Error fetching global timesheets (Status: ${data.status})`);
@@ -110,18 +137,29 @@ export async function fetchMultiMonthTimesheets(
   startMonth: string,
   endMonth: string,
 ) {
-  const data = await apiClient.get<{
+  let data: {
     data: Record<string, { entries: TimesheetEntry[]; month: string }>;
     message?: string;
     status: "ok";
-  }>("/api/timesheets/multi-month", {
-    query: {
-      employeeIds: employeeIds.join(","),
+  };
+  try {
+    const response = await timesheetsORPCClient.multiMonth({
+      employeeIds,
       endMonth,
       startMonth,
-    },
-    responseSchema: MultiMonthTimesheetsResponseSchema,
-  });
+    });
+    data = MultiMonthTimesheetsResponseSchema.parse({
+      ...response,
+      data: Object.fromEntries(
+        Object.entries(response.data).map(([employeeId, value]) => [
+          employeeId,
+          { ...value, entries: normalizeTimesheetEntries(value.entries) },
+        ]),
+      ),
+    });
+  } catch (error) {
+    throw toTimesheetsApiError(error);
+  }
 
   if (data.status !== "ok") {
     throw new Error(data.message || "Error fetching multi-month timesheets");
@@ -135,7 +173,7 @@ export async function fetchSalarySummary(
   endDate: string,
   employeeIds: number[],
 ) {
-  const data = await apiClient.get<{
+  let data: {
     data: Record<
       string,
       Array<{ month: string; net: number; retention: number; subtotal: number }>
@@ -144,14 +182,18 @@ export async function fetchSalarySummary(
     message?: string;
     status: "ok";
     to: string;
-  }>("/api/timesheets/salary-summary", {
-    query: {
-      employeeIds: employeeIds.join(","),
-      from: startDate,
-      to: endDate,
-    },
-    responseSchema: SalarySummarySchema,
-  });
+  };
+  try {
+    data = SalarySummarySchema.parse(
+      await timesheetsORPCClient.salarySummary({
+        employeeIds,
+        from: startDate,
+        to: endDate,
+      }),
+    );
+  } catch (error) {
+    throw toTimesheetsApiError(error);
+  }
 
   if (data.status !== "ok") {
     throw new Error(data.message || "Error fetching salary summary");

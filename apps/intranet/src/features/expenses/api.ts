@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { ApiError } from "@/lib/api-client";
 import { formatISO } from "@/lib/dates";
 import { expensesORPCClient, toExpensesApiError } from "./orpc";
 import type {
@@ -22,11 +21,10 @@ const ExpenseStatsResponseSchema = z.object({
 
 export async function createMonthlyExpense(payload: CreateMonthlyExpensePayload) {
   try {
-    const response = await expensesORPCClient.create({
+    return (await expensesORPCClient.create({
       ...payload,
       expenseDate: formatISO(payload.expenseDate),
-    });
-    throw new ApiError(response.message, 501);
+    })) as unknown as { expense: MonthlyExpenseDetail; status: "ok" };
   } catch (error) {
     throw toExpensesApiError(error);
   }
@@ -36,8 +34,10 @@ export async function fetchMonthlyExpenseDetail(
   publicId: string,
 ): Promise<{ expense: MonthlyExpenseDetail; status: "ok" }> {
   try {
-    const response = await expensesORPCClient.detail({ publicId });
-    throw new ApiError(response.message, 501);
+    return (await expensesORPCClient.detail({ publicId })) as unknown as {
+      expense: MonthlyExpenseDetail;
+      status: "ok";
+    };
   } catch (error) {
     throw toExpensesApiError(error);
   }
@@ -50,7 +50,8 @@ export async function fetchMonthlyExpenses(params?: {
   to?: string;
 }): Promise<{ expenses: MonthlyExpense[]; status: "ok" }> {
   try {
-    return ExpensesResponseSchema.parse(await expensesORPCClient.list(params));
+    const parsed = ExpensesResponseSchema.parse(await expensesORPCClient.list(params));
+    return { ...parsed, expenses: (parsed.expenses ?? []) as MonthlyExpense[] };
   } catch (error) {
     throw toExpensesApiError(error);
   }
@@ -63,7 +64,8 @@ export async function fetchMonthlyExpenseStats(params?: {
   to?: string;
 }): Promise<{ stats: MonthlyExpenseStatsRow[]; status: "ok" }> {
   try {
-    return ExpenseStatsResponseSchema.parse(await expensesORPCClient.stats(params));
+    const parsed = ExpenseStatsResponseSchema.parse(await expensesORPCClient.stats(params));
+    return { ...parsed, stats: (parsed.stats ?? []) as MonthlyExpenseStatsRow[] };
   } catch (error) {
     throw toExpensesApiError(error);
   }
@@ -74,8 +76,10 @@ export async function linkMonthlyExpenseTransaction(
   payload: LinkMonthlyExpenseTransactionPayload,
 ) {
   try {
-    const response = await expensesORPCClient.linkTransaction({ publicId, ...payload });
-    throw new ApiError(response.message, 501);
+    return (await expensesORPCClient.linkTransaction({ publicId, ...payload })) as unknown as {
+      status: string;
+      message?: string;
+    };
   } catch (error) {
     throw toExpensesApiError(error);
   }
@@ -83,8 +87,10 @@ export async function linkMonthlyExpenseTransaction(
 
 export async function unlinkMonthlyExpenseTransaction(publicId: string, transactionId: number) {
   try {
-    const response = await expensesORPCClient.unlinkTransaction({ publicId, transactionId });
-    throw new ApiError(response.message, 501);
+    return (await expensesORPCClient.unlinkTransaction({ publicId, transactionId })) as unknown as {
+      status: string;
+      message?: string;
+    };
   } catch (error) {
     throw toExpensesApiError(error);
   }
@@ -92,14 +98,13 @@ export async function unlinkMonthlyExpenseTransaction(publicId: string, transact
 
 export async function updateMonthlyExpense(publicId: string, payload: CreateMonthlyExpensePayload) {
   try {
-    const response = await expensesORPCClient.update({
+    return (await expensesORPCClient.update({
       publicId,
       payload: {
         ...payload,
         expenseDate: formatISO(payload.expenseDate),
       },
-    });
-    throw new ApiError(response.message, 501);
+    })) as unknown as { expense: MonthlyExpenseDetail; status: "ok" };
   } catch (error) {
     throw toExpensesApiError(error);
   }

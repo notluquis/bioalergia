@@ -3,10 +3,18 @@
  */
 
 import { z } from "zod";
-import { apiClient } from "@/lib/api-client";
 import { zDateString } from "@/lib/api-validate";
-
+import { timesheetsORPCClient, toTimesheetsApiError } from "../timesheets/orpc";
 import type { TimesheetEntryWithEmployee } from "./types";
+
+function normalizeTimesheetEntry(entry: Record<string, unknown>) {
+  const workDate = entry.work_date;
+  return {
+    ...entry,
+    work_date:
+      workDate instanceof Date ? workDate.toISOString().slice(0, 10) : (workDate as string),
+  };
+}
 
 /**
  * Fetch timesheet entries for multiple employees in a date range
@@ -21,16 +29,15 @@ export async function fetchMultiEmployeeTimesheets(
     return [];
   }
 
-  const params = new URLSearchParams({
-    employeeIds: employeeIds.join(","),
-    from,
-    to,
-  });
-
-  const response = await apiClient.get<{ entries: TimesheetEntryWithEmployee[] }>(
-    `/api/timesheets/multi-detail?${params.toString()}`,
-    {
-      responseSchema: z.object({
+  let response: { entries: TimesheetEntryWithEmployee[] };
+  try {
+    const data = await timesheetsORPCClient.multiDetail({
+      employeeIds,
+      from,
+      to,
+    });
+    response = z
+      .object({
         entries: z.array(
           z.looseObject({
             comment: z.string().nullable(),
@@ -45,9 +52,13 @@ export async function fetchMultiEmployeeTimesheets(
             worked_minutes: z.number(),
           }),
         ),
-      }),
-    },
-  );
+      })
+      .parse({
+        entries: data.entries.map((entry) => normalizeTimesheetEntry(entry)),
+      });
+  } catch (error) {
+    throw toTimesheetsApiError(error);
+  }
 
   return response.entries || [];
 }

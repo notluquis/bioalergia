@@ -19,46 +19,22 @@ import { z } from "zod";
 
 import { useToast } from "@/context/ToastContext";
 import { autoLinkEventDteByPeriod } from "@/features/calendar/api";
-import { apiClient } from "@/lib/api-client";
+import {
+  fetchHaulmerAvailablePeriods,
+  syncHaulmerIncremental,
+  syncHaulmerPeriods,
+} from "@/features/settings/haulmer-api";
 
 dayjs.locale(localeEs);
 
-// Response schema for available periods
-const AvailablePeriodsSchema = z.object({
-  status: z.string(),
-  sales: z.array(
-    z.object({
-      periodo: z.string(),
-      count: z.number(),
-    }),
-  ),
-  purchases: z.array(
-    z.object({
-      periodo: z.string(),
-      count: z.number(),
-    }),
-  ),
-});
-
-// Response schema for sync results
 const SyncResultSchema = z.object({
   period: z.string(),
   docType: z.enum(["sales", "purchases"]),
-  status: z.enum(["success", "failed"]),
+  status: z.enum(["success", "failed", "skipped"]),
   rowsProcessed: z.number(),
   rowsInserted: z.number(),
   rowsUpdated: z.number(),
   error: z.string().nullable().optional(),
-});
-
-const SyncResponseSchema = z.object({
-  status: z.string(),
-  results: z.array(SyncResultSchema),
-  summary: z.object({
-    total: z.number(),
-    success: z.number(),
-    failed: z.number(),
-  }),
 });
 
 interface SyncResult extends z.infer<typeof SyncResultSchema> {}
@@ -113,7 +89,11 @@ function formatPeriodLabel(period: string): string {
   return dayjs(period, "YYYYMM").format("MMMM YYYY");
 }
 
-interface AvailablePeriodsData extends z.infer<typeof AvailablePeriodsSchema> {}
+interface AvailablePeriodsData {
+  purchases: Array<{ count: number; periodo: string }>;
+  sales: Array<{ count: number; periodo: string }>;
+  status: string;
+}
 
 /**
  * Extract all periods from available periods data, grouped by year
@@ -484,13 +464,7 @@ export function HaulmerSyncPage() {
     error: periodsError,
   } = useQuery({
     queryKey: ["haulmer-available-periods"],
-    queryFn: async () => {
-      const response = await apiClient.get<z.infer<typeof AvailablePeriodsSchema>>(
-        "/api/haulmer/available-periods",
-        { responseSchema: AvailablePeriodsSchema },
-      );
-      return response;
-    },
+    queryFn: async () => fetchHaulmerAvailablePeriods(),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
@@ -504,14 +478,10 @@ export function HaulmerSyncPage() {
 
   const syncMutation = useMutation({
     mutationFn: async (params: { period: string; docType: "sales" | "purchases" }) => {
-      const response = await apiClient.post<z.infer<typeof SyncResponseSchema>>(
-        "/api/haulmer/sync",
-        {
-          periods: [params.period],
-          docTypes: [params.docType],
-        },
-        { responseSchema: SyncResponseSchema, timeout: false },
-      );
+      const response = await syncHaulmerPeriods({
+        periods: [params.period],
+        docTypes: [params.docType],
+      });
       return response.results?.[0];
     },
     onError: (error: Error) => {
@@ -591,14 +561,10 @@ export function HaulmerSyncPage() {
         }));
 
         try {
-          const response = await apiClient.post<z.infer<typeof SyncResponseSchema>>(
-            "/api/haulmer/sync",
-            {
-              periods: [task.period],
-              docTypes: [task.docType],
-            },
-            { responseSchema: SyncResponseSchema, timeout: false },
-          );
+          const response = await syncHaulmerPeriods({
+            periods: [task.period],
+            docTypes: [task.docType],
+          });
 
           const result = response.results?.[0];
           if (result) {
@@ -697,14 +663,10 @@ export function HaulmerSyncPage() {
     setIsSyncingIncremental(true);
 
     try {
-      const response = await apiClient.post<z.infer<typeof SyncResponseSchema>>(
-        "/api/haulmer/sync/incremental",
-        {
-          docTypes: ["sales", "purchases"],
-          includeLatestAlreadySynced: true,
-        },
-        { responseSchema: SyncResponseSchema, timeout: false },
-      );
+      const response = await syncHaulmerIncremental({
+        docTypes: ["sales", "purchases"],
+        includeLatestAlreadySynced: true,
+      });
 
       for (const result of response.results ?? []) {
         const key = `${result.period}-${result.docType}`;

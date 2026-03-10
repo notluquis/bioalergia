@@ -5,6 +5,7 @@
 
 import { z } from "zod";
 import type { MpReportType } from "../../shared/mercadopago";
+import { mercadopagoORPCClient, toMercadoPagoApiError } from "../features/finance/mercadopago/orpc";
 import { apiClient } from "../lib/api-client";
 
 /**
@@ -134,15 +135,17 @@ export const MPService = {
     endDate: Date,
     type: MpReportType = "release",
   ): Promise<MPReport> => {
-    const baseUrl = getBaseUrl(type);
-    return apiClient.post<MPReport>(
-      `${baseUrl}/reports`,
-      {
-        begin_date: beginDate.toISOString(),
-        end_date: endDate.toISOString(),
-      },
-      { responseSchema: MPReportSchema },
-    );
+    try {
+      return MPReportSchema.parse(
+        await mercadopagoORPCClient.createReport({
+          beginDate,
+          endDate,
+          type,
+        }),
+      );
+    } catch (error) {
+      throw toMercadoPagoApiError(error);
+    }
   },
 
   /**
@@ -233,18 +236,18 @@ export const MPService = {
     type: MpReportType = "release",
     params?: { limit?: number; offset?: number },
   ): Promise<MPReportListResponse> => {
-    const baseUrl = getBaseUrl(type);
-    const query = new URLSearchParams();
-    if (params?.limit != null) {
-      query.set("limit", String(params.limit));
+    let response: { reports: MPReport[]; total: number };
+    try {
+      response = MPReportListResponseSchema.parse(
+        await mercadopagoORPCClient.listReports({
+          limit: params?.limit,
+          offset: params?.offset,
+          type,
+        }),
+      );
+    } catch (error) {
+      throw toMercadoPagoApiError(error);
     }
-    if (params?.offset != null) {
-      query.set("offset", String(params.offset));
-    }
-    const response = await apiClient.get<{ reports: MPReport[]; total: number; status: string }>(
-      `${baseUrl}/reports?${query.toString()}`,
-      { responseSchema: MPReportListResponseSchema },
-    );
     const normalizeReportStatus = (report: MPReport): MPReport => {
       const status = report.status ?? report.status_detail ?? report.state;
       if (status) {
@@ -267,29 +270,32 @@ export const MPService = {
     logs: MpSyncLog[];
     total: number;
   }> => {
-    const query = new URLSearchParams();
-    if (params?.limit != null) {
-      query.set("limit", String(params.limit));
+    let response: { logs: MpSyncLog[]; total: number };
+    try {
+      response = MpSyncLogsResponseSchema.parse(
+        await mercadopagoORPCClient.listSyncLogs({
+          limit: params?.limit,
+          offset: params?.offset,
+        }),
+      );
+    } catch (error) {
+      throw toMercadoPagoApiError(error);
     }
-    if (params?.offset != null) {
-      query.set("offset", String(params.offset));
-    }
-    const response = await apiClient.get<{ logs: MpSyncLog[]; status: string; total: number }>(
-      `/api/mercadopago/sync/logs?${query.toString()}`,
-      { responseSchema: MpSyncLogsResponseSchema },
-    );
     return { logs: response.logs ?? [], total: response.total ?? 0 };
   },
 
   processReport: async (fileName: string, type: MpReportType): Promise<ImportStats> => {
-    const data = await apiClient.post<ProcessReportResponse>(
-      "/api/mercadopago/process-report",
-      {
-        fileName,
-        reportType: type,
-      },
-      { responseSchema: ProcessReportResponseSchema },
-    );
+    let data: ProcessReportResponse;
+    try {
+      data = ProcessReportResponseSchema.parse(
+        await mercadopagoORPCClient.processReport({
+          fileName,
+          reportType: type,
+        }),
+      );
+    } catch (error) {
+      throw toMercadoPagoApiError(error);
+    }
     return data.stats;
   },
 };
