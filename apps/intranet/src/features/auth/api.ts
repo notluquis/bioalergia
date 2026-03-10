@@ -1,6 +1,5 @@
 import type { PublicKeyCredentialCreationOptionsJSON } from "@simplewebauthn/browser";
-
-import { apiClient } from "@/lib/api-client";
+import { authORPCClient, toAuthApiError } from "./orpc";
 import {
   MfaSetupResponseSchema,
   PasskeyLoginOptionsResponseSchema,
@@ -38,61 +37,69 @@ export interface PasskeyVerifyParams {
 }
 
 export async function disableMfa() {
-  return apiClient.post<{ status: string }>(
-    "/api/auth/mfa/disable",
-    {},
-    { responseSchema: StatusResponseSchema },
-  );
+  try {
+    return StatusResponseSchema.parse(await authORPCClient.mfaDisable({}));
+  } catch (error) {
+    throw toAuthApiError(error);
+  }
 }
 
 export async function enableMfa({ secret, token, userId }: MfaEnableParams) {
-  return apiClient.post<{ message?: string; status: string }>(
-    "/api/auth/mfa/enable",
-    {
-      secret,
-      token,
-      userId,
-    },
-    { responseSchema: StatusResponseSchema },
-  );
+  void secret;
+  void userId;
+
+  try {
+    return StatusResponseSchema.parse(await authORPCClient.mfaEnable({ token }));
+  } catch (error) {
+    throw toAuthApiError(error);
+  }
 }
 
 // --- Passkey Registration ---
 
 export async function fetchPasskeyLoginOptions() {
-  return apiClient.get<PasskeyLoginOptions>("/api/auth/passkey/login/options", {
-    responseSchema: PasskeyLoginOptionsResponseSchema,
-  });
+  try {
+    return PasskeyLoginOptionsResponseSchema.parse(await authORPCClient.passkeyLoginOptions());
+  } catch (error) {
+    throw toAuthApiError(error);
+  }
 }
 
 export async function fetchPasskeyRegistrationOptions() {
-  return apiClient.get<PasskeyOptionsResponse>("/api/auth/passkey/register/options", {
-    responseSchema: PasskeyRegistrationOptionsResponseSchema,
-  });
+  try {
+    return PasskeyRegistrationOptionsResponseSchema.parse(
+      await authORPCClient.passkeyRegisterOptions(),
+    );
+  } catch (error) {
+    throw toAuthApiError(error);
+  }
 }
 
 export async function removePasskey() {
-  // Use delete method if the API supports it, component used delete
-  return apiClient.delete<{ message?: string; status: string }>("/api/auth/passkey/remove", {
-    responseSchema: StatusResponseSchema,
-  });
+  try {
+    return StatusResponseSchema.parse(await authORPCClient.passkeyRemove({}));
+  } catch (error) {
+    throw toAuthApiError(error);
+  }
 }
 
 export async function setupMfa() {
-  return apiClient.post<MfaSetupResponse>(
-    "/api/auth/mfa/setup",
-    {},
-    { responseSchema: MfaSetupResponseSchema },
-  );
+  try {
+    return MfaSetupResponseSchema.parse(await authORPCClient.mfaSetup({}));
+  } catch (error) {
+    throw toAuthApiError(error);
+  }
 }
 
 export async function verifyPasskeyRegistration({ body, challenge }: PasskeyVerifyParams) {
-  return apiClient.post<{ message?: string; status: string }>(
-    "/api/auth/passkey/register/verify",
-    {
-      body,
-      challenge,
-    },
-    { responseSchema: StatusResponseSchema },
-  );
+  try {
+    return StatusResponseSchema.parse(
+      await authORPCClient.passkeyRegisterVerify({
+        body: body as Record<string, unknown>,
+        challenge,
+      }),
+    );
+  } catch (error) {
+    throw toAuthApiError(error);
+  }
 }

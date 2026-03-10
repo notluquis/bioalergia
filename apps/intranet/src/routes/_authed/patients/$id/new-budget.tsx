@@ -8,8 +8,7 @@ import {
   TanStackInputField,
   TanStackTextAreaField,
 } from "@/components/forms/TanStackFieldControls";
-import { BudgetSchema } from "@/features/patients/schemas";
-import { apiClient } from "@/lib/api-client";
+import { createPatientBudget } from "@/features/patients/api";
 import { PAGE_CONTAINER } from "@/lib/styles";
 import { toast } from "@/lib/toast-interceptor";
 
@@ -52,12 +51,12 @@ function NewBudgetPage() {
 
   const mutation = useMutation({
     mutationFn: async (data: BudgetForm) => {
-      const payload = {
-        ...data,
+      return await createPatientBudget({
+        patientId: Number(id),
+        title: data.title,
+        discount: data.discount,
+        notes: data.notes,
         items: data.items.map(({ clientId, ...item }) => item),
-      };
-      return await apiClient.post(`/api/patients/${id}/budgets`, payload, {
-        responseSchema: BudgetSchema,
       });
     },
     onSuccess: () => {

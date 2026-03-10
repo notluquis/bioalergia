@@ -1,11 +1,11 @@
-import type { MongoAbility, RawRuleOf } from "@casl/ability";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useStore } from "@tanstack/react-store";
 import { useCallback } from "react";
-import { ApiError, apiClient } from "@/lib/api-client";
+import { ApiError } from "@/lib/api-client";
 import { ability, updateAbility } from "@/lib/authz/ability";
 import { logger } from "@/lib/logger";
 import type { Role } from "@/types/roles";
+import { authORPCClient, toAuthApiError } from "../orpc";
 import {
   AuthSessionResponseSchema,
   LoginMfaResponseSchema,
@@ -15,13 +15,6 @@ import {
 import { authStore, setImpersonatedRole } from "./../store/auth-store";
 import type { AuthSessionData, AuthUser, LoginResult } from "../types";
 
-type SessionPayload = {
-  abilityRules?: RawRuleOf<MongoAbility>[];
-  permissionVersion?: number;
-  status: string;
-  user?: AuthUser;
-};
-
 export function useAuth() {
   const queryClient = useQueryClient();
   const { impersonatedRole } = useStore(authStore, (state) => state);
@@ -30,9 +23,7 @@ export function useAuth() {
     gcTime: 10 * 60 * 1000, // 10 min cache
     queryFn: async (): Promise<AuthSessionData | null> => {
       try {
-        const payload = await apiClient.get<SessionPayload>("/api/auth/me/session", {
-          responseSchema: AuthSessionResponseSchema,
-        });
+        const payload = AuthSessionResponseSchema.parse(await authORPCClient.session());
 
         if (payload.status === "ok" && payload.user) {
           // Note: ability update is handled in AuthListener
@@ -45,10 +36,11 @@ export function useAuth() {
 
         return null;
       } catch (error) {
-        if (error instanceof ApiError && error.status === 401) {
+        const normalizedError = toAuthApiError(error);
+        if (normalizedError instanceof ApiError && normalizedError.status === 401) {
           return null;
         }
-        throw error;
+        throw normalizedError;
       }
     },
     queryKey: ["auth", "session"],
@@ -72,12 +64,7 @@ export function useAuth() {
 
   const login = async (email: string, password: string): Promise<LoginResult> => {
     logger.info("[auth] login:start", { email });
-    const payload = await apiClient.post<{
-      message?: string;
-      status: string;
-      user?: AuthUser;
-      userId: number;
-    }>("/api/auth/login", { email, password }, { responseSchema: LoginResponseSchema });
+    const payload = LoginResponseSchema.parse(await authORPCClient.login({ email, password }));
 
     if (payload.status === "mfa_required") {
       logger.info("[auth] login:mfa_required", { userId: payload.userId });
@@ -95,14 +82,7 @@ export function useAuth() {
 
   const loginWithMfa = async (userId: number, token: string) => {
     logger.info("[auth] mfa:start", { userId });
-    const payload = await apiClient.post<{ message?: string; status: string; user?: AuthUser }>(
-      "/api/auth/login/mfa",
-      {
-        token,
-        userId,
-      },
-      { responseSchema: LoginMfaResponseSchema },
-    );
+    const payload = LoginMfaResponseSchema.parse(await authORPCClient.loginMfa({ token, userId }));
 
     if (payload.status !== "ok" || !payload.user) {
       throw new Error(payload.message ?? "Código MFA inválido");
@@ -114,10 +94,11 @@ export function useAuth() {
 
   const loginWithPasskey = async (authResponse: unknown, challenge: string) => {
     logger.info("[auth] passkey:start");
-    const payload = await apiClient.post<{ message?: string; status: string; user?: AuthUser }>(
-      "/api/auth/passkey/login/verify",
-      { body: authResponse, challenge },
-      { responseSchema: LoginMfaResponseSchema },
+    const payload = LoginMfaResponseSchema.parse(
+      await authORPCClient.passkeyLoginVerify({
+        body: authResponse as Record<string, unknown>,
+        challenge,
+      }),
     );
 
     if (payload.status !== "ok" || !payload.user) {
@@ -132,9 +113,9 @@ export function useAuth() {
     logger.info("[auth] logout:start");
     try {
       setImpersonatedRole(null);
-      await apiClient.post("/api/auth/logout", {}, { responseSchema: StatusResponseSchema });
+      StatusResponseSchema.parse(await authORPCClient.logout({}));
     } catch (error) {
-      logger.error("[auth] logout:error", error);
+      logger.error("[auth] logout:error", toAuthApiError(error));
     } finally {
       queryClient.setQueryData(["auth", "session"], null);
       updateAbility([]);

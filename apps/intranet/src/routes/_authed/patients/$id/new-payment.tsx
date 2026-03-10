@@ -21,8 +21,7 @@ import {
   TanStackInputField,
   TanStackTextAreaField,
 } from "@/components/forms/TanStackFieldControls";
-import { PatientBudgetListSchema, PatientPaymentSchema } from "@/features/patients/schemas";
-import { apiClient } from "@/lib/api-client";
+import { createPatientPayment, fetchPatientBudgets } from "@/features/patients/api";
 import { zDateString } from "@/lib/api-validate";
 import { PAGE_CONTAINER } from "@/lib/styles";
 import { toast } from "@/lib/toast-interceptor";
@@ -47,12 +46,6 @@ const paymentSchema = z.object({
 
 type PaymentForm = z.infer<typeof paymentSchema>;
 
-interface Budget {
-  id: number;
-  title: string;
-  finalAmount: number;
-}
-
 function NewPaymentPage() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
@@ -61,23 +54,21 @@ function NewPaymentPage() {
   const { data: budgets } = useQuery({
     queryKey: ["patient-budgets", id],
     queryFn: async () => {
-      return await apiClient.get<Budget[]>(`/api/patients/${id}/budgets`, {
-        responseSchema: PatientBudgetListSchema,
-      });
+      return await fetchPatientBudgets(Number(id));
     },
   });
 
   const mutation = useMutation({
     mutationFn: async (data: PaymentForm) => {
-      return await apiClient.post(
-        `/api/patients/${id}/payments`,
-        {
-          ...data,
-          budgetId: data.budgetId ? Number(data.budgetId) : undefined,
-          paymentDate: data.paymentDate,
-        },
-        { responseSchema: PatientPaymentSchema },
-      );
+      return await createPatientPayment({
+        patientId: Number(id),
+        amount: data.amount,
+        budgetId: data.budgetId ? Number(data.budgetId) : undefined,
+        paymentDate: data.paymentDate,
+        paymentMethod: data.paymentMethod,
+        reference: data.reference,
+        notes: data.notes,
+      });
     },
     onSuccess: () => {
       toast.success("Pago registrado exitosamente");

@@ -5,6 +5,7 @@
  */
 
 import { apiClient } from "@/lib/api-client";
+import { doctoraliaORPCClient, toDoctoraliaApiError } from "./orpc";
 import {
   BookingResponseSchema,
   DoctoraliaBookingsResponseSchema,
@@ -41,10 +42,6 @@ import type {
   DoctoraliaSyncLogsResponse,
 } from "./types";
 
-// ============================================================
-// STATUS
-// ============================================================
-
 export async function bookDoctoraliaSlot(
   facilityId: string,
   doctorId: string,
@@ -52,11 +49,20 @@ export async function bookDoctoraliaSlot(
   slotStart: string,
   payload: BookSlotPayload,
 ): Promise<DoctoraliaBooking> {
-  const response = await apiClient.post<{ booking: DoctoraliaBooking; status: "ok" }>(
-    `/api/doctoralia/facilities/${facilityId}/doctors/${doctorId}/addresses/${addressId}/slots/${encodeURIComponent(slotStart)}/book`,
-    { json: payload },
-    { responseSchema: BookingResponseSchema },
-  );
+  let response: { booking: DoctoraliaBooking; status: "ok" };
+  try {
+    response = BookingResponseSchema.parse(
+      await doctoraliaORPCClient.bookSlot({
+        facilityId,
+        doctorId,
+        addressId,
+        slotStart,
+        body: payload,
+      }),
+    );
+  } catch (error) {
+    throw toDoctoraliaApiError(error);
+  }
 
   if (response.status !== "ok") {
     throw new Error("No se pudo crear la reserva");
@@ -65,10 +71,6 @@ export async function bookDoctoraliaSlot(
   return response.booking;
 }
 
-// ============================================================
-// FACILITIES
-// ============================================================
-
 export async function cancelDoctoraliaBooking(
   facilityId: string,
   doctorId: string,
@@ -76,24 +78,40 @@ export async function cancelDoctoraliaBooking(
   bookingId: string,
   reason?: string,
 ): Promise<void> {
-  const baseUrl = `/api/doctoralia/facilities/${facilityId}/doctors/${doctorId}/addresses/${addressId}/bookings/${bookingId}`;
-  const url = reason ? `${baseUrl}?reason=${encodeURIComponent(reason)}` : baseUrl;
-  await apiClient.delete(url, { responseSchema: StatusOkSchema });
+  try {
+    StatusOkSchema.parse(
+      await doctoraliaORPCClient.cancelBooking({
+        facilityId,
+        doctorId,
+        addressId,
+        bookingId,
+        reason,
+      }),
+    );
+  } catch (error) {
+    throw toDoctoraliaApiError(error);
+  }
 }
-
-// ============================================================
-// DOCTORS
-// ============================================================
 
 export async function fetchDoctoraliaBookings(query: DoctoraliaBookingQuery): Promise<{
   bookings: DoctoraliaBooking[];
   pagination: { limit: number; page: number; pages: number; total: number };
 }> {
   const { addressId, doctorId, end, facilityId, start } = query;
-  const response = await apiClient.get<DoctoraliaBookingsResponse>(
-    `/api/doctoralia/facilities/${facilityId}/doctors/${doctorId}/addresses/${addressId}/bookings`,
-    { query: { end, start }, responseSchema: DoctoraliaBookingsResponseSchema },
-  );
+  let response: DoctoraliaBookingsResponse;
+  try {
+    response = DoctoraliaBookingsResponseSchema.parse(
+      await doctoraliaORPCClient.bookings({
+        addressId,
+        doctorId,
+        end,
+        facilityId,
+        start,
+      }),
+    );
+  } catch (error) {
+    throw toDoctoraliaApiError(error);
+  }
 
   if (response.status !== "ok") {
     throw new Error("No se pudo obtener las reservas");
@@ -105,15 +123,15 @@ export async function fetchDoctoraliaBookings(query: DoctoraliaBookingQuery): Pr
   };
 }
 
-// ============================================================
-// SLOTS
-// ============================================================
-
 export async function fetchDoctoraliaDoctors(facilityId: number): Promise<DoctoraliaDoctor[]> {
-  const response = await apiClient.get<DoctoraliaDoctorsResponse>(
-    `/api/doctoralia/facilities/${facilityId}/doctors`,
-    { responseSchema: DoctoraliaDoctorsResponseSchema },
-  );
+  let response: DoctoraliaDoctorsResponse;
+  try {
+    response = DoctoraliaDoctorsResponseSchema.parse(
+      await doctoraliaORPCClient.doctors({ facilityId }),
+    );
+  } catch (error) {
+    throw toDoctoraliaApiError(error);
+  }
 
   if (response.status !== "ok") {
     throw new Error("No se pudo obtener los doctores");
@@ -122,14 +140,13 @@ export async function fetchDoctoraliaDoctors(facilityId: number): Promise<Doctor
   return response.doctors;
 }
 
-// ============================================================
-// BOOKINGS
-// ============================================================
-
 export async function fetchDoctoraliaFacilities(): Promise<DoctoraliaFacility[]> {
-  const response = await apiClient.get<DoctoraliaFacilitiesResponse>("/api/doctoralia/facilities", {
-    responseSchema: DoctoraliaFacilitiesResponseSchema,
-  });
+  let response: DoctoraliaFacilitiesResponse;
+  try {
+    response = DoctoraliaFacilitiesResponseSchema.parse(await doctoraliaORPCClient.facilities());
+  } catch (error) {
+    throw toDoctoraliaApiError(error);
+  }
 
   if (response.status !== "ok") {
     throw new Error("No se pudo obtener las instalaciones");
@@ -140,10 +157,20 @@ export async function fetchDoctoraliaFacilities(): Promise<DoctoraliaFacility[]>
 
 export async function fetchDoctoraliaSlots(query: DoctoraliaSlotQuery): Promise<DoctoraliaSlot[]> {
   const { addressId, doctorId, end, facilityId, start } = query;
-  const response = await apiClient.get<DoctoraliaSlotsResponse>(
-    `/api/doctoralia/facilities/${facilityId}/doctors/${doctorId}/addresses/${addressId}/slots`,
-    { query: { end, start }, responseSchema: DoctoraliaSlotsResponseSchema },
-  );
+  let response: DoctoraliaSlotsResponse;
+  try {
+    response = DoctoraliaSlotsResponseSchema.parse(
+      await doctoraliaORPCClient.slots({
+        addressId,
+        doctorId,
+        end,
+        facilityId,
+        start,
+      }),
+    );
+  } catch (error) {
+    throw toDoctoraliaApiError(error);
+  }
 
   if (response.status !== "ok") {
     throw new Error("No se pudo obtener los slots disponibles");
@@ -156,9 +183,12 @@ export async function fetchDoctoraliaStatus(): Promise<{
   configured: boolean;
   domain: string;
 }> {
-  const response = await apiClient.get<DoctoraliaStatusResponse>("/api/doctoralia/status", {
-    responseSchema: DoctoraliaStatusResponseSchema,
-  });
+  let response: DoctoraliaStatusResponse;
+  try {
+    response = DoctoraliaStatusResponseSchema.parse(await doctoraliaORPCClient.status());
+  } catch (error) {
+    throw toDoctoraliaApiError(error);
+  }
 
   if (response.status !== "ok") {
     throw new Error("No se pudo obtener el estado de Doctoralia");
@@ -173,17 +203,18 @@ export async function fetchDoctoraliaStatus(): Promise<{
 export async function fetchDoctoraliaCalendarAppointments(
   query: DoctoraliaCalendarAppointmentsQuery,
 ): Promise<DoctoraliaCalendarAppointment[]> {
-  const response = await apiClient.get<DoctoraliaCalendarAppointmentsResponse>(
-    "/api/doctoralia/calendar/appointments",
-    {
-      query: {
+  let response: DoctoraliaCalendarAppointmentsResponse;
+  try {
+    response = DoctoraliaCalendarAppointmentsResponseSchema.parse(
+      await doctoraliaORPCClient.calendarAppointments({
         from: query.from,
         to: query.to,
-        scheduleId: query.scheduleIds?.length ? query.scheduleIds : undefined,
-      },
-      responseSchema: DoctoraliaCalendarAppointmentsResponseSchema,
-    },
-  );
+        scheduleIds: query.scheduleIds?.length ? query.scheduleIds : undefined,
+      }),
+    );
+  } catch (error) {
+    throw toDoctoraliaApiError(error);
+  }
 
   if (response.status !== "ok") {
     throw new Error("No se pudo obtener las citas de Doctoralia");
@@ -192,14 +223,13 @@ export async function fetchDoctoraliaCalendarAppointments(
   return response.data.appointments;
 }
 
-// ============================================================
-// SYNC
-// ============================================================
-
 export async function fetchDoctoraliaSyncLogs(): Promise<DoctoraliaSyncLog[]> {
-  const response = await apiClient.get<DoctoraliaSyncLogsResponse>("/api/doctoralia/sync/logs", {
-    responseSchema: DoctoraliaSyncLogsResponseSchema,
-  });
+  let response: DoctoraliaSyncLogsResponse;
+  try {
+    response = DoctoraliaSyncLogsResponseSchema.parse(await doctoraliaORPCClient.syncLogs());
+  } catch (error) {
+    throw toDoctoraliaApiError(error);
+  }
 
   if (response.status !== "ok") {
     throw new Error("No se pudo obtener los logs de sincronización");
@@ -209,11 +239,16 @@ export async function fetchDoctoraliaSyncLogs(): Promise<DoctoraliaSyncLog[]> {
 }
 
 export async function triggerDoctoraliaSync(): Promise<{ logId: number }> {
-  const response = await apiClient.post<{
+  let response: {
     logId: number;
     message: string;
     status: "accepted";
-  }>("/api/doctoralia/sync", {}, { responseSchema: DoctoraliaSyncResponseSchema });
+  };
+  try {
+    response = DoctoraliaSyncResponseSchema.parse(await doctoraliaORPCClient.sync({}));
+  } catch (error) {
+    throw toDoctoraliaApiError(error);
+  }
 
   if (response.status !== "accepted") {
     throw new Error("No se pudo iniciar la sincronización");
@@ -226,10 +261,14 @@ export async function fetchDoctoraliaCalendarAuthStatus(): Promise<{
   connected: boolean;
   expiresAt: Date | null;
 }> {
-  const response = await apiClient.get<DoctoraliaCalendarAuthStatusResponse>(
-    "/api/doctoralia/calendar/auth/status",
-    { responseSchema: DoctoraliaCalendarAuthStatusResponseSchema },
-  );
+  let response: DoctoraliaCalendarAuthStatusResponse;
+  try {
+    response = DoctoraliaCalendarAuthStatusResponseSchema.parse(
+      await doctoraliaORPCClient.calendarAuthStatus(),
+    );
+  } catch (error) {
+    throw toDoctoraliaApiError(error);
+  }
 
   if (response.status !== "ok") {
     throw new Error("No se pudo obtener el estado de conexión de Doctoralia");

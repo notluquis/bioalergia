@@ -14,10 +14,12 @@ import { logError } from "./lib/logger";
 import { configureSuperjson } from "./lib/superjson-config";
 import { certificatesRoutes } from "./modules/certificates/index.js";
 import { patientsRoutes } from "./modules/patients/index.js";
+import { authOpenAPIHandler, authORPCHandler } from "./orpc/auth";
 import { backupsOpenAPIHandler, backupsORPCHandler } from "./orpc/backups";
 import { balancesOpenAPIHandler, balancesORPCHandler } from "./orpc/balances";
 import { calendarOpenAPIHandler, calendarORPCHandler } from "./orpc/calendar";
 import { counterpartsOpenAPIHandler, counterpartsORPCHandler } from "./orpc/counterparts";
+import { doctoraliaOpenAPIHandler, doctoraliaORPCHandler } from "./orpc/doctoralia";
 import { dteAnalyticsOpenAPIHandler, dteAnalyticsORPCHandler } from "./orpc/dte-analytics";
 import { dteEventLinksOpenAPIHandler, dteEventLinksORPCHandler } from "./orpc/dte-event-links";
 import { employeesOpenAPIHandler, employeesORPCHandler } from "./orpc/employees";
@@ -25,6 +27,7 @@ import { financeOpenAPIHandler, financeORPCHandler } from "./orpc/finance";
 import { integrationsOpenAPIHandler, integrationsORPCHandler } from "./orpc/integrations";
 import { inventoryOpenAPIHandler, inventoryORPCHandler } from "./orpc/inventory";
 import { notificationsOpenAPIHandler, notificationsORPCHandler } from "./orpc/notifications";
+import { patientsOpenAPIHandler, patientsORPCHandler } from "./orpc/patients";
 import { peopleOpenAPIHandler, peopleORPCHandler } from "./orpc/people";
 import { personalFinanceOpenAPIHandler, personalFinanceORPCHandler } from "./orpc/personal-finance";
 import {
@@ -308,6 +311,15 @@ app.get("/api/orpc", (c) =>
       </p>
       <div class="grid">
         <section class="card">
+          <h2>Auth</h2>
+          <p>Autenticación, sesión, MFA y passkeys.</p>
+          <ul>
+            <li><a href="/api/orpc/auth/docs">Reference UI</a></li>
+            <li><a href="/api/orpc/auth/openapi.json">OpenAPI JSON</a></li>
+            <li><code>/api/orpc/auth/rpc/*</code></li>
+          </ul>
+        </section>
+        <section class="card">
           <h2>Calendar</h2>
           <p>Clasificación, sync, analytics y jobs de calendario.</p>
           <ul>
@@ -332,6 +344,15 @@ app.get("/api/orpc", (c) =>
             <li><a href="/api/orpc/dte-analytics/docs">Reference UI</a></li>
             <li><a href="/api/orpc/dte-analytics/openapi.json">OpenAPI JSON</a></li>
             <li><code>/api/orpc/dte-analytics/rpc/*</code></li>
+          </ul>
+        </section>
+        <section class="card">
+          <h2>Doctoralia</h2>
+          <p>Estado, catálogo, reservas, sync y citas de calendario.</p>
+          <ul>
+            <li><a href="/api/orpc/doctoralia/docs">Reference UI</a></li>
+            <li><a href="/api/orpc/doctoralia/openapi.json">OpenAPI JSON</a></li>
+            <li><code>/api/orpc/doctoralia/rpc/*</code></li>
           </ul>
         </section>
         <section class="card">
@@ -404,6 +425,15 @@ app.get("/api/orpc", (c) =>
             <li><a href="/api/orpc/people/docs">Reference UI</a></li>
             <li><a href="/api/orpc/people/openapi.json">OpenAPI JSON</a></li>
             <li><code>/api/orpc/people/rpc/*</code></li>
+          </ul>
+        </section>
+        <section class="card">
+          <h2>Patients</h2>
+          <p>Presupuestos y pagos de pacientes.</p>
+          <ul>
+            <li><a href="/api/orpc/patients/docs">Reference UI</a></li>
+            <li><a href="/api/orpc/patients/openapi.json">OpenAPI JSON</a></li>
+            <li><code>/api/orpc/patients/rpc/*</code></li>
           </ul>
         </section>
         <section class="card">
@@ -809,6 +839,45 @@ app.use("/api/orpc/production-balances/rpc/*", async (c, next) => {
   await next();
 });
 
+app.use("/api/orpc/auth/rpc/*", async (c, next) => {
+  const { matched, response } = await authORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/auth/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
+app.use("/api/orpc/patients/rpc/*", async (c, next) => {
+  const { matched, response } = await patientsORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/patients/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
+app.use("/api/orpc/doctoralia/rpc/*", async (c, next) => {
+  const { matched, response } = await doctoraliaORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/doctoralia/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
 app.use("/api/orpc/dte-analytics/event-links/*", async (c, next) => {
   const { matched, response } = await dteEventLinksOpenAPIHandler.handle(createHonoORPCRequest(c), {
     context: { hono: c },
@@ -999,6 +1068,42 @@ app.use("/api/orpc/production-balances/*", async (c, next) => {
       context: { hono: c },
     },
   );
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
+app.use("/api/orpc/auth/*", async (c, next) => {
+  const { matched, response } = await authOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
+app.use("/api/orpc/patients/*", async (c, next) => {
+  const { matched, response } = await patientsOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
+app.use("/api/orpc/doctoralia/*", async (c, next) => {
+  const { matched, response } = await doctoraliaOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
 
   if (matched) {
     return c.newResponse(response.body, response);

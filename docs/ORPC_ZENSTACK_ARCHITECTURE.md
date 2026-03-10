@@ -35,9 +35,11 @@
 │ • feature api.ts normalizes transport   │
 └──────────────┬──────────────────────────┘
                │ HTTP(S) POST
+               │ /api/orpc/auth/rpc/*
                │ /api/orpc/calendar/rpc/*
                │ /api/orpc/dte-analytics/rpc/*
                │ /api/orpc/dte-analytics/event-links/rpc/*
+               │ /api/orpc/doctoralia/rpc/*
                │ /api/orpc/employees/rpc/*
                │ /api/orpc/integrations/rpc/*
                │ /api/orpc/inventory/rpc/*
@@ -46,6 +48,7 @@
                │ /api/orpc/finance/rpc/*
                │ /api/orpc/users/rpc/*
                │ /api/orpc/people/rpc/*
+               │ /api/orpc/patients/rpc/*
                │ /api/orpc/personal-finance/rpc/*
                │ /api/orpc/settings/rpc/*
                │ /api/orpc/notifications/rpc/*
@@ -64,12 +67,26 @@
 │ ├─ SuperJSONRPCHandler                       │
 │ │  └─ Handles Date/BigInt/Special types      │
 │ │                                            │
+│ ├─ Auth Router                               │
+│ │  • /login                                  │
+│ │  • /login/mfa                              │
+│ │  • /me/session                             │
+│ │  • /mfa/*                                  │
+│ │  • /passkey/*                              │
+│ │                                            │
 │ ├─ Calendar Router                           │
 │ │  • /events/classify                        │
 │ │  • /events/unclassified                    │
 │ │  • /events/reclassify (jobs)               │
 │ │  • /events/sync (async)                    │
 │ │  • More...                                 │
+│ │                                            │
+│ ├─ Doctoralia Router                         │
+│ │  • /status                                 │
+│ │  • /facilities                             │
+│ │  • /calendar/appointments                  │
+│ │  • /sync                                   │
+│ │  • OAuth callbacks/webhooks siguen REST    │
 │ │                                            │
 │ ├─ DTE Event Links Router                    │
 │ │  • /suggestions                            │
@@ -125,6 +142,11 @@
 │ ├─ People Router                             │
 │ │  • /                                       │
 │ │  • /{id}                                   │
+│ │                                            │
+│ ├─ Patients Router                           │
+│ │  • /{patientId}/budgets                    │
+│ │  • /payments                               │
+│ │  • /{patientId}/payments                   │
 │ │                                            │
 │ ├─ Personal Finance Router                   │
 │ │  • /credits                                │
