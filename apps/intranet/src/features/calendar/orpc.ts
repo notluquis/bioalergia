@@ -108,7 +108,7 @@ interface SuperJSONLinkOptions<T extends ClientContext>
     Omit<StandardLinkOptions<T>, "plugins">,
     StandardRPCLinkCodecOptions<T> {}
 
-class SuperJSONLink<T extends ClientContext> extends StandardLink<T> {
+export class SuperJSONLink<T extends ClientContext> extends StandardLink<T> {
   constructor(options: SuperJSONLinkOptions<T>) {
     const linkClient = new LinkFetchClient(options);
     const serializer = new SuperJSONSerializer();

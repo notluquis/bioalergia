@@ -1,4 +1,4 @@
-import { apiClient } from "@/lib/api-client";
+import { dteEventLinksORPCClient } from "./dte-orpc";
 import { calendarORPCClient, toCalendarApiError } from "./orpc";
 import {
   CalendarDailyResponseSchema,
@@ -259,14 +259,12 @@ export async function fetchTreatmentAnalytics(
 }
 
 export async function fetchEventDteLinksByDay(date: string): Promise<EventDteConfirmedLink[]> {
-  const response = await apiClient.get<{ data: EventDteConfirmedLink[]; status: "success" }>(
-    "/api/dte-analytics/event-links/by-day",
-    {
-      query: { date },
-      responseSchema: EventDteByDayResponseSchema,
-    },
-  );
-  return response.data;
+  try {
+    const data = await dteEventLinksORPCClient.byDay({ date });
+    return EventDteByDayResponseSchema.parse({ data, status: "success" }).data;
+  } catch (error) {
+    throw toCalendarApiError(error);
+  }
 }
 
 export async function fetchEventDteSuggestions(params: {
@@ -287,28 +285,12 @@ export async function fetchEventDteSuggestions(params: {
   linked: unknown;
   suggestions: EventDteSuggestion[];
 }> {
-  const response = await apiClient.get<{
-    data: {
-      event: null | {
-        amountExpected: null | number;
-        amountPaid: null | number;
-        calendarId: string;
-        description: null | string;
-        eventDate: string;
-        eventId: string;
-        hints: { nameHints: string[]; rutHints: string[] };
-        summary: null | string;
-      };
-      linked: unknown;
-      suggestions: EventDteSuggestion[];
-    };
-    status: "success";
-  }>("/api/dte-analytics/event-links/suggestions", {
-    query: params,
-    responseSchema: EventDteSuggestionResponseSchema,
-  });
-
-  return response.data;
+  try {
+    const data = await dteEventLinksORPCClient.suggestions(params);
+    return EventDteSuggestionResponseSchema.parse({ data, status: "success" }).data;
+  } catch (error) {
+    throw toCalendarApiError(error);
+  }
 }
 
 export async function confirmEventDteLink(payload: {
@@ -320,18 +302,24 @@ export async function confirmEventDteLink(payload: {
   matchedName?: null | string;
   matchedRUT?: null | string;
 }): Promise<void> {
-  await apiClient.post("/api/dte-analytics/event-links/confirm", payload, {
-    responseSchema: EventDteConfirmResponseSchema,
-  });
+  try {
+    const data = await dteEventLinksORPCClient.confirmLink(payload);
+    EventDteConfirmResponseSchema.parse({ data, status: "success" });
+  } catch (error) {
+    throw toCalendarApiError(error);
+  }
 }
 
 export async function unlinkEventDteLink(payload: {
   calendarId: string;
   eventId: string;
 }): Promise<void> {
-  await apiClient.post("/api/dte-analytics/event-links/unlink", payload, {
-    responseSchema: EventDteConfirmResponseSchema,
-  });
+  try {
+    const data = await dteEventLinksORPCClient.unlinkLink(payload);
+    EventDteConfirmResponseSchema.parse({ data, status: "success" });
+  } catch (error) {
+    throw toCalendarApiError(error);
+  }
 }
 
 export async function autoLinkEventDteByDay(payload: { date: string; minScore?: number }): Promise<{
@@ -342,20 +330,12 @@ export async function autoLinkEventDteByDay(payload: { date: string; minScore?: 
   skippedByReason: Array<{ count: number; reason: string }>;
   totalEvents: number;
 }> {
-  const response = await apiClient.post<{
-    data: {
-      date: string;
-      details: Array<{ eventId: string; reason: string }>;
-      linked: number;
-      skipped: number;
-      skippedByReason: Array<{ count: number; reason: string }>;
-      totalEvents: number;
-    };
-    status: "success";
-  }>("/api/dte-analytics/event-links/auto-link-day", payload, {
-    responseSchema: EventDteAutoLinkResponseSchema,
-  });
-  return response.data;
+  try {
+    const data = await dteEventLinksORPCClient.autoLinkDay(payload);
+    return EventDteAutoLinkResponseSchema.parse({ data, status: "success" }).data;
+  } catch (error) {
+    throw toCalendarApiError(error);
+  }
 }
 
 export async function autoLinkEventDteByPeriod(payload: {
@@ -370,21 +350,12 @@ export async function autoLinkEventDteByPeriod(payload: {
   skippedByReason: Array<{ count: number; reason: string }>;
   totalEvents: number;
 }> {
-  const response = await apiClient.post<{
-    data: {
-      daysProcessed: number;
-      details: Array<{ date: string; linked: number; skipped: number; totalEvents: number }>;
-      linked: number;
-      period: string;
-      skipped: number;
-      skippedByReason: Array<{ count: number; reason: string }>;
-      totalEvents: number;
-    };
-    status: "success";
-  }>("/api/dte-analytics/event-links/auto-link-period", payload, {
-    responseSchema: EventDteAutoLinkPeriodResponseSchema,
-  });
-  return response.data;
+  try {
+    const data = await dteEventLinksORPCClient.autoLinkPeriod(payload);
+    return EventDteAutoLinkPeriodResponseSchema.parse({ data, status: "success" }).data;
+  } catch (error) {
+    throw toCalendarApiError(error);
+  }
 }
 
 export async function autoLinkEventDteByAllPeriods(payload?: { minScore?: number }): Promise<{
@@ -401,43 +372,24 @@ export async function autoLinkEventDteByAllPeriods(payload?: { minScore?: number
   skippedByReason: Array<{ count: number; reason: string }>;
   totalEvents: number;
 }> {
-  const response = await apiClient.post<{
-    data: {
-      details: Array<{
-        daysProcessed: number;
-        linked: number;
-        period: string;
-        skipped: number;
-        totalEvents: number;
-      }>;
-      linked: number;
-      periodsProcessed: number;
-      skipped: number;
-      skippedByReason: Array<{ count: number; reason: string }>;
-      totalEvents: number;
-    };
-    status: "success";
-  }>("/api/dte-analytics/event-links/auto-link-all-periods", payload ?? {}, {
-    responseSchema: EventDteAutoLinkAllPeriodsResponseSchema,
-  });
-  return response.data;
+  try {
+    const data = await dteEventLinksORPCClient.autoLinkAllPeriods(payload);
+    return EventDteAutoLinkAllPeriodsResponseSchema.parse({ data, status: "success" }).data;
+  } catch (error) {
+    throw toCalendarApiError(error);
+  }
 }
 
 export async function startAutoLinkEventDteAllPeriodsJob(payload?: {
   minScore?: number;
   periodConcurrency?: number;
 }): Promise<{ jobId: string; periodConcurrency: number; totalPeriods: number }> {
-  const response = await apiClient.post<{
-    data: {
-      jobId: string;
-      periodConcurrency: number;
-      totalPeriods: number;
-    };
-    status: "accepted";
-  }>("/api/dte-analytics/event-links/auto-link-all-periods/start", payload ?? {}, {
-    responseSchema: EventDteAutoLinkAllPeriodsStartResponseSchema,
-  });
-  return response.data;
+  try {
+    const data = await dteEventLinksORPCClient.startAutoLinkAllPeriods(payload);
+    return EventDteAutoLinkAllPeriodsStartResponseSchema.parse({ data, status: "accepted" }).data;
+  } catch (error) {
+    throw toCalendarApiError(error);
+  }
 }
 
 export interface EventDteAutoLinkJobStatus {
@@ -454,11 +406,13 @@ export interface EventDteAutoLinkJobStatus {
 export async function fetchAutoLinkEventDteJobStatus(
   jobId: string,
 ): Promise<EventDteAutoLinkJobStatus> {
-  const response = await apiClient.get<{ data: EventDteAutoLinkJobStatus; status: "success" }>(
-    `/api/dte-analytics/event-links/jobs/${jobId}`,
-    { responseSchema: EventDteAutoLinkAllPeriodsJobStatusResponseSchema },
-  );
-  return response.data;
+  try {
+    const data = await dteEventLinksORPCClient.autoLinkJobStatus({ jobId });
+    return EventDteAutoLinkAllPeriodsJobStatusResponseSchema.parse({ data, status: "success" })
+      .data;
+  } catch (error) {
+    throw toCalendarApiError(error);
+  }
 }
 
 export async function fetchEventDteLinksOverview(params: {
@@ -468,13 +422,10 @@ export async function fetchEventDteLinksOverview(params: {
   query?: string;
   status?: "all" | "linked" | "pending_issuance" | "unlinked";
 }): Promise<EventDteOverviewResponseData> {
-  const response = await apiClient.get<{ data: EventDteOverviewResponseData; status: "success" }>(
-    "/api/dte-analytics/event-links/overview",
-    {
-      query: params,
-      responseSchema: EventDteOverviewResponseSchema,
-    },
-  );
-
-  return response.data;
+  try {
+    const data = await dteEventLinksORPCClient.overview(params);
+    return EventDteOverviewResponseSchema.parse({ data, status: "success" }).data;
+  } catch (error) {
+    throw toCalendarApiError(error);
+  }
 }

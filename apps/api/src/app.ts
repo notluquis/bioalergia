@@ -20,6 +20,11 @@ import {
   calendarORPCHandler,
   getCalendarOpenAPISpec,
 } from "./orpc/calendar";
+import {
+  dteEventLinksOpenAPIHandler,
+  dteEventLinksORPCHandler,
+  getDteEventLinksOpenAPISpec,
+} from "./orpc/dte-event-links";
 import { createHonoORPCRequest } from "./orpc/superjson";
 import { authRoutes } from "./routes/auth";
 import { backupRoutes } from "./routes/backups";
@@ -185,9 +190,39 @@ app.get("/api/orpc/calendar/openapi.json", async (c) => {
   return replyRaw(c, spec);
 });
 
+app.get("/api/orpc/dte-analytics/event-links/openapi.json", async (c) => {
+  const spec = (await getDteEventLinksOpenAPISpec()) as OpenAPI.Document;
+  return replyRaw(c, spec);
+});
+
 app.use("/api/orpc/calendar/rpc/*", async (c, next) => {
   const { matched, response } = await calendarORPCHandler.handle(createHonoORPCRequest(c), {
     prefix: "/api/orpc/calendar/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
+app.use("/api/orpc/dte-analytics/event-links/rpc/*", async (c, next) => {
+  const { matched, response } = await dteEventLinksORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/dte-analytics/event-links/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
+app.use("/api/orpc/dte-analytics/event-links/*", async (c, next) => {
+  const { matched, response } = await dteEventLinksOpenAPIHandler.handle(createHonoORPCRequest(c), {
     context: { hono: c },
   });
 
