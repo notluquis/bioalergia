@@ -3,5 +3,8 @@
   "build": {
     "builder": "DOCKERFILE",
     "dockerfilePath": "apps/site/Dockerfile"
+  },
+  "deploy": {
+    "watchPatterns": ["apps/site/**", "pnpm-lock.yaml", "pnpm-workspace.yaml"]
   }
 }
