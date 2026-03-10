@@ -49,6 +49,7 @@
                │ /api/orpc/notifications/rpc/*
                │ /api/orpc/services/rpc/*
                │ /api/orpc/production-balances/rpc/*
+               │ /api/orpc/balances/rpc/*
                │ /api/orpc/backups/rpc/*
                ▼
 ┌──────────────────────────────────────────────┐
@@ -130,6 +131,10 @@
 │ ├─ Production Balances Router                │
 │ │  • /                                       │
 │ │  • /{id}                                   │
+│ │                                            │
+│ ├─ Balances Router                           │
+│ │  • /                                       │
+│ │  • Guarda saldo diario y reporte por fecha │
 │ │                                            │
 │ ├─ Backups Router                            │
 │ │  • /                                       │
