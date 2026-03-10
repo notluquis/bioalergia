@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { apiClient } from "@/lib/api-client";
+import { employeesORPCClient, toEmployeesApiError } from "./orpc";
 
 import type { Employee, EmployeePayload, EmployeeUpdatePayload } from "./types";
 
@@ -11,46 +11,55 @@ const EmployeesResponseSchema = z.object({
   employees: z.array(z.unknown()),
 });
 
-const StatusResponseSchema = z.looseObject({ status: z.string().optional() });
-
 export async function createEmployee(data: EmployeePayload): Promise<Employee> {
-  const res = await apiClient.post<{ employee: Employee }>("/api/employees", data, {
-    responseSchema: EmployeeResponseSchema,
-  });
-  return res.employee;
+  try {
+    const res = await employeesORPCClient.create(
+      data as EmployeePayload & { names: string; rut: string },
+    );
+    return EmployeeResponseSchema.parse(res).employee as Employee;
+  } catch (error) {
+    throw toEmployeesApiError(error);
+  }
 }
 
 export async function deactivateEmployee(id: number): Promise<void> {
-  await apiClient.delete(`/api/employees/${id}`, { responseSchema: StatusResponseSchema });
+  try {
+    await employeesORPCClient.deactivate({ id });
+  } catch (error) {
+    throw toEmployeesApiError(error);
+  }
 }
 
 export async function fetchEmployees(includeInactive = false): Promise<Employee[]> {
-  const url = new URL("/api/employees", globalThis.location.origin);
-  if (includeInactive) {
-    url.searchParams.set("includeInactive", "true");
+  try {
+    const res = EmployeesResponseSchema.parse(
+      await employeesORPCClient.list(includeInactive ? { includeInactive } : undefined),
+    );
+
+    return res.employees.map((emp) => {
+      if (!emp.full_name && emp.person) {
+        return {
+          ...emp,
+          full_name: [emp.person.names, emp.person.fatherName, emp.person.motherName]
+            .filter(Boolean)
+            .join(" "),
+        };
+      }
+
+      return emp;
+    }) as Employee[];
+  } catch (error) {
+    throw toEmployeesApiError(error);
   }
-  const res = await apiClient.get<{ employees: Employee[] }>(url.pathname + url.search, {
-    responseSchema: EmployeesResponseSchema,
-  });
-  return res.employees.map((emp) => {
-    // If backend doesn't send full_name, compute it from person
-    if (!emp.full_name && emp.person) {
-      return {
-        ...emp,
-        full_name: [emp.person.names, emp.person.fatherName, emp.person.motherName]
-          .filter(Boolean)
-          .join(" "),
-      };
-    }
-    return emp;
-  });
 }
 
 export async function updateEmployee(id: number, data: EmployeeUpdatePayload): Promise<Employee> {
-  const res = await apiClient.put<{ employee: Employee }>(`/api/employees/${id}`, data, {
-    responseSchema: EmployeeResponseSchema,
-  });
-  return res.employee;
+  try {
+    const res = await employeesORPCClient.update({ id, payload: data });
+    return EmployeeResponseSchema.parse(res).employee as Employee;
+  } catch (error) {
+    throw toEmployeesApiError(error);
+  }
 }
 
 export type { Employee, EmployeePayload, EmployeeUpdatePayload } from "./types";

@@ -1,12 +1,11 @@
-import { schema as schemaLite } from "@finanzas/db/schema-lite";
 import { Alert, Button, Description, Switch } from "@heroui/react";
-import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import type { PaginationState } from "@tanstack/react-table";
-import { useClientQueries } from "@zenstackhq/tanstack-query/react";
 import { ChevronUp, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { useAuth } from "@/context/AuthContext";
+import { updateEmployee } from "@/features/hr/employees/api";
 import { columns } from "@/features/hr/employees/components/columns";
 import { EmployeeForm } from "@/features/hr/employees/components/EmployeeForm";
 import { employeeKeys } from "@/features/hr/employees/queries";
@@ -14,8 +13,6 @@ import type { Employee } from "@/features/hr/employees/types";
 import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
 // ... existing imports
 export function EmployeesPage() {
-  const client = useClientQueries(schemaLite);
-
   const { can } = useAuth();
   const canEdit = can("update", "Employee");
   const queryClient = useQueryClient();
@@ -38,8 +35,11 @@ export function EmployeesPage() {
     setPagination((prev) => ({ ...prev, pageIndex: nextPageIndex }));
   }, [includeInactive]);
 
-  // ... rest of mutation logic ...
-  const updateStatusMutation = client.employee.useUpdate();
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: number; status: "ACTIVE" | "INACTIVE" }) =>
+      updateEmployee(id, { status }),
+  });
+
   const error = (() => {
     if (updateStatusMutation.error instanceof Error) {
       return updateStatusMutation.error.message;
@@ -53,7 +53,7 @@ export function EmployeesPage() {
       return;
     }
     updateStatusMutation.mutate(
-      { data: { status: "INACTIVE" }, where: { id } },
+      { id, status: "INACTIVE" },
       {
         onSuccess: () => {
           void queryClient.invalidateQueries({ queryKey: employeeKeys.all });
@@ -67,7 +67,7 @@ export function EmployeesPage() {
       return;
     }
     updateStatusMutation.mutate(
-      { data: { status: "ACTIVE" }, where: { id } },
+      { id, status: "ACTIVE" },
       {
         onSuccess: () => {
           void queryClient.invalidateQueries({ queryKey: employeeKeys.all });

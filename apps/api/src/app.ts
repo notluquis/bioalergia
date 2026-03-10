@@ -16,6 +16,7 @@ import { certificatesRoutes } from "./modules/certificates/index.js";
 import { patientsRoutes } from "./modules/patients/index.js";
 import { calendarOpenAPIHandler, calendarORPCHandler } from "./orpc/calendar";
 import { dteEventLinksOpenAPIHandler, dteEventLinksORPCHandler } from "./orpc/dte-event-links";
+import { employeesOpenAPIHandler, employeesORPCHandler } from "./orpc/employees";
 import { createHonoORPCRequest } from "./orpc/superjson";
 import { authRoutes } from "./routes/auth";
 import { backupRoutes } from "./routes/backups";
@@ -293,6 +294,15 @@ app.get("/api/orpc", (c) =>
             <li><code>/api/orpc/dte-analytics/event-links/rpc/*</code></li>
           </ul>
         </section>
+        <section class="card">
+          <h2>Employees</h2>
+          <p>Listado, creación, edición y desactivación de empleados.</p>
+          <ul>
+            <li><a href="/api/orpc/employees/docs">Reference UI</a></li>
+            <li><a href="/api/orpc/employees/openapi.json">OpenAPI JSON</a></li>
+            <li><code>/api/orpc/employees/rpc/*</code></li>
+          </ul>
+        </section>
       </div>
     </main>
   </body>
@@ -325,8 +335,33 @@ app.use("/api/orpc/dte-analytics/event-links/rpc/*", async (c, next) => {
   await next();
 });
 
+app.use("/api/orpc/employees/rpc/*", async (c, next) => {
+  const { matched, response } = await employeesORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/employees/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
 app.use("/api/orpc/dte-analytics/event-links/*", async (c, next) => {
   const { matched, response } = await dteEventLinksOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
+app.use("/api/orpc/employees/*", async (c, next) => {
+  const { matched, response } = await employeesOpenAPIHandler.handle(createHonoORPCRequest(c), {
     context: { hono: c },
   });
 
