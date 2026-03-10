@@ -101,16 +101,22 @@ export function AccountSettingsPage() {
   // --- Passkey Mutations ---
   const registerPasskeyMutation = useMutation({
     mutationFn: async () => {
-      const options = await fetchPasskeyRegistrationOptions();
-      if (!options || "challenge" in options === false) {
-        throw new Error(options?.message ?? "Error al obtener opciones de registro");
+      const result = await fetchPasskeyRegistrationOptions();
+
+      if (result.type === "error") {
+        // Type-safe discriminated union narrowing
+        throw new Error(result.message ?? "Error al obtener opciones");
       }
 
-      const attResp = await startRegistration({ optionsJSON: options });
+      // After narrowing, result.options is PublicKeyCredentialCreationOptionsJSON
+      // No cast needed - this is the exact type @simplewebauthn/browser expects
+      const attResp = await startRegistration({
+        optionsJSON: result.options,
+      });
 
       const verifyData = await verifyPasskeyRegistration({
         body: attResp,
-        challenge: options.challenge,
+        challenge: result.options.challenge,
       });
       if (verifyData.status !== "ok") {
         throw new Error(verifyData.message ?? "Error al verificar passkey");

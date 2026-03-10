@@ -120,13 +120,9 @@ export function useMonthlyExpenses() {
     onError: (err) => {
       setLinkError(err instanceof Error ? err.message : "Error al vincular");
     },
-    onSuccess: (response) => {
+    onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: expenseKeys.all });
       void queryClient.invalidateQueries({ queryKey: expenseKeys.statsAll });
-      queryClient.setQueryData(expenseKeys.detail(response.expense.publicId).queryKey, {
-        expense: response.expense,
-        status: "ok",
-      });
       setLinkModalOpen(false);
     },
   });
@@ -138,13 +134,9 @@ export function useMonthlyExpenses() {
     onError: (err) => {
       setLinkError(err instanceof Error ? err.message : "Error al desvincular");
     },
-    onSuccess: (response) => {
+    onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: expenseKeys.all });
       void queryClient.invalidateQueries({ queryKey: expenseKeys.statsAll });
-      queryClient.setQueryData(expenseKeys.detail(response.expense.publicId).queryKey, {
-        expense: response.expense,
-        status: "ok",
-      });
     },
   });
 

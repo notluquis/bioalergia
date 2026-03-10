@@ -53,7 +53,7 @@ export async function syncHaulmerIncremental(input?: {
   includeLatestAlreadySynced?: boolean;
 }) {
   try {
-    return SyncResponseSchema.parse(await haulmerORPCClient.syncIncremental(input));
+    return SyncResponseSchema.parse(await haulmerORPCClient.syncIncremental(input ?? {}));
   } catch (error) {
     throw toHaulmerApiError(error);
   }

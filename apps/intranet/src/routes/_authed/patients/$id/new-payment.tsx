@@ -278,7 +278,7 @@ function NewPaymentPage() {
                           {new Intl.NumberFormat("es-CL", {
                             style: "currency",
                             currency: "CLP",
-                          }).format(b.finalAmount)}
+                          }).format(Number(b.finalAmount))}
                           )
                         </ListBox.Item>
                       ))}

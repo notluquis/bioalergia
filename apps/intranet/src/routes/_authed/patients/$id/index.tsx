@@ -526,7 +526,7 @@ const budgetColumns: ColumnDef<Budget>[] = [
     accessorKey: "finalAmount",
     cell: ({ row }) =>
       new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP" }).format(
-        row.original.finalAmount,
+        Number(row.original.finalAmount),
       ),
   },
   {
@@ -560,7 +560,7 @@ const paymentColumns: ColumnDef<PatientPayment>[] = [
     accessorKey: "amount",
     cell: ({ row }) =>
       new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP" }).format(
-        row.original.amount,
+        Number(row.original.amount),
       ),
   },
   {

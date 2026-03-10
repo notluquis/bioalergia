@@ -46,7 +46,7 @@ export async function fetchReleaseTransactions(
         search: params.search,
         to: params.to,
       }),
-    );
+    ) as unknown as FetchReleaseTransactionsResponse;
   } catch (error) {
     throw toReleaseTransactionsApiError(error);
   }

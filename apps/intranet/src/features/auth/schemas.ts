@@ -1,3 +1,7 @@
+import type {
+  PublicKeyCredentialCreationOptionsJSON,
+  PublicKeyCredentialRequestOptionsJSON,
+} from "@simplewebauthn/server";
 import { z } from "zod";
 
 export const AuthUserSchema = z.strictObject({
@@ -102,3 +106,15 @@ export const PasskeyRegistrationOptionsResponseSchema = z.union([
   PasskeyRegistrationOptionsSchema,
   StatusResponseSchema,
 ]);
+
+// Inferred types from Zod schemas for validation/parsing
+export type PasskeyRegistrationOptionsZod = z.infer<typeof PasskeyRegistrationOptionsSchema>;
+export type PasskeyLoginOptionsZod = z.infer<typeof PasskeyLoginOptionsSchema>;
+
+// Type-safe types using native @simplewebauthn/server types
+// These are what the oRPC actually returns and what @simplewebauthn/browser expects
+export type PasskeyRegistrationOptions = PublicKeyCredentialCreationOptionsJSON;
+export type PasskeyLoginOptions = PublicKeyCredentialRequestOptionsJSON;
+export type PasskeyRegistrationOptionsResponse = PasskeyRegistrationOptions | StatusResponse;
+export type PasskeyLoginOptionsResponse = PasskeyLoginOptions | StatusResponse;
+export type StatusResponse = z.infer<typeof StatusResponseSchema>;

@@ -184,7 +184,7 @@ export function DTESyncHistoryPage() {
                       <div className="ml-auto flex items-center gap-2 text-sm">
                         <Chip size="sm" variant="secondary">
                           <Chip.Label className="font-mono text-xs">
-                            {getTriggerLabel(log.triggerSource)}
+                            {getTriggerLabel(log.triggerSource ?? undefined)}
                           </Chip.Label>
                         </Chip>
                         <span className="whitespace-nowrap text-default-500 text-xs">

@@ -114,13 +114,13 @@ const TimesheetEntryResponseSchema = z.object({
   status: z.string(),
 });
 
-function normalizeTimesheetEntry(entry: Record<string, unknown>) {
+function normalizeTimesheetEntry(entry: Record<string, unknown>): TimesheetEntry {
   const workDate = entry.work_date;
   return {
     ...entry,
     work_date:
       workDate instanceof Date ? workDate.toISOString().slice(0, 10) : (workDate as string),
-  };
+  } as TimesheetEntry;
 }
 
 function normalizeTimesheetEntries(entries: TimesheetEntry[]) {
@@ -255,7 +255,10 @@ export async function prepareTimesheetEmailPayload(payload: {
   };
   try {
     data = PrepareEmailPayloadResponseSchema.parse(
-      await timesheetsORPCClient.prepareEmailPayload(payload),
+      await timesheetsORPCClient.prepareEmailPayload({
+        ...payload,
+        summary: payload.summary as Record<string, number | string | undefined>,
+      }),
     );
   } catch (error) {
     throw toTimesheetsApiError(error);
@@ -272,10 +275,14 @@ export async function updateTimesheet(id: number, payload: Partial<TimesheetPayl
   let data: { entry: TimesheetEntry; message?: string; status: string };
   try {
     const response = await timesheetsORPCClient.update({ id, payload });
-    data = TimesheetEntryResponseSchema.parse({
+    const parsed = TimesheetEntryResponseSchema.parse({
       ...response,
-      entry: normalizeTimesheetEntry(response.entry as Record<string, unknown>),
+      entry: normalizeTimesheetEntry(response.entry as unknown as Record<string, unknown>),
     });
+    data = {
+      ...parsed,
+      entry: parsed.entry as unknown as TimesheetEntry,
+    };
   } catch (error) {
     throw toTimesheetsApiError(error);
   }
@@ -290,10 +297,14 @@ export async function upsertTimesheet(payload: TimesheetPayload) {
   let data: { entry: TimesheetEntry; message?: string; status: string };
   try {
     const response = await timesheetsORPCClient.create(payload);
-    data = TimesheetEntryResponseSchema.parse({
+    const parsed = TimesheetEntryResponseSchema.parse({
       ...response,
-      entry: normalizeTimesheetEntry(response.entry as Record<string, unknown>),
+      entry: normalizeTimesheetEntry(response.entry as unknown as Record<string, unknown>),
     });
+    data = {
+      ...parsed,
+      entry: parsed.entry as unknown as TimesheetEntry,
+    };
   } catch (error) {
     throw toTimesheetsApiError(error);
   }

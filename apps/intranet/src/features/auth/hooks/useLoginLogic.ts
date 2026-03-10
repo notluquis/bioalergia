@@ -86,12 +86,16 @@ export function useLoginLogic(from: string) {
   });
   const passkeyMutation = useMutation({
     mutationFn: async () => {
-      const o = await fetchPasskeyLoginOptions();
-      if (!o || "status" in o) {
-        throw new Error("Invalid");
+      const result = await fetchPasskeyLoginOptions();
+
+      if (result.type === "error") {
+        // Type-safe discriminated union narrowing
+        throw new Error(result.message ?? "Error al obtener opciones de passkey");
       }
-      const a = await startAuthentication({ optionsJSON: o as any });
-      await loginWithPasskey(a, (o as any).challenge);
+
+      // After narrowing, result.type === "success" and result.options is guaranteed to exist
+      const attestation = await startAuthentication({ optionsJSON: result.options });
+      await loginWithPasskey(attestation, result.options.challenge);
     },
     onSuccess: () => {
       logger.info("[login-page] passkey success");

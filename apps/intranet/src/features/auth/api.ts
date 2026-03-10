@@ -57,19 +57,42 @@ export async function enableMfa({ secret, token, userId }: MfaEnableParams) {
 
 // --- Passkey Registration ---
 
-export async function fetchPasskeyLoginOptions() {
+export type PasskeyLoginResult =
+  | { type: "success"; options: PasskeyLoginOptions }
+  | { type: "error"; status: "error"; message?: string };
+
+export type PasskeyRegistrationResult =
+  | { type: "success"; options: PublicKeyCredentialCreationOptionsJSON }
+  | { type: "error"; status: "error"; message?: string };
+
+export async function fetchPasskeyLoginOptions(): Promise<PasskeyLoginResult> {
   try {
-    return PasskeyLoginOptionsResponseSchema.parse(await authORPCClient.passkeyLoginOptions());
+    const result = PasskeyLoginOptionsResponseSchema.parse(
+      await authORPCClient.passkeyLoginOptions(),
+    );
+    if ("status" in result && result.status === "error") {
+      // Discriminate between error and success responses
+      return { type: "error", status: "error", message: result.message };
+    }
+    // Cast the parsed result to the native @simplewebauthn type
+    // We use double cast because Zod's inferred type may not align 100% with the expected type
+    return { type: "success", options: result as unknown as PasskeyLoginOptions };
   } catch (error) {
     throw toAuthApiError(error);
   }
 }
 
-export async function fetchPasskeyRegistrationOptions() {
+export async function fetchPasskeyRegistrationOptions(): Promise<PasskeyRegistrationResult> {
   try {
-    return PasskeyRegistrationOptionsResponseSchema.parse(
+    const result = PasskeyRegistrationOptionsResponseSchema.parse(
       await authORPCClient.passkeyRegisterOptions(),
     );
+    if ("status" in result && result.status === "error") {
+      // Discriminate between error and success responses
+      return { type: "error", status: "error", message: result.message };
+    }
+    // Cast the parsed result to the native @simplewebauthn type
+    return { type: "success", options: result as PublicKeyCredentialCreationOptionsJSON };
   } catch (error) {
     throw toAuthApiError(error);
   }

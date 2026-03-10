@@ -131,17 +131,23 @@ export function useOnboardingForm() {
 
   const passkeyRegister = useMutation({
     mutationFn: async () => {
-      const options = await fetchPasskeyRegistrationOptions();
-      if (!options || "challenge" in options === false) {
-        throw new Error(options?.message ?? "No se pudieron obtener opciones de passkey");
+      const result = await fetchPasskeyRegistrationOptions();
+
+      if (result.type === "error") {
+        // Type-safe discriminated union narrowing
+        throw new Error(result.message ?? "Error al obtener opciones de passkey");
       }
 
+      // After narrowing, result.options is PublicKeyCredentialCreationOptionsJSON
+      // No cast needed - this is the exact type @simplewebauthn/browser expects
       const { startRegistration } = await import("@simplewebauthn/browser");
-      const attestation = await startRegistration({ optionsJSON: options });
+      const attestation = await startRegistration({
+        optionsJSON: result.options,
+      });
 
       const verifyResult = await verifyPasskeyRegistration({
         body: attestation,
-        challenge: options.challenge,
+        challenge: result.options.challenge,
       });
 
       if (verifyResult.status !== "ok") {

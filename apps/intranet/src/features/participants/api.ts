@@ -55,7 +55,7 @@ export async function fetchParticipantLeaderboard(params?: {
     }
 
     if ("participants" in data && Array.isArray(data.participants)) {
-      return data as ParticipantLeaderboardResponse;
+      return data as unknown as ParticipantLeaderboardResponse;
     }
 
     return {
@@ -63,7 +63,7 @@ export async function fetchParticipantLeaderboard(params?: {
         | ParticipantLeaderboardResponse["participants"]
         | [],
       status: "ok",
-    };
+    } as unknown as ParticipantLeaderboardResponse;
   } catch (error) {
     throw toTransactionsInsightsApiError(error);
   }

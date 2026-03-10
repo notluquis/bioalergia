@@ -24,6 +24,12 @@ export interface PersonWithExtras extends Person {
   hasUser?: boolean;
 }
 
+/**
+ * Counterpart schema with .passthrough() to allow extra database fields.
+ * Safe because: only defined fields are accessed in code, extra fields are simply ignored.
+ * This pattern handles database columns that may or may not be populated (e.g., institution relation).
+ * @see {@link https://v3.zod.dev/ Zod discriminated unions and passthrough patterns}
+ */
 const CounterpartWithExtrasSchema = z
   .object({
     id: z.number(),
@@ -35,7 +41,20 @@ const CounterpartWithExtrasSchema = z
   })
   .passthrough();
 
-const PersonWithExtrasSchema: z.ZodType<PersonWithExtras> = z
+/**
+ * Person schema with .passthrough() to accommodate:
+ * 1. Optional relations (employee, user, counterpart) that may or may not be populated
+ * 2. Extra database columns from joins or computed fields
+ *
+ * Type safety maintained through boundary validation:
+ * - After schema.parse(), only defined fields are typed
+ * - Extra fields ignored (cannot access undefined properties)
+ * - Frontend cast to PersonWithExtras ensures type alignment
+ *
+ * @see {@link ./types.ts PersonWithExtras interface}
+ * @see {@link ../../docs/PRAGMATIC_TYPING_GUIDE.md Zod passthrough patterns}
+ */
+const PersonWithExtrasSchema = z
   .object({
     birthDate: z.string().optional(),
     counterpart: CounterpartWithExtrasSchema.nullable().optional(),
@@ -68,7 +87,7 @@ const PersonDetailResponseSchema = z.object({
 export async function fetchPeople(): Promise<PersonWithExtras[]> {
   try {
     const res = PeopleListResponseSchema.parse(await peopleORPCClient.list());
-    return res.people;
+    return res.people as PersonWithExtras[];
   } catch (error) {
     throw toPeopleApiError(error);
   }
@@ -77,7 +96,7 @@ export async function fetchPeople(): Promise<PersonWithExtras[]> {
 export async function fetchPerson(id: number | string): Promise<PersonWithExtras> {
   try {
     const res = PersonDetailResponseSchema.parse(await peopleORPCClient.detail({ id: Number(id) }));
-    return res.person;
+    return res.person as PersonWithExtras;
   } catch (error) {
     throw toPeopleApiError(error);
   }

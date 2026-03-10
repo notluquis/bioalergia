@@ -65,7 +65,7 @@ function normalizeCredit(credit: PersonalCreditTransport): PersonalCredit {
     interestRate: toNumberValue(credit.interestRate),
     nextPaymentAmount: toNumberValue(credit.nextPaymentAmount),
     nextPaymentDate: toDateOnlyString(credit.nextPaymentDate),
-    remainingAmount: toNumberValue(credit.remainingAmount),
+    remainingAmount: (toNumberValue(credit.remainingAmount) ?? undefined) as number | undefined,
     startDate: toDateOnlyString(credit.startDate) ?? "",
     totalAmount: toNumberValue(credit.totalAmount) ?? 0,
   };
