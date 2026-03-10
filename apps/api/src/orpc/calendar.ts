@@ -96,6 +96,7 @@ const classificationOptionsSchema = z.object({
     }),
   ),
   patchReadings: z.array(z.string()),
+  status: z.literal("ok"),
   testSubtypes: z.array(z.string()),
   treatmentStages: z.array(z.string()),
 });
@@ -572,6 +573,7 @@ const unclassifiedCalendarEventSchema = z.object({
 
 const unclassifiedEventsResponseSchema = z.object({
   events: z.array(unclassifiedCalendarEventSchema),
+  status: z.literal("ok"),
   totalCount: z.number(),
 });
 
