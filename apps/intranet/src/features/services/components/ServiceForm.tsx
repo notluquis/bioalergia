@@ -3,8 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
 import { z } from "zod";
+import { financeORPCClient } from "@/features/finance/orpc";
 import { isNonAccountableCategory } from "@/features/finance/utils/non-accountable-category";
-import { apiClient } from "@/lib/api-client";
 import { fetchCounterpart, fetchCounterparts } from "../../counterparts/api";
 import type { CounterpartAccount } from "../../counterparts/types";
 import type {
@@ -268,14 +268,12 @@ export function ServiceForm({ initialValues, onCancel, onSubmit, submitLabel }: 
 
   const { data: financeCategories = [] } = useQuery({
     queryFn: async () => {
-      const payload = await apiClient.get<{ data: Array<z.infer<typeof FinanceCategorySchema>> }>(
-        "/api/finance/categories",
-        {
-          responseSchema: z.object({
-            data: z.array(FinanceCategorySchema),
-          }),
-        },
-      );
+      const payload = z
+        .object({
+          data: z.array(FinanceCategorySchema),
+          status: z.literal("ok"),
+        })
+        .parse(await financeORPCClient.categoriesList());
       return payload.data.filter(
         (category) => category.type === "EXPENSE" && !isNonAccountableCategory(category),
       );
