@@ -24,6 +24,7 @@ import { notificationsOpenAPIHandler, notificationsORPCHandler } from "./orpc/no
 import { peopleOpenAPIHandler, peopleORPCHandler } from "./orpc/people";
 import { personalFinanceOpenAPIHandler, personalFinanceORPCHandler } from "./orpc/personal-finance";
 import { rolesOpenAPIHandler, rolesORPCHandler } from "./orpc/roles";
+import { servicesOpenAPIHandler, servicesORPCHandler } from "./orpc/services";
 import { settingsOpenAPIHandler, settingsORPCHandler } from "./orpc/settings";
 import { createHonoORPCRequest } from "./orpc/superjson";
 import { usersOpenAPIHandler, usersORPCHandler } from "./orpc/users";
@@ -393,6 +394,15 @@ app.get("/api/orpc", (c) =>
             <li><code>/api/orpc/notifications/rpc/*</code></li>
           </ul>
         </section>
+        <section class="card">
+          <h2>Services</h2>
+          <p>Servicios recurrentes, schedules, pagos y conciliación financiera.</p>
+          <ul>
+            <li><a href="/api/orpc/services/docs">Reference UI</a></li>
+            <li><a href="/api/orpc/services/openapi.json">OpenAPI JSON</a></li>
+            <li><code>/api/orpc/services/rpc/*</code></li>
+          </ul>
+        </section>
       </div>
     </main>
   </body>
@@ -555,6 +565,19 @@ app.use("/api/orpc/notifications/rpc/*", async (c, next) => {
   await next();
 });
 
+app.use("/api/orpc/services/rpc/*", async (c, next) => {
+  const { matched, response } = await servicesORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/services/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
 app.use("/api/orpc/dte-analytics/event-links/*", async (c, next) => {
   const { matched, response } = await dteEventLinksOpenAPIHandler.handle(createHonoORPCRequest(c), {
     context: { hono: c },
@@ -680,6 +703,18 @@ app.use("/api/orpc/settings/*", async (c, next) => {
 
 app.use("/api/orpc/notifications/*", async (c, next) => {
   const { matched, response } = await notificationsOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
+app.use("/api/orpc/services/*", async (c, next) => {
+  const { matched, response } = await servicesOpenAPIHandler.handle(createHonoORPCRequest(c), {
     context: { hono: c },
   });
 

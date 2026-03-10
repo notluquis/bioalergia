@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { apiClient } from "@/lib/api-client";
 import { formatISO } from "@/lib/dates";
+import { servicesORPCClient, toServicesApiError } from "./orpc";
 
 import type {
   CreateServicePayload,
@@ -79,9 +79,13 @@ function serializeScheduleEditPayload(
 }
 
 export async function createService(payload: CreateServicePayload): Promise<ServiceDetailResponse> {
-  return apiClient.post<ServiceDetailResponse>("/api/services", serializeServicePayload(payload), {
-    responseSchema: ServiceDetailResponseSchema,
-  });
+  try {
+    return ServiceDetailResponseSchema.parse(
+      normalizeDetailResponse(await servicesORPCClient.create(serializeServicePayload(payload))),
+    );
+  } catch (error) {
+    throw toServicesApiError(error);
+  }
 }
 
 export function extractErrorMessage(error: unknown): null | string {
@@ -92,112 +96,210 @@ export function extractErrorMessage(error: unknown): null | string {
 }
 
 export async function fetchServiceDetail(publicId: string): Promise<ServiceDetailResponse> {
-  return apiClient.get<ServiceDetailResponse>(`/api/services/${publicId}`, {
-    responseSchema: ServiceDetailResponseSchema,
-  });
+  try {
+    return ServiceDetailResponseSchema.parse(
+      normalizeDetailResponse(await servicesORPCClient.detail({ id: publicId })),
+    );
+  } catch (error) {
+    throw toServicesApiError(error);
+  }
 }
 
 export async function fetchServices(): Promise<ServiceListResponse> {
-  return apiClient.get<ServiceListResponse>("/api/services", {
-    responseSchema: ServiceListResponseSchema,
-  });
+  try {
+    return ServiceListResponseSchema.parse(normalizeListResponse(await servicesORPCClient.list()));
+  } catch (error) {
+    throw toServicesApiError(error);
+  }
 }
 
 export async function regenerateServiceSchedules(
   publicId: string,
   payload: RegenerateServicePayload,
 ): Promise<ServiceDetailResponse> {
-  return apiClient.post<ServiceDetailResponse>(
-    `/api/services/${publicId}/schedules`,
-    serializeRegeneratePayload(payload),
-    {
-      responseSchema: ServiceDetailResponseSchema,
-    },
-  );
+  try {
+    return ServiceDetailResponseSchema.parse(
+      normalizeDetailResponse(
+        await servicesORPCClient.regenerateSchedules({
+          id: publicId,
+          ...serializeRegeneratePayload(payload),
+        }),
+      ),
+    );
+  } catch (error) {
+    throw toServicesApiError(error);
+  }
 }
 
 export async function registerServicePayment(
   scheduleId: number,
   payload: ServicePaymentPayload,
 ): Promise<{ schedule: ServiceSchedule; status: "ok" }> {
-  return apiClient.post<{ schedule: ServiceSchedule; status: "ok" }>(
-    `/api/services/schedules/${scheduleId}/pay`,
-    serializePaymentPayload(payload),
-    { responseSchema: ServiceScheduleResponseSchema },
-  );
+  try {
+    return ServiceScheduleResponseSchema.parse(
+      normalizeScheduleResponse(
+        await servicesORPCClient.schedulePay({
+          id: scheduleId,
+          ...serializePaymentPayload(payload),
+        }),
+      ),
+    );
+  } catch (error) {
+    throw toServicesApiError(error);
+  }
 }
 
 export async function unlinkServicePayment(
   scheduleId: number,
 ): Promise<{ schedule: ServiceSchedule; status: "ok" }> {
-  return apiClient.post<{ schedule: ServiceSchedule; status: "ok" }>(
-    `/api/services/schedules/${scheduleId}/unlink`,
-    {},
-    { responseSchema: ServiceScheduleResponseSchema },
-  );
+  try {
+    return ServiceScheduleResponseSchema.parse(
+      normalizeScheduleResponse(await servicesORPCClient.scheduleUnlink({ id: scheduleId })),
+    );
+  } catch (error) {
+    throw toServicesApiError(error);
+  }
 }
 
 export async function editServiceSchedule(
   scheduleId: number,
   payload: ServiceScheduleEditPayload,
 ): Promise<{ schedule: ServiceSchedule; status: "ok" }> {
-  return apiClient.patch<{ schedule: ServiceSchedule; status: "ok" }>(
-    `/api/services/schedules/${scheduleId}`,
-    serializeScheduleEditPayload(payload),
-    { responseSchema: ServiceScheduleResponseSchema },
-  );
+  try {
+    return ServiceScheduleResponseSchema.parse(
+      normalizeScheduleResponse(
+        await servicesORPCClient.scheduleEdit({
+          id: scheduleId,
+          ...serializeScheduleEditPayload(payload),
+        }),
+      ),
+    );
+  } catch (error) {
+    throw toServicesApiError(error);
+  }
 }
 
 export async function skipServiceSchedule(
   scheduleId: number,
   payload: ServiceScheduleSkipPayload,
 ): Promise<{ schedule: ServiceSchedule; status: "ok" }> {
-  return apiClient.post<{ schedule: ServiceSchedule; status: "ok" }>(
-    `/api/services/schedules/${scheduleId}/skip`,
-    payload,
-    { responseSchema: ServiceScheduleResponseSchema },
-  );
+  try {
+    return ServiceScheduleResponseSchema.parse(
+      normalizeScheduleResponse(
+        await servicesORPCClient.scheduleSkip({
+          id: scheduleId,
+          ...payload,
+        }),
+      ),
+    );
+  } catch (error) {
+    throw toServicesApiError(error);
+  }
 }
 
 export async function updateService(
   publicId: string,
   payload: CreateServicePayload,
 ): Promise<ServiceDetailResponse> {
-  return apiClient.put<ServiceDetailResponse>(
-    `/api/services/${publicId}`,
-    serializeServicePayload(payload),
-    {
-      responseSchema: ServiceDetailResponseSchema,
-    },
-  );
+  try {
+    return ServiceDetailResponseSchema.parse(
+      normalizeDetailResponse(
+        await servicesORPCClient.update({
+          id: publicId,
+          payload: serializeServicePayload(payload),
+        }),
+      ),
+    );
+  } catch (error) {
+    throw toServicesApiError(error);
+  }
 }
 
 export async function syncAllServiceTransactions(): Promise<ServiceSyncTransactionsResult> {
-  const response = await apiClient.post<{
-    data: ServiceSyncTransactionsResult;
-    status: "ok";
-  }>(
-    "/api/services/sync/transactions",
-    {},
-    {
-      responseSchema: ServiceSyncResponseSchema,
-    },
-  );
-  return response.data;
+  try {
+    const response = ServiceSyncResponseSchema.parse(
+      await servicesORPCClient.syncAllTransactions(),
+    );
+    return response.data;
+  } catch (error) {
+    throw toServicesApiError(error);
+  }
 }
 
 export async function syncServiceTransactions(
   publicId: string,
 ): Promise<ServiceSyncTransactionsResult> {
-  const response = await apiClient.post<{
-    data: ServiceSyncTransactionsResult;
-    status: "ok";
-  }>(
-    `/api/services/${publicId}/sync-transactions`,
-    {},
-    {
-      responseSchema: ServiceSyncResponseSchema,
-    },
-  );
-  return response.data;
+  try {
+    const response = ServiceSyncResponseSchema.parse(
+      await servicesORPCClient.syncTransactions({ id: publicId }),
+    );
+    return response.data;
+  } catch (error) {
+    throw toServicesApiError(error);
+  }
+}
+
+function toNumberValue(value: null | number | { toNumber: () => number } | undefined) {
+  if (value === null || value === undefined) {
+    return value;
+  }
+
+  if (typeof value === "number") {
+    return value;
+  }
+
+  return value.toNumber();
+}
+
+function normalizeSchedule(schedule: ServiceSchedule): ServiceSchedule {
+  return {
+    ...schedule,
+    effectiveAmount: toNumberValue(schedule.effectiveAmount) ?? 0,
+    expectedAmount: toNumberValue(schedule.expectedAmount) ?? 0,
+    lateFeeAmount: toNumberValue(schedule.lateFeeAmount) ?? 0,
+    paidAmount: toNumberValue(schedule.paidAmount),
+    transaction: schedule.transaction
+      ? {
+          ...schedule.transaction,
+          amount: toNumberValue(schedule.transaction.amount),
+        }
+      : schedule.transaction,
+  };
+}
+
+function normalizeService(
+  service: ServiceDetailResponse["service"],
+): ServiceDetailResponse["service"] {
+  return {
+    ...service,
+    defaultAmount: toNumberValue(service.defaultAmount) ?? 0,
+    lateFeeValue: toNumberValue(service.lateFeeValue),
+    totalExpected: toNumberValue(service.totalExpected) ?? 0,
+    totalPaid: toNumberValue(service.totalPaid) ?? 0,
+  };
+}
+
+function normalizeDetailResponse(response: ServiceDetailResponse): ServiceDetailResponse {
+  return {
+    ...response,
+    schedules: response.schedules.map(normalizeSchedule),
+    service: normalizeService(response.service),
+  };
+}
+
+function normalizeListResponse(response: ServiceListResponse): ServiceListResponse {
+  return {
+    ...response,
+    services: response.services.map(normalizeService),
+  };
+}
+
+function normalizeScheduleResponse(response: { schedule: ServiceSchedule; status: "ok" }): {
+  schedule: ServiceSchedule;
+  status: "ok";
+} {
+  return {
+    ...response,
+    schedule: normalizeSchedule(response.schedule),
+  };
 }

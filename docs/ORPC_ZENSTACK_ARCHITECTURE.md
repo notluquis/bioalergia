@@ -47,6 +47,7 @@
                │ /api/orpc/personal-finance/rpc/*
                │ /api/orpc/settings/rpc/*
                │ /api/orpc/notifications/rpc/*
+               │ /api/orpc/services/rpc/*
                ▼
 ┌──────────────────────────────────────────────┐
 │ Backend (Hono 4.12.5 + oRPC 1.13.6)          │
@@ -116,6 +117,13 @@
 │ │  • /subscribe                              │
 │ │  • /unsubscribe                            │
 │ │  • /send-test                              │
+│ │                                            │
+│ ├─ Services Router                           │
+│ │  • /                                       │
+│ │  • /{id}                                   │
+│ │  • /{id}/schedules                         │
+│ │  • /schedules/{id}/pay                     │
+│ │  • /schedules/{id}/unlink                  │
 │ │                                            │
 │ └─ Service Layer                             │
 │    └─ Use db/authDb from Zenstack             │
@@ -311,6 +319,7 @@ apps/api/src/
 │   ├── people.ts
 │   ├── personal-finance.ts
 │   ├── settings.ts
+│   ├── services.ts
 │   ├── users.ts
 │   └── superjson.ts             ← SuperJSON serializer (custom)
 │
@@ -349,6 +358,7 @@ apps/api/src/
 | 2026-03-10 | ✅ Done | Personal Finance |
 | 2026-03-10 | ✅ Done | Settings |
 | 2026-03-10 | ✅ Done | Notifications |
+| 2026-03-10 | ✅ Done | Services |
 
 ---
 
