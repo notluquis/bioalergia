@@ -277,7 +277,6 @@ export const ClassificationOptionsSchema = z.strictObject({
       label: z.string(),
     }),
   ),
-  status: z.literal("ok"),
   patchReadings: z.array(z.string()),
   testSubtypes: z.array(z.string()),
   treatmentStages: z.array(z.string()),
@@ -310,7 +309,6 @@ export const CalendarUnclassifiedEventSchema = z.strictObject({
 
 export const UnclassifiedEventsResponseSchema = z.strictObject({
   events: z.array(CalendarUnclassifiedEventSchema),
-  status: z.literal("ok"),
   totalCount: z.number(),
 });
 

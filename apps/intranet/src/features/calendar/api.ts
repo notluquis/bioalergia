@@ -194,10 +194,7 @@ export async function fetchUnclassifiedCalendarEvents(
       offset,
     });
 
-    const parsed = UnclassifiedEventsResponseSchema.parse({
-      status: "ok",
-      ...response,
-    });
+    const parsed = UnclassifiedEventsResponseSchema.parse(response);
 
     return { events: parsed.events, totalCount: parsed.totalCount };
   } catch (error) {
