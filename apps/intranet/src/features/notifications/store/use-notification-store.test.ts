@@ -214,14 +214,14 @@ describe("use-notification-store", () => {
     ) as unknown;
 
     if (isPersistedNotifications(user1Persisted)) {
-      const firstNotif = user1Persisted.notifications[0];
+      const firstNotif: unknown = user1Persisted.notifications[0];
       if (firstNotif && typeof firstNotif === "object" && "message" in firstNotif) {
         expect((firstNotif as Record<string, unknown>).message).toBe("only-user-1");
       }
     }
 
     if (isPersistedNotifications(user2Persisted)) {
-      const firstNotif = user2Persisted.notifications[0];
+      const firstNotif: unknown = user2Persisted.notifications[0];
       if (firstNotif && typeof firstNotif === "object" && "message" in firstNotif) {
         expect((firstNotif as Record<string, unknown>).message).toBe("only-user-2");
       }

@@ -9,7 +9,7 @@ import { CalendarFiltersPopover } from "@/features/calendar/components/CalendarF
 import { CalendarSkeleton } from "@/features/calendar/components/CalendarSkeleton";
 import { ScheduleCalendar } from "@/features/calendar/components/ScheduleCalendar";
 import { useCalendarEvents } from "@/features/calendar/hooks/use-calendar-events";
-import type { CalendarEventDetail } from "@/features/calendar/types";
+import type { CalendarEventDetail, CalendarSearchParams } from "@/features/calendar/types";
 import {
   fetchDoctoraliaCalendarAppointments,
   fetchDoctoraliaCalendarAuthStatus,
@@ -149,7 +149,7 @@ function useDoctoraliaCalendarAuth(params: {
 
 function useScheduleRange(params: {
   navigate: ReturnType<typeof routeApi.useNavigate>;
-  search: ReturnType<typeof routeApi.useSearch>;
+  search: CalendarSearchParams;
 }) {
   const { navigate, search } = params;
   const actualWeekStart = getActualWeekStart();
