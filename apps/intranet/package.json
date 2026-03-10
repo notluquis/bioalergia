@@ -13,9 +13,13 @@
     "@internationalized/date": "3.11.0"
   },
   "scripts": {
-    "dev": "vite",
+    "dev": "VITE_REACT_COMPILER=false vite",
+    "dev:compiler": "VITE_REACT_COMPILER=true vite",
     "build": "tsr generate && tsc && vite build",
-    "build:fast": "vite build",
+    "build:fast": "VITE_REACT_COMPILER=true vite build",
+    "build:fast:compiler": "VITE_REACT_COMPILER=true vite build",
+    "build:fast:no-compiler": "VITE_REACT_COMPILER=false vite build",
+    "build:profile": "vite build --profile",
     "preview": "vite preview",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",

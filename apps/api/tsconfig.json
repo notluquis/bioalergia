@@ -6,7 +6,7 @@
     "strict": true,
     "incremental": true,
     "skipLibCheck": true,
-    "tsBuildInfoFile": "../../.tsbuildinfo/api.tsbuildinfo",
+    "tsBuildInfoFile": "./tsconfig.tsbuildinfo",
     "outDir": "dist",
     "esModuleInterop": true,
     "noEmit": true

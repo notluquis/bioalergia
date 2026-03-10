@@ -17,6 +17,9 @@
     "lint": {},
     "format": {},
     "check": {},
-    "type-check": {}
+    "type-check": {
+      "dependsOn": ["^build"],
+      "outputs": ["tsconfig.tsbuildinfo"]
+    }
   }
 }

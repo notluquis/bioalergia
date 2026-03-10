@@ -5,19 +5,20 @@ import react from "@vitejs/plugin-react";
 import { visualizer } from "rollup-plugin-visualizer";
 import { defineConfig } from "vite";
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     tailwindcss(),
-    visualizer({
-      // Let Rollup/Vite handle output placement instead of hard-coding dist/.
-      emitFile: true,
-      filename: "bundle-analysis.html",
-      open: false,
-      gzipSize: true,
-      brotliSize: true,
-    }),
-  ],
+    mode === "analyze" &&
+      visualizer({
+        // Let Rollup/Vite handle output placement instead of hard-coding dist/.
+        emitFile: true,
+        filename: "bundle-analysis.html",
+        open: false,
+        gzipSize: true,
+        brotliSize: true,
+      }),
+  ].filter(Boolean),
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
@@ -25,10 +26,15 @@ export default defineConfig({
   },
   build: {
     target: "esnext",
+    modulePreload: {
+      polyfill: false,
+    },
+    sourcemap: false,
+    reportCompressedSize: false,
     rollupOptions: {
       // Trust the graph: Let Rolldown's advanced automatic chunking work
       // Removes manual chunks for optimal HTTP/3 multiplexing
     },
     chunkSizeWarningLimit: 600,
   },
-});
+}));

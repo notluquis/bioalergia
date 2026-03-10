@@ -8,7 +8,7 @@
     "strict": true,
     "noEmit": true,
     "incremental": true,
-    "tsBuildInfoFile": "../../.tsbuildinfo/site.tsbuildinfo",
+    "tsBuildInfoFile": "./tsconfig.tsbuildinfo",
     "skipLibCheck": true,
     "useDefineForClassFields": true,
     "baseUrl": ".",

@@ -6,7 +6,7 @@
     "strict": true,
     "incremental": true,
     "skipLibCheck": true,
-    "tsBuildInfoFile": "../../.tsbuildinfo/local-mail-agent.tsbuildinfo",
+    "tsBuildInfoFile": "./tsconfig.tsbuildinfo",
     "outDir": "dist",
     "esModuleInterop": true,
     "noEmit": true
