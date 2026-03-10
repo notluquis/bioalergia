@@ -29,9 +29,17 @@ import {
   productionBalancesOpenAPIHandler,
   productionBalancesORPCHandler,
 } from "./orpc/production-balances";
+import {
+  releaseTransactionsOpenAPIHandler,
+  releaseTransactionsORPCHandler,
+} from "./orpc/release-transactions";
 import { rolesOpenAPIHandler, rolesORPCHandler } from "./orpc/roles";
 import { servicesOpenAPIHandler, servicesORPCHandler } from "./orpc/services";
 import { settingsOpenAPIHandler, settingsORPCHandler } from "./orpc/settings";
+import {
+  settlementTransactionsOpenAPIHandler,
+  settlementTransactionsORPCHandler,
+} from "./orpc/settlement-transactions";
 import { createHonoORPCRequest } from "./orpc/superjson";
 import { usersOpenAPIHandler, usersORPCHandler } from "./orpc/users";
 import { authRoutes } from "./routes/auth";
@@ -428,6 +436,24 @@ app.get("/api/orpc", (c) =>
           </ul>
         </section>
         <section class="card">
+          <h2>Release Transactions</h2>
+          <p>Release transactions de Mercado Pago para payouts y conciliación.</p>
+          <ul>
+            <li><a href="/api/orpc/release-transactions/docs">Reference UI</a></li>
+            <li><a href="/api/orpc/release-transactions/openapi.json">OpenAPI JSON</a></li>
+            <li><code>/api/orpc/release-transactions/rpc/*</code></li>
+          </ul>
+        </section>
+        <section class="card">
+          <h2>Settlement Transactions</h2>
+          <p>Settlement transactions de Mercado Pago para conciliación financiera.</p>
+          <ul>
+            <li><a href="/api/orpc/settlement-transactions/docs">Reference UI</a></li>
+            <li><a href="/api/orpc/settlement-transactions/openapi.json">OpenAPI JSON</a></li>
+            <li><code>/api/orpc/settlement-transactions/rpc/*</code></li>
+          </ul>
+        </section>
+        <section class="card">
           <h2>Backups</h2>
           <p>Backups en Google Drive, restauración y metadata. El progreso sigue por SSE.</p>
           <ul>
@@ -473,6 +499,38 @@ app.use("/api/orpc/balances/rpc/*", async (c, next) => {
     prefix: "/api/orpc/balances/rpc",
     context: { hono: c },
   });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
+app.use("/api/orpc/release-transactions/rpc/*", async (c, next) => {
+  const { matched, response } = await releaseTransactionsORPCHandler.handle(
+    createHonoORPCRequest(c),
+    {
+      prefix: "/api/orpc/release-transactions/rpc",
+      context: { hono: c },
+    },
+  );
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
+app.use("/api/orpc/settlement-transactions/rpc/*", async (c, next) => {
+  const { matched, response } = await settlementTransactionsORPCHandler.handle(
+    createHonoORPCRequest(c),
+    {
+      prefix: "/api/orpc/settlement-transactions/rpc",
+      context: { hono: c },
+    },
+  );
 
   if (matched) {
     return c.newResponse(response.body, response);
@@ -843,6 +901,36 @@ app.use("/api/orpc/balances/*", async (c, next) => {
   const { matched, response } = await balancesOpenAPIHandler.handle(createHonoORPCRequest(c), {
     context: { hono: c },
   });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
+app.use("/api/orpc/release-transactions/*", async (c, next) => {
+  const { matched, response } = await releaseTransactionsOpenAPIHandler.handle(
+    createHonoORPCRequest(c),
+    {
+      context: { hono: c },
+    },
+  );
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
+app.use("/api/orpc/settlement-transactions/*", async (c, next) => {
+  const { matched, response } = await settlementTransactionsOpenAPIHandler.handle(
+    createHonoORPCRequest(c),
+    {
+      context: { hono: c },
+    },
+  );
 
   if (matched) {
     return c.newResponse(response.body, response);

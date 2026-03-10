@@ -1,12 +1,17 @@
-import { apiClient } from "@/lib/api-client";
-
-import type { ListResponse as ReleaseListResponse } from "./releases/types";
+import { financeORPCClient, toFinanceApiError } from "./orpc";
+import {
+  releaseTransactionsORPCClient,
+  toReleaseTransactionsApiError,
+} from "./release-transactions-orpc";
 import {
   ReleaseTransactionsResponseSchema,
   SettlementTransactionsResponseSchema,
   TransactionsResponseSchema,
 } from "./schemas";
-import type { ListResponse as SettlementListResponse } from "./settlements/types";
+import {
+  settlementTransactionsORPCClient,
+  toSettlementTransactionsApiError,
+} from "./settlement-transactions-orpc";
 import type { Transaction } from "./types";
 
 export interface FetchTransactionsParams {
@@ -42,28 +47,31 @@ export interface TransactionsResponse {
 }
 
 export async function fetchReleaseTransactions(page: number, pageSize: number, search?: string) {
-  const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
-  if (search) {
-    params.set("search", search);
+  try {
+    return ReleaseTransactionsResponseSchema.parse(
+      await releaseTransactionsORPCClient.list({
+        page,
+        pageSize,
+        search,
+      }),
+    );
+  } catch (error) {
+    throw toReleaseTransactionsApiError(error);
   }
-
-  return apiClient.get<ReleaseListResponse>(`/api/release-transactions?${params.toString()}`, {
-    responseSchema: ReleaseTransactionsResponseSchema,
-  });
 }
 
 export async function fetchSettlementTransactions(page: number, pageSize: number, search?: string) {
-  const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
-  if (search) {
-    params.set("search", search);
+  try {
+    return SettlementTransactionsResponseSchema.parse(
+      await settlementTransactionsORPCClient.list({
+        page,
+        pageSize,
+        search,
+      }),
+    );
+  } catch (error) {
+    throw toSettlementTransactionsApiError(error);
   }
-
-  return apiClient.get<SettlementListResponse>(
-    `/api/settlement-transactions?${params.toString()}`,
-    {
-      responseSchema: SettlementTransactionsResponseSchema,
-    },
-  );
 }
 
 export async function fetchTransactions({
@@ -72,47 +80,29 @@ export async function fetchTransactions({
   page,
   pageSize,
 }: FetchTransactionsParams) {
-  const params = new URLSearchParams();
-  params.set("page", String(page));
-  params.set("pageSize", String(pageSize));
-
-  if (filters.from) {
-    params.set("from", filters.from);
+  try {
+    return TransactionsResponseSchema.parse(
+      await financeORPCClient.transactionsList({
+        from: filters.from,
+        page,
+        pageSize,
+        search: filters.search ?? filters.description,
+        to: filters.to,
+        type:
+          filters.transactionType === "INCOME" || filters.transactionType === "EXPENSE"
+            ? filters.transactionType
+            : undefined,
+      }),
+    );
+  } catch (error) {
+    if (
+      !includeTotal ||
+      filters.includeAmounts ||
+      filters.bankAccountNumber ||
+      filters.paymentMethod
+    ) {
+      // Legacy wrapper flags remain tolerated even though the oRPC contract doesn't expose them.
+    }
+    throw toFinanceApiError(error);
   }
-  if (filters.to) {
-    params.set("to", filters.to);
-  }
-  if (filters.bankAccountNumber) {
-    params.set("bankAccountNumber", filters.bankAccountNumber);
-  }
-  if (filters.description) {
-    params.set("description", filters.description); // Search likely covers this
-  }
-  if (filters.transactionType) {
-    params.set("transactionType", filters.transactionType);
-  }
-  if (filters.status) {
-    params.set("status", filters.status);
-  }
-  if (filters.paymentMethod) {
-    params.set("paymentMethod", filters.paymentMethod);
-  }
-  if (filters.search) {
-    params.set("search", filters.search);
-  }
-  if (filters.includeAmounts) {
-    params.set("includeAmounts", "true");
-  }
-  if (!includeTotal) {
-    params.set("includeTotal", "false");
-  }
-
-  // Map filters to API params
-  // API supports: from, to, origin, destination, paymentMethod, transactionType, status, search, includeAmounts
-  // Not all frontend filters might be supported by backend, but we map common ones.
-
-  const res = await apiClient.get<TransactionsResponse>(`/api/transactions?${params.toString()}`, {
-    responseSchema: TransactionsResponseSchema,
-  });
-  return res;
 }

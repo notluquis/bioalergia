@@ -50,6 +50,8 @@
                │ /api/orpc/services/rpc/*
                │ /api/orpc/production-balances/rpc/*
                │ /api/orpc/balances/rpc/*
+               │ /api/orpc/release-transactions/rpc/*
+               │ /api/orpc/settlement-transactions/rpc/*
                │ /api/orpc/backups/rpc/*
                ▼
 ┌──────────────────────────────────────────────┐
@@ -135,6 +137,14 @@
 │ ├─ Balances Router                           │
 │ │  • /                                       │
 │ │  • Guarda saldo diario y reporte por fecha │
+│ │                                            │
+│ ├─ Release Transactions Router               │
+│ │  • /                                       │
+│ │  • /{id}                                   │
+│ │                                            │
+│ ├─ Settlement Transactions Router            │
+│ │  • /                                       │
+│ │  • /{id}                                   │
 │ │                                            │
 │ ├─ Backups Router                            │
 │ │  • /                                       │

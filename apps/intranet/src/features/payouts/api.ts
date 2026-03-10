@@ -1,7 +1,10 @@
 import type { ReleaseTransaction } from "@finanzas/db/models";
 
 import { z } from "zod";
-import { apiClient } from "@/lib/api-client";
+import {
+  releaseTransactionsORPCClient,
+  toReleaseTransactionsApiError,
+} from "@/features/finance/release-transactions-orpc";
 
 interface FetchReleaseTransactionsParams {
   descriptions?: string[];
@@ -33,28 +36,18 @@ const FetchReleaseTransactionsResponseSchema = z.object({
 export async function fetchReleaseTransactions(
   params: FetchReleaseTransactionsParams,
 ): Promise<FetchReleaseTransactionsResponse> {
-  const searchParams = new URLSearchParams();
-  if (params.page) {
-    searchParams.set("page", String(params.page));
+  try {
+    return FetchReleaseTransactionsResponseSchema.parse(
+      await releaseTransactionsORPCClient.list({
+        descriptions: params.descriptions?.join(","),
+        from: params.from,
+        page: params.page,
+        pageSize: params.pageSize,
+        search: params.search,
+        to: params.to,
+      }),
+    );
+  } catch (error) {
+    throw toReleaseTransactionsApiError(error);
   }
-  if (params.pageSize) {
-    searchParams.set("pageSize", String(params.pageSize));
-  }
-  if (params.from) {
-    searchParams.set("from", params.from);
-  }
-  if (params.to) {
-    searchParams.set("to", params.to);
-  }
-  if (params.search) {
-    searchParams.set("search", params.search);
-  }
-  if (params.descriptions?.length) {
-    searchParams.set("descriptions", params.descriptions.join(","));
-  }
-
-  return apiClient.get<FetchReleaseTransactionsResponse>(
-    `/api/release-transactions?${searchParams.toString()}`,
-    { responseSchema: FetchReleaseTransactionsResponseSchema },
-  );
 }
