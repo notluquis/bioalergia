@@ -9,7 +9,9 @@ import {
   rebuildClinicalSeries,
   reclassifyAllCalendarEvents,
   reclassifyCalendarEvents,
+  syncCalendarEvents,
 } from "@/features/calendar/api";
+import { CalendarActionModal } from "@/features/calendar/components/CalendarActionModal";
 import { ClassificationEmptyState } from "@/features/calendar/components/ClassificationEmptyState";
 import { ClassificationFilters } from "@/features/calendar/components/ClassificationFilters";
 import { ClassificationPagination } from "@/features/calendar/components/ClassificationPagination";
@@ -17,7 +19,7 @@ import { ClassificationRow } from "@/features/calendar/components/Classification
 import { ClassificationStats } from "@/features/calendar/components/ClassificationStats";
 import { ClassificationToolbar } from "@/features/calendar/components/ClassificationToolbar";
 import type { FormApiFor } from "@/features/calendar/form-types";
-import { calendarQueries } from "@/features/calendar/queries";
+import { calendarQueries, calendarSyncKeys } from "@/features/calendar/queries";
 import type { ClassificationEntry, FormValues } from "@/features/calendar/schemas";
 import type { CalendarUnclassifiedEvent } from "@/features/calendar/types";
 import {
@@ -34,6 +36,7 @@ import "dayjs/locale/es";
 
 const EMPTY_EVENTS: CalendarUnclassifiedEvent[] = [];
 const PAGE_SIZE = 50;
+type PendingCalendarAction = "rebuild" | "reclassify-all" | "sync";
 
 function CalendarClassificationPage() {
   const queryClient = useQueryClient();
@@ -64,6 +67,7 @@ function CalendarClassificationPage() {
   const totalCount = data?.totalCount || 0;
 
   const [savingKey, setSavingKey] = useState<null | string>(null);
+  const [pendingAction, setPendingAction] = useState<null | PendingCalendarAction>(null);
 
   const form: FormApiFor<FormValues> = useForm<
     FormValues,
@@ -151,6 +155,22 @@ function CalendarClassificationPage() {
       queryClient.invalidateQueries({ queryKey: ["calendar"] });
       queryClient.invalidateQueries({ queryKey: ["calendar-unclassified"] });
     },
+    onSettled: () => setPendingAction(null),
+  });
+
+  const syncMutation = useMutation({
+    mutationFn: syncCalendarEvents,
+    onError: (err) =>
+      toast.error(
+        `Error al iniciar sync: ${err instanceof Error ? err.message : "Error desconocido"}`,
+      ),
+    onSuccess: (response) => {
+      toast.info(response.message || "Sincronización iniciada en segundo plano");
+      void queryClient.invalidateQueries({ queryKey: calendarSyncKeys.all });
+      void queryClient.invalidateQueries({ queryKey: ["calendar"] });
+      void queryClient.invalidateQueries({ queryKey: ["calendar-unclassified"] });
+    },
+    onSettled: () => setPendingAction(null),
   });
 
   const [activeJobId, setActiveJobId] = useState<null | string>(null);
@@ -220,6 +240,25 @@ function CalendarClassificationPage() {
     });
   };
 
+  const isActionPending =
+    reclassifyAllMutation.isPending || rebuildMutation.isPending || syncMutation.isPending;
+
+  const handleConfirmAction = () => {
+    if (pendingAction === "reclassify-all") {
+      reclassifyAllMutation.mutate();
+      return;
+    }
+
+    if (pendingAction === "rebuild") {
+      rebuildMutation.mutate();
+      return;
+    }
+
+    if (pendingAction === "sync") {
+      syncMutation.mutate();
+    }
+  };
+
   return (
     <div className="space-y-6">
       <ClassificationStats events={events} form={form} loading={loading} totalCount={totalCount} />
@@ -235,29 +274,15 @@ function CalendarClassificationPage() {
           job={job}
           loading={loading}
           onReclassify={() => reclassifyMutation.mutate()}
-          onReclassifyAll={() => {
-            if (
-              globalThis.confirm(
-                "¿Reclasificar TODOS los eventos? Esto sobrescribirá las clasificaciones existentes.",
-              )
-            ) {
-              reclassifyAllMutation.mutate();
-            }
-          }}
-          onRebuild={() => {
-            if (
-              globalThis.confirm(
-                "¿Reagrupar series clínicas? Esto reorganizará los eventos en series según su tipo.\n\nEsta operación puede tomar unos minutos.",
-              )
-            ) {
-              rebuildMutation.mutate();
-            }
-          }}
+          onReclassifyAll={() => setPendingAction("reclassify-all")}
+          onRebuild={() => setPendingAction("rebuild")}
           onRefetch={() => void refetch()}
+          onSync={() => setPendingAction("sync")}
           progress={progress}
           reclassifyAllPending={reclassifyAllMutation.isPending}
           reclassifyPending={reclassifyMutation.isPending}
           rebuildPending={rebuildMutation.isPending}
+          syncPending={syncMutation.isPending}
         />
       </div>
 
@@ -295,6 +320,65 @@ function CalendarClassificationPage() {
         pageSize={PAGE_SIZE}
         totalCount={totalCount}
         totalPages={totalPages}
+      />
+
+      <CalendarActionModal
+        body={
+          pendingAction === "sync" ? (
+            <div className="space-y-3 rounded-2xl border border-warning-soft-hover bg-warning/5 p-4 text-sm">
+              <p className="font-medium text-warning">
+                Esta operación lanzará un backfill de calendario.
+              </p>
+              <ul className="list-disc space-y-1 pl-5 text-default-600">
+                <li>Sincroniza eventos desde Google Calendar.</li>
+                <li>
+                  Rellena campos derivados como <code>dosageValue</code> y <code>dosageUnit</code>.
+                </li>
+                <li>Corre en segundo plano y puede tardar algunos minutos.</li>
+              </ul>
+            </div>
+          ) : pendingAction === "rebuild" ? (
+            <div className="space-y-3 rounded-2xl border border-default-200 bg-default-50/70 p-4 text-sm text-default-600">
+              <p>
+                Se reagruparán eventos clínicos en series para <strong>tests</strong> y
+                <strong> tratamientos subcutáneos</strong>.
+              </p>
+              <p>Úsalo después del sync si quieres recalcular agrupaciones con datos frescos.</p>
+            </div>
+          ) : (
+            <div className="space-y-3 rounded-2xl border border-danger-soft-hover bg-danger/5 p-4 text-sm text-default-600">
+              <p>
+                Esta acción sobrescribirá clasificaciones existentes al volver a procesar
+                <strong> todos</strong> los eventos.
+              </p>
+            </div>
+          )
+        }
+        confirmLabel={
+          pendingAction === "sync"
+            ? "Iniciar sync"
+            : pendingAction === "rebuild"
+              ? "Reagrupar series"
+              : "Reclasificar todo"
+        }
+        description={
+          pendingAction === "sync"
+            ? "Se iniciará una sincronización en segundo plano para actualizar eventos históricos."
+            : pendingAction === "rebuild"
+              ? "Se reconstruirán las series clínicas a partir de los eventos actuales."
+              : "Esta operación es masiva y puede cambiar datos ya clasificados."
+        }
+        isOpen={pendingAction !== null}
+        isPending={isActionPending}
+        onClose={() => setPendingAction(null)}
+        onConfirm={handleConfirmAction}
+        title={
+          pendingAction === "sync"
+            ? "Sincronizar calendario"
+            : pendingAction === "rebuild"
+              ? "Reagrupar series clínicas"
+              : "Reclasificar todos los eventos"
+        }
       />
     </div>
   );

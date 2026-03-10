@@ -1,5 +1,5 @@
 import { Button, Tooltip } from "@heroui/react";
-import { RefreshCw, Settings } from "lucide-react";
+import { ArrowDownToLine, RefreshCw, Settings } from "lucide-react";
 import type { ReclassifyJob } from "../types";
 
 interface ClassificationToolbarProps {
@@ -10,10 +10,12 @@ interface ClassificationToolbarProps {
   onReclassifyAll: () => void;
   onRefetch: () => void;
   onRebuild: () => void;
+  onSync: () => void;
   progress: number;
   reclassifyAllPending: boolean;
   reclassifyPending: boolean;
   rebuildPending: boolean;
+  syncPending: boolean;
 }
 
 export function ClassificationToolbar({
@@ -25,9 +27,11 @@ export function ClassificationToolbar({
   onReclassify,
   onReclassifyAll,
   onRebuild,
+  onSync,
   reclassifyPending,
   reclassifyAllPending,
   rebuildPending,
+  syncPending,
 }: ClassificationToolbarProps) {
   return (
     <div className="flex items-center gap-3">
@@ -138,6 +142,28 @@ export function ClassificationToolbar({
           showArrow
         >
           Reclasificar TODO (sobrescribe existentes)
+        </Tooltip.Content>
+      </Tooltip>
+
+      <Tooltip>
+        <Tooltip.Trigger>
+          <Button
+            aria-label="Sincronizar calendario"
+            isDisabled={syncPending || isJobRunning}
+            isIconOnly
+            onPress={onSync}
+            size="sm"
+            variant="ghost"
+          >
+            <ArrowDownToLine className="h-4 w-4" />
+          </Button>
+        </Tooltip.Trigger>
+        <Tooltip.Content
+          className="bg-default-100 rounded-lg px-3 py-2 text-xs shadow-xl"
+          placement="bottom"
+          showArrow
+        >
+          Sincronizar calendario y recalcular campos derivados
         </Tooltip.Content>
       </Tooltip>
 
