@@ -1,10 +1,5 @@
 import { queryOptions } from "@tanstack/react-query";
-import {
-  fetchCalendarDaily,
-  fetchCalendarSummary,
-  fetchTreatmentAnalytics,
-  type MissingFieldFilters,
-} from "./api";
+import { fetchCalendarDaily, fetchCalendarSummary, type MissingFieldFilters } from "./api";
 import { calendarORPCUtils } from "./orpc";
 import type { CalendarFilters, TreatmentAnalyticsFilters } from "./types";
 import { normalizeFilters } from "./utils/filters";
@@ -62,8 +57,13 @@ export const calendarQueries = {
     filters: TreatmentAnalyticsFilters,
     granularity?: "day" | "week" | "month" | "all",
   ) =>
-    queryOptions({
-      queryFn: () => fetchTreatmentAnalytics(filters, granularity),
+    calendarORPCUtils.treatmentAnalytics.queryOptions({
+      input: {
+        calendarIds: filters.calendarIds,
+        from: filters.from,
+        granularity,
+        to: filters.to,
+      },
       queryKey: calendarKeys.treatmentAnalytics(filters, granularity),
       staleTime: 5 * 60 * 1000, // 5 minutes
     }),

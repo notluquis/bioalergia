@@ -241,33 +241,21 @@ export async function fetchTreatmentAnalytics(
   filters: TreatmentAnalyticsFilters,
   granularity?: "day" | "week" | "month" | "all",
 ): Promise<TreatmentAnalytics> {
-  const params = new URLSearchParams();
-  if (filters.from) {
-    params.set("from", filters.from);
-  }
-  if (filters.to) {
-    params.set("to", filters.to);
-  }
-  // Use singular 'calendarId' to match backend expectation
-  if (filters.calendarIds?.length) {
-    // Send as multiple calendarId params (backend expects singular param name)
-    for (const id of filters.calendarIds) {
-      params.append("calendarId", id);
-    }
-  }
-  if (granularity) {
-    params.set("granularity", granularity);
-  }
+  try {
+    const response = TreatmentAnalyticsResponseSchema.parse({
+      status: "ok",
+      ...(await calendarORPCClient.treatmentAnalytics({
+        calendarIds: filters.calendarIds,
+        from: filters.from,
+        granularity,
+        to: filters.to,
+      })),
+    });
 
-  const response = await apiClient.get<{
-    data: TreatmentAnalytics;
-    filters: TreatmentAnalyticsFilters;
-    status: "ok";
-  }>(`/api/calendar/events/treatment-analytics?${params.toString()}`, {
-    responseSchema: TreatmentAnalyticsResponseSchema,
-  });
-
-  return response.data;
+    return response.data;
+  } catch (error) {
+    throw toCalendarApiError(error);
+  }
 }
 
 export async function fetchEventDteLinksByDay(date: string): Promise<EventDteConfirmedLink[]> {

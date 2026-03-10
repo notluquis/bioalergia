@@ -20,6 +20,9 @@ import {
   type CalendarEventFilters,
   getCalendarAggregates,
   getCalendarEventsByDate,
+  getTreatmentAnalytics,
+  type TreatmentAnalyticsFilters,
+  type TreatmentAnalyticsGranularity,
 } from "../lib/google/google-calendar-queries";
 import { logError } from "../lib/logger";
 import {
@@ -262,6 +265,59 @@ const calendarSummarySchemaWithAggregates = z.object({
   }),
 });
 
+const treatmentAnalyticsInputSchema = z.object({
+  calendarIds: z.array(z.string()).optional(),
+  from: z.string().optional(),
+  granularity: z.enum(["day", "week", "month", "all"]).optional(),
+  to: z.string().optional(),
+});
+
+const treatmentAnalyticsPeriodSchema = z.object({
+  amountExpected: z.number(),
+  amountPaid: z.number(),
+  domicilioCount: z.number(),
+  dosageMl: z.number(),
+  events: z.number(),
+  induccionCount: z.number(),
+  mantencionCount: z.number(),
+});
+
+const treatmentAnalyticsSchema = z.object({
+  byDate: z
+    .array(
+      treatmentAnalyticsPeriodSchema.extend({
+        date: z.string(),
+      }),
+    )
+    .optional(),
+  byMonth: z
+    .array(
+      treatmentAnalyticsPeriodSchema.extend({
+        month: z.number(),
+        year: z.number(),
+      }),
+    )
+    .optional(),
+  byWeek: z
+    .array(
+      treatmentAnalyticsPeriodSchema.extend({
+        isoWeek: z.number(),
+        isoYear: z.number(),
+      }),
+    )
+    .optional(),
+  totals: treatmentAnalyticsPeriodSchema,
+});
+
+const treatmentAnalyticsResponseSchema = z.object({
+  data: treatmentAnalyticsSchema,
+  filters: z.object({
+    calendarIds: z.array(z.string()).optional(),
+    from: z.string().optional(),
+    to: z.string().optional(),
+  }),
+});
+
 function sanitizeOptionalSelectionValue(value: null | string | undefined): null | string {
   if (!value) {
     return null;
@@ -289,6 +345,33 @@ function normalizeDateRange(from: string, to: string) {
   }
 
   return { from, to: from };
+}
+
+function toDateOnlyString(value: Date | null | undefined): null | string {
+  if (!value) {
+    return null;
+  }
+
+  return value.toISOString().slice(0, 10);
+}
+
+function toDateTimeString(value: Date | null | undefined): null | string {
+  if (!value) {
+    return null;
+  }
+
+  return value.toISOString();
+}
+
+function getDefaultTreatmentAnalyticsRange() {
+  const to = new Date();
+  const from = new Date(to);
+  from.setDate(from.getDate() - 30);
+
+  return {
+    from: from.toISOString().slice(0, 10),
+    to: to.toISOString().slice(0, 10),
+  };
 }
 
 async function buildCalendarFiltersFromInput(input: z.infer<typeof calendarQueryInputSchema>) {
@@ -585,6 +668,31 @@ const dailyEvents = authed
     };
   });
 
+const treatmentAnalytics = requirePermission("CalendarEvent", "read")
+  .route({
+    method: "GET",
+    path: "/events/treatment-analytics",
+    summary: "Analytics de tratamientos subcutaneos",
+  })
+  .input(treatmentAnalyticsInputSchema)
+  .output(treatmentAnalyticsResponseSchema)
+  .handler(async ({ input }) => {
+    const defaults = getDefaultTreatmentAnalyticsRange();
+    const filters: TreatmentAnalyticsFilters = {
+      from: input.from ?? defaults.from,
+      to: input.to ?? defaults.to,
+      calendarIds: toOptionalFilter(input.calendarIds ?? []),
+    };
+
+    const granularity = (input.granularity ?? "all") as TreatmentAnalyticsGranularity;
+    const data = await getTreatmentAnalytics(filters, { granularity });
+
+    return {
+      data,
+      filters,
+    };
+  });
+
 const classifyEvent = requirePermission("CalendarEvent", "update")
   .route({
     method: "POST",
@@ -772,10 +880,10 @@ const unclassifiedEvents = requirePermission("CalendarEvent", "update")
         eventType: row.eventType ?? null,
         summary: row.summary ?? null,
         description: row.description ?? null,
-        startDate: row.startDate ?? null,
-        startDateTime: row.startDateTime ?? null,
-        endDate: row.endDate ?? null,
-        endDateTime: row.endDateTime ?? null,
+        startDate: toDateOnlyString(row.startDate),
+        startDateTime: toDateTimeString(row.startDateTime),
+        endDate: toDateOnlyString(row.endDate),
+        endDateTime: toDateTimeString(row.endDateTime),
         category: row.category ?? null,
         clinicalSeriesId: row.clinicalSeriesId ?? null,
         amountExpected: row.amountExpected ?? null,
@@ -870,6 +978,7 @@ const calendarORPCRouterBase = {
   summaryEvents,
   syncEvents: syncCalendarEvents,
   syncLogs: listSyncLogs,
+  treatmentAnalytics,
   unclassifiedEvents,
 };
 

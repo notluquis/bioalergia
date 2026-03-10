@@ -28,6 +28,8 @@ import type {
   CalendarSummary,
   CalendarSyncLog,
   CalendarUnclassifiedEvent,
+  TreatmentAnalytics,
+  TreatmentAnalyticsFilters,
 } from "./types";
 
 type ClassificationOptions = {
@@ -143,6 +145,14 @@ type CalendarORPCClient = {
     status: "accepted";
   }>;
   syncLogs: (input?: { limit?: number }) => Promise<CalendarSyncLog[]>;
+  treatmentAnalytics: (
+    input: TreatmentAnalyticsFilters & {
+      granularity?: "all" | "day" | "month" | "week";
+    },
+  ) => Promise<{
+    data: TreatmentAnalytics;
+    filters: TreatmentAnalyticsFilters;
+  }>;
   unclassifiedEvents: (input?: {
     filterMode?: "AND" | "OR";
     limit?: number;
