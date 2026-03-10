@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import {
   classifyCalendarEvent,
   type MissingFieldFilters,
+  rebuildClinicalSeries,
   reclassifyAllCalendarEvents,
   reclassifyCalendarEvents,
 } from "@/features/calendar/api";
@@ -135,6 +136,23 @@ function CalendarClassificationPage() {
     },
   });
 
+  const rebuildMutation = useMutation({
+    mutationFn: () => rebuildClinicalSeries(),
+    onError: (err) =>
+      toast.error(
+        `Error al reagrupar: ${err instanceof Error ? err.message : "Error desconocido"}`,
+      ),
+    onSuccess: (response) => {
+      toast.success(
+        `✓ Reagrupamiento completado: ${response.processed} series procesadas${
+          response.from && response.to ? ` (${response.from} - ${response.to})` : ""
+        }`,
+      );
+      queryClient.invalidateQueries({ queryKey: ["calendar"] });
+      queryClient.invalidateQueries({ queryKey: ["calendar-unclassified"] });
+    },
+  });
+
   const [activeJobId, setActiveJobId] = useState<null | string>(null);
   const { isComplete, isFailed, job, progress } = useJobProgress(activeJobId, {
     onComplete: (result: unknown) => {
@@ -226,10 +244,20 @@ function CalendarClassificationPage() {
               reclassifyAllMutation.mutate();
             }
           }}
+          onRebuild={() => {
+            if (
+              globalThis.confirm(
+                "¿Reagrupar series clínicas? Esto reorganizará los eventos en series según su tipo.\n\nEsta operación puede tomar unos minutos.",
+              )
+            ) {
+              rebuildMutation.mutate();
+            }
+          }}
           onRefetch={() => void refetch()}
           progress={progress}
           reclassifyAllPending={reclassifyAllMutation.isPending}
           reclassifyPending={reclassifyMutation.isPending}
+          rebuildPending={rebuildMutation.isPending}
         />
       </div>
 

@@ -1,4 +1,4 @@
-import { Skeleton, type SortDescriptor, Table } from "@heroui/react";
+import { EmptyState, Skeleton, type SortDescriptor, Table } from "@heroui/react";
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -20,7 +20,7 @@ import {
   useReactTable,
   type VisibilityState,
 } from "@tanstack/react-table";
-import React, { useRef, useState } from "react";
+import { type ReactNode, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -127,7 +127,7 @@ interface DataTableProps<TData, TValue, TMeta extends TableMeta<TData> = TableMe
   /**
    * Optional component to render when row is expanded
    */
-  readonly renderSubComponent?: (props: { row: Row<TData> }) => React.ReactNode;
+  readonly renderSubComponent?: (props: { row: Row<TData> }) => ReactNode;
   readonly rowSelection?: RowSelectionState;
   /**
    * Minimum row count to activate virtualization.
@@ -145,7 +145,7 @@ interface DataTableContentProps<TData> {
   readonly noDataMessage: string;
   readonly onRowClick?: (row: TData) => void;
   readonly onSortingChange: (sorting: SortingState) => void;
-  readonly renderSubComponent?: (props: { row: Row<TData> }) => React.ReactNode;
+  readonly renderSubComponent?: (props: { row: Row<TData> }) => ReactNode;
   readonly sorting: SortingState;
   readonly table: TanStackTable<TData>;
   readonly scrollMaxHeight?: number | string;
@@ -255,29 +255,42 @@ function DataTableContent<TData>({
                 ))}
               </Table.Body>
             ) : (
-              <Table.Body renderEmptyState={() => noDataMessage}>
-                {rows.map((row) => (
-                  <React.Fragment key={row.id}>
+              <Table.Body
+                renderEmptyState={() => (
+                  <EmptyState className="flex h-full w-full items-center justify-center text-center text-sm text-muted-foreground">
+                    {noDataMessage}
+                  </EmptyState>
+                )}
+              >
+                {rows.flatMap((row) => {
+                  const visibleCells = row.getVisibleCells();
+                  const renderedRows = [
                     <Table.Row
                       className={cn(onRowClick && "cursor-pointer")}
                       id={row.id}
+                      key={row.id}
                       onClick={() => onRowClick?.(row.original)}
                     >
-                      {row.getVisibleCells().map((cell) => (
+                      {visibleCells.map((cell) => (
                         <Table.Cell key={cell.id}>
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </Table.Cell>
                       ))}
-                    </Table.Row>
-                    {row.getIsExpanded() && renderSubComponent && (
-                      <Table.Row id={`${row.id}-expanded`}>
-                        <Table.Cell colSpan={row.getVisibleCells().length}>
+                    </Table.Row>,
+                  ];
+
+                  if (row.getIsExpanded() && renderSubComponent) {
+                    renderedRows.push(
+                      <Table.Row id={`${row.id}-expanded`} key={`${row.id}-expanded`}>
+                        <Table.Cell colSpan={visibleCells.length}>
                           {renderSubComponent({ row })}
                         </Table.Cell>
-                      </Table.Row>
-                    )}
-                  </React.Fragment>
-                ))}
+                      </Table.Row>,
+                    );
+                  }
+
+                  return renderedRows;
+                })}
               </Table.Body>
             )}
           </Table.Content>

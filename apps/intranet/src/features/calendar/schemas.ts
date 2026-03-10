@@ -618,3 +618,9 @@ export const TreatmentAnalyticsResponseSchema = z.strictObject({
   }),
   status: z.literal("ok"),
 });
+
+export const RebuildClinicalSeriesResponseSchema = z.strictObject({
+  from: z.string().nullable(),
+  processed: z.number(),
+  to: z.string().nullable(),
+});

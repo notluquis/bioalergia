@@ -17,6 +17,7 @@ import {
   EventDteConfirmResponseSchema,
   EventDteOverviewResponseSchema,
   EventDteSuggestionResponseSchema,
+  RebuildClinicalSeriesResponseSchema,
   ReclassifyJobResponseSchema,
   TreatmentAnalyticsResponseSchema,
   UnclassifiedEventsResponseSchema,
@@ -447,6 +448,26 @@ export async function fetchEventDteLinksOverview(params: {
   try {
     const data = await dteEventLinksORPCClient.overview(params);
     return EventDteOverviewResponseSchema.parse({ data, status: "success" }).data;
+  } catch (error) {
+    throw toCalendarApiError(error);
+  }
+}
+
+export interface RebuildClinicalSeriesResponse {
+  from: string | null;
+  processed: number;
+  to: string | null;
+}
+
+export async function rebuildClinicalSeries(params?: {
+  from?: string;
+  to?: string;
+}): Promise<RebuildClinicalSeriesResponse> {
+  try {
+    const response = RebuildClinicalSeriesResponseSchema.parse(
+      await calendarORPCClient.rebuildSeries(params),
+    );
+    return response;
   } catch (error) {
     throw toCalendarApiError(error);
   }

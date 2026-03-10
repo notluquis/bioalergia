@@ -135,6 +135,11 @@ type CalendarORPCClient = {
     status: "accepted";
     totalEvents: number;
   }>;
+  rebuildSeries: (input?: { from?: string; to?: string }) => Promise<{
+    from: string | null;
+    processed: number;
+    to: string | null;
+  }>;
   summaryEvents: (
     input: Omit<CalendarFilters, "maxDays"> & { maxDays?: number },
   ) => Promise<CalendarSummary>;

@@ -391,8 +391,6 @@ export function MercadoPagoSettingsPage() {
                 <span className="block text-default-500 text-xs">Total: {reportTotal}</span>
               </div>
             </div>
-
-            <div className="text-default-500 text-xs">Control de filas en paginación inferior</div>
           </div>
 
           <DataTable
@@ -422,7 +420,6 @@ export function MercadoPagoSettingsPage() {
                 <span className="block text-default-500 text-xs">Total: {syncTotal}</span>
               </div>
             </div>
-            <div className="text-default-500 text-xs">Control de filas en paginación inferior</div>
           </div>
           <DataTable
             columns={syncColumns}
