@@ -1,19 +1,19 @@
 import type { VisibilityState } from "@tanstack/react-table";
 import { useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
-import { columns, type TransactionWithRelations } from "./CashFlowColumns";
+import { type CashFlowTransaction, columns } from "./CashFlowColumns";
 
 interface Props {
-  data: TransactionWithRelations[];
+  data: CashFlowTransaction[];
   categories: Array<{ color?: null | string; icon?: null | string; id: number; name: string }>;
   isLoading: boolean;
   total: number;
   page: number; // 1-indexed
   pageSize: number;
   onPageChange: (page: number) => void;
-  onEdit: (tx: TransactionWithRelations) => void;
-  onReallocate: (tx: TransactionWithRelations) => void;
-  onCategoryChange: (tx: TransactionWithRelations, categoryId: null | number) => void;
+  onEdit: (tx: CashFlowTransaction) => void;
+  onReallocate: (tx: CashFlowTransaction) => void;
+  onCategoryChange: (tx: CashFlowTransaction, categoryId: null | number) => void;
   updatingCategoryIds: Set<number>;
 }
 

@@ -1,4 +1,3 @@
-import type { FinancialTransaction } from "@finanzas/db";
 import {
   Button,
   Chip,
@@ -33,7 +32,11 @@ import { fetchCounterparts } from "@/features/counterparts/api";
 import { useLazyTabs } from "@/hooks/use-lazy-tabs";
 import { ApiError } from "@/lib/api-client";
 import { toast } from "@/lib/toast-interceptor";
-import type { TransactionWithRelations } from "../components/CashFlowColumns";
+import type {
+  CashFlowTransaction,
+  CounterpartOption,
+  TransactionCategoryOption,
+} from "../components/CashFlowColumns";
 import { financeORPCClient, toFinanceApiError } from "../orpc";
 import { isNonAccountableCategory } from "../utils/non-accountable-category";
 
@@ -60,7 +63,7 @@ interface TransactionQueryParams {
 }
 
 type FinancialTransactionsResponse = {
-  data?: TransactionWithRelations[];
+  data?: CashFlowTransaction[];
   meta?: {
     page?: number;
     pageSize?: number;
@@ -69,19 +72,24 @@ type FinancialTransactionsResponse = {
   };
 };
 
-const CashFlowTransactionSchema = z
+const CashFlowTransactionSchema: z.ZodType<CashFlowTransaction> = z
   .object({
     amount: z.number(),
     categoryId: z.number().nullable().optional(),
     comment: z.string().nullable().optional(),
+    counterpartAccountNumber: z.string().nullable().optional(),
+    counterpartId: z.number().nullable().optional(),
+    createdAt: z.coerce.date().optional(),
     date: z.coerce.date(),
     description: z.string(),
     id: z.number(),
+    sourceId: z.string().nullable().optional(),
     type: z.enum(["INCOME", "EXPENSE"]),
+    updatedAt: z.coerce.date().optional(),
   })
   .passthrough();
 
-const FinancialTransactionsResponseSchema = z.object({
+const FinancialTransactionsResponseSchema: z.ZodType<FinancialTransactionsResponse> = z.object({
   data: z.array(CashFlowTransactionSchema),
   meta: z
     .object({
@@ -99,7 +107,7 @@ const AvailableMonthsResponseSchema = z.object({
   status: z.literal("ok"),
 });
 
-const TransactionCategorySchema = z
+const TransactionCategorySchema: z.ZodType<TransactionCategoryOption> = z
   .object({
     color: z.string().nullable().optional(),
     id: z.number(),
@@ -114,15 +122,11 @@ const TransactionCategoriesResponseSchema = z.object({
   status: z.literal("ok"),
 });
 
-type TransactionCategoryOption = z.infer<typeof TransactionCategorySchema>;
-
-const CounterpartSchema = z.object({
+const CounterpartSchema: z.ZodType<CounterpartOption> = z.object({
   bankAccountHolder: z.string(),
   id: z.number(),
   identificationNumber: z.string(),
 });
-
-type CounterpartOption = z.infer<typeof CounterpartSchema>;
 
 const CounterpartsResponseSchema = z.object({
   counterparts: z.array(CounterpartSchema),
@@ -239,7 +243,7 @@ const UpdateTransactionResponseSchema = z.object({
 });
 
 function useFinancialTransactions(params: TransactionQueryParams) {
-  return useQuery({
+  return useQuery<FinancialTransactionsResponse>({
     queryKey: ["FinancialTransaction", params],
     queryFn: async () => {
       try {
@@ -252,7 +256,7 @@ function useFinancialTransactions(params: TransactionQueryParams) {
             search: params.search,
             to: params.to,
           }),
-        ) as FinancialTransactionsResponse;
+        );
       } catch (error) {
         throw toFinanceApiError(error);
       }
@@ -345,7 +349,7 @@ function useAvailableFinancialMonths() {
 
 function isFinancialTransactionsPayload(
   payload: unknown,
-): payload is FinancialTransactionsResponse & { data: TransactionWithRelations[] } {
+): payload is FinancialTransactionsResponse & { data: CashFlowTransaction[] } {
   return (
     typeof payload === "object" &&
     payload !== null &&
@@ -472,7 +476,7 @@ function CashflowPieTooltip({
   );
 }
 
-function buildSummary(transactions: TransactionWithRelations[]) {
+function buildSummary(transactions: CashFlowTransaction[]) {
   const totals = transactions.reduce(
     (acc, tx) => {
       const amount = Number(tx.amount);
@@ -598,7 +602,7 @@ export function CashFlowPage() {
   const [categoryFilterSearch, setCategoryFilterSearch] = useState("");
   const [columnFilters, setColumnFilters] = useState<CashFlowColumnFilters>(DEFAULT_COLUMN_FILTERS);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingTx, setEditingTx] = useState<FinancialTransaction | null>(null);
+  const [editingTx, setEditingTx] = useState<CashFlowTransaction | null>(null);
   const [updatingCategoryIds, setUpdatingCategoryIds] = useState<Set<number>>(new Set());
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryType, setNewCategoryType] = useState<"EXPENSE" | "INCOME">("EXPENSE");
@@ -643,7 +647,7 @@ export function CashFlowPage() {
   );
   const [budgetAmountInput, setBudgetAmountInput] = useState("");
   const [isReallocateOpen, setIsReallocateOpen] = useState(false);
-  const [reallocateTx, setReallocateTx] = useState<null | TransactionWithRelations>(null);
+  const [reallocateTx, setReallocateTx] = useState<null | CashFlowTransaction>(null);
   const [reallocateProfileId, setReallocateProfileId] = useState<null | number>(null);
   const [reallocateFromPeriod, setReallocateFromPeriod] = useState(dayjs().format("YYYY-MM"));
   const [reallocateTargetPeriod, setReallocateTargetPeriod] = useState(dayjs().format("YYYY-MM"));
@@ -1094,15 +1098,17 @@ export function CashFlowPage() {
         queryClient.cancelQueries({ queryKey: ["TransactionCategory"] }),
         queryClient.cancelQueries({ queryKey: ["FinancialTransaction"] }),
       ]);
-      const previousTransactionCategories = queryClient.getQueriesData<TransactionCategory[]>({
-        queryKey: ["TransactionCategory"],
-      });
+      const previousTransactionCategories = queryClient.getQueriesData<TransactionCategoryOption[]>(
+        {
+          queryKey: ["TransactionCategory"],
+        },
+      );
       const previousFinancialTransactions =
         queryClient.getQueriesData<FinancialTransactionsResponse>({
           queryKey: ["FinancialTransaction"],
         });
 
-      queryClient.setQueriesData<TransactionCategory[]>(
+      queryClient.setQueriesData<TransactionCategoryOption[]>(
         { queryKey: ["TransactionCategory"] },
         (current) => {
           if (!Array.isArray(current)) {
@@ -1428,12 +1434,12 @@ export function CashFlowPage() {
     },
   });
 
-  const handleEdit = (tx: FinancialTransaction) => {
+  const handleEdit = (tx: CashFlowTransaction) => {
     setEditingTx(tx);
     setIsFormOpen(true);
   };
 
-  const handleCategoryChange = (tx: TransactionWithRelations, categoryId: null | number) => {
+  const handleCategoryChange = (tx: CashFlowTransaction, categoryId: null | number) => {
     updateTransactionCategoryMutation.mutate({
       categoryId,
       transactionId: tx.id,
@@ -1455,7 +1461,7 @@ export function CashFlowPage() {
     });
   };
 
-  const handleStartEditCategory = (category: TransactionCategory) => {
+  const handleStartEditCategory = (category: TransactionCategoryOption) => {
     setEditingCategoryId(category.id);
     setEditingCategoryName(category.name);
     setEditingCategoryType(category.type === "INCOME" ? "INCOME" : "EXPENSE");
@@ -1486,7 +1492,7 @@ export function CashFlowPage() {
     });
   };
 
-  const handleDeleteCategory = (category: TransactionCategory) => {
+  const handleDeleteCategory = (category: TransactionCategoryOption) => {
     const confirmed = window.confirm(`¿Eliminar la categoría "${category.name}"?`);
     if (!confirmed) return;
     deleteCategoryMutation.mutate(category.id);
@@ -1528,7 +1534,7 @@ export function CashFlowPage() {
     });
   };
 
-  const handleOpenReallocate = (tx: TransactionWithRelations) => {
+  const handleOpenReallocate = (tx: CashFlowTransaction) => {
     if (tx.categoryId == null) {
       toast.error("La transacción debe tener categoría para reasignar");
       return;

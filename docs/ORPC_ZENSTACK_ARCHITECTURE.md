@@ -41,6 +41,8 @@
                │ /api/orpc/inventory/rpc/*
                │ /api/orpc/roles/rpc/*
                │ /api/orpc/counterparts/rpc/*
+               │ /api/orpc/finance/rpc/*
+               │ /api/orpc/users/rpc/*
                ▼
 ┌──────────────────────────────────────────────┐
 │ Backend (Hono 4.12.5 + oRPC 1.13.6)          │
@@ -79,6 +81,19 @@
 │ │  • /suggestions                            │
 │ │  • /unassigned-payout-accounts             │
 │ │  • /{id}/summary                           │
+│ │                                            │
+│ ├─ Finance Router                            │
+│ │  • /transactions                           │
+│ │  • /categories                             │
+│ │  • /auto-category-rules                    │
+│ │  • /compensation-profiles                  │
+│ │                                            │
+│ ├─ Users Router                              │
+│ │  • /                                       │
+│ │  • /profile                                │
+│ │  • /invite                                 │
+│ │  • /setup                                  │
+│ │  • /{id}/status                            │
 │ │                                            │
 │ └─ Service Layer                             │
 │    └─ Use db/authDb from Zenstack             │
@@ -269,6 +284,8 @@ apps/api/src/
 │   ├── inventory.ts
 │   ├── roles.ts
 │   ├── counterparts.ts
+│   ├── finance.ts
+│   ├── users.ts
 │   └── superjson.ts             ← SuperJSON serializer (custom)
 │
 ├── services/

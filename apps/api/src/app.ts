@@ -22,6 +22,7 @@ import { financeOpenAPIHandler, financeORPCHandler } from "./orpc/finance";
 import { inventoryOpenAPIHandler, inventoryORPCHandler } from "./orpc/inventory";
 import { rolesOpenAPIHandler, rolesORPCHandler } from "./orpc/roles";
 import { createHonoORPCRequest } from "./orpc/superjson";
+import { usersOpenAPIHandler, usersORPCHandler } from "./orpc/users";
 import { authRoutes } from "./routes/auth";
 import { backupRoutes } from "./routes/backups";
 import { balanceRoutes } from "./routes/balances";
@@ -343,6 +344,15 @@ app.get("/api/orpc", (c) =>
             <li><code>/api/orpc/finance/rpc/*</code></li>
           </ul>
         </section>
+        <section class="card">
+          <h2>Users</h2>
+          <p>Gestión de usuarios, onboarding, MFA y passkeys.</p>
+          <ul>
+            <li><a href="/api/orpc/users/docs">Reference UI</a></li>
+            <li><a href="/api/orpc/users/openapi.json">OpenAPI JSON</a></li>
+            <li><code>/api/orpc/users/rpc/*</code></li>
+          </ul>
+        </section>
       </div>
     </main>
   </body>
@@ -440,6 +450,19 @@ app.use("/api/orpc/finance/rpc/*", async (c, next) => {
   await next();
 });
 
+app.use("/api/orpc/users/rpc/*", async (c, next) => {
+  const { matched, response } = await usersORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/users/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
 app.use("/api/orpc/dte-analytics/event-links/*", async (c, next) => {
   const { matched, response } = await dteEventLinksOpenAPIHandler.handle(createHonoORPCRequest(c), {
     context: { hono: c },
@@ -502,6 +525,18 @@ app.use("/api/orpc/counterparts/*", async (c, next) => {
 
 app.use("/api/orpc/finance/*", async (c, next) => {
   const { matched, response } = await financeOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
+app.use("/api/orpc/users/*", async (c, next) => {
+  const { matched, response } = await usersOpenAPIHandler.handle(createHonoORPCRequest(c), {
     context: { hono: c },
   });
 

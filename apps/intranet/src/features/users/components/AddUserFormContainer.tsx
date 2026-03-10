@@ -1,4 +1,3 @@
-import { schema as schemaLite } from "@finanzas/db/schema-lite";
 import {
   Button,
   Checkbox,
@@ -11,11 +10,11 @@ import {
 } from "@heroui/react";
 import { type ReactFormExtendedApi, useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useClientQueries } from "@zenstackhq/tanstack-query/react";
 import { Shield, UserPlus, Users } from "lucide-react";
 import { TanStackInputField } from "@/components/forms/TanStackFieldControls";
 import { useToast } from "@/context/ToastContext";
 import { fetchPeople, type PersonWithExtras } from "@/features/people/api";
+import { fetchRoles } from "@/features/roles/api";
 import { inviteUser } from "@/features/users/api";
 import { usePersonLinking } from "@/features/users/hooks/usePersonLinking";
 import { ApiError } from "@/lib/api-client";
@@ -49,12 +48,9 @@ export function AddUserFormContainer({
   const queryClient = useQueryClient();
   const { error: toastError, success } = useToast();
 
-  // ZenStack v3.3.0 official pattern - no workaround needed
-  const client = useClientQueries(schemaLite);
-
-  // Fetch available roles
-  const { data: rolesData, isLoading: isRolesLoading } = client.role.useFindMany({
-    orderBy: { name: "asc" },
+  const { data: rolesData, isLoading: isRolesLoading } = useQuery({
+    queryFn: fetchRoles,
+    queryKey: ["roles"],
   });
   const roles = rolesData ?? [];
 

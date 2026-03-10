@@ -1,6 +1,5 @@
 import { z } from "zod";
-import { apiClient } from "@/lib/api-client";
-
+import { toUsersApiError, usersORPCClient } from "./orpc";
 import type { User, UserProfile, UserProfileUpdatePayload } from "./types";
 
 export interface UsersResponse {
@@ -17,76 +16,101 @@ const InviteUserResponseSchema = z.object({
 const ResetPasswordResponseSchema = z.object({ tempPassword: z.string() });
 
 export async function deleteUser(userId: number): Promise<void> {
-  await apiClient.delete(`/api/users/${userId}`, { responseSchema: StatusResponseSchema });
+  try {
+    await usersORPCClient.delete({ id: userId });
+  } catch (error) {
+    throw toUsersApiError(error);
+  }
 }
 
 export async function deleteUserPasskey(userId: number): Promise<void> {
-  await apiClient.delete(`/api/users/${userId}/passkey`, { responseSchema: StatusResponseSchema });
+  try {
+    await usersORPCClient.deletePasskey({ id: userId });
+  } catch (error) {
+    throw toUsersApiError(error);
+  }
 }
 
 export async function fetchUserProfile(): Promise<UserProfile> {
-  const res = await apiClient.get<{ data: UserProfile }>("/api/users/profile", {
-    responseSchema: UserProfileResponseSchema,
-  });
-  return res.data;
+  try {
+    const res = UserProfileResponseSchema.parse(await usersORPCClient.profile());
+    return res.data as UserProfile;
+  } catch (error) {
+    throw toUsersApiError(error);
+  }
 }
 
 export async function fetchUsers(): Promise<User[]> {
-  const res = await apiClient.get<UsersResponse>("/api/users", {
-    responseSchema: UsersResponseSchema,
-  });
-  return res.users;
+  try {
+    const res = UsersResponseSchema.parse(await usersORPCClient.list());
+    return res.users as User[];
+  } catch (error) {
+    throw toUsersApiError(error);
+  }
 }
 
 export async function inviteUser(
   payload: Record<string, unknown>,
 ): Promise<{ tempPassword?: string; userId: number }> {
-  return apiClient.post("/api/users/invite", payload, { responseSchema: InviteUserResponseSchema });
+  try {
+    return InviteUserResponseSchema.parse(await usersORPCClient.invite(payload));
+  } catch (error) {
+    throw toUsersApiError(error);
+  }
 }
 
 export async function resetUserPassword(userId: number): Promise<string> {
-  const res = await apiClient.post<{ tempPassword: string }>(
-    `/api/users/${userId}/reset-password`,
-    {},
-    { responseSchema: ResetPasswordResponseSchema },
-  );
-  return res.tempPassword;
+  try {
+    const res = ResetPasswordResponseSchema.parse(
+      await usersORPCClient.resetPassword({ id: userId }),
+    );
+    return res.tempPassword;
+  } catch (error) {
+    throw toUsersApiError(error);
+  }
 }
 
 export async function setupUser(payload: Record<string, unknown>): Promise<void> {
-  await apiClient.post("/api/users/setup", payload, { responseSchema: StatusResponseSchema });
+  try {
+    await usersORPCClient.setup(payload);
+  } catch (error) {
+    throw toUsersApiError(error);
+  }
 }
 
 export async function toggleUserMfa(userId: number, enabled: boolean): Promise<void> {
-  const res = await apiClient.post<{ message?: string; status: string }>(
-    `/api/users/${userId}/mfa/toggle`,
-    {
-      enabled,
-    },
-    { responseSchema: StatusResponseSchema },
-  );
-  if (res.status !== "ok") {
-    throw new Error(res.message || "Error al cambiar estado MFA");
+  try {
+    const res = StatusResponseSchema.parse(
+      await usersORPCClient.toggleMfa({
+        enabled,
+        id: userId,
+      }),
+    );
+    if (res.status !== "ok") {
+      throw new Error(res.message || "Error al cambiar estado MFA");
+    }
+  } catch (error) {
+    throw toUsersApiError(error);
   }
 }
 
 export async function updateUserRole(userId: number, role: string): Promise<void> {
-  await apiClient.put(
-    `/api/users/${userId}/role`,
-    { role },
-    { responseSchema: StatusResponseSchema },
-  );
+  try {
+    await usersORPCClient.updateRole({ id: userId, role });
+  } catch (error) {
+    throw toUsersApiError(error);
+  }
 }
 
 export async function updateUserStatus(
   userId: number,
   status: "ACTIVE" | "PENDING_SETUP" | "SUSPENDED",
 ): Promise<void> {
-  await apiClient.put(
-    `/api/users/${userId}/status`,
-    { status },
-    { responseSchema: StatusResponseSchema },
-  );
+  try {
+    await usersORPCClient.updateStatus({ id: userId, status });
+  } catch (error) {
+    throw toUsersApiError(error);
+  }
 }
 
 const UserProfileUpdatePayloadSchema = z.object({
@@ -111,7 +135,9 @@ export async function updateUserProfile(
   payload: UserProfileUpdatePayload,
 ): Promise<void> {
   const parsedPayload = UserProfileUpdatePayloadSchema.parse(payload);
-  await apiClient.put(`/api/users/${userId}/profile`, parsedPayload, {
-    responseSchema: StatusResponseSchema,
-  });
+  try {
+    await usersORPCClient.updateProfile({ id: userId, payload: parsedPayload });
+  } catch (error) {
+    throw toUsersApiError(error);
+  }
 }

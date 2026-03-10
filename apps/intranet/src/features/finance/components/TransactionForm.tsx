@@ -1,4 +1,3 @@
-import type { FinancialTransaction } from "@finanzas/db";
 import {
   Button,
   Chip,
@@ -21,6 +20,7 @@ import { z } from "zod";
 import { toast } from "@/lib/toast-interceptor";
 import { financeORPCClient, toFinanceApiError } from "../orpc";
 import { isNonAccountableCategory } from "../utils/non-accountable-category";
+import type { CashFlowTransaction, TransactionCategoryOption } from "./CashFlowColumns";
 
 const schema = z.object({
   date: z.string(),
@@ -36,13 +36,14 @@ type FormValues = z.infer<typeof schema>;
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  initialData?: FinancialTransaction | null;
+  initialData?: CashFlowTransaction | null;
 }
 
-const TransactionCategorySchema = z
+const TransactionCategorySchema: z.ZodType<TransactionCategoryOption> = z
   .object({
     color: z.string().nullable().optional(),
     id: z.number(),
+    type: z.enum(["INCOME", "EXPENSE"]),
     icon: z.string().nullable().optional(),
     name: z.string(),
   })
@@ -52,8 +53,6 @@ const TransactionCategoriesResponseSchema = z.object({
   data: z.array(TransactionCategorySchema),
   status: z.literal("ok"),
 });
-
-type TransactionCategoryOption = z.infer<typeof TransactionCategorySchema>;
 
 const SaveTransactionResponseSchema = z.object({
   data: z.unknown().optional(),

@@ -1,0 +1,930 @@
+import { db } from "@finanzas/db";
+import { OpenAPIHandler } from "@orpc/openapi/fetch";
+import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
+import { ORPCError, onError, os } from "@orpc/server";
+import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
+import type { Context as HonoContext } from "hono";
+import { z } from "zod";
+import { getSessionUser, hasPermission } from "../auth";
+import { hashPassword } from "../lib/crypto";
+import { logError } from "../lib/logger";
+import { normalizeRut } from "../lib/rut";
+import { configureSuperjson } from "../lib/superjson-config";
+import { SuperJSONRPCHandler } from "./superjson";
+
+configureSuperjson();
+
+type UsersORPCContext = {
+  hono: HonoContext;
+};
+
+const base = os.$context<UsersORPCContext>();
+
+const userStatusSchema = z.enum(["ACTIVE", "INACTIVE", "PENDING_SETUP", "SUSPENDED"]);
+
+const userListInputSchema = z.object({
+  includeTest: z.boolean().optional(),
+});
+
+const inviteUserSchema = z.object({
+  email: z.email("Email inválido"),
+  role: z.string().min(1, "Rol requerido"),
+  position: z.string().min(1, "Cargo requerido"),
+  mfaEnforced: z.boolean().optional().default(true),
+  personId: z.number().int().optional(),
+  names: z.string().optional(),
+  fatherName: z.string().optional(),
+  motherName: z.string().optional(),
+  rut: z.string().optional(),
+});
+
+const setupUserSchema = z.object({
+  names: z.string().min(1),
+  fatherName: z.string().optional(),
+  motherName: z.string().optional(),
+  loginEmail: z.email("Email de login inválido").optional(),
+  rut: z.string().min(1),
+  phone: z.string().optional(),
+  address: z.string().optional(),
+  bankName: z.string().optional(),
+  bankAccountType: z.string().optional(),
+  bankAccountNumber: z.string().optional(),
+  password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres"),
+});
+
+const userIdSchema = z.object({
+  id: z.number().int(),
+});
+
+const updateStatusSchema = z.object({
+  id: z.number().int(),
+  status: z.enum(["ACTIVE", "PENDING_SETUP", "SUSPENDED"]),
+});
+
+const updateRoleSchema = z.object({
+  id: z.number().int(),
+  role: z.string().min(1, "Rol requerido"),
+});
+
+const toggleMfaSchema = z.object({
+  enabled: z.boolean(),
+  id: z.number().int(),
+});
+
+const updateUserProfileSchema = z
+  .object({
+    address: z.string().max(255).nullable().optional(),
+    bankAccountNumber: z.string().max(120).nullable().optional(),
+    bankAccountType: z.string().max(80).nullable().optional(),
+    bankName: z.string().max(120).nullable().optional(),
+    department: z.string().max(120).nullable().optional(),
+    email: z.email("Email inválido").optional(),
+    fatherName: z.string().max(120).nullable().optional(),
+    loginEmail: z.email("Email de login inválido").nullable().optional(),
+    mfaEnforced: z.boolean().optional(),
+    motherName: z.string().max(120).nullable().optional(),
+    names: z.string().min(1, "Nombres requeridos").max(160),
+    notificationEmail: z.email("Email de notificación inválido").optional(),
+    phone: z.string().max(60).nullable().optional(),
+    position: z.string().min(1, "Cargo requerido").max(120),
+    rut: z.string().min(1, "RUT requerido").max(20),
+  })
+  .superRefine((value, ctx) => {
+    if (!value.notificationEmail && !value.email) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "notificationEmail es requerido",
+        path: ["notificationEmail"],
+      });
+    }
+  });
+
+const userPersonSchema = z.object({
+  address: z.string().nullable(),
+  fatherName: z.string().nullable(),
+  motherName: z.string().nullable(),
+  names: z.string(),
+  phone: z.string().nullable(),
+  rut: z.string(),
+});
+
+const userEmployeeSchema = z.object({
+  bankAccountNumber: z.string().nullable(),
+  bankAccountType: z.string().nullable(),
+  bankName: z.string().nullable(),
+  department: z.string().nullable(),
+  position: z.string(),
+});
+
+const userListItemSchema = z.object({
+  createdAt: z.date(),
+  email: z.string(),
+  employee: userEmployeeSchema.nullable(),
+  hasPasskey: z.boolean(),
+  id: z.number().int(),
+  loginEmail: z.string(),
+  mfaEnabled: z.boolean(),
+  mfaEnforced: z.boolean(),
+  notificationEmail: z.string(),
+  passkeysCount: z.number().int(),
+  person: userPersonSchema.nullable(),
+  role: z.string(),
+  status: userStatusSchema,
+});
+
+const userProfileSchema = z.object({
+  address: z.string().nullable().optional(),
+  bankAccountNumber: z.string().nullable().optional(),
+  bankAccountType: z.string().nullable().optional(),
+  bankName: z.string().nullable().optional(),
+  email: z.string(),
+  fatherName: z.string().nullable().optional(),
+  id: z.number().int(),
+  loginEmail: z.string(),
+  motherName: z.string().nullable().optional(),
+  names: z.string(),
+  notificationEmail: z.string().optional(),
+  phone: z.string().nullable().optional(),
+  rut: z.string(),
+});
+
+const usersResponseSchema = z.object({
+  status: z.literal("ok"),
+  users: z.array(userListItemSchema),
+});
+
+const userProfileResponseSchema = z.object({
+  data: userProfileSchema,
+  status: z.literal("ok"),
+});
+
+const inviteResponseSchema = z.object({
+  status: z.literal("ok"),
+  tempPassword: z.string().optional(),
+  userId: z.number().int(),
+});
+
+const resetPasswordResponseSchema = z.object({
+  status: z.literal("ok"),
+  tempPassword: z.string(),
+});
+
+const toggleMfaResponseSchema = z.object({
+  mfaEnabled: z.boolean(),
+  status: z.literal("ok"),
+});
+
+const statusResponseSchema = z.object({
+  message: z.string().optional(),
+  status: z.literal("ok"),
+});
+
+function toNullableText(value: null | string | undefined): null | string {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function normalizeEmail(value: string) {
+  return value.toLowerCase().trim();
+}
+
+async function findUserByEffectiveLoginEmail(email: string, excludeUserId?: number) {
+  const rows = await db.$queryRaw<Array<{ id: number }>>`
+    SELECT u.id
+    FROM users u
+    JOIN people p ON p.id = u.person_id
+    WHERE lower(coalesce(nullif(u.login_email, ''), p.email)) = lower(${email})
+      AND (${excludeUserId ?? 0} = 0 OR u.id <> ${excludeUserId ?? 0})
+    LIMIT 1
+  `;
+
+  return rows[0] ?? null;
+}
+
+async function getUserLoginEmailMap(userIds: number[]) {
+  if (userIds.length === 0) {
+    return new Map<number, null | string>();
+  }
+
+  const rows = await db.$queryRaw<Array<{ id: number; loginEmail: null | string }>>`
+    SELECT u.id AS "id", u.login_email AS "loginEmail"
+    FROM users u
+    WHERE u.id = ANY(${userIds})
+  `;
+
+  return new Map<number, null | string>(rows.map((row) => [row.id, row.loginEmail]));
+}
+
+async function resolveInvitePersonId(
+  personId: number | undefined,
+  email: string,
+  payload: z.infer<typeof inviteUserSchema>,
+) {
+  if (!personId) {
+    const names = payload.names?.trim();
+    const rut = payload.rut?.trim();
+
+    if (!names) {
+      throw new ORPCError("BAD_REQUEST", { message: "Nombres son requeridos" });
+    }
+
+    if (!rut) {
+      throw new ORPCError("BAD_REQUEST", { message: "RUT es requerido" });
+    }
+
+    const person = await db.person.create({
+      data: {
+        names,
+        fatherName: toNullableText(payload.fatherName),
+        motherName: toNullableText(payload.motherName),
+        email,
+        rut,
+      },
+    });
+
+    return person.id;
+  }
+
+  const linkedPerson = await db.person.findUnique({ where: { id: personId } });
+  if (!linkedPerson) {
+    throw new ORPCError("NOT_FOUND", { message: "Persona no encontrada" });
+  }
+
+  const linkedEmail = linkedPerson.email?.toLowerCase().trim();
+  if (!linkedEmail) {
+    await db.person.update({
+      where: { id: linkedPerson.id },
+      data: { email },
+    });
+    return linkedPerson.id;
+  }
+
+  if (linkedEmail !== email) {
+    throw new ORPCError("CONFLICT", {
+      message:
+        "La persona vinculada ya tiene otro email. Actualiza el email de la persona primero.",
+    });
+  }
+
+  return linkedPerson.id;
+}
+
+const authed = base.use(async ({ context, next }) => {
+  const user = await getSessionUser(context.hono);
+
+  if (!user) {
+    throw new ORPCError("UNAUTHORIZED", { message: "No autorizado" });
+  }
+
+  return next({
+    context: {
+      ...context,
+      user,
+    },
+  });
+});
+
+const readUsers = authed.use(async ({ context, next }) => {
+  const canRead = await hasPermission(context.user.id, "read", "User");
+
+  if (!canRead) {
+    throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
+  }
+
+  return next();
+});
+
+const createUsers = authed.use(async ({ context, next }) => {
+  const canCreate = await hasPermission(context.user.id, "create", "User");
+
+  if (!canCreate) {
+    throw new ORPCError("FORBIDDEN", { message: "No tienes permisos para crear usuarios" });
+  }
+
+  return next();
+});
+
+const updateUsers = authed.use(async ({ context, next }) => {
+  const canUpdate = await hasPermission(context.user.id, "update", "User");
+
+  if (!canUpdate) {
+    throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
+  }
+
+  return next();
+});
+
+const deleteUsers = authed.use(async ({ context, next }) => {
+  const canDelete = await hasPermission(context.user.id, "delete", "User");
+
+  if (!canDelete) {
+    throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
+  }
+
+  return next();
+});
+
+const usersORPCRouterBase = {
+  delete: deleteUsers
+    .route({
+      method: "DELETE",
+      path: "/{id}",
+      summary: "Delete user",
+      tags: ["Users"],
+    })
+    .input(userIdSchema)
+    .output(statusResponseSchema)
+    .handler(async ({ context, input }) => {
+      if (input.id === context.user.id) {
+        throw new ORPCError("BAD_REQUEST", { message: "No puedes eliminar tu propia cuenta" });
+      }
+
+      await db.user.delete({ where: { id: input.id } });
+      return { status: "ok" as const };
+    }),
+
+  deletePasskey: updateUsers
+    .route({
+      method: "DELETE",
+      path: "/{id}/passkey",
+      summary: "Delete user passkeys",
+      tags: ["Users"],
+    })
+    .input(userIdSchema)
+    .output(statusResponseSchema)
+    .handler(async ({ input }) => {
+      await db.passkey.deleteMany({
+        where: { userId: input.id },
+      });
+
+      return { status: "ok" as const };
+    }),
+
+  invite: createUsers
+    .route({
+      method: "POST",
+      path: "/invite",
+      summary: "Invite user",
+      tags: ["Users"],
+    })
+    .input(inviteUserSchema)
+    .output(inviteResponseSchema)
+    .handler(async ({ input }) => {
+      const normalizedEmail = normalizeEmail(input.email);
+
+      const existing = await db.user.findFirst({
+        where: { person: { email: normalizedEmail } },
+      });
+      if (existing) {
+        throw new ORPCError("BAD_REQUEST", { message: "Email ya registrado" });
+      }
+
+      const loginConflict = await findUserByEffectiveLoginEmail(normalizedEmail);
+      if (loginConflict) {
+        throw new ORPCError("CONFLICT", { message: "Email ya está en uso para login" });
+      }
+
+      const crypto = await import("node:crypto");
+      const tempPassword = crypto.randomBytes(12).toString("hex");
+      const tempPasswordHash = await hashPassword(tempPassword);
+
+      const targetPersonId = await resolveInvitePersonId(input.personId, normalizedEmail, input);
+
+      const user = await db.user.create({
+        data: {
+          personId: targetPersonId,
+          passwordHash: tempPasswordHash,
+          status: "PENDING_SETUP",
+          mfaEnforced: input.mfaEnforced,
+        },
+      });
+
+      const roleRecord = await db.role.findUnique({ where: { name: input.role } });
+      if (roleRecord) {
+        await db.userRoleAssignment.create({
+          data: { userId: user.id, roleId: roleRecord.id },
+        });
+      }
+
+      await db.employee.upsert({
+        where: { personId: targetPersonId },
+        create: {
+          personId: targetPersonId,
+          position: input.position,
+          startDate: new Date(),
+          status: "ACTIVE",
+        },
+        update: { position: input.position },
+      });
+
+      return { status: "ok" as const, userId: user.id, tempPassword };
+    }),
+
+  list: readUsers
+    .route({
+      method: "GET",
+      path: "/",
+      summary: "List users",
+      tags: ["Users"],
+    })
+    .input(userListInputSchema)
+    .output(usersResponseSchema)
+    .handler(async ({ input }) => {
+      const users = await db.user.findMany({
+        where: input.includeTest
+          ? undefined
+          : {
+              NOT: {
+                person: {
+                  OR: [{ email: { contains: "test" } }, { email: { contains: "debug" } }],
+                },
+              },
+            },
+        include: {
+          person: { include: { employee: true } },
+          roles: { include: { role: true } },
+          passkeys: { select: { id: true } },
+        },
+        orderBy: { person: { names: "asc" } },
+      });
+
+      const loginEmailByUserId = await getUserLoginEmailMap(users.map((user) => user.id));
+
+      return {
+        status: "ok" as const,
+        users: users.map((user) => ({
+          createdAt: user.createdAt,
+          email: user.person?.email ?? "",
+          notificationEmail: user.person?.email ?? "",
+          loginEmail: loginEmailByUserId.get(user.id)?.trim() || (user.person?.email ?? ""),
+          status: user.status as z.infer<typeof userStatusSchema>,
+          mfaEnabled: user.mfaEnabled,
+          mfaEnforced: user.mfaEnforced,
+          hasPasskey: user.passkeys.length > 0,
+          passkeysCount: user.passkeys.length,
+          id: user.id,
+          role: user.roles[0]?.role.name || "VIEWER",
+          employee: user.person?.employee
+            ? {
+                position: user.person.employee.position,
+                department: user.person.employee.department,
+                bankName: user.person.employee.bankName,
+                bankAccountType: user.person.employee.bankAccountType,
+                bankAccountNumber: user.person.employee.bankAccountNumber,
+              }
+            : null,
+          person: user.person
+            ? {
+                address: user.person.address,
+                names: user.person.names,
+                fatherName: user.person.fatherName,
+                motherName: user.person.motherName,
+                phone: user.person.phone,
+                rut: normalizeRut(user.person.rut),
+              }
+            : null,
+        })),
+      };
+    }),
+
+  profile: authed
+    .route({
+      method: "GET",
+      path: "/profile",
+      summary: "Get current user profile",
+      tags: ["Users"],
+    })
+    .input(z.object({}))
+    .output(userProfileResponseSchema)
+    .handler(async ({ context }) => {
+      const user = await db.user.findUnique({
+        where: { id: context.user.id },
+        include: { person: { include: { employee: true } } },
+      });
+
+      if (!user) {
+        throw new ORPCError("NOT_FOUND", { message: "Usuario no encontrado" });
+      }
+
+      const loginEmailRow = await db.$queryRaw<Array<{ loginEmail: null | string }>>`
+        SELECT u.login_email AS "loginEmail"
+        FROM users u
+        WHERE u.id = ${context.user.id}
+        LIMIT 1
+      `;
+
+      const explicitLoginEmail = loginEmailRow[0]?.loginEmail?.trim() || null;
+      const notificationEmail = user.person?.email ?? "";
+      const effectiveLoginEmail = explicitLoginEmail || notificationEmail;
+
+      return {
+        status: "ok" as const,
+        data: {
+          id: user.id,
+          names: user.person.names,
+          fatherName: user.person.fatherName,
+          motherName: user.person.motherName,
+          rut: normalizeRut(user.person.rut),
+          email: notificationEmail,
+          notificationEmail,
+          loginEmail: effectiveLoginEmail,
+          phone: user.person.phone,
+          address: user.person.address,
+          bankName: user.person.employee?.bankName,
+          bankAccountType: user.person.employee?.bankAccountType,
+          bankAccountNumber: user.person.employee?.bankAccountNumber,
+        },
+      };
+    }),
+
+  resetPassword: updateUsers
+    .route({
+      method: "POST",
+      path: "/{id}/reset-password",
+      summary: "Reset user password",
+      tags: ["Users"],
+    })
+    .input(userIdSchema)
+    .output(resetPasswordResponseSchema)
+    .handler(async ({ input }) => {
+      const targetUser = await db.user.findUnique({
+        where: { id: input.id },
+        select: { id: true },
+      });
+
+      if (!targetUser) {
+        throw new ORPCError("NOT_FOUND", { message: "Usuario no encontrado" });
+      }
+
+      const crypto = await import("node:crypto");
+      const tempPassword = crypto.randomBytes(12).toString("hex");
+      const passwordHash = await hashPassword(tempPassword);
+
+      await db.user.update({
+        where: { id: input.id },
+        data: {
+          passwordHash,
+          status: "PENDING_SETUP",
+          mfaEnabled: false,
+          mfaSecret: null,
+          sessionVersion: { increment: 1 },
+        },
+      });
+
+      return { status: "ok" as const, tempPassword };
+    }),
+
+  setup: authed
+    .route({
+      method: "POST",
+      path: "/setup",
+      summary: "Complete user onboarding setup",
+      tags: ["Users"],
+    })
+    .input(setupUserSchema)
+    .output(statusResponseSchema)
+    .handler(async ({ context, input }) => {
+      const user = await db.user.findUnique({
+        where: { id: context.user.id },
+        include: { person: true },
+      });
+
+      if (!user) {
+        throw new ORPCError("NOT_FOUND", { message: "Usuario no encontrado" });
+      }
+
+      if (user.status === "ACTIVE") {
+        return { status: "ok" as const, message: "Cuenta ya configurada" };
+      }
+
+      if (user.status !== "PENDING_SETUP") {
+        throw new ORPCError("CONFLICT", {
+          message: "Estado de usuario no válido para setup",
+        });
+      }
+
+      const hash = await hashPassword(input.password);
+      const normalizedNotificationEmail = normalizeEmail(user.person?.email ?? "");
+      const normalizedLoginEmail = input.loginEmail ? normalizeEmail(input.loginEmail) : null;
+      const effectiveLoginEmail = normalizedLoginEmail || normalizedNotificationEmail;
+
+      if (!effectiveLoginEmail) {
+        throw new ORPCError("CONFLICT", {
+          message: "No existe correo válido para login. Contacta a un administrador.",
+        });
+      }
+
+      const conflictingLogin = await findUserByEffectiveLoginEmail(
+        effectiveLoginEmail,
+        context.user.id,
+      );
+      if (conflictingLogin) {
+        throw new ORPCError("CONFLICT", { message: "El correo de login ya está en uso" });
+      }
+
+      await db.person.update({
+        where: { id: user.personId },
+        data: {
+          names: input.names,
+          fatherName: input.fatherName,
+          motherName: input.motherName,
+          rut: input.rut,
+          phone: input.phone,
+          address: input.address,
+        },
+      });
+
+      await db.employee.upsert({
+        where: { personId: user.personId },
+        create: {
+          personId: user.personId,
+          position: "Por definir",
+          startDate: new Date(),
+          bankName: input.bankName,
+          bankAccountType: input.bankAccountType,
+          bankAccountNumber: input.bankAccountNumber,
+        },
+        update: {
+          bankName: input.bankName,
+          bankAccountType: input.bankAccountType,
+          bankAccountNumber: input.bankAccountNumber,
+        },
+      });
+
+      await db.user.update({
+        where: { id: context.user.id },
+        data: { passwordHash: hash, status: "ACTIVE" },
+      });
+
+      const explicitLoginEmail =
+        normalizedLoginEmail && normalizedLoginEmail !== normalizedNotificationEmail
+          ? normalizedLoginEmail
+          : null;
+
+      await db.$executeRaw`
+        UPDATE users
+        SET login_email = ${explicitLoginEmail}
+        WHERE id = ${context.user.id}
+      `;
+
+      return { status: "ok" as const, message: "Configuración completada" };
+    }),
+
+  toggleMfa: updateUsers
+    .route({
+      method: "POST",
+      path: "/{id}/mfa/toggle",
+      summary: "Toggle MFA for user",
+      tags: ["Users"],
+    })
+    .input(toggleMfaSchema)
+    .output(toggleMfaResponseSchema)
+    .handler(async ({ input }) => {
+      await db.user.update({
+        where: { id: input.id },
+        data: { mfaEnabled: input.enabled },
+      });
+
+      return { status: "ok" as const, mfaEnabled: input.enabled };
+    }),
+
+  updateProfile: updateUsers
+    .route({
+      method: "PUT",
+      path: "/{id}/profile",
+      summary: "Update user profile",
+      tags: ["Users"],
+    })
+    .input(
+      z.object({
+        id: z.number().int(),
+        payload: updateUserProfileSchema,
+      }),
+    )
+    .output(statusResponseSchema)
+    .handler(async ({ input }) => {
+      const targetUser = await db.user.findUnique({
+        where: { id: input.id },
+        include: {
+          person: {
+            include: { employee: true },
+          },
+        },
+      });
+
+      if (!targetUser) {
+        throw new ORPCError("NOT_FOUND", { message: "Usuario no encontrado" });
+      }
+
+      const notificationEmailInput = input.payload.notificationEmail ?? input.payload.email;
+      if (!notificationEmailInput) {
+        throw new ORPCError("BAD_REQUEST", { message: "Email de notificación requerido" });
+      }
+
+      const normalizedNotificationEmail = normalizeEmail(notificationEmailInput);
+      const normalizedLoginEmail = input.payload.loginEmail
+        ? normalizeEmail(input.payload.loginEmail)
+        : null;
+      const explicitLoginEmail =
+        normalizedLoginEmail && normalizedLoginEmail !== normalizedNotificationEmail
+          ? normalizedLoginEmail
+          : null;
+      const effectiveLoginEmail = explicitLoginEmail ?? normalizedNotificationEmail;
+      const normalizedRut = normalizeRut(input.payload.rut);
+
+      if (!normalizedRut) {
+        throw new ORPCError("BAD_REQUEST", { message: "RUT inválido" });
+      }
+
+      const [conflictingEmail, conflictingRut, conflictingLogin] = await Promise.all([
+        db.person.findFirst({
+          where: {
+            email: normalizedNotificationEmail,
+            NOT: { id: targetUser.personId },
+          },
+          select: { id: true },
+        }),
+        db.person.findFirst({
+          where: {
+            rut: normalizedRut,
+            NOT: { id: targetUser.personId },
+          },
+          select: { id: true },
+        }),
+        findUserByEffectiveLoginEmail(effectiveLoginEmail, input.id),
+      ]);
+
+      if (conflictingEmail) {
+        throw new ORPCError("CONFLICT", {
+          message: "El correo de notificación ya está en uso por otro usuario",
+        });
+      }
+
+      if (conflictingRut) {
+        throw new ORPCError("CONFLICT", { message: "El RUT ya está en uso por otro usuario" });
+      }
+
+      if (conflictingLogin) {
+        throw new ORPCError("CONFLICT", { message: "El correo de login ya está en uso" });
+      }
+
+      await db.$transaction(async (tx) => {
+        await tx.person.update({
+          where: { id: targetUser.personId },
+          data: {
+            address: toNullableText(input.payload.address),
+            email: normalizedNotificationEmail,
+            fatherName: toNullableText(input.payload.fatherName),
+            motherName: toNullableText(input.payload.motherName),
+            names: input.payload.names.trim(),
+            phone: toNullableText(input.payload.phone),
+            rut: normalizedRut,
+          },
+        });
+
+        await tx.employee.upsert({
+          where: { personId: targetUser.personId },
+          create: {
+            personId: targetUser.personId,
+            position: input.payload.position.trim(),
+            department: toNullableText(input.payload.department),
+            startDate: targetUser.person.employee?.startDate ?? new Date(),
+            status: targetUser.person.employee?.status ?? "ACTIVE",
+            bankName: toNullableText(input.payload.bankName),
+            bankAccountType: toNullableText(input.payload.bankAccountType),
+            bankAccountNumber: toNullableText(input.payload.bankAccountNumber),
+          },
+          update: {
+            position: input.payload.position.trim(),
+            department: toNullableText(input.payload.department),
+            bankName: toNullableText(input.payload.bankName),
+            bankAccountType: toNullableText(input.payload.bankAccountType),
+            bankAccountNumber: toNullableText(input.payload.bankAccountNumber),
+          },
+        });
+
+        if (typeof input.payload.mfaEnforced === "boolean") {
+          await tx.user.update({
+            where: { id: input.id },
+            data: { mfaEnforced: input.payload.mfaEnforced },
+          });
+        }
+
+        await tx.$executeRaw`
+          UPDATE users
+          SET login_email = ${explicitLoginEmail}
+          WHERE id = ${input.id}
+        `;
+      });
+
+      return { status: "ok" as const };
+    }),
+
+  updateRole: updateUsers
+    .route({
+      method: "PUT",
+      path: "/{id}/role",
+      summary: "Update user role",
+      tags: ["Users"],
+    })
+    .input(updateRoleSchema)
+    .output(statusResponseSchema)
+    .handler(async ({ input }) => {
+      await db.userRoleAssignment.deleteMany({ where: { userId: input.id } });
+
+      const roleRecord = await db.role.findUnique({ where: { name: input.role } });
+      if (roleRecord) {
+        await db.userRoleAssignment.create({
+          data: { userId: input.id, roleId: roleRecord.id },
+        });
+      }
+
+      return { status: "ok" as const };
+    }),
+
+  updateStatus: updateUsers
+    .route({
+      method: "PUT",
+      path: "/{id}/status",
+      summary: "Update user status",
+      tags: ["Users"],
+    })
+    .input(updateStatusSchema)
+    .output(statusResponseSchema)
+    .handler(async ({ context, input }) => {
+      if (
+        input.id === context.user.id &&
+        (input.status === "SUSPENDED" || input.status === "PENDING_SETUP")
+      ) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: "No puedes cambiar tu propia cuenta a este estado",
+        });
+      }
+
+      await db.$transaction(async (tx) => {
+        await tx.user.update({
+          where: { id: input.id },
+          data: {
+            status: input.status,
+            sessionVersion: { increment: 1 },
+            ...(input.status === "PENDING_SETUP"
+              ? {
+                  mfaEnabled: false,
+                  mfaSecret: null,
+                }
+              : {}),
+          },
+        });
+
+        if (input.status === "PENDING_SETUP") {
+          await tx.passkey.deleteMany({
+            where: { userId: input.id },
+          });
+        }
+      });
+
+      return { status: "ok" as const };
+    }),
+};
+
+export const usersORPCRouter = base.router(usersORPCRouterBase).prefix("/api/orpc/users");
+
+export const usersORPCHandler = new SuperJSONRPCHandler(usersORPCRouter, {
+  interceptors: [
+    onError((error) => {
+      logError(error, {
+        module: "api",
+        operation: "orpc.users",
+      });
+    }),
+  ],
+});
+
+export const usersOpenAPIHandler = new OpenAPIHandler(usersORPCRouter, {
+  plugins: [
+    new OpenAPIReferencePlugin({
+      docsPath: "/api/orpc/users/docs",
+      specPath: "/api/orpc/users/openapi.json",
+      theme: "saturn",
+      favicon: "https://orpc.dev/icon.svg",
+      layout: "modern",
+      meta: {
+        title: "Bioalergia Users oRPC",
+        description: "Contratos oRPC/OpenAPI para gestión de usuarios.",
+      },
+    }),
+  ],
+  interceptors: [
+    onError((error) => {
+      logError(error, {
+        module: "api",
+        operation: "openapi.users",
+      });
+    }),
+  ],
+  schemaConverters: [new ZodToJsonSchemaConverter()],
+});

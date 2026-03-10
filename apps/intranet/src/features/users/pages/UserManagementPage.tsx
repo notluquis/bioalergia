@@ -1,4 +1,3 @@
-import { schema as schemaLite } from "@finanzas/db/schema-lite";
 import {
   Button,
   Description,
@@ -11,7 +10,6 @@ import {
   TextField,
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useClientQueries } from "@zenstackhq/tanstack-query/react";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { Copy, Key, Shield, UserCog, UserPlus } from "lucide-react";
@@ -19,12 +17,15 @@ import { useCallback, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
+import { fetchRoles } from "@/features/roles/api";
 import {
+  deleteUser,
   deleteUserPasskey,
   fetchUsers,
   resetUserPassword,
   toggleUserMfa,
   updateUserProfile,
+  updateUserRole,
   updateUserStatus as updateUserStatusApi,
 } from "@/features/users/api";
 import { AddUserFormContainer } from "@/features/users/components/AddUserFormContainer";
@@ -66,8 +67,6 @@ function filterUsersByRole(users: User[], roleFilter: string) {
 }
 
 function useUserManagementActions(params: {
-  assignUserRole: (roleId: number, userId: number) => Promise<unknown>;
-  clearUserRoles: (userId: number) => Promise<unknown>;
   deleteUser: (id: number) => Promise<unknown>;
   editingUser: null | User;
   errorToast: (message: string) => void;
@@ -80,6 +79,7 @@ function useUserManagementActions(params: {
   setResetPasswordValue: (value: string) => void;
   setSelectedRole: (value: string) => void;
   successToast: (message: string) => void;
+  updateUserRole: (id: number, role: string) => Promise<unknown>;
   updateUserStatus: (
     id: number,
     status: "ACTIVE" | "PENDING_SETUP" | "SUSPENDED",
@@ -207,8 +207,7 @@ function useUserManagementActions(params: {
     }
 
     try {
-      await params.clearUserRoles(params.editingUser.id);
-      await params.assignUserRole(selectedRoleObj.id, params.editingUser.id);
+      await params.updateUserRole(params.editingUser.id, selectedRoleObj.name);
 
       void params.queryClient.invalidateQueries({ queryKey: ["users"] });
       void params.queryClient.invalidateQueries({ queryKey: ["user"] });
@@ -242,8 +241,6 @@ function useUserManagementActions(params: {
 }
 
 export function UserManagementPage() {
-  const client = useClientQueries(schemaLite);
-
   const { can } = useAuth(); // Keep context mounted
   const { error, success } = useToast();
   const queryClient = useQueryClient();
@@ -264,9 +261,9 @@ export function UserManagementPage() {
   });
   const users: User[] = usersData ?? [];
 
-  // ZenStack hooks for roles (for filter dropdown)
-  const { data: rolesData } = client.role.useFindMany({
-    orderBy: { name: "asc" },
+  const { data: rolesData } = useQuery({
+    queryFn: fetchRoles,
+    queryKey: ["roles"],
   });
   const roles = rolesData ?? [];
 
@@ -295,7 +292,6 @@ export function UserManagementPage() {
       success("Datos de usuario actualizados");
     },
   });
-  const deleteUserMutation = client.user.useDelete();
   const updateUserStatusMutation = useMutation({
     mutationFn: async ({
       id,
@@ -305,21 +301,10 @@ export function UserManagementPage() {
       status: "ACTIVE" | "PENDING_SETUP" | "SUSPENDED";
     }) => updateUserStatusApi(id, status),
   });
-  const createRoleAssignment = client.userRoleAssignment.useCreate();
-  const deleteRoleAssignments = client.userRoleAssignment.useDeleteMany();
-
-  const deleteUser = useCallback(
-    (id: number) => deleteUserMutation.mutateAsync({ where: { id } }),
-    [deleteUserMutation],
-  );
-  const clearUserRoles = useCallback(
-    (userId: number) => deleteRoleAssignments.mutateAsync({ where: { userId } }),
-    [deleteRoleAssignments],
-  );
-  const assignUserRole = useCallback(
-    (roleId: number, userId: number) =>
-      createRoleAssignment.mutateAsync({ data: { roleId, userId } }),
-    [createRoleAssignment],
+  const deleteUserAction = useCallback((id: number) => deleteUser(id), []);
+  const updateUserRoleAction = useCallback(
+    (id: number, role: string) => updateUserRole(id, role),
+    [],
   );
   const updateUserStatus = useCallback(
     (id: number, status: "ACTIVE" | "PENDING_SETUP" | "SUSPENDED") =>
@@ -331,9 +316,7 @@ export function UserManagementPage() {
   );
 
   const { actions, handleSaveRole } = useUserManagementActions({
-    assignUserRole,
-    clearUserRoles,
-    deleteUser,
+    deleteUser: deleteUserAction,
     editingUser,
     errorToast: error,
     queryClient,
@@ -345,6 +328,7 @@ export function UserManagementPage() {
     setResetPasswordValue,
     setSelectedRole,
     successToast: success,
+    updateUserRole: updateUserRoleAction,
     updateUserStatus,
     users,
   });

@@ -1,4 +1,3 @@
-import type { Counterpart, FinancialTransaction, TransactionCategory } from "@finanzas/db";
 import { Autocomplete, Button, Chip, EmptyState, ListBox, SearchField } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
@@ -6,13 +5,35 @@ import { ArrowRightLeft, ArrowUpDown, Pencil } from "lucide-react";
 import type { ReactNode } from "react";
 import { isNonAccountableCategory } from "../utils/non-accountable-category";
 
-// Extend with relations
-export type TransactionWithRelations = FinancialTransaction & {
-  category?: TransactionCategory | null;
-  counterpart?: Counterpart | null;
+export type TransactionCategoryOption = {
+  color?: null | string;
+  icon?: null | string;
+  id: number;
+  name: string;
+  type: "INCOME" | "EXPENSE";
+};
+
+export type CounterpartOption = {
+  bankAccountHolder: string;
+  id: number;
+  identificationNumber: string;
+};
+
+export type CashFlowTransaction = {
+  amount: number | string;
+  category?: null | TransactionCategoryOption;
+  categoryId: null | number;
+  comment?: null | string;
+  counterpart?: CounterpartOption | null;
+  counterpartAccountNumber?: null | string;
+  counterpartId?: null | number;
+  createdAt?: Date;
+  date: Date;
+  description: string;
   counterpartAccountNumber?: null | string;
   hasReallocation?: boolean;
   hasReallocationInEffectivePeriod?: boolean;
+  id: number;
   reallocatedInEffectivePeriod?: number;
   reallocatedInTotal?: number;
   reallocatedOutEffectivePeriod?: number;
@@ -23,6 +44,9 @@ export type TransactionWithRelations = FinancialTransaction & {
   settlementPaymentMethod?: null | string;
   settlementPaymentMethodType?: null | string;
   settlementSaleDetail?: null | string;
+  sourceId?: null | string;
+  type: "INCOME" | "EXPENSE";
+  updatedAt?: Date;
 };
 
 const formatCurrency = (amount: number) => {
@@ -131,7 +155,7 @@ const dedupeDetails = (values: string[]) => {
   return result;
 };
 
-export const columns: ColumnDef<TransactionWithRelations>[] = [
+export const columns: ColumnDef<CashFlowTransaction>[] = [
   {
     accessorKey: "date",
     header: ({ column }) => {
