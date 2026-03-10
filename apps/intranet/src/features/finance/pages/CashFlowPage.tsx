@@ -75,7 +75,7 @@ type FinancialTransactionsResponse = {
 const CashFlowTransactionSchema: z.ZodType<CashFlowTransaction> = z
   .object({
     amount: z.number(),
-    categoryId: z.number().nullable().optional(),
+    categoryId: z.number().nullable(),
     comment: z.string().nullable().optional(),
     counterpartAccountNumber: z.string().nullable().optional(),
     counterpartId: z.number().nullable().optional(),

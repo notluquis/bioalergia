@@ -43,6 +43,8 @@
                │ /api/orpc/counterparts/rpc/*
                │ /api/orpc/finance/rpc/*
                │ /api/orpc/users/rpc/*
+               │ /api/orpc/people/rpc/*
+               │ /api/orpc/personal-finance/rpc/*
                ▼
 ┌──────────────────────────────────────────────┐
 │ Backend (Hono 4.12.5 + oRPC 1.13.6)          │
@@ -94,6 +96,15 @@
 │ │  • /invite                                 │
 │ │  • /setup                                  │
 │ │  • /{id}/status                            │
+│ │                                            │
+│ ├─ People Router                             │
+│ │  • /                                       │
+│ │  • /{id}                                   │
+│ │                                            │
+│ ├─ Personal Finance Router                   │
+│ │  • /credits                                │
+│ │  • /credits/{id}                           │
+│ │  • /credits/{id}/installments/{n}/pay      │
 │ │                                            │
 │ └─ Service Layer                             │
 │    └─ Use db/authDb from Zenstack             │
@@ -285,6 +296,8 @@ apps/api/src/
 │   ├── roles.ts
 │   ├── counterparts.ts
 │   ├── finance.ts
+│   ├── people.ts
+│   ├── personal-finance.ts
 │   ├── users.ts
 │   └── superjson.ts             ← SuperJSON serializer (custom)
 │
@@ -317,6 +330,10 @@ apps/api/src/
 | 2026-03-10 | ✅ Done | Inventory |
 | 2026-03-10 | ✅ Done | Roles |
 | 2026-03-10 | ✅ Done | Counterparts |
+| 2026-03-10 | ✅ Done | Finance |
+| 2026-03-10 | ✅ Done | Users |
+| 2026-03-10 | ✅ Done | People |
+| 2026-03-10 | ✅ Done | Personal Finance |
 
 ---
 

@@ -1,7 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import { z } from "zod";
-import { apiClient } from "@/lib/api-client";
 import type { Counterpart, Person } from "@/types/schema";
+import { peopleORPCClient, toPeopleApiError } from "./orpc";
 
 export interface CounterpartWithExtras extends Counterpart {
   institution?: { name: string };
@@ -24,27 +24,63 @@ export interface PersonWithExtras extends Person {
   hasUser?: boolean;
 }
 
+const CounterpartWithExtrasSchema = z
+  .object({
+    id: z.number(),
+    institution: z
+      .object({
+        name: z.string(),
+      })
+      .optional(),
+  })
+  .passthrough();
+
+const PersonWithExtrasSchema: z.ZodType<PersonWithExtras> = z
+  .object({
+    birthDate: z.string().optional(),
+    counterpart: CounterpartWithExtrasSchema.nullable().optional(),
+    createdAt: z.coerce.date(),
+    email: z.string().nullable(),
+    employee: z.unknown().nullable().optional(),
+    fatherName: z.string().nullable(),
+    gender: z.string().nullable().optional(),
+    hasEmployee: z.boolean().optional(),
+    hasUser: z.boolean().optional(),
+    id: z.number(),
+    motherName: z.string().nullable(),
+    names: z.string(),
+    personType: z.enum(["JURIDICAL", "NATURAL"]),
+    rut: z.string(),
+    updatedAt: z.coerce.date(),
+    user: z.unknown().nullable().optional(),
+  })
+  .passthrough();
+
 const PeopleListResponseSchema = z.object({
-  people: z.array(z.unknown()),
-  status: z.string(),
+  people: z.array(PersonWithExtrasSchema),
+  status: z.literal("ok"),
 });
 
 const PersonDetailResponseSchema = z.object({
-  person: z.unknown(),
+  person: PersonWithExtrasSchema,
 });
 
 export async function fetchPeople(): Promise<PersonWithExtras[]> {
-  const res = await apiClient.get<PeopleListResponse>("/api/people", {
-    responseSchema: PeopleListResponseSchema,
-  });
-  return res.people;
+  try {
+    const res = PeopleListResponseSchema.parse(await peopleORPCClient.list());
+    return res.people;
+  } catch (error) {
+    throw toPeopleApiError(error);
+  }
 }
 
 export async function fetchPerson(id: number | string): Promise<PersonWithExtras> {
-  const res = await apiClient.get<PersonDetailResponse>(`/api/people/${id}`, {
-    responseSchema: PersonDetailResponseSchema,
-  });
-  return res.person;
+  try {
+    const res = PersonDetailResponseSchema.parse(await peopleORPCClient.detail({ id: Number(id) }));
+    return res.person;
+  } catch (error) {
+    throw toPeopleApiError(error);
+  }
 }
 
 // ============================================================================

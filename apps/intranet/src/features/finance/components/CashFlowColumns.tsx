@@ -30,7 +30,6 @@ export type CashFlowTransaction = {
   createdAt?: Date;
   date: Date;
   description: string;
-  counterpartAccountNumber?: null | string;
   hasReallocation?: boolean;
   hasReallocationInEffectivePeriod?: boolean;
   id: number;

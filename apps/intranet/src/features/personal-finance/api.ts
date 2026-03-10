@@ -1,51 +1,115 @@
 import { z } from "zod";
-import { apiClient } from "@/lib/api-client";
+import {
+  type PersonalCreditInstallmentTransport,
+  type PersonalCreditTransport,
+  personalFinanceORPCClient,
+  toPersonalFinanceApiError,
+} from "./orpc";
 
-import type { CreateCreditInput, PayInstallmentInput, PersonalCredit } from "./types";
+import type {
+  CreateCreditInput,
+  PayInstallmentInput,
+  PersonalCredit,
+  PersonalCreditInstallment,
+} from "./types";
 
-const PersonalCreditSchema = z.looseObject({});
+const PersonalCreditSchema = z.custom<PersonalCredit>();
 const PersonalCreditsSchema = z.array(PersonalCreditSchema);
 const DeleteCreditResponseSchema = z.object({ success: z.boolean() });
-const PayInstallmentResponseSchema = z.looseObject({});
+const PayInstallmentResponseSchema = z.custom<PersonalCreditInstallment>();
 
-type PayInstallmentResponse = z.infer<typeof PayInstallmentResponseSchema>;
+function toDateOnlyString(value: Date | null | string | undefined): null | string | undefined {
+  if (value === null || value === undefined) {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    return value.includes("T") ? value.slice(0, 10) : value;
+  }
+
+  return value.toISOString().slice(0, 10);
+}
+
+function toNumberValue(value: null | number | { toNumber: () => number } | undefined) {
+  if (value === null || value === undefined) {
+    return value;
+  }
+
+  if (typeof value === "number") {
+    return value;
+  }
+
+  return value.toNumber();
+}
+
+function normalizeInstallment(
+  installment: PersonalCreditInstallmentTransport,
+): NonNullable<PersonalCredit["installments"]>[number] {
+  return {
+    ...installment,
+    amount: toNumberValue(installment.amount) ?? 0,
+    capitalAmount: toNumberValue(installment.capitalAmount),
+    dueDate: toDateOnlyString(installment.dueDate) ?? "",
+    interestAmount: toNumberValue(installment.interestAmount),
+    otherCharges: toNumberValue(installment.otherCharges),
+    paidAmount: toNumberValue(installment.paidAmount),
+    paidAmountCLP: toNumberValue(installment.paidAmountCLP),
+    paidAt: toDateOnlyString(installment.paidAt),
+  };
+}
+
+function normalizeCredit(credit: PersonalCreditTransport): PersonalCredit {
+  return {
+    ...credit,
+    installments: credit.installments?.map(normalizeInstallment),
+    interestRate: toNumberValue(credit.interestRate),
+    nextPaymentAmount: toNumberValue(credit.nextPaymentAmount),
+    nextPaymentDate: toDateOnlyString(credit.nextPaymentDate),
+    remainingAmount: toNumberValue(credit.remainingAmount),
+    startDate: toDateOnlyString(credit.startDate) ?? "",
+    totalAmount: toNumberValue(credit.totalAmount) ?? 0,
+  };
+}
 
 export const personalFinanceApi = {
   // Create
   createCredit: async (data: CreateCreditInput) => {
-    return apiClient.post<PersonalCredit>(
-      "/api/personal-finance/credits",
-      {
-        ...data,
-        installments: data.installments?.map((i) => ({
-          ...i,
-          dueDate: i.dueDate,
-        })),
-        startDate: data.startDate,
-      },
-      { responseSchema: PersonalCreditSchema },
-    );
+    try {
+      const response = await personalFinanceORPCClient.createCredit(data);
+      return PersonalCreditSchema.parse(normalizeCredit(response));
+    } catch (error) {
+      throw toPersonalFinanceApiError(error);
+    }
   },
 
   // Delete
   deleteCredit: async (id: number) => {
-    return apiClient.delete<{ success: boolean }>(`/api/personal-finance/credits/${id}`, {
-      responseSchema: DeleteCreditResponseSchema,
-    });
+    try {
+      return DeleteCreditResponseSchema.parse(await personalFinanceORPCClient.deleteCredit({ id }));
+    } catch (error) {
+      throw toPersonalFinanceApiError(error);
+    }
   },
 
   // Get Detail
   getCredit: async (id: number) => {
-    return apiClient.get<PersonalCredit>(`/api/personal-finance/credits/${id}`, {
-      responseSchema: PersonalCreditSchema,
-    });
+    try {
+      const response = await personalFinanceORPCClient.getCredit({ id });
+      return PersonalCreditSchema.parse(normalizeCredit(response));
+    } catch (error) {
+      throw toPersonalFinanceApiError(error);
+    }
   },
 
   // List
   listCredits: async () => {
-    return apiClient.get<PersonalCredit[]>("/api/personal-finance/credits", {
-      responseSchema: PersonalCreditsSchema,
-    });
+    try {
+      return PersonalCreditsSchema.parse(
+        (await personalFinanceORPCClient.listCredits()).map(normalizeCredit),
+      );
+    } catch (error) {
+      throw toPersonalFinanceApiError(error);
+    }
   },
 
   // Pay Installment
@@ -54,13 +118,18 @@ export const personalFinanceApi = {
     installmentNumber: number,
     data: PayInstallmentInput,
   ) => {
-    return apiClient.post<PayInstallmentResponse>(
-      `/api/personal-finance/credits/${creditId}/installments/${installmentNumber}/pay`,
-      {
-        ...data,
-        paymentDate: data.paymentDate,
-      },
-      { responseSchema: PayInstallmentResponseSchema },
-    );
+    try {
+      return PayInstallmentResponseSchema.parse(
+        normalizeInstallment(
+          await personalFinanceORPCClient.payInstallment({
+            ...data,
+            creditId,
+            installmentNumber,
+          }),
+        ),
+      );
+    } catch (error) {
+      throw toPersonalFinanceApiError(error);
+    }
   },
 };
