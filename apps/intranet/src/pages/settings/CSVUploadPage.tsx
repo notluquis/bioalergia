@@ -838,10 +838,14 @@ function ImportSummaryCard({
 }
 
 function UpdateSelectionCard({
+  isLoadingDetails = false,
+  onLoadDetails,
   onSelectionChange,
   rowSelection,
   rows,
 }: {
+  isLoadingDetails?: boolean;
+  onLoadDetails?: () => void;
   onSelectionChange: React.Dispatch<React.SetStateAction<RowSelectionState>>;
   rowSelection: RowSelectionState;
   rows: PreviewUpdateCandidateRow[];
@@ -925,11 +929,24 @@ function UpdateSelectionCard({
               igual.
             </Card.Description>
           </div>
-          <Chip color={selectedCount === rows.length ? "success" : "warning"} variant="soft">
-            <Chip.Label>
-              {selectedCount}/{rows.length} seleccionadas
-            </Chip.Label>
-          </Chip>
+          <div className="flex items-center gap-2">
+            {onLoadDetails && (
+              <Button
+                isDisabled={isLoadingDetails}
+                onPress={onLoadDetails}
+                size="sm"
+                variant="ghost"
+              >
+                {isLoadingDetails ? <Loader2 className="mr-2 h-4 w-4 " /> : null}
+                Recargar detalle
+              </Button>
+            )}
+            <Chip color={selectedCount === rows.length ? "success" : "warning"} variant="soft">
+              <Chip.Label>
+                {selectedCount}/{rows.length} seleccionadas
+              </Chip.Label>
+            </Chip>
+          </div>
         </div>
       </Card.Header>
       <Card.Content className="space-y-3">
@@ -957,6 +974,43 @@ function UpdateSelectionCard({
           rowSelection={rowSelection}
           scrollMaxHeight="min(40dvh, 420px)"
         />
+      </Card.Content>
+    </Card>
+  );
+}
+
+function UpdateDetailLoaderCard({
+  isLoading,
+  onLoad,
+  pendingUpdates,
+}: {
+  isLoading: boolean;
+  onLoad: () => void;
+  pendingUpdates: number;
+}) {
+  if (pendingUpdates <= 0) {
+    return null;
+  }
+
+  return (
+    <Card>
+      <Card.Header>
+        <div>
+          <Card.Title>Detalle de actualizaciones</Card.Title>
+          <Card.Description>
+            La vista previa cargó solo el resumen para evitar bloquear el navegador. Si quieres
+            revisar y seleccionar fila por fila, carga el detalle manualmente.
+          </Card.Description>
+        </div>
+      </Card.Header>
+      <Card.Content className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <Chip color="warning" variant="soft">
+          <Chip.Label>{pendingUpdates} filas detectadas para actualizar</Chip.Label>
+        </Chip>
+        <Button isDisabled={isLoading} onPress={onLoad} variant="secondary">
+          {isLoading ? <Loader2 className="mr-2 h-4 w-4 " /> : null}
+          Cargar detalle de actualizaciones
+        </Button>
       </Card.Content>
     </Card>
   );
@@ -1261,6 +1315,7 @@ export function CSVUploadPage() {
   const [batchPreviewData, setBatchPreviewData] = useState<CsvPreviewResponse | null>(null);
   const [previewBatchRows, setPreviewBatchRows] = useState<Record<string, number | string>[]>([]);
   const [updateRowSelection, setUpdateRowSelection] = useState<RowSelectionState>({});
+  const [isLoadingUpdateDetails, setIsLoadingUpdateDetails] = useState(false);
   const [importMode, setImportMode] = useState<"insert-only" | "insert-or-update" | "update-only">(
     "insert-or-update",
   );
@@ -1285,6 +1340,7 @@ export function CSVUploadPage() {
     setBatchPreviewData(null);
     setPreviewBatchRows([]);
     setUpdateRowSelection({});
+    setIsLoadingUpdateDetails(false);
   };
 
   const handleTableChange = (value: string) => {
@@ -1306,6 +1362,7 @@ export function CSVUploadPage() {
     setBatchPreviewData(null);
     setPreviewBatchRows([]);
     setUpdateRowSelection({});
+    setIsLoadingUpdateDetails(false);
     setUploadedFiles((prev) => [...prev, ...newFiles]);
     e.target.value = "";
   };
@@ -1316,6 +1373,7 @@ export function CSVUploadPage() {
     setBatchPreviewData(null);
     setPreviewBatchRows([]);
     setUpdateRowSelection({});
+    setIsLoadingUpdateDetails(false);
   };
 
   const updateBatchFileState = (status: FileStatus, progress?: number, error?: string) => {
@@ -1370,6 +1428,7 @@ export function CSVUploadPage() {
     for (const [index, chunk] of chunks.entries()) {
       const response = await runChunk({
         data: chunk,
+        includeUpdateRows: false,
         mode,
         table: selectedTable,
       });
@@ -1394,6 +1453,7 @@ export function CSVUploadPage() {
     setBatchPreviewData(null);
     setPreviewBatchRows([]);
     setUpdateRowSelection({});
+    setIsLoadingUpdateDetails(false);
 
     try {
       const batch = buildBatchRows(selectedTable, uploadedFiles);
@@ -1416,6 +1476,46 @@ export function CSVUploadPage() {
       updateBatchFileState("ready", undefined, errorMsg);
     } finally {
       setIsProcessing(false);
+      setProcessingLabel("");
+    }
+  };
+
+  const handleLoadUpdateDetails = async () => {
+    if (!selectedTable || previewBatchRows.length === 0 || importMode !== "insert-or-update") {
+      return;
+    }
+
+    setIsLoadingUpdateDetails(true);
+
+    try {
+      const detailPreview = await runBatchedMutation({
+        actionLabel: "Cargando detalle",
+        mode: importMode,
+        rows: previewBatchRows,
+        runChunk: (payload) =>
+          previewMutateAsync({
+            ...payload,
+            includeUpdateRows: true,
+          }),
+        status: "previewing",
+      });
+
+      setBatchPreviewData((prev) =>
+        prev
+          ? {
+              ...prev,
+              updateRows: detailPreview.updateRows ?? [],
+            }
+          : detailPreview,
+      );
+      setUpdateRowSelection(buildUpdateSelectionState(detailPreview.updateRows ?? []));
+      updateBatchFileState("ready");
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : "Error al cargar detalle";
+      toastError(errorMsg);
+      updateBatchFileState("ready", undefined, errorMsg);
+    } finally {
+      setIsLoadingUpdateDetails(false);
       setProcessingLabel("");
     }
   };
@@ -1487,6 +1587,7 @@ export function CSVUploadPage() {
   const isValidMapping =
     firstFile && currentTable ? isValidColumnMapping(currentTable, firstFile.columnMapping) : false;
   const hasPreviewData = batchPreviewData !== null;
+  const hasLoadedUpdateDetails = Array.isArray(batchPreviewData?.updateRows);
   const updateCandidateRows: PreviewUpdateCandidateRow[] = (batchPreviewData?.updateRows ?? []).map(
     (row) => ({
       ...row,
@@ -1501,7 +1602,8 @@ export function CSVUploadPage() {
       ? (batchPreviewData?.toInsert ?? 0)
       : importMode === "update-only"
         ? (batchPreviewData?.toUpdate ?? 0)
-        : (batchPreviewData?.toInsert ?? 0) + selectedUpdateCount;
+        : (batchPreviewData?.toInsert ?? 0) +
+          (hasLoadedUpdateDetails ? selectedUpdateCount : (batchPreviewData?.toUpdate ?? 0));
 
   const columns = buildMappingColumns({
     firstFile,
@@ -1550,8 +1652,21 @@ export function CSVUploadPage() {
         previewData={batchPreviewData}
       />
 
+      {hasPreviewData &&
+        importMode === "insert-or-update" &&
+        (batchPreviewData?.toUpdate ?? 0) > 0 &&
+        !hasLoadedUpdateDetails && (
+          <UpdateDetailLoaderCard
+            isLoading={isLoadingUpdateDetails}
+            onLoad={handleLoadUpdateDetails}
+            pendingUpdates={batchPreviewData?.toUpdate ?? 0}
+          />
+        )}
+
       {hasPreviewData && importMode === "insert-or-update" && updateCandidateRows.length > 0 && (
         <UpdateSelectionCard
+          isLoadingDetails={isLoadingUpdateDetails}
+          onLoadDetails={handleLoadUpdateDetails}
           onSelectionChange={setUpdateRowSelection}
           rowSelection={updateRowSelection}
           rows={updateCandidateRows}

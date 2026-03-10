@@ -267,7 +267,7 @@ const TABLE_PERMISSIONS: Record<TableName, { action: string; subject: string }> 
   dte_sales: { action: "create", subject: "DTESaleDetail" },
 };
 
-type PreviewMode = "insert-only" | "insert-or-update";
+type PreviewMode = "insert-only" | "insert-or-update" | "update-only";
 type PreviewCounters = { toInsert: number; toSkip: number; toUpdate: number };
 type PreviewUpdateCandidate = {
   key: string;
@@ -398,7 +398,12 @@ function buildPreviewCandidateSummary(table: TableName, row: CSVRow): string {
       );
     case "dte_sales":
       return (
-        [row.documentType || row.dte || 41, row.folio, row.documentDate || row.fecha, row.totalAmount || row.total]
+        [
+          row.documentType || row.dte || 41,
+          row.folio,
+          row.documentDate || row.fecha,
+          row.totalAmount || row.total,
+        ]
           .filter(Boolean)
           .join(" • ") || "DTE venta existente"
       );
@@ -623,10 +628,11 @@ csvUploadRoutes.post("/preview", async (c) => {
     return reply(c, { status: "error", message: "No autorizado" }, 401);
   }
 
-  const { table, data, mode } = await c.req.json<{
+  const { table, data, mode, includeUpdateRows } = await c.req.json<{
     table: TableName;
     data: object[];
-    mode?: "insert-only" | "insert-or-update";
+    includeUpdateRows?: boolean;
+    mode?: "insert-only" | "insert-or-update" | "update-only";
   }>();
 
   if (!table || !data || !Array.isArray(data)) {
@@ -672,7 +678,7 @@ csvUploadRoutes.post("/preview", async (c) => {
       if (result.error) {
         errors.push(`Fila ${i + 1}: ${result.error}`);
       }
-      if (result.updateCandidate) {
+      if (includeUpdateRows && result.updateCandidate) {
         updateRows.push({
           ...result.updateCandidate,
           rowIndex: i,
@@ -689,7 +695,7 @@ csvUploadRoutes.post("/preview", async (c) => {
     toInsert: counters.toInsert,
     toUpdate: counters.toUpdate,
     toSkip: counters.toSkip,
-    updateRows,
+    ...(includeUpdateRows ? { updateRows } : {}),
     errors: errors.slice(0, 20), // Limit errors
   });
 });

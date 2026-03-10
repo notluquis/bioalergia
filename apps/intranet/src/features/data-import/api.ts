@@ -3,6 +3,7 @@ import { apiClient } from "@/lib/api-client";
 
 export interface CsvImportPayload {
   data: Record<string, number | string>[];
+  includeUpdateRows?: boolean;
   table: string;
   period?: string; // Extracted from filename (YYYYMM format)
   mode?: "insert-only" | "insert-or-update" | "update-only"; // Import mode: insert new only, upsert, or update only
