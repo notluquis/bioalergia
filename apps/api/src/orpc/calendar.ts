@@ -1,3 +1,36 @@
+/**
+ * Calendar oRPC Module
+ *
+ * Provides 13 endpoints for calendar event classification, synchronization, and analytics.
+ * All endpoints use Zenstack v3 ORM (NOT Prisma) for database access.
+ *
+ * ARCHITECTURE:
+ * 1. Frontend → POST /api/orpc/calendar/rpc/events/classify
+ *                  ↓ (SuperJSON handles Date/BigInt serialization)
+ * 2. SuperJSONRPCHandler → unmarshals JSON to strongly-typed input
+ *                          validates with Zod schema
+ *                  ↓
+ * 3. Permission middleware checks via hasPermission()
+ *                  ↓
+ * 4. Handler calls service layer (calendar.ts, clinical-series.ts, etc)
+ *                  ↓
+ * 5. Service uses db/authDb from @finanzas/db (Zenstack v3 ORM)
+ *                  ↓
+ * 6. Database returns typed results (Event[], CalendarSyncLog, etc)
+ *                  ↓
+ * 7. SuperJSONRPCHandler → serializes output with SuperJSON
+ *                          adds OpenAPI envelope
+ *                  ↓
+ * 8. Frontend ← Response with full type safety
+ *
+ * CRITICAL: This module uses Zenstack v3 ORM, NOT Prisma.
+ * - Import from @finanzas/db, NOT @prisma/client
+ * - Models generated from zenstack/schema.zmodel, NOT prisma.schema
+ * - Access control baked into schema via @allow/@deny
+ *
+ * For detailed architecture, see: docs/ORPC_ZENSTACK_ARCHITECTURE.md
+ */
+
 import type { CalendarSyncLog } from "@finanzas/db";
 import { db } from "@finanzas/db";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
@@ -48,6 +81,10 @@ import { SuperJSONRPCHandler } from "./superjson";
 
 configureSuperjson();
 
+/**
+ * oRPC Context passed to all middleware and handlers.
+ * Contains the Hono context to access request/response/auth data.
+ */
 type CalendarORPCContext = {
   hono: HonoContext;
 };

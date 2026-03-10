@@ -1,3 +1,23 @@
+/**
+ * SuperJSON Serialization for oRPC
+ *
+ * CRITICAL: oRPC's standard JSON handler cannot serialize:
+ * ❌ Date objects (becomes invalid JSON)
+ * ❌ BigInt values (exceeds Number.MAX_SAFE_INTEGER)
+ * ❌ Decimal types (from Prisma/Zenstack)
+ * ❌ Map/Set (not JSON serializable)
+ *
+ * This module provides SuperJSON serialization which handles all of above:
+ * ✅ Date → ISO string (wire) → Date (client)
+ * ✅ BigInt → string (wire) → BigInt (client)
+ * ✅ Decimal → number (wire) → number (client)
+ *
+ * Zenstack v3 returns Date/BigInt/Decimal types, so this is ESSENTIAL.
+ * Without it, endpoints like /events/job/:jobId will fail to serialize job.createdAt.
+ *
+ * See: docs/ORPC_ZENSTACK_ARCHITECTURE.md for more context.
+ */
+
 import {
   createORPCErrorFromJson,
   ErrorEvent,
@@ -18,6 +38,10 @@ import { configureSuperjson } from "../lib/superjson-config";
 
 const superjson = configureSuperjson();
 
+/**
+ * Custom serializer that wraps SuperJSON library.
+ * Handles Date, BigInt, Decimal, and other special types.
+ */
 export class SuperJSONSerializer
   implements Pick<StandardRPCSerializer, keyof StandardRPCSerializer>
 {
@@ -71,6 +95,36 @@ export interface SuperJSONRPCHandlerOptions<T extends Context>
   strictGetMethodPluginEnabled?: boolean;
 }
 
+/**
+ * oRPC HTTP handler with SuperJSON serialization.
+ *
+ * Extends FetchHandler to provide:
+ * - SuperJSON codec for Date/BigInt/Decimal serialization
+ * - StandardRPCMatcher for routing
+ * - StrictGetMethodPlugin for HTTP GET enforcement
+ *
+ * This is the HTTP transport layer for all oRPC routers.
+ * When a POST request comes to /api/orpc/calendar/rpc/..., it routes
+ * through this handler which deserializes input (SuperJSON), calls
+ * the procedure, and serializes output (SuperJSON).
+ *
+ * Example usage:
+ * ```typescript
+ * const handler = new SuperJSONRPCHandler(myRouter, {
+ *   interceptors: [onError((err) => logError(err))]
+ * })
+ *
+ * // In Hono middleware:
+ * app.use('/api/orpc/my-feature/rpc/*', async (c, next) => {
+ *   const { matched, response } = await handler.handle(
+ *     createHonoORPCRequest(c),
+ *     { prefix: '/api/orpc/my-feature/rpc', context: { hono: c } }
+ *   )
+ *   if (matched) return c.newResponse(response.body, response)
+ *   await next()
+ * })
+ * ```
+ */
 export class SuperJSONRPCHandler<T extends Context> extends FetchHandler<T> {
   constructor(
     router: Router<Record<never, never>, T>,
