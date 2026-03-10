@@ -179,8 +179,8 @@ export function useOnboardingForm() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["user", "profile"] });
       setError(null);
+      return queryClient.invalidateQueries({ queryKey: ["user", "profile"] });
     },
     onError: (mutationError) => {
       const msg =

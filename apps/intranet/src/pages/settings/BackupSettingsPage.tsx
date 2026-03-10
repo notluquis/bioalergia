@@ -356,7 +356,7 @@ export function BackupSettingsPage() {
           <BackupRow
             backup={backup}
             key={backup.id}
-            onSuccess={() => void queryClient.invalidateQueries({ queryKey: ["backups"] })}
+            onSuccess={() => queryClient.invalidateQueries({ queryKey: ["backups"] })}
           />
         ))}
       </>
@@ -389,7 +389,7 @@ export function BackupSettingsPage() {
             <div className="flex items-center gap-2">
               <Button
                 className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full p-0"
-                onPress={() => void queryClient.invalidateQueries({ queryKey: ["backups"] })}
+                onPress={() => queryClient.invalidateQueries({ queryKey: ["backups"] })}
                 size="sm"
                 variant="outline"
               >

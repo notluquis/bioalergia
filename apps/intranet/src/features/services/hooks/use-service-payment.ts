@@ -68,9 +68,11 @@ export function useServicePayment() {
       return registerServicePayment(payload.scheduleId, payload.body);
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: serviceKeys.lists() });
-      void queryClient.invalidateQueries({ queryKey: serviceKeys.details() });
       servicesActions.closePaymentModal();
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: serviceKeys.lists() }),
+        queryClient.invalidateQueries({ queryKey: serviceKeys.details() }),
+      ]);
     },
   });
 

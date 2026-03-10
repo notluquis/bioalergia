@@ -38,11 +38,14 @@ export function useServiceMutations() {
         return { ...old, services: [...old.services, response.service] };
       });
       // Invalidate both lists and detail (unifying cache is harder without normalized cache)
-      void queryClient.invalidateQueries({ queryKey: serviceKeys.lists() });
-      void queryClient.invalidateQueries({ queryKey: serviceKeys.details() });
+      const invalidatePromise = Promise.all([
+        queryClient.invalidateQueries({ queryKey: serviceKeys.lists() }),
+        queryClient.invalidateQueries({ queryKey: serviceKeys.details() }),
+      ]);
 
       servicesActions.setSelectedId(response.service.publicId);
       servicesActions.closeCreateModal();
+      return invalidatePromise;
     },
   });
 
@@ -51,9 +54,7 @@ export function useServiceMutations() {
     mutationFn: async ({ id, payload }: { id: string; payload: RegenerateServicePayload }) => {
       return regenerateServiceSchedules(id, payload);
     },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: serviceKeys.details() });
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: serviceKeys.details() }),
   });
 
   // Unlink
@@ -71,9 +72,11 @@ export function useServiceMutations() {
       return editServiceSchedule(id, payload);
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: serviceKeys.lists() });
-      void queryClient.invalidateQueries({ queryKey: serviceKeys.details() });
       servicesActions.closeEditScheduleModal();
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: serviceKeys.lists() }),
+        queryClient.invalidateQueries({ queryKey: serviceKeys.details() }),
+      ]);
     },
   });
 
@@ -83,27 +86,31 @@ export function useServiceMutations() {
       return skipServiceSchedule(id, payload);
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: serviceKeys.lists() });
-      void queryClient.invalidateQueries({ queryKey: serviceKeys.details() });
       servicesActions.closeSkipScheduleModal();
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: serviceKeys.lists() }),
+        queryClient.invalidateQueries({ queryKey: serviceKeys.details() }),
+      ]);
     },
   });
 
   // Sync financial transactions
   const syncAllTransactionsMutation = useMutation({
     mutationFn: syncAllServiceTransactions,
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: serviceKeys.lists() });
-      void queryClient.invalidateQueries({ queryKey: serviceKeys.details() });
-    },
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: serviceKeys.lists() }),
+        queryClient.invalidateQueries({ queryKey: serviceKeys.details() }),
+      ]),
   });
 
   const syncServiceTransactionsMutation = useMutation({
     mutationFn: syncServiceTransactions,
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: serviceKeys.lists() });
-      void queryClient.invalidateQueries({ queryKey: serviceKeys.details() });
-    },
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: serviceKeys.lists() }),
+        queryClient.invalidateQueries({ queryKey: serviceKeys.details() }),
+      ]),
   });
 
   return {

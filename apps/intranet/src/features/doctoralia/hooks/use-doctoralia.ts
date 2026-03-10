@@ -54,7 +54,7 @@ export function useBookSlot() {
     },
     onSuccess: () => {
       // Invalidate slots and bookings
-      void queryClient.invalidateQueries({ queryKey: doctoraliaKeys.all });
+      return queryClient.invalidateQueries({ queryKey: doctoraliaKeys.all });
     },
   });
 }
@@ -82,9 +82,7 @@ export function useCancelBooking() {
     }) => {
       return cancelDoctoraliaBooking(facilityId, doctorId, addressId, bookingId, reason);
     },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: doctoraliaKeys.all });
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: doctoraliaKeys.all }),
   });
 }
 

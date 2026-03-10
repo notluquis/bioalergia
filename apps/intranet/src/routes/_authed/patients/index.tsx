@@ -62,9 +62,7 @@ function PatientsListPage() {
 
   const syncDteSourcesMutation = useMutation({
     mutationFn: async () => syncPatientDteSources({ dryRun: false }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["patients", "dte-sources"] });
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["patients", "dte-sources"] }),
   });
 
   const patientColumns = useMemo<ColumnDef<Patient>[]>(

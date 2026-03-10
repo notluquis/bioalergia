@@ -1197,8 +1197,8 @@ export function CashFlowPage() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["TransactionCategory"] });
-      queryClient.invalidateQueries({ queryKey: ["FinancialTransaction"] });
+      void queryClient.invalidateQueries({ queryKey: ["TransactionCategory"] });
+      void queryClient.invalidateQueries({ queryKey: ["FinancialTransaction"] });
       toast.success("Categoría eliminada");
     },
     onError: (error) => {
