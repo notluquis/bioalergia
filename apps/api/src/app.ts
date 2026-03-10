@@ -15,6 +15,7 @@ import { configureSuperjson } from "./lib/superjson-config";
 import { certificatesRoutes } from "./modules/certificates/index.js";
 import { patientsRoutes } from "./modules/patients/index.js";
 import { calendarOpenAPIHandler, calendarORPCHandler } from "./orpc/calendar";
+import { counterpartsOpenAPIHandler, counterpartsORPCHandler } from "./orpc/counterparts";
 import { dteEventLinksOpenAPIHandler, dteEventLinksORPCHandler } from "./orpc/dte-event-links";
 import { employeesOpenAPIHandler, employeesORPCHandler } from "./orpc/employees";
 import { inventoryOpenAPIHandler, inventoryORPCHandler } from "./orpc/inventory";
@@ -323,6 +324,15 @@ app.get("/api/orpc", (c) =>
             <li><code>/api/orpc/roles/rpc/*</code></li>
           </ul>
         </section>
+        <section class="card">
+          <h2>Counterparts</h2>
+          <p>Contrapartes, cuentas asociadas, sync y payout accounts.</p>
+          <ul>
+            <li><a href="/api/orpc/counterparts/docs">Reference UI</a></li>
+            <li><a href="/api/orpc/counterparts/openapi.json">OpenAPI JSON</a></li>
+            <li><code>/api/orpc/counterparts/rpc/*</code></li>
+          </ul>
+        </section>
       </div>
     </main>
   </body>
@@ -394,6 +404,19 @@ app.use("/api/orpc/roles/rpc/*", async (c, next) => {
   await next();
 });
 
+app.use("/api/orpc/counterparts/rpc/*", async (c, next) => {
+  const { matched, response } = await counterpartsORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/counterparts/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
 app.use("/api/orpc/dte-analytics/event-links/*", async (c, next) => {
   const { matched, response } = await dteEventLinksOpenAPIHandler.handle(createHonoORPCRequest(c), {
     context: { hono: c },
@@ -432,6 +455,18 @@ app.use("/api/orpc/employees/*", async (c, next) => {
 
 app.use("/api/orpc/roles/*", async (c, next) => {
   const { matched, response } = await rolesOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
+app.use("/api/orpc/counterparts/*", async (c, next) => {
+  const { matched, response } = await counterpartsOpenAPIHandler.handle(createHonoORPCRequest(c), {
     context: { hono: c },
   });
 

@@ -40,6 +40,7 @@
                │ /api/orpc/employees/rpc/*
                │ /api/orpc/inventory/rpc/*
                │ /api/orpc/roles/rpc/*
+               │ /api/orpc/counterparts/rpc/*
                ▼
 ┌──────────────────────────────────────────────┐
 │ Backend (Hono 4.12.5 + oRPC 1.13.6)          │
@@ -73,6 +74,11 @@
 │ │  • /permissions                            │
 │ │  • /{id}/users                             │
 │ │  • /mappings                               │
+│ │                                            │
+│ ├─ Counterparts Router                       │
+│ │  • /suggestions                            │
+│ │  • /unassigned-payout-accounts             │
+│ │  • /{id}/summary                           │
 │ │                                            │
 │ └─ Service Layer                             │
 │    └─ Use db/authDb from Zenstack             │
@@ -262,6 +268,7 @@ apps/api/src/
 │   ├── employees.ts
 │   ├── inventory.ts
 │   ├── roles.ts
+│   ├── counterparts.ts
 │   └── superjson.ts             ← SuperJSON serializer (custom)
 │
 ├── services/
@@ -292,6 +299,7 @@ apps/api/src/
 | 2026-03-10 | ✅ Done | Employees |
 | 2026-03-10 | ✅ Done | Inventory |
 | 2026-03-10 | ✅ Done | Roles |
+| 2026-03-10 | ✅ Done | Counterparts |
 
 ---
 

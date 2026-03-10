@@ -1,11 +1,13 @@
 import { z } from "zod";
-import { apiClient } from "@/lib/api-client";
-
+import {
+  type CounterpartUpsertPayload,
+  counterpartsORPCClient,
+  toCounterpartsApiError,
+} from "./orpc";
 import type {
   Counterpart,
   CounterpartAccount,
   CounterpartAccountSuggestion,
-  CounterpartCategory,
   CounterpartSummary,
   UnassignedPayoutAccount,
 } from "./types";
@@ -50,14 +52,7 @@ const AssignRutToPayoutsResponseSchema = z.object({
   counterpart: z.unknown(),
 });
 
-const StatusResponseSchema = z.looseObject({ status: z.string().optional() });
-
-export interface CounterpartUpsertPayload {
-  identificationNumber: string;
-  bankAccountHolder: string;
-  category?: CounterpartCategory;
-  notes?: null | string;
-}
+const StatusResponseSchema = z.object({ status: z.literal("ok") });
 
 export async function addCounterpartAccount(
   counterpartId: number,
@@ -67,64 +62,81 @@ export async function addCounterpartAccount(
     bankName?: null | string;
   },
 ) {
-  const data = await apiClient.post<{ accounts: CounterpartAccount[] }>(
-    `/api/counterparts/${counterpartId}/accounts`,
-    payload,
-    { responseSchema: AccountsResponseSchema },
-  );
-  return data.accounts;
+  try {
+    const data = AccountsResponseSchema.parse(
+      await counterpartsORPCClient.addAccount({
+        counterpartId,
+        payload,
+      }),
+    );
+    return data.accounts as CounterpartAccount[];
+  } catch (error) {
+    throw toCounterpartsApiError(error);
+  }
 }
 
 export async function attachCounterpartRut(counterpartId: number, rut: string) {
-  const data = await apiClient.post<{ accounts: CounterpartAccount[] }>(
-    `/api/counterparts/${counterpartId}/attach-rut`,
-    { rut },
-    { responseSchema: AccountsResponseSchema },
-  );
-  return data.accounts;
+  try {
+    const data = AccountsResponseSchema.parse(
+      await counterpartsORPCClient.attachRut({ counterpartId, rut }),
+    );
+    return data.accounts as CounterpartAccount[];
+  } catch (error) {
+    throw toCounterpartsApiError(error);
+  }
 }
 
 export async function createCounterpart(payload: CounterpartUpsertPayload) {
-  return await apiClient.post<{ accounts: CounterpartAccount[]; counterpart: Counterpart }>(
-    "/api/counterparts",
-    payload,
-    { responseSchema: CounterpartResponseSchema },
-  );
+  try {
+    return CounterpartResponseSchema.parse(await counterpartsORPCClient.create(payload)) as {
+      accounts: CounterpartAccount[];
+      counterpart: Counterpart;
+    };
+  } catch (error) {
+    throw toCounterpartsApiError(error);
+  }
 }
 
 export async function fetchAccountSuggestions(query: string, limit = 10) {
-  const params = new URLSearchParams();
-  if (query) {
-    params.set("q", query);
+  try {
+    const data = SuggestionsResponseSchema.parse(
+      await counterpartsORPCClient.suggestions({
+        limit,
+        q: query,
+      }),
+    );
+    return data.suggestions as CounterpartAccountSuggestion[];
+  } catch (error) {
+    throw toCounterpartsApiError(error);
   }
-  params.set("limit", String(limit));
-  const data = await apiClient.get<{ suggestions: CounterpartAccountSuggestion[] }>(
-    `/api/counterparts/suggestions?${params.toString()}`,
-    { responseSchema: SuggestionsResponseSchema },
-  );
-  return data.suggestions;
 }
 
 export async function fetchCounterpart(id: number) {
-  return await apiClient.get<{ accounts: CounterpartAccount[]; counterpart: Counterpart }>(
-    `/api/counterparts/${id}`,
-    { responseSchema: CounterpartResponseSchema },
-  );
+  try {
+    return CounterpartResponseSchema.parse(await counterpartsORPCClient.detail({ id })) as {
+      accounts: CounterpartAccount[];
+      counterpart: Counterpart;
+    };
+  } catch (error) {
+    throw toCounterpartsApiError(error);
+  }
 }
 
 export async function fetchCounterparts() {
-  const data = await apiClient.get<{ counterparts: Counterpart[] }>("/api/counterparts", {
-    responseSchema: CounterpartsResponseSchema,
-  });
-  return data.counterparts;
+  try {
+    const data = CounterpartsResponseSchema.parse(await counterpartsORPCClient.list());
+    return data.counterparts as Counterpart[];
+  } catch (error) {
+    throw toCounterpartsApiError(error);
+  }
 }
 
 export async function syncCounterparts() {
-  return await apiClient.post<{
-    conflictCount?: number;
-    syncedAccounts: number;
-    syncedCounterparts: number;
-  }>("/api/counterparts/sync", {}, { responseSchema: CounterpartsSyncResponseSchema });
+  try {
+    return CounterpartsSyncResponseSchema.parse(await counterpartsORPCClient.sync());
+  } catch (error) {
+    throw toCounterpartsApiError(error);
+  }
 }
 
 export async function fetchUnassignedPayoutAccounts(params?: {
@@ -132,21 +144,22 @@ export async function fetchUnassignedPayoutAccounts(params?: {
   pageSize?: number;
   query?: string;
 }) {
-  const searchParams = new URLSearchParams();
-  if (params?.query?.trim()) {
-    searchParams.set("q", params.query.trim());
+  try {
+    return UnassignedPayoutAccountsResponseSchema.parse(
+      await counterpartsORPCClient.unassignedPayoutAccounts({
+        page: params?.page ?? 1,
+        pageSize: params?.pageSize ?? 20,
+        query: params?.query?.trim() || undefined,
+      }),
+    ) as {
+      page: number;
+      pageSize: number;
+      rows: UnassignedPayoutAccount[];
+      total: number;
+    };
+  } catch (error) {
+    throw toCounterpartsApiError(error);
   }
-  searchParams.set("page", String(params?.page ?? 1));
-  searchParams.set("pageSize", String(params?.pageSize ?? 20));
-  const data = await apiClient.get<{
-    page: number;
-    pageSize: number;
-    rows: UnassignedPayoutAccount[];
-    total: number;
-  }>(`/api/counterparts/unassigned-payout-accounts?${searchParams.toString()}`, {
-    responseSchema: UnassignedPayoutAccountsResponseSchema,
-  });
-  return data;
 }
 
 export async function assignRutToPayouts(payload: {
@@ -154,40 +167,48 @@ export async function assignRutToPayouts(payload: {
   bankAccountHolder?: string;
   rut: string;
 }) {
-  return await apiClient.post<{
-    assignedCount: number;
-    conflicts: UnassignedPayoutAccount[];
-    counterpart: Counterpart;
-  }>("/api/counterparts/assign-rut-to-payouts", payload, {
-    responseSchema: AssignRutToPayoutsResponseSchema,
-  });
+  try {
+    return AssignRutToPayoutsResponseSchema.parse(
+      await counterpartsORPCClient.assignRutToPayouts(payload),
+    ) as {
+      assignedCount: number;
+      conflicts: UnassignedPayoutAccount[];
+      counterpart: Counterpart;
+    };
+  } catch (error) {
+    throw toCounterpartsApiError(error);
+  }
 }
 
 export async function fetchCounterpartSummary(
   counterpartId: number,
   params?: { from?: string; to?: string },
 ) {
-  const search = new URLSearchParams();
-  if (params?.from) {
-    search.set("from", params.from);
+  try {
+    const data = SummaryResponseSchema.parse(
+      await counterpartsORPCClient.summary({
+        from: params?.from,
+        id: counterpartId,
+        to: params?.to,
+      }),
+    );
+    return data.summary as CounterpartSummary;
+  } catch (error) {
+    throw toCounterpartsApiError(error);
   }
-  if (params?.to) {
-    search.set("to", params.to);
-  }
-  const queryString = search.size > 0 ? `?${search.toString()}` : "";
-  const data = await apiClient.get<{ summary: CounterpartSummary }>(
-    `/api/counterparts/${counterpartId}/summary${queryString}`,
-    { responseSchema: SummaryResponseSchema },
-  );
-  return data.summary;
 }
 
 export async function updateCounterpart(id: number, payload: Partial<CounterpartUpsertPayload>) {
-  return await apiClient.put<{ accounts: CounterpartAccount[]; counterpart: Counterpart }>(
-    `/api/counterparts/${id}`,
-    payload,
-    { responseSchema: CounterpartResponseSchema },
-  );
+  try {
+    return CounterpartResponseSchema.parse(
+      await counterpartsORPCClient.update({ id, payload }),
+    ) as {
+      accounts: CounterpartAccount[];
+      counterpart: Counterpart;
+    };
+  } catch (error) {
+    throw toCounterpartsApiError(error);
+  }
 }
 
 export async function updateCounterpartAccount(
@@ -197,7 +218,11 @@ export async function updateCounterpartAccount(
     bankName: null | string;
   }>,
 ) {
-  await apiClient.put(`/api/counterparts/accounts/${accountId}`, payload, {
-    responseSchema: StatusResponseSchema,
-  });
+  try {
+    await StatusResponseSchema.parse(
+      await counterpartsORPCClient.updateAccount({ accountId, payload }),
+    );
+  } catch (error) {
+    throw toCounterpartsApiError(error);
+  }
 }
