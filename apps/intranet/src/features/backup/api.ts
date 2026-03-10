@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { apiClient } from "@/lib/api-client";
+import { backupsORPCClient, toBackupsApiError } from "./orpc";
 
 import type { BackupFile, BackupJob, RestoreJob } from "./types";
 
@@ -76,36 +76,39 @@ const TriggerRestoreResponseSchema = z.strictObject({
 });
 
 export const fetchBackups = async (): Promise<BackupFile[]> => {
-  const data = await apiClient.get<{ backups: BackupFile[] }>("/api/backups", {
-    responseSchema: BackupsResponseSchema,
-  });
-  return data.backups;
+  try {
+    const data = BackupsResponseSchema.parse(await backupsORPCClient.list());
+    return data.backups;
+  } catch (error) {
+    throw toBackupsApiError(error);
+  }
 };
 
 export const fetchTables = async (fileId: string): Promise<string[]> => {
-  const data = await apiClient.get<{ tables: string[] }>(`/api/backups/${fileId}/tables`, {
-    responseSchema: TablesResponseSchema,
-  });
-  return data.tables;
+  try {
+    const data = TablesResponseSchema.parse(await backupsORPCClient.tables({ fileId }));
+    return data.tables;
+  } catch (error) {
+    throw toBackupsApiError(error);
+  }
 };
 
 export const triggerBackup = async (): Promise<BackupJob> => {
-  const response = await apiClient.post<{
-    status: "ok";
-    message: string;
-    job: BackupJob;
-  }>("/api/backups", {}, { responseSchema: TriggerBackupResponseSchema });
-  return response.job;
+  try {
+    const response = TriggerBackupResponseSchema.parse(await backupsORPCClient.trigger());
+    return response.job;
+  } catch (error) {
+    throw toBackupsApiError(error);
+  }
 };
 
 export const triggerRestore = async (fileId: string, tables?: string[]): Promise<RestoreJob> => {
-  const response = await apiClient.post<{
-    status: "ok";
-    job: RestoreJob;
-  }>(
-    `/api/backups/${fileId}/restore`,
-    { tables },
-    { responseSchema: TriggerRestoreResponseSchema },
-  );
-  return response.job;
+  try {
+    const response = TriggerRestoreResponseSchema.parse(
+      await backupsORPCClient.restore({ fileId, tables }),
+    );
+    return response.job;
+  } catch (error) {
+    throw toBackupsApiError(error);
+  }
 };

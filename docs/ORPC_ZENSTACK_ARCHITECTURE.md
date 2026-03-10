@@ -49,6 +49,7 @@
                │ /api/orpc/notifications/rpc/*
                │ /api/orpc/services/rpc/*
                │ /api/orpc/production-balances/rpc/*
+               │ /api/orpc/backups/rpc/*
                ▼
 ┌──────────────────────────────────────────────┐
 │ Backend (Hono 4.12.5 + oRPC 1.13.6)          │
@@ -129,6 +130,14 @@
 │ ├─ Production Balances Router                │
 │ │  • /                                       │
 │ │  • /{id}                                   │
+│ │                                            │
+│ ├─ Backups Router                            │
+│ │  • /                                       │
+│ │  • /history                                │
+│ │  • /logs                                   │
+│ │  • /{fileId}/tables                        │
+│ │  • /{fileId}/restore                       │
+│ │  • Progress SSE sigue en /api/backups/...  │
 │ │                                            │
 │ └─ Service Layer                             │
 │    └─ Use db/authDb from Zenstack             │

@@ -14,6 +14,7 @@ import { logError } from "./lib/logger";
 import { configureSuperjson } from "./lib/superjson-config";
 import { certificatesRoutes } from "./modules/certificates/index.js";
 import { patientsRoutes } from "./modules/patients/index.js";
+import { backupsOpenAPIHandler, backupsORPCHandler } from "./orpc/backups";
 import { calendarOpenAPIHandler, calendarORPCHandler } from "./orpc/calendar";
 import { counterpartsOpenAPIHandler, counterpartsORPCHandler } from "./orpc/counterparts";
 import { dteEventLinksOpenAPIHandler, dteEventLinksORPCHandler } from "./orpc/dte-event-links";
@@ -416,6 +417,15 @@ app.get("/api/orpc", (c) =>
             <li><code>/api/orpc/production-balances/rpc/*</code></li>
           </ul>
         </section>
+        <section class="card">
+          <h2>Backups</h2>
+          <p>Backups en Google Drive, restauración y metadata. El progreso sigue por SSE.</p>
+          <ul>
+            <li><a href="/api/orpc/backups/docs">Reference UI</a></li>
+            <li><a href="/api/orpc/backups/openapi.json">OpenAPI JSON</a></li>
+            <li><code>/api/orpc/backups/rpc/*</code></li>
+          </ul>
+        </section>
       </div>
     </main>
   </body>
@@ -425,6 +435,19 @@ app.get("/api/orpc", (c) =>
 app.use("/api/orpc/calendar/rpc/*", async (c, next) => {
   const { matched, response } = await calendarORPCHandler.handle(createHonoORPCRequest(c), {
     prefix: "/api/orpc/calendar/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
+app.use("/api/orpc/backups/rpc/*", async (c, next) => {
+  const { matched, response } = await backupsORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/backups/rpc",
     context: { hono: c },
   });
 
@@ -771,6 +794,18 @@ app.use("/api/orpc/production-balances/*", async (c, next) => {
 
 app.use("/api/orpc/calendar/*", async (c, next) => {
   const { matched, response } = await calendarOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
+app.use("/api/orpc/backups/*", async (c, next) => {
+  const { matched, response } = await backupsOpenAPIHandler.handle(createHonoORPCRequest(c), {
     context: { hono: c },
   });
 
