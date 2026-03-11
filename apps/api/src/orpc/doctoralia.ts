@@ -261,9 +261,9 @@ const doctoraliaORPCRouterBase = {
           Date.now() - lastSuccessAt > staleThresholdMs;
 
         if (shouldRefresh) {
-          void runDoctoraliaCalendarAutoSync({
+          void Promise.all([runDoctoraliaCalendarAutoSync({
             trigger: "read-stale",
-          });
+          })]);
         }
       }
 

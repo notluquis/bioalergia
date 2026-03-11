@@ -1453,11 +1453,11 @@ calendarRoutes.post(
 
     const jobId = startJob("reclassify", normalizedEvents.length);
 
-    void runReclassifyMissingFieldsJob(normalizedEvents, jobId, {
+    void Promise.all([runReclassifyMissingFieldsJob(normalizedEvents, jobId, {
       completeJob,
       failJob,
       updateJobProgress,
-    });
+    })]);
 
     return reply(c, { status: "accepted", jobId, totalEvents: normalizedEvents.length });
   },
@@ -1488,11 +1488,11 @@ calendarRoutes.post("/events/reclassify-all", requireAuth, async (c) => {
 
   const jobId = startJob("reclassify-all", events.length);
 
-  void runReclassifyAllJob(events, jobId, {
+  void Promise.all([runReclassifyAllJob(events, jobId, {
     completeJob,
     failJob,
     updateJobProgress,
-  });
+  })]);
 
   return reply(c, { status: "accepted", jobId, totalEvents: events.length });
 });

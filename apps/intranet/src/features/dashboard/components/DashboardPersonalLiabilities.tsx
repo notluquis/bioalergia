@@ -52,7 +52,7 @@ export function DashboardPersonalLiabilities() {
         <div className="mt-2 grid grid-cols-2 gap-4">
           <div className="rounded-lg bg-danger/10 p-3">
             <div className="mb-1 flex items-center gap-2">
-              <div className="rounded-md bg-danger/20 p-1.5 text-danger">
+              <div className="rounded-md bg-danger-soft-hover p-1.5 text-danger">
                 <CreditCard className="h-4 w-4" />
               </div>
               <span className="font-medium text-default-600 text-xs">Deuda Total</span>

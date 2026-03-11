@@ -674,7 +674,7 @@ dteAnalyticsRoutes.post(
       const periods = await listAutoLinkEligiblePeriods();
       const jobId = startJob("dte-auto-link-all-periods", Math.max(periods.length, 1));
 
-      void (async () => {
+      void Promise.all([(async () => {
         try {
           if (periods.length === 0) {
             updateJobProgress(jobId, 1, "Sin períodos elegibles para auto-vincular");
@@ -714,7 +714,9 @@ dteAnalyticsRoutes.post(
             error instanceof Error ? error.message : "Failed to auto-link all periods",
           );
         }
-      })();
+      })()]);
+
+
 
       return reply(c, {
         status: "accepted",
