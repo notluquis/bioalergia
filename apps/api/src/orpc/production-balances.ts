@@ -261,8 +261,8 @@ const productionBalancesORPCRouterBase = {
 };
 
 export const productionBalancesORPCRouter = base
-  .router(productionBalancesORPCRouterBase)
-  .prefix("/api/orpc/production-balances");
+  .prefix("/api/orpc/production-balances")
+  .router(productionBalancesORPCRouterBase);
 
 export const productionBalancesORPCHandler = new SuperJSONRPCHandler(productionBalancesORPCRouter, {
   interceptors: [

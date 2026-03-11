@@ -250,7 +250,7 @@ const backupsORPCRouterBase = {
     })),
 };
 
-export const backupsORPCRouter = base.router(backupsORPCRouterBase).prefix("/api/orpc/backups");
+export const backupsORPCRouter = base.prefix("/api/orpc/backups").router(backupsORPCRouterBase);
 
 export const backupsORPCHandler = new SuperJSONRPCHandler(backupsORPCRouter, {
   interceptors: [

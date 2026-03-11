@@ -114,7 +114,7 @@ const balancesORPCRouterBase = {
     }),
 };
 
-export const balancesORPCRouter = base.router(balancesORPCRouterBase).prefix("/api/orpc/balances");
+export const balancesORPCRouter = base.prefix("/api/orpc/balances").router(balancesORPCRouterBase);
 
 export const balancesORPCHandler = new SuperJSONRPCHandler(balancesORPCRouter, {
   interceptors: [

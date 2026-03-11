@@ -509,8 +509,8 @@ const dteAnalyticsORPCRouterBase = {
 };
 
 export const dteAnalyticsORPCRouter = base
-  .router(dteAnalyticsORPCRouterBase)
-  .prefix("/api/orpc/dte-analytics");
+  .prefix("/api/orpc/dte-analytics")
+  .router(dteAnalyticsORPCRouterBase);
 
 export const dteAnalyticsORPCHandler = new SuperJSONRPCHandler(dteAnalyticsORPCRouter, {
   interceptors: [

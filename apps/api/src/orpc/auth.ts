@@ -813,7 +813,7 @@ const authORPCRouterBase = {
     }),
 };
 
-export const authORPCRouter = base.router(authORPCRouterBase).prefix("/api/orpc/auth");
+export const authORPCRouter = base.prefix("/api/orpc/auth").router(authORPCRouterBase);
 
 export const authORPCHandler = new SuperJSONRPCHandler(authORPCRouter, {
   interceptors: [

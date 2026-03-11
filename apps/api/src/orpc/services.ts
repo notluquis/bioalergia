@@ -560,7 +560,7 @@ const servicesORPCRouterBase = {
     }),
 };
 
-export const servicesORPCRouter = base.router(servicesORPCRouterBase).prefix("/api/orpc/services");
+export const servicesORPCRouter = base.prefix("/api/orpc/services").router(servicesORPCRouterBase);
 
 export const servicesORPCHandler = new SuperJSONRPCHandler(servicesORPCRouter, {
   interceptors: [

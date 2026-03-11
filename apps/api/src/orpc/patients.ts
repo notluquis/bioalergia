@@ -722,7 +722,7 @@ const patientsORPCRouterBase = {
     }),
 };
 
-export const patientsORPCRouter = base.router(patientsORPCRouterBase).prefix("/api/orpc/patients");
+export const patientsORPCRouter = base.prefix("/api/orpc/patients").router(patientsORPCRouterBase);
 
 export const patientsORPCHandler = new SuperJSONRPCHandler(patientsORPCRouter, {
   interceptors: [

@@ -177,8 +177,8 @@ const releaseTransactionsORPCRouterBase = {
 };
 
 export const releaseTransactionsORPCRouter = base
-  .router(releaseTransactionsORPCRouterBase)
-  .prefix("/api/orpc/release-transactions");
+  .prefix("/api/orpc/release-transactions")
+  .router(releaseTransactionsORPCRouterBase);
 
 export const releaseTransactionsORPCHandler = new SuperJSONRPCHandler(
   releaseTransactionsORPCRouter,

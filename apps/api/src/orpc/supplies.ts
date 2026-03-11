@@ -226,7 +226,7 @@ const suppliesORPCRouterBase = {
     }),
 };
 
-export const suppliesORPCRouter = base.router(suppliesORPCRouterBase).prefix("/api/orpc/supplies");
+export const suppliesORPCRouter = base.prefix("/api/orpc/supplies").router(suppliesORPCRouterBase);
 
 export const suppliesORPCHandler = new SuperJSONRPCHandler(suppliesORPCRouter, {
   interceptors: [

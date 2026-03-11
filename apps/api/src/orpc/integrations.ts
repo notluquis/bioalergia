@@ -114,8 +114,8 @@ const integrationsORPCRouterBase = {
 };
 
 export const integrationsORPCRouter = base
-  .router(integrationsORPCRouterBase)
-  .prefix("/api/orpc/integrations");
+  .prefix("/api/orpc/integrations")
+  .router(integrationsORPCRouterBase);
 
 export const integrationsORPCHandler = new SuperJSONRPCHandler(integrationsORPCRouter, {
   interceptors: [

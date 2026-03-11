@@ -122,8 +122,8 @@ const notificationsORPCRouterBase = {
 };
 
 export const notificationsORPCRouter = base
-  .router(notificationsORPCRouterBase)
-  .prefix("/api/orpc/notifications");
+  .prefix("/api/orpc/notifications")
+  .router(notificationsORPCRouterBase);
 
 export const notificationsORPCHandler = new SuperJSONRPCHandler(notificationsORPCRouter, {
   interceptors: [

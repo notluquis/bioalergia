@@ -144,7 +144,7 @@ const settingsORPCRouterBase = {
     })),
 };
 
-export const settingsORPCRouter = base.router(settingsORPCRouterBase).prefix("/api/orpc/settings");
+export const settingsORPCRouter = base.prefix("/api/orpc/settings").router(settingsORPCRouterBase);
 
 export const settingsORPCHandler = new SuperJSONRPCHandler(settingsORPCRouter, {
   interceptors: [
