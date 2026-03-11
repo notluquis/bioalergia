@@ -43,6 +43,7 @@ import { Route as AuthedPatientsNewRouteImport } from "./routes/_authed/patients
 import { Route as AuthedOperationsSuppliesAnalyticsRouteImport } from "./routes/_authed/operations/supplies-analytics"
 import { Route as AuthedOperationsSuppliesRouteImport } from "./routes/_authed/operations/supplies"
 import { Route as AuthedOperationsInventoryRouteImport } from "./routes/_authed/operations/inventory"
+import { Route as AuthedOperationsClinicalSeriesRouteImport } from "./routes/_authed/operations/clinical-series"
 import { Route as AuthedHrTimesheetsRouteImport } from "./routes/_authed/hr/timesheets"
 import { Route as AuthedHrReportsRouteImport } from "./routes/_authed/hr/reports"
 import { Route as AuthedHrEmployeesRouteImport } from "./routes/_authed/hr/employees"
@@ -216,6 +217,12 @@ const AuthedOperationsInventoryRoute =
   AuthedOperationsInventoryRouteImport.update({
     id: "/inventory",
     path: "/inventory",
+    getParentRoute: () => AuthedOperationsRoute,
+  } as any)
+const AuthedOperationsClinicalSeriesRoute =
+  AuthedOperationsClinicalSeriesRouteImport.update({
+    id: "/clinical-series",
+    path: "/clinical-series",
     getParentRoute: () => AuthedOperationsRoute,
   } as any)
 const AuthedHrTimesheetsRoute = AuthedHrTimesheetsRouteImport.update({
@@ -416,6 +423,7 @@ export interface FileRoutesByFullPath {
   "/hr/employees": typeof AuthedHrEmployeesRoute
   "/hr/reports": typeof AuthedHrReportsRoute
   "/hr/timesheets": typeof AuthedHrTimesheetsRoute
+  "/operations/clinical-series": typeof AuthedOperationsClinicalSeriesRoute
   "/operations/inventory": typeof AuthedOperationsInventoryRoute
   "/operations/supplies": typeof AuthedOperationsSuppliesRoute
   "/operations/supplies-analytics": typeof AuthedOperationsSuppliesAnalyticsRoute
@@ -472,6 +480,7 @@ export interface FileRoutesByTo {
   "/hr/employees": typeof AuthedHrEmployeesRoute
   "/hr/reports": typeof AuthedHrReportsRoute
   "/hr/timesheets": typeof AuthedHrTimesheetsRoute
+  "/operations/clinical-series": typeof AuthedOperationsClinicalSeriesRoute
   "/operations/inventory": typeof AuthedOperationsInventoryRoute
   "/operations/supplies": typeof AuthedOperationsSuppliesRoute
   "/operations/supplies-analytics": typeof AuthedOperationsSuppliesAnalyticsRoute
@@ -533,6 +542,7 @@ export interface FileRoutesById {
   "/_authed/hr/employees": typeof AuthedHrEmployeesRoute
   "/_authed/hr/reports": typeof AuthedHrReportsRoute
   "/_authed/hr/timesheets": typeof AuthedHrTimesheetsRoute
+  "/_authed/operations/clinical-series": typeof AuthedOperationsClinicalSeriesRoute
   "/_authed/operations/inventory": typeof AuthedOperationsInventoryRoute
   "/_authed/operations/supplies": typeof AuthedOperationsSuppliesRoute
   "/_authed/operations/supplies-analytics": typeof AuthedOperationsSuppliesAnalyticsRoute
@@ -594,6 +604,7 @@ export interface FileRouteTypes {
     | "/hr/employees"
     | "/hr/reports"
     | "/hr/timesheets"
+    | "/operations/clinical-series"
     | "/operations/inventory"
     | "/operations/supplies"
     | "/operations/supplies-analytics"
@@ -650,6 +661,7 @@ export interface FileRouteTypes {
     | "/hr/employees"
     | "/hr/reports"
     | "/hr/timesheets"
+    | "/operations/clinical-series"
     | "/operations/inventory"
     | "/operations/supplies"
     | "/operations/supplies-analytics"
@@ -710,6 +722,7 @@ export interface FileRouteTypes {
     | "/_authed/hr/employees"
     | "/_authed/hr/reports"
     | "/_authed/hr/timesheets"
+    | "/_authed/operations/clinical-series"
     | "/_authed/operations/inventory"
     | "/_authed/operations/supplies"
     | "/_authed/operations/supplies-analytics"
@@ -938,6 +951,13 @@ declare module "@tanstack/react-router" {
       path: "/inventory"
       fullPath: "/operations/inventory"
       preLoaderRoute: typeof AuthedOperationsInventoryRouteImport
+      parentRoute: typeof AuthedOperationsRoute
+    }
+    "/_authed/operations/clinical-series": {
+      id: "/_authed/operations/clinical-series"
+      path: "/clinical-series"
+      fullPath: "/operations/clinical-series"
+      preLoaderRoute: typeof AuthedOperationsClinicalSeriesRouteImport
       parentRoute: typeof AuthedOperationsRoute
     }
     "/_authed/hr/timesheets": {
@@ -1253,12 +1273,14 @@ const AuthedHrRouteWithChildren = AuthedHrRoute._addFileChildren(
 )
 
 interface AuthedOperationsRouteChildren {
+  AuthedOperationsClinicalSeriesRoute: typeof AuthedOperationsClinicalSeriesRoute
   AuthedOperationsInventoryRoute: typeof AuthedOperationsInventoryRoute
   AuthedOperationsSuppliesRoute: typeof AuthedOperationsSuppliesRoute
   AuthedOperationsSuppliesAnalyticsRoute: typeof AuthedOperationsSuppliesAnalyticsRoute
 }
 
 const AuthedOperationsRouteChildren: AuthedOperationsRouteChildren = {
+  AuthedOperationsClinicalSeriesRoute: AuthedOperationsClinicalSeriesRoute,
   AuthedOperationsInventoryRoute: AuthedOperationsInventoryRoute,
   AuthedOperationsSuppliesRoute: AuthedOperationsSuppliesRoute,
   AuthedOperationsSuppliesAnalyticsRoute:

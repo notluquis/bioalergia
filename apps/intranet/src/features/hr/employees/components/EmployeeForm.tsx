@@ -434,6 +434,7 @@ function EmployeeFormContent({
             <Label>Sueldo fijo mensual (CLP)</Label>
             <Input
               inputMode="numeric"
+              min="0"
               onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                 const rawValue = parseCLP(event.target.value);
                 setForm((prev) => ({ ...prev, fixedSalary: rawValue }));

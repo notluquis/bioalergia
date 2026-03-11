@@ -37,7 +37,7 @@ const findings = [];
 
 for (const file of files) {
   const source = await readFile(file, "utf8");
-  if (!source.includes('@heroui/react')) {
+  if (!source.includes("@heroui/react")) {
     continue;
   }
 
@@ -59,9 +59,7 @@ for (const file of files) {
 if (findings.length > 0) {
   console.error("HeroUI composition audit failed:\n");
   for (const finding of findings) {
-    console.error(
-      `- [${finding.ruleId}] ${finding.file}:${finding.line} -> ${finding.message}`,
-    );
+    console.error(`- [${finding.ruleId}] ${finding.file}:${finding.line} -> ${finding.message}`);
   }
   process.exit(1);
 }

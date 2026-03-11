@@ -107,7 +107,13 @@ export function CounterpartForm({
         <fieldset className="contents" disabled={busy}>
           <form.Field name="identificationNumber">
             {(field) => (
-              <TanStackInputField field={field} label="RUT" placeholder="12345678-9" type="text" />
+              <TanStackInputField
+                field={field}
+                label="RUT"
+                placeholder="12345678-9"
+                required
+                type="text"
+              />
             )}
           </form.Field>
 
