@@ -1358,30 +1358,12 @@ app.use("/api/orpc/transactions-insights/*", async (c, next) => {
 // Share Target (PWA)
 app.route("/api/share-target", shareTargetRoutes);
 
-// Inventory & Supplies (Migrated)
-app.route("/api/inventory", inventoryRoutes);
-app.route("/api/supplies", suppliesRoutes);
+// REST-ONLY endpoints (no oRPC equivalents)
 app.route("/api/loans", loanRoutes);
 app.route("/api/transactions", transactionRoutes);
-app.route("/api/release-transactions", releaseTransactionRoutes);
-app.route("/api/settlement-transactions", settlementTransactionRoutes);
-app.route("/api/balances", balanceRoutes);
 app.route("/api/daily-production-balances", dailyProductionRoutes);
-app.route("/api/counterparts", counterpartRoutes);
-app.route("/api/services", serviceRoutes);
-app.route("/api/roles", roleRoutes);
-app.route("/api/settings", settingsRoutes);
-app.route("/api/employees", employeeRoutes);
 app.route("/api/loan-schedules", loanScheduleRoutes);
 app.route("/api/services/schedules", serviceScheduleRoutes);
-app.route("/api/timesheets", timesheetRoutes);
-app.route("/api/people", peopleRoutes);
-app.route("/api/expenses", expenseRoutes);
-app.route("/api/integrations", integrationRoutes);
-app.route("/api/personal-finance", personalFinanceRoutes);
-
-// Finance (Cash Flow)
-app.route("/api/finance", financeRoutes);
 
 // Doctoralia integration routes
 app.route("/api/doctoralia", doctoraliaRoutes);
