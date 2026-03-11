@@ -1365,8 +1365,7 @@ app.route("/api/daily-production-balances", dailyProductionRoutes);
 app.route("/api/loan-schedules", loanScheduleRoutes);
 app.route("/api/services/schedules", serviceScheduleRoutes);
 
-// Doctoralia integration routes
-app.route("/api/doctoralia", doctoraliaRoutes);
+// Doctoralia integration routes are now served via oRPC at /api/orpc/doctoralia
 
 // Medical certificates (PDF generation with digital signature)
 app.route("/api/certificates", certificatesRoutes);
