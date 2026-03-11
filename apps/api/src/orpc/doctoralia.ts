@@ -520,8 +520,9 @@ const doctoraliaORPCRouterBase = {
 };
 
 export const doctoraliaORPCRouter = base
-  .router(doctoraliaORPCRouterBase)
-  .prefix("/api/orpc/doctoralia");
+  .prefix("/api/orpc/doctoralia")
+  .tag("Doctoralia")
+  .router(doctoraliaORPCRouterBase);
 
 export const doctoraliaORPCHandler = new SuperJSONRPCHandler(doctoraliaORPCRouter, {
   interceptors: [
