@@ -374,8 +374,8 @@ const personalFinanceORPCRouterBase = {
 };
 
 export const personalFinanceORPCRouter = base
-  .router(personalFinanceORPCRouterBase)
-  .prefix("/api/orpc/personal-finance");
+  .prefix("/api/orpc/personal-finance")
+  .router(personalFinanceORPCRouterBase);
 
 export const personalFinanceORPCHandler = new SuperJSONRPCHandler(personalFinanceORPCRouter, {
   interceptors: [

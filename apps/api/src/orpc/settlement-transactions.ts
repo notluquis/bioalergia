@@ -175,8 +175,8 @@ const settlementTransactionsORPCRouterBase = {
 };
 
 export const settlementTransactionsORPCRouter = base
-  .router(settlementTransactionsORPCRouterBase)
-  .prefix("/api/orpc/settlement-transactions");
+  .prefix("/api/orpc/settlement-transactions")
+  .router(settlementTransactionsORPCRouterBase);
 
 export const settlementTransactionsORPCHandler = new SuperJSONRPCHandler(
   settlementTransactionsORPCRouter,

@@ -895,7 +895,7 @@ const usersORPCRouterBase = {
     }),
 };
 
-export const usersORPCRouter = base.router(usersORPCRouterBase).prefix("/api/orpc/users");
+export const usersORPCRouter = base.prefix("/api/orpc/users").router(usersORPCRouterBase);
 
 export const usersORPCHandler = new SuperJSONRPCHandler(usersORPCRouter, {
   interceptors: [

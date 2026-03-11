@@ -124,8 +124,8 @@ const transactionsInsightsORPCRouterBase = {
 };
 
 export const transactionsInsightsORPCRouter = base
-  .router(transactionsInsightsORPCRouterBase)
-  .prefix("/api/orpc/transactions-insights");
+  .prefix("/api/orpc/transactions-insights")
+  .router(transactionsInsightsORPCRouterBase);
 
 export const transactionsInsightsORPCHandler = new SuperJSONRPCHandler(
   transactionsInsightsORPCRouter,

@@ -197,7 +197,7 @@ const expensesORPCRouterBase = {
     .handler(async () => notImplemented),
 };
 
-export const expensesORPCRouter = base.router(expensesORPCRouterBase).prefix("/api/orpc/expenses");
+export const expensesORPCRouter = base.prefix("/api/orpc/expenses").router(expensesORPCRouterBase);
 
 export const expensesORPCHandler = new SuperJSONRPCHandler(expensesORPCRouter, {
   interceptors: [
