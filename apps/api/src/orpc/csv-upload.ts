@@ -94,9 +94,10 @@ const csvUploadORPCRouterBase = {
     })
     .input(importInputSchema)
     .output(importResponseSchema)
-    .handler(async ({ _context, input }) => {
+    .handler(async ({ context: _context, input }) => {
       // CSV import logic is now consolidated in oRPC
       // Implementation placeholder - actual logic would be moved here from deleted routes/csv-upload.ts
+      // Auth user available at context.user (email, id)
       return {
         status: "ok" as const,
         inserted: 0,
@@ -117,9 +118,10 @@ const csvUploadORPCRouterBase = {
     })
     .input(previewInputSchema)
     .output(previewResponseSchema)
-    .handler(async ({ _context, input }) => {
+    .handler(async ({ context: _context, input }) => {
       // CSV preview logic is now consolidated in oRPC
       // Implementation placeholder - actual logic would be moved here from deleted routes/csv-upload.ts
+      // Auth user available at context.user (email, id)
       return {
         status: "ok" as const,
         toInsert: input.data.length,
