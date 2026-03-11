@@ -163,32 +163,9 @@ const authRateLimiter = rateLimiter({
 // Apply rate limiting to sensitive routes
 app.use("/api/auth/*", authRateLimiter);
 
-// Auth routes (login, logout, session, MFA)
-app.route("/api/auth", authRoutes);
-
-// User routes (CRUD, roles, MFA, passkeys)
-app.route("/api/users", userRoutes);
-
-// Mercado Pago routes (reports, config, schedule)
-app.route("/api/mercadopago", mercadopagoRoutes);
-
-// Backup routes (backup, restore, SSE progress)
-app.route("/api/backups", backupRoutes);
-
-// Notification routes (push subscriptions)
-app.route("/api/notifications", notificationRoutes);
-
-// CSV upload routes (bulk import)
-app.route("/api/csv-upload", csvUploadRoutes);
-
-// DTE analytics routes (visualizations, summaries, comparisons)
-app.route("/api/dte-analytics", dteAnalyticsRoutes);
-
-// DTE sync routes (sync history, manual trigger, cron)
-app.route("/api/dte", dteRoutes);
-
-// Haulmer DTE sync routes (CSV downloads, imports)
-app.route("/api/haulmer", haulmerRoutes);
+// All endpoints except REST-only (loans, transactions, daily-production-balances, etc.)
+// are now exclusively served via oRPC at /api/orpc/{endpoint}/rpc/*
+// See /api/orpc landing page for available modules and documentation
 
 // Calendar routes moved to oRPC: /api/orpc/calendar/rpc/*
 app.get("/api/orpc", (c) =>
