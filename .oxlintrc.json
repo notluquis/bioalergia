@@ -12,6 +12,24 @@
     }
   },
   "rules": {
+    // ESM Import Extensions (Golden Standard 2026)
+    // Rule: { "js": "always", "ts": "never", "ignorePackages": true }
+    // 
+    // Why this breaks production but not dev:
+    // - Dev (TypeScript): Uses Bundler resolver (Vite/esbuild) → auto-resolves .ts without extension
+    // - Prod (Node.js ESM): Direct ESM execution → REQUIRES .js extension (RFC 8089)
+    // - Build output: TypeScript compiles .ts → .js, so imports must have .js for runtime
+    //
+    // Examples:
+    // ✅ import timezone from "dayjs/plugin/timezone.js";  // Prod: works in Node.js ESM
+    // ✅ import { z } from "zod";                          // Packages: no extension needed
+    // ❌ import timezone from "dayjs/plugin/timezone";     // Prod: ERR_MODULE_NOT_FOUND
+    //
+    // Reference: https://oxc.rs/docs/guide/usage/linter/rules/import/extensions
+    "import/extensions": [
+      "error",
+      { "js": "always", "ts": "never", "ignorePackages": true }
+    ],
     "typescript/no-floating-promises": "error",
     "typescript/no-unsafe-assignment": "warn",
     "typescript/no-explicit-any": "error"

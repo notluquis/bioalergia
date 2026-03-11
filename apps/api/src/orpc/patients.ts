@@ -4,7 +4,7 @@ import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import dayjs from "dayjs";
-import timezone from "dayjs/plugin/timezone";
+import timezone from "dayjs/plugin/timezone.js";
 import Decimal from "decimal.js";
 import type { Context as HonoContext } from "hono";
 import { z } from "zod";

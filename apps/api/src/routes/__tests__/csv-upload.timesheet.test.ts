@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc";
+import utc from "dayjs/plugin/utc.js";
 import { describe, expect, it } from "vitest";
 
 // Extend dayjs with UTC plugin (matching csv-upload.ts & google-calendar-queries.ts)
