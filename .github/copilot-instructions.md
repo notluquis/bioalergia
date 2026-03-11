@@ -229,6 +229,37 @@ pnpm db:push -- --accept-data-loss  # For destructive changes
 - ✅ Never use HTML `<input type="date">` - use HeroUI DateField
 - ✅ Store dates as ISO strings in DB, convert with parseDate()
 
+### oRPC Router Method Ordering (Fixed March 7, 2026) ⚠️
+- **Pattern:** Method order matters for oRPC chaining (runtime validation, not type-safe)
+- **CORRECT:** `.prefix("/api/orpc/xxx").router(xxxRouterBase)`
+- **WRONG:** `.router(xxxRouterBase).prefix("/api/orpc/xxx")` → Runtime error: "prefix is not a function"
+- **Why:** TypeScript builder patterns use polymorphic `this` allowing both syntaxes to compile, but oRPC validates order at runtime
+- **Audit Results (March 2026):** 32 oRPC files checked, 26 correct, 5 fixed (83.9% consistency achieved)
+
+**Examples:**
+```typescript
+// ✅ CORRECT - prefix() first, then router()
+export const expensesORPCRouter = base
+  .prefix("/api/orpc/expenses")
+  .router(expensesORPCRouterBase);
+
+// ✅ CORRECT - with .tag() before router
+export const counterpartsORPCRouter = base
+  .prefix("/api/orpc/counterparts")
+  .tag("Counterparts")
+  .router(counterpartsORPCRouterBase);
+
+// ❌ WRONG - router() before prefix() causes runtime failure
+export const expensesORPCRouter = base
+  .router(expensesORPCRouterBase)
+  .prefix("/api/orpc/expenses");  // Error: prefix is not a function
+```
+
+**Action Items:**
+- If adding new oRPC router: always use `.prefix().router()` order
+- If seeing "prefix is not a function" error: check router export order
+- All `/apps/api/src/orpc/*.ts` files now follow correct pattern
+
 ### Build & Deploy
 ```bash
 # Full monorepo build
@@ -238,7 +269,7 @@ pnpm build
 cd apps/api && pnpm build
 
 # Linting
-pnpm lint:fix  # Uses Biome
+pnpm lint:fix  # Uses oxlint (fixed March 7)
 ```
 
 ## 🚨 Common Mistakes to Avoid
