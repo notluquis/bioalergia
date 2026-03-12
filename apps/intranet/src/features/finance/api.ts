@@ -8,6 +8,7 @@ import {
   SettlementTransactionsResponseSchema,
   TransactionsResponseSchema,
 } from "./schemas";
+import { compactORPCInput } from "@/lib/orpc-input";
 import {
   settlementTransactionsORPCClient,
   toSettlementTransactionsApiError,
@@ -49,11 +50,13 @@ export interface TransactionsResponse {
 export async function fetchReleaseTransactions(page: number, pageSize: number, search?: string) {
   try {
     return ReleaseTransactionsResponseSchema.parse(
-      await releaseTransactionsORPCClient.list({
-        page,
-        pageSize,
-        search,
-      }),
+      await releaseTransactionsORPCClient.list(
+        compactORPCInput({
+          page,
+          pageSize,
+          search,
+        })
+      )
     );
   } catch (error) {
     throw toReleaseTransactionsApiError(error);
@@ -63,11 +66,13 @@ export async function fetchReleaseTransactions(page: number, pageSize: number, s
 export async function fetchSettlementTransactions(page: number, pageSize: number, search?: string) {
   try {
     return SettlementTransactionsResponseSchema.parse(
-      await settlementTransactionsORPCClient.list({
-        page,
-        pageSize,
-        search,
-      }),
+      await settlementTransactionsORPCClient.list(
+        compactORPCInput({
+          page,
+          pageSize,
+          search,
+        })
+      )
     );
   } catch (error) {
     throw toSettlementTransactionsApiError(error);
@@ -82,17 +87,19 @@ export async function fetchTransactions({
 }: FetchTransactionsParams) {
   try {
     return TransactionsResponseSchema.parse(
-      await financeORPCClient.transactionsList({
-        from: filters.from,
-        page,
-        pageSize,
-        search: filters.search ?? filters.description,
-        to: filters.to,
-        type:
-          filters.transactionType === "INCOME" || filters.transactionType === "EXPENSE"
-            ? filters.transactionType
-            : undefined,
-      }),
+      await financeORPCClient.transactionsList(
+        compactORPCInput({
+          from: filters.from,
+          page,
+          pageSize,
+          search: filters.search ?? filters.description,
+          to: filters.to,
+          type:
+            filters.transactionType === "INCOME" || filters.transactionType === "EXPENSE"
+              ? filters.transactionType
+              : undefined,
+        }) ?? {}
+      )
     );
   } catch (error) {
     if (

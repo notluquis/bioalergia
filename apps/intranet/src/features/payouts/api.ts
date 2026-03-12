@@ -5,6 +5,7 @@ import {
   releaseTransactionsORPCClient,
   toReleaseTransactionsApiError,
 } from "@/features/finance/release-transactions-orpc";
+import { compactORPCInput } from "@/lib/orpc-input";
 
 interface FetchReleaseTransactionsParams {
   descriptions?: string[];
@@ -34,18 +35,20 @@ const FetchReleaseTransactionsResponseSchema = z.object({
 });
 
 export async function fetchReleaseTransactions(
-  params: FetchReleaseTransactionsParams,
+  params: FetchReleaseTransactionsParams
 ): Promise<FetchReleaseTransactionsResponse> {
   try {
     return FetchReleaseTransactionsResponseSchema.parse(
-      await releaseTransactionsORPCClient.list({
-        descriptions: params.descriptions?.join(","),
-        from: params.from,
-        page: params.page,
-        pageSize: params.pageSize,
-        search: params.search,
-        to: params.to,
-      }),
+      await releaseTransactionsORPCClient.list(
+        compactORPCInput({
+          descriptions: params.descriptions?.join(","),
+          from: params.from,
+          page: params.page,
+          pageSize: params.pageSize,
+          search: params.search,
+          to: params.to,
+        })
+      )
     ) as unknown as FetchReleaseTransactionsResponse;
   } catch (error) {
     throw toReleaseTransactionsApiError(error);

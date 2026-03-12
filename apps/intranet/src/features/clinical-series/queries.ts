@@ -4,6 +4,7 @@
  */
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { compactORPCInput } from "@/lib/orpc-input";
 import type {
   ClinicalSeriesFilters,
   ClinicalSeriesSnapshot,
@@ -26,10 +27,12 @@ export const clinicalSeriesKeys = {
  * Fetch all clinical series with optional filtering
  */
 export async function fetchClinicalSeries(
-  filters?: ClinicalSeriesFilters,
+  filters?: ClinicalSeriesFilters
 ): Promise<ClinicalSeriesSnapshot[]> {
   try {
-    return ClinicalSeriesSnapshotSchema.array().parse(await clinicalSeriesORPCClient.list(filters));
+    return ClinicalSeriesSnapshotSchema.array().parse(
+      await clinicalSeriesORPCClient.list(compactORPCInput(filters))
+    );
   } catch (error) {
     throw toClinicalSeriesApiError(error);
   }
@@ -50,10 +53,12 @@ export async function fetchClinicalSeriesDetail(id: number): Promise<ClinicalSer
  * Rebuild/reorganize clinical series from events
  */
 export async function rebuildClinicalSeries(
-  params?: RebuildSeriesParams,
+  params?: RebuildSeriesParams
 ): Promise<RebuildSeriesResult> {
   try {
-    return RebuildSeriesResultSchema.parse(await clinicalSeriesORPCClient.rebuild(params ?? {}));
+    return RebuildSeriesResultSchema.parse(
+      await clinicalSeriesORPCClient.rebuild(compactORPCInput(params))
+    );
   } catch (error) {
     throw toClinicalSeriesApiError(error);
   }
