@@ -2,6 +2,7 @@ import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
+import Decimal from "decimal.js";
 import type { Context as HonoContext } from "hono";
 import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
@@ -128,6 +129,105 @@ const autoCategoryRuleOutputSchema = z.object({
   type: transactionTypeSchema,
 });
 
+const transactionCategorySchema = z.object({
+  color: z.string().nullable().optional(),
+  createdAt: z.date().optional(),
+  icon: z.string().nullable().optional(),
+  id: z.number().int(),
+  name: z.string(),
+  type: transactionTypeSchema,
+  updatedAt: z.date().optional(),
+});
+
+const counterpartBriefSchema = z.object({
+  bankAccountHolder: z.string(),
+  id: z.number().int(),
+  identificationNumber: z.string(),
+});
+
+const compensationProfileSchema = z.object({
+  category: transactionCategorySchema,
+  categoryId: z.number().int(),
+  counterpart: counterpartBriefSchema.nullable().optional(),
+  counterpartId: z.number().int().nullable().optional(),
+  id: z.number().int(),
+  isActive: z.boolean(),
+  name: z.string(),
+  timezone: z.string(),
+});
+
+const compensationBudgetSchema = z.object({
+  baseAmount: z.number(),
+  id: z.number().int(),
+  isLocked: z.boolean(),
+  period: periodSchema,
+  profileId: z.number().int(),
+});
+
+const compensationLedgerEntrySchema = z.object({
+  allocatedAmount: z.number(),
+  budgetAmount: z.number(),
+  isLocked: z.boolean(),
+  period: periodSchema,
+  variance: z.number(),
+});
+
+const financialTransactionSchema = z.object({
+  amount: z.number(),
+  category: transactionCategorySchema.nullable().optional(),
+  categoryId: z.number().int().nullable(),
+  comment: z.string().nullable().optional(),
+  counterpart: z
+    .object({
+      accounts: z.array(z.object({ accountNumber: z.string().nullable() })).optional(),
+      bankAccountHolder: z.string().nullable().optional(),
+      id: z.number().int(),
+      identificationNumber: z.string().nullable().optional(),
+    })
+    .nullable()
+    .optional(),
+  counterpartAccountNumber: z.string().nullable().optional(),
+  counterpartId: z.number().int().nullable().optional(),
+  createdAt: z.date().optional(),
+  date: z.date(),
+  description: z.string(),
+  hasReallocation: z.boolean().optional(),
+  hasReallocationInEffectivePeriod: z.boolean().optional(),
+  id: z.number().int(),
+  reallocatedInEffectivePeriod: z.number().optional(),
+  reallocatedInTotal: z.number().optional(),
+  reallocatedOutEffectivePeriod: z.number().optional(),
+  reallocatedOutTotal: z.number().optional(),
+  releaseBalanceAmount: z.number().nullable().optional(),
+  releasePaymentMethod: z.string().nullable().optional(),
+  releaseSaleDetail: z.string().nullable().optional(),
+  settlementPaymentMethod: z.string().nullable().optional(),
+  settlementPaymentMethodType: z.string().nullable().optional(),
+  settlementSaleDetail: z.string().nullable().optional(),
+  sourceId: z.string().nullable().optional(),
+  type: transactionTypeSchema,
+  updatedAt: z.date().optional(),
+});
+
+const financialSummaryByCategoryEntrySchema = z.object({
+  categoryColor: z.string().nullable().optional(),
+  categoryId: z.number().int().nullable(),
+  categoryName: z.string(),
+  count: z.number().int(),
+  total: z.number(),
+  type: transactionTypeSchema,
+});
+
+const financialSummarySchema = z.object({
+  byCategory: z.array(financialSummaryByCategoryEntrySchema),
+  totals: z.object({
+    count: z.number().int(),
+    expense: z.number(),
+    income: z.number(),
+    net: z.number(),
+  }),
+});
+
 const autoCategoryRuleListResponseSchema = z.object({
   data: z.array(autoCategoryRuleOutputSchema),
   status: z.literal("ok"),
@@ -173,7 +273,7 @@ const idSchema = z.object({
 });
 
 const transactionsResponseSchema = z.object({
-  data: z.array(z.unknown()),
+  data: z.array(financialTransactionSchema),
   meta: z
     .object({
       page: z.number(),
@@ -185,21 +285,137 @@ const transactionsResponseSchema = z.object({
   status: z.literal("ok"),
 });
 
-const statusDataResponseSchema = z.object({
-  data: z.unknown().optional(),
-  message: z.string().optional(),
+const categoryListResponseSchema = z.object({
+  data: z.array(transactionCategorySchema),
   status: z.literal("ok"),
 });
 
-const listDataResponseSchema = z.object({
-  data: z.array(z.unknown()),
+const categoryResponseSchema = z.object({
+  data: transactionCategorySchema,
+  status: z.literal("ok"),
+});
+
+const compensationProfileListResponseSchema = z.object({
+  data: z.array(compensationProfileSchema),
+  status: z.literal("ok"),
+});
+
+const compensationProfileResponseSchema = z.object({
+  data: compensationProfileSchema,
+  status: z.literal("ok"),
+});
+
+const compensationBudgetResponseSchema = z.object({
+  data: compensationBudgetSchema,
+  status: z.literal("ok"),
+});
+
+const compensationLedgerResponseSchema = z.object({
+  data: z.array(compensationLedgerEntrySchema),
+  status: z.literal("ok"),
+});
+
+const availableMonthsResponseSchema = z.object({
+  data: z.array(periodSchema),
+  status: z.literal("ok"),
+});
+
+const transactionResponseSchema = z.object({
+  data: financialTransactionSchema,
+  status: z.literal("ok"),
+});
+
+const reallocationResponseSchema = z.object({
+  data: z
+    .object({
+      allocationType: z.string(),
+      amount: z.number(),
+      id: z.number().int(),
+      period: periodSchema,
+      profileId: z.number().int(),
+      transactionId: z.number().int(),
+    })
+    .passthrough(),
+  status: z.literal("ok"),
+});
+
+const syncResponseSchema = z.object({
+  data: z.object({
+    created: z.number().int(),
+    duplicates: z.number().int(),
+    errors: z.array(z.string()),
+    failed: z.number().int(),
+    total: z.number().int(),
+  }),
+  status: z.literal("ok"),
+});
+
+const syncPatternsResponseSchema = z.object({
+  data: z.object({
+    updated: z.number().int(),
+  }),
   status: z.literal("ok"),
 });
 
 const summaryResponseSchema = z.object({
-  data: z.unknown(),
+  data: financialSummarySchema,
   status: z.literal("ok"),
 });
+
+function toNumberValue(value: unknown) {
+  if (value == null) {
+    return null;
+  }
+
+  if (Decimal.isDecimal(value)) {
+    return value.toNumber();
+  }
+
+  return Number(value);
+}
+
+function toPlainFinancialTransaction<
+  T extends {
+    amount: unknown;
+    categoryId?: null | number;
+    comment?: null | string;
+    counterpartId?: null | number;
+    createdAt?: Date;
+    date: Date;
+    description: string;
+    id: number;
+    sourceId?: null | string;
+    type: "EXPENSE" | "INCOME";
+    updatedAt?: Date;
+  },
+>(transaction: T) {
+  return {
+    amount: toNumberValue(transaction.amount) ?? 0,
+    categoryId: transaction.categoryId ?? null,
+    comment: transaction.comment ?? null,
+    counterpartId: transaction.counterpartId ?? null,
+    createdAt: transaction.createdAt,
+    date: transaction.date,
+    description: transaction.description,
+    id: transaction.id,
+    sourceId: transaction.sourceId ?? null,
+    type: transaction.type,
+    updatedAt: transaction.updatedAt,
+  };
+}
+
+function toPlainListedFinancialTransaction<
+  T extends {
+    amount: unknown;
+    releaseBalanceAmount?: unknown;
+  } & ReturnType<typeof toPlainFinancialTransaction>,
+>(transaction: T) {
+  return {
+    ...transaction,
+    amount: toNumberValue(transaction.amount) ?? 0,
+    releaseBalanceAmount: toNumberValue(transaction.releaseBalanceAmount),
+  };
+}
 
 const authed = base.use(async ({ context, next }) => {
   const user = await getSessionUser(context.hono);
@@ -274,7 +490,7 @@ const financeORPCRouterBase = {
   categoriesCreate: writeFinance
     .route({ method: "POST", path: "/categories", tags: ["Finance"] })
     .input(createCategorySchema)
-    .output(statusDataResponseSchema)
+    .output(categoryResponseSchema)
     .handler(async ({ input }) => ({
       data: await createTransactionCategory(input),
       status: "ok" as const,
@@ -291,7 +507,7 @@ const financeORPCRouterBase = {
 
   categoriesList: readFinance
     .route({ method: "GET", path: "/categories", tags: ["Finance"] })
-    .output(listDataResponseSchema)
+    .output(categoryListResponseSchema)
     .handler(async () => ({
       data: await listTransactionCategories(),
       status: "ok" as const,
@@ -300,7 +516,7 @@ const financeORPCRouterBase = {
   categoriesUpdate: writeFinance
     .route({ method: "PUT", path: "/categories/{id}", tags: ["Finance"] })
     .input(z.object({ id: z.number().int().positive(), payload: updateCategorySchema }))
-    .output(statusDataResponseSchema)
+    .output(categoryResponseSchema)
     .handler(async ({ input }) => ({
       data: await updateTransactionCategory(input.id, input.payload),
       status: "ok" as const,
@@ -309,7 +525,7 @@ const financeORPCRouterBase = {
   compensationProfilesCreate: writeFinance
     .route({ method: "POST", path: "/compensation-profiles", tags: ["Finance"] })
     .input(createCompensationProfileSchema)
-    .output(statusDataResponseSchema)
+    .output(compensationProfileResponseSchema)
     .handler(async ({ input }) => ({
       data: await createCompensationProfile(input),
       status: "ok" as const,
@@ -318,7 +534,7 @@ const financeORPCRouterBase = {
   compensationProfilesLedger: readFinance
     .route({ method: "GET", path: "/compensation-profiles/{id}/ledger", tags: ["Finance"] })
     .input(compensationLedgerQuerySchema)
-    .output(listDataResponseSchema)
+    .output(compensationLedgerResponseSchema)
     .handler(async ({ input }) => ({
       data: await listCompensationPeriodLedger(input.id, input.fromPeriod, input.toPeriod),
       status: "ok" as const,
@@ -326,7 +542,7 @@ const financeORPCRouterBase = {
 
   compensationProfilesList: readFinance
     .route({ method: "GET", path: "/compensation-profiles", tags: ["Finance"] })
-    .output(listDataResponseSchema)
+    .output(compensationProfileListResponseSchema)
     .handler(async () => ({
       data: await listCompensationProfiles(),
       status: "ok" as const,
@@ -335,7 +551,7 @@ const financeORPCRouterBase = {
   compensationProfilesUpdate: writeFinance
     .route({ method: "PUT", path: "/compensation-profiles/{id}", tags: ["Finance"] })
     .input(z.object({ id: z.number().int().positive(), payload: updateCompensationProfileSchema }))
-    .output(statusDataResponseSchema)
+    .output(compensationProfileResponseSchema)
     .handler(async ({ input }) => ({
       data: await updateCompensationProfile(input.id, input.payload),
       status: "ok" as const,
@@ -344,7 +560,7 @@ const financeORPCRouterBase = {
   compensationProfilesUpsertBudget: writeFinance
     .route({ method: "PUT", path: "/compensation-profiles/{id}/budget", tags: ["Finance"] })
     .input(z.object({ id: z.number().int().positive(), payload: upsertCompensationBudgetSchema }))
-    .output(statusDataResponseSchema)
+    .output(compensationBudgetResponseSchema)
     .handler(async ({ input }) => ({
       data: await upsertCompensationPeriodBudget(input.id, input.payload),
       status: "ok" as const,
@@ -352,7 +568,7 @@ const financeORPCRouterBase = {
 
   sync: writeFinance
     .route({ method: "POST", path: "/sync", tags: ["Finance"] })
-    .output(statusDataResponseSchema)
+    .output(syncResponseSchema)
     .handler(async ({ context }) => ({
       data: await syncFinancialTransactions(context.user.id),
       status: "ok" as const,
@@ -360,7 +576,7 @@ const financeORPCRouterBase = {
 
   syncUncategorizedPatterns: writeFinance
     .route({ method: "POST", path: "/sync/uncategorized-patterns", tags: ["Finance"] })
-    .output(statusDataResponseSchema)
+    .output(syncPatternsResponseSchema)
     .handler(async () => ({
       data: await syncUncategorizedTransactionsByPatterns(),
       status: "ok" as const,
@@ -368,7 +584,7 @@ const financeORPCRouterBase = {
 
   transactionsAvailableMonths: readFinance
     .route({ method: "GET", path: "/transactions/available-months", tags: ["Finance"] })
-    .output(listDataResponseSchema)
+    .output(availableMonthsResponseSchema)
     .handler(async () => ({
       data: await listAvailableFinancialTransactionMonths(),
       status: "ok" as const,
@@ -377,9 +593,9 @@ const financeORPCRouterBase = {
   transactionsCreate: writeFinance
     .route({ method: "POST", path: "/transactions", tags: ["Finance"] })
     .input(createTransactionSchema)
-    .output(statusDataResponseSchema)
+    .output(transactionResponseSchema)
     .handler(async ({ input }) => ({
-      data: await createFinancialTransaction(input),
+      data: toPlainFinancialTransaction(await createFinancialTransaction(input)),
       status: "ok" as const,
     })),
 
@@ -402,22 +618,35 @@ const financeORPCRouterBase = {
         from: input.from ? new Date(input.from) : undefined,
         to: input.to ? new Date(input.to) : undefined,
       });
-      return { status: "ok" as const, ...result };
+      return {
+        data: result.data.map((transaction) =>
+          toPlainListedFinancialTransaction(transaction),
+        ),
+        meta: result.meta,
+        status: "ok" as const,
+      };
     }),
 
   transactionsReallocate: writeFinance
     .route({ method: "POST", path: "/transactions/{id}/reallocate", tags: ["Finance"] })
     .input(reallocateTransactionSchema)
-    .output(statusDataResponseSchema)
-    .handler(async ({ input }) => ({
-      data: await reallocateFinancialTransaction(input.id, {
+    .output(reallocationResponseSchema)
+    .handler(async ({ input }) => {
+      const allocation = await reallocateFinancialTransaction(input.id, {
         amount: input.amount,
         fromPeriod: input.fromPeriod,
         profileId: input.profileId,
         targetPeriod: input.targetPeriod,
-      }),
-      status: "ok" as const,
-    })),
+      });
+
+      return {
+        data: {
+          ...allocation,
+          amount: toNumberValue(allocation.amount) ?? 0,
+        },
+        status: "ok" as const,
+      };
+    }),
 
   transactionsSummary: readFinance
     .route({ method: "GET", path: "/transactions/summary", tags: ["Finance"] })
@@ -434,9 +663,9 @@ const financeORPCRouterBase = {
   transactionsUpdate: writeFinance
     .route({ method: "PUT", path: "/transactions/{id}", tags: ["Finance"] })
     .input(z.object({ id: z.number().int().positive(), payload: updateTransactionSchema }))
-    .output(statusDataResponseSchema)
+    .output(transactionResponseSchema)
     .handler(async ({ input }) => ({
-      data: await updateFinancialTransaction(input.id, input.payload),
+      data: toPlainFinancialTransaction(await updateFinancialTransaction(input.id, input.payload)),
       status: "ok" as const,
     })),
 };
