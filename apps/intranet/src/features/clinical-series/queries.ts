@@ -4,13 +4,13 @@
  */
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api-client";
 import type {
   ClinicalSeriesFilters,
   ClinicalSeriesSnapshot,
   RebuildSeriesParams,
   RebuildSeriesResult,
 } from "./types";
+import { clinicalSeriesORPCClient, toClinicalSeriesApiError } from "./orpc";
 import { ClinicalSeriesSnapshotSchema, RebuildSeriesResultSchema } from "./types";
 
 // Query keys for cache invalidation
@@ -28,29 +28,22 @@ export const clinicalSeriesKeys = {
 export async function fetchClinicalSeries(
   filters?: ClinicalSeriesFilters,
 ): Promise<ClinicalSeriesSnapshot[]> {
-  const params = new URLSearchParams();
-  if (filters?.kind) params.append("kind", filters.kind);
-  if (filters?.status) params.append("status", filters.status);
-  if (filters?.patientName) params.append("patientName", filters.patientName);
-  if (filters?.patientRut) params.append("patientRut", filters.patientRut);
-  if (filters?.dateFrom) params.append("dateFrom", filters.dateFrom);
-  if (filters?.dateTo) params.append("dateTo", filters.dateTo);
-
-  const response = await apiClient.get<ClinicalSeriesSnapshot[]>(
-    `/calendar/clinical-series${params.toString() ? `?${params}` : ""}`,
-    { responseSchema: ClinicalSeriesSnapshotSchema.array() },
-  );
-  return response;
+  try {
+    return ClinicalSeriesSnapshotSchema.array().parse(await clinicalSeriesORPCClient.list(filters));
+  } catch (error) {
+    throw toClinicalSeriesApiError(error);
+  }
 }
 
 /**
  * Fetch single clinical series by ID
  */
 export async function fetchClinicalSeriesDetail(id: number): Promise<ClinicalSeriesSnapshot> {
-  const response = await apiClient.get<ClinicalSeriesSnapshot>(`/calendar/clinical-series/${id}`, {
-    responseSchema: ClinicalSeriesSnapshotSchema,
-  });
-  return response;
+  try {
+    return ClinicalSeriesSnapshotSchema.parse(await clinicalSeriesORPCClient.detail({ id }));
+  } catch (error) {
+    throw toClinicalSeriesApiError(error);
+  }
 }
 
 /**
@@ -59,12 +52,11 @@ export async function fetchClinicalSeriesDetail(id: number): Promise<ClinicalSer
 export async function rebuildClinicalSeries(
   params?: RebuildSeriesParams,
 ): Promise<RebuildSeriesResult> {
-  const response = await apiClient.post<RebuildSeriesResult>(
-    `/calendar/rpc/series/rebuild`,
-    params || {},
-    { responseSchema: RebuildSeriesResultSchema },
-  );
-  return response;
+  try {
+    return RebuildSeriesResultSchema.parse(await clinicalSeriesORPCClient.rebuild(params ?? {}));
+  } catch (error) {
+    throw toClinicalSeriesApiError(error);
+  }
 }
 
 /**

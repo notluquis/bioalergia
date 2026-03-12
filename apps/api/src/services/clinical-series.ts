@@ -80,6 +80,15 @@ export interface ClinicalSeriesSnapshot {
   totalPaid: number;
 }
 
+type ClinicalSeriesFilters = {
+  dateFrom?: string;
+  dateTo?: string;
+  kind?: ClinicalSeriesKind;
+  patientName?: string;
+  patientRut?: string;
+  status?: "ACTIVE" | "CANCELLED" | "COMPLETED";
+};
+
 function normalizeName(value: string): string {
   return value
     .normalize("NFKD")
@@ -558,4 +567,90 @@ export async function getClinicalSeriesSnapshotByExternalEvent(params: {
     totalLinkedAmount,
     totalPaid,
   };
+}
+
+export async function getClinicalSeriesSnapshotById(id: number): Promise<ClinicalSeriesSnapshot | null> {
+  const series = await db.clinicalSeries.findUnique({
+    where: { id },
+    include: {
+      events: {
+        include: {
+          calendar: {
+            select: {
+              googleId: true,
+            },
+          },
+        },
+        orderBy: [{ startDate: "asc" }, { startDateTime: "asc" }, { id: "asc" }],
+      },
+    },
+  });
+
+  if (!series) {
+    return null;
+  }
+
+  const syntheticEvent = series.events[0];
+  if (!syntheticEvent) {
+    return {
+      displayName: series.displayName ?? null,
+      eligibleDocumentDateFrom: dayjs().tz(TIMEZONE).format("YYYY-MM-DD"),
+      eligibleDocumentDateTo: dayjs().tz(TIMEZONE).format("YYYY-MM-DD"),
+      events: [],
+      id: series.id,
+      kind: series.kind as ClinicalSeriesKind,
+      linkedDocuments: [],
+      patientName: series.patientName ?? null,
+      patientRut: series.patientRut ?? null,
+      remainingExpected: 0,
+      remainingPaid: 0,
+      status: series.status as ClinicalSeriesSnapshot["status"],
+      totalExpected: 0,
+      totalLinkedAmount: 0,
+      totalPaid: 0,
+    };
+  }
+
+  return getClinicalSeriesSnapshotByExternalEvent({
+    calendarId: syntheticEvent.calendar.googleId,
+    eventId: syntheticEvent.externalEventId,
+  });
+}
+
+export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilters) {
+  const baseWhere = {
+    kind: filters?.kind,
+    status: filters?.status,
+    patientName: filters?.patientName
+      ? {
+          contains: normalizeName(filters.patientName),
+        }
+      : undefined,
+    patientRut: filters?.patientRut ? normalizeRut(filters.patientRut) : undefined,
+  };
+
+  const series = await db.clinicalSeries.findMany({
+    where: baseWhere,
+    orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
+    select: { id: true },
+  });
+
+  const snapshots = (
+    await Promise.all(series.map((item) => getClinicalSeriesSnapshotById(item.id)))
+  ).filter((item): item is ClinicalSeriesSnapshot => item != null);
+
+  return snapshots.filter((snapshot) => {
+    const firstDate = snapshot.events[0]?.eventDate ?? null;
+    const lastDate = snapshot.events[snapshot.events.length - 1]?.eventDate ?? firstDate;
+
+    if (filters?.dateFrom && lastDate && lastDate < filters.dateFrom) {
+      return false;
+    }
+
+    if (filters?.dateTo && firstDate && firstDate > filters.dateTo) {
+      return false;
+    }
+
+    return true;
+  });
 }

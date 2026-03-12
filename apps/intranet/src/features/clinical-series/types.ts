@@ -9,23 +9,29 @@ export type ClinicalSeriesKind = "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREA
 export type ClinicalSeriesStatus = "ACTIVE" | "COMPLETED" | "CANCELLED";
 
 export interface ClinicalSeriesEvent {
-  id: number;
-  summary: string;
-  description: string | null;
-  startDate: string; // ISO date
-  endDate: string; // ISO date
-  stage: string | null;
+  amountExpected: number | null;
+  amountPaid: number | null;
+  calendarGoogleId: string;
+  eventDate: string;
+  eventId: number;
+  externalEventId: string;
+  seriesStageKind: "DOSE" | "INSTALLATION" | "MAINTENANCE" | "READING" | null;
+  seriesStageLabel: string | null;
+  seriesStageNumber: number | null;
+  summary: string | null;
   dosageValue: number | null;
   dosageUnit: string | null;
-  note: string | null;
 }
 
 export interface ClinicalSeriesLinkedDocument {
-  id: number;
-  type: string;
-  reference: string;
-  amount: number;
-  date: string; // ISO date
+  clientName: string;
+  clientRUT: string;
+  confidenceScore: number;
+  documentDate: string;
+  dteSaleDetailId: string;
+  folio: string;
+  matchedBy: string;
+  totalAmount: number;
 }
 
 export interface ClinicalSeriesSnapshot {
@@ -79,23 +85,29 @@ export interface RebuildSeriesResult {
 
 // Zod Schemas for API responses
 export const ClinicalSeriesEventSchema = z.object({
-  id: z.number(),
-  summary: z.string(),
-  description: z.string().nullable(),
-  startDate: z.string(),
-  endDate: z.string(),
-  stage: z.string().nullable(),
+  amountExpected: z.number().nullable(),
+  amountPaid: z.number().nullable(),
+  calendarGoogleId: z.string(),
+  eventDate: z.string(),
+  eventId: z.number(),
+  externalEventId: z.string(),
+  seriesStageKind: z.enum(["DOSE", "INSTALLATION", "MAINTENANCE", "READING"]).nullable(),
+  seriesStageLabel: z.string().nullable(),
+  seriesStageNumber: z.number().nullable(),
+  summary: z.string().nullable(),
   dosageValue: z.number().nullable(),
   dosageUnit: z.string().nullable(),
-  note: z.string().nullable(),
 });
 
 export const ClinicalSeriesLinkedDocumentSchema = z.object({
-  id: z.number(),
-  type: z.string(),
-  reference: z.string(),
-  amount: z.number(),
-  date: z.string(),
+  clientName: z.string(),
+  clientRUT: z.string(),
+  confidenceScore: z.number(),
+  documentDate: z.string(),
+  dteSaleDetailId: z.string(),
+  folio: z.string(),
+  matchedBy: z.string(),
+  totalAmount: z.number(),
 });
 
 export const ClinicalSeriesSnapshotSchema = z.object({

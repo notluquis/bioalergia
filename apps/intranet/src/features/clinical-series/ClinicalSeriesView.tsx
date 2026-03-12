@@ -277,9 +277,9 @@ export function ClinicalSeriesView() {
                   <h3 className="font-semibold text-sm mb-3">Eventos Recientes</h3>
                   <div className="space-y-2">
                     {detail.events.slice(0, 3).map((event: ClinicalSeriesSnapshot["events"][0]) => (
-                      <Surface key={event.id} className="p-2 text-xs">
-                        <p className="font-medium">{event.startDate}</p>
-                        <p className="text-foreground-500 truncate">{event.summary}</p>
+                      <Surface key={event.eventId} className="p-2 text-xs">
+                        <p className="font-medium">{event.eventDate}</p>
+                        <p className="text-foreground-500 truncate">{event.summary ?? "Sin resumen"}</p>
                         {event.dosageValue && (
                           <p className="text-accent">
                             {event.dosageValue} {event.dosageUnit}

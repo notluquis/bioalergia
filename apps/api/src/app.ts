@@ -18,6 +18,7 @@ import { authOpenAPIHandler, authORPCHandler } from "./orpc/auth";
 import { backupsOpenAPIHandler, backupsORPCHandler } from "./orpc/backups";
 import { balancesOpenAPIHandler, balancesORPCHandler } from "./orpc/balances";
 import { calendarOpenAPIHandler, calendarORPCHandler } from "./orpc/calendar";
+import { clinicalSeriesOpenAPIHandler, clinicalSeriesORPCHandler } from "./orpc/clinical-series";
 import { counterpartsOpenAPIHandler, counterpartsORPCHandler } from "./orpc/counterparts";
 import { csvUploadOpenAPIHandler, csvUploadORPCHandler } from "./orpc/csv-upload";
 import { doctoraliaOpenAPIHandler, doctoraliaORPCHandler } from "./orpc/doctoralia";
@@ -284,6 +285,15 @@ app.get("/api/orpc", (c) =>
             <li><a href="/api/orpc/calendar/docs">Reference UI</a></li>
             <li><a href="/api/orpc/calendar/openapi.json">OpenAPI JSON</a></li>
             <li><code>/api/orpc/calendar/rpc/*</code></li>
+          </ul>
+        </section>
+        <section class="card">
+          <h2>Clinical Series</h2>
+          <p>Series clínicas agrupadas para tests y tratamientos.</p>
+          <ul>
+            <li><a href="/api/orpc/clinical-series/docs">Reference UI</a></li>
+            <li><a href="/api/orpc/clinical-series/openapi.json">OpenAPI JSON</a></li>
+            <li><code>/api/orpc/clinical-series/rpc/*</code></li>
           </ul>
         </section>
         <section class="card">
@@ -556,6 +566,19 @@ app.get("/api/orpc", (c) =>
 app.use("/api/orpc/calendar/rpc/*", async (c, next) => {
   const { matched, response } = await calendarORPCHandler.handle(createHonoORPCRequest(c), {
     prefix: "/api/orpc/calendar/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
+app.use("/api/orpc/clinical-series/rpc/*", async (c, next) => {
+  const { matched, response } = await clinicalSeriesORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/clinical-series/rpc",
     context: { hono: c },
   });
 
@@ -1276,6 +1299,18 @@ app.use("/api/orpc/doctoralia/*", async (c, next) => {
 
 app.use("/api/orpc/calendar/*", async (c, next) => {
   const { matched, response } = await calendarOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
+app.use("/api/orpc/clinical-series/*", async (c, next) => {
+  const { matched, response } = await clinicalSeriesOpenAPIHandler.handle(createHonoORPCRequest(c), {
     context: { hono: c },
   });
 
