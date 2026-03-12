@@ -38,7 +38,7 @@ interface MonthlyKpiData {
 function resolveActiveMonthKey(
   monthlyKpis: MonthlyKpiData[],
   manualSelectedMonthKey: null | string,
-  currentMonthKey: string,
+  currentMonthKey: string
 ): null | string {
   if (monthlyKpis.length === 0) {
     return null;
@@ -58,7 +58,7 @@ function resolveActiveMonthKey(
 function processHeatmapData(
   summary: CalendarSummary | null | undefined,
   from: string,
-  to: string,
+  to: string
 ): {
   heatmapMaxValue: number;
   heatmapMonths: dayjs.Dayjs[];
@@ -128,7 +128,7 @@ function CalendarHeatmapPage() {
 
   const isDirty = useMemo(
     () => JSON.stringify(draftFilters) !== JSON.stringify(appliedFilters),
-    [draftFilters, appliedFilters],
+    [draftFilters, appliedFilters]
   );
 
   const { heatmapMaxValue, heatmapMonths, statsByDate } = useMemo(() => {
@@ -155,7 +155,7 @@ function CalendarHeatmapPage() {
       return null;
     }
     const matched = daily?.days.find(
-      (day) => dayjs(day.date).format("YYYY-MM-DD") === selectedDate,
+      (day) => dayjs(day.date).format("YYYY-MM-DD") === selectedDate
     );
     return matched ?? null;
   }, [daily?.days, selectedDate]);
@@ -200,7 +200,7 @@ function CalendarHeatmapPage() {
 
   const activeMonthKey = useMemo(
     () => resolveActiveMonthKey(monthlyKpis, manualSelectedMonthKey, currentMonthKey),
-    [currentMonthKey, manualSelectedMonthKey, monthlyKpis],
+    [currentMonthKey, manualSelectedMonthKey, monthlyKpis]
   );
 
   const activeMonthlyKpi = useMemo(() => {
@@ -236,7 +236,7 @@ function CalendarHeatmapPage() {
                 from: draftFilters.from || undefined,
                 to: draftFilters.to || undefined,
                 calendarId: draftFilters.calendarIds?.length ? draftFilters.calendarIds : undefined,
-                category: draftFilters.categories,
+                category: draftFilters.categories.length ? draftFilters.categories : undefined,
                 search: draftFilters.search || undefined,
               },
             });
@@ -254,7 +254,7 @@ function CalendarHeatmapPage() {
                 from: undefined,
                 to: undefined,
                 calendarId: undefined,
-                category: [],
+                category: undefined,
                 search: undefined,
               }),
             });

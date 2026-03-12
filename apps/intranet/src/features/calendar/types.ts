@@ -13,14 +13,15 @@ export const calendarSearchSchema = z.object({
     .optional()
     .transform((val) => {
       if (!val) {
-        return [];
+        return undefined;
       }
       const values = Array.isArray(val) ? val : [val];
-      return values
+      const normalized = values
         .map((entry) => entry.trim())
         .filter((entry) => entry.length > 0 && entry !== "[]");
+      return normalized.length > 0 ? normalized : undefined;
     })
-    .catch([]),
+    .catch(undefined),
   page: z.coerce.number().optional().catch(undefined),
 });
 
@@ -440,7 +441,7 @@ export type ClassifySearchParams = {
 };
 
 export type OnNavigate = (
-  updater: (prev: ClassifySearchParams) => Partial<ClassifySearchParams>,
+  updater: (prev: ClassifySearchParams) => Partial<ClassifySearchParams>
 ) => void;
 
 export interface ReclassifyJob {

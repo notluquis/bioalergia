@@ -30,7 +30,7 @@ function CalendarDailyPage() {
   const [draftFilters, setDraftFilters] = useState(appliedFilters);
   const { isOpen: filtersOpen, set: setFiltersOpen } = useDisclosure(false);
   const [selectedEventForLink, setSelectedEventForLink] = useState<CalendarEventDetail | null>(
-    null,
+    null
   );
 
   // Sync draft with applied filters when popover is closed
@@ -44,7 +44,7 @@ function CalendarDailyPage() {
   const selectedDayEntry = daily?.days.find(
     (d) =>
       dayjs(d.date, "YYYY-MM-DD").format("YYYY-MM-DD") ===
-      dayjs(currentSelectedDate).format("YYYY-MM-DD"),
+      dayjs(currentSelectedDate).format("YYYY-MM-DD")
   );
 
   const hasEvents = (selectedDayEntry?.events.length ?? 0) > 0;
@@ -53,7 +53,7 @@ function CalendarDailyPage() {
   const linksByDayQuery = useQuery(calendarDteLinkQueries.byDay(selectedDateString));
 
   const linksByEvent = new Map(
-    (linksByDayQuery.data ?? []).map((item) => [`${item.calendarId}:::${item.eventId}`, item]),
+    (linksByDayQuery.data ?? []).map((item) => [`${item.calendarId}:::${item.eventId}`, item])
   );
 
   return (
@@ -88,7 +88,9 @@ function CalendarDailyPage() {
                       calendarId: draftFilters.calendarIds?.length
                         ? draftFilters.calendarIds
                         : undefined,
-                      category: draftFilters.categories,
+                      category: draftFilters.categories.length
+                        ? draftFilters.categories
+                        : undefined,
                       search: draftFilters.search || undefined,
                     },
                   });
@@ -104,7 +106,7 @@ function CalendarDailyPage() {
                     search: (prev: Record<string, unknown>) => ({
                       ...prev,
                       calendarId: undefined,
-                      category: [],
+                      category: undefined,
                       search: undefined,
                     }),
                   });

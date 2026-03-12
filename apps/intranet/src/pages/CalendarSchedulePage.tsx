@@ -29,7 +29,7 @@ type CalendarSource = "doctoralia" | "google";
 const DOCTORALIA_STANDBY = true;
 
 function toCalendarEventDetail(
-  appointments: Awaited<ReturnType<typeof fetchDoctoraliaCalendarAppointments>>,
+  appointments: Awaited<ReturnType<typeof fetchDoctoraliaCalendarAppointments>>
 ): CalendarEventDetail[] {
   return appointments.map((appointment) => ({
     calendarId: `doctoralia:${appointment.schedule.externalId}`,
@@ -123,7 +123,7 @@ function useDoctoraliaCalendarAuth(params: {
       const popup = window.open(
         "/api/doctoralia/calendar/auth/redirect",
         "doctoralia-oauth",
-        "popup,width=640,height=840",
+        "popup,width=640,height=840"
       );
       if (!popup) {
         throw new Error("No se pudo abrir la ventana OAuth (bloqueada por el navegador).");
@@ -378,14 +378,14 @@ function CalendarSchedulePage() {
           ...(nextSource === "doctoralia"
             ? {
                 calendarId: undefined,
-                category: [],
+                category: undefined,
                 search: undefined,
               }
             : {}),
         }),
       });
     },
-    [navigate],
+    [navigate]
   );
 
   const onApplyGoogleFilters = useCallback(() => {
@@ -393,7 +393,7 @@ function CalendarSchedulePage() {
       search: {
         ...search,
         calendarId: draftFilters.calendarIds?.length ? draftFilters.calendarIds : undefined,
-        category: draftFilters.categories,
+        category: draftFilters.categories.length ? draftFilters.categories : undefined,
         search: draftFilters.search || undefined,
       },
     });
@@ -406,7 +406,7 @@ function CalendarSchedulePage() {
       search: (prev) => ({
         ...prev,
         calendarId: undefined,
-        category: [],
+        category: undefined,
         search: undefined,
       }),
     });

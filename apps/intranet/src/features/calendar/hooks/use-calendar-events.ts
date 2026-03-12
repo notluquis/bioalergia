@@ -58,7 +58,7 @@ const markAllAsError = (entries: SyncProgressEntry[]) => entries.map((e) => mark
 
 function deriveEffectiveFilters(
   search: CalendarSearchParams,
-  filters: CalendarFilters,
+  filters: CalendarFilters
 ): CalendarFilters {
   const dateParam = search.date ? dayjs(search.date, "YYYY-MM-DD") : null;
   const maxDaysRaw = search.maxDays ?? filters.maxDays;
@@ -79,7 +79,7 @@ function deriveEffectiveFilters(
 
   return {
     calendarIds: search.calendarId ?? filters.calendarIds,
-    categories: search.category.length > 0 ? search.category : filters.categories,
+    categories: search.category?.length ? search.category : filters.categories,
     from: routeFrom,
     maxDays,
     search: search.search ?? filters.search,
@@ -100,7 +100,7 @@ async function processSyncPollTick(params: {
       logId?: number;
       skipped: number;
       updated: number;
-    },
+    }
   ) => void;
   setSyncDurationMs: (value: null | number) => void;
   setSyncError: (value: null | string) => void;
@@ -122,7 +122,7 @@ async function processSyncPollTick(params: {
       params.setSyncDurationMs(
         currentLog.finishedAt && currentLog.startedAt
           ? new Date(currentLog.finishedAt).getTime() - new Date(currentLog.startedAt).getTime()
-          : null,
+          : null
       );
       params.setSyncProgress(
         SYNC_STEPS_TEMPLATE.map((step) => ({
@@ -131,7 +131,7 @@ async function processSyncPollTick(params: {
           id: step.id,
           label: step.label,
           status: "completed" as SyncProgressStatus,
-        })),
+        }))
       );
       params.setLastSyncInfo({
         excluded: currentLog.excluded,
@@ -230,7 +230,7 @@ function useCalendarSync(queryClient: ReturnType<typeof useQueryClient>) {
           durationMs: 0,
           details: {},
           status: index === 0 ? "in_progress" : "pending",
-        })),
+        }))
       );
     },
     onError: (err: unknown) => {
@@ -241,7 +241,7 @@ function useCalendarSync(queryClient: ReturnType<typeof useQueryClient>) {
         prev.map((entry) => ({
           ...entry,
           status: "error" as SyncProgressStatus,
-        })),
+        }))
       );
       setSyncing(false);
     },
