@@ -1769,7 +1769,7 @@ export async function deleteFinancialAutoCategoryRule(id: number) {
 type FinancialAutoCategoryRuleRecord = Awaited<
   ReturnType<typeof db.financialAutoCategoryRule.findFirst>
 > & {
-  category: null | {
+  category: {
     color: null | string;
     icon: null | string;
     id: number;
@@ -1785,16 +1785,13 @@ type FinancialAutoCategoryRuleRecord = Awaited<
 
 function mapFinancialAutoCategoryRule(rule: FinancialAutoCategoryRuleRecord) {
   return {
-    category:
-      rule.category == null
-        ? null
-        : {
-            color: rule.category.color,
-            icon: rule.category.icon,
-            id: rule.category.id,
-            name: rule.category.name,
-            type: rule.category.type,
-          },
+    category: {
+      color: rule.category.color,
+      icon: rule.category.icon,
+      id: rule.category.id,
+      name: rule.category.name,
+      type: rule.category.type,
+    },
     categoryId: rule.categoryId,
     commentContains: rule.commentContains,
     counterpart:
