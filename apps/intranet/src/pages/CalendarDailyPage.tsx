@@ -40,15 +40,13 @@ function CalendarDailyPage() {
     }
   }, [appliedFilters, filtersOpen]);
 
+  const selectedDateString = dayjs(currentSelectedDate).format("YYYY-MM-DD");
   // Get data for selected Day
   const selectedDayEntry = daily?.days.find(
-    (d) =>
-      dayjs(d.date, "YYYY-MM-DD").format("YYYY-MM-DD") ===
-      dayjs(currentSelectedDate).format("YYYY-MM-DD")
+    (d) => dayjs(d.date).format("YYYY-MM-DD") === selectedDateString
   );
 
   const hasEvents = (selectedDayEntry?.events.length ?? 0) > 0;
-  const selectedDateString = dayjs(currentSelectedDate).format("YYYY-MM-DD");
 
   const linksByDayQuery = useQuery(calendarDteLinkQueries.byDay(selectedDateString));
 
@@ -66,7 +64,8 @@ function CalendarDailyPage() {
               search: (prev) => ({
                 ...prev,
                 date: dayjs(newDate).format("YYYY-MM-DD"),
-                // Optional: reset from/to to force hook to re-buffer if we implement that
+                from: undefined,
+                to: undefined,
               }),
             });
           }}
