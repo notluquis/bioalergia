@@ -43,13 +43,13 @@ import { isNonAccountableCategory } from "../utils/non-accountable-category";
 const CashFlowTable = lazy(() =>
   import("../components/CashFlowTable").then((module) => ({
     default: module.CashFlowTable,
-  })),
+  }))
 );
 
 const TransactionForm = lazy(() =>
   import("../components/TransactionForm").then((module) => ({
     default: module.TransactionForm,
-  })),
+  }))
 );
 
 // Hooks
@@ -255,7 +255,7 @@ function useFinancialTransactions(params: TransactionQueryParams) {
             pageSize: params.pageSize,
             search: params.search,
             to: params.to,
-          }),
+          })
         );
       } catch (error) {
         throw toFinanceApiError(error);
@@ -269,7 +269,7 @@ function useTransactionCategories() {
     queryKey: ["TransactionCategory"],
     queryFn: async () => {
       const payload = TransactionCategoriesResponseSchema.parse(
-        await financeORPCClient.categoriesList(),
+        await financeORPCClient.categoriesList()
       );
       return payload.data;
     },
@@ -296,7 +296,7 @@ function useCompensationProfiles() {
     queryKey: ["CompensationProfile"],
     queryFn: async () => {
       const payload = CompensationProfilesResponseSchema.parse(
-        await financeORPCClient.compensationProfilesList(),
+        await financeORPCClient.compensationProfilesList()
       );
       return payload.data;
     },
@@ -315,7 +315,7 @@ function useCompensationLedger(profileId: null | number, period: string) {
           fromPeriod,
           id: profileId as number,
           toPeriod,
-        }),
+        })
       );
       return payload.data;
     },
@@ -327,7 +327,7 @@ function useFinancialAutoCategoryRules() {
     queryKey: ["FinancialAutoCategoryRule"],
     queryFn: async () => {
       const payload = AutoCategoryRulesResponseSchema.parse(
-        await financeORPCClient.autoCategoryRulesList(),
+        await financeORPCClient.autoCategoryRulesList()
       );
       return payload.data;
     },
@@ -339,7 +339,7 @@ function useAvailableFinancialMonths() {
     queryKey: ["FinancialTransaction", "available-months"],
     queryFn: async () => {
       const payload = AvailableMonthsResponseSchema.parse(
-        await financeORPCClient.transactionsAvailableMonths(),
+        await financeORPCClient.transactionsAvailableMonths()
       );
       return payload.data;
     },
@@ -348,7 +348,7 @@ function useAvailableFinancialMonths() {
 }
 
 function isFinancialTransactionsPayload(
-  payload: unknown,
+  payload: unknown
 ): payload is FinancialTransactionsResponse & { data: CashFlowTransaction[] } {
   return (
     typeof payload === "object" &&
@@ -489,7 +489,7 @@ function buildSummary(transactions: CashFlowTransaction[]) {
       acc.net += amount;
       return acc;
     },
-    { count: 0, expense: 0, income: 0, net: 0 },
+    { count: 0, expense: 0, income: 0, net: 0 }
   );
 
   const byCategoryMap = new Map<string, SummaryByCategoryEntry>();
@@ -514,7 +514,7 @@ function buildSummary(transactions: CashFlowTransaction[]) {
   }
 
   const byCategory = Array.from(byCategoryMap.values()).sort(
-    (a, b) => Math.abs(b.total) - Math.abs(a.total),
+    (a, b) => Math.abs(b.total) - Math.abs(a.total)
   );
 
   return { byCategory, totals };
@@ -522,7 +522,7 @@ function buildSummary(transactions: CashFlowTransaction[]) {
 
 function buildPieCategoryData(
   items: SummaryByCategoryEntry[],
-  type: "EXPENSE" | "INCOME",
+  type: "EXPENSE" | "INCOME"
 ): PieCategoryDatum[] {
   const rows = items
     .filter((item) => item.type === type)
@@ -639,11 +639,11 @@ export function CashFlowPage() {
   const [newCompensationName, setNewCompensationName] = useState("");
   const [newCompensationCategoryId, setNewCompensationCategoryId] = useState<null | number>(null);
   const [newCompensationCounterpartId, setNewCompensationCounterpartId] = useState<null | number>(
-    null,
+    null
   );
   const [newCompensationIsActive, setNewCompensationIsActive] = useState(true);
   const [selectedCompensationProfileId, setSelectedCompensationProfileId] = useState<null | number>(
-    null,
+    null
   );
   const [budgetAmountInput, setBudgetAmountInput] = useState("");
   const [isReallocateOpen, setIsReallocateOpen] = useState(false);
@@ -658,7 +658,7 @@ export function CashFlowPage() {
 
   const monthOptions = useMemo(() => {
     const uniqueMonths = Array.from(
-      new Set(availableMonths.filter((value) => MONTH_VALUE_REGEX.test(value))),
+      new Set(availableMonths.filter((value) => MONTH_VALUE_REGEX.test(value)))
     ).sort((a, b) => b.localeCompare(a));
 
     if (uniqueMonths.length === 0) {
@@ -704,7 +704,7 @@ export function CashFlowPage() {
   const { data: compensationProfiles = [] } = useCompensationProfiles();
   const { data: selectedCompensationLedger = [] } = useCompensationLedger(
     selectedCompensationProfileId,
-    selectedMonth,
+    selectedMonth
   );
   const { data: autoCategoryRules = [] } = useFinancialAutoCategoryRules();
   const queryClient = useQueryClient();
@@ -723,7 +723,7 @@ export function CashFlowPage() {
       return "Todas";
     }
     const selectedMap = new Map(
-      categoryFilterOptions.map((option) => [option.value, option.label]),
+      categoryFilterOptions.map((option) => [option.value, option.label])
     );
     const labels = selectedCategoryFilters.map((key) => selectedMap.get(key) ?? key);
     const preview = labels.slice(0, 2).join(", ");
@@ -735,7 +735,7 @@ export function CashFlowPage() {
 
   const selectedCategoryMap = useMemo(
     () => new Map(categoryFilterOptions.map((option) => [option.value, option.label])),
-    [categoryFilterOptions],
+    [categoryFilterOptions]
   );
   const visibleCategoryFilterOptions = useMemo(() => {
     const search = normalizeText(categoryFilterSearch);
@@ -749,7 +749,7 @@ export function CashFlowPage() {
         label: `${counterpart.bankAccountHolder} (${counterpart.identificationNumber})`,
         value: counterpart.id,
       })),
-    [counterparts],
+    [counterparts]
   );
 
   const categoryOptionsByType = useMemo(
@@ -757,11 +757,11 @@ export function CashFlowPage() {
       EXPENSE: categories.filter((category) => category.type === "EXPENSE"),
       INCOME: categories.filter((category) => category.type === "INCOME"),
     }),
-    [categories],
+    [categories]
   );
   const activeCompensationProfiles = useMemo(
     () => compensationProfiles.filter((profile) => profile.isActive),
-    [compensationProfiles],
+    [compensationProfiles]
   );
   const selectedCompensationEntry = selectedCompensationLedger[0];
 
@@ -811,7 +811,7 @@ export function CashFlowPage() {
       return filtered;
     }
     return [{ label: formatMonthLabel(nextPeriod), value: nextPeriod }, ...filtered].sort((a, b) =>
-      b.value.localeCompare(a.value),
+      b.value.localeCompare(a.value)
     );
   }, [monthOptions, reallocateFromPeriod]);
   const nonAccountableCategoryIds = useMemo(
@@ -819,9 +819,9 @@ export function CashFlowPage() {
       new Set(
         categories
           .filter((category) => isNonAccountableCategory(category))
-          .map((category) => category.id),
+          .map((category) => category.id)
       ),
-    [categories],
+    [categories]
   );
 
   const filteredTransactions = useMemo(() => {
@@ -859,7 +859,7 @@ export function CashFlowPage() {
       const counterpartText = normalizeText(
         tx.counterpart
           ? `${tx.counterpart.bankAccountHolder} ${tx.counterpart.identificationNumber}`
-          : "",
+          : ""
       );
 
       if (
@@ -891,7 +891,7 @@ export function CashFlowPage() {
         const normalizedAmount = String(Math.round(numericAmount)).replace(/[^\d-]/g, "");
         const normalizedCurrency = formatCurrency(numericAmount).replace(/[^\d-]/g, "");
         const matchesAmount = [normalizedRawAmount, normalizedAmount, normalizedCurrency].some(
-          (candidate) => candidate.includes(amountFilter),
+          (candidate) => candidate.includes(amountFilter)
         );
         if (!matchesAmount) {
           return false;
@@ -912,43 +912,43 @@ export function CashFlowPage() {
   const accountableMonthTransactions = useMemo(
     () =>
       monthTransactions.filter(
-        (tx) => tx.categoryId == null || !nonAccountableCategoryIds.has(tx.categoryId),
+        (tx) => tx.categoryId == null || !nonAccountableCategoryIds.has(tx.categoryId)
       ),
-    [monthTransactions, nonAccountableCategoryIds],
+    [monthTransactions, nonAccountableCategoryIds]
   );
   const monthlySummary = useMemo(
     () => buildSummary(accountableMonthTransactions),
-    [accountableMonthTransactions],
+    [accountableMonthTransactions]
   );
   const incomeCategorySummary = useMemo(
     () =>
       monthlySummary.byCategory
         .filter((item) => item.type === "INCOME")
         .sort((a, b) => Math.abs(b.total) - Math.abs(a.total)),
-    [monthlySummary.byCategory],
+    [monthlySummary.byCategory]
   );
   const expenseCategorySummary = useMemo(
     () =>
       monthlySummary.byCategory
         .filter((item) => item.type === "EXPENSE")
         .sort((a, b) => Math.abs(b.total) - Math.abs(a.total)),
-    [monthlySummary.byCategory],
+    [monthlySummary.byCategory]
   );
   const incomePieData = useMemo(
     () => buildPieCategoryData(monthlySummary.byCategory, "INCOME"),
-    [monthlySummary.byCategory],
+    [monthlySummary.byCategory]
   );
   const expensePieData = useMemo(
     () => buildPieCategoryData(monthlySummary.byCategory, "EXPENSE"),
-    [monthlySummary.byCategory],
+    [monthlySummary.byCategory]
   );
   const incomePieTotal = useMemo(
     () => incomePieData.reduce((acc, item) => acc + item.value, 0),
-    [incomePieData],
+    [incomePieData]
   );
   const expensePieTotal = useMemo(
     () => expensePieData.reduce((acc, item) => acc + item.value, 0),
-    [expensePieData],
+    [expensePieData]
   );
 
   const totalFiltered = filteredTransactions.length;
@@ -973,7 +973,7 @@ export function CashFlowPage() {
           await financeORPCClient.transactionsUpdate({
             id: transactionId,
             payload: { categoryId },
-          }),
+          })
         );
       } catch (error) {
         throw toFinanceApiError(error);
@@ -1005,10 +1005,10 @@ export function CashFlowPage() {
                     category: nextCategory,
                     categoryId,
                   }
-                : transaction,
+                : transaction
             ),
           };
-        },
+        }
       );
 
       setUpdatingCategoryIds((prev) => {
@@ -1048,7 +1048,7 @@ export function CashFlowPage() {
     }) => {
       try {
         return CreateTransactionCategoryResponseSchema.parse(
-          await financeORPCClient.categoriesCreate(payload),
+          await financeORPCClient.categoriesCreate(payload)
         );
       } catch (error) {
         throw toFinanceApiError(error);
@@ -1087,7 +1087,7 @@ export function CashFlowPage() {
               name: payload.name,
               type: payload.type,
             },
-          }),
+          })
         );
       } catch (error) {
         throw toFinanceApiError(error);
@@ -1101,7 +1101,7 @@ export function CashFlowPage() {
       const previousTransactionCategories = queryClient.getQueriesData<TransactionCategoryOption[]>(
         {
           queryKey: ["TransactionCategory"],
-        },
+        }
       );
       const previousFinancialTransactions =
         queryClient.getQueriesData<FinancialTransactionsResponse>({
@@ -1122,9 +1122,9 @@ export function CashFlowPage() {
                   name: payload.name,
                   type: payload.type,
                 }
-              : category,
+              : category
           );
-        },
+        }
       );
 
       queryClient.setQueriesData<FinancialTransactionsResponse>(
@@ -1148,10 +1148,10 @@ export function CashFlowPage() {
                         }
                       : transaction.category,
                   }
-                : transaction,
+                : transaction
             ),
           };
-        },
+        }
       );
 
       return {
@@ -1190,7 +1190,7 @@ export function CashFlowPage() {
     mutationFn: async (id: number) => {
       try {
         return DeleteTransactionCategoryResponseSchema.parse(
-          await financeORPCClient.categoriesDelete({ id }),
+          await financeORPCClient.categoriesDelete({ id })
         );
       } catch (error) {
         throw toFinanceApiError(error);
@@ -1252,7 +1252,7 @@ export function CashFlowPage() {
                 baseAmount: payload.baseAmount,
                 period: payload.period,
               },
-            }),
+            })
           );
       } catch (error) {
         throw toFinanceApiError(error);
@@ -1284,7 +1284,7 @@ export function CashFlowPage() {
             id: payload.transactionId,
             profileId: payload.profileId,
             targetPeriod: payload.targetPeriod,
-          }),
+          })
         );
       } catch (error) {
         throw toFinanceApiError(error);
@@ -1321,7 +1321,7 @@ export function CashFlowPage() {
     }) => {
       try {
         return CreateAutoCategoryRuleResponseSchema.parse(
-          await financeORPCClient.autoCategoryRulesCreate(payload),
+          await financeORPCClient.autoCategoryRulesCreate(payload)
         );
       } catch (error) {
         throw toFinanceApiError(error);
@@ -1370,7 +1370,7 @@ export function CashFlowPage() {
     }) => {
       try {
         return UpdateAutoCategoryRuleResponseSchema.parse(
-          await financeORPCClient.autoCategoryRulesUpdate({ id, payload }),
+          await financeORPCClient.autoCategoryRulesUpdate({ id, payload })
         );
       } catch (error) {
         throw toFinanceApiError(error);
@@ -1394,7 +1394,7 @@ export function CashFlowPage() {
     mutationFn: async (id: number) => {
       try {
         return DeleteAutoCategoryRuleResponseSchema.parse(
-          await financeORPCClient.autoCategoryRulesDelete({ id }),
+          await financeORPCClient.autoCategoryRulesDelete({ id })
         );
       } catch (error) {
         throw toFinanceApiError(error);
@@ -1417,7 +1417,7 @@ export function CashFlowPage() {
     mutationFn: async (): Promise<SyncUncategorizedByPatternsResponse> => {
       try {
         return SyncUncategorizedByPatternsResponseSchema.parse(
-          await financeORPCClient.syncUncategorizedPatterns(),
+          await financeORPCClient.syncUncategorizedPatterns()
         );
       } catch (error) {
         throw toFinanceApiError(error);
@@ -1687,7 +1687,7 @@ export function CashFlowPage() {
 
   const updateColumnFilter = <K extends keyof CashFlowColumnFilters>(
     key: K,
-    value: CashFlowColumnFilters[K],
+    value: CashFlowColumnFilters[K]
   ) => {
     setColumnFilters((prev) => ({ ...prev, [key]: value }));
     setPage(1);
@@ -1951,10 +1951,9 @@ export function CashFlowPage() {
                                     style={{
                                       width: `${
                                         Math.abs(monthlySummary.totals.expense) > 0
-                                          ? (
-                                              Math.abs(item.total) /
-                                                Math.abs(monthlySummary.totals.expense)
-                                            ) * 100
+                                          ? (Math.abs(item.total) /
+                                              Math.abs(monthlySummary.totals.expense)) *
+                                            100
                                           : 0
                                       }%`,
                                     }}
@@ -1985,7 +1984,12 @@ export function CashFlowPage() {
                       ) : (
                         <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(240px,1fr)_minmax(220px,260px)]">
                           <div className="h-80 min-w-0">
-                            <ResponsiveContainer height="100%" width="100%">
+                            <ResponsiveContainer
+                              height={320}
+                              minHeight={320}
+                              minWidth={0}
+                              width="100%"
+                            >
                               <PieChart>
                                 <Pie
                                   data={incomePieData}
@@ -2041,7 +2045,12 @@ export function CashFlowPage() {
                       ) : (
                         <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(240px,1fr)_minmax(220px,260px)]">
                           <div className="h-80 min-w-0">
-                            <ResponsiveContainer height="100%" width="100%">
+                            <ResponsiveContainer
+                              height={320}
+                              minHeight={320}
+                              minWidth={0}
+                              width="100%"
+                            >
                               <PieChart>
                                 <Pie
                                   data={expensePieData}
@@ -2354,7 +2363,7 @@ export function CashFlowPage() {
                         variant="outline"
                         onPress={() => {
                           setSelectedCategoryFilters((prev) =>
-                            prev.filter((key) => key !== categoryKey),
+                            prev.filter((key) => key !== categoryKey)
                           );
                           setPage(1);
                         }}
@@ -2604,7 +2613,7 @@ export function CashFlowPage() {
                                     value={editingCategoryType}
                                     onChange={(key) =>
                                       setEditingCategoryType(
-                                        String(key ?? "EXPENSE") as "EXPENSE" | "INCOME",
+                                        String(key ?? "EXPENSE") as "EXPENSE" | "INCOME"
                                       )
                                     }
                                   >
@@ -3117,7 +3126,7 @@ export function CashFlowPage() {
                                   value={editingRuleType}
                                   onChange={(key) =>
                                     setEditingRuleType(
-                                      String(key ?? "EXPENSE") as "EXPENSE" | "INCOME",
+                                      String(key ?? "EXPENSE") as "EXPENSE" | "INCOME"
                                     )
                                   }
                                 >
@@ -3187,7 +3196,7 @@ export function CashFlowPage() {
                                     value={editingRuleMinAmount}
                                     onChange={(e) =>
                                       setEditingRuleMinAmount(
-                                        e.target.value.replace(/[^0-9.-]/g, ""),
+                                        e.target.value.replace(/[^0-9.-]/g, "")
                                       )
                                     }
                                   />
@@ -3199,7 +3208,7 @@ export function CashFlowPage() {
                                     value={editingRuleMaxAmount}
                                     onChange={(e) =>
                                       setEditingRuleMaxAmount(
-                                        e.target.value.replace(/[^0-9.-]/g, ""),
+                                        e.target.value.replace(/[^0-9.-]/g, "")
                                       )
                                     }
                                   />

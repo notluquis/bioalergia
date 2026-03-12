@@ -28,12 +28,12 @@ import { useState } from "react";
 import {
   Area,
   AreaChart,
+  Cell,
   CartesianGrid,
   Legend,
   Pie,
   PieChart,
   ResponsiveContainer,
-  Sector,
   Tooltip,
   XAxis,
   YAxis,
@@ -149,7 +149,7 @@ function resolveRange(searchParams: AnalyticsSearchParams, selectedMonth: string
 
 function buildTrendData(
   data: TreatmentAnalytics | undefined,
-  period: AnalyticsPeriod,
+  period: AnalyticsPeriod
 ): AnalyticsTrendPoint[] | undefined {
   if (period === "day") {
     return data?.byDate;
@@ -535,8 +535,8 @@ function PieChartCard({
         <span className="font-semibold text-foreground text-xs sm:text-sm">{title}</span>
       </Card.Header>
       <Card.Content className="p-2">
-        <div className="h-24 min-h-24 w-full min-w-0">
-          <ResponsiveContainer width="100%" height="100%">
+        <div className="h-28 min-h-28 w-full min-w-0">
+          <ResponsiveContainer width="100%" height={112} minWidth={0} minHeight={112}>
             <PieChart>
               <Pie
                 data={data}
@@ -546,8 +546,11 @@ function PieChartCard({
                 outerRadius={42}
                 paddingAngle={5}
                 dataKey="value"
-                shape={(props, index) => <Sector {...props} fill={colors[index % colors.length]} />}
-              />
+              >
+                {data.map((entry, index) => (
+                  <Cell key={`${title}-${entry.name}`} fill={colors[index % colors.length]} />
+                ))}
+              </Pie>
               <Tooltip />
               <Legend
                 verticalAlign="middle"

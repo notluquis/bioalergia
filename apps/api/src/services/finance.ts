@@ -1665,13 +1665,15 @@ async function ensurePersonalDrAutoCategoryRules() {
 }
 
 export async function listFinancialAutoCategoryRules() {
-  return db.financialAutoCategoryRule.findMany({
+  const rules = await db.financialAutoCategoryRule.findMany({
     include: {
       category: true,
       counterpart: true,
     },
     orderBy: [{ priority: "desc" }, { id: "asc" }],
   });
+
+  return rules.map(mapFinancialAutoCategoryRule);
 }
 
 export async function createFinancialAutoCategoryRule(data: FinancialAutoCategoryRuleInput) {
@@ -1697,7 +1699,7 @@ export async function createFinancialAutoCategoryRule(data: FinancialAutoCategor
   });
 
   await applySingleAutoCategoryRule(created.id);
-  return created;
+  return mapFinancialAutoCategoryRule(created);
 }
 
 export async function updateFinancialAutoCategoryRule(
@@ -1755,13 +1757,64 @@ export async function updateFinancialAutoCategoryRule(
   });
 
   await applySingleAutoCategoryRule(updated.id);
-  return updated;
+  return mapFinancialAutoCategoryRule(updated);
 }
 
 export async function deleteFinancialAutoCategoryRule(id: number) {
   return db.financialAutoCategoryRule.delete({
     where: { id },
   });
+}
+
+type FinancialAutoCategoryRuleRecord = Awaited<
+  ReturnType<typeof db.financialAutoCategoryRule.findFirst>
+> & {
+  category: null | {
+    color: null | string;
+    icon: null | string;
+    id: number;
+    name: string;
+    type: TransactionType;
+  };
+  counterpart: null | {
+    bankAccountHolder: null | string;
+    id: number;
+    identificationNumber: null | string;
+  };
+};
+
+function mapFinancialAutoCategoryRule(rule: FinancialAutoCategoryRuleRecord) {
+  return {
+    category:
+      rule.category == null
+        ? null
+        : {
+            color: rule.category.color,
+            icon: rule.category.icon,
+            id: rule.category.id,
+            name: rule.category.name,
+            type: rule.category.type,
+          },
+    categoryId: rule.categoryId,
+    commentContains: rule.commentContains,
+    counterpart:
+      rule.counterpart == null
+        ? null
+        : {
+            bankAccountHolder: rule.counterpart.bankAccountHolder ?? "",
+            id: rule.counterpart.id,
+            identificationNumber: rule.counterpart.identificationNumber ?? "",
+          },
+    counterpartId: rule.counterpartId,
+    descriptionContains: rule.descriptionContains,
+    id: rule.id,
+    isActive: rule.isActive,
+    maxAmount: rule.maxAmount != null ? Number(rule.maxAmount) : null,
+    minAmount: rule.minAmount != null ? Number(rule.minAmount) : null,
+    name: rule.name,
+    priority: rule.priority,
+    type: rule.type,
+  };
 }
 
 export type CompensationProfileInput = {

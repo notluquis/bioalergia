@@ -99,6 +99,45 @@ const createAutoCategoryRuleSchema = z.object({
 
 const updateAutoCategoryRuleSchema = createAutoCategoryRuleSchema.partial();
 
+const autoCategoryRuleOutputSchema = z.object({
+  category: z.object({
+    color: z.string().nullable().optional(),
+    icon: z.string().nullable().optional(),
+    id: z.number(),
+    name: z.string(),
+    type: transactionTypeSchema,
+  }),
+  categoryId: z.number(),
+  commentContains: z.string().nullable().optional(),
+  counterpart: z
+    .object({
+      bankAccountHolder: z.string(),
+      id: z.number(),
+      identificationNumber: z.string(),
+    })
+    .nullable()
+    .optional(),
+  counterpartId: z.number().nullable().optional(),
+  descriptionContains: z.string().nullable().optional(),
+  id: z.number(),
+  isActive: z.boolean(),
+  maxAmount: z.number().nullable().optional(),
+  minAmount: z.number().nullable().optional(),
+  name: z.string(),
+  priority: z.number(),
+  type: transactionTypeSchema,
+});
+
+const autoCategoryRuleListResponseSchema = z.object({
+  data: z.array(autoCategoryRuleOutputSchema),
+  status: z.literal("ok"),
+});
+
+const autoCategoryRuleResponseSchema = z.object({
+  data: autoCategoryRuleOutputSchema,
+  status: z.literal("ok"),
+});
+
 const createCompensationProfileSchema = z.object({
   categoryId: z.number().int().positive(),
   counterpartId: z.number().int().positive().nullable().optional(),
@@ -200,7 +239,7 @@ const financeORPCRouterBase = {
   autoCategoryRulesCreate: writeFinance
     .route({ method: "POST", path: "/auto-category-rules", tags: ["Finance"] })
     .input(createAutoCategoryRuleSchema)
-    .output(statusDataResponseSchema)
+    .output(autoCategoryRuleResponseSchema)
     .handler(async ({ input }) => ({
       data: await createFinancialAutoCategoryRule(input),
       status: "ok" as const,
@@ -217,7 +256,7 @@ const financeORPCRouterBase = {
 
   autoCategoryRulesList: readFinance
     .route({ method: "GET", path: "/auto-category-rules", tags: ["Finance"] })
-    .output(listDataResponseSchema)
+    .output(autoCategoryRuleListResponseSchema)
     .handler(async () => ({
       data: await listFinancialAutoCategoryRules(),
       status: "ok" as const,
@@ -226,7 +265,7 @@ const financeORPCRouterBase = {
   autoCategoryRulesUpdate: writeFinance
     .route({ method: "PUT", path: "/auto-category-rules/{id}", tags: ["Finance"] })
     .input(z.object({ id: z.number().int().positive(), payload: updateAutoCategoryRuleSchema }))
-    .output(statusDataResponseSchema)
+    .output(autoCategoryRuleResponseSchema)
     .handler(async ({ input }) => ({
       data: await updateFinancialAutoCategoryRule(input.id, input.payload),
       status: "ok" as const,
