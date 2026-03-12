@@ -97,7 +97,7 @@ const useReportActions = ({
     onSuccess: (stats) => {
       setLastImportStats(stats);
       showSuccess(
-        `Reporte procesado: ${stats.insertedRows} insertados, ${stats.duplicateRows} duplicados`,
+        `Reporte procesado: ${stats.insertedRows} insertados, ${stats.duplicateRows} duplicados`
       );
       setProcessingFile(null);
       void queryClient.invalidateQueries({ queryKey: ["mp-reports", reportType] });
@@ -111,7 +111,7 @@ const useReportActions = ({
   const handleProcess = (fileName: string) => {
     if (
       confirm(
-        `¿Estás seguro de sincronizar el reporte ${fileName}? Esto podría duplicar datos si no se detecta correctamente.`,
+        `¿Estás seguro de sincronizar el reporte ${fileName}? Esto podría duplicar datos si no se detecta correctamente.`
       )
     ) {
       setProcessingFile(fileName);
@@ -207,7 +207,7 @@ export function MercadoPagoSettingsPage() {
     handleProcess,
     downloadPending,
     processPending,
-    processingFile,
+    processingFile
   );
   const reportPageCount = Math.max(1, Math.ceil(reportTotal / reportPagination.pageSize));
 
@@ -492,7 +492,7 @@ function buildSyncColumns(): ColumnDef<MpSyncLog>[] {
             "rounded-full px-2 py-0.5 font-semibold text-xs",
             row.original.status === "SUCCESS" && "bg-success/10 text-success",
             row.original.status === "ERROR" && "bg-danger/10 text-danger",
-            row.original.status === "RUNNING" && "bg-warning/10 text-warning",
+            row.original.status === "RUNNING" && "bg-warning/10 text-warning"
           )}
         >
           {row.original.status}
@@ -546,7 +546,7 @@ function buildSyncColumns(): ColumnDef<MpSyncLog>[] {
                       className={cn(
                         "rounded px-1.5 py-0.5 font-semibold text-[11px] uppercase",
                         tone === "release" && "bg-primary/10 text-primary",
-                        tone === "settlement" && "bg-warning/10 text-warning",
+                        tone === "settlement" && "bg-warning/10 text-warning"
                       )}
                     >
                       {label}
@@ -614,7 +614,7 @@ function buildSyncColumns(): ColumnDef<MpSyncLog>[] {
                       </Tooltip>
                     )}
                   </div>
-                ) : null,
+                ) : null
               )}
             </div>
           );
@@ -682,7 +682,7 @@ function getMpReportsRefetchInterval(query: { state: { data?: { reports?: MPRepo
   return hasPending ? 15_000 : 60_000;
 }
 
-function isReportPending(status?: string) {
+function isReportPending(status?: null | string) {
   if (!status) {
     return false;
   }
@@ -778,7 +778,7 @@ function getSyncReportTypes(log: MpSyncLog) {
     const raw = details.reportTypes;
     if (Array.isArray(raw)) {
       return raw.filter(
-        (item): item is "release" | "settlement" => item === "release" || item === "settlement",
+        (item): item is "release" | "settlement" => item === "release" || item === "settlement"
       );
     }
   }

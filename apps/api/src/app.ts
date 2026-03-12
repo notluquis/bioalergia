@@ -65,6 +65,7 @@ import { usersOpenAPIHandler, usersORPCHandler } from "./orpc/users";
 import { dailyProductionRoutes } from "./routes/daily-production-balances";
 import { loanScheduleRoutes } from "./routes/loan-schedules";
 import { loanRoutes } from "./routes/loans";
+import { mercadopagoRoutes } from "./routes/mercadopago";
 import { serviceScheduleRoutes } from "./routes/service-schedules";
 import { shareTargetRoutes } from "./routes/share-target";
 import { transactionRoutes } from "./routes/transactions";
@@ -1465,6 +1466,7 @@ app.route("/api/share-target", shareTargetRoutes);
 
 // REST-ONLY endpoints (no oRPC equivalents)
 app.route("/api/loans", loanRoutes);
+app.route("/api/mercadopago", mercadopagoRoutes);
 app.route("/api/transactions", transactionRoutes);
 app.route("/api/daily-production-balances", dailyProductionRoutes);
 app.route("/api/loan-schedules", loanScheduleRoutes);

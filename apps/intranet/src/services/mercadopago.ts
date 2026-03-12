@@ -22,14 +22,14 @@ export interface ImportStats {
 
 export interface MPReport {
   begin_date: Date;
-  created_from: "manual" | "schedule";
-  date_created?: Date;
+  created_from?: null | string;
+  date_created?: Date | null;
   end_date: Date;
-  file_name?: string;
+  file_name?: null | string;
   id: number;
-  status?: string;
-  status_detail?: string;
-  state?: string;
+  status?: null | string;
+  status_detail?: null | string;
+  state?: null | string;
 }
 
 export interface MPReportListResponse {
@@ -75,14 +75,14 @@ interface ProcessReportResponse {
 
 const MPReportSchema = z.looseObject({
   begin_date: z.coerce.date(),
-  created_from: z.enum(["manual", "schedule"]),
-  date_created: z.coerce.date().optional(),
+  created_from: z.string().nullable().optional(),
+  date_created: z.coerce.date().nullable().optional(),
   end_date: z.coerce.date(),
-  file_name: z.string().optional(),
+  file_name: z.string().nullable().optional(),
   id: z.number(),
-  status: z.string().optional(),
-  status_detail: z.string().optional(),
-  state: z.string().optional(),
+  status: z.string().nullable().optional(),
+  status_detail: z.string().nullable().optional(),
+  state: z.string().nullable().optional(),
 });
 
 const MPReportListResponseSchema = z.object({
@@ -133,7 +133,7 @@ export const MPService = {
   createReport: async (
     beginDate: Date,
     endDate: Date,
-    type: MpReportType = "release",
+    type: MpReportType = "release"
   ): Promise<MPReport> => {
     try {
       return MPReportSchema.parse(
@@ -141,7 +141,7 @@ export const MPService = {
           beginDate,
           endDate,
           type,
-        }),
+        })
       );
     } catch (error) {
       throw toMercadoPagoApiError(error);
@@ -157,7 +157,7 @@ export const MPService = {
     endDate: Date,
     type: MpReportType,
     options?: { endAtNow?: boolean },
-    onProgress?: (current: number, total: number) => void,
+    onProgress?: (current: number, total: number) => void
   ): Promise<MPReport[]> => {
     const MAX_DAYS = 60; // Safe margin below 62-day limit
     const start = new Date(beginDate);
@@ -214,7 +214,7 @@ export const MPService = {
       }
 
       console.log(
-        `[MP Service] Creating chunk ${index}/${chunks.length}: ${beginDate.toISOString()} to ${endDate.toISOString()}`,
+        `[MP Service] Creating chunk ${index}/${chunks.length}: ${beginDate.toISOString()} to ${endDate.toISOString()}`
       );
 
       const report = await MPService.createReport(beginDate, endDate, type);
@@ -234,7 +234,7 @@ export const MPService = {
 
   listReports: async (
     type: MpReportType = "release",
-    params?: { limit?: number; offset?: number },
+    params?: { limit?: number; offset?: number }
   ): Promise<MPReportListResponse> => {
     let response: { reports: MPReport[]; total: number };
     try {
@@ -243,7 +243,7 @@ export const MPService = {
           limit: params?.limit,
           offset: params?.offset,
           type,
-        }),
+        })
       );
     } catch (error) {
       throw toMercadoPagoApiError(error);
@@ -276,7 +276,7 @@ export const MPService = {
         await mercadopagoORPCClient.listSyncLogs({
           limit: params?.limit,
           offset: params?.offset,
-        }),
+        })
       );
     } catch (error) {
       throw toMercadoPagoApiError(error);
@@ -291,7 +291,7 @@ export const MPService = {
         await mercadopagoORPCClient.processReport({
           fileName,
           reportType: type,
-        }),
+        })
       );
     } catch (error) {
       throw toMercadoPagoApiError(error);

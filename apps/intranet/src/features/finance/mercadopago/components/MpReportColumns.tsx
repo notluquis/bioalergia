@@ -11,7 +11,7 @@ export const getMpReportColumns = (
   handleProcess: (fileName: string) => void,
   downloadPending: boolean,
   processPending: boolean,
-  processingFile: null | string,
+  processingFile: null | string
 ): ColumnDef<MPReport>[] => [
   {
     accessorKey: "id",
@@ -59,7 +59,7 @@ export const getMpReportColumns = (
     cell: ({ row }) => (
       <div
         className="max-w-40 truncate font-mono text-default-600 text-xs"
-        title={row.original.file_name}
+        title={row.original.file_name ?? undefined}
       >
         {row.original.file_name ?? <span className="opacity-50">-</span>}
       </div>
@@ -140,7 +140,7 @@ export const getMpReportColumns = (
   },
 ];
 
-function isReportPending(status?: string) {
+function isReportPending(status?: null | string) {
   if (!status) {
     return false;
   }

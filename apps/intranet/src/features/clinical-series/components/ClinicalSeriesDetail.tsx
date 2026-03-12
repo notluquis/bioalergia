@@ -152,15 +152,15 @@ export function ClinicalSeriesDetail({ id, onBack }: ClinicalSeriesDetailProps) 
           </TableHeader>
           <TableBody>
             {series.events.map((event) => (
-              <TableRow key={event.id}>
-                <TableCell className="text-sm">{event.startDate}</TableCell>
+              <TableRow key={event.eventId}>
+                <TableCell className="text-sm">{event.eventDate}</TableCell>
                 <TableCell>
                   <p className="font-medium truncate">{event.summary}</p>
-                  {event.note && (
-                    <p className="text-sm text-foreground-500 truncate">{event.note}</p>
+                  {event.calendarGoogleId && (
+                    <p className="text-sm text-foreground-500 truncate">{event.calendarGoogleId}</p>
                   )}
                 </TableCell>
-                <TableCell>{event.stage || "-"}</TableCell>
+                <TableCell>{event.seriesStageLabel || "-"}</TableCell>
                 <TableCell className="text-right text-sm">
                   {event.dosageValue ? `${event.dosageValue} ${event.dosageUnit || ""}` : "-"}
                 </TableCell>
@@ -183,16 +183,16 @@ export function ClinicalSeriesDetail({ id, onBack }: ClinicalSeriesDetailProps) 
             </TableHeader>
             <TableBody>
               {series.linkedDocuments.map((doc) => (
-                <TableRow key={doc.id}>
-                  <TableCell className="font-medium">{doc.type}</TableCell>
+                <TableRow key={doc.dteSaleDetailId}>
+                  <TableCell className="font-medium">DTE</TableCell>
                   <TableCell>
                     <Link href="#" className="text-accent">
-                      {doc.reference}
+                      Folio {doc.folio}
                     </Link>
                   </TableCell>
-                  <TableCell className="text-sm">{doc.date}</TableCell>
+                  <TableCell className="text-sm">{doc.documentDate}</TableCell>
                   <TableCell className="text-right font-medium">
-                    ${doc.amount.toLocaleString()}
+                    ${doc.totalAmount.toLocaleString()}
                   </TableCell>
                 </TableRow>
               ))}

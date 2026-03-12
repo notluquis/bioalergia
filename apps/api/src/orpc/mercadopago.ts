@@ -50,14 +50,14 @@ const syncLogsInputSchema = z.object({
 const mpReportSchema = z
   .object({
     begin_date: z.coerce.date(),
-    created_from: z.string(),
-    date_created: z.coerce.date().optional(),
+    created_from: z.string().nullable().optional(),
+    date_created: z.coerce.date().nullable().optional(),
     end_date: z.coerce.date(),
-    file_name: z.string().optional(),
+    file_name: z.string().nullable().optional(),
     id: z.number(),
-    state: z.string().optional(),
-    status: z.string().optional(),
-    status_detail: z.string().optional(),
+    state: z.string().nullable().optional(),
+    status: z.string().nullable().optional(),
+    status_detail: z.string().nullable().optional(),
   })
   .passthrough();
 
@@ -65,6 +65,8 @@ const listReportsResponseSchema = z.object({
   reports: z.array(mpReportSchema),
   total: z.number(),
 });
+
+const mpReportsListSchema = z.array(mpReportSchema);
 
 const syncLogSchema = z.object({
   changeDetails: z.record(z.string(), z.unknown()).nullable().optional(),
@@ -85,6 +87,18 @@ const syncLogsResponseSchema = z.object({
   logs: z.array(syncLogSchema),
   total: z.number(),
 });
+
+function normalizeSyncLogChangeDetails(
+  value: unknown,
+): null | Record<string, unknown> | undefined {
+  if (value == null) {
+    return value === null ? null : undefined;
+  }
+  if (typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+  return value as Record<string, unknown>;
+}
 
 const processReportResponseSchema = z.object({
   cashFlowSync: z
@@ -175,7 +189,7 @@ const mercadopagoORPCRouterBase = {
       const type = input.type ?? "release";
       const limit = input.limit ?? 50;
       const offset = input.offset ?? 0;
-      const data = await MercadoPagoService.listReports(type);
+      const data = mpReportsListSchema.parse(await MercadoPagoService.listReports(type));
       const sliced = data.slice(offset, offset + limit);
       return {
         reports: sliced,
@@ -197,7 +211,23 @@ const mercadopagoORPCRouterBase = {
         limit: input.limit,
         offset: input.offset,
       });
-      return { logs, total };
+      return {
+        logs: logs.map((log) => ({
+          changeDetails: normalizeSyncLogChangeDetails(log.changeDetails),
+          errorMessage: log.errorMessage,
+          excluded: log.excluded,
+          finishedAt: log.finishedAt,
+          id: log.id,
+          inserted: log.inserted,
+          skipped: log.skipped,
+          startedAt: log.startedAt,
+          status: log.status as "ERROR" | "RUNNING" | "SUCCESS",
+          triggerLabel: log.triggerLabel,
+          triggerSource: log.triggerSource,
+          updated: log.updated,
+        })),
+        total,
+      };
     }),
 
   processReport: integrationCreate

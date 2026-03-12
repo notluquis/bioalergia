@@ -34,6 +34,8 @@ export const brandAssetUrlSchema = z
     },
   );
 
+export const optionalBrandAssetUrlSchema = z.union([z.literal(""), brandAssetUrlSchema]);
+
 // Numeric schemas
 export const moneySchema = z.coerce.number().min(0);
 export const clpInt = z.coerce.number().int().default(0);
@@ -109,8 +111,8 @@ export const settingsSchema = z.object({
   tagline: z.string().max(200).optional().default(""),
   primaryColor: z.string().regex(colorRegex, "Debe ser un color HEX o CSS válido"),
   secondaryColor: z.string().regex(colorRegex, "Debe ser un color HEX o CSS válido"),
-  logoUrl: brandAssetUrlSchema,
-  faviconUrl: brandAssetUrlSchema,
+  logoUrl: optionalBrandAssetUrlSchema,
+  faviconUrl: optionalBrandAssetUrlSchema,
   pageTitle: z.string().trim().min(1).max(160),
   dbDisplayHost: z.string().min(1).max(191),
   dbDisplayName: z.string().min(1).max(191),
