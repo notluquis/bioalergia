@@ -215,3 +215,5 @@ export const settingsOpenAPIHandler = new OpenAPIHandler(settingsORPCRouter, {
     }),
   ],
 });
+
+export type SettingsORPCRouter = typeof settingsORPCRouter;

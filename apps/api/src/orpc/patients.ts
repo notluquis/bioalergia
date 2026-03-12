@@ -757,3 +757,5 @@ export const patientsOpenAPIHandler = new OpenAPIHandler(patientsORPCRouter, {
     }),
   ],
 });
+
+export type PatientsORPCRouter = typeof patientsORPCRouter;

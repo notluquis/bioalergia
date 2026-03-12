@@ -1,25 +1,10 @@
 import { createORPCClient, ORPCError } from "@orpc/client";
+import type { RouterClient } from "@orpc/server";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
-import type { BackupFile, BackupJob, RestoreJob } from "./types";
+import type { BackupsORPCRouter } from "../../../../api/src/orpc/backups";
 
-type BackupsORPCClient = {
-  history: () => Promise<{ history: unknown[]; status: "ok" }>;
-  list: () => Promise<{
-    backups: BackupFile[];
-    error?: string;
-    jobs: unknown[];
-    status: "ok";
-    warning?: string;
-  }>;
-  logs: () => Promise<{ logs: unknown[]; status: "ok" }>;
-  restore: (input: { fileId: string; tables?: string[] }) => Promise<{
-    job: RestoreJob;
-    status: "ok";
-  }>;
-  tables: (input: { fileId: string }) => Promise<{ status: "ok"; tables: string[] }>;
-  trigger: () => Promise<{ job: BackupJob; message: string; status: "ok" }>;
-};
+export type BackupsORPCClient = RouterClient<BackupsORPCRouter>;
 
 const backupsORPCLink = new SuperJSONLink({
   fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),

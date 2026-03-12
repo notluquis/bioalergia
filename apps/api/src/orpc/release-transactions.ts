@@ -216,3 +216,5 @@ export const releaseTransactionsOpenAPIHandler = new OpenAPIHandler(releaseTrans
     }),
   ],
 });
+
+export type ReleaseTransactionsORPCRouter = typeof releaseTransactionsORPCRouter;

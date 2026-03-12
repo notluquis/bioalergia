@@ -261,3 +261,5 @@ export const suppliesOpenAPIHandler = new OpenAPIHandler(suppliesORPCRouter, {
     }),
   ],
 });
+
+export type SuppliesORPCRouter = typeof suppliesORPCRouter;

@@ -1,32 +1,10 @@
 import { createORPCClient, ORPCError } from "@orpc/client";
+import type { RouterClient } from "@orpc/server";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
-import type { DTEPurchaseDetail, DTESalesDetail, DTESummaryRaw } from "./types";
+import type { DteAnalyticsORPCRouter } from "../../../../../api/src/orpc/dte-analytics";
 
-type DteAnalyticsORPCClient = {
-  purchasesAvailablePeriods: () => Promise<{ data: string[]; status: "success" }>;
-  purchasesDetails: (input: { page?: number; pageSize?: number; period?: string }) => Promise<{
-    data: DTEPurchaseDetail[];
-    meta: { page: number; pageSize: number; total: number; totalPages: number };
-    status: "success";
-  }>;
-  purchasesSummary: (input?: {
-    endPeriod?: string;
-    startPeriod?: string;
-    year?: number;
-  }) => Promise<{ data: DTESummaryRaw[]; status: "success" }>;
-  salesAvailablePeriods: () => Promise<{ data: string[]; status: "success" }>;
-  salesDetails: (input: { page?: number; pageSize?: number; period?: string }) => Promise<{
-    data: DTESalesDetail[];
-    meta: { page: number; pageSize: number; total: number; totalPages: number };
-    status: "success";
-  }>;
-  salesSummary: (input?: {
-    endPeriod?: string;
-    startPeriod?: string;
-    year?: number;
-  }) => Promise<{ data: DTESummaryRaw[]; status: "success" }>;
-};
+export type DteAnalyticsORPCClient = RouterClient<DteAnalyticsORPCRouter>;
 
 const dteAnalyticsORPCLink = new SuperJSONLink({
   fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),
@@ -37,7 +15,7 @@ export const dteAnalyticsORPCClient = createORPCClient<DteAnalyticsORPCClient>(
   dteAnalyticsORPCLink,
   {
     path: ["api", "orpc", "dte-analytics", "rpc"],
-  },
+  }
 );
 
 export function toDteAnalyticsApiError(error: unknown): ApiError {

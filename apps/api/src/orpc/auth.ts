@@ -848,3 +848,5 @@ export const authOpenAPIHandler = new OpenAPIHandler(authORPCRouter, {
     }),
   ],
 });
+
+export type AuthORPCRouter = typeof authORPCRouter;

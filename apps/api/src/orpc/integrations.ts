@@ -150,3 +150,5 @@ export const integrationsOpenAPIHandler = new OpenAPIHandler(integrationsORPCRou
     }),
   ],
 });
+
+export type IntegrationsORPCRouter = typeof integrationsORPCRouter;

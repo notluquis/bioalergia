@@ -1,31 +1,21 @@
 import { createORPCClient, ORPCError } from "@orpc/client";
+import type { RouterClient } from "@orpc/server";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
-
-type NotificationsORPCClient = {
-  sendTest: (input: { userId?: number }) => Promise<{
-    message?: string;
-    sent?: number;
-    status?: string;
-    success?: boolean;
-  }>;
-  subscribe: (input: {
-    subscription: PushSubscriptionJSON;
-    userId?: number;
-  }) => Promise<{ message?: string; status?: string }>;
-  unsubscribe: (input: { endpoint: string }) => Promise<{ message?: string; status?: string }>;
-};
+import type { NotificationsORPCRouter } from "../../../../api/src/orpc/notifications";
 
 const notificationsORPCLink = new SuperJSONLink({
   fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),
   url: () => window.location.origin,
 });
 
+export type NotificationsORPCClient = RouterClient<NotificationsORPCRouter>;
+
 export const notificationsORPCClient = createORPCClient<NotificationsORPCClient>(
   notificationsORPCLink,
   {
     path: ["api", "orpc", "notifications", "rpc"],
-  },
+  }
 );
 
 export function toNotificationsApiError(error: unknown): ApiError {

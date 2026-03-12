@@ -1,16 +1,15 @@
 import { createORPCClient, ORPCError } from "@orpc/client";
+import type { RouterClient } from "@orpc/server";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
-import type { HealthResponse } from "./types";
-
-type SystemORPCClient = {
-  health: () => Promise<HealthResponse>;
-};
+import type { SystemORPCRouter } from "../../../../api/src/orpc/system";
 
 const systemORPCLink = new SuperJSONLink({
   fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),
   url: () => window.location.origin,
 });
+
+export type SystemORPCClient = RouterClient<SystemORPCRouter>;
 
 export const systemORPCClient = createORPCClient<SystemORPCClient>(systemORPCLink, {
   path: ["api", "orpc", "system", "rpc"],

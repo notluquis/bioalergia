@@ -23,7 +23,7 @@ function normalizeDecimalValues<T>(value: T): T {
 
   if (value && typeof value === "object") {
     return Object.fromEntries(
-      Object.entries(value).map(([key, entry]) => [key, normalizeDecimalValues(entry)]),
+      Object.entries(value).map(([key, entry]) => [key, normalizeDecimalValues(entry)])
     ) as T;
   }
 
@@ -145,7 +145,7 @@ export async function fetchPatientBudgets(patientId: number) {
 }
 
 export async function fetchPatientDteSources(
-  input: { limit?: number; period?: string; q?: string } = {},
+  input: { limit?: number; period?: string; q?: string } = {}
 ) {
   try {
     const response = await patientsORPCClient.listDteSources(input);
@@ -157,7 +157,7 @@ export async function fetchPatientDteSources(
 
 export async function fetchPatients(q?: string) {
   try {
-    const response = await patientsORPCClient.list(q ? { q } : undefined);
+    const response = await patientsORPCClient.list(q ? { q } : {});
     return PatientListSchema.parse(normalizeDecimalValues(response.patients));
   } catch (error) {
     throw toPatientsApiError(error);

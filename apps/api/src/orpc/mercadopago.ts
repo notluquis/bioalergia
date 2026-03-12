@@ -397,3 +397,5 @@ export const mercadopagoOpenAPIHandler = new OpenAPIHandler(mercadopagoORPCRoute
     }),
   ],
 });
+
+export type MercadopagoORPCRouter = typeof mercadopagoORPCRouter;

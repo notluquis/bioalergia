@@ -1,43 +1,21 @@
 import { createORPCClient, ORPCError } from "@orpc/client";
+import type { RouterClient } from "@orpc/server";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
-
-type CertificateVerifyResponse =
-  | {
-      diagnosis: string;
-      doctor: {
-        name: string;
-        specialty?: string;
-      };
-      issuedAt: Date;
-      patient: {
-        name: string;
-      };
-      purpose: string;
-      restDays?: null | number;
-      restEndDate?: Date | null;
-      restStartDate?: Date | null;
-      valid: true;
-    }
-  | {
-      error?: string;
-      valid: false;
-    };
-
-type CertificatesORPCClient = {
-  verify: (input: { id: string }) => Promise<CertificateVerifyResponse>;
-};
+import type { CertificatesORPCRouter } from "../../../../api/src/orpc/certificates";
 
 const certificatesORPCLink = new SuperJSONLink({
   fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),
   url: () => window.location.origin,
 });
 
+export type CertificatesORPCClient = RouterClient<CertificatesORPCRouter>;
+
 export const certificatesORPCClient = createORPCClient<CertificatesORPCClient>(
   certificatesORPCLink,
   {
     path: ["api", "orpc", "certificates", "rpc"],
-  },
+  }
 );
 
 export function toCertificatesApiError(error: unknown): ApiError {

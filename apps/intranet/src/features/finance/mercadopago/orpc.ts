@@ -1,71 +1,10 @@
 import { createORPCClient, ORPCError } from "@orpc/client";
+import type { RouterClient } from "@orpc/server";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
-import type { MpReportType } from "../../../../shared/mercadopago";
+import type { MercadopagoORPCRouter } from "../../../../../api/src/orpc/mercadopago";
 
-type MercadoPagoORPCClient = {
-  createReport: (input: { beginDate: Date; endDate: Date; type?: MpReportType }) => Promise<{
-    begin_date: Date;
-    created_from: string;
-    date_created?: Date;
-    end_date: Date;
-    file_name?: string;
-    id: number;
-    state?: string;
-    status?: string;
-    status_detail?: string;
-  }>;
-  listReports: (input?: { limit?: number; offset?: number; type?: MpReportType }) => Promise<{
-    reports: Array<{
-      begin_date: Date;
-      created_from: string;
-      date_created?: Date;
-      end_date: Date;
-      file_name?: string;
-      id: number;
-      state?: string;
-      status?: string;
-      status_detail?: string;
-    }>;
-    total: number;
-  }>;
-  listSyncLogs: (input?: { limit?: number; offset?: number }) => Promise<{
-    logs: Array<{
-      changeDetails?: null | Record<string, unknown>;
-      errorMessage?: null | string;
-      excluded?: null | number;
-      finishedAt?: Date | null;
-      id: bigint;
-      inserted?: null | number;
-      skipped?: null | number;
-      startedAt: Date;
-      status: "ERROR" | "RUNNING" | "SUCCESS";
-      triggerLabel?: null | string;
-      triggerSource: string;
-      updated?: null | number;
-    }>;
-    total: number;
-  }>;
-  processReport: (input: { fileName: string; reportType: MpReportType }) => Promise<{
-    cashFlowSync?: {
-      created: number;
-      duplicates: number;
-      errors: string[];
-      failed: number;
-      total: number;
-    };
-    message: string;
-    stats: {
-      duplicateRows: number;
-      errors: string[];
-      insertedRows: number;
-      skippedRows: number;
-      totalRows: number;
-      validRows: number;
-    };
-    status: "error" | "success";
-  }>;
-};
+export type MercadoPagoORPCClient = RouterClient<MercadopagoORPCRouter>;
 
 const mercadopagoORPCLink = new SuperJSONLink({
   fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),

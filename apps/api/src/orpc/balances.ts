@@ -149,3 +149,5 @@ export const balancesOpenAPIHandler = new OpenAPIHandler(balancesORPCRouter, {
     }),
   ],
 });
+
+export type BalancesORPCRouter = typeof balancesORPCRouter;

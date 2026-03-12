@@ -187,3 +187,5 @@ export const dteOpenAPIHandler = new OpenAPIHandler(dteORPCRouter, {
     }),
   ],
 });
+
+export type DteORPCRouter = typeof dteORPCRouter;

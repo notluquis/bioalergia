@@ -353,3 +353,5 @@ export const haulmerOpenAPIHandler = new OpenAPIHandler(haulmerORPCRouter, {
     }),
   ],
 });
+
+export type HaulmerORPCRouter = typeof haulmerORPCRouter;

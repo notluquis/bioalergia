@@ -1,50 +1,15 @@
 import { createORPCClient, ORPCError } from "@orpc/client";
+import type { RouterClient } from "@orpc/server";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
-
-type HaulmerORPCClient = {
-  availablePeriods: () => Promise<{
-    purchases: Array<{ count: number; periodo: string }>;
-    sales: Array<{ count: number; periodo: string }>;
-    status: "ok";
-  }>;
-  sync: (input: { docTypes: Array<"purchases" | "sales">; periods: string[] }) => Promise<{
-    results: Array<{
-      docType: "purchases" | "sales";
-      error?: null | string;
-      period: string;
-      rowsInserted: number;
-      rowsProcessed: number;
-      rowsUpdated: number;
-      status: "failed" | "skipped" | "success";
-    }>;
-    status: "ok";
-    summary: { failed: number; success: number; total: number };
-  }>;
-  syncIncremental: (input: {
-    docTypes?: Array<"purchases" | "sales">;
-    includeLatestAlreadySynced?: boolean;
-  }) => Promise<{
-    message?: string;
-    mode?: "incremental";
-    results: Array<{
-      docType: "purchases" | "sales";
-      error?: null | string;
-      period: string;
-      rowsInserted: number;
-      rowsProcessed: number;
-      rowsUpdated: number;
-      status: "failed" | "skipped" | "success";
-    }>;
-    status: "ok";
-    summary: { failed: number; success: number; total: number };
-  }>;
-};
+import type { HaulmerORPCRouter } from "../../../../api/src/orpc/haulmer";
 
 const haulmerORPCLink = new SuperJSONLink({
   fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),
   url: () => window.location.origin,
 });
+
+export type HaulmerORPCClient = RouterClient<HaulmerORPCRouter>;
 
 export const haulmerORPCClient = createORPCClient<HaulmerORPCClient>(haulmerORPCLink, {
   path: ["api", "orpc", "haulmer", "rpc"],

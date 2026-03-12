@@ -297,3 +297,5 @@ export const productionBalancesOpenAPIHandler = new OpenAPIHandler(productionBal
     }),
   ],
 });
+
+export type ProductionBalancesORPCRouter = typeof productionBalancesORPCRouter;

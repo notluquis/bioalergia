@@ -1,20 +1,10 @@
 import { createORPCClient, ORPCError } from "@orpc/client";
+import type { RouterClient } from "@orpc/server";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
-import type { ListResponse as ReleaseListResponse } from "./releases/types";
+import type { ReleaseTransactionsORPCRouter } from "../../../../api/src/orpc/release-transactions";
 
-type ReleaseTransactionsORPCClient = {
-  detail: (input: { id: number }) => Promise<{ data: unknown; status: "ok" }>;
-  list: (input?: {
-    descriptions?: string;
-    from?: string;
-    page?: number;
-    pageSize?: number;
-    paymentMethod?: string;
-    search?: string;
-    to?: string;
-  }) => Promise<ReleaseListResponse>;
-};
+export type ReleaseTransactionsORPCClient = RouterClient<ReleaseTransactionsORPCRouter>;
 
 const releaseTransactionsORPCLink = new SuperJSONLink({
   fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),
@@ -25,7 +15,7 @@ export const releaseTransactionsORPCClient = createORPCClient<ReleaseTransaction
   releaseTransactionsORPCLink,
   {
     path: ["api", "orpc", "release-transactions", "rpc"],
-  },
+  }
 );
 
 export function toReleaseTransactionsApiError(error: unknown): ApiError {

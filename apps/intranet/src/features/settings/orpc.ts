@@ -1,30 +1,15 @@
 import { createORPCClient, ORPCError } from "@orpc/client";
+import type { RouterClient } from "@orpc/server";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
-import type { InternalSettings } from "./api";
-import type { AppSettings } from "./hooks/use-settings";
-
-type SettingsORPCClient = {
-  app: () => Promise<AppSettings>;
-  updateApp: (input: AppSettings) => Promise<{
-    message?: string;
-    status: string;
-  }>;
-  internal: () => Promise<{ internal: InternalSettings }>;
-  updateInternal: (input: { upsertChunkSize?: number }) => Promise<{
-    message?: string;
-    status: string;
-  }>;
-  uploadAsset: (input: { assetType: "favicon" | "logo" }) => Promise<{
-    message?: string;
-    status: string;
-  }>;
-};
+import type { SettingsORPCRouter } from "../../../../api/src/orpc/settings";
 
 const settingsORPCLink = new SuperJSONLink({
   fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),
   url: () => window.location.origin,
 });
+
+export type SettingsORPCClient = RouterClient<SettingsORPCRouter>;
 
 export const settingsORPCClient = createORPCClient<SettingsORPCClient>(settingsORPCLink, {
   path: ["api", "orpc", "settings", "rpc"],

@@ -1,27 +1,10 @@
 import { createORPCClient, ORPCError } from "@orpc/client";
+import type { RouterClient } from "@orpc/server";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
+import type { TransactionsInsightsORPCRouter } from "../../../../api/src/orpc/transactions-insights";
 
-type TransactionsInsightsORPCClient = {
-  participantInsight: (input: { from?: string; id: string; to?: string }) => Promise<{
-    counterparts: unknown[];
-    monthly: unknown[];
-    participant: string;
-    status: "ok";
-  }>;
-  participants: (input?: {
-    from?: string;
-    limit?: number;
-    mode?: "combined" | "incoming" | "outgoing";
-    to?: string;
-  }) => Promise<{ data: unknown; status: "ok" }>;
-  stats: (input: { from: string; to: string }) => Promise<{
-    byType: unknown[];
-    monthly: unknown[];
-    status: "ok";
-    totals: Record<string, number>;
-  }>;
-};
+export type TransactionsInsightsORPCClient = RouterClient<TransactionsInsightsORPCRouter>;
 
 const transactionsInsightsORPCLink = new SuperJSONLink({
   fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),
@@ -32,7 +15,7 @@ export const transactionsInsightsORPCClient = createORPCClient<TransactionsInsig
   transactionsInsightsORPCLink,
   {
     path: ["api", "orpc", "transactions-insights", "rpc"],
-  },
+  }
 );
 
 export function toTransactionsInsightsApiError(error: unknown): ApiError {

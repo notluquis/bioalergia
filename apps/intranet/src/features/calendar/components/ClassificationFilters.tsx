@@ -15,18 +15,24 @@ const DEFAULT_FILTER_BUTTONS = [
   { key: "missingDosage", label: "Sin dosis" },
   { key: "missingTreatmentStage", label: "Sin etapa" },
 ] as const;
+type MissingFilterKey = NonNullable<MissingFieldFilters["missing"]>[number];
 
 export function ClassificationFilters({
   availableFilters,
   filters,
   onSearchChange,
 }: ClassificationFiltersProps) {
-  const filterButtons = availableFilters?.length ? availableFilters : DEFAULT_FILTER_BUTTONS;
+  const filterButtons: readonly { key: MissingFilterKey; label: string }[] =
+    availableFilters?.length
+      ? availableFilters.filter((filter): filter is { key: MissingFilterKey; label: string } =>
+          DEFAULT_FILTER_BUTTONS.some((button) => button.key === filter.key)
+        )
+      : DEFAULT_FILTER_BUTTONS;
   const activeMissing = filters.missing ?? [];
 
   const hasActiveFilters = activeMissing.length > 0 || Boolean(filters.filterMode);
 
-  const toggleFilter = (key: string) => {
+  const toggleFilter = (key: MissingFilterKey) => {
     const currentMissing = new Set(activeMissing);
     if (currentMissing.has(key)) {
       currentMissing.delete(key);

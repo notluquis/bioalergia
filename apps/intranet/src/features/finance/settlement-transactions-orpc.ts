@@ -1,20 +1,10 @@
 import { createORPCClient, ORPCError } from "@orpc/client";
+import type { RouterClient } from "@orpc/server";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
-import type { ListResponse as SettlementListResponse } from "./settlements/types";
+import type { SettlementTransactionsORPCRouter } from "../../../../api/src/orpc/settlement-transactions";
 
-type SettlementTransactionsORPCClient = {
-  detail: (input: { id: number }) => Promise<{ data: unknown; status: "ok" }>;
-  list: (input?: {
-    from?: string;
-    page?: number;
-    pageSize?: number;
-    paymentMethod?: string;
-    search?: string;
-    to?: string;
-    transactionType?: string;
-  }) => Promise<SettlementListResponse>;
-};
+export type SettlementTransactionsORPCClient = RouterClient<SettlementTransactionsORPCRouter>;
 
 const settlementTransactionsORPCLink = new SuperJSONLink({
   fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),
@@ -25,7 +15,7 @@ export const settlementTransactionsORPCClient = createORPCClient<SettlementTrans
   settlementTransactionsORPCLink,
   {
     path: ["api", "orpc", "settlement-transactions", "rpc"],
-  },
+  }
 );
 
 export function toSettlementTransactionsApiError(error: unknown): ApiError {

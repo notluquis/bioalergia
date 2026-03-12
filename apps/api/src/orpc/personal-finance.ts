@@ -23,6 +23,7 @@ type PersonalFinanceORPCContext = {
 
 const base = os.$context<PersonalFinanceORPCContext>();
 const dateOnlySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+const decimalOutputSchema = z.union([z.number(), z.instanceof(Decimal)]);
 
 const creditIdSchema = z.object({
   id: z.number().int().positive(),
@@ -60,16 +61,16 @@ const createCreditInputSchema = z.object({
 
 const installmentSchema = z
   .object({
-    amount: z.unknown(),
-    capitalAmount: z.unknown().nullable().optional(),
+    amount: decimalOutputSchema,
+    capitalAmount: decimalOutputSchema.nullable().optional(),
     creditId: z.number().int(),
     dueDate: z.date(),
     id: z.number().int(),
     installmentNumber: z.number().int(),
-    interestAmount: z.unknown().nullable().optional(),
-    otherCharges: z.unknown().nullable().optional(),
-    paidAmount: z.unknown().nullable().optional(),
-    paidAmountCLP: z.unknown().nullable().optional(),
+    interestAmount: decimalOutputSchema.nullable().optional(),
+    otherCharges: decimalOutputSchema.nullable().optional(),
+    paidAmount: decimalOutputSchema.nullable().optional(),
+    paidAmountCLP: decimalOutputSchema.nullable().optional(),
     paidAt: z.date().nullable().optional(),
     status: z.enum(["PAID", "PENDING"]),
   })
@@ -84,10 +85,13 @@ const creditSchema = z
     description: z.string().nullable().optional(),
     id: z.number().int(),
     installments: z.array(installmentSchema).optional(),
-    interestRate: z.unknown().nullable().optional(),
+    interestRate: decimalOutputSchema.nullable().optional(),
+    nextPaymentAmount: decimalOutputSchema.nullable().optional(),
+    nextPaymentDate: z.date().nullable().optional(),
+    remainingAmount: decimalOutputSchema.nullable().optional(),
     startDate: z.date(),
     status: z.enum(["ACTIVE", "PAID", "REFINANCED"]),
-    totalAmount: z.unknown(),
+    totalAmount: decimalOutputSchema,
     totalInstallments: z.number().int(),
     updatedAt: z.date(),
   })
@@ -410,3 +414,5 @@ export const personalFinanceOpenAPIHandler = new OpenAPIHandler(personalFinanceO
     }),
   ],
 });
+
+export type PersonalFinanceORPCRouter = typeof personalFinanceORPCRouter;

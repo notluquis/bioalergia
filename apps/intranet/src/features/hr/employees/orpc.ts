@@ -1,25 +1,15 @@
 import { createORPCClient, ORPCError } from "@orpc/client";
+import type { RouterClient } from "@orpc/server";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
-import type { Employee, EmployeePayload, EmployeeUpdatePayload } from "./types";
-
-type EmployeesORPCClient = {
-  create: (
-    input: EmployeePayload & { names: string; rut: string },
-  ) => Promise<{ employee: Employee }>;
-  deactivate: (input: { id: number }) => Promise<{ status: "ok" }>;
-  detail: (input: { id: number }) => Promise<{ employee: Employee }>;
-  list: (input?: { includeInactive?: boolean }) => Promise<{ employees: Employee[] }>;
-  update: (input: {
-    id: number;
-    payload: EmployeeUpdatePayload;
-  }) => Promise<{ employee: Employee }>;
-};
+import type { EmployeesORPCRouter } from "../../../../../api/src/orpc/employees";
 
 const employeesORPCLink = new SuperJSONLink({
   fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),
   url: () => window.location.origin,
 });
+
+export type EmployeesORPCClient = RouterClient<EmployeesORPCRouter>;
 
 export const employeesORPCClient = createORPCClient<EmployeesORPCClient>(employeesORPCLink, {
   path: ["api", "orpc", "employees", "rpc"],

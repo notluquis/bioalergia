@@ -5,7 +5,7 @@ export interface CsvImportPayload {
   data: Record<string, number | string>[];
   includeInsertRowIndexes?: boolean;
   includeUpdateRows?: boolean;
-  table: string;
+  table: Parameters<typeof csvUploadORPCClient.preview>[0]["table"];
   period?: string; // Extracted from filename (YYYYMM format)
   mode?: "insert-only" | "insert-or-update" | "update-only"; // Import mode: insert new only, upsert, or update only
 }
@@ -43,7 +43,7 @@ const CsvPreviewResponseSchema = z.looseObject({
         key: z.string(),
         rowIndex: z.number(),
         summary: z.string(),
-      }),
+      })
     )
     .optional(),
   updated: z.number().optional(),
@@ -56,7 +56,7 @@ export async function importCsvData(payload: CsvImportPayload) {
         data: payload.data,
         mode: payload.mode,
         table: payload.table,
-      }),
+      })
     );
   } catch (error) {
     throw toCsvUploadApiError(error);
@@ -65,7 +65,15 @@ export async function importCsvData(payload: CsvImportPayload) {
 
 export async function previewCsvImport(payload: CsvImportPayload) {
   try {
-    return CsvPreviewResponseSchema.parse(await csvUploadORPCClient.preview(payload));
+    return CsvPreviewResponseSchema.parse(
+      await csvUploadORPCClient.preview({
+        data: payload.data,
+        includeInsertRowIndexes: payload.includeInsertRowIndexes,
+        includeUpdateRows: payload.includeUpdateRows,
+        mode: payload.mode,
+        table: payload.table,
+      })
+    );
   } catch (error) {
     throw toCsvUploadApiError(error);
   }

@@ -1,43 +1,10 @@
 import { createORPCClient, ORPCError } from "@orpc/client";
+import type { RouterClient } from "@orpc/server";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
-import type {
-  CreateMonthlyExpensePayload,
-  LinkMonthlyExpenseTransactionPayload,
-  MonthlyExpense,
-  MonthlyExpenseStatsRow,
-} from "./types";
+import type { ExpensesORPCRouter } from "../../../../api/src/orpc/expenses";
 
-type ExpensesORPCClient = {
-  create: (
-    input: Omit<CreateMonthlyExpensePayload, "expenseDate"> & { expenseDate: string },
-  ) => Promise<{ message: string; status: "error" }>;
-  detail: (input: { publicId: string }) => Promise<{ message: string; status: "error" }>;
-  linkTransaction: (input: LinkMonthlyExpenseTransactionPayload & { publicId: string }) => Promise<{
-    message: string;
-    status: "error";
-  }>;
-  list: (input?: {
-    from?: string;
-    serviceId?: null | number;
-    status?: string;
-    to?: string;
-  }) => Promise<{ expenses: MonthlyExpense[]; status: "ok" }>;
-  stats: (input?: {
-    category?: null | string;
-    from?: string;
-    groupBy?: "day" | "month" | "quarter" | "week" | "year";
-    to?: string;
-  }) => Promise<{ stats: MonthlyExpenseStatsRow[]; status: "ok" }>;
-  unlinkTransaction: (input: { publicId: string; transactionId: number }) => Promise<{
-    message: string;
-    status: "error";
-  }>;
-  update: (input: {
-    payload: Omit<CreateMonthlyExpensePayload, "expenseDate"> & { expenseDate: string };
-    publicId: string;
-  }) => Promise<{ message: string; status: "error" }>;
-};
+export type ExpensesORPCClient = RouterClient<ExpensesORPCRouter>;
 
 const expensesORPCLink = new SuperJSONLink({
   fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),

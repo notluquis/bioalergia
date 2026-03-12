@@ -34,7 +34,7 @@ const MultiMonthTimesheetsResponseSchema = z.object({
     z.object({
       entries: z.array(TimesheetEntrySchema),
       month: z.string(),
-    }),
+    })
   ),
   message: z.string().optional(),
   status: z.literal("ok"),
@@ -49,8 +49,8 @@ const SalarySummarySchema = z.object({
         net: z.number(),
         retention: z.number(),
         subtotal: z.number(),
-      }),
-    ),
+      })
+    )
   ),
   from: zDateString,
   message: z.string().optional(),
@@ -67,16 +67,14 @@ function normalizeTimesheetEntry(entry: Record<string, unknown>) {
   };
 }
 
-function normalizeTimesheetEntries(entries: TimesheetEntry[]) {
-  return entries.map((entry) =>
-    normalizeTimesheetEntry(entry as unknown as Record<string, unknown>),
-  );
+function normalizeTimesheetEntries(entries: Array<Record<string, unknown>>) {
+  return entries.map((entry) => normalizeTimesheetEntry(entry));
 }
 
 export async function fetchEmployeeTimesheets(
   employeeId: number,
   startDate: string,
-  endDate: string,
+  endDate: string
 ) {
   let data: {
     entries: TimesheetEntry[];
@@ -136,7 +134,7 @@ export async function fetchGlobalTimesheetRange(startDate: string, endDate: stri
 export async function fetchMultiMonthTimesheets(
   employeeIds: number[],
   startMonth: string,
-  endMonth: string,
+  endMonth: string
 ) {
   let data: {
     data: Record<string, { entries: TimesheetEntry[]; month: string }>;
@@ -155,7 +153,7 @@ export async function fetchMultiMonthTimesheets(
         Object.entries(response.data).map(([employeeId, value]) => [
           employeeId,
           { ...value, entries: normalizeTimesheetEntries(value.entries) },
-        ]),
+        ])
       ),
     });
   } catch (error) {
@@ -172,7 +170,7 @@ export async function fetchMultiMonthTimesheets(
 export async function fetchSalarySummary(
   startDate: string,
   endDate: string,
-  employeeIds: number[],
+  employeeIds: number[]
 ) {
   let data: {
     data: Record<
@@ -190,7 +188,7 @@ export async function fetchSalarySummary(
         employeeIds,
         from: startDate,
         to: endDate,
-      }),
+      })
     );
   } catch (error) {
     throw toTimesheetsApiError(error);

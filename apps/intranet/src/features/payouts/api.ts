@@ -47,7 +47,7 @@ export async function fetchReleaseTransactions(
           pageSize: params.pageSize,
           search: params.search,
           to: params.to,
-        })
+        }) ?? {}
       )
     ) as unknown as FetchReleaseTransactionsResponse;
   } catch (error) {

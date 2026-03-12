@@ -1,17 +1,15 @@
 import { createORPCClient, ORPCError } from "@orpc/client";
+import type { RouterClient } from "@orpc/server";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
-import type { BalancesApiResponse } from "./types";
-
-type BalancesORPCClient = {
-  list: (input: { from: string; to: string }) => Promise<BalancesApiResponse>;
-  save: (input: { balance: number; date: string; note?: string }) => Promise<{ status: "ok" }>;
-};
+import type { BalancesORPCRouter } from "../../../../../api/src/orpc/balances";
 
 const balancesORPCLink = new SuperJSONLink({
   fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),
   url: () => window.location.origin,
 });
+
+export type BalancesORPCClient = RouterClient<BalancesORPCRouter>;
 
 export const balancesORPCClient = createORPCClient<BalancesORPCClient>(balancesORPCLink, {
   path: ["api", "orpc", "balances", "rpc"],

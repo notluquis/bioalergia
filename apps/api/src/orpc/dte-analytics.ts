@@ -545,3 +545,5 @@ export const dteAnalyticsOpenAPIHandler = new OpenAPIHandler(dteAnalyticsORPCRou
     }),
   ],
 });
+
+export type DteAnalyticsORPCRouter = typeof dteAnalyticsORPCRouter;

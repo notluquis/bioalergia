@@ -285,3 +285,5 @@ export const backupsOpenAPIHandler = new OpenAPIHandler(backupsORPCRouter, {
     }),
   ],
 });
+
+export type BackupsORPCRouter = typeof backupsORPCRouter;

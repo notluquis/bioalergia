@@ -930,3 +930,5 @@ export const usersOpenAPIHandler = new OpenAPIHandler(usersORPCRouter, {
     }),
   ],
 });
+
+export type UsersORPCRouter = typeof usersORPCRouter;

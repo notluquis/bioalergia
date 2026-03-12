@@ -9,7 +9,7 @@ import { calendarQueries } from "@/features/calendar/queries";
 const CalendarClassificationPage = lazy(() =>
   import("@/pages/CalendarClassificationPage").then((m) => ({
     default: m.CalendarClassificationPage,
-  })),
+  }))
 );
 
 import type { MissingFieldFilters } from "@/features/calendar/api";
@@ -66,6 +66,7 @@ const classifySearchSchema = z
   }));
 
 type ClassifySearchParams = z.infer<typeof classifySearchSchema>;
+type MissingFilterKey = NonNullable<MissingFieldFilters["missing"]>[number];
 
 export const Route = createFileRoute("/_authed/calendar/classify")({
   staticData: {
@@ -97,13 +98,13 @@ export const Route = createFileRoute("/_authed/calendar/classify")({
 
   loader: async ({ context, deps: search }) => {
     const filters: MissingFieldFilters = {
-      missing: search.missing,
+      missing: search.missing as MissingFilterKey[] | undefined,
       filterMode: search.filterMode,
     };
 
     await Promise.all([
       context.queryClient.ensureQueryData(
-        calendarQueries.unclassified(search.page ?? 0, 50, filters),
+        calendarQueries.unclassified(search.page ?? 0, 50, filters)
       ),
       context.queryClient.ensureQueryData(calendarQueries.options()),
     ]);

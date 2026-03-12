@@ -197,3 +197,5 @@ export const clinicalSeriesOpenAPIHandler = new OpenAPIHandler(clinicalSeriesORP
     }),
   ],
 });
+
+export type ClinicalSeriesORPCRouter = typeof clinicalSeriesORPCRouter;

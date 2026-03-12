@@ -15,7 +15,7 @@ import { TanStackInputField } from "@/components/forms/TanStackFieldControls";
 import { useToast } from "@/context/ToastContext";
 import { fetchPeople, type PersonWithExtras } from "@/features/people/api";
 import { fetchRoles } from "@/features/roles/api";
-import { inviteUser } from "@/features/users/api";
+import { inviteUser, type InviteUserPayload } from "@/features/users/api";
 import { usePersonLinking } from "@/features/users/hooks/usePersonLinking";
 import { ApiError } from "@/lib/api-client";
 import { getPersonFullName } from "@/lib/person";
@@ -90,7 +90,7 @@ export function AddUserFormContainer({
         !p.user &&
         !p.hasUser &&
         !p.names.toLowerCase().includes("test") &&
-        !p.names.toLowerCase().includes("usuario prueba"),
+        !p.names.toLowerCase().includes("usuario prueba")
     ) || [];
 
   // Create user mutation
@@ -124,10 +124,9 @@ export function AddUserFormContainer({
       rut: "",
     } as AddUserFormState,
     onSubmit: async ({ value }) => {
-      const payload: Record<string, unknown> = {
+      const payload: InviteUserPayload = {
         email: value.email,
         mfaEnforced: value.mfaEnforced,
-        passkeyOnly: value.passkeyOnly,
         position: value.position,
         role: value.role,
       };

@@ -59,7 +59,29 @@ export async function fetchEmployees(includeInactive = false): Promise<Employee[
 
 export async function updateEmployee(id: number, data: EmployeeUpdatePayload): Promise<Employee> {
   try {
-    const res = await employeesORPCClient.update({ id, payload: data });
+    const normalizedStatus =
+      data.status === "ACTIVE" || data.status === "INACTIVE" || data.status === "TERMINATED"
+        ? data.status
+        : undefined;
+    const payload = {
+      bank_account_number: data.bank_account_number,
+      bank_account_type: data.bank_account_type,
+      bank_name: data.bank_name,
+      email: data.email,
+      fatherName: data.fatherName,
+      fixed_salary: data.fixed_salary,
+      hourly_rate: data.hourly_rate,
+      metadata: data.metadata,
+      motherName: data.motherName,
+      names: data.names ?? undefined,
+      overtime_rate: data.overtime_rate,
+      retention_rate: data.retention_rate,
+      role: data.role ?? undefined,
+      rut: data.rut ?? undefined,
+      salary_type: data.salary_type,
+      status: normalizedStatus,
+    };
+    const res = await employeesORPCClient.update({ id, payload });
     return EmployeeResponseSchema.parse(res).employee as Employee;
   } catch (error) {
     throw toEmployeesApiError(error);

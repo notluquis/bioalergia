@@ -26,11 +26,22 @@ export async function sendTestNotification(payload: SendTestPayload) {
 
 export async function subscribeToNotifications(payload: SubscribePayload) {
   try {
+    const subscription = payload.subscription.toJSON();
+    const auth = subscription.keys?.auth;
+    const p256dh = subscription.keys?.p256dh;
+
+    if (!subscription.endpoint || !auth || !p256dh) {
+      throw new Error("Suscripción push incompleta");
+    }
+
     return StatusResponseSchema.parse(
       await notificationsORPCClient.subscribe({
-        subscription: payload.subscription.toJSON(),
+        subscription: {
+          endpoint: subscription.endpoint,
+          keys: { auth, p256dh },
+        },
         userId: payload.userId,
-      }),
+      })
     );
   } catch (error) {
     throw toNotificationsApiError(error);

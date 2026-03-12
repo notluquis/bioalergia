@@ -63,24 +63,118 @@ const skipScheduleSchema = z.object({
   id: z.number().int().positive(),
   reason: z.string().min(1).max(500),
 });
+const decimalOutputSchema = z.union([z.number(), z.instanceof(Decimal)]);
+const serviceCategorySchema = z
+  .object({
+    color: z.string().nullable(),
+    id: z.number().int(),
+    name: z.string(),
+    type: z.enum(["EXPENSE", "INCOME"]),
+  })
+  .passthrough();
+const serviceTransactionSchema = z
+  .object({
+    amount: decimalOutputSchema.nullable().optional(),
+    description: z.string().nullable().optional(),
+    id: z.number().int(),
+    timestamp: z.date().optional(),
+  })
+  .passthrough();
+const serviceScheduleSchema = z
+  .object({
+    createdAt: z.date(),
+    dueDate: z.date(),
+    effectiveAmount: decimalOutputSchema,
+    expectedAmount: decimalOutputSchema,
+    financialTransactionId: z.number().int().nullable().optional(),
+    id: z.number().int(),
+    lateFeeAmount: decimalOutputSchema,
+    note: z.string().nullable(),
+    overdueDays: z.number().int(),
+    paidAmount: decimalOutputSchema.nullable().optional(),
+    paidDate: z.date().nullable().optional(),
+    periodEnd: z.date(),
+    periodStart: z.date(),
+    serviceId: z.number().int(),
+    status: z.enum(["PAID", "PARTIAL", "PENDING", "SKIPPED"]),
+    transaction: serviceTransactionSchema.nullable().optional(),
+    transactionId: z.number().int().nullable(),
+    updatedAt: z.date(),
+  })
+  .passthrough();
+const serviceSummarySchema = z
+  .object({
+    accountReference: z.string().nullable(),
+    amountIndexation: z.enum(["NONE", "UF"]),
+    autoLinkTransactions: z.boolean(),
+    category: z.string().nullable(),
+    counterpartAccountBankName: z.string().nullable(),
+    counterpartAccountId: z.number().int().nullable(),
+    counterpartAccountIdentifier: z.string().nullable(),
+    counterpartAccountType: z.string().nullable(),
+    counterpartId: z.number().int().nullable(),
+    counterpartName: z.string().nullable(),
+    createdAt: z.date(),
+    defaultAmount: decimalOutputSchema,
+    detail: z.string().nullable(),
+    dueDay: z.number().int().nullable(),
+    emissionDay: z.number().int().nullable(),
+    emissionEndDay: z.number().int().nullable(),
+    emissionExactDate: z.date().nullable(),
+    emissionMode: z.enum(["DATE_RANGE", "FIXED_DAY", "SPECIFIC_DATE"]),
+    emissionStartDay: z.number().int().nullable(),
+    frequency: z.enum([
+      "ANNUAL",
+      "BIMONTHLY",
+      "BIWEEKLY",
+      "MONTHLY",
+      "ONCE",
+      "QUARTERLY",
+      "SEMIANNUAL",
+      "WEEKLY",
+    ]),
+    id: z.number().int(),
+    lateFeeGraceDays: z.number().int().nullable(),
+    lateFeeMode: z.enum(["FIXED", "NONE", "PERCENTAGE"]),
+    lateFeeValue: decimalOutputSchema.nullable(),
+    name: z.string(),
+    nextGenerationMonths: z.number().int(),
+    notes: z.string().nullable(),
+    obligationType: z.enum(["DEBT", "LOAN", "OTHER", "SERVICE"]),
+    overdueCount: z.number().int(),
+    ownership: z.enum(["COMPANY", "MIXED", "OWNER", "THIRD_PARTY"]),
+    pendingCount: z.number().int(),
+    publicId: z.string(),
+    recurrenceType: z.enum(["ONE_OFF", "RECURRING"]),
+    reminderDaysBefore: z.number().int(),
+    serviceType: z.enum(["BUSINESS", "LEASE", "OTHER", "PERSONAL", "SOFTWARE", "SUPPLIER", "TAX", "UTILITY"]),
+    startDate: z.date(),
+    status: z.enum(["ACTIVE", "ARCHIVED", "INACTIVE"]),
+    totalExpected: decimalOutputSchema,
+    totalPaid: decimalOutputSchema,
+    transactionCategory: serviceCategorySchema.nullable().optional(),
+    transactionCategoryId: z.number().int().nullable(),
+    updatedAt: z.date(),
+  })
+  .passthrough();
 
 const statusOkSchema = z.object({
   status: z.literal("ok"),
 });
 
 const listResponseSchema = z.object({
-  services: z.array(z.unknown()),
+  services: z.array(serviceSummarySchema),
   status: z.literal("ok"),
 });
 
 const detailResponseSchema = z.object({
-  schedules: z.array(z.unknown()),
-  service: z.unknown(),
+  schedules: z.array(serviceScheduleSchema),
+  service: serviceSummarySchema,
   status: z.literal("ok"),
 });
 
 const scheduleResponseSchema = z.object({
-  schedule: z.unknown(),
+  schedule: serviceScheduleSchema,
   status: z.literal("ok"),
 });
 
@@ -96,10 +190,10 @@ const syncResponseSchema = z.object({
 
 const generateSchedulesResponseSchema = z
   .object({
-    generated: z.number().optional(),
+    generated: z.number(),
     message: z.string().optional(),
-    schedules: z.array(z.unknown()).optional(),
-    service: z.unknown().optional(),
+    schedules: z.array(serviceScheduleSchema),
+    service: serviceSummarySchema,
     status: z.literal("ok"),
   })
   .passthrough();
@@ -595,3 +689,5 @@ export const servicesOpenAPIHandler = new OpenAPIHandler(servicesORPCRouter, {
     }),
   ],
 });
+
+export type ServicesORPCRouter = typeof servicesORPCRouter;

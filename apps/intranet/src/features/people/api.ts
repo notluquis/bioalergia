@@ -86,7 +86,7 @@ const PersonDetailResponseSchema = z.object({
 
 export async function fetchPeople(): Promise<PersonWithExtras[]> {
   try {
-    const res = PeopleListResponseSchema.parse(await peopleORPCClient.list());
+    const res = PeopleListResponseSchema.parse(await peopleORPCClient.list({}));
     return res.people as PersonWithExtras[];
   } catch (error) {
     throw toPeopleApiError(error);

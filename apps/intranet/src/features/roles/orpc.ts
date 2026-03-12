@@ -1,7 +1,8 @@
 import { createORPCClient, ORPCError } from "@orpc/client";
+import type { RouterClient } from "@orpc/server";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
-import type { Permission, Role } from "@/types/roles";
+import type { RolesORPCRouter } from "../../../../api/src/orpc/roles";
 
 type RoleMapping = {
   app_role: string;
@@ -17,42 +18,12 @@ type RoleUser = {
   };
 };
 
-type RolesORPCClient = {
-  create: (input: { description: string; name: string }) => Promise<{ status: "ok" }>;
-  delete: (input: { id: number }) => Promise<{ status: "ok" }>;
-  list: () => Promise<{ roles: Role[] }>;
-  listMappings: () => Promise<{ data: RoleMapping[] }>;
-  permissions: () => Promise<{ permissions: Permission[] }>;
-  reassignUsers: (input: { id: number; targetRoleId: number }) => Promise<{
-    reassigned: number;
-    status: "ok";
-  }>;
-  roleUsers: (input: { id: number }) => Promise<{ users: RoleUser[] }>;
-  saveMapping: (input: RoleMapping) => Promise<{ status: "ok" }>;
-  syncPermissions: () => Promise<{
-    created: number;
-    details: string[];
-    errors?: string[];
-    skipped: number;
-    status: "ok";
-    total: number;
-  }>;
-  telemetryUnmappedSubjects: (input: {
-    subjects?: string[];
-    timestamp?: string;
-    total?: number;
-  }) => Promise<{ skipped?: boolean; status: "ok" }>;
-  update: (input: {
-    id: number;
-    payload: { description: string; name: string };
-  }) => Promise<{ status: "ok" }>;
-  updatePermissions: (input: { id: number; permissionIds: number[] }) => Promise<{ status: "ok" }>;
-};
-
 const rolesORPCLink = new SuperJSONLink({
   fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),
   url: () => window.location.origin,
 });
+
+export type RolesORPCClient = RouterClient<RolesORPCRouter>;
 
 export const rolesORPCClient = createORPCClient<RolesORPCClient>(rolesORPCLink, {
   path: ["api", "orpc", "roles", "rpc"],

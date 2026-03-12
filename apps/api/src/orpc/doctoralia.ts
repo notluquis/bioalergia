@@ -557,3 +557,5 @@ export const doctoraliaOpenAPIHandler = new OpenAPIHandler(doctoraliaORPCRouter,
     }),
   ],
 });
+
+export type DoctoraliaORPCRouter = typeof doctoraliaORPCRouter;

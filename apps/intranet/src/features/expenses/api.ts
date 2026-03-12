@@ -52,7 +52,7 @@ export async function fetchMonthlyExpenses(params?: {
 }): Promise<{ expenses: MonthlyExpense[]; status: "ok" }> {
   try {
     const parsed = ExpensesResponseSchema.parse(
-      await expensesORPCClient.list(compactORPCInput(params))
+      await expensesORPCClient.list(compactORPCInput(params) ?? {})
     );
     return { ...parsed, expenses: (parsed.expenses ?? []) as MonthlyExpense[] };
   } catch (error) {
@@ -68,7 +68,7 @@ export async function fetchMonthlyExpenseStats(params?: {
 }): Promise<{ stats: MonthlyExpenseStatsRow[]; status: "ok" }> {
   try {
     const parsed = ExpenseStatsResponseSchema.parse(
-      await expensesORPCClient.stats(compactORPCInput(params))
+      await expensesORPCClient.stats(compactORPCInput(params) ?? {})
     );
     return { ...parsed, stats: (parsed.stats ?? []) as MonthlyExpenseStatsRow[] };
   } catch (error) {

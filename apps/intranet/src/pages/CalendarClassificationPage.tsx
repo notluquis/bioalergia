@@ -37,6 +37,7 @@ import "dayjs/locale/es";
 const EMPTY_EVENTS: CalendarUnclassifiedEvent[] = [];
 const PAGE_SIZE = 50;
 type PendingCalendarAction = "rebuild" | "reclassify-all" | "sync";
+type MissingFilterKey = NonNullable<MissingFieldFilters["missing"]>[number];
 
 function CalendarClassificationPage() {
   const queryClient = useQueryClient();
@@ -45,7 +46,7 @@ function CalendarClassificationPage() {
 
   const page = search.page ?? 0;
   const filters: MissingFieldFilters = {
-    missing: search.missing,
+    missing: search.missing as MissingFilterKey[] | undefined,
     filterMode: search.filterMode,
   };
 
@@ -125,7 +126,7 @@ function CalendarClassificationPage() {
     onSuccess: (response) => {
       setActiveJobId(response.jobId);
       toast.info(
-        `Iniciando reclasificación de ${response.totalEvents} eventos (todos los pendientes)...`,
+        `Iniciando reclasificación de ${response.totalEvents} eventos (todos los pendientes)...`
       );
     },
   });
@@ -144,13 +145,13 @@ function CalendarClassificationPage() {
     mutationFn: () => rebuildClinicalSeries(),
     onError: (err) =>
       toast.error(
-        `Error al reagrupar: ${err instanceof Error ? err.message : "Error desconocido"}`,
+        `Error al reagrupar: ${err instanceof Error ? err.message : "Error desconocido"}`
       ),
     onSuccess: (response) => {
       toast.success(
         `✓ Reagrupamiento completado: ${response.processed} series procesadas${
           response.from && response.to ? ` (${response.from} - ${response.to})` : ""
-        }`,
+        }`
       );
       void Promise.all([
         queryClient.invalidateQueries({ queryKey: ["calendar"] }),
@@ -164,7 +165,7 @@ function CalendarClassificationPage() {
     mutationFn: syncCalendarEvents,
     onError: (err) =>
       toast.error(
-        `Error al iniciar sync: ${err instanceof Error ? err.message : "Error desconocido"}`,
+        `Error al iniciar sync: ${err instanceof Error ? err.message : "Error desconocido"}`
       ),
     onSuccess: (response) => {
       toast.info(response.message || "Sincronización iniciada en segundo plano");
@@ -192,7 +193,7 @@ function CalendarClassificationPage() {
       toast.success(
         details
           ? `✓ ${r.reclassified ?? 0} eventos actualizados. ${details}`
-          : `✓ ${r.message ?? "Completado"}`,
+          : `✓ ${r.message ?? "Completado"}`
       );
       setActiveJobId(null);
     },

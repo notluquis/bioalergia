@@ -232,3 +232,5 @@ export const expensesOpenAPIHandler = new OpenAPIHandler(expensesORPCRouter, {
     }),
   ],
 });
+
+export type ExpensesORPCRouter = typeof expensesORPCRouter;

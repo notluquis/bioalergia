@@ -158,3 +158,5 @@ export const notificationsOpenAPIHandler = new OpenAPIHandler(notificationsORPCR
     }),
   ],
 });
+
+export type NotificationsORPCRouter = typeof notificationsORPCRouter;

@@ -89,7 +89,7 @@ const getAllowedTableOptions = (can: AuthContextType["can"]) =>
 
 const buildTransformedData = (
   csvData: Record<string, string>[],
-  columnMapping: Record<string, string>,
+  columnMapping: Record<string, string>
 ): Record<string, string | number>[] =>
   csvData.map((row) => {
     const transformed: Record<string, number | string> = {};
@@ -121,7 +121,7 @@ const normalizeWithdrawIdForBatch = (value: unknown) => {
 
 function buildBatchRows(
   selectedTable: string,
-  files: UploadedFile[],
+  files: UploadedFile[]
 ): { droppedDuplicates: number; rows: Record<string, number | string>[] } {
   const allRows = files
     .filter((file) => file.status !== "error")
@@ -167,11 +167,11 @@ function chunkRows<T>(rows: T[], size: number): T[][] {
 function mergePreviewResponses(
   accumulated: CsvPreviewResponse,
   current: CsvPreviewResponse,
-  rowOffset = 0,
+  rowOffset = 0
 ): CsvPreviewResponse {
   const errors = [...(accumulated.errors ?? []), ...(current.errors ?? [])].slice(
     0,
-    MAX_PREVIEW_ERRORS,
+    MAX_PREVIEW_ERRORS
   );
   const updateRows = [
     ...(accumulated.updateRows ?? []),
@@ -199,14 +199,14 @@ function buildUpdateSelectionState(rows: CsvPreviewUpdateRow[]): RowSelectionSta
 
 const isValidColumnMapping = (
   table: TableOption | undefined,
-  columnMapping: Record<string, string>,
+  columnMapping: Record<string, string>
 ): boolean => {
   if (!table) {
     return false;
   }
   const requiredFields = table.fields.filter((field) => field.required);
   return requiredFields.every(
-    (field) => columnMapping[field.name] && columnMapping[field.name] !== "",
+    (field) => columnMapping[field.name] && columnMapping[field.name] !== ""
   );
 };
 
@@ -223,7 +223,7 @@ const matchHeaderForField = (fieldName: string, headers: string[]) => {
 
 const mapFieldsUsingExistingLogic = (
   headers: string[],
-  fields: FieldDefinition[],
+  fields: FieldDefinition[]
 ): Record<string, string> => {
   const mapping: Record<string, string> = {};
   for (const field of fields) {
@@ -239,7 +239,7 @@ const mapFieldsUsingSII = (
   headers: string[],
   fields: FieldDefinition[],
   siiMappings: Record<string, string>,
-  existingMapping: Record<string, string>,
+  existingMapping: Record<string, string>
 ): Record<string, string> => {
   const mapping = { ...existingMapping };
   for (const field of fields) {
@@ -259,7 +259,7 @@ const mapFieldsUsingSII = (
 const autoMapColumns = (
   headers: string[],
   tableFields: FieldDefinition[],
-  tableValue: string,
+  tableValue: string
 ): Record<string, string> => {
   // First try existing header matching logic
   let mapping = mapFieldsUsingExistingLogic(headers, tableFields);
@@ -886,7 +886,7 @@ function UpdateSelectionCard({
   const selectedIds = new Set(
     Object.entries(rowSelection)
       .filter(([, isSelected]) => Boolean(isSelected))
-      .map(([rowId]) => rowId),
+      .map(([rowId]) => rowId)
   );
   const selectedCount = rows.filter((row) => selectedIds.has(row.id)).length;
   const allSelected = rows.length > 0 && selectedCount === rows.length;
@@ -1070,7 +1070,7 @@ function ImportModeCard({
               "flex-1 rounded-lg border-2 p-4 text-left ",
               importMode === "insert-only"
                 ? "border-primary/50 bg-primary/5"
-                : "border-default-200 hover:border-default-300",
+                : "border-default-200 hover:border-default-300"
             )}
             onPress={() => onModeChange("insert-only")}
             type="button"
@@ -1099,7 +1099,7 @@ function ImportModeCard({
               "flex-1 rounded-lg border-2 p-4 text-left ",
               importMode === "insert-or-update"
                 ? "border-primary/50 bg-primary/5"
-                : "border-default-200 hover:border-default-300",
+                : "border-default-200 hover:border-default-300"
             )}
             onPress={() => onModeChange("insert-or-update")}
             type="button"
@@ -1128,7 +1128,7 @@ function ImportModeCard({
               "flex-1 rounded-lg border-2 p-4 text-left ",
               importMode === "update-only"
                 ? "border-primary/50 bg-primary/5"
-                : "border-default-200 hover:border-default-300",
+                : "border-default-200 hover:border-default-300"
             )}
             onPress={() => onModeChange("update-only")}
             type="button"
@@ -1220,7 +1220,7 @@ function buildMappingColumns({
                   };
                 }
                 return file;
-              }),
+              })
             );
           }}
           value={firstFile.columnMapping[row.original.name] || UNMAPPED_COLUMN_KEY}
@@ -1269,7 +1269,7 @@ function buildMappingColumns({
 async function parseFile(
   file: File,
   currentTable: TableOption | undefined,
-  selectedTable: string,
+  selectedTable: string
 ): Promise<UploadedFile> {
   try {
     const results = await new Promise<Papa.ParseResult<Record<string, string>>>(
@@ -1281,7 +1281,7 @@ async function parseFile(
           header: true,
           skipEmptyLines: true,
         });
-      },
+      }
     );
 
     if (results.errors.length > 0) {
@@ -1346,7 +1346,7 @@ export function CSVUploadPage() {
   const [updateRowSelection, setUpdateRowSelection] = useState<RowSelectionState>({});
   const [isLoadingUpdateDetails, setIsLoadingUpdateDetails] = useState(false);
   const [importMode, setImportMode] = useState<"insert-only" | "insert-or-update" | "update-only">(
-    "insert-or-update",
+    "insert-or-update"
   );
 
   const allowedTableOptions = getAllowedTableOptions(can);
@@ -1418,7 +1418,7 @@ export function CSVUploadPage() {
           progress,
           status,
         };
-      }),
+      })
     );
   };
 
@@ -1459,7 +1459,7 @@ export function CSVUploadPage() {
         data: chunk,
         includeUpdateRows: false,
         mode,
-        table: selectedTable,
+        table: selectedTable as CsvImportPayload["table"],
       });
 
       aggregated = mergePreviewResponses(aggregated, response, rowOffset);
@@ -1535,7 +1535,7 @@ export function CSVUploadPage() {
               ...prev,
               updateRows: detailPreview.updateRows ?? [],
             }
-          : detailPreview,
+          : detailPreview
       );
       setUpdateRowSelection(buildUpdateSelectionState(detailPreview.updateRows ?? []));
       updateBatchFileState("ready");
@@ -1570,7 +1570,7 @@ export function CSVUploadPage() {
       const selectedUpdateIndexes = new Set(
         Object.entries(updateRowSelection)
           .filter(([, isSelected]) => Boolean(isSelected))
-          .map(([rowIndex]) => Number(rowIndex)),
+          .map(([rowIndex]) => Number(rowIndex))
       );
 
       // Filter rows based on import mode
@@ -1604,7 +1604,7 @@ export function CSVUploadPage() {
                   ...prev,
                   insertRowIndexes,
                 }
-              : workingPreviewData,
+              : workingPreviewData
           );
         }
 
@@ -1618,12 +1618,12 @@ export function CSVUploadPage() {
       } else if (importMode === "update-only") {
         // For update-only: only send rows that are updates AND selected
         rowsToImport = previewBatchRows.filter(
-          (_, index) => updateIndexes.has(index) && selectedUpdateIndexes.has(index),
+          (_, index) => updateIndexes.has(index) && selectedUpdateIndexes.has(index)
         );
       } else if (importMode === "insert-or-update" && updateIndexes.size > 0) {
         // For insert-or-update: send all rows except unselected updates
         rowsToImport = previewBatchRows.filter(
-          (_row, index) => !updateIndexes.has(index) || selectedUpdateIndexes.has(index),
+          (_row, index) => !updateIndexes.has(index) || selectedUpdateIndexes.has(index)
         );
       }
       // For insert-only: send all rows (backend will skip existing ones)
@@ -1640,7 +1640,7 @@ export function CSVUploadPage() {
       updateBatchFileState("success");
       success(
         `Completado: ${totals.inserted ?? 0} insertados, ${totals.updated ?? 0} actualizados, ${totals.skipped ?? 0} omitidos.`,
-        "Importación",
+        "Importación"
       );
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : "Error al importar";
@@ -1662,10 +1662,10 @@ export function CSVUploadPage() {
     (row) => ({
       ...row,
       id: String(row.rowIndex),
-    }),
+    })
   );
   const selectedUpdateCount = updateCandidateRows.filter(
-    (row) => updateRowSelection[row.id],
+    (row) => updateRowSelection[row.id]
   ).length;
   const pendingImportCount =
     importMode === "insert-only"

@@ -55,7 +55,7 @@ export async function fetchReleaseTransactions(page: number, pageSize: number, s
           page,
           pageSize,
           search,
-        })
+        }) ?? {}
       )
     );
   } catch (error) {
@@ -71,7 +71,7 @@ export async function fetchSettlementTransactions(page: number, pageSize: number
           page,
           pageSize,
           search,
-        })
+        }) ?? {}
       )
     );
   } catch (error) {

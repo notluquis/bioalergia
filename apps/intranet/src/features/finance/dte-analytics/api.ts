@@ -23,7 +23,7 @@ export async function fetchPurchasesSummary(year?: number): Promise<DTESummaryRa
         : undefined;
     const response = DTESummaryResponseSchema.parse(
       await dteAnalyticsORPCClient.purchasesSummary(
-        normalizedYear !== undefined ? { year: normalizedYear } : undefined
+        normalizedYear !== undefined ? { year: normalizedYear } : {}
       )
     );
 
@@ -45,7 +45,7 @@ export async function fetchSalesSummary(year?: number): Promise<DTESummaryRaw[]>
         : undefined;
     const response = DTESummaryResponseSchema.parse(
       await dteAnalyticsORPCClient.salesSummary(
-        normalizedYear !== undefined ? { year: normalizedYear } : undefined
+        normalizedYear !== undefined ? { year: normalizedYear } : {}
       )
     );
 

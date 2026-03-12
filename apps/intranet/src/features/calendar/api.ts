@@ -58,7 +58,14 @@ export interface FieldCounts {
 export interface MissingFieldFilters {
   /** Filter mode: AND requires all conditions, OR matches any (default: OR) */
   filterMode?: "AND" | "OR";
-  missing?: string[];
+  missing?: Array<
+    | "missingAmountExpected"
+    | "missingAmountPaid"
+    | "missingAttended"
+    | "missingCategory"
+    | "missingDosage"
+    | "missingTreatmentStage"
+  >;
 }
 
 /** Response for async reclassify jobs */
@@ -109,7 +116,7 @@ function normalizeCalendarORPCFilters(filters: CalendarFilters) {
 }
 
 export async function classifyCalendarEvent(
-  payload: CalendarEventClassificationPayload,
+  payload: CalendarEventClassificationPayload
 ): Promise<void> {
   try {
     await calendarORPCClient.classifyEvent(payload);
@@ -185,7 +192,7 @@ export async function fetchClassificationOptions(): Promise<ClassificationOption
 export async function fetchUnclassifiedCalendarEvents(
   limit = 50,
   offset = 0,
-  filters?: MissingFieldFilters,
+  filters?: MissingFieldFilters
 ): Promise<UnclassifiedEventsResponse> {
   try {
     const response = await calendarORPCClient.unclassifiedEvents({
@@ -207,7 +214,7 @@ export async function fetchUnclassifiedCalendarEvents(
 export async function reclassifyAllCalendarEvents(): Promise<ReclassifyJobResponse> {
   try {
     const response = ReclassifyJobResponseSchema.parse(
-      await calendarORPCClient.reclassifyAllEvents(),
+      await calendarORPCClient.reclassifyAllEvents()
     );
     return { jobId: response.jobId, totalEvents: response.totalEvents };
   } catch (error) {
@@ -217,7 +224,7 @@ export async function reclassifyAllCalendarEvents(): Promise<ReclassifyJobRespon
 
 /** Start reclassification job for all pending events (returns immediately with jobId) */
 export async function reclassifyCalendarEvents(
-  filters?: MissingFieldFilters,
+  filters?: MissingFieldFilters
 ): Promise<ReclassifyJobResponse> {
   try {
     const response = ReclassifyJobResponseSchema.parse(
@@ -227,8 +234,8 @@ export async function reclassifyCalendarEvents(
               filterMode: filters.filterMode,
               missing: filters.missing ? [...new Set(filters.missing)] : undefined,
             }
-          : undefined,
-      ),
+          : {}
+      )
     );
 
     return {
@@ -251,7 +258,7 @@ export async function syncCalendarEvents(): Promise<CalendarSyncResponse> {
 export async function fetchCalendarJobStatus(jobId: string): Promise<CalendarJobState> {
   try {
     const response = CalendarJobStatusResponseSchema.parse(
-      await calendarORPCClient.jobStatus({ jobId }),
+      await calendarORPCClient.jobStatus({ jobId })
     );
     return response.job;
   } catch (error) {
@@ -261,7 +268,7 @@ export async function fetchCalendarJobStatus(jobId: string): Promise<CalendarJob
 
 export async function fetchTreatmentAnalytics(
   filters: TreatmentAnalyticsFilters,
-  granularity?: "day" | "week" | "month" | "all",
+  granularity?: "day" | "week" | "month" | "all"
 ): Promise<TreatmentAnalytics> {
   try {
     const response = TreatmentAnalyticsResponseSchema.parse({
@@ -396,7 +403,7 @@ export async function autoLinkEventDteByAllPeriods(payload?: { minScore?: number
   totalEvents: number;
 }> {
   try {
-    const data = await dteEventLinksORPCClient.autoLinkAllPeriods(payload);
+    const data = await dteEventLinksORPCClient.autoLinkAllPeriods(payload ?? {});
     return EventDteAutoLinkAllPeriodsResponseSchema.parse({ data, status: "success" }).data;
   } catch (error) {
     throw toCalendarApiError(error);
@@ -408,7 +415,7 @@ export async function startAutoLinkEventDteAllPeriodsJob(payload?: {
   periodConcurrency?: number;
 }): Promise<{ jobId: string; periodConcurrency: number; totalPeriods: number }> {
   try {
-    const data = await dteEventLinksORPCClient.startAutoLinkAllPeriods(payload);
+    const data = await dteEventLinksORPCClient.startAutoLinkAllPeriods(payload ?? {});
     return EventDteAutoLinkAllPeriodsStartResponseSchema.parse({ data, status: "accepted" }).data;
   } catch (error) {
     throw toCalendarApiError(error);
@@ -427,7 +434,7 @@ export interface EventDteAutoLinkJobStatus {
 }
 
 export async function fetchAutoLinkEventDteJobStatus(
-  jobId: string,
+  jobId: string
 ): Promise<EventDteAutoLinkJobStatus> {
   try {
     const data = await dteEventLinksORPCClient.autoLinkJobStatus({ jobId });
@@ -465,7 +472,7 @@ export async function rebuildClinicalSeries(params?: {
 }): Promise<RebuildClinicalSeriesResponse> {
   try {
     const response = RebuildClinicalSeriesResponseSchema.parse(
-      await calendarORPCClient.rebuildSeries(params),
+      await calendarORPCClient.rebuildClinicalSeries(params ?? {})
     );
     return response;
   } catch (error) {

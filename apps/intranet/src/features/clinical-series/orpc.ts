@@ -1,29 +1,21 @@
 import { createORPCClient, ORPCError } from "@orpc/client";
+import type { RouterClient } from "@orpc/server";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
-import type {
-  ClinicalSeriesFilters,
-  ClinicalSeriesSnapshot,
-  RebuildSeriesParams,
-  RebuildSeriesResult,
-} from "./types";
-
-type ClinicalSeriesORPCClient = {
-  detail: (input: { id: number }) => Promise<ClinicalSeriesSnapshot>;
-  list: (input?: ClinicalSeriesFilters) => Promise<ClinicalSeriesSnapshot[]>;
-  rebuild: (input?: RebuildSeriesParams) => Promise<RebuildSeriesResult>;
-};
+import type { ClinicalSeriesORPCRouter } from "../../../../api/src/orpc/clinical-series";
 
 const clinicalSeriesORPCLink = new SuperJSONLink({
   fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),
   url: () => window.location.origin,
 });
 
+export type ClinicalSeriesORPCClient = RouterClient<ClinicalSeriesORPCRouter>;
+
 export const clinicalSeriesORPCClient = createORPCClient<ClinicalSeriesORPCClient>(
   clinicalSeriesORPCLink,
   {
     path: ["api", "orpc", "clinical-series", "rpc"],
-  },
+  }
 );
 
 export function toClinicalSeriesApiError(error: unknown): ApiError {

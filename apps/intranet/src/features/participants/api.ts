@@ -18,7 +18,7 @@ const ParticipantLeaderboardResponseSchema = z.looseObject({
 
 export async function fetchParticipantInsight(
   participantId: string,
-  params?: { from?: string; to?: string },
+  params?: { from?: string; to?: string }
 ): Promise<ParticipantInsightResponse> {
   try {
     const data = ParticipantInsightResponseSchema.parse(
@@ -26,7 +26,7 @@ export async function fetchParticipantInsight(
         from: params?.from,
         id: participantId,
         to: params?.to,
-      }),
+      })
     );
 
     if (data.status !== "ok") {
@@ -47,7 +47,7 @@ export async function fetchParticipantLeaderboard(params?: {
 }): Promise<ParticipantLeaderboardResponse> {
   try {
     const data = ParticipantLeaderboardResponseSchema.parse(
-      await transactionsInsightsORPCClient.participants(params),
+      await transactionsInsightsORPCClient.participants(params ?? {})
     );
 
     if (data.status !== "ok") {

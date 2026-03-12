@@ -1,28 +1,15 @@
 import { createORPCClient, ORPCError } from "@orpc/client";
+import type { RouterClient } from "@orpc/server";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
-import type { CommonSupply, SupplyRequest } from "./types";
-
-type SuppliesORPCClient = {
-  common: () => Promise<{ commonSupplies: CommonSupply[] }>;
-  createRequest: (input: {
-    brand?: null | string;
-    model?: null | string;
-    notes?: null | string;
-    quantity: number;
-    supplyName: string;
-  }) => Promise<{ status: "ok" }>;
-  requests: () => Promise<{ requests: SupplyRequest[] }>;
-  updateRequestStatus: (input: {
-    id: number;
-    status: SupplyRequest["status"];
-  }) => Promise<{ status: "ok" }>;
-};
+import type { SuppliesORPCRouter } from "../../../../api/src/orpc/supplies";
 
 const suppliesORPCLink = new SuperJSONLink({
   fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),
   url: () => window.location.origin,
 });
+
+export type SuppliesORPCClient = RouterClient<SuppliesORPCRouter>;
 
 export const suppliesORPCClient = createORPCClient<SuppliesORPCClient>(suppliesORPCLink, {
   path: ["api", "orpc", "supplies", "rpc"],

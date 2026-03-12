@@ -14,6 +14,9 @@ const InviteUserResponseSchema = z.object({
   userId: z.number(),
 });
 const ResetPasswordResponseSchema = z.object({ tempPassword: z.string() });
+type InviteUserPayload = Parameters<typeof usersORPCClient.invite>[0];
+type SetupUserPayload = Parameters<typeof usersORPCClient.setup>[0];
+export type { InviteUserPayload, SetupUserPayload };
 
 export async function deleteUser(userId: number): Promise<void> {
   try {
@@ -33,7 +36,7 @@ export async function deleteUserPasskey(userId: number): Promise<void> {
 
 export async function fetchUserProfile(): Promise<UserProfile> {
   try {
-    const res = UserProfileResponseSchema.parse(await usersORPCClient.profile());
+    const res = UserProfileResponseSchema.parse(await usersORPCClient.profile({}));
     return res.data as UserProfile;
   } catch (error) {
     throw toUsersApiError(error);
@@ -42,7 +45,7 @@ export async function fetchUserProfile(): Promise<UserProfile> {
 
 export async function fetchUsers(): Promise<User[]> {
   try {
-    const res = UsersResponseSchema.parse(await usersORPCClient.list());
+    const res = UsersResponseSchema.parse(await usersORPCClient.list({}));
     return res.users as User[];
   } catch (error) {
     throw toUsersApiError(error);
@@ -50,7 +53,7 @@ export async function fetchUsers(): Promise<User[]> {
 }
 
 export async function inviteUser(
-  payload: Record<string, unknown>,
+  payload: InviteUserPayload
 ): Promise<{ tempPassword?: string; userId: number }> {
   try {
     return InviteUserResponseSchema.parse(await usersORPCClient.invite(payload));
@@ -62,7 +65,7 @@ export async function inviteUser(
 export async function resetUserPassword(userId: number): Promise<string> {
   try {
     const res = ResetPasswordResponseSchema.parse(
-      await usersORPCClient.resetPassword({ id: userId }),
+      await usersORPCClient.resetPassword({ id: userId })
     );
     return res.tempPassword;
   } catch (error) {
@@ -70,7 +73,7 @@ export async function resetUserPassword(userId: number): Promise<string> {
   }
 }
 
-export async function setupUser(payload: Record<string, unknown>): Promise<void> {
+export async function setupUser(payload: SetupUserPayload): Promise<void> {
   try {
     await usersORPCClient.setup(payload);
   } catch (error) {
@@ -84,7 +87,7 @@ export async function toggleUserMfa(userId: number, enabled: boolean): Promise<v
       await usersORPCClient.toggleMfa({
         enabled,
         id: userId,
-      }),
+      })
     );
     if (res.status !== "ok") {
       throw new Error(res.message || "Error al cambiar estado MFA");
@@ -104,7 +107,7 @@ export async function updateUserRole(userId: number, role: string): Promise<void
 
 export async function updateUserStatus(
   userId: number,
-  status: "ACTIVE" | "PENDING_SETUP" | "SUSPENDED",
+  status: "ACTIVE" | "PENDING_SETUP" | "SUSPENDED"
 ): Promise<void> {
   try {
     await usersORPCClient.updateStatus({ id: userId, status });
@@ -132,7 +135,7 @@ const UserProfileUpdatePayloadSchema = z.object({
 
 export async function updateUserProfile(
   userId: number,
-  payload: UserProfileUpdatePayload,
+  payload: UserProfileUpdatePayload
 ): Promise<void> {
   const parsedPayload = UserProfileUpdatePayloadSchema.parse(payload);
   try {

@@ -10,6 +10,7 @@ import {
 } from "@orpc/client";
 import type { LinkFetchClientOptions } from "@orpc/client/fetch";
 import { LinkFetchClient } from "@orpc/client/fetch";
+import type { RouterClient } from "@orpc/server";
 import type {
   StandardLinkOptions,
   StandardRPCLinkCodecOptions,
@@ -19,41 +20,7 @@ import { StandardLink, StandardRPCLinkCodec } from "@orpc/client/standard";
 import { isAsyncIteratorObject } from "@orpc/shared";
 import { ApiError } from "@/lib/api-client";
 import { configureSuperjson } from "@/lib/superjson-config";
-import type {
-  CalendarDaily,
-  CalendarData,
-  CalendarEventClassificationPayload,
-  CalendarFilters,
-  CalendarSummary,
-  CalendarSyncLog,
-  CalendarUnclassifiedEvent,
-  TreatmentAnalytics,
-  TreatmentAnalyticsFilters,
-} from "./types";
-
-type ClassificationOptions = {
-  categories: readonly string[];
-  missingFilters: readonly { key: string; label: string }[];
-  patchReadings: readonly string[];
-  testSubtypes: readonly string[];
-  treatmentStages: readonly string[];
-};
-
-type JobState = {
-  error: null | string;
-  id: string;
-  message: string;
-  progress: number;
-  result: unknown;
-  status: "completed" | "failed" | "pending" | "running";
-  total: number;
-  type: string;
-};
-
-type MissingFieldFilters = {
-  filterMode?: "AND" | "OR";
-  missing?: string[];
-};
+import type { CalendarORPCRouter } from "../../../../api/src/orpc/calendar";
 
 const superjson = configureSuperjson();
 
@@ -83,7 +50,7 @@ class SuperJSONSerializer implements Pick<StandardRPCSerializer, keyof StandardR
           }
 
           const deserialized = superjson.deserialize(
-            error.data as Parameters<typeof superjson.deserialize>[0],
+            error.data as Parameters<typeof superjson.deserialize>[0]
           );
 
           if (isORPCErrorJson(deserialized)) {
@@ -103,7 +70,8 @@ class SuperJSONSerializer implements Pick<StandardRPCSerializer, keyof StandardR
 }
 
 interface SuperJSONLinkOptions<T extends ClientContext>
-  extends LinkFetchClientOptions<T>,
+  extends
+    LinkFetchClientOptions<T>,
     Omit<StandardLinkOptions<T>, "plugins">,
     StandardRPCLinkCodecOptions<T> {}
 
@@ -117,56 +85,7 @@ export class SuperJSONLink<T extends ClientContext> extends StandardLink<T> {
   }
 }
 
-type CalendarORPCClient = {
-  dailyEvents: (input: CalendarFilters) => Promise<CalendarDaily>;
-  calendars: () => Promise<CalendarData[]>;
-  classificationOptions: () => Promise<ClassificationOptions>;
-  classifyEvent: (input: CalendarEventClassificationPayload) => Promise<{
-    ok: true;
-  }>;
-  jobStatus: (input: { jobId: string }) => Promise<{ job: JobState }>;
-  reclassifyAllEvents: () => Promise<{
-    jobId: string;
-    status: "accepted";
-    totalEvents: number;
-  }>;
-  reclassifyEvents: (input?: MissingFieldFilters) => Promise<{
-    jobId: string;
-    status: "accepted";
-    totalEvents: number;
-  }>;
-  rebuildSeries: (input?: { from?: string; to?: string }) => Promise<{
-    from: string | null;
-    processed: number;
-    to: string | null;
-  }>;
-  summaryEvents: (
-    input: Omit<CalendarFilters, "maxDays"> & { maxDays?: number },
-  ) => Promise<CalendarSummary>;
-  syncEvents: () => Promise<{
-    logId: number;
-    message: string;
-    status: "accepted";
-  }>;
-  syncLogs: (input?: { limit?: number }) => Promise<CalendarSyncLog[]>;
-  treatmentAnalytics: (
-    input: TreatmentAnalyticsFilters & {
-      granularity?: "all" | "day" | "month" | "week";
-    },
-  ) => Promise<{
-    data: TreatmentAnalytics;
-    filters: TreatmentAnalyticsFilters;
-  }>;
-  unclassifiedEvents: (input?: {
-    filterMode?: "AND" | "OR";
-    limit?: number;
-    missing?: string[];
-    offset?: number;
-  }) => Promise<{
-    events: CalendarUnclassifiedEvent[];
-    totalCount: number;
-  }>;
-};
+export type CalendarORPCClient = RouterClient<CalendarORPCRouter>;
 
 const calendarORPCLink = new SuperJSONLink({
   fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),

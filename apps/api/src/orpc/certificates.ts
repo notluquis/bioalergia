@@ -134,3 +134,5 @@ export const certificatesOpenAPIHandler = new OpenAPIHandler(certificatesORPCRou
     }),
   ],
 });
+
+export type CertificatesORPCRouter = typeof certificatesORPCRouter;

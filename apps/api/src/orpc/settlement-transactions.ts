@@ -217,3 +217,5 @@ export const settlementTransactionsOpenAPIHandler = new OpenAPIHandler(
     ],
   },
 );
+
+export type SettlementTransactionsORPCRouter = typeof settlementTransactionsORPCRouter;

@@ -53,8 +53,8 @@ const emailSummarySchema = z.object({
   overtimeMinutes: z.number().optional(),
   payDate: z.string(),
   retention: z.number(),
-  retention_rate: z.number().optional(),
-  retentionRate: z.number().optional(),
+  retention_rate: z.number().nullable().optional(),
+  retentionRate: z.number().nullable().optional(),
   role: z.string(),
   subtotal: z.number(),
   workedMinutes: z.number().optional(),
@@ -758,3 +758,5 @@ export const timesheetsOpenAPIHandler = new OpenAPIHandler(timesheetsORPCRouter,
     }),
   ],
 });
+
+export type TimesheetsORPCRouter = typeof timesheetsORPCRouter;

@@ -84,3 +84,5 @@ export const systemOpenAPIHandler = new OpenAPIHandler(systemORPCRouter, {
     }),
   ],
 });
+
+export type SystemORPCRouter = typeof systemORPCRouter;

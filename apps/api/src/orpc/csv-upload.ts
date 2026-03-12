@@ -163,3 +163,5 @@ export const csvUploadOpenAPIHandler = new OpenAPIHandler(csvUploadORPCRouter, {
     }),
   ],
 });
+
+export type CsvUploadORPCRouter = typeof csvUploadORPCRouter;

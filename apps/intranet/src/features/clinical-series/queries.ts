@@ -31,7 +31,7 @@ export async function fetchClinicalSeries(
 ): Promise<ClinicalSeriesSnapshot[]> {
   try {
     return ClinicalSeriesSnapshotSchema.array().parse(
-      await clinicalSeriesORPCClient.list(compactORPCInput(filters))
+      await clinicalSeriesORPCClient.list(compactORPCInput(filters) ?? {})
     );
   } catch (error) {
     throw toClinicalSeriesApiError(error);
@@ -57,7 +57,7 @@ export async function rebuildClinicalSeries(
 ): Promise<RebuildSeriesResult> {
   try {
     return RebuildSeriesResultSchema.parse(
-      await clinicalSeriesORPCClient.rebuild(compactORPCInput(params))
+      await clinicalSeriesORPCClient.rebuild(compactORPCInput(params) ?? {})
     );
   } catch (error) {
     throw toClinicalSeriesApiError(error);

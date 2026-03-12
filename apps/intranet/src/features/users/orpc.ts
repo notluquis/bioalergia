@@ -1,34 +1,10 @@
 import { createORPCClient, ORPCError } from "@orpc/client";
+import type { RouterClient } from "@orpc/server";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
-import type { User, UserProfile, UserProfileUpdatePayload } from "./types";
+import type { UsersORPCRouter } from "../../../../api/src/orpc/users";
 
-type UsersORPCClient = {
-  delete: (input: { id: number }) => Promise<{ status: "ok" }>;
-  deletePasskey: (input: { id: number }) => Promise<{ status: "ok" }>;
-  invite: (input: Record<string, unknown>) => Promise<{
-    status: "ok";
-    tempPassword?: string;
-    userId: number;
-  }>;
-  list: (input?: { includeTest?: boolean }) => Promise<{ status: "ok"; users: User[] }>;
-  profile: () => Promise<{ data: UserProfile; status: "ok" }>;
-  resetPassword: (input: { id: number }) => Promise<{ status: "ok"; tempPassword: string }>;
-  setup: (input: Record<string, unknown>) => Promise<{ message?: string; status: "ok" }>;
-  toggleMfa: (input: { enabled: boolean; id: number }) => Promise<{
-    mfaEnabled: boolean;
-    status: "ok";
-  }>;
-  updateProfile: (input: {
-    id: number;
-    payload: UserProfileUpdatePayload;
-  }) => Promise<{ status: "ok" }>;
-  updateRole: (input: { id: number; role: string }) => Promise<{ status: "ok" }>;
-  updateStatus: (input: {
-    id: number;
-    status: "ACTIVE" | "PENDING_SETUP" | "SUSPENDED";
-  }) => Promise<{ status: "ok" }>;
-};
+export type UsersORPCClient = RouterClient<UsersORPCRouter>;
 
 const usersORPCLink = new SuperJSONLink({
   fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),

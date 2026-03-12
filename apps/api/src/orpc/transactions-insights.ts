@@ -40,21 +40,66 @@ const participantInsightSchema = z.object({
   to: z.string().optional(),
 });
 
+const participantLeaderboardItemSchema = z.object({
+  count: z.number(),
+  personId: z.string(),
+  personName: z.string(),
+  total: z.number(),
+});
+
+const participantCounterpartSchema = z.object({
+  bankAccountHolder: z.string().nullable(),
+  bankAccountNumber: z.string().nullable(),
+  bankAccountType: z.string().nullable(),
+  bankBranch: z.string().nullable(),
+  bankName: z.string().nullable(),
+  counterpart: z.string(),
+  counterpartId: z.string().nullable(),
+  identificationNumber: z.string().nullable(),
+  identificationType: z.string().nullable(),
+  incomingAmount: z.number(),
+  incomingCount: z.number(),
+  outgoingAmount: z.number(),
+  outgoingCount: z.number(),
+  withdrawId: z.string().nullable(),
+});
+
+const participantMonthlySchema = z.object({
+  incomingAmount: z.number(),
+  incomingCount: z.number(),
+  month: z.string(),
+  outgoingAmount: z.number(),
+  outgoingCount: z.number(),
+});
+
+const movementTypeSchema = z.object({
+  description: z.string().nullable(),
+  direction: z.enum(["IN", "NEUTRO", "OUT"]),
+  total: z.number(),
+});
+
 const statusDataResponseSchema = z.object({
-  data: z.unknown(),
+  data: z.array(participantLeaderboardItemSchema),
   status: z.literal("ok"),
 });
 
 const participantInsightResponseSchema = z.object({
-  counterparts: z.array(z.unknown()),
-  monthly: z.array(z.unknown()),
+  counterparts: z.array(participantCounterpartSchema),
+  monthly: z.array(participantMonthlySchema),
   participant: z.string(),
   status: z.literal("ok"),
 });
 
 const statsResponseSchema = z.object({
-  byType: z.array(z.unknown()),
-  monthly: z.array(z.unknown()),
+  byType: z.array(movementTypeSchema),
+  monthly: z.array(
+    z.object({
+      in: z.number(),
+      month: z.string(),
+      net: z.number(),
+      out: z.number(),
+    }),
+  ),
   status: z.literal("ok"),
   totals: z.record(z.string(), z.number()),
 });
@@ -166,3 +211,5 @@ export const transactionsInsightsOpenAPIHandler = new OpenAPIHandler(
     ],
   },
 );
+
+export type TransactionsInsightsORPCRouter = typeof transactionsInsightsORPCRouter;

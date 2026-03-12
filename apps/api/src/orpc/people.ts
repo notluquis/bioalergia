@@ -189,3 +189,5 @@ export const peopleOpenAPIHandler = new OpenAPIHandler(peopleORPCRouter, {
     }),
   ],
 });
+
+export type PeopleORPCRouter = typeof peopleORPCRouter;

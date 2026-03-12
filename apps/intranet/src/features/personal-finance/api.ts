@@ -43,7 +43,7 @@ function toNumberValue(value: null | number | { toNumber: () => number } | undef
 }
 
 function normalizeInstallment(
-  installment: PersonalCreditInstallmentTransport,
+  installment: PersonalCreditInstallmentTransport
 ): NonNullable<PersonalCredit["installments"]>[number] {
   return {
     ...installment,
@@ -105,7 +105,9 @@ export const personalFinanceApi = {
   listCredits: async () => {
     try {
       return PersonalCreditsSchema.parse(
-        (await personalFinanceORPCClient.listCredits()).map(normalizeCredit),
+        (await personalFinanceORPCClient.listCredits()).map((credit) =>
+          normalizeCredit(credit as PersonalCreditTransport)
+        )
       );
     } catch (error) {
       throw toPersonalFinanceApiError(error);
@@ -116,7 +118,7 @@ export const personalFinanceApi = {
   payInstallment: async (
     creditId: number,
     installmentNumber: number,
-    data: PayInstallmentInput,
+    data: PayInstallmentInput
   ) => {
     try {
       return PayInstallmentResponseSchema.parse(
@@ -125,8 +127,8 @@ export const personalFinanceApi = {
             ...data,
             creditId,
             installmentNumber,
-          }),
-        ),
+          })
+        )
       );
     } catch (error) {
       throw toPersonalFinanceApiError(error);

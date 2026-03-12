@@ -1,32 +1,15 @@
 import { createORPCClient, ORPCError } from "@orpc/client";
+import type { RouterClient } from "@orpc/server";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
-import type {
-  AllergyInventoryOverview,
-  InventoryCategory,
-  InventoryItem,
-  InventoryMovement,
-} from "./types";
-
-type InventoryORPCClient = {
-  allergyOverview: () => Promise<{ data: AllergyInventoryOverview[]; status: "ok" }>;
-  createCategory: (input: { name: string }) => Promise<{ data: InventoryCategory; status: "ok" }>;
-  createItem: (input: Omit<InventoryItem, "id">) => Promise<{ data: InventoryItem; status: "ok" }>;
-  createMovement: (input: InventoryMovement) => Promise<{ status: "ok" }>;
-  deleteCategory: (input: { id: number }) => Promise<{ status: "ok" }>;
-  deleteItem: (input: { id: number }) => Promise<{ status: "ok" }>;
-  listCategories: () => Promise<{ data: InventoryCategory[]; status: "ok" }>;
-  listItems: () => Promise<{ data: InventoryItem[]; status: "ok" }>;
-  updateItem: (input: {
-    id: number;
-    item: Partial<Omit<InventoryItem, "id">>;
-  }) => Promise<{ data: InventoryItem; status: "ok" }>;
-};
+import type { InventoryORPCRouter } from "../../../../api/src/orpc/inventory";
 
 const inventoryORPCLink = new SuperJSONLink({
   fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),
   url: () => window.location.origin,
 });
+
+export type InventoryORPCClient = RouterClient<InventoryORPCRouter>;
 
 export const inventoryORPCClient = createORPCClient<InventoryORPCClient>(inventoryORPCLink, {
   path: ["api", "orpc", "inventory", "rpc"],

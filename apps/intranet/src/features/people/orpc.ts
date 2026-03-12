@@ -1,19 +1,15 @@
 import { createORPCClient, ORPCError } from "@orpc/client";
+import type { RouterClient } from "@orpc/server";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
-import type { PersonWithExtras } from "./api";
-
-type PeopleORPCClient = {
-  detail: (input: { id: number }) => Promise<{ person: PersonWithExtras }>;
-  list: (input?: {
-    includeTest?: boolean;
-  }) => Promise<{ people: PersonWithExtras[]; status: "ok" }>;
-};
+import type { PeopleORPCRouter } from "../../../../api/src/orpc/people";
 
 const peopleORPCLink = new SuperJSONLink({
   fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),
   url: () => window.location.origin,
 });
+
+export type PeopleORPCClient = RouterClient<PeopleORPCRouter>;
 
 export const peopleORPCClient = createORPCClient<PeopleORPCClient>(peopleORPCLink, {
   path: ["api", "orpc", "people", "rpc"],
