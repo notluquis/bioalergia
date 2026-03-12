@@ -61,12 +61,10 @@ import {
   transactionsInsightsORPCHandler,
 } from "./orpc/transactions-insights";
 import { usersOpenAPIHandler, usersORPCHandler } from "./orpc/users";
-// REST-only endpoints (no oRPC equivalent)
-import { dailyProductionRoutes } from "./routes/daily-production-balances";
+// REST compatibility endpoints kept intentionally
 import { loanScheduleRoutes } from "./routes/loan-schedules";
 import { loanRoutes } from "./routes/loans";
 import { mercadopagoRoutes } from "./routes/mercadopago";
-import { serviceScheduleRoutes } from "./routes/service-schedules";
 import { shareTargetRoutes } from "./routes/share-target";
 import { transactionRoutes } from "./routes/transactions";
 import { errorReply } from "./utils/error-reply";
@@ -147,7 +145,7 @@ app.use(
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allowHeaders: ["Content-Type", "Authorization", "Cookie"],
     exposeHeaders: ["Content-Type", "Set-Cookie"],
-  }),
+  })
 );
 
 // Health check (at root for Railway healthcheck)
@@ -167,7 +165,7 @@ const authRateLimiter = rateLimiter({
 // Apply rate limiting to sensitive routes
 app.use("/api/auth/*", authRateLimiter);
 
-// All endpoints except REST-only (loans, transactions, daily-production-balances, etc.)
+// All endpoints except the compatibility surfaces below
 // are now exclusively served via oRPC at /api/orpc/{endpoint}/rpc/*
 // See /api/orpc landing page for available modules and documentation
 
@@ -581,7 +579,7 @@ app.get("/api/orpc", (c) =>
       </div>
     </main>
   </body>
-</html>`),
+</html>`)
 );
 
 app.use("/api/orpc/calendar/rpc/*", async (c, next) => {
@@ -668,7 +666,7 @@ app.use("/api/orpc/release-transactions/rpc/*", async (c, next) => {
     {
       prefix: "/api/orpc/release-transactions/rpc",
       context: { hono: c },
-    },
+    }
   );
 
   if (matched) {
@@ -684,7 +682,7 @@ app.use("/api/orpc/settlement-transactions/rpc/*", async (c, next) => {
     {
       prefix: "/api/orpc/settlement-transactions/rpc",
       context: { hono: c },
-    },
+    }
   );
 
   if (matched) {
@@ -700,7 +698,7 @@ app.use("/api/orpc/transactions-insights/rpc/*", async (c, next) => {
     {
       prefix: "/api/orpc/transactions-insights/rpc",
       context: { hono: c },
-    },
+    }
   );
 
   if (matched) {
@@ -989,7 +987,7 @@ app.use("/api/orpc/production-balances/rpc/*", async (c, next) => {
     {
       prefix: "/api/orpc/production-balances/rpc",
       context: { hono: c },
-    },
+    }
   );
 
   if (matched) {
@@ -1223,7 +1221,7 @@ app.use("/api/orpc/personal-finance/*", async (c, next) => {
     createHonoORPCRequest(c),
     {
       context: { hono: c },
-    },
+    }
   );
 
   if (matched) {
@@ -1298,7 +1296,7 @@ app.use("/api/orpc/production-balances/*", async (c, next) => {
     createHonoORPCRequest(c),
     {
       context: { hono: c },
-    },
+    }
   );
 
   if (matched) {
@@ -1369,9 +1367,12 @@ app.use("/api/orpc/certificates/*", async (c, next) => {
 });
 
 app.use("/api/orpc/clinical-series/*", async (c, next) => {
-  const { matched, response } = await clinicalSeriesOpenAPIHandler.handle(createHonoORPCRequest(c), {
-    context: { hono: c },
-  });
+  const { matched, response } = await clinicalSeriesOpenAPIHandler.handle(
+    createHonoORPCRequest(c),
+    {
+      context: { hono: c },
+    }
+  );
 
   if (matched) {
     return c.newResponse(response.body, response);
@@ -1421,7 +1422,7 @@ app.use("/api/orpc/release-transactions/*", async (c, next) => {
     createHonoORPCRequest(c),
     {
       context: { hono: c },
-    },
+    }
   );
 
   if (matched) {
@@ -1436,7 +1437,7 @@ app.use("/api/orpc/settlement-transactions/*", async (c, next) => {
     createHonoORPCRequest(c),
     {
       context: { hono: c },
-    },
+    }
   );
 
   if (matched) {
@@ -1451,7 +1452,7 @@ app.use("/api/orpc/transactions-insights/*", async (c, next) => {
     createHonoORPCRequest(c),
     {
       context: { hono: c },
-    },
+    }
   );
 
   if (matched) {
@@ -1464,13 +1465,11 @@ app.use("/api/orpc/transactions-insights/*", async (c, next) => {
 // Share Target (PWA)
 app.route("/api/share-target", shareTargetRoutes);
 
-// REST-ONLY endpoints (no oRPC equivalents)
+// REST compatibility endpoints
 app.route("/api/loans", loanRoutes);
 app.route("/api/mercadopago", mercadopagoRoutes);
 app.route("/api/transactions", transactionRoutes);
-app.route("/api/daily-production-balances", dailyProductionRoutes);
 app.route("/api/loan-schedules", loanScheduleRoutes);
-app.route("/api/services/schedules", serviceScheduleRoutes);
 
 // Doctoralia integration routes are now served via oRPC at /api/orpc/doctoralia
 
@@ -1564,7 +1563,7 @@ app.onError((error, c) => {
       {
         code: error.code,
         ...(error.expose ? { details: error.details } : {}),
-      },
+      }
     );
   }
 
@@ -1587,7 +1586,7 @@ app.onError((error, c) => {
       httpErrorMessages[error.status] ?? "Request Error",
       {
         code: "HTTP_EXCEPTION",
-      },
+      }
     );
   }
 
@@ -1598,6 +1597,6 @@ app.onError((error, c) => {
   return reply(
     c,
     { status: "error", code: "INTERNAL_ERROR", message: "Internal Server Error" },
-    500,
+    500
   );
 });

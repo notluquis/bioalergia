@@ -43,7 +43,7 @@ export interface Employee {
 }
 export type EmployeeSalaryType = "FIXED" | "HOURLY";
 export type EmployeeStatus = "ACTIVE" | "INACTIVE" | "TERMINATED";
-export type LoanScheduleStatus = "OVERDUE" | "PAID" | "PARTIAL" | "PENDING";
+export type LoanScheduleStatus = "OVERDUE" | "PAID" | "PARTIAL" | "PENDING" | "SKIPPED";
 export type LoanStatus = "ACTIVE" | "COMPLETED" | "DEFAULTED";
 export interface Person {
   address?: null | string;

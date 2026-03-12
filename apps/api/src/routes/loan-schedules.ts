@@ -1,73 +1,53 @@
-import { db } from "@finanzas/db";
 import { Hono } from "hono";
+import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
+import { loanPaymentSchema } from "../lib/financial-schemas";
+import { zValidator } from "../lib/zod-validator";
+import { registerLoanPayment, unlinkLoanPayment } from "../services/loans";
+import { errorReply } from "../utils/error-reply";
 import { reply } from "../utils/reply";
 
 const app = new Hono();
 
-// POST /:id/pay - Register payment on a loan schedule (mark as PAID)
-app.post("/:id/pay", async (c) => {
-  const user = await getSessionUser(c);
-  if (!user) {
-    return reply(c, { status: "error", message: "Unauthorized" }, 401);
-  }
-
-  const canUpdate = await hasPermission(user.id, "update", "Loan");
-  if (!canUpdate) {
-    return reply(c, { status: "error", message: "Forbidden" }, 403);
-  }
-
-  const id = Number(c.req.param("id"));
-  if (!Number.isFinite(id)) {
-    return reply(c, { status: "error", message: "ID inválido" }, 400);
-  }
-
-  const schedule = await db.loanSchedule.findUnique({ where: { id } });
-  if (!schedule) {
-    return reply(c, { status: "error", message: "Schedule no encontrado" }, 404);
-  }
-
-  // Mark as PAID - schema only has status field for tracking
-  const updated = await db.loanSchedule.update({
-    where: { id },
-    data: {
-      status: "PAID",
-    },
-  });
-
-  return reply(c, { status: "ok", schedule: updated });
+const scheduleIdParamSchema = z.object({
+  id: z.coerce.number().int().positive(),
 });
 
-// POST /:id/unlink - Unlink payment from a loan schedule (mark as PENDING)
-app.post("/:id/unlink", async (c) => {
+app.post(
+  "/:id/pay",
+  zValidator("param", scheduleIdParamSchema),
+  zValidator("json", loanPaymentSchema),
+  async (c) => {
+    const user = await getSessionUser(c);
+    if (!user) {
+      return errorReply(c, 401, "Unauthorized");
+    }
+
+    const canUpdate = await hasPermission(user.id, "update", "Loan");
+    if (!canUpdate) {
+      return errorReply(c, 403, "Forbidden");
+    }
+
+    const { id } = c.req.valid("param");
+    const schedule = await registerLoanPayment(id, c.req.valid("json"));
+    return reply(c, { schedule, status: "ok" });
+  }
+);
+
+app.post("/:id/unlink", zValidator("param", scheduleIdParamSchema), async (c) => {
   const user = await getSessionUser(c);
   if (!user) {
-    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+    return errorReply(c, 401, "Unauthorized");
   }
 
   const canUpdate = await hasPermission(user.id, "update", "Loan");
   if (!canUpdate) {
-    return reply(c, { status: "error", message: "Forbidden" }, 403);
+    return errorReply(c, 403, "Forbidden");
   }
 
-  const id = Number(c.req.param("id"));
-  if (!Number.isFinite(id)) {
-    return reply(c, { status: "error", message: "ID inválido" }, 400);
-  }
-
-  const schedule = await db.loanSchedule.findUnique({ where: { id } });
-  if (!schedule) {
-    return reply(c, { status: "error", message: "Schedule no encontrado" }, 404);
-  }
-
-  const updated = await db.loanSchedule.update({
-    where: { id },
-    data: {
-      status: "PENDING",
-    },
-  });
-
-  return reply(c, { status: "ok", schedule: updated });
+  const { id } = c.req.valid("param");
+  const schedule = await unlinkLoanPayment(id);
+  return reply(c, { schedule, status: "ok" });
 });
 
 export const loanScheduleRoutes = app;

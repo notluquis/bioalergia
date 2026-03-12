@@ -1,192 +1,127 @@
-import { db } from "@finanzas/db";
-import { Decimal } from "decimal.js";
 import { Hono } from "hono";
+import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
-import { loanCreateSchema } from "../lib/financial-schemas";
-import { createLoan, deleteLoan, getLoanById, listLoans, updateLoan } from "../services/loans";
+import { errorReply } from "../utils/error-reply";
 import { reply } from "../utils/reply";
+import { zValidator } from "../lib/zod-validator";
+import { loanCreateSchema, loanScheduleRegenerateSchema } from "../lib/financial-schemas";
+import {
+  createLoan,
+  deleteLoan,
+  getLoanDetail,
+  listLoans,
+  regenerateLoanSchedules,
+  updateLoan,
+} from "../services/loans";
+
+const publicIdParamSchema = z.object({
+  publicId: z.string().trim().min(1),
+});
 
 const app = new Hono();
 
 app.get("/", async (c) => {
   const user = await getSessionUser(c);
   if (!user) {
-    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+    return errorReply(c, 401, "Unauthorized");
   }
 
   const canRead = await hasPermission(user.id, "read", "Loan");
   if (!canRead) {
-    return reply(c, { status: "error", message: "Forbidden" }, 403);
+    return errorReply(c, 403, "Forbidden");
   }
 
   const loans = await listLoans();
-  return reply(c, { status: "ok", loans });
+  return reply(c, { loans, status: "ok" });
 });
 
-app.post("/", async (c) => {
+app.post("/", zValidator("json", loanCreateSchema), async (c) => {
   const user = await getSessionUser(c);
   if (!user) {
-    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+    return errorReply(c, 401, "Unauthorized");
   }
 
   const canCreate = await hasPermission(user.id, "create", "Loan");
   if (!canCreate) {
-    return reply(c, { status: "error", message: "Forbidden" }, 403);
+    return errorReply(c, 403, "Forbidden");
   }
 
-  const body = await c.req.json();
-  const parsed = loanCreateSchema.safeParse(body);
-
-  if (!parsed.success) {
-    return reply(
-      c,
-      {
-        status: "error",
-        message: "Datos inválidos",
-        issues: parsed.error.issues,
-      },
-      400,
-    );
-  }
-
-  const loan = await createLoan({
-    ...parsed.data,
-    status: "ACTIVE",
-  });
-
-  return reply(c, { status: "ok", loan });
+  const loan = await createLoan(c.req.valid("json"));
+  return reply(c, { ...loan, status: "ok" }, 201);
 });
 
-app.get("/:id", async (c) => {
+app.get("/:publicId", zValidator("param", publicIdParamSchema), async (c) => {
   const user = await getSessionUser(c);
   if (!user) {
-    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+    return errorReply(c, 401, "Unauthorized");
   }
 
   const canRead = await hasPermission(user.id, "read", "Loan");
   if (!canRead) {
-    return reply(c, { status: "error", message: "Forbidden" }, 403);
+    return errorReply(c, 403, "Forbidden");
   }
 
-  const id = Number(c.req.param("id"));
-  if (!Number.isFinite(id)) {
-    return reply(c, { status: "error", message: "ID inválido" }, 400);
-  }
-
-  const loan = await getLoanById(id);
-  if (!loan) {
-    return reply(c, { status: "error", message: "Préstamo no encontrado" }, 404);
-  }
-
-  return reply(c, { status: "ok", loan });
+  const { publicId } = c.req.valid("param");
+  const loan = await getLoanDetail(publicId);
+  return reply(c, { ...loan, status: "ok" });
 });
 
-app.put("/:id", async (c) => {
+app.put(
+  "/:publicId",
+  zValidator("param", publicIdParamSchema),
+  zValidator("json", loanCreateSchema.partial()),
+  async (c) => {
+    const user = await getSessionUser(c);
+    if (!user) {
+      return errorReply(c, 401, "Unauthorized");
+    }
+
+    const canUpdate = await hasPermission(user.id, "update", "Loan");
+    if (!canUpdate) {
+      return errorReply(c, 403, "Forbidden");
+    }
+
+    const { publicId } = c.req.valid("param");
+    const loan = await updateLoan(publicId, c.req.valid("json"));
+    return reply(c, { ...loan, status: "ok" });
+  }
+);
+
+app.delete("/:publicId", zValidator("param", publicIdParamSchema), async (c) => {
   const user = await getSessionUser(c);
   if (!user) {
-    return reply(c, { status: "error", message: "Unauthorized" }, 401);
-  }
-
-  const canUpdate = await hasPermission(user.id, "update", "Loan");
-  if (!canUpdate) {
-    return reply(c, { status: "error", message: "Forbidden" }, 403);
-  }
-
-  const id = Number(c.req.param("id"));
-  if (!Number.isFinite(id)) {
-    return reply(c, { status: "error", message: "ID inválido" }, 400);
-  }
-
-  const body = await c.req.json();
-  const parsed = loanCreateSchema.partial().safeParse(body);
-
-  if (!parsed.success) {
-    return reply(
-      c,
-      {
-        status: "error",
-        message: "Datos inválidos",
-        issues: parsed.error.issues,
-      },
-      400,
-    );
-  }
-
-  const loan = await updateLoan(id, parsed.data);
-  return reply(c, { status: "ok", loan });
-});
-
-app.delete("/:id", async (c) => {
-  const user = await getSessionUser(c);
-  if (!user) {
-    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+    return errorReply(c, 401, "Unauthorized");
   }
 
   const canDelete = await hasPermission(user.id, "delete", "Loan");
   if (!canDelete) {
-    return reply(c, { status: "error", message: "Forbidden" }, 403);
+    return errorReply(c, 403, "Forbidden");
   }
 
-  const id = Number(c.req.param("id"));
-  if (!Number.isFinite(id)) {
-    return reply(c, { status: "error", message: "ID inválido" }, 400);
-  }
-
-  await deleteLoan(id);
+  const { publicId } = c.req.valid("param");
+  await deleteLoan(publicId);
   return reply(c, { status: "ok" });
 });
 
-// POST /:id/schedules - Regenerate loan schedules
-app.post("/:id/schedules", async (c) => {
-  const user = await getSessionUser(c);
-  if (!user) {
-    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+app.post(
+  "/:publicId/schedules",
+  zValidator("param", publicIdParamSchema),
+  zValidator("json", loanScheduleRegenerateSchema),
+  async (c) => {
+    const user = await getSessionUser(c);
+    if (!user) {
+      return errorReply(c, 401, "Unauthorized");
+    }
+
+    const canUpdate = await hasPermission(user.id, "update", "Loan");
+    if (!canUpdate) {
+      return errorReply(c, 403, "Forbidden");
+    }
+
+    const { publicId } = c.req.valid("param");
+    const loan = await regenerateLoanSchedules(publicId, c.req.valid("json"));
+    return reply(c, { ...loan, status: "ok" });
   }
-
-  const canUpdate = await hasPermission(user.id, "update", "Loan");
-  if (!canUpdate) {
-    return reply(c, { status: "error", message: "Forbidden" }, 403);
-  }
-
-  const id = Number(c.req.param("id"));
-  if (!Number.isFinite(id)) {
-    return reply(c, { status: "error", message: "ID inválido" }, 400);
-  }
-
-  const loan = await getLoanById(id);
-  if (!loan) {
-    return reply(c, { status: "error", message: "Préstamo no encontrado" }, 404);
-  }
-
-  const body = await c.req.json();
-  const { startDate, installments } = body;
-
-  // Delete existing schedules
-  await db.loanSchedule.deleteMany({ where: { loanId: id } });
-
-  // Generate new schedules
-  const scheduleData = [];
-  const start = new Date(startDate || loan.startDate || new Date());
-  const totalInstallments = installments || loan.schedules.length || 12;
-  const installmentAmount = Number(loan.principalAmount) / totalInstallments;
-
-  for (let i = 1; i <= totalInstallments; i++) {
-    const dueDate = new Date(start);
-    dueDate.setMonth(dueDate.getMonth() + i);
-
-    scheduleData.push({
-      loanId: id,
-      installmentNumber: i,
-      dueDate,
-      expectedAmount: new Decimal(installmentAmount),
-      status: "PENDING" as const,
-    });
-  }
-
-  await db.loanSchedule.createMany({ data: scheduleData });
-
-  const updatedLoan = await getLoanById(id);
-  return reply(c, { status: "ok", loan: updatedLoan });
-});
+);
 
 export const loanRoutes = app;

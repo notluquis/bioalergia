@@ -50,6 +50,12 @@ export const loanScheduleRegenerateSchema = z.object({
   frequency: z.enum(["WEEKLY", "BIWEEKLY", "MONTHLY"]).optional(),
 });
 
+export const loanPaymentSchema = z.object({
+  paidAmount: moneySchema,
+  paidDate: z.string().regex(dateRegex),
+  transactionId: z.coerce.number().int().positive(),
+});
+
 // Balances & Production
 export const balancesQuerySchema = z.object({
   from: z.string().regex(dateRegex).optional(),

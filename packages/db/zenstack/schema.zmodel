@@ -630,9 +630,16 @@ model ServiceSchedule {
 
 model Loan {
   id              Int            @id @default(autoincrement())
+  publicId        String         @unique @map("public_id")
   title           String
+  borrowerName    String         @map("borrower_name")
+  borrowerType    LoanBorrowerType @map("borrower_type")
   principalAmount Decimal        @map("principal_amount") @db.Decimal(15, 2)
   interestRate    Decimal        @map("interest_rate") @db.Decimal(9, 6)
+  interestType    LoanInterestType @default(SIMPLE) @map("interest_type")
+  frequency       LoanFrequency
+  totalInstallments Int          @map("total_installments")
+  notes           String?
   startDate       DateTime       @map("start_date") @db.Date
   status          LoanStatus     @default(ACTIVE)
   createdAt       DateTime       @default(now()) @map("created_at")
@@ -653,8 +660,17 @@ model LoanSchedule {
   installmentNumber Int                @map("installment_number")
   dueDate           DateTime           @map("due_date") @db.Date
   expectedAmount    Decimal            @map("expected_amount") @db.Decimal(15, 2)
+  expectedPrincipal Decimal            @map("expected_principal") @db.Decimal(15, 2)
+  expectedInterest  Decimal            @map("expected_interest") @db.Decimal(15, 2)
+  paidAmount        Decimal?           @map("paid_amount") @db.Decimal(15, 2)
+  paidDate          DateTime?          @map("paid_date") @db.Date
+  transactionId     Int?               @map("transaction_id")
+  note              String?
   status            LoanScheduleStatus @default(PENDING)
   loan              Loan               @relation(fields: [loanId], references: [id], onDelete: Cascade)
+  transaction       FinancialTransaction? @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @default(now()) @updatedAt @map("updated_at")
 
   // Access policies
   @@deny('all', auth() == null)
@@ -662,6 +678,7 @@ model LoanSchedule {
   @@allow('update', auth().status == 'ACTIVE')
 
   @@index([loanId])
+  @@index([transactionId])
   @@map("loan_schedules")
 }
 
@@ -1466,11 +1483,28 @@ enum LoanStatus {
   DEFAULTED
 }
 
+enum LoanBorrowerType {
+  PERSON
+  COMPANY
+}
+
+enum LoanFrequency {
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+}
+
+enum LoanInterestType {
+  SIMPLE
+  COMPOUND
+}
+
 enum LoanScheduleStatus {
   PENDING
   PARTIAL
   PAID
   OVERDUE
+  SKIPPED
 }
 
 enum UserStatus {
@@ -2005,6 +2039,7 @@ model FinancialTransaction {
   category         TransactionCategory?             @relation(fields: [categoryId], references: [id])
   counterpart      Counterpart?                     @relation(fields: [counterpartId], references: [id])
   allocations      FinancialTransactionAllocation[]
+  loanSchedules    LoanSchedule[]
   serviceSchedules ServiceSchedule[]
   comment          String?
 

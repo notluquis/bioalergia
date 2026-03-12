@@ -1964,9 +1964,22 @@ export class SchemaType implements SchemaDef {
                     id: true,
                     default: ExpressionUtils.call("autoincrement")
                 },
+                publicId: {
+                    name: "publicId",
+                    type: "String",
+                    unique: true
+                },
                 title: {
                     name: "title",
                     type: "String"
+                },
+                borrowerName: {
+                    name: "borrowerName",
+                    type: "String"
+                },
+                borrowerType: {
+                    name: "borrowerType",
+                    type: "LoanBorrowerType"
                 },
                 principalAmount: {
                     name: "principalAmount",
@@ -1975,6 +1988,24 @@ export class SchemaType implements SchemaDef {
                 interestRate: {
                     name: "interestRate",
                     type: "Decimal"
+                },
+                interestType: {
+                    name: "interestType",
+                    type: "LoanInterestType",
+                    default: "SIMPLE"
+                },
+                frequency: {
+                    name: "frequency",
+                    type: "LoanFrequency"
+                },
+                totalInstallments: {
+                    name: "totalInstallments",
+                    type: "Int"
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
                 },
                 startDate: {
                     name: "startDate",
@@ -2005,7 +2036,8 @@ export class SchemaType implements SchemaDef {
             },
             idFields: ["id"],
             uniqueFields: {
-                id: { type: "Int" }
+                id: { type: "Int" },
+                publicId: { type: "String" }
             }
         },
         LoanSchedule: {
@@ -2036,6 +2068,37 @@ export class SchemaType implements SchemaDef {
                     name: "expectedAmount",
                     type: "Decimal"
                 },
+                expectedPrincipal: {
+                    name: "expectedPrincipal",
+                    type: "Decimal"
+                },
+                expectedInterest: {
+                    name: "expectedInterest",
+                    type: "Decimal"
+                },
+                paidAmount: {
+                    name: "paidAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                paidDate: {
+                    name: "paidDate",
+                    type: "DateTime",
+                    optional: true
+                },
+                transactionId: {
+                    name: "transactionId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "transaction"
+                    ]
+                },
+                note: {
+                    name: "note",
+                    type: "String",
+                    optional: true
+                },
                 status: {
                     name: "status",
                     type: "LoanScheduleStatus",
@@ -2045,6 +2108,23 @@ export class SchemaType implements SchemaDef {
                     name: "loan",
                     type: "Loan",
                     relation: { opposite: "schedules", fields: ["loanId"], references: ["id"], onDelete: "Cascade" }
+                },
+                transaction: {
+                    name: "transaction",
+                    type: "FinancialTransaction",
+                    optional: true,
+                    relation: { opposite: "loanSchedules", fields: ["transactionId"], references: ["id"], onDelete: "SetNull" }
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now")
                 }
             },
             idFields: ["id"],
@@ -5564,6 +5644,12 @@ export class SchemaType implements SchemaDef {
                     array: true,
                     relation: { opposite: "transaction" }
                 },
+                loanSchedules: {
+                    name: "loanSchedules",
+                    type: "LoanSchedule",
+                    array: true,
+                    relation: { opposite: "transaction" }
+                },
                 serviceSchedules: {
                     name: "serviceSchedules",
                     type: "ServiceSchedule",
@@ -5944,13 +6030,36 @@ export class SchemaType implements SchemaDef {
                 DEFAULTED: "DEFAULTED"
             }
         },
+        LoanBorrowerType: {
+            name: "LoanBorrowerType",
+            values: {
+                PERSON: "PERSON",
+                COMPANY: "COMPANY"
+            }
+        },
+        LoanFrequency: {
+            name: "LoanFrequency",
+            values: {
+                WEEKLY: "WEEKLY",
+                BIWEEKLY: "BIWEEKLY",
+                MONTHLY: "MONTHLY"
+            }
+        },
+        LoanInterestType: {
+            name: "LoanInterestType",
+            values: {
+                SIMPLE: "SIMPLE",
+                COMPOUND: "COMPOUND"
+            }
+        },
         LoanScheduleStatus: {
             name: "LoanScheduleStatus",
             values: {
                 PENDING: "PENDING",
                 PARTIAL: "PARTIAL",
                 PAID: "PAID",
-                OVERDUE: "OVERDUE"
+                OVERDUE: "OVERDUE",
+                SKIPPED: "SKIPPED"
             }
         },
         UserStatus: {

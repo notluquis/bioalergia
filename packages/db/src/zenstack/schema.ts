@@ -2378,9 +2378,25 @@ export class SchemaType implements SchemaDef {
                     attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
                     default: ExpressionUtils.call("autoincrement")
                 },
+                publicId: {
+                    name: "publicId",
+                    type: "String",
+                    unique: true,
+                    attributes: [{ name: "@unique" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("public_id") }] }]
+                },
                 title: {
                     name: "title",
                     type: "String"
+                },
+                borrowerName: {
+                    name: "borrowerName",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("borrower_name") }] }]
+                },
+                borrowerType: {
+                    name: "borrowerType",
+                    type: "LoanBorrowerType",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("borrower_type") }] }]
                 },
                 principalAmount: {
                     name: "principalAmount",
@@ -2391,6 +2407,26 @@ export class SchemaType implements SchemaDef {
                     name: "interestRate",
                     type: "Decimal",
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("interest_rate") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(9) }, { name: "s", value: ExpressionUtils.literal(6) }] }]
+                },
+                interestType: {
+                    name: "interestType",
+                    type: "LoanInterestType",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("SIMPLE") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("interest_type") }] }],
+                    default: "SIMPLE"
+                },
+                frequency: {
+                    name: "frequency",
+                    type: "LoanFrequency"
+                },
+                totalInstallments: {
+                    name: "totalInstallments",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("total_installments") }] }]
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
                 },
                 startDate: {
                     name: "startDate",
@@ -2431,7 +2467,8 @@ export class SchemaType implements SchemaDef {
             ],
             idFields: ["id"],
             uniqueFields: {
-                id: { type: "Int" }
+                id: { type: "Int" },
+                publicId: { type: "String" }
             }
         },
         LoanSchedule: {
@@ -2467,6 +2504,42 @@ export class SchemaType implements SchemaDef {
                     type: "Decimal",
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("expected_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
                 },
+                expectedPrincipal: {
+                    name: "expectedPrincipal",
+                    type: "Decimal",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("expected_principal") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
+                },
+                expectedInterest: {
+                    name: "expectedInterest",
+                    type: "Decimal",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("expected_interest") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
+                },
+                paidAmount: {
+                    name: "paidAmount",
+                    type: "Decimal",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("paid_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
+                },
+                paidDate: {
+                    name: "paidDate",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("paid_date") }] }, { name: "@db.Date" }]
+                },
+                transactionId: {
+                    name: "transactionId",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("transaction_id") }] }],
+                    foreignKeyFor: [
+                        "transaction"
+                    ]
+                },
+                note: {
+                    name: "note",
+                    type: "String",
+                    optional: true
+                },
                 status: {
                     name: "status",
                     type: "LoanScheduleStatus",
@@ -2478,6 +2551,26 @@ export class SchemaType implements SchemaDef {
                     type: "Loan",
                     attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("loanId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }],
                     relation: { opposite: "schedules", fields: ["loanId"], references: ["id"], onDelete: "Cascade" }
+                },
+                transaction: {
+                    name: "transaction",
+                    type: "FinancialTransaction",
+                    optional: true,
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("transactionId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("SetNull") }] }],
+                    relation: { opposite: "loanSchedules", fields: ["transactionId"], references: ["id"], onDelete: "SetNull" }
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }],
+                    default: ExpressionUtils.call("now")
                 }
             },
             attributes: [
@@ -2485,6 +2578,7 @@ export class SchemaType implements SchemaDef {
                 { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
                 { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("update") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("loanId")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("transactionId")]) }] },
                 { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("loan_schedules") }] }
             ],
             idFields: ["id"],
@@ -6831,6 +6925,12 @@ export class SchemaType implements SchemaDef {
                     array: true,
                     relation: { opposite: "transaction" }
                 },
+                loanSchedules: {
+                    name: "loanSchedules",
+                    type: "LoanSchedule",
+                    array: true,
+                    relation: { opposite: "transaction" }
+                },
                 serviceSchedules: {
                     name: "serviceSchedules",
                     type: "ServiceSchedule",
@@ -7273,13 +7373,36 @@ export class SchemaType implements SchemaDef {
                 DEFAULTED: "DEFAULTED"
             }
         },
+        LoanBorrowerType: {
+            name: "LoanBorrowerType",
+            values: {
+                PERSON: "PERSON",
+                COMPANY: "COMPANY"
+            }
+        },
+        LoanFrequency: {
+            name: "LoanFrequency",
+            values: {
+                WEEKLY: "WEEKLY",
+                BIWEEKLY: "BIWEEKLY",
+                MONTHLY: "MONTHLY"
+            }
+        },
+        LoanInterestType: {
+            name: "LoanInterestType",
+            values: {
+                SIMPLE: "SIMPLE",
+                COMPOUND: "COMPOUND"
+            }
+        },
         LoanScheduleStatus: {
             name: "LoanScheduleStatus",
             values: {
                 PENDING: "PENDING",
                 PARTIAL: "PARTIAL",
                 PAID: "PAID",
-                OVERDUE: "OVERDUE"
+                OVERDUE: "OVERDUE",
+                SKIPPED: "SKIPPED"
             }
         },
         UserStatus: {
