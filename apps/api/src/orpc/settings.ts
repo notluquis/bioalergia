@@ -7,7 +7,10 @@ import type { Context as HonoContext } from "hono";
 import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
+import { settingsSchema } from "../lib/schemas";
+import { type AppSettings, settingsKeyToDbKey } from "../lib/settings";
 import { configureSuperjson } from "../lib/superjson-config";
+import { loadSettings, updateSettings as persistSettings } from "../services/settings";
 import { SuperJSONRPCHandler } from "./superjson";
 
 configureSuperjson();
@@ -26,6 +29,8 @@ const internalSettingsSchema = z.object({
 const internalSettingsResponseSchema = z.object({
   internal: internalSettingsSchema,
 });
+
+const appSettingsResponseSchema = settingsSchema;
 
 const updateInternalSettingsSchema = z.object({
   upsertChunkSize: z.number().optional(),
@@ -76,6 +81,37 @@ const updateSettings = authed.use(async ({ context, next }) => {
 });
 
 const settingsORPCRouterBase = {
+  app: readSettings
+    .route({
+      method: "GET",
+      path: "/app",
+      summary: "Get application settings",
+      tags: ["Settings"],
+    })
+    .output(appSettingsResponseSchema)
+    .handler(async () => {
+      return await loadSettings();
+    }),
+
+  updateApp: updateSettings
+    .route({
+      method: "PUT",
+      path: "/app",
+      summary: "Update application settings",
+      tags: ["Settings"],
+    })
+    .input(settingsSchema)
+    .output(statusResponseSchema)
+    .handler(async ({ input }) => {
+      const payload = Object.entries(input).reduce<Record<string, string>>((acc, [key, value]) => {
+        acc[settingsKeyToDbKey(key as keyof AppSettings)] = value;
+        return acc;
+      }, {});
+
+      await persistSettings(payload);
+      return { status: "ok" };
+    }),
+
   internal: readSettings
     .route({
       method: "GET",

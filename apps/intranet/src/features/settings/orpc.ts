@@ -2,8 +2,14 @@ import { createORPCClient, ORPCError } from "@orpc/client";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
 import type { InternalSettings } from "./api";
+import type { AppSettings } from "./hooks/use-settings";
 
 type SettingsORPCClient = {
+  app: () => Promise<AppSettings>;
+  updateApp: (input: AppSettings) => Promise<{
+    message?: string;
+    status: string;
+  }>;
   internal: () => Promise<{ internal: InternalSettings }>;
   updateInternal: (input: { upsertChunkSize?: number }) => Promise<{
     message?: string;

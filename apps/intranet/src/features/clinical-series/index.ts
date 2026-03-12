@@ -3,7 +3,6 @@
  * Provides types, queries, and components for clinical series management
  */
 
-// biome-ignore lint/performance/noBarrelFile: Intentional re-export of essentials
 export {
   clinicalSeriesKeys,
   useClinicalSeries,

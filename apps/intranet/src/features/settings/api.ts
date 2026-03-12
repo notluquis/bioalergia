@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { AppSettings } from "./hooks/use-settings";
 import { settingsORPCClient, toSettingsApiError } from "./orpc";
 
 export interface InternalSettings {
@@ -34,9 +35,48 @@ const UploadResponseSchema = z.object({
   url: z.string().optional(),
 });
 
+const AppSettingsSchema = z.object({
+  calendarDailyMaxDays: z.string(),
+  calendarExcludeSummaries: z.string(),
+  calendarSyncLookaheadDays: z.string(),
+  calendarSyncStart: z.string(),
+  calendarTimeZone: z.string(),
+  cpanelUrl: z.string(),
+  dbConsoleUrl: z.string(),
+  dbDisplayHost: z.string(),
+  dbDisplayName: z.string(),
+  faviconUrl: z.string(),
+  logoUrl: z.string(),
+  orgAddress: z.string(),
+  orgName: z.string(),
+  orgPhone: z.string(),
+  pageTitle: z.string(),
+  primaryColor: z.string(),
+  primaryCurrency: z.string(),
+  secondaryColor: z.string(),
+  supportEmail: z.string(),
+  tagline: z.string(),
+});
+
 export async function fetchInternalSettings() {
   try {
     return InternalSettingsResponseSchema.parse(await settingsORPCClient.internal());
+  } catch (error) {
+    throw toSettingsApiError(error);
+  }
+}
+
+export async function fetchAppSettings() {
+  try {
+    return AppSettingsSchema.parse(await settingsORPCClient.app());
+  } catch (error) {
+    throw toSettingsApiError(error);
+  }
+}
+
+export async function updateAppSettings(data: AppSettings) {
+  try {
+    return StatusResponseSchema.parse(await settingsORPCClient.updateApp(data));
   } catch (error) {
     throw toSettingsApiError(error);
   }

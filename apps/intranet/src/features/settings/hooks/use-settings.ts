@@ -1,9 +1,9 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { z } from "zod";
 import { APP_CONFIG } from "@/config/app";
 import { useAuth } from "@/features/auth/hooks/use-auth";
-import { ApiError, apiClient } from "@/lib/api-client";
+import { ApiError } from "@/lib/api-client";
 import { logger } from "@/lib/logger";
+import { fetchAppSettings, updateAppSettings } from "../api";
 
 export interface AppSettings {
   calendarDailyMaxDays: string;
@@ -36,21 +36,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   ...APP_CONFIG.defaults,
 };
 
-const InternalSettingsResponseSchema = z.looseObject({
-  internal: z
-    .object({
-      envUpsertChunkSize: z.string().optional(),
-      upsertChunkSize: z.union([z.number(), z.string()]).optional(),
-    })
-    .optional(),
-});
-
-const UpdateSettingsResponseSchema = z.looseObject({
-  message: z.string().optional(),
-  settings: z.unknown().optional(),
-  status: z.string(),
-});
-
 export function useSettings() {
   const { user, hasRole } = useAuth();
   const queryClient = useQueryClient();
@@ -61,16 +46,8 @@ export function useSettings() {
     gcTime: 10 * 60 * 1000,
     queryFn: async () => {
       logger.info("[settings] fetch:start", { userId: user?.id ?? null });
-      interface InternalSettingsResponse {
-        internal?: {
-          envUpsertChunkSize?: string;
-          upsertChunkSize?: number | string;
-        };
-      }
       try {
-        const payload = await apiClient.get<InternalSettingsResponse>("/api/settings/internal", {
-          responseSchema: InternalSettingsResponseSchema,
-        });
+        const payload = await fetchAppSettings();
         return { ...DEFAULT_SETTINGS, ...payload };
       } catch (error) {
         // During onboarding or stale sessions, internal settings might be unavailable.
@@ -91,19 +68,15 @@ export function useSettings() {
 
   const updateSettings = async (next: AppSettings) => {
     logger.info("[settings] update:start", next);
-    const payload = await apiClient.put<{
-      message?: string;
-      settings?: AppSettings;
-      status: string;
-    }>("/api/settings/internal", next, { responseSchema: UpdateSettingsResponseSchema });
+    const payload = await updateAppSettings(next);
 
-    if (payload.status !== "ok" || !payload.settings) {
+    if (payload.status !== "ok") {
       logger.warn("[settings] update:error", { message: payload.message });
       throw new Error(payload.message ?? "No se pudo actualizar la configuración");
     }
 
-    logger.info("[settings] update:success", payload.settings);
-    queryClient.setQueryData<AppSettings>(["settings"], payload.settings);
+    logger.info("[settings] update:success", next);
+    queryClient.setQueryData<AppSettings>(["settings", user?.id, user?.status], next);
   };
 
   const currentSettings = user ? (settingsQuery.data ?? DEFAULT_SETTINGS) : DEFAULT_SETTINGS;

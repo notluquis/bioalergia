@@ -47,8 +47,8 @@
     "migrate:deploy": "zen migrate deploy",
     "clean": "rm -rf dist",
     "type-check": "tsc --noEmit",
-    "lint": "biome lint .",
-    "lint:fix": "biome check --write ."
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix && oxfmt --write ."
   },
   "dependencies": {
     "@zenstackhq/language": "3.4.4",

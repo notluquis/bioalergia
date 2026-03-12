@@ -16,9 +16,9 @@
     "storybook": "storybook dev -p 6007",
     "build-storybook": "storybook build",
     "chromatic": "chromatic --project-token=$CHROMATIC_PROJECT_TOKEN --exit-once-uploaded",
-    "lint": "biome lint .",
-    "format": "biome format --write .",
-    "format:check": "biome check .",
+    "lint": "oxlint",
+    "format": "oxfmt --write .",
+    "format:check": "oxfmt --check .",
     "type-check": "tsc --noEmit",
     "test": "vitest",
     "clean": "rm -rf dist"

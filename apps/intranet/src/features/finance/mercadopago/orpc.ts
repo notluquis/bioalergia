@@ -6,7 +6,7 @@ import type { MpReportType } from "../../../../shared/mercadopago";
 type MercadoPagoORPCClient = {
   createReport: (input: { beginDate: Date; endDate: Date; type?: MpReportType }) => Promise<{
     begin_date: Date;
-    created_from: "manual" | "schedule";
+    created_from: string;
     date_created?: Date;
     end_date: Date;
     file_name?: string;
@@ -18,7 +18,7 @@ type MercadoPagoORPCClient = {
   listReports: (input?: { limit?: number; offset?: number; type?: MpReportType }) => Promise<{
     reports: Array<{
       begin_date: Date;
-      created_from: "manual" | "schedule";
+      created_from: string;
       date_created?: Date;
       end_date: Date;
       file_name?: string;
@@ -27,7 +27,6 @@ type MercadoPagoORPCClient = {
       status?: string;
       status_detail?: string;
     }>;
-    status: "ok";
     total: number;
   }>;
   listSyncLogs: (input?: { limit?: number; offset?: number }) => Promise<{
@@ -45,7 +44,6 @@ type MercadoPagoORPCClient = {
       triggerSource: string;
       updated?: null | number;
     }>;
-    status: "ok";
     total: number;
   }>;
   processReport: (input: { fileName: string; reportType: MpReportType }) => Promise<{
@@ -65,7 +63,7 @@ type MercadoPagoORPCClient = {
       totalRows: number;
       validRows: number;
     };
-    status: "success";
+    status: "error" | "success";
   }>;
 };
 

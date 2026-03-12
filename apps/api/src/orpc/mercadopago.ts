@@ -32,8 +32,8 @@ const listReportsInputSchema = z.object({
 });
 
 const createReportInputSchema = z.object({
-  begin_date: z.date(),
-  end_date: z.date(),
+  beginDate: z.date(),
+  endDate: z.date(),
   type: reportTypeSchema.optional(),
 });
 
@@ -49,10 +49,10 @@ const syncLogsInputSchema = z.object({
 
 const mpReportSchema = z
   .object({
-    begin_date: z.date(),
-    created_from: z.enum(["manual", "schedule"]),
-    date_created: z.date().optional(),
-    end_date: z.date(),
+    begin_date: z.coerce.date(),
+    created_from: z.string(),
+    date_created: z.coerce.date().optional(),
+    end_date: z.coerce.date(),
     file_name: z.string().optional(),
     id: z.number(),
     state: z.string().optional(),
@@ -157,8 +157,8 @@ const mercadopagoORPCRouterBase = {
     .handler(async ({ input }) => {
       const type = input.type ?? "release";
       return await MercadoPagoService.createReport(type, {
-        begin_date: formatMpDate(input.begin_date),
-        end_date: formatMpDate(input.end_date),
+        begin_date: formatMpDate(input.beginDate),
+        end_date: formatMpDate(input.endDate),
       });
     }),
 

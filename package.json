@@ -31,7 +31,6 @@
     "superjson": "^2.2.6"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.6",
     "@types/node": "25.3.5",
     "@zenstackhq/cli": "3.4.4",
     "@zenstackhq/sdk": "3.4.4",
