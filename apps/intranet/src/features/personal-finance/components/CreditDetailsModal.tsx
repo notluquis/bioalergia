@@ -1,9 +1,10 @@
 "use client";
 
-import { Button, Chip, Modal } from "@heroui/react";
+import { Button, Chip, Modal, Skeleton } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { AlertCircle, CheckCircle2, Clock } from "lucide-react";
+import { Suspense } from "react";
 import { formatCurrency } from "@/lib/utils";
 import { personalFinanceQueries } from "../queries";
 import type { PersonalCreditInstallment } from "../types";
@@ -21,7 +22,48 @@ export function CreditDetailsModal({ creditId, onClose }: CreditDetailsModalProp
     return null;
   }
 
-  return <CreditDetailsModalContent creditId={creditId} isOpen={isOpen} onClose={onClose} />;
+  return (
+    <Suspense fallback={<CreditDetailsModalFallback isOpen={isOpen} onClose={onClose} />}>
+      <CreditDetailsModalContent creditId={creditId} isOpen={isOpen} onClose={onClose} />
+    </Suspense>
+  );
+}
+
+function CreditDetailsModalFallback({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  return (
+    <Modal>
+      <Modal.Backdrop
+        isOpen={isOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            onClose();
+          }
+        }}
+      >
+        <Modal.Container className="max-h-[90vh] overflow-hidden">
+          <Modal.Dialog className="flex flex-col h-full">
+            <Modal.CloseTrigger onClick={onClose} />
+            <Modal.Header className="flex-col items-start gap-2 border-b border-border py-5">
+              <Skeleton className="h-6 w-40 rounded-md" />
+              <Skeleton className="h-4 w-56 rounded-md" />
+            </Modal.Header>
+            <Modal.Body className="flex-1 overflow-y-auto py-6">
+              <div className="space-y-3">
+                <Skeleton className="h-20 w-full rounded-xl" />
+                <Skeleton className="h-20 w-full rounded-xl" />
+                <Skeleton className="h-20 w-full rounded-xl" />
+              </div>
+            </Modal.Body>
+            <Modal.Footer className="border-t border-border py-4">
+              <Button slot="close" variant="secondary" onPress={onClose}>
+                Cerrar
+              </Button>
+            </Modal.Footer>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
+    </Modal>
+  );
 }
 
 function CreditDetailsModalContent({

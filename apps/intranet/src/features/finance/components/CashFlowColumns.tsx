@@ -1,4 +1,4 @@
-import { Autocomplete, Button, Chip, EmptyState, ListBox, SearchField } from "@heroui/react";
+import { Button, Chip, ListBox, Select } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { ArrowRightLeft, ArrowUpDown, Pencil } from "lucide-react";
@@ -109,7 +109,7 @@ function renderUnifiedValue(params: {
 
 const mapPaymentMethodLabel = (
   rawMethod: null | string | undefined,
-  rawMethodType: null | string | undefined,
+  rawMethodType: null | string | undefined
 ) => {
   const method = normalizeComparable(rawMethod);
   const methodType = normalizeComparable(rawMethodType);
@@ -190,7 +190,7 @@ export const columns: ColumnDef<CashFlowTransaction>[] = [
       const releaseMethod = mapPaymentMethodLabel(row.original.releasePaymentMethod, null);
       const settlementMethod = mapPaymentMethodLabel(
         row.original.settlementPaymentMethod,
-        row.original.settlementPaymentMethodType,
+        row.original.settlementPaymentMethodType
       );
       return renderUnifiedValue({
         primary: releaseMethod,
@@ -367,67 +367,47 @@ export const columns: ColumnDef<CashFlowTransaction>[] = [
       }
 
       return (
-        <Autocomplete
-          className="min-w-56 [&_.autocomplete__indicator]:hidden"
+        <Select
+          className="min-w-56"
           isDisabled={isUpdating}
-          placeholder="Sin categoría"
-          selectionMode="single"
-          value={selectedValue === "__none__" ? null : selectedValue}
+          value={selectedValue}
           onChange={(key) => {
-            if (key == null) {
-              meta.onCategoryChange?.(row.original, null);
-              return;
-            }
-            const parsed = String(key);
+            const parsed = String(key ?? "__none__");
             const categoryId = parsed === "__none__" ? null : Number(parsed);
             if (categoryId !== null && Number.isNaN(categoryId)) return;
             meta.onCategoryChange?.(row.original, categoryId);
           }}
         >
-          <Autocomplete.Trigger>
-            <Autocomplete.Value />
-          </Autocomplete.Trigger>
-          <Autocomplete.Popover>
-            <Autocomplete.Filter
-              filter={(text, input) => text.toLowerCase().includes(input.toLowerCase())}
-            >
-              <SearchField autoFocus name="search-category" variant="secondary">
-                <SearchField.Group>
-                  <SearchField.SearchIcon />
-                  <SearchField.Input placeholder="Buscar categoría..." />
-                  <SearchField.ClearButton />
-                </SearchField.Group>
-              </SearchField>
-              <ListBox renderEmptyState={() => <EmptyState>Sin resultados</EmptyState>}>
-                <ListBox.Item id="__none__" textValue="Sin categoría">
-                  Sin categoría
+          <Select.Trigger>
+            <Select.Value />
+            <Select.Indicator />
+          </Select.Trigger>
+          <Select.Popover>
+            <ListBox>
+              <ListBox.Item id="__none__" key="__none__" textValue="Sin categoría">
+                Sin categoría
+                <ListBox.ItemIndicator />
+              </ListBox.Item>
+              {categories.map((category) => (
+                <ListBox.Item id={String(category.id)} key={category.id} textValue={category.name}>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="inline-block h-2 w-2 rounded-full shrink-0"
+                      style={{ backgroundColor: category.color ?? "#ccc" }}
+                    />
+                    <span>{category.name}</span>
+                    {isNonAccountableCategory(category) ? (
+                      <Chip color="warning" size="sm" variant="soft">
+                        No contabilizable
+                      </Chip>
+                    ) : null}
+                  </div>
                   <ListBox.ItemIndicator />
                 </ListBox.Item>
-                {categories.map((category) => (
-                  <ListBox.Item
-                    id={String(category.id)}
-                    key={category.id}
-                    textValue={category.name}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span
-                        className="inline-block h-2 w-2 rounded-full shrink-0"
-                        style={{ backgroundColor: category.color ?? "#ccc" }}
-                      />
-                      <span>{category.name}</span>
-                      {isNonAccountableCategory(category) ? (
-                        <Chip color="warning" size="sm" variant="soft">
-                          No contabilizable
-                        </Chip>
-                      ) : null}
-                    </div>
-                    <ListBox.ItemIndicator />
-                  </ListBox.Item>
-                ))}
-              </ListBox>
-            </Autocomplete.Filter>
-          </Autocomplete.Popover>
-        </Autocomplete>
+              ))}
+            </ListBox>
+          </Select.Popover>
+        </Select>
       );
     },
   },

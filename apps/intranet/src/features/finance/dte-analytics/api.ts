@@ -17,8 +17,14 @@ import {
  */
 export async function fetchPurchasesSummary(year?: number): Promise<DTESummaryRaw[]> {
   try {
+    const normalizedYear =
+      year !== undefined && Number.isInteger(year) && year >= 2020 && year <= 2030
+        ? year
+        : undefined;
     const response = DTESummaryResponseSchema.parse(
-      await dteAnalyticsORPCClient.purchasesSummary(year !== undefined ? { year } : undefined),
+      await dteAnalyticsORPCClient.purchasesSummary(
+        normalizedYear !== undefined ? { year: normalizedYear } : undefined
+      )
     );
 
     return DTESummaryArraySchema.parse(response.data);
@@ -33,8 +39,14 @@ export async function fetchPurchasesSummary(year?: number): Promise<DTESummaryRa
  */
 export async function fetchSalesSummary(year?: number): Promise<DTESummaryRaw[]> {
   try {
+    const normalizedYear =
+      year !== undefined && Number.isInteger(year) && year >= 2020 && year <= 2030
+        ? year
+        : undefined;
     const response = DTESummaryResponseSchema.parse(
-      await dteAnalyticsORPCClient.salesSummary(year !== undefined ? { year } : undefined),
+      await dteAnalyticsORPCClient.salesSummary(
+        normalizedYear !== undefined ? { year: normalizedYear } : undefined
+      )
     );
 
     return DTESummaryArraySchema.parse(response.data);
@@ -62,7 +74,7 @@ export interface DTEListResponse<TItem> {
 export async function fetchSalesAvailablePeriods(): Promise<string[]> {
   try {
     const response = DTEPeriodsResponseSchema.parse(
-      await dteAnalyticsORPCClient.salesAvailablePeriods(),
+      await dteAnalyticsORPCClient.salesAvailablePeriods()
     );
     return DTEPeriodsResponseSchema.shape.data.parse(response.data);
   } catch (error) {
@@ -73,7 +85,7 @@ export async function fetchSalesAvailablePeriods(): Promise<string[]> {
 export async function fetchPurchasesAvailablePeriods(): Promise<string[]> {
   try {
     const response = DTEPeriodsResponseSchema.parse(
-      await dteAnalyticsORPCClient.purchasesAvailablePeriods(),
+      await dteAnalyticsORPCClient.purchasesAvailablePeriods()
     );
     return DTEPeriodsResponseSchema.shape.data.parse(response.data);
   } catch (error) {
@@ -82,7 +94,7 @@ export async function fetchPurchasesAvailablePeriods(): Promise<string[]> {
 }
 
 export async function fetchSalesDetails(
-  params: DTEListParams,
+  params: DTEListParams
 ): Promise<DTEListResponse<DTESalesDetail>> {
   try {
     const response = DTESalesDetailResponseSchema.parse(
@@ -90,7 +102,7 @@ export async function fetchSalesDetails(
         page: params.page ?? 1,
         pageSize: params.pageSize ?? 50,
         period: params.period,
-      }),
+      })
     );
 
     return {
@@ -103,7 +115,7 @@ export async function fetchSalesDetails(
 }
 
 export async function fetchPurchasesDetails(
-  params: DTEListParams,
+  params: DTEListParams
 ): Promise<DTEListResponse<DTEPurchaseDetail>> {
   try {
     const response = DTEPurchaseDetailResponseSchema.parse(
@@ -111,7 +123,7 @@ export async function fetchPurchasesDetails(
         page: params.page ?? 1,
         pageSize: params.pageSize ?? 50,
         period: params.period,
-      }),
+      })
     );
 
     return {

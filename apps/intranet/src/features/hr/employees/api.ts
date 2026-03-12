@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { compactORPCInput } from "@/lib/orpc-input";
 import { employeesORPCClient, toEmployeesApiError } from "./orpc";
 
 import type { Employee, EmployeePayload, EmployeeUpdatePayload } from "./types";
@@ -14,7 +15,7 @@ const EmployeesResponseSchema = z.object({
 export async function createEmployee(data: EmployeePayload): Promise<Employee> {
   try {
     const res = await employeesORPCClient.create(
-      data as EmployeePayload & { names: string; rut: string },
+      data as EmployeePayload & { names: string; rut: string }
     );
     return EmployeeResponseSchema.parse(res).employee as Employee;
   } catch (error) {
@@ -33,7 +34,9 @@ export async function deactivateEmployee(id: number): Promise<void> {
 export async function fetchEmployees(includeInactive = false): Promise<Employee[]> {
   try {
     const res = EmployeesResponseSchema.parse(
-      await employeesORPCClient.list(includeInactive ? { includeInactive } : undefined),
+      await employeesORPCClient.list(
+        compactORPCInput({ includeInactive: includeInactive ? true : undefined }) ?? {}
+      )
     );
     const employees = res.employees as Employee[];
 
