@@ -34,15 +34,23 @@ export function DteMonthlySummaryPanel({
   setSelectedYear,
   yearOptions,
 }: DteMonthlySummaryPanelProps) {
+  const selectedYearNumber = useMemo(() => {
+    if (!/^\d{4}$/.test(selectedYear)) {
+      return undefined;
+    }
+    const parsed = Number(selectedYear);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }, [selectedYear]);
+
   const { data: summary } = useSuspenseQuery(
     kind === "purchases"
-      ? dteAnalyticsKeys.purchases(Number(selectedYear))
-      : dteAnalyticsKeys.sales(Number(selectedYear)),
+      ? dteAnalyticsKeys.purchases(selectedYearNumber)
+      : dteAnalyticsKeys.sales(selectedYearNumber)
   );
 
   const chartData = useMemo<MonthlyChartData[]>(
     () => buildMonthlyChartData(summary, selectedYear),
-    [summary, selectedYear],
+    [summary, selectedYear]
   );
 
   const totals = useMemo<YearlyTotals>(() => calculateYearlyTotals(chartData), [chartData]);
@@ -53,7 +61,7 @@ export function DteMonthlySummaryPanel({
         setSelectedYear(key);
       }
     },
-    [setSelectedYear],
+    [setSelectedYear]
   );
 
   const labels =
