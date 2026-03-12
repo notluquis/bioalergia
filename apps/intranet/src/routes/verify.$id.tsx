@@ -3,8 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { z } from "zod";
-
-import { apiClient } from "@/lib/api-client";
+import { certificatesORPCClient, toCertificatesApiError } from "@/features/certificates/orpc";
 
 const VerifyCertificateSchema = z.union([
   z.looseObject({
@@ -28,7 +27,6 @@ const VerifyCertificateSchema = z.union([
     error: z.string().optional(),
   }),
 ]);
-type VerifyCertificateResponse = z.infer<typeof VerifyCertificateSchema>;
 
 export const Route = createFileRoute("/verify/$id")({
   component: VerifyCertificatePage,
@@ -40,10 +38,11 @@ function VerifyCertificatePage() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["verify-certificate", id],
     queryFn: async () => {
-      const data = await apiClient.get<VerifyCertificateResponse>(`certificates/verify/${id}`, {
-        responseSchema: VerifyCertificateSchema,
-      });
-      return data;
+      try {
+        return VerifyCertificateSchema.parse(await certificatesORPCClient.verify({ id }));
+      } catch (error) {
+        throw toCertificatesApiError(error);
+      }
     },
   });
 

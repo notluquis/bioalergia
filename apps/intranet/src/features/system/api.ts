@@ -1,7 +1,6 @@
 import { z } from "zod";
-import { apiClient } from "@/lib/api-client";
-
 import type { HealthResponse } from "./types";
+import { systemORPCClient, toSystemApiError } from "./orpc";
 
 const HealthResponseSchema = z.object({
   checks: z.object({
@@ -16,8 +15,10 @@ const HealthResponseSchema = z.object({
 });
 
 export async function fetchSystemHealth(signal?: AbortSignal): Promise<HealthResponse> {
-  return apiClient.get<HealthResponse>("/api/health", {
-    responseSchema: HealthResponseSchema,
-    signal,
-  });
+  try {
+    void signal;
+    return HealthResponseSchema.parse(await systemORPCClient.health());
+  } catch (error) {
+    throw toSystemApiError(error);
+  }
 }

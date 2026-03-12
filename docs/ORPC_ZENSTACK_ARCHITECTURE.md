@@ -38,6 +38,7 @@
                │ /api/orpc/auth/rpc/*
                │ /api/orpc/csv-upload/rpc/*
                │ /api/orpc/calendar/rpc/*
+               │ /api/orpc/certificates/rpc/*
                │ /api/orpc/dte/rpc/*
                │ /api/orpc/dte-analytics/rpc/*
                │ /api/orpc/dte-analytics/event-links/rpc/*
@@ -59,6 +60,7 @@
                │ /api/orpc/notifications/rpc/*
                │ /api/orpc/services/rpc/*
                │ /api/orpc/supplies/rpc/*
+               │ /api/orpc/system/rpc/*
                │ /api/orpc/timesheets/rpc/*
                │ /api/orpc/production-balances/rpc/*
                │ /api/orpc/balances/rpc/*
@@ -86,6 +88,10 @@
 │ │  • /events/reclassify (jobs)               │
 │ │  • /events/sync (async)                    │
 │ │  • More...                                 │
+│ │                                            │
+│ ├─ Certificates Router                       │
+│ │  • /verify/{id}                            │
+│ │  • PDF generation sigue REST/blob          │
 │ │                                            │
 │ ├─ CSV Upload Router                         │
 │ │  • /preview                                │
@@ -207,6 +213,9 @@
 │ │  • /common                                 │
 │ │  • /requests                               │
 │ │  • /requests/{id}/status                   │
+│ │                                            │
+│ ├─ System Router                             │
+│ │  • /health                                 │
 │ │                                            │
 │ ├─ Timesheets Router                         │
 │ │  • /summary                                │

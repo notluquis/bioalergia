@@ -18,6 +18,7 @@ import { authOpenAPIHandler, authORPCHandler } from "./orpc/auth";
 import { backupsOpenAPIHandler, backupsORPCHandler } from "./orpc/backups";
 import { balancesOpenAPIHandler, balancesORPCHandler } from "./orpc/balances";
 import { calendarOpenAPIHandler, calendarORPCHandler } from "./orpc/calendar";
+import { certificatesOpenAPIHandler, certificatesORPCHandler } from "./orpc/certificates";
 import { clinicalSeriesOpenAPIHandler, clinicalSeriesORPCHandler } from "./orpc/clinical-series";
 import { counterpartsOpenAPIHandler, counterpartsORPCHandler } from "./orpc/counterparts";
 import { csvUploadOpenAPIHandler, csvUploadORPCHandler } from "./orpc/csv-upload";
@@ -53,6 +54,7 @@ import {
 } from "./orpc/settlement-transactions";
 import { createHonoORPCRequest } from "./orpc/superjson";
 import { suppliesOpenAPIHandler, suppliesORPCHandler } from "./orpc/supplies";
+import { systemOpenAPIHandler, systemORPCHandler } from "./orpc/system";
 import { timesheetsOpenAPIHandler, timesheetsORPCHandler } from "./orpc/timesheets";
 import {
   transactionsInsightsOpenAPIHandler,
@@ -288,12 +290,30 @@ app.get("/api/orpc", (c) =>
           </ul>
         </section>
         <section class="card">
+          <h2>Certificates</h2>
+          <p>Verificación pública de certificados médicos.</p>
+          <ul>
+            <li><a href="/api/orpc/certificates/docs">Reference UI</a></li>
+            <li><a href="/api/orpc/certificates/openapi.json">OpenAPI JSON</a></li>
+            <li><code>/api/orpc/certificates/rpc/*</code></li>
+          </ul>
+        </section>
+        <section class="card">
           <h2>Clinical Series</h2>
           <p>Series clínicas agrupadas para tests y tratamientos.</p>
           <ul>
             <li><a href="/api/orpc/clinical-series/docs">Reference UI</a></li>
             <li><a href="/api/orpc/clinical-series/openapi.json">OpenAPI JSON</a></li>
             <li><code>/api/orpc/clinical-series/rpc/*</code></li>
+          </ul>
+        </section>
+        <section class="card">
+          <h2>System</h2>
+          <p>Estado básico del sistema para frontend y observabilidad.</p>
+          <ul>
+            <li><a href="/api/orpc/system/docs">Reference UI</a></li>
+            <li><a href="/api/orpc/system/openapi.json">OpenAPI JSON</a></li>
+            <li><code>/api/orpc/system/rpc/*</code></li>
           </ul>
         </section>
         <section class="card">
@@ -576,9 +596,35 @@ app.use("/api/orpc/calendar/rpc/*", async (c, next) => {
   await next();
 });
 
+app.use("/api/orpc/certificates/rpc/*", async (c, next) => {
+  const { matched, response } = await certificatesORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/certificates/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
 app.use("/api/orpc/clinical-series/rpc/*", async (c, next) => {
   const { matched, response } = await clinicalSeriesORPCHandler.handle(createHonoORPCRequest(c), {
     prefix: "/api/orpc/clinical-series/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
+app.use("/api/orpc/system/rpc/*", async (c, next) => {
+  const { matched, response } = await systemORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/system/rpc",
     context: { hono: c },
   });
 
@@ -1309,8 +1355,32 @@ app.use("/api/orpc/calendar/*", async (c, next) => {
   await next();
 });
 
+app.use("/api/orpc/certificates/*", async (c, next) => {
+  const { matched, response } = await certificatesOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
 app.use("/api/orpc/clinical-series/*", async (c, next) => {
   const { matched, response } = await clinicalSeriesOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
+app.use("/api/orpc/system/*", async (c, next) => {
+  const { matched, response } = await systemOpenAPIHandler.handle(createHonoORPCRequest(c), {
     context: { hono: c },
   });
 
