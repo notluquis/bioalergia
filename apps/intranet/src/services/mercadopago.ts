@@ -237,14 +237,13 @@ export const MPService = {
     params?: { limit?: number; offset?: number }
   ): Promise<MPReportListResponse> => {
     let response: { reports: MPReport[]; total: number };
+    const input = {
+      type,
+      ...(params?.limit != null ? { limit: params.limit } : {}),
+      ...(params?.offset != null ? { offset: params.offset } : {}),
+    };
     try {
-      response = MPReportListResponseSchema.parse(
-        await mercadopagoORPCClient.listReports({
-          limit: params?.limit,
-          offset: params?.offset,
-          type,
-        })
-      );
+      response = MPReportListResponseSchema.parse(await mercadopagoORPCClient.listReports(input));
     } catch (error) {
       throw toMercadoPagoApiError(error);
     }
@@ -271,13 +270,12 @@ export const MPService = {
     total: number;
   }> => {
     let response: { logs: MpSyncLog[]; total: number };
+    const input = {
+      ...(params?.limit != null ? { limit: params.limit } : {}),
+      ...(params?.offset != null ? { offset: params.offset } : {}),
+    };
     try {
-      response = MpSyncLogsResponseSchema.parse(
-        await mercadopagoORPCClient.listSyncLogs({
-          limit: params?.limit,
-          offset: params?.offset,
-        })
-      );
+      response = MpSyncLogsResponseSchema.parse(await mercadopagoORPCClient.listSyncLogs(input));
     } catch (error) {
       throw toMercadoPagoApiError(error);
     }
