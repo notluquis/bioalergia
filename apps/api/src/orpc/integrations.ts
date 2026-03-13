@@ -4,6 +4,7 @@ import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
+import { integrationsContract } from "@finanzas/orpc-contracts/integrations";
 import type { Context as HonoContext } from "hono";
 import { setCookie } from "hono/cookie";
 import { z } from "zod";
@@ -29,22 +30,6 @@ const base = os.$context<IntegrationsORPCContext>();
 
 const emptySchema = z.object({});
 
-const googleStatusSchema = z.object({
-  configured: z.boolean(),
-  error: z.string().optional(),
-  errorCode: z.enum(["invalid_grant", "token_expired", "token_revoked", "unknown"]).optional(),
-  source: z.enum(["db", "env", "none"]),
-  valid: z.boolean(),
-});
-
-const googleAuthUrlSchema = z.object({
-  url: z.string().url(),
-});
-
-const disconnectResponseSchema = z.object({
-  success: z.literal(true),
-});
-
 const integrationsORPCRouterBase = {
   googleDisconnect: base
     .route({
@@ -54,7 +39,7 @@ const integrationsORPCRouterBase = {
       tags: ["Integrations"],
     })
     .input(emptySchema)
-    .output(disconnectResponseSchema)
+    .output(integrationsContract.googleDisconnect["~orpc"].outputSchema)
     .handler(async () => {
       await db.setting
         .delete({
@@ -75,7 +60,7 @@ const integrationsORPCRouterBase = {
       summary: "Get Google Drive OAuth status",
       tags: ["Integrations"],
     })
-    .output(googleStatusSchema)
+    .output(integrationsContract.googleStatus["~orpc"].outputSchema)
     .handler(async () => validateOAuthToken()),
 
   googleUrl: base
@@ -85,7 +70,7 @@ const integrationsORPCRouterBase = {
       summary: "Generate Google Drive OAuth URL",
       tags: ["Integrations"],
     })
-    .output(googleAuthUrlSchema)
+    .output(integrationsContract.googleUrl["~orpc"].outputSchema)
     .handler(async ({ context }) => {
       const oauth2Client = await getOAuthClientBase();
       const state = randomBytes(32).toString("hex");

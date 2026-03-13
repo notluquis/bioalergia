@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { timesheetEntrySchema } from "@finanzas/orpc-contracts/timesheets";
 import { zDateString } from "@/lib/api-validate";
 import { timesheetsORPCClient, toTimesheetsApiError } from "../timesheets/orpc";
 import type { TimesheetEntry } from "../timesheets/types";
@@ -58,7 +59,9 @@ const SalarySummarySchema = z.object({
   to: zDateString,
 });
 
-function normalizeTimesheetEntry(entry: Record<string, unknown>) {
+type TimesheetEntryTransport = z.infer<typeof timesheetEntrySchema>;
+
+function normalizeTimesheetEntry(entry: TimesheetEntryTransport) {
   const workDate = entry.work_date;
   return {
     ...entry,
@@ -67,7 +70,7 @@ function normalizeTimesheetEntry(entry: Record<string, unknown>) {
   };
 }
 
-function normalizeTimesheetEntries(entries: Array<Record<string, unknown>>) {
+function normalizeTimesheetEntries(entries: TimesheetEntryTransport[]) {
   return entries.map((entry) => normalizeTimesheetEntry(entry));
 }
 
@@ -150,9 +153,7 @@ export async function fetchMultiMonthTimesheets(
     data = MultiMonthTimesheetsResponseSchema.parse({
       ...response,
       data: Object.fromEntries(
-        Object.entries(
-          response.data as Record<string, { entries: Record<string, unknown>[]; month: string }>
-        ).map(([employeeId, value]) => [
+        Object.entries(response.data).map(([employeeId, value]) => [
           employeeId,
           { ...value, entries: normalizeTimesheetEntries(value.entries) },
         ])

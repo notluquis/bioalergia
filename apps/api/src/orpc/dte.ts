@@ -2,8 +2,8 @@ import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
+import { dteContract } from "@finanzas/orpc-contracts/dte";
 import type { Context as HonoContext } from "hono";
-import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
@@ -17,57 +17,6 @@ type DTEORPCContext = {
 };
 
 const base = os.$context<DTEORPCContext>();
-
-const syncHistoryInputSchema = z.object({
-  limit: z.number().int().min(1).max(200).optional(),
-  offset: z.number().int().min(0).optional(),
-});
-
-const syncInputSchema = z.object({
-  docTypes: z.array(z.enum(["sales", "purchases"])).optional(),
-  period: z.string().optional(),
-});
-
-const syncLogSchema = z.object({
-  completedAt: z.date().nullable().optional(),
-  docTypes: z.string(),
-  errorMessage: z.string().nullable().optional(),
-  id: z.string(),
-  period: z.string(),
-  purchasesInserted: z.number().nullable().optional(),
-  salesInserted: z.number().nullable().optional(),
-  startedAt: z.date(),
-  status: z.string(),
-  totalInserted: z.number().nullable().optional(),
-  totalProcessed: z.number().nullable().optional(),
-  totalSkipped: z.number().nullable().optional(),
-  totalUpdated: z.number().nullable().optional(),
-  triggerSource: z.string().nullable().optional(),
-});
-
-const syncHistoryResponseSchema = z.object({
-  logs: z.array(syncLogSchema),
-  pagination: z.object({
-    limit: z.number(),
-    offset: z.number(),
-    total: z.number(),
-  }),
-});
-
-const syncResultSchema = z.object({
-  docType: z.string(),
-  inserted: z.number(),
-  processed: z.number(),
-  status: z.string(),
-  updated: z.number(),
-});
-
-const syncResponseSchema = z.object({
-  logId: z.string(),
-  period: z.string(),
-  results: z.array(syncResultSchema),
-  status: z.enum(["failed", "partial", "success"]),
-});
 
 const authed = base.use(async ({ context, next }) => {
   const user = await getSessionUser(context.hono);
@@ -101,8 +50,8 @@ const dteORPCRouterBase = {
       summary: "Trigger DTE sync",
       tags: ["DTE"],
     })
-    .input(syncInputSchema)
-    .output(syncResponseSchema)
+    .input(dteContract.sync["~orpc"].inputSchema)
+    .output(dteContract.sync["~orpc"].outputSchema)
     .handler(async ({ context, input }) => {
       return await syncDTEs({
         docTypes: input.docTypes,
@@ -119,8 +68,8 @@ const dteORPCRouterBase = {
       summary: "List DTE sync history",
       tags: ["DTE"],
     })
-    .input(syncHistoryInputSchema)
-    .output(syncHistoryResponseSchema)
+    .input(dteContract.syncHistory["~orpc"].inputSchema)
+    .output(dteContract.syncHistory["~orpc"].outputSchema)
     .handler(async ({ input }) => {
       const limit = input.limit ?? 20;
       const offset = input.offset ?? 0;

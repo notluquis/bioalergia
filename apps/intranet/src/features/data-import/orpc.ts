@@ -1,7 +1,12 @@
 import { createORPCClient, ORPCError } from "@orpc/client";
+import type { ContractRouterClient } from "@orpc/contract";
+import type { CsvUploadContract } from "@finanzas/orpc-contracts/csv-upload";
+import type { z } from "zod";
+import { csvUploadTableSchema } from "@finanzas/orpc-contracts/csv-upload";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
-import type { UnsafeORPCClient } from "@/lib/orpc-client";
+
+export type CsvUploadORPCClient = ContractRouterClient<CsvUploadContract>;
 
 const csvUploadORPCLink = new SuperJSONLink({
   fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),
@@ -10,21 +15,9 @@ const csvUploadORPCLink = new SuperJSONLink({
 
 export const csvUploadORPCClient = createORPCClient(csvUploadORPCLink, {
   path: ["api", "orpc", "csv-upload", "rpc"],
-}) as unknown as UnsafeORPCClient;
+}) as CsvUploadORPCClient;
 
-export type CsvImportTable =
-  | "counterparts"
-  | "daily_balances"
-  | "daily_production_balances"
-  | "dte_purchases"
-  | "dte_sales"
-  | "employee_timesheets"
-  | "employees"
-  | "inventory_items"
-  | "people"
-  | "services"
-  | "transactions"
-  | "withdrawals";
+export type CsvImportTable = z.infer<typeof csvUploadTableSchema>;
 
 export function toCsvUploadApiError(error: unknown): ApiError {
   if (error instanceof ApiError) {

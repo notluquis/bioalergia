@@ -1,15 +1,10 @@
 import { createORPCClient, ORPCError } from "@orpc/client";
+import type { ContractRouterClient } from "@orpc/contract";
+import type { IntegrationsContract } from "@finanzas/orpc-contracts/integrations";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
-import type { UnsafeORPCClient } from "@/lib/orpc-client";
 
-export type GoogleDriveStatus = {
-  configured: boolean;
-  error?: string;
-  errorCode?: "invalid_grant" | "token_expired" | "token_revoked" | "unknown";
-  source: "db" | "env" | "none";
-  valid: boolean;
-};
+export type GoogleDriveORPCClient = ContractRouterClient<IntegrationsContract>;
 
 const googleDriveORPCLink = new SuperJSONLink({
   fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),
@@ -18,7 +13,7 @@ const googleDriveORPCLink = new SuperJSONLink({
 
 export const googleDriveORPCClient = createORPCClient(googleDriveORPCLink, {
   path: ["api", "orpc", "integrations", "rpc"],
-}) as unknown as UnsafeORPCClient;
+}) as GoogleDriveORPCClient;
 
 export function toGoogleDriveApiError(error: unknown): ApiError {
   if (error instanceof ApiError) {

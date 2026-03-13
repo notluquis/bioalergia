@@ -4,8 +4,11 @@ import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
+import {
+  releaseTransactionsContract,
+  releaseTransactionsQuerySchema,
+} from "@finanzas/orpc-contracts/release-transactions";
 import type { Context as HonoContext } from "hono";
-import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
@@ -19,34 +22,6 @@ type ReleaseTransactionsORPCContext = {
 
 const base = os.$context<ReleaseTransactionsORPCContext>();
 const NUMERIC_PATTERN = /^\d+$/;
-
-const querySchema = z.object({
-  descriptions: z.string().optional(),
-  from: z.string().optional(),
-  page: z.coerce.number().min(1).default(1),
-  pageSize: z.coerce.number().min(1).max(100).default(50),
-  paymentMethod: z.string().optional(),
-  search: z.string().optional(),
-  to: z.string().optional(),
-});
-
-const listResponseSchema = z.object({
-  data: z.array(z.unknown()),
-  page: z.number(),
-  pageSize: z.number(),
-  status: z.literal("ok"),
-  total: z.number(),
-  totalPages: z.number(),
-});
-
-const idSchema = z.object({
-  id: z.number().int().positive(),
-});
-
-const detailResponseSchema = z.object({
-  data: z.unknown(),
-  status: z.literal("ok"),
-});
 
 const authed = base.use(async ({ context, next }) => {
   const user = await getSessionUser(context.hono);
@@ -73,7 +48,9 @@ const readReleaseTransactions = authed.use(async ({ context, next }) => {
   return next();
 });
 
-function buildReleaseWhere(input: z.infer<typeof querySchema>): ReleaseTransactionWhereInput {
+function buildReleaseWhere(
+  input: z.infer<typeof releaseTransactionsQuerySchema>,
+): ReleaseTransactionWhereInput {
   const { descriptions, from, paymentMethod, search, to } = input;
   const whereConditions: ReleaseTransactionWhereInput[] = [];
 
@@ -128,8 +105,8 @@ function buildReleaseWhere(input: z.infer<typeof querySchema>): ReleaseTransacti
 const releaseTransactionsORPCRouterBase = {
   detail: readReleaseTransactions
     .route({ method: "GET", path: "/{id}", tags: ["Release Transactions"] })
-    .input(idSchema)
-    .output(detailResponseSchema)
+    .input(releaseTransactionsContract.detail["~orpc"].inputSchema)
+    .output(releaseTransactionsContract.detail["~orpc"].outputSchema)
     .handler(async ({ context, input }) => {
       const userDb = authDb.$setAuth(context.user);
       const transaction = await userDb.releaseTransaction.findUnique({
@@ -148,8 +125,8 @@ const releaseTransactionsORPCRouterBase = {
 
   list: readReleaseTransactions
     .route({ method: "GET", path: "/", tags: ["Release Transactions"] })
-    .input(querySchema)
-    .output(listResponseSchema)
+    .input(releaseTransactionsContract.list["~orpc"].inputSchema)
+    .output(releaseTransactionsContract.list["~orpc"].outputSchema)
     .handler(async ({ context, input }) => {
       const offset = (input.page - 1) * input.pageSize;
       const where = buildReleaseWhere(input);

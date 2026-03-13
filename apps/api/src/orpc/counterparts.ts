@@ -2,15 +2,9 @@ import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
+import { counterpartsContract } from "@finanzas/orpc-contracts/counterparts";
 import type { Context as HonoContext } from "hono";
-import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
-import {
-  counterpartAccountPayloadSchema,
-  counterpartAccountUpdateSchema,
-  counterpartBulkAssignRutSchema,
-  counterpartPayloadSchema,
-} from "../lib/entity-schemas";
 import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
 import {
@@ -36,148 +30,6 @@ type CounterpartsORPCContext = {
 };
 
 const base = os.$context<CounterpartsORPCContext>();
-
-const counterpartCategorySchema = z.enum([
-  "SUPPLIER",
-  "CLIENT",
-  "EMPLOYEE",
-  "PARTNER",
-  "LENDER",
-  "PERSONAL_EXPENSE",
-  "OTHER",
-]);
-
-const counterpartSchema = z.object({
-  bankAccountHolder: z.string(),
-  category: counterpartCategorySchema,
-  createdAt: z.date(),
-  id: z.number().int(),
-  identificationNumber: z.string(),
-  notes: z.string().nullable(),
-  updatedAt: z.date(),
-});
-
-const counterpartAccountSchema = z.object({
-  accountNumber: z.string(),
-  accountType: z.string().nullable(),
-  bankName: z.string().nullable(),
-  counterpartId: z.number().int(),
-  createdAt: z.date(),
-  id: z.number().int(),
-  updatedAt: z.date(),
-});
-
-const counterpartSuggestionSchema = z.object({
-  accountIdentifier: z.string(),
-  accountType: z.string().nullable(),
-  assignedCounterpartId: z.number().int().nullable(),
-  bankAccountNumber: z.string().nullable(),
-  bankName: z.string().nullable(),
-  identificationNumber: z.string().nullable(),
-  totalAmount: z.number(),
-  withdrawId: z.string().nullable(),
-});
-
-const counterpartSummarySchema = z.object({
-  releaseTotal: z.number(),
-  settlementCount: z.number().int(),
-  withdrawTotal: z.number(),
-});
-
-const unassignedPayoutAccountSchema = z.object({
-  conflict: z.boolean(),
-  counterpartId: z.number().int().nullable(),
-  counterpartName: z.string().nullable(),
-  counterpartRut: z.string().nullable(),
-  movementCount: z.number().int(),
-  payoutBankAccountNumber: z.string(),
-  totalGrossAmount: z.number(),
-  withdrawRut: z.string().nullable(),
-});
-
-const suggestionInputSchema = z.object({
-  limit: z.number().int().min(1).max(50).optional(),
-  q: z.string().optional(),
-});
-
-const unassignedPayoutAccountsInputSchema = z.object({
-  page: z.number().int().min(1).optional(),
-  pageSize: z.number().int().min(1).max(100).optional(),
-  query: z.string().optional(),
-});
-
-const counterpartIdSchema = z.object({
-  id: z.number().int(),
-});
-
-const counterpartSummaryInputSchema = counterpartIdSchema.extend({
-  from: z.string().optional(),
-  to: z.string().optional(),
-});
-
-const addAccountInputSchema = z.object({
-  counterpartId: z.number().int(),
-  payload: counterpartAccountPayloadSchema,
-});
-
-const updateAccountInputSchema = z.object({
-  accountId: z.number().int(),
-  payload: counterpartAccountUpdateSchema,
-});
-
-const updateCounterpartInputSchema = z.object({
-  id: z.number().int(),
-  payload: counterpartPayloadSchema.partial(),
-});
-
-const attachRutInputSchema = z.object({
-  counterpartId: z.number().int(),
-  rut: z.string().min(1),
-});
-
-const counterpartsResponseSchema = z.object({
-  counterparts: z.array(counterpartSchema),
-});
-
-const counterpartDetailResponseSchema = z.object({
-  accounts: z.array(counterpartAccountSchema),
-  counterpart: counterpartSchema,
-});
-
-const accountsResponseSchema = z.object({
-  accounts: z.array(counterpartAccountSchema),
-});
-
-const suggestionsResponseSchema = z.object({
-  suggestions: z.array(counterpartSuggestionSchema),
-});
-
-const syncResponseSchema = z.object({
-  conflictCount: z.number().int().optional(),
-  syncedAccounts: z.number().int(),
-  syncedCounterparts: z.number().int(),
-});
-
-const unassignedPayoutAccountsResponseSchema = z.object({
-  page: z.number().int(),
-  pageSize: z.number().int(),
-  rows: z.array(unassignedPayoutAccountSchema),
-  total: z.number().int(),
-});
-
-const assignRutToPayoutsResponseSchema = z.object({
-  assignedCount: z.number().int(),
-  conflicts: z.array(unassignedPayoutAccountSchema),
-  counterpart: counterpartSchema,
-});
-
-const summaryResponseSchema = z.object({
-  summary: counterpartSummarySchema,
-});
-
-const statusResponseSchema = z.object({
-  status: z.literal("ok"),
-});
 
 const authed = base.use(async ({ context, next }) => {
   const user = await getSessionUser(context.hono);
@@ -232,8 +84,8 @@ const counterpartsORPCRouterBase = {
       summary: "Add counterpart account",
       tags: ["Counterparts"],
     })
-    .input(addAccountInputSchema)
-    .output(accountsResponseSchema)
+    .input(counterpartsContract.addAccount["~orpc"].inputSchema)
+    .output(counterpartsContract.addAccount["~orpc"].outputSchema)
     .handler(async ({ input }) => {
       const result = await upsertCounterpartAccount(input.counterpartId, {
         accountNumber: input.payload.accountIdentifier ?? input.payload.accountNumber ?? "",
@@ -251,8 +103,8 @@ const counterpartsORPCRouterBase = {
       summary: "Assign RUT to payout accounts",
       tags: ["Counterparts"],
     })
-    .input(counterpartBulkAssignRutSchema)
-    .output(assignRutToPayoutsResponseSchema)
+    .input(counterpartsContract.assignRutToPayouts["~orpc"].inputSchema)
+    .output(counterpartsContract.assignRutToPayouts["~orpc"].outputSchema)
     .handler(async ({ input }) => assignRutToPayoutAccounts(input)),
 
   attachRut: updateCounterparts
@@ -262,8 +114,8 @@ const counterpartsORPCRouterBase = {
       summary: "Attach RUT to counterpart",
       tags: ["Counterparts"],
     })
-    .input(attachRutInputSchema)
-    .output(accountsResponseSchema)
+    .input(counterpartsContract.attachRut["~orpc"].inputSchema)
+    .output(counterpartsContract.attachRut["~orpc"].outputSchema)
     .handler(async ({ input }) => ({
       accounts: await attachRutToCounterpart(input.counterpartId, input.rut),
     })),
@@ -275,8 +127,8 @@ const counterpartsORPCRouterBase = {
       summary: "Create counterpart",
       tags: ["Counterparts"],
     })
-    .input(counterpartPayloadSchema)
-    .output(counterpartDetailResponseSchema)
+    .input(counterpartsContract.create["~orpc"].inputSchema)
+    .output(counterpartsContract.create["~orpc"].outputSchema)
     .handler(async ({ input }) => {
       const counterpart = await createCounterpart({
         bankAccountHolder: input.bankAccountHolder,
@@ -298,8 +150,8 @@ const counterpartsORPCRouterBase = {
       summary: "Get counterpart detail",
       tags: ["Counterparts"],
     })
-    .input(counterpartIdSchema)
-    .output(counterpartDetailResponseSchema)
+    .input(counterpartsContract.detail["~orpc"].inputSchema)
+    .output(counterpartsContract.detail["~orpc"].outputSchema)
     .handler(async ({ input }) => {
       const result = await getCounterpartById(input.id);
       if (!result) {
@@ -319,7 +171,7 @@ const counterpartsORPCRouterBase = {
       summary: "List counterparts",
       tags: ["Counterparts"],
     })
-    .output(counterpartsResponseSchema)
+    .output(counterpartsContract.list["~orpc"].outputSchema)
     .handler(async () => ({
       counterparts: await listCounterparts(),
     })),
@@ -331,8 +183,8 @@ const counterpartsORPCRouterBase = {
       summary: "Get counterpart account suggestions",
       tags: ["Counterparts"],
     })
-    .input(suggestionInputSchema)
-    .output(suggestionsResponseSchema)
+    .input(counterpartsContract.suggestions["~orpc"].inputSchema)
+    .output(counterpartsContract.suggestions["~orpc"].outputSchema)
     .handler(async ({ input }) => {
       if (!input.q?.trim()) {
         return { suggestions: [] };
@@ -350,8 +202,8 @@ const counterpartsORPCRouterBase = {
       summary: "Get counterpart summary",
       tags: ["Counterparts"],
     })
-    .input(counterpartSummaryInputSchema)
-    .output(summaryResponseSchema)
+    .input(counterpartsContract.summary["~orpc"].inputSchema)
+    .output(counterpartsContract.summary["~orpc"].outputSchema)
     .handler(async ({ input }) => ({
       summary: await getCounterpartSummary(input.id),
     })),
@@ -363,7 +215,7 @@ const counterpartsORPCRouterBase = {
       summary: "Sync counterparts from transactions",
       tags: ["Counterparts"],
     })
-    .output(syncResponseSchema)
+    .output(counterpartsContract.sync["~orpc"].outputSchema)
     .handler(async () => syncCounterpartsFromTransactions()),
 
   unassignedPayoutAccounts: readCounterparts
@@ -373,8 +225,8 @@ const counterpartsORPCRouterBase = {
       summary: "List unassigned payout accounts",
       tags: ["Counterparts"],
     })
-    .input(unassignedPayoutAccountsInputSchema)
-    .output(unassignedPayoutAccountsResponseSchema)
+    .input(counterpartsContract.unassignedPayoutAccounts["~orpc"].inputSchema)
+    .output(counterpartsContract.unassignedPayoutAccounts["~orpc"].outputSchema)
     .handler(async ({ input }) =>
       listUnassignedPayoutAccounts({
         page: input.page ?? 1,
@@ -390,8 +242,8 @@ const counterpartsORPCRouterBase = {
       summary: "Update counterpart",
       tags: ["Counterparts"],
     })
-    .input(updateCounterpartInputSchema)
-    .output(counterpartDetailResponseSchema)
+    .input(counterpartsContract.update["~orpc"].inputSchema)
+    .output(counterpartsContract.update["~orpc"].outputSchema)
     .handler(async ({ input }) => {
       const counterpart = await updateCounterpart(input.id, input.payload);
       return {
@@ -407,8 +259,8 @@ const counterpartsORPCRouterBase = {
       summary: "Update counterpart account",
       tags: ["Counterparts"],
     })
-    .input(updateAccountInputSchema)
-    .output(statusResponseSchema)
+    .input(counterpartsContract.updateAccount["~orpc"].inputSchema)
+    .output(counterpartsContract.updateAccount["~orpc"].outputSchema)
     .handler(async ({ input }) => {
       await updateCounterpartAccount(input.accountId, input.payload);
       return { status: "ok" as const };

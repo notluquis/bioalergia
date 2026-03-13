@@ -1,7 +1,10 @@
 import { createORPCClient, ORPCError } from "@orpc/client";
+import type { ContractRouterClient } from "@orpc/contract";
+import type { DteContract } from "@finanzas/orpc-contracts/dte";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
-import type { UnsafeORPCClient } from "@/lib/orpc-client";
+
+export type DTESyncORPCClient = ContractRouterClient<DteContract>;
 
 const dteSyncORPCLink = new SuperJSONLink({
   fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),
@@ -10,7 +13,7 @@ const dteSyncORPCLink = new SuperJSONLink({
 
 export const dteSyncORPCClient = createORPCClient(dteSyncORPCLink, {
   path: ["api", "orpc", "dte", "rpc"],
-}) as unknown as UnsafeORPCClient;
+}) as DTESyncORPCClient;
 
 export function toDTESyncApiError(error: unknown): ApiError {
   if (error instanceof ApiError) {

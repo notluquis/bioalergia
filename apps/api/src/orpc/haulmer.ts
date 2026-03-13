@@ -3,8 +3,12 @@ import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
+import {
+  haulmerContract,
+  haulmerIncrementalSyncInputSchema,
+  haulmerSyncResponseSchema,
+} from "@finanzas/orpc-contracts/haulmer";
 import type { Context as HonoContext } from "hono";
-import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { haulmerConfig } from "../config";
 import { logError } from "../lib/logger";
@@ -20,54 +24,6 @@ type HaulmerORPCContext = {
 };
 
 const base = os.$context<HaulmerORPCContext>();
-
-const syncResultSchema = z.object({
-  docType: z.enum(["sales", "purchases"]),
-  error: z.string().nullable().optional(),
-  period: z.string(),
-  rowsInserted: z.number(),
-  rowsProcessed: z.number(),
-  rowsUpdated: z.number(),
-  status: z.enum(["failed", "skipped", "success"]),
-});
-
-const availablePeriodsResponseSchema = z.object({
-  purchases: z.array(
-    z.object({
-      count: z.number(),
-      periodo: z.string(),
-    }),
-  ),
-  sales: z.array(
-    z.object({
-      count: z.number(),
-      periodo: z.string(),
-    }),
-  ),
-  status: z.literal("ok"),
-});
-
-const syncInputSchema = z.object({
-  docTypes: z.array(z.enum(["sales", "purchases"])).min(1),
-  periods: z.array(z.string()).min(1),
-});
-
-const incrementalSyncInputSchema = z.object({
-  docTypes: z.array(z.enum(["sales", "purchases"])).optional(),
-  includeLatestAlreadySynced: z.boolean().optional().default(true),
-});
-
-const syncResponseSchema = z.object({
-  message: z.string().optional(),
-  mode: z.literal("incremental").optional(),
-  results: z.array(syncResultSchema),
-  status: z.literal("ok"),
-  summary: z.object({
-    failed: z.number(),
-    success: z.number(),
-    total: z.number(),
-  }),
-});
 
 const authed = base.use(async ({ context, next }) => {
   const user = await getSessionUser(context.hono);
@@ -166,8 +122,8 @@ function uniqueSortedPeriodsDesc(periods: string[]) {
 }
 
 async function syncIncremental(
-  input: z.infer<typeof incrementalSyncInputSchema>,
-): Promise<z.infer<typeof syncResponseSchema>> {
+  input: z.infer<typeof haulmerIncrementalSyncInputSchema>,
+): Promise<z.infer<typeof haulmerSyncResponseSchema>> {
   const config = requireHaulmerConfig();
   const docTypes =
     input.docTypes && input.docTypes.length > 0
@@ -270,7 +226,7 @@ const haulmerORPCRouterBase = {
       summary: "List available Haulmer periods",
       tags: ["Haulmer"],
     })
-    .output(availablePeriodsResponseSchema)
+    .output(haulmerContract.availablePeriods["~orpc"].outputSchema)
     .handler(async () => await fetchAvailablePeriods()),
 
   sync: createHaulmer
@@ -280,8 +236,8 @@ const haulmerORPCRouterBase = {
       summary: "Trigger Haulmer sync",
       tags: ["Haulmer"],
     })
-    .input(syncInputSchema)
-    .output(syncResponseSchema)
+    .input(haulmerContract.sync["~orpc"].inputSchema)
+    .output(haulmerContract.sync["~orpc"].outputSchema)
     .handler(async ({ input }) => {
       const config = requireHaulmerConfig();
       const results = await syncPeriods({
@@ -310,8 +266,8 @@ const haulmerORPCRouterBase = {
       summary: "Trigger incremental Haulmer sync",
       tags: ["Haulmer"],
     })
-    .input(incrementalSyncInputSchema)
-    .output(syncResponseSchema)
+    .input(haulmerContract.syncIncremental["~orpc"].inputSchema)
+    .output(haulmerContract.syncIncremental["~orpc"].outputSchema)
     .handler(async ({ input }) => await syncIncremental(input)),
 };
 

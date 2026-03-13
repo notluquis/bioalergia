@@ -1,7 +1,8 @@
 import { createORPCClient, ORPCError } from "@orpc/client";
+import type { ContractRouterClient } from "@orpc/contract";
+import type { CounterpartsContract } from "@finanzas/orpc-contracts/counterparts";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
-import type { UnsafeORPCClient } from "@/lib/orpc-client";
 import type { CounterpartCategory } from "./types";
 
 type CounterpartUpsertPayload = {
@@ -16,9 +17,11 @@ const counterpartsORPCLink = new SuperJSONLink({
   url: () => window.location.origin,
 });
 
+export type CounterpartsORPCClient = ContractRouterClient<CounterpartsContract>;
+
 export const counterpartsORPCClient = createORPCClient(counterpartsORPCLink, {
   path: ["api", "orpc", "counterparts", "rpc"],
-}) as unknown as UnsafeORPCClient;
+}) as CounterpartsORPCClient;
 
 export function toCounterpartsApiError(error: unknown): ApiError {
   if (error instanceof ApiError) {

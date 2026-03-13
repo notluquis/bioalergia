@@ -1,9 +1,5 @@
 import { z } from "zod";
-import {
-  type GoogleDriveStatus,
-  googleDriveORPCClient,
-  toGoogleDriveApiError,
-} from "./google-drive-orpc";
+import { googleDriveORPCClient, toGoogleDriveApiError } from "./google-drive-orpc";
 
 const GoogleDriveStatusSchema = z.object({
   configured: z.boolean(),
@@ -21,7 +17,7 @@ const GoogleDriveDisconnectSchema = z.object({
   success: z.literal(true),
 });
 
-export async function fetchGoogleDriveStatus(): Promise<GoogleDriveStatus> {
+export async function fetchGoogleDriveStatus(): Promise<z.infer<typeof GoogleDriveStatusSchema>> {
   try {
     return GoogleDriveStatusSchema.parse(await googleDriveORPCClient.googleStatus());
   } catch (error) {

@@ -20,20 +20,45 @@
       "import": "./dist/balances.js",
       "default": "./dist/balances.js"
     },
+    "./backups": {
+      "types": "./dist/backups.d.ts",
+      "import": "./dist/backups.js",
+      "default": "./dist/backups.js"
+    },
     "./calendar": {
       "types": "./dist/calendar.d.ts",
       "import": "./dist/calendar.js",
       "default": "./dist/calendar.js"
+    },
+    "./certificates": {
+      "types": "./dist/certificates.d.ts",
+      "import": "./dist/certificates.js",
+      "default": "./dist/certificates.js"
     },
     "./clinical-series": {
       "types": "./dist/clinical-series.d.ts",
       "import": "./dist/clinical-series.js",
       "default": "./dist/clinical-series.js"
     },
+    "./counterparts": {
+      "types": "./dist/counterparts.d.ts",
+      "import": "./dist/counterparts.js",
+      "default": "./dist/counterparts.js"
+    },
+    "./csv-upload": {
+      "types": "./dist/csv-upload.d.ts",
+      "import": "./dist/csv-upload.js",
+      "default": "./dist/csv-upload.js"
+    },
     "./doctoralia": {
       "types": "./dist/doctoralia.d.ts",
       "import": "./dist/doctoralia.js",
       "default": "./dist/doctoralia.js"
+    },
+    "./dte": {
+      "types": "./dist/dte.d.ts",
+      "import": "./dist/dte.js",
+      "default": "./dist/dte.js"
     },
     "./dte-event-links": {
       "types": "./dist/dte-event-links.d.ts",
@@ -60,10 +85,20 @@
       "import": "./dist/finance.js",
       "default": "./dist/finance.js"
     },
+    "./haulmer": {
+      "types": "./dist/haulmer.d.ts",
+      "import": "./dist/haulmer.js",
+      "default": "./dist/haulmer.js"
+    },
     "./inventory": {
       "types": "./dist/inventory.d.ts",
       "import": "./dist/inventory.js",
       "default": "./dist/inventory.js"
+    },
+    "./integrations": {
+      "types": "./dist/integrations.d.ts",
+      "import": "./dist/integrations.js",
+      "default": "./dist/integrations.js"
     },
     "./mercadopago": {
       "types": "./dist/mercadopago.d.ts",
@@ -95,6 +130,11 @@
       "import": "./dist/production-balances.js",
       "default": "./dist/production-balances.js"
     },
+    "./release-transactions": {
+      "types": "./dist/release-transactions.d.ts",
+      "import": "./dist/release-transactions.js",
+      "default": "./dist/release-transactions.js"
+    },
     "./services": {
       "types": "./dist/services.d.ts",
       "import": "./dist/services.js",
@@ -115,10 +155,20 @@
       "import": "./dist/system.js",
       "default": "./dist/system.js"
     },
+    "./timesheets": {
+      "types": "./dist/timesheets.d.ts",
+      "import": "./dist/timesheets.js",
+      "default": "./dist/timesheets.js"
+    },
     "./supplies": {
       "types": "./dist/supplies.d.ts",
       "import": "./dist/supplies.js",
       "default": "./dist/supplies.js"
+    },
+    "./settlement-transactions": {
+      "types": "./dist/settlement-transactions.d.ts",
+      "import": "./dist/settlement-transactions.js",
+      "default": "./dist/settlement-transactions.js"
     },
     "./transactions-insights": {
       "types": "./dist/transactions-insights.d.ts",

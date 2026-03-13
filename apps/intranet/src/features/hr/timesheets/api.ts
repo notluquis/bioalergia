@@ -1,12 +1,8 @@
 import { z } from "zod";
+import { timesheetEntrySchema } from "@finanzas/orpc-contracts/timesheets";
 import { apiClient } from "@/lib/api-client";
 import { zDateString } from "@/lib/api-validate";
-import {
-  type TimesheetEntriesTransport,
-  type TimesheetEntryTransport,
-  timesheetsORPCClient,
-  toTimesheetsApiError,
-} from "./orpc";
+import { timesheetsORPCClient, toTimesheetsApiError } from "./orpc";
 import type {
   TimesheetEntry,
   TimesheetPayload,
@@ -36,6 +32,9 @@ const TimesheetEntrySchema = z.looseObject({
   work_date: zDateString,
   worked_minutes: z.number(),
 });
+
+type TimesheetEntryTransport = z.infer<typeof timesheetEntrySchema>;
+type TimesheetEntriesTransport = TimesheetEntryTransport[];
 
 const TimesheetDetailResponseSchema = z.object({
   entries: z.array(TimesheetEntrySchema),
@@ -119,7 +118,7 @@ const TimesheetEntryResponseSchema = z.object({
   status: z.string(),
 });
 
-function normalizeTimesheetEntry(entry: Record<string, unknown>): TimesheetEntry {
+function normalizeTimesheetEntry(entry: TimesheetEntryTransport): TimesheetEntry {
   const workDate = entry.work_date;
   return {
     ...entry,
@@ -129,9 +128,19 @@ function normalizeTimesheetEntry(entry: Record<string, unknown>): TimesheetEntry
 }
 
 function normalizeTimesheetEntries(entries: TimesheetEntriesTransport) {
-  return entries.map((entry: TimesheetEntryTransport) =>
-    normalizeTimesheetEntry(entry as unknown as Record<string, unknown>)
-  );
+  return entries.map((entry) => normalizeTimesheetEntry(entry));
+}
+
+function serializeTimesheetPayload(payload: TimesheetPayload) {
+  return {
+    comment: payload.comment ?? undefined,
+    employee_id: payload.employee_id,
+    end_time: payload.end_time ?? undefined,
+    overtime_minutes: payload.overtime_minutes ?? undefined,
+    start_time: payload.start_time ?? undefined,
+    work_date: payload.work_date,
+    worked_minutes: payload.worked_minutes,
+  };
 }
 
 export async function bulkUpsertTimesheets(
@@ -279,19 +288,14 @@ export async function prepareTimesheetEmailPayload(payload: {
 export async function updateTimesheet(id: number, payload: Partial<TimesheetPayload>) {
   let data: { entry: TimesheetEntry; message?: string; status: string };
   try {
-    const response = await timesheetsORPCClient.update({
-      id,
-      payload: payload as Record<string, unknown>,
-    });
+    const response = await timesheetsORPCClient.update({ id, payload });
     const parsed = TimesheetEntryResponseSchema.parse({
       ...response,
-      entry: normalizeTimesheetEntry(
-        response.entry as TimesheetEntryTransport as Record<string, unknown>
-      ),
+      entry: normalizeTimesheetEntry(response.entry as TimesheetEntryTransport),
     });
     data = {
       ...parsed,
-      entry: parsed.entry as unknown as TimesheetEntry,
+      entry: normalizeTimesheetEntry(parsed.entry as TimesheetEntryTransport),
     };
   } catch (error) {
     throw toTimesheetsApiError(error);
@@ -306,18 +310,14 @@ export async function updateTimesheet(id: number, payload: Partial<TimesheetPayl
 export async function upsertTimesheet(payload: TimesheetPayload) {
   let data: { entry: TimesheetEntry; message?: string; status: string };
   try {
-    const response = await timesheetsORPCClient.create(
-      payload as unknown as Record<string, unknown>
-    );
+    const response = await timesheetsORPCClient.create(serializeTimesheetPayload(payload));
     const parsed = TimesheetEntryResponseSchema.parse({
       ...response,
-      entry: normalizeTimesheetEntry(
-        response.entry as TimesheetEntryTransport as Record<string, unknown>
-      ),
+      entry: normalizeTimesheetEntry(response.entry as TimesheetEntryTransport),
     });
     data = {
       ...parsed,
-      entry: parsed.entry as unknown as TimesheetEntry,
+      entry: normalizeTimesheetEntry(parsed.entry as TimesheetEntryTransport),
     };
   } catch (error) {
     throw toTimesheetsApiError(error);

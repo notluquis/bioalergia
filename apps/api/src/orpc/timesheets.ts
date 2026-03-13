@@ -3,6 +3,32 @@ import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
+import {
+  timesheetBulkInputSchema,
+  timesheetEmailPayloadInputSchema,
+  timesheetEmployeeDetailInputSchema,
+  timesheetEmployeeRangeInputSchema,
+  timesheetEntryResponseSchema,
+  timesheetListRangeResponseSchema,
+  timesheetMonthInputSchema,
+  timesheetMonthsResponseSchema,
+  timesheetMultiDetailInputSchema,
+  timesheetMultiDetailResponseSchema,
+  timesheetMultiMonthInputSchema,
+  timesheetMultiMonthResponseSchema,
+  timesheetPayloadSchema,
+  timesheetPrepareEmailPayloadResponseSchema,
+  timesheetPrepareEmailResponseSchema,
+  timesheetRangeInputSchema,
+  timesheetRangeResponseSchema,
+  timesheetRemoveInputSchema,
+  timesheetSalarySummaryInputSchema,
+  timesheetSalarySummaryResponseSchema,
+  timesheetStatusResponseSchema,
+  timesheetSummaryResponseSchema,
+  timesheetUpdateInputSchema,
+  timesheetsContract,
+} from "@finanzas/orpc-contracts/timesheets";
 import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone.js";
 import utc from "dayjs/plugin/utc.js";
@@ -37,17 +63,6 @@ type TimesheetsORPCContext = {
 
 const base = os.$context<TimesheetsORPCContext>();
 
-const timesheetEntrySchema = z.looseObject({
-  comment: z.string().nullable(),
-  employee_id: z.number(),
-  end_time: z.string().nullable(),
-  id: z.number(),
-  overtime_minutes: z.number(),
-  start_time: z.string().nullable(),
-  work_date: z.union([z.string(), z.date()]),
-  worked_minutes: z.number(),
-});
-
 const emailSummarySchema = z.object({
   net: z.number(),
   overtimeMinutes: z.number().optional(),
@@ -58,127 +73,6 @@ const emailSummarySchema = z.object({
   role: z.string(),
   subtotal: z.number(),
   workedMinutes: z.number().optional(),
-});
-
-const monthInputSchema = z.object({
-  employeeId: z.number().optional(),
-  month: z
-    .string()
-    .regex(/^\d{4}-\d{2}$/)
-    .optional(),
-});
-
-const rangeInputSchema = z.object({
-  from: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .optional(),
-  to: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .optional(),
-});
-
-const employeeRangeInputSchema = z.object({
-  employeeId: z.number(),
-  endDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .optional(),
-  startDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .optional(),
-});
-
-const employeeDetailInputSchema = z.object({
-  employeeId: z.number(),
-  month: z
-    .string()
-    .regex(/^\d{4}-\d{2}$/)
-    .optional(),
-});
-
-const multiMonthInputSchema = z.object({
-  employeeIds: z.array(z.number()).default([]),
-  endMonth: z
-    .string()
-    .regex(/^\d{4}-\d{2}$/)
-    .optional(),
-  startMonth: z
-    .string()
-    .regex(/^\d{4}-\d{2}$/)
-    .optional(),
-});
-
-const multiDetailInputSchema = z.object({
-  employeeIds: z.array(z.number()).default([]),
-  from: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .optional(),
-  to: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .optional(),
-});
-
-const bulkInputSchema = z.object({
-  employee_id: z.number(),
-  entries: z.array(z.any()).default([]),
-  remove_ids: z.array(z.union([z.string(), z.number()])).default([]),
-});
-
-const timesheetPayloadSchema = z.looseObject({
-  comment: z.string().nullable().optional(),
-  employee_id: z.number(),
-  end_time: z.string().nullable().optional(),
-  overtime_minutes: z.number().optional(),
-  start_time: z.string().nullable().optional(),
-  work_date: z.string(),
-  worked_minutes: z.number().optional(),
-});
-
-const updateTimesheetPayloadSchema = z.looseObject({});
-
-const emailPayloadInputSchema = z.object({
-  employeeEmail: z.email(),
-  employeeId: z.number(),
-  employeeName: z.string(),
-  month: z.string(),
-  monthLabel: z.string(),
-  pdfBase64: z.string(),
-  summary: emailSummarySchema,
-});
-
-const summaryResponseSchema = z.looseObject({
-  employees: z.array(z.looseObject({})).default([]),
-  from: z.string(),
-  month: z.string(),
-  status: z.literal("ok"),
-  to: z.string(),
-  totals: z.looseObject({}).optional(),
-});
-
-const rangeResponseSchema = z.object({
-  entries: z.array(timesheetEntrySchema),
-  from: z.string(),
-  status: z.literal("ok"),
-  to: z.string(),
-});
-
-const monthsResponseSchema = z.object({
-  months: z.array(z.string()),
-  monthsWithData: z.array(z.string()),
-  status: z.literal("ok"),
-});
-
-const multiMonthResponseSchema = z.object({
-  data: z.record(
-    z.string(),
-    z.object({ entries: z.array(timesheetEntrySchema), month: z.string() }),
-  ),
-  status: z.literal("ok"),
 });
 
 const multiDetailEntrySchema = z.looseObject({
@@ -193,62 +87,6 @@ const multiDetailEntrySchema = z.looseObject({
   start_time: z.string().nullable(),
   work_date: z.union([z.string(), z.date()]),
   worked_minutes: z.number(),
-});
-
-const multiDetailResponseSchema = z.object({
-  entries: z.array(multiDetailEntrySchema),
-});
-
-const statusResponseSchema = z.object({
-  inserted: z.number().optional(),
-  message: z.string().optional(),
-  removed: z.number().optional(),
-  status: z.literal("ok"),
-});
-
-const timesheetEntryResponseSchema = z.object({
-  entry: z.unknown(),
-  status: z.literal("ok"),
-});
-
-const salarySummaryResponseSchema = z.object({
-  data: z.record(
-    z.string(),
-    z.array(
-      z.object({
-        month: z.string(),
-        net: z.number(),
-        retention: z.number(),
-        subtotal: z.number(),
-      }),
-    ),
-  ),
-  from: z.string(),
-  status: z.literal("ok"),
-  to: z.string(),
-});
-
-const prepareEmailPayloadResponseSchema = z.object({
-  payload: z.object({
-    attachments: z.array(
-      z.object({
-        contentBase64: z.string(),
-        contentType: z.string(),
-        filename: z.string(),
-      }),
-    ),
-    from: z.string(),
-    html: z.string(),
-    subject: z.string(),
-    to: z.string(),
-  }),
-  status: z.literal("ok"),
-});
-
-const prepareEmailResponseSchema = z.object({
-  emlBase64: z.string(),
-  filename: z.string(),
-  status: z.literal("ok"),
 });
 
 function defaultRangeQuery(query: { from?: string | null; to?: string | null }) {
@@ -365,7 +203,7 @@ function buildTimesheetEmailPayload({
   monthLabel,
   pdfBase64,
   summary,
-}: z.infer<typeof emailPayloadInputSchema>) {
+}: z.infer<typeof timesheetEmailPayloadInputSchema>) {
   return {
     attachments: [
       {
@@ -459,8 +297,8 @@ const timesheetsORPCRouterBase = {
       summary: "Bulk upsert timesheets",
       tags: ["Timesheets"],
     })
-    .input(bulkInputSchema)
-    .output(statusResponseSchema)
+    .input(timesheetBulkInputSchema)
+    .output(timesheetStatusResponseSchema)
     .handler(async ({ input }) => {
       let inserted = 0;
       let removed = 0;
@@ -494,8 +332,8 @@ const timesheetsORPCRouterBase = {
       summary: "Get employee timesheet detail",
       tags: ["Timesheets"],
     })
-    .input(employeeDetailInputSchema)
-    .output(rangeResponseSchema)
+    .input(timesheetEmployeeDetailInputSchema)
+    .output(timesheetRangeResponseSchema)
     .handler(async ({ input }) => {
       const month = input.month || dayjs.tz(TIMEZONE).format("YYYY-MM");
       const from = dayjs.tz(month, "YYYY-MM", TIMEZONE).startOf("month").format("YYYY-MM-DD");
@@ -511,8 +349,8 @@ const timesheetsORPCRouterBase = {
       summary: "Get employee timesheet range",
       tags: ["Timesheets"],
     })
-    .input(employeeRangeInputSchema)
-    .output(rangeResponseSchema)
+    .input(timesheetEmployeeRangeInputSchema)
+    .output(timesheetRangeResponseSchema)
     .handler(async ({ input }) => {
       const startDate = input.startDate || dayjs.tz(TIMEZONE).startOf("month").format("YYYY-MM-DD");
       const endDate = input.endDate || dayjs.tz(TIMEZONE).endOf("month").format("YYYY-MM-DD");
@@ -531,8 +369,8 @@ const timesheetsORPCRouterBase = {
       summary: "List global timesheet range",
       tags: ["Timesheets"],
     })
-    .input(rangeInputSchema)
-    .output(z.object({ entries: z.array(timesheetEntrySchema), status: z.literal("ok") }))
+    .input(timesheetRangeInputSchema)
+    .output(timesheetListRangeResponseSchema)
     .handler(async ({ input }) => {
       const { from, to } = defaultRangeQuery(input);
       const entries = await listTimesheetEntries({ from, to });
@@ -541,7 +379,7 @@ const timesheetsORPCRouterBase = {
 
   months: readTimesheets
     .route({ method: "GET", path: "/months", summary: "List months", tags: ["Timesheets"] })
-    .output(monthsResponseSchema)
+    .output(timesheetMonthsResponseSchema)
     .handler(async () => {
       const months: string[] = [];
       const today = dayjs();
@@ -558,8 +396,8 @@ const timesheetsORPCRouterBase = {
       summary: "Get timesheets for multiple employees",
       tags: ["Timesheets"],
     })
-    .input(multiDetailInputSchema)
-    .output(multiDetailResponseSchema)
+    .input(timesheetMultiDetailInputSchema)
+    .output(timesheetMultiDetailResponseSchema)
     .handler(async ({ input }) => {
       const { from, to } = defaultRangeQuery(input);
       const allEntries: Array<z.infer<typeof multiDetailEntrySchema>> = [];
@@ -587,8 +425,8 @@ const timesheetsORPCRouterBase = {
       summary: "Get timesheets for multiple months",
       tags: ["Timesheets"],
     })
-    .input(multiMonthInputSchema)
-    .output(multiMonthResponseSchema)
+    .input(timesheetMultiMonthInputSchema)
+    .output(timesheetMultiMonthResponseSchema)
     .handler(async ({ input }) => {
       const start = input.startMonth || dayjs.tz(TIMEZONE).format("YYYY-MM");
       const end = input.endMonth || start;
@@ -614,8 +452,8 @@ const timesheetsORPCRouterBase = {
       summary: "Prepare legacy EML email",
       tags: ["Timesheets"],
     })
-    .input(emailPayloadInputSchema)
-    .output(prepareEmailResponseSchema)
+    .input(timesheetEmailPayloadInputSchema)
+    .output(timesheetPrepareEmailResponseSchema)
     .handler(async ({ input }) => {
       const payload = buildTimesheetEmailPayload(input);
       const filename = `resumen_honorarios_${input.month}_${input.employeeId}.eml`;
@@ -630,8 +468,8 @@ const timesheetsORPCRouterBase = {
       summary: "Prepare mail payload",
       tags: ["Timesheets"],
     })
-    .input(emailPayloadInputSchema)
-    .output(prepareEmailPayloadResponseSchema)
+    .input(timesheetEmailPayloadInputSchema)
+    .output(timesheetPrepareEmailPayloadResponseSchema)
     .handler(async ({ input }) => ({
       payload: buildTimesheetEmailPayload(input),
       status: "ok" as const,
@@ -644,8 +482,8 @@ const timesheetsORPCRouterBase = {
       summary: "Delete timesheet entry",
       tags: ["Timesheets"],
     })
-    .input(z.object({ id: z.number() }))
-    .output(statusResponseSchema)
+    .input(timesheetRemoveInputSchema)
+    .output(timesheetStatusResponseSchema)
     .handler(async ({ input }) => {
       await deleteTimesheetEntry(input.id);
       return { status: "ok" as const };
@@ -658,23 +496,8 @@ const timesheetsORPCRouterBase = {
       summary: "Get salary summary",
       tags: ["Timesheets"],
     })
-    .input(
-      z.object({
-        employeeIds: z.array(z.number()).optional(),
-        from: z
-          .string()
-          .regex(/^\d{4}-\d{2}-\d{2}$/)
-          .nullable()
-          .optional(),
-        mode: z.enum(["auto", "range"]).default("range"),
-        to: z
-          .string()
-          .regex(/^\d{4}-\d{2}-\d{2}$/)
-          .nullable()
-          .optional(),
-      }),
-    )
-    .output(salarySummaryResponseSchema)
+    .input(timesheetSalarySummaryInputSchema)
+    .output(timesheetSalarySummaryResponseSchema)
     .handler(async ({ input }) => {
       let from: string;
       let to: string;
@@ -701,8 +524,8 @@ const timesheetsORPCRouterBase = {
       summary: "Get monthly timesheet summary",
       tags: ["Timesheets"],
     })
-    .input(monthInputSchema)
-    .output(summaryResponseSchema)
+    .input(timesheetMonthInputSchema)
+    .output(timesheetSummaryResponseSchema)
     .handler(async ({ input }) => {
       const month = input.month || dayjs.tz(TIMEZONE).format("YYYY-MM");
       const from = dayjs.tz(month, "YYYY-MM", TIMEZONE).startOf("month").format("YYYY-MM-DD");
@@ -718,7 +541,7 @@ const timesheetsORPCRouterBase = {
       summary: "Update timesheet entry",
       tags: ["Timesheets"],
     })
-    .input(z.object({ id: z.number(), payload: updateTimesheetPayloadSchema }))
+    .input(timesheetUpdateInputSchema)
     .output(timesheetEntryResponseSchema)
     .handler(async ({ input }) => {
       const entry = await updateTimesheetEntry(input.id, input.payload);
@@ -760,3 +583,4 @@ export const timesheetsOpenAPIHandler = new OpenAPIHandler(timesheetsORPCRouter,
 });
 
 export type TimesheetsORPCRouter = typeof timesheetsORPCRouter;
+export type TimesheetsORPCContract = typeof timesheetsContract;

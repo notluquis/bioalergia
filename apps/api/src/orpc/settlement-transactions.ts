@@ -4,8 +4,11 @@ import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
+import {
+  settlementTransactionsContract,
+  settlementTransactionsQuerySchema,
+} from "@finanzas/orpc-contracts/settlement-transactions";
 import type { Context as HonoContext } from "hono";
-import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
@@ -19,34 +22,6 @@ type SettlementTransactionsORPCContext = {
 
 const base = os.$context<SettlementTransactionsORPCContext>();
 const NUMERIC_PATTERN = /^\d+$/;
-
-const querySchema = z.object({
-  from: z.string().optional(),
-  page: z.coerce.number().min(1).default(1),
-  pageSize: z.coerce.number().min(1).max(100).default(50),
-  paymentMethod: z.string().optional(),
-  search: z.string().optional(),
-  to: z.string().optional(),
-  transactionType: z.string().optional(),
-});
-
-const listResponseSchema = z.object({
-  data: z.array(z.unknown()),
-  page: z.number(),
-  pageSize: z.number(),
-  status: z.literal("ok"),
-  total: z.number(),
-  totalPages: z.number(),
-});
-
-const idSchema = z.object({
-  id: z.number().int().positive(),
-});
-
-const detailResponseSchema = z.object({
-  data: z.unknown(),
-  status: z.literal("ok"),
-});
 
 const authed = base.use(async ({ context, next }) => {
   const user = await getSessionUser(context.hono);
@@ -73,7 +48,9 @@ const readSettlementTransactions = authed.use(async ({ context, next }) => {
   return next();
 });
 
-function buildSettlementWhere(input: z.infer<typeof querySchema>): SettlementTransactionWhereInput {
+function buildSettlementWhere(
+  input: z.infer<typeof settlementTransactionsQuerySchema>,
+): SettlementTransactionWhereInput {
   const { from, paymentMethod, search, to, transactionType } = input;
   const whereConditions: SettlementTransactionWhereInput[] = [];
 
@@ -126,8 +103,8 @@ function buildSettlementWhere(input: z.infer<typeof querySchema>): SettlementTra
 const settlementTransactionsORPCRouterBase = {
   detail: readSettlementTransactions
     .route({ method: "GET", path: "/{id}", tags: ["Settlement Transactions"] })
-    .input(idSchema)
-    .output(detailResponseSchema)
+    .input(settlementTransactionsContract.detail["~orpc"].inputSchema)
+    .output(settlementTransactionsContract.detail["~orpc"].outputSchema)
     .handler(async ({ context, input }) => {
       const userDb = authDb.$setAuth(context.user);
       const transaction = await userDb.settlementTransaction.findUnique({
@@ -146,8 +123,8 @@ const settlementTransactionsORPCRouterBase = {
 
   list: readSettlementTransactions
     .route({ method: "GET", path: "/", tags: ["Settlement Transactions"] })
-    .input(querySchema)
-    .output(listResponseSchema)
+    .input(settlementTransactionsContract.list["~orpc"].inputSchema)
+    .output(settlementTransactionsContract.list["~orpc"].outputSchema)
     .handler(async ({ context, input }) => {
       const offset = (input.page - 1) * input.pageSize;
       const where = buildSettlementWhere(input);

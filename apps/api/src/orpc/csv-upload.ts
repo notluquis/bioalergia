@@ -2,8 +2,8 @@ import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
+import { csvUploadContract } from "@finanzas/orpc-contracts/csv-upload";
 import type { Context as HonoContext } from "hono";
-import { z } from "zod";
 import { getSessionUser } from "../auth";
 import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
@@ -16,65 +16,6 @@ type CsvUploadORPCContext = {
 };
 
 const base = os.$context<CsvUploadORPCContext>();
-
-const tableEnumSchema = z.enum([
-  "people",
-  "employees",
-  "counterparts",
-  "daily_balances",
-  "daily_production_balances",
-  "transactions",
-  "withdrawals",
-  "services",
-  "inventory_items",
-  "employee_timesheets",
-  "dte_purchases",
-  "dte_sales",
-]);
-
-const previewInputSchema = z.object({
-  data: z.array(z.record(z.string(), z.union([z.number(), z.string()]))),
-  includeInsertRowIndexes: z.boolean().optional(),
-  includeUpdateRows: z.boolean().optional(),
-  mode: z.enum(["insert-only", "insert-or-update", "update-only"]).optional(),
-  table: tableEnumSchema,
-});
-
-const importInputSchema = z.object({
-  data: z.array(z.record(z.string(), z.union([z.number(), z.string()]))),
-  mode: z.enum(["insert-only", "insert-or-update", "update-only"]).optional(),
-  table: tableEnumSchema,
-});
-
-const previewResponseSchema = z.object({
-  errors: z.array(z.string()).optional(),
-  insertRowIndexes: z.array(z.number()).optional(),
-  status: z.literal("ok"),
-  toInsert: z.number(),
-  toSkip: z.number(),
-  toUpdate: z.number(),
-  updateRows: z
-    .array(
-      z.object({
-        key: z.string(),
-        rowIndex: z.number(),
-        summary: z.string(),
-      }),
-    )
-    .optional(),
-});
-
-const importResponseSchema = z.object({
-  errors: z.array(z.string()).optional(),
-  inserted: z.number(),
-  skipped: z.number(),
-  status: z.literal("ok"),
-  sync: z.unknown().optional(),
-  toInsert: z.number(),
-  toSkip: z.number(),
-  toUpdate: z.number(),
-  updated: z.number(),
-});
 
 const authed = base.use(async ({ context, next }) => {
   const user = await getSessionUser(context.hono);
@@ -92,8 +33,8 @@ const csvUploadORPCRouterBase = {
       summary: "Import CSV rows",
       tags: ["CSV Upload"],
     })
-    .input(importInputSchema)
-    .output(importResponseSchema)
+    .input(csvUploadContract.import["~orpc"].inputSchema)
+    .output(csvUploadContract.import["~orpc"].outputSchema)
     .handler(async ({ context: _context, input }) => {
       // CSV import logic is now consolidated in oRPC
       // Implementation placeholder - actual logic would be moved here from deleted routes/csv-upload.ts
@@ -116,8 +57,8 @@ const csvUploadORPCRouterBase = {
       summary: "Preview CSV import",
       tags: ["CSV Upload"],
     })
-    .input(previewInputSchema)
-    .output(previewResponseSchema)
+    .input(csvUploadContract.preview["~orpc"].inputSchema)
+    .output(csvUploadContract.preview["~orpc"].outputSchema)
     .handler(async ({ context: _context, input }) => {
       // CSV preview logic is now consolidated in oRPC
       // Implementation placeholder - actual logic would be moved here from deleted routes/csv-upload.ts

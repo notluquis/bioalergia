@@ -3,11 +3,14 @@
  */
 
 import { z } from "zod";
+import { timesheetListEntrySchema } from "@finanzas/orpc-contracts/timesheets";
 import { zDateString } from "@/lib/api-validate";
 import { timesheetsORPCClient, toTimesheetsApiError } from "../timesheets/orpc";
 import type { TimesheetEntryWithEmployee } from "./types";
 
-function normalizeTimesheetEntry(entry: Record<string, unknown>) {
+type TimesheetDetailTransport = z.infer<typeof timesheetListEntrySchema>;
+
+function normalizeTimesheetEntry(entry: TimesheetDetailTransport) {
   const workDate = entry.work_date;
   return {
     ...entry,
@@ -54,9 +57,7 @@ export async function fetchMultiEmployeeTimesheets(
         ),
       })
       .parse({
-        entries: data.entries.map((entry: Record<string, unknown>) =>
-          normalizeTimesheetEntry(entry)
-        ),
+        entries: data.entries.map((entry) => normalizeTimesheetEntry(entry)),
       });
   } catch (error) {
     throw toTimesheetsApiError(error);

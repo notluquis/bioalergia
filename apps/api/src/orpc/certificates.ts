@@ -3,8 +3,8 @@ import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import { db } from "@finanzas/db";
+import { certificatesContract } from "@finanzas/orpc-contracts/certificates";
 import type { Context as HonoContext } from "hono";
-import { z } from "zod";
 import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
 import { SuperJSONRPCHandler } from "./superjson";
@@ -17,33 +17,6 @@ type CertificatesORPCContext = {
 
 const base = os.$context<CertificatesORPCContext>();
 
-const certificateVerifyInputSchema = z.object({
-  id: z.string().min(1),
-});
-
-const certificateVerifyResponseSchema = z.union([
-  z.object({
-    diagnosis: z.string(),
-    doctor: z.object({
-      name: z.string(),
-      specialty: z.string().optional(),
-    }),
-    issuedAt: z.coerce.date(),
-    patient: z.object({
-      name: z.string(),
-    }),
-    purpose: z.string(),
-    restDays: z.number().nullable().optional(),
-    restEndDate: z.coerce.date().nullable().optional(),
-    restStartDate: z.coerce.date().nullable().optional(),
-    valid: z.literal(true),
-  }),
-  z.object({
-    error: z.string().optional(),
-    valid: z.literal(false),
-  }),
-]);
-
 const certificatesORPCRouterBase = {
   verify: base
     .route({
@@ -52,8 +25,8 @@ const certificatesORPCRouterBase = {
       summary: "Verify medical certificate authenticity",
       tags: ["Certificates"],
     })
-    .input(certificateVerifyInputSchema)
-    .output(certificateVerifyResponseSchema)
+    .input(certificatesContract.verify["~orpc"].inputSchema)
+    .output(certificatesContract.verify["~orpc"].outputSchema)
     .handler(async ({ input }) => {
       const certificate = await db.medicalCertificate.findUnique({
         where: { id: input.id },
