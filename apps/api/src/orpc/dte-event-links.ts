@@ -1,3 +1,4 @@
+import { dteEventLinksContract } from "@finanzas/orpc-contracts/dte-event-links";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
@@ -369,8 +370,8 @@ const eventLinksByDay = readEventLinks
     path: "/by-day",
     summary: "Lista vinculos confirmados por dia",
   })
-  .input(eventLinkByDayInputSchema)
-  .output(z.array(byDayLinkSchema))
+  .input(dteEventLinksContract.byDay["~orpc"].inputSchema)
+  .output(dteEventLinksContract.byDay["~orpc"].outputSchema)
   .handler(async ({ input }) => {
     const normalizedDate = normalizeLinkDate(input.date);
     return listEventDteLinksByDate(normalizedDate);
@@ -382,8 +383,8 @@ const eventLinkSuggestions = readEventLinks
     path: "/suggestions",
     summary: "Sugiere DTE para un evento",
   })
-  .input(eventLinkSuggestionsInputSchema)
-  .output(suggestionsResponseSchema)
+  .input(dteEventLinksContract.suggestions["~orpc"].inputSchema)
+  .output(dteEventLinksContract.suggestions["~orpc"].outputSchema)
   .handler(async ({ input }) => {
     return getEventDteSuggestions(input);
   });
@@ -394,8 +395,8 @@ const eventLinksOverview = readEventLinks
     path: "/overview",
     summary: "Resumen paginado de vinculos evento DTE",
   })
-  .input(eventLinkOverviewInputSchema)
-  .output(overviewResponseSchema)
+  .input(dteEventLinksContract.overview["~orpc"].inputSchema)
+  .output(dteEventLinksContract.overview["~orpc"].outputSchema)
   .handler(async ({ input }) => {
     return listEventDteLinkOverview({
       page: input.page,
@@ -412,8 +413,8 @@ const autoLinkJobStatus = readEventLinkJobs
     path: "/jobs/{jobId}",
     summary: "Consulta estado de job async de auto-link",
   })
-  .input(jobStatusInputSchema)
-  .output(jobStatusResponseSchema)
+  .input(dteEventLinksContract.autoLinkJobStatus["~orpc"].inputSchema)
+  .output(dteEventLinksContract.autoLinkJobStatus["~orpc"].outputSchema)
   .handler(async ({ input }) => {
     const { getJobStatus } = await import("../lib/jobQueue");
     const job = getJobStatus(input.jobId);
@@ -440,8 +441,8 @@ const confirmLink = writeEventLinks
     path: "/confirm",
     summary: "Confirma o sobreescribe un vinculo evento DTE",
   })
-  .input(confirmEventLinkInputSchema)
-  .output(confirmResponseSchema)
+  .input(dteEventLinksContract.confirmLink["~orpc"].inputSchema)
+  .output(dteEventLinksContract.confirmLink["~orpc"].outputSchema)
   .handler(async ({ context, input }) => {
     return confirmEventDteLink({
       ...input,
@@ -455,8 +456,8 @@ const unlinkLink = writeEventLinksWithoutDteRead
     path: "/unlink",
     summary: "Elimina un vinculo confirmado",
   })
-  .input(unlinkEventLinkInputSchema)
-  .output(unlinkResponseSchema)
+  .input(dteEventLinksContract.unlinkLink["~orpc"].inputSchema)
+  .output(dteEventLinksContract.unlinkLink["~orpc"].outputSchema)
   .handler(async ({ input }) => {
     return unlinkEventDteLink(input);
   });
@@ -467,8 +468,8 @@ const autoLinkDay = writeEventLinks
     path: "/auto-link-day",
     summary: "Auto-vincula candidatos confiables de un dia",
   })
-  .input(autoLinkDayInputSchema)
-  .output(autoLinkDayResponseSchema)
+  .input(dteEventLinksContract.autoLinkDay["~orpc"].inputSchema)
+  .output(dteEventLinksContract.autoLinkDay["~orpc"].outputSchema)
   .handler(async ({ context, input }) => {
     return autoLinkEventDate({
       date: normalizeLinkDate(input.date),
@@ -483,8 +484,8 @@ const autoLinkPeriod = writeEventLinks
     path: "/auto-link-period",
     summary: "Auto-vincula candidatos confiables de un periodo",
   })
-  .input(autoLinkPeriodInputSchema)
-  .output(autoLinkPeriodResponseSchema)
+  .input(dteEventLinksContract.autoLinkPeriod["~orpc"].inputSchema)
+  .output(dteEventLinksContract.autoLinkPeriod["~orpc"].outputSchema)
   .handler(async ({ context, input }) => {
     return autoLinkEventPeriod({
       minScore: input.minScore,
@@ -499,8 +500,8 @@ const autoLinkAllPeriods = writeEventLinks
     path: "/auto-link-all-periods",
     summary: "Auto-vincula candidatos confiables de todos los periodos",
   })
-  .input(autoLinkAllPeriodsInputSchema)
-  .output(autoLinkAllPeriodsResponseSchema)
+  .input(dteEventLinksContract.autoLinkAllPeriods["~orpc"].inputSchema)
+  .output(dteEventLinksContract.autoLinkAllPeriods["~orpc"].outputSchema)
   .handler(async ({ context, input }) => {
     return autoLinkAllEventPeriods({
       minScore: input.minScore,
@@ -515,8 +516,8 @@ const startAutoLinkAllPeriods = writeEventLinks
     successStatus: 202,
     summary: "Inicia job async de auto-link de todos los periodos",
   })
-  .input(autoLinkAllPeriodsInputSchema)
-  .output(autoLinkAllPeriodsStartResponseSchema)
+  .input(dteEventLinksContract.startAutoLinkAllPeriods["~orpc"].inputSchema)
+  .output(dteEventLinksContract.startAutoLinkAllPeriods["~orpc"].outputSchema)
   .handler(async ({ context, input }) => {
     const { completeJob, failJob, startJob, updateJobProgress } = await import("../lib/jobQueue");
     const periods = await listAutoLinkEligiblePeriods();

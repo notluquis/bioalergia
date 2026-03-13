@@ -15,6 +15,16 @@
       "import": "./dist/auth.js",
       "default": "./dist/auth.js"
     },
+    "./calendar": {
+      "types": "./dist/calendar.d.ts",
+      "import": "./dist/calendar.js",
+      "default": "./dist/calendar.js"
+    },
+    "./dte-event-links": {
+      "types": "./dist/dte-event-links.d.ts",
+      "import": "./dist/dte-event-links.js",
+      "default": "./dist/dte-event-links.js"
+    },
     "./finance": {
       "types": "./dist/finance.d.ts",
       "import": "./dist/finance.js",

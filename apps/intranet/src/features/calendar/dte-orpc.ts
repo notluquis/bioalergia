@@ -1,12 +1,18 @@
 import { createORPCClient } from "@orpc/client";
+import type { ContractRouterClient } from "@orpc/contract";
+import type { DteEventLinksContract } from "@finanzas/orpc-contracts/dte-event-links";
 import { SuperJSONLink } from "./orpc";
-import type { UnsafeORPCClient } from "@/lib/orpc-client";
+
+export type DteEventLinksORPCClient = ContractRouterClient<DteEventLinksContract>;
 
 const dteEventLinksORPCLink = new SuperJSONLink({
   fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),
   url: () => window.location.origin,
 });
 
-export const dteEventLinksORPCClient = createORPCClient(dteEventLinksORPCLink, {
-  path: ["api", "orpc", "dte-analytics", "event-links", "rpc"],
-}) as unknown as UnsafeORPCClient;
+export const dteEventLinksORPCClient = createORPCClient<DteEventLinksORPCClient>(
+  dteEventLinksORPCLink,
+  {
+    path: ["api", "orpc", "dte-analytics", "event-links", "rpc"],
+  }
+);
