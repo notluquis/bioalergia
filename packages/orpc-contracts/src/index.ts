@@ -1,7 +1,11 @@
 export * from "./auth";
+export * from "./balances";
 export * from "./calendar";
+export * from "./clinical-series";
 export * from "./dte-event-links";
 export * from "./dte-analytics";
+export * from "./employees";
+export * from "./expenses";
 export * from "./finance";
 export {
   bookingResponseSchema as doctoraliaBookingResponseSchema,
@@ -26,7 +30,11 @@ export {
   syncLogsResponseSchema as mercadopagoSyncLogsResponseSchema,
   type MercadopagoContract,
 } from "./mercadopago";
+export * from "./notifications";
 export { patientsContract, type PatientsContract } from "./patients";
+export * from "./people";
+export * from "./production-balances";
+export * from "./supplies";
 export { servicesContract, type ServicesContract } from "./services";
 export * from "./settings";
 export * from "./system";

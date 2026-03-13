@@ -1,15 +1,11 @@
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
+import { productionBalancesContract } from "@finanzas/orpc-contracts/production-balances";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import dayjs from "dayjs";
 import type { Context as HonoContext } from "hono";
-import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
-import {
-  productionBalancePayloadSchema,
-  productionBalanceQuerySchema,
-} from "../lib/financial-schemas";
 import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
 import {
@@ -26,52 +22,6 @@ type ProductionBalancesORPCContext = {
 };
 
 const base = os.$context<ProductionBalancesORPCContext>();
-
-const listInputSchema = productionBalanceQuerySchema;
-const createInputSchema = productionBalancePayloadSchema;
-const updateInputSchema = productionBalancePayloadSchema.extend({
-  id: z.number().int().positive(),
-});
-
-const itemSchema = z
-  .object({
-    changeReason: z.string().nullable(),
-    comentarios: z.string().nullable(),
-    consultasMonto: z.number(),
-    controlesMonto: z.number(),
-    createdAt: z.date(),
-    createdByEmail: z.string().nullable(),
-    date: z.string(),
-    gastosDiarios: z.number(),
-    id: z.number(),
-    ingresoEfectivo: z.number(),
-    ingresoTarjetas: z.number(),
-    ingresoTransferencias: z.number(),
-    licenciasMonto: z.number(),
-    otrosAbonos: z.number(),
-    roxairMonto: z.number(),
-    status: z.string(),
-    subtotalIngresos: z.number(),
-    testsMonto: z.number(),
-    total: z.number(),
-    totalIngresos: z.number(),
-    updatedAt: z.date(),
-    updatedByEmail: z.string().nullable(),
-    vacunasMonto: z.number(),
-  })
-  .passthrough();
-
-const listResponseSchema = z.object({
-  from: z.string(),
-  items: z.array(itemSchema),
-  status: z.literal("ok"),
-  to: z.string(),
-});
-
-const itemResponseSchema = z.object({
-  item: itemSchema,
-  status: z.literal("ok"),
-});
 
 type ProductionBalanceWithUser = {
   balanceDate: string;
@@ -166,14 +116,7 @@ const writeBalances = authed.use(async ({ context, next }) => {
 
 const productionBalancesORPCRouterBase = {
   create: writeBalances
-    .route({
-      method: "POST",
-      path: "/",
-      summary: "Create daily production balance",
-      tags: ["Production Balances"],
-    })
-    .input(createInputSchema)
-    .output(itemResponseSchema)
+    .route(productionBalancesContract.create)
     .handler(async ({ context, input }) => {
       const created = await createProductionBalance(
         {
@@ -203,14 +146,7 @@ const productionBalancesORPCRouterBase = {
     }),
 
   list: readBalances
-    .route({
-      method: "GET",
-      path: "/",
-      summary: "List daily production balances",
-      tags: ["Production Balances"],
-    })
-    .input(listInputSchema)
-    .output(listResponseSchema)
+    .route(productionBalancesContract.list)
     .handler(async ({ input }) => {
       const today = dayjs();
       const toDateStr = input.to ?? today.format("YYYY-MM-DD");
@@ -226,14 +162,7 @@ const productionBalancesORPCRouterBase = {
     }),
 
   update: writeBalances
-    .route({
-      method: "PUT",
-      path: "/{id}",
-      summary: "Update daily production balance",
-      tags: ["Production Balances"],
-    })
-    .input(updateInputSchema)
-    .output(itemResponseSchema)
+    .route(productionBalancesContract.update)
     .handler(async ({ input }) => {
       const updated = await updateProductionBalance(input.id, {
         balanceDate: input.date,

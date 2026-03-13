@@ -1,9 +1,9 @@
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
+import { expensesContract } from "@finanzas/orpc-contracts/expenses";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
-import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
@@ -16,62 +16,6 @@ type ExpensesORPCContext = {
 };
 
 const base = os.$context<ExpensesORPCContext>();
-
-const listExpensesInputSchema = z.object({
-  from: z.string().optional(),
-  serviceId: z.number().int().nullable().optional(),
-  status: z.string().optional(),
-  to: z.string().optional(),
-});
-
-const statsExpensesInputSchema = z.object({
-  category: z.string().nullable().optional(),
-  from: z.string().optional(),
-  groupBy: z.enum(["day", "month", "quarter", "week", "year"]).optional(),
-  to: z.string().optional(),
-});
-
-const detailExpenseInputSchema = z.object({
-  publicId: z.string().min(1),
-});
-
-const expensePayloadSchema = z.object({
-  amountExpected: z.number(),
-  category: z.string().nullable().optional(),
-  expenseDate: z.string(),
-  name: z.string(),
-  notes: z.string().nullable().optional(),
-  serviceId: z.number().int().nullable().optional(),
-  source: z.enum(["MANUAL", "SERVICE", "TRANSACTION"]).optional(),
-  status: z.enum(["CLOSED", "OPEN"]).optional(),
-  tags: z.array(z.string()).optional(),
-});
-
-const linkTransactionInputSchema = z.object({
-  amount: z.number().optional(),
-  publicId: z.string().min(1),
-  transactionId: z.number().int(),
-});
-
-const unlinkTransactionInputSchema = z.object({
-  publicId: z.string().min(1),
-  transactionId: z.number().int(),
-});
-
-const placeholderResponseSchema = z.object({
-  message: z.string(),
-  status: z.literal("error"),
-});
-
-const expensesListResponseSchema = z.object({
-  expenses: z.array(z.unknown()),
-  status: z.literal("ok"),
-});
-
-const expensesStatsResponseSchema = z.object({
-  stats: z.array(z.unknown()),
-  status: z.literal("ok"),
-});
 
 const authed = base.use(async ({ context, next }) => {
   const user = await getSessionUser(context.hono);
@@ -125,75 +69,31 @@ const notImplemented = {
 
 const expensesORPCRouterBase = {
   create: createExpenses
-    .route({
-      method: "POST",
-      path: "/",
-      summary: "Create monthly expense placeholder",
-      tags: ["Expenses"],
-    })
-    .input(expensePayloadSchema)
-    .output(placeholderResponseSchema)
+    .route(expensesContract.create)
     .handler(async () => notImplemented),
 
   detail: readExpenses
-    .route({
-      method: "GET",
-      path: "/{publicId}",
-      summary: "Get monthly expense detail placeholder",
-      tags: ["Expenses"],
-    })
-    .input(detailExpenseInputSchema)
-    .output(placeholderResponseSchema)
+    .route(expensesContract.detail)
     .handler(async () => notImplemented),
 
   linkTransaction: updateExpenses
-    .route({
-      method: "POST",
-      path: "/{publicId}/link",
-      summary: "Link transaction to monthly expense placeholder",
-      tags: ["Expenses"],
-    })
-    .input(linkTransactionInputSchema)
-    .output(placeholderResponseSchema)
+    .route(expensesContract.linkTransaction)
     .handler(async () => notImplemented),
 
   list: readExpenses
-    .route({ method: "GET", path: "/", summary: "List monthly expenses", tags: ["Expenses"] })
-    .input(listExpensesInputSchema)
-    .output(expensesListResponseSchema)
+    .route(expensesContract.list)
     .handler(async () => ({ expenses: [], status: "ok" as const })),
 
   stats: readExpenses
-    .route({
-      method: "GET",
-      path: "/stats",
-      summary: "Get monthly expense statistics",
-      tags: ["Expenses"],
-    })
-    .input(statsExpensesInputSchema)
-    .output(expensesStatsResponseSchema)
+    .route(expensesContract.stats)
     .handler(async () => ({ stats: [], status: "ok" as const })),
 
   unlinkTransaction: updateExpenses
-    .route({
-      method: "POST",
-      path: "/{publicId}/unlink",
-      summary: "Unlink transaction from monthly expense placeholder",
-      tags: ["Expenses"],
-    })
-    .input(unlinkTransactionInputSchema)
-    .output(placeholderResponseSchema)
+    .route(expensesContract.unlinkTransaction)
     .handler(async () => notImplemented),
 
   update: updateExpenses
-    .route({
-      method: "PUT",
-      path: "/{publicId}",
-      summary: "Update monthly expense placeholder",
-      tags: ["Expenses"],
-    })
-    .input(z.object({ payload: expensePayloadSchema, publicId: z.string().min(1) }))
-    .output(placeholderResponseSchema)
+    .route(expensesContract.update)
     .handler(async () => notImplemented),
 };
 

@@ -1,9 +1,9 @@
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
+import { notificationsContract } from "@finanzas/orpc-contracts/notifications";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
-import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
@@ -21,34 +21,6 @@ type NotificationsORPCContext = {
 };
 
 const base = os.$context<NotificationsORPCContext>();
-
-const pushSubscriptionSchema = z.object({
-  endpoint: z.string().url(),
-  keys: z.object({
-    auth: z.string(),
-    p256dh: z.string(),
-  }),
-});
-
-const statusResponseSchema = z.object({
-  message: z.string().optional(),
-  sent: z.number().optional(),
-  status: z.string().optional(),
-  success: z.boolean().optional(),
-});
-
-const subscribeInputSchema = z.object({
-  subscription: pushSubscriptionSchema,
-  userId: z.number().int().optional(),
-});
-
-const unsubscribeInputSchema = z.object({
-  endpoint: z.string().url(),
-});
-
-const sendTestInputSchema = z.object({
-  userId: z.number().int().optional(),
-});
 
 const authed = base.use(async ({ context, next }) => {
   const user = await getSessionUser(context.hono);
@@ -77,14 +49,7 @@ const readNotifications = authed.use(async ({ context, next }) => {
 
 const notificationsORPCRouterBase = {
   sendTest: readNotifications
-    .route({
-      method: "POST",
-      path: "/send-test",
-      summary: "Send a test push notification to current user",
-      tags: ["Notifications"],
-    })
-    .input(sendTestInputSchema)
-    .output(statusResponseSchema)
+    .route(notificationsContract.sendTest)
     .handler(async ({ context }) => {
       return sendPushNotification(context.user.id, {
         title: "Test Notification",
@@ -93,28 +58,14 @@ const notificationsORPCRouterBase = {
     }),
 
   subscribe: authed
-    .route({
-      method: "POST",
-      path: "/subscribe",
-      summary: "Subscribe current user to push notifications",
-      tags: ["Notifications"],
-    })
-    .input(subscribeInputSchema)
-    .output(statusResponseSchema)
+    .route(notificationsContract.subscribe)
     .handler(async ({ context, input }) => {
       await subscribeToPush(context.user.id, input.subscription);
       return { message: "Subscribed successfully", status: "ok" };
     }),
 
   unsubscribe: authed
-    .route({
-      method: "POST",
-      path: "/unsubscribe",
-      summary: "Unsubscribe current user from push notifications",
-      tags: ["Notifications"],
-    })
-    .input(unsubscribeInputSchema)
-    .output(statusResponseSchema)
+    .route(notificationsContract.unsubscribe)
     .handler(async ({ context, input }) => {
       await unsubscribeFromPush(context.user.id, input.endpoint);
       return { message: "Unsubscribed successfully", status: "ok" };

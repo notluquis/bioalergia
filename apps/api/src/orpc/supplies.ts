@@ -1,11 +1,12 @@
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
+import {
+  suppliesContract,
+} from "@finanzas/orpc-contracts/supplies";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
-import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
-import { supplyRequestSchema } from "../lib/inventory-schemas";
 import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
 import {
@@ -23,48 +24,6 @@ type SuppliesORPCContext = {
 };
 
 const base = os.$context<SuppliesORPCContext>();
-
-const supplyStatusSchema = z.enum(["pending", "ordered", "in_transit", "delivered", "rejected"]);
-
-const commonSupplySchema = z.object({
-  brand: z.string().optional(),
-  description: z.string().optional(),
-  id: z.number().int(),
-  model: z.string().optional(),
-  name: z.string(),
-});
-
-const supplyRequestResponseSchema = z.object({
-  admin_notes: z.string().optional(),
-  brand: z.string().optional(),
-  created_at: z.date(),
-  id: z.number().int(),
-  model: z.string().optional(),
-  notes: z.string().optional(),
-  quantity: z.number().int(),
-  status: supplyStatusSchema,
-  supply_name: z.string(),
-  user_email: z.string().optional(),
-});
-
-const createSupplyRequestSchema = supplyRequestSchema;
-
-const updateSupplyRequestStatusInputSchema = z.object({
-  id: z.number().int().positive(),
-  status: supplyStatusSchema,
-});
-
-const commonSuppliesResponseSchema = z.object({
-  commonSupplies: z.array(commonSupplySchema),
-});
-
-const supplyRequestsResponseSchema = z.object({
-  requests: z.array(supplyRequestResponseSchema),
-});
-
-const statusResponseSchema = z.object({
-  status: z.literal("ok"),
-});
 
 function toSupplyStatus(value: string) {
   switch (value) {
@@ -159,8 +118,7 @@ const updateSupplyRequests = authed.use(async ({ context, next }) => {
 
 const suppliesORPCRouterBase = {
   common: authed
-    .route({ method: "GET", path: "/common", summary: "Get common supplies", tags: ["Supplies"] })
-    .output(commonSuppliesResponseSchema)
+    .route(suppliesContract.common)
     .handler(async () => {
       const commonSupplies = await getCommonSupplies();
 
@@ -176,14 +134,7 @@ const suppliesORPCRouterBase = {
     }),
 
   createRequest: createSupplyRequests
-    .route({
-      method: "POST",
-      path: "/requests",
-      summary: "Create supply request",
-      tags: ["Supplies"],
-    })
-    .input(createSupplyRequestSchema)
-    .output(statusResponseSchema)
+    .route(suppliesContract.createRequest)
     .handler(async ({ context, input }) => {
       await createSupplyRequest({
         brand: input.brand,
@@ -198,13 +149,7 @@ const suppliesORPCRouterBase = {
     }),
 
   requests: readSupplyRequests
-    .route({
-      method: "GET",
-      path: "/requests",
-      summary: "Get supply requests",
-      tags: ["Supplies"],
-    })
-    .output(supplyRequestsResponseSchema)
+    .route(suppliesContract.requests)
     .handler(async () => {
       const requests = await getSupplyRequests();
 
@@ -212,14 +157,7 @@ const suppliesORPCRouterBase = {
     }),
 
   updateRequestStatus: updateSupplyRequests
-    .route({
-      method: "PUT",
-      path: "/requests/{id}/status",
-      summary: "Update supply request status",
-      tags: ["Supplies"],
-    })
-    .input(updateSupplyRequestStatusInputSchema)
-    .output(statusResponseSchema)
+    .route(suppliesContract.updateRequestStatus)
     .handler(async ({ input }) => {
       await updateSupplyRequestStatus(input.id, fromSupplyStatus(input.status));
       return { status: "ok" as const };

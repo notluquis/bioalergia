@@ -1,10 +1,10 @@
 import { db } from "@finanzas/db";
+import { peopleContract } from "@finanzas/orpc-contracts/people";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
-import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
@@ -17,43 +17,6 @@ type PeopleORPCContext = {
 };
 
 const base = os.$context<PeopleORPCContext>();
-
-const peopleListInputSchema = z.object({
-  includeTest: z.boolean().optional(),
-});
-
-const personIdSchema = z.object({
-  id: z.number().int(),
-});
-
-const personSchema = z
-  .object({
-    birthDate: z.string().nullable().optional(),
-    createdAt: z.date(),
-    email: z.string().nullable(),
-    employee: z.unknown().nullable().optional(),
-    fatherName: z.string().nullable(),
-    gender: z.string().nullable().optional(),
-    hasEmployee: z.boolean().optional(),
-    hasUser: z.boolean().optional(),
-    id: z.number().int(),
-    motherName: z.string().nullable(),
-    names: z.string(),
-    personType: z.enum(["JURIDICAL", "NATURAL"]),
-    rut: z.string(),
-    updatedAt: z.date(),
-    user: z.unknown().nullable().optional(),
-  })
-  .passthrough();
-
-const peopleListResponseSchema = z.object({
-  people: z.array(personSchema),
-  status: z.literal("ok"),
-});
-
-const personDetailResponseSchema = z.object({
-  person: personSchema,
-});
 
 const authed = base.use(async ({ context, next }) => {
   const user = await getSessionUser(context.hono);
@@ -82,14 +45,7 @@ const readPeople = authed.use(async ({ context, next }) => {
 
 const peopleORPCRouterBase = {
   detail: readPeople
-    .route({
-      method: "GET",
-      path: "/{id}",
-      summary: "Get person by id",
-      tags: ["People"],
-    })
-    .input(personIdSchema)
-    .output(personDetailResponseSchema)
+    .route(peopleContract.detail)
     .handler(async ({ input }) => {
       const person = await db.person.findUnique({
         where: { id: input.id },
@@ -113,14 +69,7 @@ const peopleORPCRouterBase = {
     }),
 
   list: readPeople
-    .route({
-      method: "GET",
-      path: "/",
-      summary: "List people",
-      tags: ["People"],
-    })
-    .input(peopleListInputSchema)
-    .output(peopleListResponseSchema)
+    .route(peopleContract.list)
     .handler(async ({ input }) => {
       const people = await db.person.findMany({
         where: input.includeTest

@@ -1,16 +1,19 @@
 import { createORPCClient, ORPCError } from "@orpc/client";
+import type { ContractRouterClient } from "@orpc/contract";
+import type { NotificationsContract } from "@finanzas/orpc-contracts/notifications";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
-import type { UnsafeORPCClient } from "@/lib/orpc-client";
 
 const notificationsORPCLink = new SuperJSONLink({
   fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),
   url: () => window.location.origin,
 });
 
+export type NotificationsORPCClient = ContractRouterClient<NotificationsContract>;
+
 export const notificationsORPCClient = createORPCClient(notificationsORPCLink, {
   path: ["api", "orpc", "notifications", "rpc"],
-}) as unknown as UnsafeORPCClient;
+}) as NotificationsORPCClient;
 
 export function toNotificationsApiError(error: unknown): ApiError {
   if (error instanceof ApiError) {

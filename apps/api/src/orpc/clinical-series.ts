@@ -1,9 +1,9 @@
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
+import { clinicalSeriesContract } from "@finanzas/orpc-contracts/clinical-series";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
-import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
@@ -21,75 +21,6 @@ type ClinicalSeriesORPCContext = {
 };
 
 const base = os.$context<ClinicalSeriesORPCContext>();
-
-const kindSchema = z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT"]);
-const statusSchema = z.enum(["ACTIVE", "COMPLETED", "CANCELLED"]);
-
-const clinicalSeriesEventSchema = z.object({
-  amountExpected: z.number().nullable(),
-  amountPaid: z.number().nullable(),
-  calendarGoogleId: z.string(),
-  eventDate: z.string(),
-  eventId: z.number(),
-  externalEventId: z.string(),
-  seriesStageKind: z.enum(["DOSE", "INSTALLATION", "MAINTENANCE", "READING"]).nullable(),
-  seriesStageLabel: z.string().nullable(),
-  seriesStageNumber: z.number().nullable(),
-  summary: z.string().nullable(),
-});
-
-const clinicalSeriesLinkedDocumentSchema = z.object({
-  clientName: z.string(),
-  clientRUT: z.string(),
-  confidenceScore: z.number(),
-  documentDate: z.string(),
-  dteSaleDetailId: z.string(),
-  folio: z.string(),
-  matchedBy: z.string(),
-  totalAmount: z.number(),
-});
-
-const clinicalSeriesSnapshotSchema = z.object({
-  displayName: z.string().nullable(),
-  eligibleDocumentDateFrom: z.string(),
-  eligibleDocumentDateTo: z.string(),
-  events: z.array(clinicalSeriesEventSchema),
-  id: z.number(),
-  kind: kindSchema,
-  linkedDocuments: z.array(clinicalSeriesLinkedDocumentSchema),
-  patientName: z.string().nullable(),
-  patientRut: z.string().nullable(),
-  remainingExpected: z.number(),
-  remainingPaid: z.number(),
-  status: statusSchema,
-  totalExpected: z.number(),
-  totalLinkedAmount: z.number(),
-  totalPaid: z.number(),
-});
-
-const listInputSchema = z.object({
-  dateFrom: z.string().optional(),
-  dateTo: z.string().optional(),
-  kind: kindSchema.optional(),
-  patientName: z.string().optional(),
-  patientRut: z.string().optional(),
-  status: statusSchema.optional(),
-});
-
-const detailInputSchema = z.object({
-  id: z.number().int().positive(),
-});
-
-const rebuildInputSchema = z.object({
-  from: z.string().optional(),
-  to: z.string().optional(),
-});
-
-const rebuildResponseSchema = z.object({
-  from: z.string().nullable(),
-  processed: z.number(),
-  to: z.string().nullable(),
-});
 
 const authed = base.use(async ({ context, next }) => {
   const user = await getSessionUser(context.hono);
@@ -117,14 +48,7 @@ const updateClinicalSeries = authed.use(async ({ context, next }) => {
 
 const clinicalSeriesORPCRouterBase = {
   detail: readClinicalSeries
-    .route({
-      method: "GET",
-      path: "/{id}",
-      summary: "Get clinical series detail",
-      tags: ["ClinicalSeries"],
-    })
-    .input(detailInputSchema)
-    .output(clinicalSeriesSnapshotSchema)
+    .route(clinicalSeriesContract.detail)
     .handler(async ({ input }) => {
       const snapshot = await getClinicalSeriesSnapshotById(input.id);
       if (!snapshot) {
@@ -134,27 +58,13 @@ const clinicalSeriesORPCRouterBase = {
     }),
 
   list: readClinicalSeries
-    .route({
-      method: "GET",
-      path: "/",
-      summary: "List clinical series",
-      tags: ["ClinicalSeries"],
-    })
-    .input(listInputSchema)
-    .output(z.array(clinicalSeriesSnapshotSchema))
+    .route(clinicalSeriesContract.list)
     .handler(async ({ input }) => {
       return await listClinicalSeriesSnapshots(input);
     }),
 
   rebuild: updateClinicalSeries
-    .route({
-      method: "POST",
-      path: "/rebuild",
-      summary: "Rebuild clinical series",
-      tags: ["ClinicalSeries"],
-    })
-    .input(rebuildInputSchema)
-    .output(rebuildResponseSchema)
+    .route(clinicalSeriesContract.rebuild)
     .handler(async ({ input }) => {
       return await rebuildClinicalSeries(input);
     }),

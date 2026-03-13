@@ -85,14 +85,33 @@ const ApiSuccessResponseSchema = z.strictObject({
   status: zStatusOk.shape.status,
 });
 
+function toProductionBalancePayload(data: DailyBalancePayload) {
+  return {
+    comentarios: data.comentarios,
+    consultas: data.consultasMonto,
+    controles: data.controlesMonto,
+    date: data.date,
+    gastosDiarios: data.gastosDiarios,
+    ingresoEfectivo: data.ingresoEfectivo,
+    ingresoTarjetas: data.ingresoTarjetas,
+    ingresoTransferencias: data.ingresoTransferencias,
+    licencias: data.licenciasMonto,
+    otrosAbonos: data.otrosAbonos,
+    roxair: data.roxairMonto,
+    status: "PENDING",
+    tests: data.testsMonto,
+    vacunas: data.vacunasMonto,
+  };
+}
+
 export const dailyBalanceApi = {
   createBalance: async (data: DailyBalancePayload) => {
     try {
-      const response = await productionBalancesORPCClient.create(data);
+      const response = await productionBalancesORPCClient.create(toProductionBalancePayload(data));
       return parseOrThrow(
         ApiSuccessResponseSchema,
         response,
-        "Respuesta inválida al crear balance diario",
+        "Respuesta inválida al crear balance diario"
       );
     } catch (error) {
       throw toProductionBalancesApiError(error);
@@ -105,7 +124,7 @@ export const dailyBalanceApi = {
       return parseOrThrow(
         ApiListResponseSchema,
         response,
-        "Respuesta inválida al listar balances diarios",
+        "Respuesta inválida al listar balances diarios"
       );
     } catch (error) {
       throw toProductionBalancesApiError(error);
@@ -114,11 +133,14 @@ export const dailyBalanceApi = {
 
   updateBalance: async (id: number, data: DailyBalancePayload) => {
     try {
-      const response = await productionBalancesORPCClient.update({ id, ...data });
+      const response = await productionBalancesORPCClient.update({
+        id,
+        ...toProductionBalancePayload(data),
+      });
       return parseOrThrow(
         ApiSuccessResponseSchema,
         response,
-        "Respuesta inválida al actualizar balance diario",
+        "Respuesta inválida al actualizar balance diario"
       );
     } catch (error) {
       throw toProductionBalancesApiError(error);

@@ -15,10 +15,20 @@
       "import": "./dist/auth.js",
       "default": "./dist/auth.js"
     },
+    "./balances": {
+      "types": "./dist/balances.d.ts",
+      "import": "./dist/balances.js",
+      "default": "./dist/balances.js"
+    },
     "./calendar": {
       "types": "./dist/calendar.d.ts",
       "import": "./dist/calendar.js",
       "default": "./dist/calendar.js"
+    },
+    "./clinical-series": {
+      "types": "./dist/clinical-series.d.ts",
+      "import": "./dist/clinical-series.js",
+      "default": "./dist/clinical-series.js"
     },
     "./doctoralia": {
       "types": "./dist/doctoralia.d.ts",
@@ -35,6 +45,16 @@
       "import": "./dist/dte-analytics.js",
       "default": "./dist/dte-analytics.js"
     },
+    "./employees": {
+      "types": "./dist/employees.d.ts",
+      "import": "./dist/employees.js",
+      "default": "./dist/employees.js"
+    },
+    "./expenses": {
+      "types": "./dist/expenses.d.ts",
+      "import": "./dist/expenses.js",
+      "default": "./dist/expenses.js"
+    },
     "./finance": {
       "types": "./dist/finance.d.ts",
       "import": "./dist/finance.js",
@@ -45,10 +65,25 @@
       "import": "./dist/mercadopago.js",
       "default": "./dist/mercadopago.js"
     },
+    "./notifications": {
+      "types": "./dist/notifications.d.ts",
+      "import": "./dist/notifications.js",
+      "default": "./dist/notifications.js"
+    },
     "./patients": {
       "types": "./dist/patients.d.ts",
       "import": "./dist/patients.js",
       "default": "./dist/patients.js"
+    },
+    "./people": {
+      "types": "./dist/people.d.ts",
+      "import": "./dist/people.js",
+      "default": "./dist/people.js"
+    },
+    "./production-balances": {
+      "types": "./dist/production-balances.d.ts",
+      "import": "./dist/production-balances.js",
+      "default": "./dist/production-balances.js"
     },
     "./services": {
       "types": "./dist/services.d.ts",
@@ -64,6 +99,11 @@
       "types": "./dist/system.d.ts",
       "import": "./dist/system.js",
       "default": "./dist/system.js"
+    },
+    "./supplies": {
+      "types": "./dist/supplies.d.ts",
+      "import": "./dist/supplies.js",
+      "default": "./dist/supplies.js"
     },
     "./users": {
       "types": "./dist/users.d.ts",
