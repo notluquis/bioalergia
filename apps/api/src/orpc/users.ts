@@ -1,10 +1,29 @@
 import { db } from "@finanzas/db";
+import {
+  inviteResponseSchema,
+  inviteUserSchema,
+  resetPasswordResponseSchema,
+  setupUserSchema,
+  toggleMfaResponseSchema,
+  toggleMfaSchema,
+  updateRoleSchema,
+  updateStatusSchema,
+  updateUserProfileSchema,
+  userIdSchema,
+  userListItemSchema,
+  userProfileResponseSchema,
+  userProfileSchema,
+  usersContract,
+  usersListInputSchema,
+  usersResponseSchema,
+  usersStatusResponseSchema,
+  userStatusSchema,
+} from "@finanzas/orpc-contracts/users";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
-import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { hashPassword } from "../lib/crypto";
 import { logError } from "../lib/logger";
@@ -19,165 +38,6 @@ type UsersORPCContext = {
 };
 
 const base = os.$context<UsersORPCContext>();
-
-const userStatusSchema = z.enum(["ACTIVE", "INACTIVE", "PENDING_SETUP", "SUSPENDED"]);
-
-const userListInputSchema = z.object({
-  includeTest: z.boolean().optional(),
-});
-
-const inviteUserSchema = z.object({
-  email: z.email("Email inválido"),
-  role: z.string().min(1, "Rol requerido"),
-  position: z.string().min(1, "Cargo requerido"),
-  mfaEnforced: z.boolean().optional().default(true),
-  personId: z.number().int().optional(),
-  names: z.string().optional(),
-  fatherName: z.string().optional(),
-  motherName: z.string().optional(),
-  rut: z.string().optional(),
-});
-
-const setupUserSchema = z.object({
-  names: z.string().min(1),
-  fatherName: z.string().optional(),
-  motherName: z.string().optional(),
-  loginEmail: z.email("Email de login inválido").optional(),
-  rut: z.string().min(1),
-  phone: z.string().optional(),
-  address: z.string().optional(),
-  bankName: z.string().optional(),
-  bankAccountType: z.string().optional(),
-  bankAccountNumber: z.string().optional(),
-  password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres"),
-});
-
-const userIdSchema = z.object({
-  id: z.number().int(),
-});
-
-const updateStatusSchema = z.object({
-  id: z.number().int(),
-  status: z.enum(["ACTIVE", "PENDING_SETUP", "SUSPENDED"]),
-});
-
-const updateRoleSchema = z.object({
-  id: z.number().int(),
-  role: z.string().min(1, "Rol requerido"),
-});
-
-const toggleMfaSchema = z.object({
-  enabled: z.boolean(),
-  id: z.number().int(),
-});
-
-const updateUserProfileSchema = z
-  .object({
-    address: z.string().max(255).nullable().optional(),
-    bankAccountNumber: z.string().max(120).nullable().optional(),
-    bankAccountType: z.string().max(80).nullable().optional(),
-    bankName: z.string().max(120).nullable().optional(),
-    department: z.string().max(120).nullable().optional(),
-    email: z.email("Email inválido").optional(),
-    fatherName: z.string().max(120).nullable().optional(),
-    loginEmail: z.email("Email de login inválido").nullable().optional(),
-    mfaEnforced: z.boolean().optional(),
-    motherName: z.string().max(120).nullable().optional(),
-    names: z.string().min(1, "Nombres requeridos").max(160),
-    notificationEmail: z.email("Email de notificación inválido").optional(),
-    phone: z.string().max(60).nullable().optional(),
-    position: z.string().min(1, "Cargo requerido").max(120),
-    rut: z.string().min(1, "RUT requerido").max(20),
-  })
-  .superRefine((value, ctx) => {
-    if (!value.notificationEmail && !value.email) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "notificationEmail es requerido",
-        path: ["notificationEmail"],
-      });
-    }
-  });
-
-const userPersonSchema = z.object({
-  address: z.string().nullable(),
-  fatherName: z.string().nullable(),
-  motherName: z.string().nullable(),
-  names: z.string(),
-  phone: z.string().nullable(),
-  rut: z.string(),
-});
-
-const userEmployeeSchema = z.object({
-  bankAccountNumber: z.string().nullable(),
-  bankAccountType: z.string().nullable(),
-  bankName: z.string().nullable(),
-  department: z.string().nullable(),
-  position: z.string(),
-});
-
-const userListItemSchema = z.object({
-  createdAt: z.date(),
-  email: z.string(),
-  employee: userEmployeeSchema.nullable(),
-  hasPasskey: z.boolean(),
-  id: z.number().int(),
-  loginEmail: z.string(),
-  mfaEnabled: z.boolean(),
-  mfaEnforced: z.boolean(),
-  notificationEmail: z.string(),
-  passkeysCount: z.number().int(),
-  person: userPersonSchema.nullable(),
-  role: z.string(),
-  status: userStatusSchema,
-});
-
-const userProfileSchema = z.object({
-  address: z.string().nullable().optional(),
-  bankAccountNumber: z.string().nullable().optional(),
-  bankAccountType: z.string().nullable().optional(),
-  bankName: z.string().nullable().optional(),
-  email: z.string(),
-  fatherName: z.string().nullable().optional(),
-  id: z.number().int(),
-  loginEmail: z.string(),
-  motherName: z.string().nullable().optional(),
-  names: z.string(),
-  notificationEmail: z.string().optional(),
-  phone: z.string().nullable().optional(),
-  rut: z.string(),
-});
-
-const usersResponseSchema = z.object({
-  status: z.literal("ok"),
-  users: z.array(userListItemSchema),
-});
-
-const userProfileResponseSchema = z.object({
-  data: userProfileSchema,
-  status: z.literal("ok"),
-});
-
-const inviteResponseSchema = z.object({
-  status: z.literal("ok"),
-  tempPassword: z.string().optional(),
-  userId: z.number().int(),
-});
-
-const resetPasswordResponseSchema = z.object({
-  status: z.literal("ok"),
-  tempPassword: z.string(),
-});
-
-const toggleMfaResponseSchema = z.object({
-  mfaEnabled: z.boolean(),
-  status: z.literal("ok"),
-});
-
-const statusResponseSchema = z.object({
-  message: z.string().optional(),
-  status: z.literal("ok"),
-});
 
 function toNullableText(value: null | string | undefined): null | string {
   if (typeof value !== "string") {
@@ -222,7 +82,7 @@ async function getUserLoginEmailMap(userIds: number[]) {
 async function resolveInvitePersonId(
   personId: number | undefined,
   email: string,
-  payload: z.infer<typeof inviteUserSchema>,
+  payload: (typeof inviteUserSchema)["_output"],
 ) {
   if (!personId) {
     const names = payload.names?.trim();
@@ -330,14 +190,7 @@ const deleteUsers = authed.use(async ({ context, next }) => {
 
 const usersORPCRouterBase = {
   delete: deleteUsers
-    .route({
-      method: "DELETE",
-      path: "/{id}",
-      summary: "Delete user",
-      tags: ["Users"],
-    })
-    .input(userIdSchema)
-    .output(statusResponseSchema)
+    .route(usersContract.delete)
     .handler(async ({ context, input }) => {
       if (input.id === context.user.id) {
         throw new ORPCError("BAD_REQUEST", { message: "No puedes eliminar tu propia cuenta" });
@@ -348,14 +201,7 @@ const usersORPCRouterBase = {
     }),
 
   deletePasskey: updateUsers
-    .route({
-      method: "DELETE",
-      path: "/{id}/passkey",
-      summary: "Delete user passkeys",
-      tags: ["Users"],
-    })
-    .input(userIdSchema)
-    .output(statusResponseSchema)
+    .route(usersContract.deletePasskey)
     .handler(async ({ input }) => {
       await db.passkey.deleteMany({
         where: { userId: input.id },
@@ -365,14 +211,7 @@ const usersORPCRouterBase = {
     }),
 
   invite: createUsers
-    .route({
-      method: "POST",
-      path: "/invite",
-      summary: "Invite user",
-      tags: ["Users"],
-    })
-    .input(inviteUserSchema)
-    .output(inviteResponseSchema)
+    .route(usersContract.invite)
     .handler(async ({ input }) => {
       const normalizedEmail = normalizeEmail(input.email);
 
@@ -425,14 +264,7 @@ const usersORPCRouterBase = {
     }),
 
   list: readUsers
-    .route({
-      method: "GET",
-      path: "/",
-      summary: "List users",
-      tags: ["Users"],
-    })
-    .input(userListInputSchema)
-    .output(usersResponseSchema)
+    .route(usersContract.list)
     .handler(async ({ input }) => {
       const users = await db.user.findMany({
         where: input.includeTest
@@ -461,7 +293,7 @@ const usersORPCRouterBase = {
           email: user.person?.email ?? "",
           notificationEmail: user.person?.email ?? "",
           loginEmail: loginEmailByUserId.get(user.id)?.trim() || (user.person?.email ?? ""),
-          status: user.status as z.infer<typeof userStatusSchema>,
+          status: user.status as (typeof userStatusSchema)["_output"],
           mfaEnabled: user.mfaEnabled,
           mfaEnforced: user.mfaEnforced,
           hasPasskey: user.passkeys.length > 0,
@@ -492,14 +324,7 @@ const usersORPCRouterBase = {
     }),
 
   profile: authed
-    .route({
-      method: "GET",
-      path: "/profile",
-      summary: "Get current user profile",
-      tags: ["Users"],
-    })
-    .input(z.object({}))
-    .output(userProfileResponseSchema)
+    .route(usersContract.profile)
     .handler(async ({ context }) => {
       const user = await db.user.findUnique({
         where: { id: context.user.id },
@@ -546,14 +371,7 @@ const usersORPCRouterBase = {
     }),
 
   resetPassword: updateUsers
-    .route({
-      method: "POST",
-      path: "/{id}/reset-password",
-      summary: "Reset user password",
-      tags: ["Users"],
-    })
-    .input(userIdSchema)
-    .output(resetPasswordResponseSchema)
+    .route(usersContract.resetPassword)
     .handler(async ({ input }) => {
       const targetUser = await db.user.findUnique({
         where: { id: input.id },
@@ -583,14 +401,7 @@ const usersORPCRouterBase = {
     }),
 
   setup: authed
-    .route({
-      method: "POST",
-      path: "/setup",
-      summary: "Complete user onboarding setup",
-      tags: ["Users"],
-    })
-    .input(setupUserSchema)
-    .output(statusResponseSchema)
+    .route(usersContract.setup)
     .handler(async ({ context, input }) => {
       const user = await db.user.findUnique({
         where: { id: context.user.id },
@@ -679,14 +490,7 @@ const usersORPCRouterBase = {
     }),
 
   toggleMfa: updateUsers
-    .route({
-      method: "POST",
-      path: "/{id}/mfa/toggle",
-      summary: "Toggle MFA for user",
-      tags: ["Users"],
-    })
-    .input(toggleMfaSchema)
-    .output(toggleMfaResponseSchema)
+    .route(usersContract.toggleMfa)
     .handler(async ({ input }) => {
       await db.user.update({
         where: { id: input.id },
@@ -697,19 +501,7 @@ const usersORPCRouterBase = {
     }),
 
   updateProfile: updateUsers
-    .route({
-      method: "PUT",
-      path: "/{id}/profile",
-      summary: "Update user profile",
-      tags: ["Users"],
-    })
-    .input(
-      z.object({
-        id: z.number().int(),
-        payload: updateUserProfileSchema,
-      }),
-    )
-    .output(statusResponseSchema)
+    .route(usersContract.updateProfile)
     .handler(async ({ input }) => {
       const targetUser = await db.user.findUnique({
         where: { id: input.id },
@@ -829,14 +621,7 @@ const usersORPCRouterBase = {
     }),
 
   updateRole: updateUsers
-    .route({
-      method: "PUT",
-      path: "/{id}/role",
-      summary: "Update user role",
-      tags: ["Users"],
-    })
-    .input(updateRoleSchema)
-    .output(statusResponseSchema)
+    .route(usersContract.updateRole)
     .handler(async ({ input }) => {
       await db.userRoleAssignment.deleteMany({ where: { userId: input.id } });
 
@@ -851,14 +636,7 @@ const usersORPCRouterBase = {
     }),
 
   updateStatus: updateUsers
-    .route({
-      method: "PUT",
-      path: "/{id}/status",
-      summary: "Update user status",
-      tags: ["Users"],
-    })
-    .input(updateStatusSchema)
-    .output(statusResponseSchema)
+    .route(usersContract.updateStatus)
     .handler(async ({ context, input }) => {
       if (
         input.id === context.user.id &&

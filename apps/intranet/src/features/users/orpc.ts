@@ -1,7 +1,10 @@
 import { createORPCClient, ORPCError } from "@orpc/client";
+import type { ContractRouterClient } from "@orpc/contract";
+import type { UsersContract } from "@finanzas/orpc-contracts/users";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
-import type { UnsafeORPCClient } from "@/lib/orpc-client";
+
+export type UsersORPCClient = ContractRouterClient<UsersContract>;
 
 const usersORPCLink = new SuperJSONLink({
   fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),
@@ -10,7 +13,7 @@ const usersORPCLink = new SuperJSONLink({
 
 export const usersORPCClient = createORPCClient(usersORPCLink, {
   path: ["api", "orpc", "users", "rpc"],
-}) as unknown as UnsafeORPCClient;
+}) as UsersORPCClient;
 
 export function toUsersApiError(error: unknown): ApiError {
   if (error instanceof ApiError) {

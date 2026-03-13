@@ -25,10 +25,30 @@
       "import": "./dist/dte-event-links.js",
       "default": "./dist/dte-event-links.js"
     },
+    "./dte-analytics": {
+      "types": "./dist/dte-analytics.d.ts",
+      "import": "./dist/dte-analytics.js",
+      "default": "./dist/dte-analytics.js"
+    },
     "./finance": {
       "types": "./dist/finance.d.ts",
       "import": "./dist/finance.js",
       "default": "./dist/finance.js"
+    },
+    "./settings": {
+      "types": "./dist/settings.d.ts",
+      "import": "./dist/settings.js",
+      "default": "./dist/settings.js"
+    },
+    "./system": {
+      "types": "./dist/system.d.ts",
+      "import": "./dist/system.js",
+      "default": "./dist/system.js"
+    },
+    "./users": {
+      "types": "./dist/users.d.ts",
+      "import": "./dist/users.js",
+      "default": "./dist/users.js"
     }
   },
   "scripts": {

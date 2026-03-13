@@ -30,7 +30,9 @@
       "@shared/*": ["./shared/*"],
       "~/*": ["./*"],
       "@finanzas/db": ["../../packages/db/dist/client"],
-      "@finanzas/db/*": ["../../packages/db/dist/zenstack/*"]
+      "@finanzas/db/*": ["../../packages/db/dist/zenstack/*"],
+      "@finanzas/orpc-contracts": ["../../packages/orpc-contracts/dist/index.d.ts"],
+      "@finanzas/orpc-contracts/*": ["../../packages/orpc-contracts/dist/*"]
     }
   },
   "include": ["src", "shared"]

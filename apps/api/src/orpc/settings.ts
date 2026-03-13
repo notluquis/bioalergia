@@ -1,13 +1,12 @@
 import { db } from "@finanzas/db";
+import { settingsContract, settingsSchema } from "@finanzas/orpc-contracts/settings";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
-import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
-import { settingsSchema } from "../lib/schemas";
 import { type AppSettings, settingsKeyToDbKey } from "../lib/settings";
 import { configureSuperjson } from "../lib/superjson-config";
 import { loadSettings, updateSettings as persistSettings } from "../services/settings";
@@ -20,30 +19,6 @@ type SettingsORPCContext = {
 };
 
 const base = os.$context<SettingsORPCContext>();
-
-const internalSettingsSchema = z.object({
-  envUpsertChunkSize: z.string().optional(),
-  upsertChunkSize: z.union([z.number(), z.string()]).optional(),
-});
-
-const internalSettingsResponseSchema = z.object({
-  internal: internalSettingsSchema,
-});
-
-const appSettingsResponseSchema = settingsSchema;
-
-const updateInternalSettingsSchema = z.object({
-  upsertChunkSize: z.number().optional(),
-});
-
-const statusResponseSchema = z.object({
-  message: z.string().optional(),
-  status: z.string(),
-});
-
-const uploadAssetSchema = z.object({
-  assetType: z.enum(["favicon", "logo"]),
-});
 
 const authed = base.use(async ({ context, next }) => {
   const user = await getSessionUser(context.hono);
@@ -82,26 +57,13 @@ const updateSettings = authed.use(async ({ context, next }) => {
 
 const settingsORPCRouterBase = {
   app: readSettings
-    .route({
-      method: "GET",
-      path: "/app",
-      summary: "Get application settings",
-      tags: ["Settings"],
-    })
-    .output(appSettingsResponseSchema)
+    .route(settingsContract.app)
     .handler(async () => {
       return await loadSettings();
     }),
 
   updateApp: updateSettings
-    .route({
-      method: "PUT",
-      path: "/app",
-      summary: "Update application settings",
-      tags: ["Settings"],
-    })
-    .input(settingsSchema)
-    .output(statusResponseSchema)
+    .route(settingsContract.updateApp)
     .handler(async ({ input }) => {
       const payload = Object.entries(input).reduce<Record<string, string>>((acc, [key, value]) => {
         acc[settingsKeyToDbKey(key as keyof AppSettings)] = value;
@@ -113,13 +75,7 @@ const settingsORPCRouterBase = {
     }),
 
   internal: readSettings
-    .route({
-      method: "GET",
-      path: "/internal",
-      summary: "Get internal settings",
-      tags: ["Settings"],
-    })
-    .output(internalSettingsResponseSchema)
+    .route(settingsContract.internal)
     .handler(async () => {
       const settings = await db.setting.findMany({
         where: { key: { in: ["internal.upsertChunkSize"] } },
@@ -138,14 +94,7 @@ const settingsORPCRouterBase = {
     }),
 
   updateInternal: updateSettings
-    .route({
-      method: "PUT",
-      path: "/internal",
-      summary: "Update internal settings",
-      tags: ["Settings"],
-    })
-    .input(updateInternalSettingsSchema)
-    .output(statusResponseSchema)
+    .route(settingsContract.updateInternal)
     .handler(async ({ input }) => {
       if (input.upsertChunkSize !== undefined) {
         await db.setting.upsert({
@@ -166,14 +115,7 @@ const settingsORPCRouterBase = {
     }),
 
   uploadAsset: updateSettings
-    .route({
-      method: "POST",
-      path: "/branding/upload",
-      summary: "Placeholder branding upload endpoint",
-      tags: ["Settings"],
-    })
-    .input(uploadAssetSchema)
-    .output(statusResponseSchema)
+    .route(settingsContract.uploadAsset)
     .handler(async ({ input }) => ({
       message: `${input.assetType} upload not implemented yet`,
       status: "error",

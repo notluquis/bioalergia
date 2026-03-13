@@ -1,4 +1,5 @@
 import { db } from "@finanzas/db";
+import { dteAnalyticsContract } from "@finanzas/orpc-contracts/dte-analytics";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
@@ -6,7 +7,6 @@ import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import dayjs from "dayjs";
 import type { Context as HonoContext } from "hono";
 import { sql } from "kysely";
-import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
@@ -19,101 +19,6 @@ type DteAnalyticsORPCContext = {
 };
 
 const base = os.$context<DteAnalyticsORPCContext>();
-
-const periodParamsSchema = z.object({
-  startPeriod: z
-    .string()
-    .regex(/^\d{4}-\d{2}$/)
-    .optional(),
-  endPeriod: z
-    .string()
-    .regex(/^\d{4}-\d{2}$/)
-    .optional(),
-  year: z.number().int().min(2020).max(2030).optional(),
-});
-
-const detailsQuerySchema = z.object({
-  page: z.number().int().min(1).default(1),
-  pageSize: z.number().int().min(1).max(500).default(100),
-  period: z
-    .string()
-    .regex(/^\d{4}-\d{2}$/)
-    .optional(),
-});
-
-const summaryRowSchema = z.object({
-  averageAmount: z.number(),
-  count: z.number().int(),
-  exemptAmount: z.number(),
-  netAmount: z.number(),
-  period: z.string(),
-  taxAmount: z.number(),
-  totalAmount: z.number(),
-});
-
-const salesDetailSchema = z.object({
-  clientName: z.string(),
-  clientRUT: z.string(),
-  documentDate: z.string(),
-  documentType: z.number().int(),
-  emitterRUT: z.string().nullable(),
-  exemptAmount: z.number(),
-  folio: z.string(),
-  id: z.string(),
-  ivaAmount: z.number(),
-  netAmount: z.number(),
-  referenceDocFolio: z.string().nullable(),
-  referenceDocType: z.string().nullable(),
-  registerNumber: z.number().int(),
-  saleType: z.string(),
-  totalAmount: z.number(),
-});
-
-const purchaseDetailSchema = z.object({
-  documentDate: z.string(),
-  documentType: z.number().int(),
-  exemptAmount: z.number(),
-  folio: z.string(),
-  id: z.string(),
-  netAmount: z.number(),
-  nonRecoverableIVA: z.number(),
-  providerName: z.string(),
-  providerRUT: z.string(),
-  purchaseType: z.string(),
-  receiptDate: z.string(),
-  recoverableIVA: z.number(),
-  registerNumber: z.number().int(),
-  totalAmount: z.number(),
-});
-
-const listMetaSchema = z.object({
-  page: z.number().int().positive(),
-  pageSize: z.number().int().positive(),
-  total: z.number().int().nonnegative(),
-  totalPages: z.number().int().nonnegative(),
-});
-
-const summaryResponseSchema = z.object({
-  data: z.array(summaryRowSchema),
-  status: z.literal("success"),
-});
-
-const periodsResponseSchema = z.object({
-  data: z.array(z.string().regex(/^\d{4}-\d{2}$/)),
-  status: z.literal("success"),
-});
-
-const salesDetailsResponseSchema = z.object({
-  data: z.array(salesDetailSchema),
-  meta: listMetaSchema,
-  status: z.literal("success"),
-});
-
-const purchasesDetailsResponseSchema = z.object({
-  data: z.array(purchaseDetailSchema),
-  meta: listMetaSchema,
-  status: z.literal("success"),
-});
 
 function excludeAnnulledByNCE(
   tableAlias: string,
@@ -160,13 +65,7 @@ const readDteAnalytics = authed.use(async ({ context, next }) => {
 
 const dteAnalyticsORPCRouterBase = {
   purchasesAvailablePeriods: readDteAnalytics
-    .route({
-      method: "GET",
-      path: "/purchases/available-periods",
-      summary: "List available purchase periods",
-      tags: ["DTE Analytics"],
-    })
-    .output(periodsResponseSchema)
+    .route(dteAnalyticsContract.purchasesAvailablePeriods)
     .handler(async () => {
       const rows = await db.$qb
         .selectFrom("DTEPurchaseDetail as p")
@@ -183,14 +82,7 @@ const dteAnalyticsORPCRouterBase = {
     }),
 
   purchasesDetails: readDteAnalytics
-    .route({
-      method: "GET",
-      path: "/purchases/details",
-      summary: "Get purchase details",
-      tags: ["DTE Analytics"],
-    })
-    .input(detailsQuerySchema)
-    .output(purchasesDetailsResponseSchema)
+    .route(dteAnalyticsContract.purchasesDetails)
     .handler(async ({ input }) => {
       const offset = (input.page - 1) * input.pageSize;
 
@@ -270,14 +162,7 @@ const dteAnalyticsORPCRouterBase = {
     }),
 
   purchasesSummary: readDteAnalytics
-    .route({
-      method: "GET",
-      path: "/purchases/summary",
-      summary: "Get purchase summary",
-      tags: ["DTE Analytics"],
-    })
-    .input(periodParamsSchema)
-    .output(summaryResponseSchema)
+    .route(dteAnalyticsContract.purchasesSummary)
     .handler(async ({ input }) => {
       let query = db.$qb
         .selectFrom("DTEPurchaseDetail as p")
@@ -331,13 +216,7 @@ const dteAnalyticsORPCRouterBase = {
     }),
 
   salesAvailablePeriods: readDteAnalytics
-    .route({
-      method: "GET",
-      path: "/sales/available-periods",
-      summary: "List available sales periods",
-      tags: ["DTE Analytics"],
-    })
-    .output(periodsResponseSchema)
+    .route(dteAnalyticsContract.salesAvailablePeriods)
     .handler(async () => {
       const rows = await db.$qb
         .selectFrom("DTESaleDetail as s")
@@ -355,14 +234,7 @@ const dteAnalyticsORPCRouterBase = {
     }),
 
   salesDetails: readDteAnalytics
-    .route({
-      method: "GET",
-      path: "/sales/details",
-      summary: "Get sales details",
-      tags: ["DTE Analytics"],
-    })
-    .input(detailsQuerySchema)
-    .output(salesDetailsResponseSchema)
+    .route(dteAnalyticsContract.salesDetails)
     .handler(async ({ input }) => {
       const offset = (input.page - 1) * input.pageSize;
 
@@ -446,14 +318,7 @@ const dteAnalyticsORPCRouterBase = {
     }),
 
   salesSummary: readDteAnalytics
-    .route({
-      method: "GET",
-      path: "/sales/summary",
-      summary: "Get sales summary",
-      tags: ["DTE Analytics"],
-    })
-    .input(periodParamsSchema)
-    .output(summaryResponseSchema)
+    .route(dteAnalyticsContract.salesSummary)
     .handler(async ({ input }) => {
       let query = db.$qb
         .selectFrom("DTESaleDetail as s")

@@ -1,9 +1,9 @@
+import { systemContract } from "@finanzas/orpc-contracts/system";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
-import { z } from "zod";
 import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
 import { SuperJSONRPCHandler } from "./superjson";
@@ -16,27 +16,9 @@ type SystemORPCContext = {
 
 const base = os.$context<SystemORPCContext>();
 
-const healthResponseSchema = z.object({
-  checks: z.object({
-    db: z.object({
-      latency: z.number().nullable(),
-      message: z.string().optional(),
-      status: z.enum(["error", "ok"]),
-    }),
-  }),
-  status: z.enum(["degraded", "error", "ok"]),
-  timestamp: z.coerce.date(),
-});
-
 const systemORPCRouterBase = {
   health: base
-    .route({
-      method: "GET",
-      path: "/health",
-      summary: "Get system health summary",
-      tags: ["System"],
-    })
-    .output(healthResponseSchema)
+    .route(systemContract.health)
     .handler(async () => ({
       checks: {
         db: {
