@@ -20,6 +20,11 @@
       "import": "./dist/calendar.js",
       "default": "./dist/calendar.js"
     },
+    "./doctoralia": {
+      "types": "./dist/doctoralia.d.ts",
+      "import": "./dist/doctoralia.js",
+      "default": "./dist/doctoralia.js"
+    },
     "./dte-event-links": {
       "types": "./dist/dte-event-links.d.ts",
       "import": "./dist/dte-event-links.js",
@@ -34,6 +39,21 @@
       "types": "./dist/finance.d.ts",
       "import": "./dist/finance.js",
       "default": "./dist/finance.js"
+    },
+    "./mercadopago": {
+      "types": "./dist/mercadopago.d.ts",
+      "import": "./dist/mercadopago.js",
+      "default": "./dist/mercadopago.js"
+    },
+    "./patients": {
+      "types": "./dist/patients.d.ts",
+      "import": "./dist/patients.js",
+      "default": "./dist/patients.js"
+    },
+    "./services": {
+      "types": "./dist/services.d.ts",
+      "import": "./dist/services.js",
+      "default": "./dist/services.js"
     },
     "./settings": {
       "types": "./dist/settings.d.ts",

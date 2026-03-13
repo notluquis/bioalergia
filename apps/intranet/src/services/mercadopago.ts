@@ -6,7 +6,7 @@
 import { z } from "zod";
 import type { MpReportType } from "../../shared/mercadopago";
 import { mercadopagoORPCClient, toMercadoPagoApiError } from "../features/finance/mercadopago/orpc";
-import { apiClient } from "../lib/api-client";
+import { ApiError, apiClient } from "../lib/api-client";
 
 /**
  * Statistics returned after processing a report
@@ -15,7 +15,9 @@ export interface ImportStats {
   duplicateRows: number;
   errors: string[];
   insertedRows: number;
+  processedSourceIds?: string[];
   skippedRows: number;
+  sourceUnavailable?: boolean;
   totalRows: number;
   validRows: number;
 }
@@ -118,7 +120,9 @@ const ProcessReportResponseSchema = z.object({
     duplicateRows: z.number(),
     errors: z.array(z.string()),
     insertedRows: z.number(),
+    processedSourceIds: z.array(z.string()).optional(),
     skippedRows: z.number(),
+    sourceUnavailable: z.boolean().optional(),
     totalRows: z.number(),
     validRows: z.number(),
   }),
@@ -227,9 +231,25 @@ export const MPService = {
 
   downloadReport: async (fileName: string, type: MpReportType = "release"): Promise<Blob> => {
     const baseUrl = getBaseUrl(type);
-    return apiClient.getRaw<Blob>(`${baseUrl}/reports/download/${encodeURIComponent(fileName)}`, {
-      responseType: "blob",
-    });
+    try {
+      return await apiClient.getRaw<Blob>(
+        `${baseUrl}/reports/download/${encodeURIComponent(fileName)}`,
+        {
+          responseType: "blob",
+        }
+      );
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 404) {
+        throw new ApiError(
+          type === "settlement"
+            ? "El archivo de conciliacion aun no esta disponible para descargar en Mercado Pago."
+            : "El archivo de liberacion aun no esta disponible para descargar en Mercado Pago.",
+          404,
+          error.details
+        );
+      }
+      throw error;
+    }
   },
 
   listReports: async (
@@ -294,6 +314,18 @@ export const MPService = {
     } catch (error) {
       throw toMercadoPagoApiError(error);
     }
+
+    if (data.status !== "success" || data.stats.sourceUnavailable) {
+      throw new ApiError(
+        data.message ||
+          (type === "settlement"
+            ? "El archivo de conciliacion aun no esta disponible para sincronizar."
+            : "El archivo de liberacion aun no esta disponible para sincronizar."),
+        404,
+        data.stats
+      );
+    }
+
     return data.stats;
   },
 };

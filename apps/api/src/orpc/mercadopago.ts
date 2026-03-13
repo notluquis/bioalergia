@@ -1,9 +1,9 @@
+import { mercadopagoContract } from "@finanzas/orpc-contracts/mercadopago";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
-import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
@@ -160,14 +160,7 @@ const integrationCreate = authed.use(async ({ context, next }) => {
 
 const mercadopagoORPCRouterBase = {
   createReport: integrationCreate
-    .route({
-      method: "POST",
-      path: "/reports",
-      summary: "Create Mercado Pago report",
-      tags: ["MercadoPago"],
-    })
-    .input(createReportInputSchema)
-    .output(mpReportSchema)
+    .route(mercadopagoContract.createReport)
     .handler(async ({ input }) => {
       const type = input.type ?? "release";
       return await MercadoPagoService.createReport(type, {
@@ -177,14 +170,7 @@ const mercadopagoORPCRouterBase = {
     }),
 
   listReports: integrationRead
-    .route({
-      method: "GET",
-      path: "/reports",
-      summary: "List Mercado Pago reports",
-      tags: ["MercadoPago"],
-    })
-    .input(listReportsInputSchema)
-    .output(listReportsResponseSchema)
+    .route(mercadopagoContract.listReports)
     .handler(async ({ input }) => {
       const type = input.type ?? "release";
       const limit = input.limit ?? 50;
@@ -198,14 +184,7 @@ const mercadopagoORPCRouterBase = {
     }),
 
   listSyncLogs: integrationRead
-    .route({
-      method: "GET",
-      path: "/sync/logs",
-      summary: "List Mercado Pago sync logs",
-      tags: ["MercadoPago"],
-    })
-    .input(syncLogsInputSchema)
-    .output(syncLogsResponseSchema)
+    .route(mercadopagoContract.listSyncLogs)
     .handler(async ({ input }) => {
       const { logs, total } = await listMpSyncLogs({
         limit: input.limit,
@@ -231,14 +210,7 @@ const mercadopagoORPCRouterBase = {
     }),
 
   processReport: integrationCreate
-    .route({
-      method: "POST",
-      path: "/process-report",
-      summary: "Process Mercado Pago report",
-      tags: ["MercadoPago"],
-    })
-    .input(processReportInputSchema)
-    .output(processReportResponseSchema)
+    .route(mercadopagoContract.processReport)
     .handler(async ({ context, input }) => {
       let logId: bigint | null = null;
 

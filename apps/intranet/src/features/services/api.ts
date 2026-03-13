@@ -248,13 +248,18 @@ export async function syncServiceTransactions(
   }
 }
 
-function toNumberValue(value: null | number | { toNumber: () => number } | undefined) {
+function toNumberValue(value: null | number | string | { toNumber: () => number } | undefined) {
   if (value === null || value === undefined) {
     return value;
   }
 
   if (typeof value === "number") {
     return value;
+  }
+
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
   }
 
   return value.toNumber();

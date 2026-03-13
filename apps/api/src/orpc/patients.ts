@@ -1,4 +1,5 @@
 import { db } from "@finanzas/db";
+import { patientsContract } from "@finanzas/orpc-contracts/patients";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
@@ -7,7 +8,6 @@ import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone.js";
 import Decimal from "decimal.js";
 import type { Context as HonoContext } from "hono";
-import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
@@ -365,14 +365,7 @@ const createPayments = authed.use(async ({ context, next }) => {
 
 const patientsORPCRouterBase = {
   create: createPatients
-    .route({
-      method: "POST",
-      path: "/",
-      summary: "Create patient",
-      tags: ["Patients"],
-    })
-    .input(createPatientInputSchema)
-    .output(patientResponseSchema)
+    .route(patientsContract.create)
     .handler(async ({ input }) => {
       let person = await db.person.findUnique({
         where: { rut: input.rut },
@@ -431,14 +424,7 @@ const patientsORPCRouterBase = {
     }),
 
   createBudget: createBudgets
-    .route({
-      method: "POST",
-      path: "/budgets",
-      summary: "Create patient budget",
-      tags: ["Patients"],
-    })
-    .input(createBudgetInputSchema)
-    .output(budgetResponseSchema)
+    .route(patientsContract.createBudget)
     .handler(async ({ input }) => {
       const totalAmount = input.items.reduce(
         (sum, item) => sum + item.unitPrice * item.quantity,
@@ -470,14 +456,7 @@ const patientsORPCRouterBase = {
     }),
 
   createConsultation: createConsultations
-    .route({
-      method: "POST",
-      path: "/consultations",
-      summary: "Create patient consultation",
-      tags: ["Patients"],
-    })
-    .input(createConsultationInputSchema)
-    .output(consultationResponseSchema)
+    .route(patientsContract.createConsultation)
     .handler(async ({ input }) => {
       const patient = await db.patient.findUnique({
         where: { id: input.patientId },
@@ -506,14 +485,7 @@ const patientsORPCRouterBase = {
     }),
 
   createPayment: createPayments
-    .route({
-      method: "POST",
-      path: "/payments",
-      summary: "Create patient payment",
-      tags: ["Patients"],
-    })
-    .input(createPaymentInputSchema)
-    .output(paymentResponseSchema)
+    .route(patientsContract.createPayment)
     .handler(async ({ input }) => {
       const payment = await db.patientPayment.create({
         data: {
@@ -534,14 +506,7 @@ const patientsORPCRouterBase = {
     }),
 
   listBudgets: readBudgets
-    .route({
-      method: "GET",
-      path: "/{patientId}/budgets",
-      summary: "List patient budgets",
-      tags: ["Patients"],
-    })
-    .input(patientIdInputSchema)
-    .output(budgetListResponseSchema)
+    .route(patientsContract.listBudgets)
     .handler(async ({ input }) => {
       const budgets = await db.budget.findMany({
         where: { patientId: input.patientId },
@@ -559,14 +524,7 @@ const patientsORPCRouterBase = {
     }),
 
   listPayments: readPayments
-    .route({
-      method: "GET",
-      path: "/{patientId}/payments",
-      summary: "List patient payments",
-      tags: ["Patients"],
-    })
-    .input(patientIdInputSchema)
-    .output(paymentListResponseSchema)
+    .route(patientsContract.listPayments)
     .handler(async ({ input }) => {
       const payments = await db.patientPayment.findMany({
         where: { patientId: input.patientId },
@@ -580,14 +538,7 @@ const patientsORPCRouterBase = {
     }),
 
   detail: readPatients
-    .route({
-      method: "GET",
-      path: "/{patientId}",
-      summary: "Get patient detail",
-      tags: ["Patients"],
-    })
-    .input(patientIdInputSchema)
-    .output(patientDetailResponseSchema)
+    .route(patientsContract.detail)
     .handler(async ({ input }) => {
       const patient = await db.patient.findUnique({
         where: { id: input.patientId },
@@ -624,14 +575,7 @@ const patientsORPCRouterBase = {
     }),
 
   list: readPatients
-    .route({
-      method: "GET",
-      path: "/",
-      summary: "List patients",
-      tags: ["Patients"],
-    })
-    .input(listPatientsInputSchema)
-    .output(patientListResponseSchema)
+    .route(patientsContract.list)
     .handler(async ({ input }) => {
       const where = input.q
         ? {
@@ -664,14 +608,7 @@ const patientsORPCRouterBase = {
     }),
 
   listDteSources: readPatients
-    .route({
-      method: "GET",
-      path: "/sources/dte",
-      summary: "List patient DTE sources",
-      tags: ["Patients"],
-    })
-    .input(listPatientDteSourcesInputSchema)
-    .output(patientDteSourceListResponseSchema)
+    .route(patientsContract.listDteSources)
     .handler(async ({ input }) => {
       const maxRows = Math.min(input.limit || 100, 1000);
       const rows = await db.patientDteSaleSource.findMany({
@@ -699,14 +636,7 @@ const patientsORPCRouterBase = {
     }),
 
   syncDteSources: readPatients
-    .route({
-      method: "POST",
-      path: "/sources/dte/sync",
-      summary: "Sync patient DTE sources",
-      tags: ["Patients"],
-    })
-    .input(syncPatientDteSourcesInputSchema)
-    .output(patientDteSyncResponseSchema)
+    .route(patientsContract.syncDteSources)
     .handler(async ({ input }) => {
       const result = await syncPatientDteSaleSources({
         dryRun: input.dryRun ?? false,

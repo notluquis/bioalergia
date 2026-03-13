@@ -1,13 +1,13 @@
 import { db } from "@finanzas/db";
+import { servicesContract } from "@finanzas/orpc-contracts/services";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import { Decimal } from "decimal.js";
 import type { Context as HonoContext } from "hono";
-import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
-import { serviceCreateSchema, serviceUpdateSchema } from "../lib/entity-schemas";
+import { serviceCreateSchema } from "../lib/entity-schemas";
 import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
 import {
@@ -303,14 +303,7 @@ function normalizeTransactionReference(
 
 const servicesORPCRouterBase = {
   create: createServices
-    .route({
-      method: "POST",
-      path: "/",
-      summary: "Create service",
-      tags: ["Services"],
-    })
-    .input(serviceCreateSchema)
-    .output(detailResponseSchema)
+    .route(servicesContract.create)
     .handler(async ({ input }) => {
       const service = await createService(input);
       return {
@@ -321,14 +314,7 @@ const servicesORPCRouterBase = {
     }),
 
   delete: deleteServices
-    .route({
-      method: "DELETE",
-      path: "/{id}",
-      summary: "Delete service",
-      tags: ["Services"],
-    })
-    .input(serviceIdSchema)
-    .output(statusOkSchema)
+    .route(servicesContract.delete)
     .handler(async ({ input }) => {
       const existing = await getServiceByIdOrPublicId(input.id);
 
@@ -341,14 +327,7 @@ const servicesORPCRouterBase = {
     }),
 
   detail: readServices
-    .route({
-      method: "GET",
-      path: "/{id}",
-      summary: "Get service detail",
-      tags: ["Services"],
-    })
-    .input(serviceIdSchema)
-    .output(detailResponseSchema)
+    .route(servicesContract.detail)
     .handler(async ({ input }) => {
       const service = await getServiceByIdOrPublicId(input.id);
 
@@ -369,27 +348,14 @@ const servicesORPCRouterBase = {
     }),
 
   list: readServices
-    .route({
-      method: "GET",
-      path: "/",
-      summary: "List services",
-      tags: ["Services"],
-    })
-    .output(listResponseSchema)
+    .route(servicesContract.list)
     .handler(async () => ({
       services: await listServices(),
       status: "ok" as const,
     })),
 
   regenerateSchedules: updateServices
-    .route({
-      method: "POST",
-      path: "/{id}/schedules",
-      summary: "Generate or regenerate service schedules",
-      tags: ["Services"],
-    })
-    .input(generateSchedulesSchema)
-    .output(generateSchedulesResponseSchema)
+    .route(servicesContract.regenerateSchedules)
     .handler(async ({ input }) => {
       const existing = await getServiceByIdOrPublicId(input.id);
 
@@ -418,14 +384,7 @@ const servicesORPCRouterBase = {
     }),
 
   scheduleEdit: updateServices
-    .route({
-      method: "PATCH",
-      path: "/schedules/{id}",
-      summary: "Edit service schedule",
-      tags: ["Services"],
-    })
-    .input(editScheduleSchema)
-    .output(scheduleResponseSchema)
+    .route(servicesContract.scheduleEdit)
     .handler(async ({ input }) => {
       const schedule = await db.serviceSchedule.findUnique({ where: { id: input.id } });
 
@@ -463,14 +422,7 @@ const servicesORPCRouterBase = {
     }),
 
   schedulePay: updateServices
-    .route({
-      method: "POST",
-      path: "/schedules/{id}/pay",
-      summary: "Register service schedule payment",
-      tags: ["Services"],
-    })
-    .input(payScheduleSchema)
-    .output(scheduleResponseSchema)
+    .route(servicesContract.schedulePay)
     .handler(async ({ input }) => {
       const schedule = await db.serviceSchedule.findUnique({ where: { id: input.id } });
 
@@ -525,14 +477,7 @@ const servicesORPCRouterBase = {
     }),
 
   scheduleSkip: updateServices
-    .route({
-      method: "POST",
-      path: "/schedules/{id}/skip",
-      summary: "Skip service schedule",
-      tags: ["Services"],
-    })
-    .input(skipScheduleSchema)
-    .output(scheduleResponseSchema)
+    .route(servicesContract.scheduleSkip)
     .handler(async ({ input }) => {
       const schedule = await db.serviceSchedule.findUnique({ where: { id: input.id } });
 
@@ -555,14 +500,7 @@ const servicesORPCRouterBase = {
     }),
 
   scheduleUnlink: updateServices
-    .route({
-      method: "POST",
-      path: "/schedules/{id}/unlink",
-      summary: "Unlink service schedule payment",
-      tags: ["Services"],
-    })
-    .input(scheduleIdSchema)
-    .output(scheduleResponseSchema)
+    .route(servicesContract.scheduleUnlink)
     .handler(async ({ input }) => {
       const schedule = await db.serviceSchedule.findUnique({ where: { id: input.id } });
 
@@ -590,27 +528,14 @@ const servicesORPCRouterBase = {
     }),
 
   syncAllTransactions: updateServices
-    .route({
-      method: "POST",
-      path: "/sync/transactions",
-      summary: "Sync all service schedules with financial transactions",
-      tags: ["Services"],
-    })
-    .output(syncResponseSchema)
+    .route(servicesContract.syncAllTransactions)
     .handler(async () => ({
       data: await syncServiceSchedulesWithFinancialTransactions(),
       status: "ok" as const,
     })),
 
   syncTransactions: updateServices
-    .route({
-      method: "POST",
-      path: "/{id}/sync-transactions",
-      summary: "Sync one service schedules with financial transactions",
-      tags: ["Services"],
-    })
-    .input(serviceIdSchema)
-    .output(syncResponseSchema)
+    .route(servicesContract.syncTransactions)
     .handler(async ({ input }) => {
       const existing = await getServiceByIdOrPublicId(input.id);
 
@@ -625,14 +550,7 @@ const servicesORPCRouterBase = {
     }),
 
   update: updateServices
-    .route({
-      method: "PUT",
-      path: "/{id}",
-      summary: "Update service",
-      tags: ["Services"],
-    })
-    .input(z.object({ id: z.string().min(1), payload: serviceUpdateSchema }))
-    .output(detailResponseSchema)
+    .route(servicesContract.update)
     .handler(async ({ input }) => {
       const existing = await getServiceByIdOrPublicId(input.id);
 
