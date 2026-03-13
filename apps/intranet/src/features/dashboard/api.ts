@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { transactionsInsightsStatsResponseSchema } from "@finanzas/orpc-contracts";
 import { financeORPCClient } from "@/features/finance/orpc";
 import {
   toTransactionsInsightsApiError,
@@ -23,7 +24,7 @@ const StatsResponseSchema = z.object({
       description: z.string().nullable(),
       direction: z.enum(["IN", "NEUTRO", "OUT"]),
       total: z.number(),
-    }),
+    })
   ),
   monthly: z.array(
     z.object({
@@ -31,7 +32,7 @@ const StatsResponseSchema = z.object({
       month: z.string(),
       net: z.number(),
       out: z.number(),
-    }),
+    })
   ),
   totals: z.record(z.string(), z.number()),
 });
@@ -41,7 +42,7 @@ export async function fetchRecentMovements(): Promise<Transaction[]> {
     await financeORPCClient.transactionsList({
       page: 1,
       pageSize: 5,
-    }),
+    })
   );
 
   return data.data as Transaction[];
@@ -49,7 +50,11 @@ export async function fetchRecentMovements(): Promise<Transaction[]> {
 
 export async function fetchStats(from: string, to: string): Promise<StatsResponse> {
   try {
-    return StatsResponseSchema.parse(await transactionsInsightsORPCClient.stats({ from, to }));
+    return StatsResponseSchema.parse(
+      transactionsInsightsStatsResponseSchema.parse(
+        await transactionsInsightsORPCClient.stats({ from, to })
+      )
+    );
   } catch (error) {
     throw toTransactionsInsightsApiError(error);
   }

@@ -1,7 +1,15 @@
 import { createORPCClient, ORPCError } from "@orpc/client";
+import type { ContractRouterClient } from "@orpc/contract";
+import type {
+  PersonalFinanceContract,
+  personalFinanceCreditSchema,
+  personalFinanceInstallmentSchema,
+} from "@finanzas/orpc-contracts";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
-import type { UnsafeORPCClient } from "@/lib/orpc-client";
+import type { z } from "zod";
+
+export type PersonalFinanceORPCClient = ContractRouterClient<PersonalFinanceContract>;
 
 const personalFinanceORPCLink = new SuperJSONLink({
   fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),
@@ -10,41 +18,10 @@ const personalFinanceORPCLink = new SuperJSONLink({
 
 export const personalFinanceORPCClient = createORPCClient(personalFinanceORPCLink, {
   path: ["api", "orpc", "personal-finance", "rpc"],
-}) as unknown as UnsafeORPCClient;
+}) as PersonalFinanceORPCClient;
 
-export type PersonalCreditInstallmentTransport = {
-  amount: null | number | { toNumber: () => number } | undefined;
-  capitalAmount?: null | number | { toNumber: () => number } | undefined;
-  creditId: number;
-  dueDate: Date | string;
-  id: number;
-  installmentNumber: number;
-  interestAmount?: null | number | { toNumber: () => number } | undefined;
-  otherCharges?: null | number | { toNumber: () => number } | undefined;
-  paidAmount?: null | number | { toNumber: () => number } | undefined;
-  paidAmountCLP?: null | number | { toNumber: () => number } | undefined;
-  paidAt?: Date | null | string;
-  status: "PAID" | "PENDING";
-};
-
-export type PersonalCreditTransport = {
-  bankName: string;
-  createdAt: Date;
-  creditNumber: string;
-  currency: string;
-  description?: null | string;
-  id: number;
-  installments?: PersonalCreditInstallmentTransport[];
-  interestRate?: null | number | { toNumber: () => number } | undefined;
-  nextPaymentAmount?: null | number | { toNumber: () => number } | undefined;
-  nextPaymentDate?: Date | null | string;
-  remainingAmount?: null | number | { toNumber: () => number } | undefined;
-  startDate: Date | string;
-  status: "ACTIVE" | "PAID" | "REFINANCED";
-  totalAmount: null | number | { toNumber: () => number } | undefined;
-  totalInstallments: number;
-  updatedAt: Date;
-} & Record<string, unknown>;
+export type PersonalCreditTransport = z.infer<typeof personalFinanceCreditSchema>;
+export type PersonalCreditInstallmentTransport = z.infer<typeof personalFinanceInstallmentSchema>;
 
 export function toPersonalFinanceApiError(error: unknown): ApiError {
   if (error instanceof ApiError) {

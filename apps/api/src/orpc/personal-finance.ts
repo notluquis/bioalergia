@@ -1,13 +1,13 @@
 import { authDb } from "@finanzas/db";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
+import { personalFinanceContract } from "@finanzas/orpc-contracts/personal-finance";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc.js";
 import Decimal from "decimal.js";
 import type { Context as HonoContext } from "hono";
-import { z } from "zod";
 import { createAuthContext, getSessionUser } from "../auth";
 import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
@@ -22,102 +22,55 @@ type PersonalFinanceORPCContext = {
 };
 
 const base = os.$context<PersonalFinanceORPCContext>();
-const dateOnlySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
-const decimalOutputSchema = z.union([z.number(), z.instanceof(Decimal)]);
-
-const creditIdSchema = z.object({
-  id: z.number().int().positive(),
-});
-
-const payInstallmentInputSchema = z.object({
-  amount: z.number().positive(),
-  creditId: z.number().int().positive(),
-  installmentNumber: z.number().int().positive(),
-  paymentDate: dateOnlySchema.default(() => dayjs().format("YYYY-MM-DD")),
-});
-
-const createCreditInputSchema = z.object({
-  bankName: z.string().min(1),
-  creditNumber: z.string().min(1),
-  currency: z.enum(["CLP", "UF", "USD"]).default("CLP"),
-  description: z.string().optional(),
-  installments: z
-    .array(
-      z.object({
-        amount: z.number(),
-        capitalAmount: z.number().optional(),
-        dueDate: dateOnlySchema,
-        installmentNumber: z.number().int(),
-        interestAmount: z.number().optional(),
-        otherCharges: z.number().optional(),
-      }),
-    )
-    .optional(),
-  interestRate: z.number().optional(),
-  startDate: dateOnlySchema,
-  totalAmount: z.number().positive(),
-  totalInstallments: z.number().int().positive(),
-});
-
-const installmentSchema = z
-  .object({
-    amount: decimalOutputSchema,
-    capitalAmount: decimalOutputSchema.nullable().optional(),
-    creditId: z.number().int(),
-    dueDate: z.date(),
-    id: z.number().int(),
-    installmentNumber: z.number().int(),
-    interestAmount: decimalOutputSchema.nullable().optional(),
-    otherCharges: decimalOutputSchema.nullable().optional(),
-    paidAmount: decimalOutputSchema.nullable().optional(),
-    paidAmountCLP: decimalOutputSchema.nullable().optional(),
-    paidAt: z.date().nullable().optional(),
-    status: z.enum(["PAID", "PENDING"]),
-  })
-  .passthrough();
-
-const creditSchema = z
-  .object({
-    bankName: z.string(),
-    createdAt: z.date(),
-    creditNumber: z.string(),
-    currency: z.string(),
-    description: z.string().nullable().optional(),
-    id: z.number().int(),
-    installments: z.array(installmentSchema).optional(),
-    interestRate: decimalOutputSchema.nullable().optional(),
-    nextPaymentAmount: decimalOutputSchema.nullable().optional(),
-    nextPaymentDate: z.date().nullable().optional(),
-    remainingAmount: decimalOutputSchema.nullable().optional(),
-    startDate: z.date(),
-    status: z.enum(["ACTIVE", "PAID", "REFINANCED"]),
-    totalAmount: decimalOutputSchema,
-    totalInstallments: z.number().int(),
-    updatedAt: z.date(),
-  })
-  .passthrough();
-
-const creditsResponseSchema = z.array(creditSchema);
-const creditResponseSchema = creditSchema;
-const deleteCreditResponseSchema = z.object({
-  success: z.boolean(),
-});
-const backfillResponseSchema = z.object({
-  processed: z.number().int(),
-  results: z.array(
-    z.object({
-      creditId: z.number().int(),
-      installmentNumber: z.number().int(),
-      paidAmount: z.number(),
-      paidAmountCLP: z.number(),
-      paymentDate: z.string(),
-      ufValue: z.number(),
-    }),
-  ),
-});
-
 function parseDateOnlyUtc(value: string): Date {
   return dayjs.utc(value, "YYYY-MM-DD", true).toDate();
+}
+
+function toNumberValue(value: unknown) {
+  if (value == null) {
+    return null;
+  }
+
+  if (typeof value === "number") {
+    return value;
+  }
+
+  if (value instanceof Decimal) {
+    return value.toNumber();
+  }
+
+  if (typeof value === "object" && "toString" in value && typeof value.toString === "function") {
+    return Number(value.toString());
+  }
+
+  return Number(value);
+}
+
+function toPlainInstallment<T extends Record<string, unknown>>(installment: T) {
+  return {
+    ...installment,
+    amount: toNumberValue(installment.amount) ?? 0,
+    capitalAmount: toNumberValue(installment.capitalAmount),
+    interestAmount: toNumberValue(installment.interestAmount),
+    otherCharges: toNumberValue(installment.otherCharges),
+    paidAmount: toNumberValue(installment.paidAmount),
+    paidAmountCLP: toNumberValue(installment.paidAmountCLP),
+  };
+}
+
+function toPlainCredit<T extends Record<string, unknown>>(credit: T) {
+  const installments = Array.isArray(credit.installments)
+    ? credit.installments.map((installment) => toPlainInstallment(installment as Record<string, unknown>))
+    : undefined;
+
+  return {
+    ...credit,
+    installments,
+    interestRate: toNumberValue(credit.interestRate),
+    nextPaymentAmount: toNumberValue(credit.nextPaymentAmount),
+    remainingAmount: toNumberValue(credit.remainingAmount),
+    totalAmount: toNumberValue(credit.totalAmount) ?? 0,
+  };
 }
 
 async function getAuthorizedDb(c: HonoContext) {
@@ -133,13 +86,7 @@ async function getAuthorizedDb(c: HonoContext) {
 
 const personalFinanceORPCRouterBase = {
   backfillUfClp: base
-    .route({
-      method: "POST",
-      path: "/credits/backfill-uf-clp",
-      summary: "Backfill UF paid amounts in CLP",
-      tags: ["Personal Finance"],
-    })
-    .output(backfillResponseSchema)
+    .route(personalFinanceContract.backfillUfClp)
     .handler(async ({ context }) => {
       const db = await getAuthorizedDb(context.hono);
       const creditsUF = await db.personalCredit.findMany({
@@ -154,7 +101,14 @@ const personalFinanceORPCRouterBase = {
         },
       });
 
-      const results: z.infer<typeof backfillResponseSchema>["results"] = [];
+      const results: Array<{
+        creditId: number;
+        installmentNumber: number;
+        paidAmount: number;
+        paidAmountCLP: number;
+        paymentDate: string;
+        ufValue: number;
+      }> = [];
 
       for (const credit of creditsUF) {
         for (const installment of credit.installments || []) {
@@ -193,18 +147,11 @@ const personalFinanceORPCRouterBase = {
     }),
 
   createCredit: base
-    .route({
-      method: "POST",
-      path: "/credits",
-      summary: "Create personal credit",
-      tags: ["Personal Finance"],
-    })
-    .input(createCreditInputSchema)
-    .output(creditResponseSchema)
+    .route(personalFinanceContract.createCredit)
     .handler(async ({ context, input }) => {
       const db = await getAuthorizedDb(context.hono);
 
-      return db.personalCredit.create({
+      const credit = await db.personalCredit.create({
         data: {
           bankName: input.bankName,
           creditNumber: input.creditNumber,
@@ -237,17 +184,12 @@ const personalFinanceORPCRouterBase = {
           installments: true,
         },
       });
+
+      return toPlainCredit(credit);
     }),
 
   deleteCredit: base
-    .route({
-      method: "DELETE",
-      path: "/credits/{id}",
-      summary: "Delete personal credit",
-      tags: ["Personal Finance"],
-    })
-    .input(creditIdSchema)
-    .output(deleteCreditResponseSchema)
+    .route(personalFinanceContract.deleteCredit)
     .handler(async ({ context, input }) => {
       const db = await getAuthorizedDb(context.hono);
 
@@ -259,14 +201,7 @@ const personalFinanceORPCRouterBase = {
     }),
 
   getCredit: base
-    .route({
-      method: "GET",
-      path: "/credits/{id}",
-      summary: "Get personal credit detail",
-      tags: ["Personal Finance"],
-    })
-    .input(creditIdSchema)
-    .output(creditResponseSchema)
+    .route(personalFinanceContract.getCredit)
     .handler(async ({ context, input }) => {
       const db = await getAuthorizedDb(context.hono);
       const credit = await db.personalCredit.findUnique({
@@ -282,21 +217,15 @@ const personalFinanceORPCRouterBase = {
         throw new ORPCError("NOT_FOUND", { message: "Credit not found" });
       }
 
-      return credit;
+      return toPlainCredit(credit);
     }),
 
   listCredits: base
-    .route({
-      method: "GET",
-      path: "/credits",
-      summary: "List personal credits",
-      tags: ["Personal Finance"],
-    })
-    .output(creditsResponseSchema)
+    .route(personalFinanceContract.listCredits)
     .handler(async ({ context }) => {
       const db = await getAuthorizedDb(context.hono);
 
-      return db.personalCredit.findMany({
+      const credits = await db.personalCredit.findMany({
         orderBy: { createdAt: "desc" },
         include: {
           installments: {
@@ -304,17 +233,12 @@ const personalFinanceORPCRouterBase = {
           },
         },
       });
+
+      return credits.map((credit) => toPlainCredit(credit));
     }),
 
   payInstallment: base
-    .route({
-      method: "POST",
-      path: "/credits/{creditId}/installments/{installmentNumber}/pay",
-      summary: "Pay personal credit installment",
-      tags: ["Personal Finance"],
-    })
-    .input(payInstallmentInputSchema)
-    .output(installmentSchema)
+    .route(personalFinanceContract.payInstallment)
     .handler(async ({ context, input }) => {
       const db = await getAuthorizedDb(context.hono);
 
@@ -373,7 +297,7 @@ const personalFinanceORPCRouterBase = {
         });
       }
 
-      return updated;
+      return toPlainInstallment(updated);
     }),
 };
 

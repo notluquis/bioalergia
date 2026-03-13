@@ -7,6 +7,7 @@ export * from "./dte-analytics";
 export * from "./employees";
 export * from "./expenses";
 export * from "./finance";
+export * from "./inventory";
 export {
   bookingResponseSchema as doctoraliaBookingResponseSchema,
   bookingsResponseSchema as doctoraliaBookingsResponseSchema,
@@ -33,9 +34,12 @@ export {
 export * from "./notifications";
 export { patientsContract, type PatientsContract } from "./patients";
 export * from "./people";
+export * from "./personal-finance";
 export * from "./production-balances";
+export * from "./roles";
 export * from "./supplies";
 export { servicesContract, type ServicesContract } from "./services";
 export * from "./settings";
 export * from "./system";
+export * from "./transactions-insights";
 export * from "./users";

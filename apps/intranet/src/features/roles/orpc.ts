@@ -1,21 +1,17 @@
 import { createORPCClient, ORPCError } from "@orpc/client";
+import type { ContractRouterClient } from "@orpc/contract";
+import type {
+  RolesContract,
+  rolesRoleMappingSchema,
+  rolesRoleUserSchema,
+} from "@finanzas/orpc-contracts";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
-import type { UnsafeORPCClient } from "@/lib/orpc-client";
+import type { z } from "zod";
 
-type RoleMapping = {
-  app_role: string;
-  employee_role: string;
-};
-
-type RoleUser = {
-  email: string;
-  id: number;
-  person: null | {
-    fatherName: string;
-    names: string;
-  };
-};
+export type RolesORPCClient = ContractRouterClient<RolesContract>;
+type RoleMapping = z.infer<typeof rolesRoleMappingSchema>;
+type RoleUser = z.infer<typeof rolesRoleUserSchema>;
 
 const rolesORPCLink = new SuperJSONLink({
   fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),
@@ -24,7 +20,7 @@ const rolesORPCLink = new SuperJSONLink({
 
 export const rolesORPCClient = createORPCClient(rolesORPCLink, {
   path: ["api", "orpc", "roles", "rpc"],
-}) as unknown as UnsafeORPCClient;
+}) as RolesORPCClient;
 
 export function toRolesApiError(error: unknown): ApiError {
   if (error instanceof ApiError) {

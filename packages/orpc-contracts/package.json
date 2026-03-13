@@ -60,6 +60,11 @@
       "import": "./dist/finance.js",
       "default": "./dist/finance.js"
     },
+    "./inventory": {
+      "types": "./dist/inventory.d.ts",
+      "import": "./dist/inventory.js",
+      "default": "./dist/inventory.js"
+    },
     "./mercadopago": {
       "types": "./dist/mercadopago.d.ts",
       "import": "./dist/mercadopago.js",
@@ -80,6 +85,11 @@
       "import": "./dist/people.js",
       "default": "./dist/people.js"
     },
+    "./personal-finance": {
+      "types": "./dist/personal-finance.d.ts",
+      "import": "./dist/personal-finance.js",
+      "default": "./dist/personal-finance.js"
+    },
     "./production-balances": {
       "types": "./dist/production-balances.d.ts",
       "import": "./dist/production-balances.js",
@@ -95,6 +105,11 @@
       "import": "./dist/settings.js",
       "default": "./dist/settings.js"
     },
+    "./roles": {
+      "types": "./dist/roles.d.ts",
+      "import": "./dist/roles.js",
+      "default": "./dist/roles.js"
+    },
     "./system": {
       "types": "./dist/system.d.ts",
       "import": "./dist/system.js",
@@ -104,6 +119,11 @@
       "types": "./dist/supplies.d.ts",
       "import": "./dist/supplies.js",
       "default": "./dist/supplies.js"
+    },
+    "./transactions-insights": {
+      "types": "./dist/transactions-insights.d.ts",
+      "import": "./dist/transactions-insights.js",
+      "default": "./dist/transactions-insights.js"
     },
     "./users": {
       "types": "./dist/users.d.ts",
