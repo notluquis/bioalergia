@@ -9,6 +9,7 @@ import {
   haulmerSyncResponseSchema,
 } from "@finanzas/orpc-contracts/haulmer";
 import type { Context as HonoContext } from "hono";
+import type { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { haulmerConfig } from "../config";
 import { logError } from "../lib/logger";

@@ -6,6 +6,7 @@ import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import { Decimal } from "decimal.js";
 import type { Context as HonoContext } from "hono";
+import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { serviceCreateSchema } from "../lib/entity-schemas";
 import { logError } from "../lib/logger";
