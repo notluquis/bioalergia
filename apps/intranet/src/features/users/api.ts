@@ -14,8 +14,30 @@ const InviteUserResponseSchema = z.object({
   userId: z.number(),
 });
 const ResetPasswordResponseSchema = z.object({ tempPassword: z.string() });
-type InviteUserPayload = Parameters<typeof usersORPCClient.invite>[0];
-type SetupUserPayload = Parameters<typeof usersORPCClient.setup>[0];
+type InviteUserPayload = {
+  email: string;
+  fatherName?: string;
+  mfaEnforced?: boolean;
+  motherName?: string;
+  names?: string;
+  personId?: number;
+  position: string;
+  role: string;
+  rut?: string;
+};
+type SetupUserPayload = {
+  address?: string;
+  bankAccountNumber?: string;
+  bankAccountType?: string;
+  bankName?: string;
+  fatherName?: string;
+  loginEmail?: string;
+  motherName?: string;
+  names: string;
+  password: string;
+  phone?: string;
+  rut: string;
+};
 export type { InviteUserPayload, SetupUserPayload };
 
 export async function deleteUser(userId: number): Promise<void> {

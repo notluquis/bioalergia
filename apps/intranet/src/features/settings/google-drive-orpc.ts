@@ -1,8 +1,7 @@
 import { createORPCClient, ORPCError } from "@orpc/client";
-import type { RouterClient } from "@orpc/server";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
-import type { IntegrationsORPCRouter } from "../../../../api/src/orpc/integrations";
+import type { UnsafeORPCClient } from "@/lib/orpc-client";
 
 export type GoogleDriveStatus = {
   configured: boolean;
@@ -17,11 +16,9 @@ const googleDriveORPCLink = new SuperJSONLink({
   url: () => window.location.origin,
 });
 
-export type GoogleDriveORPCClient = RouterClient<IntegrationsORPCRouter>;
-
-export const googleDriveORPCClient = createORPCClient<GoogleDriveORPCClient>(googleDriveORPCLink, {
+export const googleDriveORPCClient = createORPCClient(googleDriveORPCLink, {
   path: ["api", "orpc", "integrations", "rpc"],
-});
+}) as unknown as UnsafeORPCClient;
 
 export function toGoogleDriveApiError(error: unknown): ApiError {
   if (error instanceof ApiError) {

@@ -10,7 +10,6 @@ import {
 } from "@orpc/client";
 import type { LinkFetchClientOptions } from "@orpc/client/fetch";
 import { LinkFetchClient } from "@orpc/client/fetch";
-import type { RouterClient } from "@orpc/server";
 import type {
   StandardLinkOptions,
   StandardRPCLinkCodecOptions,
@@ -19,8 +18,8 @@ import type {
 import { StandardLink, StandardRPCLinkCodec } from "@orpc/client/standard";
 import { isAsyncIteratorObject } from "@orpc/shared";
 import { ApiError } from "@/lib/api-client";
+import type { UnsafeORPCClient } from "@/lib/orpc-client";
 import { configureSuperjson } from "@/lib/superjson-config";
-import type { CalendarORPCRouter } from "../../../../api/src/orpc/calendar";
 
 const superjson = configureSuperjson();
 
@@ -85,16 +84,14 @@ export class SuperJSONLink<T extends ClientContext> extends StandardLink<T> {
   }
 }
 
-export type CalendarORPCClient = RouterClient<CalendarORPCRouter>;
-
 const calendarORPCLink = new SuperJSONLink({
   fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),
   url: () => window.location.origin,
 });
 
-export const calendarORPCClient = createORPCClient<CalendarORPCClient>(calendarORPCLink, {
+export const calendarORPCClient = createORPCClient(calendarORPCLink, {
   path: ["api", "orpc", "calendar", "rpc"],
-});
+}) as unknown as UnsafeORPCClient;
 
 export function toCalendarApiError(error: unknown): ApiError {
   if (error instanceof ApiError) {

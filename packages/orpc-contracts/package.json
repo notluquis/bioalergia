@@ -1,0 +1,41 @@
+{
+  "name": "@finanzas/orpc-contracts",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./auth": {
+      "types": "./dist/auth.d.ts",
+      "import": "./dist/auth.js",
+      "default": "./dist/auth.js"
+    },
+    "./finance": {
+      "types": "./dist/finance.d.ts",
+      "import": "./dist/finance.js",
+      "default": "./dist/finance.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "type-check": "oxlint --type-aware --type-check",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix && oxfmt --write .",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check"
+  },
+  "dependencies": {
+    "@orpc/contract": "^1.13.6",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.5",
+    "typescript": "^5.9.3"
+  }
+}

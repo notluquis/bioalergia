@@ -1,17 +1,8 @@
 {
   "name": "@finanzas/intranet",
-  "private": true,
   "version": "0.1.0",
+  "private": true,
   "type": "module",
-  "engines": {
-    "node": ">=20.0.0",
-    "npm": ">=10.0.0"
-  },
-  "overrides": {
-    "hono": "^4.12.1",
-    "jspdf": "$jspdf",
-    "@internationalized/date": "3.11.0"
-  },
   "scripts": {
     "dev": "VITE_REACT_COMPILER=false vite",
     "dev:compiler": "VITE_REACT_COMPILER=true vite",
@@ -39,6 +30,7 @@
     "@casl/ability": "^6.8.0",
     "@casl/react": "^5.0.1",
     "@finanzas/db": "workspace:*",
+    "@finanzas/orpc-contracts": "workspace:*",
     "@fullcalendar/core": "^6.1.20",
     "@fullcalendar/daygrid": "^6.1.20",
     "@fullcalendar/react": "^6.1.20",
@@ -47,6 +39,7 @@
     "@heroui/styles": "3.0.0-beta.8",
     "@internationalized/date": "3.12.0",
     "@orpc/client": "^1.13.6",
+    "@orpc/contract": "^1.13.6",
     "@orpc/tanstack-query": "^1.13.6",
     "@simplewebauthn/browser": "^13.2.2",
     "@tanstack/react-form": "1.28.4",
@@ -127,5 +120,14 @@
     "vite-plugin-checker": "^0.12.0",
     "vite-plugin-pwa": "^1.2.0",
     "vitest": "^4.0.18"
+  },
+  "overrides": {
+    "@internationalized/date": "3.11.0",
+    "hono": "^4.12.1",
+    "jspdf": "$jspdf"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
   }
 }

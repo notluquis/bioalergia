@@ -1,19 +1,16 @@
 import { createORPCClient, ORPCError } from "@orpc/client";
-import type { RouterClient } from "@orpc/server";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
-import type { UsersORPCRouter } from "../../../../api/src/orpc/users";
-
-export type UsersORPCClient = RouterClient<UsersORPCRouter>;
+import type { UnsafeORPCClient } from "@/lib/orpc-client";
 
 const usersORPCLink = new SuperJSONLink({
   fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),
   url: () => window.location.origin,
 });
 
-export const usersORPCClient = createORPCClient<UsersORPCClient>(usersORPCLink, {
+export const usersORPCClient = createORPCClient(usersORPCLink, {
   path: ["api", "orpc", "users", "rpc"],
-});
+}) as unknown as UnsafeORPCClient;
 
 export function toUsersApiError(error: unknown): ApiError {
   if (error instanceof ApiError) {

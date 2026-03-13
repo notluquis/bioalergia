@@ -1,19 +1,16 @@
 import { createORPCClient, ORPCError } from "@orpc/client";
-import type { RouterClient } from "@orpc/server";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
-import type { BackupsORPCRouter } from "../../../../api/src/orpc/backups";
-
-export type BackupsORPCClient = RouterClient<BackupsORPCRouter>;
+import type { UnsafeORPCClient } from "@/lib/orpc-client";
 
 const backupsORPCLink = new SuperJSONLink({
   fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),
   url: () => window.location.origin,
 });
 
-export const backupsORPCClient = createORPCClient<BackupsORPCClient>(backupsORPCLink, {
+export const backupsORPCClient = createORPCClient(backupsORPCLink, {
   path: ["api", "orpc", "backups", "rpc"],
-});
+}) as unknown as UnsafeORPCClient;
 
 export function toBackupsApiError(error: unknown): ApiError {
   if (error instanceof ApiError) {

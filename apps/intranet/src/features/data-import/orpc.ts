@@ -1,19 +1,30 @@
 import { createORPCClient, ORPCError } from "@orpc/client";
-import type { RouterClient } from "@orpc/server";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
-import type { CsvUploadORPCRouter } from "../../../../api/src/orpc/csv-upload";
+import type { UnsafeORPCClient } from "@/lib/orpc-client";
 
 const csvUploadORPCLink = new SuperJSONLink({
   fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),
   url: () => window.location.origin,
 });
 
-export type CsvUploadORPCClient = RouterClient<CsvUploadORPCRouter>;
-
-export const csvUploadORPCClient = createORPCClient<CsvUploadORPCClient>(csvUploadORPCLink, {
+export const csvUploadORPCClient = createORPCClient(csvUploadORPCLink, {
   path: ["api", "orpc", "csv-upload", "rpc"],
-});
+}) as unknown as UnsafeORPCClient;
+
+export type CsvImportTable =
+  | "counterparts"
+  | "daily_balances"
+  | "daily_production_balances"
+  | "dte_purchases"
+  | "dte_sales"
+  | "employee_timesheets"
+  | "employees"
+  | "inventory_items"
+  | "people"
+  | "services"
+  | "transactions"
+  | "withdrawals";
 
 export function toCsvUploadApiError(error: unknown): ApiError {
   if (error instanceof ApiError) {

@@ -1,24 +1,19 @@
 import { createORPCClient, ORPCError } from "@orpc/client";
-import type { RouterClient } from "@orpc/server";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
-import type { TimesheetsORPCRouter } from "../../../../../api/src/orpc/timesheets";
-
-export type TimesheetsORPCClient = RouterClient<TimesheetsORPCRouter>;
+import type { UnsafeORPCClient } from "@/lib/orpc-client";
 
 const timesheetsORPCLink = new SuperJSONLink({
   fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),
   url: () => window.location.origin,
 });
 
-export const timesheetsORPCClient = createORPCClient<TimesheetsORPCClient>(timesheetsORPCLink, {
+export const timesheetsORPCClient = createORPCClient(timesheetsORPCLink, {
   path: ["api", "orpc", "timesheets", "rpc"],
-});
+}) as unknown as UnsafeORPCClient;
 
-export type TimesheetEntryTransport = Awaited<ReturnType<TimesheetsORPCClient["create"]>>["entry"];
-export type TimesheetEntriesTransport = Awaited<
-  ReturnType<TimesheetsORPCClient["employeeDetail"]>
->["entries"];
+export type TimesheetEntryTransport = Record<string, unknown>;
+export type TimesheetEntriesTransport = TimesheetEntryTransport[];
 
 export function toTimesheetsApiError(error: unknown): ApiError {
   if (error instanceof ApiError) {

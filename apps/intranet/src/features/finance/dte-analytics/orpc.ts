@@ -1,22 +1,16 @@
 import { createORPCClient, ORPCError } from "@orpc/client";
-import type { RouterClient } from "@orpc/server";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
-import type { DteAnalyticsORPCRouter } from "../../../../../api/src/orpc/dte-analytics";
-
-export type DteAnalyticsORPCClient = RouterClient<DteAnalyticsORPCRouter>;
+import type { UnsafeORPCClient } from "@/lib/orpc-client";
 
 const dteAnalyticsORPCLink = new SuperJSONLink({
   fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),
   url: () => window.location.origin,
 });
 
-export const dteAnalyticsORPCClient = createORPCClient<DteAnalyticsORPCClient>(
-  dteAnalyticsORPCLink,
-  {
-    path: ["api", "orpc", "dte-analytics", "rpc"],
-  }
-);
+export const dteAnalyticsORPCClient = createORPCClient(dteAnalyticsORPCLink, {
+  path: ["api", "orpc", "dte-analytics", "rpc"],
+}) as unknown as UnsafeORPCClient;
 
 export function toDteAnalyticsApiError(error: unknown): ApiError {
   if (error instanceof ApiError) {

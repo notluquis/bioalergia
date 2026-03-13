@@ -105,7 +105,7 @@ export const personalFinanceApi = {
   listCredits: async () => {
     try {
       return PersonalCreditsSchema.parse(
-        (await personalFinanceORPCClient.listCredits()).map((credit) =>
+        (await personalFinanceORPCClient.listCredits()).map((credit: PersonalCreditTransport) =>
           normalizeCredit(credit as PersonalCreditTransport)
         )
       );

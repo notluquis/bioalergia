@@ -1,19 +1,16 @@
 import { createORPCClient, ORPCError } from "@orpc/client";
-import type { RouterClient } from "@orpc/server";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
-import type { MercadopagoORPCRouter } from "../../../../../api/src/orpc/mercadopago";
-
-export type MercadoPagoORPCClient = RouterClient<MercadopagoORPCRouter>;
+import type { UnsafeORPCClient } from "@/lib/orpc-client";
 
 const mercadopagoORPCLink = new SuperJSONLink({
   fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),
   url: () => window.location.origin,
 });
 
-export const mercadopagoORPCClient = createORPCClient<MercadoPagoORPCClient>(mercadopagoORPCLink, {
+export const mercadopagoORPCClient = createORPCClient(mercadopagoORPCLink, {
   path: ["api", "orpc", "mercadopago", "rpc"],
-});
+}) as unknown as UnsafeORPCClient;
 
 export function toMercadoPagoApiError(error: unknown): ApiError {
   if (error instanceof ApiError) {

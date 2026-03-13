@@ -150,7 +150,9 @@ export async function fetchMultiMonthTimesheets(
     data = MultiMonthTimesheetsResponseSchema.parse({
       ...response,
       data: Object.fromEntries(
-        Object.entries(response.data).map(([employeeId, value]) => [
+        Object.entries(
+          response.data as Record<string, { entries: Record<string, unknown>[]; month: string }>
+        ).map(([employeeId, value]) => [
           employeeId,
           { ...value, entries: normalizeTimesheetEntries(value.entries) },
         ])

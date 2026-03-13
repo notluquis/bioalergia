@@ -422,23 +422,28 @@ export const calendarORPCHandler = new SuperJSONRPCHandler(
 
 ### Setup
 
+`finance` is now the reference implementation for the monorepo-safe pattern: a shared
+contract package in `packages/orpc-contracts` consumed by both `apps/api` and
+`apps/intranet`. Other modules still use local frontend clients as an intermediate step
+until they are migrated one-by-one to shared contracts.
+
 ```typescript
 import { createORPCClient } from "@orpc/client";
-import type { RouterClient } from "@orpc/server";
+import type { ContractRouterClient } from "@orpc/contract";
 import { SuperJSONLink } from "./orpc";
-import type { CalendarORPCRouter } from "../../../../api/src/orpc/calendar";
+import type { FinanceContract } from "@finanzas/orpc-contracts/finance";
 
-type CalendarORPCClient = RouterClient<CalendarORPCRouter>;
+type FinanceORPCClient = ContractRouterClient<FinanceContract>;
 
-const calendarORPCLink = new SuperJSONLink({
+const financeORPCLink = new SuperJSONLink({
   fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),
   url: () => window.location.origin,
 });
 
-export const calendarORPCClient = createORPCClient<CalendarORPCClient>(
-  calendarORPCLink,
+export const financeORPCClient = createORPCClient<FinanceORPCClient>(
+  financeORPCLink,
   {
-    path: ["api", "orpc", "calendar", "rpc"],
+    path: ["api", "orpc", "finance", "rpc"],
   },
 );
 ```

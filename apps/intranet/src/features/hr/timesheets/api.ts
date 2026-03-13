@@ -129,7 +129,7 @@ function normalizeTimesheetEntry(entry: Record<string, unknown>): TimesheetEntry
 }
 
 function normalizeTimesheetEntries(entries: TimesheetEntriesTransport) {
-  return entries.map((entry) =>
+  return entries.map((entry: TimesheetEntryTransport) =>
     normalizeTimesheetEntry(entry as unknown as Record<string, unknown>)
   );
 }
@@ -281,7 +281,7 @@ export async function updateTimesheet(id: number, payload: Partial<TimesheetPayl
   try {
     const response = await timesheetsORPCClient.update({
       id,
-      payload: payload as Parameters<typeof timesheetsORPCClient.update>[0]["payload"],
+      payload: payload as Record<string, unknown>,
     });
     const parsed = TimesheetEntryResponseSchema.parse({
       ...response,
@@ -307,7 +307,7 @@ export async function upsertTimesheet(payload: TimesheetPayload) {
   let data: { entry: TimesheetEntry; message?: string; status: string };
   try {
     const response = await timesheetsORPCClient.create(
-      payload as Parameters<typeof timesheetsORPCClient.create>[0]
+      payload as unknown as Record<string, unknown>
     );
     const parsed = TimesheetEntryResponseSchema.parse({
       ...response,

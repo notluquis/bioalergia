@@ -1,10 +1,10 @@
 import { createORPCClient, ORPCError } from "@orpc/client";
-import type { RouterClient } from "@orpc/server";
+import type { ContractRouterClient } from "@orpc/contract";
+import type { FinanceContract } from "@finanzas/orpc-contracts/finance";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
-import type { FinanceORPCRouter } from "../../../../api/src/orpc/finance";
 
-export type FinanceORPCClient = RouterClient<FinanceORPCRouter>;
+export type FinanceORPCClient = ContractRouterClient<FinanceContract>;
 
 const financeORPCLink = new SuperJSONLink({
   fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),

@@ -27,7 +27,7 @@ export async function fetchDTESyncHistory(limit: number = 50, offset: number = 0
   try {
     const response = await dteSyncORPCClient.syncHistory({ limit, offset });
     return DTESyncHistorySchema.parse({
-      logs: response.logs.map((log) => ({
+      logs: response.logs.map((log: Record<string, unknown>) => ({
         completedAt: log.completedAt,
         docTypes: log.docTypes,
         errorMessage: log.errorMessage,

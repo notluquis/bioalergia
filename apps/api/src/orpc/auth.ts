@@ -1,5 +1,22 @@
 import type { RawRuleOf } from "@casl/ability";
 import { db } from "@finanzas/db";
+import {
+  authContract,
+  authEmptySchema,
+  authLoginOkResponseSchema,
+  authLoginResponseSchema,
+  authLoginSchema,
+  authMfaEnableSchema,
+  authMfaLoginSchema,
+  authMfaSetupResponseSchema,
+  authPasskeyLoginOptionsSchema,
+  authPasskeyRegistrationOptionsSchema,
+  authPasskeyResponseSchema,
+  authPasskeyVerifySchema,
+  authSessionResponseSchema,
+  authStatusResponseSchema,
+  authUserSchema,
+} from "@finanzas/orpc-contracts/auth";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
@@ -11,7 +28,6 @@ import type {
 } from "@simplewebauthn/server";
 import type { Context as HonoContext } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
-import { z } from "zod";
 import { logError } from "../lib/logger";
 import { signToken, verifyToken } from "../lib/paseto";
 import { configureSuperjson } from "../lib/superjson-config";
@@ -46,122 +62,6 @@ type AuthSession = {
 const base = os.$context<AuthORPCContext>();
 
 const challengeStore = new Map<string, { challenge: string; expires: number; userId?: number }>();
-
-const loginSchema = z.object({
-  email: z.email("Email inválido"),
-  password: z.string().min(1, "Contraseña requerida"),
-});
-
-const mfaLoginSchema = z.object({
-  token: z.string().min(6, "Token inválido"),
-  userId: z.number().int(),
-});
-
-const mfaEnableSchema = z.object({
-  token: z.string().min(6, "Token inválido"),
-});
-
-const passkeyVerifySchema = z.object({
-  body: z.record(z.string(), z.unknown()),
-  challenge: z.string().min(1),
-});
-
-const passkeyResponseSchema = z.object({
-  body: z.record(z.string(), z.unknown()),
-  challenge: z.string().min(1),
-});
-
-const emptySchema = z.object({});
-
-const authUserSchema = z.object({
-  email: z.string(),
-  hasPasskey: z.boolean().optional(),
-  id: z.number().int(),
-  loginEmail: z.string().optional(),
-  mfaEnabled: z.boolean().optional(),
-  mfaEnforced: z.boolean().optional(),
-  name: z.string().nullable(),
-  notificationEmail: z.string().optional(),
-  roles: z.array(z.string()),
-  status: z.string(),
-});
-
-const loginOkResponseSchema = z.object({
-  abilityRules: z.array(z.unknown()),
-  status: z.literal("ok"),
-  user: authUserSchema,
-});
-
-const loginMfaRequiredResponseSchema = z.object({
-  status: z.literal("mfa_required"),
-  userId: z.number().int(),
-});
-
-const loginResponseSchema = z.union([loginOkResponseSchema, loginMfaRequiredResponseSchema]);
-
-const sessionResponseSchema = z.object({
-  abilityRules: z.array(z.unknown()).optional(),
-  permissionVersion: z.number().optional(),
-  status: z.literal("ok"),
-  user: authUserSchema.nullable(),
-});
-
-const statusResponseSchema = z.object({
-  message: z.string().optional(),
-  status: z.literal("ok"),
-});
-
-const mfaSetupResponseSchema = z.object({
-  qrCodeUrl: z.string(),
-  secret: z.string(),
-  status: z.literal("ok"),
-});
-
-const publicKeyCredentialDescriptorSchema = z.object({
-  id: z.string(),
-  transports: z.array(z.string()).optional(),
-  type: z.string(),
-});
-
-const passkeyLoginOptionsSchema = z.object({
-  allowCredentials: z.array(publicKeyCredentialDescriptorSchema),
-  challenge: z.string(),
-  extensions: z.record(z.string(), z.unknown()).optional(),
-  rpId: z.string().optional(),
-  timeout: z.number().optional(),
-  userVerification: z.enum(["discouraged", "preferred", "required"]).optional(),
-});
-
-const passkeyRegistrationOptionsSchema = z.object({
-  attestation: z.string().optional(),
-  authenticatorSelection: z
-    .object({
-      authenticatorAttachment: z.enum(["platform", "cross-platform"]).optional(),
-      requireResidentKey: z.boolean().optional(),
-      residentKey: z.enum(["discouraged", "preferred", "required"]).optional(),
-      userVerification: z.enum(["discouraged", "preferred", "required"]).optional(),
-    })
-    .optional(),
-  challenge: z.string(),
-  excludeCredentials: z.array(publicKeyCredentialDescriptorSchema).optional(),
-  extensions: z.record(z.string(), z.unknown()).optional(),
-  pubKeyCredParams: z.array(
-    z.object({
-      alg: z.number(),
-      type: z.string(),
-    }),
-  ),
-  rp: z.object({
-    id: z.string().optional(),
-    name: z.string(),
-  }),
-  timeout: z.number().optional(),
-  user: z.object({
-    displayName: z.string(),
-    id: z.string(),
-    name: z.string(),
-  }),
-});
 
 function authError(
   status: "BAD_REQUEST" | "FORBIDDEN" | "INTERNAL_SERVER_ERROR" | "UNAUTHORIZED",
@@ -284,8 +184,8 @@ function getRequiredToken(context: AuthORPCContext) {
 const authORPCRouterBase = {
   login: base
     .route({ method: "POST", path: "/login", summary: "Login", tags: ["Auth"] })
-    .input(loginSchema)
-    .output(loginResponseSchema)
+    .input(authContract.login["~orpc"].inputSchema)
+    .output(authContract.login["~orpc"].outputSchema)
     .handler(async ({ context, input }) => {
       const normalizedEmail = normalizeEmailInput(input.email);
       const loginCandidate = await findUserByLoginIdentifier(normalizedEmail);
@@ -374,8 +274,8 @@ const authORPCRouterBase = {
 
   loginMfa: base
     .route({ method: "POST", path: "/login/mfa", summary: "Login with MFA", tags: ["Auth"] })
-    .input(mfaLoginSchema)
-    .output(loginOkResponseSchema)
+    .input(authContract.loginMfa["~orpc"].inputSchema)
+    .output(authContract.loginMfa["~orpc"].outputSchema)
     .handler(async ({ context, input }) => {
       const user = await db.user.findUnique({
         where: { id: input.userId },
@@ -428,8 +328,8 @@ const authORPCRouterBase = {
 
   logout: base
     .route({ method: "POST", path: "/logout", summary: "Logout", tags: ["Auth"] })
-    .input(emptySchema)
-    .output(statusResponseSchema)
+    .input(authContract.logout["~orpc"].inputSchema)
+    .output(authContract.logout["~orpc"].outputSchema)
     .handler(async ({ context }) => {
       deleteCookie(context.hono, COOKIE_NAME);
       return { status: "ok" as const };
@@ -437,7 +337,7 @@ const authORPCRouterBase = {
 
   session: base
     .route({ method: "GET", path: "/me/session", summary: "Get session", tags: ["Auth"] })
-    .output(sessionResponseSchema)
+    .output(authContract.session["~orpc"].outputSchema)
     .handler(async ({ context }) => {
       const token = getCookie(context.hono, COOKIE_NAME);
       if (!token) {
@@ -495,8 +395,8 @@ const authORPCRouterBase = {
 
   mfaDisable: base
     .route({ method: "POST", path: "/mfa/disable", summary: "Disable MFA", tags: ["Auth"] })
-    .input(emptySchema)
-    .output(statusResponseSchema)
+    .input(authContract.mfaDisable["~orpc"].inputSchema)
+    .output(authContract.mfaDisable["~orpc"].outputSchema)
     .handler(async ({ context }) => {
       const token = getRequiredToken(context);
       const session = await resolveSessionFromToken(token);
@@ -514,8 +414,8 @@ const authORPCRouterBase = {
 
   mfaEnable: base
     .route({ method: "POST", path: "/mfa/enable", summary: "Enable MFA", tags: ["Auth"] })
-    .input(mfaEnableSchema)
-    .output(statusResponseSchema)
+    .input(authContract.mfaEnable["~orpc"].inputSchema)
+    .output(authContract.mfaEnable["~orpc"].outputSchema)
     .handler(async ({ context, input }) => {
       const token = getRequiredToken(context);
       const session = await resolveSessionFromToken(token);
@@ -548,8 +448,8 @@ const authORPCRouterBase = {
 
   mfaSetup: base
     .route({ method: "POST", path: "/mfa/setup", summary: "Setup MFA", tags: ["Auth"] })
-    .input(emptySchema)
-    .output(mfaSetupResponseSchema)
+    .input(authContract.mfaSetup["~orpc"].inputSchema)
+    .output(authContract.mfaSetup["~orpc"].outputSchema)
     .handler(async ({ context }) => {
       const token = getRequiredToken(context);
       const session = await resolveSessionFromToken(token);
@@ -579,7 +479,7 @@ const authORPCRouterBase = {
       summary: "Get passkey login options",
       tags: ["Auth"],
     })
-    .output(passkeyLoginOptionsSchema)
+    .output(authContract.passkeyLoginOptions["~orpc"].outputSchema)
     .handler(async () => {
       const { generateAuthenticationOptions } = await import("@simplewebauthn/server");
 
@@ -600,8 +500,8 @@ const authORPCRouterBase = {
       summary: "Verify passkey login",
       tags: ["Auth"],
     })
-    .input(passkeyVerifySchema)
-    .output(loginOkResponseSchema)
+    .input(authContract.passkeyLoginVerify["~orpc"].inputSchema)
+    .output(authContract.passkeyLoginVerify["~orpc"].outputSchema)
     .handler(async ({ context, input }) => {
       const storedChallenge = getChallenge(`login:${input.challenge}`);
       if (!storedChallenge) {
@@ -694,7 +594,7 @@ const authORPCRouterBase = {
       summary: "Get passkey register options",
       tags: ["Auth"],
     })
-    .output(passkeyRegistrationOptionsSchema)
+    .output(authContract.passkeyRegisterOptions["~orpc"].outputSchema)
     .handler(async ({ context }) => {
       const token = getRequiredToken(context);
       const session = await resolveSessionFromToken(token);
@@ -736,8 +636,8 @@ const authORPCRouterBase = {
       summary: "Verify passkey registration",
       tags: ["Auth"],
     })
-    .input(passkeyResponseSchema)
-    .output(statusResponseSchema)
+    .input(authContract.passkeyRegisterVerify["~orpc"].inputSchema)
+    .output(authContract.passkeyRegisterVerify["~orpc"].outputSchema)
     .handler(async ({ context, input }) => {
       const sessionToken = getRequiredToken(context);
       const session = await resolveSessionFromToken(sessionToken);
@@ -793,8 +693,8 @@ const authORPCRouterBase = {
       summary: "Remove passkeys",
       tags: ["Auth"],
     })
-    .input(emptySchema)
-    .output(statusResponseSchema)
+    .input(authContract.passkeyRemove["~orpc"].inputSchema)
+    .output(authContract.passkeyRemove["~orpc"].outputSchema)
     .handler(async ({ context }) => {
       const token = getRequiredToken(context);
       const session = await resolveSessionFromToken(token);

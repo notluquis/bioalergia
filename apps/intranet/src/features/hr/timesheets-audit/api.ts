@@ -23,7 +23,7 @@ function normalizeTimesheetEntry(entry: Record<string, unknown>) {
 export async function fetchMultiEmployeeTimesheets(
   employeeIds: number[],
   from: string,
-  to: string,
+  to: string
 ): Promise<TimesheetEntryWithEmployee[]> {
   if (employeeIds.length === 0) {
     return [];
@@ -50,11 +50,13 @@ export async function fetchMultiEmployeeTimesheets(
             start_time: z.string(),
             work_date: zDateString,
             worked_minutes: z.number(),
-          }),
+          })
         ),
       })
       .parse({
-        entries: data.entries.map((entry) => normalizeTimesheetEntry(entry)),
+        entries: data.entries.map((entry: Record<string, unknown>) =>
+          normalizeTimesheetEntry(entry)
+        ),
       });
   } catch (error) {
     throw toTimesheetsApiError(error);

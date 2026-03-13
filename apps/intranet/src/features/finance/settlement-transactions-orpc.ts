@@ -1,22 +1,16 @@
 import { createORPCClient, ORPCError } from "@orpc/client";
-import type { RouterClient } from "@orpc/server";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
-import type { SettlementTransactionsORPCRouter } from "../../../../api/src/orpc/settlement-transactions";
-
-export type SettlementTransactionsORPCClient = RouterClient<SettlementTransactionsORPCRouter>;
+import type { UnsafeORPCClient } from "@/lib/orpc-client";
 
 const settlementTransactionsORPCLink = new SuperJSONLink({
   fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),
   url: () => window.location.origin,
 });
 
-export const settlementTransactionsORPCClient = createORPCClient<SettlementTransactionsORPCClient>(
-  settlementTransactionsORPCLink,
-  {
-    path: ["api", "orpc", "settlement-transactions", "rpc"],
-  }
-);
+export const settlementTransactionsORPCClient = createORPCClient(settlementTransactionsORPCLink, {
+  path: ["api", "orpc", "settlement-transactions", "rpc"],
+}) as unknown as UnsafeORPCClient;
 
 export function toSettlementTransactionsApiError(error: unknown): ApiError {
   if (error instanceof ApiError) {

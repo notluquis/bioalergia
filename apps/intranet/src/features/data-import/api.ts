@@ -1,11 +1,11 @@
 import { z } from "zod";
-import { csvUploadORPCClient, toCsvUploadApiError } from "./orpc";
+import { type CsvImportTable, csvUploadORPCClient, toCsvUploadApiError } from "./orpc";
 
 export interface CsvImportPayload {
   data: Record<string, number | string>[];
   includeInsertRowIndexes?: boolean;
   includeUpdateRows?: boolean;
-  table: Parameters<typeof csvUploadORPCClient.preview>[0]["table"];
+  table: CsvImportTable;
   period?: string; // Extracted from filename (YYYYMM format)
   mode?: "insert-only" | "insert-or-update" | "update-only"; // Import mode: insert new only, upsert, or update only
 }
