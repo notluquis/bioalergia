@@ -26,9 +26,7 @@ export const counterpartAccountSchema = z.object({
   accountType: z.string().nullable(),
   bankName: z.string().nullable(),
   counterpartId: z.number().int(),
-  createdAt: z.date(),
   id: z.number().int(),
-  updatedAt: z.date(),
 });
 
 export const counterpartSuggestionSchema = z.object({

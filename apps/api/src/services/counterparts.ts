@@ -1,7 +1,24 @@
 import { type CounterpartCategory, db } from "@finanzas/db";
 import type { CounterpartAccountUpdateArgs } from "@finanzas/db/input";
+import {
+  type assignRutToPayoutsResponseSchema,
+  type counterpartAccountSchema,
+  type counterpartSchema,
+  type counterpartSuggestionSchema,
+  type counterpartSummarySchema,
+  type counterpartsSyncResponseSchema,
+  type unassignedPayoutAccountSchema,
+} from "@finanzas/orpc-contracts/counterparts";
+import type { z } from "zod";
 
 type CounterpartAccountUpdateInput = NonNullable<CounterpartAccountUpdateArgs["data"]>;
+type CounterpartDto = z.output<typeof counterpartSchema>;
+type CounterpartAccountDto = z.output<typeof counterpartAccountSchema>;
+type CounterpartSuggestionDto = z.output<typeof counterpartSuggestionSchema>;
+type CounterpartSummaryDto = z.output<typeof counterpartSummarySchema>;
+type CounterpartsSyncDto = z.output<typeof counterpartsSyncResponseSchema>;
+type UnassignedPayoutAccountDto = z.output<typeof unassignedPayoutAccountSchema>;
+type AssignRutToPayoutsDto = z.output<typeof assignRutToPayoutsResponseSchema>;
 
 export type CounterpartPayload = {
   category?: CounterpartCategory;
@@ -29,27 +46,9 @@ const normalizeAccountNumber = (accountNumber: string): string => {
   return normalized.length > 0 ? normalized : "0";
 };
 
-export interface CounterpartAccountSuggestion {
-  accountIdentifier: string;
-  accountType: null | string;
-  assignedCounterpartId: null | number;
-  bankAccountNumber: null | string;
-  bankName: null | string;
-  identificationNumber: null | string;
-  totalAmount: number;
-  withdrawId: null | string;
-}
+export interface CounterpartAccountSuggestion extends CounterpartSuggestionDto {}
 
-export interface UnassignedPayoutAccount {
-  conflict: boolean;
-  counterpartId: null | number;
-  counterpartName: null | string;
-  counterpartRut: null | string;
-  movementCount: number;
-  payoutBankAccountNumber: string;
-  totalGrossAmount: number;
-  withdrawRut: null | string;
-}
+export interface UnassignedPayoutAccount extends UnassignedPayoutAccountDto {}
 
 export class CounterpartAccountConflictError extends Error {
   readonly accountNumber: string;
@@ -96,10 +95,61 @@ const counterpartAccountDetailSelect = {
   accountType: true,
   bankName: true,
   counterpartId: true,
-  createdAt: true,
   id: true,
-  updatedAt: true,
 } as const;
+
+const mapCounterpart = (counterpart: {
+  bankAccountHolder: string;
+  category: CounterpartCategory;
+  createdAt: Date;
+  id: number;
+  identificationNumber: string;
+  notes: null | string;
+  updatedAt: Date;
+}): CounterpartDto => ({
+  bankAccountHolder: counterpart.bankAccountHolder,
+  category: counterpart.category,
+  createdAt: counterpart.createdAt,
+  id: counterpart.id,
+  identificationNumber: counterpart.identificationNumber,
+  notes: counterpart.notes,
+  updatedAt: counterpart.updatedAt,
+});
+
+const mapCounterpartAccount = (account: {
+  accountNumber: string;
+  accountType: null | string;
+  bankName: null | string;
+  counterpartId: number;
+  id: number;
+}): CounterpartAccountDto => ({
+  accountNumber: account.accountNumber,
+  accountType: account.accountType,
+  bankName: account.bankName,
+  counterpartId: account.counterpartId,
+  id: account.id,
+});
+
+const mapCounterpartAccounts = (
+  accounts: Array<{
+    accountNumber: string;
+    accountType: null | string;
+    bankName: null | string;
+    counterpartId: number;
+    id: number;
+  }>,
+) => accounts.map(mapCounterpartAccount);
+
+const mapUnassignedPayoutAccount = (row: UnassignedPayoutAccount): UnassignedPayoutAccountDto => ({
+  conflict: row.conflict,
+  counterpartId: row.counterpartId,
+  counterpartName: row.counterpartName,
+  counterpartRut: row.counterpartRut,
+  movementCount: row.movementCount,
+  payoutBankAccountNumber: row.payoutBankAccountNumber,
+  totalGrossAmount: row.totalGrossAmount,
+  withdrawRut: row.withdrawRut,
+});
 
 const ensureAccumulator = (
   map: Map<string, CounterpartAccumulator>,
@@ -212,7 +262,7 @@ const syncAccountsForCounterpart = async (
   return counters;
 };
 
-export async function syncCounterpartsFromTransactions() {
+export async function syncCounterpartsFromTransactions(): Promise<CounterpartsSyncDto> {
   const withdrawals = await db.withdrawTransaction.findMany({
     orderBy: { dateCreated: "desc" },
     select: {
@@ -429,7 +479,7 @@ export async function listUnassignedPayoutAccounts(params: {
   return {
     page: safePage,
     pageSize: safePageSize,
-    rows,
+    rows: rows.map(mapUnassignedPayoutAccount),
     total,
   };
 }
@@ -524,9 +574,10 @@ const attachCounterpartAssignments = async (grouped: Map<string, CounterpartAcco
 };
 
 export async function listCounterparts() {
-  return await db.counterpart.findMany({
+  const counterparts = await db.counterpart.findMany({
     orderBy: { bankAccountHolder: "asc" },
   });
+  return counterparts.map(mapCounterpart);
 }
 
 export async function getCounterpartById(id: number) {
@@ -544,8 +595,8 @@ export async function getCounterpartById(id: number) {
   }
 
   return {
-    counterpart,
-    accounts: counterpart.accounts,
+    counterpart: mapCounterpart(counterpart),
+    accounts: mapCounterpartAccounts(counterpart.accounts),
   };
 }
 
@@ -564,8 +615,8 @@ export async function getCounterpartByRut(identificationNumber: string) {
   }
 
   return {
-    counterpart,
-    accounts: counterpart.accounts,
+    counterpart: mapCounterpart(counterpart),
+    accounts: mapCounterpartAccounts(counterpart.accounts),
   };
 }
 
@@ -581,7 +632,7 @@ export async function createCounterpart(data: CounterpartPayload) {
     throw new Error(`Counterpart with RUT ${rut} already exists`);
   }
 
-  return await db.counterpart.create({
+  const created = await db.counterpart.create({
     data: {
       identificationNumber: rut,
       bankAccountHolder: data.bankAccountHolder,
@@ -590,6 +641,10 @@ export async function createCounterpart(data: CounterpartPayload) {
     },
     include: { accounts: true },
   });
+  return {
+    accounts: mapCounterpartAccounts(created.accounts),
+    counterpart: mapCounterpart(created),
+  };
 }
 
 export async function updateCounterpart(id: number, data: CounterpartUpdatePayload) {
@@ -612,11 +667,15 @@ export async function updateCounterpart(id: number, data: CounterpartUpdatePaylo
     updateData.notes = data.notes;
   }
 
-  return await db.counterpart.update({
+  const updated = await db.counterpart.update({
     where: { id },
     data: updateData,
     include: { accounts: true },
   });
+  return {
+    accounts: mapCounterpartAccounts(updated.accounts),
+    counterpart: mapCounterpart(updated),
+  };
 }
 
 export async function upsertCounterpartAccount(
@@ -662,22 +721,26 @@ export async function upsertCounterpartAccount(
   });
 
   if (existing) {
-    return await db.counterpartAccount.update({
+    return mapCounterpartAccount(
+      await db.counterpartAccount.update({
       where: { id: existing.id },
       data: {
         bankName: payload.bankName === undefined ? undefined : payload.bankName,
         accountType: payload.accountType === undefined ? undefined : payload.accountType,
       },
-    });
+    }),
+    );
   } else {
-    return await db.counterpartAccount.create({
+    return mapCounterpartAccount(
+      await db.counterpartAccount.create({
       data: {
         counterpartId,
         accountNumber: normalizedAccount,
         bankName: payload.bankName,
         accountType: payload.accountType,
       },
-    });
+    }),
+    );
   }
 }
 
@@ -730,10 +793,10 @@ export async function updateCounterpartAccount(
     updateData.accountNumber = normalizedAccount;
   }
 
-  return await db.counterpartAccount.update({
+  return mapCounterpartAccount(await db.counterpartAccount.update({
     where: { id: accountId },
     data: updateData,
-  });
+  }));
 }
 
 export async function attachRutToCounterpart(counterpartId: number, rutInput: string) {
@@ -794,7 +857,7 @@ export async function assignRutToPayoutAccounts(params: {
   accountNumbers: string[];
   bankAccountHolder?: string;
   rut: string;
-}) {
+}): Promise<AssignRutToPayoutsDto> {
   const rut = normalizeRut(params.rut);
   if (!rut) {
     throw new Error("RUT inválido");
@@ -803,7 +866,23 @@ export async function assignRutToPayoutAccounts(params: {
     ...new Set(params.accountNumbers.map(normalizeAccountNumber).filter(Boolean)),
   ];
   if (uniqueAccounts.length === 0) {
-    return { assignedCount: 0, conflicts: [] as UnassignedPayoutAccount[] };
+    return {
+      assignedCount: 0,
+      conflicts: [],
+      counterpart: mapCounterpart(
+        await db.counterpart.upsert({
+          create: {
+            bankAccountHolder: params.bankAccountHolder?.trim() || `Titular ${rut}`,
+            category: "SUPPLIER",
+            identificationNumber: rut,
+          },
+          update: {
+            bankAccountHolder: params.bankAccountHolder?.trim() || undefined,
+          },
+          where: { identificationNumber: rut },
+        }),
+      ),
+    };
   }
 
   const counterpart = await db.counterpart.upsert({
@@ -845,10 +924,14 @@ export async function assignRutToPayoutAccounts(params: {
     }
   }
 
-  return { assignedCount, conflicts, counterpart };
+  return {
+    assignedCount,
+    conflicts: conflicts.map(mapUnassignedPayoutAccount),
+    counterpart: mapCounterpart(counterpart),
+  };
 }
 
-export async function getCounterpartSummary(counterpartId: number) {
+export async function getCounterpartSummary(counterpartId: number): Promise<CounterpartSummaryDto> {
   const counterpart = await db.counterpart.findUnique({
     select: { identificationNumber: true },
     where: { id: counterpartId },

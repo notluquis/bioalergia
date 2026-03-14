@@ -1,60 +1,21 @@
-import { z } from "zod";
+import {
+  assignRutToPayoutsResponseSchema,
+  counterpartAccountsResponseSchema,
+  counterpartDetailResponseSchema,
+  counterpartStatusResponseSchema,
+  counterpartSuggestionsResponseSchema,
+  counterpartSummaryResponseSchema,
+  counterpartsResponseSchema,
+  counterpartsSyncResponseSchema,
+  unassignedPayoutAccountsResponseSchema,
+} from "@finanzas/orpc-contracts/counterparts";
 import {
   type CounterpartUpsertPayload,
   counterpartsORPCClient,
   toCounterpartsApiError,
 } from "./orpc";
-import type {
-  Counterpart,
-  CounterpartAccount,
-  CounterpartAccountSuggestion,
-  CounterpartSummary,
-  UnassignedPayoutAccount,
-} from "./types";
 
 export type { CounterpartUpsertPayload } from "./orpc";
-
-const AccountsResponseSchema = z.object({
-  accounts: z.array(z.unknown()),
-});
-
-const CounterpartResponseSchema = z.object({
-  accounts: z.array(z.unknown()),
-  counterpart: z.unknown(),
-});
-
-const SuggestionsResponseSchema = z.object({
-  suggestions: z.array(z.unknown()),
-});
-
-const CounterpartsResponseSchema = z.object({
-  counterparts: z.array(z.unknown()),
-});
-
-const SummaryResponseSchema = z.object({
-  summary: z.unknown(),
-});
-
-const CounterpartsSyncResponseSchema = z.object({
-  conflictCount: z.number().optional(),
-  syncedAccounts: z.number(),
-  syncedCounterparts: z.number(),
-});
-
-const UnassignedPayoutAccountsResponseSchema = z.object({
-  page: z.number(),
-  pageSize: z.number(),
-  rows: z.array(z.unknown()),
-  total: z.number(),
-});
-
-const AssignRutToPayoutsResponseSchema = z.object({
-  assignedCount: z.number(),
-  conflicts: z.array(z.unknown()),
-  counterpart: z.unknown(),
-});
-
-const StatusResponseSchema = z.object({ status: z.literal("ok") });
 
 export async function addCounterpartAccount(
   counterpartId: number,
@@ -62,16 +23,16 @@ export async function addCounterpartAccount(
     accountNumber: string;
     accountType?: null | string;
     bankName?: null | string;
-  },
+  }
 ) {
   try {
-    const data = AccountsResponseSchema.parse(
+    const data = counterpartAccountsResponseSchema.parse(
       await counterpartsORPCClient.addAccount({
         counterpartId,
         payload,
-      }),
+      })
     );
-    return data.accounts as CounterpartAccount[];
+    return data.accounts;
   } catch (error) {
     throw toCounterpartsApiError(error);
   }
@@ -79,10 +40,10 @@ export async function addCounterpartAccount(
 
 export async function attachCounterpartRut(counterpartId: number, rut: string) {
   try {
-    const data = AccountsResponseSchema.parse(
-      await counterpartsORPCClient.attachRut({ counterpartId, rut }),
+    const data = counterpartAccountsResponseSchema.parse(
+      await counterpartsORPCClient.attachRut({ counterpartId, rut })
     );
-    return data.accounts as CounterpartAccount[];
+    return data.accounts;
   } catch (error) {
     throw toCounterpartsApiError(error);
   }
@@ -90,10 +51,7 @@ export async function attachCounterpartRut(counterpartId: number, rut: string) {
 
 export async function createCounterpart(payload: CounterpartUpsertPayload) {
   try {
-    return CounterpartResponseSchema.parse(await counterpartsORPCClient.create(payload)) as {
-      accounts: CounterpartAccount[];
-      counterpart: Counterpart;
-    };
+    return counterpartDetailResponseSchema.parse(await counterpartsORPCClient.create(payload));
   } catch (error) {
     throw toCounterpartsApiError(error);
   }
@@ -101,13 +59,13 @@ export async function createCounterpart(payload: CounterpartUpsertPayload) {
 
 export async function fetchAccountSuggestions(query: string, limit = 10) {
   try {
-    const data = SuggestionsResponseSchema.parse(
+    const data = counterpartSuggestionsResponseSchema.parse(
       await counterpartsORPCClient.suggestions({
         limit,
         q: query,
-      }),
+      })
     );
-    return data.suggestions as CounterpartAccountSuggestion[];
+    return data.suggestions;
   } catch (error) {
     throw toCounterpartsApiError(error);
   }
@@ -115,10 +73,7 @@ export async function fetchAccountSuggestions(query: string, limit = 10) {
 
 export async function fetchCounterpart(id: number) {
   try {
-    return CounterpartResponseSchema.parse(await counterpartsORPCClient.detail({ id })) as {
-      accounts: CounterpartAccount[];
-      counterpart: Counterpart;
-    };
+    return counterpartDetailResponseSchema.parse(await counterpartsORPCClient.detail({ id }));
   } catch (error) {
     throw toCounterpartsApiError(error);
   }
@@ -126,8 +81,8 @@ export async function fetchCounterpart(id: number) {
 
 export async function fetchCounterparts() {
   try {
-    const data = CounterpartsResponseSchema.parse(await counterpartsORPCClient.list());
-    return data.counterparts as Counterpart[];
+    const data = counterpartsResponseSchema.parse(await counterpartsORPCClient.list());
+    return data.counterparts;
   } catch (error) {
     throw toCounterpartsApiError(error);
   }
@@ -135,7 +90,7 @@ export async function fetchCounterparts() {
 
 export async function syncCounterparts() {
   try {
-    return CounterpartsSyncResponseSchema.parse(await counterpartsORPCClient.sync());
+    return counterpartsSyncResponseSchema.parse(await counterpartsORPCClient.sync());
   } catch (error) {
     throw toCounterpartsApiError(error);
   }
@@ -147,18 +102,13 @@ export async function fetchUnassignedPayoutAccounts(params?: {
   query?: string;
 }) {
   try {
-    return UnassignedPayoutAccountsResponseSchema.parse(
+    return unassignedPayoutAccountsResponseSchema.parse(
       await counterpartsORPCClient.unassignedPayoutAccounts({
         page: params?.page ?? 1,
         pageSize: params?.pageSize ?? 20,
         query: params?.query?.trim() || undefined,
-      }),
-    ) as {
-      page: number;
-      pageSize: number;
-      rows: UnassignedPayoutAccount[];
-      total: number;
-    };
+      })
+    );
   } catch (error) {
     throw toCounterpartsApiError(error);
   }
@@ -170,13 +120,9 @@ export async function assignRutToPayouts(payload: {
   rut: string;
 }) {
   try {
-    return AssignRutToPayoutsResponseSchema.parse(
-      await counterpartsORPCClient.assignRutToPayouts(payload),
-    ) as {
-      assignedCount: number;
-      conflicts: UnassignedPayoutAccount[];
-      counterpart: Counterpart;
-    };
+    return assignRutToPayoutsResponseSchema.parse(
+      await counterpartsORPCClient.assignRutToPayouts(payload)
+    );
   } catch (error) {
     throw toCounterpartsApiError(error);
   }
@@ -184,17 +130,17 @@ export async function assignRutToPayouts(payload: {
 
 export async function fetchCounterpartSummary(
   counterpartId: number,
-  params?: { from?: string; to?: string },
+  params?: { from?: string; to?: string }
 ) {
   try {
-    const data = SummaryResponseSchema.parse(
+    const data = counterpartSummaryResponseSchema.parse(
       await counterpartsORPCClient.summary({
         from: params?.from,
         id: counterpartId,
         to: params?.to,
-      }),
+      })
     );
-    return data.summary as CounterpartSummary;
+    return data.summary;
   } catch (error) {
     throw toCounterpartsApiError(error);
   }
@@ -202,12 +148,9 @@ export async function fetchCounterpartSummary(
 
 export async function updateCounterpart(id: number, payload: Partial<CounterpartUpsertPayload>) {
   try {
-    return CounterpartResponseSchema.parse(
-      await counterpartsORPCClient.update({ id, payload }),
-    ) as {
-      accounts: CounterpartAccount[];
-      counterpart: Counterpart;
-    };
+    return counterpartDetailResponseSchema.parse(
+      await counterpartsORPCClient.update({ id, payload })
+    );
   } catch (error) {
     throw toCounterpartsApiError(error);
   }
@@ -218,10 +161,12 @@ export async function updateCounterpartAccount(
   payload: Partial<{
     accountType: null | string;
     bankName: null | string;
-  }>,
+  }>
 ) {
   try {
-    StatusResponseSchema.parse(await counterpartsORPCClient.updateAccount({ accountId, payload }));
+    counterpartStatusResponseSchema.parse(
+      await counterpartsORPCClient.updateAccount({ accountId, payload })
+    );
   } catch (error) {
     throw toCounterpartsApiError(error);
   }

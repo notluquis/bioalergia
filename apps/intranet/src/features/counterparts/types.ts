@@ -33,9 +33,7 @@ export interface CounterpartAccount {
   accountType: null | string;
   bankName: null | string;
   counterpartId: number;
-  createdAt: Date;
   id: number;
-  updatedAt: Date;
 }
 
 export interface CounterpartAccountSuggestion {

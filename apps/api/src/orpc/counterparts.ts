@@ -2,8 +2,29 @@ import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
-import { counterpartsContract } from "@finanzas/orpc-contracts/counterparts";
+import {
+  assignRutToPayoutsResponseSchema,
+  counterpartAccountsResponseSchema,
+  counterpartAddAccountInputSchema,
+  counterpartAttachRutInputSchema,
+  counterpartBulkAssignRutSchema,
+  counterpartDetailResponseSchema,
+  counterpartIdSchema,
+  counterpartPayloadSchema,
+  counterpartStatusResponseSchema,
+  counterpartSuggestionInputSchema,
+  counterpartSuggestionsResponseSchema,
+  counterpartSummaryInputSchema,
+  counterpartSummaryResponseSchema,
+  counterpartUnassignedPayoutAccountsInputSchema,
+  counterpartUpdateAccountInputSchema,
+  counterpartUpdateInputSchema,
+  counterpartsResponseSchema,
+  counterpartsSyncResponseSchema,
+  unassignedPayoutAccountsResponseSchema,
+} from "@finanzas/orpc-contracts/counterparts";
 import type { Context as HonoContext } from "hono";
+import type { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
@@ -84,9 +105,9 @@ const counterpartsORPCRouterBase = {
       summary: "Add counterpart account",
       tags: ["Counterparts"],
     })
-    .input(counterpartsContract.addAccount["~orpc"].inputSchema)
-    .output(counterpartsContract.addAccount["~orpc"].outputSchema)
-    .handler(async ({ input }) => {
+    .input(counterpartAddAccountInputSchema)
+    .output(counterpartAccountsResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof counterpartAddAccountInputSchema> }) => {
       const result = await upsertCounterpartAccount(input.counterpartId, {
         accountNumber: input.payload.accountIdentifier ?? input.payload.accountNumber ?? "",
         accountType: input.payload.accountType,
@@ -103,9 +124,11 @@ const counterpartsORPCRouterBase = {
       summary: "Assign RUT to payout accounts",
       tags: ["Counterparts"],
     })
-    .input(counterpartsContract.assignRutToPayouts["~orpc"].inputSchema)
-    .output(counterpartsContract.assignRutToPayouts["~orpc"].outputSchema)
-    .handler(async ({ input }) => assignRutToPayoutAccounts(input)),
+    .input(counterpartBulkAssignRutSchema)
+    .output(assignRutToPayoutsResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof counterpartBulkAssignRutSchema> }) =>
+      assignRutToPayoutAccounts(input),
+    ),
 
   attachRut: updateCounterparts
     .route({
@@ -114,9 +137,9 @@ const counterpartsORPCRouterBase = {
       summary: "Attach RUT to counterpart",
       tags: ["Counterparts"],
     })
-    .input(counterpartsContract.attachRut["~orpc"].inputSchema)
-    .output(counterpartsContract.attachRut["~orpc"].outputSchema)
-    .handler(async ({ input }) => ({
+    .input(counterpartAttachRutInputSchema)
+    .output(counterpartAccountsResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof counterpartAttachRutInputSchema> }) => ({
       accounts: await attachRutToCounterpart(input.counterpartId, input.rut),
     })),
 
@@ -127,20 +150,15 @@ const counterpartsORPCRouterBase = {
       summary: "Create counterpart",
       tags: ["Counterparts"],
     })
-    .input(counterpartsContract.create["~orpc"].inputSchema)
-    .output(counterpartsContract.create["~orpc"].outputSchema)
-    .handler(async ({ input }) => {
-      const counterpart = await createCounterpart({
+    .input(counterpartPayloadSchema)
+    .output(counterpartDetailResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof counterpartPayloadSchema> }) => {
+      return await createCounterpart({
         bankAccountHolder: input.bankAccountHolder,
         category: input.category,
         identificationNumber: input.identificationNumber,
         notes: input.notes,
       });
-
-      return {
-        accounts: counterpart.accounts ?? [],
-        counterpart,
-      };
     }),
 
   detail: readCounterparts
@@ -150,18 +168,14 @@ const counterpartsORPCRouterBase = {
       summary: "Get counterpart detail",
       tags: ["Counterparts"],
     })
-    .input(counterpartsContract.detail["~orpc"].inputSchema)
-    .output(counterpartsContract.detail["~orpc"].outputSchema)
-    .handler(async ({ input }) => {
+    .input(counterpartIdSchema)
+    .output(counterpartDetailResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof counterpartIdSchema> }) => {
       const result = await getCounterpartById(input.id);
       if (!result) {
         throw new ORPCError("NOT_FOUND", { message: "Not found" });
       }
-
-      return {
-        accounts: result.accounts,
-        counterpart: result.counterpart,
-      };
+      return result;
     }),
 
   list: readCounterparts
@@ -171,7 +185,7 @@ const counterpartsORPCRouterBase = {
       summary: "List counterparts",
       tags: ["Counterparts"],
     })
-    .output(counterpartsContract.list["~orpc"].outputSchema)
+    .output(counterpartsResponseSchema)
     .handler(async () => ({
       counterparts: await listCounterparts(),
     })),
@@ -183,9 +197,9 @@ const counterpartsORPCRouterBase = {
       summary: "Get counterpart account suggestions",
       tags: ["Counterparts"],
     })
-    .input(counterpartsContract.suggestions["~orpc"].inputSchema)
-    .output(counterpartsContract.suggestions["~orpc"].outputSchema)
-    .handler(async ({ input }) => {
+    .input(counterpartSuggestionInputSchema)
+    .output(counterpartSuggestionsResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof counterpartSuggestionInputSchema> }) => {
       if (!input.q?.trim()) {
         return { suggestions: [] };
       }
@@ -202,9 +216,9 @@ const counterpartsORPCRouterBase = {
       summary: "Get counterpart summary",
       tags: ["Counterparts"],
     })
-    .input(counterpartsContract.summary["~orpc"].inputSchema)
-    .output(counterpartsContract.summary["~orpc"].outputSchema)
-    .handler(async ({ input }) => ({
+    .input(counterpartSummaryInputSchema)
+    .output(counterpartSummaryResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof counterpartSummaryInputSchema> }) => ({
       summary: await getCounterpartSummary(input.id),
     })),
 
@@ -215,7 +229,7 @@ const counterpartsORPCRouterBase = {
       summary: "Sync counterparts from transactions",
       tags: ["Counterparts"],
     })
-    .output(counterpartsContract.sync["~orpc"].outputSchema)
+    .output(counterpartsSyncResponseSchema)
     .handler(async () => syncCounterpartsFromTransactions()),
 
   unassignedPayoutAccounts: readCounterparts
@@ -225,9 +239,9 @@ const counterpartsORPCRouterBase = {
       summary: "List unassigned payout accounts",
       tags: ["Counterparts"],
     })
-    .input(counterpartsContract.unassignedPayoutAccounts["~orpc"].inputSchema)
-    .output(counterpartsContract.unassignedPayoutAccounts["~orpc"].outputSchema)
-    .handler(async ({ input }) =>
+    .input(counterpartUnassignedPayoutAccountsInputSchema)
+    .output(unassignedPayoutAccountsResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof counterpartUnassignedPayoutAccountsInputSchema> }) =>
       listUnassignedPayoutAccounts({
         page: input.page ?? 1,
         pageSize: input.pageSize ?? 20,
@@ -242,15 +256,11 @@ const counterpartsORPCRouterBase = {
       summary: "Update counterpart",
       tags: ["Counterparts"],
     })
-    .input(counterpartsContract.update["~orpc"].inputSchema)
-    .output(counterpartsContract.update["~orpc"].outputSchema)
-    .handler(async ({ input }) => {
-      const counterpart = await updateCounterpart(input.id, input.payload);
-      return {
-        accounts: counterpart.accounts ?? [],
-        counterpart,
-      };
-    }),
+    .input(counterpartUpdateInputSchema)
+    .output(counterpartDetailResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof counterpartUpdateInputSchema> }) =>
+      updateCounterpart(input.id, input.payload),
+    ),
 
   updateAccount: updateCounterparts
     .route({
@@ -259,9 +269,9 @@ const counterpartsORPCRouterBase = {
       summary: "Update counterpart account",
       tags: ["Counterparts"],
     })
-    .input(counterpartsContract.updateAccount["~orpc"].inputSchema)
-    .output(counterpartsContract.updateAccount["~orpc"].outputSchema)
-    .handler(async ({ input }) => {
+    .input(counterpartUpdateAccountInputSchema)
+    .output(counterpartStatusResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof counterpartUpdateAccountInputSchema> }) => {
       await updateCounterpartAccount(input.accountId, input.payload);
       return { status: "ok" as const };
     }),

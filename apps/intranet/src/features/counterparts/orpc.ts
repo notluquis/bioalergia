@@ -1,16 +1,14 @@
 import { createORPCClient, ORPCError } from "@orpc/client";
 import type { ContractRouterClient } from "@orpc/contract";
-import type { CounterpartsContract } from "@finanzas/orpc-contracts/counterparts";
+import {
+  type CounterpartsContract,
+  counterpartPayloadSchema,
+} from "@finanzas/orpc-contracts/counterparts";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
-import type { CounterpartCategory } from "./types";
+import type { z } from "zod";
 
-type CounterpartUpsertPayload = {
-  bankAccountHolder: string;
-  category?: CounterpartCategory;
-  identificationNumber: string;
-  notes?: null | string;
-};
+type CounterpartUpsertPayload = z.input<typeof counterpartPayloadSchema>;
 
 const counterpartsORPCLink = new SuperJSONLink({
   fetch: (request, init) => fetch(request, { ...init, credentials: "include" }),
