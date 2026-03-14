@@ -23,6 +23,7 @@ function RoutesAuditPage() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [filter, setFilter] = useState<"all" | "valid" | "technical" | "error">("all");
+  const selectedFilterKeys = useMemo(() => new Set([filter]), [filter]);
 
   const { data: audit } = useQuery({
     queryKey: ["routes-audit"],
@@ -170,10 +171,10 @@ function RoutesAuditPage() {
           </TextField>
           <ToggleButtonGroup
             disallowEmptySelection
-            selectedKeys={[filter]}
+            selectedKeys={selectedFilterKeys}
             selectionMode="single"
             onSelectionChange={(keys) => {
-              const [next] = Array.from(keys as Iterable<string>);
+              const [next] = Array.from(keys);
               if (next) {
                 setFilter(next as "all" | "valid" | "technical" | "error");
               }

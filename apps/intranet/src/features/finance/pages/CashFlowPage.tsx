@@ -742,6 +742,10 @@ export function CashFlowPage() {
     if (!search) return categoryFilterOptions;
     return categoryFilterOptions.filter((option) => normalizeText(option.label).includes(search));
   }, [categoryFilterOptions, categoryFilterSearch]);
+  const selectedCategoryFilterKeys = useMemo(
+    () => new Set(selectedCategoryFilters),
+    [selectedCategoryFilters]
+  );
 
   const counterpartOptions = useMemo(
     () =>
@@ -2174,7 +2178,7 @@ export function CashFlowPage() {
                           </SearchField>
                           <ListBox
                             className="max-h-60 overflow-auto"
-                            selectedKeys={new Set(selectedCategoryFilters)}
+                            selectedKeys={selectedCategoryFilterKeys}
                             selectionMode="multiple"
                             onSelectionChange={handleCategoryFilterSelection}
                           >

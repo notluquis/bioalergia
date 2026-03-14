@@ -21,7 +21,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import { Users, X } from "lucide-react";
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { EmployeeMultiSelectPopover } from "@/features/hr/components/EmployeeMultiSelectPopover";
 import { employeeKeys } from "@/features/hr/employees/queries";
@@ -286,6 +286,8 @@ function PeriodSelectionPanel({
   setSelectedWeekKeys: (keys: string[]) => void;
   weeksForMonth: WeekDefinition[];
 }) {
+  const selectedQuickRangeKeys = useMemo(() => new Set([quickRange]), [quickRange]);
+
   return (
     <div className="rounded-2xl border border-default-200 bg-background p-6 shadow-sm">
       <div className="mb-4 flex items-center gap-3">
@@ -300,10 +302,10 @@ function PeriodSelectionPanel({
         <ToggleButtonGroup
           className="min-w-max"
           disallowEmptySelection
-          selectedKeys={[quickRange]}
+          selectedKeys={selectedQuickRangeKeys}
           selectionMode="single"
           onSelectionChange={(keys) => {
-            const [next] = Array.from(keys as Iterable<string>);
+            const [next] = Array.from(keys);
             if (next) {
               handleQuickRangeChange(next as QuickRange);
             }

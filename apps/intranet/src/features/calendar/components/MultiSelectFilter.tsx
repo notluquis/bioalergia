@@ -1,5 +1,6 @@
 import { Button, Dropdown, ListBox, type Selection } from "@heroui/react";
 import { Check, ChevronDown } from "lucide-react";
+import { useMemo } from "react";
 
 export interface MultiSelectOption {
   label: string;
@@ -25,7 +26,7 @@ export function MultiSelectFilter({
   placeholder = "Seleccionar",
   selected,
 }: Readonly<MultiSelectFilterProps>) {
-  const selectedKeys = new Set(selected);
+  const selectedKeys = useMemo(() => new Set(selected), [selected]);
   const isCompact = density === "compact";
 
   const getDisplayText = () => {

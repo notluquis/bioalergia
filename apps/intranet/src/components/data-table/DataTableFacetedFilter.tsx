@@ -1,7 +1,7 @@
 import { Button, Dropdown, Input, Label, type Selection, TextField } from "@heroui/react";
 import type { Column } from "@tanstack/react-table";
 import { Check, PlusCircle } from "lucide-react";
-import { type ComponentType, useState } from "react";
+import { type ComponentType, useMemo, useState } from "react";
 
 interface DataTableFacetedFilterProps<TData, TValue> {
   readonly column?: Column<TData, TValue>;
@@ -19,14 +19,15 @@ export function DataTableFacetedFilter<TData, TValue>({
   title,
 }: DataTableFacetedFilterProps<TData, TValue>) {
   const facets = column?.getFacetedUniqueValues();
-  const selectedValues = new Set((column?.getFilterValue() as string[] | undefined) ?? []);
+  const filterValue = (column?.getFilterValue() as string[] | undefined) ?? [];
+  const selectedValues = useMemo(() => new Set(filterValue), [filterValue]);
   const [search, setSearch] = useState("");
 
   const filteredOptions = options.filter((option) =>
-    option.label.toLowerCase().includes(search.toLowerCase()),
+    option.label.toLowerCase().includes(search.toLowerCase())
   );
 
-  const selectedKeys = new Set(selectedValues);
+  const selectedKeys = useMemo(() => new Set(selectedValues), [selectedValues]);
 
   const handleSelectionChange = (keys: Selection) => {
     const nextKeys =

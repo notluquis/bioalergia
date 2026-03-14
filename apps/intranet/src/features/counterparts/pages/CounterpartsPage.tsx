@@ -23,7 +23,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import type { ColumnDef, OnChangeFn, PaginationState } from "@tanstack/react-table";
 import { Check, Filter, Plus, RefreshCcw } from "lucide-react";
-import { Suspense, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { TableRegion } from "@/components/data-table/TableRegion";
 import { useAuth } from "@/context/AuthContext";
@@ -925,6 +925,8 @@ function CounterpartsToolbar({
   visibleCounterparts,
   visibleCount,
 }: CounterpartsToolbarProps) {
+  const selectedCategoryFilterKeys = useMemo(() => new Set([categoryFilter]), [categoryFilter]);
+
   return (
     <div className="space-y-3">
       <Surface
@@ -940,10 +942,10 @@ function CounterpartsToolbar({
               <ToggleButtonGroup
                 className="w-max min-w-full pr-2"
                 disallowEmptySelection
-                selectedKeys={[categoryFilter]}
+                selectedKeys={selectedCategoryFilterKeys}
                 selectionMode="single"
                 onSelectionChange={(keys) => {
-                  const [next] = Array.from(keys as Iterable<string>);
+                  const [next] = Array.from(keys);
                   if (next) {
                     onCategoryFilterChange(next as "ALL" | CounterpartCategory);
                   }

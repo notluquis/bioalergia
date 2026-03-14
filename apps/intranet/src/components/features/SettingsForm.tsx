@@ -12,7 +12,7 @@ import {
 } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import type React from "react";
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 import { useAuth } from "@/context/AuthContext";
 import { type AppSettings, useSettings } from "@/context/SettingsContext";
@@ -168,6 +168,7 @@ export function SettingsForm() {
     }
     setLogoPreview(null);
     setLogoFile(null);
+    setFaviconPreview(null);
     setFaviconFile(null);
   }, [settings]);
 
@@ -454,6 +455,8 @@ function LogoSection({
   onUrlChange: (value: string) => void;
   previewUrl: string;
 }) {
+  const selectedKeys = useMemo(() => new Set([logoMode]), [logoMode]);
+
   return (
     <div className="col-span-full space-y-3 rounded-2xl border border-default-200 bg-default-50 p-4">
       <div className="flex items-center justify-between gap-2">
@@ -462,10 +465,10 @@ function LogoSection({
         </span>
         <ToggleButtonGroup
           disallowEmptySelection
-          selectedKeys={[logoMode]}
+          selectedKeys={selectedKeys}
           selectionMode="single"
           onSelectionChange={(keys) => {
-            const [next] = Array.from(keys as Iterable<string>);
+            const [next] = Array.from(keys);
             if (next === "url" || next === "upload") {
               onModeChange(next);
             }
@@ -535,6 +538,8 @@ function FaviconSection({
   onUrlChange: (value: string) => void;
   previewUrl: string;
 }) {
+  const selectedKeys = useMemo(() => new Set([faviconMode]), [faviconMode]);
+
   return (
     <div className="col-span-full space-y-3 rounded-2xl border border-default-200 bg-default-50 p-4">
       <div className="flex items-center justify-between gap-2">
@@ -543,10 +548,10 @@ function FaviconSection({
         </span>
         <ToggleButtonGroup
           disallowEmptySelection
-          selectedKeys={[faviconMode]}
+          selectedKeys={selectedKeys}
           selectionMode="single"
           onSelectionChange={(keys) => {
-            const [next] = Array.from(keys as Iterable<string>);
+            const [next] = Array.from(keys);
             if (next === "url" || next === "upload") {
               onModeChange(next);
             }
