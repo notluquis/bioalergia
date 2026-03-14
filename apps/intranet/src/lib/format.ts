@@ -46,13 +46,53 @@ export const coerceAmount = (v?: unknown): number => {
   if (typeof v === "number") {
     return v;
   }
-  const s = JSON.stringify(v)
-    .replaceAll("$", "")
-    .replaceAll(".", "")
-    .replaceAll(/\s/g, "")
+
+  let raw: string;
+  if (typeof v === "string") {
+    raw = v;
+  } else if (typeof v === "bigint" || typeof v === "boolean") {
+    raw = v.toString();
+  } else if (typeof v === "object" && Decimal.isDecimal(v)) {
+    raw = v.toString();
+  } else {
+    return 0;
+  }
+
+  let sanitized = raw
+    .trim()
     .replaceAll(/CLP/gi, "")
-    .replaceAll(",", ".");
-  const n = Number(s);
+    .replaceAll(/[^\d,.-]/g, "")
+    .replaceAll(/\s/g, "");
+
+  if (!sanitized) {
+    return 0;
+  }
+
+  const lastComma = sanitized.lastIndexOf(",");
+  const lastDot = sanitized.lastIndexOf(".");
+
+  if (lastComma >= 0 && lastDot >= 0) {
+    const decimalSeparator = lastComma > lastDot ? "," : ".";
+    const thousandSeparator = decimalSeparator === "," ? "." : ",";
+
+    sanitized = sanitized.replaceAll(thousandSeparator, "");
+    if (decimalSeparator === ",") {
+      sanitized = sanitized.replace(",", ".");
+    }
+  } else if (lastComma >= 0) {
+    const fractionalLength = sanitized.length - lastComma - 1;
+    sanitized =
+      fractionalLength > 0 && fractionalLength <= 2
+        ? sanitized.replace(",", ".")
+        : sanitized.replaceAll(",", "");
+  } else if (lastDot >= 0) {
+    const fractionalLength = sanitized.length - lastDot - 1;
+    if (fractionalLength === 3) {
+      sanitized = sanitized.replaceAll(".", "");
+    }
+  }
+
+  const n = Number(sanitized);
   return Number.isFinite(n) ? n : 0;
 };
 
