@@ -4,7 +4,11 @@ import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
-import { integrationsContract } from "@finanzas/orpc-contracts/integrations";
+import {
+  googleDriveAuthUrlSchema,
+  googleDriveDisconnectSchema,
+  googleDriveStatusSchema,
+} from "@finanzas/orpc-contracts/integrations";
 import type { Context as HonoContext } from "hono";
 import { setCookie } from "hono/cookie";
 import { z } from "zod";
@@ -39,7 +43,7 @@ const integrationsORPCRouterBase = {
       tags: ["Integrations"],
     })
     .input(emptySchema)
-    .output(integrationsContract.googleDisconnect["~orpc"].outputSchema)
+    .output(googleDriveDisconnectSchema)
     .handler(async () => {
       await db.setting
         .delete({
@@ -60,7 +64,7 @@ const integrationsORPCRouterBase = {
       summary: "Get Google Drive OAuth status",
       tags: ["Integrations"],
     })
-    .output(integrationsContract.googleStatus["~orpc"].outputSchema)
+    .output(googleDriveStatusSchema)
     .handler(async () => validateOAuthToken()),
 
   googleUrl: base
@@ -70,7 +74,7 @@ const integrationsORPCRouterBase = {
       summary: "Generate Google Drive OAuth URL",
       tags: ["Integrations"],
     })
-    .output(integrationsContract.googleUrl["~orpc"].outputSchema)
+    .output(googleDriveAuthUrlSchema)
     .handler(async ({ context }) => {
       const oauth2Client = await getOAuthClientBase();
       const state = randomBytes(32).toString("hex");

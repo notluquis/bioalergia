@@ -192,7 +192,7 @@ const financeORPCRouterBase = {
 
   autoCategoryRulesUpdate: writeFinance
     .route({ method: "PUT", path: "/auto-category-rules/{id}", tags: ["Finance"] })
-    .input(financeContract.autoCategoryRulesUpdate["~orpc"].inputSchema)
+    .input(z.object({ id: z.number().int().positive(), payload: financeUpdateAutoCategoryRuleSchema }))
     .output(financeAutoCategoryRuleResponseSchema)
     .handler(async ({ input }) => ({
       data: await updateFinancialAutoCategoryRule(input.id, input.payload),
@@ -227,7 +227,7 @@ const financeORPCRouterBase = {
 
   categoriesUpdate: writeFinance
     .route({ method: "PUT", path: "/categories/{id}", tags: ["Finance"] })
-    .input(financeContract.categoriesUpdate["~orpc"].inputSchema)
+    .input(z.object({ id: z.number().int().positive(), payload: financeUpdateCategorySchema }))
     .output(financeCategoryResponseSchema)
     .handler(async ({ input }) => ({
       data: await updateTransactionCategory(input.id, input.payload),
@@ -262,7 +262,7 @@ const financeORPCRouterBase = {
 
   compensationProfilesUpdate: writeFinance
     .route({ method: "PUT", path: "/compensation-profiles/{id}", tags: ["Finance"] })
-    .input(financeContract.compensationProfilesUpdate["~orpc"].inputSchema)
+    .input(z.object({ id: z.number().int().positive(), payload: financeUpdateCompensationProfileSchema }))
     .output(financeCompensationProfileResponseSchema)
     .handler(async ({ input }) => ({
       data: await updateCompensationProfile(input.id, input.payload),
@@ -271,7 +271,7 @@ const financeORPCRouterBase = {
 
   compensationProfilesUpsertBudget: writeFinance
     .route({ method: "PUT", path: "/compensation-profiles/{id}/budget", tags: ["Finance"] })
-    .input(financeContract.compensationProfilesUpsertBudget["~orpc"].inputSchema)
+    .input(z.object({ id: z.number().int().positive(), payload: financeUpsertCompensationBudgetSchema }))
     .output(financeCompensationBudgetResponseSchema)
     .handler(async ({ input }) => ({
       data: await upsertCompensationPeriodBudget(input.id, input.payload),
@@ -374,7 +374,7 @@ const financeORPCRouterBase = {
 
   transactionsUpdate: writeFinance
     .route({ method: "PUT", path: "/transactions/{id}", tags: ["Finance"] })
-    .input(financeContract.transactionsUpdate["~orpc"].inputSchema)
+    .input(z.object({ id: z.number().int().positive(), payload: financeUpdateTransactionSchema }))
     .output(financeTransactionResponseSchema)
     .handler(async ({ input }) => ({
       data: toPlainFinancialTransaction(await updateFinancialTransaction(input.id, input.payload)),

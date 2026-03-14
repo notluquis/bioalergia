@@ -4,8 +4,9 @@ import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import {
-  haulmerContract,
+  haulmerAvailablePeriodsResponseSchema,
   haulmerIncrementalSyncInputSchema,
+  haulmerSyncInputSchema,
   haulmerSyncResponseSchema,
 } from "@finanzas/orpc-contracts/haulmer";
 import type { Context as HonoContext } from "hono";
@@ -227,7 +228,7 @@ const haulmerORPCRouterBase = {
       summary: "List available Haulmer periods",
       tags: ["Haulmer"],
     })
-    .output(haulmerContract.availablePeriods["~orpc"].outputSchema)
+    .output(haulmerAvailablePeriodsResponseSchema)
     .handler(async () => await fetchAvailablePeriods()),
 
   sync: createHaulmer
@@ -237,8 +238,8 @@ const haulmerORPCRouterBase = {
       summary: "Trigger Haulmer sync",
       tags: ["Haulmer"],
     })
-    .input(haulmerContract.sync["~orpc"].inputSchema)
-    .output(haulmerContract.sync["~orpc"].outputSchema)
+    .input(haulmerSyncInputSchema)
+    .output(haulmerSyncResponseSchema)
     .handler(async ({ input }) => {
       const config = requireHaulmerConfig();
       const results = await syncPeriods({
@@ -267,8 +268,8 @@ const haulmerORPCRouterBase = {
       summary: "Trigger incremental Haulmer sync",
       tags: ["Haulmer"],
     })
-    .input(haulmerContract.syncIncremental["~orpc"].inputSchema)
-    .output(haulmerContract.syncIncremental["~orpc"].outputSchema)
+    .input(haulmerIncrementalSyncInputSchema)
+    .output(haulmerSyncResponseSchema)
     .handler(async ({ input }) => await syncIncremental(input)),
 };
 

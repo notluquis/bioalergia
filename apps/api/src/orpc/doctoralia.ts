@@ -317,22 +317,17 @@ const doctoraliaORPCRouterBase = {
     .handler(async ({ context }) => {
       const { getCachedToken } = await import("../lib/doctoralia/doctoralia-calendar-auth.js");
       const cached = await getCachedToken();
-      const storedExpiresAt = cached?.expiresAt;
-      const expiresAtIso =
-        typeof storedExpiresAt === "string" || storedExpiresAt instanceof Date
-          ? new Date(storedExpiresAt).toISOString()
-          : null;
 
       logEvent("doctoralia.calendar.oauth.status", {
         userId: context.user.id,
         connected: Boolean(cached),
-        expiresAt: expiresAtIso,
+        expiresAt: null,
       });
 
       return {
         data: {
           connected: Boolean(cached),
-          expiresAt: expiresAtIso ? new Date(expiresAtIso) : null,
+          expiresAt: null,
         },
         status: "ok",
       };

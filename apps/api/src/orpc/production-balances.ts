@@ -1,6 +1,12 @@
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
-import { productionBalancesContract } from "@finanzas/orpc-contracts/production-balances";
+import {
+  productionBalanceItemResponseSchema,
+  productionBalancePayloadSchema,
+  productionBalancesListResponseSchema,
+  productionBalanceQuerySchema,
+  productionBalanceUpdateSchema,
+} from "@finanzas/orpc-contracts/production-balances";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import dayjs from "dayjs";
@@ -116,7 +122,14 @@ const writeBalances = authed.use(async ({ context, next }) => {
 
 const productionBalancesORPCRouterBase = {
   create: writeBalances
-    .route(productionBalancesContract.create)
+    .route({
+      method: "POST",
+      path: "/",
+      summary: "Create a production balance",
+      tags: ["Production Balances"],
+    })
+    .input(productionBalancePayloadSchema)
+    .output(productionBalanceItemResponseSchema)
     .handler(async ({ context, input }) => {
       const created = await createProductionBalance(
         {
@@ -146,7 +159,14 @@ const productionBalancesORPCRouterBase = {
     }),
 
   list: readBalances
-    .route(productionBalancesContract.list)
+    .route({
+      method: "GET",
+      path: "/",
+      summary: "List production balances",
+      tags: ["Production Balances"],
+    })
+    .input(productionBalanceQuerySchema)
+    .output(productionBalancesListResponseSchema)
     .handler(async ({ input }) => {
       const today = dayjs();
       const toDateStr = input.to ?? today.format("YYYY-MM-DD");
@@ -162,7 +182,14 @@ const productionBalancesORPCRouterBase = {
     }),
 
   update: writeBalances
-    .route(productionBalancesContract.update)
+    .route({
+      method: "PUT",
+      path: "/{id}",
+      summary: "Update a production balance",
+      tags: ["Production Balances"],
+    })
+    .input(productionBalanceUpdateSchema)
+    .output(productionBalanceItemResponseSchema)
     .handler(async ({ input }) => {
       const updated = await updateProductionBalance(input.id, {
         balanceDate: input.date,

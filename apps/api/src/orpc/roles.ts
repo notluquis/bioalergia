@@ -1,9 +1,25 @@
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
-import { rolesContract } from "@finanzas/orpc-contracts/roles";
+import {
+  rolesPermissionsResponseSchema,
+  rolesReassignResponseSchema,
+  rolesResponseSchema,
+  rolesRoleFormSchema,
+  rolesRoleIdSchema,
+  rolesRoleMappingSchema,
+  rolesRoleMappingsResponseSchema,
+  rolesRoleReassignSchema,
+  rolesRoleUpdatePermissionsSchema,
+  rolesRoleUsersResponseSchema,
+  rolesStatusResponseSchema,
+  rolesSyncPermissionsResponseSchema,
+  rolesTelemetryResponseSchema,
+  rolesUnmappedSubjectsTelemetrySchema,
+} from "@finanzas/orpc-contracts/roles";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
+import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { logError, logEvent } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
@@ -98,66 +114,97 @@ const readPermissions = authed.use(async ({ context, next }) => {
 
 const rolesORPCRouterBase = {
   create: createRoles
-    .route(rolesContract.create)
-    .handler(async ({ input }) => {
+    .route({ method: "POST", path: "/", summary: "Create a role", tags: ["Roles"] })
+    .input(rolesRoleFormSchema)
+    .output(rolesStatusResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof rolesRoleFormSchema> }) => {
       await createRole(input);
       return { status: "ok" as const };
     }),
 
   delete: deleteRoles
-    .route(rolesContract.delete)
-    .handler(async ({ input }) => {
+    .route({ method: "DELETE", path: "/{id}", summary: "Delete a role", tags: ["Roles"] })
+    .input(rolesRoleIdSchema)
+    .output(rolesStatusResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof rolesRoleIdSchema> }) => {
       await deleteRole(input.id);
       return { status: "ok" as const };
     }),
 
   list: readRoles
-    .route(rolesContract.list)
+    .route({ method: "GET", path: "/", summary: "List roles", tags: ["Roles"] })
+    .output(rolesResponseSchema)
     .handler(async () => ({
       roles: await listRoles(),
     })),
 
   listMappings: readRoles
-    .route(rolesContract.listMappings)
+    .route({ method: "GET", path: "/mappings", summary: "List role mappings", tags: ["Roles"] })
+    .output(rolesRoleMappingsResponseSchema)
     .handler(async () => ({
       data: await getRoleMappings(),
     })),
 
   permissions: readPermissions
-    .route(rolesContract.permissions)
+    .route({ method: "GET", path: "/permissions", summary: "List permissions", tags: ["Roles"] })
+    .output(rolesPermissionsResponseSchema)
     .handler(async () => ({
       permissions: await listPermissions(),
     })),
 
   reassignUsers: updateRoles
-    .route(rolesContract.reassignUsers)
-    .handler(async ({ input }) => {
+    .route({
+      method: "POST",
+      path: "/{id}/reassign",
+      summary: "Reassign users from one role to another",
+      tags: ["Roles"],
+    })
+    .input(rolesRoleReassignSchema)
+    .output(rolesReassignResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof rolesRoleReassignSchema> }) => {
       const result = await reassignRoleUsers(input.id, input.targetRoleId);
       return { status: "ok" as const, ...result };
     }),
 
   roleUsers: readRoles
-    .route(rolesContract.roleUsers)
-    .handler(async ({ input }) => ({
+    .route({ method: "GET", path: "/{id}/users", summary: "List users assigned to a role", tags: ["Roles"] })
+    .input(rolesRoleIdSchema)
+    .output(rolesRoleUsersResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof rolesRoleIdSchema> }) => ({
       users: await listRoleUsers(input.id),
     })),
 
   saveMapping: updateRoles
-    .route(rolesContract.saveMapping)
-    .handler(async ({ input }) => {
+    .route({ method: "POST", path: "/mappings", summary: "Save a role mapping", tags: ["Roles"] })
+    .input(rolesRoleMappingSchema)
+    .output(rolesStatusResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof rolesRoleMappingSchema> }) => {
       await saveRoleMapping(input);
       return { status: "ok" as const };
     }),
 
   syncPermissions: updateRoles
-    .route(rolesContract.syncPermissions)
+    .route({
+      method: "POST",
+      path: "/permissions/sync",
+      summary: "Sync permissions from CASL subjects/actions",
+      tags: ["Roles"],
+    })
+    .output(rolesSyncPermissionsResponseSchema)
     .handler(async () => {
       const result = await syncPermissions();
       return { status: "ok" as const, ...result };
     }),
 
   telemetryUnmappedSubjects: readRoles
-    .route(rolesContract.telemetryUnmappedSubjects)
+    .route({
+      method: "POST",
+      path: "/telemetry/unmapped-subjects",
+      summary: "Report unmapped CASL subjects telemetry",
+      tags: ["Roles"],
+    })
+    .input(rolesUnmappedSubjectsTelemetrySchema)
+    .output(rolesTelemetryResponseSchema)
     .handler(async ({ context, input }) => {
       const shouldLog = await shouldLogUnmappedSubjects();
       if (!shouldLog) {
@@ -175,15 +222,24 @@ const rolesORPCRouterBase = {
     }),
 
   update: updateRoles
-    .route(rolesContract.update)
-    .handler(async ({ input }) => {
+    .route({ method: "PUT", path: "/{id}", summary: "Update a role", tags: ["Roles"] })
+    .input(z.object({ id: z.number().int(), payload: rolesRoleFormSchema }))
+    .output(rolesStatusResponseSchema)
+    .handler(async ({ input }: { input: { id: number; payload: z.input<typeof rolesRoleFormSchema> } }) => {
       await updateRole(input.id, input.payload);
       return { status: "ok" as const };
     }),
 
   updatePermissions: updateRoles
-    .route(rolesContract.updatePermissions)
-    .handler(async ({ input }) => {
+    .route({
+      method: "POST",
+      path: "/{id}/permissions",
+      summary: "Replace role permissions",
+      tags: ["Roles"],
+    })
+    .input(rolesRoleUpdatePermissionsSchema)
+    .output(rolesStatusResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof rolesRoleUpdatePermissionsSchema> }) => {
       await assignPermissionsToRole(input.id, input.permissionIds);
       return { status: "ok" as const };
     }),

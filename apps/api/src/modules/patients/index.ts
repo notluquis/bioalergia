@@ -31,7 +31,7 @@ dayjs.extend(timezone);
 
 const TIMEZONE = "America/Santiago";
 const parseDateOnly = (value: string) => dayjs.tz(value, "YYYY-MM-DD", TIMEZONE).toDate();
-const withBudgetItems = <T extends { budgets?: unknown[] }>(payload: T): T => {
+export const withBudgetItems = <T extends { budgets?: unknown[] }>(payload: T): T => {
   if (!Array.isArray(payload.budgets)) {
     return payload;
   }
@@ -160,7 +160,7 @@ function hasSourceChanges(
   );
 }
 
-async function syncPatientDteSaleSources(options: DteSalesSyncOptions) {
+export async function syncPatientDteSaleSources(options: DteSalesSyncOptions) {
   const latestRows = await buildDteLatestClientQuery(options).execute();
   const normalizedRows = normalizeDteClientRows(latestRows);
 

@@ -1,5 +1,4 @@
 import { db } from "@finanzas/db";
-import { patientsContract } from "@finanzas/orpc-contracts/patients";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
@@ -12,6 +11,9 @@ import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
+import {
+  syncPatientDteSaleSources,
+} from "../modules/patients";
 import { SuperJSONRPCHandler } from "./superjson";
 
 configureSuperjson();
@@ -366,7 +368,9 @@ const createPayments = authed.use(async ({ context, next }) => {
 
 const patientsORPCRouterBase = {
   create: createPatients
-    .route(patientsContract.create)
+    .route({ method: "POST", path: "/", tags: ["Patients"] })
+    .input(createPatientInputSchema)
+    .output(patientResponseSchema)
     .handler(async ({ input }) => {
       let person = await db.person.findUnique({
         where: { rut: input.rut },
@@ -425,7 +429,9 @@ const patientsORPCRouterBase = {
     }),
 
   createBudget: createBudgets
-    .route(patientsContract.createBudget)
+    .route({ method: "POST", path: "/budgets", tags: ["Patients"] })
+    .input(createBudgetInputSchema)
+    .output(budgetResponseSchema)
     .handler(async ({ input }) => {
       const totalAmount = input.items.reduce(
         (sum, item) => sum + item.unitPrice * item.quantity,
@@ -457,7 +463,9 @@ const patientsORPCRouterBase = {
     }),
 
   createConsultation: createConsultations
-    .route(patientsContract.createConsultation)
+    .route({ method: "POST", path: "/consultations", tags: ["Patients"] })
+    .input(createConsultationInputSchema)
+    .output(consultationResponseSchema)
     .handler(async ({ input }) => {
       const patient = await db.patient.findUnique({
         where: { id: input.patientId },
@@ -486,7 +494,9 @@ const patientsORPCRouterBase = {
     }),
 
   createPayment: createPayments
-    .route(patientsContract.createPayment)
+    .route({ method: "POST", path: "/payments", tags: ["Patients"] })
+    .input(createPaymentInputSchema)
+    .output(paymentResponseSchema)
     .handler(async ({ input }) => {
       const payment = await db.patientPayment.create({
         data: {
@@ -507,7 +517,9 @@ const patientsORPCRouterBase = {
     }),
 
   listBudgets: readBudgets
-    .route(patientsContract.listBudgets)
+    .route({ method: "GET", path: "/{patientId}/budgets", tags: ["Patients"] })
+    .input(patientIdInputSchema)
+    .output(budgetListResponseSchema)
     .handler(async ({ input }) => {
       const budgets = await db.budget.findMany({
         where: { patientId: input.patientId },
@@ -525,7 +537,9 @@ const patientsORPCRouterBase = {
     }),
 
   listPayments: readPayments
-    .route(patientsContract.listPayments)
+    .route({ method: "GET", path: "/{patientId}/payments", tags: ["Patients"] })
+    .input(patientIdInputSchema)
+    .output(paymentListResponseSchema)
     .handler(async ({ input }) => {
       const payments = await db.patientPayment.findMany({
         where: { patientId: input.patientId },
@@ -539,7 +553,9 @@ const patientsORPCRouterBase = {
     }),
 
   detail: readPatients
-    .route(patientsContract.detail)
+    .route({ method: "GET", path: "/{patientId}", tags: ["Patients"] })
+    .input(patientIdInputSchema)
+    .output(patientDetailResponseSchema)
     .handler(async ({ input }) => {
       const patient = await db.patient.findUnique({
         where: { id: input.patientId },
@@ -570,22 +586,30 @@ const patientsORPCRouterBase = {
       }
 
       return {
-        patient: withBudgetItems(patient),
+        patient: {
+          ...patient,
+          budgets: patient.budgets.map((budget) => ({
+            ...budget,
+            items: [],
+          })),
+        },
         status: "ok",
       };
     }),
 
   list: readPatients
-    .route(patientsContract.list)
+    .route({ method: "GET", path: "/", tags: ["Patients"] })
+    .input(listPatientsInputSchema)
+    .output(patientListResponseSchema)
     .handler(async ({ input }) => {
       const where = input.q
         ? {
             person: {
               OR: [
-                { names: { contains: input.q, mode: "insensitive" } },
-                { fatherName: { contains: input.q, mode: "insensitive" } },
-                { motherName: { contains: input.q, mode: "insensitive" } },
-                { rut: { contains: input.q, mode: "insensitive" } },
+                { names: { contains: input.q, mode: "insensitive" as const } },
+                { fatherName: { contains: input.q, mode: "insensitive" as const } },
+                { motherName: { contains: input.q, mode: "insensitive" as const } },
+                { rut: { contains: input.q, mode: "insensitive" as const } },
               ],
             },
           }
@@ -609,7 +633,9 @@ const patientsORPCRouterBase = {
     }),
 
   listDteSources: readPatients
-    .route(patientsContract.listDteSources)
+    .route({ method: "GET", path: "/sources/dte", tags: ["Patients"] })
+    .input(listPatientDteSourcesInputSchema)
+    .output(patientDteSourceListResponseSchema)
     .handler(async ({ input }) => {
       const maxRows = Math.min(input.limit || 100, 1000);
       const rows = await db.patientDteSaleSource.findMany({
@@ -619,8 +645,8 @@ const patientsORPCRouterBase = {
             input.q
               ? {
                   OR: [
-                    { clientRUT: { contains: input.q, mode: "insensitive" } },
-                    { clientName: { contains: input.q, mode: "insensitive" } },
+                    { clientRUT: { contains: input.q, mode: "insensitive" as const } },
+                    { clientName: { contains: input.q, mode: "insensitive" as const } },
                   ],
                 }
               : {},
@@ -637,7 +663,9 @@ const patientsORPCRouterBase = {
     }),
 
   syncDteSources: readPatients
-    .route(patientsContract.syncDteSources)
+    .route({ method: "POST", path: "/sources/dte/sync", tags: ["Patients"] })
+    .input(syncPatientDteSourcesInputSchema)
+    .output(patientDteSyncResponseSchema)
     .handler(async ({ input }) => {
       const result = await syncPatientDteSaleSources({
         dryRun: input.dryRun ?? false,

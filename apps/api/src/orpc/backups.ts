@@ -13,6 +13,7 @@ import {
   backupsTriggerResponseSchema,
 } from "@finanzas/orpc-contracts/backups";
 import type { Context as HonoContext } from "hono";
+import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { isOAuthConfigured } from "../lib/google/google-core";
 import { logError } from "../lib/logger";
@@ -28,6 +29,57 @@ type BackupsORPCContext = {
 };
 
 const base = os.$context<BackupsORPCContext>();
+
+type BackupJobOutput = z.output<typeof backupsTriggerResponseSchema>["job"];
+
+function toBackupJobOutput(job: {
+  completedAt?: Date;
+  currentStep: string;
+  error?: string;
+  id: string;
+  progress: number;
+  result?: Record<string, unknown>;
+  startedAt: Date;
+  status: "completed" | "failed" | "pending" | "running" | "uploading";
+  type: "full" | "scheduled";
+}): BackupJobOutput {
+  const rawResult = job.result;
+  const hasStructuredResult =
+    rawResult &&
+    typeof rawResult.driveFileId === "string" &&
+    typeof rawResult.durationMs === "number" &&
+    typeof rawResult.filename === "string" &&
+    typeof rawResult.sizeBytes === "number" &&
+    Array.isArray(rawResult.tables);
+
+  return {
+    completedAt: job.completedAt,
+    currentStep: job.currentStep,
+    error: job.error,
+    id: job.id,
+    progress: job.progress,
+    result: hasStructuredResult
+      ? {
+          driveFileId: rawResult.driveFileId as string,
+          durationMs: rawResult.durationMs as number,
+          filename: rawResult.filename as string,
+          message: typeof rawResult.message === "string" ? rawResult.message : undefined,
+          sizeBytes: rawResult.sizeBytes as number,
+          skipped: typeof rawResult.skipped === "boolean" ? rawResult.skipped : undefined,
+          stats:
+            rawResult.stats && typeof rawResult.stats === "object" && !Array.isArray(rawResult.stats)
+              ? (rawResult.stats as Record<string, { count: number; hash: string }>)
+              : undefined,
+          tables: rawResult.tables as string[],
+          webViewLink:
+            typeof rawResult.webViewLink === "string" ? rawResult.webViewLink : undefined,
+        }
+      : undefined,
+    startedAt: job.startedAt,
+    status: job.status,
+    type: job.type,
+  };
+}
 
 const authed = base.use(async ({ context, next }) => {
   const user = await getSessionUser(context.hono);
@@ -157,7 +209,7 @@ const backupsORPCRouterBase = {
     .route({ method: "POST", path: "/", tags: ["Backups"] })
     .output(backupsTriggerResponseSchema)
     .handler(async () => ({
-      job: startBackup(),
+      job: toBackupJobOutput(startBackup()),
       message: "Backup started",
       status: "ok" as const,
     })),

@@ -180,6 +180,14 @@ function getRequiredToken(context: AuthORPCContext) {
   return token;
 }
 
+function toRecordExtensions(value: unknown): Record<string, unknown> | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return undefined;
+  }
+
+  return value as Record<string, unknown>;
+}
+
 const authORPCRouterBase = {
   login: base
     .route({ method: "POST", path: "/login", summary: "Login", tags: ["Auth"] })
@@ -489,7 +497,19 @@ const authORPCRouterBase = {
       });
 
       storeChallenge(`login:${options.challenge}`, options.challenge);
-      return options;
+      return {
+        allowCredentials:
+          options.allowCredentials?.map((credential) => ({
+            id: credential.id,
+            transports: credential.transports,
+            type: credential.type,
+          })) ?? [],
+        challenge: options.challenge,
+        extensions: toRecordExtensions(options.extensions),
+        rpId: options.rpId,
+        timeout: options.timeout,
+        userVerification: options.userVerification,
+      };
     }),
 
   passkeyLoginVerify: base
@@ -625,7 +645,31 @@ const authORPCRouterBase = {
       });
 
       storeChallenge(`register:${options.challenge}`, options.challenge, session.userId);
-      return options;
+      return {
+        attestation: options.attestation,
+        authenticatorSelection: options.authenticatorSelection,
+        challenge: options.challenge,
+        excludeCredentials: options.excludeCredentials?.map((credential) => ({
+          id: credential.id,
+          transports: credential.transports,
+          type: credential.type,
+        })),
+        extensions: toRecordExtensions(options.extensions),
+        pubKeyCredParams: options.pubKeyCredParams.map((param) => ({
+          alg: param.alg,
+          type: param.type,
+        })),
+        rp: {
+          id: options.rp.id,
+          name: options.rp.name,
+        },
+        timeout: options.timeout,
+        user: {
+          displayName: options.user.displayName,
+          id: options.user.id,
+          name: options.user.name,
+        },
+      };
     }),
 
   passkeyRegisterVerify: base

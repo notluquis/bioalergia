@@ -1,5 +1,10 @@
 import { db } from "@finanzas/db";
-import { peopleContract } from "@finanzas/orpc-contracts/people";
+import {
+  peopleListInputSchema,
+  peopleListResponseSchema,
+  personDetailResponseSchema,
+  personIdSchema,
+} from "@finanzas/orpc-contracts/people";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
@@ -45,7 +50,14 @@ const readPeople = authed.use(async ({ context, next }) => {
 
 const peopleORPCRouterBase = {
   detail: readPeople
-    .route(peopleContract.detail)
+    .route({
+      method: "GET",
+      path: "/{id}",
+      summary: "Get person detail",
+      tags: ["People"],
+    })
+    .input(personIdSchema)
+    .output(personDetailResponseSchema)
     .handler(async ({ input }) => {
       const person = await db.person.findUnique({
         where: { id: input.id },
@@ -69,7 +81,14 @@ const peopleORPCRouterBase = {
     }),
 
   list: readPeople
-    .route(peopleContract.list)
+    .route({
+      method: "GET",
+      path: "/",
+      summary: "List people",
+      tags: ["People"],
+    })
+    .input(peopleListInputSchema)
+    .output(peopleListResponseSchema)
     .handler(async ({ input }) => {
       const people = await db.person.findMany({
         where: input.includeTest

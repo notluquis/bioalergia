@@ -1,6 +1,11 @@
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
-import { notificationsContract } from "@finanzas/orpc-contracts/notifications";
+import {
+  notificationsStatusResponseSchema,
+  sendTestInputSchema,
+  subscribeInputSchema,
+  unsubscribeInputSchema,
+} from "@finanzas/orpc-contracts/notifications";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
@@ -49,7 +54,14 @@ const readNotifications = authed.use(async ({ context, next }) => {
 
 const notificationsORPCRouterBase = {
   sendTest: readNotifications
-    .route(notificationsContract.sendTest)
+    .route({
+      method: "POST",
+      path: "/send-test",
+      summary: "Send a test push notification",
+      tags: ["Notifications"],
+    })
+    .input(sendTestInputSchema)
+    .output(notificationsStatusResponseSchema)
     .handler(async ({ context }) => {
       return sendPushNotification(context.user.id, {
         title: "Test Notification",
@@ -58,14 +70,28 @@ const notificationsORPCRouterBase = {
     }),
 
   subscribe: authed
-    .route(notificationsContract.subscribe)
+    .route({
+      method: "POST",
+      path: "/subscribe",
+      summary: "Subscribe the current user to push notifications",
+      tags: ["Notifications"],
+    })
+    .input(subscribeInputSchema)
+    .output(notificationsStatusResponseSchema)
     .handler(async ({ context, input }) => {
       await subscribeToPush(context.user.id, input.subscription);
       return { message: "Subscribed successfully", status: "ok" };
     }),
 
   unsubscribe: authed
-    .route(notificationsContract.unsubscribe)
+    .route({
+      method: "POST",
+      path: "/unsubscribe",
+      summary: "Unsubscribe the current user from push notifications",
+      tags: ["Notifications"],
+    })
+    .input(unsubscribeInputSchema)
+    .output(notificationsStatusResponseSchema)
     .handler(async ({ context, input }) => {
       await unsubscribeFromPush(context.user.id, input.endpoint);
       return { message: "Unsubscribed successfully", status: "ok" };

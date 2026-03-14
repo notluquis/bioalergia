@@ -1,9 +1,22 @@
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
-import { inventoryContract } from "@finanzas/orpc-contracts/inventory";
+import {
+  inventoryAllergyOverviewResponseSchema,
+  inventoryCategoryInputSchema,
+  inventoryCategoryResponseSchema,
+  inventoryCategoriesResponseSchema,
+  inventoryIdInputSchema,
+  inventoryItemCreateInputSchema,
+  inventoryItemResponseSchema,
+  inventoryItemsResponseSchema,
+  inventoryItemUpdateInputSchema,
+  inventoryMovementInputSchema,
+  inventoryStatusResponseSchema,
+} from "@finanzas/orpc-contracts/inventory";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
+import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
@@ -78,7 +91,13 @@ const requireManageInventorySettings = authed.use(async ({ context, next }) => {
 });
 
 const listAllergyOverviewRoute = requireReadInventory
-  .route(inventoryContract.allergyOverview)
+  .route({
+    method: "GET",
+    path: "/allergy-overview",
+    summary: "List allergy-focused inventory overview",
+    tags: ["Inventory"],
+  })
+  .output(inventoryAllergyOverviewResponseSchema)
   .handler(async () => {
     const items = await listInventoryItems();
 
@@ -108,7 +127,8 @@ const listAllergyOverviewRoute = requireReadInventory
   });
 
 const listCategoriesRoute = requireReadInventory
-  .route(inventoryContract.listCategories)
+  .route({ method: "GET", path: "/categories", summary: "List inventory categories", tags: ["Inventory"] })
+  .output(inventoryCategoriesResponseSchema)
   .handler(async () => {
     const categories = await listInventoryCategories();
     return {
@@ -122,8 +142,10 @@ const listCategoriesRoute = requireReadInventory
   });
 
 const createCategoryRoute = requireManageInventorySettings
-  .route(inventoryContract.createCategory)
-  .handler(async ({ input }) => {
+  .route({ method: "POST", path: "/categories", summary: "Create an inventory category", tags: ["Inventory"] })
+  .input(inventoryCategoryInputSchema)
+  .output(inventoryCategoryResponseSchema)
+  .handler(async ({ input }: { input: z.input<typeof inventoryCategoryInputSchema> }) => {
     const category = await createInventoryCategory(input.name);
     return {
       data: {
@@ -136,14 +158,22 @@ const createCategoryRoute = requireManageInventorySettings
   });
 
 const deleteCategoryRoute = requireManageInventorySettings
-  .route(inventoryContract.deleteCategory)
-  .handler(async ({ input }) => {
+  .route({
+    method: "DELETE",
+    path: "/categories/{id}",
+    summary: "Delete an inventory category",
+    tags: ["Inventory"],
+  })
+  .input(inventoryIdInputSchema)
+  .output(inventoryStatusResponseSchema)
+  .handler(async ({ input }: { input: z.output<typeof inventoryIdInputSchema> }) => {
     await deleteInventoryCategory(input.id);
     return { status: "ok" as const };
   });
 
 const listItemsRoute = requireReadInventory
-  .route(inventoryContract.listItems)
+  .route({ method: "GET", path: "/items", summary: "List inventory items", tags: ["Inventory"] })
+  .output(inventoryItemsResponseSchema)
   .handler(async () => {
     const items = await listInventoryItems();
     return {
@@ -162,8 +192,10 @@ const listItemsRoute = requireReadInventory
   });
 
 const createItemRoute = requireWriteInventory
-  .route(inventoryContract.createItem)
-  .handler(async ({ input }) => {
+  .route({ method: "POST", path: "/items", summary: "Create an inventory item", tags: ["Inventory"] })
+  .input(inventoryItemCreateInputSchema)
+  .output(inventoryItemResponseSchema)
+  .handler(async ({ input }: { input: z.input<typeof inventoryItemCreateInputSchema> }) => {
     const item = await createInventoryItem({
       name: input.name,
       description: input.description ?? null,
@@ -187,8 +219,15 @@ const createItemRoute = requireWriteInventory
   });
 
 const updateItemRoute = requireWriteInventory
-  .route(inventoryContract.updateItem)
-  .handler(async ({ input }) => {
+  .route({ method: "PUT", path: "/items/{id}", summary: "Update an inventory item", tags: ["Inventory"] })
+  .input(z.object({ id: z.coerce.number().int().positive(), item: inventoryItemUpdateInputSchema }))
+  .output(inventoryItemResponseSchema)
+  .handler(
+    async ({
+      input,
+    }: {
+      input: { id: number; item: z.input<typeof inventoryItemUpdateInputSchema> };
+    }) => {
     const item = await updateInventoryItem(input.id, {
       name: input.item.name,
       description: input.item.description,
@@ -209,18 +248,28 @@ const updateItemRoute = requireWriteInventory
       },
       status: "ok" as const,
     };
-  });
+    },
+  );
 
 const deleteItemRoute = requireWriteInventory
-  .route(inventoryContract.deleteItem)
-  .handler(async ({ input }) => {
+  .route({ method: "DELETE", path: "/items/{id}", summary: "Delete an inventory item", tags: ["Inventory"] })
+  .input(inventoryIdInputSchema)
+  .output(inventoryStatusResponseSchema)
+  .handler(async ({ input }: { input: z.output<typeof inventoryIdInputSchema> }) => {
     await deleteInventoryItem(input.id);
     return { status: "ok" as const };
   });
 
 const createMovementRoute = requireWriteInventory
-  .route(inventoryContract.createMovement)
-  .handler(async ({ input }) => {
+  .route({
+    method: "POST",
+    path: "/movements",
+    summary: "Create an inventory movement",
+    tags: ["Inventory"],
+  })
+  .input(inventoryMovementInputSchema)
+  .output(inventoryStatusResponseSchema)
+  .handler(async ({ input }: { input: z.input<typeof inventoryMovementInputSchema> }) => {
     await createInventoryMovement({
       itemId: input.item_id,
       quantityChange: input.quantity_change,
