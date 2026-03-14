@@ -13,6 +13,9 @@ import {
   Separator,
   Skeleton,
   Surface,
+  ToggleButton,
+  ToggleButtonGroup,
+  Toolbar,
   Tabs,
   TextField,
 } from "@heroui/react";
@@ -258,7 +261,7 @@ function useCounterpartsMutations(params: {
         queryKey: [...counterpartKeys.all, "unassigned-payout"],
       });
       params.toastSuccess(
-        `Sync completado: ${result.syncedCounterparts} contrapartes, ${result.syncedAccounts} cuentas, ${result.conflictCount ?? 0} conflictos.`,
+        `Sync completado: ${result.syncedCounterparts} contrapartes, ${result.syncedAccounts} cuentas, ${result.conflictCount ?? 0} conflictos.`
       );
     },
     onError: (error_) => {
@@ -300,7 +303,7 @@ function useCounterpartsDerived(params: {
   const assignExistingCounterpart =
     assignRutCompact.length > 0
       ? (params.counterparts.find(
-          (item) => item.identificationNumber.toUpperCase() === assignRutCompact.toUpperCase(),
+          (item) => item.identificationNumber.toUpperCase() === assignRutCompact.toUpperCase()
         ) ?? null)
       : null;
   const assignPreviewMessage = buildAssignPreviewMessage({
@@ -356,7 +359,7 @@ function useCounterpartsActions(params: {
         updateMutation: params.updateMutation,
       });
       params.toastSuccess(
-        wasUpdating ? "Contraparte actualizada correctamente" : "Contraparte creada correctamente",
+        wasUpdating ? "Contraparte actualizada correctamente" : "Contraparte creada correctamente"
       );
 
       params.setSelectedId(savedId);
@@ -406,7 +409,7 @@ function useCounterpartsActions(params: {
       params.setSelectedId(result.counterpart.id);
       if (result.conflicts.length > 0) {
         params.toastInfo(
-          `Asignadas ${result.assignedCount}. ${result.conflicts.length} cuentas quedaron en conflicto.`,
+          `Asignadas ${result.assignedCount}. ${result.conflicts.length} cuentas quedaron en conflicto.`
         );
       } else {
         params.toastSuccess(`Asignadas ${result.assignedCount} cuentas a la contraparte.`);
@@ -730,7 +733,7 @@ function UnassignedPayoutAccountsTable({
 }) {
   const selectedSet = new Set(selectedAccounts);
   const selectedOnCurrentPage = rows.filter((row) =>
-    selectedSet.has(row.payoutBankAccountNumber),
+    selectedSet.has(row.payoutBankAccountNumber)
   ).length;
   const allCurrentPageSelected = rows.length > 0 && selectedOnCurrentPage === rows.length;
   const partiallySelectedCurrentPage =
@@ -767,7 +770,7 @@ function UnassignedPayoutAccountsTable({
             if (allCurrentPageSelected) {
               const currentAccounts = new Set(rows.map((row) => row.payoutBankAccountNumber));
               setSelectedAccounts(
-                selectedAccounts.filter((account) => !currentAccounts.has(account)),
+                selectedAccounts.filter((account) => !currentAccounts.has(account))
               );
             } else {
               const merged = new Set([
@@ -929,27 +932,30 @@ function CounterpartsToolbar({
         variant="secondary"
       >
         <div className="space-y-4">
-          <div className="flex items-start justify-between gap-3">
+          <Toolbar
+            aria-label="Filtros y acciones de contrapartes"
+            className="flex flex-wrap items-start justify-between gap-3"
+          >
             <div className="min-w-0 flex-1 overflow-x-auto">
-              <div className="flex w-max min-w-full items-center gap-2 pr-2">
+              <ToggleButtonGroup
+                className="w-max min-w-full pr-2"
+                disallowEmptySelection
+                selectedKeys={[categoryFilter]}
+                selectionMode="single"
+                onSelectionChange={(keys) => {
+                  const [next] = Array.from(keys as Iterable<string>);
+                  if (next) {
+                    onCategoryFilterChange(next as "ALL" | CounterpartCategory);
+                  }
+                }}
+              >
                 {CATEGORY_FILTERS.map((filter) => (
-                  <Button
-                    key={filter.value}
-                    onPress={() => {
-                      onCategoryFilterChange(filter.value);
-                    }}
-                    size="sm"
-                    variant={categoryFilter === filter.value ? "secondary" : "ghost"}
-                    className={
-                      categoryFilter === filter.value
-                        ? "border border-primary/35 bg-primary/10 text-primary"
-                        : ""
-                    }
-                  >
+                  <ToggleButton id={filter.value} key={filter.value} size="sm">
+                    {filter.value !== CATEGORY_FILTERS[0]?.value && <ToggleButtonGroup.Separator />}
                     {filter.label}
-                  </Button>
+                  </ToggleButton>
                 ))}
-              </div>
+              </ToggleButtonGroup>
             </div>
             <div className="flex shrink-0 items-center gap-2">
               {canSync ? (
@@ -972,7 +978,7 @@ function CounterpartsToolbar({
                 </Button>
               ) : null}
             </div>
-          </div>
+          </Toolbar>
 
           <Separator />
 

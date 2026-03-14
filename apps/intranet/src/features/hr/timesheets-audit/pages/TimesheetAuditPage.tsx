@@ -6,7 +6,6 @@
 import {
   Alert,
   Button,
-  ButtonGroup,
   Card,
   Chip,
   Description,
@@ -15,6 +14,8 @@ import {
   ListBox,
   Select,
   Skeleton,
+  ToggleButton,
+  ToggleButtonGroup,
 } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
@@ -41,7 +42,7 @@ import "dayjs/locale/es";
 const TimesheetAuditCalendar = lazy(() =>
   import("@/features/hr/timesheets-audit/components/TimesheetAuditCalendar").then((m) => ({
     default: m.TimesheetAuditCalendar,
-  })),
+  }))
 );
 
 dayjs.extend(isoWeek);
@@ -151,7 +152,7 @@ export function TimesheetAuditPage() {
   const totalOverlapDays = overlapsByDate.size;
   const totalOverlapPairs = [...overlapsByDate.values()].reduce(
     (sum, info) => sum + info.total_overlapping_pairs,
-    0,
+    0
   );
 
   // Handlers
@@ -296,20 +297,25 @@ function PeriodSelectionPanel({
       </div>
 
       <div className="overflow-x-auto pb-2">
-        <ButtonGroup className="min-w-max">
+        <ToggleButtonGroup
+          className="min-w-max"
+          disallowEmptySelection
+          selectedKeys={[quickRange]}
+          selectionMode="single"
+          onSelectionChange={(keys) => {
+            const [next] = Array.from(keys as Iterable<string>);
+            if (next) {
+              handleQuickRangeChange(next as QuickRange);
+            }
+          }}
+        >
           {QUICK_RANGES.map((range) => (
-            <Button
-              size="sm"
-              variant={quickRange === range.id ? "primary" : "ghost"}
-              key={range.id}
-              onPress={() => {
-                handleQuickRangeChange(range.id);
-              }}
-            >
+            <ToggleButton id={range.id} key={range.id} size="sm">
+              {range.id !== QUICK_RANGES[0]?.id && <ToggleButtonGroup.Separator />}
               {range.label}
-            </Button>
+            </ToggleButton>
           ))}
-        </ButtonGroup>
+        </ToggleButtonGroup>
       </div>
 
       {quickRange === "custom" && (
@@ -373,7 +379,7 @@ function PeriodSelectionPanel({
                         "justify-start rounded-lg border p-3 text-left ",
                         isActive
                           ? "border-primary bg-primary/10 text-primary"
-                          : "border-default-200 bg-background text-foreground hover:border-primary/50",
+                          : "border-default-200 bg-background text-foreground hover:border-primary/50"
                       )}
                       key={week.key}
                       onPress={() => handleWeekToggle(week.key)}

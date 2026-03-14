@@ -1,4 +1,12 @@
-import { Card, Chip, InputGroup, TextField } from "@heroui/react";
+import {
+  Card,
+  Chip,
+  InputGroup,
+  TextField,
+  ToggleButton,
+  ToggleButtonGroup,
+  Toolbar,
+} from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { AlertCircle, CheckCircle, Search, Settings, ShieldAlert } from "lucide-react";
@@ -51,7 +59,7 @@ function RoutesAuditPage() {
         path,
         status: "technical" as const,
         message: "Auto-excluded",
-      })),
+      }))
     );
 
     // Add missing nav errors
@@ -60,7 +68,7 @@ function RoutesAuditPage() {
         path,
         status: "error" as const,
         message: "Missing staticData.nav",
-      })),
+      }))
     );
 
     // Add missing permission errors
@@ -69,7 +77,7 @@ function RoutesAuditPage() {
         path,
         status: "error" as const,
         message: "Missing staticData.permission",
-      })),
+      }))
     );
 
     // Filter by text
@@ -144,7 +152,10 @@ function RoutesAuditPage() {
       </div>
 
       <div className="space-y-4">
-        <div className="flex items-center gap-4">
+        <Toolbar
+          aria-label="Filtros de auditoría de rutas"
+          className="flex flex-wrap items-center gap-4"
+        >
           <TextField className="flex-1">
             <InputGroup>
               <InputGroup.Prefix className="text-muted-foreground">
@@ -157,41 +168,32 @@ function RoutesAuditPage() {
               />
             </InputGroup>
           </TextField>
-          <div className="flex items-center gap-2">
-            <Chip
-              color={filter === "all" ? "accent" : "default"}
-              variant={filter === "all" ? "primary" : "tertiary"}
-              className="cursor-pointer"
-              onClick={() => setFilter("all")}
-            >
-              All
-            </Chip>
-            <Chip
-              color={filter === "valid" ? "accent" : "default"}
-              variant={filter === "valid" ? "primary" : "tertiary"}
-              className="cursor-pointer"
-              onClick={() => setFilter("valid")}
-            >
+          <ToggleButtonGroup
+            disallowEmptySelection
+            selectedKeys={[filter]}
+            selectionMode="single"
+            onSelectionChange={(keys) => {
+              const [next] = Array.from(keys as Iterable<string>);
+              if (next) {
+                setFilter(next as "all" | "valid" | "technical" | "error");
+              }
+            }}
+          >
+            <ToggleButton id="all">All</ToggleButton>
+            <ToggleButton id="valid">
+              <ToggleButtonGroup.Separator />
               Valid
-            </Chip>
-            <Chip
-              color={filter === "technical" ? "accent" : "default"}
-              variant={filter === "technical" ? "primary" : "tertiary"}
-              className="cursor-pointer"
-              onClick={() => setFilter("technical")}
-            >
+            </ToggleButton>
+            <ToggleButton id="technical">
+              <ToggleButtonGroup.Separator />
               Technical
-            </Chip>
-            <Chip
-              color={filter === "error" ? "danger" : "default"}
-              variant={filter === "error" ? "primary" : "tertiary"}
-              className="cursor-pointer hover:bg-danger"
-              onClick={() => setFilter("error")}
-            >
+            </ToggleButton>
+            <ToggleButton id="error">
+              <ToggleButtonGroup.Separator />
               Errors
-            </Chip>
-          </div>
-        </div>
+            </ToggleButton>
+          </ToggleButtonGroup>
+        </Toolbar>
 
         <div className="rounded-md border">
           <div className="grid grid-cols-12 gap-4 bg-default-50 px-4 py-3 font-medium text-sm">

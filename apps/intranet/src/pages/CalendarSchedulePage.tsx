@@ -1,4 +1,4 @@
-import { Button, ButtonGroup, Chip, Label, ListBox, Select, Surface } from "@heroui/react";
+import { Button, ButtonGroup, Chip, Label, ListBox, Select, Surface, Toolbar } from "@heroui/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
 import dayjs from "dayjs";
@@ -273,7 +273,7 @@ function ScheduleHeaderControls({
   totalEvents: number;
 }>) {
   return (
-    <div className="flex items-center gap-3">
+    <Toolbar aria-label="Filtros del calendario" className="flex items-center gap-3">
       <CalendarSourceSelector
         isDisabled={sourceSelectorDisabled}
         onSourceChange={onSourceChange}
@@ -301,7 +301,7 @@ function ScheduleHeaderControls({
           showSearch
         />
       )}
-    </div>
+    </Toolbar>
   );
 }
 
@@ -423,7 +423,10 @@ function CalendarSchedulePage() {
       {/* Compact Header */}
       <header className="space-y-3">
         {/* Navigation Row */}
-        <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
+        <Toolbar
+          aria-label="Controles del calendario semanal"
+          className="flex flex-wrap items-center justify-between gap-3 sm:gap-4"
+        >
           {/* Left: Week Navigation */}
           <div className="flex flex-wrap items-center gap-3">
             <ButtonGroup size="sm" variant="tertiary">
@@ -492,7 +495,7 @@ function CalendarSchedulePage() {
               </Button>
             )}
           </div>
-        </div>
+        </Toolbar>
 
         <div className="flex flex-wrap items-center gap-2 text-xs sm:hidden">
           <span className="font-medium text-default-500">{rangeLabel}</span>

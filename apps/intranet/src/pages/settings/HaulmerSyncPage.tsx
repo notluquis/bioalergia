@@ -7,6 +7,7 @@ import {
   Disclosure,
   Label,
   Modal,
+  ProgressBar,
   Skeleton,
   Spinner,
 } from "@heroui/react";
@@ -69,7 +70,7 @@ const MONTHS_ES = [
 function periodToMonthPeriod(
   periodoStr: string,
   salesCount: number = 0,
-  purchasesCount: number = 0,
+  purchasesCount: number = 0
 ): MonthPeriod {
   const year = Number.parseInt(periodoStr.substring(0, 4), 10);
   const monthNumber = Number.parseInt(periodoStr.substring(4, 6), 10);
@@ -99,7 +100,7 @@ interface AvailablePeriodsData {
  * Extract all periods from available periods data, grouped by year
  */
 function extractAndGroupPeriods(
-  availablePeriods: AvailablePeriodsData,
+  availablePeriods: AvailablePeriodsData
 ): Record<number, MonthPeriod[]> {
   const periodMap = new Map<string, { sales: number; purchases: number }>();
 
@@ -410,8 +411,8 @@ export function HaulmerSyncPage() {
       new Set(
         results
           .filter((result) => result.docType === "sales" && result.status === "success")
-          .map((result) => result.period),
-      ),
+          .map((result) => result.period)
+      )
     ).sort((a, b) => b.localeCompare(a));
 
     if (periods.length === 0) {
@@ -443,14 +444,14 @@ export function HaulmerSyncPage() {
       }
 
       showSuccess(
-        `Auto-vinculación completada: ${linked} vinculados, ${skipped} omitidos (${processed} períodos)`,
+        `Auto-vinculación completada: ${linked} vinculados, ${skipped} omitidos (${processed} períodos)`
       );
       setPostSyncAutoLink(null);
     } catch (error) {
       showError(
         error instanceof Error
           ? `No se pudo auto-vincular DTE: ${error.message}`
-          : "No se pudo auto-vincular DTE",
+          : "No se pudo auto-vincular DTE"
       );
     } finally {
       setIsAutoLinking(false);
@@ -502,7 +503,7 @@ export function HaulmerSyncPage() {
         showSuccess(`Sync completado: ${msg}`);
         queuePostSyncAutoLink(
           [result],
-          `${docType === "sales" ? "ventas" : "compras"} ${formatPeriodLabel(period)}`,
+          `${docType === "sales" ? "ventas" : "compras"} ${formatPeriodLabel(period)}`
         );
       } else if (result.error) {
         showError(`Sync fallido: ${result.error}`);
@@ -618,7 +619,7 @@ export function HaulmerSyncPage() {
       queuePostSyncAutoLink(batchResults, "sincronización masiva");
     } catch (error) {
       showError(
-        `Error durante sincronización total: ${error instanceof Error ? error.message : "Desconocido"}`,
+        `Error durante sincronización total: ${error instanceof Error ? error.message : "Desconocido"}`
       );
     } finally {
       setIsSyncingAll(false);
@@ -680,13 +681,13 @@ export function HaulmerSyncPage() {
         showSuccess("No hay períodos nuevos para sincronizar");
       } else {
         showSuccess(
-          `Sync incremental completado: ${response.summary.success} OK, ${response.summary.failed} con error`,
+          `Sync incremental completado: ${response.summary.success} OK, ${response.summary.failed} con error`
         );
         queuePostSyncAutoLink(response.results ?? [], "sincronización incremental");
       }
     } catch (error) {
       showError(
-        `Error durante sincronización incremental: ${error instanceof Error ? error.message : "Desconocido"}`,
+        `Error durante sincronización incremental: ${error instanceof Error ? error.message : "Desconocido"}`
       );
     } finally {
       setIsSyncingIncremental(false);
@@ -955,18 +956,18 @@ export function HaulmerSyncPage() {
                   </span>
                 </div>
 
-                <div className="h-2 overflow-hidden rounded-full bg-default-100">
-                  <div
-                    className="h-full bg-primary "
-                    style={{
-                      width: `${
-                        syncAllProgress.total > 0
-                          ? Math.round((syncAllProgress.current / syncAllProgress.total) * 100)
-                          : 0
-                      }%`,
-                    }}
-                  />
-                </div>
+                <ProgressBar
+                  aria-label="Progreso de sincronización Haulmer"
+                  value={
+                    syncAllProgress.total > 0
+                      ? Math.round((syncAllProgress.current / syncAllProgress.total) * 100)
+                      : 0
+                  }
+                >
+                  <ProgressBar.Track className="h-2 rounded-full bg-default-100">
+                    <ProgressBar.Fill className="bg-primary" />
+                  </ProgressBar.Track>
+                </ProgressBar>
 
                 <Description className="text-default-500 text-xs">
                   Progreso:{" "}
