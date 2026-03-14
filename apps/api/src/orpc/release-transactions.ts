@@ -5,7 +5,9 @@ import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import {
-  releaseTransactionsContract,
+  releaseTransactionIdSchema,
+  releaseTransactionsDetailResponseSchema,
+  releaseTransactionsListResponseSchema,
   releaseTransactionsQuerySchema,
 } from "@finanzas/orpc-contracts/release-transactions";
 import type { Context as HonoContext } from "hono";
@@ -20,6 +22,8 @@ configureSuperjson();
 type ReleaseTransactionsORPCContext = {
   hono: HonoContext;
 };
+
+type AuthDbUser = Parameters<typeof authDb.$setAuth>[0];
 
 const base = os.$context<ReleaseTransactionsORPCContext>();
 const NUMERIC_PATTERN = /^\d+$/;
@@ -106,10 +110,10 @@ function buildReleaseWhere(
 const releaseTransactionsORPCRouterBase = {
   detail: readReleaseTransactions
     .route({ method: "GET", path: "/{id}", tags: ["Release Transactions"] })
-    .input(releaseTransactionsContract.detail["~orpc"].inputSchema)
-    .output(releaseTransactionsContract.detail["~orpc"].outputSchema)
-    .handler(async ({ context, input }) => {
-      const userDb = authDb.$setAuth(context.user);
+    .input(releaseTransactionIdSchema)
+    .output(releaseTransactionsDetailResponseSchema)
+    .handler(async ({ context, input }: { context: { user: unknown }; input: z.output<typeof releaseTransactionIdSchema> }) => {
+      const userDb = authDb.$setAuth(context.user as AuthDbUser);
       const transaction = await userDb.releaseTransaction.findUnique({
         where: { id: input.id },
       });
@@ -126,12 +130,12 @@ const releaseTransactionsORPCRouterBase = {
 
   list: readReleaseTransactions
     .route({ method: "GET", path: "/", tags: ["Release Transactions"] })
-    .input(releaseTransactionsContract.list["~orpc"].inputSchema)
-    .output(releaseTransactionsContract.list["~orpc"].outputSchema)
-    .handler(async ({ context, input }) => {
+    .input(releaseTransactionsQuerySchema)
+    .output(releaseTransactionsListResponseSchema)
+    .handler(async ({ context, input }: { context: { user: unknown }; input: z.output<typeof releaseTransactionsQuerySchema> }) => {
       const offset = (input.page - 1) * input.pageSize;
       const where = buildReleaseWhere(input);
-      const userDb = authDb.$setAuth(context.user);
+      const userDb = authDb.$setAuth(context.user as AuthDbUser);
 
       const [total, data] = await Promise.all([
         userDb.releaseTransaction.count({ where }),

@@ -1,9 +1,18 @@
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
-import { employeesContract } from "@finanzas/orpc-contracts/employees";
+import {
+  employeeIdInputSchema,
+  employeePayloadSchema,
+  employeeResponseSchema,
+  employeeStatusResponseSchema,
+  employeeUpdatePayloadSchema,
+  employeesListInputSchema,
+  employeesResponseSchema,
+} from "@finanzas/orpc-contracts/employees";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
+import type { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
@@ -103,29 +112,37 @@ const deleteEmployees = authed.use(async ({ context, next }) => {
 
 const employeesORPCRouterBase = {
   create: createEmployees
-    .route(employeesContract.create)
-    .handler(async ({ input }) => {
+    .route({ method: "POST", path: "/" })
+    .input(employeePayloadSchema)
+    .output(employeeResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof employeePayloadSchema> }) => {
       const employee = await createEmployee(input);
       return { employee: toPlainEmployee(employee) };
     }),
 
   deactivate: deleteEmployees
-    .route(employeesContract.deactivate)
-    .handler(async ({ input }) => {
+    .route({ method: "DELETE", path: "/{id}" })
+    .input(employeeIdInputSchema)
+    .output(employeeStatusResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof employeeIdInputSchema> }) => {
       await deactivateEmployee(input.id);
       return { status: "ok" as const };
     }),
 
   detail: readEmployees
-    .route(employeesContract.detail)
-    .handler(async ({ input }) => {
+    .route({ method: "GET", path: "/{id}" })
+    .input(employeeIdInputSchema)
+    .output(employeeResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof employeeIdInputSchema> }) => {
       const employee = await getEmployeeById(input.id);
       return { employee: toPlainEmployee(employee) };
     }),
 
   list: readEmployees
-    .route(employeesContract.list)
-    .handler(async ({ input }) => {
+    .route({ method: "GET", path: "/" })
+    .input(employeesListInputSchema)
+    .output(employeesResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof employeesListInputSchema> }) => {
       const employees = await listEmployees({
         includeInactive: input.includeInactive,
       });
@@ -136,8 +153,10 @@ const employeesORPCRouterBase = {
     }),
 
   update: updateEmployees
-    .route(employeesContract.update)
-    .handler(async ({ input }) => {
+    .route({ method: "PUT", path: "/{id}" })
+    .input(employeeIdInputSchema.extend({ payload: employeeUpdatePayloadSchema }))
+    .output(employeeResponseSchema)
+    .handler(async ({ input }: { input: { id: number; payload: z.input<typeof employeeUpdatePayloadSchema> } }) => {
       const employee = await updateEmployee(input.id, input.payload);
       return { employee: toPlainEmployee(employee) };
     }),

@@ -1,18 +1,12 @@
 import { db } from "@finanzas/db";
 import {
-  detailResponseSchema,
   editScheduleSchema,
-  generateSchedulesResponseSchema,
   generateSchedulesSchema,
-  listResponseSchema,
   payScheduleSchema,
   scheduleIdSchema as contractScheduleIdSchema,
-  scheduleResponseSchema,
   serviceCreateSchema as contractServiceCreateSchema,
   serviceIdSchema as contractServiceIdSchema,
   skipScheduleSchema,
-  statusOkSchema,
-  syncResponseSchema,
 } from "@finanzas/orpc-contracts/services";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
@@ -178,6 +172,213 @@ const generateSchedulesResponseSchema = z
   })
   .passthrough();
 
+type ServiceSummaryDto = z.infer<typeof serviceSummarySchema>;
+type ServiceScheduleDto = z.infer<typeof serviceScheduleSchema>;
+
+function toDecimalValue(value: Decimal | null | number | undefined) {
+  if (value == null) {
+    return null;
+  }
+
+  return value;
+}
+
+function toUnifiedTransactionId(schedule: {
+  financialTransactionId?: null | number;
+  releaseTransactionId?: null | number;
+  settlementTransactionId?: null | number;
+  withdrawTransactionId?: null | number;
+}) {
+  if (schedule.settlementTransactionId != null) {
+    return schedule.settlementTransactionId;
+  }
+
+  if (schedule.releaseTransactionId != null) {
+    return RELEASE_ID_OFFSET - schedule.releaseTransactionId;
+  }
+
+  if (schedule.withdrawTransactionId != null) {
+    return WITHDRAW_ID_OFFSET - schedule.withdrawTransactionId;
+  }
+
+  return schedule.financialTransactionId ?? null;
+}
+
+function getOverdueDays(schedule: {
+  dueDate: Date;
+  status: "PAID" | "PARTIAL" | "PENDING" | "SKIPPED";
+}) {
+  if (schedule.status === "PAID" || schedule.status === "SKIPPED") {
+    return 0;
+  }
+
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  const dueDate = new Date(schedule.dueDate);
+  dueDate.setHours(0, 0, 0, 0);
+
+  const diffMs = startOfToday.getTime() - dueDate.getTime();
+  return diffMs > 0 ? Math.floor(diffMs / 86_400_000) : 0;
+}
+
+function mapServiceSchedule(schedule: {
+  createdAt: Date;
+  dueDate: Date;
+  effectiveAmount: Decimal;
+  expectedAmount: Decimal;
+  financialTransactionId: null | number;
+  id: number;
+  lateFeeAmount: Decimal;
+  note: null | string;
+  paidAmount: Decimal | null;
+  paidDate: Date | null;
+  periodEnd: Date;
+  periodStart: Date;
+  releaseTransactionId: null | number;
+  serviceId: number;
+  settlementTransactionId: null | number;
+  status: "PAID" | "PARTIAL" | "PENDING" | "SKIPPED";
+  updatedAt: Date;
+  withdrawTransactionId: null | number;
+}): ServiceScheduleDto {
+  return {
+    createdAt: schedule.createdAt,
+    dueDate: schedule.dueDate,
+    effectiveAmount: schedule.effectiveAmount,
+    expectedAmount: schedule.expectedAmount,
+    financialTransactionId: schedule.financialTransactionId,
+    id: schedule.id,
+    lateFeeAmount: schedule.lateFeeAmount,
+    note: schedule.note,
+    overdueDays: getOverdueDays(schedule),
+    paidAmount: schedule.paidAmount,
+    paidDate: schedule.paidDate,
+    periodEnd: schedule.periodEnd,
+    periodStart: schedule.periodStart,
+    serviceId: schedule.serviceId,
+    status: schedule.status,
+    transaction: null,
+    transactionId: toUnifiedTransactionId(schedule),
+    updatedAt: schedule.updatedAt,
+  };
+}
+
+function getServiceScheduleStats(schedules: ServiceScheduleDto[]) {
+  return schedules.reduce(
+    (acc, schedule) => {
+      acc.totalExpected += Number(schedule.effectiveAmount);
+      acc.totalPaid += Number(schedule.paidAmount ?? 0);
+
+      if (schedule.status === "PENDING" || schedule.status === "PARTIAL") {
+        acc.pendingCount += 1;
+      }
+
+      if (schedule.overdueDays > 0 && (schedule.status === "PENDING" || schedule.status === "PARTIAL")) {
+        acc.overdueCount += 1;
+      }
+
+      return acc;
+    },
+    { overdueCount: 0, pendingCount: 0, totalExpected: 0, totalPaid: 0 },
+  );
+}
+
+function mapServiceSummary(
+  service: {
+    amountIndexation: ServiceSummaryDto["amountIndexation"];
+    autoLinkTransactions: boolean;
+    category: null | string;
+    counterpart: null | { bankAccountHolder: string; id: number };
+    createdAt: Date;
+    defaultAmount: Decimal;
+    detail: null | string;
+    dueDay: null | number;
+    emissionDay: null | number;
+    emissionEndDay: null | number;
+    emissionExactDate: Date | null;
+    emissionMode: ServiceSummaryDto["emissionMode"];
+    emissionStartDay: null | number;
+    frequency: ServiceSummaryDto["frequency"];
+    id: number;
+    lateFeeGraceDays: null | number;
+    lateFeeMode: ServiceSummaryDto["lateFeeMode"];
+    lateFeeValue: Decimal | null;
+    name: string;
+    nextGenerationMonths: number;
+    notes: null | string;
+    obligationType: ServiceSummaryDto["obligationType"];
+    ownership: ServiceSummaryDto["ownership"];
+    publicId: string;
+    recurrenceType: ServiceSummaryDto["recurrenceType"];
+    reminderDaysBefore: number;
+    startDate: Date;
+    status: ServiceSummaryDto["status"];
+    transactionCategory: null | {
+      color: null | string;
+      id: number;
+      name: string;
+      type: "EXPENSE" | "INCOME";
+    };
+    transactionCategoryId: null | number;
+    type: ServiceSummaryDto["serviceType"];
+    updatedAt: Date;
+  },
+  stats: { overdueCount: number; pendingCount: number; totalExpected: number; totalPaid: number },
+): ServiceSummaryDto {
+  return {
+    accountReference: null,
+    amountIndexation: service.amountIndexation,
+    autoLinkTransactions: service.autoLinkTransactions,
+    category: service.category,
+    counterpartAccountBankName: null,
+    counterpartAccountId: null,
+    counterpartAccountIdentifier: null,
+    counterpartAccountType: null,
+    counterpartId: service.counterpart?.id ?? null,
+    counterpartName: service.counterpart?.bankAccountHolder ?? null,
+    createdAt: service.createdAt,
+    defaultAmount: service.defaultAmount,
+    detail: service.detail,
+    dueDay: service.dueDay,
+    emissionDay: service.emissionDay,
+    emissionEndDay: service.emissionEndDay,
+    emissionExactDate: service.emissionExactDate,
+    emissionMode: service.emissionMode,
+    emissionStartDay: service.emissionStartDay,
+    frequency: service.frequency,
+    id: service.id,
+    lateFeeGraceDays: service.lateFeeGraceDays,
+    lateFeeMode: service.lateFeeMode,
+    lateFeeValue: toDecimalValue(service.lateFeeValue),
+    name: service.name,
+    nextGenerationMonths: service.nextGenerationMonths,
+    notes: service.notes,
+    obligationType: service.obligationType,
+    overdueCount: stats.overdueCount,
+    ownership: service.ownership,
+    pendingCount: stats.pendingCount,
+    publicId: service.publicId,
+    recurrenceType: service.recurrenceType,
+    reminderDaysBefore: service.reminderDaysBefore,
+    serviceType: service.type,
+    startDate: service.startDate,
+    status: service.status,
+    totalExpected: stats.totalExpected,
+    totalPaid: stats.totalPaid,
+    transactionCategory: service.transactionCategory,
+    transactionCategoryId: service.transactionCategoryId,
+    updatedAt: service.updatedAt,
+  };
+}
+
+function mapServicePayload(input: z.output<typeof contractServiceCreateSchema>) {
+  return {
+    ...input,
+    emissionExactDate: input.emissionExactDate?.toISOString() ?? null,
+    startDate: input.startDate.toISOString(),
+  };
+}
+
 const authed = base.use(async ({ context, next }) => {
   const user = await getSessionUser(context.hono);
 
@@ -286,11 +487,16 @@ const servicesORPCRouterBase = {
     .route({ method: "POST", path: "/" })
     .input(contractServiceCreateSchema)
     .output(detailResponseSchema)
-    .handler(async ({ input }: { input: z.input<typeof contractServiceCreateSchema> }) => {
-      const service = await createService(input);
+    .handler(async ({ input }: { input: z.output<typeof contractServiceCreateSchema> }) => {
+      const service = await createService(mapServicePayload(input));
       return {
         schedules: [],
-        service,
+        service: mapServiceSummary(service, {
+          overdueCount: 0,
+          pendingCount: 0,
+          totalExpected: 0,
+          totalPaid: 0,
+        }),
         status: "ok" as const,
       };
     }),
@@ -314,7 +520,7 @@ const servicesORPCRouterBase = {
     .route({ method: "GET", path: "/{id}" })
     .input(contractServiceIdSchema)
     .output(detailResponseSchema)
-    .handler(async ({ input }: { input: z.input<typeof contractServiceIdSchema> }) => {
+    .handler(async ({ input }: { input: z.output<typeof contractServiceIdSchema> }) => {
       const service = await getServiceByIdOrPublicId(input.id);
 
       if (!service) {
@@ -325,10 +531,11 @@ const servicesORPCRouterBase = {
         where: { serviceId: service.id },
         orderBy: { periodStart: "asc" },
       });
+      const mappedSchedules = schedules.map(mapServiceSchedule);
 
       return {
-        schedules,
-        service,
+        schedules: mappedSchedules,
+        service: mapServiceSummary(service, getServiceScheduleStats(mappedSchedules)),
         status: "ok" as const,
       };
     }),
@@ -336,16 +543,37 @@ const servicesORPCRouterBase = {
   list: readServices
     .route({ method: "GET", path: "/" })
     .output(listResponseSchema)
-    .handler(async () => ({
-      services: await listServices(),
-      status: "ok" as const,
-    })),
+    .handler(async () => {
+      const services = await listServices();
+      const serviceIds = services.map((service) => service.id);
+      const schedules = serviceIds.length
+        ? await db.serviceSchedule.findMany({
+            where: { serviceId: { in: serviceIds } },
+            orderBy: { periodStart: "asc" },
+          })
+        : [];
+
+      const schedulesByServiceId = new Map<number, ServiceScheduleDto[]>();
+      for (const schedule of schedules) {
+        const mapped = mapServiceSchedule(schedule);
+        const current = schedulesByServiceId.get(schedule.serviceId) ?? [];
+        current.push(mapped);
+        schedulesByServiceId.set(schedule.serviceId, current);
+      }
+
+      return {
+        services: services.map((service) =>
+          mapServiceSummary(service, getServiceScheduleStats(schedulesByServiceId.get(service.id) ?? [])),
+        ),
+        status: "ok" as const,
+      };
+    }),
 
   regenerateSchedules: updateServices
     .route({ method: "POST", path: "/{id}/schedules" })
     .input(generateSchedulesSchema)
     .output(generateSchedulesResponseSchema)
-    .handler(async ({ input }: { input: z.input<typeof generateSchedulesSchema> }) => {
+    .handler(async ({ input }: { input: z.output<typeof generateSchedulesSchema> }) => {
       const existing = await getServiceByIdOrPublicId(input.id);
 
       if (!existing) {
@@ -363,11 +591,15 @@ const servicesORPCRouterBase = {
         where: { serviceId: existing.id },
         orderBy: { periodStart: "asc" },
       });
+      const mappedSchedules = schedules.map(mapServiceSchedule);
 
       return {
         ...result,
-        schedules,
-        service,
+        schedules: mappedSchedules,
+        service: mapServiceSummary(
+          service ?? existing,
+          getServiceScheduleStats(mappedSchedules),
+        ),
         status: "ok" as const,
       };
     }),
@@ -376,7 +608,7 @@ const servicesORPCRouterBase = {
     .route({ method: "PATCH", path: "/schedules/{id}" })
     .input(editScheduleSchema)
     .output(scheduleResponseSchema)
-    .handler(async ({ input }: { input: z.input<typeof editScheduleSchema> }) => {
+    .handler(async ({ input }: { input: z.output<typeof editScheduleSchema> }) => {
       const schedule = await db.serviceSchedule.findUnique({ where: { id: input.id } });
 
       if (!schedule) {
@@ -407,7 +639,7 @@ const servicesORPCRouterBase = {
       });
 
       return {
-        schedule: updated,
+        schedule: mapServiceSchedule(updated),
         status: "ok" as const,
       };
     }),
@@ -416,7 +648,7 @@ const servicesORPCRouterBase = {
     .route({ method: "POST", path: "/schedules/{id}/pay" })
     .input(payScheduleSchema)
     .output(scheduleResponseSchema)
-    .handler(async ({ input }: { input: z.input<typeof payScheduleSchema> }) => {
+    .handler(async ({ input }: { input: z.output<typeof payScheduleSchema> }) => {
       const schedule = await db.serviceSchedule.findUnique({ where: { id: input.id } });
 
       if (!schedule) {
@@ -464,7 +696,7 @@ const servicesORPCRouterBase = {
       });
 
       return {
-        schedule: updated,
+        schedule: mapServiceSchedule(updated),
         status: "ok" as const,
       };
     }),
@@ -473,7 +705,7 @@ const servicesORPCRouterBase = {
     .route({ method: "POST", path: "/schedules/{id}/skip" })
     .input(skipScheduleSchema)
     .output(scheduleResponseSchema)
-    .handler(async ({ input }: { input: z.input<typeof skipScheduleSchema> }) => {
+    .handler(async ({ input }: { input: z.output<typeof skipScheduleSchema> }) => {
       const schedule = await db.serviceSchedule.findUnique({ where: { id: input.id } });
 
       if (!schedule) {
@@ -489,7 +721,7 @@ const servicesORPCRouterBase = {
       });
 
       return {
-        schedule: updated,
+        schedule: mapServiceSchedule(updated),
         status: "ok" as const,
       };
     }),
@@ -498,7 +730,7 @@ const servicesORPCRouterBase = {
     .route({ method: "POST", path: "/schedules/{id}/unlink" })
     .input(contractScheduleIdSchema)
     .output(scheduleResponseSchema)
-    .handler(async ({ input }: { input: z.input<typeof contractScheduleIdSchema> }) => {
+    .handler(async ({ input }: { input: z.output<typeof contractScheduleIdSchema> }) => {
       const schedule = await db.serviceSchedule.findUnique({ where: { id: input.id } });
 
       if (!schedule) {
@@ -519,7 +751,7 @@ const servicesORPCRouterBase = {
       });
 
       return {
-        schedule: updated,
+        schedule: mapServiceSchedule(updated),
         status: "ok" as const,
       };
     }),
@@ -536,7 +768,7 @@ const servicesORPCRouterBase = {
     .route({ method: "POST", path: "/{id}/sync-transactions" })
     .input(contractServiceIdSchema)
     .output(syncResponseSchema)
-    .handler(async ({ input }: { input: z.input<typeof contractServiceIdSchema> }) => {
+    .handler(async ({ input }: { input: z.output<typeof contractServiceIdSchema> }) => {
       const existing = await getServiceByIdOrPublicId(input.id);
 
       if (!existing) {
@@ -553,22 +785,23 @@ const servicesORPCRouterBase = {
     .route({ method: "PUT", path: "/{id}" })
     .input(z.object({ id: z.string().min(1), payload: contractServiceCreateSchema }))
     .output(detailResponseSchema)
-    .handler(async ({ input }: { input: { id: string; payload: z.input<typeof contractServiceCreateSchema> } }) => {
+    .handler(async ({ input }: { input: { id: string; payload: z.output<typeof contractServiceCreateSchema> } }) => {
       const existing = await getServiceByIdOrPublicId(input.id);
 
       if (!existing) {
         throw new ORPCError("NOT_FOUND", { message: "Not found" });
       }
 
-      const service = await updateService(existing.id, input.payload);
+      const service = await updateService(existing.id, mapServicePayload(input.payload));
       const schedules = await db.serviceSchedule.findMany({
         where: { serviceId: service.id },
         orderBy: { periodStart: "asc" },
       });
+      const mappedSchedules = schedules.map(mapServiceSchedule);
 
       return {
-        schedules,
-        service,
+        schedules: mappedSchedules,
+        service: mapServiceSummary(service, getServiceScheduleStats(mappedSchedules)),
         status: "ok" as const,
       };
     }),

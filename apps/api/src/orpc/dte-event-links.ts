@@ -1,4 +1,24 @@
-import { dteEventLinksContract } from "@finanzas/orpc-contracts/dte-event-links";
+import {
+  dteEventLinksAutoLinkAllPeriodsInputSchema,
+  dteEventLinksAutoLinkAllPeriodsResponseSchema,
+  dteEventLinksAutoLinkAllPeriodsStartResponseSchema,
+  dteEventLinksAutoLinkDayInputSchema,
+  dteEventLinksAutoLinkDayResponseSchema,
+  dteEventLinksAutoLinkPeriodInputSchema,
+  dteEventLinksAutoLinkPeriodResponseSchema,
+  dteEventLinksByDayInputSchema,
+  dteEventLinksByDayLinkSchema,
+  dteEventLinksConfirmInputSchema,
+  dteEventLinksConfirmResponseSchema,
+  dteEventLinksJobStatusInputSchema,
+  dteEventLinksJobStatusResponseSchema,
+  dteEventLinksOverviewInputSchema,
+  dteEventLinksOverviewResponseSchema,
+  dteEventLinksSuggestionsInputSchema,
+  dteEventLinksSuggestionsResponseSchema,
+  dteEventLinksUnlinkInputSchema,
+  dteEventLinksUnlinkResponseSchema,
+} from "@finanzas/orpc-contracts/dte-event-links";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
@@ -88,290 +108,14 @@ const writeEventLinksWithoutDteRead = authed.use(async ({ context, next }) => {
   return next();
 });
 
-const eventLinkByDayInputSchema = z.object({
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-});
-
-const eventLinkOverviewInputSchema = z.object({
-  page: z.coerce.number().int().min(0).default(0).optional(),
-  pageSize: z.coerce.number().int().min(10).max(100).default(25).optional(),
-  period: z.string().regex(/^\d{4}-\d{2}$/),
-  query: z.string().optional(),
-  status: z.enum(["all", "linked", "pending_issuance", "unlinked"]).default("all").optional(),
-});
-
-const eventLinkSuggestionsInputSchema = z.object({
-  calendarId: z.string().min(1),
-  eventId: z.string().min(1),
-  limit: z.coerce.number().int().min(1).max(30).optional(),
-});
-
-const jobStatusInputSchema = z.object({
-  jobId: z.string().min(1),
-});
-
-const confirmEventLinkInputSchema = z.object({
-  calendarId: z.string().min(1),
-  confidenceScore: z.number().min(0).max(100).optional(),
-  dteSaleDetailId: z.string().min(1),
-  eventId: z.string().min(1),
-  matchedBy: z.enum(["manual", "mixed", "name_exact", "name_fuzzy", "rut"]).optional(),
-  matchedName: z.string().nullable().optional(),
-  matchedRUT: z.string().nullable().optional(),
-});
-
-const unlinkEventLinkInputSchema = z.object({
-  calendarId: z.string().min(1),
-  eventId: z.string().min(1),
-});
-
-const autoLinkDayInputSchema = z.object({
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  minScore: z.number().min(0).max(100).optional(),
-});
-
-const autoLinkPeriodInputSchema = z.object({
-  minScore: z.number().min(0).max(100).optional(),
-  period: z.string().regex(/^\d{4}-\d{2}$/),
-});
-
-const autoLinkAllPeriodsInputSchema = z.object({
-  minScore: z.number().min(0).max(100).optional(),
-  periodConcurrency: z.coerce.number().int().min(1).max(6).optional(),
-});
-
-const eventDteSuggestionSchema = z.object({
-  clientName: z.string(),
-  clientRUT: z.string(),
-  confidenceScore: z.number(),
-  documentDate: z.string(),
-  documentType: z.number(),
-  dteSaleDetailId: z.string(),
-  exemptAmount: z.number(),
-  folio: z.string(),
-  ivaAmount: z.number(),
-  method: z.enum(["mixed", "name_exact", "name_fuzzy", "rut"]),
-  netAmount: z.number(),
-  reasons: z.array(z.string()),
-  registerNumber: z.number(),
-  totalAmount: z.number(),
-});
-
-const byDayLinkSchema = z.object({
-  calendarId: z.string(),
-  clientName: z.string(),
-  clientRUT: z.string(),
-  confidenceScore: z.number(),
-  dteSaleDetailId: z.string(),
-  eventId: z.string(),
-  folio: z.string(),
-  matchedBy: z.string(),
-  status: z.string(),
-  totalAmount: z.number(),
-});
-
-const suggestionsResponseSchema = z.object({
-  event: z
-    .object({
-      amountExpected: z.number().nullable(),
-      amountPaid: z.number().nullable(),
-      calendarId: z.string(),
-      description: z.string().nullable(),
-      eventDate: z.string(),
-      eventId: z.string(),
-      hints: z.object({
-        nameHints: z.array(z.string()),
-        rutHints: z.array(z.string()),
-      }),
-      summary: z.string().nullable(),
-    })
-    .nullable(),
-  linked: z.unknown().nullable(),
-  series: z
-    .object({
-      displayName: z.string().nullable(),
-      eligibleDocumentDateFrom: z.string(),
-      eligibleDocumentDateTo: z.string(),
-      events: z.array(
-        z.object({
-          amountExpected: z.number().nullable(),
-          amountPaid: z.number().nullable(),
-          calendarGoogleId: z.string(),
-          eventDate: z.string(),
-          eventId: z.number(),
-          externalEventId: z.string(),
-          seriesStageKind: z.enum(["DOSE", "INSTALLATION", "MAINTENANCE", "READING"]).nullable(),
-          seriesStageLabel: z.string().nullable(),
-          seriesStageNumber: z.number().nullable(),
-          summary: z.string().nullable(),
-        }),
-      ),
-      id: z.number(),
-      kind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT"]),
-      linkedDocuments: z.array(
-        z.object({
-          clientName: z.string(),
-          clientRUT: z.string(),
-          confidenceScore: z.number(),
-          documentDate: z.string(),
-          dteSaleDetailId: z.string(),
-          folio: z.string(),
-          matchedBy: z.string(),
-          totalAmount: z.number(),
-        }),
-      ),
-      patientName: z.string().nullable(),
-      patientRut: z.string().nullable(),
-      remainingExpected: z.number(),
-      remainingPaid: z.number(),
-      status: z.enum(["ACTIVE", "CANCELLED", "COMPLETED"]),
-      totalExpected: z.number(),
-      totalLinkedAmount: z.number(),
-      totalPaid: z.number(),
-    })
-    .nullable(),
-  suggestions: z.array(eventDteSuggestionSchema),
-});
-
-const overviewResponseSchema = z.object({
-  items: z.array(
-    z.object({
-      amountExpected: z.number().nullable(),
-      amountPaid: z.number().nullable(),
-      calendarId: z.string(),
-      clinicalSeriesId: z.number().nullable(),
-      confidenceScore: z.number().nullable(),
-      displayName: z.string().nullable(),
-      eventDate: z.string(),
-      eventId: z.string(),
-      linkStatus: z.enum(["linked", "pending_issuance", "unlinked"]),
-      linked: z.boolean(),
-      linkedClientName: z.string().nullable(),
-      linkedClientRUT: z.string().nullable(),
-      linkedDteSaleDetailId: z.string().nullable(),
-      linkedFolio: z.string().nullable(),
-      linkedMatchedBy: z.string().nullable(),
-      linkedTotalAmount: z.number().nullable(),
-      seriesKind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT"]).nullable(),
-      summary: z.string().nullable(),
-      topSuggestion: eventDteSuggestionSchema
-        .extend({
-          amountDiff: z.number().nullable(),
-        })
-        .nullable(),
-    }),
-  ),
-  page: z.number(),
-  pageSize: z.number(),
-  period: z.string(),
-  stats: z.object({
-    avgLinkedScore: z.number(),
-    dueEvents: z.number(),
-    linkRate: z.number(),
-    linkedEvents: z.number(),
-    pendingIssuanceEvents: z.number(),
-    totalEvents: z.number(),
-    unlinkedEvents: z.number(),
-    withPerfectScore: z.number(),
-  }),
-  totalCount: z.number(),
-  totalPages: z.number(),
-});
-
-const jobStatusResponseSchema = z.object({
-  error: z.string().nullable(),
-  id: z.string(),
-  message: z.string(),
-  progress: z.number(),
-  result: z.unknown(),
-  status: z.enum(["completed", "failed", "pending", "running"]),
-  total: z.number(),
-  type: z.string(),
-});
-
-const confirmResponseSchema = z.unknown().nullable();
-
-const unlinkResponseSchema = z.object({
-  deleted: z.boolean(),
-});
-
-const autoLinkDayResponseSchema = z.object({
-  date: z.string(),
-  details: z.array(
-    z.object({
-      eventId: z.string(),
-      reason: z.string(),
-    }),
-  ),
-  linked: z.number(),
-  skipped: z.number(),
-  skippedByReason: z.array(
-    z.object({
-      count: z.number(),
-      reason: z.string(),
-    }),
-  ),
-  totalEvents: z.number(),
-});
-
-const autoLinkPeriodResponseSchema = z.object({
-  daysProcessed: z.number(),
-  details: z.array(
-    z.object({
-      date: z.string(),
-      linked: z.number(),
-      skipped: z.number(),
-      totalEvents: z.number(),
-    }),
-  ),
-  linked: z.number(),
-  period: z.string(),
-  skipped: z.number(),
-  skippedByReason: z.array(
-    z.object({
-      count: z.number(),
-      reason: z.string(),
-    }),
-  ),
-  totalEvents: z.number(),
-});
-
-const autoLinkAllPeriodsResponseSchema = z.object({
-  details: z.array(
-    z.object({
-      daysProcessed: z.number(),
-      linked: z.number(),
-      period: z.string(),
-      skipped: z.number(),
-      totalEvents: z.number(),
-    }),
-  ),
-  linked: z.number(),
-  periodsProcessed: z.number(),
-  skipped: z.number(),
-  skippedByReason: z.array(
-    z.object({
-      count: z.number(),
-      reason: z.string(),
-    }),
-  ),
-  totalEvents: z.number(),
-});
-
-const autoLinkAllPeriodsStartResponseSchema = z.object({
-  jobId: z.string(),
-  periodConcurrency: z.number(),
-  totalPeriods: z.number(),
-});
-
 const eventLinksByDay = readEventLinks
   .route({
     method: "GET",
     path: "/by-day",
     summary: "Lista vinculos confirmados por dia",
   })
-  .input(dteEventLinksContract.byDay["~orpc"].inputSchema)
-  .output(dteEventLinksContract.byDay["~orpc"].outputSchema)
+  .input(dteEventLinksByDayInputSchema)
+  .output(z.array(dteEventLinksByDayLinkSchema))
   .handler(async ({ input }) => {
     const normalizedDate = normalizeLinkDate(input.date);
     return listEventDteLinksByDate(normalizedDate);
@@ -383,8 +127,8 @@ const eventLinkSuggestions = readEventLinks
     path: "/suggestions",
     summary: "Sugiere DTE para un evento",
   })
-  .input(dteEventLinksContract.suggestions["~orpc"].inputSchema)
-  .output(dteEventLinksContract.suggestions["~orpc"].outputSchema)
+  .input(dteEventLinksSuggestionsInputSchema)
+  .output(dteEventLinksSuggestionsResponseSchema)
   .handler(async ({ input }) => {
     return getEventDteSuggestions(input);
   });
@@ -395,8 +139,8 @@ const eventLinksOverview = readEventLinks
     path: "/overview",
     summary: "Resumen paginado de vinculos evento DTE",
   })
-  .input(dteEventLinksContract.overview["~orpc"].inputSchema)
-  .output(dteEventLinksContract.overview["~orpc"].outputSchema)
+  .input(dteEventLinksOverviewInputSchema)
+  .output(dteEventLinksOverviewResponseSchema)
   .handler(async ({ input }) => {
     return listEventDteLinkOverview({
       page: input.page,
@@ -413,8 +157,8 @@ const autoLinkJobStatus = readEventLinkJobs
     path: "/jobs/{jobId}",
     summary: "Consulta estado de job async de auto-link",
   })
-  .input(dteEventLinksContract.autoLinkJobStatus["~orpc"].inputSchema)
-  .output(dteEventLinksContract.autoLinkJobStatus["~orpc"].outputSchema)
+  .input(dteEventLinksJobStatusInputSchema)
+  .output(dteEventLinksJobStatusResponseSchema)
   .handler(async ({ input }) => {
     const { getJobStatus } = await import("../lib/jobQueue");
     const job = getJobStatus(input.jobId);
@@ -441,8 +185,8 @@ const confirmLink = writeEventLinks
     path: "/confirm",
     summary: "Confirma o sobreescribe un vinculo evento DTE",
   })
-  .input(dteEventLinksContract.confirmLink["~orpc"].inputSchema)
-  .output(dteEventLinksContract.confirmLink["~orpc"].outputSchema)
+  .input(dteEventLinksConfirmInputSchema)
+  .output(dteEventLinksConfirmResponseSchema)
   .handler(async ({ context, input }) => {
     return confirmEventDteLink({
       ...input,
@@ -456,8 +200,8 @@ const unlinkLink = writeEventLinksWithoutDteRead
     path: "/unlink",
     summary: "Elimina un vinculo confirmado",
   })
-  .input(dteEventLinksContract.unlinkLink["~orpc"].inputSchema)
-  .output(dteEventLinksContract.unlinkLink["~orpc"].outputSchema)
+  .input(dteEventLinksUnlinkInputSchema)
+  .output(dteEventLinksUnlinkResponseSchema)
   .handler(async ({ input }) => {
     return unlinkEventDteLink(input);
   });
@@ -468,8 +212,8 @@ const autoLinkDay = writeEventLinks
     path: "/auto-link-day",
     summary: "Auto-vincula candidatos confiables de un dia",
   })
-  .input(dteEventLinksContract.autoLinkDay["~orpc"].inputSchema)
-  .output(dteEventLinksContract.autoLinkDay["~orpc"].outputSchema)
+  .input(dteEventLinksAutoLinkDayInputSchema)
+  .output(dteEventLinksAutoLinkDayResponseSchema)
   .handler(async ({ context, input }) => {
     return autoLinkEventDate({
       date: normalizeLinkDate(input.date),
@@ -484,8 +228,8 @@ const autoLinkPeriod = writeEventLinks
     path: "/auto-link-period",
     summary: "Auto-vincula candidatos confiables de un periodo",
   })
-  .input(dteEventLinksContract.autoLinkPeriod["~orpc"].inputSchema)
-  .output(dteEventLinksContract.autoLinkPeriod["~orpc"].outputSchema)
+  .input(dteEventLinksAutoLinkPeriodInputSchema)
+  .output(dteEventLinksAutoLinkPeriodResponseSchema)
   .handler(async ({ context, input }) => {
     return autoLinkEventPeriod({
       minScore: input.minScore,
@@ -500,8 +244,8 @@ const autoLinkAllPeriods = writeEventLinks
     path: "/auto-link-all-periods",
     summary: "Auto-vincula candidatos confiables de todos los periodos",
   })
-  .input(dteEventLinksContract.autoLinkAllPeriods["~orpc"].inputSchema)
-  .output(dteEventLinksContract.autoLinkAllPeriods["~orpc"].outputSchema)
+  .input(dteEventLinksAutoLinkAllPeriodsInputSchema)
+  .output(dteEventLinksAutoLinkAllPeriodsResponseSchema)
   .handler(async ({ context, input }) => {
     return autoLinkAllEventPeriods({
       minScore: input.minScore,
@@ -516,8 +260,8 @@ const startAutoLinkAllPeriods = writeEventLinks
     successStatus: 202,
     summary: "Inicia job async de auto-link de todos los periodos",
   })
-  .input(dteEventLinksContract.startAutoLinkAllPeriods["~orpc"].inputSchema)
-  .output(dteEventLinksContract.startAutoLinkAllPeriods["~orpc"].outputSchema)
+  .input(dteEventLinksAutoLinkAllPeriodsInputSchema)
+  .output(dteEventLinksAutoLinkAllPeriodsStartResponseSchema)
   .handler(async ({ context, input }) => {
     const { completeJob, failJob, startJob, updateJobProgress } = await import("../lib/jobQueue");
     const periods = await listAutoLinkEligiblePeriods();

@@ -2,7 +2,12 @@ import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
-import { dteContract } from "@finanzas/orpc-contracts/dte";
+import {
+  dteSyncHistoryInputSchema,
+  dteSyncHistoryResponseSchema,
+  dteSyncInputSchema,
+  dteSyncResponseSchema,
+} from "@finanzas/orpc-contracts/dte";
 import type { Context as HonoContext } from "hono";
 import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
@@ -50,8 +55,8 @@ const dteORPCRouterBase = {
       summary: "Trigger DTE sync",
       tags: ["DTE"],
     })
-    .input(dteContract.sync["~orpc"].inputSchema)
-    .output(dteContract.sync["~orpc"].outputSchema)
+    .input(dteSyncInputSchema)
+    .output(dteSyncResponseSchema)
     .handler(async ({ context, input }) => {
       return await syncDTEs({
         docTypes: input.docTypes,
@@ -68,8 +73,8 @@ const dteORPCRouterBase = {
       summary: "List DTE sync history",
       tags: ["DTE"],
     })
-    .input(dteContract.syncHistory["~orpc"].inputSchema)
-    .output(dteContract.syncHistory["~orpc"].outputSchema)
+    .input(dteSyncHistoryInputSchema)
+    .output(dteSyncHistoryResponseSchema)
     .handler(async ({ input }) => {
       const limit = input.limit ?? 20;
       const offset = input.offset ?? 0;

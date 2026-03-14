@@ -94,7 +94,7 @@ const dteAnalyticsORPCRouterBase = {
     .route({ method: "GET", path: "/purchases/details" })
     .input(dteAnalyticsDetailsQuerySchema)
     .output(dteAnalyticsPurchasesDetailsResponseSchema)
-    .handler(async ({ input }: { input: z.input<typeof dteAnalyticsDetailsQuerySchema> }) => {
+    .handler(async ({ input }: { input: z.output<typeof dteAnalyticsDetailsQuerySchema> }) => {
       const offset = (input.page - 1) * input.pageSize;
 
       let countQuery = db.$qb
@@ -176,7 +176,7 @@ const dteAnalyticsORPCRouterBase = {
     .route({ method: "GET", path: "/purchases/summary" })
     .input(dteAnalyticsPeriodParamsSchema)
     .output(dteAnalyticsSummaryResponseSchema)
-    .handler(async ({ input }: { input: z.input<typeof dteAnalyticsPeriodParamsSchema> }) => {
+    .handler(async ({ input }: { input: z.output<typeof dteAnalyticsPeriodParamsSchema> }) => {
       let query = db.$qb
         .selectFrom("DTEPurchaseDetail as p")
         .select([
@@ -251,7 +251,7 @@ const dteAnalyticsORPCRouterBase = {
     .route({ method: "GET", path: "/sales/details" })
     .input(dteAnalyticsDetailsQuerySchema)
     .output(dteAnalyticsSalesDetailsResponseSchema)
-    .handler(async ({ input }: { input: z.input<typeof dteAnalyticsDetailsQuerySchema> }) => {
+    .handler(async ({ input }: { input: z.output<typeof dteAnalyticsDetailsQuerySchema> }) => {
       const offset = (input.page - 1) * input.pageSize;
 
       let countQuery = db.$qb
@@ -337,7 +337,7 @@ const dteAnalyticsORPCRouterBase = {
     .route({ method: "GET", path: "/sales/summary" })
     .input(dteAnalyticsPeriodParamsSchema)
     .output(dteAnalyticsSummaryResponseSchema)
-    .handler(async ({ input }: { input: z.input<typeof dteAnalyticsPeriodParamsSchema> }) => {
+    .handler(async ({ input }: { input: z.output<typeof dteAnalyticsPeriodParamsSchema> }) => {
       let query = db.$qb
         .selectFrom("DTESaleDetail as s")
         .select([

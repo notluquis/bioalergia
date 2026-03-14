@@ -1,6 +1,16 @@
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
-import { expensesContract } from "@finanzas/orpc-contracts/expenses";
+import {
+  detailExpenseInputSchema,
+  expensePayloadSchema,
+  expensesListResponseSchema,
+  expensesStatsResponseSchema,
+  linkTransactionInputSchema,
+  listExpensesInputSchema,
+  placeholderExpenseResponseSchema,
+  statsExpensesInputSchema,
+  unlinkTransactionInputSchema,
+} from "@finanzas/orpc-contracts/expenses";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
@@ -69,31 +79,45 @@ const notImplemented = {
 
 const expensesORPCRouterBase = {
   create: createExpenses
-    .route(expensesContract.create)
+    .route({ method: "POST", path: "/" })
+    .input(expensePayloadSchema)
+    .output(placeholderExpenseResponseSchema)
     .handler(async () => notImplemented),
 
   detail: readExpenses
-    .route(expensesContract.detail)
+    .route({ method: "GET", path: "/{publicId}" })
+    .input(detailExpenseInputSchema)
+    .output(placeholderExpenseResponseSchema)
     .handler(async () => notImplemented),
 
   linkTransaction: updateExpenses
-    .route(expensesContract.linkTransaction)
+    .route({ method: "POST", path: "/{publicId}/link" })
+    .input(linkTransactionInputSchema)
+    .output(placeholderExpenseResponseSchema)
     .handler(async () => notImplemented),
 
   list: readExpenses
-    .route(expensesContract.list)
+    .route({ method: "GET", path: "/" })
+    .input(listExpensesInputSchema)
+    .output(expensesListResponseSchema)
     .handler(async () => ({ expenses: [], status: "ok" as const })),
 
   stats: readExpenses
-    .route(expensesContract.stats)
+    .route({ method: "GET", path: "/stats" })
+    .input(statsExpensesInputSchema)
+    .output(expensesStatsResponseSchema)
     .handler(async () => ({ stats: [], status: "ok" as const })),
 
   unlinkTransaction: updateExpenses
-    .route(expensesContract.unlinkTransaction)
+    .route({ method: "POST", path: "/{publicId}/unlink" })
+    .input(unlinkTransactionInputSchema)
+    .output(placeholderExpenseResponseSchema)
     .handler(async () => notImplemented),
 
   update: updateExpenses
-    .route(expensesContract.update)
+    .route({ method: "PUT", path: "/{publicId}" })
+    .input(detailExpenseInputSchema.extend({ payload: expensePayloadSchema }))
+    .output(placeholderExpenseResponseSchema)
     .handler(async () => notImplemented),
 };
 
@@ -119,6 +143,7 @@ export const expensesOpenAPIHandler = new OpenAPIHandler(expensesORPCRouter, {
           title: "Bioalergia Expenses oRPC",
           description:
             "Contratos oRPC/OpenAPI para monthly expenses. La feature sigue placeholder en backend.",
+          version: "1.0.0",
         },
       },
     }),
