@@ -3,7 +3,10 @@ import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import { db } from "@finanzas/db";
-import { certificatesContract } from "@finanzas/orpc-contracts/certificates";
+import {
+  certificateVerifyInputSchema,
+  certificateVerifyResponseSchema,
+} from "@finanzas/orpc-contracts/certificates";
 import type { Context as HonoContext } from "hono";
 import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
@@ -25,8 +28,8 @@ const certificatesORPCRouterBase = {
       summary: "Verify medical certificate authenticity",
       tags: ["Certificates"],
     })
-    .input(certificatesContract.verify["~orpc"].inputSchema)
-    .output(certificatesContract.verify["~orpc"].outputSchema)
+    .input(certificateVerifyInputSchema)
+    .output(certificateVerifyResponseSchema)
     .handler(async ({ input }) => {
       const certificate = await db.medicalCertificate.findUnique({
         where: { id: input.id },

@@ -5,7 +5,9 @@ import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import {
-  settlementTransactionsContract,
+  settlementTransactionIdSchema,
+  settlementTransactionsDetailResponseSchema,
+  settlementTransactionsListResponseSchema,
   settlementTransactionsQuerySchema,
 } from "@finanzas/orpc-contracts/settlement-transactions";
 import type { Context as HonoContext } from "hono";
@@ -104,9 +106,9 @@ function buildSettlementWhere(
 const settlementTransactionsORPCRouterBase = {
   detail: readSettlementTransactions
     .route({ method: "GET", path: "/{id}", tags: ["Settlement Transactions"] })
-    .input(settlementTransactionsContract.detail["~orpc"].inputSchema)
-    .output(settlementTransactionsContract.detail["~orpc"].outputSchema)
-    .handler(async ({ context, input }) => {
+    .input(settlementTransactionIdSchema)
+    .output(settlementTransactionsDetailResponseSchema)
+    .handler(async ({ context, input }: { context: { user: unknown }; input: z.output<typeof settlementTransactionIdSchema> }) => {
       const userDb = authDb.$setAuth(context.user);
       const transaction = await userDb.settlementTransaction.findUnique({
         where: { id: input.id },
@@ -124,9 +126,9 @@ const settlementTransactionsORPCRouterBase = {
 
   list: readSettlementTransactions
     .route({ method: "GET", path: "/", tags: ["Settlement Transactions"] })
-    .input(settlementTransactionsContract.list["~orpc"].inputSchema)
-    .output(settlementTransactionsContract.list["~orpc"].outputSchema)
-    .handler(async ({ context, input }) => {
+    .input(settlementTransactionsQuerySchema)
+    .output(settlementTransactionsListResponseSchema)
+    .handler(async ({ context, input }: { context: { user: unknown }; input: z.output<typeof settlementTransactionsQuerySchema> }) => {
       const offset = (input.page - 1) * input.pageSize;
       const where = buildSettlementWhere(input);
       const userDb = authDb.$setAuth(context.user);

@@ -1,5 +1,12 @@
 import { db } from "@finanzas/db";
-import { dteAnalyticsContract } from "@finanzas/orpc-contracts/dte-analytics";
+import {
+  dteAnalyticsDetailsQuerySchema,
+  dteAnalyticsPeriodParamsSchema,
+  dteAnalyticsPeriodsResponseSchema,
+  dteAnalyticsPurchasesDetailsResponseSchema,
+  dteAnalyticsSalesDetailsResponseSchema,
+  dteAnalyticsSummaryResponseSchema,
+} from "@finanzas/orpc-contracts/dte-analytics";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
@@ -7,6 +14,7 @@ import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import dayjs from "dayjs";
 import type { Context as HonoContext } from "hono";
 import { sql } from "kysely";
+import type { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
@@ -65,7 +73,8 @@ const readDteAnalytics = authed.use(async ({ context, next }) => {
 
 const dteAnalyticsORPCRouterBase = {
   purchasesAvailablePeriods: readDteAnalytics
-    .route(dteAnalyticsContract.purchasesAvailablePeriods)
+    .route({ method: "GET", path: "/purchases/available-periods" })
+    .output(dteAnalyticsPeriodsResponseSchema)
     .handler(async () => {
       const rows = await db.$qb
         .selectFrom("DTEPurchaseDetail as p")
@@ -82,8 +91,10 @@ const dteAnalyticsORPCRouterBase = {
     }),
 
   purchasesDetails: readDteAnalytics
-    .route(dteAnalyticsContract.purchasesDetails)
-    .handler(async ({ input }) => {
+    .route({ method: "GET", path: "/purchases/details" })
+    .input(dteAnalyticsDetailsQuerySchema)
+    .output(dteAnalyticsPurchasesDetailsResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof dteAnalyticsDetailsQuerySchema> }) => {
       const offset = (input.page - 1) * input.pageSize;
 
       let countQuery = db.$qb
@@ -162,8 +173,10 @@ const dteAnalyticsORPCRouterBase = {
     }),
 
   purchasesSummary: readDteAnalytics
-    .route(dteAnalyticsContract.purchasesSummary)
-    .handler(async ({ input }) => {
+    .route({ method: "GET", path: "/purchases/summary" })
+    .input(dteAnalyticsPeriodParamsSchema)
+    .output(dteAnalyticsSummaryResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof dteAnalyticsPeriodParamsSchema> }) => {
       let query = db.$qb
         .selectFrom("DTEPurchaseDetail as p")
         .select([
@@ -216,7 +229,8 @@ const dteAnalyticsORPCRouterBase = {
     }),
 
   salesAvailablePeriods: readDteAnalytics
-    .route(dteAnalyticsContract.salesAvailablePeriods)
+    .route({ method: "GET", path: "/sales/available-periods" })
+    .output(dteAnalyticsPeriodsResponseSchema)
     .handler(async () => {
       const rows = await db.$qb
         .selectFrom("DTESaleDetail as s")
@@ -234,8 +248,10 @@ const dteAnalyticsORPCRouterBase = {
     }),
 
   salesDetails: readDteAnalytics
-    .route(dteAnalyticsContract.salesDetails)
-    .handler(async ({ input }) => {
+    .route({ method: "GET", path: "/sales/details" })
+    .input(dteAnalyticsDetailsQuerySchema)
+    .output(dteAnalyticsSalesDetailsResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof dteAnalyticsDetailsQuerySchema> }) => {
       const offset = (input.page - 1) * input.pageSize;
 
       let countQuery = db.$qb
@@ -318,8 +334,10 @@ const dteAnalyticsORPCRouterBase = {
     }),
 
   salesSummary: readDteAnalytics
-    .route(dteAnalyticsContract.salesSummary)
-    .handler(async ({ input }) => {
+    .route({ method: "GET", path: "/sales/summary" })
+    .input(dteAnalyticsPeriodParamsSchema)
+    .output(dteAnalyticsSummaryResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof dteAnalyticsPeriodParamsSchema> }) => {
       let query = db.$qb
         .selectFrom("DTESaleDetail as s")
         .select([

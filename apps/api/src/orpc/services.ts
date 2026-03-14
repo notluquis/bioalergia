@@ -1,5 +1,19 @@
 import { db } from "@finanzas/db";
-import { servicesContract } from "@finanzas/orpc-contracts/services";
+import {
+  detailResponseSchema,
+  editScheduleSchema,
+  generateSchedulesResponseSchema,
+  generateSchedulesSchema,
+  listResponseSchema,
+  payScheduleSchema,
+  scheduleIdSchema as contractScheduleIdSchema,
+  scheduleResponseSchema,
+  serviceCreateSchema as contractServiceCreateSchema,
+  serviceIdSchema as contractServiceIdSchema,
+  skipScheduleSchema,
+  statusOkSchema,
+  syncResponseSchema,
+} from "@finanzas/orpc-contracts/services";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
@@ -8,7 +22,6 @@ import { Decimal } from "decimal.js";
 import type { Context as HonoContext } from "hono";
 import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
-import { serviceCreateSchema } from "../lib/entity-schemas";
 import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
 import {
@@ -30,40 +43,6 @@ type ServicesORPCContext = {
 
 const base = os.$context<ServicesORPCContext>();
 
-const serviceIdSchema = z.object({
-  id: z.string().min(1),
-});
-
-const scheduleIdSchema = z.object({
-  id: z.number().int().positive(),
-});
-
-const generateSchedulesSchema = z.object({
-  fromDate: z.coerce.date().optional(),
-  id: z.string().min(1),
-  months: z.number().int().min(1).max(120).optional(),
-});
-
-const payScheduleSchema = z.object({
-  id: z.number().int().positive(),
-  note: z.string().max(1000).optional().nullable(),
-  paidAmount: z.coerce.number().min(0),
-  paidDate: z.coerce.date(),
-  transactionId: z.coerce.number().int(),
-  transactionSource: z.enum(["release", "settlement", "withdraw"]).optional(),
-});
-
-const editScheduleSchema = z.object({
-  dueDate: z.coerce.date().optional(),
-  expectedAmount: z.coerce.number().min(0).optional(),
-  id: z.number().int().positive(),
-  note: z.string().max(1000).optional().nullable(),
-});
-
-const skipScheduleSchema = z.object({
-  id: z.number().int().positive(),
-  reason: z.string().min(1).max(500),
-});
 const decimalOutputSchema = z.union([z.number(), z.instanceof(Decimal)]);
 const serviceCategorySchema = z
   .object({
@@ -304,8 +283,10 @@ function normalizeTransactionReference(
 
 const servicesORPCRouterBase = {
   create: createServices
-    .route(servicesContract.create)
-    .handler(async ({ input }) => {
+    .route({ method: "POST", path: "/" })
+    .input(contractServiceCreateSchema)
+    .output(detailResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof contractServiceCreateSchema> }) => {
       const service = await createService(input);
       return {
         schedules: [],
@@ -315,8 +296,10 @@ const servicesORPCRouterBase = {
     }),
 
   delete: deleteServices
-    .route(servicesContract.delete)
-    .handler(async ({ input }) => {
+    .route({ method: "DELETE", path: "/{id}" })
+    .input(contractServiceIdSchema)
+    .output(statusOkSchema)
+    .handler(async ({ input }: { input: z.input<typeof contractServiceIdSchema> }) => {
       const existing = await getServiceByIdOrPublicId(input.id);
 
       if (!existing) {
@@ -328,8 +311,10 @@ const servicesORPCRouterBase = {
     }),
 
   detail: readServices
-    .route(servicesContract.detail)
-    .handler(async ({ input }) => {
+    .route({ method: "GET", path: "/{id}" })
+    .input(contractServiceIdSchema)
+    .output(detailResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof contractServiceIdSchema> }) => {
       const service = await getServiceByIdOrPublicId(input.id);
 
       if (!service) {
@@ -349,15 +334,18 @@ const servicesORPCRouterBase = {
     }),
 
   list: readServices
-    .route(servicesContract.list)
+    .route({ method: "GET", path: "/" })
+    .output(listResponseSchema)
     .handler(async () => ({
       services: await listServices(),
       status: "ok" as const,
     })),
 
   regenerateSchedules: updateServices
-    .route(servicesContract.regenerateSchedules)
-    .handler(async ({ input }) => {
+    .route({ method: "POST", path: "/{id}/schedules" })
+    .input(generateSchedulesSchema)
+    .output(generateSchedulesResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof generateSchedulesSchema> }) => {
       const existing = await getServiceByIdOrPublicId(input.id);
 
       if (!existing) {
@@ -385,8 +373,10 @@ const servicesORPCRouterBase = {
     }),
 
   scheduleEdit: updateServices
-    .route(servicesContract.scheduleEdit)
-    .handler(async ({ input }) => {
+    .route({ method: "PATCH", path: "/schedules/{id}" })
+    .input(editScheduleSchema)
+    .output(scheduleResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof editScheduleSchema> }) => {
       const schedule = await db.serviceSchedule.findUnique({ where: { id: input.id } });
 
       if (!schedule) {
@@ -423,8 +413,10 @@ const servicesORPCRouterBase = {
     }),
 
   schedulePay: updateServices
-    .route(servicesContract.schedulePay)
-    .handler(async ({ input }) => {
+    .route({ method: "POST", path: "/schedules/{id}/pay" })
+    .input(payScheduleSchema)
+    .output(scheduleResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof payScheduleSchema> }) => {
       const schedule = await db.serviceSchedule.findUnique({ where: { id: input.id } });
 
       if (!schedule) {
@@ -478,8 +470,10 @@ const servicesORPCRouterBase = {
     }),
 
   scheduleSkip: updateServices
-    .route(servicesContract.scheduleSkip)
-    .handler(async ({ input }) => {
+    .route({ method: "POST", path: "/schedules/{id}/skip" })
+    .input(skipScheduleSchema)
+    .output(scheduleResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof skipScheduleSchema> }) => {
       const schedule = await db.serviceSchedule.findUnique({ where: { id: input.id } });
 
       if (!schedule) {
@@ -501,8 +495,10 @@ const servicesORPCRouterBase = {
     }),
 
   scheduleUnlink: updateServices
-    .route(servicesContract.scheduleUnlink)
-    .handler(async ({ input }) => {
+    .route({ method: "POST", path: "/schedules/{id}/unlink" })
+    .input(contractScheduleIdSchema)
+    .output(scheduleResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof contractScheduleIdSchema> }) => {
       const schedule = await db.serviceSchedule.findUnique({ where: { id: input.id } });
 
       if (!schedule) {
@@ -529,15 +525,18 @@ const servicesORPCRouterBase = {
     }),
 
   syncAllTransactions: updateServices
-    .route(servicesContract.syncAllTransactions)
+    .route({ method: "POST", path: "/sync/transactions" })
+    .output(syncResponseSchema)
     .handler(async () => ({
       data: await syncServiceSchedulesWithFinancialTransactions(),
       status: "ok" as const,
     })),
 
   syncTransactions: updateServices
-    .route(servicesContract.syncTransactions)
-    .handler(async ({ input }) => {
+    .route({ method: "POST", path: "/{id}/sync-transactions" })
+    .input(contractServiceIdSchema)
+    .output(syncResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof contractServiceIdSchema> }) => {
       const existing = await getServiceByIdOrPublicId(input.id);
 
       if (!existing) {
@@ -551,8 +550,10 @@ const servicesORPCRouterBase = {
     }),
 
   update: updateServices
-    .route(servicesContract.update)
-    .handler(async ({ input }) => {
+    .route({ method: "PUT", path: "/{id}" })
+    .input(z.object({ id: z.string().min(1), payload: contractServiceCreateSchema }))
+    .output(detailResponseSchema)
+    .handler(async ({ input }: { input: { id: string; payload: z.input<typeof contractServiceCreateSchema> } }) => {
       const existing = await getServiceByIdOrPublicId(input.id);
 
       if (!existing) {

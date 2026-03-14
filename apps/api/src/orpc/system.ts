@@ -1,4 +1,4 @@
-import { systemContract } from "@finanzas/orpc-contracts/system";
+import { systemHealthResponseSchema } from "@finanzas/orpc-contracts/system";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { onError, os } from "@orpc/server";
@@ -18,7 +18,8 @@ const base = os.$context<SystemORPCContext>();
 
 const systemORPCRouterBase = {
   health: base
-    .route(systemContract.health)
+    .route({ method: "GET", path: "/health" })
+    .output(systemHealthResponseSchema)
     .handler(async () => ({
       checks: {
         db: {

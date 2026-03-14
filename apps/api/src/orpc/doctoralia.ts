@@ -212,8 +212,10 @@ const canDeleteBooking = authed.use(async ({ context, next }) => {
 
 const doctoraliaORPCRouterBase = {
   bookSlot: canCreateBooking
-    .route(doctoraliaContract.bookSlot)
-    .handler(async ({ input }) => {
+    .route({ method: "POST", path: "/bookings" })
+    .input(bookSlotInputSchema)
+    .output(bookingResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof bookSlotInputSchema> }) => {
       const booking = await bookSlot(
         input.facilityId,
         input.doctorId,
@@ -229,8 +231,10 @@ const doctoraliaORPCRouterBase = {
     }),
 
   calendarAppointments: canReadFacility
-    .route(doctoraliaContract.calendarAppointments)
-    .handler(async ({ input }) => {
+    .route({ method: "GET", path: "/calendar/appointments" })
+    .input(calendarAppointmentsQuerySchema)
+    .output(calendarAppointmentsSchema)
+    .handler(async ({ input }: { input: z.input<typeof calendarAppointmentsQuerySchema> }) => {
       const autoSyncEnabled = process.env.ENABLE_DOCTORALIA_CALENDAR_SYNC === "true";
       if (autoSyncEnabled) {
         const staleThresholdMs = Number(
@@ -308,7 +312,8 @@ const doctoraliaORPCRouterBase = {
     }),
 
   calendarAuthStatus: canManageFacility
-    .route(doctoraliaContract.calendarAuthStatus)
+    .route({ method: "GET", path: "/calendar/auth/status" })
+    .output(calendarAuthStatusSchema)
     .handler(async ({ context }) => {
       const { getCachedToken } = await import("../lib/doctoralia/doctoralia-calendar-auth.js");
       const cached = await getCachedToken();
@@ -334,8 +339,10 @@ const doctoraliaORPCRouterBase = {
     }),
 
   cancelBooking: canDeleteBooking
-    .route(doctoraliaContract.cancelBooking)
-    .handler(async ({ input }) => {
+    .route({ method: "DELETE", path: "/bookings/{bookingId}" })
+    .input(cancelBookingInputSchema)
+    .output(okStatusSchema)
+    .handler(async ({ input }: { input: z.input<typeof cancelBookingInputSchema> }) => {
       await cancelBooking(
         input.facilityId,
         input.doctorId,
@@ -348,22 +355,27 @@ const doctoraliaORPCRouterBase = {
     }),
 
   doctors: canReadDoctor
-    .route(doctoraliaContract.doctors)
-    .handler(async ({ input }) => ({
+    .route({ method: "GET", path: "/facilities/{facilityId}/doctors" })
+    .input(facilityIdSchema)
+    .output(doctorsResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof facilityIdSchema> }) => ({
       doctors: await getDoctoraliaDoctorsWithAddresses(input.facilityId),
       status: "ok",
     })),
 
   facilities: canReadFacility
-    .route(doctoraliaContract.facilities)
+    .route({ method: "GET", path: "/facilities" })
+    .output(facilitiesResponseSchema)
     .handler(async () => ({
       facilities: await getDoctoraliaFacilitiesWithCounts(),
       status: "ok",
     })),
 
   bookings: canReadFacility
-    .route(doctoraliaContract.bookings)
-    .handler(async ({ input }) => {
+    .route({ method: "GET", path: "/bookings" })
+    .input(slotsAndBookingsQuerySchema)
+    .output(bookingsResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof slotsAndBookingsQuerySchema> }) => {
       const data = await getBookings(
         input.facilityId,
         input.doctorId,
@@ -388,8 +400,10 @@ const doctoraliaORPCRouterBase = {
     }),
 
   slots: canReadFacility
-    .route(doctoraliaContract.slots)
-    .handler(async ({ input }) => ({
+    .route({ method: "GET", path: "/slots" })
+    .input(slotsAndBookingsQuerySchema)
+    .output(slotsResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof slotsAndBookingsQuerySchema> }) => ({
       slots: (
         await getSlots(input.facilityId, input.doctorId, input.addressId, input.start, input.end)
       )._items,
@@ -397,7 +411,8 @@ const doctoraliaORPCRouterBase = {
     })),
 
   status: authed
-    .route(doctoraliaContract.status)
+    .route({ method: "GET", path: "/status" })
+    .output(statusResponseSchema)
     .handler(async () => ({
       configured: isDoctoraliaConfigured(),
       domain: "doctoralia.cl",
@@ -405,7 +420,9 @@ const doctoraliaORPCRouterBase = {
     })),
 
   sync: canManageFacility
-    .route(doctoraliaContract.sync)
+    .route({ method: "POST", path: "/sync" })
+    .input(syncInputSchema)
+    .output(syncResponseSchema)
     .handler(async ({ context }) => {
       const logId = await createDoctoraliaSyncLogEntry({
         triggerSource: "manual",
@@ -428,7 +445,8 @@ const doctoraliaORPCRouterBase = {
     }),
 
   syncLogs: authed
-    .route(doctoraliaContract.syncLogs)
+    .route({ method: "GET", path: "/sync/logs" })
+    .output(syncLogsResponseSchema)
     .handler(async () => ({
       logs: (await listDoctoraliaSyncLogs(50)).map((log) => ({
         id: log.id,

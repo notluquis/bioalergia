@@ -1,9 +1,17 @@
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
-import { transactionsInsightsContract } from "@finanzas/orpc-contracts/transactions-insights";
+import {
+  transactionsInsightsParticipantInsightInputSchema,
+  transactionsInsightsParticipantInsightResponseSchema,
+  transactionsInsightsParticipantLeaderboardInputSchema,
+  transactionsInsightsParticipantsResponseSchema,
+  transactionsInsightsStatsQuerySchema,
+  transactionsInsightsStatsResponseSchema,
+} from "@finanzas/orpc-contracts/transactions-insights";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
+import type { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
@@ -51,33 +59,59 @@ const readTransactionsInsights = authed.use(async ({ context, next }) => {
 
 const transactionsInsightsORPCRouterBase = {
   participantInsight: readTransactionsInsights
-    .route(transactionsInsightsContract.participantInsight)
-    .handler(async ({ input }) =>
-      getParticipantInsight(input.id, {
+    .route({ method: "GET", path: "/participants/{id}" })
+    .input(transactionsInsightsParticipantInsightInputSchema)
+    .output(transactionsInsightsParticipantInsightResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof transactionsInsightsParticipantInsightInputSchema> }) => {
+      const result = await getParticipantInsight(input.id, {
         from: input.from ? new Date(input.from) : undefined,
         to: input.to ? new Date(input.to) : undefined,
-      }),
-    ),
+      });
+
+      return {
+        ...result,
+        status: "ok" as const,
+      };
+    }),
 
   participants: readTransactionsInsights
-    .route(transactionsInsightsContract.participants)
-    .handler(async ({ input }) =>
-      getParticipantLeaderboard({
+    .route({ method: "GET", path: "/participants" })
+    .input(transactionsInsightsParticipantLeaderboardInputSchema)
+    .output(transactionsInsightsParticipantsResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof transactionsInsightsParticipantLeaderboardInputSchema> }) => {
+      const result = await getParticipantLeaderboard({
         from: input.from ? new Date(input.from) : undefined,
         limit: input.limit,
         mode: input.mode,
         to: input.to ? new Date(input.to) : undefined,
-      }),
-    ),
+      });
+
+      return {
+        ...result,
+        status: "ok" as const,
+      };
+    }),
 
   stats: readTransactionsInsights
-    .route(transactionsInsightsContract.stats)
-    .handler(async ({ input }) =>
-      getTransactionStats({
+    .route({ method: "GET", path: "/stats" })
+    .input(transactionsInsightsStatsQuerySchema)
+    .output(transactionsInsightsStatsResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof transactionsInsightsStatsQuerySchema> }) => {
+      const result = await getTransactionStats({
         from: new Date(input.from),
         to: new Date(input.to),
-      }),
-    ),
+      });
+
+      return {
+        ...result,
+        byType: result.byType.map((item) => ({
+          ...item,
+          description: item.description ?? null,
+          direction: item.direction as "IN" | "NEUTRO" | "OUT",
+        })),
+        status: "ok" as const,
+      };
+    }),
 };
 
 export const transactionsInsightsORPCRouter = base
@@ -109,6 +143,7 @@ export const transactionsInsightsOpenAPIHandler = new OpenAPIHandler(
             title: "Bioalergia Transactions Insights oRPC",
             description:
               "Contratos oRPC/OpenAPI para estadísticas y participants de transacciones.",
+            version: "1.0.0",
           },
         },
       }),

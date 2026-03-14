@@ -1,7 +1,6 @@
 import type { RawRuleOf } from "@casl/ability";
 import { db } from "@finanzas/db";
 import {
-  authContract,
   authEmptySchema,
   authLoginOkResponseSchema,
   authLoginResponseSchema,
@@ -184,8 +183,8 @@ function getRequiredToken(context: AuthORPCContext) {
 const authORPCRouterBase = {
   login: base
     .route({ method: "POST", path: "/login", summary: "Login", tags: ["Auth"] })
-    .input(authContract.login["~orpc"].inputSchema)
-    .output(authContract.login["~orpc"].outputSchema)
+    .input(authLoginSchema)
+    .output(authLoginResponseSchema)
     .handler(async ({ context, input }) => {
       const normalizedEmail = normalizeEmailInput(input.email);
       const loginCandidate = await findUserByLoginIdentifier(normalizedEmail);
@@ -274,8 +273,8 @@ const authORPCRouterBase = {
 
   loginMfa: base
     .route({ method: "POST", path: "/login/mfa", summary: "Login with MFA", tags: ["Auth"] })
-    .input(authContract.loginMfa["~orpc"].inputSchema)
-    .output(authContract.loginMfa["~orpc"].outputSchema)
+    .input(authMfaLoginSchema)
+    .output(authLoginOkResponseSchema)
     .handler(async ({ context, input }) => {
       const user = await db.user.findUnique({
         where: { id: input.userId },
@@ -328,8 +327,8 @@ const authORPCRouterBase = {
 
   logout: base
     .route({ method: "POST", path: "/logout", summary: "Logout", tags: ["Auth"] })
-    .input(authContract.logout["~orpc"].inputSchema)
-    .output(authContract.logout["~orpc"].outputSchema)
+    .input(authEmptySchema)
+    .output(authStatusResponseSchema)
     .handler(async ({ context }) => {
       deleteCookie(context.hono, COOKIE_NAME);
       return { status: "ok" as const };
@@ -337,7 +336,7 @@ const authORPCRouterBase = {
 
   session: base
     .route({ method: "GET", path: "/me/session", summary: "Get session", tags: ["Auth"] })
-    .output(authContract.session["~orpc"].outputSchema)
+    .output(authSessionResponseSchema)
     .handler(async ({ context }) => {
       const token = getCookie(context.hono, COOKIE_NAME);
       if (!token) {
@@ -395,8 +394,8 @@ const authORPCRouterBase = {
 
   mfaDisable: base
     .route({ method: "POST", path: "/mfa/disable", summary: "Disable MFA", tags: ["Auth"] })
-    .input(authContract.mfaDisable["~orpc"].inputSchema)
-    .output(authContract.mfaDisable["~orpc"].outputSchema)
+    .input(authEmptySchema)
+    .output(authStatusResponseSchema)
     .handler(async ({ context }) => {
       const token = getRequiredToken(context);
       const session = await resolveSessionFromToken(token);
@@ -414,8 +413,8 @@ const authORPCRouterBase = {
 
   mfaEnable: base
     .route({ method: "POST", path: "/mfa/enable", summary: "Enable MFA", tags: ["Auth"] })
-    .input(authContract.mfaEnable["~orpc"].inputSchema)
-    .output(authContract.mfaEnable["~orpc"].outputSchema)
+    .input(authMfaEnableSchema)
+    .output(authStatusResponseSchema)
     .handler(async ({ context, input }) => {
       const token = getRequiredToken(context);
       const session = await resolveSessionFromToken(token);
@@ -448,8 +447,8 @@ const authORPCRouterBase = {
 
   mfaSetup: base
     .route({ method: "POST", path: "/mfa/setup", summary: "Setup MFA", tags: ["Auth"] })
-    .input(authContract.mfaSetup["~orpc"].inputSchema)
-    .output(authContract.mfaSetup["~orpc"].outputSchema)
+    .input(authEmptySchema)
+    .output(authMfaSetupResponseSchema)
     .handler(async ({ context }) => {
       const token = getRequiredToken(context);
       const session = await resolveSessionFromToken(token);
@@ -479,7 +478,7 @@ const authORPCRouterBase = {
       summary: "Get passkey login options",
       tags: ["Auth"],
     })
-    .output(authContract.passkeyLoginOptions["~orpc"].outputSchema)
+    .output(authPasskeyLoginOptionsSchema)
     .handler(async () => {
       const { generateAuthenticationOptions } = await import("@simplewebauthn/server");
 
@@ -500,8 +499,8 @@ const authORPCRouterBase = {
       summary: "Verify passkey login",
       tags: ["Auth"],
     })
-    .input(authContract.passkeyLoginVerify["~orpc"].inputSchema)
-    .output(authContract.passkeyLoginVerify["~orpc"].outputSchema)
+    .input(authPasskeyVerifySchema)
+    .output(authLoginOkResponseSchema)
     .handler(async ({ context, input }) => {
       const storedChallenge = getChallenge(`login:${input.challenge}`);
       if (!storedChallenge) {
@@ -594,7 +593,7 @@ const authORPCRouterBase = {
       summary: "Get passkey register options",
       tags: ["Auth"],
     })
-    .output(authContract.passkeyRegisterOptions["~orpc"].outputSchema)
+    .output(authPasskeyRegistrationOptionsSchema)
     .handler(async ({ context }) => {
       const token = getRequiredToken(context);
       const session = await resolveSessionFromToken(token);
@@ -636,8 +635,8 @@ const authORPCRouterBase = {
       summary: "Verify passkey registration",
       tags: ["Auth"],
     })
-    .input(authContract.passkeyRegisterVerify["~orpc"].inputSchema)
-    .output(authContract.passkeyRegisterVerify["~orpc"].outputSchema)
+    .input(authPasskeyResponseSchema)
+    .output(authStatusResponseSchema)
     .handler(async ({ context, input }) => {
       const sessionToken = getRequiredToken(context);
       const session = await resolveSessionFromToken(sessionToken);
@@ -693,8 +692,8 @@ const authORPCRouterBase = {
       summary: "Remove passkeys",
       tags: ["Auth"],
     })
-    .input(authContract.passkeyRemove["~orpc"].inputSchema)
-    .output(authContract.passkeyRemove["~orpc"].outputSchema)
+    .input(authEmptySchema)
+    .output(authStatusResponseSchema)
     .handler(async ({ context }) => {
       const token = getRequiredToken(context);
       const session = await resolveSessionFromToken(token);

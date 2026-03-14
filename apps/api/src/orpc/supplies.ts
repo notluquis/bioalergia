@@ -1,8 +1,12 @@
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import {
-  suppliesContract,
+  commonSuppliesResponseSchema,
+  createSupplyRequestSchema,
+  suppliesStatusResponseSchema,
   supplyStatusSchema,
+  supplyRequestsResponseSchema,
+  updateSupplyRequestStatusInputSchema,
 } from "@finanzas/orpc-contracts/supplies";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
@@ -120,7 +124,8 @@ const updateSupplyRequests = authed.use(async ({ context, next }) => {
 
 const suppliesORPCRouterBase = {
   common: authed
-    .route(suppliesContract.common)
+    .route({ method: "GET", path: "/common" })
+    .output(commonSuppliesResponseSchema)
     .handler(async () => {
       const commonSupplies = await getCommonSupplies();
 
@@ -136,8 +141,10 @@ const suppliesORPCRouterBase = {
     }),
 
   createRequest: createSupplyRequests
-    .route(suppliesContract.createRequest)
-    .handler(async ({ context, input }) => {
+    .route({ method: "POST", path: "/requests" })
+    .input(createSupplyRequestSchema)
+    .output(suppliesStatusResponseSchema)
+    .handler(async ({ context, input }: { context: { user: { id: number } }; input: z.input<typeof createSupplyRequestSchema> }) => {
       await createSupplyRequest({
         brand: input.brand,
         model: input.model,
@@ -151,7 +158,8 @@ const suppliesORPCRouterBase = {
     }),
 
   requests: readSupplyRequests
-    .route(suppliesContract.requests)
+    .route({ method: "GET", path: "/requests" })
+    .output(supplyRequestsResponseSchema)
     .handler(async () => {
       const requests = await getSupplyRequests();
 
@@ -159,8 +167,10 @@ const suppliesORPCRouterBase = {
     }),
 
   updateRequestStatus: updateSupplyRequests
-    .route(suppliesContract.updateRequestStatus)
-    .handler(async ({ input }) => {
+    .route({ method: "PUT", path: "/requests/{id}/status" })
+    .input(updateSupplyRequestStatusInputSchema)
+    .output(suppliesStatusResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof updateSupplyRequestStatusInputSchema> }) => {
       await updateSupplyRequestStatus(input.id, fromSupplyStatus(input.status));
       return { status: "ok" as const };
     }),

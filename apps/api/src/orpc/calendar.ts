@@ -33,7 +33,27 @@
 
 import type { CalendarSyncLog } from "@finanzas/db";
 import { db } from "@finanzas/db";
-import { calendarContract } from "@finanzas/orpc-contracts/calendar";
+import {
+  calendarClassificationOptionsSchema,
+  calendarDailySchema as contractCalendarDailySchema,
+  calendarJobStateSchema,
+  calendarJobStatusInputSchema as contractCalendarJobStatusInputSchema,
+  calendarQueryInputSchema as contractCalendarQueryInputSchema,
+  calendarRebuildClinicalSeriesInputSchema as contractCalendarRebuildClinicalSeriesInputSchema,
+  calendarRebuildClinicalSeriesResponseSchema as contractCalendarRebuildClinicalSeriesResponseSchema,
+  calendarReclassifyJobResponseSchema,
+  calendarReclassifyMissingInputSchema as contractCalendarReclassifyMissingInputSchema,
+  calendarSummaryItemSchema,
+  calendarSummaryWithAggregatesSchema,
+  calendarSyncLogSchema,
+  calendarSyncLogsInputSchema as contractCalendarSyncLogsInputSchema,
+  calendarSyncResponseSchema,
+  calendarTreatmentAnalyticsInputSchema,
+  calendarTreatmentAnalyticsResponseSchema,
+  calendarUnclassifiedEventsInputSchema as contractCalendarUnclassifiedEventsInputSchema,
+  calendarUnclassifiedEventsResponseSchema,
+  calendarUpdateClassificationSchema,
+} from "@finanzas/orpc-contracts/calendar";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
@@ -511,7 +531,7 @@ const classificationOptions = readAnyCalendar
     path: "/classification-options",
     summary: "Lista opciones de clasificacion del calendario",
   })
-  .output(calendarContract.classificationOptions["~orpc"].outputSchema)
+  .output(calendarClassificationOptionsSchema)
   .handler(() => ({
     categories: [...CATEGORY_CHOICES],
     missingFilters: [...MISSING_CLASSIFICATION_FILTERS],
@@ -638,7 +658,7 @@ const listCalendars = authed
     path: "/calendars",
     summary: "Lista calendarios sincronizados",
   })
-  .output(calendarContract.calendars["~orpc"].outputSchema)
+  .output(z.array(calendarSummaryItemSchema))
   .handler(async () => {
     const calendars = await db.calendar.findMany({
       orderBy: { name: "asc" },
@@ -678,8 +698,8 @@ const summaryEvents = authed
     path: "/events/summary",
     summary: "Resumen agregado de eventos calendario",
   })
-  .input(calendarContract.summaryEvents["~orpc"].inputSchema)
-  .output(calendarContract.summaryEvents["~orpc"].outputSchema)
+  .input(contractCalendarQueryInputSchema)
+  .output(calendarSummaryWithAggregatesSchema)
   .handler(async ({ input }) => {
     const { filters, applied } = await buildCalendarFiltersFromInput(input);
     const aggregates = await getCalendarAggregates(filters);
@@ -708,8 +728,8 @@ const dailyEvents = authed
     path: "/events/daily",
     summary: "Eventos agrupados por dia",
   })
-  .input(calendarContract.dailyEvents["~orpc"].inputSchema)
-  .output(calendarContract.dailyEvents["~orpc"].outputSchema)
+  .input(contractCalendarQueryInputSchema)
+  .output(contractCalendarDailySchema)
   .handler(async ({ input }) => {
     const { filters, applied, maxDays } = await buildCalendarFiltersFromInput(input);
     const events = await getCalendarEventsByDate(filters, { maxDays });
@@ -730,8 +750,8 @@ const treatmentAnalytics = requirePermission("CalendarEvent", "read")
     path: "/events/treatment-analytics",
     summary: "Analytics de tratamientos subcutaneos",
   })
-  .input(calendarContract.treatmentAnalytics["~orpc"].inputSchema)
-  .output(calendarContract.treatmentAnalytics["~orpc"].outputSchema)
+  .input(calendarTreatmentAnalyticsInputSchema)
+  .output(calendarTreatmentAnalyticsResponseSchema)
   .handler(async ({ input }) => {
     const defaults = getDefaultTreatmentAnalyticsRange();
     const filters: TreatmentAnalyticsFilters = {
@@ -756,8 +776,8 @@ const classifyEvent = requirePermission("CalendarEvent", "update")
     successStatus: 200,
     summary: "Actualiza clasificacion manual de un evento",
   })
-  .input(calendarContract.classifyEvent["~orpc"].inputSchema)
-  .output(calendarContract.classifyEvent["~orpc"].outputSchema)
+  .input(calendarUpdateClassificationSchema)
+  .output(z.object({ ok: z.literal(true) }))
   .handler(async ({ input }) => {
     await updateCalendarEventClassification(input.calendarId, input.eventId, {
       clinicalSeriesId: input.clinicalSeriesId ?? undefined,
@@ -796,7 +816,7 @@ const syncCalendarEvents = authed
     successStatus: 202,
     summary: "Inicia sincronizacion manual en segundo plano",
   })
-  .output(calendarContract.syncEvents["~orpc"].outputSchema)
+  .output(calendarSyncResponseSchema)
   .handler(async ({ context }) => {
     const logId = await createCalendarSyncLogEntry({
       triggerSource: "manual",
@@ -851,8 +871,8 @@ const listSyncLogs = authed
     path: "/events/sync/logs",
     summary: "Lista logs recientes de sincronizacion",
   })
-  .input(calendarContract.syncLogs["~orpc"].inputSchema)
-  .output(calendarContract.syncLogs["~orpc"].outputSchema)
+  .input(contractCalendarSyncLogsInputSchema)
+  .output(z.array(calendarSyncLogSchema))
   .handler(async ({ input }) => {
     const logs = await listCalendarSyncLogs(input.limit ?? 50);
 
@@ -880,8 +900,8 @@ const rebuildClinicalSeriesRoute = requirePermission("CalendarEvent", "update")
     path: "/series/rebuild",
     summary: "Reagrupar series clinicas para tests y tratamientos subcutaneos",
   })
-  .input(calendarContract.rebuildClinicalSeries["~orpc"].inputSchema)
-  .output(calendarContract.rebuildClinicalSeries["~orpc"].outputSchema)
+  .input(contractCalendarRebuildClinicalSeriesInputSchema)
+  .output(contractCalendarRebuildClinicalSeriesResponseSchema)
   .handler(async ({ input }) => rebuildClinicalSeries(input));
 
 const unclassifiedEvents = requirePermission("CalendarEvent", "update")
@@ -890,8 +910,8 @@ const unclassifiedEvents = requirePermission("CalendarEvent", "update")
     path: "/events/unclassified",
     summary: "Lista eventos con clasificacion incompleta",
   })
-  .input(calendarContract.unclassifiedEvents["~orpc"].inputSchema)
-  .output(calendarContract.unclassifiedEvents["~orpc"].outputSchema)
+  .input(contractCalendarUnclassifiedEventsInputSchema)
+  .output(calendarUnclassifiedEventsResponseSchema)
   .handler(async ({ input }) => {
     const selectedMissingFilters = new Set<MissingClassificationFilterKey>(
       toUniqueMissingFilters(input.missing),
@@ -967,8 +987,8 @@ const reclassifyEvents = requirePermission("CalendarEvent", "update")
     successStatus: 202,
     summary: "Inicia reclasificacion de eventos pendientes",
   })
-  .input(calendarContract.reclassifyEvents["~orpc"].inputSchema)
-  .output(calendarContract.reclassifyEvents["~orpc"].outputSchema)
+  .input(contractCalendarReclassifyMissingInputSchema)
+  .output(calendarReclassifyJobResponseSchema)
   .handler(async ({ input }) => {
     const result = await startReclassifyMissingFieldsJob({
       filterMode: input.filterMode,
@@ -988,7 +1008,7 @@ const reclassifyAllEvents = requirePermission("CalendarEvent", "update")
     successStatus: 202,
     summary: "Inicia reclasificacion completa de eventos",
   })
-  .output(calendarContract.reclassifyAllEvents["~orpc"].outputSchema)
+  .output(calendarReclassifyJobResponseSchema)
   .handler(async () => {
     const result = await startReclassifyAllEventsJob();
 
@@ -1004,8 +1024,8 @@ const jobStatus = requirePermission("CalendarEvent", "update")
     path: "/events/job/{jobId}",
     summary: "Consulta estado de job de calendario",
   })
-  .input(calendarContract.jobStatus["~orpc"].inputSchema)
-  .output(calendarContract.jobStatus["~orpc"].outputSchema)
+  .input(contractCalendarJobStatusInputSchema)
+  .output(z.object({ job: calendarJobStateSchema }))
   .handler(async ({ input }) => {
     const job = await getCalendarJobStatus(input.jobId);
 

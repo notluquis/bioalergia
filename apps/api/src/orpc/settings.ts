@@ -1,10 +1,17 @@
 import { db } from "@finanzas/db";
-import { settingsContract, settingsSchema } from "@finanzas/orpc-contracts/settings";
+import {
+  settingsInternalResponseSchema,
+  settingsSchema,
+  settingsStatusResponseSchema,
+  settingsUpdateInternalSchema,
+  settingsUploadAssetSchema,
+} from "@finanzas/orpc-contracts/settings";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
+import type { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
 import { type AppSettings, settingsKeyToDbKey } from "../lib/settings";
@@ -57,14 +64,17 @@ const updateSettings = authed.use(async ({ context, next }) => {
 
 const settingsORPCRouterBase = {
   app: readSettings
-    .route(settingsContract.app)
+    .route({ method: "GET", path: "/app" })
+    .output(settingsSchema)
     .handler(async () => {
       return await loadSettings();
     }),
 
   updateApp: updateSettings
-    .route(settingsContract.updateApp)
-    .handler(async ({ input }) => {
+    .route({ method: "PUT", path: "/app" })
+    .input(settingsSchema)
+    .output(settingsStatusResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof settingsSchema> }) => {
       const payload = Object.entries(input).reduce<Record<string, string>>((acc, [key, value]) => {
         acc[settingsKeyToDbKey(key as keyof AppSettings)] = value;
         return acc;
@@ -75,7 +85,8 @@ const settingsORPCRouterBase = {
     }),
 
   internal: readSettings
-    .route(settingsContract.internal)
+    .route({ method: "GET", path: "/internal" })
+    .output(settingsInternalResponseSchema)
     .handler(async () => {
       const settings = await db.setting.findMany({
         where: { key: { in: ["internal.upsertChunkSize"] } },
@@ -94,8 +105,10 @@ const settingsORPCRouterBase = {
     }),
 
   updateInternal: updateSettings
-    .route(settingsContract.updateInternal)
-    .handler(async ({ input }) => {
+    .route({ method: "PUT", path: "/internal" })
+    .input(settingsUpdateInternalSchema)
+    .output(settingsStatusResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof settingsUpdateInternalSchema> }) => {
       if (input.upsertChunkSize !== undefined) {
         await db.setting.upsert({
           where: { key: "internal.upsertChunkSize" },
@@ -115,8 +128,10 @@ const settingsORPCRouterBase = {
     }),
 
   uploadAsset: updateSettings
-    .route(settingsContract.uploadAsset)
-    .handler(async ({ input }) => ({
+    .route({ method: "POST", path: "/branding/upload" })
+    .input(settingsUploadAssetSchema)
+    .output(settingsStatusResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof settingsUploadAssetSchema> }) => ({
       message: `${input.assetType} upload not implemented yet`,
       status: "error",
     })),

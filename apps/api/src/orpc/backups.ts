@@ -2,7 +2,16 @@ import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
-import { backupsContract } from "@finanzas/orpc-contracts/backups";
+import {
+  backupsFileIdSchema,
+  backupsHistoryResponseSchema,
+  backupsListResponseSchema,
+  backupsLogsResponseSchema,
+  backupsRestoreResponseSchema,
+  backupsRestoreSchema,
+  backupsTablesResponseSchema,
+  backupsTriggerResponseSchema,
+} from "@finanzas/orpc-contracts/backups";
 import type { Context as HonoContext } from "hono";
 import { getSessionUser, hasPermission } from "../auth";
 import { isOAuthConfigured } from "../lib/google/google-core";
@@ -74,7 +83,7 @@ const restoreBackups = authed.use(async ({ context, next }) => {
 const backupsORPCRouterBase = {
   history: readBackups
     .route({ method: "GET", path: "/history", tags: ["Backups"] })
-    .output(backupsContract.history["~orpc"].outputSchema)
+    .output(backupsHistoryResponseSchema)
     .handler(async () => ({
       history: getJobHistory(),
       status: "ok" as const,
@@ -82,7 +91,7 @@ const backupsORPCRouterBase = {
 
   list: readBackups
     .route({ method: "GET", path: "/", tags: ["Backups"] })
-    .output(backupsContract.list["~orpc"].outputSchema)
+    .output(backupsListResponseSchema)
     .handler(async () => {
       if (!(await isOAuthConfigured())) {
         return {
@@ -112,7 +121,7 @@ const backupsORPCRouterBase = {
 
   logs: readBackups
     .route({ method: "GET", path: "/logs", tags: ["Backups"] })
-    .output(backupsContract.logs["~orpc"].outputSchema)
+    .output(backupsLogsResponseSchema)
     .handler(async () => ({
       logs: getLogs(100),
       status: "ok" as const,
@@ -120,8 +129,8 @@ const backupsORPCRouterBase = {
 
   restore: restoreBackups
     .route({ method: "POST", path: "/{fileId}/restore", tags: ["Backups"] })
-    .input(backupsContract.restore["~orpc"].inputSchema)
-    .output(backupsContract.restore["~orpc"].outputSchema)
+    .input(backupsRestoreSchema)
+    .output(backupsRestoreResponseSchema)
     .handler(async ({ input }) => ({
       job: {
         backupFileId: input.fileId,
@@ -137,8 +146,8 @@ const backupsORPCRouterBase = {
 
   tables: readBackups
     .route({ method: "GET", path: "/{fileId}/tables", tags: ["Backups"] })
-    .input(backupsContract.tables["~orpc"].inputSchema)
-    .output(backupsContract.tables["~orpc"].outputSchema)
+    .input(backupsFileIdSchema)
+    .output(backupsTablesResponseSchema)
     .handler(async ({ input }) => ({
       status: "ok" as const,
       tables: await getBackupTables(input.fileId),
@@ -146,7 +155,7 @@ const backupsORPCRouterBase = {
 
   trigger: writeBackups
     .route({ method: "POST", path: "/", tags: ["Backups"] })
-    .output(backupsContract.trigger["~orpc"].outputSchema)
+    .output(backupsTriggerResponseSchema)
     .handler(async () => ({
       job: startBackup(),
       message: "Backup started",
@@ -176,6 +185,7 @@ export const backupsOpenAPIHandler = new OpenAPIHandler(backupsORPCRouter, {
           title: "Bioalergia Backups oRPC",
           description:
             "Contratos oRPC/OpenAPI para backups. El stream de progreso SSE sigue en /api/backups/progress.",
+          version: "1.0.0",
         },
       },
     }),

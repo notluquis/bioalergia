@@ -1,9 +1,15 @@
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
-import { balanceUpsertSchema, balancesContract, balancesQuerySchema, balancesResponseSchema, balancesStatusResponseSchema } from "@finanzas/orpc-contracts/balances";
+import {
+  balanceUpsertSchema,
+  balancesQuerySchema,
+  balancesResponseSchema,
+  balancesStatusResponseSchema,
+} from "@finanzas/orpc-contracts/balances";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
+import type { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
@@ -55,22 +61,33 @@ const writeBalances = authed.use(async ({ context, next }) => {
 
 const balancesORPCRouterBase = {
   list: readBalances
-    .route(balancesContract.list)
-    .handler(async ({ input }) => {
+    .route({ method: "GET", path: "/" })
+    .input(balancesQuerySchema)
+    .output(balancesResponseSchema)
+    .handler(async ({ input }: { input: z.output<typeof balancesQuerySchema> }) => {
       const report = await getBalancesReport(input.from, input.to);
 
       return {
         ...report,
         from: input.from,
+        previous: report.previous
+          ? {
+              balance: report.previous.balance,
+              date: report.previous.date,
+              note: null,
+            }
+          : null,
         status: "ok" as const,
         to: input.to,
       };
     }),
 
   save: writeBalances
-    .route(balancesContract.save)
-    .handler(async ({ input }) => {
-      await upsertDailyBalance(input.date, input.balance, input.note);
+    .route({ method: "POST", path: "/" })
+    .input(balanceUpsertSchema)
+    .output(balancesStatusResponseSchema)
+    .handler(async ({ input }: { input: z.output<typeof balanceUpsertSchema> }) => {
+      await upsertDailyBalance(input.date, input.balance, input.note ?? undefined);
       return { status: "ok" as const };
     }),
 };

@@ -24,6 +24,7 @@ import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
+import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { hashPassword } from "../lib/crypto";
 import { logError } from "../lib/logger";
@@ -50,6 +51,10 @@ function toNullableText(value: null | string | undefined): null | string {
 
 function normalizeEmail(value: string) {
   return value.toLowerCase().trim();
+}
+
+function normalizeRequiredRut(value: null | string | undefined) {
+  return normalizeRut(value ?? "") ?? "";
 }
 
 async function findUserByEffectiveLoginEmail(email: string, excludeUserId?: number) {
@@ -190,8 +195,10 @@ const deleteUsers = authed.use(async ({ context, next }) => {
 
 const usersORPCRouterBase = {
   delete: deleteUsers
-    .route(usersContract.delete)
-    .handler(async ({ context, input }) => {
+    .route({ method: "DELETE", path: "/{id}" })
+    .input(userIdSchema)
+    .output(usersStatusResponseSchema)
+    .handler(async ({ context, input }: { context: { user: { id: number } }; input: z.input<typeof userIdSchema> }) => {
       if (input.id === context.user.id) {
         throw new ORPCError("BAD_REQUEST", { message: "No puedes eliminar tu propia cuenta" });
       }
@@ -201,8 +208,10 @@ const usersORPCRouterBase = {
     }),
 
   deletePasskey: updateUsers
-    .route(usersContract.deletePasskey)
-    .handler(async ({ input }) => {
+    .route({ method: "DELETE", path: "/{id}/passkey" })
+    .input(userIdSchema)
+    .output(usersStatusResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof userIdSchema> }) => {
       await db.passkey.deleteMany({
         where: { userId: input.id },
       });
@@ -211,8 +220,10 @@ const usersORPCRouterBase = {
     }),
 
   invite: createUsers
-    .route(usersContract.invite)
-    .handler(async ({ input }) => {
+    .route({ method: "POST", path: "/invite" })
+    .input(inviteUserSchema)
+    .output(inviteResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof inviteUserSchema> }) => {
       const normalizedEmail = normalizeEmail(input.email);
 
       const existing = await db.user.findFirst({
@@ -231,7 +242,10 @@ const usersORPCRouterBase = {
       const tempPassword = crypto.randomBytes(12).toString("hex");
       const tempPasswordHash = await hashPassword(tempPassword);
 
-      const targetPersonId = await resolveInvitePersonId(input.personId, normalizedEmail, input);
+      const targetPersonId = await resolveInvitePersonId(input.personId, normalizedEmail, {
+        ...input,
+        mfaEnforced: input.mfaEnforced ?? true,
+      });
 
       const user = await db.user.create({
         data: {
@@ -264,8 +278,10 @@ const usersORPCRouterBase = {
     }),
 
   list: readUsers
-    .route(usersContract.list)
-    .handler(async ({ input }) => {
+    .route({ method: "GET", path: "/" })
+    .input(usersListInputSchema)
+    .output(usersResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof usersListInputSchema> }) => {
       const users = await db.user.findMany({
         where: input.includeTest
           ? undefined
@@ -316,7 +332,7 @@ const usersORPCRouterBase = {
                 fatherName: user.person.fatherName,
                 motherName: user.person.motherName,
                 phone: user.person.phone,
-                rut: normalizeRut(user.person.rut),
+                rut: normalizeRequiredRut(user.person.rut),
               }
             : null,
         })),
@@ -324,7 +340,9 @@ const usersORPCRouterBase = {
     }),
 
   profile: authed
-    .route(usersContract.profile)
+    .route({ method: "GET", path: "/profile" })
+    .input(z.object({}))
+    .output(userProfileResponseSchema)
     .handler(async ({ context }) => {
       const user = await db.user.findUnique({
         where: { id: context.user.id },
@@ -357,7 +375,7 @@ const usersORPCRouterBase = {
           names: user.person.names,
           fatherName: user.person.fatherName,
           motherName: user.person.motherName,
-          rut: normalizeRut(user.person.rut),
+          rut: normalizeRequiredRut(user.person.rut),
           email: notificationEmail,
           notificationEmail,
           loginEmail: effectiveLoginEmail,
@@ -371,8 +389,10 @@ const usersORPCRouterBase = {
     }),
 
   resetPassword: updateUsers
-    .route(usersContract.resetPassword)
-    .handler(async ({ input }) => {
+    .route({ method: "POST", path: "/{id}/reset-password" })
+    .input(userIdSchema)
+    .output(resetPasswordResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof userIdSchema> }) => {
       const targetUser = await db.user.findUnique({
         where: { id: input.id },
         select: { id: true },
@@ -401,8 +421,10 @@ const usersORPCRouterBase = {
     }),
 
   setup: authed
-    .route(usersContract.setup)
-    .handler(async ({ context, input }) => {
+    .route({ method: "POST", path: "/setup" })
+    .input(setupUserSchema)
+    .output(usersStatusResponseSchema)
+    .handler(async ({ context, input }: { context: { user: { id: number } }; input: z.input<typeof setupUserSchema> }) => {
       const user = await db.user.findUnique({
         where: { id: context.user.id },
         include: { person: true },
@@ -490,8 +512,10 @@ const usersORPCRouterBase = {
     }),
 
   toggleMfa: updateUsers
-    .route(usersContract.toggleMfa)
-    .handler(async ({ input }) => {
+    .route({ method: "POST", path: "/{id}/mfa" })
+    .input(toggleMfaSchema)
+    .output(toggleMfaResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof toggleMfaSchema> }) => {
       await db.user.update({
         where: { id: input.id },
         data: { mfaEnabled: input.enabled },
@@ -501,8 +525,10 @@ const usersORPCRouterBase = {
     }),
 
   updateProfile: updateUsers
-    .route(usersContract.updateProfile)
-    .handler(async ({ input }) => {
+    .route({ method: "PUT", path: "/{id}/profile" })
+    .input(z.object({ id: z.number().int(), payload: updateUserProfileSchema }))
+    .output(usersStatusResponseSchema)
+    .handler(async ({ input }: { input: { id: number; payload: z.input<typeof updateUserProfileSchema> } }) => {
       const targetUser = await db.user.findUnique({
         where: { id: input.id },
         include: {
@@ -621,8 +647,10 @@ const usersORPCRouterBase = {
     }),
 
   updateRole: updateUsers
-    .route(usersContract.updateRole)
-    .handler(async ({ input }) => {
+    .route({ method: "PUT", path: "/{id}/role" })
+    .input(updateRoleSchema)
+    .output(usersStatusResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof updateRoleSchema> }) => {
       await db.userRoleAssignment.deleteMany({ where: { userId: input.id } });
 
       const roleRecord = await db.role.findUnique({ where: { name: input.role } });
@@ -636,8 +664,10 @@ const usersORPCRouterBase = {
     }),
 
   updateStatus: updateUsers
-    .route(usersContract.updateStatus)
-    .handler(async ({ context, input }) => {
+    .route({ method: "PUT", path: "/{id}/status" })
+    .input(updateStatusSchema)
+    .output(usersStatusResponseSchema)
+    .handler(async ({ context, input }: { context: { user: { id: number } }; input: z.input<typeof updateStatusSchema> }) => {
       if (
         input.id === context.user.id &&
         (input.status === "SUSPENDED" || input.status === "PENDING_SETUP")

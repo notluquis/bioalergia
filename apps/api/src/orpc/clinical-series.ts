@@ -1,9 +1,16 @@
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
-import { clinicalSeriesContract } from "@finanzas/orpc-contracts/clinical-series";
+import {
+  clinicalSeriesDetailInputSchema,
+  clinicalSeriesListInputSchema,
+  clinicalSeriesRebuildInputSchema,
+  clinicalSeriesRebuildResponseSchema,
+  clinicalSeriesSnapshotSchema,
+} from "@finanzas/orpc-contracts/clinical-series";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
+import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
@@ -48,8 +55,10 @@ const updateClinicalSeries = authed.use(async ({ context, next }) => {
 
 const clinicalSeriesORPCRouterBase = {
   detail: readClinicalSeries
-    .route(clinicalSeriesContract.detail)
-    .handler(async ({ input }) => {
+    .route({ method: "GET", path: "/{id}" })
+    .input(clinicalSeriesDetailInputSchema)
+    .output(clinicalSeriesSnapshotSchema)
+    .handler(async ({ input }: { input: z.input<typeof clinicalSeriesDetailInputSchema> }) => {
       const snapshot = await getClinicalSeriesSnapshotById(input.id);
       if (!snapshot) {
         throw new ORPCError("NOT_FOUND", { message: "Serie clínica no encontrada" });
@@ -58,14 +67,18 @@ const clinicalSeriesORPCRouterBase = {
     }),
 
   list: readClinicalSeries
-    .route(clinicalSeriesContract.list)
-    .handler(async ({ input }) => {
+    .route({ method: "GET", path: "/" })
+    .input(clinicalSeriesListInputSchema)
+    .output(z.array(clinicalSeriesSnapshotSchema))
+    .handler(async ({ input }: { input: z.input<typeof clinicalSeriesListInputSchema> }) => {
       return await listClinicalSeriesSnapshots(input);
     }),
 
   rebuild: updateClinicalSeries
-    .route(clinicalSeriesContract.rebuild)
-    .handler(async ({ input }) => {
+    .route({ method: "POST", path: "/rebuild" })
+    .input(clinicalSeriesRebuildInputSchema)
+    .output(clinicalSeriesRebuildResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof clinicalSeriesRebuildInputSchema> }) => {
       return await rebuildClinicalSeries(input);
     }),
 };

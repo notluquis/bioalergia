@@ -8,7 +8,19 @@ export function logWarn(tag: string, details: Record<string, unknown> = {}) {
   console.warn(JSON.stringify({ level: "warn", tag, ...details }));
 }
 
-export function logError(tag: string, error: unknown, details: Record<string, unknown> = {}) {
+export function logError(tag: string, error: unknown, details?: Record<string, unknown>): void;
+export function logError(error: unknown, details?: Record<string, unknown>): void;
+export function logError(
+  tagOrError: string | unknown,
+  errorOrDetails?: Record<string, unknown> | unknown,
+  maybeDetails: Record<string, unknown> = {},
+) {
+  const tag = typeof tagOrError === "string" && arguments.length >= 3 ? tagOrError : "error";
+  const error = tag === "error" ? tagOrError : errorOrDetails;
+  const details =
+    tag === "error"
+      ? ((errorOrDetails as Record<string, unknown> | undefined) ?? {})
+      : maybeDetails;
   const errMessage = error instanceof Error ? error.message : String(error);
   console.error(JSON.stringify({ level: "error", tag, error: errMessage, ...details }));
 }
