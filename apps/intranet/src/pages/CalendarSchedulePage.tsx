@@ -341,10 +341,7 @@ function CalendarSchedulePage() {
 
   // Local state for filter draft (not applicable until the user clicks Apply)
   const [draftFilters, setDraftFilters] = React.useState(appliedFilters);
-  const serializedAppliedFilters = React.useMemo(
-    () => JSON.stringify(appliedFilters),
-    [appliedFilters]
-  );
+  const serializedAppliedFilters = JSON.stringify(appliedFilters);
 
   // Sync draft with applied filters only when popover is closed or on initial load
   // To ensure the draft starts from the current view when opened

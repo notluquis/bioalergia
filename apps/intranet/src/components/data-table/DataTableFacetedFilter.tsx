@@ -20,14 +20,12 @@ export function DataTableFacetedFilter<TData, TValue>({
 }: DataTableFacetedFilterProps<TData, TValue>) {
   const facets = column?.getFacetedUniqueValues();
   const filterValue = (column?.getFilterValue() as string[] | undefined) ?? [];
-  const selectedValues = useMemo(() => new Set(filterValue), [filterValue]);
+  const selectedKeys = useMemo(() => new Set(filterValue), [filterValue]);
   const [search, setSearch] = useState("");
 
   const filteredOptions = options.filter((option) =>
     option.label.toLowerCase().includes(search.toLowerCase())
   );
-
-  const selectedKeys = useMemo(() => new Set(selectedValues), [selectedValues]);
 
   const handleSelectionChange = (keys: Selection) => {
     const nextKeys =
@@ -45,14 +43,14 @@ export function DataTableFacetedFilter<TData, TValue>({
         <Button className="h-8 border-dashed" size="sm" variant="outline">
           <PlusCircle className="mr-2 h-4 w-4" />
           {title}
-          {selectedValues.size > 0 && (
+          {selectedKeys.size > 0 && (
             <>
               <div className="mx-2 h-4 w-px bg-default-100" />
               <div className="badge badge-sm badge-secondary hidden lg:flex">
-                {selectedValues.size}
+                {selectedKeys.size}
               </div>
               <div className="badge badge-sm badge-secondary flex lg:hidden">
-                {selectedValues.size}
+                {selectedKeys.size}
               </div>
             </>
           )}
@@ -102,7 +100,7 @@ export function DataTableFacetedFilter<TData, TValue>({
               )}
             </Dropdown.Item>
           ))}
-          {selectedValues.size > 0 && (
+          {selectedKeys.size > 0 && (
             <Dropdown.Item id="clear" textValue="Clear filters">
               <Label>Clear filters</Label>
             </Dropdown.Item>
