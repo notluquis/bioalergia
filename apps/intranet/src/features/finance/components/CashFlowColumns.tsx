@@ -370,6 +370,7 @@ export const columns: ColumnDef<CashFlowTransaction>[] = [
         <Select
           className="min-w-56"
           isDisabled={isUpdating}
+          key={`${row.original.id}:${selectedValue}`}
           value={selectedValue}
           onChange={(key) => {
             const parsed = String(key ?? "__none__");
