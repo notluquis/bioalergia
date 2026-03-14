@@ -91,6 +91,16 @@ type CounterpartSyncCounters = {
   syncedCounterparts: number;
 };
 
+const counterpartAccountDetailSelect = {
+  accountNumber: true,
+  accountType: true,
+  bankName: true,
+  counterpartId: true,
+  createdAt: true,
+  id: true,
+  updatedAt: true,
+} as const;
+
 const ensureAccumulator = (
   map: Map<string, CounterpartAccumulator>,
   rut: string,
@@ -516,17 +526,6 @@ const attachCounterpartAssignments = async (grouped: Map<string, CounterpartAcco
 export async function listCounterparts() {
   return await db.counterpart.findMany({
     orderBy: { bankAccountHolder: "asc" },
-    include: {
-      accounts: {
-        select: {
-          accountNumber: true,
-          accountType: true,
-          bankName: true,
-          counterpartId: true,
-          id: true,
-        },
-      },
-    },
   });
 }
 
@@ -535,13 +534,7 @@ export async function getCounterpartById(id: number) {
     where: { id },
     include: {
       accounts: {
-        select: {
-          accountNumber: true,
-          accountType: true,
-          bankName: true,
-          counterpartId: true,
-          id: true,
-        },
+        select: counterpartAccountDetailSelect,
       },
     },
   });
@@ -561,13 +554,7 @@ export async function getCounterpartByRut(identificationNumber: string) {
     where: { identificationNumber },
     include: {
       accounts: {
-        select: {
-          accountNumber: true,
-          accountType: true,
-          bankName: true,
-          counterpartId: true,
-          id: true,
-        },
+        select: counterpartAccountDetailSelect,
       },
     },
   });
