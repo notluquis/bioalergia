@@ -74,7 +74,7 @@ function AuthedLayout() {
 
   // Detect if mobile/tablet (md breakpoint)
   const [isMobile, setIsMobile] = React.useState(
-    !globalThis.matchMedia("(min-width: 768px)").matches,
+    !globalThis.matchMedia("(min-width: 768px)").matches
   );
   const [debouncedIsMobile] = useDebouncedValue(isMobile, { wait: 150 });
 
@@ -121,49 +121,6 @@ function AuthedLayout() {
       document.title = settings.pageTitle;
     }
   }, [settings.pageTitle]);
-
-  React.useEffect(() => {
-    if (!isMobile || !sidebarOpen) {
-      return;
-    }
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        closeSidebar();
-      }
-    };
-
-    globalThis.addEventListener("keydown", onKeyDown);
-
-    const firstFocusable = document.querySelector<HTMLElement>(
-      `#${sidebarId} a[href], #${sidebarId} button:not([disabled])`,
-    );
-    firstFocusable?.focus();
-
-    return () => {
-      globalThis.removeEventListener("keydown", onKeyDown);
-    };
-  }, [closeSidebar, isMobile, sidebarOpen]);
-
-  React.useEffect(() => {
-    if (!isMobile) {
-      return;
-    }
-
-    const originalOverflow = document.body.style.overflow;
-    const originalTouchAction = document.body.style.touchAction;
-
-    if (sidebarOpen) {
-      document.body.style.overflow = "hidden";
-      document.body.style.touchAction = "none";
-    }
-
-    return () => {
-      document.body.style.overflow = originalOverflow;
-      document.body.style.touchAction = originalTouchAction;
-    };
-  }, [isMobile, sidebarOpen]);
 
   React.useEffect(() => {
     if (!isMobile) {

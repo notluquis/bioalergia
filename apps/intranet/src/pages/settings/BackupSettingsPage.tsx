@@ -5,6 +5,7 @@ import {
   Description,
   Disclosure,
   Link,
+  ProgressBar,
   ScrollShadow,
   Skeleton,
   Surface,
@@ -176,14 +177,11 @@ function RunningJobProgressCard({
         </div>
         <span className="font-mono text-default-500 text-sm">{stepLabel}</span>
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-default-100">
-        <div
-          className={cn("h-full bg-primary ", {
-            "": progress < 12,
-          })}
-          style={{ width: `${progress}%` }}
-        />
-      </div>
+      <ProgressBar aria-label={stepLabel} value={progress}>
+        <ProgressBar.Track className="h-2 rounded-full bg-default-100">
+          <ProgressBar.Fill className="bg-primary" />
+        </ProgressBar.Track>
+      </ProgressBar>
     </Surface>
   );
 }
@@ -552,7 +550,7 @@ function BackupTablesList({
 
   const toggleTable = (table: string) => {
     setSelectedTables((prev) =>
-      prev.includes(table) ? prev.filter((t) => t !== table) : [...prev, table],
+      prev.includes(table) ? prev.filter((t) => t !== table) : [...prev, table]
     );
   };
 
@@ -582,7 +580,7 @@ function BackupTablesList({
                 <div
                   className={cn(
                     "flex items-center gap-2 rounded-lg border border-default-200 p-2 text-sm hover:bg-default-50",
-                    selectedTables.includes(table) ? "border-primary bg-primary/5" : "",
+                    selectedTables.includes(table) ? "border-primary bg-primary/5" : ""
                   )}
                   key={table}
                 >

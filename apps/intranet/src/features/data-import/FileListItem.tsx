@@ -1,4 +1,4 @@
-import { Button, Chip } from "@heroui/react";
+import { Button, Chip, ProgressBar } from "@heroui/react";
 import { AlertCircle, CheckCircle2, FileText, Loader2, X } from "lucide-react";
 import { formatFileSize } from "@/lib/format";
 
@@ -117,19 +117,11 @@ export function FileListItem({
 
         {/* Progress Bar */}
         {showProgress && progress !== undefined && (
-          <div className="mt-2">
-            <div className="h-1 w-full overflow-hidden rounded-full bg-default-200">
-              <div
-                className="h-full bg-accent "
-                style={{ width: `${progress}%` }}
-                role="progressbar"
-                aria-valuenow={progress}
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-label="Progreso"
-              />
-            </div>
-          </div>
+          <ProgressBar aria-label="Progreso" className="mt-2" size="sm" value={progress}>
+            <ProgressBar.Track className="h-1 rounded-full bg-default-200">
+              <ProgressBar.Fill className="bg-accent" />
+            </ProgressBar.Track>
+          </ProgressBar>
         )}
       </div>
 

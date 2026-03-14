@@ -8,6 +8,7 @@ import {
   Input,
   Label,
   ListBox,
+  ProgressBar,
   ScrollShadow,
   Select,
   Skeleton,
@@ -128,7 +129,7 @@ export function CalendarDteLinksOverview({
       period: search.period,
       query: search.query || undefined,
       status: search.status,
-    }),
+    })
   );
 
   const refetchOverview = useCallback(async () => {
@@ -202,7 +203,7 @@ export function CalendarDteLinksOverview({
         skippedByReason: result.skippedByReason,
       });
       toast.success(
-        `Auto-vinculación ${result.period}: ${result.linked} vinculados, ${result.skipped} omitidos (${result.daysProcessed} días)`,
+        `Auto-vinculación ${result.period}: ${result.linked} vinculados, ${result.skipped} omitidos (${result.daysProcessed} días)`
       );
       await refetchOverview();
     },
@@ -216,7 +217,7 @@ export function CalendarDteLinksOverview({
     onSuccess: (result) => {
       setActiveAutoLinkJobId(result.jobId);
       toast.info(
-        `Auto-vinculación iniciada: ${result.totalPeriods} períodos en lotes (concurrencia ${result.periodConcurrency}).`,
+        `Auto-vinculación iniciada: ${result.totalPeriods} períodos en lotes (concurrencia ${result.periodConcurrency}).`
       );
     },
   });
@@ -241,7 +242,7 @@ export function CalendarDteLinksOverview({
         skippedByReason: result.skippedByReason ?? [],
       });
       toast.success(
-        `Auto-vinculación completa: ${result.linked} vinculados, ${result.skipped} omitidos (${result.periodsProcessed} períodos)`,
+        `Auto-vinculación completa: ${result.linked} vinculados, ${result.skipped} omitidos (${result.periodsProcessed} períodos)`
       );
       setActiveAutoLinkJobId(null);
       void refetchOverview();
@@ -374,12 +375,11 @@ export function CalendarDteLinksOverview({
             </div>
           </Card.Header>
           <Card.Content>
-            <div className="h-2 w-full overflow-hidden rounded-full bg-default-200">
-              <div
-                className="h-full rounded-full bg-primary "
-                style={{ width: `${autoLinkProgress}%` }}
-              />
-            </div>
+            <ProgressBar aria-label="Progreso de auto-vinculación" value={autoLinkProgress}>
+              <ProgressBar.Track className="h-2 rounded-full bg-default-200">
+                <ProgressBar.Fill className="bg-primary" />
+              </ProgressBar.Track>
+            </ProgressBar>
             <Description className="mt-2 text-xs">
               {autoLinkJobQuery.data.progress}/{autoLinkJobQuery.data.total} períodos procesados
             </Description>
@@ -567,7 +567,7 @@ export function CalendarDteLinksOverview({
                               color={scoreColor(
                                 item.linked
                                   ? item.confidenceScore
-                                  : (item.topSuggestion?.confidenceScore ?? null),
+                                  : (item.topSuggestion?.confidenceScore ?? null)
                               )}
                               variant="soft"
                             >
@@ -575,7 +575,7 @@ export function CalendarDteLinksOverview({
                               {scoreLabel(
                                 item.linked
                                   ? item.confidenceScore
-                                  : (item.topSuggestion?.confidenceScore ?? null),
+                                  : (item.topSuggestion?.confidenceScore ?? null)
                               )}
                             </Chip>
                           ) : null}

@@ -1,4 +1,4 @@
-import { Button, Tooltip } from "@heroui/react";
+import { Button, ProgressBar, Tooltip } from "@heroui/react";
 import { ArrowDownToLine, RefreshCw, Settings } from "lucide-react";
 import type { ReclassifyJob } from "../types";
 
@@ -70,7 +70,16 @@ export function ClassificationToolbar({
         variant="tertiary"
       >
         {isJobRunning && (
-          <div className="absolute inset-0 bg-primary/20 " style={{ width: `${progress}%` }} />
+          <ProgressBar
+            aria-label="Progreso de reclasificación"
+            className="pointer-events-none absolute inset-x-0 bottom-0 z-0"
+            size="sm"
+            value={progress}
+          >
+            <ProgressBar.Track className="h-1 rounded-none bg-primary/10">
+              <ProgressBar.Fill className="bg-primary/30" />
+            </ProgressBar.Track>
+          </ProgressBar>
         )}
         <span className="relative z-10 flex items-center gap-2">
           {isJobRunning ? (

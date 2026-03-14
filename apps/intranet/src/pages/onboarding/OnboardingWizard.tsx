@@ -1,3 +1,4 @@
+import { ProgressBar as HeroProgressBar } from "@heroui/react";
 import { useNavigate } from "@tanstack/react-router";
 import { Check } from "lucide-react";
 import { useEffect } from "react";
@@ -21,14 +22,20 @@ const STEPS = [
 ];
 
 function ProgressBar({ currentStep }: { currentStep: number }) {
+  const progress = (currentStep / (STEPS.length - 1)) * 100;
+
   return (
     <div className="border-default-100 border-b px-4 py-4 sm:px-6">
       <div className="relative mx-auto max-w-4xl">
-        <div className="absolute top-4 left-0 z-0 h-0.5 w-full bg-default-100" />
-        <div
-          className="absolute top-4 left-0 z-0 h-0.5 bg-primary"
-          style={{ width: `${(currentStep / (STEPS.length - 1)) * 100}%` }}
-        />
+        <HeroProgressBar
+          aria-label="Progreso del onboarding"
+          className="absolute top-4 left-0 z-0 w-full"
+          value={progress}
+        >
+          <HeroProgressBar.Track className="h-0.5 rounded-full bg-default-100">
+            <HeroProgressBar.Fill className="bg-primary" />
+          </HeroProgressBar.Track>
+        </HeroProgressBar>
         <ol className="relative z-10 grid grid-cols-6 gap-2">
           {STEPS.map((step, idx) => (
             <li className="flex min-w-0 flex-col items-center gap-2 text-center" key={step.id}>
@@ -37,7 +44,7 @@ function ProgressBar({ currentStep }: { currentStep: number }) {
                   "flex h-8 w-8 items-center justify-center rounded-full border-2 font-semibold text-xs sm:h-9 sm:w-9",
                   idx <= currentStep
                     ? "border-primary bg-primary text-primary-foreground"
-                    : "border-default-200 bg-background text-default-500",
+                    : "border-default-200 bg-background text-default-500"
                 )}
               >
                 {idx < currentStep ? <Check size={14} strokeWidth={3} /> : idx + 1}
@@ -45,7 +52,7 @@ function ProgressBar({ currentStep }: { currentStep: number }) {
               <span
                 className={cn(
                   "line-clamp-2 max-w-22 text-[10px] uppercase leading-tight tracking-wide sm:text-[11px]",
-                  idx <= currentStep ? "font-semibold text-primary" : "text-default-500",
+                  idx <= currentStep ? "font-semibold text-primary" : "text-default-500"
                 )}
               >
                 {step.title}

@@ -1,4 +1,4 @@
-import { Button } from "@heroui/react";
+import { Button, Meter } from "@heroui/react";
 import dayjs from "dayjs";
 
 import type { LoanSummary } from "../types";
@@ -81,12 +81,15 @@ export function LoanList({
                   Inicio {dayjs(loan.start_date, "YYYY-MM-DD").format("DD MMM YYYY")}
                 </span>
               </div>
-              <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-background/60">
-                <div
-                  className="h-full rounded-full bg-primary/60"
-                  style={{ width: `${Math.min(100, Math.round(paidRatio * 100))}%` }}
-                />
-              </div>
+              <Meter
+                aria-label={`Préstamo pagado ${Math.min(100, Math.round(paidRatio * 100))}%`}
+                className="mt-2 w-full"
+                value={Math.min(100, Math.round(paidRatio * 100))}
+              >
+                <Meter.Track className="h-2 rounded-full bg-background/60">
+                  <Meter.Fill className="bg-primary/60" />
+                </Meter.Track>
+              </Meter>
             </Button>
           );
         })}
