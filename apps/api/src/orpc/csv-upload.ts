@@ -3,8 +3,16 @@ import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
-import { csvUploadContract, type csvUploadModeSchema } from "@finanzas/orpc-contracts/csv-upload";
+import {
+  csvUploadImportInputSchema,
+  csvUploadImportResponseSchema,
+  csvUploadPreviewInputSchema,
+  csvUploadPreviewResponseSchema,
+  type csvUploadModeSchema,
+} from "@finanzas/orpc-contracts/csv-upload";
+import Decimal from "decimal.js";
 import type { Context as HonoContext } from "hono";
+import type { z } from "zod";
 
 import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
@@ -55,6 +63,7 @@ type PreviewLikeResponse = {
 
 const base = os.$context<CsvUploadORPCContext>();
 const UPSERT_CHUNK_SIZE = Number(process.env.BIOALERGIA_UPSERT_CHUNK_SIZE || 250);
+const NON_RUT_CHARS_REGEX = /[^0-9k]/gi;
 
 const authed = base.use(async ({ context, next }) => {
   const user = await getSessionUser(context.hono);
@@ -93,6 +102,11 @@ function normalizeRequiredString(value: unknown): string {
   return normalizeNullableString(value) ?? "";
 }
 
+function normalizeRut(value: unknown): null | string {
+  const normalized = normalizeNullableString(value)?.replace(NON_RUT_CHARS_REGEX, "").toUpperCase();
+  return normalized && normalized.length > 0 ? normalized : null;
+}
+
 function normalizeNumber(value: unknown): null | number {
   if (value == null) {
     return null;
@@ -112,6 +126,10 @@ function normalizeNumber(value: unknown): null | number {
   const normalized = trimmed.replaceAll(".", "").replace(",", ".");
   const parsed = Number(normalized);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function toDecimal(value: null | number) {
+  return value == null ? null : new Decimal(value);
 }
 
 function normalizeDate(value: unknown): Date | null {
@@ -167,7 +185,7 @@ function parseWithdrawalRows(rows: CsvUploadRow[]): {
       bankName: normalizeNullableString(row.bankName),
       dateCreated,
       fee: normalizeNumber(row.fee),
-      identificationNumber: normalizeNullableString(row.identificationNumber),
+      identificationNumber: normalizeRut(row.identificationNumber),
       identificationType: normalizeNullableString(row.identificationType),
       payoutDescription: normalizeNullableString(row.payoutDescription),
       rowIndex: index,
@@ -178,6 +196,36 @@ function parseWithdrawalRows(rows: CsvUploadRow[]): {
   });
 
   return { errors, validRows };
+}
+
+async function ensureCounterpartsExist(rows: WithdrawImportRow[]) {
+  const counterparts = new Map<string, string>();
+
+  for (const row of rows) {
+    if (!row.identificationNumber) {
+      continue;
+    }
+    if (!counterparts.has(row.identificationNumber)) {
+      counterparts.set(
+        row.identificationNumber,
+        row.bankAccountHolder?.trim() || row.identificationNumber,
+      );
+    }
+  }
+
+  for (const [identificationNumber, bankAccountHolder] of counterparts) {
+    await db.counterpart.upsert({
+      create: {
+        bankAccountHolder,
+        category: "SUPPLIER",
+        identificationNumber,
+      },
+      update: {
+        bankAccountHolder,
+      },
+      where: { identificationNumber },
+    });
+  }
 }
 
 async function classifyWithdrawalRows(validRows: WithdrawImportRow[]) {
@@ -239,10 +287,12 @@ async function createWithdrawalRows(rows: WithdrawImportRow[]) {
     return 0;
   }
 
+  await ensureCounterpartsExist(rows);
+
   const result = await db.withdrawTransaction.createMany({
     data: rows.map((row) => ({
       activityUrl: row.activityUrl,
-      amount: row.amount,
+      amount: toDecimal(row.amount),
       bankAccountHolder: row.bankAccountHolder,
       bankAccountNumber: row.bankAccountNumber,
       bankAccountType: row.bankAccountType,
@@ -250,7 +300,7 @@ async function createWithdrawalRows(rows: WithdrawImportRow[]) {
       bankId: row.bankId,
       bankName: row.bankName,
       dateCreated: row.dateCreated,
-      fee: row.fee,
+      fee: toDecimal(row.fee),
       identificationNumber: row.identificationNumber,
       identificationType: row.identificationType,
       payoutDescription: row.payoutDescription,
@@ -267,12 +317,14 @@ async function createWithdrawalRows(rows: WithdrawImportRow[]) {
 async function updateWithdrawalRows(rows: WithdrawImportRow[]) {
   let updated = 0;
 
+  await ensureCounterpartsExist(rows);
+
   for (const row of rows) {
     await db.withdrawTransaction.update({
       where: { withdrawId: row.withdrawId },
       data: {
         activityUrl: row.activityUrl,
-        amount: row.amount,
+        amount: toDecimal(row.amount),
         bankAccountHolder: row.bankAccountHolder,
         bankAccountNumber: row.bankAccountNumber,
         bankAccountType: row.bankAccountType,
@@ -280,7 +332,7 @@ async function updateWithdrawalRows(rows: WithdrawImportRow[]) {
         bankId: row.bankId,
         bankName: row.bankName,
         dateCreated: row.dateCreated,
-        fee: row.fee,
+        fee: toDecimal(row.fee),
         identificationNumber: row.identificationNumber,
         identificationType: row.identificationType,
         payoutDescription: row.payoutDescription,
@@ -350,9 +402,9 @@ const csvUploadORPCRouterBase = {
       summary: "Import CSV rows",
       tags: ["CSV Upload"],
     })
-    .input(csvUploadContract.import["~orpc"].inputSchema)
-    .output(csvUploadContract.import["~orpc"].outputSchema)
-    .handler(async ({ input }) => {
+    .input(csvUploadImportInputSchema)
+    .output(csvUploadImportResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof csvUploadImportInputSchema> }) => {
       if (input.table !== "withdrawals") {
         return {
           status: "ok" as const,
@@ -409,9 +461,9 @@ const csvUploadORPCRouterBase = {
       summary: "Preview CSV import",
       tags: ["CSV Upload"],
     })
-    .input(csvUploadContract.preview["~orpc"].inputSchema)
-    .output(csvUploadContract.preview["~orpc"].outputSchema)
-    .handler(async ({ input }) => {
+    .input(csvUploadPreviewInputSchema)
+    .output(csvUploadPreviewResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof csvUploadPreviewInputSchema> }) => {
       if (input.table !== "withdrawals") {
         return {
           status: "ok" as const,
