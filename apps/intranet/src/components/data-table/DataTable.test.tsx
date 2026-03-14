@@ -22,7 +22,12 @@ const rows: Row[] = Array.from({ length: 5 }, (_, i) => ({
 }));
 
 function getScrollContainer() {
-  const table = screen.getByRole("table");
+  const table =
+    screen.queryByRole("grid", { name: "Tabla de datos" }) ??
+    screen.queryByRole("table", { name: "Tabla de datos" });
+  if (!table) {
+    throw new Error("No se encontró la tabla renderizada");
+  }
   const container = table.parentElement;
   if (!container) {
     throw new Error("No se encontró contenedor de scroll de la tabla");
@@ -33,12 +38,7 @@ function getScrollContainer() {
 describe("DataTable scroll behavior", () => {
   it("does not force internal vertical scroll by default in paginated small tables", () => {
     render(
-      <DataTable
-        columns={columns}
-        data={rows}
-        enableToolbar={false}
-        enableVirtualization={false}
-      />,
+      <DataTable columns={columns} data={rows} enableToolbar={false} enableVirtualization={false} />
     );
 
     const container = getScrollContainer();
@@ -54,7 +54,7 @@ describe("DataTable scroll behavior", () => {
         enableToolbar={false}
         enableVirtualization={false}
         scrollMaxHeight="24rem"
-      />,
+      />
     );
 
     const container = getScrollContainer();
@@ -70,7 +70,7 @@ describe("DataTable scroll behavior", () => {
         enablePagination={false}
         enableToolbar={false}
         enableVirtualization={false}
-      />,
+      />
     );
 
     const container = getScrollContainer();
@@ -87,7 +87,7 @@ describe("DataTable scroll behavior", () => {
         enableToolbar={false}
         enableVirtualization={false}
         scrollMode="page"
-      />,
+      />
     );
 
     const container = getScrollContainer();

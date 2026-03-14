@@ -1,13 +1,14 @@
 import {
   Alert,
   Button,
-  ButtonGroup,
   Description,
   Form,
   Input,
   Label,
   Skeleton,
   TextField,
+  ToggleButton,
+  ToggleButtonGroup,
 } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import type React from "react";
@@ -129,7 +130,7 @@ export function SettingsForm() {
   const logoPreviewRef = useRef<null | string>(null);
 
   const [faviconMode, setFaviconMode] = useState<"upload" | "url">(
-    determineFaviconMode(settings.faviconUrl),
+    determineFaviconMode(settings.faviconUrl)
   );
   const [faviconFile, setFaviconFile] = useState<File | null>(null);
   const [faviconPreview, setFaviconPreview] = useState<null | string>(null);
@@ -459,28 +460,25 @@ function LogoSection({
         <span className="font-semibold text-default-700 text-xs uppercase tracking-wide">
           Logo institucional
         </span>
-        <ButtonGroup>
-          <Button
-            onPress={() => {
-              onModeChange("url");
-            }}
-            size="sm"
-            type="button"
-            variant={logoMode === "url" ? "primary" : "secondary"}
-          >
+        <ToggleButtonGroup
+          disallowEmptySelection
+          selectedKeys={[logoMode]}
+          selectionMode="single"
+          onSelectionChange={(keys) => {
+            const [next] = Array.from(keys as Iterable<string>);
+            if (next === "url" || next === "upload") {
+              onModeChange(next);
+            }
+          }}
+        >
+          <ToggleButton id="url" size="sm">
             Usar URL
-          </Button>
-          <Button
-            onPress={() => {
-              onModeChange("upload");
-            }}
-            size="sm"
-            type="button"
-            variant={logoMode === "upload" ? "primary" : "secondary"}
-          >
+          </ToggleButton>
+          <ToggleButton id="upload" size="sm">
+            <ToggleButtonGroup.Separator />
             Subir archivo
-          </Button>
-        </ButtonGroup>
+          </ToggleButton>
+        </ToggleButtonGroup>
       </div>
       {logoMode === "url" ? (
         <div className="flex flex-col gap-2">
@@ -543,28 +541,25 @@ function FaviconSection({
         <span className="font-semibold text-default-700 text-xs uppercase tracking-wide">
           Favicon del sitio
         </span>
-        <ButtonGroup>
-          <Button
-            onPress={() => {
-              onModeChange("url");
-            }}
-            size="sm"
-            type="button"
-            variant={faviconMode === "url" ? "primary" : "secondary"}
-          >
+        <ToggleButtonGroup
+          disallowEmptySelection
+          selectedKeys={[faviconMode]}
+          selectionMode="single"
+          onSelectionChange={(keys) => {
+            const [next] = Array.from(keys as Iterable<string>);
+            if (next === "url" || next === "upload") {
+              onModeChange(next);
+            }
+          }}
+        >
+          <ToggleButton id="url" size="sm">
             Usar URL
-          </Button>
-          <Button
-            onPress={() => {
-              onModeChange("upload");
-            }}
-            size="sm"
-            type="button"
-            variant={faviconMode === "upload" ? "primary" : "secondary"}
-          >
+          </ToggleButton>
+          <ToggleButton id="upload" size="sm">
+            <ToggleButtonGroup.Separator />
             Subir archivo
-          </Button>
-        </ButtonGroup>
+          </ToggleButton>
+        </ToggleButtonGroup>
       </div>
       {faviconMode === "url" ? (
         <div className="flex flex-col gap-2">

@@ -7,6 +7,7 @@ import {
   Disclosure,
   Label,
   Modal,
+  ProgressCircle,
   ProgressBar,
   Skeleton,
   Spinner,
@@ -947,7 +948,20 @@ export function HaulmerSyncPage() {
               </Modal.Header>
               <Modal.Body className="space-y-3">
                 <div className="flex items-center gap-2 text-default-600 text-sm">
-                  <Spinner size="sm" />
+                  <ProgressCircle
+                    aria-label="Avance de sincronización Haulmer"
+                    size="sm"
+                    value={
+                      syncAllProgress.total > 0
+                        ? Math.round((syncAllProgress.current / syncAllProgress.total) * 100)
+                        : 0
+                    }
+                  >
+                    <ProgressCircle.Track>
+                      <ProgressCircle.TrackCircle />
+                      <ProgressCircle.FillCircle />
+                    </ProgressCircle.Track>
+                  </ProgressCircle>
                   <span>
                     {syncAllProgress.current}/{syncAllProgress.total} •{" "}
                     {syncAllProgress.currentDocType == null
