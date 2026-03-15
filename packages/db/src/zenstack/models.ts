@@ -42,6 +42,7 @@ export type DailyProductionBalance = $ModelResult<$Schema, "DailyProductionBalan
 export type SupplyRequest = $ModelResult<$Schema, "SupplyRequest">;
 export type CommonSupply = $ModelResult<$Schema, "CommonSupply">;
 export type CalendarSyncLog = $ModelResult<$Schema, "CalendarSyncLog">;
+export type CalendarSyncLogEntry = $ModelResult<$Schema, "CalendarSyncLogEntry">;
 export type DoctoraliaFacility = $ModelResult<$Schema, "DoctoraliaFacility">;
 export type DoctoraliaDoctor = $ModelResult<$Schema, "DoctoraliaDoctor">;
 export type DoctoraliaAddress = $ModelResult<$Schema, "DoctoraliaAddress">;

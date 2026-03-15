@@ -334,6 +334,17 @@ export const calendarSyncLogSchema = z.object({
   excluded: z.number().int(),
   errorMessage: z.string().nullable(),
   changeDetails: z.unknown().nullable(),
+  logEntries: z
+    .array(
+      z.object({
+        message: z.string().nullable(),
+        severity: z.string(),
+        attributes: z.unknown().nullable(),
+        tags: z.unknown().nullable(),
+        timestamp: z.date(),
+      }),
+    )
+    .optional(),
 });
 
 export const calendarJobStateSchema = z.object({

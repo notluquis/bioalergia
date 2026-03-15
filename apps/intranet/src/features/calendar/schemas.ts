@@ -194,19 +194,19 @@ export const CalendarSummaryResponseSchema = z.strictObject({
       z.strictObject({
         calendarId: z.string(),
         total: z.number(),
-      }),
+      })
     ),
     eventTypes: z.array(
       z.strictObject({
         eventType: z.string().nullable(),
         total: z.number(),
-      }),
+      })
     ),
     categories: z.array(
       z.strictObject({
         category: z.string().nullable(),
         total: z.number(),
-      }),
+      })
     ),
   }),
   filters: z.strictObject({
@@ -236,7 +236,7 @@ export const CalendarSyncLogSchema = z.strictObject({
               changes: z.array(z.string()),
               summary: z.string(),
             }),
-          ]),
+          ])
         )
         .optional(),
     })
@@ -247,6 +247,17 @@ export const CalendarSyncLogSchema = z.strictObject({
   finishedAt: z.coerce.date().nullable(),
   id: z.number(),
   inserted: z.number(),
+  logEntries: z
+    .array(
+      z.strictObject({
+        attributes: z.record(z.string(), z.unknown()).nullable().optional(),
+        message: z.string().nullable(),
+        severity: z.string(),
+        tags: z.record(z.string(), z.unknown()).nullable().optional(),
+        timestamp: z.coerce.date(),
+      })
+    )
+    .optional(),
   skipped: z.number(),
   startedAt: z.coerce.date().nullable(),
   status: z.enum(["ERROR", "RUNNING", "SUCCESS"]),
@@ -275,7 +286,7 @@ export const ClassificationOptionsSchema = z.strictObject({
     z.strictObject({
       key: z.string(),
       label: z.string(),
-    }),
+    })
   ),
   patchReadings: z.array(z.string()),
   testSubtypes: z.array(z.string()),
@@ -429,7 +440,7 @@ export const EventDteByDayResponseSchema = z.strictObject({
       matchedBy: z.string(),
       status: z.string(),
       totalAmount: z.number(),
-    }),
+    })
   ),
   status: z.literal("success"),
 });
@@ -446,7 +457,7 @@ export const EventDteAutoLinkResponseSchema = z.strictObject({
       z.strictObject({
         eventId: z.string(),
         reason: z.string(),
-      }),
+      })
     ),
     linked: z.number(),
     skipped: z.number(),
@@ -454,7 +465,7 @@ export const EventDteAutoLinkResponseSchema = z.strictObject({
       z.strictObject({
         count: z.number(),
         reason: z.string(),
-      }),
+      })
     ),
     totalEvents: z.number(),
   }),
@@ -470,7 +481,7 @@ export const EventDteAutoLinkPeriodResponseSchema = z.strictObject({
         linked: z.number(),
         skipped: z.number(),
         totalEvents: z.number(),
-      }),
+      })
     ),
     linked: z.number(),
     period: z.string(),
@@ -479,7 +490,7 @@ export const EventDteAutoLinkPeriodResponseSchema = z.strictObject({
       z.strictObject({
         count: z.number(),
         reason: z.string(),
-      }),
+      })
     ),
     totalEvents: z.number(),
   }),
@@ -495,7 +506,7 @@ export const EventDteAutoLinkAllPeriodsResponseSchema = z.strictObject({
         period: z.string(),
         skipped: z.number(),
         totalEvents: z.number(),
-      }),
+      })
     ),
     linked: z.number(),
     periodsProcessed: z.number(),
@@ -504,7 +515,7 @@ export const EventDteAutoLinkAllPeriodsResponseSchema = z.strictObject({
       z.strictObject({
         count: z.number(),
         reason: z.string(),
-      }),
+      })
     ),
     totalEvents: z.number(),
   }),
@@ -559,7 +570,7 @@ export const EventDteOverviewResponseSchema = z.strictObject({
         topSuggestion: EventDteSuggestionSchema.extend({
           amountDiff: z.number().nullable(),
         }).nullable(),
-      }),
+      })
     ),
     page: z.number(),
     pageSize: z.number(),

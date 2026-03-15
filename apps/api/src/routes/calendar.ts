@@ -1,4 +1,3 @@
-import type { CalendarSyncLog } from "@finanzas/db";
 import { db } from "@finanzas/db";
 import dayjs from "dayjs";
 import { type Context, Hono, type Next } from "hono";
@@ -24,6 +23,7 @@ import {
 import { updateClassificationSchema } from "../lib/schemas";
 import { zValidator } from "../lib/zod-validator";
 import {
+  type CalendarSyncLogEntryPayload,
   calendarSyncService,
   createCalendarSyncLogEntry,
   finalizeCalendarSyncLogEntry,
@@ -34,6 +34,52 @@ import {
   updateCalendarEventClassification,
 } from "../services/calendar"; // Ensure calendarSyncService is exported from services/calendar OR import directly from modules/calendar/service
 import { reply } from "../utils/reply";
+
+function buildStructuredSyncLogEntries(params: {
+  errorMessage?: string;
+  excluded?: number;
+  inserted?: number;
+  source: string;
+  status: "ERROR" | "SUCCESS";
+  updated?: number;
+}): CalendarSyncLogEntryPayload[] {
+  const entries: CalendarSyncLogEntryPayload[] = [
+    {
+      attributes: {
+        excluded: params.excluded ?? 0,
+        inserted: params.inserted ?? 0,
+        updated: params.updated ?? 0,
+      },
+      message:
+        params.status === "SUCCESS"
+          ? "Calendar sync completed"
+          : "Calendar sync finished with error",
+      severity: params.status === "SUCCESS" ? "info" : "error",
+      tags: {
+        service: "calendar-sync",
+        source: params.source,
+      },
+      timestamp: new Date(),
+    },
+  ];
+
+  if (params.errorMessage) {
+    entries.push({
+      attributes: {
+        errorMessage: params.errorMessage,
+      },
+      message: params.errorMessage,
+      severity: "error",
+      tags: {
+        service: "calendar-sync",
+        source: params.source,
+      },
+      timestamp: new Date(),
+    });
+  }
+
+  return entries;
+}
 
 export const calendarRoutes = new Hono();
 
@@ -810,13 +856,26 @@ calendarRoutes.post("/events/sync", requireAuth, async (c: Context) => {
           updated: result.details.updated,
           excluded: result.details.deleted,
         },
+        logEntries: buildStructuredSyncLogEntries({
+          excluded: result.deleted,
+          inserted: result.inserted,
+          source: "manual",
+          status: "SUCCESS",
+          updated: result.updated,
+        }),
       });
       console.log(`✅ Sync completed successfully (logId: ${logId})`);
     })
     .catch(async (error) => {
+      const message = error instanceof Error ? error.message : String(error);
       await finalizeCalendarSyncLogEntry(logId, {
         status: "ERROR",
-        errorMessage: error instanceof Error ? error.message : String(error),
+        errorMessage: message,
+        logEntries: buildStructuredSyncLogEntries({
+          errorMessage: message,
+          source: "manual",
+          status: "ERROR",
+        }),
       });
       console.error(`❌ Sync failed (logId: ${logId}):`, error);
     });
@@ -851,7 +910,7 @@ calendarRoutes.get("/events/sync/logs", requireAuth, async (c: Context) => {
   const logs = await listCalendarSyncLogs(50);
   return reply(c, {
     status: "ok",
-    logs: logs.map((log: CalendarSyncLog) => ({
+    logs: logs.map((log) => ({
       id: Number(log.id),
       triggerSource: log.triggerSource,
       triggerUserId: log.triggerUserId != null ? Number(log.triggerUserId) : null,
@@ -866,6 +925,13 @@ calendarRoutes.get("/events/sync/logs", requireAuth, async (c: Context) => {
       excluded: Number(log.excluded ?? 0),
       errorMessage: log.errorMessage ?? null,
       changeDetails: log.changeDetails ?? null,
+      logEntries: log.logEntries.map((entry) => ({
+        message: entry.message,
+        severity: entry.severity,
+        attributes: entry.attributes,
+        tags: entry.tags,
+        timestamp: entry.timestamp,
+      })),
     })),
   });
 });
@@ -1258,6 +1324,11 @@ async function executeWebhookSync(channelId: string) {
     await finalizeCalendarSyncLogEntry(initialLogId, {
       status: "ERROR",
       errorMessage: err instanceof Error ? err.message : String(err),
+      logEntries: buildStructuredSyncLogEntries({
+        errorMessage: err instanceof Error ? err.message : String(err),
+        source: "webhook",
+        status: "ERROR",
+      }),
     });
   }
 }
@@ -1296,6 +1367,13 @@ async function finalizeSyncLog(
       updated: result.details.updated,
       excluded: result.details.deleted,
     },
+    logEntries: buildStructuredSyncLogEntries({
+      excluded: result.deleted,
+      inserted: result.inserted,
+      source: "webhook",
+      status: "SUCCESS",
+      updated: result.updated,
+    }),
   });
   console.log(`[webhook] ✅ Sync completed (logId: ${logId})`);
 }

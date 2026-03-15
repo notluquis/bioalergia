@@ -996,21 +996,22 @@ model CommonSupply {
 }
 
 model CalendarSyncLog {
-  id            Int       @id @default(autoincrement())
-  triggerSource String?   @map("trigger_source")
-  triggerUserId Int?      @map("trigger_user_id")
-  triggerLabel  String?   @map("trigger_label")
-  status        String    @default("PENDING")
-  startedAt     DateTime  @default(now()) @map("started_at")
-  endedAt       DateTime? @map("ended_at")
-  fetchedAt     DateTime? @map("fetched_at")
-  eventsSynced  Int       @default(0) @map("events_synced")
-  inserted      Int?      @default(0)
-  updated       Int?      @default(0)
-  skipped       Int?      @default(0)
-  excluded      Int?      @default(0)
-  errorMessage  String?   @map("error_message")
-  changeDetails Json?     @map("change_details")
+  id            Int                    @id @default(autoincrement())
+  triggerSource String?                @map("trigger_source")
+  triggerUserId Int?                   @map("trigger_user_id")
+  triggerLabel  String?                @map("trigger_label")
+  status        String                 @default("PENDING")
+  startedAt     DateTime               @default(now()) @map("started_at")
+  endedAt       DateTime?              @map("ended_at")
+  fetchedAt     DateTime?              @map("fetched_at")
+  eventsSynced  Int                    @default(0) @map("events_synced")
+  inserted      Int?                   @default(0)
+  updated       Int?                   @default(0)
+  skipped       Int?                   @default(0)
+  excluded      Int?                   @default(0)
+  errorMessage  String?                @map("error_message")
+  changeDetails Json?                  @map("change_details")
+  logEntries    CalendarSyncLogEntry[]
 
   @@index([startedAt(sort: Desc)])
   // Access policies
@@ -1018,6 +1019,29 @@ model CalendarSyncLog {
   @@allow('read', auth() != null)
 
   @@map("calendar_sync_logs")
+}
+
+model CalendarSyncLogEntry {
+  id         Int             @id @default(autoincrement())
+  syncLogId  Int             @map("sync_log_id")
+  message    String?
+  severity   String          @default("info") // info, warning, error
+  attributes Json?              // {level, custom_fields}
+  tags       Json?              // {project, environment, service, deployment, replica, tag}
+  timestamp  DateTime        @default(now())
+  createdAt  DateTime        @default(now()) @map("created_at")
+
+  syncLog    CalendarSyncLog @relation(fields: [syncLogId], references: [id], onDelete: Cascade)
+
+  @@index([syncLogId])
+  @@index([timestamp(sort: Desc)])
+  @@index([severity])
+  
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', auth() != null)
+
+  @@map("calendar_sync_log_entries")
 }
 
 // ============================================================

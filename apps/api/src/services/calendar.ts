@@ -4,6 +4,14 @@ import type { CalendarEventRecord } from "../lib/google/google-calendar";
 import { calendarSyncService } from "../modules/calendar/service";
 import { syncClinicalSeriesForExternalEvents } from "./clinical-series";
 
+export type CalendarSyncLogEntryPayload = {
+  attributes?: null | Record<string, unknown>;
+  message: string;
+  severity?: "error" | "info" | "warning";
+  tags?: null | Record<string, unknown>;
+  timestamp?: Date;
+};
+
 export async function loadSettings() {
   const settings = await db.setting.findMany();
   return settings.reduce(
@@ -125,22 +133,38 @@ export async function finalizeCalendarSyncLogEntry(
       updated?: (string | { summary: string; changes: string[] })[];
       excluded?: string[];
     };
+    logEntries?: CalendarSyncLogEntryPayload[];
   },
 ) {
-  await db.calendarSyncLog.update({
-    where: { id: id },
-    data: {
-      status: data.status,
-      endedAt: new Date(),
-      fetchedAt: data.fetchedAt,
-      eventsSynced: (data.inserted || 0) + (data.updated || 0),
-      inserted: data.inserted,
-      updated: data.updated,
-      skipped: data.skipped,
-      excluded: data.excluded,
-      errorMessage: data.errorMessage,
-      changeDetails: data.changeDetails,
-    },
+  await db.$transaction(async (tx) => {
+    await tx.calendarSyncLog.update({
+      where: { id: id },
+      data: {
+        status: data.status,
+        endedAt: new Date(),
+        fetchedAt: data.fetchedAt,
+        eventsSynced: (data.inserted || 0) + (data.updated || 0),
+        inserted: data.inserted,
+        updated: data.updated,
+        skipped: data.skipped,
+        excluded: data.excluded,
+        errorMessage: data.errorMessage,
+        changeDetails: data.changeDetails,
+      },
+    });
+
+    if (data.logEntries && data.logEntries.length > 0) {
+      await tx.calendarSyncLogEntry.createMany({
+        data: data.logEntries.map((entry) => ({
+          syncLogId: id,
+          message: entry.message,
+          severity: entry.severity ?? "info",
+          attributes: entry.attributes,
+          tags: entry.tags,
+          timestamp: entry.timestamp ?? new Date(),
+        })),
+      });
+    }
   });
 }
 
@@ -169,6 +193,12 @@ export async function listCalendarSyncLogs(
 
   const logs = await db.calendarSyncLog.findMany({
     where,
+    include: {
+      logEntries: {
+        orderBy: { timestamp: "desc" },
+        take: 200,
+      },
+    },
     orderBy: { startedAt: "desc" },
     take: limit,
   });

@@ -3158,6 +3158,69 @@ export class SchemaType implements SchemaDef {
                     name: "changeDetails",
                     type: "Json",
                     optional: true
+                },
+                logEntries: {
+                    name: "logEntries",
+                    type: "CalendarSyncLogEntry",
+                    array: true,
+                    relation: { opposite: "syncLog" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        CalendarSyncLogEntry: {
+            name: "CalendarSyncLogEntry",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                syncLogId: {
+                    name: "syncLogId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "syncLog"
+                    ]
+                },
+                message: {
+                    name: "message",
+                    type: "String",
+                    optional: true
+                },
+                severity: {
+                    name: "severity",
+                    type: "String",
+                    default: "info"
+                },
+                attributes: {
+                    name: "attributes",
+                    type: "Json",
+                    optional: true
+                },
+                tags: {
+                    name: "tags",
+                    type: "Json",
+                    optional: true
+                },
+                timestamp: {
+                    name: "timestamp",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                syncLog: {
+                    name: "syncLog",
+                    type: "CalendarSyncLog",
+                    relation: { opposite: "logEntries", fields: ["syncLogId"], references: ["id"], onDelete: "Cascade" }
                 }
             },
             idFields: ["id"],

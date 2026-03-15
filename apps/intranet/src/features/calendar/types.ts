@@ -293,6 +293,13 @@ export interface CalendarSyncLog {
     inserted?: string[];
     updated?: (string | { changes: string[]; summary: string })[];
   };
+  logEntries?: Array<{
+    attributes?: null | Record<string, unknown>;
+    message: null | string;
+    severity: string;
+    tags?: null | Record<string, unknown>;
+    timestamp: Date;
+  }>;
   errorMessage: null | string;
   excluded: number;
   fetchedAt?: Date | null;

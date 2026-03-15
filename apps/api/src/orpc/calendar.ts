@@ -31,7 +31,6 @@
  * For detailed architecture, see: docs/ORPC_ZENSTACK_ARCHITECTURE.md
  */
 
-import type { CalendarSyncLog } from "@finanzas/db";
 import { db } from "@finanzas/db";
 import {
   calendarClassificationOptionsSchema,
@@ -89,6 +88,7 @@ import {
 import { updateClassificationSchema } from "../lib/schemas";
 import { configureSuperjson } from "../lib/superjson-config";
 import {
+  type CalendarSyncLogEntryPayload,
   calendarSyncService,
   createCalendarSyncLogEntry,
   finalizeCalendarSyncLogEntry,
@@ -118,6 +118,52 @@ const MISSING_CLASSIFICATION_FILTERS = [
   { key: "missingDosage", label: "Sin dosis" },
   { key: "missingTreatmentStage", label: "Sin etapa" },
 ] as const;
+
+function buildStructuredSyncLogEntries(params: {
+  errorMessage?: string;
+  excluded?: number;
+  inserted?: number;
+  source: string;
+  status: "ERROR" | "SUCCESS";
+  updated?: number;
+}): CalendarSyncLogEntryPayload[] {
+  const entries: CalendarSyncLogEntryPayload[] = [
+    {
+      attributes: {
+        excluded: params.excluded ?? 0,
+        inserted: params.inserted ?? 0,
+        updated: params.updated ?? 0,
+      },
+      message:
+        params.status === "SUCCESS"
+          ? "Calendar sync completed"
+          : "Calendar sync finished with error",
+      severity: params.status === "SUCCESS" ? "info" : "error",
+      tags: {
+        service: "calendar-sync",
+        source: params.source,
+      },
+      timestamp: new Date(),
+    },
+  ];
+
+  if (params.errorMessage) {
+    entries.push({
+      attributes: {
+        errorMessage: params.errorMessage,
+      },
+      message: params.errorMessage,
+      severity: "error",
+      tags: {
+        service: "calendar-sync",
+        source: params.source,
+      },
+      timestamp: new Date(),
+    });
+  }
+
+  return entries;
+}
 
 const syncLogSchema = z.object({
   id: z.number().int(),
@@ -839,12 +885,25 @@ const syncCalendarEvents = authed
             updated: result.details.updated,
             excluded: result.details.deleted,
           },
+          logEntries: buildStructuredSyncLogEntries({
+            excluded: result.deleted,
+            inserted: result.inserted,
+            source: "manual",
+            status: "SUCCESS",
+            updated: result.updated,
+          }),
         });
       })
       .catch(async (error) => {
+        const message = error instanceof Error ? error.message : String(error);
         await finalizeCalendarSyncLogEntry(logId, {
           status: "ERROR",
-          errorMessage: error instanceof Error ? error.message : String(error),
+          errorMessage: message,
+          logEntries: buildStructuredSyncLogEntries({
+            errorMessage: message,
+            source: "manual",
+            status: "ERROR",
+          }),
         });
       });
 
@@ -876,7 +935,7 @@ const listSyncLogs = authed
   .handler(async ({ input }) => {
     const logs = await listCalendarSyncLogs(input.limit ?? 50);
 
-    return logs.map((log: CalendarSyncLog) => ({
+    return logs.map((log) => ({
       id: Number(log.id),
       triggerSource: log.triggerSource,
       triggerUserId: log.triggerUserId != null ? Number(log.triggerUserId) : null,
@@ -891,6 +950,13 @@ const listSyncLogs = authed
       excluded: Number(log.excluded ?? 0),
       errorMessage: log.errorMessage ?? null,
       changeDetails: log.changeDetails ?? null,
+      logEntries: log.logEntries.map((entry) => ({
+        message: entry.message,
+        severity: entry.severity,
+        attributes: entry.attributes,
+        tags: entry.tags,
+        timestamp: entry.timestamp,
+      })),
     }));
   });
 
