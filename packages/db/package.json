@@ -51,12 +51,12 @@
     "lint:fix": "oxlint --fix && oxfmt --write ."
   },
   "dependencies": {
-    "@zenstackhq/language": "3.4.4",
-    "@zenstackhq/orm": "3.4.4",
-    "@zenstackhq/plugin-policy": "3.4.4",
-    "@zenstackhq/schema": "3.4.4",
-    "@zenstackhq/server": "3.4.4",
-    "@zenstackhq/tanstack-query": "3.4.4",
+    "@zenstackhq/language": "3.4.6",
+    "@zenstackhq/orm": "3.4.6",
+    "@zenstackhq/plugin-policy": "3.4.6",
+    "@zenstackhq/schema": "3.4.6",
+    "@zenstackhq/server": "3.4.6",
+    "@zenstackhq/tanstack-query": "3.4.6",
     "hono": "^4.12.8",
     "kysely": "^0.28.12",
     "pg": "8.20.0",

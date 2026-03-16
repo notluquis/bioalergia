@@ -27,7 +27,7 @@
     "@heroui/react": "3.0.0-beta.8",
     "@heroui/styles": "3.0.0-beta.8",
     "@tanstack/react-query": "^5.90.21",
-    "posthog-js": "1.359.1",
+    "posthog-js": "1.360.2",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },
@@ -40,7 +40,7 @@
     "@tailwindcss/vite": "^4.2.1",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^5.2.0",
+    "@vitejs/plugin-react": "^6.0.1",
     "chromatic": "^15.2.0",
     "msw": "^2.12.11",
     "msw-storybook-addon": "^2.0.6",
@@ -49,7 +49,7 @@
     "storybook-addon-tag-badges": "^3.0.6",
     "tailwindcss": "^4.2.1",
     "typescript": "^5.9.3",
-    "vite": "8.0.0-beta.16",
+    "vite": "8.0.0",
     "vitest": "^4.1.0"
   }
 }
