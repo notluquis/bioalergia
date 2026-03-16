@@ -36,8 +36,8 @@
     "@zenstackhq/sdk": "3.4.6",
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
-    "oxfmt": "^0.40.0",
-    "oxlint": "^1.55.0",
+    "oxfmt": "^0.41.0",
+    "oxlint": "^1.56.0",
     "oxlint-tsgolint": "^0.17.0",
     "turbo": "^2.8.17"
   },

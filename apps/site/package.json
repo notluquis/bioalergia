@@ -41,7 +41,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
-    "chromatic": "^15.2.0",
+    "chromatic": "^15.3.0",
     "msw": "^2.12.11",
     "msw-storybook-addon": "^2.0.6",
     "rollup-plugin-visualizer": "^7.0.1",
