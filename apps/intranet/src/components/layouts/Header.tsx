@@ -36,6 +36,27 @@ const getMatchLabel = (match: {
   return "";
 };
 
+const getFallbackLabelFromPathname = (pathname: string) => {
+  const normalized = pathname.split("?")[0] ?? pathname;
+  if (normalized === "/" || normalized.length === 0) {
+    return "Inicio";
+  }
+
+  const segments = normalized.split("/").filter(Boolean);
+  const lastSegment = segments.at(-1);
+  if (!lastSegment) {
+    return "Inicio";
+  }
+
+  const decoded = decodeURIComponent(lastSegment).replace(/[-_]+/g, " ").trim();
+
+  if (!decoded) {
+    return "Inicio";
+  }
+
+  return decoded.charAt(0).toUpperCase() + decoded.slice(1);
+};
+
 export function Header() {
   const { isDark, resolvedTheme, toggleTheme } = useTheme();
   const routerStatus = useRouterState({ select: (s) => s.status });
@@ -51,17 +72,23 @@ export function Header() {
     staticData?: Record<string, unknown>;
     pathname: string;
   }>;
-  const crumbs = castMatches
-    .map((match) => ({
-      label: getMatchLabel(match),
+  const crumbs = castMatches.map((match) => {
+    const explicitLabel = getMatchLabel(match).trim();
+    return {
+      label:
+        explicitLabel.length > 0 ? explicitLabel : getFallbackLabelFromPathname(match.pathname),
       to: match.pathname,
-    }))
-    .filter((item) => Boolean(item.label?.trim()));
-  const pageTitle = crumbs[crumbs.length - 1]?.label ?? "Inicio";
+    };
+  });
+
+  const uniqueCrumbs = crumbs.filter(
+    (item, index, array) => index === array.findIndex((candidate) => candidate.to === item.to)
+  );
+  const pageTitle = uniqueCrumbs[uniqueCrumbs.length - 1]?.label ?? "Inicio";
   const breadcrumbItems =
-    crumbs.length > 1 && crumbs[crumbs.length - 1]?.label === pageTitle
-      ? crumbs.slice(0, -1)
-      : crumbs;
+    uniqueCrumbs.length > 1 && uniqueCrumbs[uniqueCrumbs.length - 1]?.label === pageTitle
+      ? uniqueCrumbs.slice(0, -1)
+      : uniqueCrumbs;
   const showBreadcrumbs = breadcrumbItems.length > 0;
 
   const handleLogout = async () => {
@@ -75,12 +102,11 @@ export function Header() {
         <div className="min-w-0 flex-1">
           {showBreadcrumbs ? (
             <Breadcrumbs className="font-medium text-default-500 text-xs">
-              {breadcrumbItems.length === 0 && <Breadcrumbs.Item>Inicio</Breadcrumbs.Item>}
-              {breadcrumbItems.map((crumb, i) => {
-                const isLast = i === breadcrumbItems.length - 1;
+              {breadcrumbItems.map((crumb) => {
+                const isOnlyBreadcrumb = breadcrumbItems.length === 1;
                 return (
                   <Breadcrumbs.Item key={`${crumb.to}-${crumb.label}`}>
-                    {!isLast ? (
+                    {!isOnlyBreadcrumb ? (
                       <Link className=" hover:text-foreground" to={crumb.to}>
                         {crumb.label}
                       </Link>
