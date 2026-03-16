@@ -68,6 +68,7 @@ export type PatientPayment = $ModelResult<$Schema, "PatientPayment">;
 export type PatientAttachment = $ModelResult<$Schema, "PatientAttachment">;
 export type DTEPurchaseDetail = $ModelResult<$Schema, "DTEPurchaseDetail">;
 export type DTESaleDetail = $ModelResult<$Schema, "DTESaleDetail">;
+export type EventDteSaleLink = $ModelResult<$Schema, "EventDteSaleLink">;
 export type DTESyncLog = $ModelResult<$Schema, "DTESyncLog">;
 export type TransactionCategory = $ModelResult<$Schema, "TransactionCategory">;
 export type FinancialAutoCategoryRule = $ModelResult<$Schema, "FinancialAutoCategoryRule">;

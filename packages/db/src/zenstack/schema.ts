@@ -234,6 +234,12 @@ export class SchemaType implements SchemaDef {
                     array: true,
                     relation: { opposite: "uploader" }
                 },
+                eventDteSaleLinks: {
+                    name: "eventDteSaleLinks",
+                    type: "EventDteSaleLink",
+                    array: true,
+                    relation: { opposite: "creator" }
+                },
                 person: {
                     name: "person",
                     type: "Person",
@@ -3055,6 +3061,12 @@ export class SchemaType implements SchemaDef {
                 consultations: {
                     name: "consultations",
                     type: "Consultation",
+                    array: true,
+                    relation: { opposite: "event" }
+                },
+                dteSaleLinks: {
+                    name: "dteSaleLinks",
+                    type: "EventDteSaleLink",
                     array: true,
                     relation: { opposite: "event" }
                 }
@@ -6621,6 +6633,12 @@ export class SchemaType implements SchemaDef {
                     updatedAt: true,
                     attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }],
                     default: ExpressionUtils.call("now")
+                },
+                eventLinks: {
+                    name: "eventLinks",
+                    type: "EventDteSaleLink",
+                    array: true,
+                    relation: { opposite: "dteSaleDetail" }
                 }
             },
             attributes: [
@@ -6637,6 +6655,122 @@ export class SchemaType implements SchemaDef {
             uniqueFields: {
                 id: { type: "String" },
                 folio_documentType: { folio: { type: "String" }, documentType: { type: "Int" } }
+            }
+        },
+        EventDteSaleLink: {
+            name: "EventDteSaleLink",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "BigInt",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                eventId: {
+                    name: "eventId",
+                    type: "Int",
+                    unique: true,
+                    attributes: [{ name: "@unique" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("event_id") }] }],
+                    foreignKeyFor: [
+                        "event"
+                    ]
+                },
+                dteSaleDetailId: {
+                    name: "dteSaleDetailId",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("dte_sale_detail_id") }] }],
+                    foreignKeyFor: [
+                        "dteSaleDetail"
+                    ]
+                },
+                status: {
+                    name: "status",
+                    type: "String",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("CONFIRMED") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] }],
+                    default: "CONFIRMED"
+                },
+                matchedBy: {
+                    name: "matchedBy",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("matched_by") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(30) }] }]
+                },
+                confidenceScore: {
+                    name: "confidenceScore",
+                    type: "Decimal",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("confidence_score") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(5) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
+                },
+                matchedRUT: {
+                    name: "matchedRUT",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("matched_rut") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] }]
+                },
+                matchedName: {
+                    name: "matchedName",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("matched_name") }] }]
+                },
+                evidence: {
+                    name: "evidence",
+                    type: "Json",
+                    optional: true
+                },
+                createdBy: {
+                    name: "createdBy",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_by") }] }],
+                    foreignKeyFor: [
+                        "creator"
+                    ]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }],
+                    default: ExpressionUtils.call("now")
+                },
+                event: {
+                    name: "event",
+                    type: "Event",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("eventId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }],
+                    relation: { opposite: "dteSaleLinks", fields: ["eventId"], references: ["id"], onDelete: "Cascade" }
+                },
+                dteSaleDetail: {
+                    name: "dteSaleDetail",
+                    type: "DTESaleDetail",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("dteSaleDetailId")]) }, { name: "references", value: ExpressionUtils.array("String", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }],
+                    relation: { opposite: "eventLinks", fields: ["dteSaleDetailId"], references: ["id"], onDelete: "Cascade" }
+                },
+                creator: {
+                    name: "creator",
+                    type: "User",
+                    optional: true,
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("createdBy")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("SetNull") }] }],
+                    relation: { opposite: "eventDteSaleLinks", fields: ["createdBy"], references: ["id"], onDelete: "SetNull" }
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("dteSaleDetailId")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("createdAt")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("event_dte_sale_links") }] }
+            ],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "BigInt" },
+                eventId: { type: "Int" }
             }
         },
         DTESyncLog: {

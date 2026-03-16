@@ -209,6 +209,12 @@ export class SchemaType implements SchemaDef {
                     array: true,
                     relation: { opposite: "uploader" }
                 },
+                eventDteSaleLinks: {
+                    name: "eventDteSaleLinks",
+                    type: "EventDteSaleLink",
+                    array: true,
+                    relation: { opposite: "creator" }
+                },
                 person: {
                     name: "person",
                     type: "Person",
@@ -2522,6 +2528,12 @@ export class SchemaType implements SchemaDef {
                 consultations: {
                     name: "consultations",
                     type: "Consultation",
+                    array: true,
+                    relation: { opposite: "event" }
+                },
+                dteSaleLinks: {
+                    name: "dteSaleLinks",
+                    type: "EventDteSaleLink",
                     array: true,
                     relation: { opposite: "event" }
                 }
@@ -5395,12 +5407,112 @@ export class SchemaType implements SchemaDef {
                     type: "DateTime",
                     updatedAt: true,
                     default: ExpressionUtils.call("now")
+                },
+                eventLinks: {
+                    name: "eventLinks",
+                    type: "EventDteSaleLink",
+                    array: true,
+                    relation: { opposite: "dteSaleDetail" }
                 }
             },
             idFields: ["id"],
             uniqueFields: {
                 id: { type: "String" },
                 folio_documentType: { folio: { type: "String" }, documentType: { type: "Int" } }
+            }
+        },
+        EventDteSaleLink: {
+            name: "EventDteSaleLink",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "BigInt",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                eventId: {
+                    name: "eventId",
+                    type: "Int",
+                    unique: true,
+                    foreignKeyFor: [
+                        "event"
+                    ]
+                },
+                dteSaleDetailId: {
+                    name: "dteSaleDetailId",
+                    type: "String",
+                    foreignKeyFor: [
+                        "dteSaleDetail"
+                    ]
+                },
+                status: {
+                    name: "status",
+                    type: "String",
+                    default: "CONFIRMED"
+                },
+                matchedBy: {
+                    name: "matchedBy",
+                    type: "String"
+                },
+                confidenceScore: {
+                    name: "confidenceScore",
+                    type: "Decimal"
+                },
+                matchedRUT: {
+                    name: "matchedRUT",
+                    type: "String",
+                    optional: true
+                },
+                matchedName: {
+                    name: "matchedName",
+                    type: "String",
+                    optional: true
+                },
+                evidence: {
+                    name: "evidence",
+                    type: "Json",
+                    optional: true
+                },
+                createdBy: {
+                    name: "createdBy",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "creator"
+                    ]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now")
+                },
+                event: {
+                    name: "event",
+                    type: "Event",
+                    relation: { opposite: "dteSaleLinks", fields: ["eventId"], references: ["id"], onDelete: "Cascade" }
+                },
+                dteSaleDetail: {
+                    name: "dteSaleDetail",
+                    type: "DTESaleDetail",
+                    relation: { opposite: "eventLinks", fields: ["dteSaleDetailId"], references: ["id"], onDelete: "Cascade" }
+                },
+                creator: {
+                    name: "creator",
+                    type: "User",
+                    optional: true,
+                    relation: { opposite: "eventDteSaleLinks", fields: ["createdBy"], references: ["id"], onDelete: "SetNull" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "BigInt" },
+                eventId: { type: "Int" }
             }
         },
         DTESyncLog: {
