@@ -191,11 +191,11 @@
     "format:check": "oxfmt --check"
   },
   "dependencies": {
-    "@orpc/contract": "^1.13.6",
+    "@orpc/contract": "^1.13.7",
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@types/node": "^25.3.5",
+    "@types/node": "^25.5.0",
     "typescript": "^5.9.3"
   }
 }

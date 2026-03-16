@@ -35,11 +35,11 @@
     "@zenstackhq/cli": "3.4.4",
     "@zenstackhq/sdk": "3.4.4",
     "husky": "^9.1.7",
-    "lint-staged": "^16.3.2",
+    "lint-staged": "^16.4.0",
     "oxfmt": "^0.37.0",
-    "oxlint": "^1.52.0",
+    "oxlint": "^1.55.0",
     "oxlint-tsgolint": "^0.16.0",
-    "turbo": "^2.8.14"
+    "turbo": "^2.8.17"
   },
   "engines": {
     "node": ">=25.3.0",
