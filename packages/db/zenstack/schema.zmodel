@@ -76,6 +76,7 @@ model User {
   roles                   UserRoleAssignment[]
   medicalCertificates     MedicalCertificate[]
   patientAttachments      PatientAttachment[]
+  eventDteSaleLinks       EventDteSaleLink[]
   person                  Person                   @relation(fields: [personId], references: [id], onDelete: Cascade)
 
   // This model represents the authenticated user
@@ -797,6 +798,7 @@ model Event {
   calendar          Calendar                 @relation(fields: [calendarId], references: [id], onDelete: Cascade)
   clinicalSeries    ClinicalSeries?          @relation(fields: [clinicalSeriesId], references: [id], onDelete: SetNull)
   consultations     Consultation[]
+  dteSaleLinks      EventDteSaleLink[]
 
   // Access policies
   @@deny('all', auth() == null)
@@ -1943,6 +1945,7 @@ model DTESaleDetail {
 
   createdAt                      DateTime  @default(now()) @map("created_at")
   updatedAt                      DateTime  @default(now()) @updatedAt @map("updated_at")
+  eventLinks                     EventDteSaleLink[]
 
   @@deny('all', auth() == null)
   @@allow('read', auth().status == 'ACTIVE')
@@ -1953,6 +1956,33 @@ model DTESaleDetail {
   @@index([documentDate])
   @@index([documentType])
   @@map("dte_sale_details")
+}
+
+model EventDteSaleLink {
+  id              BigInt        @id @default(autoincrement())
+  eventId         Int           @unique @map("event_id")
+  dteSaleDetailId String        @map("dte_sale_detail_id")
+  status          String        @default("CONFIRMED") @db.VarChar(20)
+  matchedBy       String        @map("matched_by") @db.VarChar(30)
+  confidenceScore Decimal       @map("confidence_score") @db.Decimal(5, 2)
+  matchedRUT      String?       @map("matched_rut") @db.VarChar(20)
+  matchedName     String?       @map("matched_name")
+  evidence        Json?
+  createdBy       Int?          @map("created_by")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @default(now()) @updatedAt @map("updated_at")
+
+  event           Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  dteSaleDetail   DTESaleDetail @relation(fields: [dteSaleDetailId], references: [id], onDelete: Cascade)
+  creator         User?         @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([dteSaleDetailId])
+  @@index([createdAt(sort: Desc)])
+  @@map("event_dte_sale_links")
 }
 
 // ============================================================
