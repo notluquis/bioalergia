@@ -21,7 +21,6 @@ import {
   TableRow,
 } from "@heroui/react";
 import { useState } from "react";
-import type { Key } from "react";
 import { useClinicalSeries, useClinicalSeriesDetail, useRebuildClinicalSeries } from "./queries";
 import type {
   ClinicalSeriesFilters,
@@ -76,7 +75,9 @@ export function ClinicalSeriesView() {
     }));
   };
 
-  const handleKindChange = (key: Key | null) => {
+  const handleKindChange = (
+    key: string | number | symbol | (string | number | symbol)[] | null
+  ) => {
     if (key && typeof key === "string") {
       setFilters((prev: ClinicalSeriesFilters) => ({
         ...prev,
@@ -90,7 +91,9 @@ export function ClinicalSeriesView() {
     }
   };
 
-  const handleStatusChange = (key: Key | null) => {
+  const handleStatusChange = (
+    key: string | number | symbol | (string | number | symbol)[] | null
+  ) => {
     if (key && typeof key === "string") {
       setFilters((prev: ClinicalSeriesFilters) => ({
         ...prev,
@@ -142,7 +145,7 @@ export function ClinicalSeriesView() {
 
             <div>
               <Label className="text-sm">Tipo</Label>
-              <Select onSelectionChange={handleKindChange} selectedKey={filters.kind ?? null}>
+              <Select onChange={(value) => handleKindChange(value)} value={filters.kind ?? null}>
                 <Select.Trigger>
                   <Select.Value />
                   <Select.Indicator />
@@ -162,7 +165,10 @@ export function ClinicalSeriesView() {
 
             <div>
               <Label className="text-sm">Estado</Label>
-              <Select onSelectionChange={handleStatusChange} selectedKey={filters.status ?? null}>
+              <Select
+                onChange={(value) => handleStatusChange(value)}
+                value={filters.status ?? null}
+              >
                 <Select.Trigger>
                   <Select.Value />
                   <Select.Indicator />

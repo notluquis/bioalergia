@@ -219,8 +219,8 @@ function CalendarSourceSelector({
     <Select
       className="min-w-44"
       isDisabled={isDisabled}
-      selectedKey={source}
-      onSelectionChange={(key) => {
+      value={source}
+      onChange={(key) => {
         if (key) {
           onSourceChange(String(key));
         }
