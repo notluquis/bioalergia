@@ -65,6 +65,7 @@ import { usersOpenAPIHandler, usersORPCHandler } from "./orpc/users";
 import { loanScheduleRoutes } from "./routes/loan-schedules";
 import { loanRoutes } from "./routes/loans";
 import { mercadopagoRoutes } from "./routes/mercadopago";
+import { calendarRoutes } from "./routes/calendar";
 import { shareTargetRoutes } from "./routes/share-target";
 import { transactionRoutes } from "./routes/transactions";
 import { errorReply } from "./utils/error-reply";
@@ -1464,6 +1465,10 @@ app.use("/api/orpc/transactions-insights/*", async (c, next) => {
 
 // Share Target (PWA)
 app.route("/api/share-target", shareTargetRoutes);
+
+// Calendar REST endpoints (webhook + compatibility endpoints)
+// NOTE: Google push notifications require this webhook path to stay mounted.
+app.route("/api/calendar", calendarRoutes);
 
 // REST compatibility endpoints
 app.route("/api/loans", loanRoutes);
