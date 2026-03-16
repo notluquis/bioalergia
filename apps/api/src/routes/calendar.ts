@@ -1270,10 +1270,48 @@ calendarRoutes.get(
 const WEBHOOK_DEBOUNCE_MS = 5000;
 let webhookSyncTimer: ReturnType<typeof setTimeout> | null = null;
 let lastWebhookChannelId: string | null = null;
+let lastWebhookSignal:
+  | null
+  | {
+      channelId: string;
+      messageNumber: null | string;
+      receivedAt: string;
+      resourceId: string;
+      resourceState: null | string;
+      traceId: string;
+    } = null;
 
-async function executeWebhookSync(channelId: string) {
+function shortWebhookId(id: null | string | undefined) {
+  if (!id) {
+    return "?";
+  }
+  return `${id.slice(0, 8)}...`;
+}
+
+function createWebhookTraceId() {
+  return `wh_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+async function executeWebhookSync(
+  channelId: string,
+  signal?: {
+    messageNumber: null | string;
+    receivedAt: string;
+    resourceId: string;
+    resourceState: null | string;
+    traceId: string;
+  },
+) {
   webhookSyncTimer = null;
-  console.log(`[webhook] 🚀 Executing debounced sync: ${channelId.slice(0, 8)}...`);
+  const traceId = signal?.traceId ?? createWebhookTraceId();
+  console.log("[webhook] 🚀 Executing debounced sync", {
+    channelId: shortWebhookId(channelId),
+    messageNumber: signal?.messageNumber ?? null,
+    receivedAt: signal?.receivedAt ?? null,
+    resourceId: shortWebhookId(signal?.resourceId),
+    resourceState: signal?.resourceState ?? null,
+    traceId,
+  });
 
   const initialLogId = await createCalendarSyncLogEntry({
     triggerSource: "webhook",
@@ -1288,8 +1326,17 @@ async function executeWebhookSync(channelId: string) {
       include: { calendar: true },
     });
 
+    console.log("[webhook] 🔎 Channel lookup completed", {
+      channelFound: Boolean(channel),
+      channelId: shortWebhookId(channelId),
+      traceId,
+    });
+
     if (!channel) {
-      console.warn(`[webhook] ⚠️ Unknown channelId: ${channelId}. Falling back to syncAll.`);
+      console.warn("[webhook] ⚠️ Unknown channelId, falling back to syncAll", {
+        channelId,
+        traceId,
+      });
       // Fallback to syncAll if channel is unknown (safety net)
       // Or we could abort, but syncAll is safer to avoid missing events if DB is out of sync
       const result = await calendarSyncService.syncAll();
@@ -1297,7 +1344,11 @@ async function executeWebhookSync(channelId: string) {
       return;
     }
 
-    console.log(`[webhook] 🎯 Syncing specific calendar: ${channel.calendar.googleId}`);
+    console.log("[webhook] 🎯 Syncing specific calendar", {
+      calendarGoogleId: channel.calendar.googleId,
+      channelId: shortWebhookId(channelId),
+      traceId,
+    });
     const result = await calendarSyncService.syncCalendar(channel.calendar.googleId);
 
     // Map single calendar result to sync log format
@@ -1314,12 +1365,19 @@ async function executeWebhookSync(channelId: string) {
     });
   } catch (err) {
     if (err instanceof Error && err.message === "Sincronización ya en curso") {
-      console.log(`[webhook] ℹ️ Sync skipped (already in progress): ${channelId.slice(0, 8)}...`);
+      console.log("[webhook] ℹ️ Sync skipped (already in progress)", {
+        channelId: shortWebhookId(channelId),
+        traceId,
+      });
       // If createCalendarSyncLogEntry threw, we don't have a logId to finalize (or it failed before creation)
       return;
     }
 
-    console.error(`[webhook] ❌ Sync failed:`, err);
+    console.error("[webhook] ❌ Sync failed", {
+      channelId: shortWebhookId(channelId),
+      error: err instanceof Error ? err.message : String(err),
+      traceId,
+    });
     // If we have a logId, mark it as error
     await finalizeCalendarSyncLogEntry(initialLogId, {
       status: "ERROR",
@@ -1384,43 +1442,94 @@ calendarRoutes.post("/webhook", async (c) => {
   const resourceId = c.req.header("x-goog-resource-id");
   const messageNumber = c.req.header("x-goog-message-number");
   const channelExpirationHeader = c.req.header("x-goog-channel-expiration");
+  const traceId = createWebhookTraceId();
+  const receivedAt = new Date().toISOString();
+
+  console.log("[webhook] 📨 Notification received", {
+    channelExpiration: channelExpirationHeader ?? null,
+    channelId: shortWebhookId(channelId),
+    contentLength: c.req.header("content-length") ?? null,
+    messageNumber: messageNumber ?? null,
+    method: c.req.method,
+    path: c.req.path,
+    receivedAt,
+    resourceId: shortWebhookId(resourceId),
+    resourceState: resourceState ?? null,
+    userAgent: c.req.header("user-agent") ?? null,
+    traceId,
+  });
 
   if (!channelId || !resourceId) {
-    console.warn("[webhook] ⚠️ Missing channelId or resourceId");
+    console.warn("[webhook] ⚠️ Missing required headers", {
+      hasChannelId: Boolean(channelId),
+      hasResourceId: Boolean(resourceId),
+      traceId,
+    });
     return reply(c, { error: "Missing required headers" }, 400);
   }
 
   if (channelExpirationHeader) {
     const expirationMs = Date.parse(channelExpirationHeader);
     if (Number.isFinite(expirationMs)) {
-      await db.calendarWatchChannel.updateMany({
+      const updateResult = await db.calendarWatchChannel.updateMany({
         where: { channelId, resourceId },
         data: { expiration: new Date(expirationMs) },
+      });
+
+      console.log("[webhook] 🕒 Channel expiration updated", {
+        channelId: shortWebhookId(channelId),
+        expiration: new Date(expirationMs).toISOString(),
+        resourceId: shortWebhookId(resourceId),
+        rowsAffected: updateResult.count,
+        traceId,
       });
     }
   }
 
   if (resourceState === "sync") {
     // Initial verification
-    console.log(`[webhook] ✓ Sync verified: ${channelId.slice(0, 8)}...`);
+    console.log("[webhook] ✓ Sync verified", {
+      channelId: shortWebhookId(channelId),
+      messageNumber: messageNumber ?? null,
+      traceId,
+    });
     return c.body(null, 200);
   }
 
   if (resourceState === "exists") {
-    console.log(
-      `[webhook] 📥 Change #${messageNumber || "?"}: channel=${channelId.slice(0, 8)}... (debouncing ${WEBHOOK_DEBOUNCE_MS}ms)`,
-    );
+    console.log("[webhook] 📥 Change notification accepted (debounced)", {
+      channelId: shortWebhookId(channelId),
+      debounceMs: WEBHOOK_DEBOUNCE_MS,
+      messageNumber: messageNumber ?? null,
+      traceId,
+    });
 
     if (webhookSyncTimer) {
+      console.log("[webhook] ⏱️ Resetting existing debounce timer", {
+        previousChannelId: shortWebhookId(lastWebhookChannelId),
+        traceId,
+      });
       clearTimeout(webhookSyncTimer);
     }
 
     lastWebhookChannelId = channelId;
+    lastWebhookSignal = {
+      channelId,
+      messageNumber: messageNumber ?? null,
+      receivedAt,
+      resourceId,
+      resourceState,
+      traceId,
+    };
 
     webhookSyncTimer = setTimeout(() => {
       if (lastWebhookChannelId) {
-        executeWebhookSync(lastWebhookChannelId).catch((err) => {
-          console.error("[webhook] Error in debounced sync:", err);
+        executeWebhookSync(lastWebhookChannelId, lastWebhookSignal ?? undefined).catch((err) => {
+          console.error("[webhook] ❌ Error in debounced sync", {
+            channelId: shortWebhookId(lastWebhookChannelId),
+            error: err instanceof Error ? err.message : String(err),
+            traceId: lastWebhookSignal?.traceId ?? null,
+          });
         });
       }
     }, WEBHOOK_DEBOUNCE_MS);
@@ -1428,7 +1537,12 @@ calendarRoutes.post("/webhook", async (c) => {
     return c.body(null, 200);
   }
 
-  console.log(`[webhook] ❓ Unknown state: ${resourceState}`);
+  console.log("[webhook] ❓ Unknown state", {
+    channelId: shortWebhookId(channelId),
+    messageNumber: messageNumber ?? null,
+    resourceState: resourceState ?? null,
+    traceId,
+  });
   return c.body(null, 200);
 });
 
