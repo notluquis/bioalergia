@@ -13,8 +13,22 @@ const CREDENTIALS_PATH = path.resolve(
   "google-calendar",
   "credentials.json",
 );
-const WEBHOOK_BASE_URL = process.env.PUBLIC_URL || "http://localhost:5000";
-const WEBHOOK_ENDPOINT = `${WEBHOOK_BASE_URL}/api/calendar/webhook`;
+
+function resolveWebhookEndpoint() {
+  const explicit = process.env.GOOGLE_CALENDAR_WEBHOOK_URL?.trim();
+  if (explicit) {
+    return explicit;
+  }
+
+  const publicUrl = process.env.PUBLIC_URL?.trim();
+  if (publicUrl) {
+    return `${publicUrl.replace(/\/$/, "")}/api/webhooks/google/calendar`;
+  }
+
+  return "http://localhost:3000/api/webhooks/google/calendar";
+}
+
+const WEBHOOK_ENDPOINT = resolveWebhookEndpoint();
 
 // Google Calendar watch channels expire after 7 days max
 const CHANNEL_TTL_DAYS = 7;
@@ -95,6 +109,13 @@ export async function registerWatchChannel(
 
     const channelId = randomUUID();
     const fallbackExpiration = new Date(Date.now() + CHANNEL_TTL_DAYS * 24 * 60 * 60 * 1000);
+
+    if (!process.env.GOOGLE_CALENDAR_WEBHOOK_URL && !process.env.PUBLIC_URL) {
+      logWarn("register_watch_channel_webhook_url_fallback", {
+        fallbackUrl: WEBHOOK_ENDPOINT,
+        hint: "Set GOOGLE_CALENDAR_WEBHOOK_URL in production to avoid callback drift",
+      });
+    }
 
     logEvent("register_watch_channel_start", {
       calendarGoogleId,
