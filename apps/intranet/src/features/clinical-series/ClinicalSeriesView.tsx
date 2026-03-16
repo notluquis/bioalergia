@@ -21,6 +21,7 @@ import {
   TableRow,
 } from "@heroui/react";
 import { useState } from "react";
+import type { Key } from "react";
 import { useClinicalSeries, useClinicalSeriesDetail, useRebuildClinicalSeries } from "./queries";
 import type {
   ClinicalSeriesFilters,
@@ -75,9 +76,7 @@ export function ClinicalSeriesView() {
     }));
   };
 
-  const handleKindChange = (
-    key: string | number | symbol | (string | number | symbol)[] | null,
-  ) => {
+  const handleKindChange = (key: Key | null) => {
     if (key && typeof key === "string") {
       setFilters((prev: ClinicalSeriesFilters) => ({
         ...prev,
@@ -91,9 +90,7 @@ export function ClinicalSeriesView() {
     }
   };
 
-  const handleStatusChange = (
-    key: string | number | symbol | (string | number | symbol)[] | null,
-  ) => {
+  const handleStatusChange = (key: Key | null) => {
     if (key && typeof key === "string") {
       setFilters((prev: ClinicalSeriesFilters) => ({
         ...prev,
@@ -145,19 +142,41 @@ export function ClinicalSeriesView() {
 
             <div>
               <Label className="text-sm">Tipo</Label>
-              <Select onChange={handleKindChange} selectedKey={filters.kind || ""}>
-                <ListBox items={KIND_OPTIONS}>
-                  {(item) => <ListBox.Item key={item.value}>{item.label}</ListBox.Item>}
-                </ListBox>
+              <Select onSelectionChange={handleKindChange} selectedKey={filters.kind ?? null}>
+                <Select.Trigger>
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover>
+                  <ListBox>
+                    {KIND_OPTIONS.map((item) => (
+                      <ListBox.Item id={item.value} key={item.value} textValue={item.label}>
+                        {item.label}
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                    ))}
+                  </ListBox>
+                </Select.Popover>
               </Select>
             </div>
 
             <div>
               <Label className="text-sm">Estado</Label>
-              <Select onChange={handleStatusChange} selectedKey={filters.status || ""}>
-                <ListBox items={STATUS_OPTIONS}>
-                  {(item) => <ListBox.Item key={item.value}>{item.label}</ListBox.Item>}
-                </ListBox>
+              <Select onSelectionChange={handleStatusChange} selectedKey={filters.status ?? null}>
+                <Select.Trigger>
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover>
+                  <ListBox>
+                    {STATUS_OPTIONS.map((item) => (
+                      <ListBox.Item id={item.value} key={item.value} textValue={item.label}>
+                        {item.label}
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                    ))}
+                  </ListBox>
+                </Select.Popover>
               </Select>
             </div>
 
@@ -279,7 +298,9 @@ export function ClinicalSeriesView() {
                     {detail.events.slice(0, 3).map((event: ClinicalSeriesSnapshot["events"][0]) => (
                       <Surface key={event.eventId} className="p-2 text-xs">
                         <p className="font-medium">{event.eventDate}</p>
-                        <p className="text-foreground-500 truncate">{event.summary ?? "Sin resumen"}</p>
+                        <p className="text-foreground-500 truncate">
+                          {event.summary ?? "Sin resumen"}
+                        </p>
                         {event.dosageValue && (
                           <p className="text-accent">
                             {event.dosageValue} {event.dosageUnit}
