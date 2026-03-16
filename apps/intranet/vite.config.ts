@@ -21,7 +21,6 @@ const API_PROXY_SECURE = API_PROXY_TARGET.startsWith("https://");
 
 export default defineConfig(({ mode }) => {
   const enableChecker = mode === "development";
-  const enableReactCompiler = process.env.VITE_REACT_COMPILER !== "false";
 
   return {
     cacheDir: "../../node_modules/.vite/intranet",
@@ -34,17 +33,10 @@ export default defineConfig(({ mode }) => {
         generatedRouteTree: "./src/routeTree.gen.ts",
         quoteStyle: "double",
       }),
-      // React Compiler currently requires Babel, so keep it behind a flag
-      // to benchmark the Babel path against Vite's faster default transform path.
-      react(
-        enableReactCompiler
-          ? {
-              babel: {
-                plugins: [["babel-plugin-react-compiler", { target: "19" }]],
-              },
-            }
-          : undefined,
-      ),
+      // @vitejs/plugin-react v6 no longer supports the legacy `babel` option.
+      // Keep the base plugin configuration here; React Compiler can be wired via
+      // @rolldown/plugin-babel + reactCompilerPreset when needed.
+      react(),
       // Tailwind CSS (official Tailwind plugin for Vite)
       tailwindcss(),
       // TypeScript type-checking in dev mode only

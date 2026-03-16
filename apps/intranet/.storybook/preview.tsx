@@ -1,3 +1,5 @@
+/// <reference types="vite/client" />
+
 import { withThemeByDataAttribute } from "@storybook/addon-themes";
 import { initialize, mswLoader } from "msw-storybook-addon";
 
