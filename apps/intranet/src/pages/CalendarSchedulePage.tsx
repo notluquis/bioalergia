@@ -219,8 +219,12 @@ function CalendarSourceSelector({
     <Select
       className="min-w-44"
       isDisabled={isDisabled}
-      value={source}
-      onChange={(key) => onSourceChange(String(key))}
+      selectedKey={source}
+      onSelectionChange={(key) => {
+        if (key) {
+          onSourceChange(String(key));
+        }
+      }}
     >
       <Label className="font-medium text-default-500 text-xs">Fuente</Label>
       <Select.Trigger>
@@ -273,7 +277,10 @@ function ScheduleHeaderControls({
   totalEvents: number;
 }>) {
   return (
-    <Toolbar aria-label="Filtros del calendario" className="flex items-center gap-3">
+    <Toolbar
+      aria-label="Filtros del calendario"
+      className="w-full grid-flow-row items-start gap-2 sm:grid-flow-col sm:items-center"
+    >
       <CalendarSourceSelector
         isDisabled={sourceSelectorDisabled}
         onSourceChange={onSourceChange}
@@ -428,7 +435,7 @@ function CalendarSchedulePage() {
         {/* Navigation Row */}
         <Toolbar
           aria-label="Controles del calendario semanal"
-          className="flex flex-wrap items-center justify-between gap-3 sm:gap-4"
+          className="w-full grid-flow-row items-stretch gap-3 lg:grid-flow-col lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center"
         >
           {/* Left: Week Navigation */}
           <div className="flex flex-wrap items-center gap-3">
@@ -470,7 +477,7 @@ function CalendarSchedulePage() {
           </div>
 
           {/* Right: Event count + Filter toggle */}
-          <div className="flex items-end gap-3">
+          <div className="flex flex-wrap items-center gap-3 lg:justify-end">
             <ScheduleHeaderControls
               appliedFilters={appliedFilters}
               availableCategories={availableCategories}

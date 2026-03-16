@@ -26,12 +26,12 @@ export function CalendarFiltersPopover({
         </Button>
       </Popover.Trigger>
       <Popover.Content className={cn(panelWidthClassName, "p-0")} offset={6}>
-        <div className="rounded-xl bg-content1 shadow-lg ring-1 ring-black/5">
+        <Popover.Dialog className="rounded-xl bg-content1 shadow-lg ring-1 ring-black/5">
           <div className="flex items-center justify-between border-default-100 border-b px-3 py-2.5">
-            <h3 className="font-semibold text-small">Filtrar Vistas</h3>
+            <Popover.Heading className="font-semibold text-small">Filtrar Vistas</Popover.Heading>
           </div>
           <CalendarFilterPanel {...panelProps} variant="plain" />
-        </div>
+        </Popover.Dialog>
       </Popover.Content>
     </Popover>
   );

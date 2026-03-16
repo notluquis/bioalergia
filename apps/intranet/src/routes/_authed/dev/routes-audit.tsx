@@ -155,9 +155,9 @@ function RoutesAuditPage() {
       <div className="space-y-4">
         <Toolbar
           aria-label="Filtros de auditoría de rutas"
-          className="flex flex-wrap items-center gap-4"
+          className="w-full grid-flow-row items-stretch gap-3 sm:grid-flow-col sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
         >
-          <TextField className="flex-1">
+          <TextField className="w-full">
             <InputGroup>
               <InputGroup.Prefix className="text-muted-foreground">
                 <Search className="size-4" />

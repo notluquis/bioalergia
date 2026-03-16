@@ -936,7 +936,7 @@ function CounterpartsToolbar({
         <div className="space-y-4">
           <Toolbar
             aria-label="Filtros y acciones de contrapartes"
-            className="flex flex-wrap items-start justify-between gap-3"
+            className="w-full grid-flow-row items-start gap-3 xl:grid-flow-col xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center"
           >
             <div className="min-w-0 flex-1 overflow-x-auto">
               <ToggleButtonGroup
