@@ -46,7 +46,7 @@ export function GenerateReportModal({ onClose, open, reportType }: Props) {
         { endAtNow: useNowAsEndDate },
         (current, total) => {
           setProgress({ current, total });
-        },
+        }
       ),
     onError: (e: Error) => {
       showError(`Error: ${e.message}`);
@@ -55,7 +55,7 @@ export function GenerateReportModal({ onClose, open, reportType }: Props) {
     onSuccess: (reports) => {
       const count = reports.length;
       showSuccess(
-        count === 1 ? "Solicitud de reporte enviada" : `${count} reportes solicitados exitosamente`,
+        count === 1 ? "Solicitud de reporte enviada" : `${count} reportes solicitados exitosamente`
       );
       void queryClient.invalidateQueries({ queryKey: ["mp-reports", reportType] });
       form.reset();
@@ -88,7 +88,6 @@ export function GenerateReportModal({ onClose, open, reportType }: Props) {
   return (
     <Modal>
       <Modal.Backdrop
-        className="bg-black/40 backdrop-blur-[2px]"
         isOpen={open}
         onOpenChange={(isOpen) => {
           if (!isOpen) {
@@ -97,11 +96,11 @@ export function GenerateReportModal({ onClose, open, reportType }: Props) {
         }}
       >
         <Modal.Container placement="center">
-          <Modal.Dialog className="relative w-full max-w-2xl rounded-[28px] bg-background p-6 shadow-2xl">
-            <Modal.Header className="mb-4 font-bold text-primary text-xl">
+          <Modal.Dialog className="w-full max-w-2xl">
+            <Modal.Header>
               <Modal.Heading>{`Generar Reporte: ${reportType === "release" ? "Liberación" : "Conciliación"}`}</Modal.Heading>
             </Modal.Header>
-            <Modal.Body className="mt-2 max-h-[80vh] overflow-y-auto overscroll-contain text-foreground">
+            <Modal.Body>
               <Form
                 className="space-y-4"
                 onSubmit={(e: React.FormEvent<HTMLFormElement>) => {

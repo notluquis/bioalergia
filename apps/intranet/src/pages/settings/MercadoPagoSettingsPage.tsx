@@ -224,9 +224,14 @@ export function MercadoPagoSettingsPage() {
 
   return (
     <div className="space-y-5">
-      <Tabs selectedKey={activeTab} onSelectionChange={onTabChange} variant="secondary">
-        <Tabs.ListContainer>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <Tabs
+          className="w-full"
+          selectedKey={activeTab}
+          onSelectionChange={onTabChange}
+          variant="secondary"
+        >
+          <Tabs.ListContainer>
             <Tabs.List
               aria-label="Tipo de reporte"
               className="w-full rounded-lg bg-default-50/50 p-1 sm:w-auto"
@@ -244,232 +249,227 @@ export function MercadoPagoSettingsPage() {
                 <Tabs.Indicator />
               </Tabs.Tab>
             </Tabs.List>
+          </Tabs.ListContainer>
 
-            {!isSyncTab && (
-              <Button
-                className="w-full shrink-0 sm:w-auto"
-                onPress={openGenerateModal}
-                variant="primary"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Generar Reporte
-              </Button>
-            )}
-          </div>
-        </Tabs.ListContainer>
+          <Tabs.Panel className="space-y-5 pt-4" id="release">
+            {activeTab === "release" ? (
+              <>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  {/* Last Report Card */}
+                  <Card className="h-full p-6" variant="secondary">
+                    <Card.Header className="items-start justify-between p-0">
+                      <div>
+                        <Card.Description className="font-semibold text-default-500 text-xs uppercase tracking-wide">
+                          Último Reporte
+                        </Card.Description>
+                        <Card.Title className="mt-2 line-clamp-1 text-lg">
+                          {isReportLoading ? "Cargando..." : resolveLastReportLabel(reports)}
+                        </Card.Title>
+                      </div>
+                      <Clock className="h-5 w-5 text-primary" />
+                    </Card.Header>
+                    <Card.Content className="p-0 pt-4">
+                      <Description className="truncate text-default-400 text-xs">
+                        {isReportLoading
+                          ? "Obteniendo últimos reportes..."
+                          : (reports[0]?.file_name ?? "Sin reportes recientes")}
+                      </Description>
+                    </Card.Content>
+                  </Card>
 
-        <Tabs.Panel className="space-y-5 pt-4" id="release">
-          {activeTab === "release" ? (
-            <>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {/* Last Report Card */}
-                <article className="rounded-2xl border border-default-200 bg-background p-6 shadow-sm">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <span className="flex items-center gap-1.5 font-semibold text-default-500 text-xs uppercase tracking-wide">
-                        Último Reporte
-                      </span>
-                      <span className="mt-2 line-clamp-1 block font-semibold text-lg">
-                        {isReportLoading ? "Cargando..." : resolveLastReportLabel(reports)}
-                      </span>
-                    </div>
-                    <div className="rounded-lg bg-primary/10 p-2 text-primary">
-                      <Clock className="h-5 w-5" />
-                    </div>
-                  </div>
-                  <div className="mt-4 border-default-200/50 border-t pt-4">
-                    <Description className="truncate text-default-400 text-xs">
-                      {isReportLoading
-                        ? "Obteniendo últimos reportes..."
-                        : (reports[0]?.file_name ?? "Sin reportes recientes")}
-                    </Description>
-                  </div>
-                </article>
-
-                {/* Total Reports Card */}
-                <Card className="h-full p-6" variant="secondary">
-                  <Card.Header className="items-start justify-between p-0">
-                    <div>
-                      <Card.Title className="text-sm">Total Reportes</Card.Title>
-                      <Card.Description>{`Tipo: ${resolveReportTypeLabel(reportType)}`}</Card.Description>
-                    </div>
-                    <FileText className="h-5 w-5 text-primary" />
-                  </Card.Header>
-                  <Card.Content className="p-0 pt-3">
-                    <p className="font-semibold text-3xl">
-                      {isReportLoading ? "..." : reportTotal}
-                    </p>
-                  </Card.Content>
-                </Card>
-              </div>
-
-              {reportErrorMessage && <Alert status="danger">{reportErrorMessage}</Alert>}
-
-              <div className="space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-3 px-1">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-primary" />
-                    <div>
-                      <span className="block font-semibold text-lg">Historial de Reportes</span>
-                      <span className="block text-default-500 text-xs">Total: {reportTotal}</span>
-                    </div>
-                  </div>
+                  {/* Total Reports Card */}
+                  <Card className="h-full p-6" variant="secondary">
+                    <Card.Header className="items-start justify-between p-0">
+                      <div>
+                        <Card.Title className="text-sm">Total Reportes</Card.Title>
+                        <Card.Description>{`Tipo: ${resolveReportTypeLabel(reportType)}`}</Card.Description>
+                      </div>
+                      <FileText className="h-5 w-5 text-primary" />
+                    </Card.Header>
+                    <Card.Content className="p-0 pt-3">
+                      <p className="font-semibold text-3xl">
+                        {isReportLoading ? "..." : reportTotal}
+                      </p>
+                    </Card.Content>
+                  </Card>
                 </div>
 
-                <DataTable
-                  columns={columns}
-                  containerVariant="plain"
-                  columnVisibility={columnVisibility}
-                  data={reports}
-                  enableExport={false}
-                  enableGlobalFilter={false}
-                  isLoading={isReportLoading}
-                  key={`mp-reports-${reportType}-${reportPagination.pageIndex}-${reports.length}`}
-                  pageSizeOptions={[10, 25, 50]}
-                  pagination={reportPagination}
-                  onPaginationChange={setReportPagination}
-                  onColumnVisibilityChange={setColumnVisibility}
-                  pageCount={reportPageCount}
-                  noDataMessage={
-                    isReportLoading
-                      ? "Cargando reportes de MercadoPago..."
-                      : "Aún no hay reportes. Genera uno para comenzar."
-                  }
-                  scrollMaxHeight="min(68dvh, 760px)"
-                />
-              </div>
-            </>
-          ) : null}
-        </Tabs.Panel>
+                {reportErrorMessage && <Alert status="danger">{reportErrorMessage}</Alert>}
 
-        <Tabs.Panel className="space-y-5 pt-4" id="settlement">
-          {activeTab === "settlement" ? (
-            <>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {/* Last Report Card */}
-                <article className="rounded-2xl border border-default-200 bg-background p-6 shadow-sm">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <span className="flex items-center gap-1.5 font-semibold text-default-500 text-xs uppercase tracking-wide">
-                        Último Reporte
-                      </span>
-                      <span className="mt-2 line-clamp-1 block font-semibold text-lg">
-                        {isReportLoading ? "Cargando..." : resolveLastReportLabel(reports)}
-                      </span>
-                    </div>
-                    <div className="rounded-lg bg-primary/10 p-2 text-primary">
-                      <Clock className="h-5 w-5" />
+                <div className="space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3 px-1">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-primary" />
+                      <div>
+                        <span className="block font-semibold text-lg">Historial de Reportes</span>
+                        <span className="block text-default-500 text-xs">Total: {reportTotal}</span>
+                      </div>
                     </div>
                   </div>
-                  <div className="mt-4 border-default-200/50 border-t pt-4">
-                    <Description className="truncate text-default-400 text-xs">
-                      {isReportLoading
-                        ? "Obteniendo últimos reportes..."
-                        : (reports[0]?.file_name ?? "Sin reportes recientes")}
-                    </Description>
-                  </div>
-                </article>
 
-                {/* Total Reports Card */}
-                <Card className="h-full p-6" variant="secondary">
-                  <Card.Header className="items-start justify-between p-0">
-                    <div>
-                      <Card.Title className="text-sm">Total Reportes</Card.Title>
-                      <Card.Description>{`Tipo: ${resolveReportTypeLabel(reportType)}`}</Card.Description>
-                    </div>
-                    <FileText className="h-5 w-5 text-primary" />
-                  </Card.Header>
-                  <Card.Content className="p-0 pt-3">
-                    <p className="font-semibold text-3xl">
-                      {isReportLoading ? "..." : reportTotal}
-                    </p>
-                  </Card.Content>
-                </Card>
-              </div>
+                  <DataTable
+                    columns={columns}
+                    containerVariant="plain"
+                    columnVisibility={columnVisibility}
+                    data={reports}
+                    enableExport={false}
+                    enableGlobalFilter={false}
+                    isLoading={isReportLoading}
+                    key={`mp-reports-${reportType}-${reportPagination.pageIndex}-${reports.length}`}
+                    pageSizeOptions={[10, 25, 50]}
+                    pagination={reportPagination}
+                    onPaginationChange={setReportPagination}
+                    onColumnVisibilityChange={setColumnVisibility}
+                    pageCount={reportPageCount}
+                    noDataMessage={
+                      isReportLoading
+                        ? "Cargando reportes de MercadoPago..."
+                        : "Aún no hay reportes. Genera uno para comenzar."
+                    }
+                    scrollMaxHeight="min(68dvh, 760px)"
+                  />
+                </div>
+              </>
+            ) : null}
+          </Tabs.Panel>
 
-              {reportErrorMessage && <Alert status="danger">{reportErrorMessage}</Alert>}
+          <Tabs.Panel className="space-y-5 pt-4" id="settlement">
+            {activeTab === "settlement" ? (
+              <>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  {/* Last Report Card */}
+                  <Card className="h-full p-6" variant="secondary">
+                    <Card.Header className="items-start justify-between p-0">
+                      <div>
+                        <Card.Description className="font-semibold text-default-500 text-xs uppercase tracking-wide">
+                          Último Reporte
+                        </Card.Description>
+                        <Card.Title className="mt-2 line-clamp-1 text-lg">
+                          {isReportLoading ? "Cargando..." : resolveLastReportLabel(reports)}
+                        </Card.Title>
+                      </div>
+                      <Clock className="h-5 w-5 text-primary" />
+                    </Card.Header>
+                    <Card.Content className="p-0 pt-4">
+                      <Description className="truncate text-default-400 text-xs">
+                        {isReportLoading
+                          ? "Obteniendo últimos reportes..."
+                          : (reports[0]?.file_name ?? "Sin reportes recientes")}
+                      </Description>
+                    </Card.Content>
+                  </Card>
 
-              <div className="space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-3 px-1">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-primary" />
-                    <div>
-                      <span className="block font-semibold text-lg">Historial de Reportes</span>
-                      <span className="block text-default-500 text-xs">Total: {reportTotal}</span>
-                    </div>
-                  </div>
+                  {/* Total Reports Card */}
+                  <Card className="h-full p-6" variant="secondary">
+                    <Card.Header className="items-start justify-between p-0">
+                      <div>
+                        <Card.Title className="text-sm">Total Reportes</Card.Title>
+                        <Card.Description>{`Tipo: ${resolveReportTypeLabel(reportType)}`}</Card.Description>
+                      </div>
+                      <FileText className="h-5 w-5 text-primary" />
+                    </Card.Header>
+                    <Card.Content className="p-0 pt-3">
+                      <p className="font-semibold text-3xl">
+                        {isReportLoading ? "..." : reportTotal}
+                      </p>
+                    </Card.Content>
+                  </Card>
                 </div>
 
-                <DataTable
-                  columns={columns}
-                  containerVariant="plain"
-                  columnVisibility={columnVisibility}
-                  data={reports}
-                  enableExport={false}
-                  enableGlobalFilter={false}
-                  isLoading={isReportLoading}
-                  key={`mp-reports-${reportType}-${reportPagination.pageIndex}-${reports.length}`}
-                  pageSizeOptions={[10, 25, 50]}
-                  pagination={reportPagination}
-                  onPaginationChange={setReportPagination}
-                  onColumnVisibilityChange={setColumnVisibility}
-                  pageCount={reportPageCount}
-                  noDataMessage={
-                    isReportLoading
-                      ? "Cargando reportes de MercadoPago..."
-                      : "Aún no hay reportes. Genera uno para comenzar."
-                  }
-                  scrollMaxHeight="min(68dvh, 760px)"
-                />
-              </div>
-            </>
-          ) : null}
-        </Tabs.Panel>
+                {reportErrorMessage && <Alert status="danger">{reportErrorMessage}</Alert>}
 
-        <Tabs.Panel className="space-y-5 pt-4" id="sync">
-          {activeTab === "sync" ? (
-            <>
-              {syncErrorMessage && <Alert status="danger">{syncErrorMessage}</Alert>}
-
-              <div className="space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-3 px-1">
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-primary" />
-                    <div>
-                      <span className="block font-semibold text-lg">Historial de Sync</span>
-                      <span className="block text-default-500 text-xs">Total: {syncTotal}</span>
+                <div className="space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3 px-1">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-primary" />
+                      <div>
+                        <span className="block font-semibold text-lg">Historial de Reportes</span>
+                        <span className="block text-default-500 text-xs">Total: {reportTotal}</span>
+                      </div>
                     </div>
                   </div>
+
+                  <DataTable
+                    columns={columns}
+                    containerVariant="plain"
+                    columnVisibility={columnVisibility}
+                    data={reports}
+                    enableExport={false}
+                    enableGlobalFilter={false}
+                    isLoading={isReportLoading}
+                    key={`mp-reports-${reportType}-${reportPagination.pageIndex}-${reports.length}`}
+                    pageSizeOptions={[10, 25, 50]}
+                    pagination={reportPagination}
+                    onPaginationChange={setReportPagination}
+                    onColumnVisibilityChange={setColumnVisibility}
+                    pageCount={reportPageCount}
+                    noDataMessage={
+                      isReportLoading
+                        ? "Cargando reportes de MercadoPago..."
+                        : "Aún no hay reportes. Genera uno para comenzar."
+                    }
+                    scrollMaxHeight="min(68dvh, 760px)"
+                  />
                 </div>
-                <DataTable
-                  columns={syncColumns}
-                  containerVariant="plain"
-                  data={syncLogs}
-                  enableExport={false}
-                  enableGlobalFilter={false}
-                  isLoading={isSyncLoading}
-                  key={`mp-sync-${syncPagination.pageIndex}-${syncLogs.length}`}
-                  pageSizeOptions={[10, 25, 50]}
-                  pagination={syncPagination}
-                  onPaginationChange={setSyncPagination}
-                  pageCount={syncPageCount}
-                  noDataMessage={
-                    isSyncLoading
-                      ? "Cargando historial de sincronización..."
-                      : "Aún no hay sincronizaciones registradas."
-                  }
-                  scrollMaxHeight="min(68dvh, 760px)"
-                />
-              </div>
-            </>
-          ) : null}
-        </Tabs.Panel>
-      </Tabs>
+              </>
+            ) : null}
+          </Tabs.Panel>
+
+          <Tabs.Panel className="space-y-5 pt-4" id="sync">
+            {activeTab === "sync" ? (
+              <>
+                {syncErrorMessage && <Alert status="danger">{syncErrorMessage}</Alert>}
+
+                <div className="space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3 px-1">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-primary" />
+                      <div>
+                        <span className="block font-semibold text-lg">Historial de Sync</span>
+                        <span className="block text-default-500 text-xs">Total: {syncTotal}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <DataTable
+                    columns={syncColumns}
+                    containerVariant="plain"
+                    data={syncLogs}
+                    enableExport={false}
+                    enableGlobalFilter={false}
+                    isLoading={isSyncLoading}
+                    key={`mp-sync-${syncPagination.pageIndex}-${syncLogs.length}`}
+                    pageSizeOptions={[10, 25, 50]}
+                    pagination={syncPagination}
+                    onPaginationChange={setSyncPagination}
+                    pageCount={syncPageCount}
+                    noDataMessage={
+                      isSyncLoading
+                        ? "Cargando historial de sincronización..."
+                        : "Aún no hay sincronizaciones registradas."
+                    }
+                    scrollMaxHeight="min(68dvh, 760px)"
+                  />
+                </div>
+              </>
+            ) : null}
+          </Tabs.Panel>
+        </Tabs>
+
+        {!isSyncTab && (
+          <Button
+            className="w-full shrink-0 sm:w-auto"
+            onPress={openGenerateModal}
+            variant="primary"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Generar Reporte
+          </Button>
+        )}
+      </div>
 
       {/* Import Stats Modal */}
       <Modal>
         <Modal.Backdrop
-          className="bg-black/40 backdrop-blur-[2px]"
           isOpen={Boolean(lastImportStats)}
           onOpenChange={(open) => {
             if (!open) {
@@ -478,11 +478,11 @@ export function MercadoPagoSettingsPage() {
           }}
         >
           <Modal.Container placement="center">
-            <Modal.Dialog className="relative w-full max-w-2xl rounded-[28px] bg-background p-6 shadow-2xl">
-              <Modal.Header className="mb-4 font-bold text-primary text-xl">
+            <Modal.Dialog className="w-full max-w-2xl">
+              <Modal.Header>
                 <Modal.Heading>Reporte Procesado</Modal.Heading>
               </Modal.Header>
-              <Modal.Body className="mt-2 max-h-[80vh] overflow-y-auto overscroll-contain text-foreground">
+              <Modal.Body>
                 {lastImportStats && (
                   <div className="space-y-4">
                     <div className="flex items-center gap-2 text-success">
