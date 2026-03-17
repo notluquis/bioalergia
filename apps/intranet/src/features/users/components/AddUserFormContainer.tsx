@@ -303,11 +303,12 @@ function PersonLinkSection({
             <form.Field name="personId">
               {(field) => (
                 <Select
-                  onChange={(val) => {
+                  onSelectionChange={(key) => {
+                    const val = key?.toString();
                     const pid = val && val !== NONE_PERSON_KEY ? Number(val) : undefined;
                     handleLinkPerson(pid);
                   }}
-                  value={field.state.value ? String(field.state.value) : NONE_PERSON_KEY}
+                  selectedKey={field.state.value ? String(field.state.value) : NONE_PERSON_KEY}
                 >
                   <Label>Vincular con persona (opcional)</Label>
                   <Select.Trigger>
@@ -449,9 +450,12 @@ function UserDataFields({
                 <Select
                   isDisabled={isRolesLoading}
                   isInvalid={field.state.meta.errors.length > 0}
-                  onChange={(val) => field.handleChange(val as string)}
+                  onSelectionChange={(key) => {
+                    const val = key?.toString();
+                    if (val) field.handleChange(val);
+                  }}
                   placeholder={isRolesLoading ? "Cargando roles..." : "Seleccionar rol"}
-                  value={field.state.value}
+                  selectedKey={field.state.value || undefined}
                 >
                   <Label>Rol del sistema</Label>
                   <Select.Trigger>

@@ -62,7 +62,7 @@ function filterUsersByRole(users: User[], roleFilter: string) {
     return users;
   }
   return users.filter(
-    (u) => u.role === roleFilter || (u.role || "").toUpperCase() === roleFilter.toUpperCase(),
+    (u) => u.role === roleFilter || (u.role || "").toUpperCase() === roleFilter.toUpperCase()
   );
 }
 
@@ -82,7 +82,7 @@ function useUserManagementActions(params: {
   updateUserRole: (id: number, role: string) => Promise<unknown>;
   updateUserStatus: (
     id: number,
-    status: "ACTIVE" | "PENDING_SETUP" | "SUSPENDED",
+    status: "ACTIVE" | "PENDING_SETUP" | "SUSPENDED"
   ) => Promise<unknown>;
   users: User[];
 }) {
@@ -104,7 +104,7 @@ function useUserManagementActions(params: {
         params.errorToast("Error al eliminar Passkey");
       }
     },
-    [invalidateUsers, params],
+    [invalidateUsers, params]
   );
 
   const handleDeleteUser = useCallback(
@@ -119,7 +119,7 @@ function useUserManagementActions(params: {
         params.errorToast(error_ instanceof Error ? error_.message : "Error al eliminar");
       }
     },
-    [params],
+    [params]
   );
 
   const handleEditRole = useCallback(
@@ -127,7 +127,7 @@ function useUserManagementActions(params: {
       params.setEditingUser(user);
       params.setSelectedRole(user.role);
     },
-    [params],
+    [params]
   );
 
   const handleResetPassword = useCallback(
@@ -147,7 +147,7 @@ function useUserManagementActions(params: {
         params.errorToast(error_ instanceof Error ? error_.message : "Error al restablecer");
       }
     },
-    [invalidateUsers, params],
+    [invalidateUsers, params]
   );
 
   const handleToggleMfa = useCallback(
@@ -164,7 +164,7 @@ function useUserManagementActions(params: {
         params.errorToast(error_ instanceof Error ? error_.message : "Error desconocido");
       }
     },
-    [invalidateUsers, params],
+    [invalidateUsers, params]
   );
 
   const handleSetStatus = useCallback(
@@ -192,7 +192,7 @@ function useUserManagementActions(params: {
         params.errorToast(error_ instanceof Error ? error_.message : "Error al actualizar estado");
       }
     },
-    [params],
+    [params]
   );
 
   const handleSaveRole = useCallback(async () => {
@@ -234,7 +234,7 @@ function useUserManagementActions(params: {
       handleResetPassword,
       handleSetStatus,
       handleToggleMfa,
-    ],
+    ]
   );
 
   return { actions, handleSaveRole };
@@ -304,7 +304,7 @@ export function UserManagementPage() {
   const deleteUserAction = useCallback((id: number) => deleteUser(id), []);
   const updateUserRoleAction = useCallback(
     (id: number, role: string) => updateUserRole(id, role),
-    [],
+    []
   );
   const updateUserStatus = useCallback(
     (id: number, status: "ACTIVE" | "PENDING_SETUP" | "SUSPENDED") =>
@@ -312,7 +312,7 @@ export function UserManagementPage() {
         id,
         status,
       }),
-    [updateUserStatusMutation],
+    [updateUserStatusMutation]
   );
 
   const { actions, handleSaveRole } = useUserManagementActions({
@@ -344,7 +344,7 @@ export function UserManagementPage() {
         ...actions,
         onEditDetails: handleEditDetails,
       }),
-    [actions, handleEditDetails],
+    [actions, handleEditDetails]
   );
 
   // Filter users based on role filter (client side)
@@ -362,11 +362,12 @@ export function UserManagementPage() {
             <Select
               aria-label="Filtrar por rol"
               className="w-full"
-              value={roleFilter}
-              onChange={(key) => {
-                if (key) {
-                  setRoleFilter(key.toString());
-                }
+              selectedKey={roleFilter || undefined}
+              onSelectionChange={(key) => {
+                const val = key?.toString();
+                if (val) {
+                  setRoleFilter(val);
+                } else setRoleFilter("");
               }}
             >
               <Label>Filtrar por rol</Label>
@@ -628,11 +629,12 @@ function EditRoleModalContent({
                     aria-label="Rol asignado"
                     className="w-full"
                     placeholder="Seleccionar rol"
-                    value={selectedRole}
-                    onChange={(key) => {
-                      if (key) {
-                        setSelectedRole(key.toString());
-                      }
+                    selectedKey={selectedRole || undefined}
+                    onSelectionChange={(key) => {
+                      const val = key?.toString();
+                      if (val) {
+                        setSelectedRole(val);
+                      } else setSelectedRole("");
                     }}
                   >
                     <Label>Rol asignado</Label>
@@ -689,7 +691,7 @@ function EditUserDetailsModalContent({
   onCancel: () => void;
   onChange: <K extends keyof UserDetailsFormState>(
     field: K,
-    value: UserDetailsFormState[K],
+    value: UserDetailsFormState[K]
   ) => void;
   onSave: () => Promise<void>;
   title: string;
