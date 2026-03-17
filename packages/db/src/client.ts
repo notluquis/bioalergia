@@ -24,13 +24,20 @@ const getEnv = (key: string): string | undefined => {
   }
 };
 
-// Connection pool with UTF-8 encoding
+// Connection pool — tuned for Railway PostgreSQL
+// - connectionTimeoutMillis: 20s to tolerate Railway cold starts (can reach 15s)
+// - idleTimeoutMillis: 10min to keep the pool warm between requests
+// - max: 10 conservative for Railway Hobby (max ~97 PG connections, multiple instances)
+// - min: 2 pre-warmed connections so the first requests don't incur connection overhead
+// - keepAlive: prevents Railway's NAT from silently dropping idle TCP connections
 const pool = new Pool({
   connectionString: getEnv("DATABASE_URL"),
-  // Ensure UTF-8 encoding for all database operations
-  connectionTimeoutMillis: 5000,
-  idleTimeoutMillis: 30_000,
-  max: 20,
+  connectionTimeoutMillis: 20_000,
+  idleTimeoutMillis: 600_000,
+  max: 10,
+  min: 2,
+  keepAlive: true,
+  keepAliveInitialDelayMillis: 10_000,
   // Force UTF-8 client encoding
   options: "-c client_encoding=UTF8",
   // Fallback to postgres user if environment access fails (Deno safety)
