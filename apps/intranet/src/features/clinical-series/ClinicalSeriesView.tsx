@@ -14,12 +14,8 @@ import {
   Spinner,
   Surface,
   Table,
-  TableBody,
-  TableCell,
-  TableColumn,
-  TableHeader,
-  TableRow,
 } from "@heroui/react";
+import type { Key, Selection } from "@heroui/react";
 import { useState } from "react";
 import { useClinicalSeries, useClinicalSeriesDetail, useRebuildClinicalSeries } from "./queries";
 import type {
@@ -75,13 +71,11 @@ export function ClinicalSeriesView() {
     }));
   };
 
-  const handleKindChange = (
-    key: string | number | symbol | (string | number | symbol)[] | null
-  ) => {
-    if (key && typeof key === "string") {
+  const handleKindChange = (value: Key | null) => {
+    if (value && typeof value === "string") {
       setFilters((prev: ClinicalSeriesFilters) => ({
         ...prev,
-        kind: key as ClinicalSeriesKind,
+        kind: value as ClinicalSeriesKind,
       }));
     } else {
       setFilters((prev: ClinicalSeriesFilters) => {
@@ -91,13 +85,11 @@ export function ClinicalSeriesView() {
     }
   };
 
-  const handleStatusChange = (
-    key: string | number | symbol | (string | number | symbol)[] | null
-  ) => {
-    if (key && typeof key === "string") {
+  const handleStatusChange = (value: Key | null) => {
+    if (value && typeof value === "string") {
       setFilters((prev: ClinicalSeriesFilters) => ({
         ...prev,
-        status: key as ClinicalSeriesStatus,
+        status: value as ClinicalSeriesStatus,
       }));
     } else {
       setFilters((prev: ClinicalSeriesFilters) => {
@@ -105,6 +97,13 @@ export function ClinicalSeriesView() {
         return rest;
       });
     }
+  };
+
+  const handleRowSelectionChange = (keys: Selection) => {
+    if (keys === "all") return;
+    const [firstKey] = keys;
+    const id = firstKey !== undefined ? Number(firstKey) : null;
+    setSelectedId(id);
   };
 
   const handleRebuild = async () => {
@@ -145,7 +144,11 @@ export function ClinicalSeriesView() {
 
             <div>
               <Label className="text-sm">Tipo</Label>
-              <Select onChange={(value) => handleKindChange(value)} value={filters.kind ?? null}>
+              <Select
+                onChange={handleKindChange}
+                value={(filters.kind as Key) ?? null}
+                placeholder="Todos los tipos"
+              >
                 <Select.Trigger>
                   <Select.Value />
                   <Select.Indicator />
@@ -166,8 +169,9 @@ export function ClinicalSeriesView() {
             <div>
               <Label className="text-sm">Estado</Label>
               <Select
-                onChange={(value) => handleStatusChange(value)}
-                value={filters.status ?? null}
+                onChange={handleStatusChange}
+                value={(filters.status as Key) ?? null}
+                placeholder="Todos los estados"
               >
                 <Select.Trigger>
                   <Select.Value />
@@ -218,34 +222,43 @@ export function ClinicalSeriesView() {
           </Card>
         ) : (
           <Card>
+            {/* HeroUI v3 Table: requires Table > Table.ScrollContainer > Table.Content hierarchy
+                Table.Content creates the React Aria collection context.
+                Use selectionMode + onSelectionChange for interactive rows (not TableRow.onPress). */}
             <Table>
-              <TableHeader>
-                <TableColumn>Paciente</TableColumn>
-                <TableColumn>Tipo</TableColumn>
-                <TableColumn>Estado</TableColumn>
-              </TableHeader>
-              <TableBody>
-                {series.map((s: ClinicalSeriesSnapshot) => (
-                  <TableRow
-                    key={s.id}
-                    className="cursor-pointer hover:bg-default-100"
-                    onPress={() => setSelectedId(s.id)}
-                  >
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium">{s.patientName || "—"}</span>
-                        <span className="text-xs text-foreground-500">{s.patientRut}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm">{KIND_LABELS[s.kind]}</TableCell>
-                    <TableCell>
-                      <Badge color={s.status === "ACTIVE" ? "success" : "default"}>
-                        {STATUS_LABELS[s.status]}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
+              <Table.ScrollContainer>
+                <Table.Content
+                  aria-label="Series clínicas"
+                  selectionMode="single"
+                  selectedKeys={selectedId !== null ? new Set([selectedId]) : new Set()}
+                  onSelectionChange={handleRowSelectionChange}
+                  className="min-w-[400px]"
+                >
+                  <Table.Header>
+                    <Table.Column isRowHeader>Paciente</Table.Column>
+                    <Table.Column>Tipo</Table.Column>
+                    <Table.Column>Estado</Table.Column>
+                  </Table.Header>
+                  <Table.Body>
+                    {series.map((s: ClinicalSeriesSnapshot) => (
+                      <Table.Row key={s.id} id={s.id} className="cursor-pointer">
+                        <Table.Cell>
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium">{s.patientName || "—"}</span>
+                            <span className="text-xs text-foreground-500">{s.patientRut}</span>
+                          </div>
+                        </Table.Cell>
+                        <Table.Cell className="text-sm">{KIND_LABELS[s.kind]}</Table.Cell>
+                        <Table.Cell>
+                          <Badge color={s.status === "ACTIVE" ? "success" : "default"}>
+                            {STATUS_LABELS[s.status]}
+                          </Badge>
+                        </Table.Cell>
+                      </Table.Row>
+                    ))}
+                  </Table.Body>
+                </Table.Content>
+              </Table.ScrollContainer>
             </Table>
           </Card>
         )}

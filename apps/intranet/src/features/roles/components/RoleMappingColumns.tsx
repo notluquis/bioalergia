@@ -12,7 +12,7 @@ export type ExtendedRoleMapping = RoleMapping & {
 
 export const getColumns = (
   availableRoles: AvailableRole[],
-  onRoleChange: (employeeRole: string, newAppRole: string) => void,
+  onRoleChange: (employeeRole: string, newAppRole: string) => void
 ): ColumnDef<ExtendedRoleMapping>[] => [
   {
     accessorKey: "employee_role",
@@ -41,8 +41,9 @@ export const getColumns = (
           <Select.Popover>
             <ListBox>
               {availableRoles.map((role) => (
-                <ListBox.Item key={role.name} textValue={role.name}>
+                <ListBox.Item key={role.name} id={role.name} textValue={role.name}>
                   {role.name}
+                  <ListBox.ItemIndicator />
                 </ListBox.Item>
               ))}
             </ListBox>
