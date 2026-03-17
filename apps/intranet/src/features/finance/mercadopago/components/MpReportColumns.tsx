@@ -86,7 +86,7 @@ export const getMpReportColumns = (
     cell: ({ row }) =>
       isReportPending(row.original.status) ? (
         <Chip className="gap-1.5" color="warning" size="sm" variant="soft">
-          <Loader2 className="h-3 w-3 " />
+          <Loader2 className="h-3 w-3 animate-spin" />
           Generando...
         </Chip>
       ) : (
@@ -114,7 +114,11 @@ export const getMpReportColumns = (
             }}
             variant="ghost"
           >
-            {downloadPending ? <Loader2 className="h-5 w-5 " /> : <Download className="h-5 w-5" />}
+            {downloadPending ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <Download className="h-5 w-5" />
+            )}
           </Button>
           <Button
             className="h-9 w-9 p-0 sm:opacity-70 sm:group-hover:opacity-100"
@@ -127,7 +131,7 @@ export const getMpReportColumns = (
             variant="ghost"
           >
             {processPending && processingFile === (report.file_name ?? null) ? (
-              <Loader2 className="h-5 w-5 text-primary" />
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
             ) : (
               <RefreshCw className="h-5 w-5" />
             )}
