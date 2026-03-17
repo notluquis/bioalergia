@@ -1,4 +1,14 @@
-import { Alert, Button, Card, Description, Modal, Skeleton, Tabs, Tooltip } from "@heroui/react";
+import {
+  Alert,
+  AlertDialog,
+  Button,
+  Card,
+  Description,
+  Modal,
+  Skeleton,
+  Tabs,
+  Tooltip,
+} from "@heroui/react";
 import {
   keepPreviousData,
   type QueryClient,
@@ -9,7 +19,7 @@ import {
 import type { ColumnDef, PaginationState, VisibilityState } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { CheckCircle2, Clock, FileText, Plus } from "lucide-react";
-import { startTransition, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { DataTable } from "@/components/data-table/DataTable";
 import { GenerateReportModal } from "@/components/mercadopago/GenerateReportModal";
@@ -33,11 +43,14 @@ type MpTab = MpReportType | "sync";
 type ToastFn = (message: string, title?: string) => void;
 
 type ReportActions = {
+  confirmingFile: null | string;
   downloadPending: boolean;
+  handleConfirmProcess: () => void;
   handleDownload: (fileName: string) => void;
   handleProcess: (fileName: string) => void;
   processPending: boolean;
   processingFile: null | string;
+  setConfirmingFile: (value: null | string) => void;
 };
 
 const resolveLastReportLabel = (reports: MPReport[]) => {
@@ -69,6 +82,7 @@ const useReportActions = ({
   showSuccess: ToastFn;
 }): ReportActions => {
   const [processingFile, setProcessingFile] = useState<null | string>(null);
+  const [confirmingFile, setConfirmingFile] = useState<null | string>(null);
 
   const downloadMutation = useMutation({
     mutationFn: (fileName: string) => MPService.downloadReport(fileName, reportType),
@@ -108,26 +122,30 @@ const useReportActions = ({
     downloadMutation.mutate(fileName);
   };
 
+  // Just opens the AlertDialog — no confirm() blocking the event loop
   const handleProcess = (fileName: string) => {
-    if (
-      confirm(
-        `¿Estás seguro de sincronizar el reporte ${fileName}? Esto podría duplicar datos si no se detecta correctamente.`
-      )
-    ) {
-      startTransition(() => {
-        setProcessingFile(fileName);
-        setLastImportStats(null);
-      });
-      processMutation.mutate(fileName);
-    }
+    setConfirmingFile(fileName);
+  };
+
+  // Called when user confirms inside AlertDialog
+  const handleConfirmProcess = () => {
+    if (!confirmingFile) return;
+    const fileName = confirmingFile;
+    setConfirmingFile(null);
+    setProcessingFile(fileName);
+    setLastImportStats(null);
+    processMutation.mutate(fileName);
   };
 
   return {
+    confirmingFile,
     downloadPending: downloadMutation.isPending,
+    handleConfirmProcess,
     handleDownload,
     handleProcess,
     processPending: processMutation.isPending,
     processingFile,
+    setConfirmingFile,
   };
 };
 
@@ -195,14 +213,22 @@ export function MercadoPagoSettingsPage() {
     syncError instanceof Error ? syncError.message : syncError ? String(syncError) : null;
   const isSyncLoading = isSyncPending && !syncResponse;
 
-  const { downloadPending, handleDownload, handleProcess, processPending, processingFile } =
-    useReportActions({
-      queryClient,
-      reportType,
-      setLastImportStats,
-      showError,
-      showSuccess,
-    });
+  const {
+    confirmingFile,
+    downloadPending,
+    handleConfirmProcess,
+    handleDownload,
+    handleProcess,
+    processPending,
+    processingFile,
+    setConfirmingFile,
+  } = useReportActions({
+    queryClient,
+    reportType,
+    setLastImportStats,
+    showError,
+    showSuccess,
+  });
 
   const columns = getMpReportColumns(
     handleDownload,
@@ -218,9 +244,7 @@ export function MercadoPagoSettingsPage() {
   const onTabChange = (key: React.Key) => {
     const next = String(key);
     if (next === "release" || next === "settlement" || next === "sync") {
-      startTransition(() => {
-        setActiveTab(next);
-      });
+      setActiveTab(next);
     }
   };
   const closeImportStatsModal = () => setLastImportStats(null);
@@ -476,6 +500,39 @@ export function MercadoPagoSettingsPage() {
           ) : null}
         </Tabs.Panel>
       </Tabs>
+
+      {/* Confirm Sync AlertDialog */}
+      <AlertDialog.Backdrop
+        isDismissable
+        isOpen={Boolean(confirmingFile)}
+        onOpenChange={(open) => {
+          if (!open) setConfirmingFile(null);
+        }}
+      >
+        <AlertDialog.Container size="sm">
+          <AlertDialog.Dialog>
+            <AlertDialog.CloseTrigger />
+            <AlertDialog.Header>
+              <AlertDialog.Icon status="warning" />
+              <AlertDialog.Heading>¿Sincronizar reporte?</AlertDialog.Heading>
+            </AlertDialog.Header>
+            <AlertDialog.Body>
+              <p>
+                El reporte <strong>{confirmingFile}</strong> será procesado. Asegúrate de no
+                procesarlo dos veces para evitar duplicados.
+              </p>
+            </AlertDialog.Body>
+            <AlertDialog.Footer>
+              <Button onPress={() => setConfirmingFile(null)} variant="tertiary">
+                Cancelar
+              </Button>
+              <Button onPress={handleConfirmProcess} variant="primary">
+                Sincronizar
+              </Button>
+            </AlertDialog.Footer>
+          </AlertDialog.Dialog>
+        </AlertDialog.Container>
+      </AlertDialog.Backdrop>
 
       {/* Import Stats Modal */}
       <Modal>
