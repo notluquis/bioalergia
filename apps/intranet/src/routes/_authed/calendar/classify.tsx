@@ -1,16 +1,9 @@
-import { Skeleton } from "@heroui/react";
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 
-import { lazy, Suspense } from "react";
 import { z } from "zod";
 
 import { calendarQueries } from "@/features/calendar/queries";
-
-const CalendarClassificationPage = lazy(() =>
-  import("@/pages/CalendarClassificationPage").then((m) => ({
-    default: m.CalendarClassificationPage,
-  }))
-);
+import { CalendarClassificationPage } from "@/pages/CalendarClassificationPage";
 
 import type { MissingFieldFilters } from "@/features/calendar/api";
 
@@ -83,18 +76,7 @@ export const Route = createFileRoute("/_authed/calendar/classify")({
   validateSearch: (search: Record<string, unknown>): ClassifySearchParams =>
     classifySearchSchema.parse(search),
   loaderDeps: ({ search }) => search,
-  component: () => (
-    <Suspense
-      fallback={
-        <div className="space-y-3 p-4">
-          <Skeleton className="h-10 w-52 rounded-lg" />
-          <Skeleton className="h-80 w-full rounded-xl" />
-        </div>
-      }
-    >
-      <CalendarClassificationPage />
-    </Suspense>
-  ),
+  component: CalendarClassificationPage,
 
   loader: async ({ context, deps: search }) => {
     const filters: MissingFieldFilters = {

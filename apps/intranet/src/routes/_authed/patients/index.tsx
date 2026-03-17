@@ -4,7 +4,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import type { ColumnDef, PaginationState } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { ArrowRight, Database, RefreshCw, Search, User, UserPlus } from "lucide-react";
-import { lazy, Suspense, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { TableRegion } from "@/components/data-table/TableRegion";
 import {
@@ -12,15 +12,10 @@ import {
   fetchPatients,
   syncPatientDteSources,
 } from "@/features/patients/api";
+import { CreatePatientModal } from "@/features/patients/components/CreatePatientModal";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { useLazyTabs } from "@/hooks/use-lazy-tabs";
 import { PAGE_CONTAINER_RELAXED } from "@/lib/styles";
-
-const CreatePatientModal = lazy(() =>
-  import("@/features/patients/components/CreatePatientModal").then((module) => ({
-    default: module.CreatePatientModal,
-  })),
-);
 
 export const Route = createFileRoute("/_authed/patients/")({
   staticData: {
@@ -135,7 +130,7 @@ function PatientsListPage() {
         ),
       },
     ],
-    [navigate],
+    [navigate]
   );
 
   const dteColumns = useMemo<ColumnDef<DtePatientSource>[]>(
@@ -174,7 +169,7 @@ function PatientsListPage() {
         },
       },
     ],
-    [],
+    []
   );
 
   return (
@@ -302,11 +297,7 @@ function PatientsListPage() {
         </Card.Content>
       </Card>
 
-      {createOpen ? (
-        <Suspense fallback={null}>
-          <CreatePatientModal isOpen={createOpen} onClose={closeCreateModal} />
-        </Suspense>
-      ) : null}
+      {createOpen ? <CreatePatientModal isOpen={createOpen} onClose={closeCreateModal} /> : null}
     </section>
   );
 }

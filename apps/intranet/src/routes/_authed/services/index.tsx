@@ -1,13 +1,7 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
-import { lazy, Suspense } from "react";
-
-const ServicesPage = lazy(() =>
-  import("@/features/services/pages/ServicesPage").then((m) => ({
-    default: m.ServicesPage,
-  })),
-);
 
 import { serviceQueries } from "@/features/services/queries";
+import { ServicesPage } from "@/features/services/pages/ServicesPage";
 
 // Services index - shows the services page with tabs (overview + agenda)
 export const Route = createFileRoute("/_authed/services/")({
@@ -22,11 +16,7 @@ export const Route = createFileRoute("/_authed/services/")({
       throw routeApi.redirect({ to: "/" });
     }
   },
-  component: () => (
-    <Suspense fallback={null}>
-      <ServicesPage />
-    </Suspense>
-  ),
+  component: ServicesPage,
   loader: async ({ context: { queryClient } }) => {
     await queryClient.ensureQueryData(serviceQueries.list(true));
   },

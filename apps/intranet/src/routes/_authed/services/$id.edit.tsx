@@ -1,11 +1,7 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
-import { lazy, Suspense } from "react";
 
 import { serviceQueries } from "@/features/services/queries";
-
-const EditServicePage = lazy(() =>
-  import("@/features/services/pages/EditServicePage").then((m) => ({ default: m.ServiceEditPage })),
-);
+import { ServiceEditPage } from "@/features/services/pages/EditServicePage";
 
 export const Route = createFileRoute("/_authed/services/$id/edit")({
   beforeLoad: ({ context }) => {
@@ -24,9 +20,5 @@ export const Route = createFileRoute("/_authed/services/$id/edit")({
       return `Editar ${service?.name || "Servicio"}`;
     },
   },
-  component: () => (
-    <Suspense fallback={null}>
-      <EditServicePage />
-    </Suspense>
-  ),
+  component: ServiceEditPage,
 });

@@ -1,17 +1,17 @@
-import { Tabs } from "@heroui/react";
+import { Spinner, Tabs } from "@heroui/react";
 import { lazy, Suspense, useState } from "react";
 import { useLazyTabs } from "@/hooks/use-lazy-tabs";
 
 const ServicesOverviewContent = lazy(() =>
   import("@/features/services/components/ServicesOverviewContent").then((module) => ({
     default: module.ServicesOverviewContent,
-  })),
+  }))
 );
 
 const ServicesAgendaContent = lazy(() =>
   import("@/features/services/components/ServicesAgendaContent").then((module) => ({
     default: module.ServicesAgendaContent,
-  })),
+  }))
 );
 
 export function ServicesPage() {
@@ -46,7 +46,14 @@ export function ServicesPage() {
 
       <Tabs.Panel className="space-y-4 pt-4" id="overview">
         {isTabMounted("overview") ? (
-          <Suspense fallback={<div className="py-2 text-default-500 text-sm">Cargando...</div>}>
+          <Suspense
+            fallback={
+              <div className="flex items-center gap-2 py-4 text-default-500 text-sm">
+                <Spinner size="sm" />
+                <span>Cargando...</span>
+              </div>
+            }
+          >
             <ServicesOverviewContent />
           </Suspense>
         ) : null}
@@ -54,7 +61,14 @@ export function ServicesPage() {
 
       <Tabs.Panel className="space-y-8 pt-4" id="agenda">
         {isTabMounted("agenda") ? (
-          <Suspense fallback={<div className="py-2 text-default-500 text-sm">Cargando...</div>}>
+          <Suspense
+            fallback={
+              <div className="flex items-center gap-2 py-4 text-default-500 text-sm">
+                <Spinner size="sm" />
+                <span>Cargando...</span>
+              </div>
+            }
+          >
             <ServicesAgendaContent />
           </Suspense>
         ) : null}

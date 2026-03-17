@@ -1,23 +1,27 @@
 /**
  * Clinical Series - List & Filter View
- * Premium UX: debounced search, server-side pagination, Drawer detail panel
+ * Premium UX: debounced search, server-side pagination, Drawer detail panel, sorting
  */
 
 import {
-  Badge,
   Button,
   Card,
   Chip,
   Drawer,
+  Input,
+  Label,
   ListBox,
   Pagination,
   Select,
+  Skeleton,
+  type SortDescriptor,
   Spinner,
   Surface,
   Table,
+  TextField,
 } from "@heroui/react";
 import type { Key, Selection } from "@heroui/react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useClinicalSeries, useClinicalSeriesDetail, useRebuildClinicalSeries } from "./queries";
 import type {
   ClinicalSeriesFilters,
@@ -83,6 +87,47 @@ function useDebounce<T>(value: T, delay = 350): T {
   return debounced;
 }
 
+// ─── Sorting helpers ──────────────────────────────────────────────────────────
+
+function getLastEventDate(s: ClinicalSeriesSnapshot): string {
+  if (s.events.length === 0) return "";
+  const sorted = [...s.events].sort((a, b) => b.eventDate.localeCompare(a.eventDate));
+  return sorted[0]?.eventDate ?? "";
+}
+
+function sortItems(
+  items: ClinicalSeriesSnapshot[],
+  descriptor: SortDescriptor
+): ClinicalSeriesSnapshot[] {
+  const { column, direction } = descriptor;
+  return [...items].sort((a, b) => {
+    let cmp = 0;
+    switch (column) {
+      case "patient": {
+        cmp = (a.patientName ?? "").localeCompare(b.patientName ?? "", "es");
+        break;
+      }
+      case "kind": {
+        cmp = KIND_LABELS[a.kind].localeCompare(KIND_LABELS[b.kind], "es");
+        break;
+      }
+      case "status": {
+        cmp = STATUS_LABELS[a.status].localeCompare(STATUS_LABELS[b.status], "es");
+        break;
+      }
+      case "lastEvent": {
+        cmp = getLastEventDate(a).localeCompare(getLastEventDate(b));
+        break;
+      }
+      case "financial": {
+        cmp = a.remainingExpected - b.remainingExpected;
+        break;
+      }
+    }
+    return direction === "descending" ? -cmp : cmp;
+  });
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function ClinicalSeriesView() {
@@ -97,6 +142,12 @@ export function ClinicalSeriesView() {
 
   const debouncedRut = useDebounce(rutRaw);
   const debouncedName = useDebounce(nameRaw);
+
+  // Sorting
+  const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({
+    column: "patient",
+    direction: "ascending",
+  });
 
   // Reset page when filters change
   useEffect(() => {
@@ -121,6 +172,11 @@ export function ClinicalSeriesView() {
   const rebuildMutation = useRebuildClinicalSeries();
 
   const totalPages = data ? Math.ceil(data.total / PAGE_SIZE) : 1;
+
+  const sortedItems = useMemo(
+    () => (data?.items ? sortItems(data.items, sortDescriptor) : []),
+    [data?.items, sortDescriptor]
+  );
 
   const handleRowSelect = (keys: Selection) => {
     if (keys === "all") return;
@@ -177,48 +233,29 @@ export function ClinicalSeriesView() {
 
       {/* ── Filters ──────────────────────────────────────────────────────── */}
       <Surface className="rounded-xl p-3">
-        <div className="flex flex-wrap gap-2 items-end">
+        <div className="flex flex-wrap gap-3 items-end">
           {/* RUT */}
-          <div className="flex flex-col gap-1 flex-1 min-w-35">
-            <label className="text-xs font-medium text-foreground-400 uppercase tracking-wide">
-              RUT
-            </label>
-            <input
-              className="h-9 rounded-lg border border-default-200 bg-default-100 px-3 text-sm text-foreground placeholder:text-foreground-400 outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all"
-              onChange={(e) => setRutRaw(e.target.value)}
-              placeholder="12345678-9"
-              type="text"
-              value={rutRaw}
-            />
-          </div>
+          <TextField className="flex-1 min-w-35" value={rutRaw} onChange={setRutRaw}>
+            <Label>RUT</Label>
+            <Input placeholder="12345678-9" />
+          </TextField>
 
           {/* Nombre */}
-          <div className="flex flex-col gap-1 flex-1 min-w-35">
-            <label className="text-xs font-medium text-foreground-400 uppercase tracking-wide">
-              Paciente
-            </label>
-            <input
-              className="h-9 rounded-lg border border-default-200 bg-default-100 px-3 text-sm text-foreground placeholder:text-foreground-400 outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all"
-              onChange={(e) => setNameRaw(e.target.value)}
-              placeholder="Nombre..."
-              type="text"
-              value={nameRaw}
-            />
-          </div>
+          <TextField className="flex-1 min-w-35" value={nameRaw} onChange={setNameRaw}>
+            <Label>Paciente</Label>
+            <Input placeholder="Nombre..." />
+          </TextField>
 
           {/* Tipo */}
           <div className="flex flex-col gap-1 min-w-40">
-            <label className="text-xs font-medium text-foreground-400 uppercase tracking-wide">
-              Tipo
-            </label>
             <Select
               onChange={handleKindChange}
               value={(kind as Key) ?? null}
-              placeholder="Todos"
-              className="h-9"
+              placeholder="Todos los tipos"
               variant="secondary"
             >
-              <Select.Trigger className="h-9">
+              <Label>Tipo</Label>
+              <Select.Trigger>
                 <Select.Value />
                 <Select.Indicator />
               </Select.Trigger>
@@ -237,16 +274,14 @@ export function ClinicalSeriesView() {
 
           {/* Estado */}
           <div className="flex flex-col gap-1 min-w-35">
-            <label className="text-xs font-medium text-foreground-400 uppercase tracking-wide">
-              Estado
-            </label>
             <Select
               onChange={handleStatusChange}
               value={(status as Key) ?? null}
-              placeholder="Todos"
+              placeholder="Todos los estados"
               variant="secondary"
             >
-              <Select.Trigger className="h-9">
+              <Label>Estado</Label>
+              <Select.Trigger>
                 <Select.Value />
                 <Select.Indicator />
               </Select.Trigger>
@@ -265,7 +300,7 @@ export function ClinicalSeriesView() {
 
           {/* Clear filters */}
           {hasFilters && (
-            <Button onPress={clearFilters} variant="ghost" size="sm" className="self-end h-9">
+            <Button onPress={clearFilters} variant="ghost" size="sm" className="self-end">
               Limpiar
             </Button>
           )}
@@ -308,18 +343,29 @@ export function ClinicalSeriesView() {
                 selectionMode="single"
                 selectedKeys={selectedId !== null ? new Set([selectedId]) : new Set()}
                 onSelectionChange={handleRowSelect}
+                sortDescriptor={sortDescriptor}
+                onSortChange={setSortDescriptor}
                 className="min-w-125"
               >
                 <Table.Header>
-                  <Table.Column isRowHeader className="w-[40%]">
+                  <Table.Column allowsSorting id="patient" isRowHeader className="w-[38%]">
                     Paciente
                   </Table.Column>
-                  <Table.Column className="w-[20%]">Tipo</Table.Column>
-                  <Table.Column className="w-[15%]">Estado</Table.Column>
-                  <Table.Column className="w-[25%] text-right">Financiero</Table.Column>
+                  <Table.Column allowsSorting id="kind" className="w-[18%]">
+                    Tipo
+                  </Table.Column>
+                  <Table.Column allowsSorting id="status" className="w-[14%]">
+                    Estado
+                  </Table.Column>
+                  <Table.Column allowsSorting id="lastEvent" className="w-[10%]">
+                    Últ. evento
+                  </Table.Column>
+                  <Table.Column allowsSorting id="financial" className="w-[20%] text-right">
+                    Financiero
+                  </Table.Column>
                 </Table.Header>
                 <Table.Body>
-                  {data.items.map((s: ClinicalSeriesSnapshot) => (
+                  {sortedItems.map((s: ClinicalSeriesSnapshot) => (
                     <Table.Row key={s.id} id={s.id} className="cursor-pointer group">
                       <Table.Cell>
                         <div className="flex flex-col">
@@ -339,9 +385,14 @@ export function ClinicalSeriesView() {
                         </Chip>
                       </Table.Cell>
                       <Table.Cell>
-                        <Badge color={STATUS_COLORS[s.status]} size="sm">
+                        <Chip size="sm" color={STATUS_COLORS[s.status]} variant="soft">
                           {STATUS_LABELS[s.status]}
-                        </Badge>
+                        </Chip>
+                      </Table.Cell>
+                      <Table.Cell>
+                        <span className="text-xs text-foreground-400">
+                          {getLastEventDate(s) || "—"}
+                        </span>
                       </Table.Cell>
                       <Table.Cell className="text-right">
                         <div className="flex flex-col items-end gap-0.5">
@@ -425,7 +476,11 @@ export function ClinicalSeriesView() {
               <Drawer.CloseTrigger />
               <Drawer.Header>
                 <Drawer.Heading>
-                  {detail?.patientName ?? (isLoadingDetail ? "Cargando..." : "Detalle")}
+                  {isLoadingDetail ? (
+                    <Skeleton className="h-5 w-32 rounded-lg" />
+                  ) : (
+                    (detail?.patientName ?? "Detalle")
+                  )}
                 </Drawer.Heading>
                 {detail?.patientRut && (
                   <p className="font-mono text-xs text-foreground-400 mt-0.5">
@@ -474,9 +529,9 @@ export function ClinicalSeriesView() {
                       <Chip size="sm" color={KIND_COLORS[detail.kind]} variant="soft">
                         {KIND_LABELS[detail.kind]}
                       </Chip>
-                      <Badge color={STATUS_COLORS[detail.status]} size="sm">
+                      <Chip size="sm" color={STATUS_COLORS[detail.status]} variant="soft">
                         {STATUS_LABELS[detail.status]}
-                      </Badge>
+                      </Chip>
                     </div>
 
                     {/* Events */}

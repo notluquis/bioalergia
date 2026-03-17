@@ -1,13 +1,8 @@
-import { Skeleton } from "@heroui/react";
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import dayjs from "dayjs";
-import { lazy, Suspense } from "react";
 
 import { type CalendarSearchParams, calendarSearchSchema } from "@/features/calendar/types";
-
-const CalendarHeatmapPage = lazy(() =>
-  import("@/pages/CalendarHeatmapPage").then((m) => ({ default: m.CalendarHeatmapPage })),
-);
+import { CalendarHeatmapPage } from "@/pages/CalendarHeatmapPage";
 
 export const Route = createFileRoute("/_authed/calendar/heatmap")({
   validateSearch: (search: Record<string, unknown>): CalendarSearchParams => {
@@ -36,16 +31,5 @@ export const Route = createFileRoute("/_authed/calendar/heatmap")({
       throw routeApi.redirect({ to: "/" });
     }
   },
-  component: () => (
-    <Suspense
-      fallback={
-        <div className="space-y-3 p-4">
-          <Skeleton className="h-10 w-52 rounded-lg" />
-          <Skeleton className="h-80 w-full rounded-xl" />
-        </div>
-      }
-    >
-      <CalendarHeatmapPage />
-    </Suspense>
-  ),
+  component: CalendarHeatmapPage,
 });

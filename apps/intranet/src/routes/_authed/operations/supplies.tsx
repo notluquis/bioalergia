@@ -1,11 +1,6 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
-import { lazy, Suspense } from "react";
 
-const SuppliesPage = lazy(() =>
-  import("@/features/operations/supplies/pages/SuppliesPage").then((m) => ({
-    default: m.Supplies,
-  })),
-);
+import { Supplies } from "@/features/operations/supplies/pages/SuppliesPage";
 
 export const Route = createFileRoute("/_authed/operations/supplies")({
   staticData: {
@@ -20,11 +15,7 @@ export const Route = createFileRoute("/_authed/operations/supplies")({
       throw routeApi.redirect({ to: "/" });
     }
   },
-  component: () => (
-    <Suspense fallback={null}>
-      <SuppliesPage />
-    </Suspense>
-  ),
+  component: Supplies,
 
   loader: async ({ context: { queryClient } }) => {
     const { supplyQueries } = await import("@/features/supplies/queries");

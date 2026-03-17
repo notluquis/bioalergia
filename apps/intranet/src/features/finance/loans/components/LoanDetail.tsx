@@ -9,6 +9,7 @@ import {
   ListBox,
   Modal,
   Select,
+  Spinner,
   TextField,
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
@@ -341,9 +342,10 @@ export function LoanDetail({
 
       {loading && (
         <div className="absolute inset-0 z-30 flex items-center justify-center bg-background/40 backdrop-blur-sm">
-          <Description className="rounded-full bg-background px-4 py-2 font-semibold text-primary text-sm shadow">
-            Cargando préstamo...
-          </Description>
+          <div className="flex items-center gap-2 rounded-full bg-background px-4 py-2 shadow">
+            <Spinner size="sm" />
+            <span className="font-semibold text-primary text-sm">Cargando préstamo...</span>
+          </div>
         </div>
       )}
     </section>

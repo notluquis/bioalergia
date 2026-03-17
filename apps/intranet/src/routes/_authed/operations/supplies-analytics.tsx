@@ -1,13 +1,7 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 
-import { lazy, Suspense } from "react";
 import { z } from "zod";
-
-const TreatmentAnalyticsPage = lazy(() =>
-  import("@/features/operations/supplies/pages/TreatmentAnalyticsPage").then((m) => ({
-    default: m.TreatmentAnalyticsPage,
-  })),
-);
+import { TreatmentAnalyticsPage } from "@/features/operations/supplies/pages/TreatmentAnalyticsPage";
 
 const MONTH_FORMAT_REGEX = /^\d{4}-\d{2}$/;
 
@@ -49,9 +43,5 @@ export const Route = createFileRoute("/_authed/operations/supplies-analytics")({
     }
   },
   validateSearch: analyticsSearchSchema,
-  component: () => (
-    <Suspense fallback={null}>
-      <TreatmentAnalyticsPage />
-    </Suspense>
-  ),
+  component: TreatmentAnalyticsPage,
 });

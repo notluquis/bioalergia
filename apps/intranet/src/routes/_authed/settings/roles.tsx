@@ -1,9 +1,6 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
-import { lazy, Suspense } from "react";
 
-const RolesSettingsPage = lazy(() =>
-  import("@/pages/settings/RolesSettingsPage").then((m) => ({ default: m.RolesSettingsPage })),
-);
+import { RolesSettingsPage } from "@/pages/settings/RolesSettingsPage";
 
 export const Route = createFileRoute("/_authed/settings/roles")({
   staticData: {
@@ -18,9 +15,5 @@ export const Route = createFileRoute("/_authed/settings/roles")({
       throw routeApi.redirect({ to: "/" });
     }
   },
-  component: () => (
-    <Suspense fallback={null}>
-      <RolesSettingsPage />
-    </Suspense>
-  ),
+  component: RolesSettingsPage,
 });

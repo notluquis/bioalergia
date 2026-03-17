@@ -1,11 +1,6 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
-import { lazy, Suspense } from "react";
 
-const DailyBalancePage = lazy(() =>
-  import("@/features/production-balances/DailyBalancePage").then((m) => ({
-    default: m.DailyBalancePage,
-  })),
-);
+import { DailyBalancePage } from "@/features/production-balances/DailyBalancePage";
 
 export const Route = createFileRoute("/_authed/finanzas/production-balances")({
   staticData: {
@@ -20,9 +15,5 @@ export const Route = createFileRoute("/_authed/finanzas/production-balances")({
       throw routeApi.redirect({ to: "/" });
     }
   },
-  component: () => (
-    <Suspense fallback={null}>
-      <DailyBalancePage />
-    </Suspense>
-  ),
+  component: DailyBalancePage,
 });

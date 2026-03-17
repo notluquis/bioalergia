@@ -1,9 +1,6 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
-import { lazy, Suspense } from "react";
 
-const Counterparts = lazy(() =>
-  import("@/pages/Counterparts").then((m) => ({ default: m.CounterpartsRoute })),
-);
+import { CounterpartsRoute } from "@/pages/Counterparts";
 
 export const Route = createFileRoute("/_authed/finanzas/counterparts")({
   validateSearch: (search: Record<string, unknown>) =>
@@ -22,9 +19,5 @@ export const Route = createFileRoute("/_authed/finanzas/counterparts")({
   },
   // Note: Skipping loader because this page uses ZenStack useFindManyCounterpart hook
   // which has its own caching mechanism via TanStack Query
-  component: () => (
-    <Suspense fallback={null}>
-      <Counterparts />
-    </Suspense>
-  ),
+  component: CounterpartsRoute,
 });

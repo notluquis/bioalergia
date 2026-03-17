@@ -1,9 +1,6 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
-import { lazy, Suspense } from "react";
 
-const CSVUploadPage = lazy(() =>
-  import("@/pages/settings/CSVUploadPage").then((m) => ({ default: m.CSVUploadPage })),
-);
+import { CSVUploadPage } from "@/pages/settings/CSVUploadPage";
 
 export const Route = createFileRoute("/_authed/settings/csv-upload")({
   staticData: {
@@ -16,9 +13,5 @@ export const Route = createFileRoute("/_authed/settings/csv-upload")({
       throw routeApi.redirect({ to: "/" });
     }
   },
-  component: () => (
-    <Suspense fallback={null}>
-      <CSVUploadPage />
-    </Suspense>
-  ),
+  component: CSVUploadPage,
 });

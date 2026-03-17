@@ -1,11 +1,6 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
-import { lazy, Suspense } from "react";
 
-const TimesheetAuditPage = lazy(() =>
-  import("@/features/hr/timesheets-audit/pages/TimesheetAuditPage").then((m) => ({
-    default: m.TimesheetAuditPage,
-  })),
-);
+import { TimesheetAuditPage } from "@/features/hr/timesheets-audit/pages/TimesheetAuditPage";
 
 export const Route = createFileRoute("/_authed/hr/audit")({
   staticData: {
@@ -18,9 +13,5 @@ export const Route = createFileRoute("/_authed/hr/audit")({
       throw routeApi.redirect({ to: "/" });
     }
   },
-  component: () => (
-    <Suspense fallback={null}>
-      <TimesheetAuditPage />
-    </Suspense>
-  ),
+  component: TimesheetAuditPage,
 });

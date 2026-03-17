@@ -1,9 +1,6 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
-import { lazy, Suspense } from "react";
 
-const BackupSettingsPage = lazy(() =>
-  import("@/pages/settings/BackupSettingsPage").then((m) => ({ default: m.BackupSettingsPage })),
-);
+import { BackupSettingsPage } from "@/pages/settings/BackupSettingsPage";
 
 export const Route = createFileRoute("/_authed/settings/backups")({
   staticData: {
@@ -18,9 +15,5 @@ export const Route = createFileRoute("/_authed/settings/backups")({
       throw routeApi.redirect({ to: "/" });
     }
   },
-  component: () => (
-    <Suspense fallback={null}>
-      <BackupSettingsPage />
-    </Suspense>
-  ),
+  component: BackupSettingsPage,
 });

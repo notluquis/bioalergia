@@ -1,11 +1,8 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import dayjs from "dayjs";
-import { lazy } from "react";
 import { z } from "zod";
 
-const DTEAnalyticsPage = lazy(() =>
-  import("@/pages/finanzas/DTEAnalyticsPage").then((m) => ({ default: m.DTEAnalyticsPage })),
-);
+import { DTEAnalyticsPage } from "@/pages/finanzas/DTEAnalyticsPage";
 
 const dteAnalyticsSearchSchema = z
   .object({

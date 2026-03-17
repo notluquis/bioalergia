@@ -37,7 +37,7 @@ const TRAILING_SLASHES_REGEX = /\/+$/;
 const TimesheetExportPDF = lazy(() =>
   import("@/features/hr/timesheets/components/TimesheetExportPDF").then((m) => ({
     default: m.TimesheetExportPDF,
-  })),
+  }))
 );
 
 interface TimesheetEditorProps {
@@ -268,11 +268,9 @@ function TimesheetHeaderActions({
       </Button>
       <Suspense
         fallback={
-          <div className="flex items-center gap-2">
-            <Button className="cursor-wait bg-primary/70" isDisabled variant="primary">
-              Cargando exportador...
-            </Button>
-          </div>
+          <Button className="cursor-wait" isDisabled isPending variant="primary">
+            Exportar PDF
+          </Button>
         }
       >
         <TimesheetExportPDF
@@ -314,7 +312,7 @@ function TimesheetEditorTable({
   onRowChange: (
     index: number,
     field: keyof Omit<BulkRow, "date" | "entryId">,
-    value: string,
+    value: string
   ) => void;
   onSalidaBlur: (index: number) => void;
   pendingCount: number;
@@ -405,7 +403,7 @@ function createHandlePrepareEmail({
 }: {
   emailHasError: boolean;
   emailMutateAsync: (
-    args: Parameters<typeof prepareTimesheetEmailPayload>[0],
+    args: Parameters<typeof prepareTimesheetEmailPayload>[0]
   ) => Promise<Awaited<ReturnType<typeof prepareTimesheetEmailPayload>>>;
   generatePdfBase64: () => Promise<null | string>;
   month: string;
@@ -458,7 +456,7 @@ async function runPrepareEmail({
   summaryRow,
 }: {
   emailMutateAsync: (
-    args: Parameters<typeof prepareTimesheetEmailPayload>[0],
+    args: Parameters<typeof prepareTimesheetEmailPayload>[0]
   ) => Promise<Awaited<ReturnType<typeof prepareTimesheetEmailPayload>>>;
   generatePdfBase64: () => Promise<null | string>;
   month: string;
@@ -559,7 +557,7 @@ async function sendLocalAgentEmail(payload: {
   } catch (error) {
     if (error instanceof TypeError) {
       throw new Error(
-        "No se pudo conectar con el agente local. Revisa URL, HTTPS/certificado y que esté corriendo.",
+        "No se pudo conectar con el agente local. Revisa URL, HTTPS/certificado y que esté corriendo."
       );
     }
     throw error;
@@ -664,7 +662,7 @@ async function readLocalAgentErrorMessage(response: Response, fallbackMessage: s
 }
 
 function createHandleRowChange(
-  setBulkRows: (rows: BulkRow[] | ((prev: BulkRow[]) => BulkRow[])) => void,
+  setBulkRows: (rows: BulkRow[] | ((prev: BulkRow[]) => BulkRow[])) => void
 ) {
   return (index: number, field: keyof Omit<BulkRow, "date" | "entryId">, value: string) => {
     setBulkRows((prev) => {
@@ -679,7 +677,7 @@ function createHandleRowChange(
 
 function createHandleResetRow(
   setBulkRows: (rows: BulkRow[] | ((prev: BulkRow[]) => BulkRow[])) => void,
-  initialRows: BulkRow[],
+  initialRows: BulkRow[]
 ) {
   return (index: number) => {
     setBulkRows((prev) => {
@@ -804,7 +802,7 @@ function createHandleRemoveEntry(deleteMutate: (entryId: number) => void) {
 
 function processBulkRow(
   row: BulkRow,
-  initial: BulkRow,
+  initial: BulkRow
 ): { entry?: TimesheetUpsertEntry; error?: string; removeId?: number } {
   if (!isRowDirty(row, initial)) {
     return {};

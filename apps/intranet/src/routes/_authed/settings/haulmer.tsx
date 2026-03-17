@@ -1,9 +1,6 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
-import { lazy, Suspense } from "react";
 
-const HaulmerSyncPage = lazy(() =>
-  import("@/pages/settings/HaulmerSyncPage").then((m) => ({ default: m.HaulmerSyncPage })),
-);
+import { HaulmerSyncPage } from "@/pages/settings/HaulmerSyncPage";
 
 export const Route = createFileRoute("/_authed/settings/haulmer")({
   staticData: {
@@ -16,9 +13,5 @@ export const Route = createFileRoute("/_authed/settings/haulmer")({
       throw routeApi.redirect({ to: "/" });
     }
   },
-  component: () => (
-    <Suspense fallback={null}>
-      <HaulmerSyncPage />
-    </Suspense>
-  ),
+  component: HaulmerSyncPage,
 });

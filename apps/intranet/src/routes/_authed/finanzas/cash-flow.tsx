@@ -1,13 +1,6 @@
-import { Skeleton } from "@heroui/react";
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { lazy, Suspense } from "react";
 
-// Lazy load the page
-const CashFlowPage = lazy(() =>
-  import("../../../features/finance/pages/CashFlowPage").then((mod) => ({
-    default: mod.CashFlowPage,
-  })),
-);
+import { CashFlowPage } from "../../../features/finance/pages/CashFlowPage";
 
 export const Route = createFileRoute("/_authed/finanzas/cash-flow")({
   staticData: {
@@ -20,17 +13,5 @@ export const Route = createFileRoute("/_authed/finanzas/cash-flow")({
       throw redirect({ to: "/" });
     }
   },
-  component: () => (
-    <Suspense
-      fallback={
-        <div className="space-y-3 p-4">
-          <Skeleton className="h-10 w-56 rounded-lg" />
-          <Skeleton className="h-40 w-full rounded-xl" />
-          <Skeleton className="h-96 w-full rounded-xl" />
-        </div>
-      }
-    >
-      <CashFlowPage />
-    </Suspense>
-  ),
+  component: CashFlowPage,
 });

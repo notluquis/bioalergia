@@ -1,12 +1,8 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
-import { lazy, Suspense } from "react";
 
 import { employeeKeys } from "@/features/hr/employees/queries";
 import { timesheetQueries } from "@/features/hr/timesheets/queries";
-
-const ReportsPage = lazy(() =>
-  import("@/features/hr/reports/pages/ReportsPage").then((m) => ({ default: m.ReportsPage })),
-);
+import { ReportsPage } from "@/features/hr/reports/pages/ReportsPage";
 
 export const Route = createFileRoute("/_authed/hr/reports")({
   staticData: {
@@ -19,11 +15,7 @@ export const Route = createFileRoute("/_authed/hr/reports")({
       throw routeApi.redirect({ to: "/" });
     }
   },
-  component: () => (
-    <Suspense fallback={null}>
-      <ReportsPage />
-    </Suspense>
-  ),
+  component: ReportsPage,
 
   loader: async ({ context: { queryClient } }) => {
     await Promise.all([

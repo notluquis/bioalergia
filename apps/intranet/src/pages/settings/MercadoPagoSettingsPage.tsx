@@ -1,4 +1,4 @@
-import { Alert, Button, Card, Description, Modal, Tabs, Tooltip } from "@heroui/react";
+import { Alert, Button, Card, Description, Modal, Skeleton, Tabs, Tooltip } from "@heroui/react";
 import {
   keepPreviousData,
   type QueryClient,
@@ -114,8 +114,10 @@ const useReportActions = ({
         `¿Estás seguro de sincronizar el reporte ${fileName}? Esto podría duplicar datos si no se detecta correctamente.`
       )
     ) {
-      setProcessingFile(fileName);
-      setLastImportStats(null);
+      startTransition(() => {
+        setProcessingFile(fileName);
+        setLastImportStats(null);
+      });
       processMutation.mutate(fileName);
     }
   };
@@ -275,7 +277,11 @@ export function MercadoPagoSettingsPage() {
                         Último Reporte
                       </Card.Description>
                       <Card.Title className="mt-2 line-clamp-1 text-lg">
-                        {isReportLoading ? "Cargando..." : resolveLastReportLabel(reports)}
+                        {isReportLoading ? (
+                          <Skeleton className="h-5 w-28 rounded-lg" />
+                        ) : (
+                          resolveLastReportLabel(reports)
+                        )}
                       </Card.Title>
                     </div>
                     <Clock className="h-5 w-5 text-primary" />
@@ -357,7 +363,11 @@ export function MercadoPagoSettingsPage() {
                         Último Reporte
                       </Card.Description>
                       <Card.Title className="mt-2 line-clamp-1 text-lg">
-                        {isReportLoading ? "Cargando..." : resolveLastReportLabel(reports)}
+                        {isReportLoading ? (
+                          <Skeleton className="h-5 w-28 rounded-lg" />
+                        ) : (
+                          resolveLastReportLabel(reports)
+                        )}
                       </Card.Title>
                     </div>
                     <Clock className="h-5 w-5 text-primary" />

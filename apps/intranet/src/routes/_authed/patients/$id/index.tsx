@@ -18,16 +18,11 @@ import {
   Trash2,
   User,
 } from "lucide-react";
-import { lazy, Suspense, useState } from "react";
+import { useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { fetchPatient } from "@/features/patients/api";
+import { NewAttachmentModal } from "@/features/patients/components/NewAttachmentModal";
 import { useLazyTabs } from "@/hooks/use-lazy-tabs";
-
-const NewAttachmentModal = lazy(() =>
-  import("@/features/patients/components/NewAttachmentModal").then((module) => ({
-    default: module.NewAttachmentModal,
-  })),
-);
 
 type Patient = Awaited<ReturnType<typeof fetchPatient>>;
 type Person = Patient["person"];
@@ -344,13 +339,11 @@ function PatientDetailsPage() {
       </div>
 
       {isAttachmentModalOpen ? (
-        <Suspense fallback={null}>
-          <NewAttachmentModal
-            isOpen={isAttachmentModalOpen}
-            onClose={() => setIsAttachmentModalOpen(false)}
-            patientId={String(patient.id)}
-          />
-        </Suspense>
+        <NewAttachmentModal
+          isOpen={isAttachmentModalOpen}
+          onClose={() => setIsAttachmentModalOpen(false)}
+          patientId={String(patient.id)}
+        />
       ) : null}
     </section>
   );
@@ -526,7 +519,7 @@ const budgetColumns: ColumnDef<Budget>[] = [
     accessorKey: "finalAmount",
     cell: ({ row }) =>
       new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP" }).format(
-        Number(row.original.finalAmount),
+        Number(row.original.finalAmount)
       ),
   },
   {
@@ -560,7 +553,7 @@ const paymentColumns: ColumnDef<PatientPayment>[] = [
     accessorKey: "amount",
     cell: ({ row }) =>
       new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP" }).format(
-        Number(row.original.amount),
+        Number(row.original.amount)
       ),
   },
   {

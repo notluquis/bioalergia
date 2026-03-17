@@ -1,4 +1,4 @@
-import { Tabs } from "@heroui/react";
+import { Spinner, Tabs } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
 import { BarChart3, TrendingUp } from "lucide-react";
@@ -33,31 +33,31 @@ function isDTETabId(value: string): value is DTETabId {
 const LazyDteMonthlySummaryPanel = lazy(() =>
   import("@/features/finance/dte-analytics/components/DteMonthlySummaryPanel").then((module) => ({
     default: module.DteMonthlySummaryPanel,
-  })),
+  }))
 );
 
 const LazyDteComparisonPanel = lazy(() =>
   import("@/features/finance/dte-analytics/components/DteComparisonPanel").then((module) => ({
     default: module.DteComparisonPanel,
-  })),
+  }))
 );
 
 const LazyDteSalesDetailsPanel = lazy(() =>
   import("@/features/finance/dte-analytics/components/DteSalesDetailsPanel").then((module) => ({
     default: module.DteSalesDetailsPanel,
-  })),
+  }))
 );
 
 const LazyDtePurchasesDetailsPanel = lazy(() =>
   import("@/features/finance/dte-analytics/components/DtePurchasesDetailsPanel").then((module) => ({
     default: module.DtePurchasesDetailsPanel,
-  })),
+  }))
 );
 
 const LazyCalendarDteLinksOverview = lazy(() =>
   import("@/features/calendar/components/CalendarDteLinksOverview").then((module) => ({
     default: module.CalendarDteLinksOverview,
-  })),
+  }))
 );
 
 const routeApi = getRouteApi("/_authed/finanzas/dte-analytics");
@@ -105,7 +105,7 @@ export function DTEAnalyticsPage() {
   // Ensure selected year is always valid
   const validatedYear = useMemo(
     () => safeYearSelection(selectedYear, yearOptions),
-    [selectedYear, yearOptions],
+    [selectedYear, yearOptions]
   );
 
   return (
@@ -165,7 +165,14 @@ export function DTEAnalyticsPage() {
 
         <Tabs.Panel className="min-h-0 flex-1 pt-2 sm:pt-4" id="purchases-monthly">
           {isTabMounted("purchases-monthly") ? (
-            <Suspense fallback={<div className="py-2 text-default-500 text-sm">Cargando...</div>}>
+            <Suspense
+              fallback={
+                <div className="flex items-center gap-2 py-4 text-default-500 text-sm">
+                  <Spinner size="sm" />
+                  <span>Cargando...</span>
+                </div>
+              }
+            >
               <LazyDteMonthlySummaryPanel
                 kind="purchases"
                 selectedYear={validatedYear}
@@ -178,7 +185,14 @@ export function DTEAnalyticsPage() {
 
         <Tabs.Panel className="min-h-0 flex-1 pt-2 sm:pt-4" id="sales-monthly">
           {isTabMounted("sales-monthly") ? (
-            <Suspense fallback={<div className="py-2 text-default-500 text-sm">Cargando...</div>}>
+            <Suspense
+              fallback={
+                <div className="flex items-center gap-2 py-4 text-default-500 text-sm">
+                  <Spinner size="sm" />
+                  <span>Cargando...</span>
+                </div>
+              }
+            >
               <LazyDteMonthlySummaryPanel
                 kind="sales"
                 selectedYear={validatedYear}
@@ -191,7 +205,14 @@ export function DTEAnalyticsPage() {
 
         <Tabs.Panel className="min-h-0 flex-1 pt-2 sm:pt-4" id="purchases-comparison">
           {isTabMounted("purchases-comparison") ? (
-            <Suspense fallback={<div className="py-2 text-default-500 text-sm">Cargando...</div>}>
+            <Suspense
+              fallback={
+                <div className="flex items-center gap-2 py-4 text-default-500 text-sm">
+                  <Spinner size="sm" />
+                  <span>Cargando...</span>
+                </div>
+              }
+            >
               <LazyDteComparisonPanel kind="purchases" />
             </Suspense>
           ) : null}
@@ -199,7 +220,14 @@ export function DTEAnalyticsPage() {
 
         <Tabs.Panel className="min-h-0 flex-1 pt-2 sm:pt-4" id="purchases-details">
           {isTabMounted("purchases-details") ? (
-            <Suspense fallback={<div className="py-2 text-default-500 text-sm">Cargando...</div>}>
+            <Suspense
+              fallback={
+                <div className="flex items-center gap-2 py-4 text-default-500 text-sm">
+                  <Spinner size="sm" />
+                  <span>Cargando...</span>
+                </div>
+              }
+            >
               <LazyDtePurchasesDetailsPanel />
             </Suspense>
           ) : null}
@@ -207,7 +235,14 @@ export function DTEAnalyticsPage() {
 
         <Tabs.Panel className="min-h-0 flex-1 pt-2 sm:pt-4" id="sales-details">
           {isTabMounted("sales-details") ? (
-            <Suspense fallback={<div className="py-2 text-default-500 text-sm">Cargando...</div>}>
+            <Suspense
+              fallback={
+                <div className="flex items-center gap-2 py-4 text-default-500 text-sm">
+                  <Spinner size="sm" />
+                  <span>Cargando...</span>
+                </div>
+              }
+            >
               <LazyDteSalesDetailsPanel />
             </Suspense>
           ) : null}
@@ -215,7 +250,14 @@ export function DTEAnalyticsPage() {
 
         <Tabs.Panel className="min-h-0 flex-1 pt-2 sm:pt-4" id="sales-comparison">
           {isTabMounted("sales-comparison") ? (
-            <Suspense fallback={<div className="py-2 text-default-500 text-sm">Cargando...</div>}>
+            <Suspense
+              fallback={
+                <div className="flex items-center gap-2 py-4 text-default-500 text-sm">
+                  <Spinner size="sm" />
+                  <span>Cargando...</span>
+                </div>
+              }
+            >
               <LazyDteComparisonPanel kind="sales" />
             </Suspense>
           ) : null}
@@ -223,7 +265,14 @@ export function DTEAnalyticsPage() {
 
         <Tabs.Panel className="min-h-0 flex-1 pt-2 sm:pt-4" id="event-links">
           {isTabMounted("event-links") ? (
-            <Suspense fallback={<div className="py-2 text-default-500 text-sm">Cargando...</div>}>
+            <Suspense
+              fallback={
+                <div className="flex items-center gap-2 py-4 text-default-500 text-sm">
+                  <Spinner size="sm" />
+                  <span>Cargando...</span>
+                </div>
+              }
+            >
               <LazyCalendarDteLinksOverview
                 search={{
                   page: search.page ?? 0,

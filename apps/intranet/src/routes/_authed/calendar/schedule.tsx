@@ -1,13 +1,8 @@
-import { Skeleton } from "@heroui/react";
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
-import { lazy, Suspense } from "react";
 
 import { calendarQueries } from "@/features/calendar/queries";
 import { computeDefaultFilters, getScheduleDefaultRange } from "@/features/calendar/utils/filters";
-
-const CalendarSchedulePage = lazy(() =>
-  import("@/pages/CalendarSchedulePage").then((m) => ({ default: m.CalendarSchedulePage })),
-);
+import { CalendarSchedulePage } from "@/pages/CalendarSchedulePage";
 
 import {
   type CalendarFilters,
@@ -41,18 +36,7 @@ export const Route = createFileRoute("/_authed/calendar/schedule")({
     }
     return parsed;
   },
-  component: () => (
-    <Suspense
-      fallback={
-        <div className="space-y-3 p-4">
-          <Skeleton className="h-10 w-52 rounded-lg" />
-          <Skeleton className="h-80 w-full rounded-xl" />
-        </div>
-      }
-    >
-      <CalendarSchedulePage />
-    </Suspense>
-  ),
+  component: CalendarSchedulePage,
 
   loaderDeps: ({ search }) => search,
   loader: async ({ context, deps: search }) => {

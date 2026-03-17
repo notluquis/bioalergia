@@ -1,9 +1,6 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
-import { lazy, Suspense } from "react";
 
-const PayoutsPage = lazy(() =>
-  import("@/features/payouts/PayoutsPage").then((m) => ({ default: m.PayoutsPage })),
-);
+import { PayoutsPage } from "@/features/payouts/PayoutsPage";
 
 export const Route = createFileRoute("/_authed/finanzas/payouts")({
   staticData: {
@@ -20,11 +17,7 @@ export const Route = createFileRoute("/_authed/finanzas/payouts")({
       throw routeApi.redirect({ to: "/" });
     }
   },
-  component: () => (
-    <Suspense fallback={null}>
-      <PayoutsPage />
-    </Suspense>
-  ),
+  component: PayoutsPage,
 
   loader: async ({ context: { queryClient } }) => {
     const { payoutKeys } = await import("@/features/payouts/queries");

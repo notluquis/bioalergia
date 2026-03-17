@@ -1,19 +1,12 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
-import { lazy, Suspense } from "react";
 
-const OnboardingWizard = lazy(() =>
-  import("@/pages/onboarding/OnboardingWizard").then((m) => ({ default: m.OnboardingWizard })),
-);
+import { OnboardingWizard } from "@/pages/onboarding/OnboardingWizard";
 
 const routeApi = getRouteApi("/onboarding");
 
 // Onboarding page - accessible to authenticated users pending setup
 export const Route = createFileRoute("/onboarding")({
-  component: () => (
-    <Suspense fallback={null}>
-      <OnboardingWizard />
-    </Suspense>
-  ),
+  component: OnboardingWizard,
 
   beforeLoad: async ({ context }) => {
     // 1. Ensure user is logged in

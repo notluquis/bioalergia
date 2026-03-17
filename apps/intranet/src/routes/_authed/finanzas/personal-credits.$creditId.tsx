@@ -1,13 +1,7 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
-import { lazy, Suspense } from "react";
 
 import { personalFinanceQueries } from "@/features/personal-finance/queries";
-
-const PersonalCreditDetailsPage = lazy(() =>
-  import("@/features/personal-finance/pages/PersonalCreditDetailsPage").then((m) => ({
-    default: m.PersonalCreditDetailsPageWrapper,
-  })),
-);
+import { PersonalCreditDetailsPageWrapper } from "@/features/personal-finance/pages/PersonalCreditDetailsPage";
 
 export const Route = createFileRoute("/_authed/finanzas/personal-credits/$creditId")({
   staticData: {
@@ -26,11 +20,7 @@ export const Route = createFileRoute("/_authed/finanzas/personal-credits/$credit
       throw new Error("Unauthorized");
     }
   },
-  component: () => (
-    <Suspense fallback={null}>
-      <PersonalCreditDetailsPage />
-    </Suspense>
-  ),
+  component: PersonalCreditDetailsPageWrapper,
 
   loader: async ({ context: { queryClient }, params }) => {
     const creditId = Number(params.creditId);

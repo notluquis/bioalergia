@@ -1,11 +1,6 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
-import { lazy, Suspense } from "react";
 
-const InventorySettingsPage = lazy(() =>
-  import("@/pages/settings/InventorySettingsPage").then((m) => ({
-    default: m.InventorySettingsPage,
-  })),
-);
+import { InventorySettingsPage } from "@/pages/settings/InventorySettingsPage";
 
 export const Route = createFileRoute("/_authed/settings/inventario")({
   staticData: {
@@ -18,9 +13,5 @@ export const Route = createFileRoute("/_authed/settings/inventario")({
       throw routeApi.redirect({ to: "/" });
     }
   },
-  component: () => (
-    <Suspense fallback={null}>
-      <InventorySettingsPage />
-    </Suspense>
-  ),
+  component: InventorySettingsPage,
 });

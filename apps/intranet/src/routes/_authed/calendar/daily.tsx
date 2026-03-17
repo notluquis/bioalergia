@@ -1,13 +1,8 @@
-import { Skeleton } from "@heroui/react";
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
-import { lazy, Suspense } from "react";
 
 import { calendarQueries } from "@/features/calendar/queries";
 import { computeDefaultFilters } from "@/features/calendar/utils/filters";
-
-const CalendarDailyPage = lazy(() =>
-  import("@/pages/CalendarDailyPage").then((m) => ({ default: m.CalendarDailyPage })),
-);
+import { CalendarDailyPage } from "@/pages/CalendarDailyPage";
 
 import {
   type CalendarFilters,
@@ -32,18 +27,7 @@ export const Route = createFileRoute("/_authed/calendar/daily")({
   validateSearch: (search: Record<string, unknown>): CalendarSearchParams =>
     calendarSearchSchema.parse(search),
   loaderDeps: ({ search }) => search,
-  component: () => (
-    <Suspense
-      fallback={
-        <div className="space-y-3">
-          <Skeleton className="h-10 w-52 rounded-lg" />
-          <Skeleton className="h-80 w-full rounded-xl" />
-        </div>
-      }
-    >
-      <CalendarDailyPage />
-    </Suspense>
-  ),
+  component: CalendarDailyPage,
 
   loader: async ({ context, deps: search }) => {
     const defaults = computeDefaultFilters({});

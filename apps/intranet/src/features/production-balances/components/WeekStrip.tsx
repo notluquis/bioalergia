@@ -1,4 +1,4 @@
-import { Button } from "@heroui/react";
+import { Button, Skeleton } from "@heroui/react";
 import dayjs from "dayjs";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useMemo } from "react";
@@ -37,7 +37,11 @@ export function WeekStrip({
   if (isCollapsed) {
     return (
       <div className="mb-4 flex items-center justify-between rounded-2xl border border-default-100 bg-default-50/30 px-4 py-2">
-        <span className="text-default-500 text-sm">{weekData?.weekLabel ?? "Cargando..."}</span>
+        {weekData?.weekLabel ? (
+          <span className="text-default-500 text-sm">{weekData.weekLabel}</span>
+        ) : (
+          <Skeleton className="h-4 w-24 rounded-lg" />
+        )}
         <div className="flex items-center gap-2">
           <Button isIconOnly size="sm" variant="ghost" onPress={onPrevWeek}>
             <ChevronLeft className="size-4" />
@@ -119,7 +123,7 @@ function DayCellButton({
         "relative h-19! min-w-0 flex-col items-center justify-center rounded-xl p-2 ",
         "hover:bg-default-50",
         isSelected && "bg-primary/10 ring-1 ring-primary/60",
-        isToday && !isSelected && "ring-1 ring-primary/30",
+        isToday && !isSelected && "ring-1 ring-primary/30"
       )}
       fullWidth
       onPress={onPress}
@@ -144,7 +148,7 @@ function DayCellButton({
               : "text-default-300"
             : isSelected
               ? "text-primary"
-              : "text-foreground",
+              : "text-foreground"
         )}
       >
         {day.total === 0 ? "$0" : fmtCLP(day.total)}
