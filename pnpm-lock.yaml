@@ -145,6 +145,9 @@ importers:
       hono-rate-limiter:
         specifier: ^0.5.3
         version: 0.5.3(hono@4.12.8)
+      imapflow:
+        specifier: 1.2.15
+        version: 1.2.15
       isomorphic-dompurify:
         specifier: 3.3.0
         version: 3.3.0(@noble/hashes@2.0.1)

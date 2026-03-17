@@ -179,6 +179,11 @@
       "types": "./dist/users.d.ts",
       "import": "./dist/users.js",
       "default": "./dist/users.js"
+    },
+    "./whatsapp": {
+      "types": "./dist/whatsapp.d.ts",
+      "import": "./dist/whatsapp.js",
+      "default": "./dist/whatsapp.js"
     }
   },
   "scripts": {

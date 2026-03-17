@@ -61,6 +61,8 @@ import {
   transactionsInsightsORPCHandler,
 } from "./orpc/transactions-insights";
 import { usersOpenAPIHandler, usersORPCHandler } from "./orpc/users";
+import { whatsappOpenAPIHandler, whatsappORPCHandler } from "./orpc/whatsapp";
+import { whatsappWebhookRoutes } from "./routes/whatsapp";
 // REST compatibility endpoints kept intentionally
 import { loanScheduleRoutes } from "./routes/loan-schedules";
 import { loanRoutes } from "./routes/loans";
@@ -1463,6 +1465,34 @@ app.use("/api/orpc/transactions-insights/*", async (c, next) => {
 
   await next();
 });
+
+app.use("/api/orpc/whatsapp/rpc/*", async (c, next) => {
+  const { matched, response } = await whatsappORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/whatsapp/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
+app.use("/api/orpc/whatsapp/*", async (c, next) => {
+  const { matched, response } = await whatsappOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
+// WhatsApp webhook (Meta platform)
+app.route("/api/webhooks/whatsapp", whatsappWebhookRoutes);
 
 // Share Target (PWA)
 app.route("/api/share-target", shareTargetRoutes);

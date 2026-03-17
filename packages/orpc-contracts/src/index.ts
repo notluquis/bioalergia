@@ -53,3 +53,12 @@ export * from "./system";
 export * from "./timesheets";
 export * from "./transactions-insights";
 export * from "./users";
+export {
+  whatsappContract,
+  whatsappNotificationSchema,
+  whatsappNotificationStatusSchema,
+  whatsappStatsSchema,
+  listWhatsappNotificationsResponseSchema,
+  whatsappStatusResponseSchema,
+  type WhatsappContract,
+} from "./whatsapp";

@@ -4317,6 +4317,96 @@ export class SchemaType implements SchemaDef {
                 period_rut_docType: { period: { type: "String" }, rut: { type: "String" }, docType: { type: "String" } }
             }
         },
+        WhatsappNotification: {
+            name: "WhatsappNotification",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    default: ExpressionUtils.call("cuid")
+                },
+                patientName: {
+                    name: "patientName",
+                    type: "String"
+                },
+                patientPhone: {
+                    name: "patientPhone",
+                    type: "String"
+                },
+                patientEmail: {
+                    name: "patientEmail",
+                    type: "String",
+                    optional: true
+                },
+                appointmentDate: {
+                    name: "appointmentDate",
+                    type: "DateTime",
+                    optional: true
+                },
+                appointmentService: {
+                    name: "appointmentService",
+                    type: "String",
+                    optional: true
+                },
+                appointmentDoctor: {
+                    name: "appointmentDoctor",
+                    type: "String",
+                    optional: true
+                },
+                emailMessageId: {
+                    name: "emailMessageId",
+                    type: "String",
+                    unique: true
+                },
+                waMessageId: {
+                    name: "waMessageId",
+                    type: "String",
+                    optional: true
+                },
+                status: {
+                    name: "status",
+                    type: "WhatsappNotificationStatus",
+                    default: "PENDING"
+                },
+                errorMessage: {
+                    name: "errorMessage",
+                    type: "String",
+                    optional: true
+                },
+                sentAt: {
+                    name: "sentAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                deliveredAt: {
+                    name: "deliveredAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                readAt: {
+                    name: "readAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now")
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" },
+                emailMessageId: { type: "String" }
+            }
+        },
         PersonalCredit: {
             name: "PersonalCredit",
             fields: {
@@ -6064,6 +6154,16 @@ export class SchemaType implements SchemaDef {
         }
     } as const;
     enums = {
+        WhatsappNotificationStatus: {
+            name: "WhatsappNotificationStatus",
+            values: {
+                PENDING: "PENDING",
+                SENT: "SENT",
+                FAILED: "FAILED",
+                DELIVERED: "DELIVERED",
+                READ: "READ"
+            }
+        },
         PersonType: {
             name: "PersonType",
             values: {

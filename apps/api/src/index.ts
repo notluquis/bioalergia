@@ -6,6 +6,7 @@ import { startDTESyncScheduler } from "./lib/dte/dte-sync-cron";
 import { startGoogleCalendarScheduler } from "./lib/google/google-calendar-scheduler";
 import { scheduleWatchChannelSetup } from "./lib/google/google-calendar-watch";
 import { startMercadoPagoScheduler } from "./lib/mercadopago/mercadopago-scheduler";
+import { startWhatsappScheduler } from "./lib/whatsapp/whatsapp-scheduler";
 
 const port = Number(process.env.PORT) || 3000;
 console.log(`🚀 Finanzas API starting on port ${port}`);
@@ -28,6 +29,10 @@ if (process.env.NODE_ENV === "production" || process.env.ENABLE_DTE_AUTO_SYNC ==
 
 if (process.env.ENABLE_DOCTORALIA_CALENDAR_SYNC === "true") {
   startDoctoraliaCalendarScheduler();
+}
+
+if (process.env.ENABLE_WHATSAPP_NOTIFICATIONS === "true") {
+  startWhatsappScheduler();
 }
 
 serve({ fetch: app.fetch, port });

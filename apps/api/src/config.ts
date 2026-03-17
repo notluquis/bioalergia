@@ -138,3 +138,51 @@ if (googleCalendarEnvMissing.length > 0) {
     `[config] Google Calendar sync deshabilitado. Variables faltantes: ${googleCalendarEnvMissing.join(", ")}`,
   );
 }
+
+// WhatsApp Config
+export interface WhatsappConfig {
+  accessToken: string;
+  phoneNumberId: string;
+  templateName: string;
+  templateLanguage: string;
+  webhookVerifyToken: string | null;
+  appSecret: string | null;
+  pollCron: string;
+  imapHost: string | null;
+  imapPort: number;
+  imapUser: string | null;
+  imapPass: string | null;
+  imapMailbox: string;
+  senderFilter: string;
+}
+
+const whatsappMissing: string[] = [];
+const waAccessToken = process.env.WHATSAPP_ACCESS_TOKEN;
+if (!waAccessToken) whatsappMissing.push("WHATSAPP_ACCESS_TOKEN");
+const waPhoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+if (!waPhoneNumberId) whatsappMissing.push("WHATSAPP_PHONE_NUMBER_ID");
+
+export const whatsappConfig: WhatsappConfig | null =
+  waAccessToken && waPhoneNumberId
+    ? {
+        accessToken: waAccessToken,
+        appSecret: process.env.WHATSAPP_APP_SECRET ?? null,
+        imapHost: process.env.DOCTORALIA_IMAP_HOST ?? null,
+        imapMailbox: process.env.DOCTORALIA_IMAP_MAILBOX ?? "INBOX",
+        imapPass: process.env.DOCTORALIA_IMAP_PASS ?? null,
+        imapPort: parseInt(process.env.DOCTORALIA_IMAP_PORT ?? "993", 10),
+        imapUser: process.env.DOCTORALIA_IMAP_USER ?? null,
+        phoneNumberId: waPhoneNumberId,
+        pollCron: process.env.WHATSAPP_POLL_CRON ?? "*/2 * * * *",
+        senderFilter: process.env.DOCTORALIA_EMAIL_SENDER_FILTER ?? "doctoralia.com",
+        templateLanguage: process.env.WHATSAPP_TEMPLATE_LANGUAGE ?? "en_US",
+        templateName: process.env.WHATSAPP_TEMPLATE_NAME ?? "hello_world",
+        webhookVerifyToken: process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN ?? null,
+      }
+    : null;
+
+if (whatsappMissing.length > 0) {
+  console.warn(
+    `[config] WhatsApp deshabilitado. Variables faltantes: ${whatsappMissing.join(", ")}`,
+  );
+}

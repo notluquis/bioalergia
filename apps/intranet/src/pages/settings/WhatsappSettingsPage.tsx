@@ -72,9 +72,7 @@ const columns: ColumnDef<WaNotification>[] = [
   {
     accessorKey: "appointmentService",
     cell: ({ row }) => (
-      <span className="max-w-[200px] truncate text-sm">
-        {row.original.appointmentService ?? "—"}
-      </span>
+      <span className="max-w-50 truncate text-sm">{row.original.appointmentService ?? "—"}</span>
     ),
     header: "Servicio",
   },
