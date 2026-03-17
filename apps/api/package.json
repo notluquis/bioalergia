@@ -4,8 +4,8 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "esbuild src/index.ts --bundle --platform=node --target=esnext --format=esm --outfile=dist/index.js --packages=external --sourcemap",
-    "start": "tsx dist/index.js",
+    "build": "tsc --noEmit",
+    "start": "node --strip-types src/index.ts",
     "google:auth": "tsx src/scripts/google-auth.ts",
     "doctoralia:diagnose-login": "tsx src/scripts/diagnose-doctoralia-login.ts",
     "type-check": "oxlint --type-aware --type-check",
@@ -73,7 +73,6 @@
     "@types/qs": "^6.15.0",
     "@types/web-push": "^3.6.4",
     "dotenv": "^17.3.1",
-    "esbuild": "^0.27.4",
     "typescript": "^5.9.3",
     "vitest": "^4.1.0"
   }
