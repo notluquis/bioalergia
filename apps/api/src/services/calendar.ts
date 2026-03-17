@@ -159,8 +159,8 @@ export async function finalizeCalendarSyncLogEntry(
           syncLogId: id,
           message: entry.message,
           severity: entry.severity ?? "info",
-          attributes: (entry.attributes ?? undefined) as any,
-          tags: (entry.tags ?? undefined) as any,
+          attributes: (entry.attributes ?? undefined) as never,
+          tags: (entry.tags ?? undefined) as never,
           timestamp: entry.timestamp ?? new Date(),
         })),
       });

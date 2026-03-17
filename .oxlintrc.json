@@ -86,11 +86,5 @@
         "oxc/prefer-barrel": "off"
       }
     },
-    {
-      "files": ["apps/api/**", "packages/**"],
-      "rules": {
-        "typescript/no-explicit-any": "off"
-      }
-    }
   ]
 }
