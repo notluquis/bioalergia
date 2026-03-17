@@ -1,7 +1,7 @@
-import { Button, Chip } from "@heroui/react";
+import { Button, Chip, Spinner } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
-import { Download, Loader2, RefreshCw } from "lucide-react";
+import { Download, RefreshCw } from "lucide-react";
 import type { MPReport } from "@/services/mercadopago";
 
 const REPORT_PENDING_REGEX = /processing|pending|in_progress|waiting|generating|queued|creating/i;
@@ -86,7 +86,7 @@ export const getMpReportColumns = (
     cell: ({ row }) =>
       isReportPending(row.original.status) ? (
         <Chip className="gap-1.5" color="warning" size="sm" variant="soft">
-          <Loader2 className="h-3 w-3 animate-spin" />
+          <Spinner color="current" size="sm" />
           Generando...
         </Chip>
       ) : (
@@ -102,11 +102,14 @@ export const getMpReportColumns = (
     cell: ({ row }) => {
       const report = row.original;
       const pending = isReportPending(report.status);
+      const isProcessingThis = processPending && processingFile === (report.file_name ?? null);
       return (
         <div className="flex justify-end gap-1 text-right">
           <Button
             className="h-9 w-9 p-0 sm:opacity-70 sm:group-hover:opacity-100"
             isDisabled={downloadPending || pending || !report.file_name}
+            isIconOnly
+            isPending={downloadPending}
             onPress={() => {
               if (report.file_name) {
                 handleDownload(report.file_name);
@@ -114,15 +117,15 @@ export const getMpReportColumns = (
             }}
             variant="ghost"
           >
-            {downloadPending ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <Download className="h-5 w-5" />
-            )}
+            {({ isPending }) =>
+              isPending ? <Spinner color="current" size="sm" /> : <Download className="h-5 w-5" />
+            }
           </Button>
           <Button
             className="h-9 w-9 p-0 sm:opacity-70 sm:group-hover:opacity-100"
             isDisabled={processPending || pending || !report.file_name}
+            isIconOnly
+            isPending={isProcessingThis}
             onPress={() => {
               if (report.file_name) {
                 handleProcess(report.file_name);
@@ -130,11 +133,9 @@ export const getMpReportColumns = (
             }}
             variant="ghost"
           >
-            {processPending && processingFile === (report.file_name ?? null) ? (
-              <Loader2 className="h-5 w-5 animate-spin text-primary" />
-            ) : (
-              <RefreshCw className="h-5 w-5" />
-            )}
+            {({ isPending }) =>
+              isPending ? <Spinner color="current" size="sm" /> : <RefreshCw className="h-5 w-5" />
+            }
           </Button>
         </div>
       );
