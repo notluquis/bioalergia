@@ -65,11 +65,18 @@ export interface ClinicalSeriesListItem {
 
 export interface ClinicalSeriesFilters {
   kind?: ClinicalSeriesKind;
-  status?: ClinicalSeriesStatus;
+  page?: number;
+  pageSize?: number;
   patientName?: string;
   patientRut?: string;
-  dateFrom?: string;
-  dateTo?: string;
+  status?: ClinicalSeriesStatus;
+}
+
+export interface ClinicalSeriesListResult {
+  items: ClinicalSeriesSnapshot[];
+  page: number;
+  pageSize: number;
+  total: number;
 }
 
 export interface RebuildSeriesParams {

@@ -3,6 +3,7 @@ import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import {
   clinicalSeriesDetailInputSchema,
   clinicalSeriesListInputSchema,
+  clinicalSeriesListOutputSchema,
   clinicalSeriesRebuildInputSchema,
   clinicalSeriesRebuildResponseSchema,
   clinicalSeriesSnapshotSchema,
@@ -69,7 +70,7 @@ const clinicalSeriesORPCRouterBase = {
   list: readClinicalSeries
     .route({ method: "GET", path: "/" })
     .input(clinicalSeriesListInputSchema)
-    .output(z.array(clinicalSeriesSnapshotSchema))
+    .output(clinicalSeriesListOutputSchema)
     .handler(async ({ input }: { input: z.input<typeof clinicalSeriesListInputSchema> }) => {
       return await listClinicalSeriesSnapshots(input);
     }),

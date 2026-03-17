@@ -83,9 +83,9 @@ export interface ClinicalSeriesSnapshot {
 }
 
 type ClinicalSeriesFilters = {
-  dateFrom?: string;
-  dateTo?: string;
   kind?: ClinicalSeriesKind;
+  page?: number;
+  pageSize?: number;
   patientName?: string;
   patientRut?: string;
   status?: "ACTIVE" | "CANCELLED" | "COMPLETED";
@@ -625,6 +625,9 @@ export async function getClinicalSeriesSnapshotById(id: number): Promise<Clinica
 }
 
 export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilters) {
+  const page = Math.max(1, filters?.page ?? 1);
+  const pageSize = Math.min(100, Math.max(1, filters?.pageSize ?? 20));
+
   const baseWhere = {
     kind: filters?.kind,
     status: filters?.status,
@@ -636,28 +639,21 @@ export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilter
     patientRut: filters?.patientRut ? normalizeRut(filters.patientRut) : undefined,
   };
 
+  // Count total matching records (without pagination)
+  const total = await db.clinicalSeries.count({ where: baseWhere });
+
+  // Fetch only requested page of IDs
   const series = await db.clinicalSeries.findMany({
     where: baseWhere,
     orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
     select: { id: true },
+    skip: (page - 1) * pageSize,
+    take: pageSize,
   });
 
-  const snapshots = (
+  const items = (
     await Promise.all(series.map((item) => getClinicalSeriesSnapshotById(item.id)))
   ).filter((item): item is ClinicalSeriesSnapshot => item != null);
 
-  return snapshots.filter((snapshot) => {
-    const firstDate = snapshot.events[0]?.eventDate ?? null;
-    const lastDate = snapshot.events[snapshot.events.length - 1]?.eventDate ?? firstDate;
-
-    if (filters?.dateFrom && lastDate && lastDate < filters.dateFrom) {
-      return false;
-    }
-
-    if (filters?.dateTo && firstDate && firstDate > filters.dateTo) {
-      return false;
-    }
-
-    return true;
-  });
+  return { items, page, pageSize, total };
 }

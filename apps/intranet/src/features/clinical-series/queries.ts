@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { compactORPCInput } from "@/lib/orpc-input";
 import type {
   ClinicalSeriesFilters,
+  ClinicalSeriesListResult,
   ClinicalSeriesSnapshot,
   RebuildSeriesParams,
   RebuildSeriesResult,
@@ -24,15 +25,21 @@ export const clinicalSeriesKeys = {
 };
 
 /**
- * Fetch all clinical series with optional filtering
+ * Fetch paginated clinical series with optional filtering
  */
 export async function fetchClinicalSeries(
   filters?: ClinicalSeriesFilters
-): Promise<ClinicalSeriesSnapshot[]> {
+): Promise<ClinicalSeriesListResult> {
   try {
-    return ClinicalSeriesSnapshotSchema.array().parse(
-      await clinicalSeriesORPCClient.list(compactORPCInput(filters) ?? {})
-    );
+    const result = (await clinicalSeriesORPCClient.list(
+      compactORPCInput(filters) ?? {}
+    )) as unknown as ClinicalSeriesListResult;
+    return {
+      items: ClinicalSeriesSnapshotSchema.array().parse(result.items),
+      page: result.page,
+      pageSize: result.pageSize,
+      total: result.total,
+    };
   } catch (error) {
     throw toClinicalSeriesApiError(error);
   }
@@ -65,7 +72,7 @@ export async function rebuildClinicalSeries(
 }
 
 /**
- * Hook: Fetch all clinical series
+ * Hook: Fetch paginated clinical series
  */
 export function useClinicalSeries(filters?: ClinicalSeriesFilters) {
   return useQuery({

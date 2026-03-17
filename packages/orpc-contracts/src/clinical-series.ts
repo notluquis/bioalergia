@@ -49,12 +49,19 @@ export const clinicalSeriesSnapshotSchema = z.object({
 });
 
 export const clinicalSeriesListInputSchema = z.object({
-  dateFrom: z.string().optional(),
-  dateTo: z.string().optional(),
   kind: clinicalSeriesKindSchema.optional(),
+  page: z.number().int().positive().default(1),
+  pageSize: z.number().int().positive().max(100).default(20),
   patientName: z.string().optional(),
   patientRut: z.string().optional(),
   status: clinicalSeriesStatusSchema.optional(),
+});
+
+export const clinicalSeriesListOutputSchema = z.object({
+  items: z.array(clinicalSeriesSnapshotSchema),
+  page: z.number(),
+  pageSize: z.number(),
+  total: z.number(),
 });
 
 export const clinicalSeriesDetailInputSchema = z.object({
@@ -80,7 +87,7 @@ export const clinicalSeriesContract = {
   list: oc
     .route({ method: "GET", path: "/" })
     .input(clinicalSeriesListInputSchema)
-    .output(z.array(clinicalSeriesSnapshotSchema)),
+    .output(clinicalSeriesListOutputSchema),
   rebuild: oc
     .route({ method: "POST", path: "/rebuild" })
     .input(clinicalSeriesRebuildInputSchema)
