@@ -1,4 +1,4 @@
-import type { RawRuleOf } from "@casl/ability";
+import type { AnyAbility, RawRuleOf } from "@casl/ability";
 import { db } from "@finanzas/db";
 import {
   authEmptySchema,
@@ -261,7 +261,7 @@ const authORPCRouterBase = {
       setCookie(context.hono, COOKIE_NAME, token, COOKIE_OPTIONS);
 
       const { getAbilityRulesForUser } = await import("../services/authz.js");
-      const abilityRules = (await getAbilityRulesForUser(user.id)) as RawRuleOf<unknown>[];
+      const abilityRules = (await getAbilityRulesForUser(user.id)) as RawRuleOf<AnyAbility>[];
 
       return {
         abilityRules,
@@ -315,7 +315,7 @@ const authORPCRouterBase = {
       setCookie(context.hono, COOKIE_NAME, token, COOKIE_OPTIONS);
 
       const { getAbilityRulesForUser } = await import("../services/authz.js");
-      const abilityRules = (await getAbilityRulesForUser(user.id)) as RawRuleOf<unknown>[];
+      const abilityRules = (await getAbilityRulesForUser(user.id)) as RawRuleOf<AnyAbility>[];
 
       return {
         abilityRules,
@@ -373,7 +373,7 @@ const authORPCRouterBase = {
         }
 
         const { getAbilityRulesForUser } = await import("../services/authz.js");
-        const abilityRules = (await getAbilityRulesForUser(user.id)) as RawRuleOf<unknown>[];
+        const abilityRules = (await getAbilityRulesForUser(user.id)) as RawRuleOf<AnyAbility>[];
         const notificationEmail = user.person?.email ?? "";
         const loginEmail = await getEffectiveLoginEmailByUserId(user.id, notificationEmail);
 
@@ -588,7 +588,7 @@ const authORPCRouterBase = {
       setCookie(context.hono, COOKIE_NAME, token, COOKIE_OPTIONS);
 
       const { getAbilityRulesForUser } = await import("../services/authz.js");
-      const abilityRules = (await getAbilityRulesForUser(user.id)) as RawRuleOf<unknown>[];
+      const abilityRules = (await getAbilityRulesForUser(user.id)) as RawRuleOf<AnyAbility>[];
 
       return {
         abilityRules,
