@@ -81,4 +81,4 @@ WORKDIR /app/apps/api
 
 EXPOSE 3000
 
-CMD ["node", "--experimental-transform-types", "src/index.ts"]
+CMD ["node", "--import", "tsx", "src/index.ts"]
