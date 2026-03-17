@@ -1,22 +1,5 @@
-import { Loader2 } from "lucide-react";
-import { lazy, Suspense } from "react";
+import { CounterpartsPage } from "@/features/counterparts/pages/CounterpartsPage";
 
-// Lazy load the feature page
-const CounterpartsPage = lazy(() =>
-  import("@/features/counterparts/pages/CounterpartsPage").then((m) => ({
-    default: m.CounterpartsPage,
-  })),
-);
 export function CounterpartsRoute() {
-  return (
-    <Suspense
-      fallback={
-        <div className="flex h-[50vh] w-full items-center justify-center">
-          <Loader2 className="h-8 w-8 text-primary" />
-        </div>
-      }
-    >
-      <CounterpartsPage />
-    </Suspense>
-  );
+  return <CounterpartsPage />;
 }

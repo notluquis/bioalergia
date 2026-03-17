@@ -1,7 +1,7 @@
 import { Label, ListBox, Select, Skeleton } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { Suspense, useState } from "react";
+import { startTransition, Suspense, useState } from "react";
 
 import { useAuth } from "@/context/AuthContext";
 import { employeeKeys } from "@/features/hr/employees/queries";
@@ -81,7 +81,9 @@ export function TimesheetsPage() {
               value={selectedEmployeeId ? String(selectedEmployeeId) : null}
               onChange={(key) => {
                 const value = key ? Number(key) : null;
-                setSelectedEmployeeId(value);
+                startTransition(() => {
+                  setSelectedEmployeeId(value);
+                });
               }}
             >
               <Label>Prestador</Label>
@@ -106,7 +108,9 @@ export function TimesheetsPage() {
               value={month}
               onChange={(key) => {
                 if (key) {
-                  setMonth(key.toString());
+                  startTransition(() => {
+                    setMonth(key.toString());
+                  });
                 }
               }}
             >

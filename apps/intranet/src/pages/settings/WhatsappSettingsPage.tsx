@@ -1,4 +1,5 @@
-import { Alert, Button, Card, Skeleton, Tabs } from "@heroui/react";
+import type React from "react";
+import { Alert, Button, Card, Chip, Input, Skeleton, Tabs, TextField } from "@heroui/react";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef, PaginationState } from "@tanstack/react-table";
 import dayjs from "dayjs";
@@ -33,21 +34,20 @@ const STATUS_LABELS: Record<WaNotification["status"], string> = {
   SENT: "Enviado",
 };
 
-const STATUS_CLASSES: Record<WaNotification["status"], string> = {
-  DELIVERED: "bg-blue-100 text-blue-800",
-  FAILED: "bg-red-100 text-red-800",
-  PENDING: "bg-yellow-100 text-yellow-800",
-  READ: "bg-green-100 text-green-800",
-  SENT: "bg-teal-100 text-teal-800",
-};
+const STATUS_COLORS: Record<WaNotification["status"], React.ComponentProps<typeof Chip>["color"]> =
+  {
+    DELIVERED: "accent",
+    FAILED: "danger",
+    PENDING: "warning",
+    READ: "success",
+    SENT: "default",
+  };
 
 function StatusBadge({ status }: { status: WaNotification["status"] }) {
   return (
-    <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_CLASSES[status]}`}
-    >
+    <Chip color={STATUS_COLORS[status]} size="sm" variant="soft">
       {STATUS_LABELS[status]}
-    </span>
+    </Chip>
   );
 }
 
@@ -248,13 +248,14 @@ export function WhatsappSettingsPage() {
                   Envía el template de WhatsApp configurado al número indicado.
                 </p>
                 <div className="flex gap-2">
-                  <input
-                    className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                    onChange={(e) => setTestPhone(e.target.value)}
-                    placeholder="+56912345678"
-                    type="tel"
-                    value={testPhone}
-                  />
+                  <TextField className="flex-1">
+                    <Input
+                      onChange={(e) => setTestPhone(e.target.value)}
+                      placeholder="+56912345678"
+                      type="tel"
+                      value={testPhone}
+                    />
+                  </TextField>
                   <Button
                     isDisabled={testMutation.isPending || !testPhone.trim()}
                     isPending={testMutation.isPending}

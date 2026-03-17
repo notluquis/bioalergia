@@ -25,7 +25,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { X } from "lucide-react";
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { lazy, startTransition, Suspense, useEffect, useMemo, useState } from "react";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { z } from "zod";
 import { fetchCounterparts } from "@/features/counterparts/api";
@@ -1728,8 +1728,10 @@ export function CashFlowPage() {
         selectedKey={activeTab}
         onSelectionChange={(key) => {
           const nextTab = key as CashFlowTab;
-          setActiveTab(nextTab);
-          markTabAsMounted(nextTab);
+          startTransition(() => {
+            setActiveTab(nextTab);
+            markTabAsMounted(nextTab);
+          });
         }}
         variant="secondary"
       >

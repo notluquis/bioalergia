@@ -1,5 +1,5 @@
 import { Spinner, Tabs } from "@heroui/react";
-import { lazy, Suspense, useState } from "react";
+import { lazy, startTransition, Suspense, useState } from "react";
 import { useLazyTabs } from "@/hooks/use-lazy-tabs";
 
 const ServicesOverviewContent = lazy(() =>
@@ -23,8 +23,10 @@ export function ServicesPage() {
       aria-label="Secciones de servicios"
       onSelectionChange={(key) => {
         const nextTab = String(key) as "overview" | "agenda";
-        setSelectedTab(nextTab);
-        markTabAsMounted(nextTab);
+        startTransition(() => {
+          setSelectedTab(nextTab);
+          markTabAsMounted(nextTab);
+        });
       }}
       selectedKey={selectedTab}
     >

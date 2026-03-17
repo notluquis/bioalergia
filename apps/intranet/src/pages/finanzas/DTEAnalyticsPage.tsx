@@ -2,7 +2,7 @@ import { Spinner, Tabs } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
 import { BarChart3, TrendingUp } from "lucide-react";
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { lazy, startTransition, Suspense, useEffect, useMemo, useState } from "react";
 import { dteAnalyticsKeys } from "@/features/finance/dte-analytics/queries";
 import { extractYearsFromSummary, safeYearSelection } from "@/features/finance/dte-analytics/utils";
 import { useLazyTabs } from "@/hooks/use-lazy-tabs";
@@ -119,11 +119,13 @@ export function DTEAnalyticsPage() {
           const nextTab: DTETabId = isDTETabId(nextTabCandidate)
             ? nextTabCandidate
             : "purchases-monthly";
-          void navigate({
-            search: (prev) => ({
-              ...prev,
-              tab: nextTab,
-            }),
+          startTransition(() => {
+            void navigate({
+              search: (prev) => ({
+                ...prev,
+                tab: nextTab,
+              }),
+            });
           });
         }}
       >
