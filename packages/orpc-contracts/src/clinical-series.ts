@@ -8,6 +8,8 @@ export const clinicalSeriesEventSchema = z.object({
   amountExpected: z.number().nullable(),
   amountPaid: z.number().nullable(),
   calendarGoogleId: z.string(),
+  dosageUnit: z.string().nullable(),
+  dosageValue: z.number().nullable(),
   eventDate: z.string(),
   eventId: z.number(),
   externalEventId: z.string(),

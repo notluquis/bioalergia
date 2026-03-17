@@ -42,6 +42,8 @@ type ClinicalSeriesEventSnapshot = {
   amountExpected: null | number;
   amountPaid: null | number;
   calendarGoogleId: string;
+  dosageUnit: null | string;
+  dosageValue: null | number;
   eventDate: string;
   eventId: number;
   externalEventId: string;
@@ -496,6 +498,8 @@ export async function getClinicalSeriesSnapshotByExternalEvent(params: {
     },
   });
 
+  // note: dosageValue and dosageUnit are included via the ORM (no extra selection needed)
+
   if (!series) {
     return null;
   }
@@ -521,6 +525,8 @@ export async function getClinicalSeriesSnapshotByExternalEvent(params: {
     amountExpected: item.amountExpected,
     amountPaid: item.amountPaid,
     calendarGoogleId: item.calendar.googleId,
+    dosageUnit: item.dosageUnit ?? null,
+    dosageValue: item.dosageValue ?? null,
     eventDate: dayjs(item.startDate ?? item.startDateTime ?? item.endDate ?? item.endDateTime)
       .tz(TIMEZONE)
       .format("YYYY-MM-DD"),
@@ -585,6 +591,7 @@ export async function getClinicalSeriesSnapshotById(id: number): Promise<Clinica
       },
     },
   });
+  // dosageValue and dosageUnit are fetched as part of standard event fields via ORM
 
   if (!series) {
     return null;
