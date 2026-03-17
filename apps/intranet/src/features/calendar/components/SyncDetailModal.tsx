@@ -1,5 +1,4 @@
-import { Modal } from "@heroui/react";
-import { AlertTriangle, CheckCircle, XCircle } from "lucide-react";
+import { Alert, Modal } from "@heroui/react";
 import type { CalendarSyncLog } from "@/features/calendar/types";
 import { numberFormatter } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -39,47 +38,37 @@ export function SyncDetailModal({ isOpen, log, onClose }: Readonly<SyncDetailMod
             <Modal.Body className="mt-2 max-h-[80vh] overflow-y-auto overscroll-contain text-foreground">
               <div className="space-y-6">
                 {/* Status Banner */}
-                <div
-                  className={cn(
-                    "flex items-center gap-3 rounded-lg p-3 font-medium text-sm",
-                    (() => {
-                      if (log.status === "SUCCESS") {
-                        return "bg-success/10 text-success";
-                      }
-                      if (log.status === "ERROR") {
-                        return "bg-danger/10 text-danger";
-                      }
-                      return "bg-warning/10 text-warning";
-                    })(),
-                  )}
+                <Alert
+                  status={
+                    log.status === "SUCCESS"
+                      ? "success"
+                      : log.status === "ERROR"
+                        ? "danger"
+                        : "warning"
+                  }
                 >
-                  {(() => {
-                    if (log.status === "SUCCESS") {
-                      return <CheckCircle size={18} />;
-                    }
-                    if (log.status === "ERROR") {
-                      return <XCircle size={18} />;
-                    }
-                    return <AlertTriangle size={18} />;
-                  })()}
-                  <span>
-                    {(() => {
-                      if (log.status === "SUCCESS") {
-                        return "Sincronización completada exitosamente";
-                      }
-                      if (log.status === "ERROR") {
-                        return "Error durante la sincronización";
-                      }
-                      return "Sincronización en curso";
-                    })()}
-                  </span>
-                </div>
+                  <Alert.Indicator />
+                  <Alert.Content>
+                    <Alert.Description>
+                      {log.status === "SUCCESS"
+                        ? "Sincronización completada exitosamente"
+                        : log.status === "ERROR"
+                          ? "Error durante la sincronización"
+                          : "Sincronización en curso"}
+                    </Alert.Description>
+                  </Alert.Content>
+                </Alert>
 
                 {log.errorMessage && (
-                  <div className="rounded-lg border border-danger-soft-hover bg-danger/5 p-3 text-danger text-sm">
-                    <p className="font-semibold">Error reportado:</p>
-                    <p className="mt-1 font-mono text-xs opacity-90">{log.errorMessage}</p>
-                  </div>
+                  <Alert status="danger">
+                    <Alert.Indicator />
+                    <Alert.Content>
+                      <Alert.Title>Error reportado:</Alert.Title>
+                      <Alert.Description className="font-mono text-xs opacity-90">
+                        {log.errorMessage}
+                      </Alert.Description>
+                    </Alert.Content>
+                  </Alert>
                 )}
 
                 {/* Stats Grid */}

@@ -1,4 +1,4 @@
-import { Button, Description, Modal } from "@heroui/react";
+import { Button, Description, Modal, Tooltip } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
@@ -74,7 +74,7 @@ export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDte
 
   const candidates = useMemo(
     () => suggestionsQuery.data?.suggestions ?? [],
-    [suggestionsQuery.data],
+    [suggestionsQuery.data]
   );
   const series = suggestionsQuery.data?.series ?? null;
 
@@ -95,9 +95,12 @@ export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDte
         minSize: 220,
         size: 260,
         cell: ({ row }) => (
-          <span className="block max-w-72 truncate" title={row.original.clientName}>
-            {row.original.clientName}
-          </span>
+          <Tooltip>
+            <Tooltip.Trigger>
+              <span className="block max-w-72 truncate">{row.original.clientName}</span>
+            </Tooltip.Trigger>
+            <Tooltip.Content>{row.original.clientName}</Tooltip.Content>
+          </Tooltip>
         ),
       },
       {
@@ -139,7 +142,7 @@ export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDte
         ),
       },
     ],
-    [confirmMutation.isPending, confirmMutation.mutate],
+    [confirmMutation.isPending, confirmMutation.mutate]
   );
 
   return (

@@ -1,5 +1,5 @@
-import { Button, ProgressBar, Tooltip } from "@heroui/react";
-import { ArrowDownToLine, RefreshCw, Settings } from "lucide-react";
+import { Button, Chip, ProgressBar, Tooltip } from "@heroui/react";
+import { ArrowDownToLine, Clipboard, RefreshCw, Settings } from "lucide-react";
 import type { ReclassifyJob } from "../types";
 
 interface ClassificationToolbarProps {
@@ -44,20 +44,7 @@ export function ClassificationToolbar({
         type="button"
         variant="ghost"
       >
-        <svg
-          aria-hidden="true"
-          className={`h-4 w-4 ${loading ? "" : ""}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-          />
-        </svg>
+        <RefreshCw className="h-4 w-4" />
         <span className="hidden sm:inline">{loading ? "Cargando..." : "Actualizar"}</span>
       </Button>
 
@@ -84,38 +71,12 @@ export function ClassificationToolbar({
         <span className="relative z-10 flex items-center gap-2">
           {isJobRunning ? (
             <>
-              <svg
-                aria-hidden="true"
-                className="h-4 w-4 "
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                />
-              </svg>
+              <RefreshCw className="h-4 w-4" />
               <span className="tabular-nums">{progress}%</span>
             </>
           ) : (
             <>
-              <svg
-                aria-hidden="true"
-                className="h-4 w-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                />
-              </svg>
+              <Clipboard className="h-4 w-4" />
               Reclasificar pendientes
             </>
           )}
@@ -124,12 +85,12 @@ export function ClassificationToolbar({
 
       {/* Progress info pill */}
       {isJobRunning && job && (
-        <div className="flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1.5">
-          <span className="font-medium text-primary/80 text-xs">{job.message}</span>
-          <span className="font-bold text-primary text-xs tabular-nums">
+        <Chip color="accent" size="sm" variant="soft">
+          <Chip.Label>{job.message}</Chip.Label>
+          <span className="font-bold tabular-nums">
             {job.progress.toLocaleString("es-CL")}/{job.total.toLocaleString("es-CL")}
           </span>
-        </div>
+        </Chip>
       )}
 
       <Tooltip>
@@ -142,7 +103,7 @@ export function ClassificationToolbar({
             size="sm"
             variant="ghost"
           >
-            <RefreshCw className={isJobRunning ? "h-4 w-4 " : "h-4 w-4"} />
+            <RefreshCw className="h-4 w-4" />
           </Button>
         </Tooltip.Trigger>
         <Tooltip.Content
