@@ -46,9 +46,8 @@ export function DataTablePagination<TData>({
             <Select
               aria-label="Filas por página"
               className="w-24"
-              selectedKey={String(currentPageSize)}
-              onSelectionChange={(key) => {
-                if (!key) return;
+              value={String(currentPageSize)}
+              onChange={(key) => {
                 const nextSize = Number(key);
                 if (!Number.isNaN(nextSize)) {
                   table.setPageSize(nextSize);

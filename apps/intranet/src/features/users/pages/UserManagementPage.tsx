@@ -362,12 +362,11 @@ export function UserManagementPage() {
             <Select
               aria-label="Filtrar por rol"
               className="w-full"
-              selectedKey={roleFilter || undefined}
-              onSelectionChange={(key) => {
-                const val = key?.toString();
-                if (val) {
-                  setRoleFilter(val);
-                } else setRoleFilter("");
+              value={roleFilter}
+              onChange={(key) => {
+                if (key) {
+                  setRoleFilter(key.toString());
+                }
               }}
             >
               <Label>Filtrar por rol</Label>
@@ -629,12 +628,11 @@ function EditRoleModalContent({
                     aria-label="Rol asignado"
                     className="w-full"
                     placeholder="Seleccionar rol"
-                    selectedKey={selectedRole || undefined}
-                    onSelectionChange={(key) => {
-                      const val = key?.toString();
-                      if (val) {
-                        setSelectedRole(val);
-                      } else setSelectedRole("");
+                    value={selectedRole}
+                    onChange={(key) => {
+                      if (key) {
+                        setSelectedRole(key.toString());
+                      }
                     }}
                   >
                     <Label>Rol asignado</Label>
