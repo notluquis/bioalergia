@@ -9,7 +9,7 @@ import {
 import type { ColumnDef, PaginationState, VisibilityState } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { CheckCircle2, Clock, FileText, Plus } from "lucide-react";
-import { useMemo, useState } from "react";
+import { startTransition, useMemo, useState } from "react";
 
 import { DataTable } from "@/components/data-table/DataTable";
 import { GenerateReportModal } from "@/components/mercadopago/GenerateReportModal";
@@ -216,7 +216,9 @@ export function MercadoPagoSettingsPage() {
   const onTabChange = (key: React.Key) => {
     const next = String(key);
     if (next === "release" || next === "settlement" || next === "sync") {
-      setActiveTab(next);
+      startTransition(() => {
+        setActiveTab(next);
+      });
     }
   };
   const closeImportStatsModal = () => setLastImportStats(null);
