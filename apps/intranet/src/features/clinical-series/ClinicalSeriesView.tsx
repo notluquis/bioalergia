@@ -4,6 +4,7 @@
  */
 
 import {
+  Alert,
   Button,
   Card,
   Chip,
@@ -25,6 +26,7 @@ import type { Key, Selection } from "@heroui/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useClinicalSeries, useClinicalSeriesDetail, useRebuildClinicalSeries } from "./queries";
 import type {
+  ClinicalSeriesEvent,
   ClinicalSeriesFilters,
   ClinicalSeriesKind,
   ClinicalSeriesSnapshot,
@@ -105,6 +107,25 @@ function formatEventDate(dateStr: string, showYear = false): string {
     month: "short",
     ...(showYear && { year: "numeric" }),
   });
+}
+
+// ─── Financial helpers ────────────────────────────────────────────────────────
+// "unknown"  → parser found no amount (null)   → "Por definir"
+// "free"     → amount is explicitly 0           → "Sin costo"
+// "paid"     → amount > 0                       → show monetary value
+
+type FinancialStatus = "free" | "paid" | "unknown";
+
+function seriesFinancialStatus(events: ClinicalSeriesEvent[]): FinancialStatus {
+  if (events.some((e) => e.amountExpected != null && e.amountExpected > 0)) return "paid";
+  if (events.some((e) => e.amountExpected === 0)) return "free";
+  return "unknown";
+}
+
+function eventFinancialStatus(event: ClinicalSeriesEvent): FinancialStatus {
+  if (event.amountExpected == null) return "unknown";
+  if (event.amountExpected === 0) return "free";
+  return "paid";
 }
 
 // ─── Derived snapshot ─────────────────────────────────────────────────────────
@@ -360,11 +381,14 @@ export function ClinicalSeriesView() {
 
       {/* ── Error ──────────────────────────────────────────────────────────── */}
       {error && (
-        <Card className="p-4 bg-danger-50 border border-danger-200">
-          <p className="text-sm text-danger">
-            {error instanceof Error ? error.message : "Error al cargar los datos"}
-          </p>
-        </Card>
+        <Alert status="danger">
+          <Alert.Indicator />
+          <Alert.Content>
+            <Alert.Description>
+              {error instanceof Error ? error.message : "Error al cargar los datos"}
+            </Alert.Description>
+          </Alert.Content>
+        </Alert>
       )}
 
       {/* ── Table ──────────────────────────────────────────────────────────── */}
@@ -479,17 +503,26 @@ export function ClinicalSeriesView() {
                       </Table.Cell>
                       <Table.Cell className="text-right">
                         <div className="flex flex-col items-end gap-0.5">
-                          {s.totalExpected === 0 && s.totalPaid === 0 ? (
-                            <span className="text-xs text-foreground-300 italic">Por definir</span>
-                          ) : (
-                            <span className="text-xs text-foreground-400">
-                              ${s.totalPaid.toLocaleString("es-CL")} /
-                              <span className="text-foreground-500">
-                                {" "}
-                                ${s.totalExpected.toLocaleString("es-CL")}
+                          {(() => {
+                            const fs = seriesFinancialStatus(s.events);
+                            if (fs === "unknown")
+                              return (
+                                <span className="text-xs text-foreground-300 italic">
+                                  Por definir
+                                </span>
+                              );
+                            if (fs === "free")
+                              return <span className="text-xs text-success italic">Sin costo</span>;
+                            return (
+                              <span className="text-xs text-foreground-400">
+                                ${s.totalPaid.toLocaleString("es-CL")} /
+                                <span className="text-foreground-500">
+                                  {" "}
+                                  ${s.totalExpected.toLocaleString("es-CL")}
+                                </span>
                               </span>
-                            </span>
-                          )}
+                            );
+                          })()}
                           {s.remainingExpected > 0 && (
                             <span className="text-xs text-danger font-medium">
                               −${s.remainingExpected.toLocaleString("es-CL")} pend.
@@ -613,13 +646,21 @@ export function ClinicalSeriesView() {
                   <div className="space-y-4">
                     {/* Financial summary */}
                     {(() => {
-                      const noFinancial = detail.totalExpected === 0 && detail.totalPaid === 0;
+                      const fs = seriesFinancialStatus(detail.events);
+                      const unknownEl = (
+                        <p className="text-sm text-foreground-300 italic">Por definir</p>
+                      );
+                      const freeEl = (
+                        <p className="text-sm text-success italic font-medium">Sin costo</p>
+                      );
                       return (
                         <div className="grid grid-cols-2 gap-2">
                           <Surface className="p-3 rounded-xl">
                             <p className="text-xs text-foreground-400 mb-1">Esperado</p>
-                            {noFinancial ? (
-                              <p className="text-sm text-foreground-300 italic">Por definir</p>
+                            {fs === "unknown" ? (
+                              unknownEl
+                            ) : fs === "free" ? (
+                              freeEl
                             ) : (
                               <p className="font-semibold text-accent text-lg">
                                 ${detail.totalExpected.toLocaleString("es-CL")}
@@ -628,8 +669,10 @@ export function ClinicalSeriesView() {
                           </Surface>
                           <Surface className="p-3 rounded-xl">
                             <p className="text-xs text-foreground-400 mb-1">Pagado</p>
-                            {noFinancial ? (
-                              <p className="text-sm text-foreground-300 italic">Por definir</p>
+                            {fs === "unknown" ? (
+                              unknownEl
+                            ) : fs === "free" ? (
+                              freeEl
                             ) : (
                               <p className="font-semibold text-success text-lg">
                                 ${detail.totalPaid.toLocaleString("es-CL")}
@@ -638,8 +681,10 @@ export function ClinicalSeriesView() {
                           </Surface>
                           <Surface className="p-3 rounded-xl">
                             <p className="text-xs text-foreground-400 mb-1">Pendiente</p>
-                            {noFinancial ? (
-                              <p className="text-sm text-foreground-300 italic">Por definir</p>
+                            {fs === "unknown" ? (
+                              unknownEl
+                            ) : fs === "free" ? (
+                              freeEl
                             ) : (
                               <p
                                 className={`font-semibold text-lg ${detail.remainingExpected > 0 ? "text-danger" : "text-foreground"}`}
@@ -730,16 +775,27 @@ export function ClinicalSeriesView() {
                                             {event.dosageValue} {event.dosageUnit}
                                           </p>
                                         )}
-                                        {event.amountExpected != null ? (
-                                          <p className="text-foreground-400 mt-0.5">
-                                            ${(event.amountPaid ?? 0).toLocaleString("es-CL")} / $
-                                            {event.amountExpected.toLocaleString("es-CL")}
-                                          </p>
-                                        ) : (
-                                          <p className="text-foreground-300 italic mt-0.5">
-                                            Por definir
-                                          </p>
-                                        )}
+                                        {(() => {
+                                          const efs = eventFinancialStatus(event);
+                                          if (efs === "unknown")
+                                            return (
+                                              <p className="text-foreground-300 italic mt-0.5">
+                                                Por definir
+                                              </p>
+                                            );
+                                          if (efs === "free")
+                                            return (
+                                              <p className="text-success italic mt-0.5 font-medium">
+                                                Sin costo
+                                              </p>
+                                            );
+                                          return (
+                                            <p className="text-foreground-400 mt-0.5">
+                                              ${(event.amountPaid ?? 0).toLocaleString("es-CL")} / $
+                                              {event.amountExpected!.toLocaleString("es-CL")}
+                                            </p>
+                                          );
+                                        })()}
                                       </Surface>
                                     );
                                   })}
