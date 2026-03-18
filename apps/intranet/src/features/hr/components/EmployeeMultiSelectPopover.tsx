@@ -49,7 +49,7 @@ export function EmployeeMultiSelectPopover({
       return undefined;
     }
     return new Set(
-      options.filter((opt) => !selectedIds.includes(opt.id)).map((opt) => String(opt.id)),
+      options.filter((opt) => !selectedIds.includes(opt.id)).map((opt) => String(opt.id))
     );
   }, [maxSelected, options, selectedIds]);
 
@@ -79,16 +79,12 @@ export function EmployeeMultiSelectPopover({
         placement="bottom"
       >
         <Popover.Dialog className="space-y-2 p-3">
-          <TextField className="w-full">
+          <TextField className="w-full" value={search} onChange={(v) => setSearch(v)}>
             <InputGroup>
               <InputGroup.Prefix className="text-default-400">
                 <Search className="h-4 w-4" />
               </InputGroup.Prefix>
-              <InputGroup.Input
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder={placeholder}
-                value={search}
-              />
+              <InputGroup.Input placeholder={placeholder} />
             </InputGroup>
           </TextField>
 

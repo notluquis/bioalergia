@@ -130,8 +130,7 @@ export function EmployeeForm({ employee, onCancel, onSave }: EmployeeFormProps) 
     setRutError(null);
   }, [employee]);
 
-  const handleRutChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value;
+  const handleRutChange = (value: string) => {
     setForm((prev) => ({ ...prev, rut: value }));
     if (rutError) {
       setRutError(null);
@@ -155,8 +154,7 @@ export function EmployeeForm({ employee, onCancel, onSave }: EmployeeFormProps) 
     if (Array.isArray(details)) {
       const issues = details
         .map(
-          (i: { message: string; path: (number | string)[] }) =>
-            `${i.path.join(".")}: ${i.message}`,
+          (i: { message: string; path: (number | string)[] }) => `${i.path.join(".")}: ${i.message}`
         )
         .join("\n");
       message = `Datos inválidos:\n${issues}`;
@@ -256,7 +254,7 @@ function EmployeeFormContent({
     salaryType: string;
   };
   handleRutBlur: () => void;
-  handleRutChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  handleRutChange: (value: string) => void;
   isEditing: boolean;
   isMutating: boolean;
   onCancel: () => void;
@@ -311,89 +309,80 @@ function EmployeeFormContent({
             </Select.Popover>
           </Select>
         </div>
-        <TextField isRequired type="text">
+        <TextField
+          isRequired
+          type="text"
+          value={form.names}
+          onChange={(v) => setForm((prev) => ({ ...prev, names: v }))}
+        >
           <Label>Nombres</Label>
-          <Input
-            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-              setForm((prev) => ({ ...prev, names: event.target.value }));
-            }}
-            value={form.names}
-          />
+          <Input />
         </TextField>
 
-        <TextField type="text">
+        <TextField
+          type="text"
+          value={form.firstLastName}
+          onChange={(v) => setForm((prev) => ({ ...prev, firstLastName: v }))}
+        >
           <Label>Primer apellido</Label>
-          <Input
-            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-              setForm((prev) => ({ ...prev, firstLastName: event.target.value }));
-            }}
-            value={form.firstLastName}
-          />
+          <Input />
         </TextField>
 
-        <TextField type="text">
+        <TextField
+          type="text"
+          value={form.secondLastName}
+          onChange={(v) => setForm((prev) => ({ ...prev, secondLastName: v }))}
+        >
           <Label>Segundo apellido</Label>
-          <Input
-            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-              setForm((prev) => ({ ...prev, secondLastName: event.target.value }));
-            }}
-            value={form.secondLastName}
-          />
+          <Input />
         </TextField>
 
-        <TextField isRequired type="text">
+        <TextField
+          isRequired
+          type="text"
+          value={form.role}
+          onChange={(v) => setForm((prev) => ({ ...prev, role: v }))}
+        >
           <Label>Cargo</Label>
-          <Input
-            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-              setForm((prev) => ({ ...prev, role: event.target.value }));
-            }}
-            value={form.role}
-          />
+          <Input />
         </TextField>
 
-        <TextField type="email">
+        <TextField
+          type="email"
+          value={form.email}
+          onChange={(v) => setForm((prev) => ({ ...prev, email: v }))}
+        >
           <Label>Correo</Label>
-          <Input
-            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-              setForm((prev) => ({ ...prev, email: event.target.value }));
-            }}
-            placeholder="correo@bioalergia.cl"
-            value={form.email}
-          />
+          <Input placeholder="correo@bioalergia.cl" />
         </TextField>
 
-        <TextField isInvalid={Boolean(rutError)} type="text">
+        <TextField
+          isInvalid={Boolean(rutError)}
+          type="text"
+          value={form.rut}
+          onChange={handleRutChange}
+        >
           <Label>RUT</Label>
-          <Input
-            onBlur={handleRutBlur}
-            onChange={handleRutChange}
-            placeholder="12.345.678-9"
-            value={form.rut}
-          />
+          <Input onBlur={handleRutBlur} placeholder="12.345.678-9" />
           {rutError ? <FieldError>{rutError}</FieldError> : null}
         </TextField>
 
-        <TextField type="text">
+        <TextField
+          type="text"
+          value={form.bankName}
+          onChange={(v) => setForm((prev) => ({ ...prev, bankName: v }))}
+        >
           <Label>Banco</Label>
-          <Input
-            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-              setForm((prev) => ({ ...prev, bankName: event.target.value }));
-            }}
-            placeholder="BancoEstado"
-            value={form.bankName}
-          />
+          <Input placeholder="BancoEstado" />
         </TextField>
 
-        <TextField type="text">
+        <TextField
+          type="text"
+          value={form.bankAccountType}
+          onChange={(v) => setForm((prev) => ({ ...prev, bankAccountType: v }))}
+        >
           <Label>Tipo de cuenta</Label>
-          <Input
-            list="bank-account-type-options"
-            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-              setForm((prev) => ({ ...prev, bankAccountType: event.target.value }));
-            }}
-            placeholder="RUT / VISTA / CORRIENTE / AHORRO"
-            value={form.bankAccountType}
-          />
+          <Input list="bank-account-type-options" placeholder="RUT / VISTA / CORRIENTE / AHORRO" />
         </TextField>
 
         <datalist id="bank-account-type-options">
@@ -402,70 +391,58 @@ function EmployeeFormContent({
           <option value="CORRIENTE" />
           <option value="AHORRO" />
         </datalist>
-        <TextField type="text">
+        <TextField
+          type="text"
+          value={form.bankAccountNumber}
+          onChange={(v) => setForm((prev) => ({ ...prev, bankAccountNumber: v }))}
+        >
           <Label>N° de cuenta</Label>
-          <Input
-            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-              setForm((prev) => ({ ...prev, bankAccountNumber: event.target.value }));
-            }}
-            placeholder="12345678"
-            value={form.bankAccountNumber}
-          />
+          <Input placeholder="12345678" />
         </TextField>
 
         <TextField
           isDisabled={form.salaryType !== "HOURLY"}
           isRequired={form.salaryType === "HOURLY"}
           type="number"
+          value={form.hourlyRate}
+          onChange={(v) => setForm((prev) => ({ ...prev, hourlyRate: v }))}
         >
           <Label>Valor hora (CLP)</Label>
-          <Input
-            min="0"
-            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-              setForm((prev) => ({ ...prev, hourlyRate: event.target.value }));
-            }}
-            placeholder="$ 0"
-            value={form.hourlyRate}
-          />
+          <Input min="0" placeholder="$ 0" />
         </TextField>
 
         {form.salaryType === "FIXED" && (
-          <TextField isRequired type="text">
+          <TextField
+            isRequired
+            type="text"
+            value={formatCLP(form.fixedSalary)}
+            onChange={(v) => setForm((prev) => ({ ...prev, fixedSalary: parseCLP(v) }))}
+          >
             <Label>Sueldo fijo mensual (CLP)</Label>
-            <Input
-              inputMode="numeric"
-              min="0"
-              onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                const rawValue = parseCLP(event.target.value);
-                setForm((prev) => ({ ...prev, fixedSalary: rawValue }));
-              }}
-              placeholder="$ 1.500.000"
-              value={formatCLP(form.fixedSalary)}
-            />
+            <Input inputMode="numeric" min="0" placeholder="$ 1.500.000" />
           </TextField>
         )}
-        <TextField type="number">
+        <TextField
+          type="number"
+          value={form.overtimeRate}
+          onChange={(v) => setForm((prev) => ({ ...prev, overtimeRate: v }))}
+        >
           <Label>Valor hora extra (CLP)</Label>
-          <Input
-            min="0"
-            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-              setForm((prev) => ({ ...prev, overtimeRate: event.target.value }));
-            }}
-            placeholder="Opcional - dejar vacío si no aplica"
-            value={form.overtimeRate}
-          />
+          <Input min="0" placeholder="Opcional - dejar vacío si no aplica" />
         </TextField>
 
-        <TextField type="text">
+        <TextField
+          type="text"
+          value={form.retentionRate}
+          onChange={(v) => {
+            const filtered = v.replaceAll(/[^\d.,]/g, "");
+            setForm((prev) => ({ ...prev, retentionRate: filtered }));
+          }}
+        >
           <Label>Retención (%) - Personalizada</Label>
           <Input
             inputMode="decimal"
-            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-              const value = event.target.value.replaceAll(/[^\d.,]/g, "");
-              setForm((prev) => ({ ...prev, retentionRate: value }));
-            }}
             placeholder="Ej: 14.5 (opcional - usa tasa por año si está vacío)"
-            value={form.retentionRate}
           />
           <Description>
             Dejar vacío para usar tasa por año: 2025=14,5% | 2026=15,25%. Si se ingresa un valor,

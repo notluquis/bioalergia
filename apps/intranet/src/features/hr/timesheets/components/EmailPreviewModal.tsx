@@ -258,23 +258,25 @@ function LocalAgentPanel({ isHttpsPage, state }: { isHttpsPage: boolean; state: 
     <>
       <span className="mb-3 block font-semibold text-sm">Agente local</span>
       <div className="mb-3">
-        <TextField id="local-agent-url" type="text">
+        <TextField
+          id="local-agent-url"
+          type="text"
+          value={state.agentUrl}
+          onChange={state.setAgentUrlValue}
+        >
           <Label>URL del agente</Label>
-          <Input
-            onChange={(event) => state.setAgentUrlValue(event.target.value)}
-            placeholder="https://127.0.0.1:3333"
-            value={state.agentUrl}
-          />
+          <Input placeholder="https://127.0.0.1:3333" />
         </TextField>
       </div>
       <div className="mb-3">
-        <TextField id="local-agent-token" type="password">
+        <TextField
+          id="local-agent-token"
+          type="password"
+          value={state.agentToken}
+          onChange={state.setAgentTokenValue}
+        >
           <Label>Token</Label>
-          <Input
-            onChange={(event) => state.setAgentTokenValue(event.target.value)}
-            placeholder="Token del agente local"
-            value={state.agentToken}
-          />
+          <Input placeholder="Token del agente local" />
         </TextField>
       </div>
       <div className="flex items-center gap-3">
