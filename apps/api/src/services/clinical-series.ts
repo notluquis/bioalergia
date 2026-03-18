@@ -10,6 +10,9 @@ dayjs.extend(timezone);
 const TIMEZONE = "America/Santiago";
 const RUT_REGEX = /\b\d{1,2}\.?\d{3}\.?\d{3}-?[\dkK]\b/g;
 const CAPITALIZED_NAME_REGEX = /([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+){1,4})/g;
+// Fallback: all-lowercase multi-word sequences like "celmira morales inostroza"
+// Requires 7+ chars per word to avoid matching short medical terms (parche=6, dosis=5, carmen=6)
+const LOWERCASE_NAME_REGEX = /([a-záéíóúñ]{7,}(?:\s+[a-záéíóúñ]{7,}){1,3})/g;
 
 type ClinicalSeriesKind = "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT";
 type ClinicalSeriesStageKind = "DOSE" | "INSTALLATION" | "MAINTENANCE" | "READING";
@@ -101,7 +104,7 @@ function normalizeName(value: string): string {
     .trim();
 }
 
-function extractPatientHints(summary: null | string, description: null | string) {
+export function extractPatientHints(summary: null | string, description: null | string) {
   const text = `${summary ?? ""} ${description ?? ""}`;
   const patientRut =
     [
@@ -115,7 +118,15 @@ function extractPatientHints(summary: null | string, description: null | string)
           normalizeName((match[1] ?? "").trim()),
         ).filter((value) => value.length >= 5),
       ),
-    ][0] ?? null;
+    ][0] ??
+    [
+      ...new Set(
+        Array.from(text.matchAll(LOWERCASE_NAME_REGEX), (match) =>
+          normalizeName((match[1] ?? "").trim()),
+        ).filter((value) => value.length >= 5),
+      ),
+    ][0] ??
+    null;
 
   return { patientName, patientRut };
 }
