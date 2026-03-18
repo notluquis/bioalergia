@@ -9,16 +9,19 @@
     "prestart": "node ./scripts/free-port.mjs",
     "start": "node ./scripts/run-agent.mjs start",
     "test:send-self": "tsx src/scripts/send-self-test.ts",
-    "import:eml": "tsx src/scripts/import-eml-backup.ts"
+    "import:eml": "tsx src/scripts/import-eml-backup.ts",
+    "import:list-folders": "tsx src/scripts/list-imap-folders.ts"
   },
   "dependencies": {
     "@hono/node-server": "1.19.11",
+    "cli-progress": "^3.12.0",
     "hono": "4.12.8",
     "imapflow": "1.2.15",
     "nodemailer": "^8.0.2",
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@types/cli-progress": "^3.11.6",
     "@types/node": "^25.5.0",
     "@types/nodemailer": "^7.0.11",
     "tsx": "^4.21.0",
