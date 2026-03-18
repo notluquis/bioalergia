@@ -158,11 +158,19 @@ export function WhatsappSettingsPage() {
 
   return (
     <div className={PAGE_CONTAINER}>
-      <Tabs>
-        <Tabs.List>
-          <Tabs.Tab id="notifications">Notificaciones</Tabs.Tab>
-          <Tabs.Tab id="config">Configuración</Tabs.Tab>
-        </Tabs.List>
+      <Tabs defaultSelectedKey="notifications">
+        <Tabs.ListContainer>
+          <Tabs.List aria-label="Secciones de WhatsApp">
+            <Tabs.Tab id="notifications">
+              Notificaciones
+              <Tabs.Indicator />
+            </Tabs.Tab>
+            <Tabs.Tab id="config">
+              Configuración
+              <Tabs.Indicator />
+            </Tabs.Tab>
+          </Tabs.List>
+        </Tabs.ListContainer>
 
         <Tabs.Panel id="notifications">
           <div className="mt-4 space-y-4">
