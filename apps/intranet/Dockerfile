@@ -6,7 +6,7 @@
 FROM node:current-slim AS pruner
 WORKDIR /app
 COPY . .
-RUN npx turbo@^2 prune --scope=@finanzas/intranet --docker
+RUN TURBO_TELEMETRY_DISABLED=1 npx turbo@^2 prune @finanzas/intranet --docker
 
 # ==========================================================================
 # Stage 2: Base deps
@@ -37,6 +37,7 @@ RUN --mount=type=cache,id=s/31aed601-107c-408b-b13e-96b37282ee93-/pnpm/store,tar
 FROM base AS build
 COPY --from=pruner /app/out/full/ .
 ENV CI=true
+ENV TURBO_TELEMETRY_DISABLED=1
 RUN pnpm turbo run build --filter=@finanzas/intranet
 
 # ==========================================================================

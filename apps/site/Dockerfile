@@ -9,12 +9,12 @@ ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN npm install -g corepack@latest --force && corepack enable && corepack prepare pnpm@latest --activate
 COPY . .
-RUN pnpm -w turbo prune --scope=@finanzas/site --docker
+RUN TURBO_TELEMETRY_DISABLED=1 pnpm -w turbo prune @finanzas/site --docker
 
 # ==========================================================================
 # Stage 2: Base deps
 # ==========================================================================
-FROM node:25-slim AS base
+FROM node:current-slim AS base
 WORKDIR /app
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
@@ -33,6 +33,7 @@ ARG VITE_PUBLIC_POSTHOG_KEY
 ARG VITE_PUBLIC_POSTHOG_HOST
 COPY --from=pruner /app/out/full/ .
 ENV CI=true
+ENV TURBO_TELEMETRY_DISABLED=1
 ENV VITE_PUBLIC_POSTHOG_KEY=${VITE_PUBLIC_POSTHOG_KEY}
 ENV VITE_PUBLIC_POSTHOG_HOST=${VITE_PUBLIC_POSTHOG_HOST}
 RUN pnpm -w turbo run build --filter=@finanzas/site

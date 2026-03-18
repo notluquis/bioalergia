@@ -9,7 +9,7 @@ FROM node:current-slim AS pruner
 WORKDIR /app
 COPY . .
 # npx downloads turbo pinned to major version - fastest approach for prune-only stage
-RUN npx turbo@^2 prune --scope=@finanzas/api --docker
+RUN TURBO_TELEMETRY_DISABLED=1 npx turbo@^2 prune @finanzas/api --docker
 
 # ============================================================================
 # STAGE 2: Base - Install dependencies for pruned workspace
@@ -46,6 +46,7 @@ FROM base AS build
 COPY --from=pruner /app/out/full/ .
 
 ENV CI=true
+ENV TURBO_TELEMETRY_DISABLED=1
 
 # Build DB first (dependency of api)
 RUN pnpm turbo run build --filter=@finanzas/db
