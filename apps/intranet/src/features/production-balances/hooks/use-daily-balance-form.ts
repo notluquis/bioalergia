@@ -40,13 +40,13 @@ function buildDailyBalancePayload(data: DailyBalanceFormData, selectedDate: Date
 
 function getSelectedDayItem(
   data: ProductionBalanceApiItem[] | undefined,
-  selectedDate: Date,
+  selectedDate: Date
 ): null | ProductionBalanceApiItem {
   return (
     data?.find(
       (item) =>
         dayjs(item.date, DATE_FORMAT).format(DATE_FORMAT) ===
-        dayjs(selectedDate).format(DATE_FORMAT),
+        dayjs(selectedDate).format(DATE_FORMAT)
     ) ?? null
   );
 }
@@ -68,7 +68,7 @@ function useSyncSelectedDayForm(params: {
     if (params.weekSuccess) {
       params.resetForm();
     }
-  }, [params.resetForm, params.setOriginalData, params.weekSuccess, selectedDayItem]);
+  }, [params, selectedDayItem]);
 }
 
 function useSyncWeekData(params: {
@@ -93,7 +93,7 @@ function useSyncWeekData(params: {
     }
     const week = generateWeekData(params.selectedDate, entries);
     params.setWeekData(week);
-  }, [params.selectedDate, params.setWeekData, params.weekData]);
+  }, [params]);
 }
 
 function useAutosaveEffect(params: {
@@ -115,9 +115,10 @@ function useAutosaveEffect(params: {
       void params.save({ silent: true });
     }, AUTOSAVE_DELAY_MS);
 
+    const timeout = params.autosaveTimeout.current;
     return () => {
-      if (params.autosaveTimeout.current) {
-        clearTimeout(params.autosaveTimeout.current);
+      if (timeout) {
+        clearTimeout(timeout);
       }
     };
   }, [params]);
@@ -231,7 +232,7 @@ export function useDailyBalanceForm() {
         return false;
       }
     },
-    [formData, isDirty, isSaving, saveMutateAsync],
+    [formData, isDirty, isSaving, saveMutateAsync]
   );
 
   const saveDraft = useCallback(() => {
@@ -284,7 +285,7 @@ export function useDailyBalanceForm() {
     (date: Date) => {
       setSelectedDate(date);
     },
-    [setSelectedDate],
+    [setSelectedDate]
   );
 
   return {

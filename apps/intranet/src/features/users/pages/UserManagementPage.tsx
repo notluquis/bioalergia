@@ -259,7 +259,7 @@ export function UserManagementPage() {
     queryFn: fetchUsers,
     queryKey: ["users"],
   });
-  const users: User[] = usersData ?? [];
+  const users = useMemo(() => usersData ?? [], [usersData]);
 
   const { data: rolesData } = useQuery({
     queryFn: fetchRoles,

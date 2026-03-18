@@ -13,7 +13,6 @@ import {
   financeCompensationLedgerResponseSchema,
   financeCompensationProfileListResponseSchema,
   financeCompensationProfileResponseSchema,
-  financeContract,
   financeCreateAutoCategoryRuleSchema,
   financeCreateCategorySchema,
   financeCreateCompensationProfileSchema,

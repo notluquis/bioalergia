@@ -14,7 +14,6 @@ import {
   authPasskeyVerifySchema,
   authSessionResponseSchema,
   authStatusResponseSchema,
-  authUserSchema,
 } from "@finanzas/orpc-contracts/auth";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";

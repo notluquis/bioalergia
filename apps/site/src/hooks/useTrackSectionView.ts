@@ -29,11 +29,12 @@ export function useTrackSectionView(sectionId: string, sectionName: string) {
       { threshold: 0.25 },
     );
 
-    observer.observe(elementRef.current);
+    const element = elementRef.current;
+    observer.observe(element);
 
     return () => {
-      if (elementRef.current) {
-        observer.unobserve(elementRef.current);
+      if (element) {
+        observer.unobserve(element);
       }
     };
   }, [posthog, sectionId, sectionName]);

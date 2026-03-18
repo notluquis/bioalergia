@@ -54,11 +54,10 @@
 
 ### 2. Oxlint Consolidation (Completed March 10, 2026) - OXC ECOSYSTEM STANDARDIZED
 
-**Migration:** Replaced Biome + tsc with unified OXC ecosystem (Rust-based toolchain)
+**Migration:** Replaced tsc with unified OXC ecosystem (Rust-based toolchain)
 
 **Problem Solved:**
 - ✅ `tsc --noEmit` was hitting OOM (>4GB heap) on API type-checking
-- ✅ Tool redundancy: Separate linter (Biome) + formatter (Biome) + type-checker (tsc)
 - ✅ Slow turnaround: Type-checking blocked CI/CD
 
 **Solution Implemented:**
@@ -72,10 +71,9 @@
 
 **Type Safety Policies (Enforced via Oxlint):**
 
-**Scoped Rule: `typescript/no-explicit-any: "error"`**
-- **Frontend (`apps/intranet`)**: ❌ **NO `any`** — Use `unknown` instead
-- **Backend & Libraries (`apps/api`, `packages`)**: ✅ **`any` ALLOWED** — Higher flexibility for type-heavy patterns
-- **Config Override**: `.oxlintrc.json` overrides disable the rule for `apps/api/**` and `packages/**`
+**Rule: `typescript/no-explicit-any: "error"` (global)**
+- ❌ **NO `any` anywhere** — Use `unknown` + type guards instead
+- Applies to frontend, backend, and all packages
 
 **Pattern Guidelines:**
 
@@ -94,22 +92,16 @@
   const data = JSON.parse(raw) as any;     // ❌ Bad in frontend, ✅ OK in backend
   ```
 
-- **`any` in Frontend**: Use only in exceptional cases (document why)
+- **`any` is forbidden everywhere** — use `unknown` + type guards:
   ```typescript
-  // ❌ BAD: Frontend should avoid
+  // ❌ BAD
   const data = JSON.parse(raw) as any;
-  
-  // ✅ GOOD: Frontend should use unknown + type guard
-  const data = JSON.parse(raw) as unknown;
-  if (typeof data === 'object' && 'field' in data) {
-    console.log(data.field); // now safe
-  }
-  ```
 
-- **`any` in Backend**: Use when necessary for type-heavy patterns
-  ```typescript
-  // ✅ OK in backend when typing is too complex
-  const rules = await getAbilityRulesForUser(userId) as RawRuleOf<any>[];
+  // ✅ GOOD
+  const data = JSON.parse(raw) as unknown;
+  if (typeof data === 'object' && data !== null && 'field' in data) {
+    console.log((data as { field: string }).field);
+  }
   ```
 
 **Migration Impact:**
@@ -129,7 +121,7 @@ pnpm format:check      # oxfmt --check (verify format)
 pnpm type-check        # oxlint --type-aware --type-check (unified type-checking)
 ```
 
-⚠️ **RULE:** Never use `tsc --noEmit`, `prettier`, or `biome` directly. Always use oxlint ecosystem.
+⚠️ **RULE:** Never use `tsc --noEmit` or `prettier` directly. Always use oxlint ecosystem.
 
 **Standardized OXC Ecosystem Tools:**
 | Tool | Purpose | Status |
@@ -153,7 +145,6 @@ pnpm type-check        # oxlint --type-aware --type-check (unified type-checking
 - `package.json` (root + apps/api + apps/intranet) - script updates
 - `lint-staged.config.cjs` - updated to use oxlint + oxfmt
 - `apps/intranet/tsconfig.json` - removed baseUrl line
-- `biome.json` (archived, no longer used)
 
 **Next Steps:**
 1. ✅ Fix floating-promises errors (~20) by applying Promise.all pattern

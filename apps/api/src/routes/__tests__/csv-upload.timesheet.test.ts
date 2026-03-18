@@ -265,19 +265,4 @@ describe("Timesheet CSV Parsing with dayjs", () => {
     });
   });
 
-  describe("Dayjs Validation Features - REMOVED", () => {
-    it.skip("should validate dates strictly with explicit format - OBSOLETE TEST", () => {
-      // NOTE: This test was checking dayjs strict mode behavior
-      // We've confirmed dayjs is lenient and unsuitable for CSV validation
-      // See: dayjs-debug.test.ts for detailed findings
-      // Our solution uses manual regex parsing instead (see helpers above)
-    });
-
-    it.skip("should handle edge case dates - PARTIALLY HANDLED BY DATE VALIDATION", () => {
-      // NOTE: Our parseDateWithDayjs() validates via Date object creation
-      // But dayjs itself is lenient (won't reject invalid formats)
-      // Edge cases like leap years are validated by Date constructor NOT dayjs
-      // The manual date parsing above handles this correctly
-    });
-  });
 });

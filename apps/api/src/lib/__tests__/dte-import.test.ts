@@ -125,11 +125,7 @@ describe("parseDate", () => {
     testCases.forEach(({ input, folio, expected }) => {
       it(`should parse folio ${folio}: "${input}" → ${expected}`, () => {
         const result = parseDate(input);
-        if (expected === null) {
-          expect(result).toBeNull();
-        } else {
-          expect(result?.toISOString()).toBe(expected);
-        }
+        expect(result?.toISOString() ?? null).toBe(expected);
       });
     });
   });

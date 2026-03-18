@@ -302,23 +302,6 @@ When you encounter a situation where `any` seems necessary:
 }
 ```
 
-### Approved Exceptions (in biome.json)
-```json
-{
-  "include": [
-    "apps/intranet/src/features/calendar/components/**",
-    "apps/api/src/services/calendar.ts",
-    "apps/api/src/lib/google/**"
-  ],
-  "rules": {
-    "suspicious/noExplicitAny": {
-      "level": "warn",
-      "message": "Approved library constraint - see docs/PRAGMATIC_TYPING_GUIDE.md"
-    }
-  }
-}
-```
-
 ### Metrics to Track
 1. **New `any` types per month** - Should trend to zero
 2. **Approved vs. unapproved ratio** - Should stay >80% approved

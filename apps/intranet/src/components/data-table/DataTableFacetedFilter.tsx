@@ -19,8 +19,10 @@ export function DataTableFacetedFilter<TData, TValue>({
   title,
 }: DataTableFacetedFilterProps<TData, TValue>) {
   const facets = column?.getFacetedUniqueValues();
-  const filterValue = (column?.getFilterValue() as string[] | undefined) ?? [];
-  const selectedKeys = useMemo(() => new Set(filterValue), [filterValue]);
+  const selectedKeys = useMemo(
+    () => new Set((column?.getFilterValue() as string[] | undefined) ?? []),
+    [column]
+  );
   const [search, setSearch] = useState("");
 
   const filteredOptions = options.filter((option) =>

@@ -74,7 +74,7 @@ describe("use-notification-store", () => {
           },
         ],
         unreadCount: 1,
-      }),
+      })
     );
 
     const storeModule = await loadStoreModule();
@@ -100,12 +100,12 @@ describe("use-notification-store", () => {
     expect(storeModule.notificationStore.state.notifications[49]?.message).toBe("message-5");
 
     const persisted = JSON.parse(
-      globalThis.localStorage.getItem(storageKey("guest")) ?? "{}",
+      globalThis.localStorage.getItem(storageKey("guest")) ?? "{}"
     ) as unknown;
-    if (isPersistedNotifications(persisted)) {
-      expect((persisted.notifications as unknown[]).length).toBe(50);
-      expect(persisted.unreadCount).toBe(55);
-    }
+    expect(isPersistedNotifications(persisted)).toBe(true);
+    if (!isPersistedNotifications(persisted)) return;
+    expect((persisted.notifications as unknown[]).length).toBe(50);
+    expect(persisted.unreadCount).toBe(55);
   });
 
   it("marks a notification as read only once", async () => {
@@ -207,24 +207,24 @@ describe("use-notification-store", () => {
     expect(storeModule.notificationStore.state.notifications[0]?.message).toBe("only-user-2");
 
     const user1Persisted = JSON.parse(
-      globalThis.localStorage.getItem(storageKey("user-1")) ?? "{}",
+      globalThis.localStorage.getItem(storageKey("user-1")) ?? "{}"
     ) as unknown;
     const user2Persisted = JSON.parse(
-      globalThis.localStorage.getItem(storageKey("user-2")) ?? "{}",
+      globalThis.localStorage.getItem(storageKey("user-2")) ?? "{}"
     ) as unknown;
 
-    if (isPersistedNotifications(user1Persisted)) {
-      const firstNotif: unknown = user1Persisted.notifications[0];
-      if (firstNotif && typeof firstNotif === "object" && "message" in firstNotif) {
-        expect((firstNotif as Record<string, unknown>).message).toBe("only-user-1");
-      }
-    }
+    expect(isPersistedNotifications(user1Persisted)).toBe(true);
+    if (!isPersistedNotifications(user1Persisted)) return;
+    const firstNotif1: unknown = user1Persisted.notifications[0];
+    expect(firstNotif1 && typeof firstNotif1 === "object" && "message" in firstNotif1).toBe(true);
+    if (!(firstNotif1 && typeof firstNotif1 === "object" && "message" in firstNotif1)) return;
+    expect((firstNotif1 as Record<string, unknown>).message).toBe("only-user-1");
 
-    if (isPersistedNotifications(user2Persisted)) {
-      const firstNotif: unknown = user2Persisted.notifications[0];
-      if (firstNotif && typeof firstNotif === "object" && "message" in firstNotif) {
-        expect((firstNotif as Record<string, unknown>).message).toBe("only-user-2");
-      }
-    }
+    expect(isPersistedNotifications(user2Persisted)).toBe(true);
+    if (!isPersistedNotifications(user2Persisted)) return;
+    const firstNotif2: unknown = user2Persisted.notifications[0];
+    expect(firstNotif2 && typeof firstNotif2 === "object" && "message" in firstNotif2).toBe(true);
+    if (!(firstNotif2 && typeof firstNotif2 === "object" && "message" in firstNotif2)) return;
+    expect((firstNotif2 as Record<string, unknown>).message).toBe("only-user-2");
   });
 });

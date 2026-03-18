@@ -33,30 +33,6 @@ type MercadoPagoORPCContext = {
 
 const base = os.$context<MercadoPagoORPCContext>();
 
-const reportTypeSchema = z.enum(["release", "settlement"]);
-
-const listReportsInputSchema = z.object({
-  limit: z.number().int().min(1).max(200).optional(),
-  offset: z.number().int().min(0).optional(),
-  type: reportTypeSchema.optional(),
-});
-
-const createReportInputSchema = z.object({
-  beginDate: z.date(),
-  endDate: z.date(),
-  type: reportTypeSchema.optional(),
-});
-
-const processReportInputSchema = z.object({
-  fileName: z.string().min(1),
-  reportType: reportTypeSchema,
-});
-
-const syncLogsInputSchema = z.object({
-  limit: z.number().int().min(1).max(200).optional(),
-  offset: z.number().int().min(0).optional(),
-});
-
 const mpReportSchema = z
   .object({
     begin_date: z.coerce.date(),
@@ -71,32 +47,7 @@ const mpReportSchema = z
   })
   .passthrough();
 
-const listReportsResponseSchema = z.object({
-  reports: z.array(mpReportSchema),
-  total: z.number(),
-});
-
 const mpReportsListSchema = z.array(mpReportSchema);
-
-const syncLogSchema = z.object({
-  changeDetails: z.record(z.string(), z.unknown()).nullable().optional(),
-  errorMessage: z.string().nullable().optional(),
-  excluded: z.number().nullable().optional(),
-  finishedAt: z.date().nullable().optional(),
-  id: z.bigint(),
-  inserted: z.number().nullable().optional(),
-  skipped: z.number().nullable().optional(),
-  startedAt: z.date(),
-  status: z.enum(["RUNNING", "SUCCESS", "ERROR"]),
-  triggerLabel: z.string().nullable().optional(),
-  triggerSource: z.string(),
-  updated: z.number().nullable().optional(),
-});
-
-const syncLogsResponseSchema = z.object({
-  logs: z.array(syncLogSchema),
-  total: z.number(),
-});
 
 function normalizeSyncLogChangeDetails(
   value: unknown,
@@ -109,30 +60,6 @@ function normalizeSyncLogChangeDetails(
   }
   return value as Record<string, unknown>;
 }
-
-const processReportResponseSchema = z.object({
-  cashFlowSync: z
-    .object({
-      created: z.number(),
-      duplicates: z.number(),
-      errors: z.array(z.string()),
-      failed: z.number(),
-      total: z.number(),
-    })
-    .optional(),
-  message: z.string(),
-  stats: z.object({
-    duplicateRows: z.number(),
-    errors: z.array(z.string()),
-    insertedRows: z.number(),
-    processedSourceIds: z.array(z.string()).optional(),
-    skippedRows: z.number(),
-    sourceUnavailable: z.boolean().optional(),
-    totalRows: z.number(),
-    validRows: z.number(),
-  }),
-  status: z.enum(["error", "success"]),
-});
 
 function isMpDownloadMissing(error: unknown) {
   return error instanceof Error && error.message.includes("Download failed: 404");

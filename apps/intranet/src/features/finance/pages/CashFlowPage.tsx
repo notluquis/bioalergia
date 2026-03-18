@@ -795,7 +795,7 @@ export function CashFlowPage() {
   const visibilityFiltersCount =
     Number(showNonAccountableMovements) + Number(showOnlyUncategorizedMovements);
 
-  const monthTransactions = data?.data ?? [];
+  const monthTransactions = useMemo(() => data?.data ?? [], [data]);
   const reallocationProfileOptions = useMemo(() => {
     if (!reallocateTx) return activeCompensationProfiles;
     return activeCompensationProfiles.filter((profile) => {

@@ -1,5 +1,4 @@
 import { db } from "@finanzas/db";
-import { doctoraliaContract } from "@finanzas/orpc-contracts/doctoralia";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";

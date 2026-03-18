@@ -17,7 +17,6 @@ types.setTypeParser(20, (val) => Number.parseInt(val, 10)); // BIGINT → number
 // Helper for safe environment access (Deno compatibility)
 const getEnv = (key: string): string | undefined => {
   try {
-    // eslint-disable-next-line security/detect-object-injection
     return process.env[key];
   } catch {
     return undefined;
@@ -92,7 +91,6 @@ export type Decimal = number | string;
 
 export type EmployeeSalaryType = (typeof EmployeeSalaryType)[keyof typeof EmployeeSalaryType];
 
-// eslint-disable-next-line sonarjs/redundant-type-aliases
 export type InputJsonValue = JsonValue;
 export type JsonArray = JsonValue[];
 export interface JsonObject {

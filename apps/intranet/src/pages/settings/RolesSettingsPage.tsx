@@ -69,7 +69,7 @@ export function RolesSettingsPage() {
       const previousRoles = queryClient.getQueryData<Role[]>(["roles"]);
 
       queryClient.setQueryData<Role[]>(["roles"], (old: Role[] | undefined) =>
-        optimisticUpdateRole(old, roleId, permissionIds),
+        optimisticUpdateRole(old, roleId, permissionIds)
       );
 
       return { previousRoles };
@@ -133,21 +133,21 @@ export function RolesSettingsPage() {
 
   // --- Grouping Logic ---
 
-  // Track which permissions are "used" by pages so we can show the rest in "Advanced/System"
-  const usedPermissionIds = new Set<number>();
-
   // Pre-process navigation sections with permission data
-  const sectionsWithPermissions = processNavSections(
-    getNavSections(router.routeTree),
-    allPermissions || [],
-    usedPermissionIds,
-    buildSubjectNavKeyMap(router.routeTree, allPermissions || []),
-  );
-
-  const unmappedSubjects = useMemo(
-    () => getUnmappedSubjects(allPermissions || [], usedPermissionIds),
-    [allPermissions, usedPermissionIds],
-  );
+  const { sectionsWithPermissions, unmappedSubjects } = useMemo(() => {
+    // Track which permissions are "used" by pages so we can show the rest in "Advanced/System"
+    const usedPermissionIds = new Set<number>();
+    const sections = processNavSections(
+      getNavSections(router.routeTree),
+      allPermissions || [],
+      usedPermissionIds,
+      buildSubjectNavKeyMap(router.routeTree, allPermissions || [])
+    );
+    return {
+      sectionsWithPermissions: sections,
+      unmappedSubjects: getUnmappedSubjects(allPermissions || [], usedPermissionIds),
+    };
+  }, [allPermissions, router.routeTree]);
 
   useEffect(() => {
     if (unmappedSubjects.length === 0) {
@@ -279,7 +279,7 @@ export function RolesSettingsPage() {
 function optimisticUpdateRole(
   oldRoles: Role[] | undefined,
   roleId: number,
-  permissionIds: number[],
+  permissionIds: number[]
 ): Role[] {
   if (!oldRoles) {
     return [];
@@ -302,7 +302,7 @@ function processNavSections(
   navSections: NavSectionData[],
   allPermissions: Permission[],
   usedPermissionIds: Set<number>,
-  subjectNavKeyMap: Map<string, Set<string>>,
+  subjectNavKeyMap: Map<string, Set<string>>
 ) {
   const permissionsBySubject = buildPermissionsBySubject(allPermissions);
   const navKeyToSubjects = buildNavKeyToSubjects(subjectNavKeyMap);
@@ -322,7 +322,7 @@ function processNavSections(
             permissionsBySubject,
             sectionTitle: section.title,
             usedPermissionIds,
-          }),
+          })
         )
         .filter((item): item is NonNullable<typeof item> => item !== null);
 
@@ -356,7 +356,7 @@ function processNavSections(
           permissionIds: perms.map((p) => p.id),
           relatedPermissions: perms,
         };
-      },
+      }
     );
 
     mappedSections.push({
@@ -446,7 +446,7 @@ function buildMatrixItem({
   }
 
   const uniquePermissions = [...new Map(perms.map((p) => [p.id, p])).values()].sort((a, b) =>
-    a.subject.localeCompare(b.subject),
+    a.subject.localeCompare(b.subject)
   );
   for (const p of uniquePermissions) {
     usedPermissionIds.add(p.id);
@@ -507,7 +507,7 @@ function getRouteChildren(children: RouteTreeNode["children"]): RouteTreeNode[] 
 function addInferredAliases(mapping: Map<string, Set<string>>, allPermissions: Permission[]) {
   const mappedSubjects = Array.from(mapping.keys());
   const mappedTokenMap = new Map(
-    mappedSubjects.map((subject) => [subject, tokenizeSubject(subject)]),
+    mappedSubjects.map((subject) => [subject, tokenizeSubject(subject)])
   );
   const knownSubjects = new Set(allPermissions.map((perm) => perm.subject.toLowerCase()));
 
@@ -531,7 +531,7 @@ function addInferredAliases(mapping: Map<string, Set<string>>, allPermissions: P
 function findBestMappedSubject(
   subject: string,
   mappedSubjects: string[],
-  mappedTokenMap: Map<string, string[]>,
+  mappedTokenMap: Map<string, string[]>
 ) {
   const subjectLower = subject.toLowerCase();
   const subjectTokens = tokenizeSubject(subjectLower);
@@ -557,7 +557,7 @@ function scoreCandidateSubject(
   subjectLower: string,
   subjectTokens: string[],
   candidate: string,
-  mappedTokenMap: Map<string, string[]>,
+  mappedTokenMap: Map<string, string[]>
 ) {
   const candidateLower = candidate.toLowerCase();
   const candidateTokens = mappedTokenMap.get(candidate) ?? tokenizeSubject(candidateLower);

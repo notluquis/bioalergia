@@ -476,14 +476,6 @@ function getAutoSyncReportRange() {
   };
 }
 
-function isSameDay(a: Date, b: Date) {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
-}
-
 function minutesSince(date: Date) {
   return (Date.now() - date.getTime()) / 60000;
 }

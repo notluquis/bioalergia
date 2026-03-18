@@ -142,7 +142,7 @@ export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDte
         ),
       },
     ],
-    [confirmMutation.isPending, confirmMutation.mutate]
+    [confirmMutation]
   );
 
   return (
