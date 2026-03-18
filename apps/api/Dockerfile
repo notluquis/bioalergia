@@ -79,9 +79,6 @@ COPY --from=build /app/apps/api/node_modules ./apps/api/node_modules
 
 WORKDIR /app/apps/api
 
-# Pre-create uploads dir with node ownership so USER node can write at runtime
-RUN mkdir -p /app/apps/api/uploads/shared && chown -R node:node /app/apps/api/uploads
-
 USER node
 
 EXPOSE 3000
