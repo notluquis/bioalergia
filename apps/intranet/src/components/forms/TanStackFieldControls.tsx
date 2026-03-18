@@ -73,7 +73,17 @@ export function TanStackInputField<TValue>({
   const errorText = getFieldError(field.state.meta.errors);
   const inputValue = typeof field.state.value === "string" ? field.state.value : "";
   return (
-    <TextField isInvalid={Boolean(errorText)} isRequired={required} type={type}>
+    <TextField
+      isInvalid={Boolean(errorText)}
+      isRequired={required}
+      type={type}
+      value={inputValue}
+      onChange={(value) => {
+        const nextValue = transformOnChange ? transformOnChange(value) : value;
+        const normalizedValue = emptyAsUndefined && nextValue.length === 0 ? undefined : nextValue;
+        field.handleChange(() => normalizedValue as TValue);
+      }}
+    >
       <Label>{label}</Label>
       <Input
         className={className}
@@ -81,16 +91,7 @@ export function TanStackInputField<TValue>({
           field.handleBlur();
           onBlur?.();
         }}
-        onChange={(event) => {
-          const nextValue = transformOnChange
-            ? transformOnChange(event.target.value)
-            : event.target.value;
-          const normalizedValue =
-            emptyAsUndefined && nextValue.length === 0 ? undefined : nextValue;
-          field.handleChange(() => normalizedValue as TValue);
-        }}
         placeholder={placeholder}
-        value={inputValue}
       />
       {description ? <Description>{description}</Description> : null}
       {errorText ? <FieldError>{errorText}</FieldError> : null}
@@ -110,20 +111,21 @@ export function TanStackTextAreaField<TValue>({
   const errorText = getFieldError(field.state.meta.errors);
   const textValue = typeof field.state.value === "string" ? field.state.value : "";
   return (
-    <TextField isInvalid={Boolean(errorText)} isRequired={required}>
+    <TextField
+      isInvalid={Boolean(errorText)}
+      isRequired={required}
+      value={textValue}
+      onChange={(value) => {
+        const normalizedValue = emptyAsUndefined && value.length === 0 ? undefined : value;
+        field.handleChange(() => normalizedValue as TValue);
+      }}
+    >
       <Label>{label}</Label>
       <TextArea
         className={className}
         onBlur={field.handleBlur}
-        onChange={(event) => {
-          const nextValue = event.target.value;
-          const normalizedValue =
-            emptyAsUndefined && nextValue.length === 0 ? undefined : nextValue;
-          field.handleChange(() => normalizedValue as TValue);
-        }}
         placeholder={placeholder}
         rows={rows}
-        value={textValue}
       />
       {errorText ? <FieldError>{errorText}</FieldError> : null}
     </TextField>

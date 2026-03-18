@@ -19,7 +19,7 @@ import {
 import type { ColumnDef, PaginationState, VisibilityState } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { CheckCircle2, Clock, FileText, Plus } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import { DataTable } from "@/components/data-table/DataTable";
 import { GenerateReportModal } from "@/components/mercadopago/GenerateReportModal";
@@ -118,24 +118,27 @@ const useReportActions = ({
     },
   });
 
-  const handleDownload = (fileName: string) => {
-    downloadMutation.mutate(fileName);
-  };
+  const handleDownload = useCallback(
+    (fileName: string) => {
+      downloadMutation.mutate(fileName);
+    },
+    [downloadMutation]
+  );
 
   // Just opens the AlertDialog — no confirm() blocking the event loop
-  const handleProcess = (fileName: string) => {
+  const handleProcess = useCallback((fileName: string) => {
     setConfirmingFile(fileName);
-  };
+  }, []);
 
   // Called when user confirms inside AlertDialog
-  const handleConfirmProcess = () => {
+  const handleConfirmProcess = useCallback(() => {
     if (!confirmingFile) return;
     const fileName = confirmingFile;
     setConfirmingFile(null);
     setProcessingFile(fileName);
     setLastImportStats(null);
     processMutation.mutate(fileName);
-  };
+  }, [confirmingFile, processMutation, setLastImportStats]);
 
   return {
     confirmingFile,
@@ -230,12 +233,16 @@ export function MercadoPagoSettingsPage() {
     showSuccess,
   });
 
-  const columns = getMpReportColumns(
-    handleDownload,
-    handleProcess,
-    downloadPending,
-    processPending,
-    processingFile
+  const columns = useMemo(
+    () =>
+      getMpReportColumns(
+        handleDownload,
+        handleProcess,
+        downloadPending,
+        processPending,
+        processingFile
+      ),
+    [handleDownload, handleProcess, downloadPending, processPending, processingFile]
   );
   const reportPageCount = Math.max(1, Math.ceil(reportTotal / reportPagination.pageSize));
 
