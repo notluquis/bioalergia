@@ -10,7 +10,8 @@
     "start": "node ./scripts/run-agent.mjs start",
     "test:send-self": "tsx src/scripts/send-self-test.ts",
     "import:eml": "tsx src/scripts/import-eml-backup.ts",
-    "import:list-folders": "tsx src/scripts/list-imap-folders.ts"
+    "import:list-folders": "tsx src/scripts/list-imap-folders.ts",
+    "purge:today": "tsx src/scripts/purge-today-imports.ts"
   },
   "dependencies": {
     "@hono/node-server": "1.19.11",

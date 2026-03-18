@@ -98,11 +98,12 @@ function getTodayStr(): string {
   return `${y}-${m}-${d}`;
 }
 
-function formatEventDate(dateStr: string): string {
+function formatEventDate(dateStr: string, showYear = false): string {
   const [y, mo, d] = dateStr.split("-").map(Number);
   return new Date(y!, mo! - 1, d).toLocaleDateString("es-CL", {
     day: "numeric",
     month: "short",
+    ...(showYear && { year: "numeric" }),
   });
 }
 
@@ -450,7 +451,7 @@ export function ClinicalSeriesView() {
                       </Table.Cell>
                       <Table.Cell>
                         <span className="text-xs text-foreground-400">
-                          {s.lastEventDate ? formatEventDate(s.lastEventDate) : "—"}
+                          {s.lastEventDate ? formatEventDate(s.lastEventDate, true) : "—"}
                         </span>
                       </Table.Cell>
                       <Table.Cell>

@@ -76,6 +76,32 @@ async function listEmlFiles(dir: string) {
   return entries.filter((e) => e.toLowerCase().endsWith(".eml")).map((e) => join(dir, e));
 }
 
+function parseHeaders(raw: Buffer): string {
+  const headerEnd = raw.indexOf("\r\n\r\n");
+  return raw.subarray(0, headerEnd > 0 ? headerEnd : Math.min(8192, raw.length)).toString("latin1");
+}
+
+function extractEmailDate(headers: string, emlPath: string): Date {
+  const match = headers.match(/^Date:\s*(.+)$/im);
+  if (match) {
+    const d = new Date(match[1].trim());
+    if (!Number.isNaN(d.getTime())) return d;
+  }
+  // Loggear cuáles fallan para poder revisarlos
+  const filename = emlPath.split("/").pop() ?? emlPath;
+  console.error(`  ⚠ Sin fecha válida: ${filename} — usando fecha actual`);
+  return new Date();
+}
+
+/** Extrae las flags IMAP preservando el estado leído/no leído del .eml original.
+ *  El header Status: R o RO → \Seen; cualquier otra cosa → sin flag (no leído).
+ */
+function extractFlags(headers: string): string[] {
+  const match = headers.match(/^Status:\s*(.+)$/im);
+  if (match && match[1].toUpperCase().includes("R")) return ["\\Seen"];
+  return [];
+}
+
 async function pLimit<T>(tasks: (() => Promise<T>)[], limit: number): Promise<T[]> {
   const results: T[] = [];
   let i = 0;
@@ -191,7 +217,10 @@ async function importAccount(
     const tasks = emlFiles.map((emlPath) => async () => {
       try {
         const raw = await readFile(emlPath);
-        await client.append(imapFolder, raw, ["\\Seen"], new Date());
+        const headers = parseHeaders(raw);
+        const flags = extractFlags(headers);
+        const date = extractEmailDate(headers, emlPath);
+        await client.append(imapFolder, raw, flags, date);
         ok++;
       } catch {
         errors++;
