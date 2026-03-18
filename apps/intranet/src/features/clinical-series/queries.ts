@@ -4,11 +4,13 @@
  */
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
 import { compactORPCInput } from "@/lib/orpc-input";
 import type {
   ClinicalSeriesFilters,
   ClinicalSeriesListResult,
   ClinicalSeriesSnapshot,
+  RebuildJob,
   RebuildSeriesParams,
   RebuildSeriesResult,
 } from "./types";
@@ -57,7 +59,7 @@ export async function fetchClinicalSeriesDetail(id: number): Promise<ClinicalSer
 }
 
 /**
- * Rebuild/reorganize clinical series from events
+ * Trigger a rebuild (non-blocking — returns { jobId } immediately)
  */
 export async function rebuildClinicalSeries(
   params?: RebuildSeriesParams
@@ -93,16 +95,50 @@ export function useClinicalSeriesDetail(id: number) {
 }
 
 /**
- * Hook: Rebuild clinical series (mutation)
+ * Hook: Trigger rebuild mutation (fire-and-forget, progress via SSE)
  */
 export function useRebuildClinicalSeries() {
-  const queryClient = useQueryClient();
+  return useMutation({ mutationFn: rebuildClinicalSeries });
+}
 
-  return useMutation({
-    mutationFn: rebuildClinicalSeries,
-    onSuccess: () => {
-      // Invalidate all clinical series queries to refetch data
+/**
+ * Hook: SSE stream for real-time rebuild progress.
+ * Connects to /api/clinical-series/progress, reconnects on error.
+ * Invalidates all clinical-series queries when job transitions to "completed".
+ */
+export function useClinicalSeriesRebuildProgress() {
+  const queryClient = useQueryClient();
+  const [job, setJob] = useState<null | RebuildJob>(null);
+  const prevStatusRef = useRef<null | string>(null);
+
+  // Invalidate queries when job completes
+  useEffect(() => {
+    if (job?.status === "completed" && prevStatusRef.current === "running") {
       void queryClient.invalidateQueries({ queryKey: clinicalSeriesKeys.all });
-    },
-  });
+    }
+    prevStatusRef.current = job?.status ?? null;
+  }, [job?.status, queryClient]);
+
+  useEffect(() => {
+    const eventSource = new EventSource("/api/clinical-series/progress");
+
+    eventSource.addEventListener("message", (e: MessageEvent) => {
+      try {
+        const msg = JSON.parse(String(e.data)) as { job: null | RebuildJob };
+        setJob(msg.job);
+      } catch {
+        // Ignore parse errors
+      }
+    });
+
+    eventSource.addEventListener("error", () => {
+      eventSource.close();
+    });
+
+    return () => {
+      eventSource.close();
+    };
+  }, []);
+
+  return job;
 }

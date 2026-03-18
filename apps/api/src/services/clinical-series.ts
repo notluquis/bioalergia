@@ -440,10 +440,16 @@ export async function syncClinicalSeriesForInternalEventId(
   return targetSeriesId;
 }
 
-export async function syncClinicalSeriesForEventIds(eventIds: number[]) {
+export async function syncClinicalSeriesForEventIds(
+  eventIds: number[],
+  onProgress?: (processed: number, total: number) => void,
+) {
   const unique = [...new Set(eventIds.filter((value) => Number.isFinite(value) && value > 0))];
+  let processed = 0;
   for (const eventId of unique) {
     await syncClinicalSeriesForInternalEventId(eventId);
+    processed++;
+    onProgress?.(processed, unique.length);
   }
 }
 
@@ -459,7 +465,10 @@ export async function syncClinicalSeriesForExternalEvents(
   }
 }
 
-export async function rebuildClinicalSeries(params?: { from?: string; to?: string }) {
+export async function rebuildClinicalSeries(
+  params?: { from?: string; to?: string },
+  onProgress?: (processed: number, total: number) => void,
+) {
   const rows = await db.$queryRaw<Array<{ eventId: number }>>`
     SELECT e.id AS "eventId"
     FROM events e
@@ -475,13 +484,81 @@ export async function rebuildClinicalSeries(params?: { from?: string; to?: strin
     ORDER BY COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) ASC, e.id ASC
   `;
 
-  await syncClinicalSeriesForEventIds(rows.map((row) => row.eventId));
+  const total = rows.length;
+  // Signal total is now known before processing starts
+  onProgress?.(0, total);
+  await syncClinicalSeriesForEventIds(rows.map((row) => row.eventId), onProgress);
 
   return {
-    processed: rows.length,
+    processed: total,
     from: params?.from ?? null,
     to: params?.to ?? null,
   };
+}
+
+// ─── Rebuild Job State (SSE progress) ────────────────────────────────────────
+
+export interface RebuildJob {
+  error?: string;
+  from: null | string;
+  jobId: string;
+  processed: number;
+  progress: number;
+  status: "completed" | "failed" | "running";
+  currentStep: string;
+  to: null | string;
+  total: number;
+}
+
+let currentRebuildJob: null | RebuildJob = null;
+
+export function getCurrentRebuildJob(): null | RebuildJob {
+  return currentRebuildJob;
+}
+
+export function startRebuildClinicalSeries(params?: { from?: string; to?: string }): string {
+  const jobId = `rebuild-${Date.now()}`;
+  currentRebuildJob = {
+    jobId,
+    status: "running",
+    progress: 0,
+    processed: 0,
+    total: 0,
+    currentStep: "Consultando eventos...",
+    from: params?.from ?? null,
+    to: params?.to ?? null,
+  };
+
+  rebuildClinicalSeries(params, (processed, total) => {
+    if (!currentRebuildJob || currentRebuildJob.jobId !== jobId) return;
+    currentRebuildJob.processed = processed;
+    currentRebuildJob.total = total;
+    currentRebuildJob.progress = total > 0 ? Math.round((processed / total) * 100) : 0;
+    currentRebuildJob.currentStep =
+      processed === 0
+        ? `${total} eventos encontrados, reorganizando...`
+        : `Reorganizando ${processed} de ${total}...`;
+  })
+    .then((result) => {
+      if (!currentRebuildJob || currentRebuildJob.jobId !== jobId) return;
+      currentRebuildJob.status = "completed";
+      currentRebuildJob.progress = 100;
+      currentRebuildJob.processed = result.processed;
+      currentRebuildJob.currentStep = `${result.processed} eventos procesados`;
+      setTimeout(() => {
+        if (currentRebuildJob?.jobId === jobId) currentRebuildJob = null;
+      }, 8000);
+    })
+    .catch((err: unknown) => {
+      if (!currentRebuildJob || currentRebuildJob.jobId !== jobId) return;
+      currentRebuildJob.status = "failed";
+      currentRebuildJob.error = err instanceof Error ? err.message : "Error desconocido";
+      setTimeout(() => {
+        if (currentRebuildJob?.jobId === jobId) currentRebuildJob = null;
+      }, 8000);
+    });
+
+  return jobId;
 }
 
 export async function getClinicalSeriesSnapshotByExternalEvent(params: {

@@ -7,7 +7,7 @@ import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { rateLimiter } from "hono-rate-limiter";
-import { createAuthContext, getSessionUser } from "./auth";
+import { createAuthContext, getSessionUser, hasPermission } from "./auth";
 import { AppError } from "./lib/app-error";
 import { htmlSanitizerMiddleware } from "./lib/html-sanitizer";
 import { logError } from "./lib/logger";
@@ -20,6 +20,7 @@ import { balancesOpenAPIHandler, balancesORPCHandler } from "./orpc/balances";
 import { calendarOpenAPIHandler, calendarORPCHandler } from "./orpc/calendar";
 import { certificatesOpenAPIHandler, certificatesORPCHandler } from "./orpc/certificates";
 import { clinicalSeriesOpenAPIHandler, clinicalSeriesORPCHandler } from "./orpc/clinical-series";
+import { getCurrentRebuildJob } from "./services/clinical-series";
 import { counterpartsOpenAPIHandler, counterpartsORPCHandler } from "./orpc/counterparts";
 import { csvUploadOpenAPIHandler, csvUploadORPCHandler } from "./orpc/csv-upload";
 import { doctoraliaOpenAPIHandler, doctoraliaORPCHandler } from "./orpc/doctoralia";
@@ -609,6 +610,49 @@ app.use("/api/orpc/certificates/rpc/*", async (c, next) => {
   }
 
   await next();
+});
+
+// ─── Clinical Series SSE progress stream ──────────────────────────────────────
+app.get("/api/clinical-series/progress", async (c) => {
+  const user = await getSessionUser(c);
+  if (!user) return c.text("Unauthorized", 401);
+  const canRead = await hasPermission(user.id, "read", "ClinicalSeries");
+  if (!canRead) return c.text("Forbidden", 403);
+
+  const encoder = new TextEncoder();
+  const encode = (data: unknown) => encoder.encode(`data: ${JSON.stringify(data)}\n\n`);
+
+  const stream = new ReadableStream({
+    start(controller) {
+      // Send initial snapshot immediately
+      controller.enqueue(encode({ job: getCurrentRebuildJob() }));
+
+      const interval = setInterval(() => {
+        try {
+          controller.enqueue(encode({ job: getCurrentRebuildJob() }));
+        } catch {
+          clearInterval(interval);
+        }
+      }, 500);
+
+      c.req.raw.signal.addEventListener("abort", () => {
+        clearInterval(interval);
+        try {
+          controller.close();
+        } catch {
+          // Already closed
+        }
+      });
+    },
+  });
+
+  return c.newResponse(stream, {
+    headers: {
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+      "Content-Type": "text/event-stream",
+    },
+  });
 });
 
 app.use("/api/orpc/clinical-series/rpc/*", async (c, next) => {

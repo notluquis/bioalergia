@@ -25,7 +25,12 @@ import {
 } from "@heroui/react";
 import type { Key, Selection } from "@heroui/react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useClinicalSeries, useClinicalSeriesDetail, useRebuildClinicalSeries } from "./queries";
+import {
+  useClinicalSeries,
+  useClinicalSeriesDetail,
+  useClinicalSeriesRebuildProgress,
+  useRebuildClinicalSeries,
+} from "./queries";
 import type {
   ClinicalSeriesEvent,
   ClinicalSeriesFilters,
@@ -235,6 +240,7 @@ export function ClinicalSeriesView() {
   const { data, isLoading, error } = useClinicalSeries(filters);
   const { data: detail, isLoading: isLoadingDetail } = useClinicalSeriesDetail(selectedId ?? 0);
   const rebuildMutation = useRebuildClinicalSeries();
+  const rebuildJob = useClinicalSeriesRebuildProgress();
 
   const totalPages = data ? Math.ceil(data.total / pageSize) : 1;
 
@@ -293,7 +299,7 @@ export function ClinicalSeriesView() {
             )}
           </p>
           <Button
-            isDisabled={rebuildMutation.isPending}
+            isDisabled={rebuildMutation.isPending || rebuildJob?.status === "running"}
             onPress={() => rebuildMutation.mutateAsync({})}
             variant="secondary"
             size="sm"
@@ -302,36 +308,51 @@ export function ClinicalSeriesView() {
           </Button>
         </div>
 
-        {/* Rebuild progress / result */}
-        {rebuildMutation.isPending && (
-          <ProgressBar isIndeterminate aria-label="Reorganizando series" color="accent" size="sm">
-            <Label className="text-xs text-foreground-400">Reorganizando series…</Label>
+        {/* Rebuild progress / result — driven by SSE */}
+        {rebuildJob?.status === "running" && (
+          <ProgressBar
+            aria-label={rebuildJob.currentStep}
+            color="accent"
+            isIndeterminate={rebuildJob.total === 0}
+            maxValue={rebuildJob.total}
+            size="sm"
+            value={rebuildJob.processed}
+          >
+            <Label className="text-xs text-foreground-400">
+              {rebuildJob.currentStep}
+              {rebuildJob.total > 0 && (
+                <span className="ml-1 tabular-nums text-foreground-300">
+                  ({rebuildJob.processed}/{rebuildJob.total})
+                </span>
+              )}
+            </Label>
             <ProgressBar.Track>
               <ProgressBar.Fill />
             </ProgressBar.Track>
           </ProgressBar>
         )}
-        {rebuildMutation.isSuccess && (
+        {rebuildJob?.status === "completed" && (
           <Alert status="success">
             <Alert.Indicator />
             <Alert.Content>
               <Alert.Description>
-                {rebuildMutation.data.processed.toLocaleString("es-CL")} eventos procesados
-                {rebuildMutation.data.from && rebuildMutation.data.to
-                  ? ` (${formatEventDate(rebuildMutation.data.from, true)} – ${formatEventDate(rebuildMutation.data.to, true)})`
+                {rebuildJob.processed.toLocaleString("es-CL")} eventos procesados
+                {rebuildJob.from && rebuildJob.to
+                  ? ` (${formatEventDate(rebuildJob.from, true)} – ${formatEventDate(rebuildJob.to, true)})`
                   : ""}
               </Alert.Description>
             </Alert.Content>
           </Alert>
         )}
-        {rebuildMutation.isError && (
+        {(rebuildJob?.status === "failed" || rebuildMutation.isError) && (
           <Alert status="danger">
             <Alert.Indicator />
             <Alert.Content>
               <Alert.Description>
-                {rebuildMutation.error instanceof Error
-                  ? rebuildMutation.error.message
-                  : "Error al reorganizar las series"}
+                {rebuildJob?.error ??
+                  (rebuildMutation.error instanceof Error
+                    ? rebuildMutation.error.message
+                    : "Error al reorganizar las series")}
               </Alert.Description>
             </Alert.Content>
           </Alert>

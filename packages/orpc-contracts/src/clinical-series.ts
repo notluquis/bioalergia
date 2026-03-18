@@ -74,9 +74,8 @@ export const clinicalSeriesRebuildInputSchema = z.object({
 });
 
 export const clinicalSeriesRebuildResponseSchema = z.object({
-  from: z.string().nullable(),
-  processed: z.number(),
-  to: z.string().nullable(),
+  jobId: z.string(),
+  message: z.string(),
 });
 
 export const clinicalSeriesContract = {

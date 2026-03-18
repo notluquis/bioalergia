@@ -18,7 +18,7 @@ import { configureSuperjson } from "../lib/superjson-config";
 import {
   getClinicalSeriesSnapshotById,
   listClinicalSeriesSnapshots,
-  rebuildClinicalSeries,
+  startRebuildClinicalSeries,
 } from "../services/clinical-series";
 import { SuperJSONRPCHandler } from "./superjson";
 
@@ -79,8 +79,9 @@ const clinicalSeriesORPCRouterBase = {
     .route({ method: "POST", path: "/rebuild" })
     .input(clinicalSeriesRebuildInputSchema)
     .output(clinicalSeriesRebuildResponseSchema)
-    .handler(async ({ input }: { input: z.input<typeof clinicalSeriesRebuildInputSchema> }) => {
-      return await rebuildClinicalSeries(input);
+    .handler(({ input }: { input: z.input<typeof clinicalSeriesRebuildInputSchema> }) => {
+      const jobId = startRebuildClinicalSeries(input);
+      return { jobId, message: "Reorganización iniciada" };
     }),
 };
 

@@ -85,9 +85,20 @@ export interface RebuildSeriesParams {
 }
 
 export interface RebuildSeriesResult {
+  jobId: string;
+  message: string;
+}
+
+export interface RebuildJob {
+  currentStep: string;
+  error?: string;
+  from: null | string;
+  jobId: string;
   processed: number;
-  from: string;
-  to: string;
+  progress: number; // 0-100
+  status: "completed" | "failed" | "running";
+  to: null | string;
+  total: number;
 }
 
 // Zod Schemas for API responses
@@ -136,7 +147,6 @@ export const ClinicalSeriesSnapshotSchema = z.object({
 });
 
 export const RebuildSeriesResultSchema = z.object({
-  processed: z.number(),
-  from: z.string(),
-  to: z.string(),
+  jobId: z.string(),
+  message: z.string(),
 });
