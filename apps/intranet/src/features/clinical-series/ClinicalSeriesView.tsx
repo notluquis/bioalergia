@@ -13,6 +13,7 @@ import {
   Label,
   ListBox,
   Pagination,
+  ProgressBar,
   Select,
   Separator,
   Skeleton,
@@ -280,9 +281,9 @@ export function ClinicalSeriesView() {
   return (
     <div className="flex flex-col gap-4 h-full">
       {/* ── Header ─────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-foreground-400 mt-0.5">
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-foreground-400">
             {data ? (
               <>
                 <span className="font-medium text-foreground-600">{data.total}</span> series totales
@@ -291,16 +292,50 @@ export function ClinicalSeriesView() {
               "Tratamientos y pruebas alérgicas agrupados"
             )}
           </p>
+          <Button
+            isDisabled={rebuildMutation.isPending}
+            onPress={() => rebuildMutation.mutateAsync({})}
+            variant="secondary"
+            size="sm"
+          >
+            Reorganizar Series
+          </Button>
         </div>
-        <Button
-          isDisabled={rebuildMutation.isPending}
-          isPending={rebuildMutation.isPending}
-          onPress={() => rebuildMutation.mutateAsync({})}
-          variant="secondary"
-          size="sm"
-        >
-          Reorganizar Series
-        </Button>
+
+        {/* Rebuild progress / result */}
+        {rebuildMutation.isPending && (
+          <ProgressBar isIndeterminate aria-label="Reorganizando series" color="accent" size="sm">
+            <Label className="text-xs text-foreground-400">Reorganizando series…</Label>
+            <ProgressBar.Track>
+              <ProgressBar.Fill />
+            </ProgressBar.Track>
+          </ProgressBar>
+        )}
+        {rebuildMutation.isSuccess && (
+          <Alert status="success">
+            <Alert.Indicator />
+            <Alert.Content>
+              <Alert.Description>
+                {rebuildMutation.data.processed.toLocaleString("es-CL")} eventos procesados
+                {rebuildMutation.data.from && rebuildMutation.data.to
+                  ? ` (${formatEventDate(rebuildMutation.data.from, true)} – ${formatEventDate(rebuildMutation.data.to, true)})`
+                  : ""}
+              </Alert.Description>
+            </Alert.Content>
+          </Alert>
+        )}
+        {rebuildMutation.isError && (
+          <Alert status="danger">
+            <Alert.Indicator />
+            <Alert.Content>
+              <Alert.Description>
+                {rebuildMutation.error instanceof Error
+                  ? rebuildMutation.error.message
+                  : "Error al reorganizar las series"}
+              </Alert.Description>
+            </Alert.Content>
+          </Alert>
+        )}
       </div>
 
       {/* ── Filters ──────────────────────────────────────────────────────── */}
