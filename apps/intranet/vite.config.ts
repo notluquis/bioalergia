@@ -4,16 +4,15 @@ import babel from "@rolldown/plugin-babel";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react, { reactCompilerPreset } from "@vitejs/plugin-react";
+import { defineConfig } from "vite";
 
 const reactCompiler = reactCompilerPreset();
-import { defineConfig } from "vite";
 import checker from "vite-plugin-checker";
 import { cachePreset, VitePWA } from "vite-plugin-pwa";
 import { configDefaults } from "vitest/config";
 
 // Regex Constants (Top-level scope for performance)
 const REGEX_API_FALLBACK = /^\/api/;
-const REGEX_SHARE_TARGET_FALLBACK = /^\/share-target/;
 const API_PROXY_TARGET =
   process.env.VITE_API_PROXY_TARGET ?? process.env.VITE_API_URL ?? "http://127.0.0.1:4000";
 const API_PROXY_SECURE = API_PROXY_TARGET.startsWith("https://");
@@ -55,7 +54,7 @@ export default defineConfig(({ mode }) => {
           cleanupOutdatedCaches: true,
           // No precaching - we use runtime caching only
           globPatterns: [],
-          navigateFallbackDenylist: [REGEX_API_FALLBACK, REGEX_SHARE_TARGET_FALLBACK],
+          navigateFallbackDenylist: [REGEX_API_FALLBACK],
           // Runtime caching strategies
           runtimeCaching: [
             {
@@ -144,17 +143,6 @@ export default defineConfig(({ mode }) => {
               icons: [{ src: "/icons/icon-96.png", sizes: "96x96" }],
             },
           ],
-          share_target: {
-            action: "/share-target",
-            method: "POST",
-            enctype: "multipart/form-data",
-            params: {
-              title: "title",
-              text: "text",
-              url: "url",
-              files: [{ name: "media", accept: ["image/*", "application/pdf"] }],
-            },
-          },
           // iOS/macOS specific
           screenshots: [
             {
