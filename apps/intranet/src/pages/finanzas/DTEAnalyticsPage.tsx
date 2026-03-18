@@ -137,30 +137,37 @@ export function DTEAnalyticsPage() {
             <Tabs.Tab id="purchases-monthly" className="gap-2">
               <BarChart3 className="size-4" />
               Compras Mensual
+              <Tabs.Indicator />
             </Tabs.Tab>
             <Tabs.Tab id="sales-monthly" className="gap-2">
               <BarChart3 className="size-4" />
               Ventas Mensual
+              <Tabs.Indicator />
             </Tabs.Tab>
             <Tabs.Tab id="purchases-details" className="gap-2">
               <BarChart3 className="size-4" />
               Compras Detalle
+              <Tabs.Indicator />
             </Tabs.Tab>
             <Tabs.Tab id="sales-details" className="gap-2">
               <BarChart3 className="size-4" />
               Ventas Detalle
+              <Tabs.Indicator />
             </Tabs.Tab>
             <Tabs.Tab id="purchases-comparison" className="gap-2">
               <TrendingUp className="size-4" />
               Compras Comparativa
+              <Tabs.Indicator />
             </Tabs.Tab>
             <Tabs.Tab id="sales-comparison" className="gap-2">
               <TrendingUp className="size-4" />
               Ventas Comparativa
+              <Tabs.Indicator />
             </Tabs.Tab>
             <Tabs.Tab id="event-links" className="gap-2">
               <TrendingUp className="size-4" />
               Vínculos DTE
+              <Tabs.Indicator />
             </Tabs.Tab>
           </Tabs.List>
         </Tabs.ListContainer>
