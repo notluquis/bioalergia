@@ -13,6 +13,7 @@ import {
   ListBox,
   Pagination,
   Select,
+  Separator,
   Skeleton,
   type SortDescriptor,
   Spinner,
@@ -32,7 +33,7 @@ import type {
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
 
 const KIND_OPTIONS: { label: string; value: ClinicalSeriesKind }[] = [
   { label: "Prueba de Parche", value: "PATCH_TEST" },
@@ -109,6 +110,7 @@ function formatEventDate(dateStr: string): string {
 // Pre-compute per-row event stats once so sort comparisons are O(1).
 
 type DerivedSnapshot = ClinicalSeriesSnapshot & {
+  firstEventDate: string;
   lastEventDate: string;
   nextEventDate: string;
   upcomingCount: number;
@@ -117,13 +119,15 @@ type DerivedSnapshot = ClinicalSeriesSnapshot & {
 function deriveSnapshot(s: ClinicalSeriesSnapshot, today: string): DerivedSnapshot {
   const past = s.events.filter((e) => e.eventDate <= today);
   const future = s.events.filter((e) => e.eventDate > today);
+  const all = s.events.map((e) => e.eventDate);
+  const firstEventDate = all.length ? all.reduce((a, b) => (b < a ? b : a)) : "";
   const lastEventDate = past.length
     ? past.reduce((acc, e) => (e.eventDate > acc ? e.eventDate : acc), past[0]!.eventDate)
     : "";
   const nextEventDate = future.length
     ? future.reduce((acc, e) => (e.eventDate < acc ? e.eventDate : acc), future[0]!.eventDate)
     : "";
-  return { ...s, lastEventDate, nextEventDate, upcomingCount: future.length };
+  return { ...s, firstEventDate, lastEventDate, nextEventDate, upcomingCount: future.length };
 }
 
 // ─── Sorting ──────────────────────────────────────────────────────────────────
@@ -141,6 +145,9 @@ function sortItems(items: DerivedSnapshot[], descriptor: SortDescriptor): Derive
         break;
       case "status":
         cmp = STATUS_LABELS[a.status].localeCompare(STATUS_LABELS[b.status], "es");
+        break;
+      case "firstEvent":
+        cmp = a.firstEventDate.localeCompare(b.firstEventDate);
         break;
       case "lastEvent":
         cmp = a.lastEventDate.localeCompare(b.lastEventDate);
@@ -167,6 +174,7 @@ function sortItems(items: DerivedSnapshot[], descriptor: SortDescriptor): Derive
 export function ClinicalSeriesView() {
   // Pagination state
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<(typeof PAGE_SIZE_OPTIONS)[number]>(20);
 
   // Raw filter states (debounced for text fields)
   const [rutRaw, setRutRaw] = useState("");
@@ -183,10 +191,10 @@ export function ClinicalSeriesView() {
     direction: "ascending",
   });
 
-  // Reset page when filters change
+  // Reset page when filters or page size change
   useEffect(() => {
     setPage(1);
-  }, [debouncedRut, debouncedName, kind, status]);
+  }, [debouncedRut, debouncedName, kind, status, pageSize]);
 
   // Detail drawer
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -194,7 +202,7 @@ export function ClinicalSeriesView() {
 
   const filters: ClinicalSeriesFilters = {
     page,
-    pageSize: PAGE_SIZE,
+    pageSize: pageSize,
     ...(debouncedRut && { patientRut: debouncedRut }),
     ...(debouncedName && { patientName: debouncedName }),
     ...(kind && { kind }),
@@ -205,7 +213,7 @@ export function ClinicalSeriesView() {
   const { data: detail, isLoading: isLoadingDetail } = useClinicalSeriesDetail(selectedId ?? 0);
   const rebuildMutation = useRebuildClinicalSeries();
 
-  const totalPages = data ? Math.ceil(data.total / PAGE_SIZE) : 1;
+  const totalPages = data ? Math.ceil(data.total / pageSize) : 1;
 
   const sortedItems = useMemo(() => {
     if (!data?.items) return [];
@@ -494,51 +502,79 @@ export function ClinicalSeriesView() {
       </Card>
 
       {/* ── Pagination ─────────────────────────────────────────────────────── */}
-      {data && totalPages > 1 && (
+      {data && (
         <div className="flex items-center justify-between text-sm text-foreground-400">
-          <span>
-            Mostrando {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, data.total)} de{" "}
-            {data.total}
-          </span>
-          <Pagination size="sm">
-            <Pagination.Content>
-              <Pagination.Item>
-                <Pagination.Previous
-                  isDisabled={page === 1}
-                  onPress={() => setPage((p) => Math.max(1, p - 1))}
-                >
-                  <Pagination.PreviousIcon />
-                  Anterior
-                </Pagination.Previous>
-              </Pagination.Item>
-              {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
-                const p =
-                  totalPages <= 7
-                    ? i + 1
-                    : page <= 4
+          <div className="flex items-center gap-3">
+            <span>
+              {data.total > 0
+                ? `Mostrando ${(page - 1) * pageSize + 1}–${Math.min(page * pageSize, data.total)} de ${data.total}`
+                : `${data.total} resultados`}
+            </span>
+            <Select
+              value={String(pageSize)}
+              onChange={(key) =>
+                key && setPageSize(Number(key) as (typeof PAGE_SIZE_OPTIONS)[number])
+              }
+              variant="secondary"
+              aria-label="Filas por página"
+            >
+              <Select.Trigger className="w-24">
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  {PAGE_SIZE_OPTIONS.map((n) => (
+                    <ListBox.Item key={n} id={String(n)} textValue={`${n} / pág.`}>
+                      {n} / pág.
+                      <ListBox.ItemIndicator />
+                    </ListBox.Item>
+                  ))}
+                </ListBox>
+              </Select.Popover>
+            </Select>
+          </div>
+          {totalPages > 1 && (
+            <Pagination size="sm">
+              <Pagination.Content>
+                <Pagination.Item>
+                  <Pagination.Previous
+                    isDisabled={page === 1}
+                    onPress={() => setPage((p) => Math.max(1, p - 1))}
+                  >
+                    <Pagination.PreviousIcon />
+                    Anterior
+                  </Pagination.Previous>
+                </Pagination.Item>
+                {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                  const p =
+                    totalPages <= 7
                       ? i + 1
-                      : page >= totalPages - 3
-                        ? totalPages - 6 + i
-                        : page - 3 + i;
-                return (
-                  <Pagination.Item key={p}>
-                    <Pagination.Link isActive={p === page} onPress={() => setPage(p)}>
-                      {p}
-                    </Pagination.Link>
-                  </Pagination.Item>
-                );
-              })}
-              <Pagination.Item>
-                <Pagination.Next
-                  isDisabled={page === totalPages}
-                  onPress={() => setPage((p) => Math.min(totalPages, p + 1))}
-                >
-                  Siguiente
-                  <Pagination.NextIcon />
-                </Pagination.Next>
-              </Pagination.Item>
-            </Pagination.Content>
-          </Pagination>
+                      : page <= 4
+                        ? i + 1
+                        : page >= totalPages - 3
+                          ? totalPages - 6 + i
+                          : page - 3 + i;
+                  return (
+                    <Pagination.Item key={p}>
+                      <Pagination.Link isActive={p === page} onPress={() => setPage(p)}>
+                        {p}
+                      </Pagination.Link>
+                    </Pagination.Item>
+                  );
+                })}
+                <Pagination.Item>
+                  <Pagination.Next
+                    isDisabled={page === totalPages}
+                    onPress={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  >
+                    Siguiente
+                    <Pagination.NextIcon />
+                  </Pagination.Next>
+                </Pagination.Item>
+              </Pagination.Content>
+            </Pagination>
+          )}
         </div>
       )}
 
@@ -608,61 +644,81 @@ export function ClinicalSeriesView() {
                       </Chip>
                     </div>
 
-                    {/* Events */}
+                    {/* Events grouped by year */}
                     {detail.events.length > 0 &&
                       (() => {
                         const today = getTodayStr();
+                        const byYear = detail.events.reduce<Record<string, typeof detail.events>>(
+                          (acc, ev) => {
+                            const year = ev.eventDate.slice(0, 4);
+                            (acc[year] ??= []).push(ev);
+                            return acc;
+                          },
+                          {}
+                        );
+                        const years = Object.keys(byYear).sort();
                         return (
                           <div>
-                            <h3 className="text-sm font-semibold mb-2">
+                            <h3 className="text-sm font-semibold mb-3">
                               Eventos ({detail.events.length})
                             </h3>
-                            <div className="space-y-1.5">
-                              {detail.events.map((event) => {
-                                const isFuture = event.eventDate > today;
-                                return (
-                                  <Surface
-                                    key={event.eventId}
-                                    className={`p-2.5 rounded-lg text-xs${isFuture ? " ring-1 ring-accent/30" : ""}`}
-                                  >
-                                    <div className="flex items-center justify-between gap-2">
-                                      <span
-                                        className={`font-medium${isFuture ? " text-accent" : ""}`}
+                            <div className="space-y-4">
+                              {years.map((year) => (
+                                <div key={year} className="space-y-1.5">
+                                  <div className="flex items-center gap-2">
+                                    <Separator className="flex-1" />
+                                    <Chip size="sm" variant="soft" color="default">
+                                      {year}
+                                    </Chip>
+                                    <Separator className="flex-1" />
+                                  </div>
+                                  {byYear[year]!.map((event) => {
+                                    const isFuture = event.eventDate > today;
+                                    return (
+                                      <Surface
+                                        key={event.eventId}
+                                        className={`p-2.5 rounded-lg text-xs${isFuture ? " ring-1 ring-accent/30" : ""}`}
                                       >
-                                        {formatEventDate(event.eventDate)}
-                                      </span>
-                                      <div className="flex items-center gap-1.5">
-                                        {isFuture && (
-                                          <span className="text-[10px] text-accent font-medium uppercase tracking-wide">
-                                            próximo
+                                        <div className="flex items-center justify-between gap-2">
+                                          <span
+                                            className={`font-medium${isFuture ? " text-accent" : ""}`}
+                                          >
+                                            {formatEventDate(event.eventDate)}
                                           </span>
+                                          <div className="flex items-center gap-1.5">
+                                            {isFuture && (
+                                              <span className="text-[10px] text-accent font-medium uppercase tracking-wide">
+                                                próximo
+                                              </span>
+                                            )}
+                                            {event.seriesStageLabel && (
+                                              <span className="text-foreground-400">
+                                                {event.seriesStageLabel}
+                                              </span>
+                                            )}
+                                          </div>
+                                        </div>
+                                        {event.summary && (
+                                          <p className="text-foreground-400 truncate mt-0.5">
+                                            {event.summary}
+                                          </p>
                                         )}
-                                        {event.seriesStageLabel && (
-                                          <span className="text-foreground-400">
-                                            {event.seriesStageLabel}
-                                          </span>
+                                        {event.dosageValue != null && (
+                                          <p className="text-accent mt-0.5 font-medium">
+                                            {event.dosageValue} {event.dosageUnit}
+                                          </p>
                                         )}
-                                      </div>
-                                    </div>
-                                    {event.summary && (
-                                      <p className="text-foreground-400 truncate mt-0.5">
-                                        {event.summary}
-                                      </p>
-                                    )}
-                                    {event.dosageValue != null && (
-                                      <p className="text-accent mt-0.5 font-medium">
-                                        {event.dosageValue} {event.dosageUnit}
-                                      </p>
-                                    )}
-                                    {event.amountExpected != null && (
-                                      <p className="text-foreground-400 mt-0.5">
-                                        ${(event.amountPaid ?? 0).toLocaleString("es-CL")} / $
-                                        {event.amountExpected.toLocaleString("es-CL")}
-                                      </p>
-                                    )}
-                                  </Surface>
-                                );
-                              })}
+                                        {event.amountExpected != null && (
+                                          <p className="text-foreground-400 mt-0.5">
+                                            ${(event.amountPaid ?? 0).toLocaleString("es-CL")} / $
+                                            {event.amountExpected.toLocaleString("es-CL")}
+                                          </p>
+                                        )}
+                                      </Surface>
+                                    );
+                                  })}
+                                </div>
+                              ))}
                             </div>
                           </div>
                         );

@@ -264,35 +264,6 @@ export function WhatsappSettingsPage() {
                 )}
               </Card.Content>
             </Card>
-
-            {/* Env vars info */}
-            <Card className="md:col-span-2">
-              <Card.Header>
-                <h2 className="text-base font-semibold">Variables de entorno requeridas</h2>
-              </Card.Header>
-              <Card.Content>
-                <div className="grid gap-1 font-mono text-xs text-gray-600 md:grid-cols-2">
-                  {[
-                    "WHATSAPP_ACCESS_TOKEN",
-                    "WHATSAPP_PHONE_NUMBER_ID",
-                    "WHATSAPP_TEMPLATE_NAME (default: hello_world)",
-                    "WHATSAPP_TEMPLATE_LANGUAGE (default: en_US)",
-                    "WHATSAPP_WEBHOOK_VERIFY_TOKEN",
-                    "WHATSAPP_APP_SECRET",
-                    "ENABLE_WHATSAPP_NOTIFICATIONS=true",
-                    "DOCTORALIA_IMAP_HOST",
-                    "DOCTORALIA_IMAP_USER",
-                    "DOCTORALIA_IMAP_PASS",
-                    "DOCTORALIA_IMAP_PORT (default: 993)",
-                    "DOCTORALIA_EMAIL_SENDER_FILTER (default: doctoralia.com)",
-                  ].map((v) => (
-                    <span key={v} className="rounded bg-gray-100 px-2 py-0.5">
-                      {v}
-                    </span>
-                  ))}
-                </div>
-              </Card.Content>
-            </Card>
           </div>
         </Tabs.Panel>
       </Tabs>
