@@ -3,7 +3,7 @@ import { Alert, Button, Card, Chip, Input, Skeleton, Tabs, TextField } from "@he
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef, PaginationState } from "@tanstack/react-table";
 import dayjs from "dayjs";
-import { MessageCircle, RefreshCw, Send } from "lucide-react";
+import { RefreshCw, Send } from "lucide-react";
 import { useState } from "react";
 
 import { DataTable } from "@/components/data-table/DataTable";
@@ -158,11 +158,6 @@ export function WhatsappSettingsPage() {
 
   return (
     <div className={PAGE_CONTAINER}>
-      <div className="flex items-center gap-3">
-        <MessageCircle className="h-6 w-6 text-green-600" />
-        <h1 className="text-2xl font-bold">WhatsApp — Notificaciones</h1>
-      </div>
-
       <Tabs>
         <Tabs.List>
           <Tabs.Tab id="notifications">Notificaciones</Tabs.Tab>

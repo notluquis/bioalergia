@@ -187,6 +187,11 @@ export function ClinicalSeriesView() {
     }
   };
 
+  const handleDrawerOpenChange = (open: boolean) => {
+    setDrawerOpen(open);
+    if (!open) setSelectedId(null);
+  };
+
   const handleKindChange = (value: Key | null) => {
     setKind(value ? (value as ClinicalSeriesKind) : undefined);
   };
@@ -209,7 +214,6 @@ export function ClinicalSeriesView() {
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Series Clínicas</h1>
           <p className="text-sm text-foreground-400 mt-0.5">
             {data ? (
               <>
@@ -470,7 +474,7 @@ export function ClinicalSeriesView() {
 
       {/* ── Detail Drawer ────────────────────────────────────────────────── */}
       <Drawer>
-        <Drawer.Backdrop isOpen={drawerOpen} onOpenChange={setDrawerOpen} variant="blur">
+        <Drawer.Backdrop isOpen={drawerOpen} onOpenChange={handleDrawerOpenChange} variant="blur">
           <Drawer.Content placement="right">
             <Drawer.Dialog>
               <Drawer.CloseTrigger />
@@ -540,7 +544,7 @@ export function ClinicalSeriesView() {
                         <h3 className="text-sm font-semibold mb-2">
                           Eventos ({detail.events.length})
                         </h3>
-                        <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
+                        <div className="space-y-1.5">
                           {detail.events.map((event) => (
                             <Surface key={event.eventId} className="p-2.5 rounded-lg text-xs">
                               <div className="flex items-center justify-between gap-2">

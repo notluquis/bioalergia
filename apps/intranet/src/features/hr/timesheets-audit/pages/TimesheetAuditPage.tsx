@@ -21,7 +21,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import { Users, X } from "lucide-react";
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, startTransition, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { EmployeeMultiSelectPopover } from "@/features/hr/components/EmployeeMultiSelectPopover";
 import { employeeKeys } from "@/features/hr/employees/queries";
@@ -477,7 +477,7 @@ function EmployeeSelectionPanel({
         <EmployeeMultiSelectPopover
           buttonLabel="+ Agregar empleado"
           maxSelected={MAX_EMPLOYEES}
-          onChange={setSelectedEmployeeIds}
+          onChange={(ids) => startTransition(() => setSelectedEmployeeIds(ids))}
           options={employeeOptions}
           selectedIds={selectedEmployeeIds}
         />

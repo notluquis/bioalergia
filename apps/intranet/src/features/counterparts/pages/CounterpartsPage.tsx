@@ -23,7 +23,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import type { ColumnDef, OnChangeFn, PaginationState } from "@tanstack/react-table";
 import { Check, Filter, Plus, RefreshCcw } from "lucide-react";
-import { Suspense, useMemo, useState } from "react";
+import { startTransition, Suspense, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { TableRegion } from "@/components/data-table/TableRegion";
 import { useAuth } from "@/context/AuthContext";
@@ -510,8 +510,10 @@ export function CounterpartsPage() {
         onSelectionChange={(key) => {
           const nextTab: CounterpartsTab =
             String(key) === "unassigned-payouts" ? "unassigned-payouts" : "counterparts";
-          markTabAsMounted(nextTab);
-          handleTabSelectionChange(nextTab);
+          startTransition(() => {
+            markTabAsMounted(nextTab);
+            handleTabSelectionChange(nextTab);
+          });
         }}
         selectedKey={selectedTab}
       >
@@ -994,11 +996,11 @@ function CounterpartsToolbar({
               onInputChange={onSearchQueryChange}
               onSelectionChange={(key) => {
                 if (key === null) {
-                  onSelectCounterpart(null);
+                  startTransition(() => onSelectCounterpart(null));
                   return;
                 }
                 const parsed = Number(String(key));
-                onSelectCounterpart(Number.isFinite(parsed) ? parsed : null);
+                startTransition(() => onSelectCounterpart(Number.isFinite(parsed) ? parsed : null));
               }}
               selectedKey={selectedId === null ? null : String(selectedId)}
             >
