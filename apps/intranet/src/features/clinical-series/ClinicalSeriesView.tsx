@@ -479,13 +479,17 @@ export function ClinicalSeriesView() {
                       </Table.Cell>
                       <Table.Cell className="text-right">
                         <div className="flex flex-col items-end gap-0.5">
-                          <span className="text-xs text-foreground-400">
-                            ${s.totalPaid.toLocaleString("es-CL")} /
-                            <span className="text-foreground-500">
-                              {" "}
-                              ${s.totalExpected.toLocaleString("es-CL")}
+                          {s.totalExpected === 0 && s.totalPaid === 0 ? (
+                            <span className="text-xs text-foreground-300 italic">Por definir</span>
+                          ) : (
+                            <span className="text-xs text-foreground-400">
+                              ${s.totalPaid.toLocaleString("es-CL")} /
+                              <span className="text-foreground-500">
+                                {" "}
+                                ${s.totalExpected.toLocaleString("es-CL")}
+                              </span>
                             </span>
-                          </span>
+                          )}
                           {s.remainingExpected > 0 && (
                             <span className="text-xs text-danger font-medium">
                               −${s.remainingExpected.toLocaleString("es-CL")} pend.
@@ -585,8 +589,12 @@ export function ClinicalSeriesView() {
                 <Drawer.Heading>
                   {isLoadingDetail ? (
                     <Skeleton className="h-5 w-32 rounded-lg" />
+                  ) : detail?.patientName ? (
+                    detail.patientName
                   ) : (
-                    (detail?.patientName ?? "Detalle")
+                    <span className="text-foreground-400 italic font-normal text-base">
+                      Sin nombre
+                    </span>
                   )}
                 </Drawer.Heading>
                 {detail?.patientRut && (
@@ -604,32 +612,49 @@ export function ClinicalSeriesView() {
                 ) : detail ? (
                   <div className="space-y-4">
                     {/* Financial summary */}
-                    <div className="grid grid-cols-2 gap-2">
-                      <Surface className="p-3 rounded-xl">
-                        <p className="text-xs text-foreground-400 mb-1">Esperado</p>
-                        <p className="font-semibold text-accent text-lg">
-                          ${detail.totalExpected.toLocaleString("es-CL")}
-                        </p>
-                      </Surface>
-                      <Surface className="p-3 rounded-xl">
-                        <p className="text-xs text-foreground-400 mb-1">Pagado</p>
-                        <p className="font-semibold text-success text-lg">
-                          ${detail.totalPaid.toLocaleString("es-CL")}
-                        </p>
-                      </Surface>
-                      <Surface className="p-3 rounded-xl">
-                        <p className="text-xs text-foreground-400 mb-1">Pendiente</p>
-                        <p
-                          className={`font-semibold text-lg ${detail.remainingExpected > 0 ? "text-danger" : "text-foreground"}`}
-                        >
-                          ${detail.remainingExpected.toLocaleString("es-CL")}
-                        </p>
-                      </Surface>
-                      <Surface className="p-3 rounded-xl">
-                        <p className="text-xs text-foreground-400 mb-1">Eventos</p>
-                        <p className="font-semibold text-lg">{detail.events.length}</p>
-                      </Surface>
-                    </div>
+                    {(() => {
+                      const noFinancial = detail.totalExpected === 0 && detail.totalPaid === 0;
+                      return (
+                        <div className="grid grid-cols-2 gap-2">
+                          <Surface className="p-3 rounded-xl">
+                            <p className="text-xs text-foreground-400 mb-1">Esperado</p>
+                            {noFinancial ? (
+                              <p className="text-sm text-foreground-300 italic">Por definir</p>
+                            ) : (
+                              <p className="font-semibold text-accent text-lg">
+                                ${detail.totalExpected.toLocaleString("es-CL")}
+                              </p>
+                            )}
+                          </Surface>
+                          <Surface className="p-3 rounded-xl">
+                            <p className="text-xs text-foreground-400 mb-1">Pagado</p>
+                            {noFinancial ? (
+                              <p className="text-sm text-foreground-300 italic">Por definir</p>
+                            ) : (
+                              <p className="font-semibold text-success text-lg">
+                                ${detail.totalPaid.toLocaleString("es-CL")}
+                              </p>
+                            )}
+                          </Surface>
+                          <Surface className="p-3 rounded-xl">
+                            <p className="text-xs text-foreground-400 mb-1">Pendiente</p>
+                            {noFinancial ? (
+                              <p className="text-sm text-foreground-300 italic">Por definir</p>
+                            ) : (
+                              <p
+                                className={`font-semibold text-lg ${detail.remainingExpected > 0 ? "text-danger" : "text-foreground"}`}
+                              >
+                                ${detail.remainingExpected.toLocaleString("es-CL")}
+                              </p>
+                            )}
+                          </Surface>
+                          <Surface className="p-3 rounded-xl">
+                            <p className="text-xs text-foreground-400 mb-1">Eventos</p>
+                            <p className="font-semibold text-lg">{detail.events.length}</p>
+                          </Surface>
+                        </div>
+                      );
+                    })()}
 
                     {/* Tipo + Estado */}
                     <div className="flex gap-2">
@@ -705,10 +730,14 @@ export function ClinicalSeriesView() {
                                             {event.dosageValue} {event.dosageUnit}
                                           </p>
                                         )}
-                                        {event.amountExpected != null && (
+                                        {event.amountExpected != null ? (
                                           <p className="text-foreground-400 mt-0.5">
                                             ${(event.amountPaid ?? 0).toLocaleString("es-CL")} / $
                                             {event.amountExpected.toLocaleString("es-CL")}
+                                          </p>
+                                        ) : (
+                                          <p className="text-foreground-300 italic mt-0.5">
+                                            Por definir
                                           </p>
                                         )}
                                       </Surface>
