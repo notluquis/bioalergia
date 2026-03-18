@@ -36,61 +36,82 @@ export function ProfileStep(props: ProfileStepProps) {
         <p className="text-default-500 text-sm">Información básica para tu perfil.</p>
       </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <TextField isRequired name="names">
+        <TextField
+          isRequired
+          name="names"
+          onChange={(v) => onProfileChange("names", v)}
+          value={profile.names}
+        >
           <Label>Nombres</Label>
-          <Input onChange={(e) => onProfileChange("names", e.target.value)} value={profile.names} />
+          <Input />
         </TextField>
 
-        <TextField isRequired name="loginEmail" type="email">
+        <TextField
+          isRequired
+          name="loginEmail"
+          onChange={(v) => onProfileChange("loginEmail", v)}
+          type="email"
+          value={profile.loginEmail}
+        >
           <Label>Correo de login</Label>
-          <Input
-            onChange={(e) => onProfileChange("loginEmail", e.target.value)}
-            value={profile.loginEmail}
-          />
+          <Input />
           <Description>
             Puedes usar otro correo solo para iniciar sesión. Si no, usa el mismo actual.
           </Description>
         </TextField>
 
-        <TextField isInvalid={Boolean(error?.includes("RUT"))} isRequired name="rut" type="text">
+        <TextField
+          isInvalid={Boolean(error?.includes("RUT"))}
+          isRequired
+          name="rut"
+          onChange={(v) => onProfileChange("rut", v)}
+          type="text"
+          value={profile.rut}
+        >
           <Label>RUT</Label>
           <Input
             onBlur={() => onProfileChange("rut", formatRut(profile.rut))}
-            onChange={(e) => onProfileChange("rut", e.target.value)}
             placeholder="12.345.678-9"
-            value={profile.rut}
           />
           <FieldError>RUT inválido</FieldError>
         </TextField>
 
-        <TextField name="fatherName">
+        <TextField
+          name="fatherName"
+          onChange={(v) => onProfileChange("fatherName", v)}
+          value={profile.fatherName}
+        >
           <Label>Primer apellido</Label>
-          <Input
-            onChange={(e) => onProfileChange("fatherName", e.target.value)}
-            value={profile.fatherName}
-          />
+          <Input />
         </TextField>
 
-        <TextField name="motherName">
+        <TextField
+          name="motherName"
+          onChange={(v) => onProfileChange("motherName", v)}
+          value={profile.motherName}
+        >
           <Label>Segundo apellido</Label>
-          <Input
-            onChange={(e) => onProfileChange("motherName", e.target.value)}
-            value={profile.motherName}
-          />
+          <Input />
         </TextField>
 
-        <TextField name="phone" type="tel">
+        <TextField
+          name="phone"
+          onChange={(v) => onProfileChange("phone", v)}
+          type="tel"
+          value={profile.phone}
+        >
           <Label>Teléfono</Label>
-          <Input onChange={(e) => onProfileChange("phone", e.target.value)} value={profile.phone} />
+          <Input />
         </TextField>
 
         <div className="md:col-span-2">
-          <TextField name="address">
+          <TextField
+            name="address"
+            onChange={(v) => onProfileChange("address", v)}
+            value={profile.address}
+          >
             <Label>Dirección</Label>
-            <Input
-              onChange={(e) => onProfileChange("address", e.target.value)}
-              value={profile.address}
-            />
+            <Input />
           </TextField>
         </div>
       </div>

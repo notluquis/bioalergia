@@ -285,14 +285,13 @@ function MedicalCertificatePage() {
             <div className="grid gap-4 sm:grid-cols-3">
               <form.Field name="restDays">
                 {(field) => (
-                  <TextField type="number">
+                  <TextField
+                    type="number"
+                    value={field.state.value?.toString() || "0"}
+                    onChange={(v) => field.handleChange(Number(v))}
+                  >
                     <Label>Días de Reposo</Label>
-                    <Input
-                      min={0}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(Number(e.target.value))}
-                      value={field.state.value?.toString() || "0"}
-                    />
+                    <Input min={0} onBlur={field.handleBlur} />
                   </TextField>
                 )}
               </form.Field>

@@ -33,14 +33,14 @@ export function InventoryItemForm({ item, onCancel, onSave, saving }: InventoryI
   return (
     <form className="space-y-4 text-sm" onSubmit={handleSubmit}>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <TextField isRequired type="text">
+        <TextField
+          isRequired
+          onChange={(v) => setForm({ ...form, name: v })}
+          type="text"
+          value={form.name ?? ""}
+        >
           <Label>Nombre del item</Label>
-          <Input
-            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-              setForm({ ...form, name: event.target.value });
-            }}
-            value={form.name ?? ""}
-          />
+          <Input />
         </TextField>
 
         <Select
@@ -71,25 +71,23 @@ export function InventoryItemForm({ item, onCancel, onSave, saving }: InventoryI
           </Select.Popover>
         </Select>
       </div>
-      <TextField>
+      <TextField
+        onChange={(v) => setForm({ ...form, description: v })}
+        value={form.description ?? ""}
+      >
         <Label>Descripción</Label>
-        <TextArea
-          onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => {
-            setForm({ ...form, description: event.target.value });
-          }}
-          rows={3}
-          value={form.description ?? ""}
-        />
+        <TextArea rows={3} />
       </TextField>
 
-      <TextField isDisabled={Boolean(item)} isRequired type="number">
+      <TextField
+        isDisabled={Boolean(item)}
+        isRequired
+        onChange={(v) => setForm({ ...form, current_stock: Number(v) })}
+        type="number"
+        value={String(form.current_stock ?? 0)}
+      >
         <Label>Stock inicial</Label>
-        <Input
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-            setForm({ ...form, current_stock: Number(event.target.value) });
-          }}
-          value={String(form.current_stock ?? 0)}
-        />
+        <Input />
       </TextField>
 
       <div className="flex items-center justify-end gap-3 pt-4">

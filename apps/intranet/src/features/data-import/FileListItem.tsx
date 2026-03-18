@@ -85,7 +85,7 @@ export function FileListItem({
       {/* Icon */}
       <div className="shrink-0">
         <Icon
-          className={`h-5 w-5 ${showProgress ? "" : ""} ${
+          className={`h-5 w-5 ${showProgress ? "animate-spin" : ""} ${
             status === "error" ? "text-danger" : "text-default-500"
           }`}
         />

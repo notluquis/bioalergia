@@ -1,7 +1,7 @@
 import { Button, Form, Input, Label, Link, TextField } from "@heroui/react";
 import { useLocation } from "@tanstack/react-router";
 import { Fingerprint, Mail, Moon, Sun } from "lucide-react";
-import type { ChangeEvent, FormEvent } from "react";
+import type { FormEvent } from "react";
 import { useSettings } from "@/context/SettingsContext";
 import { useLoginLogic } from "@/features/auth/hooks/useLoginLogic";
 import { useTheme } from "@/hooks/use-theme";
@@ -62,15 +62,15 @@ export function LoginPage() {
               clearError();
               credentialsMutation.mutate();
             }}
-            handleEmailChange={(e) => updateState({ email: e.target.value })}
-            handlePasswordChange={(e) => updateState({ password: e.target.value })}
+            handleEmailChange={(v) => updateState({ email: v })}
+            handlePasswordChange={(v) => updateState({ password: v })}
             switchToPasskey={() => updateState({ step: "passkey", formError: null })}
             handleMfaSubmit={(e: React.FormEvent<HTMLFormElement>) => {
               e.preventDefault();
               clearError();
               mfaMutation.mutate();
             }}
-            handleMfaCodeChange={(e) => updateState({ mfaCode: e.target.value })}
+            handleMfaCodeChange={(v) => updateState({ mfaCode: v })}
             switchToCredentialsFromMfa={() =>
               updateState({ step: "credentials", mfaCode: "", formError: null })
             }
@@ -166,8 +166,8 @@ interface CredentialsStepProps {
   email: string;
   password: string;
   handleCredentialsSubmit: (e: FormEvent<HTMLFormElement>) => void;
-  handleEmailChange: (e: ChangeEvent<HTMLInputElement>) => void;
-  handlePasswordChange: (e: ChangeEvent<HTMLInputElement>) => void;
+  handleEmailChange: (value: string) => void;
+  handlePasswordChange: (value: string) => void;
   switchToPasskey: () => void;
 }
 
@@ -183,28 +183,28 @@ function CredentialsStep({
   return (
     <Form className="w-full space-y-4" onSubmit={handleCredentialsSubmit} validationBehavior="aria">
       <div className="mx-auto w-full max-w-xs">
-        <TextField isRequired name="email" type="email">
+        <TextField
+          isRequired
+          isDisabled={isLoading}
+          name="email"
+          type="email"
+          value={email}
+          onChange={handleEmailChange}
+        >
           <Label>Correo electrónico</Label>
-          <Input
-            autoComplete="username"
-            disabled={isLoading}
-            onChange={handleEmailChange}
-            placeholder="usuario@bioalergia.cl"
-            value={email}
-          />
+          <Input autoComplete="username" placeholder="usuario@bioalergia.cl" />
         </TextField>
       </div>
       <div className="mx-auto w-full max-w-xs">
-        <TextField name="password" type="password">
+        <TextField
+          isDisabled={isLoading}
+          name="password"
+          type="password"
+          value={password}
+          onChange={handlePasswordChange}
+        >
           <Label>Contraseña</Label>
-          <Input
-            autoComplete="current-password"
-            disabled={isLoading}
-            enterKeyHint="go"
-            onChange={handlePasswordChange}
-            placeholder="••••••••"
-            value={password}
-          />
+          <Input autoComplete="current-password" enterKeyHint="go" placeholder="••••••••" />
         </TextField>
       </div>
 
@@ -238,7 +238,7 @@ interface MfaStepProps {
   isLoading: boolean;
   mfaCode: string;
   handleMfaSubmit: (e: FormEvent<HTMLFormElement>) => void;
-  handleMfaCodeChange: (e: ChangeEvent<HTMLInputElement>) => void;
+  handleMfaCodeChange: (value: string) => void;
   switchToCredentialsFromMfa: () => void;
 }
 
@@ -252,18 +252,22 @@ function MfaStep({
   return (
     <Form className="w-full space-y-4" onSubmit={handleMfaSubmit} validationBehavior="aria">
       <div className="mx-auto w-full max-w-xs">
-        <TextField isRequired name="mfaCode" type="text">
+        <TextField
+          isRequired
+          isDisabled={isLoading}
+          name="mfaCode"
+          type="text"
+          value={mfaCode}
+          onChange={handleMfaCodeChange}
+        >
           <Label>Código de seguridad</Label>
           <Input
             autoComplete="one-time-code"
             className="text-center text-2xl tracking-widest"
-            disabled={isLoading}
             inputMode="numeric"
             maxLength={6}
-            onChange={handleMfaCodeChange}
             pattern="[0-9]*"
             placeholder="000000"
-            value={mfaCode}
           />
         </TextField>
       </div>
@@ -304,11 +308,11 @@ interface LoginContentProps {
   handlePasskeyLogin: () => void;
   switchToCredentials: () => void;
   handleCredentialsSubmit: (e: FormEvent<HTMLFormElement>) => void;
-  handleEmailChange: (e: ChangeEvent<HTMLInputElement>) => void;
-  handlePasswordChange: (e: ChangeEvent<HTMLInputElement>) => void;
+  handleEmailChange: (value: string) => void;
+  handlePasswordChange: (value: string) => void;
   switchToPasskey: () => void;
   handleMfaSubmit: (e: FormEvent<HTMLFormElement>) => void;
-  handleMfaCodeChange: (e: ChangeEvent<HTMLInputElement>) => void;
+  handleMfaCodeChange: (value: string) => void;
   switchToCredentialsFromMfa: () => void;
 }
 

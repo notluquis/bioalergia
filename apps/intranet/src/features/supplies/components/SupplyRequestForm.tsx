@@ -150,17 +150,15 @@ export function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyRequestFo
       <form.Field name="quantity">
         {(field) => (
           <div>
-            <TextField isInvalid={field.state.meta.errors.length > 0} isRequired type="number">
+            <TextField
+              isInvalid={field.state.meta.errors.length > 0}
+              isRequired
+              onChange={(v) => field.handleChange(Number.parseInt(v, 10) || 1)}
+              type="number"
+              value={String(field.state.value)}
+            >
               <Label>Cantidad</Label>
-              <Input
-                inputMode="numeric"
-                min="1"
-                onBlur={field.handleBlur}
-                onChange={(e) => {
-                  field.handleChange(Number.parseInt(e.target.value, 10) || 1);
-                }}
-                value={String(field.state.value)}
-              />
+              <Input inputMode="numeric" min="1" onBlur={field.handleBlur} />
               {field.state.meta.errors.length > 0 && (
                 <FieldError>{formatErrors(field.state.meta.errors)}</FieldError>
               )}

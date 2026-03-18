@@ -264,7 +264,7 @@ export function GenerateReportModal({ onClose, open, reportType }: Props) {
                   <Button isDisabled={mutation.isPending} type="submit" variant="primary">
                     {mutation.isPending ? (
                       <>
-                        <Loader2 className="mr-2 h-4 w-4 " />
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         {progress
                           ? `Creando ${progress.current}/${progress.total}...`
                           : "Creando..."}

@@ -221,16 +221,16 @@ function PatientsListPage() {
             <Tabs.Panel className="space-y-4 pt-4" id="clinical">
               {isTabMounted("clinical") ? (
                 <>
-                  <TextField className="max-w-md">
+                  <TextField
+                    className="max-w-md"
+                    value={searchClinical}
+                    onChange={(v) => {
+                      setSearchClinical(v);
+                      setPaginationClinical((prev) => ({ ...prev, pageIndex: 0 }));
+                    }}
+                  >
                     <InputGroup>
-                      <InputGroup.Input
-                        onChange={(e) => {
-                          setSearchClinical(e.target.value);
-                          setPaginationClinical((prev) => ({ ...prev, pageIndex: 0 }));
-                        }}
-                        placeholder="Buscar ficha clínica por nombre o RUT..."
-                        value={searchClinical}
-                      />
+                      <InputGroup.Input placeholder="Buscar ficha clínica por nombre o RUT..." />
                       <InputGroup.Suffix>
                         <Search className="text-default-300" size={18} />
                       </InputGroup.Suffix>
@@ -259,16 +259,16 @@ function PatientsListPage() {
             <Tabs.Panel className="space-y-4 pt-4" id="dte">
               {isTabMounted("dte") ? (
                 <>
-                  <TextField className="max-w-md">
+                  <TextField
+                    className="max-w-md"
+                    value={searchDte}
+                    onChange={(v) => {
+                      setSearchDte(v);
+                      setPaginationDte((prev) => ({ ...prev, pageIndex: 0 }));
+                    }}
+                  >
                     <InputGroup>
-                      <InputGroup.Input
-                        onChange={(e) => {
-                          setSearchDte(e.target.value);
-                          setPaginationDte((prev) => ({ ...prev, pageIndex: 0 }));
-                        }}
-                        placeholder="Buscar en fuente DTE por nombre o RUT..."
-                        value={searchDte}
-                      />
+                      <InputGroup.Input placeholder="Buscar en fuente DTE por nombre o RUT..." />
                       <InputGroup.Suffix>
                         <Search className="text-default-300" size={18} />
                       </InputGroup.Suffix>

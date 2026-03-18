@@ -58,17 +58,13 @@ export function DataTableFacetedFilter<TData, TValue>({
       </Dropdown.Trigger>
       <Dropdown.Popover className="w-50 p-0" placement="bottom start">
         <div className="border-default-200/60 border-b p-2">
-          <TextField>
+          <TextField value={search} onChange={(v) => setSearch(v)}>
             <Input
               className="h-8"
-              onChange={(e) => {
-                setSearch(e.target.value);
-              }}
               onKeyDown={(e) => {
                 e.stopPropagation();
               }}
               placeholder={title}
-              value={search}
             />
           </TextField>
         </div>

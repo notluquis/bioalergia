@@ -157,16 +157,12 @@ function RoutesAuditPage() {
           aria-label="Filtros de auditoría de rutas"
           className="w-full grid-flow-row items-stretch gap-3 sm:grid-flow-col sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
         >
-          <TextField className="w-full">
+          <TextField className="w-full" value={searchTerm} onChange={(v) => setSearchTerm(v)}>
             <InputGroup>
               <InputGroup.Prefix className="text-muted-foreground">
                 <Search className="size-4" />
               </InputGroup.Prefix>
-              <InputGroup.Input
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
-                placeholder="Search routes..."
-                value={searchTerm}
-              />
+              <InputGroup.Input placeholder="Search routes..." />
             </InputGroup>
           </TextField>
           <ToggleButtonGroup

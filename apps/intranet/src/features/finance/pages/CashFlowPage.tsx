@@ -2531,13 +2531,13 @@ export function CashFlowPage() {
                         className="grid grid-cols-1 gap-4 md:grid-cols-5 md:items-end"
                         onSubmit={handleCreateCategory}
                       >
-                        <TextField className="md:col-span-2">
+                        <TextField
+                          className="md:col-span-2"
+                          value={newCategoryName}
+                          onChange={(v) => setNewCategoryName(v)}
+                        >
                           <Label>Nombre</Label>
-                          <Input
-                            value={newCategoryName}
-                            onChange={(e) => setNewCategoryName(e.target.value)}
-                            placeholder="Ej: Honorarios médicos"
-                          />
+                          <Input placeholder="Ej: Honorarios médicos" />
                         </TextField>
 
                         <Select
@@ -2608,12 +2608,12 @@ export function CashFlowPage() {
                             >
                               {editingCategoryId === category.id ? (
                                 <div className="grid w-full grid-cols-1 gap-3 md:grid-cols-[1fr_160px_130px_90px_auto] md:items-end">
-                                  <TextField>
+                                  <TextField
+                                    value={editingCategoryName}
+                                    onChange={(v) => setEditingCategoryName(v)}
+                                  >
                                     <Label>Nombre</Label>
-                                    <Input
-                                      value={editingCategoryName}
-                                      onChange={(e) => setEditingCategoryName(e.target.value)}
-                                    />
+                                    <Input />
                                   </TextField>
                                   <Select
                                     value={editingCategoryType}
@@ -2733,13 +2733,13 @@ export function CashFlowPage() {
                       className="grid grid-cols-1 gap-3 md:grid-cols-6"
                       onSubmit={handleCreateCompensationProfile}
                     >
-                      <TextField className="md:col-span-2">
+                      <TextField
+                        className="md:col-span-2"
+                        value={newCompensationName}
+                        onChange={(v) => setNewCompensationName(v)}
+                      >
                         <Label>Nombre perfil</Label>
-                        <Input
-                          placeholder="Ej: Sueldo Lucas"
-                          value={newCompensationName}
-                          onChange={(e) => setNewCompensationName(e.target.value)}
-                        />
+                        <Input placeholder="Ej: Sueldo Lucas" />
                       </TextField>
                       <Select
                         className="md:col-span-2"
@@ -2879,16 +2879,12 @@ export function CashFlowPage() {
                             </div>
                           </div>
                           <div className="flex items-end gap-2">
-                            <TextField>
+                            <TextField
+                              value={budgetAmountInput}
+                              onChange={(v) => setBudgetAmountInput(v.replace(/[^0-9.-]/g, ""))}
+                            >
                               <Label>Presupuesto mes</Label>
-                              <Input
-                                inputMode="decimal"
-                                placeholder="Ej: 1500000"
-                                value={budgetAmountInput}
-                                onChange={(e) =>
-                                  setBudgetAmountInput(e.target.value.replace(/[^0-9.-]/g, ""))
-                                }
-                              />
+                              <Input inputMode="decimal" placeholder="Ej: 1500000" />
                             </TextField>
                             <Button
                               isPending={upsertCompensationBudgetMutation.isPending}
@@ -2922,13 +2918,13 @@ export function CashFlowPage() {
                       className="grid grid-cols-1 gap-3 md:grid-cols-8"
                       onSubmit={handleCreateAutoCategoryRule}
                     >
-                      <TextField className="md:col-span-2">
+                      <TextField
+                        className="md:col-span-2"
+                        value={newRuleName}
+                        onChange={(v) => setNewRuleName(v)}
+                      >
                         <Label>Nombre regla</Label>
-                        <Input
-                          placeholder="Ej: Paula Flores MP Egreso"
-                          value={newRuleName}
-                          onChange={(e) => setNewRuleName(e.target.value)}
-                        />
+                        <Input placeholder="Ej: Paula Flores MP Egreso" />
                       </TextField>
                       <Select
                         className="md:col-span-2"
@@ -3015,53 +3011,42 @@ export function CashFlowPage() {
                           </ListBox>
                         </Select.Popover>
                       </Select>
-                      <TextField>
+                      <TextField
+                        value={newRulePriority}
+                        onChange={(v) => setNewRulePriority(v.replace(/[^\d-]/g, ""))}
+                      >
                         <Label>Prioridad</Label>
-                        <Input
-                          inputMode="numeric"
-                          value={newRulePriority}
-                          onChange={(e) =>
-                            setNewRulePriority(e.target.value.replace(/[^\d-]/g, ""))
-                          }
-                        />
+                        <Input inputMode="numeric" />
                       </TextField>
-                      <TextField>
+                      <TextField
+                        value={newRuleMinAmount}
+                        onChange={(v) => setNewRuleMinAmount(v.replace(/[^0-9.-]/g, ""))}
+                      >
                         <Label>Monto mínimo</Label>
-                        <Input
-                          inputMode="decimal"
-                          placeholder="0"
-                          value={newRuleMinAmount}
-                          onChange={(e) =>
-                            setNewRuleMinAmount(e.target.value.replace(/[^0-9.-]/g, ""))
-                          }
-                        />
+                        <Input inputMode="decimal" placeholder="0" />
                       </TextField>
-                      <TextField>
+                      <TextField
+                        value={newRuleMaxAmount}
+                        onChange={(v) => setNewRuleMaxAmount(v.replace(/[^0-9.-]/g, ""))}
+                      >
                         <Label>Monto máximo</Label>
-                        <Input
-                          inputMode="decimal"
-                          placeholder="200000"
-                          value={newRuleMaxAmount}
-                          onChange={(e) =>
-                            setNewRuleMaxAmount(e.target.value.replace(/[^0-9.-]/g, ""))
-                          }
-                        />
+                        <Input inputMode="decimal" placeholder="200000" />
                       </TextField>
-                      <TextField className="md:col-span-2">
+                      <TextField
+                        className="md:col-span-2"
+                        value={newRuleCommentContains}
+                        onChange={(v) => setNewRuleCommentContains(v)}
+                      >
                         <Label>Comentario contiene</Label>
-                        <Input
-                          placeholder="Ref: Venta presencial"
-                          value={newRuleCommentContains}
-                          onChange={(e) => setNewRuleCommentContains(e.target.value)}
-                        />
+                        <Input placeholder="Ref: Venta presencial" />
                       </TextField>
-                      <TextField className="md:col-span-2">
+                      <TextField
+                        className="md:col-span-2"
+                        value={newRuleDescriptionContains}
+                        onChange={(v) => setNewRuleDescriptionContains(v)}
+                      >
                         <Label>Descripción contiene</Label>
-                        <Input
-                          placeholder="Opcional"
-                          value={newRuleDescriptionContains}
-                          onChange={(e) => setNewRuleDescriptionContains(e.target.value)}
-                        />
+                        <Input placeholder="Opcional" />
                       </TextField>
                       <div className="flex items-end md:col-span-8">
                         <Button type="submit" isPending={createAutoCategoryRuleMutation.isPending}>
@@ -3083,12 +3068,13 @@ export function CashFlowPage() {
                           >
                             {editingRuleId === rule.id ? (
                               <div className="grid grid-cols-1 gap-3 md:grid-cols-8 md:items-end">
-                                <TextField className="md:col-span-2">
+                                <TextField
+                                  className="md:col-span-2"
+                                  value={editingRuleName}
+                                  onChange={(v) => setEditingRuleName(v)}
+                                >
                                   <Label>Nombre regla</Label>
-                                  <Input
-                                    value={editingRuleName}
-                                    onChange={(e) => setEditingRuleName(e.target.value)}
-                                  />
+                                  <Input />
                                 </TextField>
                                 <Select
                                   value={
@@ -3185,55 +3171,46 @@ export function CashFlowPage() {
                                     </ListBox>
                                   </Select.Popover>
                                 </Select>
-                                <TextField>
+                                <TextField
+                                  value={editingRulePriority}
+                                  onChange={(v) => setEditingRulePriority(v.replace(/[^\d-]/g, ""))}
+                                >
                                   <Label>Prioridad</Label>
-                                  <Input
-                                    inputMode="numeric"
-                                    value={editingRulePriority}
-                                    onChange={(e) =>
-                                      setEditingRulePriority(e.target.value.replace(/[^\d-]/g, ""))
-                                    }
-                                  />
+                                  <Input inputMode="numeric" />
                                 </TextField>
-                                <TextField>
+                                <TextField
+                                  value={editingRuleMinAmount}
+                                  onChange={(v) =>
+                                    setEditingRuleMinAmount(v.replace(/[^0-9.-]/g, ""))
+                                  }
+                                >
                                   <Label>Monto mínimo</Label>
-                                  <Input
-                                    inputMode="decimal"
-                                    value={editingRuleMinAmount}
-                                    onChange={(e) =>
-                                      setEditingRuleMinAmount(
-                                        e.target.value.replace(/[^0-9.-]/g, "")
-                                      )
-                                    }
-                                  />
+                                  <Input inputMode="decimal" />
                                 </TextField>
-                                <TextField>
+                                <TextField
+                                  value={editingRuleMaxAmount}
+                                  onChange={(v) =>
+                                    setEditingRuleMaxAmount(v.replace(/[^0-9.-]/g, ""))
+                                  }
+                                >
                                   <Label>Monto máximo</Label>
-                                  <Input
-                                    inputMode="decimal"
-                                    value={editingRuleMaxAmount}
-                                    onChange={(e) =>
-                                      setEditingRuleMaxAmount(
-                                        e.target.value.replace(/[^0-9.-]/g, "")
-                                      )
-                                    }
-                                  />
+                                  <Input inputMode="decimal" />
                                 </TextField>
-                                <TextField className="md:col-span-2">
+                                <TextField
+                                  className="md:col-span-2"
+                                  value={editingRuleCommentContains}
+                                  onChange={(v) => setEditingRuleCommentContains(v)}
+                                >
                                   <Label>Comentario contiene</Label>
-                                  <Input
-                                    value={editingRuleCommentContains}
-                                    onChange={(e) => setEditingRuleCommentContains(e.target.value)}
-                                  />
+                                  <Input />
                                 </TextField>
-                                <TextField className="md:col-span-2">
+                                <TextField
+                                  className="md:col-span-2"
+                                  value={editingRuleDescriptionContains}
+                                  onChange={(v) => setEditingRuleDescriptionContains(v)}
+                                >
                                   <Label>Descripción contiene</Label>
-                                  <Input
-                                    value={editingRuleDescriptionContains}
-                                    onChange={(e) =>
-                                      setEditingRuleDescriptionContains(e.target.value)
-                                    }
-                                  />
+                                  <Input />
                                 </TextField>
                                 <Select
                                   value={editingRuleIsActive ? "ACTIVE" : "INACTIVE"}
@@ -3420,7 +3397,17 @@ export function CashFlowPage() {
                     </Select>
                   </div>
 
-                  <TextField>
+                  <TextField
+                    value={reallocateAmount == null ? "" : String(reallocateAmount)}
+                    onChange={(v) => {
+                      if (v === "") {
+                        setReallocateAmount(null);
+                        return;
+                      }
+                      const parsed = Number(v);
+                      setReallocateAmount(Number.isFinite(parsed) ? parsed : null);
+                    }}
+                  >
                     <Label>Monto a arrastrar</Label>
                     <Input
                       inputMode="decimal"
@@ -3428,16 +3415,6 @@ export function CashFlowPage() {
                       placeholder="Ej: 120000"
                       step="0.01"
                       type="number"
-                      value={reallocateAmount == null ? "" : String(reallocateAmount)}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (value === "") {
-                          setReallocateAmount(null);
-                          return;
-                        }
-                        const parsed = Number(value);
-                        setReallocateAmount(Number.isFinite(parsed) ? parsed : null);
-                      }}
                     />
                   </TextField>
                 </form>

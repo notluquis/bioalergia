@@ -135,17 +135,15 @@ export function InventorySettingsPage() {
                 validationBehavior="aria"
               >
                 <div className="flex-1">
-                  <TextField className="gap-1" id="category-name" isRequired>
+                  <TextField
+                    className="gap-1"
+                    id="category-name"
+                    isRequired
+                    value={newCategoryName}
+                    onChange={(v) => setNewCategoryName(v)}
+                  >
                     <Label>Nombre de la categoría</Label>
-                    <Input
-                      onChange={(e) => {
-                        setNewCategoryName(e.target.value);
-                      }}
-                      placeholder="Ej: Antibióticos"
-                      required
-                      value={newCategoryName}
-                      variant="secondary"
-                    />
+                    <Input placeholder="Ej: Antibióticos" required variant="secondary" />
                   </TextField>
                 </div>
                 <div className="flex gap-2">

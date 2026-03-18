@@ -37,7 +37,7 @@ export function NewAttachmentModal({ isOpen, onClose, patientId }: NewAttachment
     },
     onError: (error) => {
       toast.error(
-        `Error: ${error instanceof Error ? error.message : "No se pudo subir el archivo"}`,
+        `Error: ${error instanceof Error ? error.message : "No se pudo subir el archivo"}`
       );
     },
   });
@@ -114,13 +114,9 @@ export function NewAttachmentModal({ isOpen, onClose, patientId }: NewAttachment
                     )}
                   </div>
 
-                  <TextField>
+                  <TextField onChange={setName} value={name}>
                     <Label>Nombre del Documento</Label>
-                    <Input
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="Ej: Consentimiento informado"
-                      value={name}
-                    />
+                    <Input placeholder="Ej: Consentimiento informado" />
                   </TextField>
 
                   <Select

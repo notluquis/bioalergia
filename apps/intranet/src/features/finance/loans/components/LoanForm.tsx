@@ -52,27 +52,34 @@ type LoanInputProps = {
   error?: string;
   isInvalid?: boolean;
   label: string;
-} & React.InputHTMLAttributes<HTMLInputElement> &
-  React.TextareaHTMLAttributes<HTMLTextAreaElement>;
+  onChange?: (value: string) => void;
+  value?: string;
+} & Omit<React.InputHTMLAttributes<HTMLInputElement>, "onChange" | "value"> &
+  Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, "onChange" | "value">;
 
 function LoanInputField({
   as = "input",
   error,
   isInvalid = false,
   label,
+  onChange,
+  value,
   ...props
 }: LoanInputProps) {
   return (
-    <TextField isInvalid={isInvalid}>
+    <TextField isInvalid={isInvalid} onChange={onChange} value={value}>
       <Label>{label}</Label>
       {as === "textarea" ? (
         <TextArea
-          {...(props as React.TextareaHTMLAttributes<HTMLTextAreaElement>)}
+          {...(props as Omit<
+            React.TextareaHTMLAttributes<HTMLTextAreaElement>,
+            "onChange" | "value"
+          >)}
           variant="secondary"
         />
       ) : (
         <HeroInput
-          {...(props as React.InputHTMLAttributes<HTMLInputElement>)}
+          {...(props as Omit<React.InputHTMLAttributes<HTMLInputElement>, "onChange" | "value">)}
           variant="secondary"
         />
       )}
@@ -105,7 +112,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
   });
 
   const hasErrors = useStore(form.store, (state) =>
-    Object.values(state.fieldMeta).some((meta) => meta.errors.length > 0),
+    Object.values(state.fieldMeta).some((meta) => meta.errors.length > 0)
   );
 
   return (
@@ -126,9 +133,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
               label="Título"
               minLength={1}
               onBlur={field.handleBlur}
-              onChange={(e) => {
-                field.handleChange(e.target.value);
-              }}
+              onChange={field.handleChange}
               required
               value={field.state.value}
             />
@@ -143,9 +148,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
               label="Beneficiario"
               minLength={1}
               onBlur={field.handleBlur}
-              onChange={(e) => {
-                field.handleChange(e.target.value);
-              }}
+              onChange={field.handleChange}
               required
               value={field.state.value}
             />
@@ -397,9 +400,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
             isInvalid={field.state.meta.errors.length > 0}
             label="Descripción"
             onBlur={field.handleBlur}
-            onChange={(e) => {
-              field.handleChange(e.target.value);
-            }}
+            onChange={field.handleChange}
             rows={3}
             value={field.state.value ?? ""}
           />

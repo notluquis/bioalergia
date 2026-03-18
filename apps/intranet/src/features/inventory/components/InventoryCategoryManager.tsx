@@ -45,7 +45,7 @@ export function InventoryCategoryManager() {
         onSuccess: () => {
           setNewCategoryName("");
         },
-      },
+      }
     );
   }
 
@@ -61,17 +61,15 @@ export function InventoryCategoryManager() {
       </div>
 
       <form className="flex flex-col gap-3 sm:flex-row sm:items-end" onSubmit={handleAddCategory}>
-        <TextField className="w-full flex-1" isDisabled={createMutation.isPending} type="text">
+        <TextField
+          className="w-full flex-1"
+          isDisabled={createMutation.isPending}
+          onChange={setNewCategoryName}
+          type="text"
+          value={newCategoryName}
+        >
           <Label htmlFor="new-category-name">Nueva categoría</Label>
-          <Input
-            enterKeyHint="done"
-            id="new-category-name"
-            onChange={(e) => {
-              setNewCategoryName(e.target.value);
-            }}
-            placeholder="Ej: Insumos Médicos"
-            value={newCategoryName}
-          />
+          <Input enterKeyHint="done" id="new-category-name" placeholder="Ej: Insumos Médicos" />
         </TextField>
         <Button
           className="inline-flex items-center gap-2"

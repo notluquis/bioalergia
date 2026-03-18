@@ -282,35 +282,53 @@ function useCounterpartsDerived(params: {
   searchQuery: string;
   selectedId: null | number;
 }) {
-  const normalizedQuery = params.searchQuery.trim().toLowerCase();
-  const selectedCounterpart = params.selectedId
-    ? (params.counterparts.find((counterpart) => counterpart.id === params.selectedId) ?? null)
-    : null;
+  const { assignRutValue, categoryFilter, counterparts, searchQuery, selectedId } = params;
 
-  const visibleCounterparts = params.counterparts.filter((item) => {
-    const matchesCategory =
-      params.categoryFilter === "ALL" || item.category === params.categoryFilter;
-    const matchesQuery =
-      normalizedQuery.length === 0 ||
-      item.bankAccountHolder.toLowerCase().includes(normalizedQuery) ||
-      item.identificationNumber.toLowerCase().includes(normalizedQuery);
-    return matchesCategory && matchesQuery;
-  });
+  const normalizedQuery = useMemo(() => searchQuery.trim().toLowerCase(), [searchQuery]);
 
-  const normalizedAssignRut = normalizeRut(params.assignRutValue);
-  const assignRutIsValid = validateRut(params.assignRutValue);
-  const assignRutCompact = normalizedAssignRut?.replaceAll("-", "") ?? "";
-  const assignExistingCounterpart =
-    assignRutCompact.length > 0
-      ? (params.counterparts.find(
-          (item) => item.identificationNumber.toUpperCase() === assignRutCompact.toUpperCase()
-        ) ?? null)
-      : null;
-  const assignPreviewMessage = buildAssignPreviewMessage({
-    assignExistingCounterpart,
-    assignRutIsValid,
-    assignRutValue: params.assignRutValue,
-  });
+  const selectedCounterpart = useMemo(
+    () =>
+      selectedId
+        ? (counterparts.find((counterpart) => counterpart.id === selectedId) ?? null)
+        : null,
+    [counterparts, selectedId]
+  );
+
+  const visibleCounterparts = useMemo(
+    () =>
+      counterparts.filter((item) => {
+        const matchesCategory = categoryFilter === "ALL" || item.category === categoryFilter;
+        const matchesQuery =
+          normalizedQuery.length === 0 ||
+          item.bankAccountHolder.toLowerCase().includes(normalizedQuery) ||
+          item.identificationNumber.toLowerCase().includes(normalizedQuery);
+        return matchesCategory && matchesQuery;
+      }),
+    [counterparts, categoryFilter, normalizedQuery]
+  );
+
+  const normalizedAssignRut = useMemo(() => normalizeRut(assignRutValue), [assignRutValue]);
+  const assignRutIsValid = useMemo(() => validateRut(assignRutValue), [assignRutValue]);
+
+  const assignExistingCounterpart = useMemo(() => {
+    const compact = normalizedAssignRut?.replaceAll("-", "") ?? "";
+    if (!compact) return null;
+    return (
+      counterparts.find(
+        (item) => item.identificationNumber.toUpperCase() === compact.toUpperCase()
+      ) ?? null
+    );
+  }, [counterparts, normalizedAssignRut]);
+
+  const assignPreviewMessage = useMemo(
+    () =>
+      buildAssignPreviewMessage({
+        assignExistingCounterpart,
+        assignRutIsValid,
+        assignRutValue,
+      }),
+    [assignExistingCounterpart, assignRutIsValid, assignRutValue]
+  );
 
   return {
     assignExistingCounterpart,
@@ -650,29 +668,17 @@ export function CounterpartsPage() {
               </Modal.Header>
               <Modal.Body className="mt-2 max-h-[80vh] overflow-y-auto overscroll-contain text-foreground">
                 <div className="space-y-4">
-                  <TextField isReadOnly>
+                  <TextField isReadOnly value={String(state.assigningPayoutAccounts.length)}>
                     <Label>Cuentas payout seleccionadas</Label>
-                    <HeroInput readOnly value={String(state.assigningPayoutAccounts.length)} />
+                    <HeroInput readOnly />
                   </TextField>
-                  <TextField>
+                  <TextField onChange={state.setAssignRutValue} value={state.assignRutValue}>
                     <Label>RUT de contraparte</Label>
-                    <HeroInput
-                      onChange={(event) => {
-                        state.setAssignRutValue(event.target.value);
-                      }}
-                      placeholder="12.345.678-5"
-                      value={state.assignRutValue}
-                    />
+                    <HeroInput placeholder="12.345.678-5" />
                   </TextField>
-                  <TextField>
+                  <TextField onChange={state.setAssignHolderValue} value={state.assignHolderValue}>
                     <Label>Titular (opcional)</Label>
-                    <HeroInput
-                      onChange={(event) => {
-                        state.setAssignHolderValue(event.target.value);
-                      }}
-                      placeholder="Nombre contraparte"
-                      value={state.assignHolderValue}
-                    />
+                    <HeroInput placeholder="Nombre contraparte" />
                   </TextField>
                   <p
                     className={`text-xs ${

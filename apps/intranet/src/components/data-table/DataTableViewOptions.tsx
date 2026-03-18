@@ -46,17 +46,13 @@ export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps
       </Dropdown.Trigger>
       <Dropdown.Popover className="min-w-55" placement="bottom end">
         <div className="border-default-200/60 border-b p-2">
-          <TextField>
+          <TextField value={search} onChange={(v) => setSearch(v)}>
             <Input
               className="h-8"
-              onChange={(e) => {
-                setSearch(e.target.value);
-              }}
               onKeyDown={(e) => {
                 e.stopPropagation();
               }}
               placeholder="Buscar..."
-              value={search}
             />
           </TextField>
         </div>

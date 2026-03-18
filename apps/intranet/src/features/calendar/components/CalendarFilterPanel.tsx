@@ -119,14 +119,16 @@ export function CalendarFilterPanel({
         {/* Search Input */}
         {showSearch && (
           <div className="space-y-1.5">
-            <TextField className="w-full">
+            <TextField
+              className="w-full"
+              onChange={(v) => onFilterChange("search", v)}
+              value={filters.search ?? ""}
+            >
               <Label>Búsqueda</Label>
               <Input
                 className="h-9 w-full min-w-0 rounded-lg text-sm"
                 placeholder="Paciente, tratamiento..."
-                value={filters.search ?? ""}
                 variant="secondary"
-                onChange={(e) => onFilterChange("search", e.target.value)}
               />
             </TextField>
           </div>

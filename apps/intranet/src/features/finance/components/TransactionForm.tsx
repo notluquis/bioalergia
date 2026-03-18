@@ -15,7 +15,7 @@ import {
 import { parseDate } from "@internationalized/date";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { type ChangeEvent, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { z } from "zod";
 import { toast } from "@/lib/toast-interceptor";
 import { financeORPCClient, toFinanceApiError } from "../orpc";
@@ -64,7 +64,7 @@ function useTransactionCategories() {
     queryKey: ["TransactionCategory"],
     queryFn: async () => {
       const payload = TransactionCategoriesResponseSchema.parse(
-        await financeORPCClient.categoriesList(),
+        await financeORPCClient.categoriesList()
       );
       return payload.data;
     },
@@ -116,11 +116,11 @@ export function TransactionForm({ isOpen, onClose, initialData }: Props) {
       try {
         if (initialData) {
           return SaveTransactionResponseSchema.parse(
-            await financeORPCClient.transactionsUpdate({ id: initialData.id, payload: data }),
+            await financeORPCClient.transactionsUpdate({ id: initialData.id, payload: data })
           );
         }
         return SaveTransactionResponseSchema.parse(
-          await financeORPCClient.transactionsCreate(data),
+          await financeORPCClient.transactionsCreate(data)
         );
       } catch (error) {
         throw toFinanceApiError(error);
@@ -232,15 +232,15 @@ export function TransactionForm({ isOpen, onClose, initialData }: Props) {
                 </div>
 
                 {/* Descripción */}
-                <TextField isInvalid={!!errors.description}>
+                <TextField
+                  isInvalid={!!errors.description}
+                  onChange={(v) => handleChange("description", v)}
+                  value={formData.description}
+                >
                   <Label>Descripción</Label>
                   <Input
-                    aria-invalid={!!errors.description}
                     aria-describedby={errors.description ? "description-error" : undefined}
-                    value={formData.description}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                      handleChange("description", e.target.value)
-                    }
+                    aria-invalid={!!errors.description}
                     placeholder="Descripción del movimiento"
                   />
                   <FieldError id="description-error">{errors.description}</FieldError>
@@ -328,15 +328,12 @@ export function TransactionForm({ isOpen, onClose, initialData }: Props) {
                 </div>
 
                 {/* Comentario */}
-                <TextField>
+                <TextField
+                  onChange={(v) => handleChange("comment", v)}
+                  value={formData.comment ?? ""}
+                >
                   <Label>Comentario</Label>
-                  <TextArea
-                    value={formData.comment ?? ""}
-                    onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
-                      handleChange("comment", e.target.value)
-                    }
-                    placeholder="Notas adicionales (opcional)"
-                  />
+                  <TextArea placeholder="Notas adicionales (opcional)" />
                 </TextField>
               </form>
             </Modal.Body>

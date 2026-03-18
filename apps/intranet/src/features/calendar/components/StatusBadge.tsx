@@ -21,7 +21,7 @@ export const StatusBadge = ({ status }: { status: string }) => {
   }
   return (
     <Chip className="gap-1 font-semibold text-xs" color="warning" size="sm" variant="soft">
-      <Loader2 className="h-3 w-3 " />
+      <Loader2 className="h-3 w-3 animate-spin" />
       <Chip.Label>{status}</Chip.Label>
     </Chip>
   );

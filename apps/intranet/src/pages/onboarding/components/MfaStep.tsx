@@ -80,16 +80,19 @@ export function MfaStep({
         </div>
 
         <div className="w-full max-w-xs">
-          <TextField name="mfaCode" type="text">
+          <TextField
+            name="mfaCode"
+            type="text"
+            value={mfaCode}
+            onChange={(v) => onMfaCodeChange(v)}
+          >
             <Label>Ingresa el código de 6 dígitos</Label>
             <Input
               className="text-center text-2xl tracking-widest"
               inputMode="numeric"
               maxLength={6}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => onMfaCodeChange(e.target.value)}
               pattern="[0-9]*"
               placeholder="000000"
-              value={mfaCode}
             />
           </TextField>
         </div>

@@ -50,12 +50,11 @@ export function PasswordStep({
           name="password"
           type="password"
           validationBehavior="native"
+          value={password}
+          onChange={(v) => onPasswordChange(v)}
         >
           <Label>Nueva contraseña</Label>
-          <Input
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => onPasswordChange(e.target.value)}
-            value={password}
-          />
+          <Input />
           <FieldError>Mínimo 8 caracteres</FieldError>
         </TextField>
 
@@ -65,14 +64,11 @@ export function PasswordStep({
           minLength={8}
           name="confirmPassword"
           type="password"
+          value={confirmPassword}
+          onChange={(v) => onConfirmPasswordChange(v)}
         >
           <Label>Confirmar contraseña</Label>
-          <Input
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              onConfirmPasswordChange(e.target.value)
-            }
-            value={confirmPassword}
-          />
+          <Input />
           <FieldError>Las contraseñas no coinciden</FieldError>
         </TextField>
       </div>

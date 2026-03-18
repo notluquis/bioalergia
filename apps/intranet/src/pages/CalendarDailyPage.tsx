@@ -16,7 +16,7 @@ import { useDisclosure } from "@/hooks/use-disclosure";
 const routeApi = getRouteApi("/_authed/calendar/daily");
 import "dayjs/locale/es";
 import dayjs from "dayjs";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 function CalendarDailyPage() {
   const navigate = routeApi.useNavigate();
@@ -40,18 +40,26 @@ function CalendarDailyPage() {
     }
   }, [appliedFilters, filtersOpen]);
 
-  const selectedDateString = dayjs(currentSelectedDate).format("YYYY-MM-DD");
-  // Get data for selected Day
-  const selectedDayEntry = daily?.days.find(
-    (d) => dayjs(d.date).format("YYYY-MM-DD") === selectedDateString
+  const selectedDateString = useMemo(
+    () => dayjs(currentSelectedDate).format("YYYY-MM-DD"),
+    [currentSelectedDate]
+  );
+
+  const selectedDayEntry = useMemo(
+    () => daily?.days.find((d) => dayjs(d.date).format("YYYY-MM-DD") === selectedDateString),
+    [daily?.days, selectedDateString]
   );
 
   const hasEvents = (selectedDayEntry?.events.length ?? 0) > 0;
 
   const linksByDayQuery = useQuery(calendarDteLinkQueries.byDay(selectedDateString));
 
-  const linksByEvent = new Map(
-    (linksByDayQuery.data ?? []).map((item) => [`${item.calendarId}:::${item.eventId}`, item])
+  const linksByEvent = useMemo(
+    () =>
+      new Map(
+        (linksByDayQuery.data ?? []).map((item) => [`${item.calendarId}:::${item.eventId}`, item])
+      ),
+    [linksByDayQuery.data]
   );
 
   return (

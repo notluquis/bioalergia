@@ -101,6 +101,8 @@ function SettingsInputField({
   className,
   helper,
   label,
+  value,
+  onChange,
   ...inputProps
 }: Readonly<
   {
@@ -110,7 +112,10 @@ function SettingsInputField({
   } & React.InputHTMLAttributes<HTMLInputElement>
 >) {
   return (
-    <TextField>
+    <TextField
+      value={value as string | undefined}
+      onChange={(v) => onChange?.({ target: { value: v } } as React.ChangeEvent<HTMLInputElement>)}
+    >
       <Label>{label}</Label>
       <Input className={className} {...inputProps} />
       {helper ? <Description>{helper}</Description> : null}

@@ -89,7 +89,7 @@ export function AccountSettingsPage() {
   const handleDisableMfa = () => {
     if (
       !confirm(
-        "¿Estás seguro de desactivar la autenticación de dos factores? Tu cuenta será menos segura.",
+        "¿Estás seguro de desactivar la autenticación de dos factores? Tu cuenta será menos segura."
       )
     ) {
       return;
@@ -154,7 +154,7 @@ export function AccountSettingsPage() {
   const handleDeletePasskey = () => {
     if (
       !confirm(
-        "¿Estás seguro de eliminar tu passkey? Tendrás que usar tu contraseña para iniciar sesión.",
+        "¿Estás seguro de eliminar tu passkey? Tendrás que usar tu contraseña para iniciar sesión."
       )
     ) {
       return;
@@ -225,16 +225,12 @@ export function AccountSettingsPage() {
                     <div className="mx-auto max-w-xs space-y-3">
                       <p className="font-medium text-sm">2. Ingresa el código de 6 dígitos:</p>
                       <div className="flex gap-2">
-                        <TextField>
+                        <TextField value={mfaToken} onChange={(v) => setMfaToken(v)}>
                           <Input
                             autoComplete="one-time-code"
                             className="text-center tracking-widest"
                             maxLength={6}
-                            onChange={(e) => {
-                              setMfaToken(e.target.value);
-                            }}
                             placeholder="000000"
-                            value={mfaToken}
                           />
                         </TextField>
 

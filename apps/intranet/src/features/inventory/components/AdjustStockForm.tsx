@@ -30,26 +30,14 @@ export function AdjustStockForm({ item, onCancel, onSave, saving }: AdjustStockF
         <Description className="text-default-500">Stock actual: {item.current_stock}</Description>
       </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <TextField isRequired type="number">
+        <TextField isRequired onChange={setQuantityChange} type="number" value={quantityChange}>
           <Label>Cantidad a agregar/quitar</Label>
-          <Input
-            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-              setQuantityChange(event.target.value);
-            }}
-            placeholder="Ej: 20 (agrega) o -15 (quita)"
-            value={quantityChange}
-          />
+          <Input placeholder="Ej: 20 (agrega) o -15 (quita)" />
         </TextField>
 
-        <TextField isRequired type="text">
+        <TextField isRequired onChange={setReason} type="text" value={reason}>
           <Label>Razón del ajuste</Label>
-          <Input
-            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-              setReason(event.target.value);
-            }}
-            placeholder="Ej: Compra inicial, uso en procedimiento"
-            value={reason}
-          />
+          <Input placeholder="Ej: Compra inicial, uso en procedimiento" />
         </TextField>
       </div>
       <div className="flex items-center justify-end gap-3 pt-4">

@@ -115,15 +115,11 @@ export function PayInstallmentModal({
                           isInvalid={field.state.meta.errors.length > 0}
                           isRequired
                           type="number"
+                          value={String(field.state.value)}
+                          onChange={(v) => field.handleChange(Number.parseFloat(v))}
                         >
                           <Label>Monto Pagado</Label>
-                          <Input
-                            onBlur={field.handleBlur}
-                            onChange={(e) => {
-                              field.handleChange(Number.parseFloat(e.target.value));
-                            }}
-                            value={String(field.state.value)}
-                          />
+                          <Input onBlur={field.handleBlur} />
                           {field.state.meta.errors.length > 0 && (
                             <FieldError>
                               {field.state.meta.errors.map(String).join(", ")}

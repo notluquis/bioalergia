@@ -84,14 +84,14 @@ export function CreateCreditForm() {
               >
                 <form.Field name="bankName">
                   {(field) => (
-                    <TextField isRequired name="bankName">
+                    <TextField
+                      isRequired
+                      name="bankName"
+                      onChange={field.handleChange}
+                      value={field.state.value}
+                    >
                       <Label>Banco / Institución</Label>
-                      <Input
-                        placeholder="Ej: BCI"
-                        value={field.state.value}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        onBlur={field.handleBlur}
-                      />
+                      <Input onBlur={field.handleBlur} placeholder="Ej: BCI" />
                       {field.state.meta.errors.length > 0 && (
                         <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
                       )}
@@ -101,14 +101,14 @@ export function CreateCreditForm() {
 
                 <form.Field name="creditNumber">
                   {(field) => (
-                    <TextField isRequired name="creditNumber">
+                    <TextField
+                      isRequired
+                      name="creditNumber"
+                      onChange={field.handleChange}
+                      value={field.state.value}
+                    >
                       <Label>Número / Identificador</Label>
-                      <Input
-                        placeholder="Ej: 123456"
-                        value={field.state.value}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        onBlur={field.handleBlur}
-                      />
+                      <Input onBlur={field.handleBlur} placeholder="Ej: 123456" />
                       {field.state.meta.errors.length > 0 && (
                         <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
                       )}
@@ -118,14 +118,14 @@ export function CreateCreditForm() {
 
                 <form.Field name="description">
                   {(field) => (
-                    <TextField isRequired name="description">
+                    <TextField
+                      isRequired
+                      name="description"
+                      onChange={field.handleChange}
+                      value={field.state.value}
+                    >
                       <Label>Descripción</Label>
-                      <Input
-                        placeholder="Ej: Crédito Hipotecario"
-                        value={field.state.value}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        onBlur={field.handleBlur}
-                      />
+                      <Input onBlur={field.handleBlur} placeholder="Ej: Crédito Hipotecario" />
                       {field.state.meta.errors.length > 0 && (
                         <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
                       )}

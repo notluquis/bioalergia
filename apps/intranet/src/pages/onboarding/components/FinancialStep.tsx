@@ -38,15 +38,13 @@ export function FinancialStep({
       </div>
 
       <div className="space-y-4">
-        <TextField name="bankName">
+        <TextField
+          name="bankName"
+          value={profile.bankName}
+          onChange={(v) => onProfileChange("bankName", v)}
+        >
           <Label>Banco</Label>
-          <Input
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              onProfileChange("bankName", e.target.value)
-            }
-            placeholder="Ej: Banco de Chile"
-            value={profile.bankName}
-          />
+          <Input placeholder="Ej: Banco de Chile" />
         </TextField>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -78,14 +76,13 @@ export function FinancialStep({
               </ListBox>
             </Select.Popover>
           </Select>
-          <TextField name="bankAccountNumber">
+          <TextField
+            name="bankAccountNumber"
+            value={profile.bankAccountNumber}
+            onChange={(v) => onProfileChange("bankAccountNumber", v)}
+          >
             <Label>Número de cuenta</Label>
-            <Input
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                onProfileChange("bankAccountNumber", e.target.value)
-              }
-              value={profile.bankAccountNumber}
-            />
+            <Input />
           </TextField>
         </div>
       </div>

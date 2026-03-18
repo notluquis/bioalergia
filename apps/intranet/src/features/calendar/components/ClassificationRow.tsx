@@ -61,7 +61,7 @@ function resolveChoiceValue(value: null | string | undefined, choices: readonly 
 
   const normalizedInput = normalizeChoiceValue(trimmed);
   const normalizedMatch = choices.find(
-    (choice) => normalizeChoiceValue(choice) === normalizedInput,
+    (choice) => normalizeChoiceValue(choice) === normalizedInput
   );
   return normalizedMatch ?? trimmed;
 }
@@ -86,16 +86,16 @@ export function ClassificationRow({
     normalizeChoiceValue(category) === normalizeChoiceValue(SUBCUTANEOUS_CATEGORY);
   const isTest = normalizeChoiceValue(category) === normalizeChoiceValue(TEST_CATEGORY);
   const testSubtypePatch = useStore(form.store, (state) =>
-    Boolean(state.values.entries[index]?.testSubtypePatch),
+    Boolean(state.values.entries[index]?.testSubtypePatch)
   );
   const testPatchFirstReading = useStore(form.store, (state) =>
-    Boolean(state.values.entries[index]?.testPatchFirstReading),
+    Boolean(state.values.entries[index]?.testPatchFirstReading)
   );
   const testPatchSecondReading = useStore(form.store, (state) =>
-    Boolean(state.values.entries[index]?.testPatchSecondReading),
+    Boolean(state.values.entries[index]?.testPatchSecondReading)
   );
   const testPatchThirdReading = useStore(form.store, (state) =>
-    Boolean(state.values.entries[index]?.testPatchThirdReading),
+    Boolean(state.values.entries[index]?.testPatchThirdReading)
   );
   const hasPatchReading = testPatchFirstReading || testPatchSecondReading || testPatchThirdReading;
   const isNoShowLocked = isExplicitNoShowEvent(event);
@@ -182,18 +182,13 @@ export function ClassificationRow({
 
           <form.Field name={`entries[${index}].amountExpected`}>
             {(field: { handleChange: (v: string) => void; state: { value: null | string } }) => (
-              <TextField>
+              <TextField
+                isDisabled={isTest && hasPatchReading}
+                value={isTest && hasPatchReading ? "0" : (field.state.value ?? "")}
+                onChange={(v) => field.handleChange(v)}
+              >
                 <Label>Monto esperado</Label>
-                <Input
-                  disabled={isTest && hasPatchReading}
-                  onChange={(e) => {
-                    field.handleChange(e.target.value);
-                  }}
-                  placeholder="50000"
-                  type="text"
-                  value={isTest && hasPatchReading ? "0" : (field.state.value ?? "")}
-                  variant="secondary"
-                />
+                <Input placeholder="50000" type="text" variant="secondary" />
                 {isTest && hasPatchReading ? (
                   <Description>Lecturas de parche no tienen costo.</Description>
                 ) : null}
@@ -203,20 +198,15 @@ export function ClassificationRow({
 
           <form.Field name={`entries[${index}].amountPaid`}>
             {(field: { handleChange: (v: string) => void; state: { value: null | string } }) => (
-              <TextField>
+              <TextField
+                isDisabled={isNoShowLocked || (isTest && hasPatchReading)}
+                value={
+                  isNoShowLocked || (isTest && hasPatchReading) ? "0" : (field.state.value ?? "")
+                }
+                onChange={(v) => field.handleChange(v)}
+              >
                 <Label>Monto pagado</Label>
-                <Input
-                  disabled={isNoShowLocked || (isTest && hasPatchReading)}
-                  onChange={(e) => {
-                    field.handleChange(e.target.value);
-                  }}
-                  placeholder="50000"
-                  type="text"
-                  value={
-                    isNoShowLocked || (isTest && hasPatchReading) ? "0" : (field.state.value ?? "")
-                  }
-                  variant="secondary"
-                />
+                <Input placeholder="50000" type="text" variant="secondary" />
                 {isNoShowLocked ? (
                   <Description>Evento "no asiste": pago forzado a 0.</Description>
                 ) : null}
@@ -356,16 +346,9 @@ export function ClassificationRow({
           {isSubcutaneous && (
             <form.Field name={`entries[${index}].dosageValue`}>
               {(field: { handleChange: (v: string) => void; state: { value: null | string } }) => (
-                <TextField>
+                <TextField value={field.state.value ?? ""} onChange={(v) => field.handleChange(v)}>
                   <Label>Dosis</Label>
-                  <Input
-                    onChange={(e) => {
-                      field.handleChange(e.target.value);
-                    }}
-                    placeholder="0.3"
-                    value={field.state.value ?? ""}
-                    variant="secondary"
-                  />
+                  <Input placeholder="0.3" variant="secondary" />
                 </TextField>
               )}
             </form.Field>

@@ -61,17 +61,14 @@ export function ParticipantInsightsPage() {
             onSubmit={handleSubmit}
             validationBehavior="aria"
           >
-            <TextField name="participantId" type="text">
+            <TextField
+              name="participantId"
+              type="text"
+              value={participantId}
+              onChange={(v) => setParticipantId(v)}
+            >
               <Label>ID participante</Label>
-              <Input
-                enterKeyHint="search"
-                inputMode="numeric"
-                onChange={(e) => {
-                  setParticipantId(e.target.value);
-                }}
-                placeholder="123861706983"
-                value={participantId}
-              />
+              <Input enterKeyHint="search" inputMode="numeric" placeholder="123861706983" />
             </TextField>
 
             <Select
