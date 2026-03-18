@@ -26,6 +26,7 @@
     // ❌ import timezone from "dayjs/plugin/timezone";     // Prod: ERR_MODULE_NOT_FOUND
     //
     // Reference: https://oxc.rs/docs/guide/usage/linter/rules/import/extensions
+    "react/only-export-components": ["warn", { "allowConstantExport": true }],
     "import/extensions": [
       "error",
       { "js": "always", "ts": "never", "ignorePackages": true }
@@ -42,6 +43,17 @@
     "**/routeTree.gen.ts"
   ],
   "overrides": [
+    {
+      "files": [
+        "**/context/**",
+        "**/lib/authz/**",
+        "**/*Columns.tsx",
+        "**/main.tsx"
+      ],
+      "rules": {
+        "react/only-export-components": "off"
+      }
+    },
     {
       "files": ["**/*.stories.*"],
       "rules": {

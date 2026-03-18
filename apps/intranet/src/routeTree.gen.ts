@@ -32,9 +32,9 @@ import { Route as AuthedSettingsIndexRouteImport } from "./routes/_authed/settin
 import { Route as AuthedServicesIndexRouteImport } from "./routes/_authed/services/index";
 import { Route as AuthedPatientsIndexRouteImport } from "./routes/_authed/patients/index";
 import { Route as AuthedHrIndexRouteImport } from "./routes/_authed/hr/index";
+import { Route as AuthedSettingsWhatsappRouteImport } from "./routes/_authed/settings/whatsapp";
 import { Route as AuthedSettingsRolesRouteImport } from "./routes/_authed/settings/roles";
 import { Route as AuthedSettingsMercadopagoRouteImport } from "./routes/_authed/settings/mercadopago";
-import { Route as AuthedSettingsWhatsappRouteImport } from "./routes/_authed/settings/whatsapp";
 import { Route as AuthedSettingsInventarioRouteImport } from "./routes/_authed/settings/inventario";
 import { Route as AuthedSettingsHaulmerRouteImport } from "./routes/_authed/settings/haulmer";
 import { Route as AuthedSettingsCsvUploadRouteImport } from "./routes/_authed/settings/csv-upload";
@@ -160,6 +160,11 @@ const AuthedHrIndexRoute = AuthedHrIndexRouteImport.update({
   path: "/",
   getParentRoute: () => AuthedHrRoute,
 } as any);
+const AuthedSettingsWhatsappRoute = AuthedSettingsWhatsappRouteImport.update({
+  id: "/whatsapp",
+  path: "/whatsapp",
+  getParentRoute: () => AuthedSettingsRoute,
+} as any);
 const AuthedSettingsRolesRoute = AuthedSettingsRolesRouteImport.update({
   id: "/roles",
   path: "/roles",
@@ -168,11 +173,6 @@ const AuthedSettingsRolesRoute = AuthedSettingsRolesRouteImport.update({
 const AuthedSettingsMercadopagoRoute = AuthedSettingsMercadopagoRouteImport.update({
   id: "/mercadopago",
   path: "/mercadopago",
-  getParentRoute: () => AuthedSettingsRoute,
-} as any);
-const AuthedSettingsWhatsappRoute = AuthedSettingsWhatsappRouteImport.update({
-  id: "/whatsapp",
-  path: "/whatsapp",
   getParentRoute: () => AuthedSettingsRoute,
 } as any);
 const AuthedSettingsInventarioRoute = AuthedSettingsInventarioRouteImport.update({
@@ -423,8 +423,8 @@ export interface FileRoutesByFullPath {
   "/settings/haulmer": typeof AuthedSettingsHaulmerRoute;
   "/settings/inventario": typeof AuthedSettingsInventarioRoute;
   "/settings/mercadopago": typeof AuthedSettingsMercadopagoRoute;
-  "/settings/whatsapp": typeof AuthedSettingsWhatsappRoute;
   "/settings/roles": typeof AuthedSettingsRolesRoute;
+  "/settings/whatsapp": typeof AuthedSettingsWhatsappRoute;
   "/hr/": typeof AuthedHrIndexRoute;
   "/patients/": typeof AuthedPatientsIndexRoute;
   "/services/": typeof AuthedServicesIndexRoute;
@@ -481,8 +481,8 @@ export interface FileRoutesByTo {
   "/settings/haulmer": typeof AuthedSettingsHaulmerRoute;
   "/settings/inventario": typeof AuthedSettingsInventarioRoute;
   "/settings/mercadopago": typeof AuthedSettingsMercadopagoRoute;
-  "/settings/whatsapp": typeof AuthedSettingsWhatsappRoute;
   "/settings/roles": typeof AuthedSettingsRolesRoute;
+  "/settings/whatsapp": typeof AuthedSettingsWhatsappRoute;
   "/hr": typeof AuthedHrIndexRoute;
   "/patients": typeof AuthedPatientsIndexRoute;
   "/services": typeof AuthedServicesIndexRoute;
@@ -544,8 +544,8 @@ export interface FileRoutesById {
   "/_authed/settings/haulmer": typeof AuthedSettingsHaulmerRoute;
   "/_authed/settings/inventario": typeof AuthedSettingsInventarioRoute;
   "/_authed/settings/mercadopago": typeof AuthedSettingsMercadopagoRoute;
-  "/_authed/settings/whatsapp": typeof AuthedSettingsWhatsappRoute;
   "/_authed/settings/roles": typeof AuthedSettingsRolesRoute;
+  "/_authed/settings/whatsapp": typeof AuthedSettingsWhatsappRoute;
   "/_authed/hr/": typeof AuthedHrIndexRoute;
   "/_authed/patients/": typeof AuthedPatientsIndexRoute;
   "/_authed/services/": typeof AuthedServicesIndexRoute;
@@ -607,8 +607,8 @@ export interface FileRouteTypes {
     | "/settings/haulmer"
     | "/settings/inventario"
     | "/settings/mercadopago"
-    | "/settings/whatsapp"
     | "/settings/roles"
+    | "/settings/whatsapp"
     | "/hr/"
     | "/patients/"
     | "/services/"
@@ -665,8 +665,8 @@ export interface FileRouteTypes {
     | "/settings/haulmer"
     | "/settings/inventario"
     | "/settings/mercadopago"
-    | "/settings/whatsapp"
     | "/settings/roles"
+    | "/settings/whatsapp"
     | "/hr"
     | "/patients"
     | "/services"
@@ -727,8 +727,8 @@ export interface FileRouteTypes {
     | "/_authed/settings/haulmer"
     | "/_authed/settings/inventario"
     | "/_authed/settings/mercadopago"
-    | "/_authed/settings/whatsapp"
     | "/_authed/settings/roles"
+    | "/_authed/settings/whatsapp"
     | "/_authed/hr/"
     | "/_authed/patients/"
     | "/_authed/services/"
@@ -871,6 +871,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedHrIndexRouteImport;
       parentRoute: typeof AuthedHrRoute;
     };
+    "/_authed/settings/whatsapp": {
+      id: "/_authed/settings/whatsapp";
+      path: "/whatsapp";
+      fullPath: "/settings/whatsapp";
+      preLoaderRoute: typeof AuthedSettingsWhatsappRouteImport;
+      parentRoute: typeof AuthedSettingsRoute;
+    };
     "/_authed/settings/roles": {
       id: "/_authed/settings/roles";
       path: "/roles";
@@ -883,13 +890,6 @@ declare module "@tanstack/react-router" {
       path: "/mercadopago";
       fullPath: "/settings/mercadopago";
       preLoaderRoute: typeof AuthedSettingsMercadopagoRouteImport;
-      parentRoute: typeof AuthedSettingsRoute;
-    };
-    "/_authed/settings/whatsapp": {
-      id: "/_authed/settings/whatsapp";
-      path: "/whatsapp";
-      fullPath: "/settings/whatsapp";
-      preLoaderRoute: typeof AuthedSettingsWhatsappRouteImport;
       parentRoute: typeof AuthedSettingsRoute;
     };
     "/_authed/settings/inventario": {
@@ -1308,8 +1308,8 @@ interface AuthedSettingsRouteChildren {
   AuthedSettingsHaulmerRoute: typeof AuthedSettingsHaulmerRoute;
   AuthedSettingsInventarioRoute: typeof AuthedSettingsInventarioRoute;
   AuthedSettingsMercadopagoRoute: typeof AuthedSettingsMercadopagoRoute;
-  AuthedSettingsWhatsappRoute: typeof AuthedSettingsWhatsappRoute;
   AuthedSettingsRolesRoute: typeof AuthedSettingsRolesRoute;
+  AuthedSettingsWhatsappRoute: typeof AuthedSettingsWhatsappRoute;
   AuthedSettingsIndexRoute: typeof AuthedSettingsIndexRoute;
   AuthedSettingsUsersAddRoute: typeof AuthedSettingsUsersAddRoute;
   AuthedSettingsUsersIndexRoute: typeof AuthedSettingsUsersIndexRoute;
@@ -1321,8 +1321,8 @@ const AuthedSettingsRouteChildren: AuthedSettingsRouteChildren = {
   AuthedSettingsHaulmerRoute: AuthedSettingsHaulmerRoute,
   AuthedSettingsInventarioRoute: AuthedSettingsInventarioRoute,
   AuthedSettingsMercadopagoRoute: AuthedSettingsMercadopagoRoute,
-  AuthedSettingsWhatsappRoute: AuthedSettingsWhatsappRoute,
   AuthedSettingsRolesRoute: AuthedSettingsRolesRoute,
+  AuthedSettingsWhatsappRoute: AuthedSettingsWhatsappRoute,
   AuthedSettingsIndexRoute: AuthedSettingsIndexRoute,
   AuthedSettingsUsersAddRoute: AuthedSettingsUsersAddRoute,
   AuthedSettingsUsersIndexRoute: AuthedSettingsUsersIndexRoute,

@@ -7,18 +7,18 @@ FROM node:current-slim AS pruner
 WORKDIR /app
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN npm install -g corepack@latest --force && corepack enable && corepack prepare pnpm@10.28.0 --activate
+RUN npm install -g corepack@latest --force && corepack enable && corepack prepare pnpm@latest --activate
 COPY . .
 RUN pnpm -w turbo prune --scope=@finanzas/site --docker
 
 # ==========================================================================
 # Stage 2: Base deps
 # ==========================================================================
-FROM node:current-slim AS base
+FROM node:25-slim AS base
 WORKDIR /app
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN npm install -g corepack@latest --force && corepack enable && corepack prepare pnpm@10.28.0 --activate
+RUN npm install -g corepack@latest --force && corepack enable && corepack prepare pnpm@latest --activate
 
 COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml

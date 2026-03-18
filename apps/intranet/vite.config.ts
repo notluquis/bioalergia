@@ -1,8 +1,11 @@
 import { fileURLToPath, URL } from "node:url";
 
+import babel from "@rolldown/plugin-babel";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
-import react from "@vitejs/plugin-react";
+import react, { reactCompilerPreset } from "@vitejs/plugin-react";
+
+const reactCompiler = reactCompilerPreset();
 import { defineConfig } from "vite";
 import checker from "vite-plugin-checker";
 import { cachePreset, VitePWA } from "vite-plugin-pwa";
@@ -33,10 +36,8 @@ export default defineConfig(({ mode }) => {
         generatedRouteTree: "./src/routeTree.gen.ts",
         quoteStyle: "double",
       }),
-      // @vitejs/plugin-react v6 no longer supports the legacy `babel` option.
-      // Keep the base plugin configuration here; React Compiler can be wired via
-      // @rolldown/plugin-babel + reactCompilerPreset when needed.
       react(),
+      babel({ presets: [reactCompiler] }),
       // Tailwind CSS (official Tailwind plugin for Vite)
       tailwindcss(),
       // TypeScript type-checking in dev mode only

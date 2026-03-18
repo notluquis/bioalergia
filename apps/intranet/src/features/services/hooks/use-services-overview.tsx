@@ -6,12 +6,6 @@ import { useServiceMutations } from "./use-service-mutations";
 import { useServicePayment } from "./use-service-payment";
 import { useServicesList } from "./use-services-list";
 
-// Deprecated Provider - kept for compatibility but does nothing now
-// Can be removed once all usages are confirmed gone (it's not used in OverviewPage or Content)
-export function ServicesProvider({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
-}
-
 export function useServicesOverview() {
   const list = useServicesList();
   const details = useServiceDetails(list.services);
