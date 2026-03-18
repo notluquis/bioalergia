@@ -243,13 +243,8 @@ export function WhatsappSettingsPage() {
                   Envía el template de WhatsApp configurado al número indicado.
                 </p>
                 <div className="flex gap-2">
-                  <TextField className="flex-1">
-                    <Input
-                      onChange={(e) => setTestPhone(e.target.value)}
-                      placeholder="+56912345678"
-                      type="tel"
-                      value={testPhone}
-                    />
+                  <TextField className="flex-1" onChange={setTestPhone} value={testPhone}>
+                    <Input placeholder="+56912345678" type="tel" />
                   </TextField>
                   <Button
                     isDisabled={testMutation.isPending || !testPhone.trim()}

@@ -87,7 +87,7 @@ function useDebounce<T>(value: T, delay = 350): T {
   return debounced;
 }
 
-// ─── Date / event helpers ─────────────────────────────────────────────────────
+// ─── Date helpers ─────────────────────────────────────────────────────────────
 
 function getTodayStr(): string {
   const now = new Date();
@@ -105,31 +105,30 @@ function formatEventDate(dateStr: string): string {
   });
 }
 
-function getLastEventDate(s: ClinicalSeriesSnapshot): string {
-  const today = getTodayStr();
+// ─── Derived snapshot ─────────────────────────────────────────────────────────
+// Pre-compute per-row event stats once so sort comparisons are O(1).
+
+type DerivedSnapshot = ClinicalSeriesSnapshot & {
+  lastEventDate: string;
+  nextEventDate: string;
+  upcomingCount: number;
+};
+
+function deriveSnapshot(s: ClinicalSeriesSnapshot, today: string): DerivedSnapshot {
   const past = s.events.filter((e) => e.eventDate <= today);
-  if (past.length === 0) return "";
-  return past.reduce((acc, e) => (e.eventDate > acc ? e.eventDate : acc), past[0]!.eventDate);
-}
-
-function getNextEventDate(s: ClinicalSeriesSnapshot): string {
-  const today = getTodayStr();
   const future = s.events.filter((e) => e.eventDate > today);
-  if (future.length === 0) return "";
-  return future.reduce((acc, e) => (e.eventDate < acc ? e.eventDate : acc), future[0]!.eventDate);
-}
-
-function getUpcomingEventCount(s: ClinicalSeriesSnapshot): number {
-  const today = getTodayStr();
-  return s.events.filter((e) => e.eventDate > today).length;
+  const lastEventDate = past.length
+    ? past.reduce((acc, e) => (e.eventDate > acc ? e.eventDate : acc), past[0]!.eventDate)
+    : "";
+  const nextEventDate = future.length
+    ? future.reduce((acc, e) => (e.eventDate < acc ? e.eventDate : acc), future[0]!.eventDate)
+    : "";
+  return { ...s, lastEventDate, nextEventDate, upcomingCount: future.length };
 }
 
 // ─── Sorting ──────────────────────────────────────────────────────────────────
 
-function sortItems(
-  items: ClinicalSeriesSnapshot[],
-  descriptor: SortDescriptor
-): ClinicalSeriesSnapshot[] {
+function sortItems(items: DerivedSnapshot[], descriptor: SortDescriptor): DerivedSnapshot[] {
   const { column, direction } = descriptor;
   return [...items].sort((a, b) => {
     let cmp = 0;
@@ -144,16 +143,16 @@ function sortItems(
         cmp = STATUS_LABELS[a.status].localeCompare(STATUS_LABELS[b.status], "es");
         break;
       case "lastEvent":
-        cmp = getLastEventDate(a).localeCompare(getLastEventDate(b));
+        cmp = a.lastEventDate.localeCompare(b.lastEventDate);
         break;
       case "nextEvent":
-        cmp = getNextEventDate(a).localeCompare(getNextEventDate(b));
+        cmp = a.nextEventDate.localeCompare(b.nextEventDate);
         break;
       case "totalEvents":
         cmp = a.events.length - b.events.length;
         break;
       case "upcomingEvents":
-        cmp = getUpcomingEventCount(a) - getUpcomingEventCount(b);
+        cmp = a.upcomingCount - b.upcomingCount;
         break;
       case "financial":
         cmp = a.remainingExpected - b.remainingExpected;
@@ -208,10 +207,14 @@ export function ClinicalSeriesView() {
 
   const totalPages = data ? Math.ceil(data.total / PAGE_SIZE) : 1;
 
-  const sortedItems = useMemo(
-    () => (data?.items ? sortItems(data.items, sortDescriptor) : []),
-    [data?.items, sortDescriptor]
-  );
+  const sortedItems = useMemo(() => {
+    if (!data?.items) return [];
+    const today = getTodayStr();
+    return sortItems(
+      data.items.map((s) => deriveSnapshot(s, today)),
+      sortDescriptor
+    );
+  }, [data?.items, sortDescriptor]);
 
   const handleRowSelect = (keys: Selection) => {
     if (keys === "all") return;
@@ -384,7 +387,7 @@ export function ClinicalSeriesView() {
                 onSelectionChange={handleRowSelect}
                 sortDescriptor={sortDescriptor}
                 onSortChange={setSortDescriptor}
-                className="min-w-[64rem]"
+                className="min-w-5xl"
               >
                 <Table.Header>
                   <Table.Column allowsSorting id="patient" isRowHeader className="w-[24%]">
@@ -413,81 +416,76 @@ export function ClinicalSeriesView() {
                   </Table.Column>
                 </Table.Header>
                 <Table.Body>
-                  {sortedItems.map((s: ClinicalSeriesSnapshot) => {
-                    const lastEvent = getLastEventDate(s);
-                    const nextEvent = getNextEventDate(s);
-                    const upcomingCount = getUpcomingEventCount(s);
-                    return (
-                      <Table.Row key={s.id} id={s.id} className="cursor-pointer group">
-                        <Table.Cell>
-                          <div className="flex flex-col">
-                            <span className="text-sm font-medium text-foreground group-hover:text-accent transition-colors">
-                              {s.patientName || (
-                                <span className="text-foreground-400 italic">Sin nombre</span>
-                              )}
-                            </span>
-                            <span className="text-xs text-foreground-400 font-mono">
-                              {s.patientRut ?? "—"}
-                            </span>
-                          </div>
-                        </Table.Cell>
-                        <Table.Cell>
-                          <Chip size="sm" color={KIND_COLORS[s.kind]} variant="soft">
-                            {KIND_LABELS[s.kind]}
-                          </Chip>
-                        </Table.Cell>
-                        <Table.Cell>
-                          <Chip size="sm" color={STATUS_COLORS[s.status]} variant="soft">
-                            {STATUS_LABELS[s.status]}
-                          </Chip>
-                        </Table.Cell>
-                        <Table.Cell>
-                          <span className="text-xs text-foreground-400">
-                            {lastEvent ? formatEventDate(lastEvent) : "—"}
-                          </span>
-                        </Table.Cell>
-                        <Table.Cell>
-                          {nextEvent ? (
-                            <span className="text-xs font-medium text-accent">
-                              {formatEventDate(nextEvent)}
-                            </span>
-                          ) : (
-                            <span className="text-xs text-foreground-400">—</span>
-                          )}
-                        </Table.Cell>
-                        <Table.Cell className="text-right">
-                          <span className="text-xs tabular-nums text-foreground-500">
-                            {s.events.length}
-                          </span>
-                        </Table.Cell>
-                        <Table.Cell className="text-right">
-                          {upcomingCount > 0 ? (
-                            <Chip size="sm" color="accent" variant="soft">
-                              {upcomingCount}
-                            </Chip>
-                          ) : (
-                            <span className="text-xs text-foreground-400">—</span>
-                          )}
-                        </Table.Cell>
-                        <Table.Cell className="text-right">
-                          <div className="flex flex-col items-end gap-0.5">
-                            <span className="text-xs text-foreground-400">
-                              ${s.totalPaid.toLocaleString("es-CL")} /
-                              <span className="text-foreground-500">
-                                {" "}
-                                ${s.totalExpected.toLocaleString("es-CL")}
-                              </span>
-                            </span>
-                            {s.remainingExpected > 0 && (
-                              <span className="text-xs text-danger font-medium">
-                                −${s.remainingExpected.toLocaleString("es-CL")} pend.
-                              </span>
+                  {sortedItems.map((s) => (
+                    <Table.Row key={s.id} id={s.id} className="cursor-pointer group">
+                      <Table.Cell>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-foreground group-hover:text-accent transition-colors">
+                            {s.patientName || (
+                              <span className="text-foreground-400 italic">Sin nombre</span>
                             )}
-                          </div>
-                        </Table.Cell>
-                      </Table.Row>
-                    );
-                  })}
+                          </span>
+                          <span className="text-xs text-foreground-400 font-mono">
+                            {s.patientRut ?? "—"}
+                          </span>
+                        </div>
+                      </Table.Cell>
+                      <Table.Cell>
+                        <Chip size="sm" color={KIND_COLORS[s.kind]} variant="soft">
+                          {KIND_LABELS[s.kind]}
+                        </Chip>
+                      </Table.Cell>
+                      <Table.Cell>
+                        <Chip size="sm" color={STATUS_COLORS[s.status]} variant="soft">
+                          {STATUS_LABELS[s.status]}
+                        </Chip>
+                      </Table.Cell>
+                      <Table.Cell>
+                        <span className="text-xs text-foreground-400">
+                          {s.lastEventDate ? formatEventDate(s.lastEventDate) : "—"}
+                        </span>
+                      </Table.Cell>
+                      <Table.Cell>
+                        {s.nextEventDate ? (
+                          <span className="text-xs font-medium text-accent">
+                            {formatEventDate(s.nextEventDate)}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-foreground-400">—</span>
+                        )}
+                      </Table.Cell>
+                      <Table.Cell className="text-right">
+                        <span className="text-xs tabular-nums text-foreground-500">
+                          {s.events.length}
+                        </span>
+                      </Table.Cell>
+                      <Table.Cell className="text-right">
+                        {s.upcomingCount > 0 ? (
+                          <Chip size="sm" color="accent" variant="soft">
+                            {s.upcomingCount}
+                          </Chip>
+                        ) : (
+                          <span className="text-xs text-foreground-400">—</span>
+                        )}
+                      </Table.Cell>
+                      <Table.Cell className="text-right">
+                        <div className="flex flex-col items-end gap-0.5">
+                          <span className="text-xs text-foreground-400">
+                            ${s.totalPaid.toLocaleString("es-CL")} /
+                            <span className="text-foreground-500">
+                              {" "}
+                              ${s.totalExpected.toLocaleString("es-CL")}
+                            </span>
+                          </span>
+                          {s.remainingExpected > 0 && (
+                            <span className="text-xs text-danger font-medium">
+                              −${s.remainingExpected.toLocaleString("es-CL")} pend.
+                            </span>
+                          )}
+                        </div>
+                      </Table.Cell>
+                    </Table.Row>
+                  ))}
                 </Table.Body>
               </Table.Content>
             </Table.ScrollContainer>
@@ -611,43 +609,64 @@ export function ClinicalSeriesView() {
                     </div>
 
                     {/* Events */}
-                    {detail.events.length > 0 && (
-                      <div>
-                        <h3 className="text-sm font-semibold mb-2">
-                          Eventos ({detail.events.length})
-                        </h3>
-                        <div className="space-y-1.5">
-                          {detail.events.map((event) => (
-                            <Surface key={event.eventId} className="p-2.5 rounded-lg text-xs">
-                              <div className="flex items-center justify-between gap-2">
-                                <span className="font-medium">{event.eventDate}</span>
-                                {event.seriesStageLabel && (
-                                  <span className="text-foreground-400">
-                                    {event.seriesStageLabel}
-                                  </span>
-                                )}
-                              </div>
-                              {event.summary && (
-                                <p className="text-foreground-400 truncate mt-0.5">
-                                  {event.summary}
-                                </p>
-                              )}
-                              {event.dosageValue != null && (
-                                <p className="text-accent mt-0.5 font-medium">
-                                  {event.dosageValue} {event.dosageUnit}
-                                </p>
-                              )}
-                              {event.amountExpected != null && (
-                                <p className="text-foreground-400 mt-0.5">
-                                  ${(event.amountPaid ?? 0).toLocaleString("es-CL")} / $
-                                  {event.amountExpected.toLocaleString("es-CL")}
-                                </p>
-                              )}
-                            </Surface>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                    {detail.events.length > 0 &&
+                      (() => {
+                        const today = getTodayStr();
+                        return (
+                          <div>
+                            <h3 className="text-sm font-semibold mb-2">
+                              Eventos ({detail.events.length})
+                            </h3>
+                            <div className="space-y-1.5">
+                              {detail.events.map((event) => {
+                                const isFuture = event.eventDate > today;
+                                return (
+                                  <Surface
+                                    key={event.eventId}
+                                    className={`p-2.5 rounded-lg text-xs${isFuture ? " ring-1 ring-accent/30" : ""}`}
+                                  >
+                                    <div className="flex items-center justify-between gap-2">
+                                      <span
+                                        className={`font-medium${isFuture ? " text-accent" : ""}`}
+                                      >
+                                        {formatEventDate(event.eventDate)}
+                                      </span>
+                                      <div className="flex items-center gap-1.5">
+                                        {isFuture && (
+                                          <span className="text-[10px] text-accent font-medium uppercase tracking-wide">
+                                            próximo
+                                          </span>
+                                        )}
+                                        {event.seriesStageLabel && (
+                                          <span className="text-foreground-400">
+                                            {event.seriesStageLabel}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                    {event.summary && (
+                                      <p className="text-foreground-400 truncate mt-0.5">
+                                        {event.summary}
+                                      </p>
+                                    )}
+                                    {event.dosageValue != null && (
+                                      <p className="text-accent mt-0.5 font-medium">
+                                        {event.dosageValue} {event.dosageUnit}
+                                      </p>
+                                    )}
+                                    {event.amountExpected != null && (
+                                      <p className="text-foreground-400 mt-0.5">
+                                        ${(event.amountPaid ?? 0).toLocaleString("es-CL")} / $
+                                        {event.amountExpected.toLocaleString("es-CL")}
+                                      </p>
+                                    )}
+                                  </Surface>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })()}
                   </div>
                 ) : null}
               </Drawer.Body>
