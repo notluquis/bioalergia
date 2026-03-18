@@ -87,13 +87,44 @@ function useDebounce<T>(value: T, delay = 350): T {
   return debounced;
 }
 
-// ─── Sorting helpers ──────────────────────────────────────────────────────────
+// ─── Date / event helpers ─────────────────────────────────────────────────────
+
+function getTodayStr(): string {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function formatEventDate(dateStr: string): string {
+  const [y, mo, d] = dateStr.split("-").map(Number);
+  return new Date(y!, mo! - 1, d).toLocaleDateString("es-CL", {
+    day: "numeric",
+    month: "short",
+  });
+}
 
 function getLastEventDate(s: ClinicalSeriesSnapshot): string {
-  if (s.events.length === 0) return "";
-  const sorted = [...s.events].sort((a, b) => b.eventDate.localeCompare(a.eventDate));
-  return sorted[0]?.eventDate ?? "";
+  const today = getTodayStr();
+  const past = s.events.filter((e) => e.eventDate <= today);
+  if (past.length === 0) return "";
+  return past.reduce((acc, e) => (e.eventDate > acc ? e.eventDate : acc), past[0]!.eventDate);
 }
+
+function getNextEventDate(s: ClinicalSeriesSnapshot): string {
+  const today = getTodayStr();
+  const future = s.events.filter((e) => e.eventDate > today);
+  if (future.length === 0) return "";
+  return future.reduce((acc, e) => (e.eventDate < acc ? e.eventDate : acc), future[0]!.eventDate);
+}
+
+function getUpcomingEventCount(s: ClinicalSeriesSnapshot): number {
+  const today = getTodayStr();
+  return s.events.filter((e) => e.eventDate > today).length;
+}
+
+// ─── Sorting ──────────────────────────────────────────────────────────────────
 
 function sortItems(
   items: ClinicalSeriesSnapshot[],
@@ -103,26 +134,30 @@ function sortItems(
   return [...items].sort((a, b) => {
     let cmp = 0;
     switch (column) {
-      case "patient": {
+      case "patient":
         cmp = (a.patientName ?? "").localeCompare(b.patientName ?? "", "es");
         break;
-      }
-      case "kind": {
+      case "kind":
         cmp = KIND_LABELS[a.kind].localeCompare(KIND_LABELS[b.kind], "es");
         break;
-      }
-      case "status": {
+      case "status":
         cmp = STATUS_LABELS[a.status].localeCompare(STATUS_LABELS[b.status], "es");
         break;
-      }
-      case "lastEvent": {
+      case "lastEvent":
         cmp = getLastEventDate(a).localeCompare(getLastEventDate(b));
         break;
-      }
-      case "financial": {
+      case "nextEvent":
+        cmp = getNextEventDate(a).localeCompare(getNextEventDate(b));
+        break;
+      case "totalEvents":
+        cmp = a.events.length - b.events.length;
+        break;
+      case "upcomingEvents":
+        cmp = getUpcomingEventCount(a) - getUpcomingEventCount(b);
+        break;
+      case "financial":
         cmp = a.remainingExpected - b.remainingExpected;
         break;
-      }
     }
     return direction === "descending" ? -cmp : cmp;
   });
@@ -349,73 +384,110 @@ export function ClinicalSeriesView() {
                 onSelectionChange={handleRowSelect}
                 sortDescriptor={sortDescriptor}
                 onSortChange={setSortDescriptor}
-                className="min-w-125"
+                className="min-w-[64rem]"
               >
                 <Table.Header>
-                  <Table.Column allowsSorting id="patient" isRowHeader className="w-[38%]">
+                  <Table.Column allowsSorting id="patient" isRowHeader className="w-[24%]">
                     Paciente
                   </Table.Column>
-                  <Table.Column allowsSorting id="kind" className="w-[18%]">
+                  <Table.Column allowsSorting id="kind" className="w-[11%]">
                     Tipo
                   </Table.Column>
-                  <Table.Column allowsSorting id="status" className="w-[14%]">
+                  <Table.Column allowsSorting id="status" className="w-[10%]">
                     Estado
                   </Table.Column>
                   <Table.Column allowsSorting id="lastEvent" className="w-[10%]">
                     Últ. evento
+                  </Table.Column>
+                  <Table.Column allowsSorting id="nextEvent" className="w-[10%]">
+                    Próx. visita
+                  </Table.Column>
+                  <Table.Column allowsSorting id="totalEvents" className="w-[7%] text-right">
+                    Eventos
+                  </Table.Column>
+                  <Table.Column allowsSorting id="upcomingEvents" className="w-[8%] text-right">
+                    Próximos
                   </Table.Column>
                   <Table.Column allowsSorting id="financial" className="w-[20%] text-right">
                     Financiero
                   </Table.Column>
                 </Table.Header>
                 <Table.Body>
-                  {sortedItems.map((s: ClinicalSeriesSnapshot) => (
-                    <Table.Row key={s.id} id={s.id} className="cursor-pointer group">
-                      <Table.Cell>
-                        <div className="flex flex-col">
-                          <span className="text-sm font-medium text-foreground group-hover:text-accent transition-colors">
-                            {s.patientName || (
-                              <span className="text-foreground-400 italic">Sin nombre</span>
-                            )}
-                          </span>
-                          <span className="text-xs text-foreground-400 font-mono">
-                            {s.patientRut ?? "—"}
-                          </span>
-                        </div>
-                      </Table.Cell>
-                      <Table.Cell>
-                        <Chip size="sm" color={KIND_COLORS[s.kind]} variant="soft">
-                          {KIND_LABELS[s.kind]}
-                        </Chip>
-                      </Table.Cell>
-                      <Table.Cell>
-                        <Chip size="sm" color={STATUS_COLORS[s.status]} variant="soft">
-                          {STATUS_LABELS[s.status]}
-                        </Chip>
-                      </Table.Cell>
-                      <Table.Cell>
-                        <span className="text-xs text-foreground-400">
-                          {getLastEventDate(s) || "—"}
-                        </span>
-                      </Table.Cell>
-                      <Table.Cell className="text-right">
-                        <div className="flex flex-col items-end gap-0.5">
+                  {sortedItems.map((s: ClinicalSeriesSnapshot) => {
+                    const lastEvent = getLastEventDate(s);
+                    const nextEvent = getNextEventDate(s);
+                    const upcomingCount = getUpcomingEventCount(s);
+                    return (
+                      <Table.Row key={s.id} id={s.id} className="cursor-pointer group">
+                        <Table.Cell>
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium text-foreground group-hover:text-accent transition-colors">
+                              {s.patientName || (
+                                <span className="text-foreground-400 italic">Sin nombre</span>
+                              )}
+                            </span>
+                            <span className="text-xs text-foreground-400 font-mono">
+                              {s.patientRut ?? "—"}
+                            </span>
+                          </div>
+                        </Table.Cell>
+                        <Table.Cell>
+                          <Chip size="sm" color={KIND_COLORS[s.kind]} variant="soft">
+                            {KIND_LABELS[s.kind]}
+                          </Chip>
+                        </Table.Cell>
+                        <Table.Cell>
+                          <Chip size="sm" color={STATUS_COLORS[s.status]} variant="soft">
+                            {STATUS_LABELS[s.status]}
+                          </Chip>
+                        </Table.Cell>
+                        <Table.Cell>
                           <span className="text-xs text-foreground-400">
-                            ${s.totalPaid.toLocaleString("es-CL")} /
-                            <span className="text-foreground-500">
-                              {" "}
-                              ${s.totalExpected.toLocaleString("es-CL")}
-                            </span>
+                            {lastEvent ? formatEventDate(lastEvent) : "—"}
                           </span>
-                          {s.remainingExpected > 0 && (
-                            <span className="text-xs text-danger font-medium">
-                              −${s.remainingExpected.toLocaleString("es-CL")} pend.
+                        </Table.Cell>
+                        <Table.Cell>
+                          {nextEvent ? (
+                            <span className="text-xs font-medium text-accent">
+                              {formatEventDate(nextEvent)}
                             </span>
+                          ) : (
+                            <span className="text-xs text-foreground-400">—</span>
                           )}
-                        </div>
-                      </Table.Cell>
-                    </Table.Row>
-                  ))}
+                        </Table.Cell>
+                        <Table.Cell className="text-right">
+                          <span className="text-xs tabular-nums text-foreground-500">
+                            {s.events.length}
+                          </span>
+                        </Table.Cell>
+                        <Table.Cell className="text-right">
+                          {upcomingCount > 0 ? (
+                            <Chip size="sm" color="accent" variant="soft">
+                              {upcomingCount}
+                            </Chip>
+                          ) : (
+                            <span className="text-xs text-foreground-400">—</span>
+                          )}
+                        </Table.Cell>
+                        <Table.Cell className="text-right">
+                          <div className="flex flex-col items-end gap-0.5">
+                            <span className="text-xs text-foreground-400">
+                              ${s.totalPaid.toLocaleString("es-CL")} /
+                              <span className="text-foreground-500">
+                                {" "}
+                                ${s.totalExpected.toLocaleString("es-CL")}
+                              </span>
+                            </span>
+                            {s.remainingExpected > 0 && (
+                              <span className="text-xs text-danger font-medium">
+                                −${s.remainingExpected.toLocaleString("es-CL")} pend.
+                              </span>
+                            )}
+                          </div>
+                        </Table.Cell>
+                      </Table.Row>
+                    );
+                  })}
                 </Table.Body>
               </Table.Content>
             </Table.ScrollContainer>
