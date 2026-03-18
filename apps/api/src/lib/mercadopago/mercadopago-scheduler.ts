@@ -21,6 +21,8 @@ const DEFAULT_TIMEZONE = "America/Santiago";
 const MAX_PROCESSED_FILES = 250;
 const MAX_PROCESS_PER_RUN = 4;
 const CREATE_COOLDOWN_MINUTES = 30;
+const REPORT_POLL_INTERVAL_MS = 30_000;
+const REPORT_POLL_MAX_ATTEMPTS = 20; // hasta 10 minutos
 const ADVISORY_LOCK_KEY = 924_017_221;
 const JITTER_MAX_MS = 45_000;
 const PROCESSED_TTL_DAYS = 45;
@@ -193,18 +195,7 @@ async function ensureDailyReport(
       targetBegin: range.beginDate.toISOString(),
       targetEnd: range.endDate.toISOString(),
     });
-    return reports;
-  }
-
-  const lastGenerated = await getValidSettingDate(SETTINGS_KEYS.lastGenerated(type));
-  if (lastGenerated && isSameDay(lastGenerated, range.endDate)) {
-    logWarn("mp.autoSync.reportSkipped", {
-      type,
-      reason: "already_generated_for_end_day",
-      lastGenerated: lastGenerated.toISOString(),
-      targetBegin: range.beginDate.toISOString(),
-      targetEnd: range.endDate.toISOString(),
-    });
+    return await pollUntilReady(type, range);
   }
 
   const lastCreateAttempt = await getValidSettingDate(SETTINGS_KEYS.lastCreateAttempt(type));
@@ -215,7 +206,7 @@ async function ensureDailyReport(
       lastCreateAttempt: lastCreateAttempt.toISOString(),
       cooldownMinutes: CREATE_COOLDOWN_MINUTES,
     });
-    return reports;
+    return await pollUntilReady(type, range);
   }
 
   logEvent("mp.autoSync.reportCreating", {
@@ -235,10 +226,41 @@ async function ensureDailyReport(
     end: range.endDate.toISOString(),
   });
 
-  const refreshed = (await MercadoPagoService.listReports(type, {
-    silent: true,
-  })) as MPReportSummary[];
-  return refreshed;
+  return await pollUntilReady(type, range);
+}
+
+async function pollUntilReady(
+  type: ReportType,
+  range: { beginDate: Date; endDate: Date },
+): Promise<MPReportSummary[]> {
+  for (let attempt = 0; attempt < REPORT_POLL_MAX_ATTEMPTS; attempt++) {
+    if (attempt > 0) {
+      await new Promise((resolve) => setTimeout(resolve, REPORT_POLL_INTERVAL_MS));
+    }
+    const refreshed = (await MercadoPagoService.listReports(type, {
+      silent: true,
+    })) as MPReportSummary[];
+    const target = refreshed.find((r) => reportCoversRange(r, range.beginDate, range.endDate));
+    if (target?.file_name && isReportReady(target.status)) {
+      logEvent("mp.autoSync.reportReady", {
+        type,
+        attempt: attempt + 1,
+        fileName: target.file_name,
+      });
+      return refreshed;
+    }
+    logEvent("mp.autoSync.reportPolling", {
+      type,
+      attempt: attempt + 1,
+      status: target?.status ?? "not_found",
+    });
+  }
+  logWarn("mp.autoSync.reportPollTimeout", {
+    type,
+    maxAttempts: REPORT_POLL_MAX_ATTEMPTS,
+    intervalMs: REPORT_POLL_INTERVAL_MS,
+  });
+  return (await MercadoPagoService.listReports(type, { silent: true })) as MPReportSummary[];
 }
 
 async function processReadyReports(
@@ -442,17 +464,15 @@ function parseDate(value?: string) {
 }
 
 function getAutoSyncReportRange() {
-  const today = new Date();
-  const todayEnd = new Date(today);
-  todayEnd.setHours(23, 59, 59, 999);
+  const now = new Date();
 
-  const yesterdayStart = new Date(today);
+  const yesterdayStart = new Date(now);
   yesterdayStart.setDate(yesterdayStart.getDate() - 1);
   yesterdayStart.setHours(0, 0, 0, 0);
 
   return {
     beginDate: yesterdayStart,
-    endDate: todayEnd,
+    endDate: now,
   };
 }
 
