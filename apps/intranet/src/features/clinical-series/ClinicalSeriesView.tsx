@@ -368,7 +368,7 @@ export function ClinicalSeriesView() {
       )}
 
       {/* ── Table ──────────────────────────────────────────────────────────── */}
-      <Card className="flex-1 overflow-hidden">
+      <Card className="flex-1 min-h-0 flex flex-col overflow-hidden">
         {isLoading ? (
           <div className="flex justify-center items-center h-48">
             <Spinner size="lg" />
@@ -387,8 +387,8 @@ export function ClinicalSeriesView() {
             )}
           </div>
         ) : (
-          <Table>
-            <Table.ScrollContainer>
+          <Table className="flex-1 min-h-0 flex flex-col">
+            <Table.ScrollContainer className="flex-1 min-h-0">
               <Table.Content
                 aria-label="Series Clínicas"
                 selectionMode="single"
@@ -498,86 +498,82 @@ export function ClinicalSeriesView() {
                 </Table.Body>
               </Table.Content>
             </Table.ScrollContainer>
+            <Table.Footer>
+              <Pagination size="sm">
+                <Pagination.Summary>
+                  <span className="text-sm text-foreground-400">
+                    {data.total > 0
+                      ? `${(page - 1) * pageSize + 1}–${Math.min(page * pageSize, data.total)} de ${data.total}`
+                      : `${data.total} resultados`}
+                  </span>
+                  <Select
+                    value={String(pageSize)}
+                    onChange={(key) =>
+                      key && setPageSize(Number(key) as (typeof PAGE_SIZE_OPTIONS)[number])
+                    }
+                    variant="secondary"
+                    aria-label="Filas por página"
+                  >
+                    <Select.Trigger className="w-24">
+                      <Select.Value />
+                      <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        {PAGE_SIZE_OPTIONS.map((n) => (
+                          <ListBox.Item key={n} id={String(n)} textValue={`${n} / pág.`}>
+                            {n} / pág.
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                        ))}
+                      </ListBox>
+                    </Select.Popover>
+                  </Select>
+                </Pagination.Summary>
+                {totalPages > 1 && (
+                  <Pagination.Content>
+                    <Pagination.Item>
+                      <Pagination.Previous
+                        isDisabled={page === 1}
+                        onPress={() => setPage((p) => Math.max(1, p - 1))}
+                      >
+                        <Pagination.PreviousIcon />
+                        Anterior
+                      </Pagination.Previous>
+                    </Pagination.Item>
+                    {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                      const p =
+                        totalPages <= 7
+                          ? i + 1
+                          : page <= 4
+                            ? i + 1
+                            : page >= totalPages - 3
+                              ? totalPages - 6 + i
+                              : page - 3 + i;
+                      return (
+                        <Pagination.Item key={p}>
+                          <Pagination.Link isActive={p === page} onPress={() => setPage(p)}>
+                            {p}
+                          </Pagination.Link>
+                        </Pagination.Item>
+                      );
+                    })}
+                    <Pagination.Item>
+                      <Pagination.Next
+                        isDisabled={page === totalPages}
+                        onPress={() => setPage((p) => Math.min(totalPages, p + 1))}
+                      >
+                        Siguiente
+                        <Pagination.NextIcon />
+                      </Pagination.Next>
+                    </Pagination.Item>
+                  </Pagination.Content>
+                )}
+              </Pagination>
+            </Table.Footer>
           </Table>
         )}
       </Card>
-
-      {/* ── Pagination ─────────────────────────────────────────────────────── */}
-      {data && (
-        <div className="flex items-center justify-between text-sm text-foreground-400">
-          <div className="flex items-center gap-3">
-            <span>
-              {data.total > 0
-                ? `Mostrando ${(page - 1) * pageSize + 1}–${Math.min(page * pageSize, data.total)} de ${data.total}`
-                : `${data.total} resultados`}
-            </span>
-            <Select
-              value={String(pageSize)}
-              onChange={(key) =>
-                key && setPageSize(Number(key) as (typeof PAGE_SIZE_OPTIONS)[number])
-              }
-              variant="secondary"
-              aria-label="Filas por página"
-            >
-              <Select.Trigger className="w-24">
-                <Select.Value />
-                <Select.Indicator />
-              </Select.Trigger>
-              <Select.Popover>
-                <ListBox>
-                  {PAGE_SIZE_OPTIONS.map((n) => (
-                    <ListBox.Item key={n} id={String(n)} textValue={`${n} / pág.`}>
-                      {n} / pág.
-                      <ListBox.ItemIndicator />
-                    </ListBox.Item>
-                  ))}
-                </ListBox>
-              </Select.Popover>
-            </Select>
-          </div>
-          {totalPages > 1 && (
-            <Pagination size="sm">
-              <Pagination.Content>
-                <Pagination.Item>
-                  <Pagination.Previous
-                    isDisabled={page === 1}
-                    onPress={() => setPage((p) => Math.max(1, p - 1))}
-                  >
-                    <Pagination.PreviousIcon />
-                    Anterior
-                  </Pagination.Previous>
-                </Pagination.Item>
-                {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
-                  const p =
-                    totalPages <= 7
-                      ? i + 1
-                      : page <= 4
-                        ? i + 1
-                        : page >= totalPages - 3
-                          ? totalPages - 6 + i
-                          : page - 3 + i;
-                  return (
-                    <Pagination.Item key={p}>
-                      <Pagination.Link isActive={p === page} onPress={() => setPage(p)}>
-                        {p}
-                      </Pagination.Link>
-                    </Pagination.Item>
-                  );
-                })}
-                <Pagination.Item>
-                  <Pagination.Next
-                    isDisabled={page === totalPages}
-                    onPress={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  >
-                    Siguiente
-                    <Pagination.NextIcon />
-                  </Pagination.Next>
-                </Pagination.Item>
-              </Pagination.Content>
-            </Pagination>
-          )}
-        </div>
-      )}
 
       {/* ── Detail Drawer ────────────────────────────────────────────────── */}
       <Drawer>
