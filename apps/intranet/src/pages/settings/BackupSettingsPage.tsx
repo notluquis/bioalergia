@@ -11,7 +11,7 @@ import {
   Surface,
   Table,
 } from "@heroui/react";
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import {
@@ -28,20 +28,14 @@ import {
   RotateCcw,
   Upload,
 } from "lucide-react";
-import {
-  type Dispatch,
-  type SetStateAction,
-  Suspense,
-  useCallback,
-  useEffect,
-  useState,
-} from "react";
+import { type Dispatch, type SetStateAction, useCallback, useEffect, useState } from "react";
 import { GoogleDriveConnect } from "@/components/backup/GoogleDriveConnect";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { triggerBackup, triggerRestore } from "@/features/backup/api";
 import { backupKeys } from "@/features/backup/queries";
 import type { BackupFile, BackupJob, RestoreJob } from "@/features/backup/types";
+import { ApiError } from "@/lib/api-client";
 import { formatFileSize } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -508,25 +502,12 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
           </div>
 
           <div className="rounded-lg bg-default-50/50 p-4">
-            <Suspense
-              fallback={
-                <div className="space-y-2 py-2">
-                  {["a", "b", "c", "d"].map((slot) => (
-                    <Skeleton
-                      className="h-8 w-full rounded-md"
-                      key={`backup-table-skeleton-${slot}`}
-                    />
-                  ))}
-                </div>
-              }
-            >
-              <BackupTablesList
-                backupId={backup.id}
-                canRestore={canRestore}
-                isRestoring={restoreMutation.isPending}
-                onRestore={restoreMutation.mutate}
-              />
-            </Suspense>
+            <BackupTablesList
+              backupId={backup.id}
+              canRestore={canRestore}
+              isRestoring={restoreMutation.isPending}
+              onRestore={restoreMutation.mutate}
+            />
           </div>
         </Disclosure.Body>
       </Disclosure.Content>
@@ -546,7 +527,7 @@ function BackupTablesList({
   onRestore: (tables: string[]) => void;
 }) {
   const [selectedTables, setSelectedTables] = useState<string[]>([]);
-  const { data: tables } = useSuspenseQuery(backupKeys.tables(backupId));
+  const { data: tables = [], error, isPending, refetch } = useQuery(backupKeys.tables(backupId));
 
   const toggleTable = (table: string) => {
     setSelectedTables((prev) =>
@@ -557,6 +538,36 @@ function BackupTablesList({
   const selectAll = () => {
     setSelectedTables(tables.length === selectedTables.length ? [] : [...tables]);
   };
+
+  if (isPending) {
+    return (
+      <div className="space-y-2 py-2">
+        {["a", "b", "c", "d"].map((slot) => (
+          <Skeleton className="h-8 w-full rounded-md" key={`backup-table-skeleton-${slot}`} />
+        ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    const message =
+      error instanceof ApiError
+        ? error.message
+        : "No se pudieron cargar las tablas de este backup.";
+
+    return (
+      <div className="space-y-3 rounded-lg border border-danger/20 bg-danger/5 p-4">
+        <div className="flex items-start gap-2 text-danger text-sm">
+          <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+          <span>{message}</span>
+        </div>
+        <Button onPress={() => void refetch()} size="sm" variant="ghost">
+          <RefreshCw className="size-4" />
+          Reintentar
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <>

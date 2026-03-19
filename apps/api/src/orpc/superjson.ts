@@ -26,7 +26,7 @@ import {
   toORPCError,
 } from "@orpc/client";
 import type { StandardRPCSerializer } from "@orpc/client/standard";
-import type { Context, Router } from "@orpc/server";
+import { onError, type Context, type Router } from "@orpc/server";
 import type { FetchHandlerOptions } from "@orpc/server/fetch";
 import { FetchHandler } from "@orpc/server/fetch";
 import { StrictGetMethodPlugin } from "@orpc/server/plugins";
@@ -35,6 +35,7 @@ import { StandardHandler, StandardRPCCodec, StandardRPCMatcher } from "@orpc/ser
 import { isAsyncIteratorObject } from "@orpc/shared";
 import type { Context as HonoContext } from "hono";
 import { configureSuperjson } from "../lib/superjson-config";
+import { toORPCError as normalizeServerError } from "./error";
 
 const superjson = configureSuperjson();
 
@@ -130,6 +131,13 @@ export class SuperJSONRPCHandler<T extends Context> extends FetchHandler<T> {
     router: Router<Record<never, never>, T>,
     options: NoInfer<SuperJSONRPCHandlerOptions<T>> = {},
   ) {
+    options.interceptors ??= [];
+    options.interceptors.push(
+      onError((error) => {
+        throw normalizeServerError(error);
+      }),
+    );
+
     options.plugins ??= [];
 
     if (options.strictGetMethodPluginEnabled ?? true) {
