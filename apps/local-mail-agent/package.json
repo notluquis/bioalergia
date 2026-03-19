@@ -17,7 +17,7 @@
     "@hono/node-server": "1.19.11",
     "cli-progress": "^3.12.0",
     "hono": "4.12.8",
-    "imapflow": "1.2.15",
+    "imapflow": "1.2.16",
     "nodemailer": "^8.0.3",
     "zod": "^4.3.6"
   },
