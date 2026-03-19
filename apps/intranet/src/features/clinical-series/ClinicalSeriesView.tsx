@@ -206,11 +206,13 @@ export function ClinicalSeriesView() {
 
   // Raw filter states (debounced for text fields)
   const [rutRaw, setRutRaw] = useState("");
+  const [beneficiaryRutRaw, setBeneficiaryRutRaw] = useState("");
   const [nameRaw, setNameRaw] = useState("");
   const [kind, setKind] = useState<ClinicalSeriesKind | undefined>(undefined);
   const [status, setStatus] = useState<ClinicalSeriesStatus | undefined>(undefined);
 
   const debouncedRut = useDebounce(rutRaw);
+  const debouncedBeneficiaryRut = useDebounce(beneficiaryRutRaw);
   const debouncedName = useDebounce(nameRaw);
 
   // Sorting
@@ -222,7 +224,7 @@ export function ClinicalSeriesView() {
   // Reset page when filters or page size change
   useEffect(() => {
     setPage(1);
-  }, [debouncedRut, debouncedName, kind, status, pageSize]);
+  }, [debouncedBeneficiaryRut, debouncedRut, debouncedName, kind, status, pageSize]);
 
   // Detail drawer
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -231,6 +233,7 @@ export function ClinicalSeriesView() {
   const filters: ClinicalSeriesFilters = {
     page,
     pageSize: pageSize,
+    ...(debouncedBeneficiaryRut && { beneficiaryRut: debouncedBeneficiaryRut }),
     ...(debouncedRut && { patientRut: debouncedRut }),
     ...(debouncedName && { patientName: debouncedName }),
     ...(kind && { kind }),
@@ -275,10 +278,12 @@ export function ClinicalSeriesView() {
     setStatus(value ? (value as ClinicalSeriesStatus) : undefined);
   };
 
-  const hasFilters = !!debouncedRut || !!debouncedName || !!kind || !!status;
+  const hasFilters =
+    !!debouncedBeneficiaryRut || !!debouncedRut || !!debouncedName || !!kind || !!status;
 
   const clearFilters = () => {
     setRutRaw("");
+    setBeneficiaryRutRaw("");
     setNameRaw("");
     setKind(undefined);
     setStatus(undefined);
@@ -365,6 +370,15 @@ export function ClinicalSeriesView() {
           {/* RUT */}
           <TextField className="flex-1 min-w-35" value={rutRaw} onChange={setRutRaw}>
             <Label>RUT</Label>
+            <Input placeholder="12345678-9" />
+          </TextField>
+
+          <TextField
+            className="flex-1 min-w-35"
+            value={beneficiaryRutRaw}
+            onChange={setBeneficiaryRutRaw}
+          >
+            <Label>RUT beneficiario</Label>
             <Input placeholder="12345678-9" />
           </TextField>
 
@@ -517,6 +531,11 @@ export function ClinicalSeriesView() {
                           <span className="text-xs text-foreground-400 font-mono">
                             {s.patientRut ?? "—"}
                           </span>
+                          {s.beneficiaryRut && s.beneficiaryRut !== s.patientRut && (
+                            <span className="text-[11px] text-foreground-300 font-mono">
+                              Benef.: {s.beneficiaryRut}
+                            </span>
+                          )}
                         </div>
                       </Table.Cell>
                       <Table.Cell>
@@ -689,6 +708,11 @@ export function ClinicalSeriesView() {
                 {detail?.patientRut && (
                   <p className="font-mono text-xs text-foreground-400 mt-0.5">
                     {detail.patientRut}
+                  </p>
+                )}
+                {detail?.beneficiaryRut && detail.beneficiaryRut !== detail.patientRut && (
+                  <p className="font-mono text-[11px] text-foreground-300 mt-0.5">
+                    Beneficiario: {detail.beneficiaryRut}
                   </p>
                 )}
               </Drawer.Header>

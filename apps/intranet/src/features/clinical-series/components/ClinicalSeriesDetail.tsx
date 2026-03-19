@@ -103,6 +103,14 @@ export function ClinicalSeriesDetail({ id, onBack }: ClinicalSeriesDetailProps) 
             <p className="font-medium">{series.patientRut || "No disponible"}</p>
           </div>
           <div>
+            <p className="text-sm text-foreground-500">Beneficiario</p>
+            <p className="font-medium">{series.beneficiaryName || "No disponible"}</p>
+          </div>
+          <div>
+            <p className="text-sm text-foreground-500">RUT beneficiario</p>
+            <p className="font-medium">{series.beneficiaryRut || "No disponible"}</p>
+          </div>
+          <div>
             <p className="text-sm text-foreground-500">Tipo de Serie</p>
             <p className="font-medium">{KIND_LABELS[series.kind]}</p>
           </div>

@@ -2842,6 +2842,30 @@ export class SchemaType implements SchemaDef {
                         "clinicalSeries"
                     ]
                 },
+                patientName: {
+                    name: "patientName",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_name") }] }]
+                },
+                patientRut: {
+                    name: "patientRut",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_rut") }] }]
+                },
+                beneficiaryName: {
+                    name: "beneficiaryName",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("beneficiary_name") }] }]
+                },
+                beneficiaryRut: {
+                    name: "beneficiaryRut",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("beneficiary_rut") }] }]
+                },
                 externalEventId: {
                     name: "externalEventId",
                     type: "String",
@@ -3078,6 +3102,8 @@ export class SchemaType implements SchemaDef {
                 { name: "@@unique", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("calendarId"), ExpressionUtils.field("externalEventId")]) }] },
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("calendarId")]) }] },
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("clinicalSeriesId")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("patientRut")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("beneficiaryRut")]) }] },
                 { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("events") }] }
             ],
             idFields: ["id"],
@@ -3124,6 +3150,18 @@ export class SchemaType implements SchemaDef {
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_rut") }] }]
                 },
+                beneficiaryName: {
+                    name: "beneficiaryName",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("beneficiary_name") }] }]
+                },
+                beneficiaryRut: {
+                    name: "beneficiaryRut",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("beneficiary_rut") }] }]
+                },
                 expectedSessions: {
                     name: "expectedSessions",
                     type: "Int",
@@ -3167,6 +3205,7 @@ export class SchemaType implements SchemaDef {
                 { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("ClinicalSeriesKind", [ExpressionUtils.field("kind"), ExpressionUtils.field("status")]) }] },
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("patientRut")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("beneficiaryRut")]) }] },
                 { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("clinical_series") }] }
             ],
             idFields: ["id"],

@@ -12,8 +12,7 @@ import { useCalendarEvents } from "@/features/calendar/hooks/use-calendar-events
 import { calendarDteLinkQueries } from "@/features/calendar/queries";
 import type { CalendarEventDetail } from "@/features/calendar/types";
 import { useDisclosure } from "@/hooks/use-disclosure";
-
-const routeApi = getRouteApi("/_authed/calendar/daily");
+const routeApi = getRouteApi("/_authed/clinical/day");
 import "dayjs/locale/es";
 import dayjs from "dayjs";
 import { useEffect, useMemo, useState } from "react";

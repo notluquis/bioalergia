@@ -18,7 +18,7 @@ import { useCan } from "@/hooks/use-can";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { numberFormatter } from "@/lib/format";
 
-const routeApi = getRouteApi("/_authed/calendar/schedule");
+const routeApi = getRouteApi("/_authed/clinical/agenda");
 import "dayjs/locale/es";
 
 dayjs.extend(isoWeek);

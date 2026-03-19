@@ -22,11 +22,17 @@ export function arraysEqual(a: string[], b: string[]) {
 
 export function filtersEqual(a: CalendarFilters, b: CalendarFilters) {
   return (
+    (a.beneficiaryRut ?? "") === (b.beneficiaryRut ?? "") &&
     a.from === b.from &&
     a.to === b.to &&
     arraysEqual(unique(a.calendarIds ?? []), unique(b.calendarIds ?? [])) &&
     arraysEqual(unique(a.categories), unique(b.categories)) &&
+    (a.clinicalSeriesId ?? null) === (b.clinicalSeriesId ?? null) &&
+    (a.patientName ?? "").trim() === (b.patientName ?? "").trim() &&
+    (a.patientRut ?? "") === (b.patientRut ?? "") &&
     (a.search ?? "").trim() === (b.search ?? "").trim() &&
+    (a.seriesKind ?? "") === (b.seriesKind ?? "") &&
+    (a.seriesStatus ?? "") === (b.seriesStatus ?? "") &&
     a.maxDays === b.maxDays
   );
 }
@@ -34,8 +40,11 @@ export function filtersEqual(a: CalendarFilters, b: CalendarFilters) {
 export function normalizeFilters(filters: CalendarFilters): CalendarFilters {
   return {
     ...filters,
+    beneficiaryRut: filters.beneficiaryRut?.trim(),
     calendarIds: unique(filters.calendarIds ?? []),
     categories: unique(filters.categories),
+    patientName: filters.patientName?.trim(),
+    patientRut: filters.patientRut?.trim(),
     search: (filters.search ?? "").trim(),
   };
 }

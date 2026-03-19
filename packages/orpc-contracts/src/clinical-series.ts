@@ -7,12 +7,16 @@ export const clinicalSeriesStatusSchema = z.enum(["ACTIVE", "COMPLETED", "CANCEL
 export const clinicalSeriesEventSchema = z.object({
   amountExpected: z.number().nullable(),
   amountPaid: z.number().nullable(),
+  beneficiaryName: z.string().nullable(),
+  beneficiaryRut: z.string().nullable(),
   calendarGoogleId: z.string(),
   dosageUnit: z.string().nullable(),
   dosageValue: z.number().nullable(),
   eventDate: z.string(),
   eventId: z.number(),
   externalEventId: z.string(),
+  patientName: z.string().nullable(),
+  patientRut: z.string().nullable(),
   seriesStageKind: z.enum(["DOSE", "INSTALLATION", "MAINTENANCE", "READING"]).nullable(),
   seriesStageLabel: z.string().nullable(),
   seriesStageNumber: z.number().nullable(),
@@ -31,6 +35,8 @@ export const clinicalSeriesLinkedDocumentSchema = z.object({
 });
 
 export const clinicalSeriesSnapshotSchema = z.object({
+  beneficiaryName: z.string().nullable(),
+  beneficiaryRut: z.string().nullable(),
   displayName: z.string().nullable(),
   eligibleDocumentDateFrom: z.string(),
   eligibleDocumentDateTo: z.string(),
@@ -49,6 +55,7 @@ export const clinicalSeriesSnapshotSchema = z.object({
 });
 
 export const clinicalSeriesListInputSchema = z.object({
+  beneficiaryRut: z.string().optional(),
   kind: clinicalSeriesKindSchema.optional(),
   page: z.number().int().positive().default(1),
   pageSize: z.number().int().positive().max(100).default(20),

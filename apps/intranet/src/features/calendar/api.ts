@@ -105,12 +105,18 @@ interface CalendarSyncResponse {
 
 function normalizeCalendarORPCFilters(filters: CalendarFilters) {
   return {
+    beneficiaryRut: filters.beneficiaryRut,
     calendarIds: filters.calendarIds ?? [],
     categories: filters.categories,
+    clinicalSeriesId: filters.clinicalSeriesId,
     eventTypes: filters.eventTypes,
     from: filters.from,
     maxDays: filters.maxDays,
+    patientName: filters.patientName,
+    patientRut: filters.patientRut,
     search: filters.search,
+    seriesKind: filters.seriesKind,
+    seriesStatus: filters.seriesStatus,
     to: filters.to,
   };
 }
@@ -274,9 +280,14 @@ export async function fetchTreatmentAnalytics(
     const response = TreatmentAnalyticsResponseSchema.parse({
       status: "ok",
       ...(await calendarORPCClient.treatmentAnalytics({
+        beneficiaryRut: filters.beneficiaryRut,
         calendarIds: filters.calendarIds,
+        clinicalSeriesId: filters.clinicalSeriesId,
         from: filters.from,
         granularity,
+        patientRut: filters.patientRut,
+        seriesKind: filters.seriesKind,
+        seriesStatus: filters.seriesStatus,
         to: filters.to,
       })),
     });

@@ -6,9 +6,14 @@ import { TreatmentAnalyticsPage } from "@/features/operations/supplies/pages/Tre
 const MONTH_FORMAT_REGEX = /^\d{4}-\d{2}$/;
 
 const analyticsSearchSchema = z.object({
+  beneficiaryRut: z.string().optional(),
   from: z.string().optional(),
   to: z.string().optional(),
+  clinicalSeriesId: z.coerce.number().int().positive().optional(),
+  patientRut: z.string().optional(),
   period: z.enum(["day", "week", "month"]).default("week").optional(),
+  seriesKind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT"]).optional(),
+  seriesStatus: z.enum(["ACTIVE", "COMPLETED", "CANCELLED"]).optional(),
   month: z
     .string()
     .optional()
@@ -24,20 +29,16 @@ const analyticsSearchSchema = z.object({
     }),
 });
 
-export const Route = createFileRoute("/_authed/operations/supplies-analytics")({
+const routeApi = getRouteApi("/_authed/clinical/analytics");
+
+export const Route = createFileRoute("/_authed/clinical/analytics")({
   staticData: {
-    nav: {
-      iconKey: "ChartLine",
-      label: "Analytics Tratamientos",
-      order: 1,
-      section: "Insumos",
-    },
+    nav: { iconKey: "ChartLine", label: "Analytics", order: 5, section: "Prestaciones" },
     permission: { action: "read", subject: "CalendarEvent" },
-    title: "Analytics",
+    title: "Analytics clínico",
   },
   beforeLoad: ({ context }) => {
     if (!context.can("read", "CalendarEvent")) {
-      const routeApi = getRouteApi("/_authed/operations/supplies-analytics");
       // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw routeApi.redirect({ to: "/" });
     }

@@ -10,13 +10,13 @@ import {
   calendarSearchSchema,
 } from "@/features/calendar/types";
 
-const routeApi = getRouteApi("/_authed/calendar/schedule");
+const routeApi = getRouteApi("/_authed/clinical/agenda");
 
-export const Route = createFileRoute("/_authed/calendar/schedule")({
+export const Route = createFileRoute("/_authed/clinical/agenda")({
   staticData: {
-    nav: { iconKey: "CalendarDays", label: "Calendario", order: 1, section: "Calendario" },
+    nav: { iconKey: "CalendarDays", label: "Agenda", order: 2, section: "Prestaciones" },
     permission: { action: "read", subject: "CalendarSchedule" },
-    title: "Calendario interactivo",
+    title: "Agenda clínica",
   },
   beforeLoad: ({ context }) => {
     if (!context.can("read", "CalendarSchedule")) {
@@ -37,7 +37,6 @@ export const Route = createFileRoute("/_authed/calendar/schedule")({
     return parsed;
   },
   component: CalendarSchedulePage,
-
   loaderDeps: ({ search }) => search,
   loader: async ({ context, deps: search }) => {
     if (search.source === "doctoralia") {
@@ -46,11 +45,17 @@ export const Route = createFileRoute("/_authed/calendar/schedule")({
 
     const defaults = computeDefaultFilters({});
     const filters: CalendarFilters = {
+      beneficiaryRut: search.beneficiaryRut,
       calendarIds: search.calendarId ?? [],
       categories: search.category ?? [],
+      clinicalSeriesId: search.clinicalSeriesId,
       from: search.from ?? (search.date ? search.date : defaults.from),
       maxDays: search.maxDays ?? defaults.maxDays,
+      patientName: search.patientName,
+      patientRut: search.patientRut,
       search: search.search ?? "",
+      seriesKind: search.seriesKind,
+      seriesStatus: search.seriesStatus,
       to: search.to ?? (search.date ? search.date : defaults.to),
     };
 

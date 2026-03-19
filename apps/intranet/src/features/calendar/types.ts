@@ -1,11 +1,20 @@
 import { z } from "zod";
 
 export const calendarSearchSchema = z.object({
+  beneficiaryRut: z.string().optional().catch(undefined),
+  clinicalSeriesId: z.coerce.number().optional().catch(undefined),
   from: z.string().optional().catch(undefined),
   to: z.string().optional().catch(undefined),
   date: z.string().optional().catch(undefined),
+  patientName: z.string().optional().catch(undefined),
+  patientRut: z.string().optional().catch(undefined),
   source: z.enum(["doctoralia", "google"]).optional().catch(undefined),
   search: z.string().optional().catch(undefined),
+  seriesKind: z
+    .enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT"])
+    .optional()
+    .catch(undefined),
+  seriesStatus: z.enum(["ACTIVE", "COMPLETED", "CANCELLED"]).optional().catch(undefined),
   maxDays: z.coerce.number().optional().catch(undefined),
   calendarId: z.array(z.string()).optional().catch(undefined),
   category: z
@@ -73,12 +82,18 @@ export interface CalendarAggregateByDateType {
 export interface CalendarDaily {
   days: CalendarDayEvents[];
   filters: {
+    beneficiaryRut?: string;
     calendarIds: string[];
     categories: string[];
+    clinicalSeriesId?: number;
     eventTypes?: string[];
     from: string;
     maxDays: number;
+    patientName?: string;
+    patientRut?: string;
     search?: string;
+    seriesKind?: "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT";
+    seriesStatus?: "ACTIVE" | "CANCELLED" | "COMPLETED";
     to: string;
   };
   totals: {
@@ -134,6 +149,8 @@ export interface CalendarEventDetail {
   amountExpected?: null | number;
   amountPaid?: null | number;
   attended?: boolean | null;
+  beneficiaryName?: null | string;
+  beneficiaryRut?: null | string;
   calendarId: string;
   category?: null | string;
   clinicalSeriesId?: null | number;
@@ -157,6 +174,8 @@ export interface CalendarEventDetail {
   hangoutLink: null | string;
   isDomicilio?: boolean | null;
   location: null | string;
+  patientName?: null | string;
+  patientRut?: null | string;
   rawEvent: unknown;
   startDate: null | string;
   startDateTime: null | string;
@@ -217,6 +236,8 @@ export interface ClinicalSeriesEvent {
 }
 
 export interface ClinicalSeriesSnapshot {
+  beneficiaryName?: null | string;
+  beneficiaryRut?: null | string;
   displayName: null | string;
   eligibleDocumentDateFrom: string;
   eligibleDocumentDateTo: string;
@@ -248,12 +269,18 @@ export interface EventDteConfirmedLink {
 }
 
 export interface CalendarFilters {
+  beneficiaryRut?: string;
   calendarIds?: string[];
   categories: string[];
+  clinicalSeriesId?: number;
   eventTypes?: string[];
   from: string;
   maxDays: number;
+  patientName?: string;
+  patientRut?: string;
   search?: string;
+  seriesKind?: "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT";
+  seriesStatus?: "ACTIVE" | "CANCELLED" | "COMPLETED";
   to: string;
 }
 
@@ -271,11 +298,17 @@ export interface CalendarSummary {
     categories: { category: null | string; total: number }[];
   };
   filters: {
+    beneficiaryRut?: string;
     calendarIds: string[];
     categories: string[];
+    clinicalSeriesId?: number;
     eventTypes?: string[];
     from: string;
+    patientName?: string;
+    patientRut?: string;
     search?: string;
+    seriesKind?: "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT";
+    seriesStatus?: "ACTIVE" | "CANCELLED" | "COMPLETED";
     to: string;
   };
   totals: {
@@ -403,8 +436,13 @@ export const calendarClassificationSchema = z.object({
 });
 
 export interface TreatmentAnalyticsFilters {
+  beneficiaryRut?: string;
   calendarIds?: string[];
+  clinicalSeriesId?: number;
   from?: string;
+  patientRut?: string;
+  seriesKind?: "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT";
+  seriesStatus?: "ACTIVE" | "CANCELLED" | "COMPLETED";
   to?: string;
 }
 

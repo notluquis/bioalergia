@@ -46,8 +46,7 @@ import { DataTable } from "@/components/data-table/DataTable";
 import { calendarQueries } from "@/features/calendar/queries";
 import type { TreatmentAnalytics, TreatmentAnalyticsFilters } from "@/features/calendar/types";
 import { formatCurrency } from "@/lib/utils";
-
-const routeApi = getRouteApi("/_authed/operations/supplies-analytics");
+const routeApi = getRouteApi("/_authed/clinical/analytics");
 
 // --- Constants & Config ---
 
@@ -115,7 +114,18 @@ interface PieChartData {
 }
 
 type AnalyticsPeriod = "day" | "week" | "month";
-type AnalyticsSearchParams = ReturnType<typeof routeApi.useSearch>;
+type AnalyticsSearchParams = {
+  beneficiaryRut?: string;
+  calendarId?: string[];
+  clinicalSeriesId?: number;
+  from?: string;
+  month?: string;
+  patientRut?: string;
+  period?: "day" | "month" | "week";
+  seriesKind?: "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT";
+  seriesStatus?: "ACTIVE" | "CANCELLED" | "COMPLETED";
+  to?: string;
+};
 
 function resolvePeriod(isMonthSelected: boolean, periodValue: string | undefined): AnalyticsPeriod {
   if (!isMonthSelected) {
@@ -177,7 +187,7 @@ function getTotals(data: TreatmentAnalytics | undefined) {
 
 export function TreatmentAnalyticsPage() {
   const navigate = routeApi.useNavigate();
-  const searchParams = routeApi.useSearch();
+  const searchParams = routeApi.useSearch() as AnalyticsSearchParams;
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [dateRangeError, setDateRangeError] = useState<null | string>(null);
 
@@ -188,9 +198,14 @@ export function TreatmentAnalyticsPage() {
   const resolvedRange = resolveRange(searchParams, selectedMonth);
 
   const filters: TreatmentAnalyticsFilters = {
+    beneficiaryRut: searchParams.beneficiaryRut,
     from: resolvedRange.from as string,
     to: resolvedRange.to as string,
     calendarIds: searchParams.calendarId,
+    clinicalSeriesId: searchParams.clinicalSeriesId,
+    patientRut: searchParams.patientRut,
+    seriesKind: searchParams.seriesKind,
+    seriesStatus: searchParams.seriesStatus,
   };
 
   const hasValidDates = Boolean(filters.from) && Boolean(filters.to);

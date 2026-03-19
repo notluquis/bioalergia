@@ -78,11 +78,17 @@ function deriveEffectiveFilters(
   const routeTo = search.to ?? (dateWindow ? dateWindow.to : filters.to);
 
   return {
+    beneficiaryRut: search.beneficiaryRut ?? filters.beneficiaryRut,
     calendarIds: search.calendarId ?? filters.calendarIds,
     categories: search.category?.length ? search.category : filters.categories,
+    clinicalSeriesId: search.clinicalSeriesId ?? filters.clinicalSeriesId,
     from: routeFrom,
     maxDays,
+    patientName: search.patientName ?? filters.patientName,
+    patientRut: search.patientRut ?? filters.patientRut,
     search: search.search ?? filters.search,
+    seriesKind: search.seriesKind ?? filters.seriesKind,
+    seriesStatus: search.seriesStatus ?? filters.seriesStatus,
     to: routeTo,
   };
 }

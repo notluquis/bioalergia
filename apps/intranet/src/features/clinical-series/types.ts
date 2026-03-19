@@ -11,10 +11,14 @@ export type ClinicalSeriesStatus = "ACTIVE" | "COMPLETED" | "CANCELLED";
 export interface ClinicalSeriesEvent {
   amountExpected: number | null;
   amountPaid: number | null;
+  beneficiaryName: string | null;
+  beneficiaryRut: string | null;
   calendarGoogleId: string;
   eventDate: string;
   eventId: number;
   externalEventId: string;
+  patientName: string | null;
+  patientRut: string | null;
   seriesStageKind: "DOSE" | "INSTALLATION" | "MAINTENANCE" | "READING" | null;
   seriesStageLabel: string | null;
   seriesStageNumber: number | null;
@@ -35,6 +39,8 @@ export interface ClinicalSeriesLinkedDocument {
 }
 
 export interface ClinicalSeriesSnapshot {
+  beneficiaryName: string | null;
+  beneficiaryRut: string | null;
   id: number;
   kind: ClinicalSeriesKind;
   status: ClinicalSeriesStatus;
@@ -64,6 +70,7 @@ export interface ClinicalSeriesListItem {
 }
 
 export interface ClinicalSeriesFilters {
+  beneficiaryRut?: string;
   kind?: ClinicalSeriesKind;
   page?: number;
   pageSize?: number;
@@ -105,10 +112,14 @@ export interface RebuildJob {
 export const ClinicalSeriesEventSchema = z.object({
   amountExpected: z.number().nullable(),
   amountPaid: z.number().nullable(),
+  beneficiaryName: z.string().nullable(),
+  beneficiaryRut: z.string().nullable(),
   calendarGoogleId: z.string(),
   eventDate: z.string(),
   eventId: z.number(),
   externalEventId: z.string(),
+  patientName: z.string().nullable(),
+  patientRut: z.string().nullable(),
   seriesStageKind: z.enum(["DOSE", "INSTALLATION", "MAINTENANCE", "READING"]).nullable(),
   seriesStageLabel: z.string().nullable(),
   seriesStageNumber: z.number().nullable(),
@@ -129,6 +140,8 @@ export const ClinicalSeriesLinkedDocumentSchema = z.object({
 });
 
 export const ClinicalSeriesSnapshotSchema = z.object({
+  beneficiaryName: z.string().nullable(),
+  beneficiaryRut: z.string().nullable(),
   id: z.number(),
   kind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT"]),
   status: z.enum(["ACTIVE", "COMPLETED", "CANCELLED"]),

@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 // Mock DB so the module can be imported without a real database connection
 vi.mock("@finanzas/db", () => ({ db: {} }));
 
-const { extractPatientHints } = await import("../clinical-series");
+const { extractIdentityHints, extractPatientHints } = await import("../clinical-series");
 
 describe("extractPatientHints", () => {
   describe("patientName — capitalized names", () => {
@@ -90,5 +90,24 @@ describe("extractPatientHints", () => {
       expect(result.patientName).toBeNull();
       expect(result.patientRut).toBeNull();
     });
+  });
+});
+
+describe("extractIdentityHints", () => {
+  it("assigns the first RUT to patient and the second to beneficiary", () => {
+    const result = extractIdentityHints(
+      "Roxair Juan Pérez 12.345.678-5",
+      "Boleta a nombre de María Pérez 9.876.543-2",
+    );
+
+    expect(result.patientRut).toBe("12345678-5");
+    expect(result.beneficiaryRut).toBe("9876543-2");
+  });
+
+  it("keeps beneficiary null when only one identity is present", () => {
+    const result = extractIdentityHints("Test cutáneo Ana Soto 12.345.678-5", null);
+
+    expect(result.patientRut).toBe("12345678-5");
+    expect(result.beneficiaryRut).toBeNull();
   });
 });

@@ -2,7 +2,7 @@ import { db } from "@finanzas/db";
 
 import type { CalendarEventRecord } from "../lib/google/google-calendar";
 import { calendarSyncService } from "../modules/calendar/service";
-import { syncClinicalSeriesForExternalEvents } from "./clinical-series";
+import { extractIdentityHints, syncClinicalSeriesForExternalEvents } from "./clinical-series";
 
 export type CalendarSyncLogEntryPayload = {
   attributes?: null | Record<string, unknown>;
@@ -375,6 +375,25 @@ export async function updateCalendarEventClassification(
     throw new Error(`Calendar not found: ${calendarId}`);
   }
 
+  const existingEvent = await db.event.findUnique({
+    where: {
+      calendarId_externalEventId: {
+        calendarId: calendar.id,
+        externalEventId: eventId,
+      },
+    },
+    select: {
+      beneficiaryName: true,
+      beneficiaryRut: true,
+      description: true,
+      patientName: true,
+      patientRut: true,
+      summary: true,
+    },
+  });
+
+  const inferredIdentity = extractIdentityHints(existingEvent?.summary ?? null, existingEvent?.description ?? null);
+
   await db.event.update({
     where: {
       calendarId_externalEventId: {
@@ -387,6 +406,8 @@ export async function updateCalendarEventClassification(
       amountExpected: data.amountExpected,
       amountPaid: data.amountPaid,
       attended: data.attended,
+      beneficiaryName: existingEvent?.beneficiaryName ?? inferredIdentity.beneficiaryName,
+      beneficiaryRut: existingEvent?.beneficiaryRut ?? inferredIdentity.beneficiaryRut,
       clinicalSeries: data.clinicalSeriesId
         ? {
             connect: {
@@ -396,6 +417,8 @@ export async function updateCalendarEventClassification(
         : data.clinicalSeriesId === null
           ? { disconnect: true }
           : undefined,
+      patientName: existingEvent?.patientName ?? inferredIdentity.patientName,
+      patientRut: existingEvent?.patientRut ?? inferredIdentity.patientRut,
       seriesStageKind: data.seriesStageKind,
       seriesStageLabel: data.seriesStageLabel,
       seriesStageNumber: data.seriesStageNumber,
@@ -423,6 +446,8 @@ export async function createCalendarEvent(data: CalendarEventRecord) {
     throw new Error(`Calendar not found for googleId: ${data.calendarId}`);
   }
 
+  const identityHints = extractIdentityHints(data.summary ?? null, data.description ?? null);
+
   const createData: EventCreateInput = {
     calendarId: calendar.id,
     externalEventId: data.eventId,
@@ -443,6 +468,10 @@ export async function createCalendarEvent(data: CalendarEventRecord) {
     transparency: data.transparency,
     visibility: data.visibility,
     hangoutLink: data.hangoutLink,
+    patientName: identityHints.patientName,
+    patientRut: identityHints.patientRut,
+    beneficiaryName: identityHints.beneficiaryName,
+    beneficiaryRut: identityHints.beneficiaryRut,
     category: data.category,
     amountExpected: data.amountExpected ?? null,
     amountPaid: data.amountPaid ?? null,

@@ -36,12 +36,18 @@ const formatDateOnly = (value: string | Date | null | undefined): string => {
 };
 
 export type CalendarEventFilters = {
+  beneficiaryRut?: string;
   from?: string;
   to?: string;
   calendarIds?: string[];
+  clinicalSeriesId?: number;
   eventTypes?: string[];
   categories?: string[];
+  patientName?: string;
+  patientRut?: string;
   search?: string;
+  seriesKind?: "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT";
+  seriesStatus?: "ACTIVE" | "CANCELLED" | "COMPLETED";
   dates?: string[];
 };
 
@@ -159,7 +165,10 @@ type EventTypeRow = { eventType: string | null; total: number | string };
 type CategoryRow = { category: string | null; total: number | string };
 
 const buildEventBaseQuery = () =>
-  db.$qb.selectFrom("Event as e").leftJoin("Calendar as c", "e.calendarId", "c.id");
+  db.$qb
+    .selectFrom("Event as e")
+    .leftJoin("Calendar as c", "e.calendarId", "c.id")
+    .leftJoin("ClinicalSeries as cs", "e.clinicalSeriesId", "cs.id");
 
 type EventBaseQuery = ReturnType<typeof buildEventBaseQuery>;
 
@@ -338,6 +347,8 @@ async function getAvailableFilters(
 
 export type CalendarEventDetail = {
   calendarId: string;
+  beneficiaryName?: string | null;
+  beneficiaryRut?: string | null;
   eventId: string;
   status: string | null;
   eventType: string | null;
@@ -352,6 +363,8 @@ export type CalendarEventDetail = {
   endTimeZone: string | null;
   colorId: string | null;
   location: string | null;
+  patientName?: string | null;
+  patientRut?: string | null;
   transparency: string | null;
   visibility: string | null;
   hangoutLink: string | null;
@@ -422,7 +435,14 @@ function applyCategoryFilter(query: EventBaseQuery, categories: string[]) {
 function applySearchFilter(query: EventBaseQuery, search: string) {
   const term = `%${search}%`;
   return query.where((eb) =>
-    eb.or([eb("e.summary", "ilike", term), eb("e.description", "ilike", term)]),
+    eb.or([
+      eb("e.summary", "ilike", term),
+      eb("e.description", "ilike", term),
+      eb("e.patientName", "ilike", term),
+      eb("e.beneficiaryName", "ilike", term),
+      eb("cs.patientName", "ilike", term),
+      eb("cs.beneficiaryName", "ilike", term),
+    ]),
   );
 }
 
@@ -440,8 +460,40 @@ function applyFilters(query: EventBaseQuery, filters: CalendarEventFilters): Eve
     q = q.where("e.eventType", "in", filters.eventTypes);
   }
 
+  if (filters.clinicalSeriesId) {
+    q = q.where("e.clinicalSeriesId", "=", filters.clinicalSeriesId);
+  }
+
   if (filters.categories && filters.categories.length > 0) {
     q = applyCategoryFilter(q, filters.categories);
+  }
+
+  if (filters.patientRut) {
+    q = q.where(sql<string>`coalesce(e.patient_rut, cs.patient_rut)`, "=", filters.patientRut);
+  }
+
+  if (filters.beneficiaryRut) {
+    q = q.where(
+      sql<string>`coalesce(e.beneficiary_rut, cs.beneficiary_rut)`,
+      "=",
+      filters.beneficiaryRut,
+    );
+  }
+
+  if (filters.patientName) {
+    q = q.where(
+      sql<string>`coalesce(e.patient_name, cs.patient_name)`,
+      "ilike",
+      `%${filters.patientName}%`,
+    );
+  }
+
+  if (filters.seriesKind) {
+    q = q.where("cs.kind", "=", filters.seriesKind);
+  }
+
+  if (filters.seriesStatus) {
+    q = q.where("cs.status", "=", filters.seriesStatus);
   }
 
   if (filters.search) {
@@ -583,6 +635,10 @@ export async function getCalendarEventsByDate(
       "e.endTimeZone as endTimeZone",
       "e.colorId as colorId",
       "e.location",
+      "e.patientName as patientName",
+      "e.patientRut as patientRut",
+      "e.beneficiaryName as beneficiaryName",
+      "e.beneficiaryRut as beneficiaryRut",
       "e.transparency",
       "e.visibility",
       "e.hangoutLink as hangoutLink",
@@ -639,6 +695,10 @@ export async function getCalendarEventsByDate(
     endTimeZone: string | null;
     colorId: string | null;
     location: string | null;
+    patientName: string | null;
+    patientRut: string | null;
+    beneficiaryName: string | null;
+    beneficiaryRut: string | null;
     transparency: string | null;
     visibility: string | null;
     hangoutLink: string | null;
@@ -710,6 +770,10 @@ export async function getCalendarEventsByDate(
       endTimeZone: ev.endTimeZone,
       colorId: ev.colorId,
       location: ev.location,
+      patientName: ev.patientName,
+      patientRut: ev.patientRut,
+      beneficiaryName: ev.beneficiaryName,
+      beneficiaryRut: ev.beneficiaryRut,
       transparency: ev.transparency,
       visibility: ev.visibility,
       hangoutLink: ev.hangoutLink,
@@ -759,9 +823,14 @@ export async function getCalendarEventsByDate(
 }
 
 export type TreatmentAnalyticsFilters = {
+  beneficiaryRut?: string;
   from?: string;
   to?: string;
   calendarIds?: string[];
+  clinicalSeriesId?: number;
+  patientRut?: string;
+  seriesKind?: "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT";
+  seriesStatus?: "ACTIVE" | "CANCELLED" | "COMPLETED";
 };
 
 export type TreatmentAnalyticsGranularity = "all" | "day" | "week" | "month";
@@ -868,6 +937,7 @@ function buildTreatmentBaseQuery(filters: TreatmentAnalyticsFilters) {
   let baseQuery = db.$qb
     .selectFrom("Event as e")
     .leftJoin("Calendar as c", "e.calendarId", "c.id")
+    .leftJoin("ClinicalSeries as cs", "e.clinicalSeriesId", "cs.id")
     .where("e.category", "=", "Tratamiento subcutáneo");
 
   if (filters.from && dayjs(filters.from).isValid()) {
@@ -886,6 +956,29 @@ function buildTreatmentBaseQuery(filters: TreatmentAnalyticsFilters) {
   }
   if (filters.calendarIds && filters.calendarIds.length > 0) {
     baseQuery = baseQuery.where("c.googleId", "in", filters.calendarIds);
+  }
+  if (filters.clinicalSeriesId) {
+    baseQuery = baseQuery.where("e.clinicalSeriesId", "=", filters.clinicalSeriesId);
+  }
+  if (filters.patientRut) {
+    baseQuery = baseQuery.where(
+      sql<string>`coalesce(e.patient_rut, cs.patient_rut)`,
+      "=",
+      filters.patientRut,
+    );
+  }
+  if (filters.beneficiaryRut) {
+    baseQuery = baseQuery.where(
+      sql<string>`coalesce(e.beneficiary_rut, cs.beneficiary_rut)`,
+      "=",
+      filters.beneficiaryRut,
+    );
+  }
+  if (filters.seriesKind) {
+    baseQuery = baseQuery.where("cs.kind", "=", filters.seriesKind);
+  }
+  if (filters.seriesStatus) {
+    baseQuery = baseQuery.where("cs.status", "=", filters.seriesStatus);
   }
   return baseQuery;
 }

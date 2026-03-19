@@ -2339,6 +2339,26 @@ export class SchemaType implements SchemaDef {
                         "clinicalSeries"
                     ]
                 },
+                patientName: {
+                    name: "patientName",
+                    type: "String",
+                    optional: true
+                },
+                patientRut: {
+                    name: "patientRut",
+                    type: "String",
+                    optional: true
+                },
+                beneficiaryName: {
+                    name: "beneficiaryName",
+                    type: "String",
+                    optional: true
+                },
+                beneficiaryRut: {
+                    name: "beneficiaryRut",
+                    type: "String",
+                    optional: true
+                },
                 externalEventId: {
                     name: "externalEventId",
                     type: "String"
@@ -2574,6 +2594,16 @@ export class SchemaType implements SchemaDef {
                 },
                 patientRut: {
                     name: "patientRut",
+                    type: "String",
+                    optional: true
+                },
+                beneficiaryName: {
+                    name: "beneficiaryName",
+                    type: "String",
+                    optional: true
+                },
+                beneficiaryRut: {
+                    name: "beneficiaryRut",
                     type: "String",
                     optional: true
                 },

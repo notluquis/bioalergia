@@ -10,13 +10,13 @@ import {
   calendarSearchSchema,
 } from "@/features/calendar/types";
 
-const routeApi = getRouteApi("/_authed/calendar/daily");
+const routeApi = getRouteApi("/_authed/clinical/day");
 
-export const Route = createFileRoute("/_authed/calendar/daily")({
+export const Route = createFileRoute("/_authed/clinical/day")({
   staticData: {
-    nav: { iconKey: "Calendar", label: "Detalle Diario", order: 2, section: "Calendario" },
+    nav: { iconKey: "Calendar", label: "Día", order: 3, section: "Prestaciones" },
     permission: { action: "read", subject: "CalendarDaily" },
-    title: "Detalle diario",
+    title: "Detalle diario clínico",
   },
   beforeLoad: ({ context }) => {
     if (!context.can("read", "CalendarDaily")) {
@@ -28,15 +28,20 @@ export const Route = createFileRoute("/_authed/calendar/daily")({
     calendarSearchSchema.parse(search),
   loaderDeps: ({ search }) => search,
   component: CalendarDailyPage,
-
   loader: async ({ context, deps: search }) => {
     const defaults = computeDefaultFilters({});
     const filters: CalendarFilters = {
+      beneficiaryRut: search.beneficiaryRut,
       calendarIds: search.calendarId ?? [],
       categories: search.category ?? [],
+      clinicalSeriesId: search.clinicalSeriesId,
       from: search.from ?? (search.date ? search.date : defaults.from),
       maxDays: search.maxDays ?? defaults.maxDays,
+      patientName: search.patientName,
+      patientRut: search.patientRut,
       search: search.search ?? "",
+      seriesKind: search.seriesKind,
+      seriesStatus: search.seriesStatus,
       to: search.to ?? (search.date ? search.date : defaults.to),
     };
 

@@ -7,7 +7,7 @@ import { CalendarClassificationPage } from "@/pages/CalendarClassificationPage";
 
 import type { MissingFieldFilters } from "@/features/calendar/api";
 
-const routeApi = getRouteApi("/_authed/calendar/classify");
+const routeApi = getRouteApi("/_authed/clinical/classify");
 
 const MISSING_FILTER_KEYS = [
   "missingCategory",
@@ -61,11 +61,11 @@ const classifySearchSchema = z
 type ClassifySearchParams = z.infer<typeof classifySearchSchema>;
 type MissingFilterKey = NonNullable<MissingFieldFilters["missing"]>[number];
 
-export const Route = createFileRoute("/_authed/calendar/classify")({
+export const Route = createFileRoute("/_authed/clinical/classify")({
   staticData: {
-    nav: { iconKey: "ListChecks", label: "Clasificar", order: 4, section: "Calendario" },
+    nav: { iconKey: "ClipboardCheck", label: "Clasificación", order: 6, section: "Prestaciones" },
     permission: { action: "update", subject: "CalendarEvent" },
-    title: "Clasificar eventos",
+    title: "Clasificación clínica",
   },
   beforeLoad: ({ context }) => {
     if (!context.can("update", "CalendarEvent")) {
@@ -77,7 +77,6 @@ export const Route = createFileRoute("/_authed/calendar/classify")({
     classifySearchSchema.parse(search),
   loaderDeps: ({ search }) => search,
   component: CalendarClassificationPage,
-
   loader: async ({ context, deps: search }) => {
     const filters: MissingFieldFilters = {
       missing: search.missing as MissingFilterKey[] | undefined,

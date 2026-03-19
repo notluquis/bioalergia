@@ -31,7 +31,7 @@ import {
 import { useJobProgress } from "@/hooks/use-job-progress";
 import { toast } from "@/lib/toast-interceptor";
 
-const routeApi = getRouteApi("/_authed/calendar/classify");
+const routeApi = getRouteApi("/_authed/clinical/classify");
 import "dayjs/locale/es";
 
 const EMPTY_EVENTS: CalendarUnclassifiedEvent[] = [];

@@ -20,6 +20,8 @@ type ClinicalSeriesStageKind = "DOSE" | "INSTALLATION" | "MAINTENANCE" | "READIN
 type EventSeriesCandidate = {
   amountExpected: null | number;
   amountPaid: null | number;
+  beneficiaryName: null | string;
+  beneficiaryRut: null | string;
   calendarGoogleId: string;
   category: null | string;
   clinicalSeriesId: null | number;
@@ -27,6 +29,8 @@ type EventSeriesCandidate = {
   eventDate: string;
   eventId: number;
   externalEventId: string;
+  patientName: null | string;
+  patientRut: null | string;
   seriesStageKind: ClinicalSeriesStageKind | null;
   seriesStageLabel: null | string;
   seriesStageNumber: null | number;
@@ -44,12 +48,16 @@ type EventSeriesCandidate = {
 type ClinicalSeriesEventSnapshot = {
   amountExpected: null | number;
   amountPaid: null | number;
+  beneficiaryName: null | string;
+  beneficiaryRut: null | string;
   calendarGoogleId: string;
   dosageUnit: null | string;
   dosageValue: null | number;
   eventDate: string;
   eventId: number;
   externalEventId: string;
+  patientName: null | string;
+  patientRut: null | string;
   seriesStageKind: ClinicalSeriesStageKind | null;
   seriesStageLabel: null | string;
   seriesStageNumber: null | number;
@@ -68,6 +76,8 @@ type ClinicalSeriesLinkedDocument = {
 };
 
 export interface ClinicalSeriesSnapshot {
+  beneficiaryName: null | string;
+  beneficiaryRut: null | string;
   displayName: null | string;
   eligibleDocumentDateFrom: string;
   eligibleDocumentDateTo: string;
@@ -86,6 +96,7 @@ export interface ClinicalSeriesSnapshot {
 }
 
 type ClinicalSeriesFilters = {
+  beneficiaryRut?: string;
   kind?: ClinicalSeriesKind;
   page?: number;
   pageSize?: number;
@@ -105,30 +116,42 @@ function normalizeName(value: string): string {
 }
 
 export function extractPatientHints(summary: null | string, description: null | string) {
-  const text = `${summary ?? ""} ${description ?? ""}`;
-  const patientRut =
-    [
-      ...new Set((text.match(RUT_REGEX) ?? []).map((value) => normalizeRut(value)).filter(Boolean)),
-    ][0] ?? null;
+  const identity = extractIdentityHints(summary, description);
+  return {
+    patientName: identity.patientName,
+    patientRut: identity.patientRut,
+  };
+}
 
-  const patientName =
+export function extractIdentityHints(summary: null | string, description: null | string) {
+  const text = `${summary ?? ""} ${description ?? ""}`;
+  const ruts = [
+    ...new Set((text.match(RUT_REGEX) ?? []).map((value) => normalizeRut(value)).filter(Boolean)),
+  ];
+  const names =
     [
       ...new Set(
         Array.from(text.matchAll(CAPITALIZED_NAME_REGEX), (match) =>
           normalizeName((match[1] ?? "").trim()),
         ).filter((value) => value.length >= 5),
       ),
-    ][0] ??
-    [
-      ...new Set(
-        Array.from(text.matchAll(LOWERCASE_NAME_REGEX), (match) =>
-          normalizeName((match[1] ?? "").trim()),
-        ).filter((value) => value.length >= 5),
-      ),
-    ][0] ??
-    null;
+    ].concat(
+      [
+        ...new Set(
+          Array.from(text.matchAll(LOWERCASE_NAME_REGEX), (match) =>
+            normalizeName((match[1] ?? "").trim()),
+          ).filter((value) => value.length >= 5),
+        ),
+      ],
+    );
 
-  return { patientName, patientRut };
+  const uniqueNames = [...new Set(names)];
+  const patientRut = ruts[0] ?? null;
+  const beneficiaryRut = ruts.find((value) => value !== patientRut) ?? null;
+  const patientName = uniqueNames[0] ?? null;
+  const beneficiaryName = uniqueNames.find((value) => value !== patientName) ?? null;
+
+  return { beneficiaryName, beneficiaryRut, patientName, patientRut };
 }
 
 function inferSeriesKind(event: EventSeriesCandidate): ClinicalSeriesKind | null {
@@ -200,6 +223,10 @@ async function loadEventSeriesCandidateByInternalId(
       e.id AS "eventId",
       c.google_id AS "calendarGoogleId",
       e.external_event_id AS "externalEventId",
+      e.patient_name AS "patientName",
+      e.patient_rut AS "patientRut",
+      e.beneficiary_name AS "beneficiaryName",
+      e.beneficiary_rut AS "beneficiaryRut",
       COALESCE(to_char(e.start_date, 'YYYY-MM-DD'), to_char((e.start_date_time AT TIME ZONE ${TIMEZONE})::date, 'YYYY-MM-DD')) AS "eventDate",
       e.summary AS "summary",
       e.description AS "description",
@@ -230,6 +257,10 @@ async function loadEventSeriesCandidateByExternalIds(
       e.id AS "eventId",
       c.google_id AS "calendarGoogleId",
       e.external_event_id AS "externalEventId",
+      e.patient_name AS "patientName",
+      e.patient_rut AS "patientRut",
+      e.beneficiary_name AS "beneficiaryName",
+      e.beneficiary_rut AS "beneficiaryRut",
       COALESCE(to_char(e.start_date, 'YYYY-MM-DD'), to_char((e.start_date_time AT TIME ZONE ${TIMEZONE})::date, 'YYYY-MM-DD')) AS "eventDate",
       e.summary AS "summary",
       e.description AS "description",
@@ -340,25 +371,52 @@ async function refreshClinicalSeriesMetadata(seriesId: number) {
 
   let patientName = series.patientName;
   let patientRut = series.patientRut;
+  let beneficiaryName = series.beneficiaryName;
+  let beneficiaryRut = series.beneficiaryRut;
 
-  if (!patientName || !patientRut) {
+  if (!patientName || !patientRut || !beneficiaryName || !beneficiaryRut) {
     for (const event of series.events) {
-      const hints = extractPatientHints(event.summary, event.description);
+      const hints = extractIdentityHints(event.summary, event.description);
       if (!patientRut && hints.patientRut) {
         patientRut = hints.patientRut;
       }
       if (!patientName && hints.patientName) {
         patientName = hints.patientName;
       }
-      if (patientName && patientRut) {
+      if (!beneficiaryRut && hints.beneficiaryRut) {
+        beneficiaryRut = hints.beneficiaryRut;
+      }
+      if (!beneficiaryName && hints.beneficiaryName) {
+        beneficiaryName = hints.beneficiaryName;
+      }
+      if (patientName && patientRut && beneficiaryName && beneficiaryRut) {
         break;
       }
+    }
+  }
+
+  if (!beneficiaryRut || !beneficiaryName) {
+    const linkedDocuments = await db.$queryRaw<Array<{ clientName: string; clientRUT: string }>>`
+      SELECT DISTINCT
+        s.client_name AS "clientName",
+        s.client_rut AS "clientRUT"
+      FROM event_dte_sale_links l
+      JOIN events e ON e.id = l.event_id
+      JOIN dte_sale_details s ON s.id = l.dte_sale_detail_id
+      WHERE e.clinical_series_id = ${seriesId}
+    `;
+
+    if (linkedDocuments.length === 1) {
+      beneficiaryRut ||= linkedDocuments[0]?.clientRUT ?? null;
+      beneficiaryName ||= linkedDocuments[0]?.clientName ?? null;
     }
   }
 
   await db.clinicalSeries.update({
     where: { id: seriesId },
     data: {
+      beneficiaryName,
+      beneficiaryRut,
       displayName: buildSeriesDisplayName({
         kind: series.kind as ClinicalSeriesKind,
         patientName,
@@ -390,35 +448,79 @@ export async function syncClinicalSeriesForInternalEventId(
     return null;
   }
 
-  const hints = extractPatientHints(event.summary, event.description);
-  if (!hints.patientName && !hints.patientRut) {
+  const inferredIdentity = extractIdentityHints(event.summary, event.description);
+  const identity = {
+    beneficiaryName: event.beneficiaryName ?? inferredIdentity.beneficiaryName,
+    beneficiaryRut: event.beneficiaryRut ?? inferredIdentity.beneficiaryRut,
+    patientName: event.patientName ?? inferredIdentity.patientName,
+    patientRut: event.patientRut ?? inferredIdentity.patientRut,
+  };
+
+  await db.event.update({
+    where: { id: event.eventId },
+    data: {
+      beneficiaryName: identity.beneficiaryName,
+      beneficiaryRut: identity.beneficiaryRut,
+      patientName: identity.patientName,
+      patientRut: identity.patientRut,
+    },
+  });
+
+  if (!identity.patientName && !identity.patientRut) {
     return event.clinicalSeriesId ?? null;
   }
 
-  let targetSeriesId =
-    event.clinicalSeriesId ??
+  let targetSeriesId: null | number = null;
+
+  if (event.clinicalSeriesId != null) {
+    const currentSeries = await db.clinicalSeries.findUnique({
+      where: { id: event.clinicalSeriesId },
+      select: {
+        beneficiaryRut: true,
+        id: true,
+        kind: true,
+        patientRut: true,
+      },
+    });
+
+    const sameKind = currentSeries?.kind === kind;
+    const samePatient =
+      !identity.patientRut || !currentSeries?.patientRut || currentSeries.patientRut === identity.patientRut;
+    const compatibleBeneficiary =
+      !identity.beneficiaryRut ||
+      !currentSeries?.beneficiaryRut ||
+      currentSeries.beneficiaryRut === identity.beneficiaryRut;
+
+    if (sameKind && samePatient && compatibleBeneficiary) {
+      targetSeriesId = currentSeries.id;
+    }
+  }
+
+  targetSeriesId ||=
     (await findMatchingSeries({
       eventDate: event.eventDate,
       kind,
-      patientName: hints.patientName,
-      patientRut: hints.patientRut,
+      patientName: identity.patientName,
+      patientRut: identity.patientRut,
     }));
 
   if (!targetSeriesId) {
     const created = await db.clinicalSeries.create({
       data: {
+        beneficiaryName: identity.beneficiaryName,
+        beneficiaryRut: identity.beneficiaryRut,
         displayName: buildSeriesDisplayName({
           kind,
-          patientName: hints.patientName,
-          patientRut: hints.patientRut,
+          patientName: identity.patientName,
+          patientRut: identity.patientRut,
         }),
         expectedSessions:
           event.seriesStageNumber != null && Number.isFinite(event.seriesStageNumber)
             ? event.seriesStageNumber
             : null,
         kind,
-        patientName: hints.patientName,
-        patientRut: hints.patientRut,
+        patientName: identity.patientName,
+        patientRut: identity.patientRut,
       },
       select: { id: true },
     });
@@ -612,6 +714,8 @@ export async function getClinicalSeriesSnapshotByExternalEvent(params: {
   const events = series.events.map((item) => ({
     amountExpected: item.amountExpected,
     amountPaid: item.amountPaid,
+    beneficiaryName: item.beneficiaryName ?? null,
+    beneficiaryRut: item.beneficiaryRut ?? null,
     calendarGoogleId: item.calendar.googleId,
     dosageUnit: item.dosageUnit ?? null,
     dosageValue: item.dosageValue ?? null,
@@ -620,6 +724,8 @@ export async function getClinicalSeriesSnapshotByExternalEvent(params: {
       .format("YYYY-MM-DD"),
     eventId: item.id,
     externalEventId: item.externalEventId,
+    patientName: item.patientName ?? null,
+    patientRut: item.patientRut ?? null,
     seriesStageKind: (item.seriesStageKind as ClinicalSeriesStageKind | null) ?? null,
     seriesStageLabel: item.seriesStageLabel ?? null,
     seriesStageNumber: item.seriesStageNumber ?? null,
@@ -645,6 +751,8 @@ export async function getClinicalSeriesSnapshotByExternalEvent(params: {
     : dayjs.tz(endDate, TIMEZONE).add(30, "day").format("YYYY-MM-DD");
 
   return {
+    beneficiaryName: series.beneficiaryName ?? null,
+    beneficiaryRut: series.beneficiaryRut ?? null,
     displayName: series.displayName ?? null,
     eligibleDocumentDateFrom,
     eligibleDocumentDateTo,
@@ -689,6 +797,8 @@ export async function getClinicalSeriesSnapshotById(id: number): Promise<Clinica
   if (!syntheticEvent) {
     return {
       displayName: series.displayName ?? null,
+      beneficiaryName: series.beneficiaryName ?? null,
+      beneficiaryRut: series.beneficiaryRut ?? null,
       eligibleDocumentDateFrom: dayjs().tz(TIMEZONE).format("YYYY-MM-DD"),
       eligibleDocumentDateTo: dayjs().tz(TIMEZONE).format("YYYY-MM-DD"),
       events: [],
@@ -717,6 +827,7 @@ export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilter
   const pageSize = Math.min(100, Math.max(1, filters?.pageSize ?? 20));
 
   const baseWhere = {
+    beneficiaryRut: filters?.beneficiaryRut ? normalizeRut(filters.beneficiaryRut) : undefined,
     kind: filters?.kind,
     status: filters?.status,
     patientName: filters?.patientName

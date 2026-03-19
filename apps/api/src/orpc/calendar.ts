@@ -165,12 +165,18 @@ function buildStructuredSyncLogEntries(params: {
 }
 
 const calendarQueryInputSchema = z.object({
+  beneficiaryRut: z.string().optional(),
   from: z.string().optional(),
   to: z.string().optional(),
   calendarIds: z.array(z.string()).optional(),
+  clinicalSeriesId: z.coerce.number().int().positive().optional(),
   eventTypes: z.array(z.string()).optional(),
   categories: z.array(z.string()).optional(),
+  patientName: z.string().optional(),
+  patientRut: z.string().optional(),
   search: z.string().optional(),
+  seriesKind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT"]).optional(),
+  seriesStatus: z.enum(["ACTIVE", "COMPLETED", "CANCELLED"]).optional(),
   maxDays: z.coerce.number().positive().int().optional(),
 });
 
@@ -248,28 +254,43 @@ async function buildCalendarFiltersFromInput(input: z.infer<typeof calendarQuery
   const eventTypes = input.eventTypes ?? [];
   const categories = input.categories ?? [];
   const search = input.search?.trim() || undefined;
+  const patientName = input.patientName?.trim() || undefined;
+  const patientRut = input.patientRut?.trim() || undefined;
+  const beneficiaryRut = input.beneficiaryRut?.trim() || undefined;
 
   const defaultMaxDays = Number(settings["calendar.dailyMaxDays"] ?? "31");
   const maxDays = input.maxDays ?? parsePositiveCappedInt(defaultMaxDays, 31, 120);
 
   const filters: CalendarEventFilters = {
+    beneficiaryRut,
     from: normalizedRange.from,
     to: normalizedRange.to,
     calendarIds: toOptionalFilter(calendarIds),
+    clinicalSeriesId: input.clinicalSeriesId,
     eventTypes: toOptionalFilter(eventTypes),
     categories: toOptionalFilter(categories),
+    patientName,
+    patientRut,
     search,
+    seriesKind: input.seriesKind,
+    seriesStatus: input.seriesStatus,
   };
 
   return {
     filters,
     applied: {
+      beneficiaryRut,
       from: normalizedRange.from,
       to: normalizedRange.to,
       calendarIds,
+      clinicalSeriesId: input.clinicalSeriesId,
       eventTypes,
       categories,
+      patientName,
+      patientRut,
       search,
+      seriesKind: input.seriesKind,
+      seriesStatus: input.seriesStatus,
     },
     maxDays,
   };
@@ -460,9 +481,14 @@ const treatmentAnalytics = requirePermission("CalendarEvent", "read")
   .handler(async ({ input }) => {
     const defaults = getDefaultTreatmentAnalyticsRange();
     const filters: TreatmentAnalyticsFilters = {
+      beneficiaryRut: input.beneficiaryRut?.trim() || undefined,
       from: input.from ?? defaults.from,
       to: input.to ?? defaults.to,
       calendarIds: toOptionalFilter(input.calendarIds ?? []),
+      clinicalSeriesId: input.clinicalSeriesId,
+      patientRut: input.patientRut?.trim() || undefined,
+      seriesKind: input.seriesKind,
+      seriesStatus: input.seriesStatus,
     };
 
     const granularity = (input.granularity ?? "all") as TreatmentAnalyticsGranularity;

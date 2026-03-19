@@ -4,11 +4,12 @@ import dayjs from "dayjs";
 import { type CalendarSearchParams, calendarSearchSchema } from "@/features/calendar/types";
 import { CalendarHeatmapPage } from "@/pages/CalendarHeatmapPage";
 
-export const Route = createFileRoute("/_authed/calendar/heatmap")({
+const routeApi = getRouteApi("/_authed/clinical/heatmap");
+
+export const Route = createFileRoute("/_authed/clinical/heatmap")({
   validateSearch: (search: Record<string, unknown>): CalendarSearchParams => {
     const parsed = calendarSearchSchema.parse(search);
     if (!parsed.from || !parsed.to) {
-      // Default range: previous month + current month + next month (3 months total)
       const defaultFrom = dayjs().subtract(1, "month").startOf("month").format("YYYY-MM-DD");
       const defaultTo = dayjs().add(1, "month").endOf("month").format("YYYY-MM-DD");
       return {
@@ -20,13 +21,12 @@ export const Route = createFileRoute("/_authed/calendar/heatmap")({
     return parsed;
   },
   staticData: {
-    nav: { iconKey: "LayoutDashboard", label: "Mapa de Calor", order: 3, section: "Calendario" },
+    nav: { iconKey: "LayoutDashboard", label: "Heatmap", order: 4, section: "Prestaciones" },
     permission: { action: "read", subject: "CalendarHeatmap" },
-    title: "Mapa de calor",
+    title: "Heatmap clínico",
   },
   beforeLoad: ({ context }) => {
     if (!context.can("read", "CalendarHeatmap")) {
-      const routeApi = getRouteApi("/_authed/calendar/heatmap");
       // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw routeApi.redirect({ to: "/" });
     }

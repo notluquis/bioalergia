@@ -11,8 +11,7 @@ import { useCalendarEvents } from "@/features/calendar/hooks/use-calendar-events
 import type { CalendarSummary } from "@/features/calendar/types";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { currencyFormatter, numberFormatter } from "@/lib/format";
-
-const routeApi = getRouteApi("/_authed/calendar/heatmap");
+const routeApi = getRouteApi("/_authed/clinical/heatmap");
 import "dayjs/locale/es";
 
 dayjs.locale("es");

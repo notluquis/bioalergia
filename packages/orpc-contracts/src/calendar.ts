@@ -11,12 +11,18 @@ export const calendarMissingClassificationFilterKeySchema = z.enum([
 ]);
 
 export const calendarQueryInputSchema = z.object({
+  beneficiaryRut: z.string().optional(),
   from: z.string().optional(),
   to: z.string().optional(),
   calendarIds: z.array(z.string()).optional(),
+  clinicalSeriesId: z.number().int().positive().optional(),
   eventTypes: z.array(z.string()).optional(),
   categories: z.array(z.string()).optional(),
+  patientName: z.string().optional(),
+  patientRut: z.string().optional(),
   search: z.string().optional(),
+  seriesKind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT"]).optional(),
+  seriesStatus: z.enum(["ACTIVE", "COMPLETED", "CANCELLED"]).optional(),
   maxDays: z.coerce.number().positive().int().optional(),
 });
 
@@ -103,6 +109,8 @@ export const calendarEventDetailSchema = z.object({
   amountExpected: z.number().nullable().optional(),
   amountPaid: z.number().nullable().optional(),
   attended: z.boolean().nullable().optional(),
+  beneficiaryName: z.string().nullable().optional(),
+  beneficiaryRut: z.string().nullable().optional(),
   calendarId: z.string(),
   category: z.string().nullable().optional(),
   clinicalSeriesId: z.number().nullable().optional(),
@@ -127,6 +135,8 @@ export const calendarEventDetailSchema = z.object({
   hangoutLink: z.string().nullable(),
   isDomicilio: z.boolean().nullable().optional(),
   location: z.string().nullable(),
+  patientName: z.string().nullable().optional(),
+  patientRut: z.string().nullable().optional(),
   rawEvent: z.unknown(),
   startDate: z.string().nullable(),
   startDateTime: z.string().nullable(),
@@ -147,12 +157,18 @@ export const calendarDayEventsSchema = z.object({
 });
 
 export const calendarFiltersOutputSchema = z.object({
+  beneficiaryRut: z.string().optional(),
   calendarIds: z.array(z.string()),
   categories: z.array(z.string()),
+  clinicalSeriesId: z.number().int().positive().optional(),
   eventTypes: z.array(z.string()).optional(),
   from: z.string(),
   maxDays: z.number(),
+  patientName: z.string().optional(),
+  patientRut: z.string().optional(),
   search: z.string().optional(),
+  seriesKind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT"]).optional(),
+  seriesStatus: z.enum(["ACTIVE", "COMPLETED", "CANCELLED"]).optional(),
   to: z.string(),
 });
 
@@ -248,9 +264,14 @@ export const calendarSummaryWithAggregatesSchema = z.object({
 });
 
 export const calendarTreatmentAnalyticsInputSchema = z.object({
+  beneficiaryRut: z.string().optional(),
   calendarIds: z.array(z.string()).optional(),
+  clinicalSeriesId: z.number().int().positive().optional(),
   from: z.string().optional(),
   granularity: z.enum(["day", "week", "month", "all"]).optional(),
+  patientRut: z.string().optional(),
+  seriesKind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT"]).optional(),
+  seriesStatus: z.enum(["ACTIVE", "COMPLETED", "CANCELLED"]).optional(),
   to: z.string().optional(),
 });
 

@@ -757,6 +757,10 @@ model Event {
   id                Int                      @id @default(autoincrement())
   calendarId        Int                      @map("calendar_id")
   clinicalSeriesId  Int?                     @map("clinical_series_id")
+  patientName       String?                  @map("patient_name")
+  patientRut        String?                  @map("patient_rut")
+  beneficiaryName   String?                  @map("beneficiary_name")
+  beneficiaryRut    String?                  @map("beneficiary_rut")
   externalEventId   String                   @map("external_event_id")
   eventStatus       String?                  @map("event_status")
   eventType         String?                  @map("event_type")
@@ -808,6 +812,8 @@ model Event {
   @@unique([calendarId, externalEventId])
   @@index([calendarId])
   @@index([clinicalSeriesId])
+  @@index([patientRut])
+  @@index([beneficiaryRut])
   @@map("events")
 }
 
@@ -818,6 +824,8 @@ model ClinicalSeries {
   displayName      String?              @map("display_name")
   patientName      String?              @map("patient_name")
   patientRut       String?              @map("patient_rut")
+  beneficiaryName  String?              @map("beneficiary_name")
+  beneficiaryRut   String?              @map("beneficiary_rut")
   expectedSessions Int?                 @map("expected_sessions")
   notes            String?
   completedAt      DateTime?            @map("completed_at")
@@ -831,6 +839,7 @@ model ClinicalSeries {
 
   @@index([kind, status])
   @@index([patientRut])
+  @@index([beneficiaryRut])
   @@map("clinical_series")
 }
 

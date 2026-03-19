@@ -69,10 +69,11 @@ const ICON_MAP: Record<string, ComponentType<{ className?: string; strokeWidth?:
 };
 
 const SECTION_ORDER: NavSection[] = [
-  "Calendario",
+  "Prestaciones",
   "Insumos",
   "Finanzas",
   "Servicios",
+  "Calendario",
   "Operaciones",
   "Sistema",
 ];
@@ -116,7 +117,7 @@ export function generateNavSections(routeTree: RouteTreeNode): NavSectionData[] 
           label: item.label,
           requiredPermission: item.requiredPermission,
           to: item.to,
-        }),
+        })
       );
 
     sections.push({
@@ -165,7 +166,7 @@ function extractNavItems(route: RouteTreeNode): ExtractedNavItem[] {
         .then(({ isTechnicalRoute }) => {
           if (!isTechnicalRoute(fullPath)) {
             console.warn(
-              `⚠️  Route "${fullPath}" has permission but no nav metadata. Add staticData.nav or hideFromNav: true`,
+              `⚠️  Route "${fullPath}" has permission but no nav metadata. Add staticData.nav or hideFromNav: true`
             );
           }
         })
