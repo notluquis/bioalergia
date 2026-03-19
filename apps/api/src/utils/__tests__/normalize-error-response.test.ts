@@ -33,22 +33,6 @@ function createContext({
 }
 
 describe("normalizeErrorResponse", () => {
-  it("adds code for legacy { error } payload", async () => {
-    const c = createContext({
-      body: { error: "No se proporcionó ningún archivo" },
-      status: 400,
-      path: "/api/patients/1/attachments",
-    }) as unknown as Parameters<typeof normalizeErrorResponse>[0];
-
-    await normalizeErrorResponse(c);
-
-    expect(await c.res.json()).toEqual({
-      status: "error",
-      message: "No se proporcionó ningún archivo",
-      code: "PATIENT_ATTACHMENT_FILE_REQUIRED",
-    });
-  });
-
   it("adds code inside superjson payload from reply()", async () => {
     const serialized = superjson.serialize({ status: "error", message: "Token inválido" });
 

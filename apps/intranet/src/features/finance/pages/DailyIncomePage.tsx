@@ -1,5 +1,3 @@
-import type { Event } from "@finanzas/db/models";
-import { schema as schemaLite } from "@finanzas/db/schema-lite";
 import {
   Alert,
   Card,
@@ -11,30 +9,45 @@ import {
   Skeleton,
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
-import { useClientQueries } from "@zenstackhq/tanstack-query/react";
+import { useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { useState } from "react";
+import { fetchCalendarDaily } from "@/features/calendar/api";
 
-type EventForDaily = Pick<
-  Event,
-  "id" | "startDate" | "summary" | "eventType" | "amountExpected" | "amountPaid"
->;
+type EventForDaily = {
+  amountExpected: null | number;
+  amountPaid: null | number;
+  eventType: null | string;
+  id: string;
+  startDate: string;
+  summary: null | string;
+};
 
 export function DailyIncomePage() {
   const [from, setFrom] = useState(dayjs().startOf("month").format("YYYY-MM-DD"));
   const [to, setTo] = useState(dayjs().endOf("month").format("YYYY-MM-DD"));
 
-  // ZenStack v3.3.0 official pattern
-  const client = useClientQueries(schemaLite);
-  const { data: events, isLoading } = client.event.useFindMany({
-    where: {
-      AND: [
-        { startDate: { gte: dayjs(from, "YYYY-MM-DD").toDate() } },
-        { startDate: { lte: dayjs(to, "YYYY-MM-DD").toDate() } },
-      ],
-    },
-    orderBy: { startDateTime: "desc" },
+  const { data, isLoading } = useQuery({
+    queryFn: () =>
+      fetchCalendarDaily({
+        categories: [],
+        from,
+        maxDays: Math.max(dayjs(to).diff(dayjs(from), "day") + 1, 1),
+        to,
+      }),
+    queryKey: ["daily-income", from, to],
   });
+  const events: EventForDaily[] =
+    data?.days.flatMap((day) =>
+      day.events.map((event) => ({
+        amountExpected: event.amountExpected ?? null,
+        amountPaid: event.amountPaid ?? null,
+        eventType: event.eventType,
+        id: event.eventId,
+        startDate: event.startDate ?? event.eventDate,
+        summary: event.summary,
+      }))
+    ) ?? [];
 
   // Group by date
   const grouped = (events || []).reduce(
@@ -46,7 +59,7 @@ export function DailyIncomePage() {
       acc[date].push(event);
       return acc;
     },
-    {} as Record<string, EventForDaily[]>,
+    {} as Record<string, EventForDaily[]>
   );
 
   const sortedDates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
@@ -138,11 +151,11 @@ export function DailyIncomePage() {
           const dayEvents = grouped[date] ?? [];
           const totalExpected = dayEvents.reduce(
             (sum: number, e: EventForDaily) => sum + (e.amountExpected || 0),
-            0,
+            0
           );
           const totalPaid = dayEvents.reduce(
             (sum: number, e: EventForDaily) => sum + (e.amountPaid || 0),
-            0,
+            0
           );
 
           return (

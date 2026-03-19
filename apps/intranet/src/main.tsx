@@ -8,7 +8,6 @@
 import { Spinner } from "@heroui/react";
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
-import { QuerySettingsProvider } from "@zenstackhq/tanstack-query/react";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { ZodError } from "zod";
@@ -64,14 +63,6 @@ globalThis.addEventListener("unhandledrejection", (event) => {
 // ============================================================================
 
 function logGlobalError(error: unknown, context: string) {
-  const zenstackInfo =
-    typeof error === "object" &&
-    error !== null &&
-    "info" in error &&
-    (error as { info?: unknown }).info
-      ? (error as { info?: unknown; status?: unknown })
-      : null;
-
   if (error instanceof ZodError) {
     console.group(`🚨 [${context}] Validation Error`);
     console.table(
@@ -79,20 +70,12 @@ function logGlobalError(error: unknown, context: string) {
         path: issue.path.join("."),
         message: issue.message,
         code: issue.code,
-      })),
+      }))
     );
     console.groupEnd();
   } else if (error instanceof ApiError && error.details) {
     console.group(`🚨 [${context}] ApiError`);
     console.error(error.message);
-    console.groupEnd();
-  } else if (zenstackInfo) {
-    console.group(`🚨 [${context}] ZenStack Query Error`);
-    console.error(
-      "Status:",
-      typeof zenstackInfo.status === "number" ? zenstackInfo.status : "unknown",
-    );
-    console.error("Info:", zenstackInfo.info);
     console.groupEnd();
   } else {
     // Standard error logging
@@ -197,7 +180,7 @@ const ReactQueryDevtools =
     : React.lazy(() =>
         import("@tanstack/react-query-devtools").then((res) => ({
           default: res.ReactQueryDevtools,
-        })),
+        }))
       );
 
 // ============================================================================
@@ -219,27 +202,19 @@ ReactDOM.createRoot(rootElement).render(
     <GlobalError>
       <ChunkErrorBoundary>
         <QueryClientProvider client={queryClient}>
-          <QuerySettingsProvider
-            value={{
-              endpoint: import.meta.env.VITE_API_URL
-                ? `${import.meta.env.VITE_API_URL}/api/model`
-                : "/api/model",
-            }}
-          >
-            <AuthListener />
-            <SettingsProvider>
-              <ToastProvider>
-                <AbilityProvider>
-                  <InnerApp />
-                  <React.Suspense fallback={null}>
-                    <ReactQueryDevtools initialIsOpen={false} />
-                  </React.Suspense>
-                </AbilityProvider>
-              </ToastProvider>
-            </SettingsProvider>
-          </QuerySettingsProvider>
+          <AuthListener />
+          <SettingsProvider>
+            <ToastProvider>
+              <AbilityProvider>
+                <InnerApp />
+                <React.Suspense fallback={null}>
+                  <ReactQueryDevtools initialIsOpen={false} />
+                </React.Suspense>
+              </AbilityProvider>
+            </ToastProvider>
+          </SettingsProvider>
         </QueryClientProvider>
       </ChunkErrorBoundary>
     </GlobalError>
-  </React.StrictMode>,
+  </React.StrictMode>
 );

@@ -100,6 +100,11 @@
       "import": "./dist/integrations.js",
       "default": "./dist/integrations.js"
     },
+    "./loans": {
+      "types": "./dist/loans.d.ts",
+      "import": "./dist/loans.js",
+      "default": "./dist/loans.js"
+    },
     "./mercadopago": {
       "types": "./dist/mercadopago.d.ts",
       "import": "./dist/mercadopago.js",

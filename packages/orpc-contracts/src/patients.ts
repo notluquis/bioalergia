@@ -71,6 +71,13 @@ export const syncPatientDteSourcesInputSchema = z.object({
   period: z.string().optional(),
 });
 
+export const uploadPatientAttachmentInputSchema = z.object({
+  file: z.file(),
+  name: z.string().optional(),
+  patientId: z.number().int().positive(),
+  type: z.string().min(1),
+});
+
 export const patientPaymentSchema = z.object({
   amount: decimalSchema,
   budgetId: z.number().nullable().optional(),
@@ -240,6 +247,11 @@ export const patientResponseSchema = z.object({
   status: z.literal("ok"),
 });
 
+export const attachmentResponseSchema = z.object({
+  attachment: attachmentSchema,
+  status: z.literal("ok"),
+});
+
 export const consultationResponseSchema = z.object({
   consultation: consultationSchema,
   status: z.literal("ok"),
@@ -262,6 +274,10 @@ export const patientDteSyncResponseSchema = z.object({
 
 export const patientsContract = {
   create: oc.route({ method: "POST", path: "/" }).input(createPatientInputSchema).output(patientResponseSchema),
+  createAttachment: oc
+    .route({ method: "POST", path: "/attachments" })
+    .input(uploadPatientAttachmentInputSchema)
+    .output(attachmentResponseSchema),
   createBudget: oc.route({ method: "POST", path: "/budgets" }).input(createBudgetInputSchema).output(budgetResponseSchema),
   createConsultation: oc
     .route({ method: "POST", path: "/consultations" })

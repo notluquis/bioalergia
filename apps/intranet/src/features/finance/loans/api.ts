@@ -1,9 +1,9 @@
-import { apiClient } from "@/lib/api-client";
 import {
   LoanDetailResponseSchema,
   LoanListResponseSchema,
   LoanScheduleResponseSchema,
 } from "./schemas";
+import { loansORPCClient, toLoansApiError } from "./orpc";
 import type {
   CreateLoanPayload,
   LoanDetailResponse,
@@ -14,49 +14,63 @@ import type {
 } from "./types";
 
 export async function createLoan(payload: CreateLoanPayload): Promise<LoanDetailResponse> {
-  return apiClient.post<LoanDetailResponse>("/api/loans", payload, {
-    responseSchema: LoanDetailResponseSchema,
-  });
+  try {
+    return LoanDetailResponseSchema.parse(await loansORPCClient.create(payload));
+  } catch (error) {
+    throw toLoansApiError(error);
+  }
 }
 
 export async function fetchLoanDetail(publicId: string): Promise<LoanDetailResponse> {
-  return apiClient.get<LoanDetailResponse>(`/api/loans/${publicId}`, {
-    responseSchema: LoanDetailResponseSchema,
-  });
+  try {
+    return LoanDetailResponseSchema.parse(await loansORPCClient.detail({ publicId }));
+  } catch (error) {
+    throw toLoansApiError(error);
+  }
 }
 
 export async function fetchLoans(): Promise<LoanListResponse> {
-  return apiClient.get<LoanListResponse>("/api/loans", {
-    responseSchema: LoanListResponseSchema,
-  });
+  try {
+    return LoanListResponseSchema.parse(await loansORPCClient.list());
+  } catch (error) {
+    throw toLoansApiError(error);
+  }
 }
 
 export async function regenerateSchedules(
   publicId: string,
-  payload: RegenerateSchedulePayload,
+  payload: RegenerateSchedulePayload
 ): Promise<LoanDetailResponse> {
-  return apiClient.post<LoanDetailResponse>(`/api/loans/${publicId}/schedules`, payload, {
-    responseSchema: LoanDetailResponseSchema,
-  });
+  try {
+    return LoanDetailResponseSchema.parse(
+      await loansORPCClient.regenerateSchedules({ payload, publicId })
+    );
+  } catch (error) {
+    throw toLoansApiError(error);
+  }
 }
 
 export async function registerLoanPayment(
   scheduleId: number,
-  payload: LoanPaymentPayload,
+  payload: LoanPaymentPayload
 ): Promise<{ schedule: LoanSchedule; status: "ok" }> {
-  return apiClient.post<{ schedule: LoanSchedule; status: "ok" }>(
-    `/api/loan-schedules/${scheduleId}/pay`,
-    payload,
-    { responseSchema: LoanScheduleResponseSchema },
-  );
+  try {
+    return LoanScheduleResponseSchema.parse(
+      await loansORPCClient.paySchedule({ id: scheduleId, payload })
+    );
+  } catch (error) {
+    throw toLoansApiError(error);
+  }
 }
 
 export async function unlinkLoanPayment(
-  scheduleId: number,
+  scheduleId: number
 ): Promise<{ schedule: LoanSchedule; status: "ok" }> {
-  return apiClient.post<{ schedule: LoanSchedule; status: "ok" }>(
-    `/api/loan-schedules/${scheduleId}/unlink`,
-    {},
-    { responseSchema: LoanScheduleResponseSchema },
-  );
+  try {
+    return LoanScheduleResponseSchema.parse(
+      await loansORPCClient.unlinkSchedulePayment({ id: scheduleId })
+    );
+  } catch (error) {
+    throw toLoansApiError(error);
+  }
 }

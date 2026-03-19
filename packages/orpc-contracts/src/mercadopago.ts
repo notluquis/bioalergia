@@ -20,6 +20,11 @@ export const processReportInputSchema = z.object({
   reportType: reportTypeSchema,
 });
 
+export const downloadReportInputSchema = z.object({
+  fileName: z.string().min(1),
+  type: reportTypeSchema.optional(),
+});
+
 export const syncLogsInputSchema = z.object({
   limit: z.number().int().min(1).max(200).optional(),
   offset: z.number().int().min(0).optional(),
@@ -86,6 +91,10 @@ export const processReportResponseSchema = z.object({
 
 export const mercadopagoContract = {
   createReport: oc.route({ method: "POST", path: "/reports" }).input(createReportInputSchema).output(mpReportSchema),
+  downloadReport: oc
+    .route({ method: "GET", path: "/reports/download" })
+    .input(downloadReportInputSchema)
+    .output(z.file()),
   listReports: oc.route({ method: "GET", path: "/reports" }).input(listReportsInputSchema).output(listReportsResponseSchema),
   listSyncLogs: oc.route({ method: "GET", path: "/sync/logs" }).input(syncLogsInputSchema).output(syncLogsResponseSchema),
   processReport: oc

@@ -24,7 +24,7 @@ import {
   TanStackInputField,
   TanStackTextAreaField,
 } from "@/components/forms/TanStackFieldControls";
-import { apiClient } from "@/lib/api-client";
+import { certificatesORPCClient, toCertificatesApiError } from "@/features/certificates/orpc";
 import { toast } from "@/lib/toast-interceptor";
 
 const medicalCertificateSearchSchema = z.object({
@@ -67,9 +67,11 @@ function MedicalCertificatePage() {
 
   const generateMutation = useMutation({
     mutationFn: async (data: FormData) => {
-      return await apiClient.postRaw<Blob>("certificates/medical", data, {
-        responseType: "blob",
-      });
+      try {
+        return await certificatesORPCClient.generateMedical(data);
+      } catch (error) {
+        throw toCertificatesApiError(error);
+      }
     },
     onSuccess: (pdfBlob, variables) => {
       // Download PDF

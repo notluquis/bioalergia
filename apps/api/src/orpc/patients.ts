@@ -1,4 +1,8 @@
 import { db } from "@finanzas/db";
+import crypto from "node:crypto";
+import fs from "node:fs";
+import nodeOs from "node:os";
+import path from "node:path";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
@@ -11,6 +15,7 @@ import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
+import { uploadPatientAttachmentToDrive } from "../services/patient-attachments-drive.js";
 import {
   syncPatientDteSaleSources,
 } from "../modules/patients";
@@ -95,6 +100,13 @@ const syncPatientDteSourcesInputSchema = z.object({
   dryRun: z.boolean().optional(),
   limit: z.number().int().positive().max(5000).optional(),
   period: z.string().optional(),
+});
+
+const createAttachmentInputSchema = z.object({
+  file: z.file(),
+  name: z.string().optional(),
+  patientId: z.number().int().positive(),
+  type: z.string().min(1),
 });
 
 const patientPaymentSchema = z.object({
@@ -257,6 +269,11 @@ const patientResponseSchema = z.object({
   status: z.literal("ok"),
 });
 
+const attachmentResponseSchema = z.object({
+  attachment: attachmentSchema,
+  status: z.literal("ok"),
+});
+
 const consultationResponseSchema = z.object({
   consultation: consultationSchema,
   status: z.literal("ok"),
@@ -289,11 +306,21 @@ const authed = base.use(async ({ context, next }) => {
   }
 
   return next({
-    context: {
-      ...context,
-      user,
+      context: {
+        ...context,
+        user,
     },
   });
+});
+
+const updatePatients = authed.use(async ({ context, next }) => {
+  const canUpdate = await hasPermission(context.user.id, "update", "Patient");
+
+  if (!canUpdate) {
+    throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
+  }
+
+  return next();
 });
 
 const readBudgets = authed.use(async ({ context, next }) => {
@@ -426,6 +453,49 @@ const patientsORPCRouterBase = {
         patient,
         status: "ok",
       };
+    }),
+
+  createAttachment: updatePatients
+    .route({ method: "POST", path: "/attachments", tags: ["Patients"] })
+    .input(createAttachmentInputSchema)
+    .output(attachmentResponseSchema)
+    .handler(async ({ context, input }) => {
+      const tempPath = path.join(nodeOs.tmpdir(), `${crypto.randomUUID()}-${input.file.name}`);
+      const arrayBuffer = await input.file.arrayBuffer();
+      fs.writeFileSync(tempPath, Buffer.from(arrayBuffer));
+
+      try {
+        const attachmentName = input.name?.trim() || input.file.name;
+        const { fileId, webViewLink } = await uploadPatientAttachmentToDrive(
+          tempPath,
+          attachmentName,
+          input.file.type || "application/octet-stream",
+          String(input.patientId),
+        );
+
+        const attachment = await db.patientAttachment.create({
+          data: {
+            driveFileId: fileId,
+            mimeType: input.file.type || null,
+            name: attachmentName,
+            patientId: input.patientId,
+            type: input.type as "CONSENT" | "EXAM" | "OTHER" | "RECIPE",
+            uploadedBy: context.user.id,
+          },
+        });
+
+        return {
+          attachment: {
+            ...attachment,
+            webViewLink: webViewLink ?? undefined,
+          },
+          status: "ok" as const,
+        };
+      } finally {
+        if (fs.existsSync(tempPath)) {
+          fs.unlinkSync(tempPath);
+        }
+      }
     }),
 
   createBudget: createBudgets

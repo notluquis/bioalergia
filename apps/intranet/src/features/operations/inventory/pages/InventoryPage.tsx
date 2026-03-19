@@ -1,12 +1,15 @@
-import { schema as schemaLite } from "@finanzas/db/schema-lite";
 import { Alert, Button, Modal, Surface } from "@heroui/react";
-import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { useClientQueries } from "@zenstackhq/tanstack-query/react";
+import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Lock, PlusCircle } from "lucide-react";
 import { useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
+import {
+  createInventoryItem,
+  createInventoryMovement,
+  updateInventoryItem,
+} from "@/features/inventory/api";
 import { AdjustStockForm } from "@/features/inventory/components/AdjustStockForm";
 import { AllergyInventoryView } from "@/features/inventory/components/AllergyInventoryView";
 import { columns } from "@/features/inventory/components/columns";
@@ -14,8 +17,6 @@ import { InventoryItemForm } from "@/features/inventory/components/InventoryItem
 import { inventoryKeys } from "@/features/inventory/queries";
 import type { InventoryItem, InventoryMovement } from "@/features/inventory/types";
 export function InventoryPage() {
-  const client = useClientQueries(schemaLite);
-
   const { can } = useAuth();
   const queryClient = useQueryClient();
   const { error: toastError, success: toastSuccess } = useToast();
@@ -58,10 +59,16 @@ export function InventoryPage() {
     setItemForStockAdjust(null);
   }
 
-  // ZenStack mutations for CRUD
-  const createItemMutation = client.inventoryItem.useCreate();
-  const updateItemMutation = client.inventoryItem.useUpdate();
-  const createMovementMutation = client.inventoryMovement.useCreate();
+  const createItemMutation = useMutation({
+    mutationFn: (itemData: Omit<InventoryItem, "id">) => createInventoryItem(itemData),
+  });
+  const updateItemMutation = useMutation({
+    mutationFn: ({ id, item }: { id: number; item: Partial<Omit<InventoryItem, "id">> }) =>
+      updateInventoryItem(id, item),
+  });
+  const createMovementMutation = useMutation({
+    mutationFn: (movement: InventoryMovement) => createInventoryMovement(movement),
+  });
 
   const saving =
     createItemMutation.isPending ||
@@ -72,26 +79,10 @@ export function InventoryPage() {
     setError(null);
     try {
       if (editingItem) {
-        await updateItemMutation.mutateAsync({
-          data: {
-            categoryId: itemData.category_id,
-            currentStock: itemData.current_stock,
-            description: itemData.description,
-            name: itemData.name,
-          },
-          where: { id: editingItem.id },
-        });
+        await updateItemMutation.mutateAsync({ id: editingItem.id, item: itemData });
         toastSuccess("Item actualizado");
       } else {
-        // ZenStack uses camelCase field names
-        await createItemMutation.mutateAsync({
-          data: {
-            categoryId: itemData.category_id,
-            currentStock: itemData.current_stock,
-            description: itemData.description,
-            name: itemData.name,
-          },
-        });
+        await createItemMutation.mutateAsync(itemData);
         toastSuccess("Item creado correctamente");
       }
       void queryClient.invalidateQueries({ queryKey: inventoryKeys.items().queryKey });
@@ -106,15 +97,7 @@ export function InventoryPage() {
   async function handleAdjustStock(movement: InventoryMovement) {
     setError(null);
     try {
-      // ZenStack uses camelCase field names
-      await createMovementMutation.mutateAsync({
-        data: {
-          itemId: movement.item_id,
-          quantityChange: movement.quantity_change,
-          reason: movement.reason,
-        },
-      });
-      // Refetch items to get updated stock
+      await createMovementMutation.mutateAsync(movement);
       void queryClient.invalidateQueries({ queryKey: inventoryKeys.items().queryKey });
       toastSuccess("Stock ajustado correctamente");
       closeModal();

@@ -1,29 +1,43 @@
-import type { Event } from "@finanzas/db";
-import { schema as schemaLite } from "@finanzas/db/schema-lite";
-import { useClientQueries } from "@zenstackhq/tanstack-query/react";
+import { useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
-
 import { useMemo } from "react";
+import { fetchCalendarDaily } from "@/features/calendar/api";
 import type { DateRange, FinancialSummary, IncomeCategoryGroup, IncomeItem } from "../types";
 
-type EventForIncome = Pick<
-  Event,
-  "id" | "externalEventId" | "startDate" | "summary" | "eventType" | "category" | "amountPaid"
->;
+type EventForIncome = {
+  amountPaid: null | number;
+  category: null | string;
+  eventType: null | string;
+  externalEventId: string;
+  id: number;
+  startDate: string;
+  summary: null | string;
+};
 
 export function useFinancialSummary(dateRange: DateRange) {
-  const client = useClientQueries(schemaLite);
-
-  const { data: events, isLoading } = client.event.useFindMany({
-    where: {
-      AND: [
-        { startDate: { gte: dayjs(dateRange.from, "YYYY-MM-DD").toDate() } },
-        { startDate: { lte: dayjs(dateRange.to, "YYYY-MM-DD").toDate() } },
-        { amountPaid: { gt: 0 } },
-      ],
-    },
-    orderBy: { startDate: "desc" },
+  const { data, isLoading } = useQuery({
+    queryFn: () =>
+      fetchCalendarDaily({
+        categories: [],
+        from: dateRange.from,
+        maxDays: Math.max(dayjs(dateRange.to).diff(dayjs(dateRange.from), "day") + 1, 1),
+        to: dateRange.to,
+      }),
+    queryKey: ["financial-summary", dateRange.from, dateRange.to],
   });
+  const events =
+    data?.days
+      .flatMap((day) => day.events)
+      .filter((event) => (event.amountPaid ?? 0) > 0)
+      .map((event) => ({
+        amountPaid: event.amountPaid ?? null,
+        category: event.category ?? null,
+        eventType: event.eventType,
+        externalEventId: event.eventId,
+        id: Number.parseInt(event.eventId, 10) || 0,
+        startDate: event.startDate ?? event.eventDate,
+        summary: event.summary,
+      })) ?? [];
 
   const summary = useMemo((): FinancialSummary | null => {
     if (!events) {
@@ -47,7 +61,7 @@ export function useFinancialSummary(dateRange: DateRange) {
         category: cat,
         total: catItems.reduce((sum, i) => sum + i.amount, 0),
         items: catItems,
-      }),
+      })
     );
 
     // Sort by total desc
@@ -89,6 +103,14 @@ function mapEventToIncomeItem(event: EventForIncome): IncomeItem {
     summary: event.summary || "Sin título",
     category,
     amount: event.amountPaid || 0,
-    originalEvent: event,
+    originalEvent: {
+      amountPaid: event.amountPaid,
+      category: event.category,
+      eventType: event.eventType,
+      externalEventId: event.externalEventId,
+      id: event.id,
+      startDate: event.startDate ? dayjs(event.startDate, "YYYY-MM-DD").toDate() : null,
+      summary: event.summary,
+    },
   };
 }

@@ -6,7 +6,7 @@
 import { z } from "zod";
 import type { MpReportType } from "../../shared/mercadopago";
 import { mercadopagoORPCClient, toMercadoPagoApiError } from "../features/finance/mercadopago/orpc";
-import { ApiError, apiClient } from "../lib/api-client";
+import { ApiError } from "../lib/api-client";
 
 /**
  * Statistics returned after processing a report
@@ -129,10 +129,6 @@ const ProcessReportResponseSchema = z.object({
   status: z.string(),
 });
 
-function getBaseUrl(type: MpReportType = "release") {
-  return type === "release" ? "/api/mercadopago" : "/api/mercadopago/settlement";
-}
-
 export const MPService = {
   createReport: async (
     beginDate: Date,
@@ -230,25 +226,23 @@ export const MPService = {
   },
 
   downloadReport: async (fileName: string, type: MpReportType = "release"): Promise<Blob> => {
-    const baseUrl = getBaseUrl(type);
     try {
-      return await apiClient.getRaw<Blob>(
-        `${baseUrl}/reports/download/${encodeURIComponent(fileName)}`,
-        {
-          responseType: "blob",
-        }
-      );
+      return await mercadopagoORPCClient.downloadReport({
+        fileName,
+        type,
+      });
     } catch (error) {
-      if (error instanceof ApiError && error.status === 404) {
+      const apiError = toMercadoPagoApiError(error);
+      if (apiError.status === 404) {
         throw new ApiError(
           type === "settlement"
             ? "El archivo de conciliacion aun no esta disponible para descargar en Mercado Pago."
             : "El archivo de liberacion aun no esta disponible para descargar en Mercado Pago.",
           404,
-          error.details
+          apiError.details
         );
       }
-      throw error;
+      throw apiError;
     }
   },
 

@@ -1,28 +1,26 @@
-import { schema as schemaLite } from "@finanzas/db/schema-lite";
 import { Button, Description, Input, Label, Skeleton, TextField } from "@heroui/react";
-import { useClientQueries } from "@zenstackhq/tanstack-query/react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { PlusCircle } from "lucide-react";
 import { useState } from "react";
+import { createInventoryCategory } from "../api";
+import { inventoryKeys } from "../queries";
 
 import type { InventoryCategory } from "../types";
 export function InventoryCategoryManager() {
-  const client = useClientQueries(schemaLite);
-
   const [newCategoryName, setNewCategoryName] = useState("");
 
-  // ZenStack hooks for categories
   const {
-    data: categoriesData,
+    data: categories = [],
     error: queryError,
     isLoading: loading,
-  } = client.inventoryCategory.useFindMany({
-    orderBy: { name: "asc" },
+  } = useQuery(inventoryKeys.categories());
+
+  const createMutation = useMutation({
+    mutationFn: (name: string) => createInventoryCategory(name),
+    onSuccess: () => {
+      setNewCategoryName("");
+    },
   });
-
-  const categories: InventoryCategory[] = categoriesData ?? [];
-
-  // ZenStack mutation for creating category
-  const createMutation = client.inventoryCategory.useCreate();
 
   const error = (() => {
     if (queryError instanceof Error) {
@@ -39,14 +37,7 @@ export function InventoryCategoryManager() {
     if (!newCategoryName.trim()) {
       return;
     }
-    createMutation.mutate(
-      { data: { name: newCategoryName.trim() } },
-      {
-        onSuccess: () => {
-          setNewCategoryName("");
-        },
-      }
-    );
+    createMutation.mutate(newCategoryName.trim());
   }
 
   return (

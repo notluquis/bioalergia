@@ -1,19 +1,14 @@
 // apps/api/src/app.ts
-import { authDb, schema } from "@finanzas/db";
-import { RPCApiHandler } from "@zenstackhq/server/api";
-import { createHonoHandler } from "@zenstackhq/server/hono";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { rateLimiter } from "hono-rate-limiter";
-import { createAuthContext, getSessionUser, hasPermission } from "./auth";
+import { getSessionUser, hasPermission } from "./auth";
 import { AppError } from "./lib/app-error";
 import { htmlSanitizerMiddleware } from "./lib/html-sanitizer";
 import { logError } from "./lib/logger";
 import { configureSuperjson } from "./lib/superjson-config";
-import { certificatesRoutes } from "./modules/certificates/index.js";
-import { patientsRoutes } from "./modules/patients/index.js";
 import { authOpenAPIHandler, authORPCHandler } from "./orpc/auth";
 import { backupsOpenAPIHandler, backupsORPCHandler } from "./orpc/backups";
 import { balancesOpenAPIHandler, balancesORPCHandler } from "./orpc/balances";
@@ -33,6 +28,7 @@ import { financeOpenAPIHandler, financeORPCHandler } from "./orpc/finance";
 import { haulmerOpenAPIHandler, haulmerORPCHandler } from "./orpc/haulmer";
 import { integrationsOpenAPIHandler, integrationsORPCHandler } from "./orpc/integrations";
 import { inventoryOpenAPIHandler, inventoryORPCHandler } from "./orpc/inventory";
+import { loansOpenAPIHandler, loansORPCHandler } from "./orpc/loans";
 import { mercadopagoOpenAPIHandler, mercadopagoORPCHandler } from "./orpc/mercadopago";
 import { notificationsOpenAPIHandler, notificationsORPCHandler } from "./orpc/notifications";
 import { patientsOpenAPIHandler, patientsORPCHandler } from "./orpc/patients";
@@ -64,13 +60,7 @@ import {
 import { usersOpenAPIHandler, usersORPCHandler } from "./orpc/users";
 import { whatsappOpenAPIHandler, whatsappORPCHandler } from "./orpc/whatsapp";
 import { whatsappWebhookRoutes } from "./routes/whatsapp";
-// REST compatibility endpoints kept intentionally
-import { loanScheduleRoutes } from "./routes/loan-schedules";
-import { loanRoutes } from "./routes/loans";
-import { mercadopagoRoutes } from "./routes/mercadopago";
-import { calendarRoutes } from "./routes/calendar";
 import { googleCalendarWebhookRoutes } from "./routes/google-calendar-webhook";
-import { transactionRoutes } from "./routes/transactions";
 import { errorReply } from "./utils/error-reply";
 import { normalizeErrorResponse } from "./utils/normalize-error-response";
 import { reply, replyRaw } from "./utils/reply";
@@ -885,6 +875,19 @@ app.use("/api/orpc/inventory/rpc/*", async (c, next) => {
   await next();
 });
 
+app.use("/api/orpc/loans/rpc/*", async (c, next) => {
+  const { matched, response } = await loansORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/loans/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
 app.use("/api/orpc/roles/rpc/*", async (c, next) => {
   const { matched, response } = await rolesORPCHandler.handle(createHonoORPCRequest(c), {
     prefix: "/api/orpc/roles/rpc",
@@ -1121,6 +1124,18 @@ app.use("/api/orpc/dte/*", async (c, next) => {
 
 app.use("/api/orpc/inventory/*", async (c, next) => {
   const { matched, response } = await inventoryOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
+app.use("/api/orpc/loans/*", async (c, next) => {
+  const { matched, response } = await loansOpenAPIHandler.handle(createHonoORPCRequest(c), {
     context: { hono: c },
   });
 
@@ -1539,50 +1554,8 @@ app.route("/api/webhooks/whatsapp", whatsappWebhookRoutes);
 
 // Share Target (PWA)
 
-// Calendar REST endpoints (webhook + compatibility endpoints)
-// NOTE: Google push notifications require this webhook path to stay mounted.
-app.route("/api/calendar", calendarRoutes);
-
 // Dedicated external webhook ingress (Golden Standard 2026)
 app.route("/api/webhooks/google", googleCalendarWebhookRoutes);
-
-// REST compatibility endpoints
-app.route("/api/loans", loanRoutes);
-app.route("/api/mercadopago", mercadopagoRoutes);
-app.route("/api/transactions", transactionRoutes);
-app.route("/api/loan-schedules", loanScheduleRoutes);
-
-// Doctoralia integration routes are now served via oRPC at /api/orpc/doctoralia
-
-// Medical certificates (PDF generation with digital signature)
-app.route("/api/certificates", certificatesRoutes);
-
-// Patients management
-app.route("/api/patients", patientsRoutes);
-
-// ZenStack Query-as-a-Service (auto CRUD for all models)
-// Frontend uses /api/model/* (via QuerySettingsProvider in main.tsx)
-const zenStackHandler = createHonoHandler({
-  apiHandler: new RPCApiHandler({ schema }),
-  getClient: async (ctx) => {
-    // Extract user from JWT
-    const user = await getSessionUser(ctx);
-    const authContext = createAuthContext(user);
-
-    if (authContext) {
-      // Authenticated: apply access control policies AND audit logging
-      const policyClient = authDb.$setAuth(authContext);
-      // Inject Audit Plugin - This ensures every write operation via the content-aware client is logged
-      return policyClient;
-    }
-
-    // Anonymous: policies will deny access via @@deny('all', auth() == null)
-    return authDb;
-  },
-});
-
-// Mount ZenStack at /api/model/* for frontend hooks (useFindMany, etc.)
-app.use("/api/model/*", zenStackHandler);
 
 // ============================================================================
 // ROOT ENDPOINT
@@ -1606,9 +1579,8 @@ app.get("/", (c) => {
     endpoints: {
       health: "/health",
       auth: "/api/auth/*",
-      model: "/api/model/*",
       users: "/api/users/*",
-      mercadopago: "/api/mercadopago/*",
+      orpc: "/api/orpc/*",
       backup: "/api/backup/*",
     },
   };

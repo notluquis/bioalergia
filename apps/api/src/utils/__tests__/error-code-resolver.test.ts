@@ -31,33 +31,6 @@ describe("resolveErrorCode", () => {
       },
     },
     {
-      expected: "PATIENT_NOT_FOUND",
-      input: {
-        method: "GET",
-        path: "/api/patients/999",
-        status: 404,
-        message: "Paciente no encontrado",
-      },
-    },
-    {
-      expected: "PATIENT_ATTACHMENT_FILE_REQUIRED",
-      input: {
-        method: "POST",
-        path: "/api/patients/1/attachments",
-        status: 400,
-        message: "No se proporcionó ningún archivo",
-      },
-    },
-    {
-      expected: "CERTIFICATE_NOT_FOUND",
-      input: {
-        method: "GET",
-        path: "/api/certificates/verify/abc",
-        status: 404,
-        message: "Certificado no encontrado",
-      },
-    },
-    {
       expected: "FINANCE_TRANSACTION_NOT_FOUND",
       input: {
         method: "GET",

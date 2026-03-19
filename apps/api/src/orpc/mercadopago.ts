@@ -1,5 +1,6 @@
 import {
   createReportInputSchema as contractCreateReportInputSchema,
+  downloadReportInputSchema as contractDownloadReportInputSchema,
   listReportsInputSchema as contractListReportsInputSchema,
   listReportsResponseSchema as contractListReportsResponseSchema,
   mpReportSchema as contractMpReportSchema,
@@ -132,6 +133,34 @@ const mercadopagoORPCRouterBase = {
         reports: sliced,
         total: data.length,
       };
+    }),
+
+  downloadReport: integrationRead
+    .route({
+      method: "GET",
+      path: "/reports/download",
+      summary: "Download a MercadoPago report file",
+      tags: ["MercadoPago"],
+    })
+    .input(contractDownloadReportInputSchema)
+    .output(z.file())
+    .handler(async ({ input }) => {
+      const type = input.type ?? "release";
+
+      try {
+        const response = await MercadoPagoService.downloadReport(type, input.fileName);
+        const blob = await response.blob();
+        const contentType = response.headers.get("content-type") ?? blob.type ?? "text/csv";
+        return new File([blob], input.fileName, { type: contentType });
+      } catch (error) {
+        if (isMpDownloadMissing(error)) {
+          throw new ORPCError("NOT_FOUND", {
+            message: toMpDownloadErrorMessage(type),
+          });
+        }
+
+        throw error;
+      }
     }),
 
   listSyncLogs: integrationRead

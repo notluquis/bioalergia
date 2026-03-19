@@ -1,5 +1,4 @@
 import Decimal from "decimal.js";
-import { apiClient } from "@/lib/api-client";
 import { patientsORPCClient, toPatientsApiError } from "./orpc";
 import {
   AttachmentSchema,
@@ -109,18 +108,14 @@ export async function uploadPatientAttachment(input: {
   patientId: string;
   type: string;
 }) {
-  const formData = new FormData();
-  formData.append("file", input.file);
-  formData.append("name", input.name || input.file.name);
-  formData.append("type", input.type);
-
   try {
-    return await apiClient.post(`/api/patients/${input.patientId}/attachments`, formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-      responseSchema: AttachmentSchema,
+    const response = await patientsORPCClient.createAttachment({
+      file: input.file,
+      name: input.name || input.file.name,
+      patientId: Number(input.patientId),
+      type: input.type,
     });
+    return AttachmentSchema.parse(normalizeDecimalValues(response.attachment));
   } catch (error) {
     throw toPatientsApiError(error);
   }

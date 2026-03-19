@@ -15,6 +15,7 @@ export * from "./finance";
 export * from "./haulmer";
 export * from "./inventory";
 export * from "./integrations";
+export * from "./loans";
 export {
   bookingResponseSchema as doctoraliaBookingResponseSchema,
   bookingsResponseSchema as doctoraliaBookingsResponseSchema,
