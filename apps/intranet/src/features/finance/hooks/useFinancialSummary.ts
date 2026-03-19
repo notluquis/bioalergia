@@ -25,25 +25,24 @@ export function useFinancialSummary(dateRange: DateRange) {
       }),
     queryKey: ["financial-summary", dateRange.from, dateRange.to],
   });
-  const events =
-    data?.days
-      .flatMap((day) => day.events)
-      .filter((event) => (event.amountPaid ?? 0) > 0)
-      .map((event) => ({
-        amountPaid: event.amountPaid ?? null,
-        category: event.category ?? null,
-        eventType: event.eventType,
-        externalEventId: event.eventId,
-        id: Number.parseInt(event.eventId, 10) || 0,
-        startDate: event.startDate ?? event.eventDate,
-        summary: event.summary,
-      })) ?? [];
+  const events = useMemo(
+    () =>
+      data?.days
+        .flatMap((day) => day.events)
+        .filter((event) => (event.amountPaid ?? 0) > 0)
+        .map((event) => ({
+          amountPaid: event.amountPaid ?? null,
+          category: event.category ?? null,
+          eventType: event.eventType,
+          externalEventId: event.eventId,
+          id: Number.parseInt(event.eventId, 10) || 0,
+          startDate: event.startDate ?? event.eventDate,
+          summary: event.summary,
+        })) ?? [],
+    [data?.days]
+  );
 
   const summary = useMemo((): FinancialSummary | null => {
-    if (!events) {
-      return null;
-    }
-
     const items: IncomeItem[] = events.map(mapEventToIncomeItem);
 
     const grouped: Record<string, IncomeItem[]> = {};
