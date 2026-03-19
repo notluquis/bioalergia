@@ -1,13 +1,34 @@
 import { Hono } from "hono";
 import { z } from "zod";
-import { getSessionUser, hasPermission } from "../auth";
+import type { AuthSession } from "../auth";
+import { hasPermission } from "../auth";
+import { AppError } from "../lib/app-error";
 import { transactionsQuerySchema } from "../lib/financial-schemas";
+import { requireSession } from "../lib/legacy-route";
 import { mapTransaction } from "../lib/mappers";
 import { zValidator } from "../lib/zod-validator";
 import { listTransactions, type TransactionFilters } from "../services/transactions";
 import { reply } from "../utils/reply";
 
-const app = new Hono();
+const app = new Hono<{
+  Variables: {
+    user: AuthSession;
+  };
+}>();
+
+app.use("*", requireSession);
+
+async function requireTransactionReadAccess(userId: number) {
+  const canRead = await hasPermission(userId, "read", "Transaction");
+  const canReadList = await hasPermission(userId, "read", "TransactionList");
+
+  if (!canRead && !canReadList) {
+    throw new AppError(403, {
+      code: "FORBIDDEN",
+      message: "Forbidden",
+    });
+  }
+}
 
 // ============================================================
 // SCHEMAS
@@ -55,17 +76,8 @@ const parseDateEnd = (value: string) => {
 // ============================================================
 
 app.get("/", zValidator("query", listTransactionsSchema), async (c) => {
-  const user = await getSessionUser(c);
-  if (!user) {
-    return reply(c, { status: "error", message: "Unauthorized" }, 401);
-  }
-
-  const canRead = await hasPermission(user.id, "read", "Transaction");
-  const canReadList = await hasPermission(user.id, "read", "TransactionList");
-
-  if (!canRead && !canReadList) {
-    return reply(c, { status: "error", message: "Forbidden" }, 403);
-  }
+  const user = c.get("user");
+  await requireTransactionReadAccess(user.id);
 
   const {
     limit: rawLimit,
@@ -119,17 +131,8 @@ app.get("/", zValidator("query", listTransactionsSchema), async (c) => {
 });
 
 app.get("/participants", zValidator("query", participantLeaderboardSchema), async (c) => {
-  const user = await getSessionUser(c);
-  if (!user) {
-    return reply(c, { status: "error", message: "Unauthorized" }, 401);
-  }
-
-  const canRead = await hasPermission(user.id, "read", "Transaction");
-  const canReadList = await hasPermission(user.id, "read", "TransactionList");
-
-  if (!canRead && !canReadList) {
-    return reply(c, { status: "error", message: "Forbidden" }, 403);
-  }
+  const user = c.get("user");
+  await requireTransactionReadAccess(user.id);
 
   const { from, to, limit } = c.req.valid("query");
   const fromDate = from ? new Date(from) : undefined;
@@ -141,7 +144,11 @@ app.get("/participants", zValidator("query", participantLeaderboardSchema), asyn
     return reply(c, result);
   } catch (err) {
     console.error("Error fetching participant leaderboard:", err);
-    return reply(c, { status: "error", message: "Error interno" }, 500);
+    throw new AppError(500, {
+      code: "TRANSACTION_PARTICIPANTS_FAILED",
+      expose: false,
+      message: "Error interno",
+    });
   }
 });
 
@@ -150,17 +157,8 @@ app.get(
   zValidator("param", participantInsightParamsSchema),
   zValidator("query", participantInsightQuerySchema),
   async (c) => {
-    const user = await getSessionUser(c);
-    if (!user) {
-      return reply(c, { status: "error", message: "Unauthorized" }, 401);
-    }
-
-    const canRead = await hasPermission(user.id, "read", "Transaction");
-    const canReadList = await hasPermission(user.id, "read", "TransactionList");
-
-    if (!canRead && !canReadList) {
-      return reply(c, { status: "error", message: "Forbidden" }, 403);
-    }
+    const user = c.get("user");
+    await requireTransactionReadAccess(user.id);
 
     const { id } = c.req.valid("param");
     const { from, to } = c.req.valid("query");
@@ -174,22 +172,26 @@ app.get(
       return reply(c, result);
     } catch (err) {
       console.error("Error fetching participant insight:", err);
-      return reply(c, { status: "error", message: "Error interno" }, 500);
+      throw new AppError(500, {
+        code: "TRANSACTION_PARTICIPANT_INSIGHT_FAILED",
+        expose: false,
+        message: "Error interno",
+      });
     }
   },
 );
 
 app.get("/stats", zValidator("query", statsQuerySchema), async (c) => {
-  const user = await getSessionUser(c);
-  if (!user) {
-    return reply(c, { status: "error", message: "Unauthorized" }, 401);
-  }
+  const user = c.get("user");
 
   const canRead = await hasPermission(user.id, "read", "Transaction");
   const canReadStats = await hasPermission(user.id, "read", "TransactionStats");
 
   if (!canRead && !canReadStats) {
-    return reply(c, { status: "error", message: "Forbidden" }, 403);
+    throw new AppError(403, {
+      code: "FORBIDDEN",
+      message: "Forbidden",
+    });
   }
 
   const { from, to } = c.req.valid("query");
@@ -203,7 +205,11 @@ app.get("/stats", zValidator("query", statsQuerySchema), async (c) => {
     return reply(c, result);
   } catch (err) {
     console.error("Error fetching stats:", err);
-    return reply(c, { status: "error", message: "Error interno" }, 500);
+    throw new AppError(500, {
+      code: "TRANSACTION_STATS_FAILED",
+      expose: false,
+      message: "Error interno",
+    });
   }
 });
 

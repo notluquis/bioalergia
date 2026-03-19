@@ -556,7 +556,7 @@ function BackupTablesList({
         : "No se pudieron cargar las tablas de este backup.";
 
     return (
-      <div className="space-y-3 rounded-lg border border-danger/20 bg-danger/5 p-4">
+      <div className="space-y-3 rounded-lg border border-danger-soft-hover bg-danger/5 p-4">
         <div className="flex items-start gap-2 text-danger text-sm">
           <AlertTriangle className="mt-0.5 size-4 shrink-0" />
           <span>{message}</span>

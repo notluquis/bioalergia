@@ -2,12 +2,14 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import type { User } from "@finanzas/db";
 import { db } from "@finanzas/db";
 import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone.js";
 import utc from "dayjs/plugin/utc.js";
 import { Hono } from "hono";
+import type { AuthSession } from "../../auth.js";
+import { AppError } from "../../lib/app-error";
+import { requireSession } from "../../lib/legacy-route";
 import { zValidator } from "../../lib/zod-validator";
 import { uploadCertificateToDrive } from "../../services/certificates-drive.js";
 import { replyRaw } from "../../utils/reply";
@@ -21,25 +23,21 @@ const TIMEZONE = "America/Santiago";
 
 const parseDateOnly = (value: string) => dayjs.tz(value, "YYYY-MM-DD", TIMEZONE).toDate();
 
-export type Variables = {
-  user: User;
-};
-
-const certificates = new Hono<{ Variables: Variables }>();
+const certificates = new Hono<{
+  Variables: {
+    user: AuthSession;
+  };
+}>();
 
 /**
  * POST /medical
  * Generate a signed medical certificate PDF with QR code
  * Saves to Google Drive and database for auditing
  */
-certificates.post("/medical", zValidator("json", medicalCertificateSchema), async (c) => {
+certificates.post("/medical", requireSession, zValidator("json", medicalCertificateSchema), async (c) => {
   try {
     const input = c.req.valid("json");
-    const userId = c.get("user")?.id;
-
-    if (!userId) {
-      return replyRaw(c, { error: "Usuario no autenticado" }, 401);
-    }
+    const userId = c.get("user").id;
 
     // Generate unique ID for certificate
     const certificateId = crypto.randomUUID();
@@ -108,8 +106,15 @@ certificates.post("/medical", zValidator("json", medicalCertificateSchema), asyn
 
     return c.body(Buffer.from(signedPdfBytes));
   } catch (error) {
+    if (error instanceof AppError) {
+      throw error;
+    }
     console.error("Error generating certificate:", error);
-    return replyRaw(c, { error: "Error al generar el certificado", details: String(error) }, 500);
+    throw new AppError(500, {
+      code: "CERTIFICATE_GENERATION_FAILED",
+      expose: false,
+      message: "Error al generar el certificado",
+    });
   }
 });
 
