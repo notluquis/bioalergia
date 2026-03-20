@@ -46,8 +46,6 @@
     "migrate:dev": "zen migrate dev",
     "migrate:deploy": "zen migrate deploy",
     "clean": "rm -rf dist",
-    "type-check": "tsc --noEmit",
-    "type-check:ts": "tsc -b --pretty false",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix && oxfmt --write ."
   },

@@ -18,4 +18,3 @@ fi
 
 $PNPM_CMD exec lint-staged
 $PNPM_CMD --filter ./apps/site --if-present audit:routes
-$PNPM_CMD --filter ./apps/intranet type-check

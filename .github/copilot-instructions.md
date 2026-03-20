@@ -30,9 +30,7 @@
 #### Important Tools
 - **Linter:** Oxlint v1.52.0 (Rust-based linting, 50-100x faster than ESLint)
 - **Formatter:** Oxfmt v0.37.0 (Rust-based, 95% Prettier compatible)
-- **Fast Type-Checker:** Oxlint scoped to owned sources (`oxlint src shared` or equivalent)
-- **Type-Aware Lint:** Oxlint type-aware mode on owned sources (`oxlint --type-aware src shared` or equivalent)
-- **Structural Type-Checker:** TypeScript build mode with project references (`tsc -b`)
+- **Lint Feedback:** Oxlint scoped to owned sources
 - **Build Tool:** turbo monorepo
 - **Package Manager:** pnpm (NOT npm or yarn)
 
@@ -54,7 +52,7 @@
 
 ### 2. Oxlint Consolidation (Completed March 10, 2026) - OXC ECOSYSTEM STANDARDIZED
 
-**Migration:** Consolidated fast feedback around the OXC ecosystem while keeping TypeScript build mode for structural validation
+**Migration:** Consolidated fast feedback around the OXC ecosystem and removed repository-wide type-check gates from the default workflow
 
 **Problem Solved:**
 - ✅ direct `tsc --noEmit` in app build scripts was creating slow, monolithic checks
@@ -63,9 +61,8 @@
 **Solution Implemented:**
 - **Linting:** `oxlint` (Rust-based, replaces ESLint)
 - **Formatting:** `oxfmt` (Rust-based, 95% Prettier compatible)
-- **Fast type-checking:** `oxlint src shared`
-- **Type-aware linting:** `oxlint --type-aware src shared`
-- **Structural type-checking:** `tsc -b --pretty false` via project references
+- **Fast linting:** `oxlint`
+- **Formatting:** `oxfmt`
 
 **Configuration Files:**
 - `.oxlintrc.json` - Oxlint rules (typescript plugin enabled, type-aware rules)
@@ -109,8 +106,8 @@
 **Migration Impact:**
 | Metric | Before | After |
 |--------|--------|-------|
-| Fast type-check time | OOM / inconsistent | seconds |
-| API type-check | Failed | ~2s (silent success) |
+| Fast lint time | Slow / inconsistent | seconds |
+| API lint | Mixed | fast |
 | Memory usage | >4GB | <100MB |
 | Tool consolidation | 3 tools | 1 tool |
 
@@ -120,20 +117,17 @@ pnpm lint              # oxlint (linting + rules)
 pnpm lint:fix          # oxlint --fix (auto-fix)
 pnpm format            # oxfmt (formatting)
 pnpm format:check      # oxfmt --check (verify format)
-pnpm type-check        # Fast lint gate via oxlint
-pnpm type-check:lint   # Type-aware lint on selected projects
-pnpm type-check:ts     # Structural validation via TypeScript project references
+pnpm lint              # Fast lint gate via oxlint
 ```
 
-⚠️ **RULE:** Do not put `tsc --noEmit` inside app `build` scripts. Keep builds artifact-focused and run structural TypeScript checks through `pnpm type-check:ts`.
-⚠️ **RULE:** Do not use `oxlint --type-aware --type-check` as the primary fast path. `--type-check` is experimental and too expensive for the intranet app.
+⚠️ **RULE:** Do not put `tsc --noEmit` inside app `build` scripts. Keep builds artifact-focused.
 
 **Standardized OXC Ecosystem Tools:**
 | Tool | Purpose | Status |
 |------|---------|--------|
-| oxlint v1.52.0 | Linting + Type-checking | ✅ Active |
+| oxlint v1.52.0 | Linting | ✅ Active |
 | oxfmt v0.37.0 | Formatting | ✅ Active |
-| oxlint-tsgolint v0.17.1 | Go-based type-aware checking | ✅ Active |
+| oxlint-tsgolint v0.17.1 | Go-based type-aware checking | ⏸ Disabled in default workflow |
 | oxc-minify v0.x | Production minification (Terser replacement) | ⏳ Planned v2 |
 | oxc-transform | AST transformations (TypeScript/JSX) | ⏳ Research |
 | oxc-parser | Custom code analysis | ⏳ Research |

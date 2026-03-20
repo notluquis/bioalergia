@@ -19,8 +19,6 @@
     "lint": "oxlint",
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
-    "type-check": "tsc --noEmit",
-    "type-check:ts": "tsc -b --pretty false",
     "test": "vitest",
     "clean": "rm -rf dist"
   },

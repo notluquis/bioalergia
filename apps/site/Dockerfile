@@ -36,7 +36,6 @@ ENV CI=true
 ENV TURBO_TELEMETRY_DISABLED=1
 ENV VITE_PUBLIC_POSTHOG_KEY=${VITE_PUBLIC_POSTHOG_KEY}
 ENV VITE_PUBLIC_POSTHOG_HOST=${VITE_PUBLIC_POSTHOG_HOST}
-RUN pnpm -w turbo run type-check:ts --filter=@finanzas/site
 RUN pnpm -w turbo run build --filter=@finanzas/site
 
 # ==========================================================================

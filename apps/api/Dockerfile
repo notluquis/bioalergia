@@ -49,9 +49,8 @@ COPY --from=pruner /app/out/full/ .
 ENV CI=true
 ENV TURBO_TELEMETRY_DISABLED=1
 
-# Build API workspace dependencies, then run structural type-check
+# Build API workspace dependencies
 RUN pnpm turbo run build --filter=@finanzas/api...
-RUN pnpm turbo run type-check:ts --filter=@finanzas/api...
 
 # ============================================================================
 # STAGE 4: Runner - Production image

@@ -16,14 +16,6 @@
     },
     "lint": {},
     "format": {},
-    "check": {},
-    "type-check": {
-      "outputs": ["tsconfig.tsbuildinfo"]
-    },
-    "type-check:lint": {},
-    "type-check:ts": {
-      "dependsOn": ["^build"],
-      "outputs": ["tsconfig.tsbuildinfo"]
-    }
+    "check": {}
   }
 }

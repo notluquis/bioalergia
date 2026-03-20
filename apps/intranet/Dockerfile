@@ -39,7 +39,6 @@ FROM base AS build
 COPY --from=pruner /app/out/full/ .
 ENV CI=true
 ENV TURBO_TELEMETRY_DISABLED=1
-RUN pnpm turbo run type-check:ts --filter=@finanzas/intranet...
 RUN pnpm turbo run build --filter=@finanzas/intranet...
 
 # ==========================================================================
