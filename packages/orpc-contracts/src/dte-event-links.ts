@@ -17,6 +17,7 @@ export const dteEventLinksSuggestionsInputSchema = z.object({
   calendarId: z.string().min(1),
   eventId: z.string().min(1),
   limit: z.coerce.number().int().min(1).max(30).optional(),
+  sameDayOnly: z.boolean().optional(),
 });
 
 export const dteEventLinksJobStatusInputSchema = z.object({

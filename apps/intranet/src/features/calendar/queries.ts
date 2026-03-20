@@ -29,7 +29,7 @@ export const calendarKeys = {
     ["calendar", "summary", normalizeFilters(filters)] as const,
   treatmentAnalytics: (
     filters: TreatmentAnalyticsFilters,
-    granularity?: "day" | "week" | "month" | "all",
+    granularity?: "day" | "week" | "month" | "all"
   ) => ["calendar", "treatment-analytics", filters, granularity ?? "all"] as const,
   unclassified: (page: number, pageSize: number, filters: MissingFieldFilters) =>
     ["calendar-unclassified", page, pageSize, filters] as const,
@@ -57,8 +57,21 @@ export const calendarDteLinkKeys = {
       params.pageSize ?? 25,
       params.query ?? "",
     ] as const,
-  suggestions: (calendarId: null | string | undefined, eventId: null | string | undefined) =>
-    ["calendar", "dte-link", "suggestions", calendarId, eventId] as const,
+  suggestions: (
+    calendarId: null | string | undefined,
+    eventId: null | string | undefined,
+    sameDayOnly?: boolean,
+    limit?: number
+  ) =>
+    [
+      "calendar",
+      "dte-link",
+      "suggestions",
+      calendarId,
+      eventId,
+      sameDayOnly ?? false,
+      limit ?? null,
+    ] as const,
 };
 
 export const calendarSyncQueries = {
@@ -94,7 +107,7 @@ export const calendarQueries = {
     }),
   treatmentAnalytics: (
     filters: TreatmentAnalyticsFilters,
-    granularity?: "day" | "week" | "month" | "all",
+    granularity?: "day" | "week" | "month" | "all"
   ) =>
     queryOptions({
       queryFn: () => fetchTreatmentAnalytics(filters, granularity),
@@ -131,9 +144,19 @@ export const calendarDteLinkQueries = {
       queryFn: () => fetchEventDteLinksOverview(params),
       queryKey: calendarDteLinkKeys.overview(params),
     }),
-  suggestions: (params: { calendarId: string; eventId: string; limit?: number }) =>
+  suggestions: (params: {
+    calendarId: string;
+    eventId: string;
+    limit?: number;
+    sameDayOnly?: boolean;
+  }) =>
     queryOptions({
       queryFn: () => fetchEventDteSuggestions(params),
-      queryKey: calendarDteLinkKeys.suggestions(params.calendarId, params.eventId),
+      queryKey: calendarDteLinkKeys.suggestions(
+        params.calendarId,
+        params.eventId,
+        params.sameDayOnly,
+        params.limit
+      ),
     }),
 };

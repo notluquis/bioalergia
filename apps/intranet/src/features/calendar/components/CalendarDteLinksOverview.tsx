@@ -15,6 +15,7 @@ import {
   Select,
   Skeleton,
   Spinner,
+  Surface,
   Tabs,
   Tooltip,
 } from "@heroui/react";
@@ -66,6 +67,12 @@ interface AutoLinkRunSummary {
   processedLabel: string;
   skipped: number;
   skippedByReason: Array<{ count: number; reason: string }>;
+}
+
+interface KpiTileProps {
+  description?: string;
+  title: string;
+  value: number | string;
 }
 
 function buildPeriodOptions(count = 24): Array<{ label: string; value: string }> {
@@ -186,6 +193,18 @@ function suggestionMethodLabel(method: EventDteSuggestion["method"]): string {
   return "RUT";
 }
 
+function KpiTile({ description, title, value }: Readonly<KpiTileProps>) {
+  return (
+    <Surface className="rounded-2xl border border-default-200/70 p-4" variant="secondary">
+      <div className="space-y-1">
+        <p className="text-default-500 text-xs uppercase tracking-wide">{title}</p>
+        <p className="text-2xl font-semibold leading-none tabular-nums">{value}</p>
+        {description ? <Description className="text-xs">{description}</Description> : null}
+      </div>
+    </Surface>
+  );
+}
+
 interface SuggestionExplorerProps {
   confirmPending: boolean;
   item: EventDteOverviewItem;
@@ -207,8 +226,12 @@ function SuggestionExplorer({
         calendarId: item.calendarId,
         eventId: item.eventId,
         limit: 5,
+        sameDayOnly: true,
       }),
-    queryKey: [...calendarDteLinkKeys.suggestions(item.calendarId, item.eventId), "overview", 5],
+    queryKey: [
+      ...calendarDteLinkKeys.suggestions(item.calendarId, item.eventId, true, 5),
+      "overview",
+    ],
     enabled: isExpanded && !item.linked && item.linkStatus !== "pending_issuance",
     staleTime: 60_000,
   });
@@ -220,7 +243,7 @@ function SuggestionExplorer({
   return (
     <Disclosure isExpanded={isExpanded} onExpandedChange={setIsExpanded}>
       <Disclosure.Heading>
-        <Button className="w-full justify-between" slot="trigger" variant="secondary">
+        <Button className="w-full justify-between rounded-2xl" slot="trigger" variant="secondary">
           <span className="flex items-center gap-2">
             <span>Candidatos revisados</span>
             {suggestions.length > 0 ? (
@@ -233,7 +256,7 @@ function SuggestionExplorer({
         </Button>
       </Disclosure.Heading>
       <Disclosure.Content>
-        <Disclosure.Body className="mt-2 rounded-2xl border border-default-200 bg-default-50/60 p-3">
+        <Disclosure.Body className="mt-2 space-y-3 rounded-2xl border border-default-200/70 bg-default-50/50 p-3">
           {item.linkStatus === "pending_issuance" ? (
             <Alert status="warning">
               Evento futuro: los candidatos se revisan cuando llegue la fecha de emisión.
@@ -262,20 +285,20 @@ function SuggestionExplorer({
                     eventAmount != null ? Math.abs(eventAmount - candidate.totalAmount) : null;
 
                   return (
-                    <Card
-                      className="gap-2 border border-default-200"
+                    <Surface
+                      className="rounded-2xl border border-default-200/70 p-3"
                       key={candidate.dteSaleDetailId}
-                      variant={index === 0 ? "default" : "transparent"}
+                      variant={index === 0 ? "secondary" : "default"}
                     >
-                      <Card.Header className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-                        <div className="space-y-1">
-                          <Card.Title className="text-sm">{candidate.clientName}</Card.Title>
-                          <Card.Description>
+                      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                        <div className="min-w-0 space-y-1">
+                          <p className="truncate font-medium text-sm">{candidate.clientName}</p>
+                          <Description>
                             {candidate.clientRUT} · Folio {candidate.folio} ·{" "}
                             {dayjs(candidate.documentDate).format("DD-MM-YYYY")}
-                          </Card.Description>
+                          </Description>
                         </div>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <Chip
                             color={scoreColor(candidate.confidenceScore)}
                             size="sm"
@@ -292,40 +315,32 @@ function SuggestionExplorer({
                             </Chip>
                           ) : null}
                         </div>
-                      </Card.Header>
-                      <Card.Content className="grid grid-cols-1 gap-2 text-sm md:grid-cols-3">
-                        <div className="rounded-lg border border-default-200 bg-background p-2">
-                          <p className="text-default-500 text-xs uppercase">Monto DTE</p>
-                          <p className="font-medium">
+                      </div>
+                      <div className="mt-3 grid grid-cols-2 gap-2 text-sm lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto]">
+                        <Surface className="rounded-xl p-2.5" variant="secondary">
+                          <p className="text-default-500 text-[11px] uppercase tracking-wide">
+                            Monto DTE
+                          </p>
+                          <p className="font-medium leading-tight">
                             {currencyFormatter.format(candidate.totalAmount)}
                           </p>
-                        </div>
-                        <div className="rounded-lg border border-default-200 bg-background p-2">
-                          <p className="text-default-500 text-xs uppercase">Diferencia</p>
-                          <p className="font-medium">
+                        </Surface>
+                        <Surface className="rounded-xl p-2.5" variant="secondary">
+                          <p className="text-default-500 text-[11px] uppercase tracking-wide">
+                            Diferencia
+                          </p>
+                          <p className="font-medium leading-tight">
                             {diff != null ? currencyFormatter.format(diff) : "-"}
                           </p>
-                        </div>
-                        <div className="rounded-lg border border-default-200 bg-background p-2">
-                          <p className="text-default-500 text-xs uppercase">Registro</p>
-                          <p className="font-medium">#{candidate.registerNumber}</p>
-                        </div>
-                      </Card.Content>
-                      <Card.Content className="pt-0">
-                        <div className="flex flex-wrap gap-2">
-                          {candidate.reasons.slice(0, 3).map((reason) => (
-                            <Chip
-                              key={`${candidate.dteSaleDetailId}-${reason}`}
-                              size="sm"
-                              variant="soft"
-                            >
-                              {reason}
-                            </Chip>
-                          ))}
-                        </div>
-                      </Card.Content>
-                      <Card.Footer className="justify-end">
+                        </Surface>
+                        <Surface className="rounded-xl p-2.5" variant="secondary">
+                          <p className="text-default-500 text-[11px] uppercase tracking-wide">
+                            Registro
+                          </p>
+                          <p className="font-medium leading-tight">#{candidate.registerNumber}</p>
+                        </Surface>
                         <Button
+                          className="self-end lg:self-auto"
                           isPending={confirmPending}
                           size="sm"
                           variant={index === 0 ? "primary" : "secondary"}
@@ -333,8 +348,19 @@ function SuggestionExplorer({
                         >
                           Vincular este DTE
                         </Button>
-                      </Card.Footer>
-                    </Card>
+                      </div>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {candidate.reasons.slice(0, 3).map((reason) => (
+                          <Chip
+                            key={`${candidate.dteSaleDetailId}-${reason}`}
+                            size="sm"
+                            variant="soft"
+                          >
+                            {reason}
+                          </Chip>
+                        ))}
+                      </div>
+                    </Surface>
                   );
                 })
               ) : (
@@ -510,18 +536,21 @@ export function CalendarDteLinksOverview({
 
   return (
     <div className="space-y-4">
-      <Card>
-        <Card.Header className="flex flex-col items-start gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div>
+      <Surface
+        className="rounded-[28px] border border-default-200/70 p-4 sm:p-5"
+        variant="secondary"
+      >
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1.4fr)] xl:items-end">
+          <div className="space-y-1">
             <Card.Title>Vínculos Evento ↔ DTE</Card.Title>
             <Card.Description>
-              Los no vinculados se cuentan solo hasta hoy. Eventos futuros quedan como pendientes de
-              emisión.
+              Prioriza revisión manual en casos ambiguos o con diferencia de monto. Los eventos
+              futuros siguen como pendientes de emisión.
             </Card.Description>
           </div>
-          <div className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">
+          <div className="grid gap-3 lg:grid-cols-[220px_minmax(0,1fr)_auto]">
             <Select
-              className="w-full sm:w-56"
+              className="w-full"
               value={search.period}
               onChange={(value) =>
                 onSearchChange({
@@ -548,8 +577,8 @@ export function CalendarDteLinksOverview({
             </Select>
             <div className="flex gap-2">
               <Input
-                className="min-w-60"
-                placeholder="Buscar por título/descripción"
+                className="min-w-0 flex-1"
+                placeholder="Buscar por título o descripción"
                 value={queryDraft}
                 onChange={(event) => setQueryDraft(event.target.value)}
                 onKeyDown={(event) => {
@@ -559,51 +588,56 @@ export function CalendarDteLinksOverview({
                 }}
               />
               <Button
+                className="shrink-0"
                 variant="secondary"
                 onPress={() => onSearchChange({ page: 0, query: queryDraft.trim() || undefined })}
               >
                 Filtrar
               </Button>
-              <Dropdown>
-                <Dropdown.Trigger>
-                  <Button isPending={autoLinkActionPending} variant="primary">
-                    Auto-vincular
-                    <ChevronDown className="h-4 w-4" />
-                  </Button>
-                </Dropdown.Trigger>
-                <Dropdown.Popover className="min-w-75" placement="bottom end">
-                  <Dropdown.Menu
-                    aria-label="Opciones de auto-vinculación"
-                    onAction={(key) => {
-                      const mode = String(key) as AutoLinkMode;
-                      if (mode === "all_periods") {
-                        startAutoLinkAllPeriodsMutation.mutate();
-                        return;
-                      }
-                      autoLinkPeriodMutation.mutate();
-                    }}
-                  >
-                    <Dropdown.Item
-                      id="selected_period"
-                      isDisabled={autoLinkActionPending || isAutoLinkRunning}
-                      textValue={`Solo período seleccionado (${search.period})`}
-                    >
-                      <Label>Solo período seleccionado ({search.period})</Label>
-                    </Dropdown.Item>
-                    <Dropdown.Item
-                      id="all_periods"
-                      isDisabled={autoLinkActionPending || isAutoLinkRunning}
-                      textValue="Todos los períodos disponibles (hasta hoy)"
-                    >
-                      <Label>Todos los períodos disponibles (hasta hoy)</Label>
-                    </Dropdown.Item>
-                  </Dropdown.Menu>
-                </Dropdown.Popover>
-              </Dropdown>
             </div>
+            <Dropdown>
+              <Dropdown.Trigger>
+                <Button
+                  className="w-full lg:w-auto"
+                  isPending={autoLinkActionPending}
+                  variant="primary"
+                >
+                  Auto-vincular
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </Dropdown.Trigger>
+              <Dropdown.Popover className="min-w-75" placement="bottom end">
+                <Dropdown.Menu
+                  aria-label="Opciones de auto-vinculación"
+                  onAction={(key) => {
+                    const mode = String(key) as AutoLinkMode;
+                    if (mode === "all_periods") {
+                      startAutoLinkAllPeriodsMutation.mutate();
+                      return;
+                    }
+                    autoLinkPeriodMutation.mutate();
+                  }}
+                >
+                  <Dropdown.Item
+                    id="selected_period"
+                    isDisabled={autoLinkActionPending || isAutoLinkRunning}
+                    textValue={`Solo período seleccionado (${search.period})`}
+                  >
+                    <Label>Solo período seleccionado ({search.period})</Label>
+                  </Dropdown.Item>
+                  <Dropdown.Item
+                    id="all_periods"
+                    isDisabled={autoLinkActionPending || isAutoLinkRunning}
+                    textValue="Todos los períodos disponibles (hasta hoy)"
+                  >
+                    <Label>Todos los períodos disponibles (hasta hoy)</Label>
+                  </Dropdown.Item>
+                </Dropdown.Menu>
+              </Dropdown.Popover>
+            </Dropdown>
           </div>
-        </Card.Header>
-      </Card>
+        </div>
+      </Surface>
 
       {isAutoLinkRunning && autoLinkJobQuery.data ? (
         <Card variant="secondary">
@@ -630,58 +664,17 @@ export function CalendarDteLinksOverview({
         </Card>
       ) : null}
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
-        <Card variant="secondary">
-          <Card.Header className="gap-1 p-2.5">
-            <Card.Title className="text-sm">Eventos</Card.Title>
-            <Card.Description className="text-2xl font-semibold">
-              {stats?.totalEvents ?? 0}
-            </Card.Description>
-          </Card.Header>
-        </Card>
-        <Card variant="secondary">
-          <Card.Header className="gap-1 p-2.5">
-            <Card.Title className="text-sm">Vinculados</Card.Title>
-            <Card.Description className="text-2xl font-semibold">
-              {stats?.linkedEvents ?? 0}
-            </Card.Description>
-          </Card.Header>
-        </Card>
-        <Card variant="secondary">
-          <Card.Header className="gap-1 p-2.5">
-            <Card.Title className="text-sm">No Vinculados (Hasta Hoy)</Card.Title>
-            <Card.Description className="text-2xl font-semibold">
-              {stats?.unlinkedEvents ?? 0}
-            </Card.Description>
-          </Card.Header>
-        </Card>
-        <Card variant="secondary">
-          <Card.Header className="gap-1 p-2.5">
-            <Card.Title className="text-sm">Pendiente Emisión</Card.Title>
-            <Card.Description className="text-2xl font-semibold">
-              {stats?.pendingIssuanceEvents ?? 0}
-            </Card.Description>
-          </Card.Header>
-        </Card>
-        <Card variant="secondary">
-          <Card.Header className="gap-1 p-2.5">
-            <Card.Title className="text-sm">Tasa Vinculación (Hasta Hoy)</Card.Title>
-            <Card.Description className="text-2xl font-semibold">
-              {stats?.linkRate ?? 0}%
-            </Card.Description>
-            <Description className="text-default-500 text-xs">
-              Sobre {stats?.dueEvents ?? 0} eventos exigibles
-            </Description>
-          </Card.Header>
-        </Card>
-        <Card variant="secondary">
-          <Card.Header className="gap-1 p-2.5">
-            <Card.Title className="text-sm">Promedio Score</Card.Title>
-            <Card.Description className="text-2xl font-semibold">
-              {Math.round(stats?.avgLinkedScore ?? 0)}
-            </Card.Description>
-          </Card.Header>
-        </Card>
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-6">
+        <KpiTile title="Eventos" value={stats?.totalEvents ?? 0} />
+        <KpiTile title="Vinculados" value={stats?.linkedEvents ?? 0} />
+        <KpiTile title="No vinculados" value={stats?.unlinkedEvents ?? 0} />
+        <KpiTile title="Pendiente emisión" value={stats?.pendingIssuanceEvents ?? 0} />
+        <KpiTile
+          description={`Sobre ${stats?.dueEvents ?? 0} eventos exigibles`}
+          title="Tasa vinculación"
+          value={`${stats?.linkRate ?? 0}%`}
+        />
+        <KpiTile title="Promedio score" value={Math.round(stats?.avgLinkedScore ?? 0)} />
       </div>
 
       {autoLinkSummary ? (
@@ -786,26 +779,31 @@ export function CalendarDteLinksOverview({
 
                   return (
                     <Card
-                      className="gap-2"
+                      className="gap-3 overflow-hidden"
                       key={`${item.calendarId}:${item.eventId}`}
                       variant="secondary"
                     >
-                      <Card.Header className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-                        <div className="space-y-1">
-                          <Card.Title className="text-base">
+                      <Card.Header className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                        <div className="min-w-0 space-y-1">
+                          <Card.Title className="line-clamp-2 text-base">
                             {item.summary ?? "(Sin título)"}
                           </Card.Title>
                           <Card.Description>
                             {dayjs(item.eventDate).format("DD-MM-YYYY")} · {item.eventId}
                           </Card.Description>
                         </div>
-                        <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2 lg:max-w-[45%] lg:justify-end">
                           <Chip color={linkStatusColor(item.linkStatus)} variant="soft">
                             {linkStatusLabel(item.linkStatus)}
                           </Chip>
                           {item.displayName ? (
                             <Chip color="default" variant="soft" size="sm">
                               {item.displayName}
+                            </Chip>
+                          ) : null}
+                          {item.seriesKind ? (
+                            <Chip color="default" size="sm" variant="tertiary">
+                              {seriesKindLabel(item.seriesKind)}
                             </Chip>
                           ) : null}
                           {item.linkStatus !== "pending_issuance" ? (
@@ -833,39 +831,55 @@ export function CalendarDteLinksOverview({
                         </div>
                       </Card.Header>
 
-                      <Card.Content className="grid grid-cols-1 gap-2 text-sm lg:grid-cols-3">
-                        <div className="rounded-lg border border-default-200 p-2">
-                          <p className="text-default-500 text-xs uppercase">Monto evento</p>
-                          <p className="font-medium">
+                      <Card.Content className="grid grid-cols-2 gap-2 text-sm lg:grid-cols-4">
+                        <Surface className="rounded-xl p-3" variant="secondary">
+                          <p className="text-default-500 text-[11px] uppercase tracking-wide">
+                            Monto evento
+                          </p>
+                          <p className="font-medium leading-tight">
                             {currencyFormatter.format(currentHint ?? 0)}
                           </p>
-                        </div>
-                        <div className="rounded-lg border border-default-200 p-2">
-                          <p className="text-default-500 text-xs uppercase">
+                        </Surface>
+                        <Surface className="rounded-xl p-3" variant="secondary">
+                          <p className="text-default-500 text-[11px] uppercase tracking-wide">
                             {item.linked
                               ? "DTE vinculado"
                               : item.linkStatus === "pending_issuance"
                                 ? "Estado DTE"
                                 : "Mejor sugerencia"}
                           </p>
-                          <p className="font-medium">
+                          <p className="font-medium leading-tight">
                             {item.linkStatus === "pending_issuance"
                               ? "Aún no exigible"
                               : displayAmount != null
                                 ? currencyFormatter.format(displayAmount)
                                 : "-"}
                           </p>
-                        </div>
-                        <div className="rounded-lg border border-default-200 p-2">
-                          <p className="text-default-500 text-xs uppercase">Diferencia</p>
-                          <p className="font-medium">
+                        </Surface>
+                        <Surface className="rounded-xl p-3" variant="secondary">
+                          <p className="text-default-500 text-[11px] uppercase tracking-wide">
+                            Diferencia
+                          </p>
+                          <p className="font-medium leading-tight">
                             {item.linkStatus === "pending_issuance"
                               ? "-"
                               : localDiff != null
                                 ? currencyFormatter.format(localDiff)
                                 : "-"}
                           </p>
-                        </div>
+                        </Surface>
+                        <Surface className="rounded-xl p-3" variant="secondary">
+                          <p className="text-default-500 text-[11px] uppercase tracking-wide">
+                            Referencia
+                          </p>
+                          <p className="truncate font-medium leading-tight">
+                            {item.linked
+                              ? `Folio ${item.linkedFolio ?? "-"}`
+                              : item.topSuggestion
+                                ? `Folio ${item.topSuggestion.folio}`
+                                : "Sin sugerencia"}
+                          </p>
+                        </Surface>
                       </Card.Content>
 
                       {!item.linked && item.lastAutoLinkSkip ? (
@@ -928,8 +942,8 @@ export function CalendarDteLinksOverview({
                         </Card.Content>
                       ) : null}
 
-                      <Card.Footer className="flex flex-col items-start justify-between gap-2 md:flex-row md:items-center">
-                        <Description>
+                      <Card.Footer className="flex flex-col gap-3 border-default-200/70 border-t pt-4 lg:flex-row lg:items-center lg:justify-between">
+                        <Description className="min-w-0">
                           {item.linked
                             ? `${item.linkedClientName ?? "-"} · ${item.linkedClientRUT ?? "-"} · Folio ${item.linkedFolio ?? "-"}`
                             : item.linkStatus === "pending_issuance"
@@ -938,9 +952,10 @@ export function CalendarDteLinksOverview({
                                 ? `${item.topSuggestion.clientName} · ${item.topSuggestion.clientRUT} · Folio ${item.topSuggestion.folio}`
                                 : "Sin sugerencias para este evento"}
                         </Description>
-                        <div className="flex gap-2">
+                        <div className="flex w-full gap-2 lg:w-auto">
                           {item.linked ? (
                             <Button
+                              className="w-full lg:w-auto"
                               isPending={unlinkMutation.isPending}
                               size="sm"
                               variant="danger"
@@ -950,6 +965,7 @@ export function CalendarDteLinksOverview({
                             </Button>
                           ) : (
                             <Button
+                              className="w-full lg:w-auto"
                               isDisabled={
                                 !item.topSuggestion || item.linkStatus === "pending_issuance"
                               }

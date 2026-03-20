@@ -311,6 +311,7 @@ export async function fetchEventDteSuggestions(params: {
   calendarId: string;
   eventId: string;
   limit?: number;
+  sameDayOnly?: boolean;
 }): Promise<{
   event: null | {
     amountExpected: null | number;

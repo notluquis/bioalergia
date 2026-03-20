@@ -540,6 +540,7 @@ export async function getEventDteSuggestions(params: {
   calendarId: string;
   eventId: string;
   limit?: number;
+  sameDayOnly?: boolean;
 }) {
   let event = await getEventByExternalIds(params.calendarId, params.eventId);
   if (!event) {
@@ -572,13 +573,15 @@ export async function getEventDteSuggestions(params: {
     }),
   ]);
 
-  const candidates = series
-    ? await getSalesCandidatesByDateRange({
-        excludeDteSaleDetailIds: series.linkedDocuments.map((item) => item.dteSaleDetailId),
-        from: series.eligibleDocumentDateFrom,
-        to: series.eligibleDocumentDateTo,
-      })
-    : await getSalesCandidatesByDate(event.eventDate);
+  const candidates = params.sameDayOnly
+    ? await getSalesCandidatesByDate(event.eventDate)
+    : series
+      ? await getSalesCandidatesByDateRange({
+          excludeDteSaleDetailIds: series.linkedDocuments.map((item) => item.dteSaleDetailId),
+          from: series.eligibleDocumentDateFrom,
+          to: series.eligibleDocumentDateTo,
+        })
+      : await getSalesCandidatesByDate(event.eventDate);
 
   const mergedText = `${event.summary ?? ""} ${event.description ?? ""}`;
   const rutHints = [
@@ -857,6 +860,7 @@ export async function listEventDteLinkOverview(params: {
           eventId: row.eventId,
           // Pull enough candidates to preserve ambiguity handling.
           limit: 3,
+          sameDayOnly: true,
         });
         const first = suggestions.suggestions[0];
         if (first) {
