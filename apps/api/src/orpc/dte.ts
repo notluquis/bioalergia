@@ -32,7 +32,7 @@ const authed = base.use(async ({ context, next }) => {
 });
 
 const readDTE = authed.use(async ({ context, next }) => {
-  const canRead = await hasPermission(context.user.id, "read", "DTESyncLog");
+  const canRead = await hasPermission(context.user, "read", "DTESyncLog");
   if (!canRead) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
   }
@@ -40,7 +40,7 @@ const readDTE = authed.use(async ({ context, next }) => {
 });
 
 const createDTE = authed.use(async ({ context, next }) => {
-  const canCreate = await hasPermission(context.user.id, "create", "DTESyncLog");
+  const canCreate = await hasPermission(context.user, "create", "DTESyncLog");
   if (!canCreate) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
   }

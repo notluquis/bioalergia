@@ -100,7 +100,7 @@ const authed = base.use(async ({ context, next }) => {
 });
 
 const readBalances = authed.use(async ({ context, next }) => {
-  const canRead = await hasPermission(context.user.id, "read", "ProductionBalance");
+  const canRead = await hasPermission(context.user, "read", "ProductionBalance");
 
   if (!canRead) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
@@ -110,8 +110,8 @@ const readBalances = authed.use(async ({ context, next }) => {
 });
 
 const writeBalances = authed.use(async ({ context, next }) => {
-  const canCreate = await hasPermission(context.user.id, "create", "ProductionBalance");
-  const canUpdate = await hasPermission(context.user.id, "update", "ProductionBalance");
+  const canCreate = await hasPermission(context.user, "create", "ProductionBalance");
+  const canUpdate = await hasPermission(context.user, "update", "ProductionBalance");
 
   if (!canCreate && !canUpdate) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });

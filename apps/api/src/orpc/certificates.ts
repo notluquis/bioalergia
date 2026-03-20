@@ -55,7 +55,7 @@ const authed = base.use(async ({ context, next }) => {
 });
 
 const createMedicalCertificates = authed.use(async ({ context, next }) => {
-  const canCreate = await hasPermission(context.user.id, "create", "MedicalCertificate");
+  const canCreate = await hasPermission(context.user, "create", "MedicalCertificate");
   if (!canCreate) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
   }

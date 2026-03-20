@@ -170,7 +170,7 @@ const authed = base.use(async ({ context, next }) => {
 });
 
 const canReadFacility = authed.use(async ({ context, next }) => {
-  const canRead = await hasPermission(context.user.id, "read", "DoctoraliaFacility");
+  const canRead = await hasPermission(context.user, "read", "DoctoraliaFacility");
   if (!canRead) {
     throw new ORPCError("FORBIDDEN", { message: "Sin permisos" });
   }
@@ -178,7 +178,7 @@ const canReadFacility = authed.use(async ({ context, next }) => {
 });
 
 const canReadDoctor = authed.use(async ({ context, next }) => {
-  const canRead = await hasPermission(context.user.id, "read", "DoctoraliaDoctor");
+  const canRead = await hasPermission(context.user, "read", "DoctoraliaDoctor");
   if (!canRead) {
     throw new ORPCError("FORBIDDEN", { message: "Sin permisos" });
   }
@@ -186,7 +186,7 @@ const canReadDoctor = authed.use(async ({ context, next }) => {
 });
 
 const canManageFacility = authed.use(async ({ context, next }) => {
-  const canUpdate = await hasPermission(context.user.id, "update", "DoctoraliaFacility");
+  const canUpdate = await hasPermission(context.user, "update", "DoctoraliaFacility");
   if (!canUpdate) {
     throw new ORPCError("FORBIDDEN", { message: "Sin permisos" });
   }
@@ -194,7 +194,7 @@ const canManageFacility = authed.use(async ({ context, next }) => {
 });
 
 const canCreateBooking = authed.use(async ({ context, next }) => {
-  const canCreate = await hasPermission(context.user.id, "create", "DoctoraliaBooking");
+  const canCreate = await hasPermission(context.user, "create", "DoctoraliaBooking");
   if (!canCreate) {
     throw new ORPCError("FORBIDDEN", { message: "Sin permisos" });
   }
@@ -202,7 +202,7 @@ const canCreateBooking = authed.use(async ({ context, next }) => {
 });
 
 const canDeleteBooking = authed.use(async ({ context, next }) => {
-  const canDelete = await hasPermission(context.user.id, "delete", "DoctoraliaBooking");
+  const canDelete = await hasPermission(context.user, "delete", "DoctoraliaBooking");
   if (!canDelete) {
     throw new ORPCError("FORBIDDEN", { message: "Sin permisos" });
   }

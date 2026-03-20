@@ -64,7 +64,7 @@ const authed = base.use(async ({ context, next }) => {
 });
 
 const readDteAnalytics = authed.use(async ({ context, next }) => {
-  const canRead = await hasPermission(context.user.id, "read", "DTEPurchaseDetail");
+  const canRead = await hasPermission(context.user, "read", "DTEPurchaseDetail");
 
   if (!canRead) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });

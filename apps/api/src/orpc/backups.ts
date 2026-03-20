@@ -97,7 +97,7 @@ const authed = base.use(async ({ context, next }) => {
 });
 
 const readBackups = authed.use(async ({ context, next }) => {
-  const canRead = await hasPermission(context.user.id, "read", "Backup");
+  const canRead = await hasPermission(context.user, "read", "Backup");
 
   if (!canRead) {
     throw new ORPCError("FORBIDDEN", {
@@ -109,7 +109,7 @@ const readBackups = authed.use(async ({ context, next }) => {
 });
 
 const writeBackups = authed.use(async ({ context, next }) => {
-  const canCreate = await hasPermission(context.user.id, "create", "Backup");
+  const canCreate = await hasPermission(context.user, "create", "Backup");
 
   if (!canCreate) {
     throw new ORPCError("FORBIDDEN", {
@@ -121,7 +121,7 @@ const writeBackups = authed.use(async ({ context, next }) => {
 });
 
 const restoreBackups = authed.use(async ({ context, next }) => {
-  const canRestore = await hasPermission(context.user.id, "update", "Backup");
+  const canRestore = await hasPermission(context.user, "update", "Backup");
 
   if (!canRestore) {
     throw new ORPCError("FORBIDDEN", {

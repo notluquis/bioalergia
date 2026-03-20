@@ -67,7 +67,7 @@ app.get("/", async (c) => {
     return reply(c, { status: "error", message: "Unauthorized" }, 401);
   }
 
-  const canRead = await hasPermission(user.id, "read", "ProductionBalance");
+  const canRead = await hasPermission(user, "read", "ProductionBalance");
   if (!canRead) {
     return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
@@ -106,7 +106,7 @@ app.post("/", async (c) => {
     return reply(c, { status: "error", message: "Unauthorized" }, 401);
   }
 
-  const canCreate = await hasPermission(user.id, "create", "ProductionBalance");
+  const canCreate = await hasPermission(user, "create", "ProductionBalance");
   if (!canCreate) {
     return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
@@ -155,7 +155,7 @@ app.put("/:id", async (c) => {
     return reply(c, { status: "error", message: "Unauthorized" }, 401);
   }
 
-  const canUpdate = await hasPermission(user.id, "update", "ProductionBalance");
+  const canUpdate = await hasPermission(user, "update", "ProductionBalance");
   if (!canUpdate) {
     return reply(c, { status: "error", message: "Forbidden" }, 403);
   }

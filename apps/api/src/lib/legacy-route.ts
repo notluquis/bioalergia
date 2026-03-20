@@ -29,7 +29,7 @@ export const requirePermission = (action: string, subject: string) =>
   createMiddleware<LegacyEnv>(async (c, next) => {
     const user = c.get("user");
 
-    if (!(await hasPermission(user.id, action, subject))) {
+    if (!(await hasPermission(user, action, subject))) {
       throw new AppError(403, {
         code: "FORBIDDEN",
         message: "Forbidden",

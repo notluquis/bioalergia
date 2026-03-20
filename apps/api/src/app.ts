@@ -606,7 +606,7 @@ app.use("/api/orpc/certificates/rpc/*", async (c, next) => {
 app.get("/api/clinical-series/progress", async (c) => {
   const user = await getSessionUser(c);
   if (!user) return c.text("Unauthorized", 401);
-  const canRead = await hasPermission(user.id, "read", "ClinicalSeries");
+  const canRead = await hasPermission(user, "read", "ClinicalSeries");
   if (!canRead) return c.text("Forbidden", 403);
 
   const encoder = new TextEncoder();

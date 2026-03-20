@@ -36,7 +36,7 @@ const authed = base.use(async ({ context, next }) => {
 });
 
 const readHaulmer = authed.use(async ({ context, next }) => {
-  const canRead = await hasPermission(context.user.id, "read", "Integration");
+  const canRead = await hasPermission(context.user, "read", "Integration");
   if (!canRead) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
   }
@@ -44,7 +44,7 @@ const readHaulmer = authed.use(async ({ context, next }) => {
 });
 
 const createHaulmer = authed.use(async ({ context, next }) => {
-  const canCreate = await hasPermission(context.user.id, "create", "Integration");
+  const canCreate = await hasPermission(context.user, "create", "Integration");
   if (!canCreate) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
   }

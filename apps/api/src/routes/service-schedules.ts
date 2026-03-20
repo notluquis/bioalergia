@@ -74,7 +74,7 @@ app.patch("/:id", async (c) => {
     return reply(c, { status: "error", message: "Unauthorized" }, 401);
   }
 
-  const canUpdate = await hasPermission(user.id, "update", "Service");
+  const canUpdate = await hasPermission(user, "update", "Service");
   if (!canUpdate) {
     return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
@@ -136,7 +136,7 @@ app.post("/:id/pay", async (c) => {
     return reply(c, { status: "error", message: "Unauthorized" }, 401);
   }
 
-  const canUpdate = await hasPermission(user.id, "update", "Service");
+  const canUpdate = await hasPermission(user, "update", "Service");
   if (!canUpdate) {
     return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
@@ -218,7 +218,7 @@ app.post("/:id/unlink", async (c) => {
     return reply(c, { status: "error", message: "Unauthorized" }, 401);
   }
 
-  const canUpdate = await hasPermission(user.id, "update", "Service");
+  const canUpdate = await hasPermission(user, "update", "Service");
   if (!canUpdate) {
     return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
@@ -256,7 +256,7 @@ app.post("/:id/skip", async (c) => {
     return reply(c, { status: "error", message: "Unauthorized" }, 401);
   }
 
-  const canUpdate = await hasPermission(user.id, "update", "Service");
+  const canUpdate = await hasPermission(user, "update", "Service");
   if (!canUpdate) {
     return reply(c, { status: "error", message: "Forbidden" }, 403);
   }

@@ -395,10 +395,10 @@ const authed = base.use(async ({ context, next }) => {
 });
 
 const readServices = authed.use(async ({ context, next }) => {
-  const canRead = await hasPermission(context.user.id, "read", "Service");
-  const canReadList = await hasPermission(context.user.id, "read", "ServiceList");
-  const canReadAgenda = await hasPermission(context.user.id, "read", "ServiceAgenda");
-  const canReadTemplate = await hasPermission(context.user.id, "read", "ServiceTemplate");
+  const canRead = await hasPermission(context.user, "read", "Service");
+  const canReadList = await hasPermission(context.user, "read", "ServiceList");
+  const canReadAgenda = await hasPermission(context.user, "read", "ServiceAgenda");
+  const canReadTemplate = await hasPermission(context.user, "read", "ServiceTemplate");
 
   if (!canRead && !canReadList && !canReadAgenda && !canReadTemplate) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
@@ -408,7 +408,7 @@ const readServices = authed.use(async ({ context, next }) => {
 });
 
 const updateServices = authed.use(async ({ context, next }) => {
-  const canUpdate = await hasPermission(context.user.id, "update", "Service");
+  const canUpdate = await hasPermission(context.user, "update", "Service");
 
   if (!canUpdate) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
@@ -418,7 +418,7 @@ const updateServices = authed.use(async ({ context, next }) => {
 });
 
 const createServices = authed.use(async ({ context, next }) => {
-  const canCreate = await hasPermission(context.user.id, "create", "Service");
+  const canCreate = await hasPermission(context.user, "create", "Service");
 
   if (!canCreate) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
@@ -428,7 +428,7 @@ const createServices = authed.use(async ({ context, next }) => {
 });
 
 const deleteServices = authed.use(async ({ context, next }) => {
-  const canDelete = await hasPermission(context.user.id, "delete", "Service");
+  const canDelete = await hasPermission(context.user, "delete", "Service");
 
   if (!canDelete) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });

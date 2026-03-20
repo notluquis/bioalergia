@@ -53,7 +53,7 @@ const authed = base.use(async ({ context, next }) => {
 });
 
 const readLoans = authed.use(async ({ context, next }) => {
-  const canRead = await hasPermission(context.user.id, "read", "Loan");
+  const canRead = await hasPermission(context.user, "read", "Loan");
   if (!canRead) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
   }
@@ -61,7 +61,7 @@ const readLoans = authed.use(async ({ context, next }) => {
 });
 
 const createLoans = authed.use(async ({ context, next }) => {
-  const canCreate = await hasPermission(context.user.id, "create", "Loan");
+  const canCreate = await hasPermission(context.user, "create", "Loan");
   if (!canCreate) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
   }
@@ -69,7 +69,7 @@ const createLoans = authed.use(async ({ context, next }) => {
 });
 
 const updateLoans = authed.use(async ({ context, next }) => {
-  const canUpdate = await hasPermission(context.user.id, "update", "Loan");
+  const canUpdate = await hasPermission(context.user, "update", "Loan");
   if (!canUpdate) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
   }
@@ -77,7 +77,7 @@ const updateLoans = authed.use(async ({ context, next }) => {
 });
 
 const deleteLoans = authed.use(async ({ context, next }) => {
-  const canDelete = await hasPermission(context.user.id, "delete", "Loan");
+  const canDelete = await hasPermission(context.user, "delete", "Loan");
   if (!canDelete) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
   }

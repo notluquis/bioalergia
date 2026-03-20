@@ -1,7 +1,12 @@
 import type { AnyAbility, RawRuleOf } from "@casl/ability";
 import { db } from "@finanzas/db";
 import {
+  authDebugScopeSchema,
   authEmptySchema,
+  authExchangeDebugTokenResponseSchema,
+  authExchangeDebugTokenSchema,
+  authIssueDebugTokenResponseSchema,
+  authIssueDebugTokenSchema,
   authLoginOkResponseSchema,
   authLoginResponseSchema,
   authLoginSchema,
@@ -26,9 +31,17 @@ import type {
 } from "@simplewebauthn/server";
 import type { Context as HonoContext } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
+import { randomUUID } from "node:crypto";
+import { getSessionUser, hasPermission, resolveSessionUserFromToken } from "../auth";
 import { logError } from "../lib/logger";
 import { signToken, verifyToken } from "../lib/paseto";
 import { configureSuperjson } from "../lib/superjson-config";
+import {
+  consumeDebugTokenRecord,
+  createDebugTokenRecord,
+  ensureDebugTokenSupportEnabled,
+} from "../services/debug-tokens";
+import { getAbilityRulesForUser } from "../services/authz";
 import { SuperJSONRPCHandler } from "./superjson";
 
 configureSuperjson();
@@ -69,14 +82,31 @@ function authError(
 }
 
 async function issueToken(session: AuthSession): Promise<string> {
+  return issueTokenWithOptions(session);
+}
+
+async function issueTokenWithOptions(
+  session: AuthSession,
+  options?: {
+    debugAudience?: string;
+    debugReason?: string;
+    debugScopes?: Array<{ action: string; subject: string }>;
+    expiresIn?: string;
+    tokenType?: "debug-session" | "session";
+  },
+): Promise<string> {
   return signToken(
     {
+      aud: options?.debugAudience,
       sub: session.userId.toString(),
       email: session.email,
+      reason: options?.debugReason,
       roles: session.roles,
+      scp: options?.debugScopes,
       sv: session.sessionVersion,
+      typ: options?.tokenType ?? "session",
     },
-    "2d",
+    options?.expiresIn ?? "2d",
   );
 }
 
@@ -141,36 +171,6 @@ async function getEffectiveLoginEmailByUserId(userId: number, fallbackEmail: str
   return explicitLoginEmail || notificationEmail || fallbackEmail;
 }
 
-async function resolveSessionFromToken(token: string) {
-  const decoded = await verifyToken(token);
-  if (!decoded || typeof decoded.sub !== "string") {
-    return null;
-  }
-  const userId = Number(decoded.sub);
-  if (!Number.isFinite(userId)) {
-    return null;
-  }
-  const user = await db.user.findUnique({
-    where: { id: userId },
-    select: { id: true, sessionVersion: true, person: { select: { email: true } } },
-  });
-  if (!user) {
-    return null;
-  }
-  const tokenSessionVersion =
-    typeof decoded.sv === "number" && Number.isFinite(decoded.sv) ? decoded.sv : 1;
-  if (tokenSessionVersion !== user.sessionVersion) {
-    return null;
-  }
-  return {
-    userEmail: await getEffectiveLoginEmailByUserId(
-      user.id,
-      user.person?.email ?? String(decoded.email ?? ""),
-    ),
-    userId: user.id,
-  };
-}
-
 function getRequiredToken(context: AuthORPCContext) {
   const token = getCookie(context.hono, COOKIE_NAME);
   if (!token) {
@@ -186,6 +186,46 @@ function toRecordExtensions(value: unknown): Record<string, unknown> | undefined
 
   return value as Record<string, unknown>;
 }
+
+function buildCookieOptions(maxAge: number) {
+  return {
+    ...COOKIE_OPTIONS,
+    maxAge,
+  };
+}
+
+function filterAbilityRulesByDebugScopes(
+  abilityRules: RawRuleOf<AnyAbility>[],
+  scopes?: Array<{ action: string; subject: string }>,
+) {
+  if (!scopes || scopes.length === 0) {
+    return abilityRules;
+  }
+
+  const allowed = new Set(scopes.map((scope) => `${scope.action}:${scope.subject}`));
+  return abilityRules.filter((rule) => {
+    if (typeof rule.action !== "string" || typeof rule.subject !== "string") {
+      return false;
+    }
+    return allowed.has(`${rule.action}:${rule.subject}`);
+  });
+}
+
+const debugTokenAdmin = base.use(async ({ context, next }) => {
+  ensureDebugTokenSupportEnabled();
+  const token = getRequiredToken(context);
+  const session = await resolveSessionUserFromToken(token);
+  if (!session) {
+    authError("UNAUTHORIZED", "No autorizado");
+  }
+
+  const canIssue = await hasPermission(session, "update", "User");
+  if (!canIssue) {
+    authError("FORBIDDEN", "Forbidden");
+  }
+
+  return next({ context: { ...context, session } });
+});
 
 const authORPCRouterBase = {
   login: base
@@ -345,20 +385,19 @@ const authORPCRouterBase = {
     .route({ method: "GET", path: "/me/session", summary: "Get session", tags: ["Auth"] })
     .output(authSessionResponseSchema)
     .handler(async ({ context }) => {
-      const token = getCookie(context.hono, COOKIE_NAME);
-      if (!token) {
+      const hasCookieSession = Boolean(getCookie(context.hono, COOKIE_NAME));
+      const session = await getSessionUser(context.hono);
+
+      if (!session) {
+        if (hasCookieSession) {
+          deleteCookie(context.hono, COOKIE_NAME);
+        }
         return { status: "ok" as const, user: null };
       }
 
       try {
-        const session = await resolveSessionFromToken(token);
-        if (!session) {
-          deleteCookie(context.hono, COOKIE_NAME);
-          return { status: "ok" as const, user: null };
-        }
-
         const user = await db.user.findUnique({
-          where: { id: session.userId },
+          where: { id: session.id },
           include: {
             passkeys: { select: { id: true } },
             person: true,
@@ -367,12 +406,16 @@ const authORPCRouterBase = {
         });
 
         if (!user) {
-          deleteCookie(context.hono, COOKIE_NAME);
+          if (hasCookieSession) {
+            deleteCookie(context.hono, COOKIE_NAME);
+          }
           return { status: "ok" as const, user: null };
         }
 
-        const { getAbilityRulesForUser } = await import("../services/authz.js");
-        const abilityRules = (await getAbilityRulesForUser(user.id)) as RawRuleOf<AnyAbility>[];
+        const abilityRules = filterAbilityRulesByDebugScopes(
+          (await getAbilityRulesForUser(user.id)) as RawRuleOf<AnyAbility>[],
+          session.debugScopes,
+        );
         const notificationEmail = user.person?.email ?? "";
         const loginEmail = await getEffectiveLoginEmailByUserId(user.id, notificationEmail);
 
@@ -394,9 +437,147 @@ const authORPCRouterBase = {
           },
         };
       } catch {
-        deleteCookie(context.hono, COOKIE_NAME);
+        if (hasCookieSession) {
+          deleteCookie(context.hono, COOKIE_NAME);
+        }
         return { status: "ok" as const, user: null };
       }
+    }),
+
+  issueDebugToken: debugTokenAdmin
+    .route({ method: "POST", path: "/debug/token", summary: "Issue debug token", tags: ["Auth"] })
+    .input(authIssueDebugTokenSchema)
+    .output(authIssueDebugTokenResponseSchema)
+    .handler(async ({ context, input }) => {
+      const targetUser = await db.user.findUnique({
+        where: { id: input.targetUserId },
+        include: {
+          person: true,
+          roles: { include: { role: true } },
+        },
+      });
+
+      if (!targetUser || targetUser.status !== "ACTIVE") {
+        authError("BAD_REQUEST", "Usuario objetivo no disponible");
+      }
+
+      const normalizedScopes = input.scopes.map((scope) => authDebugScopeSchema.parse(scope));
+      const expiresInMinutes = input.expiresInMinutes ?? 10;
+      const expiresAt = new Date(Date.now() + expiresInMinutes * 60 * 1000);
+      const jti = randomUUID();
+      const notificationEmail = targetUser.person?.email ?? "";
+      const loginEmail = await getEffectiveLoginEmailByUserId(targetUser.id, notificationEmail);
+
+      await createDebugTokenRecord({
+        audience: input.audience,
+        expiresAt,
+        issuedByUserId: context.session.id,
+        jti,
+        reason: input.reason,
+        scopes: normalizedScopes,
+        targetUserId: targetUser.id,
+      });
+
+      const token = await signToken(
+        {
+          actor: context.session.id,
+          aud: input.audience,
+          email: loginEmail,
+          jti,
+          reason: input.reason,
+          scp: normalizedScopes,
+          sub: targetUser.id.toString(),
+          sv: targetUser.sessionVersion,
+          typ: "debug",
+        },
+        `${expiresInMinutes}m`,
+      );
+
+      return {
+        expiresAt: expiresAt.toISOString(),
+        jti,
+        status: "ok" as const,
+        token,
+      };
+    }),
+
+  exchangeDebugToken: base
+    .route({
+      method: "POST",
+      path: "/debug/exchange",
+      summary: "Exchange debug token",
+      tags: ["Auth"],
+    })
+    .input(authExchangeDebugTokenSchema)
+    .output(authExchangeDebugTokenResponseSchema)
+    .handler(async ({ context, input }) => {
+      ensureDebugTokenSupportEnabled();
+      const decoded = await verifyToken(input.token);
+      if (!decoded || typeof decoded.sub !== "string" || typeof decoded.jti !== "string") {
+        authError("UNAUTHORIZED", "Token inválido");
+      }
+      if (decoded.typ !== "debug") {
+        authError("UNAUTHORIZED", "Token inválido");
+      }
+
+      const record = await consumeDebugTokenRecord(decoded.jti);
+      if (!record) {
+        authError("UNAUTHORIZED", "Token expirado o ya utilizado");
+      }
+
+      const targetUser = await db.user.findUnique({
+        where: { id: record.targetUserId },
+        include: {
+          person: true,
+          roles: { include: { role: true } },
+        },
+      });
+
+      if (!targetUser || targetUser.status !== "ACTIVE") {
+        authError("UNAUTHORIZED", "Usuario objetivo no disponible");
+      }
+
+      const notificationEmail = targetUser.person?.email ?? "";
+      const loginEmail = await getEffectiveLoginEmailByUserId(targetUser.id, notificationEmail);
+      const accessToken = await issueTokenWithOptions(
+        {
+          email: loginEmail,
+          roles: targetUser.roles.map((role) => role.role.name),
+          sessionVersion: targetUser.sessionVersion,
+          userId: targetUser.id,
+        },
+        {
+          debugAudience: record.audience,
+          debugReason: record.reason,
+          debugScopes: record.scopes,
+          expiresIn: "10m",
+          tokenType: "debug-session",
+        },
+      );
+
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+      const delivery = input.delivery ?? "bearer";
+
+      if (delivery === "cookie") {
+        setCookie(context.hono, COOKIE_NAME, accessToken, buildCookieOptions(10 * 60));
+      }
+
+      return {
+        ...(delivery === "bearer" ? { accessToken } : {}),
+        delivery,
+        expiresAt,
+        status: "ok" as const,
+        user: {
+          email: loginEmail,
+          id: targetUser.id,
+          loginEmail,
+          mfaEnabled: targetUser.mfaEnabled,
+          name: targetUser.person?.names || null,
+          notificationEmail,
+          roles: targetUser.roles.map((role) => role.role.name),
+          status: targetUser.status,
+        },
+      };
     }),
 
   mfaDisable: base
@@ -405,13 +586,13 @@ const authORPCRouterBase = {
     .output(authStatusResponseSchema)
     .handler(async ({ context }) => {
       const token = getRequiredToken(context);
-      const session = await resolveSessionFromToken(token);
+      const session = await resolveSessionUserFromToken(token);
       if (!session) {
         authError("UNAUTHORIZED", "Token inválido");
       }
 
       await db.user.update({
-        where: { id: session.userId },
+        where: { id: session.id },
         data: { mfaEnabled: false, mfaSecret: null },
       });
 
@@ -424,12 +605,12 @@ const authORPCRouterBase = {
     .output(authStatusResponseSchema)
     .handler(async ({ context, input }) => {
       const token = getRequiredToken(context);
-      const session = await resolveSessionFromToken(token);
+      const session = await resolveSessionUserFromToken(token);
       if (!session) {
         authError("UNAUTHORIZED", "Token inválido");
       }
 
-      const user = await db.user.findUnique({ where: { id: session.userId } });
+      const user = await db.user.findUnique({ where: { id: session.id } });
       if (!user) {
         authError("BAD_REQUEST", "Usuario no encontrado");
       }
@@ -445,7 +626,7 @@ const authORPCRouterBase = {
       }
 
       await db.user.update({
-        where: { id: session.userId },
+        where: { id: session.id },
         data: { mfaEnabled: true },
       });
 
@@ -458,16 +639,16 @@ const authORPCRouterBase = {
     .output(authMfaSetupResponseSchema)
     .handler(async ({ context }) => {
       const token = getRequiredToken(context);
-      const session = await resolveSessionFromToken(token);
+      const session = await resolveSessionUserFromToken(token);
       if (!session) {
         authError("UNAUTHORIZED", "Token inválido");
       }
 
       const { generateMfaSecret } = await import("../services/mfa.js");
-      const { qrCodeUrl, secret } = await generateMfaSecret(session.userEmail);
+      const { qrCodeUrl, secret } = await generateMfaSecret(session.email);
 
       await db.user.update({
-        where: { id: session.userId },
+        where: { id: session.id },
         data: { mfaEnabled: false, mfaSecret: secret },
       });
 
@@ -615,13 +796,13 @@ const authORPCRouterBase = {
     .output(authPasskeyRegistrationOptionsSchema)
     .handler(async ({ context }) => {
       const token = getRequiredToken(context);
-      const session = await resolveSessionFromToken(token);
+      const session = await resolveSessionUserFromToken(token);
       if (!session) {
         authError("UNAUTHORIZED", "Token inválido");
       }
 
       const user = await db.user.findUnique({
-        where: { id: session.userId },
+        where: { id: session.id },
         include: { person: true },
       });
       if (!user) {
@@ -638,12 +819,12 @@ const authORPCRouterBase = {
         },
         rpID: RP_ID,
         rpName: RP_NAME,
-        userDisplayName: user.person?.names || user.person?.email || session.userEmail,
-        userID: new Uint8Array(Buffer.from(String(session.userId))),
-        userName: user.person?.email || session.userEmail,
+        userDisplayName: user.person?.names || user.person?.email || session.email,
+        userID: new Uint8Array(Buffer.from(String(session.id))),
+        userName: user.person?.email || session.email,
       });
 
-      storeChallenge(`register:${options.challenge}`, options.challenge, session.userId);
+      storeChallenge(`register:${options.challenge}`, options.challenge, session.id);
       return {
         attestation: options.attestation,
         authenticatorSelection: options.authenticatorSelection,
@@ -682,13 +863,13 @@ const authORPCRouterBase = {
     .output(authStatusResponseSchema)
     .handler(async ({ context, input }) => {
       const sessionToken = getRequiredToken(context);
-      const session = await resolveSessionFromToken(sessionToken);
+      const session = await resolveSessionUserFromToken(sessionToken);
       if (!session) {
         authError("UNAUTHORIZED", "Token inválido");
       }
 
       const storedChallenge = getChallenge(`register:${input.challenge}`);
-      if (!storedChallenge || storedChallenge.userId !== session.userId) {
+      if (!storedChallenge || storedChallenge.userId !== session.id) {
         authError("BAD_REQUEST", "Challenge inválido");
       }
 
@@ -717,8 +898,8 @@ const authORPCRouterBase = {
           friendlyName: `Passkey (${new Date().toLocaleDateString()})`,
           publicKey: Buffer.from(credential.publicKey),
           transports: responseBody.response.transports ?? undefined,
-          userId: session.userId,
-          webAuthnUserID: String(session.userId),
+          userId: session.id,
+          webAuthnUserID: String(session.id),
         },
       });
 
@@ -739,13 +920,13 @@ const authORPCRouterBase = {
     .output(authStatusResponseSchema)
     .handler(async ({ context }) => {
       const token = getRequiredToken(context);
-      const session = await resolveSessionFromToken(token);
+      const session = await resolveSessionUserFromToken(token);
       if (!session) {
         authError("UNAUTHORIZED", "Token inválido");
       }
 
       await db.passkey.deleteMany({
-        where: { userId: session.userId },
+        where: { userId: session.id },
       });
 
       return {

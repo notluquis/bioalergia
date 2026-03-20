@@ -63,7 +63,7 @@ const authed = base.use(async ({ context, next }) => {
 });
 
 const readRoles = authed.use(async ({ context, next }) => {
-  const canRead = await hasPermission(context.user.id, "read", "Role");
+  const canRead = await hasPermission(context.user, "read", "Role");
 
   if (!canRead) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
@@ -73,7 +73,7 @@ const readRoles = authed.use(async ({ context, next }) => {
 });
 
 const createRoles = authed.use(async ({ context, next }) => {
-  const canCreate = await hasPermission(context.user.id, "create", "Role");
+  const canCreate = await hasPermission(context.user, "create", "Role");
 
   if (!canCreate) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
@@ -83,7 +83,7 @@ const createRoles = authed.use(async ({ context, next }) => {
 });
 
 const updateRoles = authed.use(async ({ context, next }) => {
-  const canUpdate = await hasPermission(context.user.id, "update", "Role");
+  const canUpdate = await hasPermission(context.user, "update", "Role");
 
   if (!canUpdate) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
@@ -93,7 +93,7 @@ const updateRoles = authed.use(async ({ context, next }) => {
 });
 
 const deleteRoles = authed.use(async ({ context, next }) => {
-  const canDelete = await hasPermission(context.user.id, "delete", "Role");
+  const canDelete = await hasPermission(context.user, "delete", "Role");
 
   if (!canDelete) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
@@ -103,7 +103,7 @@ const deleteRoles = authed.use(async ({ context, next }) => {
 });
 
 const readPermissions = authed.use(async ({ context, next }) => {
-  const canRead = await hasPermission(context.user.id, "read", "Permission");
+  const canRead = await hasPermission(context.user, "read", "Permission");
 
   if (!canRead) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });

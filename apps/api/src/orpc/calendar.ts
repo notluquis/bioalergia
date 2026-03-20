@@ -319,9 +319,9 @@ function requirePermission(
   fallback?: { action: string; subject: string },
 ) {
   return authed.use(async ({ context, next }) => {
-    const direct = await hasPermission(context.user.id, action, subject);
+    const direct = await hasPermission(context.user, action, subject);
     const secondary = fallback
-      ? await hasPermission(context.user.id, fallback.action, fallback.subject)
+      ? await hasPermission(context.user, fallback.action, fallback.subject)
       : false;
 
     if (!direct && !secondary) {
@@ -333,9 +333,9 @@ function requirePermission(
 }
 
 const readAnyCalendar = authed.use(async ({ context, next }) => {
-  const canReadSchedule = await hasPermission(context.user.id, "read", "CalendarSchedule");
-  const canReadDaily = await hasPermission(context.user.id, "read", "CalendarDaily");
-  const canReadEvents = await hasPermission(context.user.id, "read", "CalendarEvent");
+  const canReadSchedule = await hasPermission(context.user, "read", "CalendarSchedule");
+  const canReadDaily = await hasPermission(context.user, "read", "CalendarDaily");
+  const canReadEvents = await hasPermission(context.user, "read", "CalendarEvent");
 
   if (!canReadSchedule && !canReadDaily && !canReadEvents) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
@@ -369,9 +369,9 @@ function toUniqueMissingFilters(values: MissingClassificationFilterKey[] | undef
 
 const listCalendars = authed
   .use(async ({ context, next }) => {
-    const canReadSchedule = await hasPermission(context.user.id, "read", "CalendarSchedule");
-    const canReadSettings = await hasPermission(context.user.id, "update", "CalendarSetting");
-    const canReadEvents = await hasPermission(context.user.id, "read", "CalendarEvent");
+    const canReadSchedule = await hasPermission(context.user, "read", "CalendarSchedule");
+    const canReadSettings = await hasPermission(context.user, "update", "CalendarSetting");
+    const canReadEvents = await hasPermission(context.user, "read", "CalendarEvent");
 
     if (!canReadSchedule && !canReadSettings && !canReadEvents) {
       throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
@@ -409,9 +409,9 @@ const listCalendars = authed
 
 const summaryEvents = authed
   .use(async ({ context, next }) => {
-    const canReadSchedule = await hasPermission(context.user.id, "read", "CalendarSchedule");
-    const canReadHeatmap = await hasPermission(context.user.id, "read", "CalendarHeatmap");
-    const canReadEvents = await hasPermission(context.user.id, "read", "CalendarEvent");
+    const canReadSchedule = await hasPermission(context.user, "read", "CalendarSchedule");
+    const canReadHeatmap = await hasPermission(context.user, "read", "CalendarHeatmap");
+    const canReadEvents = await hasPermission(context.user, "read", "CalendarEvent");
 
     if (!canReadSchedule && !canReadHeatmap && !canReadEvents) {
       throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
@@ -440,8 +440,8 @@ const summaryEvents = authed
 
 const dailyEvents = authed
   .use(async ({ context, next }) => {
-    const canReadDaily = await hasPermission(context.user.id, "read", "CalendarDaily");
-    const canReadEvents = await hasPermission(context.user.id, "read", "CalendarEvent");
+    const canReadDaily = await hasPermission(context.user, "read", "CalendarDaily");
+    const canReadEvents = await hasPermission(context.user, "read", "CalendarEvent");
 
     if (!canReadDaily && !canReadEvents) {
       throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
@@ -532,8 +532,8 @@ const classifyEvent = requirePermission("CalendarEvent", "update")
 
 const syncCalendarEvents = authed
   .use(async ({ context, next }) => {
-    const canSync = await hasPermission(context.user.id, "update", "CalendarSetting");
-    const canManageEvents = await hasPermission(context.user.id, "update", "CalendarEvent");
+    const canSync = await hasPermission(context.user, "update", "CalendarSetting");
+    const canManageEvents = await hasPermission(context.user, "update", "CalendarEvent");
 
     if (!canSync && !canManageEvents) {
       throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
@@ -601,8 +601,8 @@ const syncCalendarEvents = authed
 
 const listSyncLogs = authed
   .use(async ({ context, next }) => {
-    const canReadLogs = await hasPermission(context.user.id, "read", "CalendarSyncLog");
-    const canReadSettings = await hasPermission(context.user.id, "update", "CalendarSetting");
+    const canReadLogs = await hasPermission(context.user, "read", "CalendarSyncLog");
+    const canReadSettings = await hasPermission(context.user, "update", "CalendarSetting");
 
     if (!canReadLogs && !canReadSettings) {
       throw new ORPCError("FORBIDDEN", { message: "Forbidden" });

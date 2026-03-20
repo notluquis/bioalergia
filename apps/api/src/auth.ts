@@ -12,9 +12,18 @@ import { getCookie } from "hono/cookie";
 import { verifyToken } from "./lib/paseto";
 import { getAbilityRulesForUser } from "./services/authz";
 
+export type DebugScope = {
+  action: string;
+  subject: string;
+};
+
 // User session type matching ZenStack auth model
 export interface AuthSession {
+  debugAudience?: string;
+  debugReason?: string;
+  debugScopes?: DebugScope[];
   id: number;
+  isDebugSession?: boolean;
   email: string;
   status: "ACTIVE" | "PENDING_SETUP" | "SUSPENDED";
   roles: Array<{ role: { name: string } }>;
@@ -23,32 +32,50 @@ export interface AuthSession {
 const COOKIE_NAME = "finanzas_session";
 const BEARER_PREFIX = /^Bearer\s+/i;
 
-/**
- * Extract and verify PASETO token from request
- * Supports both Authorization header and cookie
- */
-export async function getSessionUser(ctx: Context): Promise<AuthSession | null> {
-  const cached = ctx.get("sessionUser") as AuthSession | null | undefined;
-  if (cached !== undefined) {
-    return cached;
+function parseDebugScopes(value: unknown): DebugScope[] | undefined {
+  if (!Array.isArray(value)) {
+    return undefined;
   }
 
-  // 1. Check Authorization header
-  let token = ctx.req.header("Authorization")?.replace(BEARER_PREFIX, "");
+  const scopes = value
+    .map((entry) => {
+      if (!entry || typeof entry !== "object") {
+        return null;
+      }
+      const action = "action" in entry ? entry.action : undefined;
+      const subject = "subject" in entry ? entry.subject : undefined;
+      if (typeof action !== "string" || typeof subject !== "string") {
+        return null;
+      }
+      return { action, subject };
+    })
+    .filter((entry): entry is DebugScope => entry !== null);
 
-  // 2. Fall back to cookie
-  if (!token) {
-    token = getCookie(ctx, COOKIE_NAME);
+  return scopes.length > 0 ? scopes : undefined;
+}
+
+function isDebugScopeAllowed(
+  scopes: DebugScope[] | undefined,
+  action: string,
+  subject: string,
+): boolean {
+  if (!scopes || scopes.length === 0) {
+    return true;
   }
 
-  if (!token) {
-    return null;
-  }
+  return scopes.some((scope) => scope.action === action && scope.subject === subject);
+}
 
+export async function resolveSessionUserFromToken(token: string): Promise<AuthSession | null> {
   try {
     const decoded = await verifyToken(token);
 
     if (!decoded || typeof decoded.sub !== "string") {
+      return null;
+    }
+
+    const tokenType = typeof decoded.typ === "string" ? decoded.typ : "session";
+    if (tokenType !== "session" && tokenType !== "debug-session") {
       return null;
     }
 
@@ -83,13 +110,45 @@ export async function getSessionUser(ctx: Context): Promise<AuthSession | null> 
       return null;
     }
 
-    const session: AuthSession = {
-      id: user.id,
+    return {
+      debugAudience: typeof decoded.aud === "string" ? decoded.aud : undefined,
+      debugReason: typeof decoded.reason === "string" ? decoded.reason : undefined,
+      debugScopes: parseDebugScopes(decoded.scp),
       email: String(decoded.email ?? user.person?.email ?? ""),
-      status: user.status,
+      id: user.id,
+      isDebugSession: tokenType === "debug-session",
       roles: user.roles.map((roleAssignment) => ({ role: { name: roleAssignment.role.name } })),
+      status: user.status,
     };
+  } catch {
+    return null;
+  }
+}
 
+/**
+ * Extract and verify PASETO token from request
+ * Supports both Authorization header and cookie
+ */
+export async function getSessionUser(ctx: Context): Promise<AuthSession | null> {
+  const cached = ctx.get("sessionUser") as AuthSession | null | undefined;
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  // 1. Check Authorization header
+  let token = ctx.req.header("Authorization")?.replace(BEARER_PREFIX, "");
+
+  // 2. Fall back to cookie
+  if (!token) {
+    token = getCookie(ctx, COOKIE_NAME);
+  }
+
+  if (!token) {
+    return null;
+  }
+
+  try {
+    const session = await resolveSessionUserFromToken(token);
     ctx.set("sessionUser", session);
     return session;
   } catch {
@@ -123,11 +182,18 @@ export function createAuthContext(user: AuthSession | null) {
  * @param subject - The permission subject (e.g., "Backup", "Setting", "User")
  */
 export async function hasPermission(
-  userId: number,
+  userOrId: AuthSession | number,
   action: string,
   subject: string,
   resource?: Record<string, unknown>,
 ): Promise<boolean> {
+  const userId = typeof userOrId === "number" ? userOrId : userOrId.id;
+  const debugScopes = typeof userOrId === "number" ? undefined : userOrId.debugScopes;
+
+  if (!isDebugScopeAllowed(debugScopes, action, subject)) {
+    return false;
+  }
+
   const user = await db.user.findUnique({
     where: { id: userId },
     select: { status: true },

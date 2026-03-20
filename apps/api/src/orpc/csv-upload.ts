@@ -74,7 +74,7 @@ const authed = base.use(async ({ context, next }) => {
 });
 
 const canReadCsvUpload = authed.use(async ({ context, next }) => {
-  const canReadSettings = await hasPermission(context.user.id, "read", "Setting");
+  const canReadSettings = await hasPermission(context.user, "read", "Setting");
   if (!canReadSettings) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
   }
@@ -82,7 +82,7 @@ const canReadCsvUpload = authed.use(async ({ context, next }) => {
 });
 
 const canWriteWithdrawals = authed.use(async ({ context, next }) => {
-  const canCreate = await hasPermission(context.user.id, "create", "WithdrawTransaction");
+  const canCreate = await hasPermission(context.user, "create", "WithdrawTransaction");
   if (!canCreate) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
   }

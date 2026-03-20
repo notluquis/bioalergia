@@ -151,7 +151,7 @@ const authed = base.use(async ({ context, next }) => {
 });
 
 const readUsers = authed.use(async ({ context, next }) => {
-  const canRead = await hasPermission(context.user.id, "read", "User");
+  const canRead = await hasPermission(context.user, "read", "User");
 
   if (!canRead) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
@@ -161,7 +161,7 @@ const readUsers = authed.use(async ({ context, next }) => {
 });
 
 const createUsers = authed.use(async ({ context, next }) => {
-  const canCreate = await hasPermission(context.user.id, "create", "User");
+  const canCreate = await hasPermission(context.user, "create", "User");
 
   if (!canCreate) {
     throw new ORPCError("FORBIDDEN", { message: "No tienes permisos para crear usuarios" });
@@ -171,7 +171,7 @@ const createUsers = authed.use(async ({ context, next }) => {
 });
 
 const updateUsers = authed.use(async ({ context, next }) => {
-  const canUpdate = await hasPermission(context.user.id, "update", "User");
+  const canUpdate = await hasPermission(context.user, "update", "User");
 
   if (!canUpdate) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
@@ -181,7 +181,7 @@ const updateUsers = authed.use(async ({ context, next }) => {
 });
 
 const deleteUsers = authed.use(async ({ context, next }) => {
-  const canDelete = await hasPermission(context.user.id, "delete", "User");
+  const canDelete = await hasPermission(context.user, "delete", "User");
 
   if (!canDelete) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });

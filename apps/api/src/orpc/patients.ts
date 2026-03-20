@@ -314,7 +314,7 @@ const authed = base.use(async ({ context, next }) => {
 });
 
 const updatePatients = authed.use(async ({ context, next }) => {
-  const canUpdate = await hasPermission(context.user.id, "update", "Patient");
+  const canUpdate = await hasPermission(context.user, "update", "Patient");
 
   if (!canUpdate) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
@@ -324,7 +324,7 @@ const updatePatients = authed.use(async ({ context, next }) => {
 });
 
 const readBudgets = authed.use(async ({ context, next }) => {
-  const canRead = await hasPermission(context.user.id, "read", "Budget");
+  const canRead = await hasPermission(context.user, "read", "Budget");
 
   if (!canRead) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
@@ -334,7 +334,7 @@ const readBudgets = authed.use(async ({ context, next }) => {
 });
 
 const readPatients = authed.use(async ({ context, next }) => {
-  const canRead = await hasPermission(context.user.id, "read", "Patient");
+  const canRead = await hasPermission(context.user, "read", "Patient");
 
   if (!canRead) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
@@ -344,7 +344,7 @@ const readPatients = authed.use(async ({ context, next }) => {
 });
 
 const createPatients = authed.use(async ({ context, next }) => {
-  const canCreate = await hasPermission(context.user.id, "create", "Patient");
+  const canCreate = await hasPermission(context.user, "create", "Patient");
 
   if (!canCreate) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
@@ -354,7 +354,7 @@ const createPatients = authed.use(async ({ context, next }) => {
 });
 
 const createConsultations = authed.use(async ({ context, next }) => {
-  const canCreate = await hasPermission(context.user.id, "create", "Consultation");
+  const canCreate = await hasPermission(context.user, "create", "Consultation");
 
   if (!canCreate) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
@@ -364,7 +364,7 @@ const createConsultations = authed.use(async ({ context, next }) => {
 });
 
 const createBudgets = authed.use(async ({ context, next }) => {
-  const canCreate = await hasPermission(context.user.id, "create", "Budget");
+  const canCreate = await hasPermission(context.user, "create", "Budget");
 
   if (!canCreate) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
@@ -374,7 +374,7 @@ const createBudgets = authed.use(async ({ context, next }) => {
 });
 
 const readPayments = authed.use(async ({ context, next }) => {
-  const canRead = await hasPermission(context.user.id, "read", "PatientPayment");
+  const canRead = await hasPermission(context.user, "read", "PatientPayment");
 
   if (!canRead) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
@@ -384,7 +384,7 @@ const readPayments = authed.use(async ({ context, next }) => {
 });
 
 const createPayments = authed.use(async ({ context, next }) => {
-  const canCreate = await hasPermission(context.user.id, "create", "PatientPayment");
+  const canCreate = await hasPermission(context.user, "create", "PatientPayment");
 
   if (!canCreate) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });

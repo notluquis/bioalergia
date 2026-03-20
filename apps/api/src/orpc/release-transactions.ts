@@ -44,7 +44,7 @@ const authed = base.use(async ({ context, next }) => {
 });
 
 const readReleaseTransactions = authed.use(async ({ context, next }) => {
-  const canRead = await hasPermission(context.user.id, "read", "Integration");
+  const canRead = await hasPermission(context.user, "read", "Integration");
 
   if (!canRead) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });

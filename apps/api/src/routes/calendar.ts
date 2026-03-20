@@ -694,10 +694,10 @@ calendarRoutes.get(
       return reply(c, { status: "error", message: "No autorizado" }, 401);
     }
 
-    const canReadSchedule = await hasPermission(user.id, "read", "CalendarSchedule");
-    const canReadHeatmap = await hasPermission(user.id, "read", "CalendarHeatmap");
+    const canReadSchedule = await hasPermission(user, "read", "CalendarSchedule");
+    const canReadHeatmap = await hasPermission(user, "read", "CalendarHeatmap");
     // Broad fallback: if neither specific permission is available, allow if user can read events
-    const canReadEvents = await hasPermission(user.id, "read", "CalendarEvent");
+    const canReadEvents = await hasPermission(user, "read", "CalendarEvent");
 
     if (!canReadSchedule && !canReadHeatmap && !canReadEvents) {
       return reply(c, { status: "error", message: "Forbidden" }, 403);
@@ -735,7 +735,7 @@ calendarRoutes.get(
       return reply(c, { status: "error", message: "No autorizado" }, 401);
     }
 
-    const canReadEvents = await hasPermission(user.id, "read", "CalendarEvent");
+    const canReadEvents = await hasPermission(user, "read", "CalendarEvent");
     if (!canReadEvents) {
       return reply(c, { status: "error", message: "Forbidden" }, 403);
     }
@@ -793,9 +793,9 @@ calendarRoutes.get(
       return reply(c, { status: "error", message: "No autorizado" }, 401);
     }
 
-    const canReadDaily = await hasPermission(user.id, "read", "CalendarDaily");
+    const canReadDaily = await hasPermission(user, "read", "CalendarDaily");
     // Broad fallback: if daily permission not available, allow if user can read events
-    const canReadEvents = await hasPermission(user.id, "read", "CalendarEvent");
+    const canReadEvents = await hasPermission(user, "read", "CalendarEvent");
 
     if (!canReadDaily && !canReadEvents) {
       return reply(c, { status: "error", message: "Forbidden" }, 403);
@@ -824,9 +824,9 @@ calendarRoutes.post("/events/sync", requireAuth, async (c: Context) => {
     return reply(c, { status: "error", message: "No autorizado" }, 401);
   }
 
-  const canSync = await hasPermission(user.id, "update", "CalendarSetting");
+  const canSync = await hasPermission(user, "update", "CalendarSetting");
   // Also allow if they can manage events broadly, though strictly it's a setting op
-  const canManageEvents = await hasPermission(user.id, "update", "CalendarEvent");
+  const canManageEvents = await hasPermission(user, "update", "CalendarEvent");
 
   if (!canSync && !canManageEvents) {
     return reply(c, { status: "error", message: "Forbidden" }, 403);
@@ -900,8 +900,8 @@ calendarRoutes.get("/events/sync/logs", requireAuth, async (c: Context) => {
     return reply(c, { status: "error", message: "No autorizado" }, 401);
   }
 
-  const canReadLogs = await hasPermission(user.id, "read", "CalendarSyncLog");
-  const canReadSettings = await hasPermission(user.id, "update", "CalendarSetting"); // Settings page shows logs
+  const canReadLogs = await hasPermission(user, "read", "CalendarSyncLog");
+  const canReadSettings = await hasPermission(user, "update", "CalendarSetting"); // Settings page shows logs
 
   if (!canReadLogs && !canReadSettings) {
     return reply(c, { status: "error", message: "Forbidden" }, 403);
@@ -946,9 +946,9 @@ calendarRoutes.get("/classification-options", async (c: Context) => {
   }
 
   // Allow if user has ANY calendar read capability
-  const canReadSchedule = await hasPermission(user.id, "read", "CalendarSchedule");
-  const canReadDaily = await hasPermission(user.id, "read", "CalendarDaily");
-  const canReadEvents = await hasPermission(user.id, "read", "CalendarEvent");
+  const canReadSchedule = await hasPermission(user, "read", "CalendarSchedule");
+  const canReadDaily = await hasPermission(user, "read", "CalendarDaily");
+  const canReadEvents = await hasPermission(user, "read", "CalendarEvent");
 
   if (!canReadSchedule && !canReadDaily && !canReadEvents) {
     return reply(c, { status: "error", message: "Forbidden" }, 403);
@@ -1003,7 +1003,7 @@ calendarRoutes.get(
       return reply(c, { status: "error", message: "No autorizado" }, 401);
     }
 
-    const canUpdateEvents = await hasPermission(user.id, "update", "CalendarEvent");
+    const canUpdateEvents = await hasPermission(user, "update", "CalendarEvent");
     if (!canUpdateEvents) {
       return reply(c, { status: "error", message: "Forbidden" }, 403);
     }
@@ -1092,7 +1092,7 @@ calendarRoutes.post(
       return reply(c, { status: "error", message: "No autorizado" }, 401);
     }
 
-    const canClassify = await hasPermission(user.id, "update", "CalendarEvent");
+    const canClassify = await hasPermission(user, "update", "CalendarEvent");
 
     if (!canClassify) {
       return reply(c, { status: "error", message: "Forbidden" }, 403);
@@ -1132,9 +1132,9 @@ calendarRoutes.get("/calendars", async (c) => {
   }
 
   // Allow if they have any broad listing/settings access
-  const canReadSchedule = await hasPermission(user.id, "read", "CalendarSchedule");
-  const canReadSettings = await hasPermission(user.id, "update", "CalendarSetting");
-  const canReadEvents = await hasPermission(user.id, "read", "CalendarEvent");
+  const canReadSchedule = await hasPermission(user, "read", "CalendarSchedule");
+  const canReadSettings = await hasPermission(user, "update", "CalendarSetting");
+  const canReadEvents = await hasPermission(user, "read", "CalendarEvent");
 
   if (!canReadSchedule && !canReadSettings && !canReadEvents) {
     return reply(c, { status: "error", message: "Forbidden" }, 403);
@@ -1189,9 +1189,9 @@ calendarRoutes.get(
       return reply(c, { status: "error", message: "No autorizado" }, 401);
     }
 
-    const canReadSchedule = await hasPermission(user.id, "read", "CalendarSchedule");
-    const canReadDaily = await hasPermission(user.id, "read", "CalendarDaily");
-    const canReadEvents = await hasPermission(user.id, "read", "CalendarEvent");
+    const canReadSchedule = await hasPermission(user, "read", "CalendarSchedule");
+    const canReadDaily = await hasPermission(user, "read", "CalendarDaily");
+    const canReadEvents = await hasPermission(user, "read", "CalendarEvent");
 
     if (!canReadSchedule && !canReadDaily && !canReadEvents) {
       return reply(c, { status: "error", message: "Forbidden" }, 403);
@@ -1523,7 +1523,7 @@ calendarRoutes.post(
       return reply(c, { status: "error", message: "No autorizado" }, 401);
     }
 
-    const canReclassify = await hasPermission(user.id, "update", "CalendarEvent");
+    const canReclassify = await hasPermission(user, "update", "CalendarEvent");
     if (!canReclassify) {
       return reply(c, { status: "error", message: "Forbidden" }, 403);
     }
@@ -1624,7 +1624,7 @@ calendarRoutes.post("/events/reclassify-all", requireAuth, async (c) => {
     return reply(c, { status: "error", message: "No autorizado" }, 401);
   }
 
-  const canReclassify = await hasPermission(user.id, "update", "CalendarEvent");
+  const canReclassify = await hasPermission(user, "update", "CalendarEvent");
   if (!canReclassify) {
     return reply(c, { status: "error", message: "Forbidden" }, 403);
   }

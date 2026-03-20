@@ -68,7 +68,7 @@ const authed = base.use(async ({ context, next }) => {
 });
 
 const readCounterparts = authed.use(async ({ context, next }) => {
-  const canRead = await hasPermission(context.user.id, "read", "Counterpart");
+  const canRead = await hasPermission(context.user, "read", "Counterpart");
 
   if (!canRead) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
@@ -78,7 +78,7 @@ const readCounterparts = authed.use(async ({ context, next }) => {
 });
 
 const createCounterparts = authed.use(async ({ context, next }) => {
-  const canCreate = await hasPermission(context.user.id, "create", "Counterpart");
+  const canCreate = await hasPermission(context.user, "create", "Counterpart");
 
   if (!canCreate) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
@@ -88,7 +88,7 @@ const createCounterparts = authed.use(async ({ context, next }) => {
 });
 
 const updateCounterparts = authed.use(async ({ context, next }) => {
-  const canUpdate = await hasPermission(context.user.id, "update", "Counterpart");
+  const canUpdate = await hasPermission(context.user, "update", "Counterpart");
 
   if (!canUpdate) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });

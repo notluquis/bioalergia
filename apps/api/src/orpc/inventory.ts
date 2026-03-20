@@ -56,8 +56,8 @@ const authed = base.use(async ({ context, next }) => {
 });
 
 const requireReadInventory = authed.use(async ({ context, next }) => {
-  const canRead = await hasPermission(context.user.id, "read", "InventoryItem");
-  const canReadSettings = await hasPermission(context.user.id, "update", "InventorySetting");
+  const canRead = await hasPermission(context.user, "read", "InventoryItem");
+  const canReadSettings = await hasPermission(context.user, "update", "InventorySetting");
 
   if (!canRead && !canReadSettings) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
@@ -68,10 +68,10 @@ const requireReadInventory = authed.use(async ({ context, next }) => {
 
 const requireWriteInventory = authed.use(async ({ context, next }) => {
   const canModify =
-    (await hasPermission(context.user.id, "create", "InventoryItem")) ||
-    (await hasPermission(context.user.id, "update", "InventoryItem")) ||
-    (await hasPermission(context.user.id, "delete", "InventoryItem")) ||
-    (await hasPermission(context.user.id, "update", "InventorySetting"));
+    (await hasPermission(context.user, "create", "InventoryItem")) ||
+    (await hasPermission(context.user, "update", "InventoryItem")) ||
+    (await hasPermission(context.user, "delete", "InventoryItem")) ||
+    (await hasPermission(context.user, "update", "InventorySetting"));
 
   if (!canModify) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
@@ -81,7 +81,7 @@ const requireWriteInventory = authed.use(async ({ context, next }) => {
 });
 
 const requireManageInventorySettings = authed.use(async ({ context, next }) => {
-  const canManageSettings = await hasPermission(context.user.id, "update", "InventorySetting");
+  const canManageSettings = await hasPermission(context.user, "update", "InventorySetting");
 
   if (!canManageSettings) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });

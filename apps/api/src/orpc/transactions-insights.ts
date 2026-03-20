@@ -46,9 +46,9 @@ const authed = base.use(async ({ context, next }) => {
 });
 
 const readTransactionsInsights = authed.use(async ({ context, next }) => {
-  const canReadTransactions = await hasPermission(context.user.id, "read", "Transaction");
-  const canReadList = await hasPermission(context.user.id, "read", "TransactionList");
-  const canReadStats = await hasPermission(context.user.id, "read", "TransactionStats");
+  const canReadTransactions = await hasPermission(context.user, "read", "Transaction");
+  const canReadList = await hasPermission(context.user, "read", "TransactionList");
+  const canReadStats = await hasPermission(context.user, "read", "TransactionStats");
 
   if (!canReadTransactions && !canReadList && !canReadStats) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });

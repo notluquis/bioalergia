@@ -43,7 +43,7 @@ const authed = base.use(async ({ context, next }) => {
 });
 
 const readSettings = authed.use(async ({ context, next }) => {
-  const canRead = await hasPermission(context.user.id, "read", "Setting");
+  const canRead = await hasPermission(context.user, "read", "Setting");
 
   if (!canRead) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
@@ -53,7 +53,7 @@ const readSettings = authed.use(async ({ context, next }) => {
 });
 
 const updateSettings = authed.use(async ({ context, next }) => {
-  const canUpdate = await hasPermission(context.user.id, "update", "Setting");
+  const canUpdate = await hasPermission(context.user, "update", "Setting");
 
   if (!canUpdate) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });

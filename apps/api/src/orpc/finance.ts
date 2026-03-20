@@ -143,7 +143,7 @@ const authed = base.use(async ({ context, next }) => {
 });
 
 const readFinance = authed.use(async ({ context, next }) => {
-  const canRead = await hasPermission(context.user.id, "read", "Transaction");
+  const canRead = await hasPermission(context.user, "read", "Transaction");
   if (!canRead) {
     throw new ORPCError("FORBIDDEN", {
       message: "No tienes permisos para realizar esta acción.",
@@ -153,7 +153,7 @@ const readFinance = authed.use(async ({ context, next }) => {
 });
 
 const writeFinance = authed.use(async ({ context, next }) => {
-  const canWrite = await hasPermission(context.user.id, "update", "Transaction");
+  const canWrite = await hasPermission(context.user, "update", "Transaction");
   if (!canWrite) {
     throw new ORPCError("FORBIDDEN", {
       message: "No tienes permisos para realizar esta acción.",

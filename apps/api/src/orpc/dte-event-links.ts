@@ -67,8 +67,8 @@ const authed = base.use(async ({ context, next }) => {
 });
 
 const readEventLinks = authed.use(async ({ context, next }) => {
-  const canReadCalendar = await hasPermission(context.user.id, "read", "CalendarDaily");
-  const canReadDte = await hasPermission(context.user.id, "read", "DTEPurchaseDetail");
+  const canReadCalendar = await hasPermission(context.user, "read", "CalendarDaily");
+  const canReadDte = await hasPermission(context.user, "read", "DTEPurchaseDetail");
 
   if (!canReadCalendar || !canReadDte) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
@@ -78,7 +78,7 @@ const readEventLinks = authed.use(async ({ context, next }) => {
 });
 
 const readEventLinkJobs = authed.use(async ({ context, next }) => {
-  const canReadDte = await hasPermission(context.user.id, "read", "DTEPurchaseDetail");
+  const canReadDte = await hasPermission(context.user, "read", "DTEPurchaseDetail");
 
   if (!canReadDte) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
@@ -88,8 +88,8 @@ const readEventLinkJobs = authed.use(async ({ context, next }) => {
 });
 
 const writeEventLinks = authed.use(async ({ context, next }) => {
-  const canWriteCalendar = await hasPermission(context.user.id, "update", "CalendarEvent");
-  const canReadDte = await hasPermission(context.user.id, "read", "DTEPurchaseDetail");
+  const canWriteCalendar = await hasPermission(context.user, "update", "CalendarEvent");
+  const canReadDte = await hasPermission(context.user, "read", "DTEPurchaseDetail");
 
   if (!canWriteCalendar || !canReadDte) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
@@ -99,7 +99,7 @@ const writeEventLinks = authed.use(async ({ context, next }) => {
 });
 
 const writeEventLinksWithoutDteRead = authed.use(async ({ context, next }) => {
-  const canWriteCalendar = await hasPermission(context.user.id, "update", "CalendarEvent");
+  const canWriteCalendar = await hasPermission(context.user, "update", "CalendarEvent");
 
   if (!canWriteCalendar) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });

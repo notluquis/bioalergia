@@ -254,10 +254,10 @@ const authed = base.use(async ({ context, next }) => {
 
 const readTimesheets = authed.use(async ({ context, next }) => {
   const checks = await Promise.all([
-    hasPermission(context.user.id, "read", "Timesheet"),
-    hasPermission(context.user.id, "read", "TimesheetList"),
-    hasPermission(context.user.id, "read", "TimesheetAudit"),
-    hasPermission(context.user.id, "read", "Report"),
+    hasPermission(context.user, "read", "Timesheet"),
+    hasPermission(context.user, "read", "TimesheetList"),
+    hasPermission(context.user, "read", "TimesheetAudit"),
+    hasPermission(context.user, "read", "Report"),
   ]);
   if (!checks.some(Boolean)) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
@@ -266,7 +266,7 @@ const readTimesheets = authed.use(async ({ context, next }) => {
 });
 
 const createTimesheets = authed.use(async ({ context, next }) => {
-  const canCreate = await hasPermission(context.user.id, "create", "Timesheet");
+  const canCreate = await hasPermission(context.user, "create", "Timesheet");
   if (!canCreate) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
   }
@@ -274,7 +274,7 @@ const createTimesheets = authed.use(async ({ context, next }) => {
 });
 
 const updateTimesheets = authed.use(async ({ context, next }) => {
-  const canUpdate = await hasPermission(context.user.id, "update", "Timesheet");
+  const canUpdate = await hasPermission(context.user, "update", "Timesheet");
   if (!canUpdate) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
   }
@@ -282,7 +282,7 @@ const updateTimesheets = authed.use(async ({ context, next }) => {
 });
 
 const deleteTimesheets = authed.use(async ({ context, next }) => {
-  const canDelete = await hasPermission(context.user.id, "delete", "Timesheet");
+  const canDelete = await hasPermission(context.user, "delete", "Timesheet");
   if (!canDelete) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
   }

@@ -68,6 +68,41 @@ export const authStatusResponseSchema = z.object({
   status: z.literal("ok"),
 });
 
+export const authDebugAudienceSchema = z.enum(["debug-cli", "debug-playwright"]);
+
+export const authDebugScopeSchema = z.object({
+  action: z.string().min(1),
+  subject: z.string().min(1),
+});
+
+export const authIssueDebugTokenSchema = z.object({
+  audience: authDebugAudienceSchema,
+  expiresInMinutes: z.number().int().min(1).max(15).optional(),
+  reason: z.string().min(3).max(200),
+  scopes: z.array(authDebugScopeSchema).min(1).max(20),
+  targetUserId: z.number().int(),
+});
+
+export const authIssueDebugTokenResponseSchema = z.object({
+  expiresAt: z.string(),
+  jti: z.string(),
+  status: z.literal("ok"),
+  token: z.string(),
+});
+
+export const authExchangeDebugTokenSchema = z.object({
+  delivery: z.enum(["bearer", "cookie"]).optional(),
+  token: z.string().min(1),
+});
+
+export const authExchangeDebugTokenResponseSchema = z.object({
+  accessToken: z.string().optional(),
+  delivery: z.enum(["bearer", "cookie"]),
+  expiresAt: z.string(),
+  status: z.literal("ok"),
+  user: authUserSchema,
+});
+
 export const authMfaSetupResponseSchema = z.object({
   qrCodeUrl: z.string(),
   secret: z.string(),
@@ -128,6 +163,14 @@ export const authContract = {
     .output(authLoginOkResponseSchema),
   logout: oc.route({ method: "POST", path: "/logout" }).input(authEmptySchema).output(authStatusResponseSchema),
   session: oc.route({ method: "GET", path: "/me/session" }).output(authSessionResponseSchema),
+  issueDebugToken: oc
+    .route({ method: "POST", path: "/debug/token" })
+    .input(authIssueDebugTokenSchema)
+    .output(authIssueDebugTokenResponseSchema),
+  exchangeDebugToken: oc
+    .route({ method: "POST", path: "/debug/exchange" })
+    .input(authExchangeDebugTokenSchema)
+    .output(authExchangeDebugTokenResponseSchema),
   mfaDisable: oc
     .route({ method: "POST", path: "/mfa/disable" })
     .input(authEmptySchema)

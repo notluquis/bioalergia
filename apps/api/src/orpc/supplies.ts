@@ -93,7 +93,7 @@ const authed = base.use(async ({ context, next }) => {
 });
 
 const readSupplyRequests = authed.use(async ({ context, next }) => {
-  const canRead = await hasPermission(context.user.id, "read", "SupplyRequest");
+  const canRead = await hasPermission(context.user, "read", "SupplyRequest");
 
   if (!canRead) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
@@ -103,7 +103,7 @@ const readSupplyRequests = authed.use(async ({ context, next }) => {
 });
 
 const createSupplyRequests = authed.use(async ({ context, next }) => {
-  const canCreate = await hasPermission(context.user.id, "create", "SupplyRequest");
+  const canCreate = await hasPermission(context.user, "create", "SupplyRequest");
 
   if (!canCreate) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
@@ -113,7 +113,7 @@ const createSupplyRequests = authed.use(async ({ context, next }) => {
 });
 
 const updateSupplyRequests = authed.use(async ({ context, next }) => {
-  const canUpdate = await hasPermission(context.user.id, "update", "SupplyRequest");
+  const canUpdate = await hasPermission(context.user, "update", "SupplyRequest");
 
   if (!canUpdate) {
     throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
