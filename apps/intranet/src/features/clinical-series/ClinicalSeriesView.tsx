@@ -23,9 +23,13 @@ import {
   Table,
   TextField,
 } from "@heroui/react";
+import { useQueryClient } from "@tanstack/react-query";
 import type { Key, Selection } from "@heroui/react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { EventDteLinkModal } from "@/features/calendar/components/EventDteLinkModal";
+import type { CalendarEventDetail } from "@/features/calendar/types";
 import {
+  clinicalSeriesKeys,
   useClinicalSeries,
   useClinicalSeriesDetail,
   useClinicalSeriesRebuildProgress,
@@ -139,6 +143,51 @@ function eventFinancialStatus(event: ClinicalSeriesEvent): FinancialStatus {
   return "paid";
 }
 
+function toCalendarEventDetail(event: ClinicalSeriesEvent): CalendarEventDetail {
+  return {
+    amountExpected: event.amountExpected ?? null,
+    amountPaid: event.amountPaid ?? null,
+    attended: null,
+    beneficiaryName: null,
+    beneficiaryRut: null,
+    calendarId: event.calendarGoogleId,
+    category: null,
+    clinicalSeriesId: null,
+    colorId: null,
+    controlIncluded: null,
+    description: event.summary ?? null,
+    dosageUnit: event.dosageUnit ?? null,
+    dosageValue: event.dosageValue ?? null,
+    seriesStageKind: event.seriesStageKind ?? null,
+    seriesStageLabel: event.seriesStageLabel ?? null,
+    seriesStageNumber: event.seriesStageNumber ?? null,
+    endDate: event.eventDate,
+    endDateTime: null,
+    endTimeZone: null,
+    eventCreatedAt: null,
+    eventDate: event.eventDate,
+    eventDateTime: null,
+    eventId: event.externalEventId,
+    eventType: null,
+    eventUpdatedAt: null,
+    hangoutLink: null,
+    isDomicilio: null,
+    location: null,
+    patientName: event.patientName ?? null,
+    patientRut: event.patientRut ?? null,
+    rawEvent: null,
+    startDate: event.eventDate,
+    startDateTime: null,
+    startTimeZone: null,
+    status: null,
+    summary: event.summary ?? event.seriesStageLabel ?? null,
+    testMetadata: null,
+    transparency: null,
+    treatmentStage: null,
+    visibility: null,
+  };
+}
+
 // ─── Derived snapshot ─────────────────────────────────────────────────────────
 // Pre-compute per-row event stats once so sort comparisons are O(1).
 
@@ -166,6 +215,7 @@ function deriveSnapshot(s: ClinicalSeriesSnapshot, today: string): DerivedSnapsh
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function ClinicalSeriesView() {
+  const queryClient = useQueryClient();
   // Pagination state
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<(typeof PAGE_SIZE_OPTIONS)[number]>(20);
@@ -195,6 +245,7 @@ export function ClinicalSeriesView() {
   // Detail drawer
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedSeriesEvent, setSelectedSeriesEvent] = useState<CalendarEventDetail | null>(null);
 
   const filters: ClinicalSeriesFilters = {
     page,
@@ -787,61 +838,74 @@ export function ClinicalSeriesView() {
                                   {byYear[year]!.map((event) => {
                                     const isFuture = event.eventDate > today;
                                     return (
-                                      <Surface
+                                      <Button
+                                        className="h-auto min-h-0 w-full justify-start p-0 text-left"
                                         key={event.eventId}
-                                        className={`p-2.5 rounded-lg text-xs${isFuture ? " ring-1 ring-accent/30" : ""}`}
+                                        onPress={() =>
+                                          setSelectedSeriesEvent(toCalendarEventDetail(event))
+                                        }
+                                        variant="ghost"
                                       >
-                                        <div className="flex items-center justify-between gap-2">
-                                          <span
-                                            className={`font-medium${isFuture ? " text-accent" : ""}`}
-                                          >
-                                            {formatEventDate(event.eventDate)}
-                                          </span>
-                                          <div className="flex items-center gap-1.5">
-                                            {isFuture && (
-                                              <span className="text-[10px] text-accent font-medium uppercase tracking-wide">
-                                                próximo
-                                              </span>
-                                            )}
-                                            {event.seriesStageLabel && (
-                                              <span className="text-foreground-400">
-                                                {event.seriesStageLabel}
-                                              </span>
-                                            )}
+                                        <Surface
+                                          className={`w-full rounded-lg p-2.5 text-xs${isFuture ? " ring-1 ring-accent/30" : ""}`}
+                                        >
+                                          <div className="flex items-center justify-between gap-2">
+                                            <span
+                                              className={`font-medium${isFuture ? " text-accent" : ""}`}
+                                            >
+                                              {formatEventDate(event.eventDate)}
+                                            </span>
+                                            <div className="flex items-center gap-1.5">
+                                              {isFuture && (
+                                                <span className="text-[10px] text-accent font-medium uppercase tracking-wide">
+                                                  próximo
+                                                </span>
+                                              )}
+                                              {event.seriesStageLabel && (
+                                                <span className="text-foreground-400">
+                                                  {event.seriesStageLabel}
+                                                </span>
+                                              )}
+                                            </div>
                                           </div>
-                                        </div>
-                                        {event.summary && (
-                                          <p className="text-foreground-400 truncate mt-0.5">
-                                            {event.summary}
-                                          </p>
-                                        )}
-                                        {event.dosageValue != null && (
-                                          <p className="text-accent mt-0.5 font-medium">
-                                            {event.dosageValue} {event.dosageUnit}
-                                          </p>
-                                        )}
-                                        {(() => {
-                                          const efs = eventFinancialStatus(event);
-                                          if (efs === "unknown")
-                                            return (
-                                              <p className="text-foreground-300 italic mt-0.5">
-                                                Por definir
-                                              </p>
-                                            );
-                                          if (efs === "free")
-                                            return (
-                                              <p className="text-success italic mt-0.5 font-medium">
-                                                Sin costo
-                                              </p>
-                                            );
-                                          return (
-                                            <p className="text-foreground-400 mt-0.5">
-                                              ${(event.amountPaid ?? 0).toLocaleString("es-CL")} / $
-                                              {event.amountExpected!.toLocaleString("es-CL")}
+                                          {event.summary && (
+                                            <p className="text-foreground-400 truncate mt-0.5">
+                                              {event.summary}
                                             </p>
-                                          );
-                                        })()}
-                                      </Surface>
+                                          )}
+                                          {event.dosageValue != null && (
+                                            <p className="text-accent mt-0.5 font-medium">
+                                              {event.dosageValue} {event.dosageUnit}
+                                            </p>
+                                          )}
+                                          {(() => {
+                                            const efs = eventFinancialStatus(event);
+                                            if (efs === "unknown")
+                                              return (
+                                                <p className="mt-0.5 italic text-foreground-300">
+                                                  Ver boletas y sugerencias
+                                                </p>
+                                              );
+                                            if (efs === "free")
+                                              return (
+                                                <p className="mt-0.5 font-medium italic text-success">
+                                                  Sin costo · Ver boletas
+                                                </p>
+                                              );
+                                            return (
+                                              <>
+                                                <p className="mt-0.5 text-foreground-400">
+                                                  ${(event.amountPaid ?? 0).toLocaleString("es-CL")}{" "}
+                                                  / ${event.amountExpected!.toLocaleString("es-CL")}
+                                                </p>
+                                                <p className="text-[11px] font-medium text-accent">
+                                                  Abrir boletas y sugerencias
+                                                </p>
+                                              </>
+                                            );
+                                          })()}
+                                        </Surface>
+                                      </Button>
                                     );
                                   })}
                                 </div>
@@ -857,6 +921,18 @@ export function ClinicalSeriesView() {
           </Drawer.Content>
         </Drawer.Backdrop>
       </Drawer>
+
+      <EventDteLinkModal
+        event={selectedSeriesEvent}
+        isOpen={selectedSeriesEvent != null}
+        onClose={() => setSelectedSeriesEvent(null)}
+        onLinked={() => {
+          void queryClient.invalidateQueries({ queryKey: clinicalSeriesKeys.all });
+          if (selectedId != null) {
+            void queryClient.invalidateQueries({ queryKey: clinicalSeriesKeys.detail(selectedId) });
+          }
+        }}
+      />
     </div>
   );
 }
