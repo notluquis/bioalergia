@@ -215,9 +215,11 @@ const autoLinkDay = writeEventLinks
   .input(dteEventLinksAutoLinkDayInputSchema)
   .output(dteEventLinksAutoLinkDayResponseSchema)
   .handler(async ({ context, input }) => {
+    const parsedInput = dteEventLinksAutoLinkDayInputSchema.parse(input);
     return autoLinkEventDate({
-      date: normalizeLinkDate(input.date),
-      minScore: input.minScore,
+      date: normalizeLinkDate(parsedInput.date),
+      minScore: parsedInput.minScore,
+      strategy: parsedInput.strategy,
       userId: context.user.id,
     });
   });
@@ -231,9 +233,11 @@ const autoLinkPeriod = writeEventLinks
   .input(dteEventLinksAutoLinkPeriodInputSchema)
   .output(dteEventLinksAutoLinkPeriodResponseSchema)
   .handler(async ({ context, input }) => {
+    const parsedInput = dteEventLinksAutoLinkPeriodInputSchema.parse(input);
     return autoLinkEventPeriod({
-      minScore: input.minScore,
-      period: input.period,
+      minScore: parsedInput.minScore,
+      period: parsedInput.period,
+      strategy: parsedInput.strategy,
       userId: context.user.id,
     });
   });
@@ -247,8 +251,10 @@ const autoLinkAllPeriods = writeEventLinks
   .input(dteEventLinksAutoLinkAllPeriodsInputSchema)
   .output(dteEventLinksAutoLinkAllPeriodsResponseSchema)
   .handler(async ({ context, input }) => {
+    const parsedInput = dteEventLinksAutoLinkAllPeriodsInputSchema.parse(input);
     return autoLinkAllEventPeriods({
-      minScore: input.minScore,
+      minScore: parsedInput.minScore,
+      strategy: parsedInput.strategy,
       userId: context.user.id,
     });
   });
@@ -263,6 +269,7 @@ const startAutoLinkAllPeriods = writeEventLinks
   .input(dteEventLinksAutoLinkAllPeriodsInputSchema)
   .output(dteEventLinksAutoLinkAllPeriodsStartResponseSchema)
   .handler(async ({ context, input }) => {
+    const parsedInput = dteEventLinksAutoLinkAllPeriodsInputSchema.parse(input);
     const { completeJob, failJob, startJob, updateJobProgress } = await import("../lib/jobQueue");
     const periods = await listAutoLinkEligiblePeriods();
     const jobId = startJob("dte-auto-link-all-periods", Math.max(periods.length, 1));
@@ -283,7 +290,7 @@ const startAutoLinkAllPeriods = writeEventLinks
         }
 
         const result = await autoLinkAllEventPeriodsWithProgress({
-          minScore: input.minScore,
+          minScore: parsedInput.minScore,
           onProgress: (snapshot) => {
             const boundedProgress = Math.max(
               0,
@@ -295,8 +302,9 @@ const startAutoLinkAllPeriods = writeEventLinks
               `Período ${snapshot.currentPeriod} listo (${snapshot.completedPeriods}/${snapshot.totalPeriods}) · Vinculados ${snapshot.linked} · Omitidos ${snapshot.skipped}`,
             );
           },
-          periodConcurrency: input.periodConcurrency,
+          periodConcurrency: parsedInput.periodConcurrency,
           periods,
+          strategy: parsedInput.strategy,
           userId: context.user.id,
         });
 
@@ -308,7 +316,7 @@ const startAutoLinkAllPeriods = writeEventLinks
 
     return {
       jobId,
-      periodConcurrency: Math.max(1, Math.min(input.periodConcurrency ?? 3, 6)),
+      periodConcurrency: Math.max(1, Math.min(parsedInput.periodConcurrency ?? 3, 6)),
       totalPeriods: periods.length,
     };
   });

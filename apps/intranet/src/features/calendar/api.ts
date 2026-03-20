@@ -364,7 +364,11 @@ export async function unlinkEventDteLink(payload: {
   }
 }
 
-export async function autoLinkEventDteByDay(payload: { date: string; minScore?: number }): Promise<{
+export async function autoLinkEventDteByDay(payload: {
+  date: string;
+  minScore?: number;
+  strategy?: "missing_only" | "relink_all";
+}): Promise<{
   date: string;
   details: Array<{ eventId: string; reason: string }>;
   linked: number;
@@ -383,6 +387,7 @@ export async function autoLinkEventDteByDay(payload: { date: string; minScore?: 
 export async function autoLinkEventDteByPeriod(payload: {
   minScore?: number;
   period: string;
+  strategy?: "missing_only" | "relink_all";
 }): Promise<{
   daysProcessed: number;
   details: Array<{ date: string; linked: number; skipped: number; totalEvents: number }>;
@@ -425,6 +430,7 @@ export async function autoLinkEventDteByAllPeriods(payload?: { minScore?: number
 export async function startAutoLinkEventDteAllPeriodsJob(payload?: {
   minScore?: number;
   periodConcurrency?: number;
+  strategy?: "missing_only" | "relink_all";
 }): Promise<{ jobId: string; periodConcurrency: number; totalPeriods: number }> {
   try {
     const data = await dteEventLinksORPCClient.startAutoLinkAllPeriods(payload ?? {});

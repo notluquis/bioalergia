@@ -60,7 +60,13 @@ interface CalendarDteLinksOverviewProps {
   search: CalendarDteLinksSearchState;
 }
 
-type AutoLinkMode = "all_periods" | "selected_period";
+type AutoLinkScope = "all_periods" | "selected_period";
+type AutoLinkStrategy = "missing_only" | "relink_all";
+type AutoLinkMode =
+  | "selected_period_missing_only"
+  | "selected_period_relink_all"
+  | "all_periods_missing_only"
+  | "all_periods_relink_all";
 interface AutoLinkRunSummary {
   linked: number;
   modeLabel: string;
@@ -73,6 +79,51 @@ interface KpiTileProps {
   description?: string;
   title: string;
   value: number | string;
+}
+
+function getAutoLinkModeConfig(mode: AutoLinkMode): {
+  description: string;
+  label: string;
+  scope: AutoLinkScope;
+  strategy: AutoLinkStrategy;
+} {
+  switch (mode) {
+    case "selected_period_missing_only":
+      return {
+        description: "Sólo procesa eventos sin vínculo dentro del período seleccionado.",
+        label: "Solo este período · sólo faltantes",
+        scope: "selected_period",
+        strategy: "missing_only",
+      };
+    case "selected_period_relink_all":
+      return {
+        description:
+          "Re-evalúa todos los eventos del período y puede reemplazar vínculos existentes.",
+        label: "Solo este período · re-vincular todo",
+        scope: "selected_period",
+        strategy: "relink_all",
+      };
+    case "all_periods_missing_only":
+      return {
+        description:
+          "Procesa todos los períodos hasta hoy, pero sólo eventos todavía no vinculados.",
+        label: "Todos los períodos hasta hoy · sólo faltantes",
+        scope: "all_periods",
+        strategy: "missing_only",
+      };
+    case "all_periods_relink_all":
+      return {
+        description:
+          "Re-evalúa todos los períodos hasta hoy y puede sobrescribir vínculos existentes.",
+        label: "Todos los períodos hasta hoy · re-vincular todo",
+        scope: "all_periods",
+        strategy: "relink_all",
+      };
+  }
+}
+
+function autoLinkStrategyLabel(strategy: AutoLinkStrategy): string {
+  return strategy === "missing_only" ? "Sólo faltantes" : "Re-vincular todo";
 }
 
 function buildPeriodOptions(count = 24): Array<{ label: string; value: string }> {
@@ -453,34 +504,36 @@ export function CalendarDteLinksOverview({
   });
 
   const autoLinkPeriodMutation = useMutation({
-    mutationFn: async () => autoLinkEventDteByPeriod({ period: search.period }),
+    mutationFn: async (strategy: AutoLinkStrategy) =>
+      autoLinkEventDteByPeriod({ period: search.period, strategy }),
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "No se pudo auto-vincular");
     },
-    onSuccess: async (result) => {
+    onSuccess: async (result, strategy) => {
       setAutoLinkSummary({
         linked: result.linked,
-        modeLabel: `Período ${result.period}`,
+        modeLabel: `Período ${result.period} · ${autoLinkStrategyLabel(strategy)}`,
         processedLabel: `${result.daysProcessed} días`,
         skipped: result.skipped,
         skippedByReason: result.skippedByReason,
       });
       toast.success(
-        `Auto-vinculación ${result.period}: ${result.linked} vinculados, ${result.skipped} omitidos (${result.daysProcessed} días)`
+        `Auto-vinculación ${result.period} · ${autoLinkStrategyLabel(strategy)}: ${result.linked} vinculados, ${result.skipped} omitidos (${result.daysProcessed} días)`
       );
       await refetchOverview();
     },
   });
 
   const startAutoLinkAllPeriodsMutation = useMutation({
-    mutationFn: () => startAutoLinkEventDteAllPeriodsJob({ periodConcurrency: 3 }),
+    mutationFn: (strategy: AutoLinkStrategy) =>
+      startAutoLinkEventDteAllPeriodsJob({ periodConcurrency: 3, strategy }),
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "No se pudo iniciar auto-vinculación");
     },
-    onSuccess: (result) => {
+    onSuccess: (result, strategy) => {
       setActiveAutoLinkJobId(result.jobId);
       toast.info(
-        `Auto-vinculación iniciada: ${result.totalPeriods} períodos en lotes (concurrencia ${result.periodConcurrency}).`
+        `Auto-vinculación iniciada · ${autoLinkStrategyLabel(strategy)}: ${result.totalPeriods} períodos en lotes (concurrencia ${result.periodConcurrency}).`
       );
     },
   });
@@ -496,16 +549,18 @@ export function CalendarDteLinksOverview({
         periodsProcessed: number;
         skipped: number;
         skippedByReason: Array<{ count: number; reason: string }>;
+        strategy?: AutoLinkStrategy;
       };
+      const strategy = result.strategy ?? "missing_only";
       setAutoLinkSummary({
         linked: result.linked,
-        modeLabel: "Todos los períodos",
+        modeLabel: `Todos los períodos hasta hoy · ${autoLinkStrategyLabel(strategy)}`,
         processedLabel: `${result.periodsProcessed} períodos`,
         skipped: result.skipped,
         skippedByReason: result.skippedByReason ?? [],
       });
       toast.success(
-        `Auto-vinculación completa: ${result.linked} vinculados, ${result.skipped} omitidos (${result.periodsProcessed} períodos)`
+        `Auto-vinculación completa · ${autoLinkStrategyLabel(strategy)}: ${result.linked} vinculados, ${result.skipped} omitidos (${result.periodsProcessed} períodos)`
       );
       setActiveAutoLinkJobId(null);
       void refetchOverview();
@@ -608,27 +663,57 @@ export function CalendarDteLinksOverview({
               <Dropdown.Menu
                 aria-label="Opciones de auto-vinculación"
                 onAction={(key) => {
-                  const mode = String(key) as AutoLinkMode;
-                  if (mode === "all_periods") {
-                    startAutoLinkAllPeriodsMutation.mutate();
+                  const modeConfig = getAutoLinkModeConfig(String(key) as AutoLinkMode);
+                  if (modeConfig.scope === "all_periods") {
+                    startAutoLinkAllPeriodsMutation.mutate(modeConfig.strategy);
                     return;
                   }
-                  autoLinkPeriodMutation.mutate();
+                  autoLinkPeriodMutation.mutate(modeConfig.strategy);
                 }}
               >
                 <Dropdown.Item
-                  id="selected_period"
+                  id="selected_period_missing_only"
                   isDisabled={autoLinkActionPending || isAutoLinkRunning}
-                  textValue={`Solo período seleccionado (${search.period})`}
+                  textValue={`Solo este período ${search.period} sólo faltantes`}
                 >
-                  <Label>Solo período seleccionado ({search.period})</Label>
+                  <div className="space-y-0.5">
+                    <Label>Solo este período · sólo faltantes</Label>
+                    <Description>{search.period} · Sólo eventos sin vínculo actual.</Description>
+                  </div>
                 </Dropdown.Item>
                 <Dropdown.Item
-                  id="all_periods"
+                  id="selected_period_relink_all"
                   isDisabled={autoLinkActionPending || isAutoLinkRunning}
-                  textValue="Todos los períodos disponibles (hasta hoy)"
+                  textValue={`Solo este período ${search.period} re-vincular todo`}
                 >
-                  <Label>Todos los períodos disponibles (hasta hoy)</Label>
+                  <div className="space-y-0.5">
+                    <Label>Solo este período · re-vincular todo</Label>
+                    <Description>
+                      {search.period} · Recalcula y puede reemplazar vínculos.
+                    </Description>
+                  </div>
+                </Dropdown.Item>
+                <Dropdown.Item
+                  id="all_periods_missing_only"
+                  isDisabled={autoLinkActionPending || isAutoLinkRunning}
+                  textValue="Todos los períodos hasta hoy sólo faltantes"
+                >
+                  <div className="space-y-0.5">
+                    <Label>Todos los períodos hasta hoy · sólo faltantes</Label>
+                    <Description>Procesa backlog sin tocar vínculos ya confirmados.</Description>
+                  </div>
+                </Dropdown.Item>
+                <Dropdown.Item
+                  id="all_periods_relink_all"
+                  isDisabled={autoLinkActionPending || isAutoLinkRunning}
+                  textValue="Todos los períodos hasta hoy re-vincular todo"
+                >
+                  <div className="space-y-0.5">
+                    <Label>Todos los períodos hasta hoy · re-vincular todo</Label>
+                    <Description>
+                      Re-evalúa todo el histórico exigible y puede sobrescribir.
+                    </Description>
+                  </div>
                 </Dropdown.Item>
               </Dropdown.Menu>
             </Dropdown.Popover>
@@ -787,6 +872,7 @@ export function CalendarDteLinksOverview({
                           </Card.Title>
                           <Card.Description>
                             {dayjs(item.eventDate).format("DD-MM-YYYY")}
+                            {item.eventTime ? ` · ${item.eventTime}` : ""}
                           </Card.Description>
                         </div>
                         <div className="flex flex-wrap items-center gap-2 lg:max-w-[45%] lg:justify-end">

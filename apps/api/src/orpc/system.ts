@@ -1,11 +1,16 @@
-import { systemHealthResponseSchema } from "@finanzas/orpc-contracts/system";
+import {
+  systemHealthResponseSchema,
+  systemRailwayDeploymentsResponseSchema,
+} from "@finanzas/orpc-contracts/system";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
-import { onError, os } from "@orpc/server";
+import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
+import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
+import { getRailwayDeploymentsSnapshot } from "../services/system-railway";
 import { SuperJSONRPCHandler } from "./superjson";
 
 configureSuperjson();
@@ -16,7 +21,38 @@ type SystemORPCContext = {
 
 const base = os.$context<SystemORPCContext>();
 
+const authed = base.use(async ({ context, next }) => {
+  const user = await getSessionUser(context.hono);
+
+  if (!user) {
+    throw new ORPCError("UNAUTHORIZED", { message: "No autorizado" });
+  }
+
+  return next({
+    context: {
+      ...context,
+      user,
+    },
+  });
+});
+
+const readDeployments = authed.use(async ({ context, next }) => {
+  const canRead = await hasPermission(context.user.id, "read", "Integration");
+
+  if (!canRead) {
+    throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
+  }
+
+  return next();
+});
+
 const systemORPCRouterBase = {
+  deployments: readDeployments
+    .route({ method: "GET", path: "/deployments" })
+    .output(systemRailwayDeploymentsResponseSchema)
+    .handler(async () => {
+      return getRailwayDeploymentsSnapshot();
+    }),
   health: base
     .route({ method: "GET", path: "/health" })
     .output(systemHealthResponseSchema)

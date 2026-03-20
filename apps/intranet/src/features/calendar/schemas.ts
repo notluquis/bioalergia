@@ -571,6 +571,7 @@ export const EventDteOverviewResponseSchema = z.strictObject({
         confidenceScore: z.number().nullable(),
         displayName: z.string().nullable(),
         eventDate: z.string(),
+        eventTime: z.string().nullable(),
         eventId: z.string(),
         lastAutoLinkSkip: z
           .strictObject({

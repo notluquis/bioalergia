@@ -511,6 +511,7 @@ export interface EventDteOverviewItem {
   confidenceScore: null | number;
   displayName: null | string;
   eventDate: string;
+  eventTime: null | string;
   eventId: string;
   lastAutoLinkSkip: EventDteOverviewAutoLinkSkip | null;
   linkStatus: "linked" | "pending_issuance" | "unlinked";

@@ -5,6 +5,7 @@ import React from "react";
 import { UpdateNotification } from "@/components/features/UpdateNotification";
 import { Header } from "@/components/layouts/Header";
 import { BottomNav } from "@/components/layouts/MobileNav";
+import { DeploymentStatusChip } from "@/components/layouts/DeploymentStatusChip";
 import { Sidebar } from "@/components/layouts/Sidebar";
 import { useAuth } from "@/context/AuthContext";
 import { useSettings } from "@/context/SettingsContext";
@@ -55,7 +56,7 @@ export const Route = createFileRoute("/_authed")({
 });
 
 function AuthedLayout() {
-  const { impersonatedRole, stopImpersonating, user } = useAuth();
+  const { impersonatedRole, stopImpersonating } = useAuth();
   const { settings } = useSettings();
   const sidebarId = "app-sidebar";
   const menuToggleButtonId = "mobile-menu-toggle";
@@ -275,31 +276,14 @@ function AuthedLayout() {
                 </Tooltip>
               </div>
               <div className="flex justify-end">
-                <span
-                  className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 font-medium ${
-                    user
-                      ? "border-success/40 bg-success/10 text-success"
-                      : "border-danger/40 bg-danger/10 text-danger"
-                  }`}
-                >
-                  <span
-                    className={`inline-flex h-2 w-2 rounded-full ${
-                      user ? "bg-success" : "bg-danger"
-                    }`}
-                  />
-                  {user ? "Sesión activa" : "Sin sesión"}
-                </span>
+                <DeploymentStatusChip />
               </div>
             </div>
           </footer>
         </div>
 
         {/* Mobile bottom navigation */}
-        <BottomNav
-          buildLabel={buildLabel}
-          isHidden={isMobile && sidebarOpen}
-          isSessionActive={Boolean(user)}
-        />
+        <BottomNav buildLabel={buildLabel} isHidden={isMobile && sidebarOpen} />
 
         {/* Update notification popup */}
         <UpdateNotification />

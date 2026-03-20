@@ -3,18 +3,14 @@ import { useLocation, useNavigate, useRouter } from "@tanstack/react-router";
 import React from "react";
 import { useCan } from "@/hooks/use-can";
 import { getNavSections, type NavItem } from "@/lib/nav-generator";
+import { DeploymentStatusChip } from "./DeploymentStatusChip";
 
 interface BottomNavProps {
   buildLabel?: string;
   isHidden?: boolean;
-  isSessionActive?: boolean;
 }
 
-export function BottomNav({
-  buildLabel,
-  isHidden = false,
-  isSessionActive = false,
-}: Readonly<BottomNavProps>) {
+export function BottomNav({ buildLabel, isHidden = false }: Readonly<BottomNavProps>) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const router = useRouter();
@@ -54,20 +50,7 @@ export function BottomNav({
     <nav className="fixed bottom-[calc(env(safe-area-inset-bottom)+1.5rem)] left-1/2 z-50 w-[min(100%-2rem,400px)] -translate-x-1/2 md:hidden">
       <div className="mb-2 flex items-center justify-between rounded-2xl border border-default-100 bg-background/80 px-3 py-1.5 text-[10px] shadow-lg backdrop-blur-xl">
         <span className="truncate text-default-500">Build: {buildLabel ?? "Desconocido"}</span>
-        <span
-          className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 font-medium ${
-            isSessionActive
-              ? "border-success/40 bg-success/10 text-success"
-              : "border-danger/40 bg-danger/10 text-danger"
-          }`}
-        >
-          <span
-            className={`inline-flex h-1.5 w-1.5 rounded-full ${
-              isSessionActive ? "bg-success" : "bg-danger"
-            }`}
-          />
-          {isSessionActive ? "Sesión activa" : "Sin sesión"}
-        </span>
+        <DeploymentStatusChip compact />
       </div>
       <div className="flex items-center justify-between gap-1 rounded-4xl border border-default-100 bg-background/80 p-2 shadow-2xl backdrop-blur-xl">
         {navItems.map((item: NavItem) => {

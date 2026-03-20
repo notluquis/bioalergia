@@ -13,7 +13,39 @@ export const systemHealthResponseSchema = z.object({
   timestamp: z.coerce.date(),
 });
 
+export const systemRailwayDeploymentStatusSchema = z.enum([
+  "BUILDING",
+  "CRASHED",
+  "DEPLOYING",
+  "FAILED",
+  "QUEUED",
+  "REMOVED",
+  "SKIPPED",
+  "SLEEPING",
+  "SUCCESS",
+  "WAITING",
+  "UNKNOWN",
+]);
+
+export const systemRailwayDeploymentTargetSchema = z.object({
+  createdAt: z.coerce.date().nullable(),
+  deploymentId: z.string().nullable(),
+  environmentId: z.string(),
+  label: z.string(),
+  serviceId: z.string(),
+  status: systemRailwayDeploymentStatusSchema,
+});
+
+export const systemRailwayDeploymentsResponseSchema = z.object({
+  checkedAt: z.coerce.date(),
+  configured: z.boolean(),
+  targets: z.array(systemRailwayDeploymentTargetSchema),
+});
+
 export const systemContract = {
+  deployments: oc
+    .route({ method: "GET", path: "/deployments" })
+    .output(systemRailwayDeploymentsResponseSchema),
   health: oc.route({ method: "GET", path: "/health" }).output(systemHealthResponseSchema),
 };
 

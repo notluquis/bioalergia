@@ -62,6 +62,8 @@ interface AutoLinkProgressSnapshot {
   totalPeriods: number;
 }
 
+type AutoLinkStrategy = "missing_only" | "relink_all";
+
 function incrementReason(counter: Map<string, number>, reason: string, increment = 1) {
   counter.set(reason, (counter.get(reason) ?? 0) + increment);
 }
@@ -120,6 +122,7 @@ interface EventRow {
   eventId: number;
   externalEventId: string;
   googleCalendarId: string;
+  linkedDteSaleDetailId: null | string;
   seriesStageKind: null | "DOSE" | "INSTALLATION" | "MAINTENANCE" | "READING";
   seriesStageLabel: null | string;
   seriesStageNumber: null | number;
@@ -147,6 +150,7 @@ interface EventDteOverviewRow {
   confidenceScore: null | number;
   displayName: null | string;
   eventDate: string;
+  eventTime: null | string;
   eventId: string;
   lastAutoLinkSkipAt: Date | null;
   lastAutoLinkSkipReason: null | string;
@@ -442,6 +446,7 @@ async function getEventByExternalIds(
       e.summary AS "summary",
       e.description AS "description",
       e.clinical_series_id AS "clinicalSeriesId",
+      l.dte_sale_detail_id AS "linkedDteSaleDetailId",
       e.series_stage_kind AS "seriesStageKind",
       e.series_stage_label AS "seriesStageLabel",
       e.series_stage_number AS "seriesStageNumber",
@@ -449,6 +454,7 @@ async function getEventByExternalIds(
       e.amount_paid AS "amountPaid"
     FROM events e
     JOIN calendars c ON c.id = e.calendar_id
+    LEFT JOIN event_dte_sale_links l ON l.event_id = e.id
     WHERE c.google_id = ${calendarGoogleId}
       AND e.external_event_id = ${externalEventId}
     LIMIT 1
@@ -467,6 +473,7 @@ async function getEventsByDate(date: string): Promise<EventRow[]> {
       e.summary AS "summary",
       e.description AS "description",
       e.clinical_series_id AS "clinicalSeriesId",
+      l.dte_sale_detail_id AS "linkedDteSaleDetailId",
       e.series_stage_kind AS "seriesStageKind",
       e.series_stage_label AS "seriesStageLabel",
       e.series_stage_number AS "seriesStageNumber",
@@ -474,6 +481,7 @@ async function getEventsByDate(date: string): Promise<EventRow[]> {
       e.amount_paid AS "amountPaid"
     FROM events e
     JOIN calendars c ON c.id = e.calendar_id
+    LEFT JOIN event_dte_sale_links l ON l.event_id = e.id
     WHERE COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) = ${date}::date
     ORDER BY e.start_date_time ASC NULLS LAST, e.id ASC
   `;
@@ -595,12 +603,14 @@ export async function getEventDteSuggestions(params: {
     ...new Set([
       ...extractRutHints(mergedText),
       ...(series?.patientRut ? [series.patientRut] : []),
+      ...(series?.beneficiaryRut ? [series.beneficiaryRut] : []),
     ]),
   ];
   const nameHints = [
     ...new Set([
       ...extractNameHints(mergedText),
       ...(series?.patientName ? [series.patientName] : []),
+      ...(series?.beneficiaryName ? [series.beneficiaryName] : []),
     ]),
   ];
   const amountHint = computeSeriesAmountHint(series, event);
@@ -790,6 +800,7 @@ export async function listEventDteLinkOverview(params: {
       e.external_event_id AS "eventId",
       e.summary AS "summary",
       COALESCE(to_char(e.start_date, 'YYYY-MM-DD'), to_char((e.start_date_time AT TIME ZONE ${TIMEZONE})::date, 'YYYY-MM-DD')) AS "eventDate",
+      to_char(e.start_date_time AT TIME ZONE ${TIMEZONE}, 'HH24:MI') AS "eventTime",
       e.amount_expected AS "amountExpected",
       e.amount_paid AS "amountPaid",
       e.clinical_series_id AS "clinicalSeriesId",
@@ -892,6 +903,7 @@ export async function listEventDteLinkOverview(params: {
         confidenceScore: row.confidenceScore,
         displayName: row.displayName,
         eventDate: row.eventDate,
+        eventTime: row.eventTime,
         eventId: row.eventId,
         lastAutoLinkSkip:
           row.lastAutoLinkSkipReason && row.lastAutoLinkSkipAt
@@ -1111,6 +1123,7 @@ export async function unlinkEventDteLink(params: { calendarId: string; eventId: 
 export async function autoLinkEventDate(params: {
   date: string;
   minScore?: number;
+  strategy?: AutoLinkStrategy;
   userId: number;
 }) {
   const today = dayjs().tz(TIMEZONE).format("YYYY-MM-DD");
@@ -1121,14 +1134,17 @@ export async function autoLinkEventDate(params: {
   }
 
   const minScore = params.minScore ?? MIN_AUTO_LINK_SCORE;
+  const strategy = params.strategy ?? "missing_only";
   const events = await getEventsByDate(params.date);
+  const eventsToProcess =
+    strategy === "relink_all" ? events : events.filter((event) => !event.linkedDteSaleDetailId);
 
   let linked = 0;
   let skipped = 0;
   const details: Array<{ eventId: string; reason: string }> = [];
   const skippedByReason = new Map<string, number>();
 
-  for (const event of events) {
+  for (const event of eventsToProcess) {
     const suggestionsResponse = await getEventDteSuggestions({
       calendarId: event.googleCalendarId,
       eventId: event.externalEventId,
@@ -1239,7 +1255,7 @@ export async function autoLinkEventDate(params: {
 
   return {
     date: params.date,
-    totalEvents: events.length,
+    totalEvents: eventsToProcess.length,
     linked,
     skipped,
     skippedByReason: normalizeReasonCounts(skippedByReason),
@@ -1250,6 +1266,7 @@ export async function autoLinkEventDate(params: {
 export async function autoLinkEventPeriod(params: {
   minScore?: number;
   period: string;
+  strategy?: AutoLinkStrategy;
   userId: number;
 }) {
   const periodDate = dayjs(`${params.period}-01`, "YYYY-MM-DD", true);
@@ -1296,6 +1313,7 @@ export async function autoLinkEventPeriod(params: {
     const result = await autoLinkEventDate({
       date: row.eventDate,
       minScore: params.minScore,
+      strategy: params.strategy,
       userId: params.userId,
     });
     totalEvents += result.totalEvents;
@@ -1323,7 +1341,12 @@ export async function autoLinkEventPeriod(params: {
   };
 }
 
-export async function autoLinkAllEventPeriods(params: { minScore?: number; userId: number }) {
+export async function autoLinkAllEventPeriods(params: {
+  minScore?: number;
+  strategy?: AutoLinkStrategy;
+  userId: number;
+}) {
+  const strategy = params.strategy ?? "missing_only";
   const periodRows = await listAutoLinkEligiblePeriods();
   const periodConcurrency = 3;
   const queue = [...periodRows];
@@ -1344,6 +1367,7 @@ export async function autoLinkAllEventPeriods(params: { minScore?: number; userI
         const result = await autoLinkEventPeriod({
           minScore: params.minScore,
           period: row.period,
+          strategy,
           userId: params.userId,
         });
 
@@ -1368,6 +1392,7 @@ export async function autoLinkAllEventPeriods(params: { minScore?: number; userI
 
   return {
     periodsProcessed: details.length,
+    strategy,
     totalEvents,
     linked,
     skipped,
@@ -1392,8 +1417,10 @@ export async function autoLinkAllEventPeriodsWithProgress(params: {
   onProgress?: (snapshot: AutoLinkProgressSnapshot) => void;
   periodConcurrency?: number;
   periods: Array<{ period: string }>;
+  strategy?: AutoLinkStrategy;
   userId: number;
 }) {
+  const strategy = params.strategy ?? "missing_only";
   const queue = [...params.periods];
   const details: AutoLinkPeriodSummary[] = [];
   const concurrency = Math.max(1, Math.min(params.periodConcurrency ?? 3, 6));
@@ -1414,6 +1441,7 @@ export async function autoLinkAllEventPeriodsWithProgress(params: {
         const result = await autoLinkEventPeriod({
           minScore: params.minScore,
           period: row.period,
+          strategy,
           userId: params.userId,
         });
 
@@ -1449,6 +1477,7 @@ export async function autoLinkAllEventPeriodsWithProgress(params: {
 
   return {
     periodsProcessed: details.length,
+    strategy,
     totalEvents,
     linked,
     skipped,
