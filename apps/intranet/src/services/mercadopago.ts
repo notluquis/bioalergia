@@ -6,7 +6,7 @@
 import { z } from "zod";
 import type { MpReportType } from "../../shared/mercadopago";
 import { mercadopagoORPCClient, toMercadoPagoApiError } from "../features/finance/mercadopago/orpc";
-import { ApiError } from "../lib/api-client";
+import { apiClient, ApiError } from "../lib/api-client";
 
 /**
  * Statistics returned after processing a report
@@ -227,12 +227,15 @@ export const MPService = {
 
   downloadReport: async (fileName: string, type: MpReportType = "release"): Promise<Blob> => {
     try {
-      return await mercadopagoORPCClient.downloadReport({
-        fileName,
-        type,
+      return await apiClient.getRaw<Blob>("/api/orpc/mercadopago/rpc/reports/download", {
+        query: {
+          fileName,
+          type,
+        },
+        responseType: "blob",
       });
     } catch (error) {
-      const apiError = toMercadoPagoApiError(error);
+      const apiError = error instanceof ApiError ? error : toMercadoPagoApiError(error);
       if (apiError.status === 404) {
         throw new ApiError(
           type === "settlement"
