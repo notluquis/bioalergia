@@ -280,7 +280,6 @@ const DOSE_CLUSTOID_PATTERN = /\bdosis\s+clust(?:oid)?\b/i;
 const DOSAGE_PATTERNS = [
   /(\d+(?:[.,]\d+)?)\s*ml\b/i,
   /(\d+(?:[.,]\d+)?)\s*cc\b/i,
-  /(\d+(?:[.,]\d+)?)\s*mg\b/i,
   // Match: 0,2ml( - dosage with opening paren directly after (no space)
   /(\d+[.,]\d+)\s*ml\s*\(/i,
 ];
@@ -791,6 +790,25 @@ function extractDosage(
   return null;
 }
 
+function normalizeSubcutaneousDosage(
+  dosage: null | { value: number; unit: string },
+): null | { value: number; unit: "ml" } {
+  if (!dosage) return null;
+
+  const normalizedUnit = dosage.unit.trim().toLowerCase();
+  if (normalizedUnit !== "ml" && normalizedUnit !== "cc") {
+    return null;
+  }
+
+  // En inmunoterapia subcutánea trabajamos en mL y con volúmenes fraccionarios acotados.
+  // Valores enteros altos como "10 mg" o "10 ml" no representan una dosis válida en este flujo.
+  if (!Number.isFinite(dosage.value) || dosage.value <= 0 || dosage.value > 1) {
+    return null;
+  }
+
+  return { unit: "ml", value: dosage.value };
+}
+
 function detectTreatmentStage(summary: string, description: string): string | null {
   const text = `${summary} ${description}`;
 
@@ -979,7 +997,7 @@ export function parseCalendarMetadata(input: {
   const amounts = refineAmounts(rawAmounts, summary, description);
   const category = classifyCategory(summary, description);
   const attended = detectAttendance(summary, description);
-  const dosage = extractDosage(summary, description);
+  const rawDosage = extractDosage(summary, description);
   const treatmentStage = detectTreatmentStage(summary, description);
   const controlIncluded = matchesAny(text, CONTROL_PATTERNS);
   const isDomicilio = matchesAny(text, DOMICILIO_PATTERNS);
@@ -993,6 +1011,7 @@ export function parseCalendarMetadata(input: {
 
   // Logic: Dosage and Treatment Stage only apply to "Tratamiento subcutáneo"
   const isSubcut = category === "Tratamiento subcutáneo";
+  const dosage = isSubcut ? normalizeSubcutaneousDosage(rawDosage) : null;
 
   // Determine treatment stage:
   // 1. Pattern-based detection takes priority (e.g., "3era dosis" = Inducción even if 0.5ml)
