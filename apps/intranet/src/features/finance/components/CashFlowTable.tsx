@@ -5,7 +5,13 @@ import { type CashFlowTransaction, columns } from "./CashFlowColumns";
 
 interface Props {
   data: CashFlowTransaction[];
-  categories: Array<{ color?: null | string; icon?: null | string; id: number; name: string }>;
+  categories: Array<{
+    color?: null | string;
+    icon?: null | string;
+    id: number;
+    name: string;
+    type: "INCOME" | "EXPENSE";
+  }>;
   isLoading: boolean;
   total: number;
   page: number; // 1-indexed

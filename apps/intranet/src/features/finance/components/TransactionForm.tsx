@@ -13,7 +13,7 @@ import {
   TextField,
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
 import { z } from "zod";
@@ -34,46 +34,19 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 interface Props {
+  categories: TransactionCategoryOption[];
   isOpen: boolean;
   onClose: () => void;
   initialData?: CashFlowTransaction | null;
 }
-
-const TransactionCategorySchema: z.ZodType<TransactionCategoryOption> = z
-  .object({
-    color: z.string().nullable().optional(),
-    id: z.number(),
-    type: z.enum(["INCOME", "EXPENSE"]),
-    icon: z.string().nullable().optional(),
-    name: z.string(),
-  })
-  .passthrough();
-
-const TransactionCategoriesResponseSchema = z.object({
-  data: z.array(TransactionCategorySchema),
-  status: z.literal("ok"),
-});
 
 const SaveTransactionResponseSchema = z.object({
   data: z.unknown().optional(),
   status: z.literal("ok"),
 });
 
-function useTransactionCategories() {
-  return useQuery<TransactionCategoryOption[]>({
-    queryKey: ["TransactionCategory"],
-    queryFn: async () => {
-      const payload = TransactionCategoriesResponseSchema.parse(
-        await financeORPCClient.categoriesList()
-      );
-      return payload.data;
-    },
-  });
-}
-
-export function TransactionForm({ isOpen, onClose, initialData }: Props) {
+export function TransactionForm({ categories, isOpen, onClose, initialData }: Props) {
   const queryClient = useQueryClient();
-  const { data: categories } = useTransactionCategories();
 
   const [formData, setFormData] = useState<FormValues>({
     date: dayjs().format("YYYY-MM-DD"),
@@ -137,6 +110,7 @@ export function TransactionForm({ isOpen, onClose, initialData }: Props) {
   });
 
   const isSubmitting = mutation.isPending;
+  const availableCategories = categories.filter((category) => category.type === formData.type);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -299,12 +273,12 @@ export function TransactionForm({ isOpen, onClose, initialData }: Props) {
                           Sin categoría
                           <ListBox.ItemIndicator />
                         </ListBox.Item>
-                        {(categories ?? []).length === 0 ? (
+                        {availableCategories.length === 0 ? (
                           <ListBox.Item id="__empty__" textValue="No hay categorías" isDisabled>
                             No hay categorías disponibles
                           </ListBox.Item>
                         ) : null}
-                        {(categories ?? []).map((cat: TransactionCategoryOption) => (
+                        {availableCategories.map((cat: TransactionCategoryOption) => (
                           <ListBox.Item key={cat.id} id={cat.id.toString()} textValue={cat.name}>
                             <div className="flex items-center gap-2">
                               <div

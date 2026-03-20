@@ -39,6 +39,10 @@ import type {
 } from "../components/CashFlowColumns";
 import { financeORPCClient, toFinanceApiError } from "../orpc";
 import { isNonAccountableCategory } from "../utils/non-accountable-category";
+import {
+  buildCategoryFrequencyMap,
+  orderTransactionCategoriesByFrequency,
+} from "../utils/order-transaction-categories";
 
 const CashFlowTable = lazy(() =>
   import("../components/CashFlowTable").then((module) => ({
@@ -708,15 +712,21 @@ export function CashFlowPage() {
   );
   const { data: autoCategoryRules = [] } = useFinancialAutoCategoryRules();
   const queryClient = useQueryClient();
+  const monthTransactions = useMemo(() => data?.data ?? [], [data]);
+
+  const orderedCategories = useMemo(() => {
+    const categoryFrequencies = buildCategoryFrequencyMap(monthTransactions);
+    return orderTransactionCategoriesByFrequency(categories, categoryFrequencies);
+  }, [categories, monthTransactions]);
 
   const categoryFilterOptions = useMemo(() => {
-    const baseOptions = categories.map((category) => ({
+    const baseOptions = orderedCategories.map((category) => ({
       color: category.color ?? "#9ca3af",
       label: category.name,
       value: String(category.id),
     }));
     return [{ color: "#9ca3af", label: "Sin categoría", value: "__none__" }, ...baseOptions];
-  }, [categories]);
+  }, [orderedCategories]);
 
   const selectedCategoryLabel = useMemo(() => {
     if (selectedCategoryFilters.length === 0) {
@@ -758,10 +768,10 @@ export function CashFlowPage() {
 
   const categoryOptionsByType = useMemo(
     () => ({
-      EXPENSE: categories.filter((category) => category.type === "EXPENSE"),
-      INCOME: categories.filter((category) => category.type === "INCOME"),
+      EXPENSE: orderedCategories.filter((category) => category.type === "EXPENSE"),
+      INCOME: orderedCategories.filter((category) => category.type === "INCOME"),
     }),
-    [categories]
+    [orderedCategories]
   );
   const activeCompensationProfiles = useMemo(
     () => compensationProfiles.filter((profile) => profile.isActive),
@@ -795,7 +805,6 @@ export function CashFlowPage() {
   const visibilityFiltersCount =
     Number(showNonAccountableMovements) + Number(showOnlyUncategorizedMovements);
 
-  const monthTransactions = useMemo(() => data?.data ?? [], [data]);
   const reallocationProfileOptions = useMemo(() => {
     if (!reallocateTx) return activeCompensationProfiles;
     return activeCompensationProfiles.filter((profile) => {
@@ -821,11 +830,11 @@ export function CashFlowPage() {
   const nonAccountableCategoryIds = useMemo(
     () =>
       new Set(
-        categories
+        orderedCategories
           .filter((category) => isNonAccountableCategory(category))
           .map((category) => category.id)
       ),
-    [categories]
+    [orderedCategories]
   );
 
   const filteredTransactions = useMemo(() => {
@@ -2477,7 +2486,7 @@ export function CashFlowPage() {
                 >
                   <CashFlowTable
                     data={paginatedTransactions}
-                    categories={categories}
+                    categories={orderedCategories}
                     total={totalFiltered}
                     isLoading={isLoading}
                     page={safePage}
@@ -3309,6 +3318,7 @@ export function CashFlowPage() {
       {isFormOpen ? (
         <Suspense fallback={null}>
           <TransactionForm
+            categories={orderedCategories}
             isOpen={isFormOpen}
             onClose={() => setIsFormOpen(false)}
             initialData={editingTx}

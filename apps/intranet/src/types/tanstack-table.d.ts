@@ -45,6 +45,7 @@ declare module "@tanstack/react-table" {
       icon?: null | string;
       id: number;
       name: string;
+      type?: "INCOME" | "EXPENSE";
     }>;
     updatingCategoryIds?: Set<number>;
   }
