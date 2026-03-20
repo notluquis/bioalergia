@@ -807,7 +807,8 @@ export async function listEventDteLinkOverview(params: {
         const suggestions = await getEventDteSuggestions({
           calendarId: row.calendarId,
           eventId: row.eventId,
-          limit: 1,
+          // Pull enough candidates to preserve ambiguity handling.
+          limit: 3,
         });
         const first = suggestions.suggestions[0];
         if (first) {
