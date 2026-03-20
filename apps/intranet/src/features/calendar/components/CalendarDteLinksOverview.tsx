@@ -7,10 +7,10 @@ import {
   Description,
   Disclosure,
   Dropdown,
-  Input,
   Label,
   ListBox,
   ProgressBar,
+  SearchField,
   ScrollShadow,
   Select,
   Skeleton,
@@ -540,53 +540,63 @@ export function CalendarDteLinksOverview({
         className="rounded-[28px] border border-default-200/70 p-4 sm:p-5"
         variant="secondary"
       >
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1.4fr)] xl:items-end">
-          <div className="space-y-1">
+        <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_220px_minmax(320px,1fr)_auto] xl:items-end">
+          <div className="space-y-1 xl:pr-4">
             <Card.Title>Vínculos Evento ↔ DTE</Card.Title>
-            <Card.Description>
+            <Card.Description className="max-w-2xl">
               Prioriza revisión manual en casos ambiguos o con diferencia de monto. Los eventos
               futuros siguen como pendientes de emisión.
             </Card.Description>
           </div>
-          <div className="grid gap-3 lg:grid-cols-[220px_minmax(0,1fr)_auto]">
-            <Select
-              className="w-full"
-              value={search.period}
-              onChange={(value) =>
-                onSearchChange({
-                  page: 0,
-                  period: value ? String(value) : dayjs().format("YYYY-MM"),
-                })
-              }
-            >
-              <Label>Periodo</Label>
-              <Select.Trigger>
-                <Select.Value />
-                <Select.Indicator />
-              </Select.Trigger>
-              <Select.Popover>
-                <ListBox>
-                  {periodOptions.map((option) => (
-                    <ListBox.Item id={option.value} key={option.value} textValue={option.label}>
-                      {option.label}
-                      <ListBox.ItemIndicator />
-                    </ListBox.Item>
-                  ))}
-                </ListBox>
-              </Select.Popover>
-            </Select>
+          <Select
+            className="w-full"
+            value={search.period}
+            onChange={(value) =>
+              onSearchChange({
+                page: 0,
+                period: value ? String(value) : dayjs().format("YYYY-MM"),
+              })
+            }
+          >
+            <Label>Periodo</Label>
+            <Select.Trigger>
+              <Select.Value />
+              <Select.Indicator />
+            </Select.Trigger>
+            <Select.Popover>
+              <ListBox>
+                {periodOptions.map((option) => (
+                  <ListBox.Item id={option.value} key={option.value} textValue={option.label}>
+                    {option.label}
+                    <ListBox.ItemIndicator />
+                  </ListBox.Item>
+                ))}
+              </ListBox>
+            </Select.Popover>
+          </Select>
+          <div className="space-y-1">
+            <Label>Buscar</Label>
             <div className="flex gap-2">
-              <Input
+              <SearchField
                 className="min-w-0 flex-1"
-                placeholder="Buscar por título o descripción"
+                onChange={setQueryDraft}
                 value={queryDraft}
-                onChange={(event) => setQueryDraft(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    onSearchChange({ page: 0, query: queryDraft.trim() || undefined });
-                  }
-                }}
-              />
+                variant="secondary"
+              >
+                <Label className="sr-only">Buscar por título o descripción</Label>
+                <SearchField.Group>
+                  <SearchField.SearchIcon />
+                  <SearchField.Input
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        onSearchChange({ page: 0, query: queryDraft.trim() || undefined });
+                      }
+                    }}
+                    placeholder="Buscar por título o descripción"
+                  />
+                  <SearchField.ClearButton />
+                </SearchField.Group>
+              </SearchField>
               <Button
                 className="shrink-0"
                 variant="secondary"
@@ -595,47 +605,47 @@ export function CalendarDteLinksOverview({
                 Filtrar
               </Button>
             </div>
-            <Dropdown>
-              <Dropdown.Trigger>
-                <Button
-                  className="w-full lg:w-auto"
-                  isPending={autoLinkActionPending}
-                  variant="primary"
-                >
-                  Auto-vincular
-                  <ChevronDown className="h-4 w-4" />
-                </Button>
-              </Dropdown.Trigger>
-              <Dropdown.Popover className="min-w-75" placement="bottom end">
-                <Dropdown.Menu
-                  aria-label="Opciones de auto-vinculación"
-                  onAction={(key) => {
-                    const mode = String(key) as AutoLinkMode;
-                    if (mode === "all_periods") {
-                      startAutoLinkAllPeriodsMutation.mutate();
-                      return;
-                    }
-                    autoLinkPeriodMutation.mutate();
-                  }}
-                >
-                  <Dropdown.Item
-                    id="selected_period"
-                    isDisabled={autoLinkActionPending || isAutoLinkRunning}
-                    textValue={`Solo período seleccionado (${search.period})`}
-                  >
-                    <Label>Solo período seleccionado ({search.period})</Label>
-                  </Dropdown.Item>
-                  <Dropdown.Item
-                    id="all_periods"
-                    isDisabled={autoLinkActionPending || isAutoLinkRunning}
-                    textValue="Todos los períodos disponibles (hasta hoy)"
-                  >
-                    <Label>Todos los períodos disponibles (hasta hoy)</Label>
-                  </Dropdown.Item>
-                </Dropdown.Menu>
-              </Dropdown.Popover>
-            </Dropdown>
           </div>
+          <Dropdown>
+            <Dropdown.Trigger>
+              <Button
+                className="w-full xl:w-auto"
+                isPending={autoLinkActionPending}
+                variant="primary"
+              >
+                Auto-vincular
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </Dropdown.Trigger>
+            <Dropdown.Popover className="min-w-75" placement="bottom end">
+              <Dropdown.Menu
+                aria-label="Opciones de auto-vinculación"
+                onAction={(key) => {
+                  const mode = String(key) as AutoLinkMode;
+                  if (mode === "all_periods") {
+                    startAutoLinkAllPeriodsMutation.mutate();
+                    return;
+                  }
+                  autoLinkPeriodMutation.mutate();
+                }}
+              >
+                <Dropdown.Item
+                  id="selected_period"
+                  isDisabled={autoLinkActionPending || isAutoLinkRunning}
+                  textValue={`Solo período seleccionado (${search.period})`}
+                >
+                  <Label>Solo período seleccionado ({search.period})</Label>
+                </Dropdown.Item>
+                <Dropdown.Item
+                  id="all_periods"
+                  isDisabled={autoLinkActionPending || isAutoLinkRunning}
+                  textValue="Todos los períodos disponibles (hasta hoy)"
+                >
+                  <Label>Todos los períodos disponibles (hasta hoy)</Label>
+                </Dropdown.Item>
+              </Dropdown.Menu>
+            </Dropdown.Popover>
+          </Dropdown>
         </div>
       </Surface>
 
