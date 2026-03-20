@@ -1,9 +1,11 @@
 import {
+  Alert,
   Button,
   ButtonGroup,
   Card,
   Chip,
   Description,
+  Disclosure,
   Dropdown,
   Input,
   Label,
@@ -25,11 +27,12 @@ import { useToast } from "@/context/ToastContext";
 import {
   autoLinkEventDteByPeriod,
   confirmEventDteLink,
+  fetchEventDteSuggestions,
   startAutoLinkEventDteAllPeriodsJob,
   unlinkEventDteLink,
 } from "@/features/calendar/api";
 import { calendarDteLinkKeys, calendarDteLinkQueries } from "@/features/calendar/queries";
-import type { EventDteOverviewItem } from "@/features/calendar/types";
+import type { EventDteOverviewItem, EventDteSuggestion } from "@/features/calendar/types";
 import { currencyFormatter } from "@/lib/format";
 
 const OVERVIEW_SKELETON_KEYS = [
@@ -113,8 +116,16 @@ function formatAutoLinkAttempt(attemptedAt: string): string {
   return dayjs(attemptedAt).format("DD-MM-YYYY HH:mm");
 }
 
+function seriesKindLabel(kind: EventDteOverviewItem["seriesKind"]): string | null {
+  if (kind === "PATCH_TEST") return "Test de parche";
+  if (kind === "SKIN_TEST") return "Test cutáneo";
+  if (kind === "SUBCUTANEOUS_TREATMENT") return "Tratamiento subcutáneo";
+  return null;
+}
+
 function describeAutoLinkSkipReason(reason: string): {
   detail: string;
+  severity: "danger" | "warning";
   title: string;
   tooltipLabel: string;
 } {
@@ -123,6 +134,7 @@ function describeAutoLinkSkipReason(reason: string): {
     const score = Number(scoreMatch[1] ?? 0);
     return {
       detail: `La mejor coincidencia alcanzó ${score}% y el mínimo para auto-vincular es 90%. Requiere revisión manual.`,
+      severity: "warning",
       title: `Coincidencia insuficiente (${score}%)`,
       tooltipLabel: "Score insuficiente",
     };
@@ -133,6 +145,7 @@ function describeAutoLinkSkipReason(reason: string): {
     const amountDiff = Number(amountDiffMatch[1] ?? 0);
     return {
       detail: `La mejor sugerencia difiere en ${currencyFormatter.format(amountDiff)}. El auto-vínculo sólo se permite hasta ${currencyFormatter.format(5000)} de diferencia.`,
+      severity: "danger",
       title: "Monto fuera del rango permitido",
       tooltipLabel: "Monto incompatible",
     };
@@ -141,7 +154,8 @@ function describeAutoLinkSkipReason(reason: string): {
   if (reason === "Ambiguo") {
     return {
       detail:
-        "Se encontraron varias sugerencias con puntaje similar, por lo que el sistema evitó decidir automáticamente.",
+        "Se encontraron varias sugerencias con puntaje similar. Revisa los candidatos y vincula el correcto manualmente desde esta misma tarjeta.",
+      severity: "warning",
       title: "Hay más de un DTE plausible",
       tooltipLabel: "Caso ambiguo",
     };
@@ -151,6 +165,7 @@ function describeAutoLinkSkipReason(reason: string): {
     return {
       detail:
         "No apareció ninguna boleta o factura con coincidencia suficiente en nombre, RUT o contexto del evento.",
+      severity: "danger",
       title: "No se encontró un DTE compatible",
       tooltipLabel: "Sin coincidencias",
     };
@@ -158,9 +173,179 @@ function describeAutoLinkSkipReason(reason: string): {
 
   return {
     detail: reason,
+    severity: "warning",
     title: "Auto-vínculo omitido",
     tooltipLabel: "Auto-link revisado",
   };
+}
+
+function suggestionMethodLabel(method: EventDteSuggestion["method"]): string {
+  if (method === "mixed") return "Nombre + RUT";
+  if (method === "name_exact") return "Nombre exacto";
+  if (method === "name_fuzzy") return "Nombre aproximado";
+  return "RUT";
+}
+
+interface SuggestionExplorerProps {
+  confirmPending: boolean;
+  item: EventDteOverviewItem;
+  onConfirm: (candidate: EventDteSuggestion) => void;
+}
+
+function SuggestionExplorer({
+  confirmPending,
+  item,
+  onConfirm,
+}: Readonly<SuggestionExplorerProps>) {
+  const [isExpanded, setIsExpanded] = useState(
+    item.lastAutoLinkSkip?.reason === "Ambiguo" || item.topSuggestion == null
+  );
+
+  const suggestionsQuery = useQuery({
+    queryFn: () =>
+      fetchEventDteSuggestions({
+        calendarId: item.calendarId,
+        eventId: item.eventId,
+        limit: 5,
+      }),
+    queryKey: [...calendarDteLinkKeys.suggestions(item.calendarId, item.eventId), "overview", 5],
+    enabled: isExpanded && !item.linked && item.linkStatus !== "pending_issuance",
+    staleTime: 60_000,
+  });
+
+  const suggestions = suggestionsQuery.data?.suggestions ?? [];
+  const topCandidates = suggestions.slice(0, 3);
+  const label = seriesKindLabel(item.seriesKind);
+
+  return (
+    <Disclosure isExpanded={isExpanded} onExpandedChange={setIsExpanded}>
+      <Disclosure.Heading>
+        <Button className="w-full justify-between" slot="trigger" variant="secondary">
+          <span className="flex items-center gap-2">
+            <span>Candidatos revisados</span>
+            {suggestions.length > 0 ? (
+              <Chip color="default" size="sm" variant="soft">
+                {suggestions.length}
+              </Chip>
+            ) : null}
+          </span>
+          <Disclosure.Indicator />
+        </Button>
+      </Disclosure.Heading>
+      <Disclosure.Content>
+        <Disclosure.Body className="mt-2 rounded-2xl border border-default-200 bg-default-50/60 p-3">
+          {item.linkStatus === "pending_issuance" ? (
+            <Alert status="warning">
+              Evento futuro: los candidatos se revisan cuando llegue la fecha de emisión.
+            </Alert>
+          ) : null}
+
+          {suggestionsQuery.isLoading ? (
+            <div className="space-y-2">
+              <Skeleton className="h-24 rounded-2xl" />
+              <Skeleton className="h-24 rounded-2xl" />
+            </div>
+          ) : null}
+
+          {suggestionsQuery.isError ? (
+            <Alert status="danger">No se pudieron cargar los candidatos del evento.</Alert>
+          ) : null}
+
+          {!suggestionsQuery.isLoading &&
+          !suggestionsQuery.isError &&
+          item.linkStatus !== "pending_issuance" ? (
+            <div className="space-y-3">
+              {topCandidates.length > 0 ? (
+                topCandidates.map((candidate, index) => {
+                  const eventAmount = amountHint(item);
+                  const diff =
+                    eventAmount != null ? Math.abs(eventAmount - candidate.totalAmount) : null;
+
+                  return (
+                    <Card
+                      className="gap-2 border border-default-200"
+                      key={candidate.dteSaleDetailId}
+                      variant={index === 0 ? "default" : "transparent"}
+                    >
+                      <Card.Header className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                        <div className="space-y-1">
+                          <Card.Title className="text-sm">{candidate.clientName}</Card.Title>
+                          <Card.Description>
+                            {candidate.clientRUT} · Folio {candidate.folio} ·{" "}
+                            {dayjs(candidate.documentDate).format("DD-MM-YYYY")}
+                          </Card.Description>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <Chip
+                            color={scoreColor(candidate.confidenceScore)}
+                            size="sm"
+                            variant="soft"
+                          >
+                            Score {scoreLabel(candidate.confidenceScore)}
+                          </Chip>
+                          <Chip color="default" size="sm" variant="soft">
+                            {suggestionMethodLabel(candidate.method)}
+                          </Chip>
+                          {label ? (
+                            <Chip color="default" size="sm" variant="tertiary">
+                              {label}
+                            </Chip>
+                          ) : null}
+                        </div>
+                      </Card.Header>
+                      <Card.Content className="grid grid-cols-1 gap-2 text-sm md:grid-cols-3">
+                        <div className="rounded-lg border border-default-200 bg-background p-2">
+                          <p className="text-default-500 text-xs uppercase">Monto DTE</p>
+                          <p className="font-medium">
+                            {currencyFormatter.format(candidate.totalAmount)}
+                          </p>
+                        </div>
+                        <div className="rounded-lg border border-default-200 bg-background p-2">
+                          <p className="text-default-500 text-xs uppercase">Diferencia</p>
+                          <p className="font-medium">
+                            {diff != null ? currencyFormatter.format(diff) : "-"}
+                          </p>
+                        </div>
+                        <div className="rounded-lg border border-default-200 bg-background p-2">
+                          <p className="text-default-500 text-xs uppercase">Registro</p>
+                          <p className="font-medium">#{candidate.registerNumber}</p>
+                        </div>
+                      </Card.Content>
+                      <Card.Content className="pt-0">
+                        <div className="flex flex-wrap gap-2">
+                          {candidate.reasons.slice(0, 3).map((reason) => (
+                            <Chip
+                              key={`${candidate.dteSaleDetailId}-${reason}`}
+                              size="sm"
+                              variant="soft"
+                            >
+                              {reason}
+                            </Chip>
+                          ))}
+                        </div>
+                      </Card.Content>
+                      <Card.Footer className="justify-end">
+                        <Button
+                          isPending={confirmPending}
+                          size="sm"
+                          variant={index === 0 ? "primary" : "secondary"}
+                          onPress={() => onConfirm(candidate)}
+                        >
+                          Vincular este DTE
+                        </Button>
+                      </Card.Footer>
+                    </Card>
+                  );
+                })
+              ) : (
+                <Alert status="danger">No hay candidatos disponibles para este evento.</Alert>
+              )}
+            </div>
+          ) : null}
+        </Disclosure.Body>
+      </Disclosure.Content>
+    </Disclosure>
+  );
 }
 
 export function CalendarDteLinksOverview({
@@ -205,18 +390,21 @@ export function CalendarDteLinksOverview({
   });
 
   const confirmMutation = useMutation({
-    mutationFn: async (item: EventDteOverviewItem) => {
-      if (!item.topSuggestion) {
-        throw new Error("No hay sugerencia para vincular");
-      }
+    mutationFn: async ({
+      candidate,
+      item,
+    }: {
+      candidate: EventDteSuggestion;
+      item: EventDteOverviewItem;
+    }) => {
       await confirmEventDteLink({
         calendarId: item.calendarId,
-        confidenceScore: item.topSuggestion.confidenceScore,
-        dteSaleDetailId: item.topSuggestion.dteSaleDetailId,
+        confidenceScore: candidate.confidenceScore,
+        dteSaleDetailId: candidate.dteSaleDetailId,
         eventId: item.eventId,
-        matchedBy: item.topSuggestion.method,
-        matchedName: item.topSuggestion.clientName,
-        matchedRUT: item.topSuggestion.clientRUT,
+        matchedBy: candidate.method,
+        matchedName: candidate.clientName,
+        matchedRUT: candidate.clientRUT,
       });
     },
     onError: (error) => {
@@ -682,16 +870,16 @@ export function CalendarDteLinksOverview({
 
                       {!item.linked && item.lastAutoLinkSkip ? (
                         <Card.Content className="pt-0">
-                          <div className="rounded-lg border border-warning/30 bg-warning/10 p-3">
-                            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                          <Alert status={autoLinkSkipReason?.severity ?? "warning"}>
+                            <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                               <div className="space-y-1">
-                                <p className="text-[11px] font-semibold uppercase tracking-wide text-warning-700">
+                                <p className="text-[11px] font-semibold uppercase tracking-wide">
                                   Último auto-vínculo omitido
                                 </p>
-                                <p className="text-sm font-medium text-foreground">
+                                <p className="text-sm font-medium">
                                   {autoLinkSkipReason?.title ?? item.lastAutoLinkSkip.reason}
                                 </p>
-                                <Description className="text-sm text-default-700">
+                                <Description className="text-sm">
                                   {autoLinkSkipReason?.detail ?? item.lastAutoLinkSkip.reason}
                                 </Description>
                                 <Description className="text-xs">
@@ -701,7 +889,11 @@ export function CalendarDteLinksOverview({
                               </div>
                               <Tooltip delay={0}>
                                 <Tooltip.Trigger aria-label="Detalle del último intento de auto-vinculación">
-                                  <Chip color="warning" size="sm" variant="soft">
+                                  <Chip
+                                    color={autoLinkSkipReason?.severity ?? "warning"}
+                                    size="sm"
+                                    variant="soft"
+                                  >
                                     {autoLinkSkipReason?.tooltipLabel ?? "Auto-link revisado"}
                                   </Chip>
                                 </Tooltip.Trigger>
@@ -722,7 +914,17 @@ export function CalendarDteLinksOverview({
                                 </Tooltip.Content>
                               </Tooltip>
                             </div>
-                          </div>
+                          </Alert>
+                        </Card.Content>
+                      ) : null}
+
+                      {!item.linked ? (
+                        <Card.Content className="pt-0">
+                          <SuggestionExplorer
+                            confirmPending={confirmMutation.isPending}
+                            item={item}
+                            onConfirm={(candidate) => confirmMutation.mutate({ item, candidate })}
+                          />
                         </Card.Content>
                       ) : null}
 
@@ -754,7 +956,14 @@ export function CalendarDteLinksOverview({
                               isPending={confirmMutation.isPending}
                               size="sm"
                               variant="primary"
-                              onPress={() => confirmMutation.mutate(item)}
+                              onPress={() =>
+                                item.topSuggestion
+                                  ? confirmMutation.mutate({
+                                      item,
+                                      candidate: item.topSuggestion,
+                                    })
+                                  : undefined
+                              }
                             >
                               Vincular sugerencia
                             </Button>
