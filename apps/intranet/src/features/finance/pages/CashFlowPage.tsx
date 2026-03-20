@@ -268,6 +268,52 @@ function useFinancialTransactions(params: TransactionQueryParams) {
   });
 }
 
+function useHistoricalTransactionCategoryFrequencies() {
+  return useQuery<Map<number, number>>({
+    queryKey: ["FinancialTransaction", "category-frequencies"],
+    queryFn: async () => {
+      const pageSize = 1000;
+      let page = 1;
+      let totalPages = 1;
+      const frequencies = new Map<number, number>();
+
+      while (page <= totalPages) {
+        let response: FinancialTransactionsResponse;
+
+        try {
+          response = FinancialTransactionsResponseSchema.parse(
+            await financeORPCClient.transactionsList({
+              page,
+              pageSize,
+            })
+          );
+        } catch (error) {
+          throw toFinanceApiError(error);
+        }
+
+        const pageFrequencies = buildCategoryFrequencyMap(response.data ?? []);
+        for (const [categoryId, count] of pageFrequencies) {
+          frequencies.set(categoryId, (frequencies.get(categoryId) ?? 0) + count);
+        }
+
+        const nextTotalPages = response.meta?.totalPages;
+        if (typeof nextTotalPages === "number" && Number.isFinite(nextTotalPages)) {
+          totalPages = Math.max(1, nextTotalPages);
+        } else if ((response.data?.length ?? 0) < pageSize) {
+          totalPages = page;
+        } else {
+          totalPages = page + 1;
+        }
+
+        page += 1;
+      }
+
+      return frequencies;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 function useTransactionCategories() {
   return useQuery<TransactionCategoryOption[]>({
     queryKey: ["TransactionCategory"],
@@ -704,6 +750,8 @@ export function CashFlowPage() {
     pageSize: 2500,
   });
   const { data: categories = [] } = useTransactionCategories();
+  const { data: historicalCategoryFrequencies = new Map() } =
+    useHistoricalTransactionCategoryFrequencies();
   const { data: counterparts = [] } = useCounterparts();
   const { data: compensationProfiles = [] } = useCompensationProfiles();
   const { data: selectedCompensationLedger = [] } = useCompensationLedger(
@@ -715,9 +763,8 @@ export function CashFlowPage() {
   const monthTransactions = useMemo(() => data?.data ?? [], [data]);
 
   const orderedCategories = useMemo(() => {
-    const categoryFrequencies = buildCategoryFrequencyMap(monthTransactions);
-    return orderTransactionCategoriesByFrequency(categories, categoryFrequencies);
-  }, [categories, monthTransactions]);
+    return orderTransactionCategoriesByFrequency(categories, historicalCategoryFrequencies);
+  }, [categories, historicalCategoryFrequencies]);
 
   const categoryFilterOptions = useMemo(() => {
     const baseOptions = orderedCategories.map((category) => ({
