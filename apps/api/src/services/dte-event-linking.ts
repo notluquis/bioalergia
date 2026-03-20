@@ -5,6 +5,7 @@ import utc from "dayjs/plugin/utc.js";
 import { normalizeRut } from "../lib/rut";
 import {
   type ClinicalSeriesSnapshot,
+  extractIdentityHints,
   getClinicalSeriesSnapshotByExternalEvent,
   syncClinicalSeriesForInternalEventId,
 } from "./clinical-series";
@@ -74,6 +75,48 @@ function normalizeReasonCounts(counter: Map<string, number>): SkipReasonCount[] 
     .sort((a, b) => b.count - a.count || a.reason.localeCompare(b.reason));
 }
 
+function parseLinkedDocumentsJson(value: unknown): EventDteLinkedDocument[] {
+  if (!Array.isArray(value)) return [];
+
+  return value.flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const record = item as Record<string, unknown>;
+    const clientName = typeof record.clientName === "string" ? record.clientName : null;
+    const clientRUT = typeof record.clientRUT === "string" ? record.clientRUT : null;
+    const dteSaleDetailId =
+      typeof record.dteSaleDetailId === "string" ? record.dteSaleDetailId : null;
+    const folio = typeof record.folio === "string" ? record.folio : null;
+    const matchedBy = typeof record.matchedBy === "string" ? record.matchedBy : null;
+    const confidenceScore =
+      typeof record.confidenceScore === "number" ? record.confidenceScore : null;
+    const totalAmount = typeof record.totalAmount === "number" ? record.totalAmount : null;
+
+    if (
+      !clientName ||
+      !clientRUT ||
+      !dteSaleDetailId ||
+      !folio ||
+      !matchedBy ||
+      confidenceScore == null ||
+      totalAmount == null
+    ) {
+      return [];
+    }
+
+    return [
+      {
+        clientName,
+        clientRUT,
+        confidenceScore,
+        dteSaleDetailId,
+        folio,
+        matchedBy,
+        totalAmount,
+      },
+    ];
+  });
+}
+
 export interface EventDteSuggestion {
   dteSaleDetailId: string;
   documentType: number;
@@ -88,6 +131,20 @@ export interface EventDteSuggestion {
   method: "mixed" | "name_exact" | "name_fuzzy" | "rut";
   confidenceScore: number;
   reasons: string[];
+}
+
+export interface EventDteBundleSuggestion {
+  clientName: string;
+  clientRUT: string;
+  confidenceScore: number;
+  count: number;
+  documentDate: string;
+  documents: EventDteSuggestion[];
+  dteSaleDetailIds: string[];
+  folios: string[];
+  method: "mixed" | "name_exact" | "name_fuzzy" | "rut";
+  reasons: string[];
+  totalAmount: number;
 }
 
 export interface EventDteLinkRecord {
@@ -111,6 +168,16 @@ export interface EventDteLinkRecord {
     folio: string;
     totalAmount: number;
   };
+}
+
+interface EventDteLinkedDocument {
+  clientName: string;
+  clientRUT: string;
+  confidenceScore: number;
+  dteSaleDetailId: string;
+  folio: string;
+  matchedBy: string;
+  totalAmount: number;
 }
 
 interface EventRow {
@@ -155,8 +222,10 @@ interface EventDteOverviewRow {
   eventId: string;
   lastAutoLinkSkipAt: Date | null;
   lastAutoLinkSkipReason: null | string;
+  linkedCount: number;
   linkedClientName: null | string;
   linkedClientRUT: null | string;
+  linkedDocumentsJson: unknown;
   linkedDteSaleDetailId: null | string;
   linkedFolio: null | string;
   linkedMatchedBy: null | string;
@@ -444,6 +513,146 @@ export function scoreCandidate(params: {
   };
 }
 
+function isSkinTestBundleEligible(series: ClinicalSeriesSnapshot | null): boolean {
+  return series?.kind === "SKIN_TEST";
+}
+
+function candidateHasExactRutMatch(candidate: DteSaleRow, rutHints: string[]): boolean {
+  const candidateRut = normalizeRut(candidate.clientRUT) || candidate.clientRUT;
+  return rutHints.some((rut) => rut === candidateRut);
+}
+
+function combineSuggestionMethod(
+  documents: EventDteSuggestion[],
+): EventDteBundleSuggestion["method"] {
+  if (documents.some((candidate) => candidate.method === "mixed")) return "mixed";
+  if (documents.some((candidate) => candidate.method === "name_exact")) return "name_exact";
+  if (documents.some((candidate) => candidate.method === "name_fuzzy")) return "name_fuzzy";
+  return "rut";
+}
+
+function compareBundleSuggestions(
+  a: EventDteBundleSuggestion,
+  b: EventDteBundleSuggestion,
+  amountHint: null | number,
+): number {
+  const diffA =
+    amountHint != null ? Math.abs(amountHint - a.totalAmount) : Number.POSITIVE_INFINITY;
+  const diffB =
+    amountHint != null ? Math.abs(amountHint - b.totalAmount) : Number.POSITIVE_INFINITY;
+
+  if (diffA !== diffB) return diffA - diffB;
+  if (a.confidenceScore !== b.confidenceScore) return b.confidenceScore - a.confidenceScore;
+  if (a.count !== b.count) return a.count - b.count;
+  return a.folios.join(",").localeCompare(b.folios.join(","));
+}
+
+export function findSkinTestBundleSuggestions(params: {
+  amountHint: null | number;
+  candidates: DteSaleRow[];
+  limit?: number;
+  nameHints: string[];
+  rutHints: string[];
+}): EventDteBundleSuggestion[] {
+  if (params.amountHint == null) return [];
+
+  const eligible = params.candidates
+    .filter((candidate) => candidate.linkedEventsCount === 0)
+    .filter((candidate) => candidateHasExactRutMatch(candidate, params.rutHints))
+    .map((candidate) => ({
+      candidate,
+      suggestion: scoreCandidate({
+        amountHint: params.amountHint,
+        dte: candidate,
+        nameHints: params.nameHints,
+        rutHints: params.rutHints,
+      }),
+    }));
+
+  if (eligible.length < 2) return [];
+
+  const bundles = new Map<string, EventDteBundleSuggestion>();
+  const limit = params.limit ?? 5;
+
+  const visit = (startIndex: number, current: typeof eligible) => {
+    if (current.length >= 2) {
+      const totalAmount = current.reduce((sum, entry) => sum + entry.candidate.totalAmount, 0);
+      const amountDiff = Math.abs(params.amountHint - totalAmount);
+
+      if (amountDiff <= MAX_AUTO_LINK_AMOUNT_DIFF) {
+        const sorted = [...current].sort((a, b) =>
+          a.candidate.dteSaleDetailId.localeCompare(b.candidate.dteSaleDetailId),
+        );
+        const dteSaleDetailIds = sorted.map((entry) => entry.candidate.dteSaleDetailId);
+        const reasons = [
+          `Bundle de ${sorted.length} DTE del mismo día y mismo RUT`,
+          `Suma total ${currencyFormatterForReason(totalAmount)} frente a evento ${currencyFormatterForReason(params.amountHint)}`,
+        ];
+
+        const exactNameSignals = sorted.filter(
+          (entry) =>
+            entry.suggestion.method === "mixed" || entry.suggestion.method === "name_exact",
+        ).length;
+
+        if (exactNameSignals > 0) {
+          reasons.push("El bundle conserva coincidencias nominales fuertes");
+        }
+
+        if (amountDiff <= 500) {
+          reasons.push("La suma del bundle coincide casi exacto");
+        } else if (amountDiff <= 2000) {
+          reasons.push("La suma del bundle es cercana");
+        } else {
+          reasons.push("La suma del bundle es compatible");
+        }
+
+        const confidenceScore = Math.min(
+          100,
+          amountDiff <= 500 ? 100 : amountDiff <= 2000 ? 96 : 92,
+        );
+
+        const bundle: EventDteBundleSuggestion = {
+          clientName: sorted[0]!.candidate.clientName,
+          clientRUT: sorted[0]!.candidate.clientRUT,
+          confidenceScore,
+          count: sorted.length,
+          documentDate: sorted[0]!.candidate.documentDate,
+          documents: sorted.map((entry) => entry.suggestion),
+          dteSaleDetailIds,
+          folios: sorted.map((entry) => entry.candidate.folio),
+          method: combineSuggestionMethod(sorted.map((entry) => entry.suggestion)),
+          reasons,
+          totalAmount,
+        };
+
+        bundles.set(dteSaleDetailIds.join("|"), bundle);
+      }
+    }
+
+    if (current.length === 3) return;
+
+    for (let index = startIndex; index < eligible.length; index += 1) {
+      current.push(eligible[index]!);
+      visit(index + 1, current);
+      current.pop();
+    }
+  };
+
+  visit(0, []);
+
+  return [...bundles.values()]
+    .sort((a, b) => compareBundleSuggestions(a, b, params.amountHint))
+    .slice(0, limit);
+}
+
+function currencyFormatterForReason(value: number): string {
+  return new Intl.NumberFormat("es-CL", {
+    currency: "CLP",
+    maximumFractionDigits: 0,
+    style: "currency",
+  }).format(value);
+}
+
 function isAmbiguous(top: EventDteSuggestion, second: EventDteSuggestion | undefined): boolean {
   if (!second) return false;
   return (
@@ -478,7 +687,7 @@ async function getEventByExternalIds(
       e.summary AS "summary",
       e.description AS "description",
       e.clinical_series_id AS "clinicalSeriesId",
-      l.dte_sale_detail_id AS "linkedDteSaleDetailId",
+      link_stats."linkedDteSaleDetailId" AS "linkedDteSaleDetailId",
       e.series_stage_kind AS "seriesStageKind",
       e.series_stage_label AS "seriesStageLabel",
       e.series_stage_number AS "seriesStageNumber",
@@ -486,7 +695,12 @@ async function getEventByExternalIds(
       e.amount_paid AS "amountPaid"
     FROM events e
     JOIN calendars c ON c.id = e.calendar_id
-    LEFT JOIN event_dte_sale_links l ON l.event_id = e.id
+    LEFT JOIN LATERAL (
+      SELECT
+        MIN(l.dte_sale_detail_id) AS "linkedDteSaleDetailId"
+      FROM event_dte_sale_links l
+      WHERE l.event_id = e.id
+    ) link_stats ON TRUE
     WHERE c.google_id = ${calendarGoogleId}
       AND e.external_event_id = ${externalEventId}
     LIMIT 1
@@ -505,7 +719,7 @@ async function getEventsByDate(date: string): Promise<EventRow[]> {
       e.summary AS "summary",
       e.description AS "description",
       e.clinical_series_id AS "clinicalSeriesId",
-      l.dte_sale_detail_id AS "linkedDteSaleDetailId",
+      link_stats."linkedDteSaleDetailId" AS "linkedDteSaleDetailId",
       e.series_stage_kind AS "seriesStageKind",
       e.series_stage_label AS "seriesStageLabel",
       e.series_stage_number AS "seriesStageNumber",
@@ -513,7 +727,12 @@ async function getEventsByDate(date: string): Promise<EventRow[]> {
       e.amount_paid AS "amountPaid"
     FROM events e
     JOIN calendars c ON c.id = e.calendar_id
-    LEFT JOIN event_dte_sale_links l ON l.event_id = e.id
+    LEFT JOIN LATERAL (
+      SELECT
+        MIN(l.dte_sale_detail_id) AS "linkedDteSaleDetailId"
+      FROM event_dte_sale_links l
+      WHERE l.event_id = e.id
+    ) link_stats ON TRUE
     WHERE COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) = ${date}::date
     ORDER BY e.start_date_time ASC NULLS LAST, e.id ASC
   `;
@@ -602,11 +821,12 @@ export async function getEventDteSuggestions(params: {
   let event = await getEventByExternalIds(params.calendarId, params.eventId);
   if (!event) {
     return {
+      bundleSuggestions: [] as EventDteBundleSuggestion[],
       event: null,
       series: null as ClinicalSeriesSnapshot | null,
       sameDayUnlinkedSuggestions: [] as EventDteSuggestion[],
       suggestions: [] as EventDteSuggestion[],
-      linked: null as EventDteLinkRecord | null,
+      linked: [] as EventDteLinkRecord[],
     };
   }
 
@@ -615,17 +835,18 @@ export async function getEventDteSuggestions(params: {
     event = await getEventByExternalIds(params.calendarId, params.eventId);
     if (!event) {
       return {
+        bundleSuggestions: [] as EventDteBundleSuggestion[],
         event: null,
         series: null as ClinicalSeriesSnapshot | null,
         sameDayUnlinkedSuggestions: [] as EventDteSuggestion[],
         suggestions: [] as EventDteSuggestion[],
-        linked: null as EventDteLinkRecord | null,
+        linked: [] as EventDteLinkRecord[],
       };
     }
   }
 
   const [linked, series] = await Promise.all([
-    getEventDteLinkByInternalEventId(event.eventId),
+    getEventDteLinksByInternalEventId(event.eventId),
     getClinicalSeriesSnapshotByExternalEvent({
       calendarId: params.calendarId,
       eventId: params.eventId,
@@ -645,9 +866,13 @@ export async function getEventDteSuggestions(params: {
       : await getSalesCandidatesByDate(event.eventDate);
 
   const mergedText = `${event.summary ?? ""} ${event.description ?? ""}`;
+  const identityHints = extractIdentityHints(event.summary, event.description);
+
   const rutHints = [
     ...new Set([
       ...extractRutHints(mergedText),
+      ...(identityHints.patientRut ? [identityHints.patientRut] : []),
+      ...(identityHints.beneficiaryRut ? [identityHints.beneficiaryRut] : []),
       ...(series?.patientRut ? [series.patientRut] : []),
       ...(series?.beneficiaryRut ? [series.beneficiaryRut] : []),
     ]),
@@ -655,11 +880,22 @@ export async function getEventDteSuggestions(params: {
   const nameHints = [
     ...new Set([
       ...extractNameHints(mergedText),
+      ...(identityHints.patientName ? [identityHints.patientName] : []),
+      ...(identityHints.beneficiaryName ? [identityHints.beneficiaryName] : []),
       ...(series?.patientName ? [series.patientName] : []),
       ...(series?.beneficiaryName ? [series.beneficiaryName] : []),
     ]),
   ];
   const amountHint = computeSeriesAmountHint(series, event);
+  const bundleSuggestions = isSkinTestBundleEligible(series)
+    ? findSkinTestBundleSuggestions({
+        amountHint,
+        candidates: sameDayCandidates,
+        limit: params.limit ?? 5,
+        nameHints,
+        rutHints,
+      })
+    : [];
 
   let suggestions = candidates
     .map((candidate) =>
@@ -717,6 +953,7 @@ export async function getEventDteSuggestions(params: {
   }
 
   return {
+    bundleSuggestions,
     event: {
       amountExpected: event.amountExpected,
       amountPaid: event.amountPaid,
@@ -813,25 +1050,33 @@ export async function listEventDteLinkOverview(params: {
   >`
     SELECT
       COUNT(*)::int AS "totalEvents",
-      COUNT(l.id)::int AS "linkedEvents",
+      COUNT(*) FILTER (WHERE link_stats."linkedCount" > 0)::int AS "linkedEvents",
       COUNT(*) FILTER (
         WHERE COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
       )::int AS "dueEvents",
-      COUNT(l.id) FILTER (
-        WHERE COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
+      COUNT(*) FILTER (
+        WHERE link_stats."linkedCount" > 0
+          AND COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
       )::int AS "linkedDueEvents",
       COUNT(*) FILTER (
-        WHERE l.id IS NULL
+        WHERE link_stats."linkedCount" = 0
           AND COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
       )::int AS "unlinkedEvents",
       COUNT(*) FILTER (
-        WHERE l.id IS NULL
+        WHERE link_stats."linkedCount" = 0
           AND COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) > ${today}::date
       )::int AS "pendingIssuanceEvents",
-      COUNT(*) FILTER (WHERE l.confidence_score::float = 100)::int AS "withPerfectScore",
-      AVG(l.confidence_score::float) AS "avgLinkedScore"
+      COUNT(*) FILTER (WHERE link_stats."maxConfidenceScore" = 100)::int AS "withPerfectScore",
+      AVG(link_stats."avgConfidenceScore") FILTER (WHERE link_stats."linkedCount" > 0) AS "avgLinkedScore"
     FROM events e
-    LEFT JOIN event_dte_sale_links l ON l.event_id = e.id
+    LEFT JOIN LATERAL (
+      SELECT
+        COUNT(*)::int AS "linkedCount",
+        MAX(l.confidence_score::float) AS "maxConfidenceScore",
+        AVG(l.confidence_score::float) AS "avgConfidenceScore"
+      FROM event_dte_sale_links l
+      WHERE l.event_id = e.id
+    ) link_stats ON TRUE
     WHERE COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date)
       BETWEEN ${periodStart}::date AND ${periodEnd}::date
   `;
@@ -839,26 +1084,30 @@ export async function listEventDteLinkOverview(params: {
   const totalCountRows = await db.$queryRaw<Array<{ count: number }>>`
     SELECT COUNT(*)::int AS "count"
     FROM events e
-    LEFT JOIN event_dte_sale_links l ON l.event_id = e.id
+    LEFT JOIN LATERAL (
+      SELECT COUNT(*)::int AS "linkedCount"
+      FROM event_dte_sale_links l
+      WHERE l.event_id = e.id
+    ) link_stats ON TRUE
     WHERE COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date)
       BETWEEN ${periodStart}::date AND ${periodEnd}::date
       AND (
         (
           ${status} = 'all'
           AND (
-            l.id IS NOT NULL
+            link_stats."linkedCount" > 0
             OR COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
           )
         )
-        OR (${status} = 'linked' AND l.id IS NOT NULL)
+        OR (${status} = 'linked' AND link_stats."linkedCount" > 0)
         OR (
           ${status} = 'unlinked'
-          AND l.id IS NULL
+          AND link_stats."linkedCount" = 0
           AND COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
         )
         OR (
           ${status} = 'pending_issuance'
-          AND l.id IS NULL
+          AND link_stats."linkedCount" = 0
           AND COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) > ${today}::date
         )
       )
@@ -882,19 +1131,48 @@ export async function listEventDteLinkOverview(params: {
       e.clinical_series_id AS "clinicalSeriesId",
       auto_skip."lastAutoLinkSkipAt" AS "lastAutoLinkSkipAt",
       auto_skip."lastAutoLinkSkipReason" AS "lastAutoLinkSkipReason",
-      l.dte_sale_detail_id AS "linkedDteSaleDetailId",
-      l.matched_by AS "linkedMatchedBy",
-      l.confidence_score::float AS "confidenceScore",
-      s.client_name AS "linkedClientName",
-      s.client_rut AS "linkedClientRUT",
-      s.folio AS "linkedFolio",
-      COALESCE(s.total_amount, 0)::float AS "linkedTotalAmount",
+      link_stats."linkedCount" AS "linkedCount",
+      link_stats."linkedDocumentsJson" AS "linkedDocumentsJson",
+      link_stats."linkedDteSaleDetailId" AS "linkedDteSaleDetailId",
+      link_stats."linkedMatchedBy" AS "linkedMatchedBy",
+      link_stats."confidenceScore" AS "confidenceScore",
+      link_stats."linkedClientName" AS "linkedClientName",
+      link_stats."linkedClientRUT" AS "linkedClientRUT",
+      link_stats."linkedFolio" AS "linkedFolio",
+      link_stats."linkedTotalAmount" AS "linkedTotalAmount",
       cs.display_name AS "displayName",
       cs.kind AS "seriesKind"
     FROM events e
     JOIN calendars c ON c.id = e.calendar_id
-    LEFT JOIN event_dte_sale_links l ON l.event_id = e.id
-    LEFT JOIN dte_sale_details s ON s.id = l.dte_sale_detail_id
+    LEFT JOIN LATERAL (
+      SELECT
+        COUNT(*)::int AS "linkedCount",
+        MIN(l.dte_sale_detail_id) AS "linkedDteSaleDetailId",
+        MIN(l.matched_by) AS "linkedMatchedBy",
+        MAX(l.confidence_score::float) AS "confidenceScore",
+        MIN(s.client_name) AS "linkedClientName",
+        MIN(s.client_rut) AS "linkedClientRUT",
+        MIN(s.folio) AS "linkedFolio",
+        COALESCE(SUM(s.total_amount), 0)::float AS "linkedTotalAmount",
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'clientName', s.client_name,
+              'clientRUT', s.client_rut,
+              'confidenceScore', l.confidence_score::float,
+              'dteSaleDetailId', l.dte_sale_detail_id,
+              'folio', s.folio,
+              'matchedBy', l.matched_by,
+              'totalAmount', COALESCE(s.total_amount, 0)::float
+            )
+            ORDER BY s.folio ASC
+          ) FILTER (WHERE l.id IS NOT NULL),
+          '[]'::json
+        ) AS "linkedDocumentsJson"
+      FROM event_dte_sale_links l
+      JOIN dte_sale_details s ON s.id = l.dte_sale_detail_id
+      WHERE l.event_id = e.id
+    ) link_stats ON TRUE
     LEFT JOIN clinical_series cs ON e.clinical_series_id = cs.id
     LEFT JOIN LATERAL (
       SELECT
@@ -912,19 +1190,19 @@ export async function listEventDteLinkOverview(params: {
         (
           ${status} = 'all'
           AND (
-            l.id IS NOT NULL
+            link_stats."linkedCount" > 0
             OR COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
           )
         )
-        OR (${status} = 'linked' AND l.id IS NOT NULL)
+        OR (${status} = 'linked' AND link_stats."linkedCount" > 0)
         OR (
           ${status} = 'unlinked'
-          AND l.id IS NULL
+          AND link_stats."linkedCount" = 0
           AND COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
         )
         OR (
           ${status} = 'pending_issuance'
-          AND l.id IS NULL
+          AND link_stats."linkedCount" = 0
           AND COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) > ${today}::date
         )
       )
@@ -939,16 +1217,19 @@ export async function listEventDteLinkOverview(params: {
 
   const items = await Promise.all(
     rows.map(async (row) => {
+      let topBundleSuggestion: null | (EventDteBundleSuggestion & { amountDiff: null | number }) =
+        null;
       let topSuggestion: null | (EventDteSuggestion & { amountDiff: null | number }) = null;
+      const linkedDocuments = parseLinkedDocumentsJson(row.linkedDocumentsJson);
 
       const isDueForEmission = row.eventDate <= today;
-      const linkStatus: "linked" | "pending_issuance" | "unlinked" = row.linkedDteSaleDetailId
+      const linkStatus: "linked" | "pending_issuance" | "unlinked" = row.linkedCount > 0
         ? "linked"
         : isDueForEmission
           ? "unlinked"
           : "pending_issuance";
 
-      if (!row.linkedDteSaleDetailId && isDueForEmission) {
+      if (row.linkedCount === 0 && isDueForEmission) {
         const suggestions = await getEventDteSuggestions({
           calendarId: row.calendarId,
           eventId: row.eventId,
@@ -956,14 +1237,21 @@ export async function listEventDteLinkOverview(params: {
           limit: 3,
           sameDayOnly: true,
         });
+        const firstBundle = suggestions.bundleSuggestions[0];
         const first = suggestions.suggestions[0];
+        const amountHint =
+          row.amountPaid != null && Number.isFinite(row.amountPaid)
+            ? Number(row.amountPaid)
+            : row.amountExpected != null && Number.isFinite(row.amountExpected)
+              ? Number(row.amountExpected)
+              : null;
+        if (firstBundle) {
+          topBundleSuggestion = {
+            ...firstBundle,
+            amountDiff: amountHint != null ? Math.abs(amountHint - firstBundle.totalAmount) : null,
+          };
+        }
         if (first) {
-          const amountHint =
-            row.amountPaid != null && Number.isFinite(row.amountPaid)
-              ? Number(row.amountPaid)
-              : row.amountExpected != null && Number.isFinite(row.amountExpected)
-                ? Number(row.amountExpected)
-                : null;
           topSuggestion = {
             ...first,
             amountDiff: amountHint != null ? Math.abs(amountHint - first.totalAmount) : null,
@@ -989,15 +1277,17 @@ export async function listEventDteLinkOverview(params: {
               }
             : null,
         linkStatus,
-        linked: Boolean(row.linkedDteSaleDetailId),
+        linked: row.linkedCount > 0,
         linkedClientName: row.linkedClientName,
         linkedClientRUT: row.linkedClientRUT,
+        linkedDocuments,
         linkedDteSaleDetailId: row.linkedDteSaleDetailId,
         linkedFolio: row.linkedFolio,
         linkedMatchedBy: row.linkedMatchedBy,
         linkedTotalAmount: row.linkedTotalAmount,
         seriesKind: row.seriesKind,
         summary: row.summary,
+        topBundleSuggestion,
         topSuggestion,
       };
     }),
@@ -1037,9 +1327,9 @@ export async function listEventDteLinkOverview(params: {
   };
 }
 
-export async function getEventDteLinkByInternalEventId(
+export async function getEventDteLinksByInternalEventId(
   eventId: number,
-): Promise<EventDteLinkRecord | null> {
+): Promise<EventDteLinkRecord[]> {
   const rows = await db.$queryRaw<
     Array<{
       id: number;
@@ -1084,13 +1374,10 @@ export async function getEventDteLinkByInternalEventId(
     FROM event_dte_sale_links l
     JOIN dte_sale_details s ON s.id = l.dte_sale_detail_id
     WHERE l.event_id = ${eventId}
-    LIMIT 1
+    ORDER BY s.document_date ASC, s.folio ASC
   `;
 
-  const row = rows[0];
-  if (!row) return null;
-
-  return {
+  return rows.map((row) => ({
     id: row.id,
     eventId: row.eventId,
     dteSaleDetailId: row.dteSaleDetailId,
@@ -1111,13 +1398,14 @@ export async function getEventDteLinkByInternalEventId(
       folio: row.folio,
       totalAmount: row.totalAmount,
     },
-  };
+  }));
 }
 
 export async function confirmEventDteLink(params: {
   calendarId: string;
   confidenceScore?: number;
-  dteSaleDetailId: string;
+  dteSaleDetailId?: string;
+  dteSaleDetailIds?: string[];
   eventId: string;
   matchedBy?: "manual" | "mixed" | "name_exact" | "name_fuzzy" | "rut";
   matchedName?: null | string;
@@ -1129,57 +1417,79 @@ export async function confirmEventDteLink(params: {
     throw new Error("Evento no encontrado");
   }
 
+  const targetDteSaleDetailIds = [
+    ...(params.dteSaleDetailIds ?? []),
+    ...(params.dteSaleDetailId ? [params.dteSaleDetailId] : []),
+  ];
+  const normalizedDteSaleDetailIds = [...new Set(targetDteSaleDetailIds)].slice(0, 3);
+
+  if (normalizedDteSaleDetailIds.length === 0) {
+    throw new Error("Debes indicar al menos un DTE para confirmar el vínculo");
+  }
+
   const dteRows = await db.$queryRaw<Array<{ id: string }>>`
     SELECT s.id
     FROM dte_sale_details s
-    WHERE s.id = ${params.dteSaleDetailId}
-    LIMIT 1
+    WHERE s.id = ANY(${normalizedDteSaleDetailIds}::text[])
   `;
 
-  if (!dteRows[0]) {
-    throw new Error("DTE sale no encontrado");
+  if (dteRows.length !== normalizedDteSaleDetailIds.length) {
+    throw new Error("Uno o más DTE de venta no existen");
   }
 
   await db.$executeRaw`
-    INSERT INTO event_dte_sale_links (
-      event_id,
-      dte_sale_detail_id,
-      status,
-      matched_by,
-      confidence_score,
-      matched_rut,
-      matched_name,
-      evidence,
-      created_by,
-      created_at,
-      updated_at
-    ) VALUES (
-      ${event.eventId},
-      ${params.dteSaleDetailId},
-      'MANUAL',
-      ${params.matchedBy ?? "manual"},
-      ${Math.max(0, Math.min(100, params.confidenceScore ?? 100))},
-      ${params.matchedRUT ?? null},
-      ${params.matchedName ?? null},
-      ${JSON.stringify({ source: "manual_confirm" })}::jsonb,
-      ${params.userId},
-      NOW(),
-      NOW()
-    )
-    ON CONFLICT (event_id)
-    DO UPDATE SET
-      dte_sale_detail_id = EXCLUDED.dte_sale_detail_id,
-      status = EXCLUDED.status,
-      matched_by = EXCLUDED.matched_by,
-      confidence_score = EXCLUDED.confidence_score,
-      matched_rut = EXCLUDED.matched_rut,
-      matched_name = EXCLUDED.matched_name,
-      evidence = EXCLUDED.evidence,
-      created_by = EXCLUDED.created_by,
-      updated_at = NOW()
+    DELETE FROM event_dte_sale_links
+    WHERE event_id = ${event.eventId}
+       OR dte_sale_detail_id = ANY(${normalizedDteSaleDetailIds}::text[])
   `;
 
-  return getEventDteLinkByInternalEventId(event.eventId);
+  const evidence = JSON.stringify({
+    bundleSize: normalizedDteSaleDetailIds.length,
+    source: "manual_confirm",
+  });
+
+  for (const dteSaleDetailId of normalizedDteSaleDetailIds) {
+    await db.$executeRaw`
+      INSERT INTO event_dte_sale_links (
+        event_id,
+        dte_sale_detail_id,
+        status,
+        matched_by,
+        confidence_score,
+        matched_rut,
+        matched_name,
+        evidence,
+        created_by,
+        created_at,
+        updated_at
+      ) VALUES (
+        ${event.eventId},
+        ${dteSaleDetailId},
+        'MANUAL',
+        ${params.matchedBy ?? "manual"},
+        ${Math.max(0, Math.min(100, params.confidenceScore ?? 100))},
+        ${params.matchedRUT ?? null},
+        ${params.matchedName ?? null},
+        ${evidence}::jsonb,
+        ${params.userId},
+        NOW(),
+        NOW()
+      )
+      ON CONFLICT (dte_sale_detail_id)
+      DO UPDATE SET
+        event_id = EXCLUDED.event_id,
+        status = EXCLUDED.status,
+        matched_by = EXCLUDED.matched_by,
+        confidence_score = EXCLUDED.confidence_score,
+        matched_rut = EXCLUDED.matched_rut,
+        matched_name = EXCLUDED.matched_name,
+        evidence = EXCLUDED.evidence,
+        created_by = EXCLUDED.created_by,
+        updated_at = NOW()
+    `;
+  }
+
+  return getEventDteLinksByInternalEventId(event.eventId);
 }
 
 export async function unlinkEventDteLink(params: { calendarId: string; eventId: string }) {
@@ -1227,8 +1537,78 @@ export async function autoLinkEventDate(params: {
       limit: 3,
       sameDayOnly: true,
     });
+    const topBundle = suggestionsResponse.bundleSuggestions[0];
+    const secondBundle = suggestionsResponse.bundleSuggestions[1];
     const top = suggestionsResponse.suggestions[0];
     const second = suggestionsResponse.suggestions[1];
+
+    if (
+      suggestionsResponse.series?.kind === "SKIN_TEST" &&
+      topBundle &&
+      (!secondBundle || topBundle.confidenceScore - secondBundle.confidenceScore > 3)
+    ) {
+      if (topBundle.confidenceScore < minScore) {
+        skipped += 1;
+        const reason = `Score bajo bundle (${topBundle.confidenceScore})`;
+        await recordAutoLinkAttempt({
+          confidenceScore: topBundle.confidenceScore,
+          dteSaleDetailId: topBundle.dteSaleDetailIds[0] ?? null,
+          eventId: event.eventId,
+          reason,
+          status: "SKIPPED",
+          userId: params.userId,
+        });
+        incrementReason(skippedByReason, reason);
+        details.push({ eventId: event.externalEventId, reason });
+        continue;
+      }
+
+      const amountHint = computeAmountHint(event);
+      if (amountHint != null) {
+        const amountDiff = Math.abs(amountHint - topBundle.totalAmount);
+        if (amountDiff > MAX_AUTO_LINK_AMOUNT_DIFF) {
+          skipped += 1;
+          const reason = `Monto bundle no coincide (dif ${Math.round(amountDiff)})`;
+          await recordAutoLinkAttempt({
+            confidenceScore: topBundle.confidenceScore,
+            dteSaleDetailId: topBundle.dteSaleDetailIds[0] ?? null,
+            eventId: event.eventId,
+            reason,
+            status: "SKIPPED",
+            userId: params.userId,
+          });
+          incrementReason(skippedByReason, reason);
+          details.push({ eventId: event.externalEventId, reason });
+          continue;
+        }
+      }
+
+      await confirmEventDteLink({
+        calendarId: event.googleCalendarId,
+        confidenceScore: topBundle.confidenceScore,
+        dteSaleDetailIds: topBundle.dteSaleDetailIds,
+        eventId: event.externalEventId,
+        matchedBy: topBundle.method,
+        matchedName: topBundle.clientName,
+        matchedRUT: topBundle.clientRUT,
+        userId: params.userId,
+      });
+      await recordAutoLinkAttempt({
+        confidenceScore: topBundle.confidenceScore,
+        dteSaleDetailId: topBundle.dteSaleDetailIds[0] ?? null,
+        eventId: event.eventId,
+        reason: `Auto-linked bundle (${topBundle.confidenceScore})`,
+        status: "LINKED",
+        userId: params.userId,
+      });
+
+      linked += 1;
+      details.push({
+        eventId: event.externalEventId,
+        reason: `Auto-linked bundle (${topBundle.confidenceScore})`,
+      });
+      continue;
+    }
 
     if (!top) {
       skipped += 1;

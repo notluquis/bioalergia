@@ -376,6 +376,20 @@ export const EventDteSuggestionSchema = z.strictObject({
   totalAmount: z.number(),
 });
 
+export const EventDteBundleSuggestionSchema = z.strictObject({
+  clientName: z.string(),
+  clientRUT: z.string(),
+  confidenceScore: z.number(),
+  count: z.number().int().min(2).max(3),
+  documentDate: z.string(),
+  documents: z.array(EventDteSuggestionSchema).min(2).max(3),
+  dteSaleDetailIds: z.array(z.string()).min(2).max(3),
+  folios: z.array(z.string()).min(2).max(3),
+  method: z.enum(["mixed", "name_exact", "name_fuzzy", "rut"]),
+  reasons: z.array(z.string()),
+  totalAmount: z.number(),
+});
+
 export const ClinicalSeriesLinkedDocumentSchema = z.strictObject({
   clientName: z.string(),
   clientRUT: z.string(),
@@ -420,6 +434,7 @@ export const ClinicalSeriesSnapshotSchema = z.strictObject({
 
 export const EventDteSuggestionResponseSchema = z.strictObject({
   data: z.strictObject({
+    bundleSuggestions: z.array(EventDteBundleSuggestionSchema),
     event: z
       .strictObject({
         amountExpected: z.number().nullable(),
@@ -584,12 +599,26 @@ export const EventDteOverviewResponseSchema = z.strictObject({
         linked: z.boolean(),
         linkedClientName: z.string().nullable(),
         linkedClientRUT: z.string().nullable(),
+        linkedDocuments: z.array(
+          z.strictObject({
+            clientName: z.string(),
+            clientRUT: z.string(),
+            confidenceScore: z.number(),
+            dteSaleDetailId: z.string(),
+            folio: z.string(),
+            matchedBy: z.string(),
+            totalAmount: z.number(),
+          })
+        ),
         linkedDteSaleDetailId: z.string().nullable(),
         linkedFolio: z.string().nullable(),
         linkedMatchedBy: z.string().nullable(),
         linkedTotalAmount: z.number().nullable(),
         seriesKind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT"]).nullable(),
         summary: z.string().nullable(),
+        topBundleSuggestion: EventDteBundleSuggestionSchema.extend({
+          amountDiff: z.number().nullable(),
+        }).nullable(),
         topSuggestion: EventDteSuggestionSchema.extend({
           amountDiff: z.number().nullable(),
         }).nullable(),

@@ -55,6 +55,14 @@ describe("extractPatientHints", () => {
       );
       expect(patientName).toBe("pedro gonzalez");
     });
+
+    it("detects lowercase names with shorter surnames when enough real tokens are present", () => {
+      const { patientName } = extractPatientHints(
+        "llego 2da dosis acaros 0,2ml(30); benjamin saez jaque",
+        null,
+      );
+      expect(patientName).toBe("benjamin saez jaque");
+    });
   });
 
   describe("patientRut", () => {

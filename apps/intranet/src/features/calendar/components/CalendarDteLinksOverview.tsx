@@ -34,7 +34,11 @@ import {
   unlinkEventDteLink,
 } from "@/features/calendar/api";
 import { calendarDteLinkKeys, calendarDteLinkQueries } from "@/features/calendar/queries";
-import type { EventDteOverviewItem, EventDteSuggestion } from "@/features/calendar/types";
+import type {
+  EventDteBundleSuggestion,
+  EventDteOverviewItem,
+  EventDteSuggestion,
+} from "@/features/calendar/types";
 import { currencyFormatter } from "@/lib/format";
 
 const OVERVIEW_SKELETON_KEYS = [
@@ -302,7 +306,8 @@ function groupOverviewItemsByDate(items: EventDteOverviewItem[]): EventDayGroup[
 interface SuggestionExplorerProps {
   confirmPending: boolean;
   item: EventDteOverviewItem;
-  onConfirm: (candidate: EventDteSuggestion) => void;
+  onConfirmBundle: (candidate: EventDteBundleSuggestion) => void;
+  onConfirmSingle: (candidate: EventDteSuggestion) => void;
 }
 
 function SuggestionCandidateCard({
@@ -380,13 +385,107 @@ function SuggestionCandidateCard({
   );
 }
 
+function BundleSuggestionCard({
+  bundle,
+  confirmPending,
+  eventAmount,
+  index,
+  label,
+  onConfirm,
+}: Readonly<{
+  bundle: EventDteBundleSuggestion;
+  confirmPending: boolean;
+  eventAmount: null | number;
+  index: number;
+  label: null | string;
+  onConfirm: (bundle: EventDteBundleSuggestion) => void;
+}>) {
+  const diff = eventAmount != null ? Math.abs(eventAmount - bundle.totalAmount) : null;
+
+  return (
+    <Card className="gap-3" variant={index === 0 ? "secondary" : "default"}>
+      <Card.Header className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0 space-y-1">
+          <Card.Title className="truncate text-sm">{bundle.clientName}</Card.Title>
+          <Card.Description>
+            {bundle.clientRUT} · {bundle.folios.map((folio) => `Folio ${folio}`).join(" + ")} ·{" "}
+            {dayjs(bundle.documentDate).format("DD-MM-YYYY")}
+          </Card.Description>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Chip color="secondary" size="sm" variant="soft">
+            Sugerencia compuesta · {bundle.count} DTE
+          </Chip>
+          <Chip color={scoreColor(bundle.confidenceScore)} size="sm" variant="soft">
+            Score {scoreLabel(bundle.confidenceScore)}
+          </Chip>
+          {label ? (
+            <Chip color="default" size="sm" variant="tertiary">
+              {label}
+            </Chip>
+          ) : null}
+        </div>
+      </Card.Header>
+      <Card.Content className="grid grid-cols-2 gap-2 text-sm lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+        <Surface className="rounded-xl p-2.5" variant="secondary">
+          <p className="text-default-500 text-[11px] uppercase tracking-wide">Suma DTE</p>
+          <p className="font-medium leading-tight">
+            {currencyFormatter.format(bundle.totalAmount)}
+          </p>
+        </Surface>
+        <Surface className="rounded-xl p-2.5" variant="secondary">
+          <p className="text-default-500 text-[11px] uppercase tracking-wide">Diferencia</p>
+          <p className="font-medium leading-tight">
+            {diff != null ? currencyFormatter.format(diff) : "-"}
+          </p>
+        </Surface>
+        <Button
+          className="self-end lg:self-auto"
+          isPending={confirmPending}
+          size="sm"
+          variant={index === 0 ? "primary" : "tertiary"}
+          onPress={() => onConfirm(bundle)}
+        >
+          Vincular bundle
+        </Button>
+      </Card.Content>
+      <Card.Content className="gap-2 pt-0">
+        {bundle.documents.map((document) => (
+          <Surface
+            className="flex items-center justify-between gap-3 rounded-xl p-2.5"
+            key={document.dteSaleDetailId}
+            variant="secondary"
+          >
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium">Folio {document.folio}</p>
+              <Description className="text-xs">{document.clientRUT}</Description>
+            </div>
+            <Chip color="default" size="sm" variant="soft">
+              {currencyFormatter.format(document.totalAmount)}
+            </Chip>
+          </Surface>
+        ))}
+      </Card.Content>
+      <Card.Footer className="flex flex-wrap gap-2 pt-0">
+        {bundle.reasons.slice(0, 3).map((reason) => (
+          <Chip key={`${bundle.dteSaleDetailIds.join("-")}-${reason}`} size="sm" variant="soft">
+            {reason}
+          </Chip>
+        ))}
+      </Card.Footer>
+    </Card>
+  );
+}
+
 function SuggestionExplorer({
   confirmPending,
   item,
-  onConfirm,
+  onConfirmBundle,
+  onConfirmSingle,
 }: Readonly<SuggestionExplorerProps>) {
   const [isExpanded, setIsExpanded] = useState(
-    item.lastAutoLinkSkip?.reason === "Ambiguo" || item.topSuggestion == null
+    item.lastAutoLinkSkip?.reason === "Ambiguo" ||
+      (item.topSuggestion == null && item.topBundleSuggestion == null)
   );
 
   const suggestionsQuery = useQuery({
@@ -406,12 +505,18 @@ function SuggestionExplorer({
   });
 
   const suggestions = suggestionsQuery.data?.suggestions ?? [];
+  const bundleSuggestions = suggestionsQuery.data?.bundleSuggestions ?? [];
   const sameDayUnlinkedSuggestions = suggestionsQuery.data?.sameDayUnlinkedSuggestions ?? [];
   const topCandidates = suggestions.slice(0, 3);
+  const topBundles = bundleSuggestions.slice(0, 3);
   const topSameDayUnlinked = sameDayUnlinkedSuggestions.slice(0, 3);
   const label = seriesKindLabel(item.seriesKind);
   const disclosureCount =
-    suggestions.length > 0 ? suggestions.length : sameDayUnlinkedSuggestions.length;
+    bundleSuggestions.length > 0
+      ? bundleSuggestions.length
+      : suggestions.length > 0
+        ? suggestions.length
+        : sameDayUnlinkedSuggestions.length;
   const eventAmount = amountHint(item);
 
   return (
@@ -452,7 +557,25 @@ function SuggestionExplorer({
           !suggestionsQuery.isError &&
           item.linkStatus !== "pending_issuance" ? (
             <div className="space-y-3">
-              {topCandidates.length > 0 ? (
+              {topBundles.length > 0 ? (
+                <>
+                  <Alert status="warning">
+                    Test cutáneo con bundle sugerido. Todas las DTE del grupo comparten el mismo RUT
+                    y la suma calza con el monto del evento.
+                  </Alert>
+                  {topBundles.map((bundle, index) => (
+                    <BundleSuggestionCard
+                      bundle={bundle}
+                      confirmPending={confirmPending}
+                      eventAmount={eventAmount}
+                      index={index}
+                      key={bundle.dteSaleDetailIds.join("|")}
+                      label={label}
+                      onConfirm={onConfirmBundle}
+                    />
+                  ))}
+                </>
+              ) : topCandidates.length > 0 ? (
                 topCandidates.map((candidate, index) => (
                   <SuggestionCandidateCard
                     candidate={candidate}
@@ -461,7 +584,7 @@ function SuggestionExplorer({
                     index={index}
                     key={candidate.dteSaleDetailId}
                     label={label}
-                    onConfirm={onConfirm}
+                    onConfirm={onConfirmSingle}
                   />
                 ))
               ) : topSameDayUnlinked.length > 0 ? (
@@ -478,7 +601,7 @@ function SuggestionExplorer({
                       index={index}
                       key={candidate.dteSaleDetailId}
                       label={label}
-                      onConfirm={onConfirm}
+                      onConfirm={onConfirmSingle}
                     />
                   ))}
                 </>
@@ -539,13 +662,14 @@ export function CalendarDteLinksOverview({
       candidate,
       item,
     }: {
-      candidate: EventDteSuggestion;
+      candidate: EventDteBundleSuggestion | EventDteSuggestion;
       item: EventDteOverviewItem;
     }) => {
       await confirmEventDteLink({
         calendarId: item.calendarId,
         confidenceScore: candidate.confidenceScore,
-        dteSaleDetailId: candidate.dteSaleDetailId,
+        dteSaleDetailId: "dteSaleDetailId" in candidate ? candidate.dteSaleDetailId : undefined,
+        dteSaleDetailIds: "dteSaleDetailIds" in candidate ? candidate.dteSaleDetailIds : undefined,
         eventId: item.eventId,
         matchedBy: candidate.method,
         matchedName: candidate.clientName,
@@ -970,9 +1094,11 @@ export function CalendarDteLinksOverview({
                           <Accordion.Body className="border-default-200/70 border-t px-3 py-3 sm:px-4">
                             <div className="space-y-3">
                               {group.items.map((item) => {
+                                const primarySuggestion =
+                                  item.topBundleSuggestion ?? item.topSuggestion;
                                 const displayAmount = item.linked
                                   ? item.linkedTotalAmount
-                                  : (item.topSuggestion?.totalAmount ?? null);
+                                  : (primarySuggestion?.totalAmount ?? null);
                                 const currentHint = amountHint(item);
                                 const autoLinkSkipReason = item.lastAutoLinkSkip
                                   ? describeAutoLinkSkipReason(item.lastAutoLinkSkip.reason)
@@ -980,7 +1106,7 @@ export function CalendarDteLinksOverview({
                                 const localDiff =
                                   currentHint != null && displayAmount != null
                                     ? Math.abs(currentHint - displayAmount)
-                                    : (item.topSuggestion?.amountDiff ?? null);
+                                    : (primarySuggestion?.amountDiff ?? null);
 
                                 return (
                                   <Card
@@ -1015,12 +1141,22 @@ export function CalendarDteLinksOverview({
                                             {seriesKindLabel(item.seriesKind)}
                                           </Chip>
                                         ) : null}
+                                        {!item.linked && item.topBundleSuggestion ? (
+                                          <Chip color="secondary" size="sm" variant="soft">
+                                            Bundle · {item.topBundleSuggestion.count} DTE
+                                          </Chip>
+                                        ) : null}
+                                        {item.linked && item.linkedDocuments.length > 1 ? (
+                                          <Chip color="secondary" size="sm" variant="soft">
+                                            {item.linkedDocuments.length} DTE vinculadas
+                                          </Chip>
+                                        ) : null}
                                         {item.linkStatus !== "pending_issuance" ? (
                                           <Chip
                                             color={scoreColor(
                                               item.linked
                                                 ? item.confidenceScore
-                                                : (item.topSuggestion?.confidenceScore ?? null)
+                                                : (primarySuggestion?.confidenceScore ?? null)
                                             )}
                                             variant="soft"
                                           >
@@ -1028,7 +1164,7 @@ export function CalendarDteLinksOverview({
                                             {scoreLabel(
                                               item.linked
                                                 ? item.confidenceScore
-                                                : (item.topSuggestion?.confidenceScore ?? null)
+                                                : (primarySuggestion?.confidenceScore ?? null)
                                             )}
                                           </Chip>
                                         ) : null}
@@ -1083,10 +1219,18 @@ export function CalendarDteLinksOverview({
                                         </p>
                                         <p className="truncate font-medium leading-tight">
                                           {item.linked
-                                            ? `Folio ${item.linkedFolio ?? "-"}`
-                                            : item.topSuggestion
-                                              ? `Folio ${item.topSuggestion.folio}`
-                                              : "Sin sugerencia"}
+                                            ? item.linkedDocuments.length > 1
+                                              ? item.linkedDocuments
+                                                  .map((document) => `Folio ${document.folio}`)
+                                                  .join(" + ")
+                                              : `Folio ${item.linkedFolio ?? "-"}`
+                                            : item.topBundleSuggestion
+                                              ? item.topBundleSuggestion.folios
+                                                  .map((folio) => `Folio ${folio}`)
+                                                  .join(" + ")
+                                              : item.topSuggestion
+                                                ? `Folio ${item.topSuggestion.folio}`
+                                                : "Sin sugerencia"}
                                         </p>
                                       </Surface>
                                     </Card.Content>
@@ -1155,7 +1299,10 @@ export function CalendarDteLinksOverview({
                                         <SuggestionExplorer
                                           confirmPending={confirmMutation.isPending}
                                           item={item}
-                                          onConfirm={(candidate) =>
+                                          onConfirmBundle={(candidate) =>
+                                            confirmMutation.mutate({ item, candidate })
+                                          }
+                                          onConfirmSingle={(candidate) =>
                                             confirmMutation.mutate({ item, candidate })
                                           }
                                         />
@@ -1165,12 +1312,20 @@ export function CalendarDteLinksOverview({
                                     <Card.Footer className="flex flex-col gap-3 border-default-200/70 border-t pt-4 lg:flex-row lg:items-center lg:justify-between">
                                       <Description className="min-w-0">
                                         {item.linked
-                                          ? `${item.linkedClientName ?? "-"} · ${item.linkedClientRUT ?? "-"} · Folio ${item.linkedFolio ?? "-"}`
+                                          ? `${item.linkedClientName ?? "-"} · ${item.linkedClientRUT ?? "-"} · ${
+                                              item.linkedDocuments.length > 1
+                                                ? item.linkedDocuments
+                                                    .map((document) => `Folio ${document.folio}`)
+                                                    .join(" + ")
+                                                : `Folio ${item.linkedFolio ?? "-"}`
+                                            }`
                                           : item.linkStatus === "pending_issuance"
                                             ? "Evento en fecha futura: se revisa vínculo cuando llegue el día de emisión."
-                                            : item.topSuggestion
-                                              ? `${item.topSuggestion.clientName} · ${item.topSuggestion.clientRUT} · Folio ${item.topSuggestion.folio}`
-                                              : "Sin sugerencias para este evento"}
+                                            : item.topBundleSuggestion
+                                              ? `${item.topBundleSuggestion.clientName} · ${item.topBundleSuggestion.clientRUT} · ${item.topBundleSuggestion.folios.map((folio) => `Folio ${folio}`).join(" + ")}`
+                                              : item.topSuggestion
+                                                ? `${item.topSuggestion.clientName} · ${item.topSuggestion.clientRUT} · Folio ${item.topSuggestion.folio}`
+                                                : "Sin sugerencias para este evento"}
                                       </Description>
                                       <div className="flex w-full gap-2 lg:w-auto">
                                         {item.linked ? (
@@ -1187,19 +1342,24 @@ export function CalendarDteLinksOverview({
                                           <Button
                                             className="w-full lg:w-auto"
                                             isDisabled={
-                                              !item.topSuggestion ||
+                                              (!item.topSuggestion && !item.topBundleSuggestion) ||
                                               item.linkStatus === "pending_issuance"
                                             }
                                             isPending={confirmMutation.isPending}
                                             size="sm"
                                             variant="primary"
                                             onPress={() =>
-                                              item.topSuggestion
+                                              item.topBundleSuggestion
                                                 ? confirmMutation.mutate({
                                                     item,
-                                                    candidate: item.topSuggestion,
+                                                    candidate: item.topBundleSuggestion,
                                                   })
-                                                : undefined
+                                                : item.topSuggestion
+                                                  ? confirmMutation.mutate({
+                                                      item,
+                                                      candidate: item.topSuggestion,
+                                                    })
+                                                  : undefined
                                             }
                                           >
                                             Vincular sugerencia

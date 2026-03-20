@@ -10,9 +10,33 @@ dayjs.extend(timezone);
 const TIMEZONE = "America/Santiago";
 const RUT_REGEX = /\b\d{1,2}\.?\d{3}\.?\d{3}-?[\dkK]\b/g;
 const CAPITALIZED_NAME_REGEX = /([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+){1,4})/g;
-// Fallback: all-lowercase multi-word sequences like "celmira morales inostroza"
-// Requires 7+ chars per word to avoid matching short medical terms (parche=6, dosis=5, carmen=6)
-const LOWERCASE_NAME_REGEX = /([a-záéíóúñ]{7,}(?:\s+[a-záéíóúñ]{7,}){1,3})/g;
+const LOWERCASE_NAME_STOPWORDS = new Set([
+  "acaros",
+  "administracion",
+  "aeroalergenos",
+  "alimentario",
+  "ambiente",
+  "clustoid",
+  "confirma",
+  "control",
+  "dosis",
+  "gramineas",
+  "instalacion",
+  "llego",
+  "lectura",
+  "mantencion",
+  "mensual",
+  "parche",
+  "presento",
+  "reaccion",
+  "retiro",
+  "semanal",
+  "se",
+  "subcutaneo",
+  "test",
+  "tratamiento",
+  "vacuna",
+]);
 
 type ClinicalSeriesKind = "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT";
 type ClinicalSeriesStageKind = "DOSE" | "INSTALLATION" | "MAINTENANCE" | "READING";
@@ -115,6 +139,44 @@ function normalizeName(value: string): string {
     .trim();
 }
 
+function extractLowercaseNameHints(text: string): string[] {
+  const normalized = normalizeName(text);
+  if (!normalized) return [];
+
+  const tokens = normalized
+    .split(" ")
+    .map((token) => token.trim())
+    .filter(Boolean);
+
+  const matches = new Set<string>();
+
+  for (let start = 0; start < tokens.length; start += 1) {
+    for (let length = 2; length <= 4; length += 1) {
+      const candidate = tokens.slice(start, start + length);
+      if (candidate.length < 2) continue;
+      if (
+        candidate.some(
+          (token) =>
+            token.length < 4 || /\d/.test(token) || LOWERCASE_NAME_STOPWORDS.has(token),
+        )
+      ) {
+        continue;
+      }
+      if (!candidate.some((token) => token.length >= 7)) {
+        continue;
+      }
+
+      matches.add(candidate.join(" "));
+    }
+  }
+
+  return [...matches].sort((a, b) => {
+    const tokenDiff = b.split(" ").length - a.split(" ").length;
+    if (tokenDiff !== 0) return tokenDiff;
+    return b.length - a.length;
+  });
+}
+
 export function extractPatientHints(summary: null | string, description: null | string) {
   const identity = extractIdentityHints(summary, description);
   return {
@@ -135,15 +197,7 @@ export function extractIdentityHints(summary: null | string, description: null |
           normalizeName((match[1] ?? "").trim()),
         ).filter((value) => value.length >= 5),
       ),
-    ].concat(
-      [
-        ...new Set(
-          Array.from(text.matchAll(LOWERCASE_NAME_REGEX), (match) =>
-            normalizeName((match[1] ?? "").trim()),
-          ).filter((value) => value.length >= 5),
-        ),
-      ],
-    );
+    ].concat(extractLowercaseNameHints(text));
 
   const uniqueNames = [...new Set(names)];
   const patientRut = ruts[0] ?? null;

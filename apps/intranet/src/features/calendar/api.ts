@@ -323,7 +323,8 @@ export async function fetchEventDteSuggestions(params: {
 export async function confirmEventDteLink(payload: {
   calendarId: string;
   confidenceScore?: number;
-  dteSaleDetailId: string;
+  dteSaleDetailId?: string;
+  dteSaleDetailIds?: string[];
   eventId: string;
   matchedBy?: "manual" | "mixed" | "name_exact" | "name_fuzzy" | "rut";
   matchedName?: null | string;

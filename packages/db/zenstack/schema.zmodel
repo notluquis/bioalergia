@@ -2011,8 +2011,8 @@ model DTESaleDetail {
 
 model EventDteSaleLink {
   id              BigInt        @id @default(autoincrement())
-  eventId         Int           @unique @map("event_id")
-  dteSaleDetailId String        @map("dte_sale_detail_id")
+  eventId         Int           @map("event_id")
+  dteSaleDetailId String        @unique @map("dte_sale_detail_id")
   status          String        @default("CONFIRMED") @db.VarChar(20)
   matchedBy       String        @map("matched_by") @db.VarChar(30)
   confidenceScore Decimal       @map("confidence_score") @db.Decimal(5, 2)
@@ -2031,7 +2031,7 @@ model EventDteSaleLink {
   @@allow('read', auth().status == 'ACTIVE')
   @@allow('create,update,delete', auth().status == 'ACTIVE')
 
-  @@index([dteSaleDetailId])
+  @@index([eventId])
   @@index([createdAt(sort: Desc)])
   @@map("event_dte_sale_links")
 }

@@ -210,7 +210,22 @@ export interface EventDteSuggestion {
   totalAmount: number;
 }
 
+export interface EventDteBundleSuggestion {
+  clientName: string;
+  clientRUT: string;
+  confidenceScore: number;
+  count: number;
+  documentDate: string;
+  documents: EventDteSuggestion[];
+  dteSaleDetailIds: string[];
+  folios: string[];
+  method: "mixed" | "name_exact" | "name_fuzzy" | "rut";
+  reasons: string[];
+  totalAmount: number;
+}
+
 export interface EventDteSuggestionResponse {
+  bundleSuggestions: EventDteBundleSuggestion[];
   event: null | {
     amountExpected: null | number;
     amountPaid: null | number;
@@ -515,6 +530,10 @@ export interface EventDteOverviewSuggestion extends EventDteSuggestion {
   amountDiff: null | number;
 }
 
+export interface EventDteOverviewBundleSuggestion extends EventDteBundleSuggestion {
+  amountDiff: null | number;
+}
+
 export interface EventDteOverviewAutoLinkSkip {
   attemptedAt: string;
   reason: string;
@@ -535,12 +554,22 @@ export interface EventDteOverviewItem {
   linked: boolean;
   linkedClientName: null | string;
   linkedClientRUT: null | string;
+  linkedDocuments: Array<{
+    clientName: string;
+    clientRUT: string;
+    confidenceScore: number;
+    dteSaleDetailId: string;
+    folio: string;
+    matchedBy: string;
+    totalAmount: number;
+  }>;
   linkedDteSaleDetailId: null | string;
   linkedFolio: null | string;
   linkedMatchedBy: null | string;
   linkedTotalAmount: null | number;
   seriesKind: null | "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT";
   summary: null | string;
+  topBundleSuggestion: EventDteOverviewBundleSuggestion | null;
   topSuggestion: EventDteOverviewSuggestion | null;
 }
 

@@ -29,11 +29,20 @@ export const dteEventLinksJobStatusInputSchema = z.object({
 export const dteEventLinksConfirmInputSchema = z.object({
   calendarId: z.string().min(1),
   confidenceScore: z.number().min(0).max(100).optional(),
-  dteSaleDetailId: z.string().min(1),
+  dteSaleDetailId: z.string().min(1).optional(),
+  dteSaleDetailIds: z.array(z.string().min(1)).min(1).max(3).optional(),
   eventId: z.string().min(1),
   matchedBy: z.enum(["manual", "mixed", "name_exact", "name_fuzzy", "rut"]).optional(),
   matchedName: z.string().nullable().optional(),
   matchedRUT: z.string().nullable().optional(),
+}).superRefine((value, ctx) => {
+  if (!value.dteSaleDetailId && (!value.dteSaleDetailIds || value.dteSaleDetailIds.length === 0)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Debes enviar al menos un DTE para vincular.",
+      path: ["dteSaleDetailId"],
+    });
+  }
 });
 
 export const dteEventLinksUnlinkInputSchema = z.object({
@@ -75,6 +84,20 @@ export const dteEventLinksSuggestionSchema = z.object({
   totalAmount: z.number(),
 });
 
+export const dteEventLinksBundleSuggestionSchema = z.object({
+  clientName: z.string(),
+  clientRUT: z.string(),
+  confidenceScore: z.number(),
+  count: z.number().int().min(2).max(3),
+  documentDate: z.string(),
+  documents: z.array(dteEventLinksSuggestionSchema).min(2).max(3),
+  dteSaleDetailIds: z.array(z.string()).min(2).max(3),
+  folios: z.array(z.string()).min(2).max(3),
+  method: z.enum(["mixed", "name_exact", "name_fuzzy", "rut"]),
+  reasons: z.array(z.string()),
+  totalAmount: z.number(),
+});
+
 export const dteEventLinksByDayLinkSchema = z.object({
   calendarId: z.string(),
   clientName: z.string(),
@@ -89,6 +112,7 @@ export const dteEventLinksByDayLinkSchema = z.object({
 });
 
 export const dteEventLinksSuggestionsResponseSchema = z.object({
+  bundleSuggestions: z.array(dteEventLinksBundleSuggestionSchema),
   event: z
     .object({
       amountExpected: z.number().nullable(),
@@ -174,12 +198,28 @@ export const dteEventLinksOverviewResponseSchema = z.object({
       linked: z.boolean(),
       linkedClientName: z.string().nullable(),
       linkedClientRUT: z.string().nullable(),
+      linkedDocuments: z.array(
+        z.object({
+          clientName: z.string(),
+          clientRUT: z.string(),
+          confidenceScore: z.number(),
+          dteSaleDetailId: z.string(),
+          folio: z.string(),
+          matchedBy: z.string(),
+          totalAmount: z.number(),
+        }),
+      ),
       linkedDteSaleDetailId: z.string().nullable(),
       linkedFolio: z.string().nullable(),
       linkedMatchedBy: z.string().nullable(),
       linkedTotalAmount: z.number().nullable(),
       seriesKind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT"]).nullable(),
       summary: z.string().nullable(),
+      topBundleSuggestion: dteEventLinksBundleSuggestionSchema
+        .extend({
+          amountDiff: z.number().nullable(),
+        })
+        .nullable(),
       topSuggestion: dteEventLinksSuggestionSchema
         .extend({
           amountDiff: z.number().nullable(),
