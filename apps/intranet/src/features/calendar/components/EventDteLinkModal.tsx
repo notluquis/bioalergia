@@ -1,4 +1,4 @@
-import { Button, Description, Modal, Tooltip } from "@heroui/react";
+import { Button, Chip, Description, Modal, Tooltip } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
@@ -9,6 +9,7 @@ import { confirmEventDteLink, unlinkEventDteLink } from "@/features/calendar/api
 import { calendarDteLinkKeys, calendarDteLinkQueries } from "@/features/calendar/queries";
 import type { CalendarEventDetail, EventDteMatchHypothesis } from "@/features/calendar/types";
 import { currencyFormatter } from "@/lib/format";
+const WARNING_REASON_PREFIX = "Advertencia:";
 
 interface EventDteLinkModalProps {
   event: CalendarEventDetail | null;
@@ -32,6 +33,10 @@ interface EventDteLinkRow {
   hypothesis?: EventDteMatchHypothesis;
   hypothesisKind?: "bundle" | "single";
   policyKey?: "default_same_day" | "same_day_unlinked_fallback" | "skin_test_bundle";
+}
+
+function warningReasons(reasons: string[]): string[] {
+  return reasons.filter((reason) => reason.startsWith(WARNING_REASON_PREFIX));
 }
 
 export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDteLinkModalProps) {
@@ -181,6 +186,31 @@ export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDte
       {
         accessorKey: "matchedBy",
         header: "Método",
+      },
+      {
+        id: "warnings",
+        header: "Alertas",
+        cell: ({ row }) => {
+          const warnings = warningReasons(row.original.reasons);
+          if (warnings.length === 0) return null;
+          return (
+            <Tooltip>
+              <Tooltip.Trigger>
+                <Chip color="warning" size="sm" variant="soft">
+                  {warnings.length === 1 ? "Advertencia" : `${warnings.length} alertas`}
+                </Chip>
+              </Tooltip.Trigger>
+              <Tooltip.Content className="max-w-sm">
+                <div className="space-y-1">
+                  {warnings.map((warning) => (
+                    <p key={warning}>{warning}</p>
+                  ))}
+                </div>
+              </Tooltip.Content>
+            </Tooltip>
+          );
+        },
+        size: 140,
       },
       {
         id: "actions",

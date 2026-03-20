@@ -56,6 +56,7 @@ type AutoLinkStrategy = "missing_only" | "relink_all";
 type HypothesisKind = "bundle" | "single";
 type PolicyKey = "default_same_day" | "same_day_unlinked_fallback" | "skin_test_bundle";
 type FeedbackAction = "confirmed" | "manual_override" | "rejected" | "unlinked";
+const CROSS_SERIES_WARNING_PREFIX = "Advertencia:";
 
 interface SkipReasonCount {
   count: number;
@@ -189,6 +190,14 @@ interface EventDteLinkedDocument {
   folio: string;
   matchedBy: string;
   totalAmount: number;
+}
+
+interface SameKindRutConflictRow {
+  clientRUT: string;
+  patientName: null | string;
+  patientRut: null | string;
+  seriesId: number;
+  status: "ACTIVE" | "CANCELLED" | "COMPLETED";
 }
 
 interface EventRow {
@@ -590,6 +599,97 @@ function currencyFormatterForReason(value: number): string {
   }).format(value);
 }
 
+function clinicalSeriesKindLabel(
+  kind: EventIdentityClaims["seriesKind"] | ClinicalSeriesSnapshot["kind"] | null,
+): string {
+  if (kind === "PATCH_TEST") return "test de parche";
+  if (kind === "SKIN_TEST") return "test cutáneo";
+  if (kind === "SUBCUTANEOUS_TREATMENT") return "tratamiento subcutáneo";
+  return "serie clínica";
+}
+
+function isSamePatientIdentity(params: {
+  currentPatientName: null | string;
+  currentPatientRut: null | string;
+  otherPatientName: null | string;
+  otherPatientRut: null | string;
+}) {
+  const currentRut = params.currentPatientRut ? normalizeRut(params.currentPatientRut) : null;
+  const otherRut = params.otherPatientRut ? normalizeRut(params.otherPatientRut) : null;
+  if (currentRut && otherRut) return currentRut === otherRut;
+
+  const currentName = params.currentPatientName ? normalizeName(params.currentPatientName) : "";
+  const otherName = params.otherPatientName ? normalizeName(params.otherPatientName) : "";
+  if (currentName && otherName) return currentName === otherName;
+
+  return false;
+}
+
+async function getSameKindRutConflictWarnings(params: {
+  candidateRuts: string[];
+  currentPatientName: null | string;
+  currentPatientRut: null | string;
+  seriesId: number;
+  seriesKind: ClinicalSeriesSnapshot["kind"];
+}) {
+  const normalizedCandidateRuts = [
+    ...new Set(params.candidateRuts.map((rut) => normalizeRut(rut) || rut).filter(Boolean)),
+  ];
+  if (normalizedCandidateRuts.length === 0) return new Map<string, string>();
+
+  const rows = await db.$queryRaw<SameKindRutConflictRow[]>`
+    SELECT DISTINCT ON (s.client_rut, cs.id)
+      s.client_rut AS "clientRUT",
+      cs.id AS "seriesId",
+      cs.patient_name AS "patientName",
+      cs.patient_rut AS "patientRut",
+      cs.status::text AS "status"
+    FROM event_dte_sale_links l
+    JOIN events e ON e.id = l.event_id
+    JOIN clinical_series cs ON cs.id = e.clinical_series_id
+    JOIN dte_sale_details s ON s.id = l.dte_sale_detail_id
+    WHERE cs.id <> ${params.seriesId}
+      AND cs.kind = ${params.seriesKind}
+      AND s.client_rut = ANY(${normalizedCandidateRuts}::text[])
+    ORDER BY s.client_rut, cs.id, l.updated_at DESC
+  `;
+
+  const byRut = new Map<string, SameKindRutConflictRow[]>();
+  for (const row of rows) {
+    const normalizedRut = normalizeRut(row.clientRUT) || row.clientRUT;
+    if (
+      isSamePatientIdentity({
+        currentPatientName: params.currentPatientName,
+        currentPatientRut: params.currentPatientRut,
+        otherPatientName: row.patientName,
+        otherPatientRut: row.patientRut,
+      })
+    ) {
+      continue;
+    }
+
+    const current = byRut.get(normalizedRut) ?? [];
+    current.push(row);
+    byRut.set(normalizedRut, current);
+  }
+
+  const warnings = new Map<string, string>();
+  for (const [rut, conflicts] of byRut) {
+    if (conflicts.length === 0) continue;
+    const examples = conflicts
+      .slice(0, 2)
+      .map((conflict) => conflict.patientName ?? conflict.patientRut ?? `Serie #${conflict.seriesId}`);
+    const countLabel = conflicts.length === 1 ? "otra serie" : `${conflicts.length} otras series`;
+    const examplesLabel = examples.length > 0 ? ` Ejemplos: ${examples.join(" · ")}.` : "";
+    warnings.set(
+      rut,
+      `${CROSS_SERIES_WARNING_PREFIX} este RUT ya aparece vinculado en ${countLabel} de ${clinicalSeriesKindLabel(params.seriesKind)} con otro paciente.${examplesLabel}`,
+    );
+  }
+
+  return warnings;
+}
+
 function isHypothesisAmbiguous(top: MatchHypothesis, second: MatchHypothesis | undefined): boolean {
   if (!second) return false;
   const topExactRut = top.signals.some((signal) => signal.code === "exact_rut");
@@ -625,6 +725,7 @@ export function scoreCandidate(params: {
 function analyzeCandidate(params: {
   amountHint: null | number;
   candidate: DteSaleRow;
+  crossSeriesWarningByRut?: Map<string, string>;
   nameClaims: string[];
   rutClaims: string[];
   seriesLinkedRuts: string[];
@@ -727,6 +828,14 @@ function analyzeCandidate(params: {
 
   if (params.candidate.linkedEventsCount === 0) {
     signals.push(toSignal("document_free", "DTE libre", 0));
+  }
+
+  const crossSeriesWarning = params.crossSeriesWarningByRut?.get(candidateRut);
+  if (crossSeriesWarning) {
+    signals.push(
+      toSignal("cross_series_same_rut_warning", "RUT presente en otra serie del mismo tipo", 0),
+    );
+    reasons.push(crossSeriesWarning);
   }
 
   const confidenceScore = Math.max(0, Math.min(100, score));
@@ -1111,6 +1220,7 @@ async function retrieveDteCandidates(params: {
 function buildHypotheses(params: {
   claims: EventIdentityClaims;
   candidates: DteSaleRow[];
+  crossSeriesWarningByRut?: Map<string, string>;
   fallbackLimit: number;
   limit: number;
 }): {
@@ -1122,6 +1232,7 @@ function buildHypotheses(params: {
     analyzeCandidate({
       amountHint: params.claims.amountHint,
       candidate,
+      crossSeriesWarningByRut: params.crossSeriesWarningByRut,
       nameClaims: params.claims.nameClaims,
       rutClaims: params.claims.rutClaims,
       seriesLinkedRuts: params.claims.seriesLinkedRuts,
@@ -1242,9 +1353,21 @@ export async function getEventDteSuggestions(params: {
     to,
   });
 
+  const crossSeriesWarningByRut =
+    series != null
+      ? await getSameKindRutConflictWarnings({
+          candidateRuts: candidates.map((candidate) => candidate.clientRUT),
+          currentPatientName: series.patientName,
+          currentPatientRut: series.patientRut,
+          seriesId: series.id,
+          seriesKind: series.kind,
+        })
+      : new Map<string, string>();
+
   const { candidateSetSummary, fallbackCandidates, hypotheses } = buildHypotheses({
     claims,
     candidates,
+    crossSeriesWarningByRut,
     fallbackLimit: params.limit ?? 5,
     limit: params.limit ?? 15,
   });

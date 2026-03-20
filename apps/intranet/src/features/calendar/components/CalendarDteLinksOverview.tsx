@@ -49,6 +49,7 @@ const OVERVIEW_SKELETON_KEYS = [
   "overview-skeleton-5",
   "overview-skeleton-6",
 ] as const;
+const WARNING_REASON_PREFIX = "Advertencia:";
 
 export type LinkStatusFilter = "all" | "linked" | "pending_issuance" | "unlinked";
 
@@ -289,6 +290,20 @@ function suggestionMethodLabel(method: EventDteSuggestion["method"]): string {
   return "RUT";
 }
 
+function warningReasons(reasons: string[]): string[] {
+  return reasons.filter((reason) => reason.startsWith(WARNING_REASON_PREFIX));
+}
+
+function nonWarningReasons(reasons: string[]): string[] {
+  return reasons.filter((reason) => !reason.startsWith(WARNING_REASON_PREFIX));
+}
+
+function warningLabel(reasons: string[]): null | string {
+  const warnings = warningReasons(reasons);
+  if (warnings.length === 0) return null;
+  return warnings.length === 1 ? "Advertencia de serie" : `${warnings.length} advertencias`;
+}
+
 function KpiTile({ description, title, value }: Readonly<KpiTileProps>) {
   return (
     <Surface className="rounded-2xl border border-default-200/70 p-4" variant="secondary">
@@ -358,6 +373,8 @@ function SuggestionCandidateCard({
   onConfirm: (candidate: EventDteSuggestion) => void;
 }>) {
   const diff = eventAmount != null ? Math.abs(eventAmount - candidate.totalAmount) : null;
+  const candidateWarnings = warningReasons(candidate.reasons);
+  const candidateNotes = nonWarningReasons(candidate.reasons);
 
   return (
     <Card className="gap-3" variant={index === 0 ? "secondary" : "default"}>
@@ -376,6 +393,11 @@ function SuggestionCandidateCard({
           <Chip color="default" size="sm" variant="soft">
             {suggestionMethodLabel(candidate.method)}
           </Chip>
+          {candidateWarnings.length > 0 ? (
+            <Chip color="warning" size="sm" variant="soft">
+              {warningLabel(candidate.reasons)}
+            </Chip>
+          ) : null}
           {label ? (
             <Chip color="default" size="sm" variant="tertiary">
               {label}
@@ -406,8 +428,13 @@ function SuggestionCandidateCard({
           Vincular este DTE
         </Button>
       </Card.Content>
+      {candidateWarnings.length > 0 ? (
+        <Card.Content className="pt-0">
+          <Alert status="warning">{candidateWarnings[0]}</Alert>
+        </Card.Content>
+      ) : null}
       <Card.Footer className="flex flex-wrap gap-2 pt-0">
-        {candidate.reasons.slice(0, 3).map((reason) => (
+        {candidateNotes.slice(0, 3).map((reason) => (
           <Chip key={`${candidate.dteSaleDetailId}-${reason}`} size="sm" variant="soft">
             {reason}
           </Chip>
@@ -434,6 +461,8 @@ function HypothesisCard({
 }>) {
   const diff = eventAmount != null ? Math.abs(eventAmount - hypothesis.totalAmount) : null;
   const isBundle = hypothesis.kind === "bundle";
+  const hypothesisWarnings = warningReasons(hypothesis.reasons);
+  const hypothesisNotes = nonWarningReasons(hypothesis.reasons);
 
   return (
     <Card className="gap-3" variant={index === 0 ? "secondary" : "default"}>
@@ -458,6 +487,11 @@ function HypothesisCard({
           <Chip color="default" size="sm" variant="soft">
             {suggestionMethodLabel(hypothesis.method)}
           </Chip>
+          {hypothesisWarnings.length > 0 ? (
+            <Chip color="warning" size="sm" variant="soft">
+              {warningLabel(hypothesis.reasons)}
+            </Chip>
+          ) : null}
           {label ? (
             <Chip color="default" size="sm" variant="tertiary">
               {label}
@@ -507,8 +541,13 @@ function HypothesisCard({
           </Surface>
         ))}
       </Card.Content>
+      {hypothesisWarnings.length > 0 ? (
+        <Card.Content className="pt-0">
+          <Alert status="warning">{hypothesisWarnings[0]}</Alert>
+        </Card.Content>
+      ) : null}
       <Card.Footer className="flex flex-wrap gap-2 pt-0">
-        {hypothesis.reasons.slice(0, 3).map((reason) => (
+        {hypothesisNotes.slice(0, 3).map((reason) => (
           <Chip key={`${hypothesis.dteSaleDetailIds.join("-")}-${reason}`} size="sm" variant="soft">
             {reason}
           </Chip>
@@ -1138,6 +1177,9 @@ export function CalendarDteLinksOverview({
                                       reason: item.lastAutoLinkSkip.reason,
                                     })
                                   : null;
+                                const primaryWarningLabel = primarySuggestion
+                                  ? warningLabel(primarySuggestion.reasons)
+                                  : null;
 
                                 return (
                                   <Card
@@ -1203,6 +1245,11 @@ export function CalendarDteLinksOverview({
                                         {item.linked && (item.confidenceScore ?? 0) === 100 ? (
                                           <Chip color="success" variant="soft">
                                             Perfecto 100
+                                          </Chip>
+                                        ) : null}
+                                        {!item.linked && primaryWarningLabel ? (
+                                          <Chip color="warning" size="sm" variant="soft">
+                                            {primaryWarningLabel}
                                           </Chip>
                                         ) : null}
                                       </div>
