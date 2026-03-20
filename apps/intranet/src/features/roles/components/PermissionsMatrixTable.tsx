@@ -1,9 +1,10 @@
-import { Button, Checkbox, Dropdown, ScrollShadow, Separator } from "@heroui/react";
-import { Check, ChevronDown, ChevronRight, Eye, Pencil, Trash2 } from "lucide-react";
+import { Button, Dropdown, ScrollShadow, Separator } from "@heroui/react";
+import { ChevronDown, ChevronRight, Eye, Pencil, Trash2 } from "lucide-react";
 import { Fragment, useState } from "react";
 import type { Permission, Role } from "@/types/roles";
 
 import { BulkToggleCell } from "./BulkToggleCell";
+import { RolePermissionCheckbox } from "./RolePermissionCheckbox";
 
 export interface MatrixItem {
   icon: React.ComponentType<{ className?: string }>;
@@ -307,21 +308,15 @@ function PermissionCell({
 
   return (
     <div className={`flex items-center justify-center ${className || ""}`}>
-      <Checkbox
-        aria-label={`Permiso ${permissionId} para rol ${role.name}`}
-        className="justify-center"
+      <RolePermissionCheckbox
+        ariaLabel={`Permiso ${permissionId} para rol ${role.name}`}
         isDisabled={isUpdating}
         isSelected={hasAccess}
+        isUpdating={isUpdating}
         onChange={() => {
           onToggle(role, permissionId);
         }}
-      >
-        <Checkbox.Control>
-          <Checkbox.Indicator>
-            {({ isSelected }) => (isSelected ? <Check className="h-3.5 w-3.5" /> : null)}
-          </Checkbox.Indicator>
-        </Checkbox.Control>
-      </Checkbox>
+      />
     </div>
   );
 }

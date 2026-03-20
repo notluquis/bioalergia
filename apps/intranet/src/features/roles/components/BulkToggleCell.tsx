@@ -1,7 +1,5 @@
-import { Checkbox } from "@heroui/react";
-import { Loader2 } from "lucide-react";
-
 import type { Role } from "@/types/roles";
+import { RolePermissionCheckbox } from "./RolePermissionCheckbox";
 
 export function BulkToggleCell({
   className,
@@ -28,24 +26,16 @@ export function BulkToggleCell({
 
   return (
     <div className={`flex items-center justify-center p-0 ${className || ""}`}>
-      <Checkbox
-        aria-label={`Permisos agrupados para rol ${role.name}`}
-        className="justify-center"
+      <RolePermissionCheckbox
+        ariaLabel={`Permisos agrupados para rol ${role.name}`}
         isDisabled={isUpdating}
         isIndeterminate={somePresent}
         isSelected={allPresent}
+        isUpdating={isUpdating}
         onChange={() => {
           onToggle(role, permissionIds);
         }}
-      >
-        <Checkbox.Control>
-          {isUpdating ? (
-            <Loader2 className="h-4 w-4 animate-spin text-default-300" />
-          ) : (
-            <Checkbox.Indicator />
-          )}
-        </Checkbox.Control>
-      </Checkbox>
+      />
     </div>
   );
 }
