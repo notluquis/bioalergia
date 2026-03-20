@@ -7,7 +7,11 @@ import { DataTable } from "@/components/data-table/DataTable";
 import { useToast } from "@/context/ToastContext";
 import { confirmEventDteLink, unlinkEventDteLink } from "@/features/calendar/api";
 import { calendarDteLinkKeys, calendarDteLinkQueries } from "@/features/calendar/queries";
-import type { CalendarEventDetail, EventDteSuggestion } from "@/features/calendar/types";
+import type {
+  CalendarEventDetail,
+  EventDteMatchHypothesis,
+  EventDteSuggestion,
+} from "@/features/calendar/types";
 import { currencyFormatter } from "@/lib/format";
 
 interface EventDteLinkModalProps {
@@ -15,6 +19,23 @@ interface EventDteLinkModalProps {
   isOpen: boolean;
   onClose: () => void;
   onLinked: () => void;
+}
+
+interface EventDteLinkRow {
+  clientName: string;
+  clientRUT: string;
+  confidenceScore: number;
+  dteSaleDetailIds: string[];
+  folioLabel: string;
+  key: string;
+  matchedBy: "manual" | "mixed" | "name_exact" | "name_fuzzy" | "rut";
+  matchedName: string;
+  matchedRUT: string;
+  reasons: string[];
+  totalAmount: number;
+  hypothesis?: EventDteMatchHypothesis;
+  hypothesisKind?: "bundle" | "single";
+  policyKey?: "default_same_day" | "same_day_unlinked_fallback" | "skin_test_bundle";
 }
 
 export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDteLinkModalProps) {
@@ -33,15 +54,18 @@ export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDte
   });
 
   const confirmMutation = useMutation({
-    mutationFn: (candidate: EventDteSuggestion) =>
+    mutationFn: (candidate: EventDteLinkRow) =>
       confirmEventDteLink({
         calendarId: event?.calendarId ?? "",
         confidenceScore: candidate.confidenceScore,
-        dteSaleDetailId: candidate.dteSaleDetailId,
+        dteSaleDetailIds: candidate.dteSaleDetailIds,
         eventId: event?.eventId ?? "",
-        matchedBy: candidate.method,
-        matchedName: candidate.clientName,
-        matchedRUT: candidate.clientRUT,
+        hypothesis: candidate.hypothesis,
+        hypothesisKind: candidate.hypothesisKind,
+        matchedBy: candidate.matchedBy,
+        matchedName: candidate.matchedName,
+        matchedRUT: candidate.matchedRUT,
+        policyKey: candidate.policyKey,
       }),
     onSuccess: async () => {
       toast.success("Vínculo DTE confirmado");
@@ -72,10 +96,47 @@ export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDte
     },
   });
 
-  const candidates = useMemo(
-    () => suggestionsQuery.data?.suggestions ?? [],
-    [suggestionsQuery.data]
-  );
+  const candidates = useMemo(() => {
+    const hypotheses = suggestionsQuery.data?.hypotheses ?? [];
+    const hypothesisRows = hypotheses.map((hypothesis) => ({
+      clientName: hypothesis.clientName,
+      clientRUT: hypothesis.clientRUT,
+      confidenceScore: hypothesis.score,
+      dteSaleDetailIds: hypothesis.dteSaleDetailIds,
+      folioLabel:
+        hypothesis.kind === "bundle"
+          ? `Folios ${hypothesis.folios.join(", ")}`
+          : `Folio ${hypothesis.folios[0] ?? "-"}`,
+      hypothesis,
+      hypothesisKind: hypothesis.kind,
+      key: hypothesis.hypothesisId,
+      matchedBy: hypothesis.method,
+      matchedName: hypothesis.clientName,
+      matchedRUT: hypothesis.clientRUT,
+      policyKey: hypothesis.policyKey,
+      reasons: hypothesis.reasons,
+      totalAmount: hypothesis.totalAmount,
+    }));
+    const usedIds = new Set(hypothesisRows.flatMap((row) => row.dteSaleDetailIds));
+    const fallbackRows = (suggestionsQuery.data?.fallbackCandidates ?? [])
+      .filter((candidate) => !usedIds.has(candidate.dteSaleDetailId))
+      .map((candidate) => ({
+        clientName: candidate.clientName,
+        clientRUT: candidate.clientRUT,
+        confidenceScore: candidate.confidenceScore,
+        dteSaleDetailIds: [candidate.dteSaleDetailId],
+        folioLabel: `Folio ${candidate.folio}`,
+        key: candidate.dteSaleDetailId,
+        matchedBy: "manual" as const,
+        matchedName: candidate.clientName,
+        matchedRUT: candidate.clientRUT,
+        policyKey: "same_day_unlinked_fallback" as const,
+        reasons: candidate.reasons,
+        totalAmount: candidate.totalAmount,
+      }));
+
+    return [...hypothesisRows, ...fallbackRows];
+  }, [suggestionsQuery.data]);
   const series = suggestionsQuery.data?.series ?? null;
 
   const seriesKindLabel = useMemo(() => {
@@ -87,7 +148,7 @@ export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDte
     return "Tratamiento subcutáneo";
   }, [series]);
 
-  const suggestionColumns = useMemo<ColumnDef<EventDteSuggestion>[]>(
+  const suggestionColumns = useMemo<ColumnDef<EventDteLinkRow>[]>(
     () => [
       {
         accessorKey: "clientName",
@@ -108,8 +169,8 @@ export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDte
         header: "RUT",
       },
       {
-        accessorKey: "folio",
-        header: "Folio",
+        accessorKey: "folioLabel",
+        header: "Referencia",
       },
       {
         accessorKey: "totalAmount",
@@ -122,7 +183,7 @@ export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDte
         cell: ({ row }) => <span className="font-semibold">{row.original.confidenceScore}</span>,
       },
       {
-        accessorKey: "method",
+        accessorKey: "matchedBy",
         header: "Método",
       },
       {
