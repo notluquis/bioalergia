@@ -210,6 +210,23 @@ export interface EventDteSuggestion {
   totalAmount: number;
 }
 
+export interface EventDteSuggestionResponse {
+  event: null | {
+    amountExpected: null | number;
+    amountPaid: null | number;
+    calendarId: string;
+    description: null | string;
+    eventDate: string;
+    eventId: string;
+    hints: { nameHints: string[]; rutHints: string[] };
+    summary: null | string;
+  };
+  linked: unknown;
+  sameDayUnlinkedSuggestions: EventDteSuggestion[];
+  series: ClinicalSeriesSnapshot | null;
+  suggestions: EventDteSuggestion[];
+}
+
 export interface ClinicalSeriesLinkedDocument {
   clientName: string;
   clientRUT: string;

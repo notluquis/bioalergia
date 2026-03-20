@@ -604,6 +604,7 @@ export async function getEventDteSuggestions(params: {
     return {
       event: null,
       series: null as ClinicalSeriesSnapshot | null,
+      sameDayUnlinkedSuggestions: [] as EventDteSuggestion[],
       suggestions: [] as EventDteSuggestion[],
       linked: null as EventDteLinkRecord | null,
     };
@@ -616,6 +617,7 @@ export async function getEventDteSuggestions(params: {
       return {
         event: null,
         series: null as ClinicalSeriesSnapshot | null,
+        sameDayUnlinkedSuggestions: [] as EventDteSuggestion[],
         suggestions: [] as EventDteSuggestion[],
         linked: null as EventDteLinkRecord | null,
       };
@@ -630,8 +632,10 @@ export async function getEventDteSuggestions(params: {
     }),
   ]);
 
+  const sameDayCandidates = await getSalesCandidatesByDate(event.eventDate);
+
   const candidates = params.sameDayOnly
-    ? await getSalesCandidatesByDate(event.eventDate)
+    ? sameDayCandidates
     : series
       ? await getSalesCandidatesByDateRange({
           excludeDteSaleDetailIds: series.linkedDocuments.map((item) => item.dteSaleDetailId),
@@ -670,6 +674,35 @@ export async function getEventDteSuggestions(params: {
     .sort((a, b) => b.confidenceScore - a.confidenceScore)
     .slice(0, params.limit ?? 15);
 
+  const sameDayUnlinkedSuggestions = sameDayCandidates
+    .filter((candidate) => candidate.linkedEventsCount === 0)
+    .map((candidate) =>
+      scoreCandidate({
+        amountHint,
+        dte: candidate,
+        nameHints,
+        rutHints,
+      }),
+    )
+    .filter((candidate) => !suggestions.some((suggestion) => suggestion.dteSaleDetailId === candidate.dteSaleDetailId))
+    .sort((a, b) => {
+      const amountDiffA =
+        amountHint != null ? Math.abs(amountHint - a.totalAmount) : Number.POSITIVE_INFINITY;
+      const amountDiffB =
+        amountHint != null ? Math.abs(amountHint - b.totalAmount) : Number.POSITIVE_INFINITY;
+
+      if (amountDiffA !== amountDiffB) {
+        return amountDiffA - amountDiffB;
+      }
+
+      return b.confidenceScore - a.confidenceScore;
+    })
+    .slice(0, params.limit ?? 5)
+    .map((candidate) => ({
+      ...candidate,
+      reasons: [...candidate.reasons, "DTE del mismo día sin eventos vinculados"],
+    }));
+
   if (suggestions.length > 1 && shouldTreatAsAmbiguous(suggestions[0], suggestions[1])) {
     suggestions = suggestions.map((candidate, idx) => {
       if (idx <= 1) {
@@ -698,6 +731,7 @@ export async function getEventDteSuggestions(params: {
       },
     },
     series,
+    sameDayUnlinkedSuggestions,
     suggestions,
     linked,
   };

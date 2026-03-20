@@ -305,6 +305,81 @@ interface SuggestionExplorerProps {
   onConfirm: (candidate: EventDteSuggestion) => void;
 }
 
+function SuggestionCandidateCard({
+  candidate,
+  confirmPending,
+  eventAmount,
+  index,
+  label,
+  onConfirm,
+}: Readonly<{
+  candidate: EventDteSuggestion;
+  confirmPending: boolean;
+  eventAmount: null | number;
+  index: number;
+  label: null | string;
+  onConfirm: (candidate: EventDteSuggestion) => void;
+}>) {
+  const diff = eventAmount != null ? Math.abs(eventAmount - candidate.totalAmount) : null;
+
+  return (
+    <Card className="gap-3" variant={index === 0 ? "secondary" : "default"}>
+      <Card.Header className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0 space-y-1">
+          <Card.Title className="truncate text-sm">{candidate.clientName}</Card.Title>
+          <Card.Description>
+            {candidate.clientRUT} · Folio {candidate.folio} ·{" "}
+            {dayjs(candidate.documentDate).format("DD-MM-YYYY")}
+          </Card.Description>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Chip color={scoreColor(candidate.confidenceScore)} size="sm" variant="soft">
+            Score {scoreLabel(candidate.confidenceScore)}
+          </Chip>
+          <Chip color="default" size="sm" variant="soft">
+            {suggestionMethodLabel(candidate.method)}
+          </Chip>
+          {label ? (
+            <Chip color="default" size="sm" variant="tertiary">
+              {label}
+            </Chip>
+          ) : null}
+        </div>
+      </Card.Header>
+      <Card.Content className="grid grid-cols-2 gap-2 text-sm lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+        <Surface className="rounded-xl p-2.5" variant="secondary">
+          <p className="text-default-500 text-[11px] uppercase tracking-wide">Monto DTE</p>
+          <p className="font-medium leading-tight">
+            {currencyFormatter.format(candidate.totalAmount)}
+          </p>
+        </Surface>
+        <Surface className="rounded-xl p-2.5" variant="secondary">
+          <p className="text-default-500 text-[11px] uppercase tracking-wide">Diferencia</p>
+          <p className="font-medium leading-tight">
+            {diff != null ? currencyFormatter.format(diff) : "-"}
+          </p>
+        </Surface>
+        <Button
+          className="self-end lg:self-auto"
+          isPending={confirmPending}
+          size="sm"
+          variant={index === 0 ? "primary" : "tertiary"}
+          onPress={() => onConfirm(candidate)}
+        >
+          Vincular este DTE
+        </Button>
+      </Card.Content>
+      <Card.Footer className="flex flex-wrap gap-2 pt-0">
+        {candidate.reasons.slice(0, 3).map((reason) => (
+          <Chip key={`${candidate.dteSaleDetailId}-${reason}`} size="sm" variant="soft">
+            {reason}
+          </Chip>
+        ))}
+      </Card.Footer>
+    </Card>
+  );
+}
+
 function SuggestionExplorer({
   confirmPending,
   item,
@@ -331,8 +406,13 @@ function SuggestionExplorer({
   });
 
   const suggestions = suggestionsQuery.data?.suggestions ?? [];
+  const sameDayUnlinkedSuggestions = suggestionsQuery.data?.sameDayUnlinkedSuggestions ?? [];
   const topCandidates = suggestions.slice(0, 3);
+  const topSameDayUnlinked = sameDayUnlinkedSuggestions.slice(0, 3);
   const label = seriesKindLabel(item.seriesKind);
+  const disclosureCount =
+    suggestions.length > 0 ? suggestions.length : sameDayUnlinkedSuggestions.length;
+  const eventAmount = amountHint(item);
 
   return (
     <Disclosure isExpanded={isExpanded} onExpandedChange={setIsExpanded}>
@@ -340,9 +420,9 @@ function SuggestionExplorer({
         <Button className="w-full justify-between rounded-2xl" slot="trigger" variant="secondary">
           <span className="flex items-center gap-2">
             <span>Candidatos revisados</span>
-            {suggestions.length > 0 ? (
+            {disclosureCount > 0 ? (
               <Chip color="default" size="sm" variant="soft">
-                {suggestions.length}
+                {disclosureCount}
               </Chip>
             ) : null}
           </span>
@@ -373,86 +453,35 @@ function SuggestionExplorer({
           item.linkStatus !== "pending_issuance" ? (
             <div className="space-y-3">
               {topCandidates.length > 0 ? (
-                topCandidates.map((candidate, index) => {
-                  const eventAmount = amountHint(item);
-                  const diff =
-                    eventAmount != null ? Math.abs(eventAmount - candidate.totalAmount) : null;
-
-                  return (
-                    <Card
-                      className="gap-3"
+                topCandidates.map((candidate, index) => (
+                  <SuggestionCandidateCard
+                    candidate={candidate}
+                    confirmPending={confirmPending}
+                    eventAmount={eventAmount}
+                    index={index}
+                    key={candidate.dteSaleDetailId}
+                    label={label}
+                    onConfirm={onConfirm}
+                  />
+                ))
+              ) : topSameDayUnlinked.length > 0 ? (
+                <>
+                  <Alert status="warning">
+                    No hubo coincidencias suficientes. Estas DTE del mismo día siguen sin eventos
+                    vinculados y pueden revisarse manualmente.
+                  </Alert>
+                  {topSameDayUnlinked.map((candidate, index) => (
+                    <SuggestionCandidateCard
+                      candidate={candidate}
+                      confirmPending={confirmPending}
+                      eventAmount={eventAmount}
+                      index={index}
                       key={candidate.dteSaleDetailId}
-                      variant={index === 0 ? "secondary" : "default"}
-                    >
-                      <Card.Header className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                        <div className="min-w-0 space-y-1">
-                          <Card.Title className="truncate text-sm">
-                            {candidate.clientName}
-                          </Card.Title>
-                          <Card.Description>
-                            {candidate.clientRUT} · Folio {candidate.folio} ·{" "}
-                            {dayjs(candidate.documentDate).format("DD-MM-YYYY")}
-                          </Card.Description>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Chip
-                            color={scoreColor(candidate.confidenceScore)}
-                            size="sm"
-                            variant="soft"
-                          >
-                            Score {scoreLabel(candidate.confidenceScore)}
-                          </Chip>
-                          <Chip color="default" size="sm" variant="soft">
-                            {suggestionMethodLabel(candidate.method)}
-                          </Chip>
-                          {label ? (
-                            <Chip color="default" size="sm" variant="tertiary">
-                              {label}
-                            </Chip>
-                          ) : null}
-                        </div>
-                      </Card.Header>
-                      <Card.Content className="grid grid-cols-2 gap-2 text-sm lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
-                        <Surface className="rounded-xl p-2.5" variant="secondary">
-                          <p className="text-default-500 text-[11px] uppercase tracking-wide">
-                            Monto DTE
-                          </p>
-                          <p className="font-medium leading-tight">
-                            {currencyFormatter.format(candidate.totalAmount)}
-                          </p>
-                        </Surface>
-                        <Surface className="rounded-xl p-2.5" variant="secondary">
-                          <p className="text-default-500 text-[11px] uppercase tracking-wide">
-                            Diferencia
-                          </p>
-                          <p className="font-medium leading-tight">
-                            {diff != null ? currencyFormatter.format(diff) : "-"}
-                          </p>
-                        </Surface>
-                        <Button
-                          className="self-end lg:self-auto"
-                          isPending={confirmPending}
-                          size="sm"
-                          variant={index === 0 ? "primary" : "tertiary"}
-                          onPress={() => onConfirm(candidate)}
-                        >
-                          Vincular este DTE
-                        </Button>
-                      </Card.Content>
-                      <Card.Footer className="flex flex-wrap gap-2 pt-0">
-                        {candidate.reasons.slice(0, 3).map((reason) => (
-                          <Chip
-                            key={`${candidate.dteSaleDetailId}-${reason}`}
-                            size="sm"
-                            variant="soft"
-                          >
-                            {reason}
-                          </Chip>
-                        ))}
-                      </Card.Footer>
-                    </Card>
-                  );
-                })
+                      label={label}
+                      onConfirm={onConfirm}
+                    />
+                  ))}
+                </>
               ) : (
                 <Alert status="danger">No hay candidatos disponibles para este evento.</Alert>
               )}

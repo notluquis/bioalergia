@@ -30,10 +30,9 @@ import type {
   CalendarSummary,
   CalendarSyncLog,
   CalendarUnclassifiedEvent,
-  ClinicalSeriesSnapshot,
   EventDteConfirmedLink,
   EventDteOverviewResponseData,
-  EventDteSuggestion,
+  EventDteSuggestionResponse,
   TreatmentAnalytics,
   TreatmentAnalyticsFilters,
 } from "./types";
@@ -312,21 +311,7 @@ export async function fetchEventDteSuggestions(params: {
   eventId: string;
   limit?: number;
   sameDayOnly?: boolean;
-}): Promise<{
-  event: null | {
-    amountExpected: null | number;
-    amountPaid: null | number;
-    calendarId: string;
-    description: null | string;
-    eventDate: string;
-    eventId: string;
-    hints: { nameHints: string[]; rutHints: string[] };
-    summary: null | string;
-  };
-  linked: unknown;
-  series: ClinicalSeriesSnapshot | null;
-  suggestions: EventDteSuggestion[];
-}> {
+}): Promise<EventDteSuggestionResponse> {
   try {
     const data = await dteEventLinksORPCClient.suggestions(params);
     return EventDteSuggestionResponseSchema.parse({ data, status: "success" }).data;

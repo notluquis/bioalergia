@@ -105,6 +105,7 @@ export const dteEventLinksSuggestionsResponseSchema = z.object({
     })
     .nullable(),
   linked: z.unknown().nullable(),
+  sameDayUnlinkedSuggestions: z.array(dteEventLinksSuggestionSchema),
   series: z
     .object({
       displayName: z.string().nullable(),

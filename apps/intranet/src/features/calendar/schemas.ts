@@ -436,6 +436,7 @@ export const EventDteSuggestionResponseSchema = z.strictObject({
       })
       .nullable(),
     linked: z.unknown().nullable(),
+    sameDayUnlinkedSuggestions: z.array(EventDteSuggestionSchema),
     series: ClinicalSeriesSnapshotSchema.nullable(),
     suggestions: z.array(EventDteSuggestionSchema),
   }),
