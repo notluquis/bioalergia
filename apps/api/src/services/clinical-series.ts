@@ -944,7 +944,13 @@ export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilter
     WITH event_stats AS (
       SELECT
         e.clinical_series_id AS series_id,
-        MAX(COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date)) AS last_event_date,
+        MAX(
+          CASE
+            WHEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
+            THEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date)
+            ELSE NULL
+          END
+        ) AS last_event_date,
         MIN(
           CASE
             WHEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) > ${today}::date
