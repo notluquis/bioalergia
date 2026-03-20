@@ -7,9 +7,9 @@ FROM node:current-slim AS pruner
 WORKDIR /app
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable && corepack prepare pnpm@latest --activate
 COPY . .
-RUN TURBO_TELEMETRY_DISABLED=1 pnpm -w turbo prune @finanzas/site --docker
+RUN npm install -g pnpm@latest
+RUN TURBO_TELEMETRY_DISABLED=1 npx turbo@^2 prune @finanzas/site --docker
 
 # ==========================================================================
 # Stage 2: Base deps
@@ -18,12 +18,13 @@ FROM node:current-slim AS base
 WORKDIR /app
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN npm install -g pnpm@latest
 
 COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 
-RUN --mount=type=cache,id=s/15a5a9cb-b1d7-4fa9-8082-b013705c6f0f-/pnpm/store,target=/pnpm/store     pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=s/15a5a9cb-b1d7-4fa9-8082-b013705c6f0f-/pnpm/store,target=/pnpm/store \
+    pnpm install --frozen-lockfile
 
 # ==========================================================================
 # Stage 3: Build
