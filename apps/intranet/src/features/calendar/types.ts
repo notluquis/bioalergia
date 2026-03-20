@@ -204,28 +204,61 @@ export interface EventDteSuggestion {
   exemptAmount: number;
   folio: string;
   ivaAmount: number;
+  linkedEventsCount: number;
   method: "mixed" | "name_exact" | "name_fuzzy" | "rut";
   netAmount: number;
   reasons: string[];
   totalAmount: number;
 }
 
-export interface EventDteBundleSuggestion {
+export interface EventDteMatchSignal {
+  code: string;
+  label: string;
+  value?: null | string;
+  weight: number;
+}
+
+export interface EventDteIdentityClaims {
+  amountHint: null | number;
+  beneficiaryName: null | string;
+  beneficiaryRut: null | string;
+  eventDate: string;
+  nameClaims: string[];
+  patientName: null | string;
+  patientRut: null | string;
+  rutClaims: string[];
+  sameDayOnly: boolean;
+  seriesKind: null | "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT";
+}
+
+export interface EventDteCandidateSetSummary {
+  consideredCount: number;
+  fallbackCount: number;
+  retrievedCount: number;
+  sameDayCount: number;
+}
+
+export interface EventDteMatchHypothesis {
+  amountDiff: null | number;
+  autoLinkEligible: boolean;
   clientName: string;
   clientRUT: string;
-  confidenceScore: number;
-  count: number;
   documentDate: string;
   documents: EventDteSuggestion[];
   dteSaleDetailIds: string[];
   folios: string[];
+  hypothesisId: string;
+  kind: "bundle" | "single";
   method: "mixed" | "name_exact" | "name_fuzzy" | "rut";
+  policyKey: "default_same_day" | "same_day_unlinked_fallback" | "skin_test_bundle";
   reasons: string[];
+  score: number;
+  signals: EventDteMatchSignal[];
   totalAmount: number;
 }
 
 export interface EventDteSuggestionResponse {
-  bundleSuggestions: EventDteBundleSuggestion[];
+  candidateSetSummary: EventDteCandidateSetSummary;
   event: null | {
     amountExpected: null | number;
     amountPaid: null | number;
@@ -233,13 +266,14 @@ export interface EventDteSuggestionResponse {
     description: null | string;
     eventDate: string;
     eventId: string;
-    hints: { nameHints: string[]; rutHints: string[] };
     summary: null | string;
   };
+  fallbackCandidates: EventDteSuggestion[];
+  hypotheses: EventDteMatchHypothesis[];
+  identityClaims: EventDteIdentityClaims | null;
   linked: unknown;
-  sameDayUnlinkedSuggestions: EventDteSuggestion[];
+  linkedDocuments: ClinicalSeriesLinkedDocument[];
   series: ClinicalSeriesSnapshot | null;
-  suggestions: EventDteSuggestion[];
 }
 
 export interface ClinicalSeriesLinkedDocument {
@@ -526,14 +560,6 @@ export interface ReclassifyJob {
   total: number;
 }
 
-export interface EventDteOverviewSuggestion extends EventDteSuggestion {
-  amountDiff: null | number;
-}
-
-export interface EventDteOverviewBundleSuggestion extends EventDteBundleSuggestion {
-  amountDiff: null | number;
-}
-
 export interface EventDteOverviewAutoLinkSkip {
   attemptedAt: string;
   reason: string;
@@ -569,8 +595,7 @@ export interface EventDteOverviewItem {
   linkedTotalAmount: null | number;
   seriesKind: null | "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT";
   summary: null | string;
-  topBundleSuggestion: EventDteOverviewBundleSuggestion | null;
-  topSuggestion: EventDteOverviewSuggestion | null;
+  topHypothesis: EventDteMatchHypothesis | null;
 }
 
 export interface EventDteOverviewStats {

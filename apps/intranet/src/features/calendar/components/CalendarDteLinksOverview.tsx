@@ -35,7 +35,7 @@ import {
 } from "@/features/calendar/api";
 import { calendarDteLinkKeys, calendarDteLinkQueries } from "@/features/calendar/queries";
 import type {
-  EventDteBundleSuggestion,
+  EventDteMatchHypothesis,
   EventDteOverviewItem,
   EventDteSuggestion,
 } from "@/features/calendar/types";
@@ -306,7 +306,7 @@ function groupOverviewItemsByDate(items: EventDteOverviewItem[]): EventDayGroup[
 interface SuggestionExplorerProps {
   confirmPending: boolean;
   item: EventDteOverviewItem;
-  onConfirmBundle: (candidate: EventDteBundleSuggestion) => void;
+  onConfirmHypothesis: (candidate: EventDteMatchHypothesis) => void;
   onConfirmSingle: (candidate: EventDteSuggestion) => void;
 }
 
@@ -385,39 +385,46 @@ function SuggestionCandidateCard({
   );
 }
 
-function BundleSuggestionCard({
-  bundle,
+function HypothesisCard({
+  hypothesis,
   confirmPending,
   eventAmount,
   index,
   label,
   onConfirm,
 }: Readonly<{
-  bundle: EventDteBundleSuggestion;
+  hypothesis: EventDteMatchHypothesis;
   confirmPending: boolean;
   eventAmount: null | number;
   index: number;
   label: null | string;
-  onConfirm: (bundle: EventDteBundleSuggestion) => void;
+  onConfirm: (hypothesis: EventDteMatchHypothesis) => void;
 }>) {
-  const diff = eventAmount != null ? Math.abs(eventAmount - bundle.totalAmount) : null;
+  const diff = eventAmount != null ? Math.abs(eventAmount - hypothesis.totalAmount) : null;
+  const isBundle = hypothesis.kind === "bundle";
 
   return (
     <Card className="gap-3" variant={index === 0 ? "secondary" : "default"}>
       <Card.Header className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0 space-y-1">
-          <Card.Title className="truncate text-sm">{bundle.clientName}</Card.Title>
+          <Card.Title className="truncate text-sm">{hypothesis.clientName}</Card.Title>
           <Card.Description>
-            {bundle.clientRUT} · {bundle.folios.map((folio) => `Folio ${folio}`).join(" + ")} ·{" "}
-            {dayjs(bundle.documentDate).format("DD-MM-YYYY")}
+            {hypothesis.clientRUT} ·{" "}
+            {hypothesis.folios.map((folio) => `Folio ${folio}`).join(" + ")} ·{" "}
+            {dayjs(hypothesis.documentDate).format("DD-MM-YYYY")}
           </Card.Description>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Chip color="accent" size="sm" variant="soft">
-            Sugerencia compuesta · {bundle.count} DTE
+          <Chip color={isBundle ? "accent" : "default"} size="sm" variant="soft">
+            {isBundle
+              ? `Sugerencia compuesta · ${hypothesis.dteSaleDetailIds.length} DTE`
+              : "Hipótesis principal"}
           </Chip>
-          <Chip color={scoreColor(bundle.confidenceScore)} size="sm" variant="soft">
-            Score {scoreLabel(bundle.confidenceScore)}
+          <Chip color={scoreColor(hypothesis.score)} size="sm" variant="soft">
+            Score {scoreLabel(hypothesis.score)}
+          </Chip>
+          <Chip color="default" size="sm" variant="soft">
+            {suggestionMethodLabel(hypothesis.method)}
           </Chip>
           {label ? (
             <Chip color="default" size="sm" variant="tertiary">
@@ -428,9 +435,11 @@ function BundleSuggestionCard({
       </Card.Header>
       <Card.Content className="grid grid-cols-2 gap-2 text-sm lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
         <Surface className="rounded-xl p-2.5" variant="secondary">
-          <p className="text-default-500 text-[11px] uppercase tracking-wide">Suma DTE</p>
+          <p className="text-default-500 text-[11px] uppercase tracking-wide">
+            {isBundle ? "Suma DTE" : "Monto DTE"}
+          </p>
           <p className="font-medium leading-tight">
-            {currencyFormatter.format(bundle.totalAmount)}
+            {currencyFormatter.format(hypothesis.totalAmount)}
           </p>
         </Surface>
         <Surface className="rounded-xl p-2.5" variant="secondary">
@@ -444,13 +453,13 @@ function BundleSuggestionCard({
           isPending={confirmPending}
           size="sm"
           variant={index === 0 ? "primary" : "tertiary"}
-          onPress={() => onConfirm(bundle)}
+          onPress={() => onConfirm(hypothesis)}
         >
-          Vincular bundle
+          Vincular hipótesis
         </Button>
       </Card.Content>
       <Card.Content className="gap-2 pt-0">
-        {bundle.documents.map((document) => (
+        {hypothesis.documents.map((document) => (
           <Surface
             className="flex items-center justify-between gap-3 rounded-xl p-2.5"
             key={document.dteSaleDetailId}
@@ -467,8 +476,8 @@ function BundleSuggestionCard({
         ))}
       </Card.Content>
       <Card.Footer className="flex flex-wrap gap-2 pt-0">
-        {bundle.reasons.slice(0, 3).map((reason) => (
-          <Chip key={`${bundle.dteSaleDetailIds.join("-")}-${reason}`} size="sm" variant="soft">
+        {hypothesis.reasons.slice(0, 3).map((reason) => (
+          <Chip key={`${hypothesis.dteSaleDetailIds.join("-")}-${reason}`} size="sm" variant="soft">
             {reason}
           </Chip>
         ))}
@@ -480,12 +489,11 @@ function BundleSuggestionCard({
 function SuggestionExplorer({
   confirmPending,
   item,
-  onConfirmBundle,
+  onConfirmHypothesis,
   onConfirmSingle,
 }: Readonly<SuggestionExplorerProps>) {
   const [isExpanded, setIsExpanded] = useState(
-    item.lastAutoLinkSkip?.reason === "Ambiguo" ||
-      (item.topSuggestion == null && item.topBundleSuggestion == null)
+    item.lastAutoLinkSkip?.reason === "Ambiguo" || item.topHypothesis == null
   );
 
   const suggestionsQuery = useQuery({
@@ -504,19 +512,12 @@ function SuggestionExplorer({
     staleTime: 60_000,
   });
 
-  const suggestions = suggestionsQuery.data?.suggestions ?? [];
-  const bundleSuggestions = suggestionsQuery.data?.bundleSuggestions ?? [];
-  const sameDayUnlinkedSuggestions = suggestionsQuery.data?.sameDayUnlinkedSuggestions ?? [];
-  const topCandidates = suggestions.slice(0, 3);
-  const topBundles = bundleSuggestions.slice(0, 3);
-  const topSameDayUnlinked = sameDayUnlinkedSuggestions.slice(0, 3);
+  const hypotheses = suggestionsQuery.data?.hypotheses ?? [];
+  const fallbackCandidates = suggestionsQuery.data?.fallbackCandidates ?? [];
+  const topHypotheses = hypotheses.slice(0, 3);
+  const topFallbackCandidates = fallbackCandidates.slice(0, 3);
   const label = seriesKindLabel(item.seriesKind);
-  const disclosureCount =
-    bundleSuggestions.length > 0
-      ? bundleSuggestions.length
-      : suggestions.length > 0
-        ? suggestions.length
-        : sameDayUnlinkedSuggestions.length;
+  const disclosureCount = hypotheses.length > 0 ? hypotheses.length : fallbackCandidates.length;
   const eventAmount = amountHint(item);
 
   return (
@@ -557,43 +558,33 @@ function SuggestionExplorer({
           !suggestionsQuery.isError &&
           item.linkStatus !== "pending_issuance" ? (
             <div className="space-y-3">
-              {topBundles.length > 0 ? (
+              {topHypotheses.length > 0 ? (
                 <>
-                  <Alert status="warning">
-                    Test cutáneo con bundle sugerido. Todas las DTE del grupo comparten el mismo RUT
-                    y la suma calza con el monto del evento.
-                  </Alert>
-                  {topBundles.map((bundle, index) => (
-                    <BundleSuggestionCard
-                      bundle={bundle}
+                  {topHypotheses[0]?.kind === "bundle" ? (
+                    <Alert status="warning">
+                      Test cutáneo con hipótesis compuesta. Todas las DTE del grupo comparten el
+                      mismo RUT y la suma calza con el monto del evento.
+                    </Alert>
+                  ) : null}
+                  {topHypotheses.map((hypothesis, index) => (
+                    <HypothesisCard
+                      hypothesis={hypothesis}
                       confirmPending={confirmPending}
                       eventAmount={eventAmount}
                       index={index}
-                      key={bundle.dteSaleDetailIds.join("|")}
+                      key={hypothesis.hypothesisId}
                       label={label}
-                      onConfirm={onConfirmBundle}
+                      onConfirm={onConfirmHypothesis}
                     />
                   ))}
                 </>
-              ) : topCandidates.length > 0 ? (
-                topCandidates.map((candidate, index) => (
-                  <SuggestionCandidateCard
-                    candidate={candidate}
-                    confirmPending={confirmPending}
-                    eventAmount={eventAmount}
-                    index={index}
-                    key={candidate.dteSaleDetailId}
-                    label={label}
-                    onConfirm={onConfirmSingle}
-                  />
-                ))
-              ) : topSameDayUnlinked.length > 0 ? (
+              ) : topFallbackCandidates.length > 0 ? (
                 <>
                   <Alert status="warning">
                     No hubo coincidencias suficientes. Estas DTE del mismo día siguen sin eventos
                     vinculados y pueden revisarse manualmente.
                   </Alert>
-                  {topSameDayUnlinked.map((candidate, index) => (
+                  {topFallbackCandidates.map((candidate, index) => (
                     <SuggestionCandidateCard
                       candidate={candidate}
                       confirmPending={confirmPending}
@@ -662,18 +653,23 @@ export function CalendarDteLinksOverview({
       candidate,
       item,
     }: {
-      candidate: EventDteBundleSuggestion | EventDteSuggestion;
+      candidate: EventDteMatchHypothesis | EventDteSuggestion;
       item: EventDteOverviewItem;
     }) => {
       await confirmEventDteLink({
         calendarId: item.calendarId,
-        confidenceScore: candidate.confidenceScore,
-        dteSaleDetailId: "dteSaleDetailId" in candidate ? candidate.dteSaleDetailId : undefined,
-        dteSaleDetailIds: "dteSaleDetailIds" in candidate ? candidate.dteSaleDetailIds : undefined,
+        confidenceScore: "score" in candidate ? candidate.score : candidate.confidenceScore,
+        dteSaleDetailIds:
+          "dteSaleDetailIds" in candidate
+            ? candidate.dteSaleDetailIds
+            : [candidate.dteSaleDetailId],
         eventId: item.eventId,
         matchedBy: candidate.method,
         matchedName: candidate.clientName,
         matchedRUT: candidate.clientRUT,
+        hypothesis: "hypothesisId" in candidate ? candidate : undefined,
+        hypothesisKind: "kind" in candidate ? candidate.kind : "single",
+        policyKey: "policyKey" in candidate ? candidate.policyKey : "same_day_unlinked_fallback",
       });
     },
     onError: (error) => {
@@ -1094,8 +1090,7 @@ export function CalendarDteLinksOverview({
                           <Accordion.Body className="border-default-200/70 border-t px-3 py-3 sm:px-4">
                             <div className="space-y-3">
                               {group.items.map((item) => {
-                                const primarySuggestion =
-                                  item.topBundleSuggestion ?? item.topSuggestion;
+                                const primarySuggestion = item.topHypothesis;
                                 const displayAmount = item.linked
                                   ? item.linkedTotalAmount
                                   : (primarySuggestion?.totalAmount ?? null);
@@ -1141,9 +1136,10 @@ export function CalendarDteLinksOverview({
                                             {seriesKindLabel(item.seriesKind)}
                                           </Chip>
                                         ) : null}
-                                        {!item.linked && item.topBundleSuggestion ? (
+                                        {!item.linked && item.topHypothesis?.kind === "bundle" ? (
                                           <Chip color="accent" size="sm" variant="soft">
-                                            Bundle · {item.topBundleSuggestion.count} DTE
+                                            Bundle · {item.topHypothesis.dteSaleDetailIds.length}{" "}
+                                            DTE
                                           </Chip>
                                         ) : null}
                                         {item.linked && item.linkedDocuments.length > 1 ? (
@@ -1156,7 +1152,7 @@ export function CalendarDteLinksOverview({
                                             color={scoreColor(
                                               item.linked
                                                 ? item.confidenceScore
-                                                : (primarySuggestion?.confidenceScore ?? null)
+                                                : (primarySuggestion?.score ?? null)
                                             )}
                                             variant="soft"
                                           >
@@ -1164,7 +1160,7 @@ export function CalendarDteLinksOverview({
                                             {scoreLabel(
                                               item.linked
                                                 ? item.confidenceScore
-                                                : (primarySuggestion?.confidenceScore ?? null)
+                                                : (primarySuggestion?.score ?? null)
                                             )}
                                           </Chip>
                                         ) : null}
@@ -1224,13 +1220,11 @@ export function CalendarDteLinksOverview({
                                                   .map((document) => `Folio ${document.folio}`)
                                                   .join(" + ")
                                               : `Folio ${item.linkedFolio ?? "-"}`
-                                            : item.topBundleSuggestion
-                                              ? item.topBundleSuggestion.folios
+                                            : item.topHypothesis
+                                              ? item.topHypothesis.folios
                                                   .map((folio) => `Folio ${folio}`)
                                                   .join(" + ")
-                                              : item.topSuggestion
-                                                ? `Folio ${item.topSuggestion.folio}`
-                                                : "Sin sugerencia"}
+                                              : "Sin sugerencia"}
                                         </p>
                                       </Surface>
                                     </Card.Content>
@@ -1299,7 +1293,7 @@ export function CalendarDteLinksOverview({
                                         <SuggestionExplorer
                                           confirmPending={confirmMutation.isPending}
                                           item={item}
-                                          onConfirmBundle={(candidate) =>
+                                          onConfirmHypothesis={(candidate) =>
                                             confirmMutation.mutate({ item, candidate })
                                           }
                                           onConfirmSingle={(candidate) =>
@@ -1321,11 +1315,9 @@ export function CalendarDteLinksOverview({
                                             }`
                                           : item.linkStatus === "pending_issuance"
                                             ? "Evento en fecha futura: se revisa vínculo cuando llegue el día de emisión."
-                                            : item.topBundleSuggestion
-                                              ? `${item.topBundleSuggestion.clientName} · ${item.topBundleSuggestion.clientRUT} · ${item.topBundleSuggestion.folios.map((folio) => `Folio ${folio}`).join(" + ")}`
-                                              : item.topSuggestion
-                                                ? `${item.topSuggestion.clientName} · ${item.topSuggestion.clientRUT} · Folio ${item.topSuggestion.folio}`
-                                                : "Sin sugerencias para este evento"}
+                                            : item.topHypothesis
+                                              ? `${item.topHypothesis.clientName} · ${item.topHypothesis.clientRUT} · ${item.topHypothesis.folios.map((folio) => `Folio ${folio}`).join(" + ")}`
+                                              : "Sin sugerencias para este evento"}
                                       </Description>
                                       <div className="flex w-full gap-2 lg:w-auto">
                                         {item.linked ? (
@@ -1342,24 +1334,19 @@ export function CalendarDteLinksOverview({
                                           <Button
                                             className="w-full lg:w-auto"
                                             isDisabled={
-                                              (!item.topSuggestion && !item.topBundleSuggestion) ||
+                                              item.topHypothesis == null ||
                                               item.linkStatus === "pending_issuance"
                                             }
                                             isPending={confirmMutation.isPending}
                                             size="sm"
                                             variant="primary"
                                             onPress={() =>
-                                              item.topBundleSuggestion
+                                              item.topHypothesis
                                                 ? confirmMutation.mutate({
                                                     item,
-                                                    candidate: item.topBundleSuggestion,
+                                                    candidate: item.topHypothesis,
                                                   })
-                                                : item.topSuggestion
-                                                  ? confirmMutation.mutate({
-                                                      item,
-                                                      candidate: item.topSuggestion,
-                                                    })
-                                                  : undefined
+                                                : undefined
                                             }
                                           >
                                             Vincular sugerencia

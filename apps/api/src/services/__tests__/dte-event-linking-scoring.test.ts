@@ -2,7 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@finanzas/db", () => ({ db: {} }));
 
-const { findSkinTestBundleSuggestions, scoreCandidate } = await import("../dte-event-linking");
+const { findSkinTestBundleSuggestions, scoreCandidate, selectGlobalAutoLinkHypotheses } =
+  await import("../dte-event-linking");
 
 describe("scoreCandidate", () => {
   it("surfaces a same-day same-amount guardian/patient surname match as a review candidate", () => {
@@ -140,5 +141,103 @@ describe("findSkinTestBundleSuggestions", () => {
     });
 
     expect(result).toEqual([]);
+  });
+});
+
+describe("selectGlobalAutoLinkHypotheses", () => {
+  it("chooses the highest total-score combination without reusing a DTE across events", () => {
+    const selected = selectGlobalAutoLinkHypotheses([
+      {
+        event: {
+          amountExpected: 30000,
+          amountPaid: 30000,
+          clinicalSeriesId: 1,
+          description: null,
+          eventDate: "2026-03-16",
+          eventId: 10,
+          externalEventId: "event-a",
+          googleCalendarId: "calendar-1",
+          linkedCount: 0,
+          linkedDteSaleDetailId: null,
+          summary: "Evento A",
+        },
+        hypotheses: [
+          {
+            amountDiff: 0,
+            autoLinkEligible: true,
+            clientName: "Paciente A",
+            clientRUT: "11111111-1",
+            documentDate: "2026-03-16",
+            documents: [],
+            dteSaleDetailIds: ["shared-dte"],
+            folios: ["100"],
+            hypothesisId: "a-shared",
+            kind: "single",
+            method: "rut",
+            policyKey: "default_same_day",
+            reasons: [],
+            score: 95,
+            signals: [],
+            totalAmount: 30000,
+          },
+        ],
+      },
+      {
+        event: {
+          amountExpected: 30000,
+          amountPaid: 30000,
+          clinicalSeriesId: 2,
+          description: null,
+          eventDate: "2026-03-16",
+          eventId: 11,
+          externalEventId: "event-b",
+          googleCalendarId: "calendar-1",
+          linkedCount: 0,
+          linkedDteSaleDetailId: null,
+          summary: "Evento B",
+        },
+        hypotheses: [
+          {
+            amountDiff: 0,
+            autoLinkEligible: true,
+            clientName: "Paciente B",
+            clientRUT: "22222222-2",
+            documentDate: "2026-03-16",
+            documents: [],
+            dteSaleDetailIds: ["shared-dte"],
+            folios: ["100"],
+            hypothesisId: "b-shared",
+            kind: "single",
+            method: "rut",
+            policyKey: "default_same_day",
+            reasons: [],
+            score: 90,
+            signals: [],
+            totalAmount: 30000,
+          },
+          {
+            amountDiff: 0,
+            autoLinkEligible: true,
+            clientName: "Paciente B",
+            clientRUT: "22222222-2",
+            documentDate: "2026-03-16",
+            documents: [],
+            dteSaleDetailIds: ["exclusive-dte"],
+            folios: ["101"],
+            hypothesisId: "b-exclusive",
+            kind: "single",
+            method: "rut",
+            policyKey: "default_same_day",
+            reasons: [],
+            score: 89,
+            signals: [],
+            totalAmount: 30000,
+          },
+        ],
+      },
+    ]);
+
+    expect(selected.get("event-a")?.hypothesisId).toBe("a-shared");
+    expect(selected.get("event-b")?.hypothesisId).toBe("b-exclusive");
   });
 });

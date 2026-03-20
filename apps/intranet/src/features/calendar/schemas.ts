@@ -370,23 +370,56 @@ export const EventDteSuggestionSchema = z.strictObject({
   exemptAmount: z.number(),
   folio: z.string(),
   ivaAmount: z.number(),
+  linkedEventsCount: z.number(),
   method: z.enum(["mixed", "name_exact", "name_fuzzy", "rut"]),
   netAmount: z.number(),
   reasons: z.array(z.string()),
   totalAmount: z.number(),
 });
 
-export const EventDteBundleSuggestionSchema = z.strictObject({
+export const EventDteMatchSignalSchema = z.strictObject({
+  code: z.string(),
+  label: z.string(),
+  value: z.string().nullable().optional(),
+  weight: z.number(),
+});
+
+export const EventDteIdentityClaimsSchema = z.strictObject({
+  amountHint: z.number().nullable(),
+  beneficiaryName: z.string().nullable(),
+  beneficiaryRut: z.string().nullable(),
+  eventDate: z.string(),
+  nameClaims: z.array(z.string()),
+  patientName: z.string().nullable(),
+  patientRut: z.string().nullable(),
+  rutClaims: z.array(z.string()),
+  sameDayOnly: z.boolean(),
+  seriesKind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT"]).nullable(),
+});
+
+export const EventDteCandidateSetSummarySchema = z.strictObject({
+  consideredCount: z.number(),
+  fallbackCount: z.number(),
+  retrievedCount: z.number(),
+  sameDayCount: z.number(),
+});
+
+export const EventDteHypothesisSchema = z.strictObject({
+  amountDiff: z.number().nullable(),
+  autoLinkEligible: z.boolean(),
   clientName: z.string(),
   clientRUT: z.string(),
-  confidenceScore: z.number(),
-  count: z.number().int().min(2).max(3),
   documentDate: z.string(),
-  documents: z.array(EventDteSuggestionSchema).min(2).max(3),
-  dteSaleDetailIds: z.array(z.string()).min(2).max(3),
-  folios: z.array(z.string()).min(2).max(3),
+  documents: z.array(EventDteSuggestionSchema).min(1).max(3),
+  dteSaleDetailIds: z.array(z.string()).min(1).max(3),
+  folios: z.array(z.string()).min(1).max(3),
+  hypothesisId: z.string(),
+  kind: z.enum(["bundle", "single"]),
   method: z.enum(["mixed", "name_exact", "name_fuzzy", "rut"]),
+  policyKey: z.enum(["default_same_day", "same_day_unlinked_fallback", "skin_test_bundle"]),
   reasons: z.array(z.string()),
+  score: z.number(),
+  signals: z.array(EventDteMatchSignalSchema),
   totalAmount: z.number(),
 });
 
@@ -434,7 +467,7 @@ export const ClinicalSeriesSnapshotSchema = z.strictObject({
 
 export const EventDteSuggestionResponseSchema = z.strictObject({
   data: z.strictObject({
-    bundleSuggestions: z.array(EventDteBundleSuggestionSchema),
+    candidateSetSummary: EventDteCandidateSetSummarySchema,
     event: z
       .strictObject({
         amountExpected: z.number().nullable(),
@@ -443,17 +476,15 @@ export const EventDteSuggestionResponseSchema = z.strictObject({
         description: z.string().nullable(),
         eventDate: z.string(),
         eventId: z.string(),
-        hints: z.strictObject({
-          nameHints: z.array(z.string()),
-          rutHints: z.array(z.string()),
-        }),
         summary: z.string().nullable(),
       })
       .nullable(),
+    fallbackCandidates: z.array(EventDteSuggestionSchema),
+    hypotheses: z.array(EventDteHypothesisSchema),
+    identityClaims: EventDteIdentityClaimsSchema.nullable(),
     linked: z.unknown().nullable(),
-    sameDayUnlinkedSuggestions: z.array(EventDteSuggestionSchema),
+    linkedDocuments: z.array(ClinicalSeriesLinkedDocumentSchema),
     series: ClinicalSeriesSnapshotSchema.nullable(),
-    suggestions: z.array(EventDteSuggestionSchema),
   }),
   status: z.literal("success"),
 });
@@ -616,12 +647,7 @@ export const EventDteOverviewResponseSchema = z.strictObject({
         linkedTotalAmount: z.number().nullable(),
         seriesKind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT"]).nullable(),
         summary: z.string().nullable(),
-        topBundleSuggestion: EventDteBundleSuggestionSchema.extend({
-          amountDiff: z.number().nullable(),
-        }).nullable(),
-        topSuggestion: EventDteSuggestionSchema.extend({
-          amountDiff: z.number().nullable(),
-        }).nullable(),
+        topHypothesis: EventDteHypothesisSchema.nullable(),
       })
     ),
     page: z.number(),

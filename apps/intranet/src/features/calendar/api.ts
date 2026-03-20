@@ -323,15 +323,20 @@ export async function fetchEventDteSuggestions(params: {
 export async function confirmEventDteLink(payload: {
   calendarId: string;
   confidenceScore?: number;
-  dteSaleDetailId?: string;
   dteSaleDetailIds?: string[];
   eventId: string;
+  hypothesis?: unknown;
+  hypothesisKind?: "bundle" | "single";
   matchedBy?: "manual" | "mixed" | "name_exact" | "name_fuzzy" | "rut";
   matchedName?: null | string;
   matchedRUT?: null | string;
+  policyKey?: "default_same_day" | "same_day_unlinked_fallback" | "skin_test_bundle";
 }): Promise<void> {
   try {
-    const data = await dteEventLinksORPCClient.confirmLink(payload);
+    const data = await dteEventLinksORPCClient.confirmLink({
+      ...payload,
+      dteSaleDetailIds: payload.dteSaleDetailIds ?? [],
+    });
     EventDteConfirmResponseSchema.parse({ data, status: "success" });
   } catch (error) {
     throw toCalendarApiError(error);

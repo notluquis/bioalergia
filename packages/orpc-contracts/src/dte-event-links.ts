@@ -2,6 +2,12 @@ import { oc } from "@orpc/contract";
 import { z } from "zod";
 
 export const dteEventLinksAutoLinkStrategySchema = z.enum(["missing_only", "relink_all"]);
+export const dteEventLinksHypothesisKindSchema = z.enum(["single", "bundle"]);
+export const dteEventLinksPolicyKeySchema = z.enum([
+  "default_same_day",
+  "skin_test_bundle",
+  "same_day_unlinked_fallback",
+]);
 
 export const dteEventLinksByDayInputSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -29,20 +35,14 @@ export const dteEventLinksJobStatusInputSchema = z.object({
 export const dteEventLinksConfirmInputSchema = z.object({
   calendarId: z.string().min(1),
   confidenceScore: z.number().min(0).max(100).optional(),
-  dteSaleDetailId: z.string().min(1).optional(),
-  dteSaleDetailIds: z.array(z.string().min(1)).min(1).max(3).optional(),
+  dteSaleDetailIds: z.array(z.string().min(1)).min(1).max(3),
   eventId: z.string().min(1),
+  hypothesis: z.unknown().optional(),
+  hypothesisKind: dteEventLinksHypothesisKindSchema.optional(),
   matchedBy: z.enum(["manual", "mixed", "name_exact", "name_fuzzy", "rut"]).optional(),
   matchedName: z.string().nullable().optional(),
   matchedRUT: z.string().nullable().optional(),
-}).superRefine((value, ctx) => {
-  if (!value.dteSaleDetailId && (!value.dteSaleDetailIds || value.dteSaleDetailIds.length === 0)) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "Debes enviar al menos un DTE para vincular.",
-      path: ["dteSaleDetailId"],
-    });
-  }
+  policyKey: dteEventLinksPolicyKeySchema.optional(),
 });
 
 export const dteEventLinksUnlinkInputSchema = z.object({
@@ -68,7 +68,14 @@ export const dteEventLinksAutoLinkAllPeriodsInputSchema = z.object({
   strategy: dteEventLinksAutoLinkStrategySchema.default("missing_only").optional(),
 });
 
-export const dteEventLinksSuggestionSchema = z.object({
+export const dteEventLinksMatchSignalSchema = z.object({
+  code: z.string(),
+  label: z.string(),
+  value: z.string().nullable().optional(),
+  weight: z.number(),
+});
+
+export const dteEventLinksCandidateDocumentSchema = z.object({
   clientName: z.string(),
   clientRUT: z.string(),
   confidenceScore: z.number(),
@@ -78,23 +85,60 @@ export const dteEventLinksSuggestionSchema = z.object({
   exemptAmount: z.number(),
   folio: z.string(),
   ivaAmount: z.number(),
+  linkedEventsCount: z.number().int().min(0).default(0),
   method: z.enum(["mixed", "name_exact", "name_fuzzy", "rut"]),
   netAmount: z.number(),
   reasons: z.array(z.string()),
   totalAmount: z.number(),
 });
 
-export const dteEventLinksBundleSuggestionSchema = z.object({
+export const dteEventLinksIdentityClaimsSchema = z.object({
+  amountHint: z.number().nullable(),
+  beneficiaryName: z.string().nullable(),
+  beneficiaryRut: z.string().nullable(),
+  eventDate: z.string(),
+  nameClaims: z.array(z.string()),
+  patientName: z.string().nullable(),
+  patientRut: z.string().nullable(),
+  rutClaims: z.array(z.string()),
+  sameDayOnly: z.boolean(),
+  seriesKind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT"]).nullable(),
+});
+
+export const dteEventLinksCandidateSetSummarySchema = z.object({
+  consideredCount: z.number().int().min(0),
+  fallbackCount: z.number().int().min(0),
+  retrievedCount: z.number().int().min(0),
+  sameDayCount: z.number().int().min(0),
+});
+
+export const dteEventLinksHypothesisSchema = z.object({
+  amountDiff: z.number().nullable(),
+  autoLinkEligible: z.boolean(),
+  clientName: z.string(),
+  clientRUT: z.string(),
+  documentDate: z.string(),
+  documents: z.array(dteEventLinksCandidateDocumentSchema).min(1).max(3),
+  dteSaleDetailIds: z.array(z.string()).min(1).max(3),
+  folios: z.array(z.string()).min(1).max(3),
+  hypothesisId: z.string(),
+  kind: dteEventLinksHypothesisKindSchema,
+  method: z.enum(["mixed", "name_exact", "name_fuzzy", "rut"]),
+  policyKey: dteEventLinksPolicyKeySchema,
+  reasons: z.array(z.string()),
+  score: z.number(),
+  signals: z.array(dteEventLinksMatchSignalSchema),
+  totalAmount: z.number(),
+});
+
+export const dteEventLinksLinkedDocumentSchema = z.object({
   clientName: z.string(),
   clientRUT: z.string(),
   confidenceScore: z.number(),
-  count: z.number().int().min(2).max(3),
   documentDate: z.string(),
-  documents: z.array(dteEventLinksSuggestionSchema).min(2).max(3),
-  dteSaleDetailIds: z.array(z.string()).min(2).max(3),
-  folios: z.array(z.string()).min(2).max(3),
-  method: z.enum(["mixed", "name_exact", "name_fuzzy", "rut"]),
-  reasons: z.array(z.string()),
+  dteSaleDetailId: z.string(),
+  folio: z.string(),
+  matchedBy: z.string(),
   totalAmount: z.number(),
 });
 
@@ -112,7 +156,7 @@ export const dteEventLinksByDayLinkSchema = z.object({
 });
 
 export const dteEventLinksSuggestionsResponseSchema = z.object({
-  bundleSuggestions: z.array(dteEventLinksBundleSuggestionSchema),
+  candidateSetSummary: dteEventLinksCandidateSetSummarySchema,
   event: z
     .object({
       amountExpected: z.number().nullable(),
@@ -121,15 +165,14 @@ export const dteEventLinksSuggestionsResponseSchema = z.object({
       description: z.string().nullable(),
       eventDate: z.string(),
       eventId: z.string(),
-      hints: z.object({
-        nameHints: z.array(z.string()),
-        rutHints: z.array(z.string()),
-      }),
       summary: z.string().nullable(),
     })
     .nullable(),
+  fallbackCandidates: z.array(dteEventLinksCandidateDocumentSchema),
+  hypotheses: z.array(dteEventLinksHypothesisSchema),
+  identityClaims: dteEventLinksIdentityClaimsSchema.nullable(),
   linked: z.unknown().nullable(),
-  sameDayUnlinkedSuggestions: z.array(dteEventLinksSuggestionSchema),
+  linkedDocuments: z.array(dteEventLinksLinkedDocumentSchema),
   series: z
     .object({
       displayName: z.string().nullable(),
@@ -151,18 +194,7 @@ export const dteEventLinksSuggestionsResponseSchema = z.object({
       ),
       id: z.number(),
       kind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT"]),
-      linkedDocuments: z.array(
-        z.object({
-          clientName: z.string(),
-          clientRUT: z.string(),
-          confidenceScore: z.number(),
-          documentDate: z.string(),
-          dteSaleDetailId: z.string(),
-          folio: z.string(),
-          matchedBy: z.string(),
-          totalAmount: z.number(),
-        }),
-      ),
+      linkedDocuments: z.array(dteEventLinksLinkedDocumentSchema),
       patientName: z.string().nullable(),
       patientRut: z.string().nullable(),
       remainingExpected: z.number(),
@@ -173,7 +205,6 @@ export const dteEventLinksSuggestionsResponseSchema = z.object({
       totalPaid: z.number(),
     })
     .nullable(),
-  suggestions: z.array(dteEventLinksSuggestionSchema),
 });
 
 export const dteEventLinksOverviewResponseSchema = z.object({
@@ -198,33 +229,14 @@ export const dteEventLinksOverviewResponseSchema = z.object({
       linked: z.boolean(),
       linkedClientName: z.string().nullable(),
       linkedClientRUT: z.string().nullable(),
-      linkedDocuments: z.array(
-        z.object({
-          clientName: z.string(),
-          clientRUT: z.string(),
-          confidenceScore: z.number(),
-          dteSaleDetailId: z.string(),
-          folio: z.string(),
-          matchedBy: z.string(),
-          totalAmount: z.number(),
-        }),
-      ),
+      linkedDocuments: z.array(dteEventLinksLinkedDocumentSchema.omit({ documentDate: true })),
       linkedDteSaleDetailId: z.string().nullable(),
       linkedFolio: z.string().nullable(),
       linkedMatchedBy: z.string().nullable(),
       linkedTotalAmount: z.number().nullable(),
       seriesKind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT"]).nullable(),
       summary: z.string().nullable(),
-      topBundleSuggestion: dteEventLinksBundleSuggestionSchema
-        .extend({
-          amountDiff: z.number().nullable(),
-        })
-        .nullable(),
-      topSuggestion: dteEventLinksSuggestionSchema
-        .extend({
-          amountDiff: z.number().nullable(),
-        })
-        .nullable(),
+      topHypothesis: dteEventLinksHypothesisSchema.nullable(),
     }),
   ),
   page: z.number(),

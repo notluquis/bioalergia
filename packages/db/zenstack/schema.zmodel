@@ -77,6 +77,7 @@ model User {
   medicalCertificates     MedicalCertificate[]
   patientAttachments      PatientAttachment[]
   eventDteAutoLinkAttempts EventDteAutoLinkAttempt[]
+  eventDteMatchReviews    EventDteMatchReview[]
   eventDteSaleLinks       EventDteSaleLink[]
   person                  Person                   @relation(fields: [personId], references: [id], onDelete: Cascade)
 
@@ -804,6 +805,7 @@ model Event {
   clinicalSeries    ClinicalSeries?          @relation(fields: [clinicalSeriesId], references: [id], onDelete: SetNull)
   consultations     Consultation[]
   dteAutoLinkAttempts EventDteAutoLinkAttempt[]
+  dteMatchReviews   EventDteMatchReview[]
   dteSaleLinks      EventDteSaleLink[]
 
   // Access policies
@@ -2006,6 +2008,7 @@ model DTESaleDetail {
   @@index([clientRUT])
   @@index([documentDate])
   @@index([documentType])
+  @@index([documentDate, totalAmount])
   @@map("dte_sale_details")
 }
 
@@ -2058,6 +2061,29 @@ model EventDteAutoLinkAttempt {
   @@index([candidateDteSaleDetailId])
   @@index([createdAt(sort: Desc)])
   @@map("event_dte_auto_link_attempts")
+}
+
+model EventDteMatchReview {
+  id              BigInt   @id @default(autoincrement())
+  eventId         Int      @map("event_id")
+  action          String   @db.VarChar(20)
+  hypothesisKind  String?  @map("hypothesis_kind") @db.VarChar(20)
+  dteSaleDetailIds Json    @map("dte_sale_detail_ids")
+  hypothesis      Json?
+  createdBy       Int?     @map("created_by")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  event           Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  creator         User?    @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([eventId])
+  @@index([action])
+  @@index([createdAt(sort: Desc)])
+  @@map("event_dte_match_reviews")
 }
 
 // ============================================================

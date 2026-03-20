@@ -202,8 +202,11 @@ const unlinkLink = writeEventLinksWithoutDteRead
   })
   .input(dteEventLinksUnlinkInputSchema)
   .output(dteEventLinksUnlinkResponseSchema)
-  .handler(async ({ input }) => {
-    return unlinkEventDteLink(input);
+  .handler(async ({ context, input }) => {
+    return unlinkEventDteLink({
+      ...input,
+      userId: context.user.id,
+    });
   });
 
 const autoLinkDay = writeEventLinks
