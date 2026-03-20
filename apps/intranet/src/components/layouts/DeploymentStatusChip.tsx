@@ -75,7 +75,10 @@ function summaryLabel(
   if (targets.some((target) => isProblemStatus(target.status))) return "Deploy con falla";
   const activeTargets = targets.filter((target) => isActiveStatus(target.status));
   const activeCount = activeTargets.length;
-  if (activeCount === 1) return `${activeTargets[0]?.label ?? "Deploy"} en curso`;
+  if (activeCount === 1) {
+    const target = activeTargets[0];
+    return `${target?.label ?? "Deploy"} · ${formatRelativeAge(target?.createdAt ?? null)}`;
+  }
   if (activeCount > 0) return `${activeCount} deploys en curso`;
   return "Deploy estable";
 }
