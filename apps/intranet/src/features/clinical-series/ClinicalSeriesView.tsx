@@ -143,6 +143,21 @@ function eventFinancialStatus(event: ClinicalSeriesEvent): FinancialStatus {
   return "paid";
 }
 
+function compareSeriesEventsDesc(a: ClinicalSeriesEvent, b: ClinicalSeriesEvent) {
+  const dateDiff = b.eventDate.localeCompare(a.eventDate);
+  if (dateDiff !== 0) return dateDiff;
+  return b.eventId - a.eventId;
+}
+
+function clinicalEventHeadline(event: ClinicalSeriesEvent): string {
+  return event.seriesStageLabel ?? event.summary ?? "Evento";
+}
+
+function clinicalEventSupportText(event: ClinicalSeriesEvent): null | string {
+  if (event.seriesStageLabel && event.summary) return event.summary;
+  return null;
+}
+
 function toCalendarEventDetail(event: ClinicalSeriesEvent): CalendarEventDetail {
   return {
     amountExpected: event.amountExpected ?? null,
@@ -811,7 +826,8 @@ export function ClinicalSeriesView() {
                     {detail.events.length > 0 &&
                       (() => {
                         const today = getTodayStr();
-                        const byYear = detail.events.reduce<Record<string, typeof detail.events>>(
+                        const sortedEvents = [...detail.events].sort(compareSeriesEventsDesc);
+                        const byYear = sortedEvents.reduce<Record<string, typeof detail.events>>(
                           (acc, ev) => {
                             const year = ev.eventDate.slice(0, 4);
                             (acc[year] ??= []).push(ev);
@@ -819,7 +835,7 @@ export function ClinicalSeriesView() {
                           },
                           {}
                         );
-                        const years = Object.keys(byYear).sort();
+                        const years = Object.keys(byYear).sort((a, b) => b.localeCompare(a));
                         return (
                           <div>
                             <h3 className="text-sm font-semibold mb-3">
@@ -861,21 +877,19 @@ export function ClinicalSeriesView() {
                                                   próximo
                                                 </span>
                                               )}
-                                              {event.seriesStageLabel && (
+                                              {event.seriesStageLabel && event.summary && (
                                                 <span className="text-foreground-400">
                                                   {event.seriesStageLabel}
                                                 </span>
                                               )}
                                             </div>
                                           </div>
-                                          {event.summary && (
+                                          <p className="mt-0.5 font-medium text-foreground">
+                                            {clinicalEventHeadline(event)}
+                                          </p>
+                                          {clinicalEventSupportText(event) && (
                                             <p className="text-foreground-400 truncate mt-0.5">
-                                              {event.summary}
-                                            </p>
-                                          )}
-                                          {event.dosageValue != null && (
-                                            <p className="text-accent mt-0.5 font-medium">
-                                              {event.dosageValue} {event.dosageUnit}
+                                              {clinicalEventSupportText(event)}
                                             </p>
                                           )}
                                           {(() => {

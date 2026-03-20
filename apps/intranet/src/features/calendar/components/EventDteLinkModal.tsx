@@ -1,9 +1,16 @@
-import { Button, Chip, Description, Modal, Tooltip } from "@heroui/react";
+import {
+  Alert,
+  Button,
+  Chip,
+  Description,
+  Disclosure,
+  Modal,
+  ScrollShadow,
+  Surface,
+} from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
-import { useMemo } from "react";
-import { DataTable } from "@/components/data-table/DataTable";
+import { useEffect, useMemo, useState } from "react";
 import { useToast } from "@/context/ToastContext";
 import { confirmEventDteLink, unlinkEventDteLink } from "@/features/calendar/api";
 import { calendarDteLinkKeys, calendarDteLinkQueries } from "@/features/calendar/queries";
@@ -35,8 +42,50 @@ interface EventDteLinkRow {
   policyKey?: "default_same_day" | "same_day_unlinked_fallback" | "skin_test_bundle";
 }
 
+interface LinkedEventDocumentRow {
+  confidenceScore: number;
+  createdAt: string;
+  dte: {
+    clientName: string;
+    clientRUT: string;
+    documentDate: string;
+    documentType: number;
+    folio: string;
+    totalAmount: number;
+  };
+  dteSaleDetailId: string;
+  matchedBy: string;
+  matchedName: null | string;
+  matchedRUT: null | string;
+  status: "CONFIRMED" | "MANUAL" | "REJECTED";
+  updatedAt: string;
+}
+
 function warningReasons(reasons: string[]): string[] {
   return reasons.filter((reason) => reason.startsWith(WARNING_REASON_PREFIX));
+}
+
+function infoReasons(reasons: string[]): string[] {
+  return reasons.filter((reason) => !reason.startsWith(WARNING_REASON_PREFIX));
+}
+
+function formatSeriesEventHeadline(event: {
+  seriesStageLabel?: null | string;
+  summary?: null | string;
+}) {
+  return event.seriesStageLabel ?? event.summary ?? "Evento";
+}
+
+function formatSeriesEventSupport(event: {
+  seriesStageLabel?: null | string;
+  summary?: null | string;
+}) {
+  if (event.seriesStageLabel && event.summary) return event.summary;
+  return null;
+}
+
+function compareSeriesEventsDesc(a: { eventDate: string }, b: { eventDate: string }) {
+  return b.eventDate.localeCompare(a.eventDate);
 }
 
 export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDteLinkModalProps) {
@@ -44,6 +93,7 @@ export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDte
   const toast = useToast();
   const today = dayjs().format("YYYY-MM-DD");
   const isPendingEmission = Boolean(event?.eventDate && event.eventDate > today);
+  const [suggestionsExpanded, setSuggestionsExpanded] = useState(true);
 
   const suggestionsQuery = useQuery({
     ...calendarDteLinkQueries.suggestions({
@@ -138,7 +188,33 @@ export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDte
 
     return [...hypothesisRows, ...fallbackRows];
   }, [suggestionsQuery.data]);
+  const currentLinks = useMemo<LinkedEventDocumentRow[]>(
+    () =>
+      Array.isArray(suggestionsQuery.data?.linked)
+        ? (suggestionsQuery.data.linked as LinkedEventDocumentRow[])
+        : [],
+    [suggestionsQuery.data?.linked]
+  );
   const series = suggestionsQuery.data?.series ?? null;
+  const sortedSeriesEvents = useMemo(
+    () => [...(series?.events ?? [])].sort(compareSeriesEventsDesc),
+    [series?.events]
+  );
+  const sortedSeriesDocuments = useMemo(
+    () =>
+      [...(series?.linkedDocuments ?? [])].sort((a, b) => {
+        const dateDiff = b.documentDate.localeCompare(a.documentDate);
+        if (dateDiff !== 0) return dateDiff;
+        return b.folio.localeCompare(a.folio);
+      }),
+    [series?.linkedDocuments]
+  );
+  const hasCurrentLink = currentLinks.length > 0;
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setSuggestionsExpanded(!hasCurrentLink);
+  }, [hasCurrentLink, isOpen]);
 
   const seriesKindLabel = useMemo(() => {
     if (!series) {
@@ -148,89 +224,6 @@ export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDte
     if (series.kind === "SKIN_TEST") return "Test cutáneo";
     return "Tratamiento subcutáneo";
   }, [series]);
-
-  const suggestionColumns = useMemo<ColumnDef<EventDteLinkRow>[]>(
-    () => [
-      {
-        accessorKey: "clientName",
-        header: "Cliente",
-        minSize: 220,
-        size: 260,
-        cell: ({ row }) => (
-          <Tooltip>
-            <Tooltip.Trigger>
-              <span className="block max-w-72 truncate">{row.original.clientName}</span>
-            </Tooltip.Trigger>
-            <Tooltip.Content>{row.original.clientName}</Tooltip.Content>
-          </Tooltip>
-        ),
-      },
-      {
-        accessorKey: "clientRUT",
-        header: "RUT",
-      },
-      {
-        accessorKey: "folioLabel",
-        header: "Referencia",
-      },
-      {
-        accessorKey: "totalAmount",
-        header: "Total",
-        cell: ({ row }) => currencyFormatter.format(row.original.totalAmount),
-      },
-      {
-        accessorKey: "confidenceScore",
-        header: "Score",
-        cell: ({ row }) => <span className="font-semibold">{row.original.confidenceScore}</span>,
-      },
-      {
-        accessorKey: "matchedBy",
-        header: "Método",
-      },
-      {
-        id: "warnings",
-        header: "Alertas",
-        cell: ({ row }) => {
-          const warnings = warningReasons(row.original.reasons);
-          if (warnings.length === 0) return null;
-          return (
-            <Tooltip>
-              <Tooltip.Trigger>
-                <Chip color="warning" size="sm" variant="soft">
-                  {warnings.length === 1 ? "Advertencia" : `${warnings.length} alertas`}
-                </Chip>
-              </Tooltip.Trigger>
-              <Tooltip.Content className="max-w-sm">
-                <div className="space-y-1">
-                  {warnings.map((warning) => (
-                    <p key={warning}>{warning}</p>
-                  ))}
-                </div>
-              </Tooltip.Content>
-            </Tooltip>
-          );
-        },
-        size: 140,
-      },
-      {
-        id: "actions",
-        header: "",
-        cell: ({ row }) => (
-          <div className="text-right">
-            <Button
-              isPending={confirmMutation.isPending}
-              size="sm"
-              variant="primary"
-              onPress={() => confirmMutation.mutate(row.original)}
-            >
-              Vincular
-            </Button>
-          </div>
-        ),
-      },
-    ],
-    [confirmMutation]
-  );
 
   return (
     <Modal>
@@ -242,15 +235,23 @@ export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDte
               <Modal.Heading>Vincular evento con boleta DTE</Modal.Heading>
             </Modal.Header>
             <Modal.Body className="space-y-3 pb-4">
-              <div className="rounded-lg border border-default-200 p-3">
+              <Surface className="rounded-xl p-3" variant="secondary">
                 <p className="font-semibold text-sm">{event?.summary ?? "(Sin título)"}</p>
                 <p className="text-default-500 text-xs">
-                  {event?.description ?? "Sin descripción"}
+                  {[event?.eventDate, event?.patientRut, event?.patientName]
+                    .filter(Boolean)
+                    .join(" · ")}
                 </p>
-              </div>
+                {event?.description && event.description !== event.summary ? (
+                  <p className="text-default-400 mt-1 text-xs">{event.description}</p>
+                ) : null}
+              </Surface>
 
               {series ? (
-                <div className="space-y-3 rounded-lg border border-primary/20 bg-primary/5 p-3">
+                <Surface
+                  className="space-y-3 rounded-xl border border-primary/20 p-3"
+                  variant="secondary"
+                >
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <p className="font-semibold text-sm">
@@ -285,71 +286,77 @@ export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDte
                   </div>
 
                   <div className="grid gap-2 md:grid-cols-2">
-                    <div className="rounded-lg border border-default-200 bg-background p-3">
+                    <Surface className="rounded-xl p-3" variant="default">
                       <p className="mb-2 font-semibold text-xs uppercase tracking-wide text-default-600">
                         Eventos de la serie
                       </p>
-                      <div className="space-y-2 text-xs">
-                        {series.events.map((seriesEvent) => (
-                          <div
-                            className="flex items-center justify-between gap-2"
-                            key={`${seriesEvent.calendarGoogleId}-${seriesEvent.externalEventId}`}
-                          >
-                            <div className="min-w-0">
-                              <p className="truncate font-medium">
-                                {seriesEvent.seriesStageLabel ?? seriesEvent.summary ?? "Evento"}
-                              </p>
-                              <p className="truncate text-default-500">
-                                {seriesEvent.eventDate}
-                                {seriesEvent.summary ? ` · ${seriesEvent.summary}` : ""}
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              {seriesEvent.amountExpected != null ? (
-                                <p>{currencyFormatter.format(seriesEvent.amountExpected)}</p>
-                              ) : null}
-                              {seriesEvent.amountPaid != null ? (
-                                <p className="text-success">
-                                  {currencyFormatter.format(seriesEvent.amountPaid)}
-                                </p>
-                              ) : null}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="rounded-lg border border-default-200 bg-background p-3">
-                      <p className="mb-2 font-semibold text-xs uppercase tracking-wide text-default-600">
-                        Documentos ya vinculados
-                      </p>
-                      <div className="space-y-2 text-xs">
-                        {series.linkedDocuments.length === 0 ? (
-                          <p className="text-default-500">
-                            Todavía no hay DTE asociados a esta serie.
-                          </p>
-                        ) : (
-                          series.linkedDocuments.map((doc) => (
+                      <ScrollShadow className="max-h-72">
+                        <div className="space-y-2 text-xs pr-2">
+                          {sortedSeriesEvents.map((seriesEvent) => (
                             <div
                               className="flex items-center justify-between gap-2"
-                              key={doc.dteSaleDetailId}
+                              key={`${seriesEvent.calendarGoogleId}-${seriesEvent.externalEventId}`}
                             >
                               <div className="min-w-0">
                                 <p className="truncate font-medium">
-                                  {doc.clientName} · Folio {doc.folio}
+                                  {formatSeriesEventHeadline(seriesEvent)}
                                 </p>
-                                <p className="truncate text-default-500">
-                                  {doc.documentDate} · {doc.matchedBy}
+                                <p className="truncate text-default-500">{seriesEvent.eventDate}</p>
+                                {formatSeriesEventSupport(seriesEvent) ? (
+                                  <p className="truncate text-default-400">
+                                    {formatSeriesEventSupport(seriesEvent)}
+                                  </p>
+                                ) : null}
+                              </div>
+                              <div className="text-right">
+                                {seriesEvent.amountExpected != null ? (
+                                  <p>{currencyFormatter.format(seriesEvent.amountExpected)}</p>
+                                ) : null}
+                                {seriesEvent.amountPaid != null ? (
+                                  <p className="text-success">
+                                    {currencyFormatter.format(seriesEvent.amountPaid)}
+                                  </p>
+                                ) : null}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </ScrollShadow>
+                    </Surface>
+
+                    <Surface className="rounded-xl p-3" variant="default">
+                      <p className="mb-2 font-semibold text-xs uppercase tracking-wide text-default-600">
+                        Documentos ya vinculados
+                      </p>
+                      <ScrollShadow className="max-h-72">
+                        <div className="space-y-2 text-xs pr-2">
+                          {sortedSeriesDocuments.length === 0 ? (
+                            <p className="text-default-500">
+                              Todavía no hay DTE asociados a esta serie.
+                            </p>
+                          ) : (
+                            sortedSeriesDocuments.map((doc) => (
+                              <div
+                                className="flex items-center justify-between gap-2"
+                                key={doc.dteSaleDetailId}
+                              >
+                                <div className="min-w-0">
+                                  <p className="truncate font-medium">
+                                    {doc.clientName} · Folio {doc.folio}
+                                  </p>
+                                  <p className="truncate text-default-500">
+                                    {doc.documentDate} · {doc.matchedBy}
+                                  </p>
+                                </div>
+                                <p className="font-medium">
+                                  {currencyFormatter.format(doc.totalAmount)}
                                 </p>
                               </div>
-                              <p className="font-medium">
-                                {currencyFormatter.format(doc.totalAmount)}
-                              </p>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
+                            ))
+                          )}
+                        </div>
+                      </ScrollShadow>
+                    </Surface>
                   </div>
 
                   <Description className="text-default-600">
@@ -357,57 +364,203 @@ export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDte
                     {series.eligibleDocumentDateFrom} a {series.eligibleDocumentDateTo}) y excluyen
                     DTE ya vinculados dentro del mismo cluster.
                   </Description>
-                </div>
+                </Surface>
               ) : null}
 
               {suggestionsQuery.isError ? (
-                <Description className="text-danger">
-                  No se pudieron cargar sugerencias.
-                </Description>
+                <Alert status="danger">No se pudieron cargar sugerencias.</Alert>
               ) : null}
 
-              {suggestionsQuery.data?.linked ? (
-                <div className="flex items-center justify-between rounded-lg border border-success-200 bg-success-50/40 p-3">
-                  <Description className="text-success-700">
-                    Este evento ya tiene un vínculo confirmado.
-                  </Description>
-                  <Button
-                    isPending={unlinkMutation.isPending}
-                    size="sm"
-                    variant="danger"
-                    onPress={() => unlinkMutation.mutate()}
-                  >
-                    Desvincular
-                  </Button>
-                </div>
+              {hasCurrentLink ? (
+                <Surface className="space-y-3 rounded-xl p-3" variant="secondary">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-sm">Vínculo confirmado</p>
+                      <Description>Este evento ya tiene boleta asociada.</Description>
+                    </div>
+                    <Button
+                      isPending={unlinkMutation.isPending}
+                      size="sm"
+                      variant="danger"
+                      onPress={() => unlinkMutation.mutate()}
+                    >
+                      Desvincular
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    {currentLinks.map((link) => (
+                      <Surface
+                        className="rounded-xl p-3"
+                        key={link.dteSaleDetailId}
+                        variant="default"
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="truncate font-medium">
+                              {link.dte.clientName} · Folio {link.dte.folio}
+                            </p>
+                            <p className="text-default-500 text-xs">
+                              {link.dte.clientRUT} · {link.dte.documentDate} · {link.matchedBy}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold">
+                              {currencyFormatter.format(link.dte.totalAmount)}
+                            </p>
+                            <p className="text-default-500 text-xs">
+                              Score {Math.round(link.confidenceScore)}
+                            </p>
+                          </div>
+                        </div>
+                      </Surface>
+                    ))}
+                  </div>
+                </Surface>
               ) : null}
 
               {isPendingEmission && !suggestionsQuery.data?.linked ? (
-                <div className="rounded-lg border border-warning-200 bg-warning-50/40 p-3">
-                  <Description className="text-warning-700">
-                    Evento en fecha futura. El vínculo DTE se habilita cuando llegue la fecha de
-                    emisión.
-                  </Description>
-                </div>
+                <Alert status="warning">
+                  Evento en fecha futura. El vínculo DTE se habilita cuando llegue la fecha de
+                  emisión.
+                </Alert>
               ) : null}
 
-              <DataTable
-                autoFitColumns={false}
-                columns={suggestionColumns}
-                containerVariant="plain"
-                data={candidates}
-                enableGlobalFilter={false}
-                enablePagination={false}
-                enableToolbar={false}
-                isLoading={!isPendingEmission && suggestionsQuery.isLoading}
-                noDataMessage={
-                  isPendingEmission
-                    ? "Evento pendiente de emisión: aún no se muestran candidatos."
-                    : "Sin candidatos para este día."
-                }
-                scrollMaxHeight="min(50dvh, 420px)"
-                scrollMode="container"
-              />
+              {!isPendingEmission ? (
+                <Disclosure
+                  isExpanded={suggestionsExpanded}
+                  onExpandedChange={setSuggestionsExpanded}
+                >
+                  <Disclosure.Heading>
+                    <Button
+                      className="w-full justify-between rounded-xl border border-default-200 px-3 py-3 h-auto"
+                      slot="trigger"
+                      variant="secondary"
+                    >
+                      <div className="flex w-full items-center justify-between gap-3 text-left">
+                        <div>
+                          <p className="font-semibold text-sm">
+                            {hasCurrentLink
+                              ? "Volver a vincular o revisar boletas"
+                              : "Boletas y sugerencias"}
+                          </p>
+                          <Description>
+                            {hasCurrentLink
+                              ? "La lista queda colapsada por defecto porque ya existe un vínculo confirmado."
+                              : "Las mejores hipótesis quedan abiertas porque el evento aún no tiene vínculo."}
+                          </Description>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Chip size="sm" variant="soft">
+                            {candidates.length}
+                          </Chip>
+                          <Disclosure.Indicator />
+                        </div>
+                      </div>
+                    </Button>
+                  </Disclosure.Heading>
+                  <Disclosure.Content>
+                    <Disclosure.Body className="px-0 pt-3">
+                      {suggestionsQuery.isLoading ? (
+                        <div className="space-y-2">
+                          <Surface className="h-24 rounded-xl" variant="secondary" />
+                          <Surface className="h-24 rounded-xl" variant="secondary" />
+                        </div>
+                      ) : candidates.length === 0 ? (
+                        <Alert status="warning">Sin candidatos para este día.</Alert>
+                      ) : (
+                        <div className="space-y-3">
+                          {candidates.map((candidate, index) => {
+                            const warnings = warningReasons(candidate.reasons);
+                            const notes = infoReasons(candidate.reasons);
+                            return (
+                              <Surface
+                                className="space-y-3 rounded-xl p-3"
+                                key={candidate.key}
+                                variant={index === 0 ? "secondary" : "default"}
+                              >
+                                <div className="flex flex-wrap items-start justify-between gap-3">
+                                  <div className="min-w-0">
+                                    <p className="truncate font-medium">{candidate.clientName}</p>
+                                    <p className="text-default-500 text-xs">
+                                      {candidate.clientRUT} · {candidate.folioLabel}
+                                    </p>
+                                  </div>
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <Chip color="default" size="sm" variant="soft">
+                                      {candidate.matchedBy}
+                                    </Chip>
+                                    <Chip color="default" size="sm" variant="soft">
+                                      Score {Math.round(candidate.confidenceScore)}
+                                    </Chip>
+                                    {warnings.length > 0 ? (
+                                      <Chip color="warning" size="sm" variant="soft">
+                                        Advertencia
+                                      </Chip>
+                                    ) : null}
+                                  </div>
+                                </div>
+                                <div className="grid gap-2 sm:grid-cols-3">
+                                  <Surface className="rounded-lg p-2.5" variant="secondary">
+                                    <p className="text-default-500 text-[11px] uppercase tracking-wide">
+                                      Total
+                                    </p>
+                                    <p className="font-medium">
+                                      {currencyFormatter.format(candidate.totalAmount)}
+                                    </p>
+                                  </Surface>
+                                  <Surface className="rounded-lg p-2.5" variant="secondary">
+                                    <p className="text-default-500 text-[11px] uppercase tracking-wide">
+                                      Referencia
+                                    </p>
+                                    <p className="font-medium">{candidate.folioLabel}</p>
+                                  </Surface>
+                                  <Surface className="rounded-lg p-2.5" variant="secondary">
+                                    <p className="text-default-500 text-[11px] uppercase tracking-wide">
+                                      Tipo
+                                    </p>
+                                    <p className="font-medium">
+                                      {"hypothesisKind" in candidate &&
+                                      candidate.hypothesisKind === "bundle"
+                                        ? "Hipótesis compuesta"
+                                        : "DTE individual"}
+                                    </p>
+                                  </Surface>
+                                </div>
+                                {warnings.length > 0 ? (
+                                  <Alert status="warning">{warnings[0]}</Alert>
+                                ) : null}
+                                {notes.length > 0 ? (
+                                  <div className="flex flex-wrap gap-2">
+                                    {notes.slice(0, 3).map((reason) => (
+                                      <Chip
+                                        key={`${candidate.key}-${reason}`}
+                                        size="sm"
+                                        variant="soft"
+                                      >
+                                        {reason}
+                                      </Chip>
+                                    ))}
+                                  </div>
+                                ) : null}
+                                <div className="flex justify-end">
+                                  <Button
+                                    isPending={confirmMutation.isPending}
+                                    size="sm"
+                                    variant="primary"
+                                    onPress={() => confirmMutation.mutate(candidate)}
+                                  >
+                                    Vincular
+                                  </Button>
+                                </div>
+                              </Surface>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </Disclosure.Body>
+                  </Disclosure.Content>
+                </Disclosure>
+              ) : null}
             </Modal.Body>
           </Modal.Dialog>
         </Modal.Container>
