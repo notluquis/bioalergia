@@ -7,6 +7,16 @@ import { z } from "zod";
 
 export type ClinicalSeriesKind = "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT";
 export type ClinicalSeriesStatus = "ACTIVE" | "COMPLETED" | "CANCELLED";
+export type ClinicalSeriesSortColumn =
+  | "financial"
+  | "kind"
+  | "lastEvent"
+  | "nextEvent"
+  | "patient"
+  | "status"
+  | "totalEvents"
+  | "upcomingEvents";
+export type ClinicalSeriesSortDirection = "ascending" | "descending";
 
 export interface ClinicalSeriesEvent {
   amountExpected: number | null;
@@ -76,6 +86,8 @@ export interface ClinicalSeriesFilters {
   pageSize?: number;
   patientName?: string;
   patientRut?: string;
+  sortColumn?: ClinicalSeriesSortColumn;
+  sortDirection?: ClinicalSeriesSortDirection;
   status?: ClinicalSeriesStatus;
 }
 

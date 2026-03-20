@@ -1,5 +1,5 @@
 import { Checkbox, Label } from "@heroui/react";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, Minus } from "lucide-react";
 
 interface RolePermissionCheckboxProps {
   ariaLabel: string;
@@ -33,7 +33,12 @@ export function RolePermissionCheckbox({
           <Loader2 className="h-3.5 w-3.5 animate-spin text-default-500" />
         ) : (
           <Checkbox.Indicator>
-            {({ isSelected: selected }) => (selected ? <Check className="h-3.5 w-3.5" /> : null)}
+            {({ isIndeterminate: indeterminate, isSelected: selected }) => {
+              if (indeterminate) {
+                return <Minus className="h-3.5 w-3.5" strokeWidth={3} />;
+              }
+              return selected ? <Check className="h-3.5 w-3.5" /> : null;
+            }}
           </Checkbox.Indicator>
         )}
       </Checkbox.Control>

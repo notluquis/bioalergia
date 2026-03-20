@@ -3,6 +3,17 @@ import { z } from "zod";
 
 export const clinicalSeriesKindSchema = z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT"]);
 export const clinicalSeriesStatusSchema = z.enum(["ACTIVE", "COMPLETED", "CANCELLED"]);
+export const clinicalSeriesSortColumnSchema = z.enum([
+  "financial",
+  "kind",
+  "lastEvent",
+  "nextEvent",
+  "patient",
+  "status",
+  "totalEvents",
+  "upcomingEvents",
+]);
+export const clinicalSeriesSortDirectionSchema = z.enum(["ascending", "descending"]);
 
 export const clinicalSeriesEventSchema = z.object({
   amountExpected: z.number().nullable(),
@@ -61,6 +72,8 @@ export const clinicalSeriesListInputSchema = z.object({
   pageSize: z.number().int().positive().max(100).default(20),
   patientName: z.string().optional(),
   patientRut: z.string().optional(),
+  sortColumn: clinicalSeriesSortColumnSchema.optional(),
+  sortDirection: clinicalSeriesSortDirectionSchema.optional(),
   status: clinicalSeriesStatusSchema.optional(),
 });
 

@@ -36,6 +36,7 @@ import type {
   ClinicalSeriesFilters,
   ClinicalSeriesKind,
   ClinicalSeriesSnapshot,
+  ClinicalSeriesSortColumn,
   ClinicalSeriesStatus,
 } from "./types";
 
@@ -158,45 +159,6 @@ function deriveSnapshot(s: ClinicalSeriesSnapshot, today: string): DerivedSnapsh
   return { ...s, firstEventDate, lastEventDate, nextEventDate, upcomingCount: future.length };
 }
 
-// ─── Sorting ──────────────────────────────────────────────────────────────────
-
-function sortItems(items: DerivedSnapshot[], descriptor: SortDescriptor): DerivedSnapshot[] {
-  const { column, direction } = descriptor;
-  return [...items].sort((a, b) => {
-    let cmp = 0;
-    switch (column) {
-      case "patient":
-        cmp = (a.patientName ?? "").localeCompare(b.patientName ?? "", "es");
-        break;
-      case "kind":
-        cmp = KIND_LABELS[a.kind].localeCompare(KIND_LABELS[b.kind], "es");
-        break;
-      case "status":
-        cmp = STATUS_LABELS[a.status].localeCompare(STATUS_LABELS[b.status], "es");
-        break;
-      case "firstEvent":
-        cmp = a.firstEventDate.localeCompare(b.firstEventDate);
-        break;
-      case "lastEvent":
-        cmp = a.lastEventDate.localeCompare(b.lastEventDate);
-        break;
-      case "nextEvent":
-        cmp = a.nextEventDate.localeCompare(b.nextEventDate);
-        break;
-      case "totalEvents":
-        cmp = a.events.length - b.events.length;
-        break;
-      case "upcomingEvents":
-        cmp = a.upcomingCount - b.upcomingCount;
-        break;
-      case "financial":
-        cmp = a.remainingExpected - b.remainingExpected;
-        break;
-    }
-    return direction === "descending" ? -cmp : cmp;
-  });
-}
-
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function ClinicalSeriesView() {
@@ -217,8 +179,8 @@ export function ClinicalSeriesView() {
 
   // Sorting
   const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({
-    column: "patient",
-    direction: "ascending",
+    column: "lastEvent",
+    direction: "descending",
   });
 
   // Reset page when filters or page size change
@@ -237,6 +199,8 @@ export function ClinicalSeriesView() {
     ...(debouncedRut && { patientRut: debouncedRut }),
     ...(debouncedName && { patientName: debouncedName }),
     ...(kind && { kind }),
+    sortColumn: sortDescriptor.column as ClinicalSeriesSortColumn,
+    sortDirection: sortDescriptor.direction,
     ...(status && { status }),
   };
 
@@ -247,14 +211,11 @@ export function ClinicalSeriesView() {
 
   const totalPages = data ? Math.ceil(data.total / pageSize) : 1;
 
-  const sortedItems = useMemo(() => {
+  const derivedItems = useMemo(() => {
     if (!data?.items) return [];
     const today = getTodayStr();
-    return sortItems(
-      data.items.map((s) => deriveSnapshot(s, today)),
-      sortDescriptor
-    );
-  }, [data?.items, sortDescriptor]);
+    return data.items.map((s) => deriveSnapshot(s, today));
+  }, [data?.items]);
 
   const handleRowSelect = (keys: Selection) => {
     if (keys === "all") return;
@@ -519,7 +480,7 @@ export function ClinicalSeriesView() {
                   </Table.Column>
                 </Table.Header>
                 <Table.Body>
-                  {sortedItems.map((s) => (
+                  {derivedItems.map((s) => (
                     <Table.Row key={s.id} id={s.id} className="cursor-pointer group">
                       <Table.Cell>
                         <div className="flex flex-col">

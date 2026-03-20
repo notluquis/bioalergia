@@ -1,7 +1,8 @@
-import { db } from "@finanzas/db";
+import { db, kysely } from "@finanzas/db";
 import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone.js";
 import utc from "dayjs/plugin/utc.js";
+import { sql } from "kysely";
 import { normalizeRut } from "../lib/rut";
 
 dayjs.extend(utc);
@@ -126,6 +127,16 @@ type ClinicalSeriesFilters = {
   pageSize?: number;
   patientName?: string;
   patientRut?: string;
+  sortColumn?:
+    | "financial"
+    | "kind"
+    | "lastEvent"
+    | "nextEvent"
+    | "patient"
+    | "status"
+    | "totalEvents"
+    | "upcomingEvents";
+  sortDirection?: "ascending" | "descending";
   status?: "ACTIVE" | "CANCELLED" | "COMPLETED";
 };
 
@@ -137,6 +148,37 @@ function normalizeName(value: string): string {
     .replace(/[^\p{L}\p{N}\s-]+/gu, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function resolveClinicalSeriesOrderBy(
+  filters?: ClinicalSeriesFilters,
+): ReturnType<typeof sql> {
+  const sortColumn = filters?.sortColumn ?? "lastEvent";
+  const sortDirection = filters?.sortDirection === "ascending" ? "ASC" : "DESC";
+
+  const columnExpression = (() => {
+    switch (sortColumn) {
+      case "patient":
+        return "lower(coalesce(cs.patient_name, ''))";
+      case "kind":
+        return "cs.kind::text";
+      case "status":
+        return "cs.status::text";
+      case "nextEvent":
+        return "es.next_event_date";
+      case "totalEvents":
+        return "coalesce(es.total_events, 0)";
+      case "upcomingEvents":
+        return "coalesce(es.upcoming_events, 0)";
+      case "financial":
+        return "greatest(0, coalesce(es.total_expected, 0) - coalesce(lt.total_linked_amount, 0))";
+      case "lastEvent":
+      default:
+        return "es.last_event_date";
+    }
+  })();
+
+  return sql.raw(`${columnExpression} ${sortDirection} NULLS LAST, cs.id DESC`);
 }
 
 function extractLowercaseNameHints(text: string): string[] {
@@ -879,6 +921,7 @@ export async function getClinicalSeriesSnapshotById(id: number): Promise<Clinica
 export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilters) {
   const page = Math.max(1, filters?.page ?? 1);
   const pageSize = Math.min(100, Math.max(1, filters?.pageSize ?? 20));
+  const today = dayjs().tz(TIMEZONE).format("YYYY-MM-DD");
 
   const baseWhere = {
     beneficiaryRut: filters?.beneficiaryRut ? normalizeRut(filters.beneficiaryRut) : undefined,
@@ -895,14 +938,64 @@ export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilter
   // Count total matching records (without pagination)
   const total = await db.clinicalSeries.count({ where: baseWhere });
 
-  // Fetch only requested page of IDs
-  const series = await db.clinicalSeries.findMany({
-    where: baseWhere,
-    orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
-    select: { id: true },
-    skip: (page - 1) * pageSize,
-    take: pageSize,
-  });
+  const normalizedPatientName = filters?.patientName ? `%${normalizeName(filters.patientName)}%` : null;
+  const orderBy = resolveClinicalSeriesOrderBy(filters);
+  const seriesResult = await sql<{ id: number }>`
+    WITH event_stats AS (
+      SELECT
+        e.clinical_series_id AS series_id,
+        MAX(COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date)) AS last_event_date,
+        MIN(
+          CASE
+            WHEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) > ${today}::date
+            THEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date)
+            ELSE NULL
+          END
+        ) AS next_event_date,
+        COUNT(*)::int AS total_events,
+        SUM(
+          CASE
+            WHEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) > ${today}::date
+            THEN 1
+            ELSE 0
+          END
+        )::int AS upcoming_events,
+        COALESCE(SUM(e.amount_expected), 0)::float AS total_expected
+      FROM events e
+      WHERE e.clinical_series_id IS NOT NULL
+      GROUP BY e.clinical_series_id
+    ),
+    linked_totals AS (
+      SELECT
+        linked.series_id,
+        COALESCE(SUM(linked.total_amount), 0)::float AS total_linked_amount
+      FROM (
+        SELECT DISTINCT ON (e.clinical_series_id, s.id)
+          e.clinical_series_id AS series_id,
+          COALESCE(s.total_amount, 0) AS total_amount
+        FROM event_dte_sale_links l
+        JOIN events e ON e.id = l.event_id
+        JOIN dte_sale_details s ON s.id = l.dte_sale_detail_id
+        WHERE e.clinical_series_id IS NOT NULL
+        ORDER BY e.clinical_series_id, s.id, l.updated_at DESC
+      ) AS linked
+      GROUP BY linked.series_id
+    )
+    SELECT cs.id
+    FROM clinical_series cs
+    LEFT JOIN event_stats es ON es.series_id = cs.id
+    LEFT JOIN linked_totals lt ON lt.series_id = cs.id
+    WHERE (${filters?.beneficiaryRut ? normalizeRut(filters.beneficiaryRut) : null}::text IS NULL OR cs.beneficiary_rut = ${filters?.beneficiaryRut ? normalizeRut(filters.beneficiaryRut) : null})
+      AND (${filters?.kind ?? null}::text IS NULL OR cs.kind::text = ${filters?.kind ?? null})
+      AND (${filters?.status ?? null}::text IS NULL OR cs.status::text = ${filters?.status ?? null})
+      AND (${normalizedPatientName}::text IS NULL OR lower(coalesce(cs.patient_name, '')) LIKE ${normalizedPatientName})
+      AND (${filters?.patientRut ? normalizeRut(filters.patientRut) : null}::text IS NULL OR cs.patient_rut = ${filters?.patientRut ? normalizeRut(filters.patientRut) : null})
+    ORDER BY ${orderBy}
+    LIMIT ${pageSize}
+    OFFSET ${(page - 1) * pageSize}
+  `.execute(kysely);
+
+  const series = seriesResult.rows;
 
   const items = (
     await Promise.all(series.map((item) => getClinicalSeriesSnapshotById(item.id)))
