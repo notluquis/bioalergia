@@ -65,7 +65,7 @@ function AuthedLayout() {
   const isNavigating = useRouterState({ select: (s) => s.status === "pending" });
   const contentPaddingClass = useRouterState({
     select: (s) => {
-      return s.location.pathname.startsWith("/calendar/daily") ? "p-1 md:p-2" : "p-3 md:p-5";
+      return s.location.pathname.startsWith("/clinical/day") ? "p-1 md:p-2" : "p-3 md:p-5";
     },
   });
 

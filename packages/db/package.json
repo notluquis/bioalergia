@@ -47,6 +47,7 @@
     "migrate:deploy": "zen migrate deploy",
     "clean": "rm -rf dist",
     "type-check": "tsc --noEmit",
+    "type-check:ts": "tsc -b --pretty false",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix && oxfmt --write ."
   },
@@ -74,5 +75,9 @@
     "ts-morph": "^27.0.2",
     "ts-pattern": "^5.9.0",
     "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=25",
+    "npm": ">=10.0.0"
   }
 }

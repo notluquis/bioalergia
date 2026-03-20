@@ -35,5 +35,6 @@
       "@finanzas/orpc-contracts/*": ["../../packages/orpc-contracts/dist/*"]
     }
   },
-  "include": ["src", "shared"]
+  "include": ["src", "shared"],
+  "references": [{ "path": "../../packages/db" }, { "path": "../../packages/orpc-contracts" }]
 }

@@ -7,7 +7,7 @@ FROM node:current-slim AS pruner
 WORKDIR /app
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN npm install -g corepack@latest --force && corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@latest --activate
 COPY . .
 RUN TURBO_TELEMETRY_DISABLED=1 pnpm -w turbo prune @finanzas/site --docker
 
@@ -18,7 +18,7 @@ FROM node:current-slim AS base
 WORKDIR /app
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN npm install -g corepack@latest --force && corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
 COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
@@ -36,6 +36,7 @@ ENV CI=true
 ENV TURBO_TELEMETRY_DISABLED=1
 ENV VITE_PUBLIC_POSTHOG_KEY=${VITE_PUBLIC_POSTHOG_KEY}
 ENV VITE_PUBLIC_POSTHOG_HOST=${VITE_PUBLIC_POSTHOG_HOST}
+RUN pnpm -w turbo run type-check:ts --filter=@finanzas/site
 RUN pnpm -w turbo run build --filter=@finanzas/site
 
 # ==========================================================================

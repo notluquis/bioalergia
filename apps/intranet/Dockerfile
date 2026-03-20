@@ -5,7 +5,10 @@
 # ==========================================================================
 FROM node:current-slim AS pruner
 WORKDIR /app
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
 COPY . .
+RUN corepack enable && corepack prepare pnpm@latest --activate
 RUN TURBO_TELEMETRY_DISABLED=1 npx turbo@^2 prune @finanzas/intranet --docker
 
 # ==========================================================================
@@ -21,9 +24,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     && rm -rf /var/lib/apt/lists/*
 
-RUN npm install -g corepack@latest --force && \
-    corepack enable pnpm && \
-    corepack install -g pnpm@latest
+RUN corepack enable && \
+    corepack prepare pnpm@latest --activate
 
 COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
@@ -38,7 +40,8 @@ FROM base AS build
 COPY --from=pruner /app/out/full/ .
 ENV CI=true
 ENV TURBO_TELEMETRY_DISABLED=1
-RUN pnpm turbo run build --filter=@finanzas/intranet
+RUN pnpm turbo run type-check:ts --filter=@finanzas/intranet...
+RUN pnpm turbo run build --filter=@finanzas/intranet...
 
 # ==========================================================================
 # Stage 4: Runner - Caddy (modern HTTP/3 server)

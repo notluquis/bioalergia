@@ -8,6 +8,7 @@
     "dev": "node ./scripts/run-agent.mjs",
     "prestart": "node ./scripts/free-port.mjs",
     "start": "node ./scripts/run-agent.mjs start",
+    "type-check:ts": "tsc -b --pretty false",
     "test:send-self": "tsx src/scripts/send-self-test.ts",
     "import:eml": "tsx src/scripts/import-eml-backup.ts",
     "import:list-folders": "tsx src/scripts/list-imap-folders.ts",
@@ -27,5 +28,9 @@
     "@types/nodemailer": "^7.0.11",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=25",
+    "npm": ">=10.0.0"
   }
 }

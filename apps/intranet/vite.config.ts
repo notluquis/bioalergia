@@ -123,8 +123,8 @@ export default defineConfig(({ mode }) => {
           ],
           shortcuts: [
             {
-              name: "Calendario",
-              url: "/calendar",
+              name: "Prestaciones",
+              url: "/clinical/agenda",
               icons: [{ src: "/icons/icon-96.png", sizes: "96x96" }],
             },
             {

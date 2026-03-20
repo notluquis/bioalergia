@@ -195,6 +195,7 @@
     "build": "tsc",
     "clean": "rm -rf dist",
     "type-check": "oxlint --type-aware --type-check",
+    "type-check:ts": "tsc -b --pretty false",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix && oxfmt --write .",
     "format": "oxfmt",
@@ -207,5 +208,9 @@
   "devDependencies": {
     "@types/node": "^25.5.0",
     "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=25",
+    "npm": ">=10.0.0"
   }
 }

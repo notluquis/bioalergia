@@ -7,21 +7,22 @@
     "mail:status": "node scripts/mail-agent.mjs status",
     "mail:stop": "node scripts/mail-agent.mjs stop",
     "mail:logs": "node scripts/mail-agent.mjs logs",
-    "build": "pnpm -r --if-present build",
-    "test": "pnpm -r --if-present test",
+    "build": "turbo run build --continue=never",
+    "test": "turbo run test --continue=never",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "lint:ci": "oxlint --format=github",
     "lint:ci:sarif": "oxlint --format=sarif --reporter-file=./reports/oxlint.sarif",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
-    "check": "pnpm lint && pnpm type-check",
+    "check": "pnpm lint && pnpm type-check && pnpm type-check:ts",
     "check:fix": "oxlint --fix && oxfmt",
     "check:full": "pnpm check && pnpm test && pnpm build",
     "ci:check": "oxlint --format=github",
-    "ci": "pnpm lint:ci && pnpm type-check && pnpm test && pnpm build",
+    "ci": "pnpm lint:ci && pnpm type-check && pnpm type-check:ts && pnpm test && pnpm build",
     "clean": "pnpm -r --if-present clean",
     "type-check": "turbo run type-check --continue=never",
+    "type-check:ts": "turbo run type-check:ts --continue=never",
     "devtools": "turbo devtools",
     "prepare": "husky || true"
   },
@@ -42,10 +43,11 @@
     "turbo": "^2.8.20"
   },
   "engines": {
-    "node": ">=25.3.0",
+    "node": ">=25",
+    "npm": ">=10.0.0",
     "pnpm": ">=10.28.0"
   },
-  "packageManager": "pnpm@10.32.1+sha512.a706938f0e89ac1456b6563eab4edf1d1faf3368d1191fc5c59790e96dc918e4456ab2e67d613de1043d2e8c81f87303e6b40d4ffeca9df15ef1ad567348f2be",
+  "packageManager": "pnpm@10.32.1",
   "pnpm": {
     "onlyBuiltDependencies": [
       "argon2",

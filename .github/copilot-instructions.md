@@ -22,17 +22,16 @@
 
 #### Frontend
 - **Framework:** React 19.2.4 + TypeScript 5.9.3
-- **UI Library:** HeroUI v3.0.0-beta.5 (NOT Material-UI or Chakra)
+- **UI Library:** HeroUI v3 RC / beta line (NOT Material-UI or Chakra)
 - **Date Handling:** `@internationalized/date` with dayjs (es_ES locale)
-- **Build:** Vite v8.0.0-beta.10
+- **Build:** Vite v8.x
 - **Styling:** Tailwind CSS v4.1.18
 
 #### Important Tools
 - **Linter:** Oxlint v1.52.0 (Rust-based linting, 50-100x faster than ESLint)
 - **Formatter:** Oxfmt v0.37.0 (Rust-based, 95% Prettier compatible)
-- **Type-Checker:** Oxlint `--type-aware --type-check` (via oxlint-tsgolint v0.16.0)
-  - Replaces `tsc --noEmit` (eliminated OOM issue)
-  - All packages type-check in 7-8 seconds total (no memory exhaustion)
+- **Fast Type-Checker:** Oxlint `--type-aware --type-check` (via oxlint-tsgolint)
+- **Structural Type-Checker:** TypeScript build mode with project references (`tsc -b`)
 - **Build Tool:** turbo monorepo
 - **Package Manager:** pnpm (NOT npm or yarn)
 
@@ -54,16 +53,17 @@
 
 ### 2. Oxlint Consolidation (Completed March 10, 2026) - OXC ECOSYSTEM STANDARDIZED
 
-**Migration:** Replaced tsc with unified OXC ecosystem (Rust-based toolchain)
+**Migration:** Consolidated fast feedback around the OXC ecosystem while keeping TypeScript build mode for structural validation
 
 **Problem Solved:**
-- ✅ `tsc --noEmit` was hitting OOM (>4GB heap) on API type-checking
+- ✅ direct `tsc --noEmit` in app build scripts was creating slow, monolithic checks
 - ✅ Slow turnaround: Type-checking blocked CI/CD
 
 **Solution Implemented:**
 - **Linting:** `oxlint` (Rust-based, replaces ESLint)
 - **Formatting:** `oxfmt` (Rust-based, 95% Prettier compatible)
-- **Type-Checking:** `oxlint --type-aware --type-check` (via oxlint-tsgolint, replaces tsc)
+- **Fast type-checking:** `oxlint --type-aware --type-check`
+- **Structural type-checking:** `tsc -b --pretty false` via project references
 
 **Configuration Files:**
 - `.oxlintrc.json` - Oxlint rules (typescript plugin enabled, type-aware rules)
@@ -107,7 +107,7 @@
 **Migration Impact:**
 | Metric | Before | After |
 |--------|--------|-------|
-| Type-check time | OOM (4GB+) | 7.3s |
+| Fast type-check time | OOM / inconsistent | seconds |
 | API type-check | Failed | ~2s (silent success) |
 | Memory usage | >4GB | <100MB |
 | Tool consolidation | 3 tools | 1 tool |
@@ -118,10 +118,11 @@ pnpm lint              # oxlint (linting + rules)
 pnpm lint:fix          # oxlint --fix (auto-fix)
 pnpm format            # oxfmt (formatting)
 pnpm format:check      # oxfmt --check (verify format)
-pnpm type-check        # oxlint --type-aware --type-check (unified type-checking)
+pnpm type-check        # Fast type-aware checks via oxlint
+pnpm type-check:ts     # Structural validation via TypeScript project references
 ```
 
-⚠️ **RULE:** Never use `tsc --noEmit` or `prettier` directly. Always use oxlint ecosystem.
+⚠️ **RULE:** Do not put `tsc --noEmit` inside app `build` scripts. Keep builds artifact-focused and run structural TypeScript checks through `pnpm type-check:ts`.
 
 **Standardized OXC Ecosystem Tools:**
 | Tool | Purpose | Status |
