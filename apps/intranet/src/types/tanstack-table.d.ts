@@ -5,6 +5,12 @@ import type { InventoryItem } from "@/features/inventory/types";
 import type { SupplyRequest } from "@/features/supplies/types";
 
 declare module "@tanstack/react-table" {
+  interface ColumnMeta<TData extends RowData, TValue> {
+    className?: string;
+    headerClassName?: string;
+    isRowHeader?: boolean;
+  }
+
   interface TableMeta<TData extends RowData> {
     totals?: {
       extraAmount: number;

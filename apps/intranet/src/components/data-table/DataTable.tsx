@@ -27,7 +27,7 @@ import {
   useReactTable,
   type VisibilityState,
 } from "@tanstack/react-table";
-import { type ReactNode, useRef, useState } from "react";
+import { type ReactNode, useMemo, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -44,6 +44,12 @@ interface DataTableProps<TData, TValue, TMeta extends TableMeta<TData> = TableMe
   readonly columns: ColumnDef<TData, TValue>[];
   readonly columnVisibility?: VisibilityState;
   readonly data: TData[];
+  /**
+   * Enable HeroUI/React Aria column resizing primitives.
+   * This is an advanced feature and should be opt-in per table.
+   * @default false
+   */
+  readonly enableColumnResizing?: boolean;
   /**
    * Controls the DataTable container styling when wrapped by cards/surfaces.
    * @default "default"
@@ -147,6 +153,7 @@ interface DataTableProps<TData, TValue, TMeta extends TableMeta<TData> = TableMe
 interface DataTableContentProps<TData> {
   readonly autoFitColumns: boolean;
   readonly containerVariant: "default" | "plain";
+  readonly enableColumnResizing: boolean;
   readonly estimatedRowHeight: number;
   readonly enableVirtualization: boolean;
   readonly isLoading?: boolean;
@@ -159,12 +166,25 @@ interface DataTableContentProps<TData> {
   readonly scrollMaxHeight?: number | string;
   readonly scrollMode: "auto" | "container" | "page";
   readonly virtualizationMaxHeight: number | string;
-  readonly collectionKey: string;
 }
+
+type BodyItem<TData> =
+  | {
+      id: string;
+      kind: "data";
+      row: Row<TData>;
+    }
+  | {
+      id: string;
+      kind: "expanded";
+      row: Row<TData>;
+      visibleCellCount: number;
+    };
 
 function DataTableContent<TData>({
   autoFitColumns,
   containerVariant,
+  enableColumnResizing,
   estimatedRowHeight,
   enableVirtualization,
   isLoading,
@@ -177,7 +197,6 @@ function DataTableContent<TData>({
   sorting,
   table,
   virtualizationMaxHeight,
-  collectionKey,
 }: DataTableContentProps<TData>) {
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const rows = table.getRowModel().rows;
@@ -188,6 +207,32 @@ function DataTableContent<TData>({
   const resolvedMaxHeight = scrollMaxHeight ?? virtualizationMaxHeight;
   const headerGroups = table.getHeaderGroups();
   const activeHeaderGroup = headerGroups.at(-1);
+  const defaultRowHeaderColumnId =
+    activeHeaderGroup?.headers.find((header) => !header.isPlaceholder)?.column.id ?? null;
+  const hasResizableColumns =
+    enableColumnResizing &&
+    (activeHeaderGroup?.headers.some((header) => header.column.getCanResize()) ?? false);
+  const bodyItems = useMemo<BodyItem<TData>[]>(() => {
+    const items: BodyItem<TData>[] = [];
+    for (const row of rows) {
+      items.push({
+        id: row.id,
+        kind: "data",
+        row,
+      });
+
+      if (row.getIsExpanded() && renderSubComponent) {
+        items.push({
+          id: `${row.id}-expanded`,
+          kind: "expanded",
+          row,
+          visibleCellCount: row.getVisibleCells().length,
+        });
+      }
+    }
+    return items;
+  }, [renderSubComponent, rows]);
+  const collectionIdentity = useMemo(() => bodyItems.map((item) => item.id).join("|"), [bodyItems]);
   const sortDescriptor: SortDescriptor | undefined = sorting[0]
     ? {
         column: sorting[0].id,
@@ -214,23 +259,33 @@ function DataTableContent<TData>({
         </Table.Row>
       ))}
     </Table.Body>
-  ) : enableVirtualization || !renderSubComponent ? (
+  ) : (
     <Table.Body
-      items={rows}
+      items={bodyItems}
       renderEmptyState={() => (
         <EmptyState className="flex h-full w-full items-center justify-center text-center text-sm text-muted-foreground">
           {noDataMessage}
         </EmptyState>
       )}
     >
-      {(row) => {
-        const visibleCells = row.getVisibleCells();
+      {(item) => {
+        if (item.kind === "expanded") {
+          return (
+            <Table.Row id={item.id}>
+              <Table.Cell colSpan={item.visibleCellCount}>
+                {renderSubComponent?.({ row: item.row })}
+              </Table.Cell>
+            </Table.Row>
+          );
+        }
+
+        const visibleCells = item.row.getVisibleCells();
 
         return (
           <Table.Row
             className={cn(onRowClick && "cursor-pointer")}
-            id={row.id}
-            onClick={() => onRowClick?.(row.original)}
+            id={item.id}
+            onClick={() => onRowClick?.(item.row.original)}
           >
             {visibleCells.map((cell) => (
               <Table.Cell key={cell.id}>
@@ -241,112 +296,88 @@ function DataTableContent<TData>({
         );
       }}
     </Table.Body>
-  ) : (
-    <Table.Body
-      renderEmptyState={() => (
-        <EmptyState className="flex h-full w-full items-center justify-center text-center text-sm text-muted-foreground">
-          {noDataMessage}
-        </EmptyState>
-      )}
+  );
+
+  const tableContent = (
+    <Table.ScrollContainer
+      className="muted-scrollbar"
+      ref={tableContainerRef}
+      style={
+        shouldEnableInternalVerticalScroll
+          ? {
+              maxHeight: resolvedMaxHeight,
+              overflowY: "auto",
+            }
+          : undefined
+      }
     >
-      {rows.flatMap((row) => {
-        const visibleCells = row.getVisibleCells();
-        const renderedRows = [
-          <Table.Row
-            className={cn(onRowClick && "cursor-pointer")}
-            id={row.id}
-            key={row.id}
-            onClick={() => onRowClick?.(row.original)}
-          >
-            {visibleCells.map((cell) => (
-              <Table.Cell key={cell.id}>
-                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-              </Table.Cell>
-            ))}
-          </Table.Row>,
-        ];
-
-        if (row.getIsExpanded() && renderSubComponent) {
-          renderedRows.push(
-            <Table.Row id={`${row.id}-expanded`} key={`${row.id}-expanded`}>
-              <Table.Cell colSpan={visibleCells.length}>{renderSubComponent({ row })}</Table.Cell>
-            </Table.Row>
-          );
+      <Table.Content
+        aria-label="Tabla de datos"
+        className={cn(
+          "w-full",
+          autoFitColumns ? "min-w-full" : "min-w-max",
+          enableVirtualization && "overflow-auto"
+        )}
+        sortDescriptor={sortDescriptor}
+        style={
+          enableVirtualization
+            ? {
+                maxHeight: resolvedMaxHeight,
+                overflowY: "auto",
+              }
+            : undefined
         }
-
-        return renderedRows;
-      })}
-    </Table.Body>
+        onSortChange={(descriptor) => {
+          if (!descriptor?.column) {
+            onSortingChange([]);
+            return;
+          }
+          onSortingChange([
+            {
+              desc: descriptor.direction === "descending",
+              id: String(descriptor.column),
+            },
+          ]);
+        }}
+      >
+        <Table.Header className={enableVirtualization ? "h-full w-full" : undefined}>
+          {activeHeaderGroup.headers.map((header) => {
+            const headerContent = header.isPlaceholder
+              ? null
+              : flexRender(header.column.columnDef.header, header.getContext());
+            return (
+              <Table.Column
+                allowsSorting={header.column.getCanSort()}
+                defaultWidth={autoFitColumns ? undefined : header.getSize()}
+                id={header.column.id}
+                isRowHeader={
+                  header.column.columnDef.meta?.isRowHeader ??
+                  header.column.id === defaultRowHeaderColumnId
+                }
+                key={header.id}
+                minWidth={header.getSize()}
+              >
+                {headerContent}
+                {enableColumnResizing && header.column.getCanResize() && <Table.ColumnResizer />}
+              </Table.Column>
+            );
+          })}
+        </Table.Header>
+        {bodyContent}
+      </Table.Content>
+    </Table.ScrollContainer>
   );
 
   const tableNode = (
-    <Table variant={containerVariant === "plain" ? "primary" : "secondary"}>
-      <Table.ResizableContainer>
-        <Table.ScrollContainer
-          className="muted-scrollbar"
-          ref={tableContainerRef}
-          style={
-            shouldEnableInternalVerticalScroll
-              ? {
-                  maxHeight: resolvedMaxHeight,
-                  overflowY: "auto",
-                }
-              : undefined
-          }
-        >
-          <Table.Content
-            aria-label="Tabla de datos"
-            className={cn(
-              "w-full",
-              autoFitColumns ? "min-w-full" : "min-w-max",
-              enableVirtualization && "overflow-auto"
-            )}
-            key={collectionKey}
-            sortDescriptor={sortDescriptor}
-            style={
-              enableVirtualization
-                ? {
-                    maxHeight: resolvedMaxHeight,
-                    overflowY: "auto",
-                  }
-                : undefined
-            }
-            onSortChange={(descriptor) => {
-              if (!descriptor?.column) {
-                onSortingChange([]);
-                return;
-              }
-              onSortingChange([
-                {
-                  desc: descriptor.direction === "descending",
-                  id: String(descriptor.column),
-                },
-              ]);
-            }}
-          >
-            <Table.Header className={enableVirtualization ? "h-full w-full" : undefined}>
-              {activeHeaderGroup.headers.map((header) => {
-                const headerContent = header.isPlaceholder
-                  ? null
-                  : flexRender(header.column.columnDef.header, header.getContext());
-                return (
-                  <Table.Column
-                    allowsSorting={header.column.getCanSort()}
-                    defaultWidth={autoFitColumns ? undefined : header.getSize()}
-                    id={header.column.id}
-                    key={header.id}
-                    minWidth={header.getSize()}
-                  >
-                    {headerContent}
-                    {header.column.getCanResize() && <Table.ColumnResizer />}
-                  </Table.Column>
-                );
-              })}
-            </Table.Header>
-            {bodyContent}
-          </Table.Content>
-        </Table.ScrollContainer>
-      </Table.ResizableContainer>
+    <Table
+      key={collectionIdentity}
+      variant={containerVariant === "plain" ? "primary" : "secondary"}
+    >
+      {hasResizableColumns ? (
+        <Table.ResizableContainer>{tableContent}</Table.ResizableContainer>
+      ) : (
+        tableContent
+      )}
     </Table>
   );
 
@@ -373,6 +404,7 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
   columnVisibility: controlledColumnVisibility,
   containerVariant = "default",
   data,
+  enableColumnResizing = false,
   enableExport = true,
   enableGlobalFilter = true,
   enablePageSizeSelector = true,
@@ -424,22 +456,23 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
   const shouldVirtualize =
     enableVirtualization && data.length >= virtualizationThreshold && !renderSubComponent;
   const effectiveScrollMode = scrollMode === "auto" && !enablePagination ? "container" : scrollMode;
-  const lastDataRef = useRef(data);
-  const collectionVersionRef = useRef(0);
-
-  if (lastDataRef.current !== data) {
-    lastDataRef.current = data;
-    collectionVersionRef.current += 1;
-  }
-
-  const collectionKey = `table-collection-${collectionVersionRef.current}`;
+  const getStableRowId = (originalRow: TData, index: number) => {
+    const row = originalRow as Record<string, unknown>;
+    type RowIdValue = number | string | undefined;
+    const id =
+      (row.id as RowIdValue)?.toString() ??
+      (row.employeeId as RowIdValue)?.toString() ??
+      (row._id as RowIdValue)?.toString();
+    return id && id.length > 0 ? id : `row_${index}`;
+  };
+  const dataIdentity = data.map((row, index) => getStableRowId(row, index)).join("|");
 
   const table = useReactTable({
     autoResetPageIndex: !manualPagination,
     columnResizeMode: "onChange",
     columns,
     data,
-    enableColumnResizing: true,
+    enableColumnResizing,
     enableGlobalFilter,
     enablePinning: true,
     enableRowSelection: true,
@@ -448,15 +481,7 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: shouldPaginate ? getPaginationRowModel() : undefined,
     getSortedRowModel: getSortedRowModel(),
-    getRowId: (originalRow: TData, index: number) => {
-      const row = originalRow as Record<string, unknown>;
-      type RowIdValue = number | string | undefined;
-      const id =
-        (row.id as RowIdValue)?.toString() ??
-        (row.employeeId as RowIdValue)?.toString() ??
-        (row._id as RowIdValue)?.toString();
-      return id && id.length > 0 ? id : `row_${index}`;
-    },
+    getRowId: getStableRowId,
     manualPagination,
     meta,
     onColumnFiltersChange: setColumnFilters,
@@ -491,8 +516,10 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
         />
       )}
       <DataTableContent
+        key={dataIdentity}
         autoFitColumns={autoFitColumns}
         containerVariant={containerVariant}
+        enableColumnResizing={enableColumnResizing}
         estimatedRowHeight={estimatedRowHeight}
         enableVirtualization={shouldVirtualize}
         isLoading={isLoading}
@@ -505,7 +532,6 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
         sorting={sorting}
         table={table}
         virtualizationMaxHeight={virtualizationMaxHeight}
-        collectionKey={collectionKey}
       />
       {enablePagination && (
         <DataTablePagination

@@ -1,5 +1,5 @@
 import type { ColumnDef } from "@tanstack/react-table";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { DataTable } from "./DataTable";
@@ -95,7 +95,7 @@ describe("DataTable scroll behavior", () => {
     expect(container.style.maxHeight).toBe("");
   });
 
-  it("updates rendered rows when the data prop changes", () => {
+  it("updates rendered rows when the data prop changes", async () => {
     const { rerender } = render(
       <DataTable columns={columns} data={rows} enableToolbar={false} enableVirtualization={false} />
     );
@@ -112,9 +112,11 @@ describe("DataTable scroll behavior", () => {
       />
     );
 
-    expect(screen.queryByText("Fila 1")).not.toBeNull();
-    expect(screen.queryByText("Fila 2")).not.toBeNull();
-    expect(screen.queryByText("Fila 3")).toBeNull();
-    expect(screen.queryByText("Fila 5")).toBeNull();
+    await waitFor(() => {
+      expect(screen.queryByText("Fila 1")).not.toBeNull();
+      expect(screen.queryByText("Fila 2")).not.toBeNull();
+      expect(screen.queryByText("Fila 3")).toBeNull();
+      expect(screen.queryByText("Fila 5")).toBeNull();
+    });
   });
 });
