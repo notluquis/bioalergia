@@ -5,7 +5,6 @@ import { Loader2, LogOut, Moon, Sun } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { NotificationHistory } from "@/features/notifications/components/NotificationHistory";
 import { useTheme } from "@/hooks/use-theme";
-import { DeploymentStatusChip } from "./DeploymentStatusChip";
 
 import { Clock } from "../features/Clock";
 
@@ -133,9 +132,6 @@ export function Header() {
           <div className="flex items-center gap-2 md:gap-3">
             <div className="hidden md:block">
               <Clock />
-            </div>
-            <div className="hidden lg:block">
-              <DeploymentStatusChip compact />
             </div>
             <NotificationHistory />
             <Button

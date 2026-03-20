@@ -46,6 +46,25 @@ function statusLabel(status: RailwayDeploymentStatus) {
   }
 }
 
+function formatRelativeAge(date: Date | null) {
+  if (!date) return "sin hora";
+
+  const minutes = Math.max(0, dayjs().diff(dayjs(date), "minute"));
+  if (minutes < 1) return "recién";
+  if (minutes < 60) return `hace ${minutes} min`;
+
+  const hours = Math.max(0, dayjs().diff(dayjs(date), "hour"));
+  if (hours < 24) return `hace ${hours} h`;
+
+  const days = Math.max(0, dayjs().diff(dayjs(date), "day"));
+  return `hace ${days} d`;
+}
+
+function shortDeploymentId(deploymentId: null | string) {
+  if (!deploymentId) return null;
+  return deploymentId.slice(0, 8);
+}
+
 function summaryLabel(
   targets: RailwayDeploymentTarget[],
   configured: boolean,
@@ -54,9 +73,10 @@ function summaryLabel(
   if (!configured) return "Deploy n/d";
   if (errorMessage) return "Deploy error";
   if (targets.some((target) => isProblemStatus(target.status))) return "Deploy con falla";
-  const activeCount = targets.filter((target) => isActiveStatus(target.status)).length;
-  if (activeCount > 0)
-    return activeCount === 1 ? "Deploy en curso" : `${activeCount} deploys en curso`;
+  const activeTargets = targets.filter((target) => isActiveStatus(target.status));
+  const activeCount = activeTargets.length;
+  if (activeCount === 1) return `${activeTargets[0]?.label ?? "Deploy"} en curso`;
+  if (activeCount > 0) return `${activeCount} deploys en curso`;
   return "Deploy estable";
 }
 
@@ -111,19 +131,72 @@ export function DeploymentStatusChip({ compact = false }: Readonly<DeploymentSta
   }
 
   const checkedAt = data?.checkedAt ? dayjs(data.checkedAt).format("DD-MM-YYYY HH:mm") : null;
+  const activeTargets = targets.filter((target) => isActiveStatus(target.status));
+  const problemTargets = targets.filter((target) => isProblemStatus(target.status));
+  const stableTargets = targets.filter(
+    (target) => !isActiveStatus(target.status) && !isProblemStatus(target.status)
+  );
 
   return (
     <Tooltip>
       <Tooltip.Trigger>{content}</Tooltip.Trigger>
-      <Tooltip.Content>
-        <div className="space-y-1 text-sm">
-          {targets.length > 0 ? (
-            targets.map((target) => (
-              <div className="flex items-center justify-between gap-3" key={target.serviceId}>
-                <span className="font-medium">{target.label}</span>
-                <span>{statusLabel(target.status)}</span>
-              </div>
-            ))
+      <Tooltip.Content className="max-w-sm">
+        <div className="space-y-3 text-sm">
+          {activeTargets.length > 0 ? (
+            <div className="space-y-1.5">
+              <div className="font-medium">En curso</div>
+              {activeTargets.map((target) => (
+                <div className="flex items-start justify-between gap-3" key={target.serviceId}>
+                  <div className="min-w-0">
+                    <div className="font-medium">{target.label}</div>
+                    <div className="text-default-500 text-xs">
+                      {statusLabel(target.status)} · {formatRelativeAge(target.createdAt)}
+                    </div>
+                  </div>
+                  <div className="text-default-500 shrink-0 text-xs tabular-nums">
+                    {shortDeploymentId(target.deploymentId) ?? "sin id"}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : null}
+
+          {problemTargets.length > 0 ? (
+            <div className="space-y-1.5">
+              <div className="font-medium">Con falla</div>
+              {problemTargets.map((target) => (
+                <div className="flex items-start justify-between gap-3" key={target.serviceId}>
+                  <div className="min-w-0">
+                    <div className="font-medium">{target.label}</div>
+                    <div className="text-default-500 text-xs">
+                      {statusLabel(target.status)} · {formatRelativeAge(target.createdAt)}
+                    </div>
+                  </div>
+                  <div className="text-default-500 shrink-0 text-xs tabular-nums">
+                    {shortDeploymentId(target.deploymentId) ?? "sin id"}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : null}
+
+          {stableTargets.length > 0 ? (
+            <div className="space-y-1.5">
+              <div className="font-medium">Último estado</div>
+              {stableTargets.map((target) => (
+                <div className="flex items-start justify-between gap-3" key={target.serviceId}>
+                  <div className="min-w-0">
+                    <div className="font-medium">{target.label}</div>
+                    <div className="text-default-500 text-xs">
+                      {statusLabel(target.status)} · {formatRelativeAge(target.createdAt)}
+                    </div>
+                  </div>
+                  <div className="text-default-500 shrink-0 text-xs tabular-nums">
+                    {shortDeploymentId(target.deploymentId) ?? "sin id"}
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : errorMessage ? (
             <div className="max-w-sm space-y-1">
               <div className="font-medium">Railway respondió con error</div>
