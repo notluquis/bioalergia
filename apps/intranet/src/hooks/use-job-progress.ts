@@ -48,7 +48,7 @@ export function useJobProgress(jobId: null | string, options: UseJobProgressOpti
       setHasNotified(true);
       onComplete?.(query.data.result);
       // Invalidate calendar queries to refresh the list
-      void Promise.all([queryClient.invalidateQueries({ queryKey: ["calendar-unclassified"] })]);
+      void queryClient.invalidateQueries({ queryKey: ["calendar-unclassified"] });
     } else if (query.data.status === "failed" && query.data.error) {
       setHasNotified(true);
       onError?.(query.data.error);

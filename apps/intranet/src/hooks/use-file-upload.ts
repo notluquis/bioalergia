@@ -41,7 +41,7 @@ export function useFileUpload({
       setResults(uploadResults);
       setError(null);
       for (const key of invalidateKeys) {
-        void Promise.all([queryClient.invalidateQueries({ queryKey: key })]);
+        void queryClient.invalidateQueries({ queryKey: key });
       }
       onUploadSuccess?.(uploadResults);
     },
@@ -81,7 +81,7 @@ export function useFileUpload({
         return true;
       }
       const analyses = await Promise.all(
-        selected.map(async (file) => ({ file, ...(await validator(file)) })),
+        selected.map(async (file) => ({ file, ...(await validator(file)) }))
       );
       const problematic = analyses.filter((item) => item.missing.length > 0);
 
@@ -91,7 +91,7 @@ export function useFileUpload({
           file: file.name,
           headersCount,
           missing,
-        })),
+        }))
       );
 
       if (problematic.length === 0 || !confirmOnValidationWarning) {
@@ -101,12 +101,12 @@ export function useFileUpload({
       const message = problematic
         .map(
           ({ file, headersCount, missing }) =>
-            `${file.name}: faltan ${missing.join(", ")} · columnas detectadas: ${headersCount}`,
+            `${file.name}: faltan ${missing.join(", ")} · columnas detectadas: ${headersCount}`
         )
         .join("\n");
 
       return globalThis.confirm(
-        `Advertencia: algunos archivos no contienen todas las columnas esperadas.\n\n${message}\n\n¿Deseas continuar igualmente?`,
+        `Advertencia: algunos archivos no contienen todas las columnas esperadas.\n\n${message}\n\n¿Deseas continuar igualmente?`
       );
     };
 

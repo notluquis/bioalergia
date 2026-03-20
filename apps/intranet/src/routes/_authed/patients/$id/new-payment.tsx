@@ -72,12 +72,12 @@ function NewPaymentPage() {
     },
     onSuccess: () => {
       toast.success("Pago registrado exitosamente");
-      void Promise.all([queryClient.invalidateQueries({ queryKey: ["patient", id] })]);
+      void queryClient.invalidateQueries({ queryKey: ["patient", id] });
       void navigate({ to: "/patients/$id", params: { id: String(id) } });
     },
     onError: (error) => {
       toast.error(
-        `Error: ${error instanceof Error ? error.message : "No se pudo registrar el pago"}`,
+        `Error: ${error instanceof Error ? error.message : "No se pudo registrar el pago"}`
       );
     },
   });

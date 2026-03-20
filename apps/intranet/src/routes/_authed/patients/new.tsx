@@ -50,7 +50,7 @@ function AddPatientPage() {
       toastError(err instanceof Error ? err.message : "Error al registrar paciente");
     },
     onSuccess: () => {
-      void Promise.all([queryClient.invalidateQueries({ queryKey: ["patients"] })]);
+      void queryClient.invalidateQueries({ queryKey: ["patients"] });
       success("Paciente registrado exitosamente");
       void navigate({ to: "/patients" });
     },

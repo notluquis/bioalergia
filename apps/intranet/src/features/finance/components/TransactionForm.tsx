@@ -127,7 +127,7 @@ export function TransactionForm({ isOpen, onClose, initialData }: Props) {
       }
     },
     onSuccess: () => {
-      void Promise.all([queryClient.invalidateQueries({ queryKey: ["FinancialTransaction"] })]);
+      void queryClient.invalidateQueries({ queryKey: ["FinancialTransaction"] });
       toast.success(initialData ? "Movimiento actualizado" : "Movimiento creado");
       onClose();
     },

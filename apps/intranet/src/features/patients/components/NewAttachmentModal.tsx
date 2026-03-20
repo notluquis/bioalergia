@@ -32,7 +32,7 @@ export function NewAttachmentModal({ isOpen, onClose, patientId }: NewAttachment
     },
     onSuccess: () => {
       toast.success("Documento subido exitosamente");
-      void Promise.all([queryClient.invalidateQueries({ queryKey: ["patient", patientId] })]);
+      void queryClient.invalidateQueries({ queryKey: ["patient", patientId] });
       handleClose();
     },
     onError: (error) => {

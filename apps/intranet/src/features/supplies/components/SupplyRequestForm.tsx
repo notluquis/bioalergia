@@ -30,9 +30,7 @@ export function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyRequestFo
   const createRequestMutation = useMutation<void, Error, SupplyRequestPayload>({
     mutationFn: createSupplyRequest,
     onSuccess: () => {
-      void Promise.all([
-        queryClient.invalidateQueries({ queryKey: queryKeys.supplies.requests() }),
-      ]);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.supplies.requests() });
     },
   });
 
@@ -107,7 +105,7 @@ export function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyRequestFo
       className="grid grid-cols-1 gap-4 md:grid-cols-2"
       onSubmit={(e) => {
         e.preventDefault();
-        void Promise.all([form.handleSubmit()]);
+        void form.handleSubmit();
       }}
     >
       <form.Field name="selectedSupply">

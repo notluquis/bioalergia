@@ -115,7 +115,7 @@ function CalendarClassificationPage() {
     onSettled: () => setSavingKey(null),
     onSuccess: () => {
       toast.success("Clasificación actualizada");
-      void Promise.all([queryClient.invalidateQueries({ queryKey: ["calendar-unclassified"] })]);
+      void queryClient.invalidateQueries({ queryKey: ["calendar-unclassified"] });
     },
   });
 

@@ -136,10 +136,10 @@ export function Sidebar({ isMobile, isOpen, onClose, sidebarId }: SidebarProps) 
               className="w-56"
               onAction={(key) => {
                 if (key === "account") {
-                  void Promise.all([router.navigate({ to: "/account" })]);
+                  void router.navigate({ to: "/account" });
                 }
                 if (key === "logout") {
-                  void Promise.all([logout()]);
+                  void logout();
                 }
               }}
             >

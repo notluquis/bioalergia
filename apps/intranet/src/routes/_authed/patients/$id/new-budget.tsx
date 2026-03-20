@@ -61,12 +61,12 @@ function NewBudgetPage() {
     },
     onSuccess: () => {
       toast.success("Presupuesto creado exitosamente");
-      void Promise.all([queryClient.invalidateQueries({ queryKey: ["patient", id] })]);
+      void queryClient.invalidateQueries({ queryKey: ["patient", id] });
       void navigate({ to: "/patients/$id", params: { id: String(id) } });
     },
     onError: (error) => {
       toast.error(
-        `Error: ${error instanceof Error ? error.message : "No se pudo crear el presupuesto"}`,
+        `Error: ${error instanceof Error ? error.message : "No se pudo crear el presupuesto"}`
       );
     },
   });

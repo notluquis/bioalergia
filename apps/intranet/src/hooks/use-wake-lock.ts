@@ -23,7 +23,7 @@ export function useWakeLock() {
           // Ignore NotAllowedError as it's expected if user denies permission or tab is hidden
           if ((error as Error).name !== "NotAllowedError") {
             console.error(
-              `[WakeLock] Failed to acquire wake lock: ${(error as Error).name}, ${(error as Error).message}`,
+              `[WakeLock] Failed to acquire wake lock: ${(error as Error).name}, ${(error as Error).message}`
             );
           }
         }
@@ -41,7 +41,7 @@ export function useWakeLock() {
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       if (wakeLockRef.current) {
-        void Promise.all([wakeLockRef.current.release()]);
+        void wakeLockRef.current.release();
         wakeLockRef.current = null;
       }
     };

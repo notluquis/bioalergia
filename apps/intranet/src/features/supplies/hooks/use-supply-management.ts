@@ -45,7 +45,7 @@ export function useSupplyManagement(): UseSupplyManagementResult {
       }
       return acc;
     },
-    {},
+    {}
   );
 
   // 4. Mutations
@@ -58,7 +58,7 @@ export function useSupplyManagement(): UseSupplyManagementResult {
       toastError(message);
     },
     onSuccess: () => {
-      void Promise.all([queryClient.invalidateQueries({ queryKey: supplyKeys.requests() })]);
+      void queryClient.invalidateQueries({ queryKey: supplyKeys.requests() });
       toastSuccess("Estado de solicitud actualizado");
     },
   });
