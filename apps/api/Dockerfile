@@ -10,7 +10,7 @@ WORKDIR /app
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 COPY . .
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN npm install -g pnpm@latest
 # npx downloads turbo pinned to major version - fastest approach for prune-only stage
 RUN TURBO_TELEMETRY_DISABLED=1 npx turbo@^2 prune @finanzas/api --docker
 
@@ -28,9 +28,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     && rm -rf /var/lib/apt/lists/*
 
-# Install latest pnpm through Corepack
-RUN corepack enable && \
-    corepack prepare pnpm@latest --activate
+# Install latest pnpm directly (corepack removed in Node.js 25+)
+RUN npm install -g pnpm@latest
 
 # Copy dependencies from pruner
 COPY --from=pruner /app/out/json/ .
