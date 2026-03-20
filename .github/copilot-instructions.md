@@ -52,11 +52,11 @@
 
 ### 2. Oxlint Consolidation (Completed March 10, 2026) - OXC ECOSYSTEM STANDARDIZED
 
-**Migration:** Consolidated fast feedback around the OXC ecosystem and removed repository-wide type-check gates from the default workflow
+**Migration:** Consolidated fast feedback around the OXC ecosystem and standardized typed checks around Oxlint for the Intranet workflow
 
 **Problem Solved:**
 - ✅ direct `tsc --noEmit` in app build scripts was creating slow, monolithic checks
-- ✅ Slow turnaround: Type-checking blocked CI/CD
+- ✅ Typed validation now runs through `oxlint --type-aware --type-check` in the default Intranet flow
 
 **Solution Implemented:**
 - **Linting:** `oxlint` (Rust-based, replaces ESLint)
@@ -115,9 +115,10 @@
 ```bash
 pnpm lint              # oxlint (linting + rules)
 pnpm lint:fix          # oxlint --fix (auto-fix)
+pnpm type-check        # typed Oxlint gate for Intranet
 pnpm format            # oxfmt (formatting)
 pnpm format:check      # oxfmt --check (verify format)
-pnpm lint              # Fast lint gate via oxlint
+pnpm check             # lint + typed gate
 ```
 
 ⚠️ **RULE:** Do not put `tsc --noEmit` inside app `build` scripts. Keep builds artifact-focused.
@@ -127,7 +128,7 @@ pnpm lint              # Fast lint gate via oxlint
 |------|---------|--------|
 | oxlint v1.52.0 | Linting | ✅ Active |
 | oxfmt v0.37.0 | Formatting | ✅ Active |
-| oxlint-tsgolint v0.17.1 | Go-based type-aware checking | ⏸ Disabled in default workflow |
+| oxlint-tsgolint v0.17.1 | Go-based type-aware checking | ✅ Active in Intranet flow |
 | oxc-minify v0.x | Production minification (Terser replacement) | ⏳ Planned v2 |
 | oxc-transform | AST transformations (TypeScript/JSX) | ⏳ Research |
 | oxc-parser | Custom code analysis | ⏳ Research |
