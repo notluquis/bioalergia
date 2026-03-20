@@ -333,12 +333,6 @@ function SuggestionExplorer({
                             {diff != null ? currencyFormatter.format(diff) : "-"}
                           </p>
                         </Surface>
-                        <Surface className="rounded-xl p-2.5" variant="secondary">
-                          <p className="text-default-500 text-[11px] uppercase tracking-wide">
-                            Registro
-                          </p>
-                          <p className="font-medium leading-tight">#{candidate.registerNumber}</p>
-                        </Surface>
                         <Button
                           className="self-end lg:self-auto"
                           isPending={confirmPending}

@@ -67,7 +67,6 @@ export const dteEventLinksSuggestionSchema = z.object({
   method: z.enum(["mixed", "name_exact", "name_fuzzy", "rut"]),
   netAmount: z.number(),
   reasons: z.array(z.string()),
-  registerNumber: z.number(),
   totalAmount: z.number(),
 });
 

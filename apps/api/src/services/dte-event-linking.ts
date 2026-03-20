@@ -74,7 +74,6 @@ function normalizeReasonCounts(counter: Map<string, number>): SkipReasonCount[] 
 
 export interface EventDteSuggestion {
   dteSaleDetailId: string;
-  registerNumber: number;
   documentType: number;
   clientRUT: string;
   clientName: string;
@@ -137,7 +136,6 @@ interface DteSaleRow {
   folio: string;
   ivaAmount: number;
   netAmount: number;
-  registerNumber: number;
   totalAmount: number;
 }
 
@@ -395,7 +393,6 @@ function scoreCandidate(params: {
 
   return {
     dteSaleDetailId: params.dte.dteSaleDetailId,
-    registerNumber: params.dte.registerNumber,
     documentType: params.dte.documentType,
     clientRUT: params.dte.clientRUT,
     clientName: params.dte.clientName,
@@ -474,7 +471,6 @@ async function getSalesCandidatesByDate(date: string): Promise<DteSaleRow[]> {
   return db.$queryRaw<DteSaleRow[]>`
     SELECT
       s.id AS "dteSaleDetailId",
-      s.register_number AS "registerNumber",
       s.document_type AS "documentType",
       s.client_rut AS "clientRUT",
       s.client_name AS "clientName",
@@ -508,7 +504,6 @@ async function getSalesCandidatesByDateRange(params: {
   return db.$queryRaw<DteSaleRow[]>`
     SELECT
       s.id AS "dteSaleDetailId",
-      s.register_number AS "registerNumber",
       s.document_type AS "documentType",
       s.client_rut AS "clientRUT",
       s.client_name AS "clientName",

@@ -207,7 +207,6 @@ export interface EventDteSuggestion {
   method: "mixed" | "name_exact" | "name_fuzzy" | "rut";
   netAmount: number;
   reasons: string[];
-  registerNumber: number;
   totalAmount: number;
 }
 

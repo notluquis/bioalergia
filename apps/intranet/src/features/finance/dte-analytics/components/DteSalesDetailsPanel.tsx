@@ -11,10 +11,6 @@ import { formatCurrency } from "@/features/finance/dte-analytics/utils";
 
 const salesColumns: ColumnDef<DTESalesDetail>[] = [
   {
-    accessorKey: "registerNumber",
-    header: "register_number",
-  },
-  {
     accessorKey: "documentType",
     header: "document_type",
   },

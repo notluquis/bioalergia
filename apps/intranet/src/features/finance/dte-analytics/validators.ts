@@ -67,7 +67,6 @@ const DTEListMetaSchema = z.object({
 
 export const DTESalesDetailSchema = z.object({
   id: z.string().min(1),
-  registerNumber: z.number().int(),
   documentType: z.number().int(),
   saleType: z.string(),
   clientRUT: z.string(),
@@ -85,7 +84,6 @@ export const DTESalesDetailSchema = z.object({
 
 export const DTEPurchaseDetailSchema = z.object({
   id: z.string().min(1),
-  registerNumber: z.number().int(),
   documentType: z.number().int(),
   purchaseType: z.string(),
   providerRUT: z.string(),
@@ -189,7 +187,7 @@ export function safeParsePeriod(period: string): ParsedPeriod {
 
   if (!result.success) {
     throw new TypeError(
-      `Invalid period "${period}": ${result.error.issues.map((e) => e.message).join(", ")}`,
+      `Invalid period "${period}": ${result.error.issues.map((e) => e.message).join(", ")}`
     );
   }
 

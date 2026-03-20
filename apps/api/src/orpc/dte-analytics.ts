@@ -123,7 +123,6 @@ const dteAnalyticsORPCRouterBase = {
       const rows = await dataQuery
         .select([
           sql<string>`p.id`.as("id"),
-          sql<number>`p.register_number`.as("registerNumber"),
           sql<number>`p.document_type`.as("documentType"),
           sql<string>`p.purchase_type`.as("purchaseType"),
           sql<string>`p.provider_rut`.as("providerRUT"),
@@ -159,7 +158,6 @@ const dteAnalyticsORPCRouterBase = {
           purchaseType: row.purchaseType,
           receiptDate: dayjs(row.receiptDate).format("YYYY-MM-DD"),
           recoverableIVA: Number(row.recoverableIVA),
-          registerNumber: Number(row.registerNumber),
           totalAmount: Number(row.totalAmount),
         })),
         meta: {
@@ -282,7 +280,6 @@ const dteAnalyticsORPCRouterBase = {
       const rows = await dataQuery
         .select([
           sql<string>`s.id`.as("id"),
-          sql<number>`s.register_number`.as("registerNumber"),
           sql<number>`s.document_type`.as("documentType"),
           sql<string>`s.sale_type`.as("saleType"),
           sql<string>`s.client_rut`.as("clientRUT"),
@@ -319,7 +316,6 @@ const dteAnalyticsORPCRouterBase = {
           netAmount: Number(row.netAmount),
           referenceDocFolio: row.referenceDocFolio,
           referenceDocType: row.referenceDocType,
-          registerNumber: Number(row.registerNumber),
           saleType: row.saleType,
           totalAmount: Number(row.totalAmount),
         })),

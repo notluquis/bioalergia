@@ -45,7 +45,6 @@ export const dteAnalyticsSalesDetailSchema = z.object({
   netAmount: z.number(),
   referenceDocFolio: z.string().nullable(),
   referenceDocType: z.string().nullable(),
-  registerNumber: z.number().int(),
   saleType: z.string(),
   totalAmount: z.number(),
 });
@@ -63,7 +62,6 @@ export const dteAnalyticsPurchaseDetailSchema = z.object({
   purchaseType: z.string(),
   receiptDate: z.string(),
   recoverableIVA: z.number(),
-  registerNumber: z.number().int(),
   totalAmount: z.number(),
 });
 

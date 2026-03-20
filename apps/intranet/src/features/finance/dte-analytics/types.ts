@@ -32,7 +32,6 @@ export interface DTEListMeta {
 
 export interface DTESalesDetail {
   id: string;
-  registerNumber: number;
   documentType: number;
   saleType: string;
   clientRUT: string;
@@ -50,7 +49,6 @@ export interface DTESalesDetail {
 
 export interface DTEPurchaseDetail {
   id: string;
-  registerNumber: number;
   documentType: number;
   purchaseType: string;
   providerRUT: string;
