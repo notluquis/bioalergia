@@ -1,3 +1,4 @@
+import { logError } from "../lib/logger";
 import { z } from "zod";
 
 const RAILWAY_GRAPHQL_ENDPOINT =
@@ -11,15 +12,24 @@ const deploymentNodeSchema = z.object({
 });
 
 const deploymentsResponseSchema = z.object({
-  data: z.object({
-    deployments: z.object({
-      edges: z.array(
-        z.object({
-          node: deploymentNodeSchema,
-        }),
-      ),
-    }),
-  }),
+  data: z
+    .object({
+      deployments: z.object({
+        edges: z.array(
+          z.object({
+            node: deploymentNodeSchema,
+          }),
+        ),
+      }),
+    })
+    .nullable(),
+  errors: z
+    .array(
+      z.object({
+        message: z.string(),
+      }),
+    )
+    .optional(),
 });
 
 type RailwayDeploymentStatus =
@@ -53,6 +63,7 @@ interface RailwayDeploymentTarget {
 interface RailwayDeploymentsSnapshot {
   checkedAt: Date;
   configured: boolean;
+  errorMessage: null | string;
   targets: RailwayDeploymentTarget[];
 }
 
@@ -75,6 +86,14 @@ function getAuthHeaders(): null | Record<string, string> {
   }
 
   return null;
+}
+
+function summarizeGraphQLErrors(errors: Array<{ message: string }> | undefined): null | string {
+  if (!errors || errors.length === 0) return null;
+  return errors
+    .map((entry) => entry.message.trim())
+    .filter(Boolean)
+    .join(" | ");
 }
 
 function normalizeStatus(status: null | string | undefined): RailwayDeploymentStatus {
@@ -161,6 +180,12 @@ async function fetchLatestDeploymentForTarget(target: RailwayDeploymentTargetCon
   }
 
   const payload = deploymentsResponseSchema.parse(await response.json());
+  const graphQLErrorMessage = summarizeGraphQLErrors(payload.errors);
+
+  if (!payload.data) {
+    throw new Error(graphQLErrorMessage ?? "Railway no devolvió datos para deployments");
+  }
+
   const latest = payload.data.deployments.edges[0]?.node ?? null;
 
   return {
@@ -182,6 +207,7 @@ export async function getRailwayDeploymentsSnapshot(): Promise<RailwayDeployment
     return {
       checkedAt: new Date(),
       configured: false,
+      errorMessage: headers ? "Faltan IDs de Railway en el API" : "Falta token de Railway en el API",
       targets: [],
     };
   }
@@ -190,16 +216,37 @@ export async function getRailwayDeploymentsSnapshot(): Promise<RailwayDeployment
     return cachedSnapshot;
   }
 
-  const results = await Promise.all(targets.map((target) => fetchLatestDeploymentForTarget(target)));
+  try {
+    const results = await Promise.all(
+      targets.map((target) => fetchLatestDeploymentForTarget(target)),
+    );
 
-  const snapshot = {
-    checkedAt: new Date(),
-    configured: true,
-    targets: results,
-  } satisfies RailwayDeploymentsSnapshot;
+    const snapshot = {
+      checkedAt: new Date(),
+      configured: true,
+      errorMessage: null,
+      targets: results,
+    } satisfies RailwayDeploymentsSnapshot;
 
-  cachedSnapshot = snapshot;
-  cacheExpiresAt = now + CACHE_TTL_MS;
+    cachedSnapshot = snapshot;
+    cacheExpiresAt = now + CACHE_TTL_MS;
 
-  return snapshot;
+    return snapshot;
+  } catch (error) {
+    logError("system.railway.deployments", error, {
+      endpoint: RAILWAY_GRAPHQL_ENDPOINT,
+      configuredTargets: targets.map((target) => ({
+        environmentId: target.environmentId,
+        label: target.label,
+        serviceId: target.serviceId,
+      })),
+    });
+
+    return {
+      checkedAt: new Date(),
+      configured: true,
+      errorMessage: error instanceof Error ? error.message : "No se pudo consultar Railway",
+      targets: [],
+    };
+  }
 }

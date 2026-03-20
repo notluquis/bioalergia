@@ -1,11 +1,17 @@
 import { dteAnalyticsORPCClient, toDteAnalyticsApiError } from "./orpc";
-import type { DTEPurchaseDetail, DTESalesDetail, DTESummaryRaw } from "./types";
+import type {
+  DTEPurchaseDetail,
+  DTESalesDetail,
+  DTESalesLinkedEventsResponse,
+  DTESummaryRaw,
+} from "./types";
 import {
   DTEPeriodsResponseSchema,
   DTEPurchaseDetailArraySchema,
   DTEPurchaseDetailResponseSchema,
   DTESalesDetailArraySchema,
   DTESalesDetailResponseSchema,
+  DTESalesLinkedEventsResponseSchema,
   DTESummaryArraySchema,
   DTESummaryResponseSchema,
 } from "./validators";
@@ -109,6 +115,19 @@ export async function fetchSalesDetails(
       data: DTESalesDetailArraySchema.parse(response.data),
       meta: DTESalesDetailResponseSchema.shape.meta.parse(response.meta),
     };
+  } catch (error) {
+    throw toDteAnalyticsApiError(error);
+  }
+}
+
+export async function fetchSalesLinkedEvents(
+  dteSaleDetailId: string
+): Promise<DTESalesLinkedEventsResponse> {
+  try {
+    const response = DTESalesLinkedEventsResponseSchema.parse(
+      await dteAnalyticsORPCClient.salesLinkedEvents({ dteSaleDetailId })
+    );
+    return response.data;
   } catch (error) {
     throw toDteAnalyticsApiError(error);
   }

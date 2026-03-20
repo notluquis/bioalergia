@@ -6,6 +6,7 @@ import {
   fetchPurchasesSummary,
   fetchSalesAvailablePeriods,
   fetchSalesDetails,
+  fetchSalesLinkedEvents,
   fetchSalesSummary,
 } from "./api";
 
@@ -37,6 +38,11 @@ export const dteAnalyticsKeys = {
     queryOptions({
       queryFn: () => fetchSalesDetails(params),
       queryKey: ["dte-analytics", "sales", "details", params],
+    }),
+  salesLinkedEvents: (dteSaleDetailId: string) =>
+    queryOptions({
+      queryFn: () => fetchSalesLinkedEvents(dteSaleDetailId),
+      queryKey: ["dte-analytics", "sales", "linked-events", dteSaleDetailId],
     }),
   purchasesDetails: (params: { page: number; pageSize: number; period?: string }) =>
     queryOptions({

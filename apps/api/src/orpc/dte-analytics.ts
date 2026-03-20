@@ -4,6 +4,8 @@ import {
   dteAnalyticsPeriodParamsSchema,
   dteAnalyticsPeriodsResponseSchema,
   dteAnalyticsPurchasesDetailsResponseSchema,
+  dteAnalyticsSalesLinkedEventsQuerySchema,
+  dteAnalyticsSalesLinkedEventsResponseSchema,
   dteAnalyticsSalesDetailsResponseSchema,
   dteAnalyticsSummaryResponseSchema,
 } from "@finanzas/orpc-contracts/dte-analytics";
@@ -293,6 +295,11 @@ const dteAnalyticsORPCRouterBase = {
           sql<null | string>`s.emitter_rut`.as("emitterRUT"),
           sql<null | string>`s.reference_doc_type`.as("referenceDocType"),
           sql<null | string>`s.reference_doc_folio`.as("referenceDocFolio"),
+          sql<number>`(
+            SELECT COUNT(*)::int
+            FROM event_dte_sale_links l
+            WHERE l.dte_sale_detail_id = s.id
+          )`.as("linkedEventsCount"),
         ])
         .orderBy(sql`s.document_date`, "desc")
         .orderBy(sql`s.register_number`, "desc")
@@ -317,6 +324,7 @@ const dteAnalyticsORPCRouterBase = {
           referenceDocFolio: row.referenceDocFolio,
           referenceDocType: row.referenceDocType,
           saleType: row.saleType,
+          linkedEventsCount: Number(row.linkedEventsCount),
           totalAmount: Number(row.totalAmount),
         })),
         meta: {
@@ -324,6 +332,121 @@ const dteAnalyticsORPCRouterBase = {
           pageSize: input.pageSize,
           total,
           totalPages: Math.ceil(total / input.pageSize),
+        },
+        status: "success" as const,
+      };
+    }),
+
+  salesLinkedEvents: readDteAnalytics
+    .route({ method: "GET", path: "/sales/linked-events" })
+    .input(dteAnalyticsSalesLinkedEventsQuerySchema)
+    .output(dteAnalyticsSalesLinkedEventsResponseSchema)
+    .handler(async ({ input }: { input: z.output<typeof dteAnalyticsSalesLinkedEventsQuerySchema> }) => {
+      const dte = await db.$queryRaw<
+        Array<{
+          clientName: string;
+          clientRUT: string;
+          documentDate: Date;
+          documentType: number;
+          emitterRUT: null | string;
+          exemptAmount: number;
+          folio: string;
+          id: string;
+          ivaAmount: number;
+          linkedEventsCount: number;
+          netAmount: number;
+          referenceDocFolio: null | string;
+          referenceDocType: null | string;
+          saleType: string;
+          totalAmount: number;
+        }>
+      >`
+        SELECT
+          s.id AS "id",
+          s.document_type AS "documentType",
+          s.sale_type AS "saleType",
+          s.client_rut AS "clientRUT",
+          s.client_name AS "clientName",
+          s.folio AS "folio",
+          s.document_date AS "documentDate",
+          COALESCE(s.exempt_amount, 0)::float AS "exemptAmount",
+          COALESCE(s.net_amount, 0)::float AS "netAmount",
+          COALESCE(s.iva_amount, 0)::float AS "ivaAmount",
+          COALESCE(s.total_amount, 0)::float AS "totalAmount",
+          s.emitter_rut AS "emitterRUT",
+          s.reference_doc_type AS "referenceDocType",
+          s.reference_doc_folio AS "referenceDocFolio",
+          (
+            SELECT COUNT(*)::int
+            FROM event_dte_sale_links l
+            WHERE l.dte_sale_detail_id = s.id
+          ) AS "linkedEventsCount"
+        FROM dte_sale_details s
+        WHERE s.id = ${input.dteSaleDetailId}
+        LIMIT 1
+      `;
+
+      const dteRow = dte[0];
+
+      if (!dteRow) {
+        throw new ORPCError("NOT_FOUND", { message: "DTE de venta no encontrado" });
+      }
+
+      const linkedEvents = await db.$queryRaw<
+        Array<{
+          amountExpected: null | number;
+          amountPaid: null | number;
+          calendarId: string;
+          confidenceScore: null | number;
+          displayName: null | string;
+          eventDate: string;
+          eventId: string;
+          eventTime: null | string;
+          matchedBy: null | string;
+          seriesKind: null | "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT";
+          summary: null | string;
+        }>
+      >`
+        SELECT
+          c.google_id AS "calendarId",
+          e.external_event_id AS "eventId",
+          e.summary AS "summary",
+          COALESCE(to_char(e.start_date, 'YYYY-MM-DD'), to_char((e.start_date_time AT TIME ZONE 'America/Santiago')::date, 'YYYY-MM-DD')) AS "eventDate",
+          to_char(e.start_date_time AT TIME ZONE 'America/Santiago', 'HH24:MI') AS "eventTime",
+          e.amount_expected AS "amountExpected",
+          e.amount_paid AS "amountPaid",
+          l.matched_by AS "matchedBy",
+          l.confidence_score::float AS "confidenceScore",
+          cs.display_name AS "displayName",
+          cs.kind AS "seriesKind"
+        FROM event_dte_sale_links l
+        JOIN events e ON e.id = l.event_id
+        JOIN calendars c ON c.id = e.calendar_id
+        LEFT JOIN clinical_series cs ON cs.id = e.clinical_series_id
+        WHERE l.dte_sale_detail_id = ${input.dteSaleDetailId}
+        ORDER BY COALESCE(e.start_date, (e.start_date_time AT TIME ZONE 'America/Santiago')::date) DESC, e.start_date_time DESC NULLS LAST, e.id DESC
+      `;
+
+      return {
+        data: {
+          dte: {
+            clientName: dteRow.clientName,
+            clientRUT: dteRow.clientRUT,
+            documentDate: dayjs(dteRow.documentDate).format("YYYY-MM-DD"),
+            documentType: Number(dteRow.documentType),
+            emitterRUT: dteRow.emitterRUT,
+            exemptAmount: Number(dteRow.exemptAmount),
+            folio: dteRow.folio,
+            id: dteRow.id,
+            ivaAmount: Number(dteRow.ivaAmount),
+            netAmount: Number(dteRow.netAmount),
+            referenceDocFolio: dteRow.referenceDocFolio,
+            referenceDocType: dteRow.referenceDocType,
+            saleType: dteRow.saleType,
+            linkedEventsCount: Number(dteRow.linkedEventsCount),
+            totalAmount: Number(dteRow.totalAmount),
+          },
+          linkedEvents,
         },
         status: "success" as const,
       };

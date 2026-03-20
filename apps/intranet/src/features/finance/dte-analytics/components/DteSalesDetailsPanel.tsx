@@ -1,4 +1,14 @@
-import { Card, Description, Label, ListBox, Select } from "@heroui/react";
+import {
+  Button,
+  Card,
+  Chip,
+  Description,
+  Drawer,
+  Label,
+  ListBox,
+  Select,
+  Skeleton,
+} from "@heroui/react";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import type { ColumnDef, PaginationState } from "@tanstack/react-table";
 import dayjs from "dayjs";
@@ -6,91 +16,292 @@ import { Check } from "lucide-react";
 import { useEffect, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { dteAnalyticsKeys } from "@/features/finance/dte-analytics/queries";
-import type { DTESalesDetail } from "@/features/finance/dte-analytics/types";
+import type {
+  DTESalesDetail,
+  DTESalesLinkedEvent,
+  DTESalesLinkedEventsResponse,
+} from "@/features/finance/dte-analytics/types";
 import { formatCurrency } from "@/features/finance/dte-analytics/utils";
 
-const salesColumns: ColumnDef<DTESalesDetail>[] = [
-  {
-    accessorKey: "documentType",
-    header: "document_type",
-  },
-  {
-    accessorKey: "saleType",
-    header: "sale_type",
-    cell: ({ row }) => (
-      <span className="block max-w-44 truncate" title={row.original.saleType}>
-        {row.original.saleType}
-      </span>
-    ),
-  },
-  {
-    accessorKey: "clientRUT",
-    header: "client_rut",
-  },
-  {
-    accessorKey: "clientName",
-    header: "client_name",
-    minSize: 200,
-    size: 240,
-    cell: ({ row }) => (
-      <span className="block max-w-72 truncate" title={row.original.clientName}>
-        {row.original.clientName}
-      </span>
-    ),
-  },
-  {
-    accessorKey: "folio",
-    header: "folio",
-  },
-  {
-    accessorKey: "documentDate",
-    header: "document_date",
-    cell: ({ row }) => dayjs(row.original.documentDate).format("DD-MM-YYYY"),
-  },
-  {
-    accessorKey: "exemptAmount",
-    header: "exempt_amount",
-    cell: ({ row }) => formatCurrency(row.original.exemptAmount),
-  },
-  {
-    accessorKey: "netAmount",
-    header: "net_amount",
-    cell: ({ row }) => formatCurrency(row.original.netAmount),
-  },
-  {
-    accessorKey: "ivaAmount",
-    header: "iva_amount",
-    cell: ({ row }) => formatCurrency(row.original.ivaAmount),
-  },
-  {
-    accessorKey: "totalAmount",
-    header: "total_amount",
-    cell: ({ row }) => (
-      <span className="font-medium">{formatCurrency(row.original.totalAmount)}</span>
-    ),
-  },
-  {
-    accessorKey: "emitterRUT",
-    header: "emitter_rut",
-    cell: ({ row }) => row.original.emitterRUT ?? "-",
-  },
-  {
-    accessorKey: "referenceDocType",
-    header: "reference_doc_type",
-    cell: ({ row }) => row.original.referenceDocType ?? "-",
-  },
-  {
-    accessorKey: "referenceDocFolio",
-    header: "reference_doc_folio",
-    cell: ({ row }) => row.original.referenceDocFolio ?? "-",
-  },
-];
+function seriesKindLabel(kind: DTESalesLinkedEvent["seriesKind"]) {
+  if (kind === "PATCH_TEST") return "Test de parche";
+  if (kind === "SKIN_TEST") return "Test cutáneo";
+  if (kind === "SUBCUTANEOUS_TREATMENT") return "Tratamiento subcutáneo";
+  return "Sin serie";
+}
+
+function matchedByLabel(matchedBy: DTESalesLinkedEvent["matchedBy"]) {
+  if (matchedBy === "manual") return "Manual";
+  if (matchedBy === "mixed") return "Nombre + RUT";
+  if (matchedBy === "name_exact") return "Nombre exacto";
+  if (matchedBy === "name_fuzzy") return "Nombre aproximado";
+  if (matchedBy === "rut") return "RUT";
+  return "No informado";
+}
+
+function buildSalesColumns(
+  onOpenLinkedEvents: (detail: DTESalesDetail) => void
+): ColumnDef<DTESalesDetail>[] {
+  return [
+    {
+      accessorKey: "documentType",
+      header: "document_type",
+    },
+    {
+      accessorKey: "saleType",
+      header: "sale_type",
+      cell: ({ row }) => (
+        <span className="block max-w-44 truncate" title={row.original.saleType}>
+          {row.original.saleType}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "clientRUT",
+      header: "client_rut",
+    },
+    {
+      accessorKey: "clientName",
+      header: "client_name",
+      minSize: 200,
+      size: 240,
+      cell: ({ row }) => (
+        <span className="block max-w-72 truncate" title={row.original.clientName}>
+          {row.original.clientName}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "folio",
+      header: "folio",
+    },
+    {
+      accessorKey: "documentDate",
+      header: "document_date",
+      cell: ({ row }) => dayjs(row.original.documentDate).format("DD-MM-YYYY"),
+    },
+    {
+      accessorKey: "exemptAmount",
+      header: "exempt_amount",
+      cell: ({ row }) => formatCurrency(row.original.exemptAmount),
+    },
+    {
+      accessorKey: "netAmount",
+      header: "net_amount",
+      cell: ({ row }) => formatCurrency(row.original.netAmount),
+    },
+    {
+      accessorKey: "ivaAmount",
+      header: "iva_amount",
+      cell: ({ row }) => formatCurrency(row.original.ivaAmount),
+    },
+    {
+      accessorKey: "totalAmount",
+      header: "total_amount",
+      cell: ({ row }) => (
+        <span className="font-medium">{formatCurrency(row.original.totalAmount)}</span>
+      ),
+    },
+    {
+      accessorKey: "emitterRUT",
+      header: "emitter_rut",
+      cell: ({ row }) => row.original.emitterRUT ?? "-",
+    },
+    {
+      accessorKey: "referenceDocType",
+      header: "reference_doc_type",
+      cell: ({ row }) => row.original.referenceDocType ?? "-",
+    },
+    {
+      accessorKey: "referenceDocFolio",
+      header: "reference_doc_folio",
+      cell: ({ row }) => row.original.referenceDocFolio ?? "-",
+    },
+    {
+      id: "linkedEvents",
+      header: "eventos",
+      minSize: 170,
+      cell: ({ row }) => {
+        const count = row.original.linkedEventsCount;
+
+        if (count === 0) {
+          return (
+            <Chip color="default" size="sm" variant="soft">
+              Sin eventos
+            </Chip>
+          );
+        }
+
+        return (
+          <div className="flex items-center justify-end gap-2">
+            <Chip color="success" size="sm" variant="soft">
+              {count} evento{count === 1 ? "" : "s"}
+            </Chip>
+            <Button size="sm" variant="secondary" onPress={() => onOpenLinkedEvents(row.original)}>
+              Ver
+            </Button>
+          </div>
+        );
+      },
+    },
+  ];
+}
 
 const DEFAULT_PAGE_SIZE = 50;
+
+interface SalesLinkedEventsDrawerProps {
+  data: DTESalesLinkedEventsResponse | undefined;
+  detail: DTESalesDetail | null;
+  isLoading: boolean;
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+function SalesLinkedEventsDrawer({
+  data,
+  detail,
+  isLoading,
+  isOpen,
+  onClose,
+}: Readonly<SalesLinkedEventsDrawerProps>) {
+  const drawerTitle = detail ? `Folio ${detail.folio}` : "Eventos vinculados";
+  const resolvedDte = data?.dte ?? detail;
+  const linkedEvents = data?.linkedEvents ?? [];
+
+  return (
+    <Drawer>
+      <Drawer.Backdrop isOpen={isOpen} onOpenChange={(open) => !open && onClose()} variant="blur">
+        <Drawer.Content
+          className="w-[min(92vw,640px)] border-l bg-background shadow-2xl"
+          placement="right"
+        >
+          <Drawer.Dialog className="flex h-full max-h-dvh flex-col">
+            <Drawer.CloseTrigger />
+            <Drawer.Header className="border-default-200/70 border-b">
+              <div className="space-y-2">
+                <Drawer.Heading>{drawerTitle}</Drawer.Heading>
+                {resolvedDte ? (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Chip color="default" size="sm" variant="soft">
+                      {resolvedDte.clientName}
+                    </Chip>
+                    <Chip color="default" size="sm" variant="soft">
+                      {resolvedDte.clientRUT}
+                    </Chip>
+                    <Chip color="default" size="sm" variant="soft">
+                      {dayjs(resolvedDte.documentDate).format("DD-MM-YYYY")}
+                    </Chip>
+                    <Chip color="success" size="sm" variant="soft">
+                      {formatCurrency(resolvedDte.totalAmount)}
+                    </Chip>
+                  </div>
+                ) : null}
+              </div>
+            </Drawer.Header>
+            <Drawer.Body className="space-y-4">
+              {isLoading ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-28 rounded-2xl" />
+                  <Skeleton className="h-28 rounded-2xl" />
+                </div>
+              ) : null}
+
+              {!isLoading && resolvedDte ? (
+                <Card variant="secondary">
+                  <Card.Header>
+                    <Card.Title className="text-sm">Resumen del DTE</Card.Title>
+                    <Card.Description>
+                      {resolvedDte.saleType} · Documento {resolvedDte.documentType}
+                    </Card.Description>
+                  </Card.Header>
+                  <Card.Content className="grid grid-cols-2 gap-2 text-sm">
+                    <div className="rounded-xl border border-default-200/70 p-3">
+                      <p className="text-default-500 text-[11px] uppercase tracking-wide">Folio</p>
+                      <p className="font-medium">{resolvedDte.folio}</p>
+                    </div>
+                    <div className="rounded-xl border border-default-200/70 p-3">
+                      <p className="text-default-500 text-[11px] uppercase tracking-wide">Total</p>
+                      <p className="font-medium">{formatCurrency(resolvedDte.totalAmount)}</p>
+                    </div>
+                  </Card.Content>
+                </Card>
+              ) : null}
+
+              {!isLoading && linkedEvents.length === 0 ? (
+                <Card variant="secondary">
+                  <Card.Header>
+                    <Card.Title className="text-sm">Sin eventos vinculados</Card.Title>
+                    <Card.Description>
+                      Este DTE no tiene eventos asociados en este momento.
+                    </Card.Description>
+                  </Card.Header>
+                </Card>
+              ) : null}
+
+              {!isLoading && linkedEvents.length > 0 ? (
+                <div className="space-y-3">
+                  {linkedEvents.map((event) => (
+                    <Card key={`${event.calendarId}:${event.eventId}`} variant="secondary">
+                      <Card.Header className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                        <div className="space-y-1">
+                          <Card.Title className="text-sm">
+                            {event.summary ?? "(Sin título)"}
+                          </Card.Title>
+                          <Card.Description>
+                            {dayjs(event.eventDate).format("DD-MM-YYYY")}
+                            {event.eventTime ? ` · ${event.eventTime}` : ""}
+                          </Card.Description>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <Chip color="default" size="sm" variant="soft">
+                            {seriesKindLabel(event.seriesKind)}
+                          </Chip>
+                          <Chip color="default" size="sm" variant="soft">
+                            {matchedByLabel(event.matchedBy)}
+                          </Chip>
+                          {event.confidenceScore != null ? (
+                            <Chip
+                              color={event.confidenceScore >= 90 ? "success" : "warning"}
+                              size="sm"
+                              variant="soft"
+                            >
+                              Score {Math.round(event.confidenceScore)}%
+                            </Chip>
+                          ) : null}
+                        </div>
+                      </Card.Header>
+                      <Card.Content className="grid grid-cols-2 gap-2 text-sm">
+                        <div className="rounded-xl border border-default-200/70 p-3">
+                          <p className="text-default-500 text-[11px] uppercase tracking-wide">
+                            Serie
+                          </p>
+                          <p className="font-medium">{event.displayName ?? "Sin nombre visible"}</p>
+                        </div>
+                        <div className="rounded-xl border border-default-200/70 p-3">
+                          <p className="text-default-500 text-[11px] uppercase tracking-wide">
+                            Monto evento
+                          </p>
+                          <p className="font-medium">
+                            {formatCurrency(event.amountPaid ?? event.amountExpected ?? 0)}
+                          </p>
+                        </div>
+                      </Card.Content>
+                    </Card>
+                  ))}
+                </div>
+              ) : null}
+            </Drawer.Body>
+          </Drawer.Dialog>
+        </Drawer.Content>
+      </Drawer.Backdrop>
+    </Drawer>
+  );
+}
 
 export function DteSalesDetailsPanel() {
   const { data: periods } = useSuspenseQuery(dteAnalyticsKeys.salesAvailablePeriods());
   const [selectedPeriod, setSelectedPeriod] = useState<string>("");
+  const [selectedDetail, setSelectedDetail] = useState<DTESalesDetail | null>(null);
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: DEFAULT_PAGE_SIZE,
@@ -108,6 +319,15 @@ export function DteSalesDetailsPanel() {
       period: selectedPeriod || undefined,
     }),
     enabled: Boolean(selectedPeriod),
+  });
+
+  const linkedEventsQuery = useQuery({
+    ...dteAnalyticsKeys.salesLinkedEvents(selectedDetail?.id ?? ""),
+    enabled: Boolean(selectedDetail?.id),
+  });
+
+  const salesColumns = buildSalesColumns((detail) => {
+    setSelectedDetail(detail);
   });
 
   if (periods.length === 0) {
@@ -179,6 +399,14 @@ export function DteSalesDetailsPanel() {
           scrollMode="container"
         />
       </div>
+
+      <SalesLinkedEventsDrawer
+        data={linkedEventsQuery.data}
+        detail={selectedDetail}
+        isLoading={linkedEventsQuery.isLoading}
+        isOpen={selectedDetail != null}
+        onClose={() => setSelectedDetail(null)}
+      />
     </div>
   );
 }

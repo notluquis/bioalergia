@@ -31,6 +31,7 @@ const RailwayDeploymentStatusSchema = z.enum([
 const RailwayDeploymentsResponseSchema = z.object({
   checkedAt: z.coerce.date(),
   configured: z.boolean(),
+  errorMessage: z.string().nullable(),
   targets: z.array(
     z.object({
       createdAt: z.coerce.date().nullable(),

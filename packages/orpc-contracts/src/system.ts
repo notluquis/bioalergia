@@ -39,6 +39,7 @@ export const systemRailwayDeploymentTargetSchema = z.object({
 export const systemRailwayDeploymentsResponseSchema = z.object({
   checkedAt: z.coerce.date(),
   configured: z.boolean(),
+  errorMessage: z.string().nullable(),
   targets: z.array(systemRailwayDeploymentTargetSchema),
 });
 

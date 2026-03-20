@@ -35,5 +35,6 @@ export interface RailwayDeploymentTarget {
 export interface RailwayDeploymentsResponse {
   checkedAt: Date;
   configured: boolean;
+  errorMessage: null | string;
   targets: RailwayDeploymentTarget[];
 }

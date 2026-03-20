@@ -46,8 +46,13 @@ function statusLabel(status: RailwayDeploymentStatus) {
   }
 }
 
-function summaryLabel(targets: RailwayDeploymentTarget[], configured: boolean) {
+function summaryLabel(
+  targets: RailwayDeploymentTarget[],
+  configured: boolean,
+  errorMessage: null | string
+) {
   if (!configured) return "Deploy n/d";
+  if (errorMessage) return "Deploy error";
   if (targets.some((target) => isProblemStatus(target.status))) return "Deploy con falla";
   const activeCount = targets.filter((target) => isActiveStatus(target.status)).length;
   if (activeCount > 0)
@@ -57,9 +62,11 @@ function summaryLabel(targets: RailwayDeploymentTarget[], configured: boolean) {
 
 function summaryColor(
   targets: RailwayDeploymentTarget[],
-  configured: boolean
+  configured: boolean,
+  errorMessage: null | string
 ): "danger" | "default" | "success" | "warning" {
   if (!configured) return "default";
+  if (errorMessage) return "danger";
   if (targets.some((target) => isProblemStatus(target.status))) return "danger";
   if (targets.some((target) => isActiveStatus(target.status))) return "warning";
   return "success";
@@ -84,8 +91,9 @@ export function DeploymentStatusChip({ compact = false }: Readonly<DeploymentSta
   const data = deploymentsQuery.data;
   const targets = data?.targets ?? [];
   const configured = data?.configured ?? false;
-  const label = summaryLabel(targets, configured);
-  const color = summaryColor(targets, configured);
+  const errorMessage = data?.errorMessage ?? null;
+  const label = summaryLabel(targets, configured, errorMessage);
+  const color = summaryColor(targets, configured, errorMessage);
 
   const content = (
     <Chip color={color} size={compact ? "sm" : "md"} variant="soft">
@@ -97,7 +105,7 @@ export function DeploymentStatusChip({ compact = false }: Readonly<DeploymentSta
     return (
       <Tooltip>
         <Tooltip.Trigger>{content}</Tooltip.Trigger>
-        <Tooltip.Content>No se pudo consultar Railway.</Tooltip.Content>
+        <Tooltip.Content>No se pudo consultar Railway desde el API.</Tooltip.Content>
       </Tooltip>
     );
   }
@@ -116,8 +124,18 @@ export function DeploymentStatusChip({ compact = false }: Readonly<DeploymentSta
                 <span>{statusLabel(target.status)}</span>
               </div>
             ))
+          ) : errorMessage ? (
+            <div className="max-w-sm space-y-1">
+              <div className="font-medium">Railway respondió con error</div>
+              <div>{errorMessage}</div>
+            </div>
+          ) : !configured ? (
+            <div className="max-w-sm space-y-1">
+              <div className="font-medium">Configuración incompleta</div>
+              <div>Define token e IDs de Railway en el servicio `api`.</div>
+            </div>
           ) : (
-            <div>Configura los IDs/token de Railway en el API.</div>
+            <div className="max-w-sm">No se encontraron servicios configurados para mostrar.</div>
           )}
           {checkedAt ? (
             <div className="text-default-500 text-xs">Actualizado {checkedAt}</div>

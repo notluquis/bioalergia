@@ -22,6 +22,10 @@ export const dteAnalyticsDetailsQuerySchema = z.object({
     .optional(),
 });
 
+export const dteAnalyticsSalesLinkedEventsQuerySchema = z.object({
+  dteSaleDetailId: z.string().min(1),
+});
+
 export const dteAnalyticsSummaryRowSchema = z.object({
   averageAmount: z.number(),
   count: z.number().int(),
@@ -46,7 +50,30 @@ export const dteAnalyticsSalesDetailSchema = z.object({
   referenceDocFolio: z.string().nullable(),
   referenceDocType: z.string().nullable(),
   saleType: z.string(),
+  linkedEventsCount: z.number().int().nonnegative(),
   totalAmount: z.number(),
+});
+
+export const dteAnalyticsSalesLinkedEventSchema = z.object({
+  amountExpected: z.number().nullable(),
+  amountPaid: z.number().nullable(),
+  calendarId: z.string(),
+  confidenceScore: z.number().nullable(),
+  displayName: z.string().nullable(),
+  eventDate: z.string(),
+  eventId: z.string(),
+  eventTime: z.string().nullable(),
+  matchedBy: z.string().nullable(),
+  seriesKind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT"]).nullable(),
+  summary: z.string().nullable(),
+});
+
+export const dteAnalyticsSalesLinkedEventsResponseSchema = z.object({
+  data: z.object({
+    dte: dteAnalyticsSalesDetailSchema,
+    linkedEvents: z.array(dteAnalyticsSalesLinkedEventSchema),
+  }),
+  status: z.literal("success"),
 });
 
 export const dteAnalyticsPurchaseDetailSchema = z.object({
@@ -113,6 +140,10 @@ export const dteAnalyticsContract = {
     .route({ method: "GET", path: "/sales/details" })
     .input(dteAnalyticsDetailsQuerySchema)
     .output(dteAnalyticsSalesDetailsResponseSchema),
+  salesLinkedEvents: oc
+    .route({ method: "GET", path: "/sales/linked-events" })
+    .input(dteAnalyticsSalesLinkedEventsQuerySchema)
+    .output(dteAnalyticsSalesLinkedEventsResponseSchema),
   salesSummary: oc
     .route({ method: "GET", path: "/sales/summary" })
     .input(dteAnalyticsPeriodParamsSchema)

@@ -4,7 +4,13 @@
  */
 
 import { z } from "zod";
-import type { DTEPurchaseDetail, DTESalesDetail, DTESummaryRaw } from "./types";
+import type {
+  DTEPurchaseDetail,
+  DTESalesDetail,
+  DTESalesLinkedEvent,
+  DTESalesLinkedEventsResponse,
+  DTESummaryRaw,
+} from "./types";
 
 /**
  * Period validator: ensures YYYY-MM format where MM is 01-12
@@ -80,7 +86,22 @@ export const DTESalesDetailSchema = z.object({
   emitterRUT: z.string().nullable(),
   referenceDocType: z.string().nullable(),
   referenceDocFolio: z.string().nullable(),
+  linkedEventsCount: z.number().int().nonnegative(),
 }) satisfies z.ZodType<DTESalesDetail>;
+
+export const DTESalesLinkedEventSchema = z.object({
+  amountExpected: z.number().nullable(),
+  amountPaid: z.number().nullable(),
+  calendarId: z.string().min(1),
+  confidenceScore: z.number().nullable(),
+  displayName: z.string().nullable(),
+  eventDate: z.string(),
+  eventId: z.string().min(1),
+  eventTime: z.string().nullable(),
+  matchedBy: z.string().nullable(),
+  seriesKind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT"]).nullable(),
+  summary: z.string().nullable(),
+}) satisfies z.ZodType<DTESalesLinkedEvent>;
 
 export const DTEPurchaseDetailSchema = z.object({
   id: z.string().min(1),
@@ -106,6 +127,17 @@ export const DTESalesDetailResponseSchema = z.object({
   data: DTESalesDetailArraySchema,
   meta: DTEListMetaSchema,
 });
+
+export const DTESalesLinkedEventsResponseSchema = z.object({
+  status: z.literal("success"),
+  data: z.object({
+    dte: DTESalesDetailSchema,
+    linkedEvents: z.array(DTESalesLinkedEventSchema),
+  }),
+}) satisfies z.ZodType<{
+  data: DTESalesLinkedEventsResponse;
+  status: "success";
+}>;
 
 export const DTEPurchaseDetailResponseSchema = z.object({
   status: z.literal("success"),

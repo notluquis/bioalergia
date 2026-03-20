@@ -45,6 +45,26 @@ export interface DTESalesDetail {
   emitterRUT: null | string;
   referenceDocType: null | string;
   referenceDocFolio: null | string;
+  linkedEventsCount: number;
+}
+
+export interface DTESalesLinkedEvent {
+  amountExpected: null | number;
+  amountPaid: null | number;
+  calendarId: string;
+  confidenceScore: null | number;
+  displayName: null | string;
+  eventDate: string;
+  eventId: string;
+  eventTime: null | string;
+  matchedBy: null | string;
+  seriesKind: "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT" | null;
+  summary: null | string;
+}
+
+export interface DTESalesLinkedEventsResponse {
+  dte: DTESalesDetail;
+  linkedEvents: DTESalesLinkedEvent[];
 }
 
 export interface DTEPurchaseDetail {
