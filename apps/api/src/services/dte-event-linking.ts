@@ -138,6 +138,7 @@ interface DteSaleRow {
   exemptAmount: number;
   folio: string;
   ivaAmount: number;
+  linkedEventsCount: number;
   netAmount: number;
   totalAmount: number;
 }
@@ -282,6 +283,26 @@ function containsName(hint: string, candidateName: string): boolean {
   );
 }
 
+function surnameTokens(value: string): string[] {
+  const tokens = tokenize(value).filter((token) => token.length >= 4);
+  return tokens.slice(-2);
+}
+
+function findSharedSurnameToken(nameHints: string[], candidateName: string): null | string {
+  const candidateSurnames = new Set(surnameTokens(candidateName));
+  if (candidateSurnames.size === 0) return null;
+
+  for (const hint of nameHints) {
+    for (const token of surnameTokens(hint)) {
+      if (candidateSurnames.has(token)) {
+        return token;
+      }
+    }
+  }
+
+  return null;
+}
+
 function extractRutHints(text: string): string[] {
   const matches = text.match(RUT_REGEX) ?? [];
   const normalized = matches
@@ -332,7 +353,7 @@ function computeSeriesAmountHint(
   return computeAmountHint(event);
 }
 
-function scoreCandidate(params: {
+export function scoreCandidate(params: {
   amountHint: null | number;
   dte: DteSaleRow;
   nameHints: string[];
@@ -359,6 +380,8 @@ function scoreCandidate(params: {
   let score = 0;
   const reasons: string[] = [];
   let method: EventDteSuggestion["method"] = "name_fuzzy";
+  const amountDiff =
+    params.amountHint != null ? Math.abs(params.amountHint - params.dte.totalAmount) : null;
 
   if (rutMatch) {
     score += 95;
@@ -379,17 +402,26 @@ function scoreCandidate(params: {
     }
   }
 
-  if (params.amountHint != null) {
-    const diff = Math.abs(params.amountHint - params.dte.totalAmount);
-    if (diff <= 500) {
+  if (amountDiff != null) {
+    if (amountDiff <= 500) {
       score += 8;
       reasons.push("Monto coincide casi exacto");
-    } else if (diff <= 2000) {
+    } else if (amountDiff <= 2000) {
       score += 5;
       reasons.push("Monto cercano");
-    } else if (diff <= 5000) {
+    } else if (amountDiff <= 5000) {
       score += 3;
       reasons.push("Monto compatible");
+    }
+  }
+
+  if (!rutMatch && !exactNameMatch && params.dte.linkedEventsCount === 0 && amountDiff != null) {
+    const sharedSurnameToken = findSharedSurnameToken(params.nameHints, params.dte.clientName);
+    if (sharedSurnameToken && amountDiff <= 500) {
+      score += 30;
+      reasons.push(
+        `Apellido compartido (${sharedSurnameToken}) con posible responsable/paciente y DTE aún libre`,
+      );
     }
   }
 
@@ -499,7 +531,12 @@ async function getSalesCandidatesByDate(date: string): Promise<DteSaleRow[]> {
       COALESCE(s.exempt_amount, 0)::float AS "exemptAmount",
       COALESCE(s.net_amount, 0)::float AS "netAmount",
       COALESCE(s.iva_amount, 0)::float AS "ivaAmount",
-      COALESCE(s.total_amount, 0)::float AS "totalAmount"
+      COALESCE(s.total_amount, 0)::float AS "totalAmount",
+      (
+        SELECT COUNT(*)::int
+        FROM event_dte_sale_links l
+        WHERE l.dte_sale_detail_id = s.id
+      ) AS "linkedEventsCount"
     FROM dte_sale_details s
     WHERE s.document_date = ${date}::date
       AND s.document_type <> 61
@@ -532,7 +569,12 @@ async function getSalesCandidatesByDateRange(params: {
       COALESCE(s.exempt_amount, 0)::float AS "exemptAmount",
       COALESCE(s.net_amount, 0)::float AS "netAmount",
       COALESCE(s.iva_amount, 0)::float AS "ivaAmount",
-      COALESCE(s.total_amount, 0)::float AS "totalAmount"
+      COALESCE(s.total_amount, 0)::float AS "totalAmount",
+      (
+        SELECT COUNT(*)::int
+        FROM event_dte_sale_links l
+        WHERE l.dte_sale_detail_id = s.id
+      ) AS "linkedEventsCount"
     FROM dte_sale_details s
     WHERE s.document_date BETWEEN ${params.from}::date AND ${params.to}::date
       AND s.document_type <> 61
