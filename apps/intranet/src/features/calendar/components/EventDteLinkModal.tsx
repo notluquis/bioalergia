@@ -7,11 +7,7 @@ import { DataTable } from "@/components/data-table/DataTable";
 import { useToast } from "@/context/ToastContext";
 import { confirmEventDteLink, unlinkEventDteLink } from "@/features/calendar/api";
 import { calendarDteLinkKeys, calendarDteLinkQueries } from "@/features/calendar/queries";
-import type {
-  CalendarEventDetail,
-  EventDteMatchHypothesis,
-  EventDteSuggestion,
-} from "@/features/calendar/types";
+import type { CalendarEventDetail, EventDteMatchHypothesis } from "@/features/calendar/types";
 import { currencyFormatter } from "@/lib/format";
 
 interface EventDteLinkModalProps {
