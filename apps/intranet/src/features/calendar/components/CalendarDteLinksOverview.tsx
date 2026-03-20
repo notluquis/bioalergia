@@ -194,17 +194,32 @@ function seriesKindLabel(kind: EventDteOverviewItem["seriesKind"]): string | nul
   return null;
 }
 
-function describeAutoLinkSkipReason(reason: string): {
+const AUTO_LINK_MAX_AMOUNT_DIFF = 5000;
+
+function describeAutoLinkSkipReason(params: {
+  currentAmountDiff?: null | number;
+  currentHypothesis?: EventDteMatchHypothesis | null;
+  reason: string;
+}): {
   detail: string;
   severity: "danger" | "warning";
   title: string;
   tooltipLabel: string;
 } {
+  const { currentAmountDiff = null, currentHypothesis = null, reason } = params;
   const scoreMatch = /^Score bajo \((\d+)\)$/.exec(reason);
   if (scoreMatch) {
     const score = Number(scoreMatch[1] ?? 0);
+    if (currentHypothesis && currentHypothesis.score >= 90) {
+      return {
+        detail: `En el último intento automático la mejor coincidencia quedó en ${score}%. Las sugerencias actuales ya muestran ${Math.round(currentHypothesis.score)}%, así que ese motivo quedó desactualizado.`,
+        severity: "warning",
+        title: "Intento previo con score insuficiente",
+        tooltipLabel: "Intento previo",
+      };
+    }
     return {
-      detail: `La mejor coincidencia alcanzó ${score}% y el mínimo para auto-vincular es 90%. Requiere revisión manual.`,
+      detail: `En el último intento automático la mejor coincidencia alcanzó ${score}% y el mínimo para auto-vincular es 90%. Requiere revisión manual.`,
       severity: "warning",
       title: `Coincidencia insuficiente (${score}%)`,
       tooltipLabel: "Score insuficiente",
@@ -214,8 +229,16 @@ function describeAutoLinkSkipReason(reason: string): {
   const amountDiffMatch = /^Monto no coincide \(dif (\d+)\)$/.exec(reason);
   if (amountDiffMatch) {
     const amountDiff = Number(amountDiffMatch[1] ?? 0);
+    if (currentAmountDiff != null && currentAmountDiff <= AUTO_LINK_MAX_AMOUNT_DIFF) {
+      return {
+        detail: `En el último intento automático se registró una diferencia de ${currencyFormatter.format(amountDiff)}. Las sugerencias actuales muestran ${currencyFormatter.format(currentAmountDiff)}, así que ese motivo ya no representa el estado actual.`,
+        severity: "warning",
+        title: "Intento previo con monto fuera de rango",
+        tooltipLabel: "Intento previo",
+      };
+    }
     return {
-      detail: `La mejor sugerencia difiere en ${currencyFormatter.format(amountDiff)}. El auto-vínculo sólo se permite hasta ${currencyFormatter.format(5000)} de diferencia.`,
+      detail: `En el último intento automático la mejor sugerencia difería en ${currencyFormatter.format(amountDiff)}. El auto-vínculo sólo se permite hasta ${currencyFormatter.format(AUTO_LINK_MAX_AMOUNT_DIFF)} de diferencia.`,
       severity: "danger",
       title: "Monto fuera del rango permitido",
       tooltipLabel: "Monto incompatible",
@@ -233,9 +256,18 @@ function describeAutoLinkSkipReason(reason: string): {
   }
 
   if (reason === "Sin candidatos") {
+    if (currentHypothesis) {
+      return {
+        detail:
+          "En el último intento automático no apareció una coincidencia suficiente. Las sugerencias actuales ya encontraron candidatos plausibles, así que revisa el estado actual de esta tarjeta.",
+        severity: "warning",
+        title: "Intento previo sin coincidencias",
+        tooltipLabel: "Intento previo",
+      };
+    }
     return {
       detail:
-        "No apareció ninguna boleta o factura con coincidencia suficiente en nombre, RUT o contexto del evento.",
+        "En el último intento automático no apareció ninguna boleta o factura con coincidencia suficiente en nombre, RUT o contexto del evento.",
       severity: "danger",
       title: "No se encontró un DTE compatible",
       tooltipLabel: "Sin coincidencias",
@@ -1095,13 +1127,17 @@ export function CalendarDteLinksOverview({
                                   ? item.linkedTotalAmount
                                   : (primarySuggestion?.totalAmount ?? null);
                                 const currentHint = amountHint(item);
-                                const autoLinkSkipReason = item.lastAutoLinkSkip
-                                  ? describeAutoLinkSkipReason(item.lastAutoLinkSkip.reason)
-                                  : null;
                                 const localDiff =
                                   currentHint != null && displayAmount != null
                                     ? Math.abs(currentHint - displayAmount)
                                     : (primarySuggestion?.amountDiff ?? null);
+                                const autoLinkSkipReason = item.lastAutoLinkSkip
+                                  ? describeAutoLinkSkipReason({
+                                      currentAmountDiff: localDiff,
+                                      currentHypothesis: primarySuggestion,
+                                      reason: item.lastAutoLinkSkip.reason,
+                                    })
+                                  : null;
 
                                 return (
                                   <Card
@@ -1235,7 +1271,7 @@ export function CalendarDteLinksOverview({
                                           <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                                             <div className="space-y-1">
                                               <p className="text-[11px] font-semibold uppercase tracking-wide">
-                                                Último auto-vínculo omitido
+                                                Último intento automático omitido
                                               </p>
                                               <p className="text-sm font-medium">
                                                 {autoLinkSkipReason?.title ??
@@ -1260,7 +1296,7 @@ export function CalendarDteLinksOverview({
                                                   variant="soft"
                                                 >
                                                   {autoLinkSkipReason?.tooltipLabel ??
-                                                    "Auto-link revisado"}
+                                                    "Intento previo"}
                                                 </Chip>
                                               </Tooltip.Trigger>
                                               <Tooltip.Content className="max-w-sm" showArrow>
