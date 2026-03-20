@@ -120,6 +120,10 @@ export interface ClinicalSeriesSnapshot {
   totalPaid: number;
 }
 
+function isPastOrTodayEvent(eventDate: string, today: string) {
+  return eventDate <= today;
+}
+
 type ClinicalSeriesFilters = {
   beneficiaryRut?: string;
   kind?: ClinicalSeriesKind;
@@ -171,7 +175,7 @@ function resolveClinicalSeriesOrderBy(
       case "upcomingEvents":
         return "coalesce(es.upcoming_events, 0)";
       case "financial":
-        return "greatest(0, coalesce(es.total_expected, 0) - coalesce(lt.total_linked_amount, 0))";
+        return "greatest(0, coalesce(es.total_expected_due, 0) - coalesce(lt.total_linked_amount, 0))";
       case "lastEvent":
       default:
         return "es.last_event_date";
@@ -831,6 +835,10 @@ export async function getClinicalSeriesSnapshotByExternalEvent(params: {
   const totalExpected = events.reduce((sum, item) => sum + (item.amountExpected ?? 0), 0);
   const totalPaid = events.reduce((sum, item) => sum + (item.amountPaid ?? 0), 0);
   const totalLinkedAmount = linkedDocuments.reduce((sum, item) => sum + item.totalAmount, 0);
+  const today = dayjs().tz(TIMEZONE).format("YYYY-MM-DD");
+  const dueEvents = events.filter((item) => isPastOrTodayEvent(item.eventDate, today));
+  const totalExpectedDue = dueEvents.reduce((sum, item) => sum + (item.amountExpected ?? 0), 0);
+  const totalPaidDue = dueEvents.reduce((sum, item) => sum + (item.amountPaid ?? 0), 0);
   const eventDates = events.map((item) => item.eventDate).sort();
   const startDate = eventDates[0] ?? dayjs().tz(TIMEZONE).format("YYYY-MM-DD");
   const endDate = eventDates[eventDates.length - 1] ?? startDate;
@@ -858,12 +866,12 @@ export async function getClinicalSeriesSnapshotByExternalEvent(params: {
     linkedDocuments,
     patientName: series.patientName ?? null,
     patientRut: series.patientRut ?? null,
-    remainingExpected: Math.max(0, totalExpected - totalLinkedAmount),
-    remainingPaid: Math.max(0, totalPaid - totalLinkedAmount),
+    remainingExpected: Math.max(0, totalExpectedDue - totalLinkedAmount),
+    remainingPaid: Math.max(0, totalPaidDue - totalLinkedAmount),
     status: series.status as ClinicalSeriesSnapshot["status"],
-    totalExpected,
+    totalExpected: totalExpectedDue,
     totalLinkedAmount,
-    totalPaid,
+    totalPaid: totalPaidDue,
   };
 }
 
@@ -966,7 +974,17 @@ export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilter
             ELSE 0
           END
         )::int AS upcoming_events,
-        COALESCE(SUM(e.amount_expected), 0)::float AS total_expected
+        COALESCE(SUM(e.amount_expected), 0)::float AS total_expected,
+        COALESCE(
+          SUM(
+            CASE
+              WHEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
+              THEN e.amount_expected
+              ELSE 0
+            END
+          ),
+          0
+        )::float AS total_expected_due
       FROM events e
       WHERE e.clinical_series_id IS NOT NULL
       GROUP BY e.clinical_series_id

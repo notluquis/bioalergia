@@ -123,9 +123,13 @@ function formatEventDate(dateStr: string, showYear = false): string {
 
 type FinancialStatus = "free" | "paid" | "unknown";
 
-function seriesFinancialStatus(events: ClinicalSeriesEvent[]): FinancialStatus {
-  if (events.some((e) => e.amountExpected != null && e.amountExpected > 0)) return "paid";
-  if (events.some((e) => e.amountExpected === 0)) return "free";
+function seriesFinancialStatus(
+  events: ClinicalSeriesEvent[],
+  today = getTodayStr()
+): FinancialStatus {
+  const dueEvents = events.filter((event) => event.eventDate <= today);
+  if (dueEvents.some((e) => e.amountExpected != null && e.amountExpected > 0)) return "paid";
+  if (dueEvents.some((e) => e.amountExpected === 0)) return "free";
   return "unknown";
 }
 
