@@ -33,8 +33,5 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Lint & type-check
-        run: pnpm ci:check
-
-      - name: Build production bundle
-        run: pnpm build
+      - name: Full CI pipeline
+        run: pnpm ci

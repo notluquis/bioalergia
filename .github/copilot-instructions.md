@@ -30,7 +30,8 @@
 #### Important Tools
 - **Linter:** Oxlint v1.52.0 (Rust-based linting, 50-100x faster than ESLint)
 - **Formatter:** Oxfmt v0.37.0 (Rust-based, 95% Prettier compatible)
-- **Fast Type-Checker:** Oxlint `--type-aware --type-check` (via oxlint-tsgolint)
+- **Fast Type-Checker:** Oxlint scoped to owned sources (`oxlint src shared` or equivalent)
+- **Type-Aware Lint:** Oxlint type-aware mode on owned sources (`oxlint --type-aware src shared` or equivalent)
 - **Structural Type-Checker:** TypeScript build mode with project references (`tsc -b`)
 - **Build Tool:** turbo monorepo
 - **Package Manager:** pnpm (NOT npm or yarn)
@@ -62,7 +63,8 @@
 **Solution Implemented:**
 - **Linting:** `oxlint` (Rust-based, replaces ESLint)
 - **Formatting:** `oxfmt` (Rust-based, 95% Prettier compatible)
-- **Fast type-checking:** `oxlint --type-aware --type-check`
+- **Fast type-checking:** `oxlint src shared`
+- **Type-aware linting:** `oxlint --type-aware src shared`
 - **Structural type-checking:** `tsc -b --pretty false` via project references
 
 **Configuration Files:**
@@ -118,18 +120,20 @@ pnpm lint              # oxlint (linting + rules)
 pnpm lint:fix          # oxlint --fix (auto-fix)
 pnpm format            # oxfmt (formatting)
 pnpm format:check      # oxfmt --check (verify format)
-pnpm type-check        # Fast type-aware checks via oxlint
+pnpm type-check        # Fast lint gate via oxlint
+pnpm type-check:lint   # Type-aware lint on selected projects
 pnpm type-check:ts     # Structural validation via TypeScript project references
 ```
 
 ⚠️ **RULE:** Do not put `tsc --noEmit` inside app `build` scripts. Keep builds artifact-focused and run structural TypeScript checks through `pnpm type-check:ts`.
+⚠️ **RULE:** Do not use `oxlint --type-aware --type-check` as the primary fast path. `--type-check` is experimental and too expensive for the intranet app.
 
 **Standardized OXC Ecosystem Tools:**
 | Tool | Purpose | Status |
 |------|---------|--------|
 | oxlint v1.52.0 | Linting + Type-checking | ✅ Active |
 | oxfmt v0.37.0 | Formatting | ✅ Active |
-| oxlint-tsgolint v0.16.0 | Go-based type-aware checking | ✅ Active |
+| oxlint-tsgolint v0.17.1 | Go-based type-aware checking | ✅ Active |
 | oxc-minify v0.x | Production minification (Terser replacement) | ⏳ Planned v2 |
 | oxc-transform | AST transformations (TypeScript/JSX) | ⏳ Research |
 | oxc-parser | Custom code analysis | ⏳ Research |

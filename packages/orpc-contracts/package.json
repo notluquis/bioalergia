@@ -194,7 +194,8 @@
   "scripts": {
     "build": "tsc",
     "clean": "rm -rf dist",
-    "type-check": "oxlint --type-aware --type-check",
+    "type-check": "oxlint src",
+    "type-check:lint": "oxlint --type-aware src",
     "type-check:ts": "tsc -b --pretty false",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix && oxfmt --write .",

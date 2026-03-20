@@ -17,11 +17,12 @@
     "format:check": "oxfmt --check",
     "check": "pnpm lint && pnpm type-check && pnpm type-check:ts",
     "check:fix": "oxlint --fix && oxfmt",
-    "check:full": "pnpm check && pnpm test && pnpm build",
+    "check:full": "pnpm check && pnpm type-check:lint && pnpm test && pnpm build",
     "ci:check": "oxlint --format=github",
-    "ci": "pnpm lint:ci && pnpm type-check && pnpm type-check:ts && pnpm test && pnpm build",
+    "ci": "pnpm lint:ci && pnpm type-check && pnpm type-check:lint && pnpm type-check:ts && pnpm test && pnpm build",
     "clean": "pnpm -r --if-present clean",
     "type-check": "turbo run type-check --continue=never",
+    "type-check:lint": "turbo run type-check:lint --continue=never",
     "type-check:ts": "turbo run type-check:ts --continue=never",
     "devtools": "turbo devtools",
     "prepare": "husky || true"
@@ -39,7 +40,7 @@
     "lint-staged": "^16.4.0",
     "oxfmt": "^0.41.0",
     "oxlint": "^1.56.0",
-    "oxlint-tsgolint": "^0.17.0",
+    "oxlint-tsgolint": "^0.17.1",
     "turbo": "^2.8.20"
   },
   "engines": {
