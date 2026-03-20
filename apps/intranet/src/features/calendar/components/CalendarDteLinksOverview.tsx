@@ -379,18 +379,20 @@ function SuggestionExplorer({
                     eventAmount != null ? Math.abs(eventAmount - candidate.totalAmount) : null;
 
                   return (
-                    <Surface
-                      className="rounded-2xl border border-default-200/70 p-3"
+                    <Card
+                      className="gap-3"
                       key={candidate.dteSaleDetailId}
                       variant={index === 0 ? "secondary" : "default"}
                     >
-                      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                      <Card.Header className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                         <div className="min-w-0 space-y-1">
-                          <p className="truncate font-medium text-sm">{candidate.clientName}</p>
-                          <Description>
+                          <Card.Title className="truncate text-sm">
+                            {candidate.clientName}
+                          </Card.Title>
+                          <Card.Description>
                             {candidate.clientRUT} · Folio {candidate.folio} ·{" "}
                             {dayjs(candidate.documentDate).format("DD-MM-YYYY")}
-                          </Description>
+                          </Card.Description>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
                           <Chip
@@ -409,8 +411,8 @@ function SuggestionExplorer({
                             </Chip>
                           ) : null}
                         </div>
-                      </div>
-                      <div className="mt-3 grid grid-cols-2 gap-2 text-sm lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto]">
+                      </Card.Header>
+                      <Card.Content className="grid grid-cols-2 gap-2 text-sm lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
                         <Surface className="rounded-xl p-2.5" variant="secondary">
                           <p className="text-default-500 text-[11px] uppercase tracking-wide">
                             Monto DTE
@@ -431,13 +433,13 @@ function SuggestionExplorer({
                           className="self-end lg:self-auto"
                           isPending={confirmPending}
                           size="sm"
-                          variant={index === 0 ? "primary" : "secondary"}
+                          variant={index === 0 ? "primary" : "tertiary"}
                           onPress={() => onConfirm(candidate)}
                         >
                           Vincular este DTE
                         </Button>
-                      </div>
-                      <div className="mt-3 flex flex-wrap gap-2">
+                      </Card.Content>
+                      <Card.Footer className="flex flex-wrap gap-2 pt-0">
                         {candidate.reasons.slice(0, 3).map((reason) => (
                           <Chip
                             key={`${candidate.dteSaleDetailId}-${reason}`}
@@ -447,8 +449,8 @@ function SuggestionExplorer({
                             {reason}
                           </Chip>
                         ))}
-                      </div>
-                    </Surface>
+                      </Card.Footer>
+                    </Card>
                   );
                 })
               ) : (

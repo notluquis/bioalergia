@@ -1,4 +1,4 @@
-import { Card, Description, Label, ListBox, Select } from "@heroui/react";
+import { Card, Description, Label, ListBox, Select, Surface } from "@heroui/react";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import type { ColumnDef, PaginationState } from "@tanstack/react-table";
 import dayjs from "dayjs";
@@ -120,7 +120,7 @@ export function DtePurchasesDetailsPanel() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
-      <div className="flex flex-wrap items-end gap-3">
+      <Surface className="flex flex-wrap items-end gap-3 rounded-2xl p-3" variant="secondary">
         <Select
           value={selectedPeriod}
           onChange={(key) => {
@@ -151,7 +151,7 @@ export function DtePurchasesDetailsPanel() {
         <Description>
           {detailsQuery.data?.meta.total ?? 0} registros en {selectedPeriod}
         </Description>
-      </div>
+      </Surface>
 
       <div className="min-h-0 flex-1">
         <DataTable

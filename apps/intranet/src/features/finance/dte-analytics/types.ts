@@ -168,6 +168,16 @@ export const CHART_COLORS = [
 
 export type ChartColorHex = (typeof CHART_COLORS)[number];
 
+export const CHART_THEME = {
+  axis: "#94a3b8",
+  grid: "#334155",
+  legend: "#cbd5e1",
+  tooltipBackground: "rgba(15, 23, 42, 0.94)",
+  tooltipBorder: "#334155",
+  tooltipLabel: "#f8fafc",
+  tooltipValue: "#e2e8f0",
+} as const;
+
 // Regex patterns defined at top level for performance
 const PERIOD_FORMAT_REGEX = /^\d{4}-\d{2}$/;
 

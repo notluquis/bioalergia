@@ -138,27 +138,23 @@ export function Header() {
               aria-label={
                 resolvedTheme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"
               }
-              className="rounded-full border border-default-200/70 bg-background/80 text-foreground shadow-sm"
               isIconOnly
+              size="sm"
               onPress={toggleTheme}
-              variant="ghost"
+              variant="secondary"
             >
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-default-50/50 shadow-inner">
-                {isDark ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-              </span>
+              {isDark ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
             </Button>
             <Button
               isIconOnly
               aria-label="Cerrar sesión"
-              className="rounded-full border border-default-200/70 bg-background/80 text-foreground shadow-sm hover:border-danger/40 hover:bg-danger/10 hover:text-danger"
+              size="sm"
               onPress={() => {
                 void handleLogout();
               }}
-              variant="ghost"
+              variant="danger"
             >
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-default-50/50 shadow-inner ">
-                <LogOut className="h-4 w-4" />
-              </span>
+              <LogOut className="h-4 w-4" />
             </Button>
           </div>
         </div>

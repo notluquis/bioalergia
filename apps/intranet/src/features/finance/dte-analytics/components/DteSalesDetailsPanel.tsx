@@ -8,6 +8,7 @@ import {
   ListBox,
   Select,
   Skeleton,
+  Surface,
 } from "@heroui/react";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import type { ColumnDef, PaginationState } from "@tanstack/react-table";
@@ -137,7 +138,7 @@ function buildSalesColumns(
             <Chip color="success" size="sm" variant="soft">
               {count} evento{count === 1 ? "" : "s"}
             </Chip>
-            <Button size="sm" variant="secondary" onPress={() => onOpenLinkedEvents(row.original)}>
+            <Button size="sm" variant="tertiary" onPress={() => onOpenLinkedEvents(row.original)}>
               Ver
             </Button>
           </div>
@@ -215,14 +216,14 @@ function SalesLinkedEventsDrawer({
                     </Card.Description>
                   </Card.Header>
                   <Card.Content className="grid grid-cols-2 gap-2 text-sm">
-                    <div className="rounded-xl border border-default-200/70 p-3">
+                    <Surface className="rounded-xl p-3" variant="default">
                       <p className="text-default-500 text-[11px] uppercase tracking-wide">Folio</p>
                       <p className="font-medium">{resolvedDte.folio}</p>
-                    </div>
-                    <div className="rounded-xl border border-default-200/70 p-3">
+                    </Surface>
+                    <Surface className="rounded-xl p-3" variant="default">
                       <p className="text-default-500 text-[11px] uppercase tracking-wide">Total</p>
                       <p className="font-medium">{formatCurrency(resolvedDte.totalAmount)}</p>
-                    </div>
+                    </Surface>
                   </Card.Content>
                 </Card>
               ) : null}
@@ -271,20 +272,20 @@ function SalesLinkedEventsDrawer({
                         </div>
                       </Card.Header>
                       <Card.Content className="grid grid-cols-2 gap-2 text-sm">
-                        <div className="rounded-xl border border-default-200/70 p-3">
+                        <Surface className="rounded-xl p-3" variant="default">
                           <p className="text-default-500 text-[11px] uppercase tracking-wide">
                             Serie
                           </p>
                           <p className="font-medium">{event.displayName ?? "Sin nombre visible"}</p>
-                        </div>
-                        <div className="rounded-xl border border-default-200/70 p-3">
+                        </Surface>
+                        <Surface className="rounded-xl p-3" variant="default">
                           <p className="text-default-500 text-[11px] uppercase tracking-wide">
                             Monto evento
                           </p>
                           <p className="font-medium">
                             {formatCurrency(event.amountPaid ?? event.amountExpected ?? 0)}
                           </p>
-                        </div>
+                        </Surface>
                       </Card.Content>
                     </Card>
                   ))}
@@ -345,7 +346,7 @@ export function DteSalesDetailsPanel() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
-      <div className="flex flex-wrap items-end gap-3">
+      <Surface className="flex flex-wrap items-end gap-3 rounded-2xl p-3" variant="secondary">
         <Select
           value={selectedPeriod}
           onChange={(key) => {
@@ -376,7 +377,7 @@ export function DteSalesDetailsPanel() {
         <Description>
           {detailsQuery.data?.meta.total ?? 0} registros en {selectedPeriod}
         </Description>
-      </div>
+      </Surface>
 
       <div className="min-h-0 flex-1">
         <DataTable

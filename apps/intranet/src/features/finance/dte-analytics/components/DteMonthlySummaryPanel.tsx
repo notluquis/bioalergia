@@ -1,4 +1,4 @@
-import { Card, Label, ListBox, Select } from "@heroui/react";
+import { Card, Description, Label, ListBox, Select, Surface } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useCallback, useMemo } from "react";
 import {
@@ -12,7 +12,11 @@ import {
   YAxis,
 } from "recharts";
 import { dteAnalyticsKeys } from "@/features/finance/dte-analytics/queries";
-import type { MonthlyChartData, YearlyTotals } from "@/features/finance/dte-analytics/types";
+import {
+  CHART_THEME,
+  type MonthlyChartData,
+  YearlyTotals,
+} from "@/features/finance/dte-analytics/types";
 import {
   buildMonthlyChartData,
   calculateYearlyTotals,
@@ -81,7 +85,7 @@ export function DteMonthlySummaryPanel({
 
   return (
     <div className="space-y-4 pt-4">
-      <div className="flex items-center gap-4">
+      <Surface className="flex items-center gap-4 rounded-2xl p-3" variant="secondary">
         <Select placeholder="Seleccionar año" value={selectedYear} onChange={handleYearChange}>
           <Label>Año</Label>
           <Select.Trigger>
@@ -98,10 +102,10 @@ export function DteMonthlySummaryPanel({
             </ListBox>
           </Select.Popover>
         </Select>
-      </div>
+      </Surface>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
-        <Card>
+        <Card variant="secondary">
           <Card.Header>
             <Card.Title className="text-sm">{labels.total}</Card.Title>
           </Card.Header>
@@ -109,7 +113,7 @@ export function DteMonthlySummaryPanel({
             <span className="font-bold text-2xl">{formatCurrency(totals.totalAmount)}</span>
           </Card.Content>
         </Card>
-        <Card>
+        <Card variant="secondary">
           <Card.Header>
             <Card.Title className="text-sm">Exento</Card.Title>
           </Card.Header>
@@ -117,7 +121,7 @@ export function DteMonthlySummaryPanel({
             <span className="font-bold text-2xl">{formatCurrency(totals.exemptAmount)}</span>
           </Card.Content>
         </Card>
-        <Card>
+        <Card variant="secondary">
           <Card.Header>
             <Card.Title className="text-sm">Neto</Card.Title>
           </Card.Header>
@@ -125,7 +129,7 @@ export function DteMonthlySummaryPanel({
             <span className="font-bold text-2xl">{formatCurrency(totals.netAmount)}</span>
           </Card.Content>
         </Card>
-        <Card>
+        <Card variant="secondary">
           <Card.Header>
             <Card.Title className="text-sm">{labels.netTax}</Card.Title>
           </Card.Header>
@@ -133,7 +137,7 @@ export function DteMonthlySummaryPanel({
             <span className="font-bold text-2xl">{formatCurrency(totals.taxAmount)}</span>
           </Card.Content>
         </Card>
-        <Card>
+        <Card variant="secondary">
           <Card.Header>
             <Card.Title className="text-sm">{labels.docs}</Card.Title>
           </Card.Header>
@@ -143,27 +147,65 @@ export function DteMonthlySummaryPanel({
         </Card>
       </div>
 
-      <Card>
+      <Card variant="secondary">
         <Card.Header>
           <Card.Title>{labels.title}</Card.Title>
+          <Card.Description>
+            Serie apilada con escala monetaria y colores consistentes para DTE analytics.
+          </Card.Description>
         </Card.Header>
         <Card.Content>
           <ResponsiveContainer height={400} width="100%">
             <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis niceTicks="auto" tickFormatter={formatCurrencyCompact} />
-              <Tooltip
-                formatter={(value) => (typeof value === "number" ? formatCurrency(value) : "N/A")}
-                labelStyle={{ color: "#000" }}
-                contentStyle={{ backgroundColor: "#fff" }}
+              <CartesianGrid stroke={CHART_THEME.grid} strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="month" stroke={CHART_THEME.axis} tickLine={false} axisLine={false} />
+              <YAxis
+                axisLine={false}
+                niceTicks="auto"
+                stroke={CHART_THEME.axis}
+                tickFormatter={formatCurrencyCompact}
+                tickLine={false}
               />
-              <Legend />
-              <Bar dataKey="exemptAmount" stackId="total" fill="#8b5cf6" name="Exento" />
-              <Bar dataKey="netAmount" stackId="total" fill="#10b981" name="Neto" />
-              <Bar dataKey="taxAmount" stackId="total" fill="#f59e0b" name="IVA" />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: CHART_THEME.tooltipBackground,
+                  border: `1px solid ${CHART_THEME.tooltipBorder}`,
+                  borderRadius: 16,
+                  boxShadow: "0 18px 48px rgba(15, 23, 42, 0.28)",
+                }}
+                formatter={(value) => (typeof value === "number" ? formatCurrency(value) : "N/A")}
+                itemStyle={{ color: CHART_THEME.tooltipValue }}
+                labelStyle={{ color: CHART_THEME.tooltipLabel, fontWeight: 600 }}
+                cursor={{ fill: "rgba(148, 163, 184, 0.12)" }}
+              />
+              <Legend wrapperStyle={{ color: CHART_THEME.legend, paddingTop: 12 }} />
+              <Bar
+                dataKey="exemptAmount"
+                stackId="total"
+                fill="#3b82f6"
+                name="Exento"
+                radius={[6, 6, 0, 0]}
+              />
+              <Bar
+                dataKey="netAmount"
+                stackId="total"
+                fill="#10b981"
+                name="Neto"
+                radius={[6, 6, 0, 0]}
+              />
+              <Bar
+                dataKey="taxAmount"
+                stackId="total"
+                fill="#f59e0b"
+                name="IVA"
+                radius={[6, 6, 0, 0]}
+              />
             </BarChart>
           </ResponsiveContainer>
+          <Description className="mt-3 text-xs">
+            Totales expresados en CLP. La leyenda y tooltip usan la misma jerarquía visual en todas
+            las vistas comparativas.
+          </Description>
         </Card.Content>
       </Card>
     </div>
