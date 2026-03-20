@@ -96,6 +96,7 @@ export interface EventIdentityClaims {
   patientRut: null | string;
   rutClaims: string[];
   sameDayOnly: boolean;
+  seriesLinkedRuts: string[];
   seriesKind: null | "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT";
 }
 
@@ -218,6 +219,7 @@ interface DteSaleRow {
   retrievalMeta: {
     amountCandidate: boolean;
     exactRutMatch: boolean;
+    sameSeriesRutMatch: boolean;
     sharedSurnameMatch: boolean;
     trigramSimilarity: number;
   };
@@ -557,6 +559,14 @@ function extractIdentityClaims(params: {
     ),
   ];
 
+  const seriesLinkedRuts = [
+    ...new Set(
+      (params.series?.linkedDocuments ?? [])
+        .map((document) => normalizeRut(document.clientRUT) || document.clientRUT)
+        .filter(Boolean),
+    ),
+  ];
+
   return {
     amountHint: computeSeriesAmountHint(params.series, params.event),
     beneficiaryName: identityHints.beneficiaryName ?? params.series?.beneficiaryName ?? null,
@@ -567,6 +577,7 @@ function extractIdentityClaims(params: {
     patientRut: identityHints.patientRut ?? params.series?.patientRut ?? null,
     rutClaims,
     sameDayOnly: params.sameDayOnly,
+    seriesLinkedRuts,
     seriesKind: params.series?.kind ?? null,
   };
 }
@@ -591,6 +602,7 @@ export function scoreCandidate(params: {
   dte: Omit<DteSaleRow, "retrievalMeta"> & { retrievalMeta?: DteSaleRow["retrievalMeta"] };
   nameHints: string[];
   rutHints: string[];
+  seriesLinkedRuts?: string[];
 }): EventDteSuggestion {
   return analyzeCandidate({
     amountHint: params.amountHint,
@@ -599,12 +611,14 @@ export function scoreCandidate(params: {
       retrievalMeta: params.dte.retrievalMeta ?? {
         amountCandidate: false,
         exactRutMatch: false,
+        sameSeriesRutMatch: false,
         sharedSurnameMatch: false,
         trigramSimilarity: 0,
       },
     },
     nameClaims: params.nameHints,
     rutClaims: params.rutHints,
+    seriesLinkedRuts: params.seriesLinkedRuts ?? [],
   }).document;
 }
 
@@ -613,9 +627,12 @@ function analyzeCandidate(params: {
   candidate: DteSaleRow;
   nameClaims: string[];
   rutClaims: string[];
+  seriesLinkedRuts: string[];
 }): CandidateAnalysis {
   const candidateRut = normalizeRut(params.candidate.clientRUT) || params.candidate.clientRUT;
   const rutMatch = params.rutClaims.some((rut) => rut === candidateRut);
+  const sameSeriesRutMatch =
+    !rutMatch && params.seriesLinkedRuts.some((rut) => rut === candidateRut);
 
   let bestNameScore = 0;
   let exactNameMatch = false;
@@ -644,6 +661,12 @@ function analyzeCandidate(params: {
     signals.push(toSignal("exact_rut", "RUT exacto", 95));
     reasons.push("RUT exacto encontrado en título/descripción del evento");
     method = params.nameClaims.length > 0 ? "mixed" : "rut";
+  }
+
+  if (sameSeriesRutMatch) {
+    score += 30;
+    signals.push(toSignal("same_series_rut", "Mismo RUT ya vinculado en la serie", 30));
+    reasons.push("RUT ya confirmado en otro evento de la misma serie clínica");
   }
 
   if (exactNameMatch) {
@@ -790,12 +813,14 @@ export function findSkinTestBundleSuggestions(params: {
         retrievalMeta: candidate.retrievalMeta ?? {
           amountCandidate: false,
           exactRutMatch: false,
+          sameSeriesRutMatch: false,
           sharedSurnameMatch: false,
           trigramSimilarity: 0,
         },
       },
       nameClaims: params.nameHints,
       rutClaims: params.rutHints,
+      seriesLinkedRuts: [],
     }),
   );
 
@@ -979,12 +1004,14 @@ async function retrieveDteCandidates(params: {
   from: string;
   nameClaims: string[];
   rutClaims: string[];
+  seriesLinkedRuts: string[];
   surnameClaims: string[];
   to: string;
 }): Promise<DteSaleRow[]> {
   const excludedIds = params.excludeDteSaleDetailIds ?? [];
   const loweredNameClaims = params.nameClaims.map((value) => normalizeName(value)).filter(Boolean);
   const loweredSurnameClaims = params.surnameClaims.map((value) => normalizeName(value)).filter(Boolean);
+  const normalizedSeriesLinkedRuts = params.seriesLinkedRuts.map((value) => normalizeRut(value) || value);
 
   return db.$queryRaw<DteSaleRow[]>`
     SELECT
@@ -1007,6 +1034,10 @@ async function retrieveDteCandidates(params: {
         'exactRutMatch', (
           cardinality(${params.rutClaims}::text[]) > 0
           AND s.client_rut = ANY(${params.rutClaims}::text[])
+        ),
+        'sameSeriesRutMatch', (
+          cardinality(${normalizedSeriesLinkedRuts}::text[]) > 0
+          AND s.client_rut = ANY(${normalizedSeriesLinkedRuts}::text[])
         ),
         'amountCandidate', (
           ${params.amountHint}::float8 IS NOT NULL
@@ -1043,6 +1074,10 @@ async function retrieveDteCandidates(params: {
           AND s.client_rut = ANY(${params.rutClaims}::text[])
         )
         OR (
+          cardinality(${normalizedSeriesLinkedRuts}::text[]) > 0
+          AND s.client_rut = ANY(${normalizedSeriesLinkedRuts}::text[])
+        )
+        OR (
           ${params.amountHint}::float8 IS NOT NULL
           AND ABS(COALESCE(s.total_amount, 0)::float - ${params.amountHint}::float8) <= ${MAX_AUTO_LINK_AMOUNT_DIFF}
         )
@@ -1062,6 +1097,8 @@ async function retrieveDteCandidates(params: {
       (
         CASE
           WHEN cardinality(${params.rutClaims}::text[]) > 0 AND s.client_rut = ANY(${params.rutClaims}::text[]) THEN 1
+          WHEN cardinality(${normalizedSeriesLinkedRuts}::text[]) > 0
+            AND s.client_rut = ANY(${normalizedSeriesLinkedRuts}::text[]) THEN 1
           ELSE 0
         END
       ) DESC,
@@ -1087,6 +1124,7 @@ function buildHypotheses(params: {
       candidate,
       nameClaims: params.claims.nameClaims,
       rutClaims: params.claims.rutClaims,
+      seriesLinkedRuts: params.claims.seriesLinkedRuts,
     }),
   );
 
@@ -1199,6 +1237,7 @@ export async function getEventDteSuggestions(params: {
     from,
     nameClaims: claims.nameClaims,
     rutClaims: claims.rutClaims,
+    seriesLinkedRuts: claims.seriesLinkedRuts,
     surnameClaims,
     to,
   });

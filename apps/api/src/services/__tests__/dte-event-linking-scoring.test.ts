@@ -60,6 +60,57 @@ describe("scoreCandidate", () => {
       result.reasons.some((reason) => reason.includes("posible responsable/paciente")),
     ).toBe(false);
   });
+
+  it("boosts a candidate when the same RUT was already linked in another event of the series", () => {
+    const result = scoreCandidate({
+      amountHint: 60000,
+      dte: {
+        clientName: "NADIA YAÑEZ ROJAS",
+        clientRUT: "10370222-4",
+        documentDate: "2026-03-20",
+        documentType: 41,
+        dteSaleDetailId: "sale-20062",
+        exemptAmount: 0,
+        folio: "20062",
+        ivaAmount: 0,
+        linkedEventsCount: 0,
+        netAmount: 60000,
+        totalAmount: 60000,
+      },
+      nameHints: ["nadia yañez rojas"],
+      rutHints: [],
+      seriesLinkedRuts: ["10370222-4"],
+    });
+
+    expect(result.confidenceScore).toBe(100);
+    expect(result.reasons).toContain("RUT ya confirmado en otro evento de la misma serie clínica");
+    expect(result.reasons).not.toContain("RUT exacto encontrado en título/descripción del evento");
+  });
+
+  it("surfaces same-series RUT as a stronger review candidate even when the event text lacks a direct RUT", () => {
+    const result = scoreCandidate({
+      amountHint: 60000,
+      dte: {
+        clientName: "NADIA YAÑEZ ROJAS",
+        clientRUT: "10370222-4",
+        documentDate: "2026-03-20",
+        documentType: 41,
+        dteSaleDetailId: "sale-20062",
+        exemptAmount: 0,
+        folio: "20062",
+        ivaAmount: 0,
+        linkedEventsCount: 0,
+        netAmount: 60000,
+        totalAmount: 60000,
+      },
+      nameHints: ["llevara hijo clustoid ag nadia yañez rojas"],
+      rutHints: [],
+      seriesLinkedRuts: ["10370222-4"],
+    });
+
+    expect(result.confidenceScore).toBeGreaterThanOrEqual(35);
+    expect(result.reasons).toContain("RUT ya confirmado en otro evento de la misma serie clínica");
+  });
 });
 
 describe("findSkinTestBundleSuggestions", () => {
