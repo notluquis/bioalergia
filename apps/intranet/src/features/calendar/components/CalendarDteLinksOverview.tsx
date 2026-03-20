@@ -14,6 +14,7 @@ import {
   Skeleton,
   Spinner,
   Tabs,
+  Tooltip,
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
@@ -106,6 +107,10 @@ function linkStatusLabel(status: EventDteOverviewItem["linkStatus"]): string {
   if (status === "linked") return "Vinculado";
   if (status === "pending_issuance") return "Pendiente emisión";
   return "No vinculado";
+}
+
+function formatAutoLinkAttempt(attemptedAt: string): string {
+  return dayjs(attemptedAt).format("DD-MM-YYYY HH:mm");
 }
 
 export function CalendarDteLinksOverview({
@@ -621,6 +626,41 @@ export function CalendarDteLinksOverview({
                           </p>
                         </div>
                       </Card.Content>
+
+                      {!item.linked && item.lastAutoLinkSkip ? (
+                        <Card.Content className="pt-0">
+                          <div className="rounded-lg border border-warning/30 bg-warning/10 p-3">
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                              <div className="space-y-1">
+                                <p className="text-[11px] font-semibold uppercase tracking-wide text-warning-700">
+                                  Último auto-vínculo omitido
+                                </p>
+                                <p className="text-sm font-medium text-foreground">
+                                  {item.lastAutoLinkSkip.reason}
+                                </p>
+                                <Description className="text-xs">
+                                  Intentado{" "}
+                                  {formatAutoLinkAttempt(item.lastAutoLinkSkip.attemptedAt)}
+                                </Description>
+                              </div>
+                              <Tooltip delay={0}>
+                                <Tooltip.Trigger aria-label="Detalle del último intento de auto-vinculación">
+                                  <Chip color="warning" size="sm" variant="soft">
+                                    Auto-link revisado
+                                  </Chip>
+                                </Tooltip.Trigger>
+                                <Tooltip.Content className="max-w-xs" showArrow>
+                                  <Tooltip.Arrow />
+                                  <p>
+                                    Último intento:{" "}
+                                    {formatAutoLinkAttempt(item.lastAutoLinkSkip.attemptedAt)}
+                                  </p>
+                                </Tooltip.Content>
+                              </Tooltip>
+                            </div>
+                          </div>
+                        </Card.Content>
+                      ) : null}
 
                       <Card.Footer className="flex flex-col items-start justify-between gap-2 md:flex-row md:items-center">
                         <Description>

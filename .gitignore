@@ -86,6 +86,7 @@ temp/
 artifacts/local-mail-agent.pid
 artifacts/local-mail-agent.sock
 artifacts/local-mail-agent.state.json
+artifacts/type-check-debug/
 
 # Storybook
 storybook-static/

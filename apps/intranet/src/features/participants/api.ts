@@ -1,7 +1,7 @@
 import {
   transactionsInsightsParticipantInsightResponseSchema,
   transactionsInsightsParticipantsResponseSchema,
-} from "@finanzas/orpc-contracts";
+} from "@finanzas/orpc-contracts/transactions-insights";
 import {
   toTransactionsInsightsApiError,
   transactionsInsightsORPCClient,

@@ -573,6 +573,12 @@ export const EventDteOverviewResponseSchema = z.strictObject({
         displayName: z.string().nullable(),
         eventDate: z.string(),
         eventId: z.string(),
+        lastAutoLinkSkip: z
+          .strictObject({
+            attemptedAt: z.string(),
+            reason: z.string(),
+          })
+          .nullable(),
         linkStatus: z.enum(["linked", "pending_issuance", "unlinked"]),
         linked: z.boolean(),
         linkedClientName: z.string().nullable(),

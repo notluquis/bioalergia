@@ -1,10 +1,9 @@
-import type { ReleaseTransaction } from "@finanzas/db/models";
-
-import { z } from "zod";
 import {
   releaseTransactionsORPCClient,
   toReleaseTransactionsApiError,
 } from "@/features/finance/release-transactions-orpc";
+import { ReleaseTransactionsResponseSchema } from "@/features/finance/schemas";
+import type { ReleaseTransaction } from "@/features/finance/releases/types";
 import { compactORPCInput } from "@/lib/orpc-input";
 
 interface FetchReleaseTransactionsParams {
@@ -25,20 +24,11 @@ interface FetchReleaseTransactionsResponse {
   totalPages: number;
 }
 
-const FetchReleaseTransactionsResponseSchema = z.object({
-  data: z.array(z.unknown()),
-  page: z.number(),
-  pageSize: z.number(),
-  status: z.literal("ok"),
-  total: z.number(),
-  totalPages: z.number(),
-});
-
 export async function fetchReleaseTransactions(
   params: FetchReleaseTransactionsParams
 ): Promise<FetchReleaseTransactionsResponse> {
   try {
-    return FetchReleaseTransactionsResponseSchema.parse(
+    return ReleaseTransactionsResponseSchema.parse(
       await releaseTransactionsORPCClient.list(
         compactORPCInput({
           descriptions: params.descriptions?.join(","),

@@ -5,7 +5,7 @@
 import {
   transactionsInsightsParticipantsResponseSchema,
   transactionsInsightsStatsResponseSchema,
-} from "@finanzas/orpc-contracts";
+} from "@finanzas/orpc-contracts/transactions-insights";
 import {
   toTransactionsInsightsApiError,
   transactionsInsightsORPCClient,

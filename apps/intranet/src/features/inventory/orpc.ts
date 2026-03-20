@@ -1,6 +1,6 @@
 import { createORPCClient, ORPCError } from "@orpc/client";
 import type { ContractRouterClient } from "@orpc/contract";
-import type { InventoryContract } from "@finanzas/orpc-contracts";
+import type { InventoryContract } from "@finanzas/orpc-contracts/inventory";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
 

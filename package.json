@@ -21,6 +21,8 @@
     "ci:check": "oxlint --format=github",
     "ci": "pnpm lint:ci && pnpm test && pnpm build",
     "clean": "pnpm -r --if-present clean",
+    "tmp:type-aware:intranet": "cd apps/intranet && OXC_LOG=debug pnpm exec oxlint --type-aware src shared",
+    "tmp:type-check:intranet": "cd apps/intranet && pnpm exec tsc -b --pretty false",
     "devtools": "turbo devtools",
     "prepare": "husky || true"
   },

@@ -76,6 +76,7 @@ model User {
   roles                   UserRoleAssignment[]
   medicalCertificates     MedicalCertificate[]
   patientAttachments      PatientAttachment[]
+  eventDteAutoLinkAttempts EventDteAutoLinkAttempt[]
   eventDteSaleLinks       EventDteSaleLink[]
   person                  Person                   @relation(fields: [personId], references: [id], onDelete: Cascade)
 
@@ -802,6 +803,7 @@ model Event {
   calendar          Calendar                 @relation(fields: [calendarId], references: [id], onDelete: Cascade)
   clinicalSeries    ClinicalSeries?          @relation(fields: [clinicalSeriesId], references: [id], onDelete: SetNull)
   consultations     Consultation[]
+  dteAutoLinkAttempts EventDteAutoLinkAttempt[]
   dteSaleLinks      EventDteSaleLink[]
 
   // Access policies
@@ -1993,6 +1995,7 @@ model DTESaleDetail {
 
   createdAt                      DateTime  @default(now()) @map("created_at")
   updatedAt                      DateTime  @default(now()) @updatedAt @map("updated_at")
+  autoLinkAttempts               EventDteAutoLinkAttempt[]
   eventLinks                     EventDteSaleLink[]
 
   @@deny('all', auth() == null)
@@ -2031,6 +2034,30 @@ model EventDteSaleLink {
   @@index([dteSaleDetailId])
   @@index([createdAt(sort: Desc)])
   @@map("event_dte_sale_links")
+}
+
+model EventDteAutoLinkAttempt {
+  id                     BigInt         @id @default(autoincrement())
+  eventId                Int            @map("event_id")
+  candidateDteSaleDetailId String?      @map("candidate_dte_sale_detail_id")
+  status                 String         @db.VarChar(20)
+  reason                 String
+  confidenceScore        Decimal?       @map("confidence_score") @db.Decimal(5, 2)
+  createdBy              Int?           @map("created_by")
+  createdAt              DateTime       @default(now()) @map("created_at")
+
+  event                  Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  candidateDteSaleDetail DTESaleDetail? @relation(fields: [candidateDteSaleDetailId], references: [id], onDelete: SetNull)
+  creator                User?          @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([eventId, createdAt(sort: Desc)])
+  @@index([candidateDteSaleDetailId])
+  @@index([createdAt(sort: Desc)])
+  @@map("event_dte_auto_link_attempts")
 }
 
 // ============================================================

@@ -1,9 +1,9 @@
-import type { ReleaseTransaction } from "@finanzas/db/models";
 import { Chip } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
 
+import type { ReleaseTransaction } from "@/features/finance/releases/types";
 import { fmtCLP } from "@/lib/format";
 
 export const columns: ColumnDef<ReleaseTransaction>[] = [

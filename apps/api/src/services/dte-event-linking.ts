@@ -150,6 +150,8 @@ interface EventDteOverviewRow {
   displayName: null | string;
   eventDate: string;
   eventId: string;
+  lastAutoLinkSkipAt: Date | null;
+  lastAutoLinkSkipReason: null | string;
   linkedClientName: null | string;
   linkedClientRUT: null | string;
   linkedDteSaleDetailId: null | string;
@@ -158,6 +160,40 @@ interface EventDteOverviewRow {
   linkedTotalAmount: null | number;
   seriesKind: null | "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT";
   summary: null | string;
+}
+
+async function recordAutoLinkAttempt(params: {
+  confidenceScore?: number;
+  dteSaleDetailId?: null | string;
+  eventId: number;
+  reason: string;
+  status: "LINKED" | "SKIPPED";
+  userId: number;
+}) {
+  const normalizedScore =
+    params.confidenceScore != null && Number.isFinite(params.confidenceScore)
+      ? Math.max(0, Math.min(100, params.confidenceScore))
+      : null;
+
+  await db.$executeRaw`
+    INSERT INTO event_dte_auto_link_attempts (
+      event_id,
+      candidate_dte_sale_detail_id,
+      status,
+      reason,
+      confidence_score,
+      created_by,
+      created_at
+    ) VALUES (
+      ${params.eventId},
+      ${params.dteSaleDetailId ?? null},
+      ${params.status},
+      ${params.reason},
+      ${normalizedScore},
+      ${params.userId},
+      NOW()
+    )
+  `;
 }
 
 function normalizeText(value: string): string {
@@ -747,6 +783,8 @@ export async function listEventDteLinkOverview(params: {
       e.amount_expected AS "amountExpected",
       e.amount_paid AS "amountPaid",
       e.clinical_series_id AS "clinicalSeriesId",
+      auto_skip."lastAutoLinkSkipAt" AS "lastAutoLinkSkipAt",
+      auto_skip."lastAutoLinkSkipReason" AS "lastAutoLinkSkipReason",
       l.dte_sale_detail_id AS "linkedDteSaleDetailId",
       l.matched_by AS "linkedMatchedBy",
       l.confidence_score::float AS "confidenceScore",
@@ -761,6 +799,16 @@ export async function listEventDteLinkOverview(params: {
     LEFT JOIN event_dte_sale_links l ON l.event_id = e.id
     LEFT JOIN dte_sale_details s ON s.id = l.dte_sale_detail_id
     LEFT JOIN clinical_series cs ON e.clinical_series_id = cs.id
+    LEFT JOIN LATERAL (
+      SELECT
+        a.created_at AS "lastAutoLinkSkipAt",
+        a.reason AS "lastAutoLinkSkipReason"
+      FROM event_dte_auto_link_attempts a
+      WHERE a.event_id = e.id
+        AND a.status = 'SKIPPED'
+      ORDER BY a.created_at DESC, a.id DESC
+      LIMIT 1
+    ) auto_skip ON TRUE
     WHERE COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date)
       BETWEEN ${periodStart}::date AND ${periodEnd}::date
       AND (
@@ -834,6 +882,13 @@ export async function listEventDteLinkOverview(params: {
         displayName: row.displayName,
         eventDate: row.eventDate,
         eventId: row.eventId,
+        lastAutoLinkSkip:
+          row.lastAutoLinkSkipReason && row.lastAutoLinkSkipAt
+            ? {
+                attemptedAt: row.lastAutoLinkSkipAt.toISOString(),
+                reason: row.lastAutoLinkSkipReason,
+              }
+            : null,
         linkStatus,
         linked: Boolean(row.linkedDteSaleDetailId),
         linkedClientName: row.linkedClientName,
@@ -1074,6 +1129,12 @@ export async function autoLinkEventDate(params: {
     if (!top) {
       skipped += 1;
       const reason = "Sin candidatos";
+      await recordAutoLinkAttempt({
+        eventId: event.eventId,
+        reason,
+        status: "SKIPPED",
+        userId: params.userId,
+      });
       incrementReason(skippedByReason, reason);
       details.push({ eventId: event.externalEventId, reason });
       continue;
@@ -1082,6 +1143,14 @@ export async function autoLinkEventDate(params: {
     if (top.confidenceScore < minScore) {
       skipped += 1;
       const reason = `Score bajo (${top.confidenceScore})`;
+      await recordAutoLinkAttempt({
+        confidenceScore: top.confidenceScore,
+        dteSaleDetailId: top.dteSaleDetailId,
+        eventId: event.eventId,
+        reason,
+        status: "SKIPPED",
+        userId: params.userId,
+      });
       incrementReason(skippedByReason, reason);
       details.push({
         eventId: event.externalEventId,
@@ -1096,6 +1165,14 @@ export async function autoLinkEventDate(params: {
       if (amountDiff > MAX_AUTO_LINK_AMOUNT_DIFF) {
         skipped += 1;
         const reason = `Monto no coincide (dif ${Math.round(amountDiff)})`;
+        await recordAutoLinkAttempt({
+          confidenceScore: top.confidenceScore,
+          dteSaleDetailId: top.dteSaleDetailId,
+          eventId: event.eventId,
+          reason,
+          status: "SKIPPED",
+          userId: params.userId,
+        });
         incrementReason(skippedByReason, reason);
         details.push({
           eventId: event.externalEventId,
@@ -1109,6 +1186,14 @@ export async function autoLinkEventDate(params: {
     if (!isPerfectScore && isAmbiguous(top, second)) {
       skipped += 1;
       const reason = "Ambiguo";
+      await recordAutoLinkAttempt({
+        confidenceScore: top.confidenceScore,
+        dteSaleDetailId: top.dteSaleDetailId,
+        eventId: event.eventId,
+        reason,
+        status: "SKIPPED",
+        userId: params.userId,
+      });
       incrementReason(skippedByReason, reason);
       details.push({ eventId: event.externalEventId, reason });
       continue;
@@ -1122,6 +1207,14 @@ export async function autoLinkEventDate(params: {
       matchedBy: top.method,
       matchedName: top.clientName,
       matchedRUT: top.clientRUT,
+      userId: params.userId,
+    });
+    await recordAutoLinkAttempt({
+      confidenceScore: top.confidenceScore,
+      dteSaleDetailId: top.dteSaleDetailId,
+      eventId: event.eventId,
+      reason: `Auto-linked (${top.confidenceScore})`,
+      status: "LINKED",
       userId: params.userId,
     });
 

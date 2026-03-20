@@ -4,7 +4,7 @@ import type {
   PersonalFinanceContract,
   personalFinanceCreditSchema,
   personalFinanceInstallmentSchema,
-} from "@finanzas/orpc-contracts";
+} from "@finanzas/orpc-contracts/personal-finance";
 import { SuperJSONLink } from "@/features/calendar/orpc";
 import { ApiError } from "@/lib/api-client";
 import type { z } from "zod";

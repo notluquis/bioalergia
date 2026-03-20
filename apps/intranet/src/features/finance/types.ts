@@ -51,7 +51,15 @@ export interface Transaction {
 // Financial Dashboard Types (Frontend-First)
 // ==========================================
 
-import type { Event } from "@finanzas/db/models";
+export interface FinancialSummaryEventSnapshot {
+  amountPaid: null | number;
+  category: null | string;
+  eventType: null | string;
+  externalEventId: string;
+  id: number;
+  startDate: Date | null;
+  summary: null | string;
+}
 
 export type FinancialPeriod = "day" | "week" | "month";
 
@@ -61,7 +69,7 @@ export interface IncomeItem {
   summary: string;
   category: string; // Derived e.g. "Subcutáneo", "Prick Test"
   amount: number;
-  originalEvent: Partial<Event>;
+  originalEvent: Partial<FinancialSummaryEventSnapshot>;
 }
 
 export interface IncomeCategoryGroup {

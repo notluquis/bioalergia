@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { transactionsInsightsStatsResponseSchema } from "@finanzas/orpc-contracts";
+import { transactionsInsightsStatsResponseSchema } from "@finanzas/orpc-contracts/transactions-insights";
 import { financeORPCClient } from "@/features/finance/orpc";
 import {
   toTransactionsInsightsApiError,

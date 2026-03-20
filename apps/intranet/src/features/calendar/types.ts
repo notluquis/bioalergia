@@ -499,6 +499,11 @@ export interface EventDteOverviewSuggestion extends EventDteSuggestion {
   amountDiff: null | number;
 }
 
+export interface EventDteOverviewAutoLinkSkip {
+  attemptedAt: string;
+  reason: string;
+}
+
 export interface EventDteOverviewItem {
   amountExpected: null | number;
   amountPaid: null | number;
@@ -508,6 +513,7 @@ export interface EventDteOverviewItem {
   displayName: null | string;
   eventDate: string;
   eventId: string;
+  lastAutoLinkSkip: EventDteOverviewAutoLinkSkip | null;
   linkStatus: "linked" | "pending_issuance" | "unlinked";
   linked: boolean;
   linkedClientName: null | string;
