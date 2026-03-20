@@ -113,6 +113,56 @@ function formatAutoLinkAttempt(attemptedAt: string): string {
   return dayjs(attemptedAt).format("DD-MM-YYYY HH:mm");
 }
 
+function describeAutoLinkSkipReason(reason: string): {
+  detail: string;
+  title: string;
+  tooltipLabel: string;
+} {
+  const scoreMatch = /^Score bajo \((\d+)\)$/.exec(reason);
+  if (scoreMatch) {
+    const score = Number(scoreMatch[1] ?? 0);
+    return {
+      detail: `La mejor coincidencia alcanzó ${score}% y el mínimo para auto-vincular es 90%. Requiere revisión manual.`,
+      title: `Coincidencia insuficiente (${score}%)`,
+      tooltipLabel: "Score insuficiente",
+    };
+  }
+
+  const amountDiffMatch = /^Monto no coincide \(dif (\d+)\)$/.exec(reason);
+  if (amountDiffMatch) {
+    const amountDiff = Number(amountDiffMatch[1] ?? 0);
+    return {
+      detail: `La mejor sugerencia difiere en ${currencyFormatter.format(amountDiff)}. El auto-vínculo sólo se permite hasta ${currencyFormatter.format(5000)} de diferencia.`,
+      title: "Monto fuera del rango permitido",
+      tooltipLabel: "Monto incompatible",
+    };
+  }
+
+  if (reason === "Ambiguo") {
+    return {
+      detail:
+        "Se encontraron varias sugerencias con puntaje similar, por lo que el sistema evitó decidir automáticamente.",
+      title: "Hay más de un DTE plausible",
+      tooltipLabel: "Caso ambiguo",
+    };
+  }
+
+  if (reason === "Sin candidatos") {
+    return {
+      detail:
+        "No apareció ninguna boleta o factura con coincidencia suficiente en nombre, RUT o contexto del evento.",
+      title: "No se encontró un DTE compatible",
+      tooltipLabel: "Sin coincidencias",
+    };
+  }
+
+  return {
+    detail: reason,
+    title: "Auto-vínculo omitido",
+    tooltipLabel: "Auto-link revisado",
+  };
+}
+
 export function CalendarDteLinksOverview({
   onSearchChange,
   search,
@@ -538,6 +588,9 @@ export function CalendarDteLinksOverview({
                     ? item.linkedTotalAmount
                     : (item.topSuggestion?.totalAmount ?? null);
                   const currentHint = amountHint(item);
+                  const autoLinkSkipReason = item.lastAutoLinkSkip
+                    ? describeAutoLinkSkipReason(item.lastAutoLinkSkip.reason)
+                    : null;
                   const localDiff =
                     currentHint != null && displayAmount != null
                       ? Math.abs(currentHint - displayAmount)
@@ -636,8 +689,11 @@ export function CalendarDteLinksOverview({
                                   Último auto-vínculo omitido
                                 </p>
                                 <p className="text-sm font-medium text-foreground">
-                                  {item.lastAutoLinkSkip.reason}
+                                  {autoLinkSkipReason?.title ?? item.lastAutoLinkSkip.reason}
                                 </p>
+                                <Description className="text-sm text-default-700">
+                                  {autoLinkSkipReason?.detail ?? item.lastAutoLinkSkip.reason}
+                                </Description>
                                 <Description className="text-xs">
                                   Intentado{" "}
                                   {formatAutoLinkAttempt(item.lastAutoLinkSkip.attemptedAt)}
@@ -646,15 +702,23 @@ export function CalendarDteLinksOverview({
                               <Tooltip delay={0}>
                                 <Tooltip.Trigger aria-label="Detalle del último intento de auto-vinculación">
                                   <Chip color="warning" size="sm" variant="soft">
-                                    Auto-link revisado
+                                    {autoLinkSkipReason?.tooltipLabel ?? "Auto-link revisado"}
                                   </Chip>
                                 </Tooltip.Trigger>
-                                <Tooltip.Content className="max-w-xs" showArrow>
+                                <Tooltip.Content className="max-w-sm" showArrow>
                                   <Tooltip.Arrow />
-                                  <p>
-                                    Último intento:{" "}
-                                    {formatAutoLinkAttempt(item.lastAutoLinkSkip.attemptedAt)}
-                                  </p>
+                                  <div className="space-y-1">
+                                    <p className="font-medium">
+                                      {autoLinkSkipReason?.title ?? item.lastAutoLinkSkip.reason}
+                                    </p>
+                                    <p>
+                                      {autoLinkSkipReason?.detail ?? item.lastAutoLinkSkip.reason}
+                                    </p>
+                                    <p>
+                                      Último intento:{" "}
+                                      {formatAutoLinkAttempt(item.lastAutoLinkSkip.attemptedAt)}
+                                    </p>
+                                  </div>
                                 </Tooltip.Content>
                               </Tooltip>
                             </div>
