@@ -94,4 +94,27 @@ describe("DataTable scroll behavior", () => {
     expect(container.style.overflowY).toBe("");
     expect(container.style.maxHeight).toBe("");
   });
+
+  it("updates rendered rows when the data prop changes", () => {
+    const { rerender } = render(
+      <DataTable columns={columns} data={rows} enableToolbar={false} enableVirtualization={false} />
+    );
+
+    expect(screen.queryByText("Fila 1")).not.toBeNull();
+    expect(screen.queryByText("Fila 5")).not.toBeNull();
+
+    rerender(
+      <DataTable
+        columns={columns}
+        data={rows.slice(0, 2)}
+        enableToolbar={false}
+        enableVirtualization={false}
+      />
+    );
+
+    expect(screen.queryByText("Fila 1")).not.toBeNull();
+    expect(screen.queryByText("Fila 2")).not.toBeNull();
+    expect(screen.queryByText("Fila 3")).toBeNull();
+    expect(screen.queryByText("Fila 5")).toBeNull();
+  });
 });

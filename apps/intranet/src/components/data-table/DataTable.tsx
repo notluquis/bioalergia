@@ -159,6 +159,7 @@ interface DataTableContentProps<TData> {
   readonly scrollMaxHeight?: number | string;
   readonly scrollMode: "auto" | "container" | "page";
   readonly virtualizationMaxHeight: number | string;
+  readonly collectionKey: string;
 }
 
 function DataTableContent<TData>({
@@ -176,6 +177,7 @@ function DataTableContent<TData>({
   sorting,
   table,
   virtualizationMaxHeight,
+  collectionKey,
 }: DataTableContentProps<TData>) {
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const rows = table.getRowModel().rows;
@@ -212,7 +214,7 @@ function DataTableContent<TData>({
         </Table.Row>
       ))}
     </Table.Body>
-  ) : enableVirtualization ? (
+  ) : enableVirtualization || !renderSubComponent ? (
     <Table.Body
       items={rows}
       renderEmptyState={() => (
@@ -299,6 +301,7 @@ function DataTableContent<TData>({
               autoFitColumns ? "min-w-full" : "min-w-max",
               enableVirtualization && "overflow-auto"
             )}
+            key={collectionKey}
             sortDescriptor={sortDescriptor}
             style={
               enableVirtualization
@@ -421,6 +424,15 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
   const shouldVirtualize =
     enableVirtualization && data.length >= virtualizationThreshold && !renderSubComponent;
   const effectiveScrollMode = scrollMode === "auto" && !enablePagination ? "container" : scrollMode;
+  const lastDataRef = useRef(data);
+  const collectionVersionRef = useRef(0);
+
+  if (lastDataRef.current !== data) {
+    lastDataRef.current = data;
+    collectionVersionRef.current += 1;
+  }
+
+  const collectionKey = `table-collection-${collectionVersionRef.current}`;
 
   const table = useReactTable({
     autoResetPageIndex: !manualPagination,
@@ -493,6 +505,7 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
         sorting={sorting}
         table={table}
         virtualizationMaxHeight={virtualizationMaxHeight}
+        collectionKey={collectionKey}
       />
       {enablePagination && (
         <DataTablePagination
