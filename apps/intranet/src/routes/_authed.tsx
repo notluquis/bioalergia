@@ -251,7 +251,7 @@ function AuthedLayout() {
             </div>
           </main>
 
-          <footer className="surface-elevated hidden px-6 py-3 text-foreground text-sm md:flex">
+          <footer className="surface-elevated hidden px-4 py-2 text-foreground text-sm md:flex md:px-6">
             <div className="grid w-full grid-cols-3 items-center gap-2 text-xs">
               <span className="text-default-500">Build: {buildLabel}</span>
               <div className="flex justify-center">

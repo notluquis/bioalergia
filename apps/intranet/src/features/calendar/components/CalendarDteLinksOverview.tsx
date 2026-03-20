@@ -1,4 +1,5 @@
 import {
+  Accordion,
   Alert,
   Button,
   ButtonGroup,
@@ -79,6 +80,14 @@ interface KpiTileProps {
   description?: string;
   title: string;
   value: number | string;
+}
+
+interface EventDayGroup {
+  date: string;
+  items: EventDteOverviewItem[];
+  linkedCount: number;
+  pendingCount: number;
+  unlinkedCount: number;
 }
 
 function getAutoLinkModeConfig(mode: AutoLinkMode): {
@@ -254,6 +263,40 @@ function KpiTile({ description, title, value }: Readonly<KpiTileProps>) {
       </div>
     </Surface>
   );
+}
+
+function formatEventDayLabel(date: string): string {
+  return dayjs(date).locale("es").format("dddd D [de] MMMM");
+}
+
+function groupOverviewItemsByDate(items: EventDteOverviewItem[]): EventDayGroup[] {
+  const grouped = new Map<string, EventDayGroup>();
+
+  items.forEach((item) => {
+    const current =
+      grouped.get(item.eventDate) ??
+      ({
+        date: item.eventDate,
+        items: [],
+        linkedCount: 0,
+        pendingCount: 0,
+        unlinkedCount: 0,
+      } satisfies EventDayGroup);
+
+    current.items.push(item);
+
+    if (item.linkStatus === "linked") {
+      current.linkedCount += 1;
+    } else if (item.linkStatus === "pending_issuance") {
+      current.pendingCount += 1;
+    } else {
+      current.unlinkedCount += 1;
+    }
+
+    grouped.set(item.eventDate, current);
+  });
+
+  return Array.from(grouped.values());
 }
 
 interface SuggestionExplorerProps {
@@ -582,6 +625,7 @@ export function CalendarDteLinksOverview({
   const periodOptions = useMemo(() => buildPeriodOptions(30), []);
   const stats = overviewQuery.data?.stats;
   const items = overviewQuery.data?.items ?? [];
+  const groupedItems = groupOverviewItemsByDate(items);
 
   return (
     <div className="space-y-4">
@@ -837,7 +881,7 @@ export function CalendarDteLinksOverview({
           {!overviewQuery.isLoading && !overviewQuery.isError ? (
             <ScrollShadow className="max-h-[64dvh] p-4" size={80}>
               <div className="space-y-3">
-                {items.length === 0 ? (
+                {groupedItems.length === 0 ? (
                   <Card variant="transparent">
                     <Card.Header>
                       <Card.Title className="text-base">Sin resultados</Card.Title>
@@ -846,232 +890,302 @@ export function CalendarDteLinksOverview({
                   </Card>
                 ) : null}
 
-                {items.map((item) => {
-                  const displayAmount = item.linked
-                    ? item.linkedTotalAmount
-                    : (item.topSuggestion?.totalAmount ?? null);
-                  const currentHint = amountHint(item);
-                  const autoLinkSkipReason = item.lastAutoLinkSkip
-                    ? describeAutoLinkSkipReason(item.lastAutoLinkSkip.reason)
-                    : null;
-                  const localDiff =
-                    currentHint != null && displayAmount != null
-                      ? Math.abs(currentHint - displayAmount)
-                      : (item.topSuggestion?.amountDiff ?? null);
-
-                  return (
-                    <Card
-                      className="gap-3 overflow-hidden"
-                      key={`${item.calendarId}:${item.eventId}`}
-                      variant="secondary"
-                    >
-                      <Card.Header className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                        <div className="min-w-0 space-y-1">
-                          <Card.Title className="line-clamp-2 text-base">
-                            {item.summary ?? "(Sin título)"}
-                          </Card.Title>
-                          <Card.Description>
-                            {dayjs(item.eventDate).format("DD-MM-YYYY")}
-                            {item.eventTime ? ` · ${item.eventTime}` : ""}
-                          </Card.Description>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2 lg:max-w-[45%] lg:justify-end">
-                          <Chip color={linkStatusColor(item.linkStatus)} variant="soft">
-                            {linkStatusLabel(item.linkStatus)}
-                          </Chip>
-                          {item.displayName ? (
-                            <Chip color="default" variant="soft" size="sm">
-                              {item.displayName}
-                            </Chip>
-                          ) : null}
-                          {item.seriesKind ? (
-                            <Chip color="default" size="sm" variant="tertiary">
-                              {seriesKindLabel(item.seriesKind)}
-                            </Chip>
-                          ) : null}
-                          {item.linkStatus !== "pending_issuance" ? (
-                            <Chip
-                              color={scoreColor(
-                                item.linked
-                                  ? item.confidenceScore
-                                  : (item.topSuggestion?.confidenceScore ?? null)
-                              )}
-                              variant="soft"
-                            >
-                              Score{" "}
-                              {scoreLabel(
-                                item.linked
-                                  ? item.confidenceScore
-                                  : (item.topSuggestion?.confidenceScore ?? null)
-                              )}
-                            </Chip>
-                          ) : null}
-                          {item.linked && (item.confidenceScore ?? 0) === 100 ? (
-                            <Chip color="success" variant="soft">
-                              Perfecto 100
-                            </Chip>
-                          ) : null}
-                        </div>
-                      </Card.Header>
-
-                      <Card.Content className="grid grid-cols-2 gap-2 text-sm lg:grid-cols-4">
-                        <Surface className="rounded-xl p-3" variant="secondary">
-                          <p className="text-default-500 text-[11px] uppercase tracking-wide">
-                            Monto evento
-                          </p>
-                          <p className="font-medium leading-tight">
-                            {currencyFormatter.format(currentHint ?? 0)}
-                          </p>
-                        </Surface>
-                        <Surface className="rounded-xl p-3" variant="secondary">
-                          <p className="text-default-500 text-[11px] uppercase tracking-wide">
-                            {item.linked
-                              ? "DTE vinculado"
-                              : item.linkStatus === "pending_issuance"
-                                ? "Estado DTE"
-                                : "Mejor sugerencia"}
-                          </p>
-                          <p className="font-medium leading-tight">
-                            {item.linkStatus === "pending_issuance"
-                              ? "Aún no exigible"
-                              : displayAmount != null
-                                ? currencyFormatter.format(displayAmount)
-                                : "-"}
-                          </p>
-                        </Surface>
-                        <Surface className="rounded-xl p-3" variant="secondary">
-                          <p className="text-default-500 text-[11px] uppercase tracking-wide">
-                            Diferencia
-                          </p>
-                          <p className="font-medium leading-tight">
-                            {item.linkStatus === "pending_issuance"
-                              ? "-"
-                              : localDiff != null
-                                ? currencyFormatter.format(localDiff)
-                                : "-"}
-                          </p>
-                        </Surface>
-                        <Surface className="rounded-xl p-3" variant="secondary">
-                          <p className="text-default-500 text-[11px] uppercase tracking-wide">
-                            Referencia
-                          </p>
-                          <p className="truncate font-medium leading-tight">
-                            {item.linked
-                              ? `Folio ${item.linkedFolio ?? "-"}`
-                              : item.topSuggestion
-                                ? `Folio ${item.topSuggestion.folio}`
-                                : "Sin sugerencia"}
-                          </p>
-                        </Surface>
-                      </Card.Content>
-
-                      {!item.linked && item.lastAutoLinkSkip ? (
-                        <Card.Content className="pt-0">
-                          <Alert status={autoLinkSkipReason?.severity ?? "warning"}>
-                            <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                              <div className="space-y-1">
-                                <p className="text-[11px] font-semibold uppercase tracking-wide">
-                                  Último auto-vínculo omitido
-                                </p>
-                                <p className="text-sm font-medium">
-                                  {autoLinkSkipReason?.title ?? item.lastAutoLinkSkip.reason}
-                                </p>
-                                <Description className="text-sm">
-                                  {autoLinkSkipReason?.detail ?? item.lastAutoLinkSkip.reason}
-                                </Description>
-                                <Description className="text-xs">
-                                  Intentado{" "}
-                                  {formatAutoLinkAttempt(item.lastAutoLinkSkip.attemptedAt)}
-                                </Description>
-                              </div>
-                              <Tooltip delay={0}>
-                                <Tooltip.Trigger aria-label="Detalle del último intento de auto-vinculación">
-                                  <Chip
-                                    color={autoLinkSkipReason?.severity ?? "warning"}
-                                    size="sm"
-                                    variant="soft"
-                                  >
-                                    {autoLinkSkipReason?.tooltipLabel ?? "Auto-link revisado"}
-                                  </Chip>
-                                </Tooltip.Trigger>
-                                <Tooltip.Content className="max-w-sm" showArrow>
-                                  <Tooltip.Arrow />
-                                  <div className="space-y-1">
-                                    <p className="font-medium">
-                                      {autoLinkSkipReason?.title ?? item.lastAutoLinkSkip.reason}
-                                    </p>
-                                    <p>
-                                      {autoLinkSkipReason?.detail ?? item.lastAutoLinkSkip.reason}
-                                    </p>
-                                    <p>
-                                      Último intento:{" "}
-                                      {formatAutoLinkAttempt(item.lastAutoLinkSkip.attemptedAt)}
-                                    </p>
-                                  </div>
-                                </Tooltip.Content>
-                              </Tooltip>
+                {groupedItems.length > 0 ? (
+                  <Accordion
+                    allowsMultipleExpanded
+                    className="space-y-3"
+                    hideSeparator
+                    variant="surface"
+                  >
+                    {groupedItems.map((group, groupIndex) => (
+                      <Accordion.Item
+                        className="overflow-hidden rounded-2xl border border-default-200/70 bg-default-50/40"
+                        defaultExpanded={groupIndex === 0}
+                        id={group.date}
+                        key={group.date}
+                      >
+                        <Accordion.Heading>
+                          <Accordion.Trigger className="flex w-full flex-wrap items-center gap-3 px-4 py-3 text-left hover:bg-default-100/60 data-[hover=true]:bg-default-100/60">
+                            <div className="min-w-0 flex-1">
+                              <p className="font-semibold text-sm">
+                                {formatEventDayLabel(group.date)}
+                              </p>
+                              <Description className="text-xs">
+                                {dayjs(group.date).format("DD-MM-YYYY")} · {group.items.length}{" "}
+                                eventos
+                              </Description>
                             </div>
-                          </Alert>
-                        </Card.Content>
-                      ) : null}
+                            <div className="flex flex-wrap items-center gap-2">
+                              {group.unlinkedCount > 0 ? (
+                                <Chip color="warning" size="sm" variant="soft">
+                                  {group.unlinkedCount} no vinculados
+                                </Chip>
+                              ) : null}
+                              {group.linkedCount > 0 ? (
+                                <Chip color="success" size="sm" variant="soft">
+                                  {group.linkedCount} vinculados
+                                </Chip>
+                              ) : null}
+                              {group.pendingCount > 0 ? (
+                                <Chip color="default" size="sm" variant="soft">
+                                  {group.pendingCount} pendientes
+                                </Chip>
+                              ) : null}
+                              <Accordion.Indicator className="text-default-400" />
+                            </div>
+                          </Accordion.Trigger>
+                        </Accordion.Heading>
+                        <Accordion.Panel className="pb-0">
+                          <Accordion.Body className="border-default-200/70 border-t px-3 py-3 sm:px-4">
+                            <div className="space-y-3">
+                              {group.items.map((item) => {
+                                const displayAmount = item.linked
+                                  ? item.linkedTotalAmount
+                                  : (item.topSuggestion?.totalAmount ?? null);
+                                const currentHint = amountHint(item);
+                                const autoLinkSkipReason = item.lastAutoLinkSkip
+                                  ? describeAutoLinkSkipReason(item.lastAutoLinkSkip.reason)
+                                  : null;
+                                const localDiff =
+                                  currentHint != null && displayAmount != null
+                                    ? Math.abs(currentHint - displayAmount)
+                                    : (item.topSuggestion?.amountDiff ?? null);
 
-                      {!item.linked ? (
-                        <Card.Content className="pt-0">
-                          <SuggestionExplorer
-                            confirmPending={confirmMutation.isPending}
-                            item={item}
-                            onConfirm={(candidate) => confirmMutation.mutate({ item, candidate })}
-                          />
-                        </Card.Content>
-                      ) : null}
+                                return (
+                                  <Card
+                                    className="gap-3 overflow-hidden"
+                                    key={`${item.calendarId}:${item.eventId}`}
+                                    variant="secondary"
+                                  >
+                                    <Card.Header className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                                      <div className="min-w-0 space-y-1">
+                                        <Card.Title className="line-clamp-2 text-base">
+                                          {item.summary ?? "(Sin título)"}
+                                        </Card.Title>
+                                        <Card.Description>
+                                          {dayjs(item.eventDate).format("DD-MM-YYYY")}
+                                          {item.eventTime ? ` · ${item.eventTime}` : ""}
+                                        </Card.Description>
+                                      </div>
+                                      <div className="flex flex-wrap items-center gap-2 lg:max-w-[45%] lg:justify-end">
+                                        <Chip
+                                          color={linkStatusColor(item.linkStatus)}
+                                          variant="soft"
+                                        >
+                                          {linkStatusLabel(item.linkStatus)}
+                                        </Chip>
+                                        {item.displayName ? (
+                                          <Chip color="default" size="sm" variant="soft">
+                                            {item.displayName}
+                                          </Chip>
+                                        ) : null}
+                                        {item.seriesKind ? (
+                                          <Chip color="default" size="sm" variant="tertiary">
+                                            {seriesKindLabel(item.seriesKind)}
+                                          </Chip>
+                                        ) : null}
+                                        {item.linkStatus !== "pending_issuance" ? (
+                                          <Chip
+                                            color={scoreColor(
+                                              item.linked
+                                                ? item.confidenceScore
+                                                : (item.topSuggestion?.confidenceScore ?? null)
+                                            )}
+                                            variant="soft"
+                                          >
+                                            Score{" "}
+                                            {scoreLabel(
+                                              item.linked
+                                                ? item.confidenceScore
+                                                : (item.topSuggestion?.confidenceScore ?? null)
+                                            )}
+                                          </Chip>
+                                        ) : null}
+                                        {item.linked && (item.confidenceScore ?? 0) === 100 ? (
+                                          <Chip color="success" variant="soft">
+                                            Perfecto 100
+                                          </Chip>
+                                        ) : null}
+                                      </div>
+                                    </Card.Header>
 
-                      <Card.Footer className="flex flex-col gap-3 border-default-200/70 border-t pt-4 lg:flex-row lg:items-center lg:justify-between">
-                        <Description className="min-w-0">
-                          {item.linked
-                            ? `${item.linkedClientName ?? "-"} · ${item.linkedClientRUT ?? "-"} · Folio ${item.linkedFolio ?? "-"}`
-                            : item.linkStatus === "pending_issuance"
-                              ? "Evento en fecha futura: se revisa vínculo cuando llegue el día de emisión."
-                              : item.topSuggestion
-                                ? `${item.topSuggestion.clientName} · ${item.topSuggestion.clientRUT} · Folio ${item.topSuggestion.folio}`
-                                : "Sin sugerencias para este evento"}
-                        </Description>
-                        <div className="flex w-full gap-2 lg:w-auto">
-                          {item.linked ? (
-                            <Button
-                              className="w-full lg:w-auto"
-                              isPending={unlinkMutation.isPending}
-                              size="sm"
-                              variant="danger"
-                              onPress={() => unlinkMutation.mutate(item)}
-                            >
-                              Desvincular
-                            </Button>
-                          ) : (
-                            <Button
-                              className="w-full lg:w-auto"
-                              isDisabled={
-                                !item.topSuggestion || item.linkStatus === "pending_issuance"
-                              }
-                              isPending={confirmMutation.isPending}
-                              size="sm"
-                              variant="primary"
-                              onPress={() =>
-                                item.topSuggestion
-                                  ? confirmMutation.mutate({
-                                      item,
-                                      candidate: item.topSuggestion,
-                                    })
-                                  : undefined
-                              }
-                            >
-                              Vincular sugerencia
-                            </Button>
-                          )}
-                        </div>
-                      </Card.Footer>
-                    </Card>
-                  );
-                })}
+                                    <Card.Content className="grid grid-cols-2 gap-2 text-sm lg:grid-cols-4">
+                                      <Surface className="rounded-xl p-3" variant="secondary">
+                                        <p className="text-default-500 text-[11px] uppercase tracking-wide">
+                                          Monto evento
+                                        </p>
+                                        <p className="font-medium leading-tight">
+                                          {currencyFormatter.format(currentHint ?? 0)}
+                                        </p>
+                                      </Surface>
+                                      <Surface className="rounded-xl p-3" variant="secondary">
+                                        <p className="text-default-500 text-[11px] uppercase tracking-wide">
+                                          {item.linked
+                                            ? "DTE vinculado"
+                                            : item.linkStatus === "pending_issuance"
+                                              ? "Estado DTE"
+                                              : "Mejor sugerencia"}
+                                        </p>
+                                        <p className="font-medium leading-tight">
+                                          {item.linkStatus === "pending_issuance"
+                                            ? "Aún no exigible"
+                                            : displayAmount != null
+                                              ? currencyFormatter.format(displayAmount)
+                                              : "-"}
+                                        </p>
+                                      </Surface>
+                                      <Surface className="rounded-xl p-3" variant="secondary">
+                                        <p className="text-default-500 text-[11px] uppercase tracking-wide">
+                                          Diferencia
+                                        </p>
+                                        <p className="font-medium leading-tight">
+                                          {item.linkStatus === "pending_issuance"
+                                            ? "-"
+                                            : localDiff != null
+                                              ? currencyFormatter.format(localDiff)
+                                              : "-"}
+                                        </p>
+                                      </Surface>
+                                      <Surface className="rounded-xl p-3" variant="secondary">
+                                        <p className="text-default-500 text-[11px] uppercase tracking-wide">
+                                          Referencia
+                                        </p>
+                                        <p className="truncate font-medium leading-tight">
+                                          {item.linked
+                                            ? `Folio ${item.linkedFolio ?? "-"}`
+                                            : item.topSuggestion
+                                              ? `Folio ${item.topSuggestion.folio}`
+                                              : "Sin sugerencia"}
+                                        </p>
+                                      </Surface>
+                                    </Card.Content>
+
+                                    {!item.linked && item.lastAutoLinkSkip ? (
+                                      <Card.Content className="pt-0">
+                                        <Alert status={autoLinkSkipReason?.severity ?? "warning"}>
+                                          <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                            <div className="space-y-1">
+                                              <p className="text-[11px] font-semibold uppercase tracking-wide">
+                                                Último auto-vínculo omitido
+                                              </p>
+                                              <p className="text-sm font-medium">
+                                                {autoLinkSkipReason?.title ??
+                                                  item.lastAutoLinkSkip.reason}
+                                              </p>
+                                              <Description className="text-sm">
+                                                {autoLinkSkipReason?.detail ??
+                                                  item.lastAutoLinkSkip.reason}
+                                              </Description>
+                                              <Description className="text-xs">
+                                                Intentado{" "}
+                                                {formatAutoLinkAttempt(
+                                                  item.lastAutoLinkSkip.attemptedAt
+                                                )}
+                                              </Description>
+                                            </div>
+                                            <Tooltip delay={0}>
+                                              <Tooltip.Trigger aria-label="Detalle del último intento de auto-vinculación">
+                                                <Chip
+                                                  color={autoLinkSkipReason?.severity ?? "warning"}
+                                                  size="sm"
+                                                  variant="soft"
+                                                >
+                                                  {autoLinkSkipReason?.tooltipLabel ??
+                                                    "Auto-link revisado"}
+                                                </Chip>
+                                              </Tooltip.Trigger>
+                                              <Tooltip.Content className="max-w-sm" showArrow>
+                                                <Tooltip.Arrow />
+                                                <div className="space-y-1">
+                                                  <p className="font-medium">
+                                                    {autoLinkSkipReason?.title ??
+                                                      item.lastAutoLinkSkip.reason}
+                                                  </p>
+                                                  <p>
+                                                    {autoLinkSkipReason?.detail ??
+                                                      item.lastAutoLinkSkip.reason}
+                                                  </p>
+                                                  <p>
+                                                    Último intento:{" "}
+                                                    {formatAutoLinkAttempt(
+                                                      item.lastAutoLinkSkip.attemptedAt
+                                                    )}
+                                                  </p>
+                                                </div>
+                                              </Tooltip.Content>
+                                            </Tooltip>
+                                          </div>
+                                        </Alert>
+                                      </Card.Content>
+                                    ) : null}
+
+                                    {!item.linked ? (
+                                      <Card.Content className="pt-0">
+                                        <SuggestionExplorer
+                                          confirmPending={confirmMutation.isPending}
+                                          item={item}
+                                          onConfirm={(candidate) =>
+                                            confirmMutation.mutate({ item, candidate })
+                                          }
+                                        />
+                                      </Card.Content>
+                                    ) : null}
+
+                                    <Card.Footer className="flex flex-col gap-3 border-default-200/70 border-t pt-4 lg:flex-row lg:items-center lg:justify-between">
+                                      <Description className="min-w-0">
+                                        {item.linked
+                                          ? `${item.linkedClientName ?? "-"} · ${item.linkedClientRUT ?? "-"} · Folio ${item.linkedFolio ?? "-"}`
+                                          : item.linkStatus === "pending_issuance"
+                                            ? "Evento en fecha futura: se revisa vínculo cuando llegue el día de emisión."
+                                            : item.topSuggestion
+                                              ? `${item.topSuggestion.clientName} · ${item.topSuggestion.clientRUT} · Folio ${item.topSuggestion.folio}`
+                                              : "Sin sugerencias para este evento"}
+                                      </Description>
+                                      <div className="flex w-full gap-2 lg:w-auto">
+                                        {item.linked ? (
+                                          <Button
+                                            className="w-full lg:w-auto"
+                                            isPending={unlinkMutation.isPending}
+                                            size="sm"
+                                            variant="danger"
+                                            onPress={() => unlinkMutation.mutate(item)}
+                                          >
+                                            Desvincular
+                                          </Button>
+                                        ) : (
+                                          <Button
+                                            className="w-full lg:w-auto"
+                                            isDisabled={
+                                              !item.topSuggestion ||
+                                              item.linkStatus === "pending_issuance"
+                                            }
+                                            isPending={confirmMutation.isPending}
+                                            size="sm"
+                                            variant="primary"
+                                            onPress={() =>
+                                              item.topSuggestion
+                                                ? confirmMutation.mutate({
+                                                    item,
+                                                    candidate: item.topSuggestion,
+                                                  })
+                                                : undefined
+                                            }
+                                          >
+                                            Vincular sugerencia
+                                          </Button>
+                                        )}
+                                      </div>
+                                    </Card.Footer>
+                                  </Card>
+                                );
+                              })}
+                            </div>
+                          </Accordion.Body>
+                        </Accordion.Panel>
+                      </Accordion.Item>
+                    ))}
+                  </Accordion>
+                ) : null}
               </div>
             </ScrollShadow>
           ) : null}
