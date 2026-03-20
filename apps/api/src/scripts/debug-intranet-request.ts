@@ -1,3 +1,8 @@
+import { readFile } from "node:fs/promises";
+import { ScureBase32Plugin } from "@otplib/plugin-base32-scure";
+import { NodeCryptoPlugin } from "@otplib/plugin-crypto-node";
+import { OTP } from "otplib";
+
 type HttpMethod = "DELETE" | "GET" | "PATCH" | "POST" | "PUT";
 type DebugScope = {
   action: string;
@@ -26,11 +31,17 @@ function printHelp() {
   pnpm --filter @finanzas/api debug:mp-download -- --target-user-id 5 --file-name 2026-03-20.csv --report-type release
 
 Required env:
-  DEBUG_SESSION_COOKIE      Full 'finanzas_session=...' cookie or raw token value
-  DEBUG_SESSION_COOKIE_FILE Path to a local file containing the cookie value
+  One of:
+    DEBUG_LOGIN_EMAIL + DEBUG_LOGIN_PASSWORD
+    DEBUG_SESSION_COOKIE
+    DEBUG_SESSION_COOKIE_FILE
 
 Optional env:
   DEBUG_BASE_URL            Defaults to https://intranet.bioalergia.cl
+  DEBUG_LOGIN_TOTP_TOKEN    MFA code for loginMfa when MFA is enabled
+  DEBUG_LOGIN_TOTP_SECRET   MFA secret used to generate the code automatically
+  DEBUG_LOGIN_TOTP_SECRET_FILE
+                            Path to a local file containing the MFA secret
 
 Options:
   --target-user-id <id>     User to impersonate with the debug token
@@ -150,7 +161,132 @@ function parseArgs(argv: string[]): ParsedArgs {
   return args;
 }
 
-async function loadSessionCookieSource(): Promise<string> {
+const otp = new OTP({
+  base32: new ScureBase32Plugin(),
+  crypto: new NodeCryptoPlugin(),
+});
+
+async function loadTextEnvOrFile(options: {
+  envKey: string;
+  fileEnvKey: string;
+}): Promise<null | string> {
+  const inline = process.env[options.envKey]?.trim();
+  if (inline) {
+    return inline;
+  }
+
+  const filePath = process.env[options.fileEnvKey]?.trim();
+  if (!filePath) {
+    return null;
+  }
+
+  const contents = await readFile(filePath, "utf8");
+  const trimmed = contents.trim();
+  return trimmed || null;
+}
+
+function extractSessionCookie(response: Response): string {
+  const values =
+    typeof response.headers.getSetCookie === "function"
+      ? response.headers.getSetCookie()
+      : [response.headers.get("set-cookie")].filter((value): value is string => Boolean(value));
+
+  for (const value of values) {
+    const match = value.match(/(?:^|,\s*)finanzas_session=([^;]+)/);
+    if (match?.[1]) {
+      return `finanzas_session=${match[1]}`;
+    }
+  }
+
+  throw new Error("No finanzas_session cookie returned by auth endpoint");
+}
+
+async function resolveMfaToken(): Promise<null | string> {
+  const directToken = process.env.DEBUG_LOGIN_TOTP_TOKEN?.trim();
+  if (directToken) {
+    return directToken;
+  }
+
+  const secret = await loadTextEnvOrFile({
+    envKey: "DEBUG_LOGIN_TOTP_SECRET",
+    fileEnvKey: "DEBUG_LOGIN_TOTP_SECRET_FILE",
+  });
+  if (!secret) {
+    return null;
+  }
+
+  return await otp.generate({ secret });
+}
+
+async function loginWithCredentials(baseUrl: string): Promise<string> {
+  const email = process.env.DEBUG_LOGIN_EMAIL?.trim();
+  const password = process.env.DEBUG_LOGIN_PASSWORD?.trim();
+  if (!email || !password) {
+    throw new Error("DEBUG_LOGIN_EMAIL and DEBUG_LOGIN_PASSWORD are required for credential login");
+  }
+
+  const loginResponse = await fetch(`${baseUrl}/api/orpc/auth/rpc/login`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      json: {
+        email,
+        password,
+      },
+    }),
+  });
+
+  const loginBody = await expectJson(loginResponse);
+  if (!loginResponse.ok) {
+    throw new Error(`login failed (${loginResponse.status}): ${JSON.stringify(loginBody)}`);
+  }
+
+  const payload =
+    loginBody && typeof loginBody === "object" && "json" in loginBody ? loginBody.json : loginBody;
+
+  if (!payload || typeof payload !== "object" || !("status" in payload)) {
+    throw new Error(`login returned unexpected payload: ${JSON.stringify(loginBody)}`);
+  }
+
+  if (payload.status === "ok") {
+    return extractSessionCookie(loginResponse);
+  }
+
+  if (payload.status !== "mfa_required" || typeof payload.userId !== "number") {
+    throw new Error(`login returned unexpected auth status: ${JSON.stringify(loginBody)}`);
+  }
+
+  const token = await resolveMfaToken();
+  if (!token) {
+    throw new Error(
+      "MFA required. Set DEBUG_LOGIN_TOTP_TOKEN or DEBUG_LOGIN_TOTP_SECRET/DEBUG_LOGIN_TOTP_SECRET_FILE",
+    );
+  }
+
+  const mfaResponse = await fetch(`${baseUrl}/api/orpc/auth/rpc/loginMfa`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      json: {
+        token,
+        userId: payload.userId,
+      },
+    }),
+  });
+
+  const mfaBody = await expectJson(mfaResponse);
+  if (!mfaResponse.ok) {
+    throw new Error(`loginMfa failed (${mfaResponse.status}): ${JSON.stringify(mfaBody)}`);
+  }
+
+  return extractSessionCookie(mfaResponse);
+}
+
+async function loadSessionCookieSource(baseUrl: string): Promise<string> {
   const inline = process.env.DEBUG_SESSION_COOKIE?.trim();
   if (inline) {
     return inline;
@@ -162,7 +298,13 @@ async function loadSessionCookieSource(): Promise<string> {
     return contents.trim();
   }
 
-  throw new Error("DEBUG_SESSION_COOKIE or DEBUG_SESSION_COOKIE_FILE is required");
+  if (process.env.DEBUG_LOGIN_EMAIL?.trim() || process.env.DEBUG_LOGIN_PASSWORD?.trim()) {
+    return loginWithCredentials(baseUrl);
+  }
+
+  throw new Error(
+    "Provide DEBUG_LOGIN_EMAIL + DEBUG_LOGIN_PASSWORD, DEBUG_SESSION_COOKIE, or DEBUG_SESSION_COOKIE_FILE",
+  );
 }
 
 function normalizeSessionCookie(rawValue: string): string {
@@ -320,7 +462,7 @@ async function main() {
     throw new Error("--expires-in must be between 1 and 15 minutes");
   }
 
-  const sessionCookie = normalizeSessionCookie(await loadSessionCookieSource());
+  const sessionCookie = normalizeSessionCookie(await loadSessionCookieSource(args.baseUrl));
   const scopes = parseScopes(args.scopeArgs);
   const debugToken = await issueDebugToken({
     baseUrl: args.baseUrl,
@@ -383,4 +525,3 @@ main().catch((error) => {
   console.error(error instanceof Error ? error.message : String(error));
   process.exitCode = 1;
 });
-import { readFile } from "node:fs/promises";

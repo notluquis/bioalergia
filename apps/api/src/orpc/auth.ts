@@ -219,7 +219,12 @@ const debugTokenAdmin = base.use(async ({ context, next }) => {
     authError("UNAUTHORIZED", "No autorizado");
   }
 
-  const canIssue = await hasPermission(session, "update", "User");
+  // Golden-standard permission model:
+  // issuing debug tokens should be gated by its own virtual subject instead of broad user mutation.
+  // Keep update:User as a transitional fallback for existing admins until roles are migrated.
+  const canIssue =
+    (await hasPermission(session, "create", "DebugToken")) ||
+    (await hasPermission(session, "update", "User"));
   if (!canIssue) {
     authError("FORBIDDEN", "Forbidden");
   }

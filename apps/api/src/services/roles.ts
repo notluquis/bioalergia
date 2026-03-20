@@ -251,6 +251,7 @@ export async function syncPermissions() {
     "Backup",
     "BulkData",
     "Integration",
+    "DebugToken",
     "CalendarSetting",
     "InventorySetting",
     "CalendarSchedule",
