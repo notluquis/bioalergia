@@ -27,6 +27,7 @@ function printHelp() {
 
 Required env:
   DEBUG_SESSION_COOKIE      Full 'finanzas_session=...' cookie or raw token value
+  DEBUG_SESSION_COOKIE_FILE Path to a local file containing the cookie value
 
 Optional env:
   DEBUG_BASE_URL            Defaults to https://intranet.bioalergia.cl
@@ -149,10 +150,25 @@ function parseArgs(argv: string[]): ParsedArgs {
   return args;
 }
 
+async function loadSessionCookieSource(): Promise<string> {
+  const inline = process.env.DEBUG_SESSION_COOKIE?.trim();
+  if (inline) {
+    return inline;
+  }
+
+  const filePath = process.env.DEBUG_SESSION_COOKIE_FILE?.trim();
+  if (filePath) {
+    const contents = await readFile(filePath, "utf8");
+    return contents.trim();
+  }
+
+  throw new Error("DEBUG_SESSION_COOKIE or DEBUG_SESSION_COOKIE_FILE is required");
+}
+
 function normalizeSessionCookie(rawValue: string): string {
   const trimmed = rawValue.trim();
   if (!trimmed) {
-    throw new Error("DEBUG_SESSION_COOKIE is required");
+    throw new Error("Debug session cookie source is empty");
   }
 
   if (trimmed.startsWith("finanzas_session=")) {
@@ -304,7 +320,7 @@ async function main() {
     throw new Error("--expires-in must be between 1 and 15 minutes");
   }
 
-  const sessionCookie = normalizeSessionCookie(process.env.DEBUG_SESSION_COOKIE || "");
+  const sessionCookie = normalizeSessionCookie(await loadSessionCookieSource());
   const scopes = parseScopes(args.scopeArgs);
   const debugToken = await issueDebugToken({
     baseUrl: args.baseUrl,
@@ -367,3 +383,4 @@ main().catch((error) => {
   console.error(error instanceof Error ? error.message : String(error));
   process.exitCode = 1;
 });
+import { readFile } from "node:fs/promises";
