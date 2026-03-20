@@ -8,7 +8,7 @@ WORKDIR /app
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 COPY . .
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN npm install -g pnpm
 RUN TURBO_TELEMETRY_DISABLED=1 npx turbo@^2 prune @finanzas/intranet --docker
 
 # ==========================================================================
@@ -24,8 +24,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     && rm -rf /var/lib/apt/lists/*
 
-RUN corepack enable && \
-    corepack prepare pnpm@latest --activate
+RUN npm install -g pnpm
 
 COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
