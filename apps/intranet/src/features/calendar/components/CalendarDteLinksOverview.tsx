@@ -535,13 +535,6 @@ export function CalendarDteLinksOverview({
         variant="secondary"
       >
         <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_220px_minmax(320px,1fr)_auto] xl:items-end">
-          <div className="space-y-1 xl:pr-4">
-            <Card.Title>Vínculos Evento ↔ DTE</Card.Title>
-            <Card.Description className="max-w-2xl">
-              Prioriza revisión manual en casos ambiguos o con diferencia de monto. Los eventos
-              futuros siguen como pendientes de emisión.
-            </Card.Description>
-          </div>
           <Select
             className="w-full"
             value={search.period}
@@ -793,7 +786,7 @@ export function CalendarDteLinksOverview({
                             {item.summary ?? "(Sin título)"}
                           </Card.Title>
                           <Card.Description>
-                            {dayjs(item.eventDate).format("DD-MM-YYYY")} · {item.eventId}
+                            {dayjs(item.eventDate).format("DD-MM-YYYY")}
                           </Card.Description>
                         </div>
                         <div className="flex flex-wrap items-center gap-2 lg:max-w-[45%] lg:justify-end">

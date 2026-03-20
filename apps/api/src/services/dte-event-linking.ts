@@ -417,6 +417,18 @@ function isAmbiguous(top: EventDteSuggestion, second: EventDteSuggestion | undef
   );
 }
 
+function hasExactRutSignal(candidate: EventDteSuggestion): boolean {
+  return candidate.reasons.some((reason) => reason.includes("RUT exacto"));
+}
+
+function shouldTreatAsAmbiguous(
+  top: EventDteSuggestion,
+  second: EventDteSuggestion | undefined,
+): boolean {
+  if (hasExactRutSignal(top)) return false;
+  return isAmbiguous(top, second);
+}
+
 async function getEventByExternalIds(
   calendarGoogleId: string,
   externalEventId: string,
@@ -606,7 +618,7 @@ export async function getEventDteSuggestions(params: {
     .sort((a, b) => b.confidenceScore - a.confidenceScore)
     .slice(0, params.limit ?? 15);
 
-  if (suggestions.length > 1 && isAmbiguous(suggestions[0], suggestions[1])) {
+  if (suggestions.length > 1 && shouldTreatAsAmbiguous(suggestions[0], suggestions[1])) {
     suggestions = suggestions.map((candidate, idx) => {
       if (idx <= 1) {
         return {
@@ -1121,6 +1133,7 @@ export async function autoLinkEventDate(params: {
       calendarId: event.googleCalendarId,
       eventId: event.externalEventId,
       limit: 3,
+      sameDayOnly: true,
     });
     const top = suggestionsResponse.suggestions[0];
     const second = suggestionsResponse.suggestions[1];
@@ -1182,7 +1195,7 @@ export async function autoLinkEventDate(params: {
     }
 
     const isPerfectScore = top.confidenceScore === 100;
-    if (!isPerfectScore && isAmbiguous(top, second)) {
+    if (!isPerfectScore && shouldTreatAsAmbiguous(top, second)) {
       skipped += 1;
       const reason = "Ambiguo";
       await recordAutoLinkAttempt({
