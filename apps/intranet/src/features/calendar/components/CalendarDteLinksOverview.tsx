@@ -413,7 +413,7 @@ function BundleSuggestionCard({
           </Card.Description>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Chip color="secondary" size="sm" variant="soft">
+          <Chip color="accent" size="sm" variant="soft">
             Sugerencia compuesta · {bundle.count} DTE
           </Chip>
           <Chip color={scoreColor(bundle.confidenceScore)} size="sm" variant="soft">
@@ -1142,12 +1142,12 @@ export function CalendarDteLinksOverview({
                                           </Chip>
                                         ) : null}
                                         {!item.linked && item.topBundleSuggestion ? (
-                                          <Chip color="secondary" size="sm" variant="soft">
+                                          <Chip color="accent" size="sm" variant="soft">
                                             Bundle · {item.topBundleSuggestion.count} DTE
                                           </Chip>
                                         ) : null}
                                         {item.linked && item.linkedDocuments.length > 1 ? (
-                                          <Chip color="secondary" size="sm" variant="soft">
+                                          <Chip color="accent" size="sm" variant="soft">
                                             {item.linkedDocuments.length} DTE vinculadas
                                           </Chip>
                                         ) : null}
