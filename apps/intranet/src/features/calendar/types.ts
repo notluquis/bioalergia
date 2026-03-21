@@ -238,11 +238,19 @@ export interface EventDteCandidateSetSummary {
   sameDayCount: number;
 }
 
+export interface EventDteCrossSeriesConflict {
+  patientName: null | string;
+  patientRut: null | string;
+  seriesId: number;
+  status: "ACTIVE" | "CANCELLED" | "COMPLETED";
+}
+
 export interface EventDteMatchHypothesis {
   amountDiff: null | number;
   autoLinkEligible: boolean;
   clientName: string;
   clientRUT: string;
+  crossSeriesConflicts: EventDteCrossSeriesConflict[];
   documentDate: string;
   documents: EventDteSuggestion[];
   dteSaleDetailIds: string[];

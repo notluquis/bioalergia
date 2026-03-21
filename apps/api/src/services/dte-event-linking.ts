@@ -132,6 +132,7 @@ export interface MatchHypothesis {
   autoLinkEligible: boolean;
   clientName: string;
   clientRUT: string;
+  crossSeriesConflicts: CrossSeriesConflict[];
   documentDate: string;
   documents: EventDteSuggestion[];
   dteSaleDetailIds: string[];
@@ -202,6 +203,15 @@ interface SameKindRutConflictRow {
   status: "ACTIVE" | "CANCELLED" | "COMPLETED";
 }
 
+export interface CrossSeriesConflict {
+  patientName: null | string;
+  patientRut: null | string;
+  seriesId: number;
+  status: "ACTIVE" | "CANCELLED" | "COMPLETED";
+}
+
+type CrossSeriesConflictInfo = { conflicts: CrossSeriesConflict[]; message: string };
+
 interface EventRow {
   amountExpected: null | number;
   amountPaid: null | number;
@@ -240,6 +250,7 @@ interface DteSaleRow {
 interface CandidateAnalysis {
   amountDiff: null | number;
   candidate: DteSaleRow;
+  crossSeriesConflicts: CrossSeriesConflict[];
   document: EventDteSuggestion;
   exactRutMatch: boolean;
   fuzzyNameScore: number;
@@ -667,7 +678,7 @@ async function getSameKindRutConflictWarnings(params: {
   const normalizedCandidateRuts = [
     ...new Set(params.candidateRuts.map((rut) => normalizeRut(rut) || rut).filter(Boolean)),
   ];
-  if (normalizedCandidateRuts.length === 0) return new Map<string, string>();
+  if (normalizedCandidateRuts.length === 0) return new Map<string, CrossSeriesConflictInfo>();
 
   const rows = await db.$queryRaw<SameKindRutConflictRow[]>`
     SELECT DISTINCT ON (s.client_rut, cs.id)
@@ -705,7 +716,7 @@ async function getSameKindRutConflictWarnings(params: {
     byRut.set(normalizedRut, current);
   }
 
-  const warnings = new Map<string, string>();
+  const warnings = new Map<string, CrossSeriesConflictInfo>();
   for (const [rut, conflicts] of byRut) {
     if (conflicts.length === 0) continue;
     const examples = conflicts
@@ -713,10 +724,15 @@ async function getSameKindRutConflictWarnings(params: {
       .map((conflict) => conflict.patientName ?? conflict.patientRut ?? `Serie #${conflict.seriesId}`);
     const countLabel = conflicts.length === 1 ? "otra serie" : `${conflicts.length} otras series`;
     const examplesLabel = examples.length > 0 ? ` Ejemplos: ${examples.join(" · ")}.` : "";
-    warnings.set(
-      rut,
-      `${CROSS_SERIES_WARNING_PREFIX} este RUT ya aparece vinculado en ${countLabel} de ${clinicalSeriesKindLabel(params.seriesKind)} con otro paciente.${examplesLabel}`,
-    );
+    warnings.set(rut, {
+      conflicts: conflicts.map((c) => ({
+        patientName: c.patientName,
+        patientRut: c.patientRut,
+        seriesId: c.seriesId,
+        status: c.status,
+      })),
+      message: `${CROSS_SERIES_WARNING_PREFIX} este RUT ya aparece vinculado en ${countLabel} de ${clinicalSeriesKindLabel(params.seriesKind)} con otro paciente.${examplesLabel}`,
+    });
   }
 
   return warnings;
@@ -757,7 +773,7 @@ export function scoreCandidate(params: {
 function analyzeCandidate(params: {
   amountHint: null | number;
   candidate: DteSaleRow;
-  crossSeriesWarningByRut?: Map<string, string>;
+  crossSeriesWarningByRut?: Map<string, CrossSeriesConflictInfo>;
   nameClaims: string[];
   rutClaims: string[];
   seriesLinkedRuts: string[];
@@ -891,12 +907,12 @@ function analyzeCandidate(params: {
     signals.push(toSignal("document_free", "DTE libre", 0));
   }
 
-  const crossSeriesWarning = params.crossSeriesWarningByRut?.get(candidateRut);
-  if (crossSeriesWarning) {
+  const crossSeriesInfo = params.crossSeriesWarningByRut?.get(candidateRut);
+  if (crossSeriesInfo) {
     signals.push(
       toSignal("cross_series_same_rut_warning", "RUT presente en otra serie del mismo tipo", 0),
     );
-    reasons.push(crossSeriesWarning);
+    reasons.push(crossSeriesInfo.message);
   }
 
   const confidenceScore = Math.max(0, Math.min(100, score));
@@ -904,6 +920,7 @@ function analyzeCandidate(params: {
   return {
     amountDiff,
     candidate: params.candidate,
+    crossSeriesConflicts: crossSeriesInfo?.conflicts ?? [],
     document: {
       clientName: params.candidate.clientName,
       clientRUT: params.candidate.clientRUT,
@@ -943,6 +960,7 @@ function buildSingleHypothesis(analysis: CandidateAnalysis, claims: EventIdentit
     autoLinkEligible,
     clientName: analysis.document.clientName,
     clientRUT: analysis.document.clientRUT,
+    crossSeriesConflicts: analysis.crossSeriesConflicts,
     documentDate: analysis.document.documentDate,
     documents: [analysis.document],
     dteSaleDetailIds: [analysis.document.dteSaleDetailId],
@@ -1059,6 +1077,7 @@ function buildBundleHypotheses(params: {
           autoLinkEligible: score >= MIN_AUTO_LINK_SCORE,
           clientName: sorted[0]!.document.clientName,
           clientRUT: sorted[0]!.document.clientRUT,
+          crossSeriesConflicts: [...new Map(sorted.flatMap((a) => a.crossSeriesConflicts).map((c) => [c.seriesId, c])).values()],
           documentDate: sorted[0]!.document.documentDate,
           documents: sorted.map((analysis) => analysis.document),
           dteSaleDetailIds,
@@ -1294,7 +1313,7 @@ async function retrieveDteCandidates(params: {
 function buildHypotheses(params: {
   claims: EventIdentityClaims;
   candidates: DteSaleRow[];
-  crossSeriesWarningByRut?: Map<string, string>;
+  crossSeriesWarningByRut?: Map<string, CrossSeriesConflictInfo>;
   fallbackLimit: number;
   limit: number;
 }): {
@@ -1436,7 +1455,7 @@ export async function getEventDteSuggestions(params: {
           seriesId: series.id,
           seriesKind: series.kind,
         })
-      : new Map<string, string>();
+      : new Map<string, CrossSeriesConflictInfo>();
 
   const { candidateSetSummary, fallbackCandidates, hypotheses } = buildHypotheses({
     claims,

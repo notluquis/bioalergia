@@ -112,11 +112,19 @@ export const dteEventLinksCandidateSetSummarySchema = z.object({
   sameDayCount: z.number().int().min(0),
 });
 
+export const dteEventLinksCrossSeriesConflictSchema = z.object({
+  patientName: z.string().nullable(),
+  patientRut: z.string().nullable(),
+  seriesId: z.number(),
+  status: z.enum(["ACTIVE", "CANCELLED", "COMPLETED"]),
+});
+
 export const dteEventLinksHypothesisSchema = z.object({
   amountDiff: z.number().nullable(),
   autoLinkEligible: z.boolean(),
   clientName: z.string(),
   clientRUT: z.string(),
+  crossSeriesConflicts: z.array(dteEventLinksCrossSeriesConflictSchema),
   documentDate: z.string(),
   documents: z.array(dteEventLinksCandidateDocumentSchema).min(1).max(3),
   dteSaleDetailIds: z.array(z.string()).min(1).max(3),

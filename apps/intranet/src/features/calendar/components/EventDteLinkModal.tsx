@@ -5,6 +5,7 @@ import {
   Description,
   Disclosure,
   Modal,
+  Popover,
   ScrollShadow,
   Surface,
 } from "@heroui/react";
@@ -154,6 +155,7 @@ export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDte
       clientName: hypothesis.clientName,
       clientRUT: hypothesis.clientRUT,
       confidenceScore: hypothesis.score,
+      crossSeriesConflicts: hypothesis.crossSeriesConflicts,
       dteSaleDetailIds: hypothesis.dteSaleDetailIds,
       folioLabel:
         hypothesis.kind === "bundle"
@@ -176,6 +178,7 @@ export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDte
         clientName: candidate.clientName,
         clientRUT: candidate.clientRUT,
         confidenceScore: candidate.confidenceScore,
+        crossSeriesConflicts: [] as EventDteMatchHypothesis["crossSeriesConflicts"],
         dteSaleDetailIds: [candidate.dteSaleDetailId],
         folioLabel: `Folio ${candidate.folio}`,
         key: candidate.dteSaleDetailId,
@@ -528,7 +531,67 @@ export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDte
                                   </Surface>
                                 </div>
                                 {warnings.length > 0 ? (
-                                  <Alert status="warning">{warnings[0]}</Alert>
+                                  <div className="space-y-1.5">
+                                    <Alert status="warning">{warnings[0]}</Alert>
+                                    {candidate.crossSeriesConflicts.length > 0 ? (
+                                      <Popover>
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          className="text-warning text-xs h-auto py-1"
+                                        >
+                                          Ver{" "}
+                                          {candidate.crossSeriesConflicts.length === 1
+                                            ? "serie en conflicto"
+                                            : `${candidate.crossSeriesConflicts.length} series en conflicto`}{" "}
+                                          →
+                                        </Button>
+                                        <Popover.Content placement="bottom start" className="w-72">
+                                          <Popover.Dialog className="p-3 space-y-2">
+                                            <p className="text-xs font-semibold text-foreground-500 uppercase tracking-wide mb-2">
+                                              Series con este RUT vinculado
+                                            </p>
+                                            {candidate.crossSeriesConflicts.map((conflict) => (
+                                              <Surface
+                                                key={conflict.seriesId}
+                                                className="rounded-lg p-2.5 space-y-0.5"
+                                                variant="secondary"
+                                              >
+                                                <p className="text-sm font-medium leading-tight">
+                                                  {conflict.patientName ??
+                                                    conflict.patientRut ??
+                                                    `Serie #${conflict.seriesId}`}
+                                                </p>
+                                                <p className="text-xs text-foreground-400">
+                                                  {conflict.patientRut
+                                                    ? `${conflict.patientRut} · `
+                                                    : ""}
+                                                  Serie #{conflict.seriesId}
+                                                </p>
+                                                <Chip
+                                                  size="sm"
+                                                  variant="tertiary"
+                                                  color={
+                                                    conflict.status === "ACTIVE"
+                                                      ? "success"
+                                                      : conflict.status === "CANCELLED"
+                                                        ? "danger"
+                                                        : "default"
+                                                  }
+                                                >
+                                                  {conflict.status === "ACTIVE"
+                                                    ? "Activa"
+                                                    : conflict.status === "CANCELLED"
+                                                      ? "Cancelada"
+                                                      : "Completada"}
+                                                </Chip>
+                                              </Surface>
+                                            ))}
+                                          </Popover.Dialog>
+                                        </Popover.Content>
+                                      </Popover>
+                                    ) : null}
+                                  </div>
                                 ) : null}
                                 {notes.length > 0 ? (
                                   <div className="flex flex-wrap gap-2">
