@@ -1051,6 +1051,7 @@ export function CalendarDteLinksOverview({
       <Card>
         <Card.Header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <Tabs
+            variant="secondary"
             selectedKey={search.status}
             onSelectionChange={(key) =>
               onSearchChange({ page: 0, status: String(key) as LinkStatusFilter })
@@ -1059,21 +1060,49 @@ export function CalendarDteLinksOverview({
             <Tabs.ListContainer>
               <Tabs.List aria-label="Filtro de estado" className="w-fit">
                 <Tabs.Tab id="all">
-                  Todos (sin pendientes)
+                  <span className="flex items-center gap-1.5 whitespace-nowrap">
+                    Todos
+                    {stats != null && (
+                      <Chip size="sm" variant="soft">
+                        {(stats.totalEvents ?? 0) - (stats.pendingIssuanceEvents ?? 0)}
+                      </Chip>
+                    )}
+                  </span>
                   <Tabs.Indicator />
                 </Tabs.Tab>
                 <Tabs.Tab id="linked">
-                  Vinculados
+                  <span className="flex items-center gap-1.5 whitespace-nowrap">
+                    Vinculados
+                    {stats != null && (
+                      <Chip size="sm" variant="soft" className="text-success">
+                        {stats.linkedEvents ?? 0}
+                      </Chip>
+                    )}
+                  </span>
                   <Tabs.Separator />
                   <Tabs.Indicator />
                 </Tabs.Tab>
                 <Tabs.Tab id="unlinked">
-                  No vinculados (hasta hoy)
+                  <span className="flex items-center gap-1.5 whitespace-nowrap">
+                    No vinculados
+                    {stats != null && (
+                      <Chip size="sm" variant="soft" className="text-warning">
+                        {stats.unlinkedEvents ?? 0}
+                      </Chip>
+                    )}
+                  </span>
                   <Tabs.Separator />
                   <Tabs.Indicator />
                 </Tabs.Tab>
                 <Tabs.Tab id="pending_issuance">
-                  Pendiente emisión
+                  <span className="flex items-center gap-1.5 whitespace-nowrap">
+                    Pendiente emisión
+                    {stats != null && (
+                      <Chip size="sm" variant="soft">
+                        {stats.pendingIssuanceEvents ?? 0}
+                      </Chip>
+                    )}
+                  </span>
                   <Tabs.Separator />
                   <Tabs.Indicator />
                 </Tabs.Tab>
