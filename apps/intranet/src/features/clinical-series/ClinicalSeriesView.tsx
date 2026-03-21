@@ -13,6 +13,7 @@ import {
   Input,
   Label,
   ListBox,
+  Modal,
   Pagination,
   ProgressBar,
   Select,
@@ -312,7 +313,7 @@ export function ClinicalSeriesView() {
   const [mergeModalDuplicate, setMergeModalDuplicate] = useState<ClinicalSeriesDuplicate | null>(
     null
   );
-  const [autoMergeOnRebuild, setAutoMergeOnRebuild] = useState(false);
+  const [rebuildModalOpen, setRebuildModalOpen] = useState(false);
 
   const { data, isLoading, error } = useClinicalSeries(filters);
   const { data: detail, isLoading: isLoadingDetail } = useClinicalSeriesDetail(selectedId ?? 0);
@@ -377,36 +378,20 @@ export function ClinicalSeriesView() {
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
           <p className="text-sm text-foreground-400">
-            {data ? (
+            {data && (
               <>
                 <span className="font-medium text-foreground-600">{data.total}</span> series totales
               </>
-            ) : (
-              "Tratamientos y pruebas alérgicas agrupados"
             )}
           </p>
-          <div className="flex items-center gap-3">
-            <label className="flex items-center gap-1.5 cursor-pointer select-none">
-              <Checkbox
-                aria-label="Deduplicar series al reorganizar"
-                isSelected={autoMergeOnRebuild}
-                onChange={setAutoMergeOnRebuild}
-              >
-                <Checkbox.Control>
-                  <Checkbox.Indicator />
-                </Checkbox.Control>
-              </Checkbox>
-              <span className="text-xs text-foreground-400">Deduplicar</span>
-            </label>
-            <Button
-              isDisabled={rebuildMutation.isPending || rebuildJob?.status === "running"}
-              onPress={() => rebuildMutation.mutateAsync({ autoMerge: autoMergeOnRebuild })}
-              variant="secondary"
-              size="sm"
-            >
-              Reorganizar Series
-            </Button>
-          </div>
+          <Button
+            isDisabled={rebuildMutation.isPending || rebuildJob?.status === "running"}
+            onPress={() => setRebuildModalOpen(true)}
+            variant="secondary"
+            size="sm"
+          >
+            Reorganizar Series
+          </Button>
         </div>
 
         {/* Rebuild progress / result — driven by SSE */}
@@ -1131,6 +1116,15 @@ export function ClinicalSeriesView() {
           onClose={() => setMergeModalDuplicate(null)}
         />
       )}
+
+      <RebuildModal
+        isOpen={rebuildModalOpen}
+        onClose={() => setRebuildModalOpen(false)}
+        onConfirm={(autoMerge) => {
+          setRebuildModalOpen(false);
+          rebuildMutation.mutate({ autoMerge });
+        }}
+      />
     </div>
   );
 }
@@ -1170,5 +1164,68 @@ function MergeModalWithSnapshots({
       onClose={onClose}
       snapshots={snapshots}
     />
+  );
+}
+
+function RebuildModal({
+  isOpen,
+  onClose,
+  onConfirm,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: (autoMerge: boolean) => void;
+}) {
+  const [autoMerge, setAutoMerge] = useState(false);
+
+  return (
+    <Modal>
+      <Modal.Backdrop
+        className="bg-black/40 backdrop-blur-[2px]"
+        isOpen={isOpen}
+        onOpenChange={(open) => {
+          if (!open) onClose();
+        }}
+      >
+        <Modal.Container placement="center">
+          <Modal.Dialog className="relative w-full max-w-sm rounded-[24px] bg-background p-6 shadow-2xl space-y-4">
+            <Modal.Header>
+              <Modal.Heading className="font-bold text-lg">Reorganizar Series</Modal.Heading>
+            </Modal.Header>
+            <Modal.Body className="space-y-3">
+              <p className="text-sm text-foreground-400">
+                Se reasignarán todos los eventos clínicos a sus series correspondientes.
+              </p>
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <Checkbox
+                  aria-label="Deduplicar series duplicadas"
+                  isSelected={autoMerge}
+                  onChange={setAutoMerge}
+                >
+                  <Checkbox.Control>
+                    <Checkbox.Indicator />
+                  </Checkbox.Control>
+                </Checkbox>
+                <span className="text-sm">Fusionar series duplicadas</span>
+              </label>
+              {autoMerge && (
+                <p className="text-xs text-foreground-300 pl-6">
+                  Se detectarán y fusionarán automáticamente series del mismo tipo con el mismo
+                  paciente.
+                </p>
+              )}
+            </Modal.Body>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="ghost" onPress={onClose}>
+                Cancelar
+              </Button>
+              <Button variant="primary" onPress={() => onConfirm(autoMerge)}>
+                Reorganizar
+              </Button>
+            </div>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
+    </Modal>
   );
 }
