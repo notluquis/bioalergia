@@ -49,6 +49,7 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   // Vaccine / product names
   "alxoid",
   "clust",
+  "clusitoid",
   "cluxin",
   "clustek",
   "forte",
@@ -337,10 +338,15 @@ function extractRutAdjacentNames(text: string): string[] {
 
   while ((m = globalRutRegex.exec(text)) !== null) {
     const raw = text.slice(0, m.index).trim();
-    // Strip age annotations like "18 años:", "2 años;" that secretaries
-    // write between the patient name and the RUT. Without this, the digit
-    // breaks the backwards walk before we reach the name.
-    const before = raw.replace(/\b\d{1,3}\s+a[ñn]os?[;:,]?\s*/gi, "").trim();
+    // Strip clinical noise that appears between the name and the RUT:
+    //   - Age annotations: "37 años,", "2 años;"
+    //   - Parenthetical amounts/doses: "(50)", "(100)" — these are sometimes
+    //     glued directly to the following word: "(50)luis" → must become "luis"
+    //     so the backwards walk reaches the actual name token.
+    const before = raw
+      .replace(/\b\d{1,3}\s+a[ñn]os?[;:,]?\s*/gi, "")
+      .replace(/\(\d+\)\s*/g, " ")
+      .trim();
     // Take up to 5 raw tokens ending at the RUT and walk backwards, stopping
     // at the first token that looks like a stopword or non-name token.
     const rawTokens = before.split(/\s+/).slice(-5);
@@ -356,7 +362,12 @@ function extractRutAdjacentNames(text: string): string[] {
       // Strip trailing digits so "martin9" is treated as "martin".
       const stripped = token.replace(/\d+$/, "");
       const n = normalizeName(stripped || token);
-      if (!n || /\d/.test(n) || LOWERCASE_NAME_STOPWORDS.has(n)) break;
+      if (!n || /\d/.test(n)) break;
+      // A single whitespace-token can contain comma-joined words ("alamos,fonasa," →
+      // "alamos fonasa"). Check each word individually so stopwords inside the
+      // token are caught even when the full string isn't in the set.
+      const nWords = n.split(" ").filter(Boolean);
+      if (nWords.some((w) => LOWERCASE_NAME_STOPWORDS.has(w))) break;
       if (n.length < 3 && !PARTICLES.has(n)) break;
       nameTokens.unshift(n);
     }
