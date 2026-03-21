@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 // Extend dayjs with UTC plugin (matching csv-upload.ts & google-calendar-queries.ts)
 dayjs.extend(utc);
 
-// Regex patterns at module level (Biome useTopLevelRegex requirement)
+// Regex patterns at module level
 const HYPHEN_DATE_REGEX_TEST = /^(\d{1,2})-(\d{1,2})-(\d{4})$/;
 const TIME_REGEX_TEST = /^(\d{1,2}):(\d{2})$/;
 

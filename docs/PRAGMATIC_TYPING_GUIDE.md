@@ -231,7 +231,7 @@ data: {
 
 ---
 
-## Biome Ignore Comments - Best Practices
+## Linter Ignore Comments - Best Practices
 
 ### ✅ GOOD
 ```typescript
@@ -335,7 +335,7 @@ When you encounter a situation where `any` seems necessary:
 A: Not when used pragmatically. The validated 90% is still type-safe. The 10% is either library-constrained or runtime-validated.
 
 **Q: How do we prevent `any` from spreading?**
-A: Biome enforcement + code reviews + this guide. Track metrics. Refactor HIGH priority items first.
+A: Linter enforcement + code reviews + this guide. Track metrics. Refactor HIGH priority items first.
 
 **Q: What about unknown edge cases?**
 A: Known library constraints are documented here. New `any` usage goes through decision process above.

@@ -44,7 +44,7 @@
 
 ### 6. Linting: Unused Imports
 **Location**: Various
-**Issue**: Biome is configured (`noUnusedImports: "error"`) but some files might have slipped through or are ignored.
+**Issue**: The linter is configured (`noUnusedImports: "error"`) but some files might have slipped through or are ignored.
 **Action**: Run `pnpm lint:fix` globally.
 
 ## Summary & Next Actions
