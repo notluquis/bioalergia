@@ -562,31 +562,27 @@ async function refreshClinicalSeriesMetadata(seriesId: number) {
     return;
   }
 
-  let patientName = series.patientName;
-  let patientRut = series.patientRut;
-  let beneficiaryName = series.beneficiaryName;
-  let beneficiaryRut = series.beneficiaryRut;
+  // Always re-extract from event text so an improved algorithm overwrites stale
+  // stored values. Fall back to the stored DB value if extraction finds nothing.
+  let patientName: null | string = null;
+  let patientRut: null | string = null;
+  let beneficiaryName: null | string = null;
+  let beneficiaryRut: null | string = null;
 
-  if (!patientName || !patientRut || !beneficiaryName || !beneficiaryRut) {
-    for (const event of series.events) {
-      const hints = extractIdentityHints(event.summary, event.description);
-      if (!patientRut && hints.patientRut) {
-        patientRut = hints.patientRut;
-      }
-      if (!patientName && hints.patientName) {
-        patientName = hints.patientName;
-      }
-      if (!beneficiaryRut && hints.beneficiaryRut) {
-        beneficiaryRut = hints.beneficiaryRut;
-      }
-      if (!beneficiaryName && hints.beneficiaryName) {
-        beneficiaryName = hints.beneficiaryName;
-      }
-      if (patientName && patientRut && beneficiaryName && beneficiaryRut) {
-        break;
-      }
-    }
+  for (const event of series.events) {
+    const hints = extractIdentityHints(event.summary, event.description);
+    if (!patientRut && hints.patientRut) patientRut = hints.patientRut;
+    if (!patientName && hints.patientName) patientName = hints.patientName;
+    if (!beneficiaryRut && hints.beneficiaryRut) beneficiaryRut = hints.beneficiaryRut;
+    if (!beneficiaryName && hints.beneficiaryName) beneficiaryName = hints.beneficiaryName;
+    if (patientName && patientRut && beneficiaryName && beneficiaryRut) break;
   }
+
+  // Fall back to whatever was in the DB if fresh extraction came up empty.
+  patientName ??= series.patientName;
+  patientRut ??= series.patientRut;
+  beneficiaryName ??= series.beneficiaryName;
+  beneficiaryRut ??= series.beneficiaryRut;
 
   if (!beneficiaryRut || !beneficiaryName) {
     const linkedDocuments = await db.$queryRaw<Array<{ clientName: string; clientRUT: string }>>`
@@ -642,11 +638,13 @@ export async function syncClinicalSeriesForInternalEventId(
   }
 
   const inferredIdentity = extractIdentityHints(event.summary, event.description);
+  // Prefer fresh extraction so an improved algorithm overwrites stale stored values.
+  // Fall back to whatever is already in the DB if extraction returns nothing.
   const identity = {
-    beneficiaryName: event.beneficiaryName ?? inferredIdentity.beneficiaryName,
-    beneficiaryRut: event.beneficiaryRut ?? inferredIdentity.beneficiaryRut,
-    patientName: event.patientName ?? inferredIdentity.patientName,
-    patientRut: event.patientRut ?? inferredIdentity.patientRut,
+    beneficiaryName: inferredIdentity.beneficiaryName ?? event.beneficiaryName,
+    beneficiaryRut: inferredIdentity.beneficiaryRut ?? event.beneficiaryRut,
+    patientName: inferredIdentity.patientName ?? event.patientName,
+    patientRut: inferredIdentity.patientRut ?? event.patientRut,
   };
 
   await db.event.update({
