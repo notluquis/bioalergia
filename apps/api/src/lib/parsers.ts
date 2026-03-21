@@ -226,6 +226,7 @@ export const IGNORE_PATTERNS = [
   /^jornada\s+de\s+invierno\b/i,
   /^reservado$/i, // just "reservado" with nothing else
   /\band\b.*\b[a-záéíóúñ]+$/i, // "name and name" pattern
+  /^horario\b/i, // "horario vacunas mañana" — schedule reminders, not patient events
 ];
 
 /** Patterns for attendance confirmation */

@@ -285,12 +285,13 @@ describe("extractPatientHints", () => {
       // Real case: "llego test de parche(60mil), aero I(30): javiera rio: 18 años: 940951267"
       // "18 años:" must be stripped before the backwards walk, otherwise "18"
       // breaks the walk before we reach "javiera rio".
-      const { patientName, patientRut } = extractPatientHints(
+      // NOTE: 940951267 normalizes to 94095126-7 (valid checksum) but body ≥ 50M
+      // → filtered as company RUT. Name extraction is the main assertion here.
+      const { patientName } = extractPatientHints(
         "llego test de parche(60mil), aero I(30): javiera rio: 18 años: 940951267",
         null,
       );
       expect(patientName).toBe("javiera rio");
-      expect(patientRut).not.toBeNull();
     });
 
     it("extracts name before 'N años:' with three-part surname", () => {
@@ -448,5 +449,19 @@ describe("extractIdentityHints", () => {
 
     expect(result.patientRut).toBe("12345678-5");
     expect(result.beneficiaryRut).toBeNull();
+  });
+
+  it("rejects company RUTs (numeric body ≥ 50M)", () => {
+    // Company RUTs in Chile are typically ≥ 50,000,000.
+    // The clinic only serves natural persons — company RUTs must be filtered out.
+    // 76.354.771-K: valid checksum but company RUT
+    const result = extractIdentityHints("vacuna clustoid 76.354.771-K Ana López", null);
+    expect(result.patientRut).toBeNull();
+  });
+
+  it("accepts valid personal RUT below 50M threshold", () => {
+    // Personal RUTs are currently up to ~26M — must still be accepted.
+    const result = extractIdentityHints("test cutaneo 12.345.678-5 Ana López", null);
+    expect(result.patientRut).toBe("12345678-5");
   });
 });

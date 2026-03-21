@@ -511,7 +511,14 @@ export function extractIdentityHints(summary: null | string, description: null |
     ...new Set(
       (combinedText.match(RUT_REGEX) ?? [])
         .map((value) => normalizeRut(value))
-        .filter((rut): rut is string => rut !== null && validateRut(rut)),
+        .filter((rut): rut is string => {
+          if (rut === null || !validateRut(rut)) return false;
+          // Reject company RUTs: numeric body ≥ 50,000,000.
+          // Personal (natural person) RUTs in Chile are currently below ~26M.
+          // The clinic only serves patients, never companies.
+          const body = Number(rut.split("-")[0]);
+          return body < 50_000_000;
+        }),
     ),
   ];
 
