@@ -100,6 +100,7 @@ export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDte
       calendarId: event?.calendarId ?? "",
       eventId: event?.eventId ?? "",
       limit: 12,
+      sameDayOnly: true,
     }),
     enabled: isOpen && Boolean(event?.calendarId && event?.eventId) && !isPendingEmission,
   });

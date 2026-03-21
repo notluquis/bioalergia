@@ -12,7 +12,7 @@ interface SidebarItemProps {
 export function SidebarItem({ isMobile, item, onNavigate }: SidebarItemProps) {
   return (
     <Link
-      activeOptions={{ exact: item.to === "/" }}
+      activeOptions={{ exact: true }}
       className="group select-none outline-none"
       onClick={() => {
         onNavigate();
@@ -30,7 +30,7 @@ export function SidebarItem({ isMobile, item, onNavigate }: SidebarItemProps) {
                   : "mx-auto h-12 w-12 justify-center p-0",
                 isActive
                   ? "bg-primary/10 font-semibold text-primary"
-                  : "text-default-500 hover:bg-default-50 hover:text-foreground",
+                  : "text-default-500 hover:bg-default-50 hover:text-foreground"
               )}
             >
               {/* Active Indicator */}
@@ -38,7 +38,7 @@ export function SidebarItem({ isMobile, item, onNavigate }: SidebarItemProps) {
                 <span
                   className={cn(
                     "absolute rounded-full bg-primary ",
-                    isMobile ? "top-1/2 left-0 h-6 w-1 -translate-y-1/2" : "top-2 right-0 h-7 w-1",
+                    isMobile ? "top-1/2 left-0 h-6 w-1 -translate-y-1/2" : "top-2 right-0 h-7 w-1"
                   )}
                 />
               )}
