@@ -33,9 +33,11 @@ import {
   useClinicalSeries,
   useClinicalSeriesDetail,
   useClinicalSeriesRebuildProgress,
+  useDetectDuplicates,
   useRebuildClinicalSeries,
 } from "./queries";
 import type {
+  ClinicalSeriesDuplicate,
   ClinicalSeriesEvent,
   ClinicalSeriesFilters,
   ClinicalSeriesKind,
@@ -46,6 +48,7 @@ import type {
   SubcutaneousVaccineProduct,
   HealthInsuranceType,
 } from "./types";
+import { ClinicalSeriesMergeModal } from "./components/ClinicalSeriesMergeModal";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -303,10 +306,16 @@ export function ClinicalSeriesView() {
     ...(status && { status }),
   };
 
+  // Merge modal state
+  const [mergeModalDuplicate, setMergeModalDuplicate] = useState<ClinicalSeriesDuplicate | null>(
+    null
+  );
+
   const { data, isLoading, error } = useClinicalSeries(filters);
   const { data: detail, isLoading: isLoadingDetail } = useClinicalSeriesDetail(selectedId ?? 0);
   const rebuildMutation = useRebuildClinicalSeries();
   const rebuildJob = useClinicalSeriesRebuildProgress();
+  const { data: duplicates } = useDetectDuplicates();
 
   const totalPages = data ? Math.ceil(data.total / pageSize) : 1;
 
@@ -419,6 +428,31 @@ export function ClinicalSeriesView() {
                     ? rebuildMutation.error.message
                     : "Error al reorganizar las series")}
               </Alert.Description>
+            </Alert.Content>
+          </Alert>
+        )}
+        {duplicates && duplicates.length > 0 && (
+          <Alert status="warning">
+            <Alert.Indicator />
+            <Alert.Content>
+              <Alert.Description>
+                {duplicates.length} serie{duplicates.length !== 1 ? "s" : ""} duplicada
+                {duplicates.length !== 1 ? "s" : ""} detectada
+                {duplicates.length !== 1 ? "s" : ""}
+              </Alert.Description>
+              <div className="flex gap-2 flex-wrap mt-1">
+                {duplicates.map((dup) => (
+                  <Button
+                    key={`${dup.sourceId}-${dup.targetId}`}
+                    size="sm"
+                    variant="ghost"
+                    className="text-warning text-xs h-auto py-1"
+                    onPress={() => setMergeModalDuplicate(dup)}
+                  >
+                    Serie #{dup.sourceId} → #{dup.targetId}
+                  </Button>
+                ))}
+              </div>
             </Alert.Content>
           </Alert>
         )}
@@ -796,6 +830,23 @@ export function ClinicalSeriesView() {
                     Beneficiario: {detail.beneficiaryRut}
                   </p>
                 )}
+                {detail &&
+                  duplicates &&
+                  (() => {
+                    const dup = duplicates.find(
+                      (d) => d.sourceId === detail.id || d.targetId === detail.id
+                    );
+                    return dup ? (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="mt-2 text-xs"
+                        onPress={() => setMergeModalDuplicate(dup)}
+                      >
+                        Fusionar duplicado →
+                      </Button>
+                    ) : null;
+                  })()}
               </Drawer.Header>
 
               <Drawer.Body>
@@ -1039,6 +1090,37 @@ export function ClinicalSeriesView() {
           }
         }}
       />
+
+      {mergeModalDuplicate && (
+        <MergeModalWithSnapshots
+          duplicate={mergeModalDuplicate}
+          onClose={() => setMergeModalDuplicate(null)}
+        />
+      )}
     </div>
+  );
+}
+
+// Loads both snapshots needed by the merge modal and renders it.
+function MergeModalWithSnapshots({
+  duplicate,
+  onClose,
+}: {
+  duplicate: ClinicalSeriesDuplicate;
+  onClose: () => void;
+}) {
+  const { data: snap1 } = useClinicalSeriesDetail(duplicate.sourceId);
+  const { data: snap2 } = useClinicalSeriesDetail(duplicate.targetId);
+  const snapshots: Record<number, ClinicalSeriesSnapshot> = {};
+  if (snap1) snapshots[duplicate.sourceId] = snap1;
+  if (snap2) snapshots[duplicate.targetId] = snap2;
+
+  return (
+    <ClinicalSeriesMergeModal
+      duplicate={duplicate}
+      isOpen
+      onClose={onClose}
+      snapshots={snapshots}
+    />
   );
 }

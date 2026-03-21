@@ -98,6 +98,28 @@ export const clinicalSeriesRebuildResponseSchema = z.object({
   message: z.string(),
 });
 
+export const clinicalSeriesDuplicateSchema = z.object({
+  confidence: z.enum(["high", "medium"]),
+  reason: z.string(),
+  sourceId: z.number(),
+  targetId: z.number(),
+});
+
+export const clinicalSeriesDetectDuplicatesOutputSchema = z.object({
+  duplicates: z.array(clinicalSeriesDuplicateSchema),
+});
+
+export const clinicalSeriesMergeInputSchema = z.object({
+  mergeReason: z.string().optional(),
+  sourceId: z.number().int().positive(),
+  targetId: z.number().int().positive(),
+});
+
+export const clinicalSeriesMergeOutputSchema = z.object({
+  eventsMovedCount: z.number(),
+  targetId: z.number(),
+});
+
 export const clinicalSeriesContract = {
   detail: oc
     .route({ method: "GET", path: "/{id}" })
@@ -111,6 +133,14 @@ export const clinicalSeriesContract = {
     .route({ method: "POST", path: "/rebuild" })
     .input(clinicalSeriesRebuildInputSchema)
     .output(clinicalSeriesRebuildResponseSchema),
+  detectDuplicates: oc
+    .route({ method: "GET", path: "/detect-duplicates" })
+    .input(z.object({}))
+    .output(clinicalSeriesDetectDuplicatesOutputSchema),
+  merge: oc
+    .route({ method: "POST", path: "/merge" })
+    .input(clinicalSeriesMergeInputSchema)
+    .output(clinicalSeriesMergeOutputSchema),
 };
 
 export type ClinicalSeriesContract = typeof clinicalSeriesContract;

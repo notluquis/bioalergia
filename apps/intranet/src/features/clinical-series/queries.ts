@@ -7,15 +7,23 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { compactORPCInput } from "@/lib/orpc-input";
 import type {
+  ClinicalSeriesDuplicate,
   ClinicalSeriesFilters,
   ClinicalSeriesListResult,
   ClinicalSeriesSnapshot,
+  MergeClinicalSeriesParams,
+  MergeClinicalSeriesResult,
   RebuildJob,
   RebuildSeriesParams,
   RebuildSeriesResult,
 } from "./types";
 import { clinicalSeriesORPCClient, toClinicalSeriesApiError } from "./orpc";
-import { ClinicalSeriesSnapshotSchema, RebuildSeriesResultSchema } from "./types";
+import {
+  ClinicalSeriesSnapshotSchema,
+  DetectDuplicatesResultSchema,
+  MergeClinicalSeriesResultSchema,
+  RebuildSeriesResultSchema,
+} from "./types";
 
 // Query keys for cache invalidation
 export const clinicalSeriesKeys = {
@@ -24,6 +32,7 @@ export const clinicalSeriesKeys = {
   list: (filters?: ClinicalSeriesFilters) => [...clinicalSeriesKeys.lists(), filters] as const,
   details: () => [...clinicalSeriesKeys.all, "detail"] as const,
   detail: (id: number) => [...clinicalSeriesKeys.details(), id] as const,
+  duplicates: () => [...clinicalSeriesKeys.all, "duplicates"] as const,
 };
 
 /**
@@ -95,10 +104,61 @@ export function useClinicalSeriesDetail(id: number) {
 }
 
 /**
+ * Detect duplicate clinical series
+ */
+export async function fetchDetectDuplicates(): Promise<ClinicalSeriesDuplicate[]> {
+  try {
+    const result = DetectDuplicatesResultSchema.parse(
+      await clinicalSeriesORPCClient.detectDuplicates({})
+    );
+    return result.duplicates;
+  } catch (error) {
+    throw toClinicalSeriesApiError(error);
+  }
+}
+
+/**
+ * Merge two clinical series
+ */
+export async function mergeClinicalSeries(
+  params: MergeClinicalSeriesParams
+): Promise<MergeClinicalSeriesResult> {
+  try {
+    return MergeClinicalSeriesResultSchema.parse(await clinicalSeriesORPCClient.merge(params));
+  } catch (error) {
+    throw toClinicalSeriesApiError(error);
+  }
+}
+
+/**
  * Hook: Trigger rebuild mutation (fire-and-forget, progress via SSE)
  */
 export function useRebuildClinicalSeries() {
   return useMutation({ mutationFn: rebuildClinicalSeries });
+}
+
+/**
+ * Hook: Detect duplicate series
+ */
+export function useDetectDuplicates() {
+  return useQuery({
+    queryFn: fetchDetectDuplicates,
+    queryKey: clinicalSeriesKeys.duplicates(),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/**
+ * Hook: Merge two clinical series
+ */
+export function useMergeClinicalSeries() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: mergeClinicalSeries,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: clinicalSeriesKeys.all });
+    },
+  });
 }
 
 /**

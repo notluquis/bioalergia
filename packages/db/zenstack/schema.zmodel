@@ -839,7 +839,8 @@ model ClinicalSeries {
   completedAt      DateTime?                 @map("completed_at")
   createdAt        DateTime                  @default(now()) @map("created_at")
   updatedAt        DateTime                  @default(now()) @updatedAt @map("updated_at")
-  events           Event[]
+  events     Event[]
+  mergeLogs  ClinicalSeriesMergeLog[]
 
   @@deny('all', auth() == null)
   @@allow('read', true)
@@ -849,6 +850,26 @@ model ClinicalSeries {
   @@index([patientRut])
   @@index([beneficiaryRut])
   @@map("clinical_series")
+}
+
+model ClinicalSeriesMergeLog {
+  id          BigInt         @id @default(autoincrement())
+  sourceId    Int            @map("source_id")
+  targetId    Int            @map("target_id")
+  eventsMoved Int            @default(0) @map("events_moved")
+  mergedBy    Int?           @map("merged_by")
+  mergeReason String?        @map("merge_reason")
+  isAuto      Boolean        @default(false) @map("is_auto")
+  createdAt   DateTime       @default(now()) @map("created_at")
+  target      ClinicalSeries @relation(fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth() != null)
+  @@allow('create', auth().status == 'ACTIVE')
+
+  @@index([targetId])
+  @@index([sourceId])
+  @@map("clinical_series_merge_log")
 }
 
 model SyncLog {

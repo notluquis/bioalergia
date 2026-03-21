@@ -2,8 +2,11 @@ import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import {
   clinicalSeriesDetailInputSchema,
+  clinicalSeriesDetectDuplicatesOutputSchema,
   clinicalSeriesListInputSchema,
   clinicalSeriesListOutputSchema,
+  clinicalSeriesMergeInputSchema,
+  clinicalSeriesMergeOutputSchema,
   clinicalSeriesRebuildInputSchema,
   clinicalSeriesRebuildResponseSchema,
   clinicalSeriesSnapshotSchema,
@@ -16,8 +19,10 @@ import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
 import {
+  detectDuplicateSeries,
   getClinicalSeriesSnapshotById,
   listClinicalSeriesSnapshots,
+  mergeClinicalSeries,
   startRebuildClinicalSeries,
 } from "../services/clinical-series";
 import { SuperJSONRPCHandler } from "./superjson";
@@ -82,6 +87,30 @@ const clinicalSeriesORPCRouterBase = {
     .handler(({ input }: { input: z.input<typeof clinicalSeriesRebuildInputSchema> }) => {
       const jobId = startRebuildClinicalSeries(input);
       return { jobId, message: "Reorganización iniciada" };
+    }),
+
+  detectDuplicates: readClinicalSeries
+    .route({ method: "GET", path: "/detect-duplicates" })
+    .input(z.object({}))
+    .output(clinicalSeriesDetectDuplicatesOutputSchema)
+    .handler(async () => {
+      const duplicates = await detectDuplicateSeries();
+      return { duplicates };
+    }),
+
+  merge: updateClinicalSeries
+    .route({ method: "POST", path: "/merge" })
+    .input(clinicalSeriesMergeInputSchema)
+    .output(clinicalSeriesMergeOutputSchema)
+    .handler(async ({ input, context }: { input: z.input<typeof clinicalSeriesMergeInputSchema>; context: { user: { id: number } } }) => {
+      const result = await mergeClinicalSeries({
+        isAuto: false,
+        mergeReason: input.mergeReason,
+        mergedBy: context.user.id,
+        sourceId: input.sourceId,
+        targetId: input.targetId,
+      });
+      return { eventsMovedCount: result.eventsMovedCount, targetId: input.targetId };
     }),
 };
 

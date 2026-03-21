@@ -197,3 +197,37 @@ export const RebuildSeriesResultSchema = z.object({
   jobId: z.string(),
   message: z.string(),
 });
+
+export interface ClinicalSeriesDuplicate {
+  confidence: "high" | "medium";
+  reason: string;
+  sourceId: number;
+  targetId: number;
+}
+
+export interface MergeClinicalSeriesParams {
+  mergeReason?: string;
+  sourceId: number;
+  targetId: number;
+}
+
+export interface MergeClinicalSeriesResult {
+  eventsMovedCount: number;
+  targetId: number;
+}
+
+export const ClinicalSeriesDuplicateSchema = z.object({
+  confidence: z.enum(["high", "medium"]),
+  reason: z.string(),
+  sourceId: z.number(),
+  targetId: z.number(),
+});
+
+export const DetectDuplicatesResultSchema = z.object({
+  duplicates: z.array(ClinicalSeriesDuplicateSchema),
+});
+
+export const MergeClinicalSeriesResultSchema = z.object({
+  eventsMovedCount: z.number(),
+  targetId: z.number(),
+});

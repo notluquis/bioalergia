@@ -1390,3 +1390,124 @@ export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilter
 
   return { items, page, pageSize, total };
 }
+
+// ─── Duplicate Detection & Merge ─────────────────────────────────────────────
+
+export interface ClinicalSeriesDuplicate {
+  confidence: "high" | "medium";
+  reason: string;
+  sourceId: number;
+  targetId: number;
+}
+
+export async function detectDuplicateSeries(): Promise<ClinicalSeriesDuplicate[]> {
+  // Fetch all series that have at least one event, ordered by id ASC so the
+  // lower (older) id becomes the target and the higher (newer) becomes source.
+  const allSeries = await db.clinicalSeries.findMany({
+    select: {
+      id: true,
+      kind: true,
+      patientName: true,
+      patientRut: true,
+      _count: { select: { events: true } },
+    },
+    where: { events: { some: {} } },
+    orderBy: { id: "asc" },
+  });
+
+  const results: ClinicalSeriesDuplicate[] = [];
+  // Track which IDs have already been paired to avoid chaining A→B→C
+  const paired = new Set<number>();
+
+  for (let i = 0; i < allSeries.length; i++) {
+    const a = allSeries[i]!;
+    if (paired.has(a.id)) continue;
+
+    for (let j = i + 1; j < allSeries.length; j++) {
+      const b = allSeries[j]!;
+      if (paired.has(b.id)) continue;
+      if (a.kind !== b.kind) continue;
+
+      const aRut = a.patientRut ? normalizeRut(a.patientRut) : null;
+      const bRut = b.patientRut ? normalizeRut(b.patientRut) : null;
+      const aName = a.patientName ? normalizeName(a.patientName) : null;
+      const bName = b.patientName ? normalizeName(b.patientName) : null;
+
+      // High confidence: same non-null RUT
+      if (aRut && bRut && aRut === bRut) {
+        results.push({
+          confidence: "high",
+          reason: `Mismo RUT de paciente (${a.patientRut})`,
+          sourceId: b.id,
+          targetId: a.id,
+        });
+        paired.add(b.id);
+        break;
+      }
+
+      // High confidence: same non-null normalized name (at least 2 tokens, 8+ chars)
+      if (
+        aName &&
+        bName &&
+        aName === bName &&
+        aName.split(" ").length >= 2 &&
+        aName.length >= 8
+      ) {
+        results.push({
+          confidence: "high",
+          reason: `Mismo nombre de paciente (${a.patientName})`,
+          sourceId: b.id,
+          targetId: a.id,
+        });
+        paired.add(b.id);
+        break;
+      }
+    }
+  }
+
+  return results;
+}
+
+export async function mergeClinicalSeries(params: {
+  isAuto?: boolean;
+  mergeReason?: string;
+  mergedBy?: number;
+  sourceId: number;
+  targetId: number;
+}): Promise<{ eventsMovedCount: number }> {
+  const [source, target] = await Promise.all([
+    db.clinicalSeries.findUnique({ select: { id: true, kind: true }, where: { id: params.sourceId } }),
+    db.clinicalSeries.findUnique({ select: { id: true, kind: true }, where: { id: params.targetId } }),
+  ]);
+
+  if (!source) throw new Error(`Serie fuente #${params.sourceId} no encontrada`);
+  if (!target) throw new Error(`Serie destino #${params.targetId} no encontrada`);
+  if (source.kind !== target.kind) {
+    throw new Error(
+      `No se pueden fusionar series de distinto tipo (${source.kind} vs ${target.kind})`,
+    );
+  }
+
+  const eventsMovedCount = await db.$transaction(async (tx) => {
+    const { count } = await tx.event.updateMany({
+      where: { clinicalSeriesId: params.sourceId },
+      data: { clinicalSeriesId: params.targetId },
+    });
+
+    await tx.$executeRaw`
+      INSERT INTO clinical_series_merge_log
+        (source_id, target_id, events_moved, merged_by, merge_reason, is_auto)
+      VALUES
+        (${params.sourceId}, ${params.targetId}, ${count},
+         ${params.mergedBy ?? null}, ${params.mergeReason ?? null}, ${params.isAuto ?? false})
+    `;
+
+    await tx.clinicalSeries.delete({ where: { id: params.sourceId } });
+
+    return count;
+  });
+
+  await refreshClinicalSeriesMetadata(params.targetId);
+
+  return { eventsMovedCount };
+}
