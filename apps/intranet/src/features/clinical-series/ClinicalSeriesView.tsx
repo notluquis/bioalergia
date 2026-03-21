@@ -314,6 +314,7 @@ export function ClinicalSeriesView() {
     null
   );
   const [rebuildModalOpen, setRebuildModalOpen] = useState(false);
+  const [duplicatesModalOpen, setDuplicatesModalOpen] = useState(false);
 
   const { data, isLoading, error } = useClinicalSeries(filters);
   const { data: detail, isLoading: isLoadingDetail } = useClinicalSeriesDetail(selectedId ?? 0);
@@ -455,23 +456,18 @@ export function ClinicalSeriesView() {
             <Alert.Indicator />
             <Alert.Content>
               <Alert.Description>
-                {duplicates.length} serie{duplicates.length !== 1 ? "s" : ""} duplicada
-                {duplicates.length !== 1 ? "s" : ""} detectada
+                {duplicates.length} par{duplicates.length !== 1 ? "es" : ""} duplicado
+                {duplicates.length !== 1 ? "s" : ""} detectado
                 {duplicates.length !== 1 ? "s" : ""}
               </Alert.Description>
-              <div className="flex gap-2 flex-wrap mt-1">
-                {duplicates.map((dup) => (
-                  <Button
-                    key={`${dup.sourceId}-${dup.targetId}`}
-                    size="sm"
-                    variant="ghost"
-                    className="text-warning text-xs h-auto py-1"
-                    onPress={() => setMergeModalDuplicate(dup)}
-                  >
-                    Serie #{dup.sourceId} → #{dup.targetId}
-                  </Button>
-                ))}
-              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-warning text-xs h-auto py-1 mt-1"
+                onPress={() => setDuplicatesModalOpen(true)}
+              >
+                Revisar →
+              </Button>
             </Alert.Content>
           </Alert>
         )}
@@ -1110,6 +1106,18 @@ export function ClinicalSeriesView() {
         }}
       />
 
+      {duplicates && (
+        <DuplicatesModal
+          duplicates={duplicates}
+          isOpen={duplicatesModalOpen}
+          onClose={() => setDuplicatesModalOpen(false)}
+          onMerge={(dup) => {
+            setDuplicatesModalOpen(false);
+            setMergeModalDuplicate(dup);
+          }}
+        />
+      )}
+
       {mergeModalDuplicate && (
         <MergeModalWithSnapshots
           duplicate={mergeModalDuplicate}
@@ -1126,6 +1134,113 @@ export function ClinicalSeriesView() {
         }}
       />
     </div>
+  );
+}
+
+// ─── Duplicates Management Modal ──────────────────────────────────────────────
+
+const DUPES_PAGE_SIZE = 10;
+
+function DuplicatesModal({
+  duplicates,
+  isOpen,
+  onClose,
+  onMerge,
+}: {
+  duplicates: ClinicalSeriesDuplicate[];
+  isOpen: boolean;
+  onClose: () => void;
+  onMerge: (dup: ClinicalSeriesDuplicate) => void;
+}) {
+  const [page, setPage] = useState(1);
+  const totalPages = Math.ceil(duplicates.length / DUPES_PAGE_SIZE);
+  const pageItems = duplicates.slice((page - 1) * DUPES_PAGE_SIZE, page * DUPES_PAGE_SIZE);
+
+  return (
+    <Modal>
+      <Modal.Backdrop
+        className="bg-black/40 backdrop-blur-[2px]"
+        isOpen={isOpen}
+        onOpenChange={(open) => {
+          if (!open) onClose();
+        }}
+      >
+        <Modal.Container placement="center">
+          <Modal.Dialog className="relative w-full max-w-xl rounded-[24px] bg-background p-6 shadow-2xl space-y-4">
+            <Modal.Header>
+              <Modal.Heading className="font-bold text-lg">
+                Series duplicadas ({duplicates.length})
+              </Modal.Heading>
+            </Modal.Header>
+
+            <Modal.Body className="space-y-2">
+              {pageItems.map((dup) => (
+                <Surface
+                  key={`${dup.sourceId}-${dup.targetId}`}
+                  className="rounded-xl p-3 flex items-center gap-3"
+                >
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <p className="text-sm font-medium truncate">
+                      {dup.patientName ?? (
+                        <span className="text-foreground-400 italic">Sin nombre</span>
+                      )}
+                    </p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Chip size="sm" color={KIND_COLORS[dup.kind]} variant="tertiary">
+                        {KIND_LABELS[dup.kind]}
+                      </Chip>
+                      <span className="text-xs text-foreground-400 font-mono">
+                        #{dup.sourceId} ({dup.sourceEventCount} ev.) → #{dup.targetId} (
+                        {dup.targetEventCount} ev.)
+                      </span>
+                    </div>
+                    <p className="text-xs text-foreground-300 italic truncate">{dup.reason}</p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="shrink-0 text-xs"
+                    onPress={() => onMerge(dup)}
+                  >
+                    Fusionar
+                  </Button>
+                </Surface>
+              ))}
+
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 pt-1">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    isDisabled={page === 1}
+                    onPress={() => setPage((p) => p - 1)}
+                  >
+                    ←
+                  </Button>
+                  <span className="text-xs text-foreground-400">
+                    {page} / {totalPages}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    isDisabled={page === totalPages}
+                    onPress={() => setPage((p) => p + 1)}
+                  >
+                    →
+                  </Button>
+                </div>
+              )}
+            </Modal.Body>
+
+            <div className="flex justify-end pt-2">
+              <Button variant="ghost" onPress={onClose}>
+                Cerrar
+              </Button>
+            </div>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
+    </Modal>
   );
 }
 

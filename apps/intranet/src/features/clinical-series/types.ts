@@ -201,8 +201,12 @@ export const RebuildSeriesResultSchema = z.object({
 
 export interface ClinicalSeriesDuplicate {
   confidence: "high" | "medium";
+  kind: ClinicalSeriesKind;
+  patientName: string | null;
   reason: string;
+  sourceEventCount: number;
   sourceId: number;
+  targetEventCount: number;
   targetId: number;
 }
 
@@ -219,8 +223,12 @@ export interface MergeClinicalSeriesResult {
 
 export const ClinicalSeriesDuplicateSchema = z.object({
   confidence: z.enum(["high", "medium"]),
+  kind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT"]),
+  patientName: z.string().nullable(),
   reason: z.string(),
+  sourceEventCount: z.number(),
   sourceId: z.number(),
+  targetEventCount: z.number(),
   targetId: z.number(),
 });
 

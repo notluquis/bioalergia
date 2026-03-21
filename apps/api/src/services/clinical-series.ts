@@ -57,9 +57,13 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   // Diagnostic / study names
   "aero",
   "ag",
+  "civid",
+  "confirmada",
   "mix",
   "panel",
   "prick",
+  "pricktest",
+  "testcutaneo",
   // Chilean health/admin terms that appear in clinical notes but are not names
   "aer",
   "ali",
@@ -1429,8 +1433,12 @@ function isLikelyPersonName(name: string): boolean {
 
 export interface ClinicalSeriesDuplicate {
   confidence: "high" | "medium";
+  kind: ClinicalSeriesKind;
+  patientName: null | string;
   reason: string;
+  sourceEventCount: number;
   sourceId: number;
+  targetEventCount: number;
   targetId: number;
 }
 
@@ -1471,8 +1479,12 @@ export async function detectDuplicateSeries(): Promise<ClinicalSeriesDuplicate[]
       if (aRut && bRut && aRut === bRut) {
         results.push({
           confidence: "high",
+          kind: a.kind,
+          patientName: a.patientName,
           reason: `Mismo RUT de paciente (${a.patientRut})`,
+          sourceEventCount: b._count.events,
           sourceId: b.id,
+          targetEventCount: a._count.events,
           targetId: a.id,
         });
         paired.add(b.id);
@@ -1480,16 +1492,15 @@ export async function detectDuplicateSeries(): Promise<ClinicalSeriesDuplicate[]
       }
 
       // High confidence: same non-null normalized name that looks like a real person name
-      if (
-        aName &&
-        bName &&
-        aName === bName &&
-        isLikelyPersonName(aName)
-      ) {
+      if (aName && bName && aName === bName && isLikelyPersonName(aName)) {
         results.push({
           confidence: "high",
+          kind: a.kind,
+          patientName: a.patientName,
           reason: `Mismo nombre de paciente (${a.patientName})`,
+          sourceEventCount: b._count.events,
           sourceId: b.id,
+          targetEventCount: a._count.events,
           targetId: a.id,
         });
         paired.add(b.id);

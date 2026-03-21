@@ -101,8 +101,12 @@ export const clinicalSeriesRebuildResponseSchema = z.object({
 
 export const clinicalSeriesDuplicateSchema = z.object({
   confidence: z.enum(["high", "medium"]),
+  kind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT"]),
+  patientName: z.string().nullable(),
   reason: z.string(),
+  sourceEventCount: z.number(),
   sourceId: z.number(),
+  targetEventCount: z.number(),
   targetId: z.number(),
 });
 
