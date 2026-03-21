@@ -89,6 +89,7 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
 
 type ClinicalSeriesKind = "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT";
 type ClinicalSeriesStageKind = "DOSE" | "INSTALLATION" | "MAINTENANCE" | "READING";
+type SubcutaneousAllergenType = "ACAROS" | "ACAROS_GRAMINEAS" | "GRAMINEAS";
 
 type EventSeriesCandidate = {
   amountExpected: null | number;
@@ -149,6 +150,7 @@ type ClinicalSeriesLinkedDocument = {
 };
 
 export interface ClinicalSeriesSnapshot {
+  allergenType: null | SubcutaneousAllergenType;
   beneficiaryName: null | string;
   beneficiaryRut: null | string;
   displayName: null | string;
@@ -396,6 +398,33 @@ export function extractIdentityHints(summary: null | string, description: null |
   const beneficiaryName = uniqueNames.find((value) => value !== patientName) ?? null;
 
   return { beneficiaryName, beneficiaryRut, patientName, patientRut };
+}
+
+const ACAROS_PATTERN = /\b[áa]caros?\b/i;
+const GRAMINEAS_PATTERN = /\bgram[íi]neas?\b/i;
+
+// Scan all events in a series to determine which allergen(s) are treated.
+// When no specific allergen keyword is found the treatment defaults to
+// ACAROS_GRAMINEAS because the clinic refers to the combined product as
+// plain "clustoid" (without qualification).
+function inferAllergenType(
+  events: Array<{ description: null | string; summary: null | string }>,
+): SubcutaneousAllergenType {
+  let hasAcaros = false;
+  let hasGramineas = false;
+
+  for (const event of events) {
+    const text = `${event.summary ?? ""} ${event.description ?? ""}`;
+    if (!hasAcaros && ACAROS_PATTERN.test(text)) hasAcaros = true;
+    if (!hasGramineas && GRAMINEAS_PATTERN.test(text)) hasGramineas = true;
+    if (hasAcaros && hasGramineas) break;
+  }
+
+  if (hasAcaros && hasGramineas) return "ACAROS_GRAMINEAS";
+  if (hasAcaros) return "ACAROS";
+  if (hasGramineas) return "GRAMINEAS";
+  // Default: plain "clustoid" without allergen qualifier = combined treatment
+  return "ACAROS_GRAMINEAS";
 }
 
 function inferSeriesKind(event: EventSeriesCandidate): ClinicalSeriesKind | null {
@@ -652,9 +681,15 @@ async function refreshClinicalSeriesMetadata(seriesId: number) {
     }
   }
 
+  const allergenType =
+    series.kind === "SUBCUTANEOUS_TREATMENT"
+      ? inferAllergenType(series.events)
+      : null;
+
   await db.clinicalSeries.update({
     where: { id: seriesId },
     data: {
+      allergenType,
       beneficiaryName,
       beneficiaryRut,
       displayName: buildSeriesDisplayName({
@@ -1058,6 +1093,7 @@ export async function getClinicalSeriesSnapshotByExternalEvent(params: {
     : dayjs.tz(endDate, TIMEZONE).add(30, "day").format("YYYY-MM-DD");
 
   return {
+    allergenType: (series.allergenType as SubcutaneousAllergenType | null) ?? null,
     beneficiaryName: series.beneficiaryName ?? null,
     beneficiaryRut: series.beneficiaryRut ?? null,
     displayName: series.displayName ?? null,

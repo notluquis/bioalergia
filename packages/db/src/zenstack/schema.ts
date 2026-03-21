@@ -234,6 +234,18 @@ export class SchemaType implements SchemaDef {
                     array: true,
                     relation: { opposite: "uploader" }
                 },
+                eventDteAutoLinkAttempts: {
+                    name: "eventDteAutoLinkAttempts",
+                    type: "EventDteAutoLinkAttempt",
+                    array: true,
+                    relation: { opposite: "creator" }
+                },
+                eventDteMatchReviews: {
+                    name: "eventDteMatchReviews",
+                    type: "EventDteMatchReview",
+                    array: true,
+                    relation: { opposite: "creator" }
+                },
                 eventDteSaleLinks: {
                     name: "eventDteSaleLinks",
                     type: "EventDteSaleLink",
@@ -3088,6 +3100,18 @@ export class SchemaType implements SchemaDef {
                     array: true,
                     relation: { opposite: "event" }
                 },
+                dteAutoLinkAttempts: {
+                    name: "dteAutoLinkAttempts",
+                    type: "EventDteAutoLinkAttempt",
+                    array: true,
+                    relation: { opposite: "event" }
+                },
+                dteMatchReviews: {
+                    name: "dteMatchReviews",
+                    type: "EventDteMatchReview",
+                    array: true,
+                    relation: { opposite: "event" }
+                },
                 dteSaleLinks: {
                     name: "dteSaleLinks",
                     type: "EventDteSaleLink",
@@ -3161,6 +3185,12 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("beneficiary_rut") }] }]
+                },
+                allergenType: {
+                    name: "allergenType",
+                    type: "SubcutaneousAllergenType",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("allergen_type") }] }]
                 },
                 expectedSessions: {
                     name: "expectedSessions",
@@ -6787,6 +6817,12 @@ export class SchemaType implements SchemaDef {
                     attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }],
                     default: ExpressionUtils.call("now")
                 },
+                autoLinkAttempts: {
+                    name: "autoLinkAttempts",
+                    type: "EventDteAutoLinkAttempt",
+                    array: true,
+                    relation: { opposite: "candidateDteSaleDetail" }
+                },
                 eventLinks: {
                     name: "eventLinks",
                     type: "EventDteSaleLink",
@@ -6802,6 +6838,7 @@ export class SchemaType implements SchemaDef {
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("clientRUT")]) }] },
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("documentDate")]) }] },
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("documentType")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("documentDate"), ExpressionUtils.field("totalAmount")]) }] },
                 { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("dte_sale_details") }] }
             ],
             idFields: ["id"],
@@ -6823,8 +6860,7 @@ export class SchemaType implements SchemaDef {
                 eventId: {
                     name: "eventId",
                     type: "Int",
-                    unique: true,
-                    attributes: [{ name: "@unique" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("event_id") }] }],
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("event_id") }] }],
                     foreignKeyFor: [
                         "event"
                     ]
@@ -6832,7 +6868,8 @@ export class SchemaType implements SchemaDef {
                 dteSaleDetailId: {
                     name: "dteSaleDetailId",
                     type: "String",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("dte_sale_detail_id") }] }],
+                    unique: true,
+                    attributes: [{ name: "@unique" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("dte_sale_detail_id") }] }],
                     foreignKeyFor: [
                         "dteSaleDetail"
                     ]
@@ -6916,14 +6953,188 @@ export class SchemaType implements SchemaDef {
                 { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
                 { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
                 { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("dteSaleDetailId")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("eventId")]) }] },
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("createdAt")]) }] },
                 { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("event_dte_sale_links") }] }
             ],
             idFields: ["id"],
             uniqueFields: {
                 id: { type: "BigInt" },
-                eventId: { type: "Int" }
+                dteSaleDetailId: { type: "String" }
+            }
+        },
+        EventDteAutoLinkAttempt: {
+            name: "EventDteAutoLinkAttempt",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "BigInt",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                eventId: {
+                    name: "eventId",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("event_id") }] }],
+                    foreignKeyFor: [
+                        "event"
+                    ]
+                },
+                candidateDteSaleDetailId: {
+                    name: "candidateDteSaleDetailId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("candidate_dte_sale_detail_id") }] }],
+                    foreignKeyFor: [
+                        "candidateDteSaleDetail"
+                    ]
+                },
+                status: {
+                    name: "status",
+                    type: "String",
+                    attributes: [{ name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] }]
+                },
+                reason: {
+                    name: "reason",
+                    type: "String"
+                },
+                confidenceScore: {
+                    name: "confidenceScore",
+                    type: "Decimal",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("confidence_score") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(5) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
+                },
+                createdBy: {
+                    name: "createdBy",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_by") }] }],
+                    foreignKeyFor: [
+                        "creator"
+                    ]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
+                    default: ExpressionUtils.call("now")
+                },
+                event: {
+                    name: "event",
+                    type: "Event",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("eventId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }],
+                    relation: { opposite: "dteAutoLinkAttempts", fields: ["eventId"], references: ["id"], onDelete: "Cascade" }
+                },
+                candidateDteSaleDetail: {
+                    name: "candidateDteSaleDetail",
+                    type: "DTESaleDetail",
+                    optional: true,
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("candidateDteSaleDetailId")]) }, { name: "references", value: ExpressionUtils.array("String", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("SetNull") }] }],
+                    relation: { opposite: "autoLinkAttempts", fields: ["candidateDteSaleDetailId"], references: ["id"], onDelete: "SetNull" }
+                },
+                creator: {
+                    name: "creator",
+                    type: "User",
+                    optional: true,
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("createdBy")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("SetNull") }] }],
+                    relation: { opposite: "eventDteAutoLinkAttempts", fields: ["createdBy"], references: ["id"], onDelete: "SetNull" }
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("eventId"), ExpressionUtils.field("createdAt")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("candidateDteSaleDetailId")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("createdAt")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("event_dte_auto_link_attempts") }] }
+            ],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "BigInt" }
+            }
+        },
+        EventDteMatchReview: {
+            name: "EventDteMatchReview",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "BigInt",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                eventId: {
+                    name: "eventId",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("event_id") }] }],
+                    foreignKeyFor: [
+                        "event"
+                    ]
+                },
+                action: {
+                    name: "action",
+                    type: "String",
+                    attributes: [{ name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] }]
+                },
+                hypothesisKind: {
+                    name: "hypothesisKind",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("hypothesis_kind") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] }]
+                },
+                dteSaleDetailIds: {
+                    name: "dteSaleDetailIds",
+                    type: "Json",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("dte_sale_detail_ids") }] }]
+                },
+                hypothesis: {
+                    name: "hypothesis",
+                    type: "Json",
+                    optional: true
+                },
+                createdBy: {
+                    name: "createdBy",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_by") }] }],
+                    foreignKeyFor: [
+                        "creator"
+                    ]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
+                    default: ExpressionUtils.call("now")
+                },
+                event: {
+                    name: "event",
+                    type: "Event",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("eventId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }],
+                    relation: { opposite: "dteMatchReviews", fields: ["eventId"], references: ["id"], onDelete: "Cascade" }
+                },
+                creator: {
+                    name: "creator",
+                    type: "User",
+                    optional: true,
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("createdBy")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("SetNull") }] }],
+                    relation: { opposite: "eventDteMatchReviews", fields: ["createdBy"], references: ["id"], onDelete: "SetNull" }
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("eventId")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("action")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("createdAt")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("event_dte_match_reviews") }] }
+            ],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "BigInt" }
             }
         },
         DTESyncLog: {
@@ -7793,6 +8004,14 @@ export class SchemaType implements SchemaDef {
                 PATCH_TEST: "PATCH_TEST",
                 SKIN_TEST: "SKIN_TEST",
                 SUBCUTANEOUS_TREATMENT: "SUBCUTANEOUS_TREATMENT"
+            }
+        },
+        SubcutaneousAllergenType: {
+            name: "SubcutaneousAllergenType",
+            values: {
+                ACAROS: "ACAROS",
+                GRAMINEAS: "GRAMINEAS",
+                ACAROS_GRAMINEAS: "ACAROS_GRAMINEAS"
             }
         },
         ClinicalSeriesStatus: {

@@ -822,19 +822,20 @@ model Event {
 }
 
 model ClinicalSeries {
-  id               Int                  @id @default(autoincrement())
+  id               Int                       @id @default(autoincrement())
   kind             ClinicalSeriesKind
-  status           ClinicalSeriesStatus @default(ACTIVE)
-  displayName      String?              @map("display_name")
-  patientName      String?              @map("patient_name")
-  patientRut       String?              @map("patient_rut")
-  beneficiaryName  String?              @map("beneficiary_name")
-  beneficiaryRut   String?              @map("beneficiary_rut")
-  expectedSessions Int?                 @map("expected_sessions")
+  status           ClinicalSeriesStatus      @default(ACTIVE)
+  displayName      String?                   @map("display_name")
+  patientName      String?                   @map("patient_name")
+  patientRut       String?                   @map("patient_rut")
+  beneficiaryName  String?                   @map("beneficiary_name")
+  beneficiaryRut   String?                   @map("beneficiary_rut")
+  allergenType     SubcutaneousAllergenType? @map("allergen_type")
+  expectedSessions Int?                      @map("expected_sessions")
   notes            String?
-  completedAt      DateTime?            @map("completed_at")
-  createdAt        DateTime             @default(now()) @map("created_at")
-  updatedAt        DateTime             @default(now()) @updatedAt @map("updated_at")
+  completedAt      DateTime?                 @map("completed_at")
+  createdAt        DateTime                  @default(now()) @map("created_at")
+  updatedAt        DateTime                  @default(now()) @updatedAt @map("updated_at")
   events           Event[]
 
   @@deny('all', auth() == null)
@@ -1595,6 +1596,12 @@ enum ClinicalSeriesKind {
   PATCH_TEST
   SKIN_TEST
   SUBCUTANEOUS_TREATMENT
+}
+
+enum SubcutaneousAllergenType {
+  ACAROS
+  GRAMINEAS
+  ACAROS_GRAMINEAS
 }
 
 enum ClinicalSeriesStatus {

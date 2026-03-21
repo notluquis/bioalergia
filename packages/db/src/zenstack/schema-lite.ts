@@ -209,6 +209,18 @@ export class SchemaType implements SchemaDef {
                     array: true,
                     relation: { opposite: "uploader" }
                 },
+                eventDteAutoLinkAttempts: {
+                    name: "eventDteAutoLinkAttempts",
+                    type: "EventDteAutoLinkAttempt",
+                    array: true,
+                    relation: { opposite: "creator" }
+                },
+                eventDteMatchReviews: {
+                    name: "eventDteMatchReviews",
+                    type: "EventDteMatchReview",
+                    array: true,
+                    relation: { opposite: "creator" }
+                },
                 eventDteSaleLinks: {
                     name: "eventDteSaleLinks",
                     type: "EventDteSaleLink",
@@ -2551,6 +2563,18 @@ export class SchemaType implements SchemaDef {
                     array: true,
                     relation: { opposite: "event" }
                 },
+                dteAutoLinkAttempts: {
+                    name: "dteAutoLinkAttempts",
+                    type: "EventDteAutoLinkAttempt",
+                    array: true,
+                    relation: { opposite: "event" }
+                },
+                dteMatchReviews: {
+                    name: "dteMatchReviews",
+                    type: "EventDteMatchReview",
+                    array: true,
+                    relation: { opposite: "event" }
+                },
                 dteSaleLinks: {
                     name: "dteSaleLinks",
                     type: "EventDteSaleLink",
@@ -2605,6 +2629,11 @@ export class SchemaType implements SchemaDef {
                 beneficiaryRut: {
                     name: "beneficiaryRut",
                     type: "String",
+                    optional: true
+                },
+                allergenType: {
+                    name: "allergenType",
+                    type: "SubcutaneousAllergenType",
                     optional: true
                 },
                 expectedSessions: {
@@ -5528,6 +5557,12 @@ export class SchemaType implements SchemaDef {
                     updatedAt: true,
                     default: ExpressionUtils.call("now")
                 },
+                autoLinkAttempts: {
+                    name: "autoLinkAttempts",
+                    type: "EventDteAutoLinkAttempt",
+                    array: true,
+                    relation: { opposite: "candidateDteSaleDetail" }
+                },
                 eventLinks: {
                     name: "eventLinks",
                     type: "EventDteSaleLink",
@@ -5553,7 +5588,6 @@ export class SchemaType implements SchemaDef {
                 eventId: {
                     name: "eventId",
                     type: "Int",
-                    unique: true,
                     foreignKeyFor: [
                         "event"
                     ]
@@ -5561,6 +5595,7 @@ export class SchemaType implements SchemaDef {
                 dteSaleDetailId: {
                     name: "dteSaleDetailId",
                     type: "String",
+                    unique: true,
                     foreignKeyFor: [
                         "dteSaleDetail"
                     ]
@@ -5632,7 +5667,144 @@ export class SchemaType implements SchemaDef {
             idFields: ["id"],
             uniqueFields: {
                 id: { type: "BigInt" },
-                eventId: { type: "Int" }
+                dteSaleDetailId: { type: "String" }
+            }
+        },
+        EventDteAutoLinkAttempt: {
+            name: "EventDteAutoLinkAttempt",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "BigInt",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                eventId: {
+                    name: "eventId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "event"
+                    ]
+                },
+                candidateDteSaleDetailId: {
+                    name: "candidateDteSaleDetailId",
+                    type: "String",
+                    optional: true,
+                    foreignKeyFor: [
+                        "candidateDteSaleDetail"
+                    ]
+                },
+                status: {
+                    name: "status",
+                    type: "String"
+                },
+                reason: {
+                    name: "reason",
+                    type: "String"
+                },
+                confidenceScore: {
+                    name: "confidenceScore",
+                    type: "Decimal",
+                    optional: true
+                },
+                createdBy: {
+                    name: "createdBy",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "creator"
+                    ]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                event: {
+                    name: "event",
+                    type: "Event",
+                    relation: { opposite: "dteAutoLinkAttempts", fields: ["eventId"], references: ["id"], onDelete: "Cascade" }
+                },
+                candidateDteSaleDetail: {
+                    name: "candidateDteSaleDetail",
+                    type: "DTESaleDetail",
+                    optional: true,
+                    relation: { opposite: "autoLinkAttempts", fields: ["candidateDteSaleDetailId"], references: ["id"], onDelete: "SetNull" }
+                },
+                creator: {
+                    name: "creator",
+                    type: "User",
+                    optional: true,
+                    relation: { opposite: "eventDteAutoLinkAttempts", fields: ["createdBy"], references: ["id"], onDelete: "SetNull" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "BigInt" }
+            }
+        },
+        EventDteMatchReview: {
+            name: "EventDteMatchReview",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "BigInt",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                eventId: {
+                    name: "eventId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "event"
+                    ]
+                },
+                action: {
+                    name: "action",
+                    type: "String"
+                },
+                hypothesisKind: {
+                    name: "hypothesisKind",
+                    type: "String",
+                    optional: true
+                },
+                dteSaleDetailIds: {
+                    name: "dteSaleDetailIds",
+                    type: "Json"
+                },
+                hypothesis: {
+                    name: "hypothesis",
+                    type: "Json",
+                    optional: true
+                },
+                createdBy: {
+                    name: "createdBy",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "creator"
+                    ]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                event: {
+                    name: "event",
+                    type: "Event",
+                    relation: { opposite: "dteMatchReviews", fields: ["eventId"], references: ["id"], onDelete: "Cascade" }
+                },
+                creator: {
+                    name: "creator",
+                    type: "User",
+                    optional: true,
+                    relation: { opposite: "eventDteMatchReviews", fields: ["createdBy"], references: ["id"], onDelete: "SetNull" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "BigInt" }
             }
         },
         DTESyncLog: {
@@ -6381,6 +6553,14 @@ export class SchemaType implements SchemaDef {
                 PATCH_TEST: "PATCH_TEST",
                 SKIN_TEST: "SKIN_TEST",
                 SUBCUTANEOUS_TREATMENT: "SUBCUTANEOUS_TREATMENT"
+            }
+        },
+        SubcutaneousAllergenType: {
+            name: "SubcutaneousAllergenType",
+            values: {
+                ACAROS: "ACAROS",
+                GRAMINEAS: "GRAMINEAS",
+                ACAROS_GRAMINEAS: "ACAROS_GRAMINEAS"
             }
         },
         ClinicalSeriesStatus: {

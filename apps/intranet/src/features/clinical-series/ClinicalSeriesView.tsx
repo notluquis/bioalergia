@@ -42,6 +42,7 @@ import type {
   ClinicalSeriesSnapshot,
   ClinicalSeriesSortColumn,
   ClinicalSeriesStatus,
+  SubcutaneousAllergenType,
 } from "./types";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -76,6 +77,12 @@ const STATUS_COLORS: Record<ClinicalSeriesStatus, "success" | "default" | "dange
   ACTIVE: "success",
   COMPLETED: "default",
   CANCELLED: "danger",
+};
+
+const ALLERGEN_LABELS: Record<SubcutaneousAllergenType, string> = {
+  ACAROS: "Ácaros",
+  GRAMINEAS: "Gramíneas",
+  ACAROS_GRAMINEAS: "Ácaros + Gramíneas",
 };
 
 const STATUS_LABELS: Record<ClinicalSeriesStatus, string> = {
@@ -570,9 +577,16 @@ export function ClinicalSeriesView() {
                         </div>
                       </Table.Cell>
                       <Table.Cell>
-                        <Chip size="sm" color={KIND_COLORS[s.kind]} variant="soft">
-                          {KIND_LABELS[s.kind]}
-                        </Chip>
+                        <div className="flex flex-col gap-1">
+                          <Chip size="sm" color={KIND_COLORS[s.kind]} variant="soft">
+                            {KIND_LABELS[s.kind]}
+                          </Chip>
+                          {s.kind === "SUBCUTANEOUS_TREATMENT" && s.allergenType && (
+                            <Chip size="sm" color="primary" variant="soft">
+                              {ALLERGEN_LABELS[s.allergenType]}
+                            </Chip>
+                          )}
+                        </div>
                       </Table.Cell>
                       <Table.Cell>
                         <Chip size="sm" color={STATUS_COLORS[s.status]} variant="soft">
@@ -812,11 +826,16 @@ export function ClinicalSeriesView() {
                       );
                     })()}
 
-                    {/* Tipo + Estado */}
-                    <div className="flex gap-2">
+                    {/* Tipo + Alérgeno + Estado */}
+                    <div className="flex flex-wrap gap-2">
                       <Chip size="sm" color={KIND_COLORS[detail.kind]} variant="soft">
                         {KIND_LABELS[detail.kind]}
                       </Chip>
+                      {detail.kind === "SUBCUTANEOUS_TREATMENT" && detail.allergenType && (
+                        <Chip size="sm" color="primary" variant="soft">
+                          {ALLERGEN_LABELS[detail.allergenType]}
+                        </Chip>
+                      )}
                       <Chip size="sm" color={STATUS_COLORS[detail.status]} variant="soft">
                         {STATUS_LABELS[detail.status]}
                       </Chip>

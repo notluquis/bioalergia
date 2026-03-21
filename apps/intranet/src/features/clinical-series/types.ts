@@ -7,6 +7,7 @@ import { z } from "zod";
 
 export type ClinicalSeriesKind = "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT";
 export type ClinicalSeriesStatus = "ACTIVE" | "COMPLETED" | "CANCELLED";
+export type SubcutaneousAllergenType = "ACAROS" | "ACAROS_GRAMINEAS" | "GRAMINEAS";
 export type ClinicalSeriesSortColumn =
   | "financial"
   | "kind"
@@ -49,6 +50,7 @@ export interface ClinicalSeriesLinkedDocument {
 }
 
 export interface ClinicalSeriesSnapshot {
+  allergenType: SubcutaneousAllergenType | null;
   beneficiaryName: string | null;
   beneficiaryRut: string | null;
   id: number;
@@ -152,6 +154,7 @@ export const ClinicalSeriesLinkedDocumentSchema = z.object({
 });
 
 export const ClinicalSeriesSnapshotSchema = z.object({
+  allergenType: z.enum(["ACAROS", "ACAROS_GRAMINEAS", "GRAMINEAS"]).nullable(),
   beneficiaryName: z.string().nullable(),
   beneficiaryRut: z.string().nullable(),
   id: z.number(),
