@@ -52,7 +52,14 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "cluxin",
   "clustek",
   "forte",
+  "multitest",
   "oral",
+  // Diagnostic / study names
+  "aero",
+  "ag",
+  "mix",
+  "panel",
+  "prick",
   // Chilean health/admin terms that appear in clinical notes but are not names
   "aer",
   "ali",
@@ -1012,7 +1019,7 @@ export async function syncClinicalSeriesForExternalEvents(
 }
 
 export async function rebuildClinicalSeries(
-  params?: { from?: string; to?: string },
+  params?: { autoMerge?: boolean; from?: string; to?: string },
   onProgress?: (processed: number, total: number) => void,
 ) {
   const rows = await db.$queryRaw<Array<{ eventId: number }>>`
@@ -1035,9 +1042,20 @@ export async function rebuildClinicalSeries(
   onProgress?.(0, total);
   await syncClinicalSeriesForEventIds(rows.map((row) => row.eventId), onProgress);
 
+  // Dedup pass: merge duplicates only when explicitly requested
+  let deduped = 0;
+  if (params?.autoMerge) {
+    const duplicates = await detectDuplicateSeries();
+    for (const dup of duplicates) {
+      await mergeClinicalSeries({ isAuto: true, mergeReason: dup.reason, sourceId: dup.sourceId, targetId: dup.targetId });
+    }
+    deduped = duplicates.length;
+  }
+
   return {
-    processed: total,
+    deduped,
     from: params?.from ?? null,
+    processed: total,
     to: params?.to ?? null,
   };
 }
@@ -1090,7 +1108,10 @@ export function startRebuildClinicalSeries(params?: { from?: string; to?: string
       currentRebuildJob.status = "completed";
       currentRebuildJob.progress = 100;
       currentRebuildJob.processed = result.processed;
-      currentRebuildJob.currentStep = `${result.processed} eventos procesados`;
+      currentRebuildJob.currentStep =
+        result.deduped > 0
+          ? `${result.processed} eventos procesados · ${result.deduped} serie${result.deduped !== 1 ? "s" : ""} fusionada${result.deduped !== 1 ? "s" : ""}`
+          : `${result.processed} eventos procesados`;
       setTimeout(() => {
         if (currentRebuildJob?.jobId === jobId) currentRebuildJob = null;
       }, 8000);
@@ -1393,6 +1414,19 @@ export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilter
 
 // ─── Duplicate Detection & Merge ─────────────────────────────────────────────
 
+/**
+ * Returns true only if the normalized name has at least 2 tokens that are NOT
+ * in the clinical stopword list and are at least 3 characters long.
+ * Prevents product/test names like "multitest aero" from matching as persons.
+ */
+function isLikelyPersonName(name: string): boolean {
+  const normalized = normalizeName(name);
+  const significantTokens = normalized
+    .split(" ")
+    .filter((t) => t.length >= 3 && !LOWERCASE_NAME_STOPWORDS.has(t));
+  return significantTokens.length >= 2;
+}
+
 export interface ClinicalSeriesDuplicate {
   confidence: "high" | "medium";
   reason: string;
@@ -1445,13 +1479,12 @@ export async function detectDuplicateSeries(): Promise<ClinicalSeriesDuplicate[]
         break;
       }
 
-      // High confidence: same non-null normalized name (at least 2 tokens, 8+ chars)
+      // High confidence: same non-null normalized name that looks like a real person name
       if (
         aName &&
         bName &&
         aName === bName &&
-        aName.split(" ").length >= 2 &&
-        aName.length >= 8
+        isLikelyPersonName(aName)
       ) {
         results.push({
           confidence: "high",

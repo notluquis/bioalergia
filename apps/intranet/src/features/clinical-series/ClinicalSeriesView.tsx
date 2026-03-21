@@ -7,6 +7,7 @@ import {
   Alert,
   Button,
   Card,
+  Checkbox,
   Chip,
   Drawer,
   Input,
@@ -23,13 +24,14 @@ import {
   Table,
   TextField,
 } from "@heroui/react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Key, Selection } from "@heroui/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { EventDteLinkModal } from "@/features/calendar/components/EventDteLinkModal";
 import type { CalendarEventDetail } from "@/features/calendar/types";
 import {
   clinicalSeriesKeys,
+  fetchClinicalSeriesDetail,
   useClinicalSeries,
   useClinicalSeriesDetail,
   useClinicalSeriesRebuildProgress,
@@ -310,6 +312,7 @@ export function ClinicalSeriesView() {
   const [mergeModalDuplicate, setMergeModalDuplicate] = useState<ClinicalSeriesDuplicate | null>(
     null
   );
+  const [autoMergeOnRebuild, setAutoMergeOnRebuild] = useState(false);
 
   const { data, isLoading, error } = useClinicalSeries(filters);
   const { data: detail, isLoading: isLoadingDetail } = useClinicalSeriesDetail(selectedId ?? 0);
@@ -372,14 +375,28 @@ export function ClinicalSeriesView() {
               "Tratamientos y pruebas alérgicas agrupados"
             )}
           </p>
-          <Button
-            isDisabled={rebuildMutation.isPending || rebuildJob?.status === "running"}
-            onPress={() => rebuildMutation.mutateAsync({})}
-            variant="secondary"
-            size="sm"
-          >
-            Reorganizar Series
-          </Button>
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-1.5 cursor-pointer select-none">
+              <Checkbox
+                aria-label="Deduplicar series al reorganizar"
+                isSelected={autoMergeOnRebuild}
+                onChange={setAutoMergeOnRebuild}
+              >
+                <Checkbox.Control>
+                  <Checkbox.Indicator />
+                </Checkbox.Control>
+              </Checkbox>
+              <span className="text-xs text-foreground-400">Deduplicar</span>
+            </label>
+            <Button
+              isDisabled={rebuildMutation.isPending || rebuildJob?.status === "running"}
+              onPress={() => rebuildMutation.mutateAsync({ autoMerge: autoMergeOnRebuild })}
+              variant="secondary"
+              size="sm"
+            >
+              Reorganizar Series
+            </Button>
+          </div>
         </div>
 
         {/* Rebuild progress / result — driven by SSE */}
@@ -1102,6 +1119,8 @@ export function ClinicalSeriesView() {
 }
 
 // Loads both snapshots needed by the merge modal and renders it.
+// Loads both snapshots needed by the merge modal with staleTime: Infinity + retry: false
+// so they are fetched once on mount and never refetch after the merge deletes the source.
 function MergeModalWithSnapshots({
   duplicate,
   onClose,
@@ -1109,8 +1128,20 @@ function MergeModalWithSnapshots({
   duplicate: ClinicalSeriesDuplicate;
   onClose: () => void;
 }) {
-  const { data: snap1 } = useClinicalSeriesDetail(duplicate.sourceId);
-  const { data: snap2 } = useClinicalSeriesDetail(duplicate.targetId);
+  const { data: snap1 } = useQuery({
+    enabled: !!duplicate.sourceId,
+    queryFn: () => fetchClinicalSeriesDetail(duplicate.sourceId),
+    queryKey: clinicalSeriesKeys.detail(duplicate.sourceId),
+    retry: false,
+    staleTime: Infinity,
+  });
+  const { data: snap2 } = useQuery({
+    enabled: !!duplicate.targetId,
+    queryFn: () => fetchClinicalSeriesDetail(duplicate.targetId),
+    queryKey: clinicalSeriesKeys.detail(duplicate.targetId),
+    retry: false,
+    staleTime: Infinity,
+  });
   const snapshots: Record<number, ClinicalSeriesSnapshot> = {};
   if (snap1) snapshots[duplicate.sourceId] = snap1;
   if (snap2) snapshots[duplicate.targetId] = snap2;

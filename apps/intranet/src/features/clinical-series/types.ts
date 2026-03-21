@@ -113,6 +113,7 @@ export interface ClinicalSeriesListResult {
 }
 
 export interface RebuildSeriesParams {
+  autoMerge?: boolean;
   from?: string; // ISO date
   to?: string; // ISO date
 }

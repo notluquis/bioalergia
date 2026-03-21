@@ -89,6 +89,7 @@ export const clinicalSeriesDetailInputSchema = z.object({
 });
 
 export const clinicalSeriesRebuildInputSchema = z.object({
+  autoMerge: z.boolean().optional(),
   from: z.string().optional(),
   to: z.string().optional(),
 });
