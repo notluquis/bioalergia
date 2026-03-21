@@ -45,7 +45,6 @@ import type {
   SubcutaneousAllergenType,
   SubcutaneousVaccineProduct,
   HealthInsuranceType,
-  DeliveryModality,
 } from "./types";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -993,6 +992,24 @@ export function ClinicalSeriesView() {
                                               </>
                                             );
                                           })()}
+                                          {event.linkedFolios.length > 0 ? (
+                                            <div className="flex flex-wrap gap-1 mt-1">
+                                              {event.linkedFolios.map((folio) => (
+                                                <Chip
+                                                  key={folio}
+                                                  size="sm"
+                                                  color="success"
+                                                  variant="soft"
+                                                >
+                                                  Boleta N°{folio}
+                                                </Chip>
+                                              ))}
+                                            </div>
+                                          ) : !isFuture ? (
+                                            <p className="mt-1 text-[10px] text-foreground-300 italic">
+                                              Sin boleta vinculada
+                                            </p>
+                                          ) : null}
                                         </Surface>
                                       </Button>
                                     );

@@ -36,6 +36,7 @@ export interface ClinicalSeriesEvent {
   eventDate: string;
   eventId: number;
   externalEventId: string;
+  linkedFolios: string[];
   patientName: string | null;
   patientRut: string | null;
   seriesStageKind: "DOSE" | "INSTALLATION" | "MAINTENANCE" | "READING" | null;
@@ -143,6 +144,7 @@ export const ClinicalSeriesEventSchema = z.object({
   eventDate: z.string(),
   eventId: z.number(),
   externalEventId: z.string(),
+  linkedFolios: z.array(z.string()),
   patientName: z.string().nullable(),
   patientRut: z.string().nullable(),
   seriesStageKind: z.enum(["DOSE", "INSTALLATION", "MAINTENANCE", "READING"]).nullable(),

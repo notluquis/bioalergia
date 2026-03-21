@@ -158,6 +158,7 @@ type ClinicalSeriesEventSnapshot = {
   eventDate: string;
   eventId: number;
   externalEventId: string;
+  linkedFolios: string[];
   patientName: null | string;
   patientRut: null | string;
   seriesStageKind: ClinicalSeriesStageKind | null;
@@ -1154,6 +1155,18 @@ export async function getClinicalSeriesSnapshotByExternalEvent(params: {
     ORDER BY s.id, l.updated_at DESC
   `;
 
+  const eventIds = series.events.map((e) => e.id);
+  const eventFolioRows = eventIds.length
+    ? await db.$queryRaw<Array<{ eventId: number; folios: string[] }>>`
+        SELECT l.event_id AS "eventId", ARRAY_AGG(s.folio ORDER BY s.document_date) AS "folios"
+        FROM event_dte_sale_links l
+        JOIN dte_sale_details s ON s.id = l.dte_sale_detail_id
+        WHERE l.event_id = ANY(${eventIds}::int[])
+        GROUP BY l.event_id
+      `
+    : [];
+  const foliosByEventId = new Map(eventFolioRows.map((r) => [r.eventId, r.folios]));
+
   const events = series.events.map((item) => ({
     amountExpected: item.amountExpected,
     amountPaid: item.amountPaid,
@@ -1167,6 +1180,7 @@ export async function getClinicalSeriesSnapshotByExternalEvent(params: {
       .format("YYYY-MM-DD"),
     eventId: item.id,
     externalEventId: item.externalEventId,
+    linkedFolios: foliosByEventId.get(item.id) ?? [],
     patientName: item.patientName ?? null,
     patientRut: item.patientRut ?? null,
     seriesStageKind: (item.seriesStageKind as ClinicalSeriesStageKind | null) ?? null,
@@ -1245,12 +1259,15 @@ export async function getClinicalSeriesSnapshotById(id: number): Promise<Clinica
   const syntheticEvent = series.events[0];
   if (!syntheticEvent) {
     return {
-      displayName: series.displayName ?? null,
+      allergenType: (series.allergenType as SubcutaneousAllergenType | null) ?? null,
       beneficiaryName: series.beneficiaryName ?? null,
       beneficiaryRut: series.beneficiaryRut ?? null,
+      deliveryModality: (series.deliveryModality as DeliveryModality | null) ?? null,
+      displayName: series.displayName ?? null,
       eligibleDocumentDateFrom: dayjs().tz(TIMEZONE).format("YYYY-MM-DD"),
       eligibleDocumentDateTo: dayjs().tz(TIMEZONE).format("YYYY-MM-DD"),
       events: [],
+      healthInsurance: (series.healthInsurance as HealthInsuranceType | null) ?? null,
       id: series.id,
       kind: series.kind as ClinicalSeriesKind,
       linkedDocuments: [],
@@ -1259,6 +1276,7 @@ export async function getClinicalSeriesSnapshotById(id: number): Promise<Clinica
       remainingExpected: 0,
       remainingPaid: 0,
       status: series.status as ClinicalSeriesSnapshot["status"],
+      vaccineProduct: (series.vaccineProduct as SubcutaneousVaccineProduct | null) ?? null,
       totalExpected: 0,
       totalLinkedAmount: 0,
       totalPaid: 0,
