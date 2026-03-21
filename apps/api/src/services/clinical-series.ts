@@ -12,31 +12,63 @@ const TIMEZONE = "America/Santiago";
 const RUT_REGEX = /\b\d{1,2}\.?\d{3}\.?\d{3}-?[\dkK]\b/g;
 const CAPITALIZED_NAME_REGEX = /([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+){1,4})/g;
 const LOWERCASE_NAME_STOPWORDS = new Set([
+  // Allergy / treatment terms
   "acaros",
   "administracion",
   "aeroalergenos",
   "alimentario",
   "ambiente",
+  "ampolla",
+  "antigenos",
   "clustoid",
   "confirma",
   "control",
   "dosis",
+  "entrega",
+  "fase",
+  "frasco",
   "gramineas",
+  "inyeccion",
   "instalacion",
-  "llego",
   "lectura",
   "mantencion",
   "mensual",
+  "pagada",
+  "pagado",
   "parche",
   "presento",
+  "prueba",
   "reaccion",
   "retiro",
   "semanal",
-  "se",
+  "semana",
   "subcutaneo",
   "test",
   "tratamiento",
   "vacuna",
+  // Common Spanish words that appear in clinical notes but are not names
+  "con",
+  "del",
+  "desde",
+  "ella",
+  "este",
+  "hace",
+  "hijo",
+  "hija",
+  "llego",
+  "lleva",
+  "llevara",
+  "llevo",
+  "para",
+  "pero",
+  "retiran",
+  "sale",
+  "sera",
+  "tiene",
+  "trae",
+  "traen",
+  "venir",
+  "viene",
 ]);
 
 type ClinicalSeriesKind = "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT";
@@ -231,20 +263,78 @@ export function extractPatientHints(summary: null | string, description: null | 
   };
 }
 
+// Extract name tokens from the raw text immediately before each RUT occurrence.
+// This is the highest-confidence source: secretaries typically write the
+// patient name right before the RUT ("Nadia Yañez Rojas 12.345.678-9 ...").
+function extractRutAdjacentNames(text: string): string[] {
+  const results: string[] = [];
+  const globalRutRegex = new RegExp(RUT_REGEX.source, "g");
+  let m: RegExpExecArray | null;
+
+  while ((m = globalRutRegex.exec(text)) !== null) {
+    const before = text.slice(0, m.index).trim();
+    // Take up to 5 raw tokens ending at the RUT and walk backwards, stopping
+    // at the first token that looks like a stopword or non-name token.
+    const rawTokens = before.split(/\s+/).slice(-5);
+    const nameTokens: string[] = [];
+    for (const token of [...rawTokens].reverse()) {
+      const n = normalizeName(token);
+      if (!n || n.length < 3 || /\d/.test(n) || LOWERCASE_NAME_STOPWORDS.has(n)) break;
+      nameTokens.unshift(n);
+    }
+    if (nameTokens.length >= 2) results.push(nameTokens.join(" "));
+  }
+
+  return [...new Set(results)];
+}
+
+// Walk the token stream looking for a token that starts with an uppercase
+// letter (likely a name start) and extend it with following tokens that also
+// look like name tokens (any case, no stopwords, no digits).
+// This handles the common "Nadia yañez rojas" pattern where only the first
+// word is capitalised — something the pure-regex approach misses.
+function extractCapitalizedStartNames(text: string): string[] {
+  const results: string[] = [];
+  const tokens = text.split(/\s+/).filter(Boolean);
+
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i]!;
+    // Must start with an uppercase letter followed by at least one lowercase.
+    if (!/^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]/.test(token)) continue;
+    const normalized = normalizeName(token);
+    if (!normalized || normalized.length < 3 || LOWERCASE_NAME_STOPWORDS.has(normalized)) continue;
+
+    const sequence = [normalized];
+    for (let j = i + 1; j < Math.min(i + 4, tokens.length); j++) {
+      const next = tokens[j]!;
+      const nextNorm = normalizeName(next);
+      if (!nextNorm || nextNorm.length < 3 || /\d/.test(nextNorm) || LOWERCASE_NAME_STOPWORDS.has(nextNorm)) break;
+      sequence.push(nextNorm);
+    }
+
+    if (sequence.length >= 2) results.push(sequence.join(" "));
+  }
+
+  return [...new Set(results)];
+}
+
 export function extractIdentityHints(summary: null | string, description: null | string) {
-  const text = `${summary ?? ""} ${description ?? ""}`;
+  const text = `${summary ?? ""} ${description ?? ""}`.trim();
   const ruts = [
     ...new Set((text.match(RUT_REGEX) ?? []).map((value) => normalizeRut(value)).filter(Boolean)),
   ];
-  const names =
-    [
-      ...new Set(
-        Array.from(text.matchAll(CAPITALIZED_NAME_REGEX), (match) =>
-          normalizeName((match[1] ?? "").trim()),
-        ).filter((value) => value.length >= 5),
-      ),
-    ].concat(extractLowercaseNameHints(text));
 
+  // Priority 1 — text adjacent to a RUT: highest confidence.
+  const rutAdjacentNames = extractRutAdjacentNames(text);
+
+  // Priority 2 — sequences starting from a capitalised token: catches
+  // "Nadia yañez rojas" where only the first token is capitalised.
+  const capitalizedStartNames = extractCapitalizedStartNames(text);
+
+  // Priority 3 — pure lowercase sliding-window heuristic: existing fallback.
+  const lowercaseNames = extractLowercaseNameHints(text);
+
+  const names = [...rutAdjacentNames, ...capitalizedStartNames, ...lowercaseNames];
   const uniqueNames = [...new Set(names)];
   const patientRut = ruts[0] ?? null;
   const beneficiaryRut = ruts.find((value) => value !== patientRut) ?? null;

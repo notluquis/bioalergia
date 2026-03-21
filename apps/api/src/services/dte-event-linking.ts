@@ -2,6 +2,8 @@ import { db } from "@finanzas/db";
 import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone.js";
 import utc from "dayjs/plugin/utc.js";
+import jaroWinkler from "talisman/metrics/jaro-winkler";
+import mongeElkan, { symmetric as mongeElkanSymmetric } from "talisman/metrics/monge-elkan";
 import { normalizeRut } from "../lib/rut";
 import {
   type ClinicalSeriesSnapshot,
@@ -298,7 +300,7 @@ function parseLinkedDocumentsJson(value: unknown): EventDteLinkedDocument[] {
     const confidenceScore =
       typeof record.confidenceScore === "number" ? record.confidenceScore : null;
     const totalAmount = typeof record.totalAmount === "number" ? record.totalAmount : null;
-    const documentDate = typeof record.documentDate === "string" ? record.documentDate : undefined;
+    const documentDate = typeof record.documentDate === "string" ? record.documentDate : "";
 
     if (
       !clientName ||
@@ -463,17 +465,47 @@ function tokenSetF1(a: string, b: string): number {
   return (2 * precision * recall) / (precision + recall);
 }
 
+// Sort tokens alphabetically so "YAÑEZ ROJAS NADIA" and "nadia yanez rojas"
+// produce the same canonical form after normalization. This handles the SII
+// convention of storing names as APELLIDO_PATERNO APELLIDO_MATERNO NOMBRES.
+function tokenSort(value: string): string {
+  return normalizeName(value).split(" ").sort().join(" ");
+}
+
+// Symmetric Monge-Elkan with Jaro-Winkler as the inner metric.
+// Applies JW to every (source-token, target-token) pair and takes the max per
+// source token, then averages. Symmetric variant averages both directions so
+// neither side is penalised for having extra tokens (e.g. middle names).
+// This is the algorithm used by Splink (UK MoJ record-linkage) for name fields.
+function mongeElkanScore(a: string, b: string): number {
+  const aTokens = tokenize(tokenSort(a));
+  const bTokens = tokenize(tokenSort(b));
+  if (aTokens.length === 0 || bTokens.length === 0) return 0;
+  return mongeElkanSymmetric(jaroWinkler, aTokens, bTokens);
+}
+
 function containsName(hint: string, candidateName: string): boolean {
   const normalizedHint = normalizeName(hint);
   const normalizedCandidate = normalizeName(candidateName);
   if (!normalizedHint || !normalizedCandidate) return false;
+  // Direct substring check (original)
+  if (normalizedHint.includes(normalizedCandidate) || normalizedCandidate.includes(normalizedHint)) {
+    return true;
+  }
+  // Token-sorted comparison: catches SII reversed format
+  const sortedHint = tokenSort(normalizedHint);
+  const sortedCandidate = tokenSort(normalizedCandidate);
   return (
-    normalizedHint.includes(normalizedCandidate) || normalizedCandidate.includes(normalizedHint)
+    sortedHint === sortedCandidate ||
+    sortedHint.includes(sortedCandidate) ||
+    sortedCandidate.includes(sortedHint)
   );
 }
 
 function surnameTokens(value: string): string[] {
-  const tokens = tokenize(value).filter((token) => token.length >= 4);
+  // Filter name particles (de, del, la, los, von, van) which are not surnames.
+  const PARTICLES = new Set(["de", "del", "la", "los", "las", "von", "van", "y"]);
+  const tokens = tokenize(value).filter((t) => t.length >= 3 && !PARTICLES.has(t));
   return tokens.slice(-2);
 }
 
@@ -740,7 +772,10 @@ function analyzeCandidate(params: {
   for (const nameClaim of params.nameClaims) {
     const tokenScore = tokenSetF1(nameClaim, params.candidate.clientName);
     const diceScore = diceCoefficient(nameClaim, params.candidate.clientName);
-    const combined = Math.max(tokenScore, diceScore);
+    // Monge-Elkan with Jaro-Winkler handles partial names and SII reversed
+    // format (APELLIDO APELLIDO NOMBRE) better than bigram/token-F1 alone.
+    const meScore = mongeElkanScore(nameClaim, params.candidate.clientName);
+    const combined = Math.max(tokenScore, diceScore, meScore);
     if (containsName(nameClaim, params.candidate.clientName)) {
       exactNameMatch = true;
       bestNameScore = Math.max(bestNameScore, 1);
@@ -804,6 +839,28 @@ function analyzeCandidate(params: {
       score += 3;
       signals.push(toSignal("amount_compatible", "Monto compatible", 3));
       reasons.push("Monto compatible");
+    }
+  }
+
+  // trigramSimilarity is computed by pg_trgm's word_similarity() in the DB
+  // retrieval query and carried in retrievalMeta. Use it as a supplementary
+  // signal when name-level scoring hasn't already captured the match and there
+  // is no RUT hit — this catches cases where the name claim is a short partial
+  // (e.g. "nadia yanez") against a long DTE name ("YAÑEZ ROJAS NADIA VALENTINA").
+  const trigramSim = params.candidate.retrievalMeta?.trigramSimilarity ?? 0;
+  if (!rutMatch && !exactNameMatch && bestNameScore === 0 && trigramSim >= 0.5) {
+    const trigramWeight = Math.round((trigramSim - 0.5) * 30); // 0 at 0.5, max 15 at 1.0
+    if (trigramWeight > 0) {
+      score += trigramWeight;
+      signals.push(
+        toSignal(
+          "trigram_similarity",
+          "Similaridad trigramática (DB)",
+          trigramWeight,
+          `${Math.round(trigramSim * 100)}%`,
+        ),
+      );
+      reasons.push(`Similaridad trigramática en DB: ${Math.round(trigramSim * 100)}%`);
     }
   }
 
@@ -1157,10 +1214,15 @@ async function retrieveDteCandidates(params: {
           SELECT 1
           FROM unnest(${loweredSurnameClaims}::text[]) AS surname_hint
           WHERE surname_hint <> ''
-            AND lower(s.client_name) LIKE '%' || surname_hint || '%'
+            AND f_unaccent(lower(s.client_name)) LIKE '%' || f_unaccent(surname_hint) || '%'
         ),
+        -- word_similarity(query, text) measures how well the query appears as a
+        -- contiguous word-substring of text — much better than similarity() for
+        -- partial names (e.g. "nadia yanez" inside "YAÑEZ ROJAS NADIA VALENTINA").
+        -- f_unaccent normalises ñ→n, á→a etc. using the immutable wrapper so the
+        -- GIN index on f_unaccent(lower(client_name)) is used.
         'trigramSimilarity', COALESCE((
-          SELECT MAX(similarity(lower(s.client_name), name_hint))
+          SELECT MAX(word_similarity(f_unaccent(name_hint), f_unaccent(lower(s.client_name))))
           FROM unnest(${loweredNameClaims}::text[]) AS name_hint
         ), 0)
       ) AS "retrievalMeta"
@@ -1195,12 +1257,19 @@ async function retrieveDteCandidates(params: {
           SELECT 1
           FROM unnest(${loweredSurnameClaims}::text[]) AS surname_hint
           WHERE surname_hint <> ''
-            AND lower(s.client_name) LIKE '%' || surname_hint || '%'
+            AND f_unaccent(lower(s.client_name)) LIKE '%' || f_unaccent(surname_hint) || '%'
         )
-        OR EXISTS (
-          SELECT 1
-          FROM unnest(${loweredNameClaims}::text[]) AS name_hint
-          WHERE similarity(lower(s.client_name), name_hint) >= 0.18
+        -- word_similarity with the <% operator lets the GIN index on
+        -- f_unaccent(lower(client_name)) accelerate this path.
+        -- Threshold 0.35 is intentionally low for retrieval; scoring in
+        -- analyzeCandidate re-ranks with tighter criteria.
+        OR (
+          cardinality(${loweredNameClaims}::text[]) > 0
+          AND EXISTS (
+            SELECT 1
+            FROM unnest(${loweredNameClaims}::text[]) AS name_hint
+            WHERE f_unaccent(name_hint) <% f_unaccent(lower(s.client_name))
+          )
         )
       )
     ORDER BY
