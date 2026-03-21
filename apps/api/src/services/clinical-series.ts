@@ -47,6 +47,9 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "tratamiento",
   "vacuna",
   // Common Spanish words that appear in clinical notes but are not names
+  "beneficiario",
+  "nombre",
+  "paciente",
   "con",
   "del",
   "desde",

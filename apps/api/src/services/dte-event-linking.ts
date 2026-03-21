@@ -774,8 +774,12 @@ function analyzeCandidate(params: {
     const diceScore = diceCoefficient(nameClaim, params.candidate.clientName);
     // Monge-Elkan with Jaro-Winkler handles partial names and SII reversed
     // format (APELLIDO APELLIDO NOMBRE) better than bigram/token-F1 alone.
+    // Only use meScore when it's strong enough to reflect a real partial-name
+    // match (≥0.70). A single shared surname token produces ~0.65 which would
+    // inflate the score for unrelated people (e.g. guardian/patient sharing a
+    // surname). Most genuine partial matches where 2+ tokens align score ≥0.70.
     const meScore = mongeElkanScore(nameClaim, params.candidate.clientName);
-    const combined = Math.max(tokenScore, diceScore, meScore);
+    const combined = Math.max(tokenScore, diceScore, meScore >= 0.70 ? meScore : 0);
     if (containsName(nameClaim, params.candidate.clientName)) {
       exactNameMatch = true;
       bestNameScore = Math.max(bestNameScore, 1);
