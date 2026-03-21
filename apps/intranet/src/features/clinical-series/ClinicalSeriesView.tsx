@@ -32,10 +32,10 @@ import type { CalendarEventDetail } from "@/features/calendar/types";
 import {
   clinicalSeriesKeys,
   fetchClinicalSeriesDetail,
+  fetchDetectDuplicates,
   useClinicalSeries,
   useClinicalSeriesDetail,
   useClinicalSeriesRebuildProgress,
-  useDetectDuplicates,
   useRebuildClinicalSeries,
 } from "./queries";
 import type {
@@ -318,7 +318,17 @@ export function ClinicalSeriesView() {
   const { data: detail, isLoading: isLoadingDetail } = useClinicalSeriesDetail(selectedId ?? 0);
   const rebuildMutation = useRebuildClinicalSeries();
   const rebuildJob = useClinicalSeriesRebuildProgress();
-  const { data: duplicates } = useDetectDuplicates();
+  // Deferred: only starts after the main list has loaded so it doesn't compete for bandwidth
+  const {
+    data: duplicates,
+    isLoading: isCheckingDuplicates,
+    isFetching: isFetchingDuplicates,
+  } = useQuery({
+    enabled: !isLoading && !!data,
+    queryFn: fetchDetectDuplicates,
+    queryKey: clinicalSeriesKeys.duplicates(),
+    staleTime: 5 * 60 * 1000,
+  });
 
   const totalPages = data ? Math.ceil(data.total / pageSize) : 1;
 
@@ -447,6 +457,13 @@ export function ClinicalSeriesView() {
               </Alert.Description>
             </Alert.Content>
           </Alert>
+        )}
+        {/* Duplicate detection — deferred, runs after main list loads */}
+        {(isCheckingDuplicates || isFetchingDuplicates) && !duplicates && (
+          <p className="text-xs text-foreground-300 flex items-center gap-1.5">
+            <Spinner size="sm" />
+            Verificando duplicados...
+          </p>
         )}
         {duplicates && duplicates.length > 0 && (
           <Alert status="warning">
