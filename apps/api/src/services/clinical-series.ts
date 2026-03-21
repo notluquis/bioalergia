@@ -47,7 +47,9 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "tratamiento",
   "vacuna",
   // Chilean health/admin terms that appear in clinical notes but are not names
+  "ambiental",
   "boleta",
+  "dte",
   "evento",
   "fonasa",
   "hualpen",
@@ -312,16 +314,20 @@ function extractRutAdjacentNames(text: string): string[] {
 // Walk the token stream looking for a token that starts with an uppercase
 // letter (likely a name start) and extend it with following tokens that also
 // look like name tokens (any case, no stopwords, no digits).
-// This handles the common "Nadia yañez rojas" pattern where only the first
-// word is capitalised — something the pure-regex approach misses.
+// Handles two common patterns in Chilean medical notes:
+//   - "Nadia yañez rojas" — only the first word is Title-cased
+//   - "RENATO RIQUELME MUÑOZ" — secretaries sometimes type in ALL-CAPS
 function extractCapitalizedStartNames(text: string): string[] {
   const results: string[] = [];
   const tokens = text.split(/\s+/).filter(Boolean);
 
   for (let i = 0; i < tokens.length; i++) {
     const token = tokens[i]!;
-    // Must start with an uppercase letter followed by at least one lowercase.
-    if (!/^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]/.test(token)) continue;
+    // Accept Title-case ("Nadia") OR all-caps sequences of 3+ letters ("RENATO").
+    // Pure lowercase tokens are handled by extractLowercaseNameHints instead.
+    const isTitleCase = /^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]/.test(token);
+    const isAllCaps = /^[A-ZÁÉÍÓÚÑ]{3,}$/.test(token);
+    if (!isTitleCase && !isAllCaps) continue;
     const normalized = normalizeName(token);
     if (!normalized || normalized.length < 3 || LOWERCASE_NAME_STOPWORDS.has(normalized)) continue;
 

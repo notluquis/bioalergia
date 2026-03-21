@@ -16,6 +16,74 @@ describe("extractPatientHints", () => {
       const { patientName } = extractPatientHints(null, "Paciente: Maria José Silva");
       expect(patientName).toBe("maria jose silva");
     });
+
+    // ── ALL-CAPS event summaries ─────────────────────────────────────────────
+    it("extracts name from ALL-CAPS summary (RENATO RIQUELME MUÑOZ)", () => {
+      // Secretaries sometimes type full caps. Stopwords filter "confirma",
+      // "test", "cutaneo", "ambiental" — leaving the real name.
+      const { patientName } = extractPatientHints(
+        "confirma TEST CUTANEO AMBIENTAL RENATO RIQUELME MUÑOZ",
+        null,
+      );
+      expect(patientName).toBe("renato riquelme munoz");
+    });
+
+    it("extracts name from ALL-CAPS when mixed with lowercase tokens", () => {
+      // "LLEGO" is a stopword; "PAULINA ANGÉLICA VIVEROS INZUNZA" should be extracted.
+      const { patientName } = extractPatientHints(
+        "LLEGO, vacuna clustoid 0,5 PAULINA ANGELICA VIVEROS INZUNZA (50)",
+        null,
+      );
+      expect(patientName).toBe("paulina angelica viveros inzunza");
+    });
+
+    // ── Title-case name in the middle of a mixed summary ────────────────────
+    it("extracts Title-case name following lowercase clinical noise", () => {
+      // Real pattern: "confirma,vacuna clustoid 0,5 Paulina Angélica Viveros Inzunza (50)"
+      const { patientName } = extractPatientHints(
+        "confirma,vacuna clustoid 0,5 Paulina Angélica Viveros Inzunza (50)",
+        "ano por medio antibioticos asma",
+      );
+      expect(patientName).toBe("paulina angelica viveros inzunza");
+    });
+
+    // ── Compound surnames with particles ────────────────────────────────────
+    it("extracts name with 'de la' compound surname via RUT-adjacent walk", () => {
+      // "claudio de la cuadra" — "de" and "la" are particles (length <3) that
+      // would break a plain walk; particle-aware logic keeps them.
+      const { patientName } = extractPatientHints(
+        "11:35 control test de parche claudio de la cuadra 967534216",
+        null,
+      );
+      expect(patientName).toBe("claudio de la cuadra");
+    });
+  });
+
+  describe("patientName — stopword filtering", () => {
+    it("does not use 'ambiental' as a name token", () => {
+      const { patientName } = extractPatientHints(
+        "test cutaneo ambiental rosa pineda",
+        null,
+      );
+      // "ambiental" is a stopword — result should skip it and find "rosa pineda"
+      expect(patientName).toBe("rosa pineda");
+    });
+
+    it("does not use 'cutaneo' as a name token", () => {
+      // Real case: "llego Test cutaneo javiera vera" → should be "javiera vera"
+      const { patientName } = extractPatientHints("llego Test cutaneo javiera vera", null);
+      expect(patientName).toBe("javiera vera");
+    });
+
+    it("does not use 'vincular' or 'evento' as name tokens", () => {
+      // If someone wrote "Vincular evento con boleta DTE" in a description,
+      // those words must be filtered as stopwords.
+      const { patientName } = extractPatientHints(
+        "Vincular evento boleta DTE",
+        "javiera vera paciente",
+      );
+      expect(patientName).toBe("javiera vera");
+    });
   });
 
   describe("patientName — all-lowercase fallback (7+ chars per word)", () => {
