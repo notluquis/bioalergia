@@ -187,6 +187,78 @@ describe("extractPatientHints", () => {
     });
   });
 
+  // ── Summary always has priority over description ─────────────────────────
+  describe("patientName — summary priority over description", () => {
+    it("summary capitalized name wins over description noise", () => {
+      // Real case: Paulina Viveros series had "ano por medio antibioticos asma"
+      // stored from an old event description, overriding the correct summary name.
+      const { patientName } = extractPatientHints(
+        "llego vacuna clustoid 0,5 Paulina Angélica Viveros Inzunza (50)",
+        "ano por medio antibioticos asma",
+      );
+      expect(patientName).toBe("paulina angelica viveros inzunza");
+    });
+
+    it("summary name wins over description field labels", () => {
+      // Real case: older Maximiliano events had structured description with
+      // "-Rut del paciente:", "-Previsión: Colmena", "-Número de contacto:" etc.
+      // that should never override the clearly-named summary.
+      const { patientName } = extractPatientHints(
+        "llego Maximiliano Soto Hernández ,vacuna clustoid (50)",
+        "-Rut del paciente: 21825149-8 -Edad: 18 años -Previsión: Colmena -Número de contacto: 97583527",
+      );
+      expect(patientName).toBe("maximiliano soto hernandez");
+    });
+
+    it("description name used when summary has none", () => {
+      const { patientName } = extractPatientHints(
+        "dosis mensual clustoid",
+        "celmira morales inostroza",
+      );
+      expect(patientName).toBe("celmira morales inostroza");
+    });
+  });
+
+  // ── Field labels and delimiters ───────────────────────────────────────────
+  describe("patientName — field labels and delimiters", () => {
+    it("stops at hyphen-prefixed field label like '-Rut del paciente'", () => {
+      // Real case: "vacuna clustoid (50) Maximiliano Soto Hernández -Rut del paciente: 21825149-8"
+      const { patientName } = extractPatientHints(
+        "vacuna clustoid (50) Maximiliano Soto Hernández -Rut del paciente: 21825149-8",
+        null,
+      );
+      expect(patientName).toBe("maximiliano soto hernandez");
+    });
+
+    it("handles comma-attached surname+word as two tokens (Xavier VIDAUX,vacuna)", () => {
+      // Real case: "confirma vacuna mensual clustoid 50 Xavier VIDAUX, 21770139-2, 51 años"
+      // "VIDAUX," with comma: comma is stripped → "vidaux" only, not "vidaux vacuna".
+      const { patientName } = extractPatientHints(
+        "confirma vacuna mensual clustoid 50 Xavier VIDAUX, 21770139-2, 51 años, isapre, concepcion, 961552808",
+        null,
+      );
+      expect(patientName).toBe("xavier vidaux");
+    });
+
+    it("does not include 'rut' as a name token", () => {
+      // "rut" is a common label abbreviation (Rol Único Tributario), not a name.
+      const { patientName } = extractPatientHints(
+        "llego,Amanda valentina gallardo gonzález rut 22341364-1",
+        null,
+      );
+      expect(patientName).toBe("amanda valentina gallardo gonzalez");
+    });
+
+    it("extracts name from summaries with comma-separated segments", () => {
+      // Real case: "confirma Joaquin Garcia Torres, dosis mensual clustoid (60)"
+      const { patientName } = extractPatientHints(
+        "confirma Joaquin Garcia Torres, dosis mensual clustoid (60)",
+        null,
+      );
+      expect(patientName).toBe("joaquin garcia torres");
+    });
+  });
+
   describe("patientRut", () => {
     it("extracts a RUT with dots and dash", () => {
       const { patientRut } = extractPatientHints("12.345.678-9 Juan Pérez", null);

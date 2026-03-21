@@ -57,6 +57,7 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "fonasa",
   "hualpen",
   "isapre",
+  "rut",
   "vincular",
   // Common Spanish words that appear in clinical notes but are not names
   "beneficiario",
@@ -304,6 +305,9 @@ function extractRutAdjacentNames(text: string): string[] {
     const PARTICLES = new Set(["de", "del", "la", "las", "los", "van", "von", "y", "e"]);
     const nameTokens: string[] = [];
     for (const token of [...rawTokens].reverse()) {
+      // Hyphen-prefixed tokens are field labels ("-Rut:", "-Edad", "-Número")
+      // that secretaries write in structured notes — not name components.
+      if (token.startsWith("-")) break;
       // Strip trailing digits so "martin9" is treated as "martin".
       const stripped = token.replace(/\d+$/, "");
       const n = normalizeName(stripped || token);
@@ -343,9 +347,15 @@ function extractCapitalizedStartNames(text: string): string[] {
     const sequence = [normalized];
     for (let j = i + 1; j < Math.min(i + 4, tokens.length); j++) {
       const next = tokens[j]!;
-      const nextNorm = normalizeName(next);
+      // Hyphen-prefixed tokens are field labels ("-Rut:", "-Edad") — stop here.
+      if (next.startsWith("-")) break;
+      // Tokens like "VIDAUX,vacuna" normalize to "vidaux vacuna" (embedded space).
+      // Only use the first word; the rest is a new clause separated by a comma.
+      const rawNorm = normalizeName(next);
+      const nextNorm = rawNorm.split(" ")[0]!;
       if (!nextNorm || nextNorm.length < 3 || /\d/.test(nextNorm) || LOWERCASE_NAME_STOPWORDS.has(nextNorm)) break;
       sequence.push(nextNorm);
+      if (rawNorm !== nextNorm) break; // comma/separator found — don't extend further
     }
 
     if (sequence.length >= 2) results.push(sequence.join(" "));
@@ -354,24 +364,32 @@ function extractCapitalizedStartNames(text: string): string[] {
   return [...new Set(results)];
 }
 
+function extractNamesFromText(text: string): string[] {
+  if (!text) return [];
+  return [
+    ...extractRutAdjacentNames(text),
+    ...extractCapitalizedStartNames(text),
+    ...extractLowercaseNameHints(text),
+  ];
+}
+
 export function extractIdentityHints(summary: null | string, description: null | string) {
-  const text = `${summary ?? ""} ${description ?? ""}`.trim();
+  // RUTs are extracted from combined text — they appear in either field.
+  const combinedText = `${summary ?? ""} ${description ?? ""}`.trim();
   const ruts = [
-    ...new Set((text.match(RUT_REGEX) ?? []).map((value) => normalizeRut(value)).filter(Boolean)),
+    ...new Set(
+      (combinedText.match(RUT_REGEX) ?? []).map((value) => normalizeRut(value)).filter(Boolean),
+    ),
   ];
 
-  // Priority 1 — text adjacent to a RUT: highest confidence.
-  const rutAdjacentNames = extractRutAdjacentNames(text);
+  // Names: summary always has priority over description.
+  // Running extractors separately prevents description noise (clinical notes,
+  // field labels like "-Rut del paciente:", previous visit history) from
+  // overriding a clearly-identified name in the event title/summary.
+  const summaryNames = extractNamesFromText((summary ?? "").trim());
+  const descriptionNames = extractNamesFromText((description ?? "").trim());
 
-  // Priority 2 — sequences starting from a capitalised token: catches
-  // "Nadia yañez rojas" where only the first token is capitalised.
-  const capitalizedStartNames = extractCapitalizedStartNames(text);
-
-  // Priority 3 — pure lowercase sliding-window heuristic: existing fallback.
-  const lowercaseNames = extractLowercaseNameHints(text);
-
-  const names = [...rutAdjacentNames, ...capitalizedStartNames, ...lowercaseNames];
-  const uniqueNames = [...new Set(names)];
+  const uniqueNames = [...new Set([...summaryNames, ...descriptionNames])];
   const patientRut = ruts[0] ?? null;
   const beneficiaryRut = ruts.find((value) => value !== patientRut) ?? null;
   const patientName = uniqueNames[0] ?? null;
