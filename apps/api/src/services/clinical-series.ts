@@ -3,7 +3,7 @@ import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone.js";
 import utc from "dayjs/plugin/utc.js";
 import { sql } from "kysely";
-import { normalizeRut, validateRut } from "../lib/rut";
+import { normalizeRut } from "../lib/rut";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -515,12 +515,14 @@ export function extractIdentityHints(summary: null | string, description: null |
       (combinedText.match(RUT_REGEX) ?? [])
         .map((value) => normalizeRut(value))
         .filter((rut): rut is string => {
-          if (rut === null || !validateRut(rut)) return false;
-          // Reject company RUTs: numeric body ≥ 50,000,000.
-          // Personal (natural person) RUTs in Chile are currently below ~26M.
-          // The clinic only serves patients, never companies.
+          if (rut === null) return false;
           const body = Number(rut.split("-")[0]);
-          return body < 50_000_000;
+          // Reject company RUTs (body ≥ 50M) and noise (body < 1M).
+          // Personal RUTs in Chile are currently 1M–26M. The ≥50M check is
+          // sufficient to filter mobile numbers (9XXXXXXXX = 90M+); we do NOT
+          // require a valid checksum so that secretary typos in the DV digit
+          // (e.g. 26606696-1 instead of -5) still produce a usable match key.
+          return body >= 1_000_000 && body < 50_000_000;
         }),
     ),
   ];
@@ -1605,30 +1607,6 @@ export async function detectDuplicateSeries(): Promise<ClinicalSeriesDuplicate[]
         break;
       }
 
-      // Medium confidence: names share ≥2 tokens, at least one ≥5 chars, and the
-      // intersection covers ≥50% of the shorter name — "jose luis ojeda" and
-      // "jose ojeda carrasco" both contain {"jose","ojeda"} which is enough evidence.
-      if (aName && bName && isLikelyPersonName(aName) && isLikelyPersonName(bName)) {
-        const aTokens = new Set(aName.split(" ").filter(Boolean));
-        const bTokens = new Set(bName.split(" ").filter(Boolean));
-        const common = [...aTokens].filter((t) => bTokens.has(t));
-        const shorter = Math.min(aTokens.size, bTokens.size);
-        const hasSubstantial = common.some((t) => t.length >= 5);
-        if (common.length >= 2 && hasSubstantial && common.length / shorter >= 0.5) {
-          results.push({
-            confidence: "medium",
-            kind: a.kind,
-            patientName: a.patientName ?? b.patientName,
-            reason: `Nombres similares ("${a.patientName}" / "${b.patientName}")`,
-            sourceEventCount: b._count.events,
-            sourceId: b.id,
-            targetEventCount: a._count.events,
-            targetId: a.id,
-          });
-          paired.add(b.id);
-          break;
-        }
-      }
     }
   }
 

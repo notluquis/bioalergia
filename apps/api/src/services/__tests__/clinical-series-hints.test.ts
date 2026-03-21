@@ -471,6 +471,13 @@ describe("extractIdentityHints", () => {
     expect(result.patientRut).toBeNull();
   });
 
+  it("accepts personal RUT below 50M even with wrong check digit (secretary typo)", () => {
+    // Real case: 26.606.696-1 has correct DV=5 but was typed as -1 by the secretary.
+    // We keep it so duplicate detection can still match two series with the same typo'd RUT.
+    const result = extractIdentityHints("jose luis ojeda 26.606.696-1", null);
+    expect(result.patientRut).toBe("26606696-1");
+  });
+
   it("accepts valid personal RUT below 50M threshold", () => {
     // Personal RUTs are currently up to ~26M — must still be accepted.
     const result = extractIdentityHints("test cutaneo 12.345.678-5 Ana López", null);
