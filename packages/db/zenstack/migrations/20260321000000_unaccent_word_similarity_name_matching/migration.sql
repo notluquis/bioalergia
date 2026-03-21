@@ -29,6 +29,6 @@ $$;
 -- negligible.
 DROP INDEX IF EXISTS dte_sale_details_client_name_trgm_idx;
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS dte_sale_details_client_name_trgm_idx
+CREATE INDEX IF NOT EXISTS dte_sale_details_client_name_trgm_idx
   ON public.dte_sale_details
   USING GIN (f_unaccent(lower(client_name)) gin_trgm_ops);
