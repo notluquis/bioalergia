@@ -144,7 +144,7 @@ export const ClinicalSeriesEventSchema = z.object({
   eventDate: z.string(),
   eventId: z.number(),
   externalEventId: z.string(),
-  linkedFolios: z.array(z.string()),
+  linkedFolios: z.array(z.string()).catch([]),
   patientName: z.string().nullable(),
   patientRut: z.string().nullable(),
   seriesStageKind: z.enum(["DOSE", "INSTALLATION", "MAINTENANCE", "READING"]).nullable(),
@@ -167,12 +167,13 @@ export const ClinicalSeriesLinkedDocumentSchema = z.object({
 });
 
 export const ClinicalSeriesSnapshotSchema = z.object({
-  allergenType: z.enum(["ACAROS", "ACAROS_GRAMINEAS", "GRAMINEAS"]).nullable(),
+  allergenType: z.enum(["ACAROS", "ACAROS_GRAMINEAS", "GRAMINEAS"]).nullable().catch(null),
   vaccineProduct: z
     .enum(["ALXOID", "CLUSTOID", "CLUSTOID_B120", "CLUSTOID_FORTE", "ORAL_TEC"])
-    .nullable(),
-  healthInsurance: z.enum(["FONASA", "ISAPRE", "PARTICULAR"]).nullable(),
-  deliveryModality: z.enum(["DOMICILIO", "PRESENCIAL"]).nullable(),
+    .nullable()
+    .catch(null),
+  healthInsurance: z.enum(["FONASA", "ISAPRE", "PARTICULAR"]).nullable().catch(null),
+  deliveryModality: z.enum(["DOMICILIO", "PRESENCIAL"]).nullable().catch(null),
   beneficiaryName: z.string().nullable(),
   beneficiaryRut: z.string().nullable(),
   id: z.number(),
