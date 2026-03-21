@@ -206,6 +206,18 @@ describe("extractPatientHints", () => {
       expect(patientName).toBeNull();
     });
 
+    it("does not include 's/c' (sin costo) abbreviation in patient name", () => {
+      // Real case: "s/c Ignacio Vergara Guzman 19813018-4" — "s/c" normalizes
+      // to "s c" (3 chars total) which used to pass the `n.length < 3` check
+      // even though each individual word is only 1 char.
+      const { patientName } = extractPatientHints(
+        "s/c Ignacio Vergara Guzman 19813018-4",
+        null,
+      );
+      expect(patientName).toBe("ignacio vergara guzman");
+      expect(patientName).not.toContain("s c");
+    });
+
     it("stops backwards walk at 'clustoid' and does not strip it to 'oid'", () => {
       // Bug fix: stripStopwordPrefix ran before stopword check. "clustoid" was
       // stripped to "oid" (clust=prefix stopword) instead of breaking the walk.

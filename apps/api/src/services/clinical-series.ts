@@ -443,7 +443,10 @@ function extractRutAdjacentNames(text: string): string[] {
       // Deglue stopword prefixes glued without a space ("llegodiego" → "diego").
       const n = stripStopwordPrefix(normalized);
       if (!n || /\d/.test(n)) break;
-      if (n.length < 3 && !PARTICLES.has(n)) break;
+      // Check word lengths rather than total token length: "s/c" normalizes to
+      // "s c" (3 chars) and would pass `n.length < 3`, but each word is 1 char.
+      const nWords = n.split(" ").filter(Boolean);
+      if (nWords.every((w) => w.length < 3) && !PARTICLES.has(n)) break;
       nameTokens.unshift(n);
     }
     // Drop leading/trailing particles — a name must start and end with a real token.
