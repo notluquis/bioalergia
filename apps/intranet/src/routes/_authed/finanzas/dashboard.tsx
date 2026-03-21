@@ -11,6 +11,7 @@ export const Route = createFileRoute("/_authed/finanzas/dashboard")({
       section: "Finanzas",
     },
     permission: { action: "read", subject: "Event" },
+    relatedSubjects: ["Dashboard"],
     title: "Tablero Financiero",
   },
   beforeLoad: ({ context }) => {

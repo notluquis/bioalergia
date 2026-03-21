@@ -8,6 +8,7 @@ export const Route = createFileRoute("/_authed/services/")({
   staticData: {
     nav: { iconKey: "Briefcase", label: "Servicios", order: 10, section: "Servicios" },
     permission: { action: "read", subject: "ServiceList" },
+    relatedSubjects: ["ServiceAgenda", "ServiceSchedule", "ServiceTemplate"],
     breadcrumb: "Servicios",
   },
   beforeLoad: ({ context }) => {

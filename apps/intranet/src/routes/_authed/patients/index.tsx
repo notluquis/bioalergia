@@ -21,6 +21,7 @@ export const Route = createFileRoute("/_authed/patients/")({
   staticData: {
     nav: { iconKey: "Users", label: "Pacientes", order: 1, section: "Servicios" },
     permission: { action: "read", subject: "Patient" },
+    relatedSubjects: ["Person", "Consultation", "Passkey"],
   },
   component: PatientsListPage,
 });

@@ -8,6 +8,7 @@ export const Route = createFileRoute("/_authed/hr/timesheets")({
   staticData: {
     nav: { iconKey: "Clock", label: "Control Horario", order: 4, section: "Operaciones" },
     permission: { action: "read", subject: "TimesheetList" },
+    relatedSubjects: ["Timesheet"],
   },
   beforeLoad: ({ context }) => {
     if (!context.can("read", "TimesheetList")) {

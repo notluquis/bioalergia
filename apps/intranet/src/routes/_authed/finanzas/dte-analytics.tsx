@@ -45,6 +45,7 @@ export const Route = createFileRoute("/_authed/finanzas/dte-analytics")({
       section: "Finanzas",
     },
     permission: { action: "read", subject: "DTEPurchaseDetail" },
+    relatedSubjects: ["DTEPeriod", "DTESaleDetail", "DTESyncLog"],
     title: "Análisis de DTEs",
   },
   beforeLoad: ({ context }) => {

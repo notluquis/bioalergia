@@ -6,6 +6,7 @@ export const Route = createFileRoute("/_authed/settings/backups")({
   staticData: {
     nav: { iconKey: "Database", label: "Backups", order: 4, section: "Sistema" },
     permission: { action: "read", subject: "Backup" },
+    relatedSubjects: ["DebugToken", "Setting"],
     title: "Copias de seguridad",
   },
   beforeLoad: ({ context }) => {

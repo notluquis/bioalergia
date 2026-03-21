@@ -6,6 +6,15 @@ export const Route = createFileRoute("/_authed/finanzas/production-balances")({
   staticData: {
     nav: { iconKey: "FileSpreadsheet", label: "Balance Diario", order: 7, section: "Finanzas" },
     permission: { action: "read", subject: "DailyBalance" },
+    relatedSubjects: [
+      "Balance",
+      "Budget",
+      "BudgetItem",
+      "DailyProductionBalance",
+      "ProductionBalance",
+      "CompensationPeriodBudget",
+      "CompensationProfile",
+    ],
     title: "Balance diario de producción",
   },
   beforeLoad: ({ context }) => {

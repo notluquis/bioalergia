@@ -12,7 +12,7 @@ const TanStackRouterDevtools =
     : lazy(() =>
         import("@tanstack/router-devtools").then((res) => ({
           default: res.TanStackRouterDevtools,
-        })),
+        }))
       );
 
 import type { NavConfig, RoutePermission } from "@/types/navigation";
@@ -22,6 +22,8 @@ declare module "@tanstack/react-router" {
   interface StaticDataRouteOption {
     nav?: NavConfig;
     permission?: RoutePermission;
+    /** Additional permission subjects owned by this page (used for roles matrix grouping) */
+    relatedSubjects?: string[];
     title?: string;
     hideFromNav?: boolean;
     breadcrumb?: string | ((data: unknown) => string);

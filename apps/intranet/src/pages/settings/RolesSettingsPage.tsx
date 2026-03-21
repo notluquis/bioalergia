@@ -472,13 +472,26 @@ function buildSubjectNavKeyMap(routeTreeData: RouteTreeNode, allPermissions: Per
   const walk = (route: RouteTreeNode, activeNav?: NavConfig) => {
     const currentNav = (route.options?.staticData?.nav as NavConfig | undefined) ?? activeNav;
     const permission = route.options?.staticData?.permission as { subject?: string } | undefined;
+    const relatedSubjects = route.options?.staticData?.relatedSubjects as string[] | undefined;
 
-    if (permission?.subject && currentNav) {
+    if (currentNav) {
       const key = getNavKey(currentNav.section, currentNav.label);
-      const subject = permission.subject.toLowerCase();
-      const existing = mapping.get(subject) ?? new Set<string>();
-      existing.add(key);
-      mapping.set(subject, existing);
+
+      if (permission?.subject) {
+        const subject = permission.subject.toLowerCase();
+        const existing = mapping.get(subject) ?? new Set<string>();
+        existing.add(key);
+        mapping.set(subject, existing);
+      }
+
+      if (relatedSubjects) {
+        for (const subject of relatedSubjects) {
+          const subjectLower = subject.toLowerCase();
+          const existing = mapping.get(subjectLower) ?? new Set<string>();
+          existing.add(key);
+          mapping.set(subjectLower, existing);
+        }
+      }
     }
 
     getRouteChildren(route.children).forEach((child) => {
@@ -511,17 +524,57 @@ function addInferredAliases(mapping: Map<string, Set<string>>, allPermissions: P
   );
   const knownSubjects = new Set(allPermissions.map((perm) => perm.subject.toLowerCase()));
 
+  // Build token → navKey frequency index for section-based fallback (pass 2)
+  const tokenToNavKeyScores = new Map<string, Map<string, number>>();
+  for (const [subject, navKeys] of mapping.entries()) {
+    for (const token of tokenizeSubject(subject)) {
+      if (token.length < 4) continue;
+      const navKeyMap = tokenToNavKeyScores.get(token) ?? new Map<string, number>();
+      for (const navKey of navKeys) {
+        navKeyMap.set(navKey, (navKeyMap.get(navKey) ?? 0) + 1);
+      }
+      tokenToNavKeyScores.set(token, navKeyMap);
+    }
+  }
+
   for (const subject of knownSubjects) {
     if (mapping.has(subject)) {
       continue;
     }
+
+    // Pass 1: direct containment + token matching
     const best = findBestMappedSubject(subject, mappedSubjects, mappedTokenMap);
-    if (!best) {
+    if (best) {
+      const target = mapping.get(best);
+      if (target) mapping.set(subject, new Set(target));
       continue;
     }
-    const target = mapping.get(best);
-    if (target) {
-      mapping.set(subject, new Set(target));
+
+    // Pass 2: token-based section inference — collapse navKey scores to section level
+    const tokens = tokenizeSubject(subject).filter((t) => t.length >= 4);
+    if (tokens.length === 0) continue;
+
+    const sectionScores = new Map<string, number>();
+    const sectionFirstNavKey = new Map<string, string>();
+
+    for (const token of tokens) {
+      const navKeyScores = tokenToNavKeyScores.get(token);
+      if (!navKeyScores) continue;
+      for (const [navKey, count] of navKeyScores) {
+        const section = navKey.split("::")[0];
+        sectionScores.set(section, (sectionScores.get(section) ?? 0) + count);
+        if (!sectionFirstNavKey.has(section)) {
+          sectionFirstNavKey.set(section, navKey);
+        }
+      }
+    }
+
+    if (sectionScores.size === 0) continue;
+
+    const bestSection = [...sectionScores.entries()].sort((a, b) => b[1] - a[1])[0][0];
+    const bestNavKey = sectionFirstNavKey.get(bestSection);
+    if (bestNavKey) {
+      mapping.set(subject, new Set([bestNavKey]));
     }
   }
 
@@ -547,7 +600,7 @@ function findBestMappedSubject(
     }
   }
 
-  if (!best || bestScore < 2) {
+  if (!best || bestScore < 1) {
     return null;
   }
   return best;
@@ -564,6 +617,10 @@ function scoreCandidateSubject(
 
   if (subjectLower.includes(candidateLower)) {
     return 1000 + candidateLower.length;
+  }
+  // Also check reverse: candidate is a superstring of subject (e.g. "calendar" → "calendarschedule")
+  if (candidateLower.includes(subjectLower) && subjectLower.length >= 4) {
+    return 1000 + subjectLower.length;
   }
 
   if (candidateTokens.length === 0) {

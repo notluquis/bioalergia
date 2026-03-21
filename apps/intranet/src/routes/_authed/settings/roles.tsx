@@ -6,6 +6,7 @@ export const Route = createFileRoute("/_authed/settings/roles")({
   staticData: {
     nav: { iconKey: "UserCog", label: "Roles", order: 2, section: "Sistema" },
     permission: { action: "read", subject: "Role" },
+    relatedSubjects: ["Permission"],
     title: "Roles y permisos",
   },
   beforeLoad: ({ context }) => {

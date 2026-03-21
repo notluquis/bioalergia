@@ -6,6 +6,12 @@ export const Route = createFileRoute("/_authed/settings/inventario")({
   staticData: {
     nav: { iconKey: "PackagePlus", label: "Conf. Inventario", order: 5, section: "Sistema" },
     permission: { action: "update", subject: "InventorySetting" },
+    relatedSubjects: [
+      "InventoryCategory",
+      "InventoryMovement",
+      "CommonSupply",
+      "FinancialAutoCategoryRule",
+    ],
   },
   beforeLoad: ({ context }) => {
     if (!context.can("update", "InventorySetting")) {

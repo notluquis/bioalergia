@@ -6,6 +6,7 @@ export const Route = createFileRoute("/_authed/settings/haulmer")({
   staticData: {
     nav: { iconKey: "Download", label: "Haulmer", order: 7, section: "Sistema" },
     permission: { action: "read", subject: "Integration" },
+    relatedSubjects: ["HaulmerAuthToken", "HaulmerSyncLog"],
   },
   beforeLoad: ({ context }) => {
     if (!context.can("read", "Integration")) {
