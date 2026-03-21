@@ -144,6 +144,81 @@ describe("extractPatientHints", () => {
     });
   });
 
+  // ── Stopword prefix glued to name ("llegodiego" → "diego") ──────────────
+  describe("patientName — stopword prefix glued to name token", () => {
+    it("strips 'llego' glued to the first name token", () => {
+      // Real case: secretary types "llegodiego" without a space.
+      // "llegodiego" alone is not a stopword; stripStopwordPrefix finds the
+      // "llego" prefix and returns "diego", leaving "diego musiet" as the name.
+      const { patientName } = extractPatientHints(
+        "llegodiego musiet (50) clustoid 19511977-5",
+        null,
+      );
+      expect(patientName).toBe("diego musiet");
+    });
+
+    it("does not extract 'autorizado por doctor' as a person name", () => {
+      // Real case: note "autorizado por doctor miriam" was matched as a
+      // duplicate because isLikelyPersonName counted clinical words as tokens.
+      const { patientName } = extractPatientHints(
+        "autorizado por doctor miriam tratamiento subcutaneo",
+        null,
+      );
+      // Only "miriam" survives — 1 token < 2 required → no name extracted
+      expect(patientName).toBeNull();
+    });
+  });
+
+  // ── Clinical phrases mistaken for names ──────────────────────────────────
+  describe("patientName — clinical phrases not treated as names", () => {
+    it("does not extract 'inicio' as a name token", () => {
+      // Real case: "inicio david merino" → "inicio" is a treatment start marker.
+      const { patientName } = extractPatientHints(
+        "inicio david merino subcutaneo acaros 26606696-1",
+        null,
+      );
+      // "david merino" has only 2 tokens, last is 6 chars — valid name
+      expect(patientName).toBe("david merino");
+    });
+
+    it("does not extract 'alergia alimentaria' as a name", () => {
+      // Real case: two series matched by name "alergia alimentaria" — both words
+      // are allergy/medical terms and must be filtered.
+      const { patientName } = extractPatientHints("alergia alimentaria test cutaneo", null);
+      expect(patientName).toBeNull();
+    });
+
+    it("does not extract 'diagnostico de asma bronquial infantil' as a name", () => {
+      const { patientName } = extractPatientHints(
+        "diagnostico de asma bronquial infantil test cutaneo ambiental",
+        null,
+      );
+      expect(patientName).toBeNull();
+    });
+
+    it("does not extract 'tomo antihistaminico' as a name", () => {
+      const { patientName } = extractPatientHints("tomo antihistaminico parche", null);
+      expect(patientName).toBeNull();
+    });
+
+    it("does not extract 'solo examen' as a name", () => {
+      const { patientName } = extractPatientHints("solo examen test cutaneo", null);
+      expect(patientName).toBeNull();
+    });
+
+    it("stops backwards walk at 'clustoid' and does not strip it to 'oid'", () => {
+      // Bug fix: stripStopwordPrefix ran before stopword check. "clustoid" was
+      // stripped to "oid" (clust=prefix stopword) instead of breaking the walk.
+      const { patientName } = extractPatientHints(
+        "llegodiego musiet clustoid 0,5ml (50) 95703962-7",
+        null,
+      );
+      // "diego musiet" — "oid" must NOT appear in the extracted name
+      expect(patientName).toBe("diego musiet");
+      expect(patientName).not.toContain("oid");
+    });
+  });
+
   // ── Amount annotations and comma-joined stopwords ───────────────────────
   describe("patientName — amount annotations and comma-joined stopwords", () => {
     it("strips (N) amounts glued to the name token before backwards walk", () => {

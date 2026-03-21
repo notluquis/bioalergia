@@ -15,28 +15,45 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "acaros",
   "administracion",
   "aeroalergenos",
+  "alergia",
+  "alergico",
+  "alergica",
   "alimento",
   "alimentario",
+  "alimentos",
   "ambiente",
   "ampolla",
   "antigenos",
+  "antihistaminico",
+  "asma",
+  "bronquial",
+  "cholga",
   "clustoid",
   "confirma",
   "consulta",
   "control",
+  "costo",
   "cutaneo",
+  "diagnostico",
   "dosis",
   "entrega",
+  "examen",
   "fase",
   "frasco",
   "graminea",
   "gramineas",
+  "infantil",
+  "inicio",
   "inyeccion",
+  "inmunoterapia",
   "instalacion",
   "lectura",
   "mantencion",
   "mensual",
   "mil",
+  "papa",
+  "pediatrico",
+  "realizara",
   "cuarta",
   "cuarto",
   "pagada",
@@ -52,6 +69,7 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "reaccion",
   "refuerzo",
   "retiro",
+  "retoma",
   "segunda",
   "segundo",
   "semanal",
@@ -68,6 +86,7 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "alxoid",
   "clust",
   "clusitoid",
+  "clustois",
   "cluxin",
   "clustek",
   "forte",
@@ -90,6 +109,7 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "amb",
   "ambiental",
   "banmedica",
+  "blanca",
   "boleta",
   "ccp",
   "colmena",
@@ -121,12 +141,15 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "talcahuano",
   "tome",
   // Common Spanish words that appear in clinical notes but are not names
+  "autorizado",
   "beneficiario",
   "nombre",
   "paciente",
+  "como",
   "con",
   "del",
   "desde",
+  "doctor",
   "ella",
   "este",
   "hace",
@@ -136,15 +159,22 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "lleva",
   "llevara",
   "llevo",
+  "nueva",
+  "nuevamas",
   "para",
   "pero",
+  "por",
   "retiran",
+  "humana",
   "sale",
   "sera",
+  "solo",
   "tiene",
+  "tomo",
   "trae",
   "traen",
   "venir",
+  "ver",
   "viene",
 ]);
 
@@ -272,6 +302,22 @@ function normalizeName(value: string): string {
     .trim();
 }
 
+/**
+ * If a stopword of ≥4 chars is glued directly to the start of `token`
+ * (e.g. "llegodiego" = "llego" + "diego"), returns the remainder after the
+ * stopword so downstream checks can evaluate it on its own.
+ * Uses the longest matching prefix to avoid partial matches.
+ */
+function stripStopwordPrefix(token: string): string {
+  let best = "";
+  for (const sw of LOWERCASE_NAME_STOPWORDS) {
+    if (sw.length >= 4 && sw.length > best.length && token.startsWith(sw) && token.length > sw.length) {
+      best = sw;
+    }
+  }
+  return best ? token.slice(best.length) : token;
+}
+
 function resolveClinicalSeriesOrderBy(
   filters?: ClinicalSeriesFilters,
 ): ReturnType<typeof sql> {
@@ -309,7 +355,7 @@ function extractLowercaseNameHints(text: string): string[] {
 
   const tokens = normalized
     .split(" ")
-    .map((token) => token.trim())
+    .map((token) => stripStopwordPrefix(token.trim()))
     .filter(Boolean);
 
   const matches = new Set<string>();
@@ -385,13 +431,18 @@ function extractRutAdjacentNames(text: string): string[] {
       if (token.startsWith("-")) break;
       // Strip trailing digits so "martin9" is treated as "martin".
       const stripped = token.replace(/\d+$/, "");
-      const n = normalizeName(stripped || token);
-      if (!n || /\d/.test(n)) break;
+      const normalized = normalizeName(stripped || token);
+      if (!normalized || /\d/.test(normalized)) break;
       // A single whitespace-token can contain comma-joined words ("alamos,fonasa," →
       // "alamos fonasa"). Check each word individually so stopwords inside the
       // token are caught even when the full string isn't in the set.
-      const nWords = n.split(" ").filter(Boolean);
-      if (nWords.some((w) => LOWERCASE_NAME_STOPWORDS.has(w))) break;
+      // IMPORTANT: Check stopwords BEFORE degluing — "clustoid" must break the walk,
+      // not be stripped to "oid" by stripStopwordPrefix.
+      const nWords0 = normalized.split(" ").filter(Boolean);
+      if (nWords0.some((w) => LOWERCASE_NAME_STOPWORDS.has(w))) break;
+      // Deglue stopword prefixes glued without a space ("llegodiego" → "diego").
+      const n = stripStopwordPrefix(normalized);
+      if (!n || /\d/.test(n)) break;
       if (n.length < 3 && !PARTICLES.has(n)) break;
       nameTokens.unshift(n);
     }
