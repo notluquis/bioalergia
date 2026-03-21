@@ -832,8 +832,6 @@ export async function getClinicalSeriesSnapshotByExternalEvent(params: {
     summary: item.summary ?? null,
   }));
 
-  const totalExpected = events.reduce((sum, item) => sum + (item.amountExpected ?? 0), 0);
-  const totalPaid = events.reduce((sum, item) => sum + (item.amountPaid ?? 0), 0);
   const totalLinkedAmount = linkedDocuments.reduce((sum, item) => sum + item.totalAmount, 0);
   const today = dayjs().tz(TIMEZONE).format("YYYY-MM-DD");
   const dueEvents = events.filter((item) => isPastOrTodayEvent(item.eventDate, today));
