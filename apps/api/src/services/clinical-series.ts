@@ -834,7 +834,12 @@ export async function syncClinicalSeriesForEventIds(
   });
 
   // Refresh each touched series once, also concurrently.
-  await runConcurrent([...touchedSeriesIds], 8, refreshClinicalSeriesMetadata);
+  // Errors are isolated per series so one failure doesn't abort the rest.
+  await runConcurrent([...touchedSeriesIds], 8, (id) =>
+    refreshClinicalSeriesMetadata(id).catch((err: unknown) => {
+      console.error(`[clinical-series] refreshClinicalSeriesMetadata(${id}) failed:`, err);
+    }),
+  );
 }
 
 export async function syncClinicalSeriesForExternalEvents(

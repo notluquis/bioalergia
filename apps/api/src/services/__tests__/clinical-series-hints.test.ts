@@ -124,6 +124,17 @@ describe("extractPatientHints", () => {
       expect(patientName).toBe("pedro gonzalez");
     });
 
+    it("ignores medical noise in description when summary has a capitalized name", () => {
+      // Real case: description contained "ano por medio antibioticos asma" while
+      // ALL 12 event summaries show "Paulina Angélica Viveros Inzunza". The
+      // capitalized extractor must win over the lowercase description noise.
+      const { patientName } = extractPatientHints(
+        "llego vacuna clustoid 0,5 Paulina Angélica Viveros Inzunza (50)",
+        "ano por medio antibioticos asma",
+      );
+      expect(patientName).toBe("paulina angelica viveros inzunza");
+    });
+
     it("detects lowercase names with shorter surnames when enough real tokens are present", () => {
       const { patientName } = extractPatientHints(
         "llego 2da dosis acaros 0,2ml(30); benjamin saez jaque",
