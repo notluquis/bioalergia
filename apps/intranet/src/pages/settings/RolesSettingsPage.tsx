@@ -561,7 +561,7 @@ function addInferredAliases(mapping: Map<string, Set<string>>, allPermissions: P
       const navKeyScores = tokenToNavKeyScores.get(token);
       if (!navKeyScores) continue;
       for (const [navKey, count] of navKeyScores) {
-        const section = navKey.split("::")[0];
+        const section = navKey.split("::")[0] ?? navKey;
         sectionScores.set(section, (sectionScores.get(section) ?? 0) + count);
         if (!sectionFirstNavKey.has(section)) {
           sectionFirstNavKey.set(section, navKey);
@@ -571,7 +571,10 @@ function addInferredAliases(mapping: Map<string, Set<string>>, allPermissions: P
 
     if (sectionScores.size === 0) continue;
 
-    const bestSection = [...sectionScores.entries()].sort((a, b) => b[1] - a[1])[0][0];
+    const sorted = [...sectionScores.entries()].sort((a, b) => b[1] - a[1]);
+    const topEntry = sorted[0];
+    if (!topEntry) continue;
+    const bestSection = topEntry[0];
     const bestNavKey = sectionFirstNavKey.get(bestSection);
     if (bestNavKey) {
       mapping.set(subject, new Set([bestNavKey]));
