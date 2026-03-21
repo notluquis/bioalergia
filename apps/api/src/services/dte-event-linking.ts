@@ -185,7 +185,7 @@ interface EventDteLinkedDocument {
   clientName: string;
   clientRUT: string;
   confidenceScore: number;
-  documentDate?: string;
+  documentDate: string;
   dteSaleDetailId: string;
   folio: string;
   matchedBy: string;
@@ -811,7 +811,7 @@ function analyzeCandidate(params: {
     !rutMatch && !exactNameMatch && params.candidate.linkedEventsCount === 0 && amountDiff != null
       ? findSharedSurnameToken(params.nameClaims, params.candidate.clientName)
       : null;
-  if (sharedSurnameToken && amountDiff <= 500) {
+  if (sharedSurnameToken && amountDiff != null && amountDiff <= 500) {
     score += 30;
     signals.push(
       toSignal(
@@ -960,6 +960,7 @@ function buildBundleHypotheses(params: {
   limit: number;
 }): MatchHypothesis[] {
   if (!params.enabled || params.amountHint == null) return [];
+  const amountHint = params.amountHint;
 
   const eligible = params.analyses
     .filter((analysis) => analysis.candidate.linkedEventsCount === 0)
@@ -970,7 +971,7 @@ function buildBundleHypotheses(params: {
   const visit = (startIndex: number, current: CandidateAnalysis[]) => {
     if (current.length >= 2) {
       const totalAmount = current.reduce((sum, analysis) => sum + analysis.document.totalAmount, 0);
-      const amountDiff = Math.abs(params.amountHint - totalAmount);
+      const amountDiff = Math.abs(amountHint - totalAmount);
       if (amountDiff <= MAX_AUTO_LINK_AMOUNT_DIFF) {
         const sorted = [...current].sort((a, b) =>
           a.document.dteSaleDetailId.localeCompare(b.document.dteSaleDetailId),
@@ -978,7 +979,7 @@ function buildBundleHypotheses(params: {
         const dteSaleDetailIds = sorted.map((analysis) => analysis.document.dteSaleDetailId);
         const reasons = [
           `Bundle de ${sorted.length} DTE del mismo día y mismo RUT`,
-          `Suma total ${currencyFormatterForReason(totalAmount)} frente a evento ${currencyFormatterForReason(params.amountHint)}`,
+          `Suma total ${currencyFormatterForReason(totalAmount)} frente a evento ${currencyFormatterForReason(amountHint)}`,
         ];
         if (amountDiff <= 500) {
           reasons.push("La suma del bundle coincide casi exacto");

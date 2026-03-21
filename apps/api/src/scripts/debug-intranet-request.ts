@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { ScureBase32Plugin } from "@otplib/plugin-base32-scure";
 import { NodeCryptoPlugin } from "@otplib/plugin-crypto-node";
 import { OTP } from "otplib";
+import { z } from "zod";
 
 type HttpMethod = "DELETE" | "GET" | "PATCH" | "POST" | "PUT";
 type DebugScope = {
@@ -23,6 +24,11 @@ type ParsedArgs = {
   scopeArgs: string[];
   targetUserId: number;
 };
+
+const loginResponseSchema = z.discriminatedUnion("status", [
+  z.object({ status: z.literal("ok") }),
+  z.object({ status: z.literal("mfa_required"), userId: z.number() }),
+]);
 
 function printHelp() {
   console.log(`Usage:
@@ -246,16 +252,14 @@ async function loginWithCredentials(baseUrl: string): Promise<string> {
   const payload =
     loginBody && typeof loginBody === "object" && "json" in loginBody ? loginBody.json : loginBody;
 
-  if (!payload || typeof payload !== "object" || !("status" in payload)) {
+  const parsedLogin = loginResponseSchema.safeParse(payload);
+  if (!parsedLogin.success) {
     throw new Error(`login returned unexpected payload: ${JSON.stringify(loginBody)}`);
   }
+  const loginPayload = parsedLogin.data;
 
-  if (payload.status === "ok") {
+  if (loginPayload.status === "ok") {
     return extractSessionCookie(loginResponse);
-  }
-
-  if (payload.status !== "mfa_required" || typeof payload.userId !== "number") {
-    throw new Error(`login returned unexpected auth status: ${JSON.stringify(loginBody)}`);
   }
 
   const token = await resolveMfaToken();
@@ -273,7 +277,7 @@ async function loginWithCredentials(baseUrl: string): Promise<string> {
     body: JSON.stringify({
       json: {
         token,
-        userId: payload.userId,
+        userId: loginPayload.userId,
       },
     }),
   });
