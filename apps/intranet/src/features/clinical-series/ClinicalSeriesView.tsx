@@ -1129,9 +1129,9 @@ export function ClinicalSeriesView() {
   );
 }
 
-// Loads both snapshots needed by the merge modal and renders it.
-// Loads both snapshots needed by the merge modal with staleTime: Infinity + retry: false
-// so they are fetched once on mount and never refetch after the merge deletes the source.
+// Loads both snapshots for the merge modal.
+// staleTime: Infinity — fetched once on open, never refetches while the modal is alive.
+// retry: false       — a 404 means the series was already merged; show an error instead of retrying.
 function MergeModalWithSnapshots({
   duplicate,
   onClose,
@@ -1139,20 +1139,116 @@ function MergeModalWithSnapshots({
   duplicate: ClinicalSeriesDuplicate;
   onClose: () => void;
 }) {
-  const { data: snap1 } = useQuery({
+  const queryClient = useQueryClient();
+
+  const {
+    data: snap1,
+    isLoading: loading1,
+    isError: error1,
+  } = useQuery({
     enabled: !!duplicate.sourceId,
     queryFn: () => fetchClinicalSeriesDetail(duplicate.sourceId),
     queryKey: clinicalSeriesKeys.detail(duplicate.sourceId),
     retry: false,
     staleTime: Infinity,
   });
-  const { data: snap2 } = useQuery({
+  const {
+    data: snap2,
+    isLoading: loading2,
+    isError: error2,
+  } = useQuery({
     enabled: !!duplicate.targetId,
     queryFn: () => fetchClinicalSeriesDetail(duplicate.targetId),
     queryKey: clinicalSeriesKeys.detail(duplicate.targetId),
     retry: false,
     staleTime: Infinity,
   });
+
+  const isLoading = loading1 || loading2;
+  const hasError = error1 || error2;
+
+  // One of the series no longer exists — the duplicate entry is stale. Close and refresh.
+  if (hasError) {
+    return (
+      <Modal>
+        <Modal.Backdrop
+          className="bg-black/40 backdrop-blur-[2px]"
+          isOpen
+          onOpenChange={(open) => {
+            if (!open) onClose();
+          }}
+        >
+          <Modal.Container placement="center">
+            <Modal.Dialog className="relative w-full max-w-sm rounded-[24px] bg-background p-6 shadow-2xl space-y-4">
+              <Modal.Header>
+                <Modal.Heading className="font-bold text-lg">Serie no encontrada</Modal.Heading>
+              </Modal.Header>
+              <Modal.Body>
+                <p className="text-sm text-foreground-400">
+                  Una de las series ya no existe, probablemente fue fusionada anteriormente.
+                </p>
+              </Modal.Body>
+              <div className="flex justify-end pt-2">
+                <Button
+                  variant="primary"
+                  onPress={() => {
+                    void queryClient.invalidateQueries({
+                      queryKey: clinicalSeriesKeys.duplicates(),
+                    });
+                    onClose();
+                  }}
+                >
+                  Entendido
+                </Button>
+              </div>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <Modal>
+        <Modal.Backdrop
+          className="bg-black/40 backdrop-blur-[2px]"
+          isOpen
+          onOpenChange={(open) => {
+            if (!open) onClose();
+          }}
+        >
+          <Modal.Container placement="center">
+            <Modal.Dialog className="relative w-full max-w-lg rounded-[24px] bg-background p-6 shadow-2xl space-y-4">
+              <Modal.Header>
+                <Modal.Heading className="font-bold text-lg">
+                  Fusionar series duplicadas
+                </Modal.Heading>
+              </Modal.Header>
+              <Modal.Body className="space-y-3">
+                <div className="flex gap-2">
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-3 w-16 rounded" />
+                    <Skeleton className="h-4 w-36 rounded" />
+                    <Skeleton className="h-3 w-24 rounded" />
+                    <Skeleton className="h-3 w-28 rounded" />
+                  </div>
+                  <div className="w-6" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-3 w-16 rounded" />
+                    <Skeleton className="h-4 w-36 rounded" />
+                    <Skeleton className="h-3 w-24 rounded" />
+                    <Skeleton className="h-3 w-28 rounded" />
+                  </div>
+                </div>
+              </Modal.Body>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal>
+    );
+  }
+
   const snapshots: Record<number, ClinicalSeriesSnapshot> = {};
   if (snap1) snapshots[duplicate.sourceId] = snap1;
   if (snap2) snapshots[duplicate.targetId] = snap2;
