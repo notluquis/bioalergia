@@ -411,7 +411,7 @@ export const EventDteCrossSeriesConflictSchema = z.strictObject({
   status: z.enum(["ACTIVE", "CANCELLED", "COMPLETED"]),
 });
 
-export const EventDteHypothesisSchema = z.strictObject({
+export const EventDteHypothesisSchema = z.object({
   amountDiff: z.number().nullable(),
   autoLinkEligible: z.boolean(),
   clientName: z.string(),
