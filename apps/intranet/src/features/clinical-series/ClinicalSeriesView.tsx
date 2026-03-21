@@ -43,6 +43,9 @@ import type {
   ClinicalSeriesSortColumn,
   ClinicalSeriesStatus,
   SubcutaneousAllergenType,
+  SubcutaneousVaccineProduct,
+  HealthInsuranceType,
+  DeliveryModality,
 } from "./types";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -83,6 +86,31 @@ const ALLERGEN_LABELS: Record<SubcutaneousAllergenType, string> = {
   ACAROS: "Ácaros",
   GRAMINEAS: "Gramíneas",
   ACAROS_GRAMINEAS: "Ácaros + Gramíneas",
+};
+
+const VACCINE_LABELS: Record<SubcutaneousVaccineProduct, string> = {
+  CLUSTOID: "Clustoid",
+  CLUSTOID_FORTE: "Clustoid Forte",
+  CLUSTOID_B120: "Clustoid B120",
+  ALXOID: "Alxoid",
+  ORAL_TEC: "Oral-Tec",
+};
+
+const INSURANCE_LABELS: Record<HealthInsuranceType, string> = {
+  FONASA: "Fonasa",
+  ISAPRE: "Isapre",
+  PARTICULAR: "Particular",
+};
+
+const INSURANCE_COLORS: Record<HealthInsuranceType, "success" | "warning" | "default"> = {
+  FONASA: "success",
+  ISAPRE: "warning",
+  PARTICULAR: "default",
+};
+
+const DELIVERY_LABELS: Record<DeliveryModality, string> = {
+  PRESENCIAL: "Presencial",
+  DOMICILIO: "Domicilio",
 };
 
 const STATUS_LABELS: Record<ClinicalSeriesStatus, string> = {
@@ -581,9 +609,23 @@ export function ClinicalSeriesView() {
                           <Chip size="sm" color={KIND_COLORS[s.kind]} variant="soft">
                             {KIND_LABELS[s.kind]}
                           </Chip>
-                          {s.kind === "SUBCUTANEOUS_TREATMENT" && s.allergenType && (
+                          {s.allergenType && (
                             <Chip size="sm" color="primary" variant="soft">
                               {ALLERGEN_LABELS[s.allergenType]}
+                            </Chip>
+                          )}
+                          {s.vaccineProduct && (
+                            <Chip size="sm" color="secondary" variant="soft">
+                              {VACCINE_LABELS[s.vaccineProduct]}
+                            </Chip>
+                          )}
+                          {s.healthInsurance && (
+                            <Chip
+                              size="sm"
+                              color={INSURANCE_COLORS[s.healthInsurance]}
+                              variant="soft"
+                            >
+                              {INSURANCE_LABELS[s.healthInsurance]}
                             </Chip>
                           )}
                         </div>
@@ -826,14 +868,33 @@ export function ClinicalSeriesView() {
                       );
                     })()}
 
-                    {/* Tipo + Alérgeno + Estado */}
+                    {/* Tipo + clasificaciones + estado */}
                     <div className="flex flex-wrap gap-2">
                       <Chip size="sm" color={KIND_COLORS[detail.kind]} variant="soft">
                         {KIND_LABELS[detail.kind]}
                       </Chip>
-                      {detail.kind === "SUBCUTANEOUS_TREATMENT" && detail.allergenType && (
+                      {detail.allergenType && (
                         <Chip size="sm" color="primary" variant="soft">
                           {ALLERGEN_LABELS[detail.allergenType]}
+                        </Chip>
+                      )}
+                      {detail.vaccineProduct && (
+                        <Chip size="sm" color="secondary" variant="soft">
+                          {VACCINE_LABELS[detail.vaccineProduct]}
+                        </Chip>
+                      )}
+                      {detail.healthInsurance && (
+                        <Chip
+                          size="sm"
+                          color={INSURANCE_COLORS[detail.healthInsurance]}
+                          variant="soft"
+                        >
+                          {INSURANCE_LABELS[detail.healthInsurance]}
+                        </Chip>
+                      )}
+                      {detail.deliveryModality === "DOMICILIO" && (
+                        <Chip size="sm" color="warning" variant="soft">
+                          Domicilio
                         </Chip>
                       )}
                       <Chip size="sm" color={STATUS_COLORS[detail.status]} variant="soft">

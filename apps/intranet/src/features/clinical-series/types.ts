@@ -8,6 +8,14 @@ import { z } from "zod";
 export type ClinicalSeriesKind = "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT";
 export type ClinicalSeriesStatus = "ACTIVE" | "COMPLETED" | "CANCELLED";
 export type SubcutaneousAllergenType = "ACAROS" | "ACAROS_GRAMINEAS" | "GRAMINEAS";
+export type SubcutaneousVaccineProduct =
+  | "ALXOID"
+  | "CLUSTOID"
+  | "CLUSTOID_B120"
+  | "CLUSTOID_FORTE"
+  | "ORAL_TEC";
+export type HealthInsuranceType = "FONASA" | "ISAPRE" | "PARTICULAR";
+export type DeliveryModality = "DOMICILIO" | "PRESENCIAL";
 export type ClinicalSeriesSortColumn =
   | "financial"
   | "kind"
@@ -51,6 +59,9 @@ export interface ClinicalSeriesLinkedDocument {
 
 export interface ClinicalSeriesSnapshot {
   allergenType: SubcutaneousAllergenType | null;
+  vaccineProduct: SubcutaneousVaccineProduct | null;
+  healthInsurance: HealthInsuranceType | null;
+  deliveryModality: DeliveryModality | null;
   beneficiaryName: string | null;
   beneficiaryRut: string | null;
   id: number;
@@ -155,6 +166,11 @@ export const ClinicalSeriesLinkedDocumentSchema = z.object({
 
 export const ClinicalSeriesSnapshotSchema = z.object({
   allergenType: z.enum(["ACAROS", "ACAROS_GRAMINEAS", "GRAMINEAS"]).nullable(),
+  vaccineProduct: z
+    .enum(["ALXOID", "CLUSTOID", "CLUSTOID_B120", "CLUSTOID_FORTE", "ORAL_TEC"])
+    .nullable(),
+  healthInsurance: z.enum(["FONASA", "ISAPRE", "PARTICULAR"]).nullable(),
+  deliveryModality: z.enum(["DOMICILIO", "PRESENCIAL"]).nullable(),
   beneficiaryName: z.string().nullable(),
   beneficiaryRut: z.string().nullable(),
   id: z.number(),

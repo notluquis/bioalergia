@@ -46,19 +46,44 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "test",
   "tratamiento",
   "vacuna",
+  // Vaccine / product names
+  "alxoid",
+  "clust",
+  "cluxin",
+  "clustek",
+  "forte",
+  "oral",
   // Chilean health/admin terms that appear in clinical notes but are not names
   "aer",
   "ali",
   "amb",
   "ambiental",
   "boleta",
+  "colmena",
+  "consalud",
+  "contacto",
+  "domicilio",
   "dte",
+  "edad",
   "evento",
   "fonasa",
   "hualpen",
   "isapre",
+  "lucas",
+  "numero",
+  "particular",
+  "pago",
   "rut",
   "vincular",
+  // Communes / cities that appear as patient origin but are not names
+  "cauquenes",
+  "chillan",
+  "concepcion",
+  "coronel",
+  "lota",
+  "penco",
+  "talcahuano",
+  "tome",
   // Common Spanish words that appear in clinical notes but are not names
   "beneficiario",
   "nombre",
@@ -90,6 +115,9 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
 type ClinicalSeriesKind = "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT";
 type ClinicalSeriesStageKind = "DOSE" | "INSTALLATION" | "MAINTENANCE" | "READING";
 type SubcutaneousAllergenType = "ACAROS" | "ACAROS_GRAMINEAS" | "GRAMINEAS";
+type SubcutaneousVaccineProduct = "ALXOID" | "CLUSTOID" | "CLUSTOID_B120" | "CLUSTOID_FORTE" | "ORAL_TEC";
+type HealthInsuranceType = "FONASA" | "ISAPRE" | "PARTICULAR";
+type DeliveryModality = "DOMICILIO" | "PRESENCIAL";
 
 type EventSeriesCandidate = {
   amountExpected: null | number;
@@ -151,6 +179,9 @@ type ClinicalSeriesLinkedDocument = {
 
 export interface ClinicalSeriesSnapshot {
   allergenType: null | SubcutaneousAllergenType;
+  vaccineProduct: null | SubcutaneousVaccineProduct;
+  healthInsurance: null | HealthInsuranceType;
+  deliveryModality: null | DeliveryModality;
   beneficiaryName: null | string;
   beneficiaryRut: null | string;
   displayName: null | string;
@@ -427,6 +458,74 @@ function inferAllergenType(
   return "ACAROS_GRAMINEAS";
 }
 
+// Vaccine product — Cluxin and Clustek are trade names for Clustoid.
+// Forte and B120 are concentration variants of the same base product.
+const ORAL_TEC_PATTERN = /oral[\s-]?tec/i;
+const ALXOID_PATTERN = /\balxoid\b/i;
+const CLUSTOID_BASE_PATTERN = /cl[au]s[i]?t[oau]?id[eo]?|cluxin|clustek|clutoid|\bclust/i;
+const CLUSTOID_FORTE_PATTERN = /\bforte\b/i;
+const CLUSTOID_B120_PATTERN = /\bb[\s-]?120\b/i;
+
+function inferVaccineProduct(
+  events: Array<{ description: null | string; summary: null | string }>,
+): null | SubcutaneousVaccineProduct {
+  let hasOralTec = false;
+  let hasAlxoid = false;
+  let hasClustoid = false;
+  let hasForte = false;
+  let hasB120 = false;
+
+  for (const event of events) {
+    const text = `${event.summary ?? ""} ${event.description ?? ""}`;
+    if (!hasOralTec && ORAL_TEC_PATTERN.test(text)) hasOralTec = true;
+    if (!hasAlxoid && ALXOID_PATTERN.test(text)) hasAlxoid = true;
+    if (!hasClustoid && CLUSTOID_BASE_PATTERN.test(text)) hasClustoid = true;
+    if (hasClustoid && !hasForte && CLUSTOID_FORTE_PATTERN.test(text)) hasForte = true;
+    if (hasClustoid && !hasB120 && CLUSTOID_B120_PATTERN.test(text)) hasB120 = true;
+  }
+
+  if (hasOralTec) return "ORAL_TEC";
+  if (hasAlxoid) return "ALXOID";
+  if (hasClustoid) {
+    if (hasForte) return "CLUSTOID_FORTE";
+    if (hasB120) return "CLUSTOID_B120";
+    return "CLUSTOID";
+  }
+  return null;
+}
+
+// Health insurance — detect from descriptions ("fonasa", "isapre", known ISAPREs).
+const FONASA_PATTERN = /\bfonasa\b/i;
+const ISAPRE_PATTERN =
+  /\bisapre\b|\bcolmena\b|\bconsalud\b|\bbanm[eé]dica\b|\bcruz\s*blanca\b|\bvida\s*tres\b|\bnueva\s*m[aá]s\s*vida\b/i;
+const PARTICULAR_PATTERN = /\bparticular\b/i;
+
+function inferHealthInsurance(
+  events: Array<{ description: null | string; summary: null | string }>,
+): HealthInsuranceType | null {
+  for (const event of events) {
+    const text = `${event.summary ?? ""} ${event.description ?? ""}`;
+    if (FONASA_PATTERN.test(text)) return "FONASA";
+    if (ISAPRE_PATTERN.test(text)) return "ISAPRE";
+    if (PARTICULAR_PATTERN.test(text)) return "PARTICULAR";
+  }
+  return null;
+}
+
+// Delivery modality — domicilio if any event was sent/picked up; otherwise presencial.
+const DOMICILIO_DELIVERY_PATTERN =
+  /\bdomicilio\b|\bse\s+envi[oó]\b|\bse\s+la?\s+llev[oó]\b|\bse\s+lo\s+llev[oó]\b|\bretira\b|\benviar\b|\bdespacho\b/i;
+
+function inferDeliveryModality(
+  events: Array<{ description: null | string; summary: null | string }>,
+): DeliveryModality {
+  for (const event of events) {
+    const text = `${event.summary ?? ""} ${event.description ?? ""}`;
+    if (DOMICILIO_DELIVERY_PATTERN.test(text)) return "DOMICILIO";
+  }
+  return "PRESENCIAL";
+}
+
 function inferSeriesKind(event: EventSeriesCandidate): ClinicalSeriesKind | null {
   if (event.category === "Tratamiento subcutáneo") {
     return "SUBCUTANEOUS_TREATMENT";
@@ -681,15 +780,19 @@ async function refreshClinicalSeriesMetadata(seriesId: number) {
     }
   }
 
-  const allergenType =
-    series.kind === "SUBCUTANEOUS_TREATMENT"
-      ? inferAllergenType(series.events)
-      : null;
+  const isSubcut = series.kind === "SUBCUTANEOUS_TREATMENT";
+  const allergenType = isSubcut ? inferAllergenType(series.events) : null;
+  const vaccineProduct = isSubcut ? inferVaccineProduct(series.events) : null;
+  const healthInsurance = inferHealthInsurance(series.events);
+  const deliveryModality = isSubcut ? inferDeliveryModality(series.events) : null;
 
   await db.clinicalSeries.update({
     where: { id: seriesId },
     data: {
       allergenType,
+      vaccineProduct,
+      healthInsurance,
+      deliveryModality,
       beneficiaryName,
       beneficiaryRut,
       displayName: buildSeriesDisplayName({
@@ -1094,6 +1197,9 @@ export async function getClinicalSeriesSnapshotByExternalEvent(params: {
 
   return {
     allergenType: (series.allergenType as SubcutaneousAllergenType | null) ?? null,
+    vaccineProduct: (series.vaccineProduct as SubcutaneousVaccineProduct | null) ?? null,
+    healthInsurance: (series.healthInsurance as HealthInsuranceType | null) ?? null,
+    deliveryModality: (series.deliveryModality as DeliveryModality | null) ?? null,
     beneficiaryName: series.beneficiaryName ?? null,
     beneficiaryRut: series.beneficiaryRut ?? null,
     displayName: series.displayName ?? null,

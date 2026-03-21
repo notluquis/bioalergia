@@ -3192,6 +3192,24 @@ export class SchemaType implements SchemaDef {
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("allergen_type") }] }]
                 },
+                vaccineProduct: {
+                    name: "vaccineProduct",
+                    type: "SubcutaneousVaccineProduct",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("vaccine_product") }] }]
+                },
+                healthInsurance: {
+                    name: "healthInsurance",
+                    type: "HealthInsuranceType",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("health_insurance") }] }]
+                },
+                deliveryModality: {
+                    name: "deliveryModality",
+                    type: "DeliveryModality",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("delivery_modality") }] }]
+                },
                 expectedSessions: {
                     name: "expectedSessions",
                     type: "Int",
@@ -8012,6 +8030,31 @@ export class SchemaType implements SchemaDef {
                 ACAROS: "ACAROS",
                 GRAMINEAS: "GRAMINEAS",
                 ACAROS_GRAMINEAS: "ACAROS_GRAMINEAS"
+            }
+        },
+        SubcutaneousVaccineProduct: {
+            name: "SubcutaneousVaccineProduct",
+            values: {
+                CLUSTOID: "CLUSTOID",
+                CLUSTOID_FORTE: "CLUSTOID_FORTE",
+                CLUSTOID_B120: "CLUSTOID_B120",
+                ALXOID: "ALXOID",
+                ORAL_TEC: "ORAL_TEC"
+            }
+        },
+        HealthInsuranceType: {
+            name: "HealthInsuranceType",
+            values: {
+                FONASA: "FONASA",
+                ISAPRE: "ISAPRE",
+                PARTICULAR: "PARTICULAR"
+            }
+        },
+        DeliveryModality: {
+            name: "DeliveryModality",
+            values: {
+                PRESENCIAL: "PRESENCIAL",
+                DOMICILIO: "DOMICILIO"
             }
         },
         ClinicalSeriesStatus: {

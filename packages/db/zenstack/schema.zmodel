@@ -830,8 +830,11 @@ model ClinicalSeries {
   patientRut       String?                   @map("patient_rut")
   beneficiaryName  String?                   @map("beneficiary_name")
   beneficiaryRut   String?                   @map("beneficiary_rut")
-  allergenType     SubcutaneousAllergenType? @map("allergen_type")
-  expectedSessions Int?                      @map("expected_sessions")
+  allergenType     SubcutaneousAllergenType?  @map("allergen_type")
+  vaccineProduct   SubcutaneousVaccineProduct? @map("vaccine_product")
+  healthInsurance  HealthInsuranceType?        @map("health_insurance")
+  deliveryModality DeliveryModality?           @map("delivery_modality")
+  expectedSessions Int?                        @map("expected_sessions")
   notes            String?
   completedAt      DateTime?                 @map("completed_at")
   createdAt        DateTime                  @default(now()) @map("created_at")
@@ -1602,6 +1605,26 @@ enum SubcutaneousAllergenType {
   ACAROS
   GRAMINEAS
   ACAROS_GRAMINEAS
+}
+
+// Clustoid/Cluxin/Clustek are the same product; Forte and B120 are concentration variants.
+enum SubcutaneousVaccineProduct {
+  CLUSTOID
+  CLUSTOID_FORTE
+  CLUSTOID_B120
+  ALXOID
+  ORAL_TEC
+}
+
+enum HealthInsuranceType {
+  FONASA
+  ISAPRE
+  PARTICULAR
+}
+
+enum DeliveryModality {
+  PRESENCIAL
+  DOMICILIO
 }
 
 enum ClinicalSeriesStatus {
