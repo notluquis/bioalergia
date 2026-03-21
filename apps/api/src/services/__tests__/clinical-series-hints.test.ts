@@ -133,6 +133,49 @@ describe("extractPatientHints", () => {
     });
   });
 
+  // ── Age annotations between name and RUT ────────────────────────────────
+  describe("patientName — age annotation between name and RUT", () => {
+    it("extracts name when 'N años:' separates it from the RUT", () => {
+      // Real case: "llego test de parche(60mil), aero I(30): javiera rio: 18 años: 940951267"
+      // "18 años:" must be stripped before the backwards walk, otherwise "18"
+      // breaks the walk before we reach "javiera rio".
+      const { patientName, patientRut } = extractPatientHints(
+        "llego test de parche(60mil), aero I(30): javiera rio: 18 años: 940951267",
+        null,
+      );
+      expect(patientName).toBe("javiera rio");
+      expect(patientRut).not.toBeNull();
+    });
+
+    it("extracts name before 'N años:' with three-part surname", () => {
+      // Real case: "llego confir. test de parche, aer, ali: nicole roa zuchel: 35 años: 988330481"
+      const { patientName } = extractPatientHints(
+        "llego confir. test de parche, aer, ali: nicole roa zuchel: 35 años: 988330481",
+        null,
+      );
+      expect(patientName).toBe("nicole roa zuchel");
+    });
+
+    it("extracts short first name before 'N años;' separator", () => {
+      // Real case: "llego test cutaneo mia brito; 2 años; 988388227"
+      const { patientName } = extractPatientHints(
+        "llego test cutaneo mia brito; 2 años; 988388227",
+        null,
+      );
+      expect(patientName).toBe("mia brito");
+    });
+
+    it("extracts name when digit is attached to the last surname token", () => {
+      // Real case: "llego conf.test cutaneo amb mauricio san martin9 56750226"
+      // "martin9" has a trailing digit that should be stripped before the walk.
+      const { patientName } = extractPatientHints(
+        "llego conf.test cutaneo amb mauricio san martin9 56750226",
+        null,
+      );
+      expect(patientName).toBe("mauricio san martin");
+    });
+  });
+
   describe("patientRut", () => {
     it("extracts a RUT with dots and dash", () => {
       const { patientRut } = extractPatientHints("12.345.678-9 Juan Pérez", null);

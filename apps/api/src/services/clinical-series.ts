@@ -47,6 +47,9 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "tratamiento",
   "vacuna",
   // Chilean health/admin terms that appear in clinical notes but are not names
+  "aer",
+  "ali",
+  "amb",
   "ambiental",
   "boleta",
   "dte",
@@ -287,7 +290,11 @@ function extractRutAdjacentNames(text: string): string[] {
   let m: RegExpExecArray | null;
 
   while ((m = globalRutRegex.exec(text)) !== null) {
-    const before = text.slice(0, m.index).trim();
+    const raw = text.slice(0, m.index).trim();
+    // Strip age annotations like "18 años:", "2 años;" that secretaries
+    // write between the patient name and the RUT. Without this, the digit
+    // breaks the backwards walk before we reach the name.
+    const before = raw.replace(/\b\d{1,3}\s+a[ñn]os?[;:,]?\s*/gi, "").trim();
     // Take up to 5 raw tokens ending at the RUT and walk backwards, stopping
     // at the first token that looks like a stopword or non-name token.
     const rawTokens = before.split(/\s+/).slice(-5);
@@ -297,7 +304,9 @@ function extractRutAdjacentNames(text: string): string[] {
     const PARTICLES = new Set(["de", "del", "la", "las", "los", "van", "von", "y", "e"]);
     const nameTokens: string[] = [];
     for (const token of [...rawTokens].reverse()) {
-      const n = normalizeName(token);
+      // Strip trailing digits so "martin9" is treated as "martin".
+      const stripped = token.replace(/\d+$/, "");
+      const n = normalizeName(stripped || token);
       if (!n || /\d/.test(n) || LOWERCASE_NAME_STOPWORDS.has(n)) break;
       if (n.length < 3 && !PARTICLES.has(n)) break;
       nameTokens.unshift(n);
