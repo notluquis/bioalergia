@@ -320,13 +320,13 @@ export function ClinicalSeriesView() {
   const { data: detail, isLoading: isLoadingDetail } = useClinicalSeriesDetail(selectedId ?? 0);
   const rebuildMutation = useRebuildClinicalSeries();
   const rebuildJob = useClinicalSeriesRebuildProgress();
-  // Deferred: only starts after the main list has loaded so it doesn't compete for bandwidth
+  // Manual: only runs when the user explicitly presses "Verificar duplicados"
   const {
     data: duplicates,
-    isLoading: isCheckingDuplicates,
-    isFetching: isFetchingDuplicates,
+    isFetching: isCheckingDuplicates,
+    refetch: checkDuplicates,
   } = useQuery({
-    enabled: !isLoading && !!data,
+    enabled: false,
     queryFn: fetchDetectDuplicates,
     queryKey: clinicalSeriesKeys.duplicates(),
     staleTime: 5 * 60 * 1000,
@@ -385,14 +385,29 @@ export function ClinicalSeriesView() {
               </>
             )}
           </p>
-          <Button
-            isDisabled={rebuildMutation.isPending || rebuildJob?.status === "running"}
-            onPress={() => setRebuildModalOpen(true)}
-            variant="secondary"
-            size="sm"
-          >
-            Reorganizar Series
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              isPending={isCheckingDuplicates}
+              onPress={() => void checkDuplicates()}
+              variant="ghost"
+              size="sm"
+            >
+              {({ isPending }: { isPending: boolean }) => (
+                <>
+                  {isPending && <Spinner color="current" size="sm" />}
+                  {isPending ? "Verificando..." : "Verificar duplicados"}
+                </>
+              )}
+            </Button>
+            <Button
+              isDisabled={rebuildMutation.isPending || rebuildJob?.status === "running"}
+              onPress={() => setRebuildModalOpen(true)}
+              variant="secondary"
+              size="sm"
+            >
+              Reorganizar Series
+            </Button>
+          </div>
         </div>
 
         {/* Rebuild progress / result — driven by SSE */}
@@ -444,12 +459,8 @@ export function ClinicalSeriesView() {
             </Alert.Content>
           </Alert>
         )}
-        {/* Duplicate detection — deferred, runs after main list loads */}
-        {(isCheckingDuplicates || isFetchingDuplicates) && !duplicates && (
-          <p className="text-xs text-foreground-300 flex items-center gap-1.5">
-            <Spinner size="sm" />
-            Verificando duplicados...
-          </p>
+        {duplicates && duplicates.length === 0 && (
+          <p className="text-xs text-foreground-400">Sin duplicados detectados.</p>
         )}
         {duplicates && duplicates.length > 0 && (
           <Alert status="warning">
