@@ -599,17 +599,17 @@ export function ClinicalSeriesView() {
                         </div>
                       </Table.Cell>
                       <Table.Cell>
-                        <div className="flex flex-col gap-1">
-                          <Chip size="sm" color={KIND_COLORS[s.kind]} variant="soft">
+                        <div className="flex flex-col gap-1 items-start">
+                          <Chip size="sm" color={KIND_COLORS[s.kind]} variant="tertiary">
                             {KIND_LABELS[s.kind]}
                           </Chip>
                           {s.allergenType && (
-                            <Chip size="sm" color="accent" variant="soft">
+                            <Chip size="sm" color="accent" variant="tertiary">
                               {ALLERGEN_LABELS[s.allergenType]}
                             </Chip>
                           )}
                           {s.vaccineProduct && (
-                            <Chip size="sm" color="default" variant="soft">
+                            <Chip size="sm" color="default" variant="tertiary">
                               {VACCINE_LABELS[s.vaccineProduct]}
                             </Chip>
                           )}
@@ -617,7 +617,7 @@ export function ClinicalSeriesView() {
                             <Chip
                               size="sm"
                               color={INSURANCE_COLORS[s.healthInsurance]}
-                              variant="soft"
+                              variant="tertiary"
                             >
                               {INSURANCE_LABELS[s.healthInsurance]}
                             </Chip>
