@@ -84,6 +84,8 @@ const SUBCUT_PATTERNS = [
   /\bsubcut[áa]ne[oa]/i, // subcutáneo
   /inmuno/i, // inmuno
   /\d+[ªº]?\s*(era|ta|da|ra|va)?\s*dosis/i, // 2era dosis, 4ta dosis, 3ra dosis
+  /\b(cuarta|quinta|sexta|s[eé]ptima|octava|novena|d[eé]cima)\s+dosis\b/i, // word-form ordinals
+  /\bgram[íi]neas?\b/i, // gramíneas / gramineas allergen vaccine
   /\bdosis\s+mensual/i, // Dosis mensual
   /v[ie]+n?[ie]?[eo]?r?o?n?\s+a\s+buscar/i, // vinieron a buscar
   /\bmantenci[oó]n\b/i, // mantención (maintenance treatment)
@@ -99,11 +101,12 @@ const DECIMAL_DOSAGE_PATTERN = /\b(\d+[.,]\d{1,2})\b/;
 const TEST_PATTERNS = [
   /\bexam[eé]n(es)?\b/i, // examen, examenes
   /test\s*(de\s*)?parche/i, // test de parche
-  /lectura\s*(de\s*)?parche/i, // lectura de parche
+  /lectu?ra\s*(de\s*)?parche/i, // lectura/lecura de parche (typo-tolerant)
   /\d+(era|da|ra)?\s*test/i, // 1eratest
   /lleg[oó]\s*test/i, // llegotest
-  /\d+(era|da|ra)?\s*lectura/i, // 2da lectura
+  /\d+(era|da|ra)?\s*lectu?ra\b/i, // 2da lectura / 1ra lecura (typo-tolerant)
   /\btest\b/i,
+  /\bparche\b/i, // standalone "parche" always means test de parche
   /cut[áa]neo/i,
   /ambiental/i,
   /panel/i,
@@ -613,6 +616,9 @@ function extractAmounts(summary: string, description: string) {
   applyTypoAndMlFallback(text, amounts);
   applyKeywordFallback(text, amounts);
   applyContextualAmountFallback(text, amounts);
+  // Check summary alone first: "N)" may appear at end of summary even when
+  // description text follows (e.g. "(3era dosis) 40)" followed by patient info).
+  applyEndAmountFallback(summary, amounts);
   applyEndAmountFallback(text, amounts);
   applyPaidPattern(text, amounts);
 
