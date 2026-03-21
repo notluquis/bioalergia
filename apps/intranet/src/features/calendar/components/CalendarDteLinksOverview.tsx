@@ -1209,7 +1209,7 @@ export function CalendarDteLinksOverview({
                                             {item.displayName}
                                           </Chip>
                                         ) : null}
-                                        {item.seriesKind ? (
+                                        {item.seriesKind && !item.displayName ? (
                                           <Chip color="default" size="sm" variant="tertiary">
                                             {seriesKindLabel(item.seriesKind)}
                                           </Chip>
