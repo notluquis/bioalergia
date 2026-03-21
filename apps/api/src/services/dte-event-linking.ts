@@ -196,6 +196,7 @@ interface EventDteLinkedDocument {
 }
 
 interface SameKindRutConflictRow {
+  beneficiaryRut: null | string;
   clientRUT: string;
   patientName: null | string;
   patientRut: null | string;
@@ -652,14 +653,28 @@ function clinicalSeriesKindLabel(
 }
 
 function isSamePatientIdentity(params: {
+  currentBeneficiaryRut?: null | string;
   currentPatientName: null | string;
   currentPatientRut: null | string;
+  otherBeneficiaryRut?: null | string;
   otherPatientName: null | string;
   otherPatientRut: null | string;
 }) {
   const currentRut = params.currentPatientRut ? normalizeRut(params.currentPatientRut) : null;
   const otherRut = params.otherPatientRut ? normalizeRut(params.otherPatientRut) : null;
-  if (currentRut && otherRut) return currentRut === otherRut;
+  const currentBenefRut = params.currentBeneficiaryRut
+    ? normalizeRut(params.currentBeneficiaryRut)
+    : null;
+  const otherBenefRut = params.otherBeneficiaryRut
+    ? normalizeRut(params.otherBeneficiaryRut)
+    : null;
+
+  if (currentRut && otherRut) {
+    if (currentRut === otherRut) return true;
+    // Same person, patient/beneficiary RUTs swapped between series
+    if (currentBenefRut && currentBenefRut === otherRut) return true;
+    if (otherBenefRut && otherBenefRut === currentRut) return true;
+  }
 
   const currentName = params.currentPatientName ? normalizeName(params.currentPatientName) : "";
   const otherName = params.otherPatientName ? normalizeName(params.otherPatientName) : "";
@@ -670,6 +685,7 @@ function isSamePatientIdentity(params: {
 
 async function getSameKindRutConflictWarnings(params: {
   candidateRuts: string[];
+  currentBeneficiaryRut: null | string;
   currentPatientName: null | string;
   currentPatientRut: null | string;
   seriesId: number;
@@ -686,6 +702,7 @@ async function getSameKindRutConflictWarnings(params: {
       cs.id AS "seriesId",
       cs.patient_name AS "patientName",
       cs.patient_rut AS "patientRut",
+      cs.beneficiary_rut AS "beneficiaryRut",
       cs.status::text AS "status"
     FROM event_dte_sale_links l
     JOIN events e ON e.id = l.event_id
@@ -702,8 +719,10 @@ async function getSameKindRutConflictWarnings(params: {
     const normalizedRut = normalizeRut(row.clientRUT) || row.clientRUT;
     if (
       isSamePatientIdentity({
+        currentBeneficiaryRut: params.currentBeneficiaryRut,
         currentPatientName: params.currentPatientName,
         currentPatientRut: params.currentPatientRut,
+        otherBeneficiaryRut: row.beneficiaryRut,
         otherPatientName: row.patientName,
         otherPatientRut: row.patientRut,
       })
@@ -1450,6 +1469,7 @@ export async function getEventDteSuggestions(params: {
     series != null
       ? await getSameKindRutConflictWarnings({
           candidateRuts: candidates.map((candidate) => candidate.clientRUT),
+          currentBeneficiaryRut: series.beneficiaryRut ?? null,
           currentPatientName: series.patientName,
           currentPatientRut: series.patientRut,
           seriesId: series.id,
