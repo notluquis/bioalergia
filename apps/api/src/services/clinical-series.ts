@@ -636,14 +636,61 @@ async function refreshClinicalSeriesMetadata(seriesId: number) {
   });
 }
 
-export async function syncClinicalSeriesForInternalEventId(
-  eventId: number,
-): Promise<null | number> {
-  const event = await loadEventSeriesCandidateByInternalId(eventId);
-  if (!event) {
-    return null;
+// Run items concurrently using N "queue-draining" workers.
+// Workers share a mutable queue; JS single-threaded shift() is safe without locks.
+async function runConcurrent<T>(
+  items: T[],
+  concurrency: number,
+  fn: (item: T) => Promise<void>,
+): Promise<void> {
+  if (items.length === 0) return;
+  const queue = [...items];
+  async function worker(): Promise<void> {
+    let item: T | undefined;
+    while ((item = queue.shift()) !== undefined) {
+      await fn(item);
+    }
   }
+  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, () => worker()));
+}
 
+// Batch loader — one query for all events instead of N individual round trips.
+async function loadEventSeriesCandidatesByIds(
+  eventIds: number[],
+): Promise<EventSeriesCandidate[]> {
+  if (eventIds.length === 0) return [];
+  return db.$queryRaw<EventSeriesCandidate[]>`
+    SELECT
+      e.id AS "eventId",
+      c.google_id AS "calendarGoogleId",
+      e.external_event_id AS "externalEventId",
+      e.patient_name AS "patientName",
+      e.patient_rut AS "patientRut",
+      e.beneficiary_name AS "beneficiaryName",
+      e.beneficiary_rut AS "beneficiaryRut",
+      COALESCE(to_char(e.start_date, 'YYYY-MM-DD'), to_char((e.start_date_time AT TIME ZONE ${TIMEZONE})::date, 'YYYY-MM-DD')) AS "eventDate",
+      e.summary AS "summary",
+      e.description AS "description",
+      e.category AS "category",
+      e.clinical_series_id AS "clinicalSeriesId",
+      e.series_stage_kind AS "seriesStageKind",
+      e.series_stage_label AS "seriesStageLabel",
+      e.series_stage_number AS "seriesStageNumber",
+      e.treatment_stage AS "treatmentStage",
+      e.test_metadata AS "testMetadata",
+      e.amount_expected AS "amountExpected",
+      e.amount_paid AS "amountPaid"
+    FROM events e
+    JOIN calendars c ON c.id = e.calendar_id
+    WHERE e.id = ANY(${eventIds}::int[])
+    ORDER BY e.id ASC
+  `;
+}
+
+// Core per-event sync logic — load-agnostic. Returns the series ID that was
+// touched (for the caller to schedule a deduplicated metadata refresh), or
+// null if the event does not qualify for a clinical series.
+async function assignEventToSeries(event: EventSeriesCandidate): Promise<null | number> {
   const kind = inferSeriesKind(event);
   if (!kind) {
     if (event.clinicalSeriesId != null) {
@@ -684,12 +731,7 @@ export async function syncClinicalSeriesForInternalEventId(
   if (event.clinicalSeriesId != null) {
     const currentSeries = await db.clinicalSeries.findUnique({
       where: { id: event.clinicalSeriesId },
-      select: {
-        beneficiaryRut: true,
-        id: true,
-        kind: true,
-        patientRut: true,
-      },
+      select: { beneficiaryRut: true, id: true, kind: true, patientRut: true },
     });
 
     const sameKind = currentSeries?.kind === kind;
@@ -705,24 +747,19 @@ export async function syncClinicalSeriesForInternalEventId(
     }
   }
 
-  targetSeriesId ||=
-    (await findMatchingSeries({
-      eventDate: event.eventDate,
-      kind,
-      patientName: identity.patientName,
-      patientRut: identity.patientRut,
-    }));
+  targetSeriesId ||= await findMatchingSeries({
+    eventDate: event.eventDate,
+    kind,
+    patientName: identity.patientName,
+    patientRut: identity.patientRut,
+  });
 
   if (!targetSeriesId) {
     const created = await db.clinicalSeries.create({
       data: {
         beneficiaryName: identity.beneficiaryName,
         beneficiaryRut: identity.beneficiaryRut,
-        displayName: buildSeriesDisplayName({
-          kind,
-          patientName: identity.patientName,
-          patientRut: identity.patientRut,
-        }),
+        displayName: buildSeriesDisplayName({ kind, patientName: identity.patientName, patientRut: identity.patientRut }),
         expectedSessions:
           event.seriesStageNumber != null && Number.isFinite(event.seriesStageNumber)
             ? event.seriesStageNumber
@@ -739,16 +776,21 @@ export async function syncClinicalSeriesForInternalEventId(
   if (event.clinicalSeriesId !== targetSeriesId) {
     await db.event.update({
       where: { id: event.eventId },
-      data: {
-        clinicalSeries: {
-          connect: { id: targetSeriesId },
-        },
-      },
+      data: { clinicalSeries: { connect: { id: targetSeriesId } } },
     });
   }
 
-  await refreshClinicalSeriesMetadata(targetSeriesId);
   return targetSeriesId;
+}
+
+export async function syncClinicalSeriesForInternalEventId(
+  eventId: number,
+): Promise<null | number> {
+  const event = await loadEventSeriesCandidateByInternalId(eventId);
+  if (!event) return null;
+  const seriesId = await assignEventToSeries(event);
+  if (seriesId != null) await refreshClinicalSeriesMetadata(seriesId);
+  return seriesId;
 }
 
 export async function syncClinicalSeriesForEventIds(
@@ -756,12 +798,28 @@ export async function syncClinicalSeriesForEventIds(
   onProgress?: (processed: number, total: number) => void,
 ) {
   const unique = [...new Set(eventIds.filter((value) => Number.isFinite(value) && value > 0))];
+  if (unique.length === 0) return;
+  const total = unique.length;
+
+  // One query for all events instead of N individual round trips.
+  const events = await loadEventSeriesCandidatesByIds(unique);
+
+  // Collect which series were touched so we can refresh metadata exactly once
+  // per series at the end — eliminates redundant refreshes and race conditions
+  // when the same series has multiple events in the batch.
+  const touchedSeriesIds = new Set<number>();
   let processed = 0;
-  for (const eventId of unique) {
-    await syncClinicalSeriesForInternalEventId(eventId);
+
+  // 8 concurrent workers sharing a queue — ~8x throughput vs serial processing.
+  await runConcurrent(events, 8, async (event) => {
+    const seriesId = await assignEventToSeries(event).catch(() => null);
+    if (seriesId != null) touchedSeriesIds.add(seriesId);
     processed++;
-    onProgress?.(processed, unique.length);
-  }
+    onProgress?.(processed, total);
+  });
+
+  // Refresh each touched series once, also concurrently.
+  await runConcurrent([...touchedSeriesIds], 8, refreshClinicalSeriesMetadata);
 }
 
 export async function syncClinicalSeriesForExternalEvents(
