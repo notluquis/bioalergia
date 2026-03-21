@@ -10,7 +10,6 @@ dayjs.extend(timezone);
 
 const TIMEZONE = "America/Santiago";
 const RUT_REGEX = /\b\d{1,2}\.?\d{3}\.?\d{3}-?[\dkK]\b/g;
-const CAPITALIZED_NAME_REGEX = /([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+){1,4})/g;
 const LOWERCASE_NAME_STOPWORDS = new Set([
   // Allergy / treatment terms
   "acaros",
@@ -23,6 +22,7 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "clustoid",
   "confirma",
   "control",
+  "cutaneo",
   "dosis",
   "entrega",
   "fase",
@@ -46,6 +46,13 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "test",
   "tratamiento",
   "vacuna",
+  // Chilean health/admin terms that appear in clinical notes but are not names
+  "boleta",
+  "evento",
+  "fonasa",
+  "hualpen",
+  "isapre",
+  "vincular",
   // Common Spanish words that appear in clinical notes but are not names
   "beneficiario",
   "nombre",
@@ -243,7 +250,10 @@ function extractLowercaseNameHints(text: string): string[] {
       ) {
         continue;
       }
-      if (!candidate.some((token) => token.length >= 7)) {
+      // Require at least one "substantial" token to rule out noise pairs.
+      // ≥5 chars catches short-but-real names like "Rosa Pineda" / "Sara Mena Gaona"
+      // while still filtering generic word pairs like "bien mal".
+      if (!candidate.some((token) => token.length >= 5)) {
         continue;
       }
 
@@ -279,12 +289,20 @@ function extractRutAdjacentNames(text: string): string[] {
     // Take up to 5 raw tokens ending at the RUT and walk backwards, stopping
     // at the first token that looks like a stopword or non-name token.
     const rawTokens = before.split(/\s+/).slice(-5);
+    // Short particles ("de", "la", "del", "las", "los") are valid in Chilean
+    // compound surnames like "Claudio de la Cuadra". Allow them unless they're
+    // the only token (i.e. don't start or end the name with a particle).
+    const PARTICLES = new Set(["de", "del", "la", "las", "los", "van", "von", "y", "e"]);
     const nameTokens: string[] = [];
     for (const token of [...rawTokens].reverse()) {
       const n = normalizeName(token);
-      if (!n || n.length < 3 || /\d/.test(n) || LOWERCASE_NAME_STOPWORDS.has(n)) break;
+      if (!n || /\d/.test(n) || LOWERCASE_NAME_STOPWORDS.has(n)) break;
+      if (n.length < 3 && !PARTICLES.has(n)) break;
       nameTokens.unshift(n);
     }
+    // Drop leading/trailing particles — a name must start and end with a real token.
+    while (nameTokens.length > 0 && PARTICLES.has(nameTokens[0]!)) nameTokens.shift();
+    while (nameTokens.length > 0 && PARTICLES.has(nameTokens[nameTokens.length - 1]!)) nameTokens.pop();
     if (nameTokens.length >= 2) results.push(nameTokens.join(" "));
   }
 

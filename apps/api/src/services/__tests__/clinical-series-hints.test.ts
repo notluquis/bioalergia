@@ -42,10 +42,10 @@ describe("extractPatientHints", () => {
       expect(patientName).toBeNull();
     });
 
-    it("does not match short common medical words like dosis/carmen", () => {
-      // "dosis"(5) < 7, "carmen"(6) < 7, "tapia"(5) < 7 — none qualify
+    it("extracts a short-token name when at least one token is ≥5 chars", () => {
+      // "dosis" and "semanal" are stopwords → filtered. "carmen"(6) ≥ 5 → qualifies.
       const { patientName } = extractPatientHints("dosis semanal carmen tapia", null);
-      expect(patientName).toBeNull();
+      expect(patientName).toBe("carmen tapia");
     });
 
     it("prefers capitalized match over lowercase when both are present", () => {
