@@ -144,6 +144,42 @@ describe("extractPatientHints", () => {
     });
   });
 
+  // ── Amount annotations and comma-joined stopwords ───────────────────────
+  describe("patientName — amount annotations and comma-joined stopwords", () => {
+    it("strips (N) amounts glued to the name token before backwards walk", () => {
+      // Real case: "(50)luis" — the amount in parens was concatenated with the
+      // first name with no space. Without stripping, normalizeName("(50)luis") →
+      // "50 luis" → digit check broke the walk before reaching "luis".
+      const { patientName } = extractPatientHints(
+        "se lleva vacuna SE agosto y septiembre dosis (100)mensual clusitoid (50)luis villar castro, los alamos,fonasa, 994923189",
+        null,
+      );
+      expect(patientName).toBe("luis villar castro");
+    });
+
+    it("stops backwards walk at comma-joined stopwords like 'alamos,fonasa,'", () => {
+      // Real case: "alamos,fonasa," is a single whitespace-token that normalizes
+      // to "alamos fonasa". Without per-word checking, the full string wasn't in
+      // the stopwords set so it leaked into the extracted name.
+      const { patientName } = extractPatientHints(
+        "dosis mensual clusitoid luis villar castro, los alamos,fonasa, 994923189",
+        null,
+      );
+      expect(patientName).toBe("luis villar castro");
+    });
+
+    it("stops backwards walk at comma-joined place+insurance like 'concepcion,isapre.'", () => {
+      // Real case: "37 años,concepcion,isapre.973361751" — after age stripping
+      // leaves ",concepcion,isapre." as one token. Per-word check must catch
+      // "concepcion" (commune stopword) and break before adding it to the name.
+      const { patientName } = extractPatientHints(
+        "1602 test cutaneo ambiental II (30) lorena ortiz fierro. 37 años,concepcion,isapre.973361751",
+        null,
+      );
+      expect(patientName).toBe("lorena ortiz fierro");
+    });
+  });
+
   // ── Age annotations between name and RUT ────────────────────────────────
   describe("patientName — age annotation between name and RUT", () => {
     it("extracts name when 'N años:' separates it from the RUT", () => {
