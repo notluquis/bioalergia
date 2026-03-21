@@ -3,7 +3,7 @@ import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone.js";
 import utc from "dayjs/plugin/utc.js";
 import { sql } from "kysely";
-import { normalizeRut } from "../lib/rut";
+import { normalizeRut, validateRut } from "../lib/rut";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -15,30 +15,36 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "acaros",
   "administracion",
   "aeroalergenos",
+  "alimento",
   "alimentario",
   "ambiente",
   "ampolla",
   "antigenos",
   "clustoid",
   "confirma",
+  "consulta",
   "control",
   "cutaneo",
   "dosis",
   "entrega",
   "fase",
   "frasco",
+  "graminea",
   "gramineas",
   "inyeccion",
   "instalacion",
   "lectura",
   "mantencion",
   "mensual",
+  "mil",
   "pagada",
   "pagado",
   "parche",
+  "polen",
   "presento",
   "prueba",
   "reaccion",
+  "refuerzo",
   "retiro",
   "semanal",
   "semana",
@@ -65,15 +71,19 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "prick",
   "pricktest",
   "testcutaneo",
+  "vac",
   // Chilean health/admin terms that appear in clinical notes but are not names
   "aer",
   "ali",
   "amb",
   "ambiental",
+  "banmedica",
   "boleta",
+  "ccp",
   "colmena",
   "consalud",
   "contacto",
+  "dipreca",
   "domicilio",
   "dte",
   "edad",
@@ -88,7 +98,9 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "rut",
   "vincular",
   // Communes / cities that appear as patient origin but are not names
+  "angeles",
   "cauquenes",
+  "chiguayante",
   "chillan",
   "concepcion",
   "coronel",
@@ -434,7 +446,9 @@ export function extractIdentityHints(summary: null | string, description: null |
   const combinedText = `${summary ?? ""} ${description ?? ""}`.trim();
   const ruts = [
     ...new Set(
-      (combinedText.match(RUT_REGEX) ?? []).map((value) => normalizeRut(value)).filter(Boolean),
+      (combinedText.match(RUT_REGEX) ?? [])
+        .map((value) => normalizeRut(value))
+        .filter((rut): rut is string => rut !== null && validateRut(rut)),
     ),
   ];
 

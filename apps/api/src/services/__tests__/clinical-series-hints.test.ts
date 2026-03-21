@@ -297,7 +297,8 @@ describe("extractPatientHints", () => {
 
   describe("patientRut", () => {
     it("extracts a RUT with dots and dash", () => {
-      const { patientRut } = extractPatientHints("12.345.678-9 Juan Pérez", null);
+      // 12.345.678-5: DV = 11 - (138 % 11) = 11 - 6 = 5 ✓
+      const { patientRut } = extractPatientHints("12.345.678-5 Juan Pérez", null);
       expect(patientRut).not.toBeNull();
     });
 
@@ -333,13 +334,14 @@ describe("extractPatientHints", () => {
 
 describe("extractIdentityHints", () => {
   it("assigns the first RUT to patient and the second to beneficiary", () => {
+    // 9.876.543-3: DV = 11 - (184 % 11) = 11 - 8 = 3 ✓
     const result = extractIdentityHints(
       "Roxair Juan Pérez 12.345.678-5",
-      "Boleta a nombre de María Pérez 9.876.543-2",
+      "Boleta a nombre de María Pérez 9.876.543-3",
     );
 
     expect(result.patientRut).toBe("12345678-5");
-    expect(result.beneficiaryRut).toBe("9876543-2");
+    expect(result.beneficiaryRut).toBe("9876543-3");
   });
 
   it("keeps beneficiary null when only one identity is present", () => {
