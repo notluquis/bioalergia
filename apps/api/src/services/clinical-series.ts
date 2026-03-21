@@ -1604,6 +1604,31 @@ export async function detectDuplicateSeries(): Promise<ClinicalSeriesDuplicate[]
         paired.add(b.id);
         break;
       }
+
+      // Medium confidence: names share ≥2 tokens, at least one ≥5 chars, and the
+      // intersection covers ≥50% of the shorter name — "jose luis ojeda" and
+      // "jose ojeda carrasco" both contain {"jose","ojeda"} which is enough evidence.
+      if (aName && bName && isLikelyPersonName(aName) && isLikelyPersonName(bName)) {
+        const aTokens = new Set(aName.split(" ").filter(Boolean));
+        const bTokens = new Set(bName.split(" ").filter(Boolean));
+        const common = [...aTokens].filter((t) => bTokens.has(t));
+        const shorter = Math.min(aTokens.size, bTokens.size);
+        const hasSubstantial = common.some((t) => t.length >= 5);
+        if (common.length >= 2 && hasSubstantial && common.length / shorter >= 0.5) {
+          results.push({
+            confidence: "medium",
+            kind: a.kind,
+            patientName: a.patientName ?? b.patientName,
+            reason: `Nombres similares ("${a.patientName}" / "${b.patientName}")`,
+            sourceEventCount: b._count.events,
+            sourceId: b.id,
+            targetEventCount: a._count.events,
+            targetId: a.id,
+          });
+          paired.add(b.id);
+          break;
+        }
+      }
     }
   }
 
