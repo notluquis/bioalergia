@@ -108,11 +108,6 @@ const INSURANCE_COLORS: Record<HealthInsuranceType, "success" | "warning" | "def
   PARTICULAR: "default",
 };
 
-const DELIVERY_LABELS: Record<DeliveryModality, string> = {
-  PRESENCIAL: "Presencial",
-  DOMICILIO: "Domicilio",
-};
-
 const STATUS_LABELS: Record<ClinicalSeriesStatus, string> = {
   ACTIVE: "Activa",
   CANCELLED: "Cancelada",
@@ -610,12 +605,12 @@ export function ClinicalSeriesView() {
                             {KIND_LABELS[s.kind]}
                           </Chip>
                           {s.allergenType && (
-                            <Chip size="sm" color="primary" variant="soft">
+                            <Chip size="sm" color="accent" variant="soft">
                               {ALLERGEN_LABELS[s.allergenType]}
                             </Chip>
                           )}
                           {s.vaccineProduct && (
-                            <Chip size="sm" color="secondary" variant="soft">
+                            <Chip size="sm" color="default" variant="soft">
                               {VACCINE_LABELS[s.vaccineProduct]}
                             </Chip>
                           )}
@@ -874,12 +869,12 @@ export function ClinicalSeriesView() {
                         {KIND_LABELS[detail.kind]}
                       </Chip>
                       {detail.allergenType && (
-                        <Chip size="sm" color="primary" variant="soft">
+                        <Chip size="sm" color="accent" variant="soft">
                           {ALLERGEN_LABELS[detail.allergenType]}
                         </Chip>
                       )}
                       {detail.vaccineProduct && (
-                        <Chip size="sm" color="secondary" variant="soft">
+                        <Chip size="sm" color="default" variant="soft">
                           {VACCINE_LABELS[detail.vaccineProduct]}
                         </Chip>
                       )}
