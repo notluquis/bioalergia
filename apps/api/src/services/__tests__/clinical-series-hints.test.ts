@@ -180,6 +180,30 @@ describe("extractPatientHints", () => {
     });
   });
 
+  // ── Ordinal dose words ───────────────────────────────────────────────────
+  describe("patientName — ordinal dose words", () => {
+    it("does not include 'primera' after the name", () => {
+      // Real case: "Valeria Palma Onetto, Primera dosis Gramíneas"
+      // "Primera" is Title-case and passes the capitalized extractor unless
+      // it is listed as a stopword.
+      const { patientName } = extractPatientHints(
+        "llego Valeria Palma Onetto, Primera dosis Gramíneas (Lucas emite boleta)",
+        null,
+      );
+      expect(patientName).toBe("valeria palma onetto");
+    });
+
+    it("does not include 'segunda', 'tercera', 'cuarta' as name tokens", () => {
+      for (const ordinal of ["segunda", "tercera", "cuarta", "quinta", "sexta"]) {
+        const { patientName } = extractPatientHints(
+          `llego Ana Soto Reyes ${ordinal} dosis clustoid (50)`,
+          null,
+        );
+        expect(patientName).toBe("ana soto reyes");
+      }
+    });
+  });
+
   // ── Age annotations between name and RUT ────────────────────────────────
   describe("patientName — age annotation between name and RUT", () => {
     it("extracts name when 'N años:' separates it from the RUT", () => {
