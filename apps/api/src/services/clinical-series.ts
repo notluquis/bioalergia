@@ -1599,7 +1599,8 @@ export interface ClinicalSeriesDuplicate {
 export async function detectDuplicateSeries(): Promise<ClinicalSeriesDuplicate[]> {
   // Fetch all series that have at least one event, ordered by id ASC so the
   // lower (older) id becomes the target and the higher (newer) becomes source.
-  const allSeries = await db.clinicalSeries.findMany({
+  type SeriesRow = { id: number; kind: ClinicalSeriesKind; patientName: string | null; patientRut: string | null; _count: { events: number } };
+  const allSeries: SeriesRow[] = await db.clinicalSeries.findMany({
     select: {
       id: true,
       kind: true,
@@ -1612,59 +1613,68 @@ export async function detectDuplicateSeries(): Promise<ClinicalSeriesDuplicate[]
   });
 
   const results: ClinicalSeriesDuplicate[] = [];
-  // Track which IDs have already been assigned as sources so they are not
-  // also used as targets. A series used as target can still absorb more sources.
   const usedAsSources = new Set<number>();
 
-  for (let i = 0; i < allSeries.length; i++) {
-    const a = allSeries[i]!;
-    if (usedAsSources.has(a.id)) continue;
+  // ── Pass 1: RUT-based grouping — O(n) ────────────────────────────────────
+  // Group by (normalizedRut, kind). Within each group the lowest id is the
+  // target; all others are sources. This replaces the inner O(n) scan.
+  const rutGroups = new Map<string, SeriesRow[]>();
+  for (const s of allSeries) {
+    if (!s.patientRut) continue;
+    const key = `${normalizeRut(s.patientRut)}:${s.kind}`;
+    const group = rutGroups.get(key);
+    if (group) group.push(s);
+    else rutGroups.set(key, [s]);
+  }
 
-    const aRut = a.patientRut ? normalizeRut(a.patientRut) : null;
-    const aName = a.patientName ? normalizeName(a.patientName) : null;
-
-    for (let j = i + 1; j < allSeries.length; j++) {
-      const b = allSeries[j]!;
-      if (usedAsSources.has(b.id)) continue;
-      if (a.kind !== b.kind) continue;
-
-      const bRut = b.patientRut ? normalizeRut(b.patientRut) : null;
-      const bName = b.patientName ? normalizeName(b.patientName) : null;
-
-      // High confidence: same non-null RUT — do NOT break so all series sharing
-      // this RUT are merged into the same target in a single pass.
-      if (aRut && bRut && aRut === bRut) {
-        results.push({
-          confidence: "high",
-          kind: a.kind,
-          patientName: a.patientName,
-          reason: `Mismo RUT de paciente (${a.patientRut})`,
-          sourceEventCount: b._count.events,
-          sourceId: b.id,
-          targetEventCount: a._count.events,
-          targetId: a.id,
-        });
-        usedAsSources.add(b.id);
-        continue;
-      }
-
-      // High confidence: same non-null normalized name that looks like a real person name
-      if (aName && bName && aName === bName && isLikelyPersonName(aName)) {
-        results.push({
-          confidence: "high",
-          kind: a.kind,
-          patientName: a.patientName,
-          reason: `Mismo nombre de paciente (${a.patientName})`,
-          sourceEventCount: b._count.events,
-          sourceId: b.id,
-          targetEventCount: a._count.events,
-          targetId: a.id,
-        });
-        usedAsSources.add(b.id);
-        break;
-      }
-
+  for (const group of rutGroups.values()) {
+    if (group.length < 2) continue;
+    const target = group[0]!; // sorted by id asc — oldest is target
+    for (let k = 1; k < group.length; k++) {
+      const src = group[k]!;
+      results.push({
+        confidence: "high",
+        kind: target.kind,
+        patientName: target.patientName,
+        reason: `Mismo RUT de paciente (${target.patientRut})`,
+        sourceEventCount: src._count.events,
+        sourceId: src.id,
+        targetEventCount: target._count.events,
+        targetId: target.id,
+      });
+      usedAsSources.add(src.id);
     }
+  }
+
+  // ── Pass 2: name-based grouping — O(n) ───────────────────────────────────
+  // Group by (normalizedName, kind), ignoring series already used as sources.
+  // Only groups of exactly 2 are merged — 3+ with the same name are likely
+  // different patients sharing a common name, so we leave them alone.
+  const nameGroups = new Map<string, SeriesRow[]>();
+  for (const s of allSeries) {
+    if (!s.patientName || usedAsSources.has(s.id)) continue;
+    const normalized = normalizeName(s.patientName);
+    if (!isLikelyPersonName(normalized)) continue;
+    const key = `${normalized}:${s.kind}`;
+    const group = nameGroups.get(key);
+    if (group) group.push(s);
+    else nameGroups.set(key, [s]);
+  }
+
+  for (const group of nameGroups.values()) {
+    if (group.length !== 2) continue;
+    const [target, src] = group as [SeriesRow, SeriesRow];
+    results.push({
+      confidence: "high",
+      kind: target.kind,
+      patientName: target.patientName,
+      reason: `Mismo nombre de paciente (${target.patientName})`,
+      sourceEventCount: src._count.events,
+      sourceId: src.id,
+      targetEventCount: target._count.events,
+      targetId: target.id,
+    });
+    usedAsSources.add(src.id);
   }
 
   return results;
