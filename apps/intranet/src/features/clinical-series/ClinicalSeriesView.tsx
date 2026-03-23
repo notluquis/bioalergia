@@ -38,6 +38,7 @@ import {
   useClinicalSeriesDetail,
   useClinicalSeriesRebuildProgress,
   useRebuildClinicalSeries,
+  useMergeClinicalSeries,
 } from "./queries";
 import type {
   ClinicalSeriesDuplicate,
@@ -1150,7 +1151,19 @@ export function ClinicalSeriesView() {
 
 // ─── Duplicates Management Modal ──────────────────────────────────────────────
 
-const DUPES_PAGE_SIZE = 10;
+// ── DuplicatesModal ──────────────────────────────────────────────────────────
+// Groups duplicate pairs by target series so all sources for the same patient
+// appear together in an expandable card.
+
+interface DuplicateGroup {
+  dups: ClinicalSeriesDuplicate[];
+  kind: ClinicalSeriesKind;
+  patientName: null | string;
+  targetEventCount: number;
+  targetId: number;
+}
+
+const DUPES_PAGE_SIZE = 8;
 
 function DuplicatesModal({
   duplicates,
@@ -1164,8 +1177,43 @@ function DuplicatesModal({
   onMerge: (dup: ClinicalSeriesDuplicate) => void;
 }) {
   const [page, setPage] = useState(1);
-  const totalPages = Math.ceil(duplicates.length / DUPES_PAGE_SIZE);
-  const pageItems = duplicates.slice((page - 1) * DUPES_PAGE_SIZE, page * DUPES_PAGE_SIZE);
+  const [expandedTarget, setExpandedTarget] = useState<number | null>(null);
+  const [mergingTarget, setMergingTarget] = useState<number | null>(null);
+  const merge = useMergeClinicalSeries();
+
+  const groups = useMemo<DuplicateGroup[]>(() => {
+    const map = new Map<number, ClinicalSeriesDuplicate[]>();
+    for (const dup of duplicates) {
+      const list = map.get(dup.targetId) ?? [];
+      list.push(dup);
+      map.set(dup.targetId, list);
+    }
+    return [...map.entries()].map(([targetId, dups]) => ({
+      dups,
+      kind: dups[0]!.kind,
+      patientName: dups[0]!.patientName,
+      targetEventCount: dups[0]!.targetEventCount,
+      targetId,
+    }));
+  }, [duplicates]);
+
+  const totalPages = Math.ceil(groups.length / DUPES_PAGE_SIZE);
+  const pageGroups = groups.slice((page - 1) * DUPES_PAGE_SIZE, page * DUPES_PAGE_SIZE);
+
+  const handleMergeAll = async (group: DuplicateGroup) => {
+    setMergingTarget(group.targetId);
+    try {
+      for (const dup of group.dups) {
+        await merge.mutateAsync({
+          mergeReason: dup.reason,
+          sourceId: dup.sourceId,
+          targetId: dup.targetId,
+        });
+      }
+    } finally {
+      setMergingTarget(null);
+    }
+  };
 
   return (
     <Modal>
@@ -1177,49 +1225,106 @@ function DuplicatesModal({
         }}
       >
         <Modal.Container placement="center">
-          <Modal.Dialog className="relative w-full max-w-xl rounded-[24px] bg-background p-6 shadow-2xl space-y-4">
+          <Modal.Dialog className="relative w-full max-w-xl rounded-[24px] bg-background p-6 shadow-2xl flex flex-col gap-4 max-h-[85vh]">
             <Modal.Header>
               <Modal.Heading className="font-bold text-lg">
-                Series duplicadas ({duplicates.length})
+                Series duplicadas
+                <span className="ml-2 text-sm font-normal text-foreground-400">
+                  {groups.length} grupo{groups.length !== 1 ? "s" : ""} · {duplicates.length} serie
+                  {duplicates.length !== 1 ? "s" : ""}
+                </span>
               </Modal.Heading>
             </Modal.Header>
 
-            <Modal.Body className="space-y-2">
-              {pageItems.map((dup) => (
-                <Surface
-                  key={`${dup.sourceId}-${dup.targetId}`}
-                  className="rounded-xl p-3 flex items-center gap-3"
-                >
-                  <div className="flex-1 min-w-0 space-y-1">
-                    <p className="text-sm font-medium truncate">
-                      {dup.patientName ?? (
-                        <span className="text-foreground-400 italic">Sin nombre</span>
-                      )}
-                    </p>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Chip size="sm" color={KIND_COLORS[dup.kind]} variant="tertiary">
-                        {KIND_LABELS[dup.kind]}
-                      </Chip>
-                      <span className="text-xs text-foreground-400 font-mono">
-                        #{dup.sourceId} ({dup.sourceEventCount} ev.) → #{dup.targetId} (
-                        {dup.targetEventCount} ev.)
+            <Modal.Body className="overflow-y-auto space-y-2 -mx-1 px-1">
+              {pageGroups.map((group) => {
+                const isExpanded = expandedTarget === group.targetId;
+                const isMerging = mergingTarget === group.targetId;
+                return (
+                  <Surface key={group.targetId} className="rounded-xl overflow-hidden">
+                    {/* ── Card header ─── */}
+                    <button
+                      className="w-full p-3 flex items-start gap-3 text-left hover:bg-surface-200 transition-colors"
+                      onClick={() => setExpandedTarget(isExpanded ? null : group.targetId)}
+                    >
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <p className="text-sm font-medium truncate">
+                          {group.patientName ?? (
+                            <span className="text-foreground-400 italic">Sin nombre</span>
+                          )}
+                        </p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Chip size="sm" color={KIND_COLORS[group.kind]} variant="tertiary">
+                            {KIND_LABELS[group.kind]}
+                          </Chip>
+                          <span className="text-xs text-foreground-400 font-mono">
+                            Destino #{group.targetId} · {group.targetEventCount} ev.
+                          </span>
+                          <span className="text-xs text-foreground-400">
+                            {group.dups.length} duplicado{group.dups.length !== 1 ? "s" : ""}
+                          </span>
+                        </div>
+                      </div>
+                      <span className="text-foreground-300 text-xs mt-0.5 shrink-0">
+                        {isExpanded ? "▲" : "▼"}
                       </span>
-                    </div>
-                    <p className="text-xs text-foreground-300 italic truncate">{dup.reason}</p>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    className="shrink-0 text-xs"
-                    onPress={() => onMerge(dup)}
-                  >
-                    Fusionar
-                  </Button>
-                </Surface>
-              ))}
+                    </button>
 
-              {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 pt-1">
+                    {/* ── Expanded sources ─── */}
+                    {isExpanded && (
+                      <div className="border-t border-surface-200">
+                        {group.dups.map((dup) => (
+                          <div
+                            key={dup.sourceId}
+                            className="flex items-center gap-3 px-3 py-2 border-b border-surface-200 last:border-b-0"
+                          >
+                            <div className="flex-1 min-w-0 space-y-0.5">
+                              <p className="text-xs font-mono text-foreground-400">
+                                Fuente #{dup.sourceId} · {dup.sourceEventCount} ev.
+                              </p>
+                              <p className="text-xs text-foreground-300 italic truncate">
+                                {dup.reason}
+                              </p>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="shrink-0 text-xs"
+                              isDisabled={isMerging}
+                              onPress={() => onMerge(dup)}
+                            >
+                              Revisar →
+                            </Button>
+                          </div>
+                        ))}
+
+                        {/* Merge-all footer */}
+                        <div className="px-3 py-2 flex justify-end">
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            isDisabled={isMerging}
+                            onPress={() => void handleMergeAll(group)}
+                          >
+                            {isMerging ? (
+                              <Spinner size="sm" />
+                            ) : group.dups.length > 1 ? (
+                              `Fusionar todo (${group.dups.length})`
+                            ) : (
+                              "Fusionar"
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </Surface>
+                );
+              })}
+            </Modal.Body>
+
+            <div className="flex items-center justify-between pt-2">
+              {totalPages > 1 ? (
+                <div className="flex items-center gap-2">
                   <Button
                     size="sm"
                     variant="ghost"
@@ -1240,10 +1345,9 @@ function DuplicatesModal({
                     →
                   </Button>
                 </div>
+              ) : (
+                <span />
               )}
-            </Modal.Body>
-
-            <div className="flex justify-end pt-2">
               <Button variant="ghost" onPress={onClose}>
                 Cerrar
               </Button>
