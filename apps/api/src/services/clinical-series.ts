@@ -865,7 +865,14 @@ async function findMatchingSeries(params: {
         ? eventDate.diff(end, "day")
         : 0;
 
-    if (distance > thresholdDays) {
+    // RUT matches bypass the date window: the RUT uniquely identifies the
+    // patient, so we should always prefer an existing series over creating a
+    // new one — even when events are processed out of chronological order
+    // (e.g. a November event synced before April events of the same course).
+    // Name-only matches still respect the window to keep separate treatment
+    // courses (years apart) as distinct series.
+    const isRutMatch = !!params.patientRut && candidate.patientRut === params.patientRut;
+    if (!isRutMatch && distance > thresholdDays) {
       continue;
     }
 
