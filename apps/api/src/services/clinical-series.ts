@@ -1612,24 +1612,27 @@ export async function detectDuplicateSeries(): Promise<ClinicalSeriesDuplicate[]
   });
 
   const results: ClinicalSeriesDuplicate[] = [];
-  // Track which IDs have already been paired to avoid chaining A→B→C
-  const paired = new Set<number>();
+  // Track which IDs have already been assigned as sources so they are not
+  // also used as targets. A series used as target can still absorb more sources.
+  const usedAsSources = new Set<number>();
 
   for (let i = 0; i < allSeries.length; i++) {
     const a = allSeries[i]!;
-    if (paired.has(a.id)) continue;
+    if (usedAsSources.has(a.id)) continue;
+
+    const aRut = a.patientRut ? normalizeRut(a.patientRut) : null;
+    const aName = a.patientName ? normalizeName(a.patientName) : null;
 
     for (let j = i + 1; j < allSeries.length; j++) {
       const b = allSeries[j]!;
-      if (paired.has(b.id)) continue;
+      if (usedAsSources.has(b.id)) continue;
       if (a.kind !== b.kind) continue;
 
-      const aRut = a.patientRut ? normalizeRut(a.patientRut) : null;
       const bRut = b.patientRut ? normalizeRut(b.patientRut) : null;
-      const aName = a.patientName ? normalizeName(a.patientName) : null;
       const bName = b.patientName ? normalizeName(b.patientName) : null;
 
-      // High confidence: same non-null RUT
+      // High confidence: same non-null RUT — do NOT break so all series sharing
+      // this RUT are merged into the same target in a single pass.
       if (aRut && bRut && aRut === bRut) {
         results.push({
           confidence: "high",
@@ -1641,8 +1644,8 @@ export async function detectDuplicateSeries(): Promise<ClinicalSeriesDuplicate[]
           targetEventCount: a._count.events,
           targetId: a.id,
         });
-        paired.add(b.id);
-        break;
+        usedAsSources.add(b.id);
+        continue;
       }
 
       // High confidence: same non-null normalized name that looks like a real person name
@@ -1657,7 +1660,7 @@ export async function detectDuplicateSeries(): Promise<ClinicalSeriesDuplicate[]
           targetEventCount: a._count.events,
           targetId: a.id,
         });
-        paired.add(b.id);
+        usedAsSources.add(b.id);
         break;
       }
 

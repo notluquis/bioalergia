@@ -105,10 +105,10 @@ describe("detectDuplicateSeries — same RUT, different name (subset)", () => {
     expect(dupes[0]!.reason).toContain("nombre");
   });
 
-  it("only pairs each series once (no chaining A→B→C)", async () => {
-    // Three series for the same patient/RUT/kind.
-    // The algorithm pairs the oldest (A) with the next (B), then C is left
-    // unpaired — a known limitation documented in the code.
+  it("merges ALL same-RUT series into one target in a single pass", async () => {
+    // Real case from DB: RUT 15198025-2 had 3 series (617, 5966, 5976).
+    // Previously only one pair was detected per pass (break after first match).
+    // Now all sources are collected under the lowest-id target in one pass.
     mockFindMany.mockResolvedValueOnce([
       makeSeries(617, "varela zambrano", "15198025-2", "SUBCUTANEOUS_TREATMENT", 8),
       makeSeries(5966, "karen varela zambrano", "15198025-2", "SUBCUTANEOUS_TREATMENT", 2),
@@ -117,8 +117,26 @@ describe("detectDuplicateSeries — same RUT, different name (subset)", () => {
 
     const dupes = await detectDuplicateSeries();
 
-    // Only one pair detected; 5976 is left for a subsequent dedup run.
-    expect(dupes).toHaveLength(1);
-    expect(dupes[0]).toMatchObject({ targetId: 617, sourceId: 5966 });
+    expect(dupes).toHaveLength(2);
+    expect(dupes.every((d) => d.targetId === 617)).toBe(true);
+    expect(dupes.map((d) => d.sourceId).sort((a, b) => a - b)).toEqual([5966, 5976]);
+  });
+
+  it("merges 4 same-RUT series into one target (real case: ojeda carrasco)", async () => {
+    // Real case from DB: RUT 26606696-1 had 4 series (10, 6227, 6228, 6229).
+    // Old code detected pairs (10→6227) and (6228→6229) — leaving two series
+    // after the first merge pass. New code merges all into target 10.
+    mockFindMany.mockResolvedValueOnce([
+      makeSeries(10, "jose ojeda carrasco", "26606696-1", "SUBCUTANEOUS_TREATMENT", 9),
+      makeSeries(6227, "jose luis ojeda", "26606696-1", "SUBCUTANEOUS_TREATMENT", 1),
+      makeSeries(6228, "jose luis ojeda", "26606696-1", "SUBCUTANEOUS_TREATMENT", 1),
+      makeSeries(6229, "jose luis ojeda", "26606696-1", "SUBCUTANEOUS_TREATMENT", 1),
+    ]);
+
+    const dupes = await detectDuplicateSeries();
+
+    expect(dupes).toHaveLength(3);
+    expect(dupes.every((d) => d.targetId === 10)).toBe(true);
+    expect(dupes.map((d) => d.sourceId).sort((a, b) => a - b)).toEqual([6227, 6228, 6229]);
   });
 });
