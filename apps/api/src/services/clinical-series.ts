@@ -821,103 +821,237 @@ function getSignificantNameTokens(name: string): string[] {
     .filter((t) => t.length >= 3 && !LOWERCASE_NAME_STOPWORDS.has(t));
 }
 
-// Shared event-date distance helper.
-function seriesDateDistance(
-  eventDate: dayjs.Dayjs,
-  events: Array<{ endDate: Date | null; endDateTime: Date | null; startDate: Date | null; startDateTime: Date | null }>,
-): number {
-  const dates = events
-    .map((e) => e.startDate ?? e.startDateTime ?? e.endDate ?? e.endDateTime)
-    .filter((v): v is Date => v instanceof Date)
-    .map((v) => dayjs(v).tz(TIMEZONE))
-    .sort((a, b) => a.valueOf() - b.valueOf());
-  if (dates.length === 0) return Infinity;
-  const start = dates[0]!;
-  const end = dates[dates.length - 1]!;
-  return eventDate.isBefore(start)
-    ? start.diff(eventDate, "day")
-    : eventDate.isAfter(end)
-      ? eventDate.diff(end, "day")
-      : 0;
-}
+// ── SeriesAssignmentContext ───────────────────────────────────────────────────
+// Pre-loaded in-memory index of all clinical series. Eliminates per-event DB
+// queries during bulk rebuilds — a single load replaces O(N) round trips with
+// O(1) map lookups and O(k) token-overlap scans.
 
-async function findMatchingSeries(params: {
-  eventDate: string;
+interface SeriesEntry {
+  beneficiaryRut: null | string;
+  id: number;
   kind: ClinicalSeriesKind;
+  maxDate: dayjs.Dayjs | null;
+  minDate: dayjs.Dayjs | null;
   patientName: null | string;
   patientRut: null | string;
-}): Promise<null | number> {
+}
+
+class SeriesAssignmentContext {
+  // Oldest-wins indexes — first writer wins (load order: id ASC).
+  private readonly rutKindIndex = new Map<string, number>();  // `${rut}:${kind}` → id
+  private readonly nameKindIndex = new Map<string, number>(); // `${name}:${kind}` → id
+  // Token inverted index — insertion order matches id ASC load order.
+  private readonly tokenIndex = new Map<string, number[]>(); // token → [id, …]
+  readonly seriesById = new Map<number, SeriesEntry>();
+
+  private addEntry(entry: SeriesEntry): void {
+    this.seriesById.set(entry.id, entry);
+
+    if (entry.patientRut) {
+      const key = `${normalizeRut(entry.patientRut)}:${entry.kind}`;
+      if (!this.rutKindIndex.has(key)) this.rutKindIndex.set(key, entry.id);
+    }
+    if (entry.patientName) {
+      const key = `${normalizeName(entry.patientName)}:${entry.kind}`;
+      if (!this.nameKindIndex.has(key)) this.nameKindIndex.set(key, entry.id);
+      for (const token of getSignificantNameTokens(entry.patientName)) {
+        const list = this.tokenIndex.get(token);
+        if (list) list.push(entry.id);
+        else this.tokenIndex.set(token, [entry.id]);
+      }
+    }
+  }
+
+  static async load(): Promise<SeriesAssignmentContext> {
+    const ctx = new SeriesAssignmentContext();
+    const rows = await db.clinicalSeries.findMany({
+      select: {
+        beneficiaryRut: true,
+        id: true,
+        kind: true,
+        patientName: true,
+        patientRut: true,
+        events: { select: { endDate: true, endDateTime: true, startDate: true, startDateTime: true } },
+      },
+      orderBy: { id: "asc" },
+    });
+    for (const s of rows) {
+      const dates = s.events
+        .map((e) => e.startDate ?? e.startDateTime ?? e.endDate ?? e.endDateTime)
+        .filter((v): v is Date => v instanceof Date)
+        .map((v) => dayjs(v).tz(TIMEZONE))
+        .sort((a, b) => a.valueOf() - b.valueOf());
+      ctx.addEntry({
+        beneficiaryRut: s.beneficiaryRut,
+        id: s.id,
+        kind: s.kind,
+        maxDate: dates[dates.length - 1] ?? null,
+        minDate: dates[0] ?? null,
+        patientName: s.patientName,
+        patientRut: s.patientRut,
+      });
+    }
+    return ctx;
+  }
+
+  /** Distance in days between eventDate and the series' event span. */
+  private dist(entry: SeriesEntry, eventDate: dayjs.Dayjs): number {
+    if (!entry.minDate || !entry.maxDate) return Infinity;
+    if (eventDate.isBefore(entry.minDate)) return entry.minDate.diff(eventDate, "day");
+    if (eventDate.isAfter(entry.maxDate)) return eventDate.diff(entry.maxDate, "day");
+    return 0;
+  }
+
+  /** RUT uniquely identifies the patient — returns the oldest series for this rut+kind. */
+  findByRut(rut: string, kind: ClinicalSeriesKind): number | undefined {
+    return this.rutKindIndex.get(`${normalizeRut(rut)}:${kind}`);
+  }
+
+  /** Exact normalized name match, closest within the date window. */
+  findByName(name: string, kind: ClinicalSeriesKind, eventDate: dayjs.Dayjs, thresholdDays: number): number | undefined {
+    const id = this.nameKindIndex.get(`${normalizeName(name)}:${kind}`);
+    if (id == null) return undefined;
+    const entry = this.seriesById.get(id);
+    if (!entry) return undefined;
+    return this.dist(entry, eventDate) <= thresholdDays ? id : undefined;
+  }
+
+  /**
+   * Token-overlap fallback: finds the oldest same-kind series that shares ≥2
+   * significant tokens covering ≥2/3 of the shorter name. Used when exact
+   * name matching fails (e.g. "jose luis ojeda" ↔ "jose ojeda carrasco").
+   */
+  findByTokenOverlap(name: string, kind: ClinicalSeriesKind, eventDate: dayjs.Dayjs, thresholdDays: number): number | undefined {
+    const eventTokens = getSignificantNameTokens(name);
+    if (eventTokens.length < 2) return undefined;
+
+    // Count how many event tokens appear in each candidate series.
+    const overlapCount = new Map<number, number>();
+    for (const token of eventTokens) {
+      for (const id of (this.tokenIndex.get(token) ?? [])) {
+        overlapCount.set(id, (overlapCount.get(id) ?? 0) + 1);
+      }
+    }
+
+    let bestId: number | undefined;
+    for (const [id, overlap] of overlapCount) {
+      if (overlap < 2) continue;
+      const entry = this.seriesById.get(id);
+      if (!entry || entry.kind !== kind || !entry.patientName) continue;
+      const shorterLen = Math.min(eventTokens.length, getSignificantNameTokens(entry.patientName).length);
+      if (overlap / shorterLen < 2 / 3) continue;
+      if (this.dist(entry, eventDate) > thresholdDays) continue;
+      if (bestId === undefined || id < bestId) bestId = id; // oldest wins
+    }
+    return bestId;
+  }
+
+  /** Register a newly created series so subsequent lookups can find it. */
+  register(entry: SeriesEntry): void {
+    this.addEntry(entry);
+  }
+
+  /** Extend the series' date span after assigning an event to it. */
+  touch(id: number, eventDate: dayjs.Dayjs): void {
+    const entry = this.seriesById.get(id);
+    if (!entry) return;
+    if (!entry.minDate || eventDate.isBefore(entry.minDate)) entry.minDate = eventDate;
+    if (!entry.maxDate || eventDate.isAfter(entry.maxDate)) entry.maxDate = eventDate;
+  }
+}
+
+async function findMatchingSeries(
+  params: { eventDate: string; kind: ClinicalSeriesKind; patientName: null | string; patientRut: null | string },
+  ctx?: SeriesAssignmentContext,
+): Promise<null | number> {
   const eventDateDjs = dayjs.tz(params.eventDate, TIMEZONE);
   const thresholdDays = getSeriesWindowDays(params.kind);
 
-  const eventSelect = {
-    select: { endDate: true, endDateTime: true, startDate: true, startDateTime: true },
-  } as const;
+  // ── Fast path: all lookups in memory (O(1) / O(k)) ───────────────────────
+  if (ctx) {
+    if (params.patientRut) {
+      const id = ctx.findByRut(params.patientRut, params.kind);
+      if (id != null) return id;
+    }
+    if (params.patientName) {
+      const exact = ctx.findByName(params.patientName, params.kind, eventDateDjs, thresholdDays);
+      if (exact != null) return exact;
+      if (!params.patientRut) {
+        const fuzzy = ctx.findByTokenOverlap(params.patientName, params.kind, eventDateDjs, thresholdDays);
+        if (fuzzy != null) return fuzzy;
+      }
+    }
+    return null;
+  }
 
-  // ── Pass 1: RUT or exact-name candidates ─────────────────────────────────
-  const candidates = await db.clinicalSeries.findMany({
-    where: {
-      kind: params.kind,
-      OR: [
-        params.patientRut ? { patientRut: params.patientRut } : undefined,
-        params.patientName ? { patientName: params.patientName } : undefined,
-      ].filter(Boolean) as Array<{ patientName?: string; patientRut?: string }>,
-    },
-    include: { events: eventSelect },
-    orderBy: { id: "asc" },
-  });
+  // ── Slow path: DB queries (single-event incremental sync) ─────────────────
+  const eventSelect = { select: { endDate: true, endDateTime: true, startDate: true, startDateTime: true } } as const;
 
-  // RUT uniquely identifies the patient — return the oldest matching series
-  // immediately, regardless of date gap (handles out-of-order syncs and avoids
-  // a newer duplicate winning on shorter date distance).
   if (params.patientRut) {
-    const rutMatch = candidates.find((c) => c.patientRut === params.patientRut);
+    // RUT uniquely identifies the patient — return oldest series for this rut+kind.
+    const rutMatch = await db.clinicalSeries.findFirst({
+      where: { kind: params.kind, patientRut: params.patientRut },
+      orderBy: { id: "asc" },
+      select: { id: true },
+    });
     if (rutMatch) return rutMatch.id;
   }
 
-  // Exact name match: closest within the date window.
-  let bestMatch: null | { distance: number; seriesId: number } = null;
-  for (const candidate of candidates) {
-    const distance =
-      candidate.events.length === 0
-        ? Infinity
-        : seriesDateDistance(eventDateDjs, candidate.events);
-    if (distance > thresholdDays) continue;
-    if (!bestMatch || distance < bestMatch.distance) {
-      bestMatch = { distance, seriesId: candidate.id };
+  if (params.patientName) {
+    // Exact name match within date window.
+    const nameCandidates = await db.clinicalSeries.findMany({
+      where: { kind: params.kind, patientName: params.patientName },
+      include: { events: eventSelect },
+      orderBy: { id: "asc" },
+    });
+    let best: null | { distance: number; id: number } = null;
+    for (const c of nameCandidates) {
+      const dates = c.events
+        .map((e) => e.startDate ?? e.startDateTime ?? e.endDate ?? e.endDateTime)
+        .filter((v): v is Date => v instanceof Date)
+        .map((v) => dayjs(v).tz(TIMEZONE))
+        .sort((a, b) => a.valueOf() - b.valueOf());
+      const distance =
+        dates.length === 0
+          ? Infinity
+          : (() => {
+              const s = dates[0]!;
+              const e = dates[dates.length - 1]!;
+              return eventDateDjs.isBefore(s) ? s.diff(eventDateDjs, "day") : eventDateDjs.isAfter(e) ? eventDateDjs.diff(e, "day") : 0;
+            })();
+      if (distance > thresholdDays) continue;
+      if (!best || distance < best.distance) best = { distance, id: c.id };
     }
-  }
-  if (bestMatch) return bestMatch.seriesId;
+    if (best) return best.id;
 
-  // ── Pass 2: token-overlap fallback (no RUT, no exact name match) ─────────
-  // Catches partial-name variants: "jose luis ojeda" ↔ "jose ojeda carrasco"
-  // (same person, same RUT, but different events omit different name parts).
-  // Requires ≥2 significant tokens overlapping and covering ≥2/3 of the
-  // shorter name. Among qualifying candidates, returns the oldest (lowest id).
-  if (!params.patientRut && params.patientName) {
+    // Token-overlap fallback.
     const eventTokens = getSignificantNameTokens(params.patientName);
-    if (eventTokens.length >= 2) {
+    if (!params.patientRut && eventTokens.length >= 2) {
       const allSameKind = await db.clinicalSeries.findMany({
         where: { kind: params.kind },
         include: { events: eventSelect },
         orderBy: { id: "asc" },
       });
-
-      for (const candidate of allSameKind) {
-        if (!candidate.patientName) continue;
-        const candidateTokens = getSignificantNameTokens(candidate.patientName);
-        const overlap = eventTokens.filter((t) => candidateTokens.includes(t)).length;
-        const shorterLen = Math.min(eventTokens.length, candidateTokens.length);
-        if (overlap < 2 || overlap / shorterLen < 2 / 3) continue;
-
+      for (const c of allSameKind) {
+        if (!c.patientName) continue;
+        const cTokens = getSignificantNameTokens(c.patientName);
+        const overlap = eventTokens.filter((t) => cTokens.includes(t)).length;
+        if (overlap < 2 || overlap / Math.min(eventTokens.length, cTokens.length) < 2 / 3) continue;
+        const dates = c.events
+          .map((e) => e.startDate ?? e.startDateTime ?? e.endDate ?? e.endDateTime)
+          .filter((v): v is Date => v instanceof Date)
+          .map((v) => dayjs(v).tz(TIMEZONE))
+          .sort((a, b) => a.valueOf() - b.valueOf());
         const distance =
-          candidate.events.length === 0
+          dates.length === 0
             ? Infinity
-            : seriesDateDistance(eventDateDjs, candidate.events);
+            : (() => {
+                const s = dates[0]!;
+                const e = dates[dates.length - 1]!;
+                return eventDateDjs.isBefore(s) ? s.diff(eventDateDjs, "day") : eventDateDjs.isAfter(e) ? eventDateDjs.diff(e, "day") : 0;
+              })();
         if (distance > thresholdDays) continue;
-
-        // Candidates sorted id ASC — first hit is the oldest canonical series.
-        return candidate.id;
+        return c.id; // sorted id ASC — oldest qualifies first
       }
     }
   }
@@ -1068,7 +1202,7 @@ async function loadEventSeriesCandidatesByIds(
 // Core per-event sync logic — load-agnostic. Returns the series ID that was
 // touched (for the caller to schedule a deduplicated metadata refresh), or
 // null if the event does not qualify for a clinical series.
-async function assignEventToSeries(event: EventSeriesCandidate): Promise<null | number> {
+async function assignEventToSeries(event: EventSeriesCandidate, ctx?: SeriesAssignmentContext): Promise<null | number> {
   const kind = inferSeriesKind(event);
   if (!kind) {
     if (event.clinicalSeriesId != null) {
@@ -1108,33 +1242,29 @@ async function assignEventToSeries(event: EventSeriesCandidate): Promise<null | 
   // for this patient+kind by ordering candidates id ASC and preferring the one
   // with the smallest date distance. This ensures that during a rebuild an event
   // already sitting in a newer duplicate series gets re-assigned to the original.
-  let targetSeriesId = await findMatchingSeries({
-    eventDate: event.eventDate,
-    kind,
-    patientName: identity.patientName,
-    patientRut: identity.patientRut,
-  });
+  let targetSeriesId = await findMatchingSeries(
+    { eventDate: event.eventDate, kind, patientName: identity.patientName, patientRut: identity.patientRut },
+    ctx,
+  );
 
   // Fallback: if nothing found but the event already has a compatible series
-  // (e.g. a brand-new kind that has no prior series yet), keep it there.
+  // (e.g. brand-new patient, no prior series of this kind), keep it there.
   if (!targetSeriesId && event.clinicalSeriesId != null) {
-    const currentSeries = await db.clinicalSeries.findUnique({
+    // Use context entry when available — avoids a DB round trip.
+    const current = ctx?.seriesById.get(event.clinicalSeriesId) ?? await db.clinicalSeries.findUnique({
       where: { id: event.clinicalSeriesId },
       select: { beneficiaryRut: true, id: true, kind: true, patientRut: true },
     });
-
-    const sameKind = currentSeries?.kind === kind;
-    const samePatient =
-      !identity.patientRut || !currentSeries?.patientRut || currentSeries.patientRut === identity.patientRut;
-    const compatibleBeneficiary =
-      !identity.beneficiaryRut ||
-      !currentSeries?.beneficiaryRut ||
-      currentSeries.beneficiaryRut === identity.beneficiaryRut;
-
-    if (sameKind && samePatient && compatibleBeneficiary) {
-      targetSeriesId = currentSeries.id;
+    if (
+      current?.kind === kind &&
+      (!identity.patientRut || !current.patientRut || current.patientRut === identity.patientRut) &&
+      (!identity.beneficiaryRut || !current.beneficiaryRut || current.beneficiaryRut === identity.beneficiaryRut)
+    ) {
+      targetSeriesId = current.id;
     }
   }
+
+  const eventDateDjs = dayjs.tz(event.eventDate, TIMEZONE);
 
   if (!targetSeriesId) {
     const created = await db.clinicalSeries.create({
@@ -1153,6 +1283,16 @@ async function assignEventToSeries(event: EventSeriesCandidate): Promise<null | 
       select: { id: true },
     });
     targetSeriesId = created.id;
+    // Register new series in the context so subsequent events find it.
+    ctx?.register({
+      beneficiaryRut: identity.beneficiaryRut,
+      id: targetSeriesId,
+      kind,
+      maxDate: eventDateDjs,
+      minDate: eventDateDjs,
+      patientName: identity.patientName,
+      patientRut: identity.patientRut,
+    });
   }
 
   if (event.clinicalSeriesId !== targetSeriesId) {
@@ -1161,6 +1301,9 @@ async function assignEventToSeries(event: EventSeriesCandidate): Promise<null | 
       data: { clinicalSeries: { connect: { id: targetSeriesId } } },
     });
   }
+
+  // Extend the series' date span so subsequent events get accurate distances.
+  ctx?.touch(targetSeriesId, eventDateDjs);
 
   return targetSeriesId;
 }
@@ -1183,8 +1326,11 @@ export async function syncClinicalSeriesForEventIds(
   if (unique.length === 0) return;
   const total = unique.length;
 
-  // One query for all events instead of N individual round trips.
-  const events = await loadEventSeriesCandidatesByIds(unique);
+  // One query for all events + one query for all existing series — no per-event DB lookups.
+  const [events, ctx] = await Promise.all([
+    loadEventSeriesCandidatesByIds(unique),
+    SeriesAssignmentContext.load(),
+  ]);
 
   // Collect which series were touched so we can refresh metadata exactly once
   // per series at the end — eliminates redundant refreshes and race conditions
@@ -1194,7 +1340,7 @@ export async function syncClinicalSeriesForEventIds(
 
   // 8 concurrent workers sharing a queue — ~8x throughput vs serial processing.
   await runConcurrent(events, 8, async (event) => {
-    const seriesId = await assignEventToSeries(event).catch(() => null);
+    const seriesId = await assignEventToSeries(event, ctx).catch(() => null);
     if (seriesId != null) touchedSeriesIds.add(seriesId);
     processed++;
     onProgress?.(processed, total);
