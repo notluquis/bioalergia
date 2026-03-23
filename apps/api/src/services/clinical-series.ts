@@ -975,7 +975,16 @@ async function findMatchingSeries(
     }
     if (params.patientName) {
       const exact = ctx.findByName(params.patientName, params.kind, eventDateDjs, thresholdDays);
-      if (exact != null) return exact;
+      if (exact != null) {
+        // If the matched series has a RUT, prefer the oldest canonical series for that RUT.
+        // This prevents re-assigning events to a duplicate series when the canonical exists.
+        const entry = ctx.seriesById.get(exact);
+        if (entry?.patientRut) {
+          const canonical = ctx.findByRut(entry.patientRut, params.kind);
+          if (canonical != null && canonical !== exact) return canonical;
+        }
+        return exact;
+      }
       if (!params.patientRut) {
         const fuzzy = ctx.findByTokenOverlap(params.patientName, params.kind, eventDateDjs, thresholdDays);
         if (fuzzy != null) return fuzzy;

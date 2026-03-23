@@ -32,6 +32,7 @@ import { EventDteLinkModal } from "@/features/calendar/components/EventDteLinkMo
 import type { CalendarEventDetail } from "@/features/calendar/types";
 import {
   clinicalSeriesKeys,
+  fetchClinicalSeriesDetail,
   fetchDetectDuplicates,
   useClinicalSeries,
   useClinicalSeriesDetail,
@@ -1144,6 +1145,46 @@ interface DuplicateGroup {
 
 const DUPES_PAGE_SIZE = 8;
 
+function SourceEventsList({ sourceId }: { sourceId: number }) {
+  const [open, setOpen] = useState(false);
+  const { data, isLoading } = useQuery({
+    queryKey: clinicalSeriesKeys.detail(sourceId),
+    queryFn: () => fetchClinicalSeriesDetail(sourceId),
+    enabled: open,
+  });
+
+  return (
+    <div className="mt-1">
+      <button
+        className="text-[11px] text-foreground-400 hover:text-foreground-600 transition-colors"
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((v) => !v);
+        }}
+      >
+        {open ? "▲ Ocultar eventos" : "▾ Ver eventos"}
+      </button>
+      {open && (
+        <div className="mt-1 space-y-0.5">
+          {isLoading ? (
+            <Spinner size="sm" />
+          ) : (
+            (data?.events ?? []).map((ev) => (
+              <div
+                key={ev.eventId}
+                className="flex items-baseline gap-1.5 text-[11px] text-foreground-400"
+              >
+                <span className="font-mono shrink-0">{ev.eventDate.slice(0, 10)}</span>
+                <span className="truncate">{ev.summary ?? ev.seriesStageLabel ?? "—"}</span>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function DuplicatesModal({
   duplicates,
   isOpen,
@@ -1324,6 +1365,7 @@ function DuplicatesModal({
                                     {dup.reason}
                                   </p>
                                 </Label>
+                                <SourceEventsList sourceId={dup.sourceId} />
                               </Checkbox.Content>
                             </Checkbox>
                           );
