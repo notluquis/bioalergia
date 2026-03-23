@@ -106,6 +106,8 @@ export const clinicalSeriesDuplicateSchema = z.object({
   reason: z.string(),
   sourceEventCount: z.number(),
   sourceId: z.number(),
+  sourcePatientName: z.string().nullable(),
+  sourcePatientRut: z.string().nullable(),
   targetEventCount: z.number(),
   targetId: z.number(),
 });

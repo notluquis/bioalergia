@@ -1789,6 +1789,8 @@ export interface ClinicalSeriesDuplicate {
   reason: string;
   sourceEventCount: number;
   sourceId: number;
+  sourcePatientName: null | string;
+  sourcePatientRut: null | string;
   targetEventCount: number;
   targetId: number;
 }
@@ -1836,6 +1838,8 @@ export async function detectDuplicateSeries(): Promise<ClinicalSeriesDuplicate[]
         reason: `Mismo RUT de paciente (${target.patientRut})`,
         sourceEventCount: src._count.events,
         sourceId: src.id,
+        sourcePatientName: src.patientName,
+        sourcePatientRut: src.patientRut,
         targetEventCount: target._count.events,
         targetId: target.id,
       });
@@ -1868,6 +1872,8 @@ export async function detectDuplicateSeries(): Promise<ClinicalSeriesDuplicate[]
       reason: `Mismo nombre de paciente (${target.patientName})`,
       sourceEventCount: src._count.events,
       sourceId: src.id,
+      sourcePatientName: src.patientName,
+      sourcePatientRut: src.patientRut,
       targetEventCount: target._count.events,
       targetId: target.id,
     });

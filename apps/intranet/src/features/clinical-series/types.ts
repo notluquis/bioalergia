@@ -206,6 +206,8 @@ export interface ClinicalSeriesDuplicate {
   reason: string;
   sourceEventCount: number;
   sourceId: number;
+  sourcePatientName: string | null;
+  sourcePatientRut: string | null;
   targetEventCount: number;
   targetId: number;
 }
@@ -228,6 +230,8 @@ export const ClinicalSeriesDuplicateSchema = z.object({
   reason: z.string(),
   sourceEventCount: z.number(),
   sourceId: z.number(),
+  sourcePatientName: z.string().nullable(),
+  sourcePatientRut: z.string().nullable(),
   targetEventCount: z.number(),
   targetId: z.number(),
 });

@@ -52,7 +52,6 @@ import type {
   SubcutaneousVaccineProduct,
   HealthInsuranceType,
 } from "./types";
-import { ClinicalSeriesMergeModal } from "./components/ClinicalSeriesMergeModal";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -310,10 +309,6 @@ export function ClinicalSeriesView() {
     ...(status && { status }),
   };
 
-  // Merge modal state
-  const [mergeModalDuplicate, setMergeModalDuplicate] = useState<ClinicalSeriesDuplicate | null>(
-    null
-  );
   const [rebuildModalOpen, setRebuildModalOpen] = useState(false);
   const [duplicatesModalOpen, setDuplicatesModalOpen] = useState(false);
 
@@ -1123,17 +1118,6 @@ export function ClinicalSeriesView() {
           duplicates={duplicates}
           isOpen={duplicatesModalOpen}
           onClose={() => setDuplicatesModalOpen(false)}
-          onMerge={(dup) => {
-            setDuplicatesModalOpen(false);
-            setMergeModalDuplicate(dup);
-          }}
-        />
-      )}
-
-      {mergeModalDuplicate && (
-        <MergeModalWithSnapshots
-          duplicate={mergeModalDuplicate}
-          onClose={() => setMergeModalDuplicate(null)}
         />
       )}
 
@@ -1151,10 +1135,6 @@ export function ClinicalSeriesView() {
 
 // ─── Duplicates Management Modal ──────────────────────────────────────────────
 
-// ── DuplicatesModal ──────────────────────────────────────────────────────────
-// Groups duplicate pairs by target series so all sources for the same patient
-// appear together in an expandable card.
-
 interface DuplicateGroup {
   dups: ClinicalSeriesDuplicate[];
   kind: ClinicalSeriesKind;
@@ -1169,17 +1149,18 @@ function DuplicatesModal({
   duplicates,
   isOpen,
   onClose,
-  onMerge,
 }: {
   duplicates: ClinicalSeriesDuplicate[];
   isOpen: boolean;
   onClose: () => void;
-  onMerge: (dup: ClinicalSeriesDuplicate) => void;
 }) {
   const [page, setPage] = useState(1);
   const [expandedTarget, setExpandedTarget] = useState<number | null>(null);
   const [mergingTarget, setMergingTarget] = useState<number | null>(null);
+  // Selected source IDs per target — all pre-selected on first expand.
+  const [selectedByTarget, setSelectedByTarget] = useState<Map<number, Set<number>>>(new Map());
   const merge = useMergeClinicalSeries();
+  const queryClient = useQueryClient();
 
   const groups = useMemo<DuplicateGroup[]>(() => {
     const map = new Map<number, ClinicalSeriesDuplicate[]>();
@@ -1200,16 +1181,31 @@ function DuplicatesModal({
   const totalPages = Math.ceil(groups.length / DUPES_PAGE_SIZE);
   const pageGroups = groups.slice((page - 1) * DUPES_PAGE_SIZE, page * DUPES_PAGE_SIZE);
 
-  const handleMergeAll = async (group: DuplicateGroup) => {
+  const getSelected = (targetId: number, dups: ClinicalSeriesDuplicate[]) =>
+    selectedByTarget.get(targetId) ?? new Set(dups.map((d) => d.sourceId));
+
+  const setSelected = (targetId: number, next: Set<number>) => {
+    setSelectedByTarget((prev) => {
+      const m = new Map(prev);
+      m.set(targetId, new Set(next));
+      return m;
+    });
+  };
+
+  const handleMergeSelected = async (group: DuplicateGroup) => {
+    const selected = getSelected(group.targetId, group.dups);
+    const toMerge = group.dups.filter((d) => selected.has(d.sourceId));
+    if (toMerge.length === 0) return;
     setMergingTarget(group.targetId);
     try {
-      for (const dup of group.dups) {
+      for (const dup of toMerge) {
         await merge.mutateAsync({
           mergeReason: dup.reason,
           sourceId: dup.sourceId,
           targetId: dup.targetId,
         });
       }
+      void queryClient.invalidateQueries({ queryKey: clinicalSeriesKeys.duplicates() });
     } finally {
       setMergingTarget(null);
     }
@@ -1240,6 +1236,9 @@ function DuplicatesModal({
               {pageGroups.map((group) => {
                 const isExpanded = expandedTarget === group.targetId;
                 const isMerging = mergingTarget === group.targetId;
+                const selected = getSelected(group.targetId, group.dups);
+                const allSelected = selected.size === group.dups.length;
+
                 return (
                   <Surface key={group.targetId} className="rounded-xl overflow-hidden">
                     {/* ── Card header ─── */}
@@ -1273,43 +1272,91 @@ function DuplicatesModal({
                     {/* ── Expanded sources ─── */}
                     {isExpanded && (
                       <div className="border-t border-surface-200">
-                        {group.dups.map((dup) => (
-                          <div
-                            key={dup.sourceId}
-                            className="flex items-center gap-3 px-3 py-2 border-b border-surface-200 last:border-b-0"
-                          >
-                            <div className="flex-1 min-w-0 space-y-0.5">
-                              <p className="text-xs font-mono text-foreground-400">
-                                Fuente #{dup.sourceId} · {dup.sourceEventCount} ev.
-                              </p>
-                              <p className="text-xs text-foreground-300 italic truncate">
-                                {dup.reason}
-                              </p>
-                            </div>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="shrink-0 text-xs"
-                              isDisabled={isMerging}
-                              onPress={() => onMerge(dup)}
+                        {group.dups.map((dup) => {
+                          const isSelected = selected.has(dup.sourceId);
+                          const sourceHasMore = dup.sourceEventCount > group.targetEventCount;
+                          return (
+                            <label
+                              key={dup.sourceId}
+                              className="flex items-start gap-3 px-3 py-2.5 border-b border-surface-200 last:border-b-0 hover:bg-surface-100 transition-colors cursor-pointer select-none"
                             >
-                              Revisar →
-                            </Button>
-                          </div>
-                        ))}
+                              <Checkbox
+                                isSelected={isSelected}
+                                isDisabled={isMerging}
+                                onChange={(checked) => {
+                                  const next = new Set(selected);
+                                  if (checked) next.add(dup.sourceId);
+                                  else next.delete(dup.sourceId);
+                                  setSelected(group.targetId, next);
+                                }}
+                                className="mt-0.5"
+                              >
+                                <Checkbox.Control>
+                                  <Checkbox.Indicator />
+                                </Checkbox.Control>
+                              </Checkbox>
+                              <div className="flex-1 min-w-0 space-y-0.5">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="text-sm font-medium">
+                                    {dup.sourcePatientName ?? (
+                                      <span className="text-foreground-400 italic">Sin nombre</span>
+                                    )}
+                                  </span>
+                                  {sourceHasMore && (
+                                    <span className="text-[10px] text-warning font-medium">
+                                      ↑ más eventos
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  {dup.sourcePatientRut && (
+                                    <span className="text-xs font-mono text-foreground-400">
+                                      {dup.sourcePatientRut}
+                                    </span>
+                                  )}
+                                  <span className="text-xs text-foreground-400">
+                                    #{dup.sourceId} · {dup.sourceEventCount} ev.
+                                  </span>
+                                </div>
+                                <p className="text-xs text-foreground-300 italic truncate">
+                                  {dup.reason}
+                                </p>
+                              </div>
+                            </label>
+                          );
+                        })}
 
-                        {/* Merge-all footer */}
-                        <div className="px-3 py-2 flex justify-end">
+                        {/* Footer */}
+                        <div className="px-3 py-2 flex items-center justify-between gap-2">
+                          {group.dups.length > 1 ? (
+                            <button
+                              className="text-xs text-foreground-400 hover:text-foreground-600 transition-colors"
+                              onClick={() => {
+                                setSelected(
+                                  group.targetId,
+                                  allSelected
+                                    ? new Set()
+                                    : new Set(group.dups.map((d) => d.sourceId))
+                                );
+                              }}
+                            >
+                              {allSelected ? "Deseleccionar todos" : "Seleccionar todos"}
+                            </button>
+                          ) : (
+                            <span />
+                          )}
                           <Button
                             size="sm"
                             variant="secondary"
-                            isDisabled={isMerging}
-                            onPress={() => void handleMergeAll(group)}
+                            isDisabled={isMerging || selected.size === 0}
+                            onPress={() => void handleMergeSelected(group)}
                           >
                             {isMerging ? (
                               <Spinner size="sm" />
-                            ) : group.dups.length > 1 ? (
-                              `Fusionar todo (${group.dups.length})`
+                            ) : allSelected && group.dups.length > 1 ? (
+                              `Fusionar todos (${group.dups.length})`
+                            ) : selected.size > 1 ? (
+                              `Fusionar seleccionados (${selected.size})`
                             ) : (
                               "Fusionar"
                             )}
@@ -1356,140 +1403,6 @@ function DuplicatesModal({
         </Modal.Container>
       </Modal.Backdrop>
     </Modal>
-  );
-}
-
-// Loads both snapshots for the merge modal.
-// staleTime: Infinity — fetched once on open, never refetches while the modal is alive.
-// retry: false       — a 404 means the series was already merged; show an error instead of retrying.
-function MergeModalWithSnapshots({
-  duplicate,
-  onClose,
-}: {
-  duplicate: ClinicalSeriesDuplicate;
-  onClose: () => void;
-}) {
-  const queryClient = useQueryClient();
-
-  const {
-    data: snap1,
-    isLoading: loading1,
-    isError: error1,
-  } = useQuery({
-    enabled: !!duplicate.sourceId,
-    queryFn: () => fetchClinicalSeriesDetail(duplicate.sourceId),
-    queryKey: clinicalSeriesKeys.detail(duplicate.sourceId),
-    retry: false,
-    staleTime: Infinity,
-  });
-  const {
-    data: snap2,
-    isLoading: loading2,
-    isError: error2,
-  } = useQuery({
-    enabled: !!duplicate.targetId,
-    queryFn: () => fetchClinicalSeriesDetail(duplicate.targetId),
-    queryKey: clinicalSeriesKeys.detail(duplicate.targetId),
-    retry: false,
-    staleTime: Infinity,
-  });
-
-  const isLoading = loading1 || loading2;
-  const hasError = error1 || error2;
-
-  // One of the series no longer exists — the duplicate entry is stale. Close and refresh.
-  if (hasError) {
-    return (
-      <Modal>
-        <Modal.Backdrop
-          className="bg-black/40 backdrop-blur-[2px]"
-          isOpen
-          onOpenChange={(open) => {
-            if (!open) onClose();
-          }}
-        >
-          <Modal.Container placement="center">
-            <Modal.Dialog className="relative w-full max-w-sm rounded-[24px] bg-background p-6 shadow-2xl space-y-4">
-              <Modal.Header>
-                <Modal.Heading className="font-bold text-lg">Serie no encontrada</Modal.Heading>
-              </Modal.Header>
-              <Modal.Body>
-                <p className="text-sm text-foreground-400">
-                  Una de las series ya no existe, probablemente fue fusionada anteriormente.
-                </p>
-              </Modal.Body>
-              <div className="flex justify-end pt-2">
-                <Button
-                  variant="primary"
-                  onPress={() => {
-                    void queryClient.invalidateQueries({
-                      queryKey: clinicalSeriesKeys.duplicates(),
-                    });
-                    onClose();
-                  }}
-                >
-                  Entendido
-                </Button>
-              </div>
-            </Modal.Dialog>
-          </Modal.Container>
-        </Modal.Backdrop>
-      </Modal>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <Modal>
-        <Modal.Backdrop
-          className="bg-black/40 backdrop-blur-[2px]"
-          isOpen
-          onOpenChange={(open) => {
-            if (!open) onClose();
-          }}
-        >
-          <Modal.Container placement="center">
-            <Modal.Dialog className="relative w-full max-w-lg rounded-[24px] bg-background p-6 shadow-2xl space-y-4">
-              <Modal.Header>
-                <Modal.Heading className="font-bold text-lg">
-                  Fusionar series duplicadas
-                </Modal.Heading>
-              </Modal.Header>
-              <Modal.Body className="space-y-3">
-                <div className="flex gap-2">
-                  <div className="flex-1 space-y-2">
-                    <Skeleton className="h-3 w-16 rounded" />
-                    <Skeleton className="h-4 w-36 rounded" />
-                    <Skeleton className="h-3 w-24 rounded" />
-                    <Skeleton className="h-3 w-28 rounded" />
-                  </div>
-                  <div className="w-6" />
-                  <div className="flex-1 space-y-2">
-                    <Skeleton className="h-3 w-16 rounded" />
-                    <Skeleton className="h-4 w-36 rounded" />
-                    <Skeleton className="h-3 w-24 rounded" />
-                    <Skeleton className="h-3 w-28 rounded" />
-                  </div>
-                </div>
-              </Modal.Body>
-            </Modal.Dialog>
-          </Modal.Container>
-        </Modal.Backdrop>
-      </Modal>
-    );
-  }
-
-  const snapshots: Record<number, ClinicalSeriesSnapshot> = {};
-  if (snap1) snapshots[duplicate.sourceId] = snap1;
-  if (snap2) snapshots[duplicate.targetId] = snap2;
-
-  return (
-    <ClinicalSeriesMergeModal
-      duplicate={duplicate}
-      isOpen
-      onClose={onClose}
-      snapshots={snapshots}
-    />
   );
 }
 
