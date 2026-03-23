@@ -32,7 +32,6 @@ import { EventDteLinkModal } from "@/features/calendar/components/EventDteLinkMo
 import type { CalendarEventDetail } from "@/features/calendar/types";
 import {
   clinicalSeriesKeys,
-  fetchClinicalSeriesDetail,
   fetchDetectDuplicates,
   useClinicalSeries,
   useClinicalSeriesDetail,
@@ -863,7 +862,7 @@ export function ClinicalSeriesView() {
                         size="sm"
                         variant="secondary"
                         className="mt-2 text-xs"
-                        onPress={() => setMergeModalDuplicate(dup)}
+                        onPress={() => setDuplicatesModalOpen(true)}
                       >
                         Fusionar duplicado →
                       </Button>
@@ -1276,53 +1275,57 @@ function DuplicatesModal({
                           const isSelected = selected.has(dup.sourceId);
                           const sourceHasMore = dup.sourceEventCount > group.targetEventCount;
                           return (
-                            <label
+                            <Checkbox
                               key={dup.sourceId}
-                              className="flex items-start gap-3 px-3 py-2.5 border-b border-surface-200 last:border-b-0 hover:bg-surface-100 transition-colors cursor-pointer select-none"
+                              id={`dup-${dup.sourceId}`}
+                              isSelected={isSelected}
+                              isDisabled={isMerging}
+                              onChange={(checked) => {
+                                const next = new Set(selected);
+                                if (checked) next.add(dup.sourceId);
+                                else next.delete(dup.sourceId);
+                                setSelected(group.targetId, next);
+                              }}
+                              className="flex items-start gap-3 px-3 py-2.5 border-b border-surface-200 last:border-b-0 hover:bg-surface-100 transition-colors w-full"
                             >
-                              <Checkbox
-                                isSelected={isSelected}
-                                isDisabled={isMerging}
-                                onChange={(checked) => {
-                                  const next = new Set(selected);
-                                  if (checked) next.add(dup.sourceId);
-                                  else next.delete(dup.sourceId);
-                                  setSelected(group.targetId, next);
-                                }}
-                                className="mt-0.5"
-                              >
-                                <Checkbox.Control>
-                                  <Checkbox.Indicator />
-                                </Checkbox.Control>
-                              </Checkbox>
-                              <div className="flex-1 min-w-0 space-y-0.5">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="text-sm font-medium">
-                                    {dup.sourcePatientName ?? (
-                                      <span className="text-foreground-400 italic">Sin nombre</span>
+                              <Checkbox.Control className="mt-0.5 shrink-0">
+                                <Checkbox.Indicator />
+                              </Checkbox.Control>
+                              <Checkbox.Content className="flex-1 min-w-0">
+                                <Label
+                                  htmlFor={`dup-${dup.sourceId}`}
+                                  className="flex flex-col gap-0.5 cursor-pointer w-full"
+                                >
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-sm font-medium">
+                                      {dup.sourcePatientName ?? (
+                                        <span className="text-foreground-400 italic">
+                                          Sin nombre
+                                        </span>
+                                      )}
+                                    </span>
+                                    {sourceHasMore && (
+                                      <span className="text-[10px] text-warning font-medium">
+                                        ↑ más eventos
+                                      </span>
                                     )}
-                                  </span>
-                                  {sourceHasMore && (
-                                    <span className="text-[10px] text-warning font-medium">
-                                      ↑ más eventos
+                                  </div>
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    {dup.sourcePatientRut && (
+                                      <span className="text-xs font-mono text-foreground-400">
+                                        {dup.sourcePatientRut}
+                                      </span>
+                                    )}
+                                    <span className="text-xs text-foreground-400">
+                                      #{dup.sourceId} · {dup.sourceEventCount} ev.
                                     </span>
-                                  )}
-                                </div>
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  {dup.sourcePatientRut && (
-                                    <span className="text-xs font-mono text-foreground-400">
-                                      {dup.sourcePatientRut}
-                                    </span>
-                                  )}
-                                  <span className="text-xs text-foreground-400">
-                                    #{dup.sourceId} · {dup.sourceEventCount} ev.
-                                  </span>
-                                </div>
-                                <p className="text-xs text-foreground-300 italic truncate">
-                                  {dup.reason}
-                                </p>
-                              </div>
-                            </label>
+                                  </div>
+                                  <p className="text-xs text-foreground-300 italic truncate">
+                                    {dup.reason}
+                                  </p>
+                                </Label>
+                              </Checkbox.Content>
+                            </Checkbox>
                           );
                         })}
 
@@ -1435,18 +1438,16 @@ function RebuildModal({
               <p className="text-sm text-foreground-400">
                 Se reasignarán todos los eventos clínicos a sus series correspondientes.
               </p>
-              <label className="flex items-center gap-2 cursor-pointer select-none">
-                <Checkbox
-                  aria-label="Deduplicar series duplicadas"
-                  isSelected={autoMerge}
-                  onChange={setAutoMerge}
-                >
-                  <Checkbox.Control>
-                    <Checkbox.Indicator />
-                  </Checkbox.Control>
-                </Checkbox>
-                <span className="text-sm">Fusionar series duplicadas</span>
-              </label>
+              <Checkbox id="auto-merge" isSelected={autoMerge} onChange={setAutoMerge}>
+                <Checkbox.Control>
+                  <Checkbox.Indicator />
+                </Checkbox.Control>
+                <Checkbox.Content>
+                  <Label htmlFor="auto-merge" className="text-sm cursor-pointer">
+                    Fusionar series duplicadas
+                  </Label>
+                </Checkbox.Content>
+              </Checkbox>
               {autoMerge && (
                 <p className="text-xs text-foreground-300 pl-6">
                   Se detectarán y fusionarán automáticamente series del mismo tipo con el mismo
