@@ -814,12 +814,47 @@ async function loadEventSeriesCandidateByExternalIds(
   return rows[0] ?? null;
 }
 
+// Returns significant tokens from a normalized name: length ≥ 3, not a stopword.
+function getSignificantNameTokens(name: string): string[] {
+  return normalizeName(name)
+    .split(" ")
+    .filter((t) => t.length >= 3 && !LOWERCASE_NAME_STOPWORDS.has(t));
+}
+
+// Shared event-date distance helper.
+function seriesDateDistance(
+  eventDate: dayjs.Dayjs,
+  events: Array<{ endDate: Date | null; endDateTime: Date | null; startDate: Date | null; startDateTime: Date | null }>,
+): number {
+  const dates = events
+    .map((e) => e.startDate ?? e.startDateTime ?? e.endDate ?? e.endDateTime)
+    .filter((v): v is Date => v instanceof Date)
+    .map((v) => dayjs(v).tz(TIMEZONE))
+    .sort((a, b) => a.valueOf() - b.valueOf());
+  if (dates.length === 0) return Infinity;
+  const start = dates[0]!;
+  const end = dates[dates.length - 1]!;
+  return eventDate.isBefore(start)
+    ? start.diff(eventDate, "day")
+    : eventDate.isAfter(end)
+      ? eventDate.diff(end, "day")
+      : 0;
+}
+
 async function findMatchingSeries(params: {
   eventDate: string;
   kind: ClinicalSeriesKind;
   patientName: null | string;
   patientRut: null | string;
 }): Promise<null | number> {
+  const eventDateDjs = dayjs.tz(params.eventDate, TIMEZONE);
+  const thresholdDays = getSeriesWindowDays(params.kind);
+
+  const eventSelect = {
+    select: { endDate: true, endDateTime: true, startDate: true, startDateTime: true },
+  } as const;
+
+  // ── Pass 1: RUT or exact-name candidates ─────────────────────────────────
   const candidates = await db.clinicalSeries.findMany({
     where: {
       kind: params.kind,
@@ -828,66 +863,66 @@ async function findMatchingSeries(params: {
         params.patientName ? { patientName: params.patientName } : undefined,
       ].filter(Boolean) as Array<{ patientName?: string; patientRut?: string }>,
     },
-    include: {
-      events: {
-        select: {
-          endDate: true,
-          endDateTime: true,
-          startDate: true,
-          startDateTime: true,
-        },
-      },
-    },
+    include: { events: eventSelect },
     orderBy: { id: "asc" },
   });
 
-  // ── RUT match: always return the oldest series (candidates sorted id ASC) ─
-  // The RUT uniquely identifies the patient — all events for the same
-  // patient+kind belong in one series regardless of date gaps between them.
-  // Using distance here would make the Mar 9 event prefer a duplicate series
-  // (distance 0) over the canonical older one (distance 7), keeping duplicates
-  // alive through every rebuild pass.
+  // RUT uniquely identifies the patient — return the oldest matching series
+  // immediately, regardless of date gap (handles out-of-order syncs and avoids
+  // a newer duplicate winning on shorter date distance).
   if (params.patientRut) {
     const rutMatch = candidates.find((c) => c.patientRut === params.patientRut);
     if (rutMatch) return rutMatch.id;
   }
 
-  // ── Name-only match: closest series within the date window ───────────────
-  const thresholdDays = getSeriesWindowDays(params.kind);
-  const eventDate = dayjs.tz(params.eventDate, TIMEZONE);
-
+  // Exact name match: closest within the date window.
   let bestMatch: null | { distance: number; seriesId: number } = null;
-
   for (const candidate of candidates) {
-    if (candidate.events.length === 0) {
-      // Empty series: treat as worst-case distance so it's only used when
-      // there are no series with events within the window.
-      if (!bestMatch) bestMatch = { distance: Infinity, seriesId: candidate.id };
-      continue;
-    }
-
-    const eventDates = candidate.events
-      .map((item) => item.startDate ?? item.startDateTime ?? item.endDate ?? item.endDateTime)
-      .filter((value): value is Date => value instanceof Date)
-      .map((value) => dayjs(value).tz(TIMEZONE))
-      .sort((a, b) => a.valueOf() - b.valueOf());
-
-    const start = eventDates[0];
-    const end = eventDates[eventDates.length - 1];
-    const distance = eventDate.isBefore(start)
-      ? start.diff(eventDate, "day")
-      : eventDate.isAfter(end)
-        ? eventDate.diff(end, "day")
-        : 0;
-
+    const distance =
+      candidate.events.length === 0
+        ? Infinity
+        : seriesDateDistance(eventDateDjs, candidate.events);
     if (distance > thresholdDays) continue;
-
     if (!bestMatch || distance < bestMatch.distance) {
       bestMatch = { distance, seriesId: candidate.id };
     }
   }
+  if (bestMatch) return bestMatch.seriesId;
 
-  return bestMatch?.seriesId ?? null;
+  // ── Pass 2: token-overlap fallback (no RUT, no exact name match) ─────────
+  // Catches partial-name variants: "jose luis ojeda" ↔ "jose ojeda carrasco"
+  // (same person, same RUT, but different events omit different name parts).
+  // Requires ≥2 significant tokens overlapping and covering ≥2/3 of the
+  // shorter name. Among qualifying candidates, returns the oldest (lowest id).
+  if (!params.patientRut && params.patientName) {
+    const eventTokens = getSignificantNameTokens(params.patientName);
+    if (eventTokens.length >= 2) {
+      const allSameKind = await db.clinicalSeries.findMany({
+        where: { kind: params.kind },
+        include: { events: eventSelect },
+        orderBy: { id: "asc" },
+      });
+
+      for (const candidate of allSameKind) {
+        if (!candidate.patientName) continue;
+        const candidateTokens = getSignificantNameTokens(candidate.patientName);
+        const overlap = eventTokens.filter((t) => candidateTokens.includes(t)).length;
+        const shorterLen = Math.min(eventTokens.length, candidateTokens.length);
+        if (overlap < 2 || overlap / shorterLen < 2 / 3) continue;
+
+        const distance =
+          candidate.events.length === 0
+            ? Infinity
+            : seriesDateDistance(eventDateDjs, candidate.events);
+        if (distance > thresholdDays) continue;
+
+        // Candidates sorted id ASC — first hit is the oldest canonical series.
+        return candidate.id;
+      }
+    }
+  }
+
+  return null;
 }
 
 async function refreshClinicalSeriesMetadata(seriesId: number) {
