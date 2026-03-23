@@ -1210,6 +1210,11 @@ export async function rebuildClinicalSeries(
   onProgress?.(0, total);
   await syncClinicalSeriesForEventIds(rows.map((row) => row.eventId), onProgress);
 
+  // Cleanup: delete series that ended up with no events after reassignment.
+  const { count: deleted } = await db.clinicalSeries.deleteMany({
+    where: { events: { none: {} } },
+  });
+
   // Dedup pass: merge duplicates only when explicitly requested
   let deduped = 0;
   if (params?.autoMerge) {
@@ -1221,6 +1226,7 @@ export async function rebuildClinicalSeries(
   }
 
   return {
+    deleted,
     deduped,
     from: params?.from ?? null,
     processed: total,

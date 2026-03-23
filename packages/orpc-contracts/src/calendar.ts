@@ -42,6 +42,8 @@ export const calendarRebuildClinicalSeriesInputSchema = z.object({
 });
 
 export const calendarRebuildClinicalSeriesResponseSchema = z.object({
+  deleted: z.number(),
+  deduped: z.number(),
   from: z.string().nullable(),
   processed: z.number(),
   to: z.string().nullable(),
