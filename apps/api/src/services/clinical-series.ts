@@ -841,6 +841,18 @@ async function findMatchingSeries(params: {
     orderBy: { id: "asc" },
   });
 
+  // ── RUT match: always return the oldest series (candidates sorted id ASC) ─
+  // The RUT uniquely identifies the patient — all events for the same
+  // patient+kind belong in one series regardless of date gaps between them.
+  // Using distance here would make the Mar 9 event prefer a duplicate series
+  // (distance 0) over the canonical older one (distance 7), keeping duplicates
+  // alive through every rebuild pass.
+  if (params.patientRut) {
+    const rutMatch = candidates.find((c) => c.patientRut === params.patientRut);
+    if (rutMatch) return rutMatch.id;
+  }
+
+  // ── Name-only match: closest series within the date window ───────────────
   const thresholdDays = getSeriesWindowDays(params.kind);
   const eventDate = dayjs.tz(params.eventDate, TIMEZONE);
 
@@ -848,7 +860,10 @@ async function findMatchingSeries(params: {
 
   for (const candidate of candidates) {
     if (candidate.events.length === 0) {
-      return candidate.id;
+      // Empty series: treat as worst-case distance so it's only used when
+      // there are no series with events within the window.
+      if (!bestMatch) bestMatch = { distance: Infinity, seriesId: candidate.id };
+      continue;
     }
 
     const eventDates = candidate.events
@@ -865,16 +880,7 @@ async function findMatchingSeries(params: {
         ? eventDate.diff(end, "day")
         : 0;
 
-    // RUT matches bypass the date window: the RUT uniquely identifies the
-    // patient, so we should always prefer an existing series over creating a
-    // new one — even when events are processed out of chronological order
-    // (e.g. a November event synced before April events of the same course).
-    // Name-only matches still respect the window to keep separate treatment
-    // courses (years apart) as distinct series.
-    const isRutMatch = !!params.patientRut && candidate.patientRut === params.patientRut;
-    if (!isRutMatch && distance > thresholdDays) {
-      continue;
-    }
+    if (distance > thresholdDays) continue;
 
     if (!bestMatch || distance < bestMatch.distance) {
       bestMatch = { distance, seriesId: candidate.id };
