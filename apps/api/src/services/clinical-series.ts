@@ -838,7 +838,7 @@ async function findMatchingSeries(params: {
         },
       },
     },
-    orderBy: { updatedAt: "desc" },
+    orderBy: { id: "asc" },
   });
 
   const thresholdDays = getSeriesWindowDays(params.kind);
@@ -1063,9 +1063,20 @@ async function assignEventToSeries(event: EventSeriesCandidate): Promise<null | 
     return event.clinicalSeriesId ?? null;
   }
 
-  let targetSeriesId: null | number = null;
+  // Always call findMatchingSeries first — it returns the oldest canonical series
+  // for this patient+kind by ordering candidates id ASC and preferring the one
+  // with the smallest date distance. This ensures that during a rebuild an event
+  // already sitting in a newer duplicate series gets re-assigned to the original.
+  let targetSeriesId = await findMatchingSeries({
+    eventDate: event.eventDate,
+    kind,
+    patientName: identity.patientName,
+    patientRut: identity.patientRut,
+  });
 
-  if (event.clinicalSeriesId != null) {
+  // Fallback: if nothing found but the event already has a compatible series
+  // (e.g. a brand-new kind that has no prior series yet), keep it there.
+  if (!targetSeriesId && event.clinicalSeriesId != null) {
     const currentSeries = await db.clinicalSeries.findUnique({
       where: { id: event.clinicalSeriesId },
       select: { beneficiaryRut: true, id: true, kind: true, patientRut: true },
@@ -1083,13 +1094,6 @@ async function assignEventToSeries(event: EventSeriesCandidate): Promise<null | 
       targetSeriesId = currentSeries.id;
     }
   }
-
-  targetSeriesId ||= await findMatchingSeries({
-    eventDate: event.eventDate,
-    kind,
-    patientName: identity.patientName,
-    patientRut: identity.patientRut,
-  });
 
   if (!targetSeriesId) {
     const created = await db.clinicalSeries.create({
