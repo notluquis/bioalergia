@@ -75,6 +75,16 @@ describe("extractPatientHints", () => {
       expect(patientName).toBe("javiera vera");
     });
 
+    it("does not use 'avisara cuando pueda' as name tokens", () => {
+      // Real case: secretary writes "avisara cuando pueda matias Aguirre (50) 0,5ml vacuna gramineas+acaros"
+      // "avisara", "cuando", "pueda" are appointment notes, not name components.
+      const { patientName } = extractPatientHints(
+        "avisara cuando pueda matias Aguirre (50) 0,5ml vacuna gramineas+acaros",
+        null,
+      );
+      expect(patientName).toBe("matias aguirre");
+    });
+
     it("does not use 'vincular' or 'evento' as name tokens", () => {
       // If someone wrote "Vincular evento con boleta DTE" in a description,
       // those words must be filtered as stopwords.
