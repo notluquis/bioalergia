@@ -1238,7 +1238,7 @@ export function getCurrentRebuildJob(): null | RebuildJob {
   return currentRebuildJob;
 }
 
-export function startRebuildClinicalSeries(params?: { from?: string; to?: string }): string {
+export function startRebuildClinicalSeries(params?: { autoMerge?: boolean; from?: string; to?: string }): string {
   const jobId = `rebuild-${Date.now()}`;
   currentRebuildJob = {
     jobId,

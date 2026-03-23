@@ -1398,7 +1398,7 @@ function RebuildModal({
   onClose: () => void;
   onConfirm: (autoMerge: boolean) => void;
 }) {
-  const [autoMerge, setAutoMerge] = useState(false);
+  const [autoMerge, setAutoMerge] = useState(true);
 
   return (
     <Modal>
