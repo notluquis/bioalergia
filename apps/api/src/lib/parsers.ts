@@ -819,7 +819,13 @@ function normalizeSubcutaneousDosage(
 function detectTreatmentStage(summary: string, description: string): string | null {
   const text = `${summary} ${description}`;
 
-  // Induction takes priority (e.g. "2da dosis clustoid" is Induction, even if "dosis clustoid" looks like maintenance)
+  // Explicit maintenance keywords take priority over ordinal induction markers.
+  // e.g. "5ta dosis mensual clustoid" → Mantención (not "5ta dosis")
+  if (matchesAny(text, MAINTENANCE_PATTERNS)) {
+    return "Mantención";
+  }
+
+  // Induction: numbered doses 1-5 with no maintenance markers present.
   if (matchesAny(text, INDUCTION_PATTERNS)) {
     return "Inducción";
   }
@@ -829,8 +835,8 @@ function detectTreatmentStage(summary: string, description: string): string | nu
     return "Mantención";
   }
 
-  // Maintenance keywords or 0.5 (with or without ml) = Mantención
-  if (matchesAny(text, MAINTENANCE_PATTERNS) || HALF_ML_PATTERN.test(text)) {
+  // 0.5 ml as low-priority fallback (after ordinal check to avoid overriding e.g. "3era dosis 0.5ml")
+  if (HALF_ML_PATTERN.test(text)) {
     return "Mantención";
   }
 
@@ -952,6 +958,17 @@ function buildSeriesMetadata(params: {
   }
 
   if (isSubcut) {
+    // Mantención takes priority — explicit maintenance keywords override ordinal numbers.
+    // e.g. "5ta dosis mensual clustoid" → MAINTENANCE, not "5ta dosis"
+    if (params.treatmentStage === "Mantención") {
+      return {
+        clinicalSeriesKind: "SUBCUTANEOUS_TREATMENT" as const,
+        seriesStageKind: "MAINTENANCE" as const,
+        seriesStageLabel: "Mantención",
+        seriesStageNumber: null,
+      };
+    }
+
     const doseNumber = detectOrdinalNumber(text, /dosis/);
     if (doseNumber != null) {
       return {
@@ -959,15 +976,6 @@ function buildSeriesMetadata(params: {
         seriesStageKind: "DOSE" as const,
         seriesStageLabel: formatOrdinalLabel(doseNumber, "dosis"),
         seriesStageNumber: doseNumber,
-      };
-    }
-
-    if (params.treatmentStage === "Mantención") {
-      return {
-        clinicalSeriesKind: "SUBCUTANEOUS_TREATMENT" as const,
-        seriesStageKind: "MAINTENANCE" as const,
-        seriesStageLabel: "Mantención",
-        seriesStageNumber: null,
       };
     }
 
