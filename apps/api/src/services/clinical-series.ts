@@ -10,6 +10,11 @@ dayjs.extend(timezone);
 
 const TIMEZONE = "America/Santiago";
 const RUT_REGEX = /\b\d{1,2}\.?\d{3}\.?\d{3}-?[\dkK]\b/g;
+const TIME_REGEX = /\b\d{1,2}:\d{2}\b/g;
+const AGE_REGEX = /\b\d{1,3}\s*a[ñn]os?\b/gi;
+const LONG_NUMBER_REGEX = /\b\d{5,}\b/g;
+const STANDALONE_NUMBER_REGEX = /\b\d+\b/g;
+const SEPARATOR_REGEX = /[;:,()[\]{}/\\]+/g;
 const LOWERCASE_NAME_STOPWORDS = new Set([
   // Allergy / treatment terms
   "acaros",
@@ -396,44 +401,75 @@ function resolveClinicalSeriesOrderBy(
   return sql.raw(`${columnExpression} ${sortDirection} NULLS LAST, cs.id DESC`);
 }
 
-function extractLowercaseNameHints(text: string): string[] {
-  const normalized = normalizeName(text);
-  if (!normalized) return [];
+/**
+ * Strip all non-name noise from raw event text so that name extraction
+ * sees only name tokens. Order matters: RUTs must be stripped before
+ * separators (dots in "12.345.678-9"), age before lone digits.
+ */
+function stripNoiseFromText(text: string): string {
+  return text
+    .replace(TIME_REGEX, " ")            // 15:00, 9:30
+    .replace(new RegExp(RUT_REGEX.source, "g"), " ") // 12.345.678-9
+    .replace(AGE_REGEX, " ")             // "36 años"
+    .replace(LONG_NUMBER_REGEX, " ")     // phones, codes ≥5 digits
+    .replace(STANDALONE_NUMBER_REGEX, " ") // remaining bare numbers
+    .replace(SEPARATOR_REGEX, " ")       // ;:,()[]{}
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
-  const tokens = normalized
+/**
+ * Extract name sequences from already-stripped text. Allows particles
+ * ("de", "la", "del", …) between name tokens so compound surnames like
+ * "León de la Sotta" or "Claudio de la Cuadra" are captured intact.
+ */
+function extractNamesFromCleanedText(text: string): string[] {
+  const PARTICLES = new Set(["de", "del", "la", "las", "los", "van", "von", "y", "e"]);
+  const tokens = normalizeName(text)
     .split(" ")
-    .map((token) => stripStopwordPrefix(token.trim()))
-    .filter(Boolean);
+    .filter(Boolean)
+    .map((t) => stripStopwordPrefix(t));
 
-  const matches = new Set<string>();
+  const isNameToken = (t: string) =>
+    t.length >= 3 && !/\d/.test(t) && !LOWERCASE_NAME_STOPWORDS.has(t);
+  const isParticle = (t: string) => PARTICLES.has(t);
 
-  for (let start = 0; start < tokens.length; start += 1) {
-    for (let length = 2; length <= 4; length += 1) {
-      const candidate = tokens.slice(start, start + length);
-      if (candidate.length < 2) continue;
-      if (
-        candidate.some(
-          (token) =>
-            token.length < 4 || /\d/.test(token) || LOWERCASE_NAME_STOPWORDS.has(token),
-        )
-      ) {
-        continue;
+  const results: string[] = [];
+  let i = 0;
+
+  while (i < tokens.length) {
+    if (!isNameToken(tokens[i]!)) { i++; continue; }
+
+    const seq: string[] = [tokens[i]!];
+    let j = i + 1;
+
+    while (j < tokens.length && seq.length < 6) {
+      const t = tokens[j]!;
+      if (isNameToken(t)) {
+        seq.push(t); j++;
+      } else if (isParticle(t)) {
+        // Allow particles only when a name token eventually follows.
+        let k = j + 1;
+        while (k < tokens.length && isParticle(tokens[k]!)) k++;
+        if (k < tokens.length && isNameToken(tokens[k]!)) {
+          while (j <= k) seq.push(tokens[j++]!);
+        } else {
+          break;
+        }
+      } else {
+        break;
       }
-      // Require at least one "substantial" token to rule out noise pairs.
-      // ≥5 chars catches short-but-real names like "Rosa Pineda" / "Sara Mena Gaona"
-      // while still filtering generic word pairs like "bien mal".
-      if (!candidate.some((token) => token.length >= 5)) {
-        continue;
-      }
-
-      matches.add(candidate.join(" "));
     }
+
+    // Names must not start or end with a particle.
+    while (seq.length > 0 && isParticle(seq[seq.length - 1]!)) seq.pop();
+    if (seq.length >= 2) results.push(seq.join(" "));
+    i = j;
   }
 
-  return [...matches].sort((a, b) => {
-    const tokenDiff = b.split(" ").length - a.split(" ").length;
-    if (tokenDiff !== 0) return tokenDiff;
-    return b.length - a.length;
+  return [...new Set(results)].sort((a, b) => {
+    const td = b.split(" ").length - a.split(" ").length;
+    return td !== 0 ? td : b.length - a.length;
   });
 }
 
@@ -512,53 +548,13 @@ function extractRutAdjacentNames(text: string): string[] {
   return [...new Set(results)];
 }
 
-// Walk the token stream looking for a token that starts with an uppercase
-// letter (likely a name start) and extend it with following tokens that also
-// look like name tokens (any case, no stopwords, no digits).
-// Handles two common patterns in Chilean medical notes:
-//   - "Nadia yañez rojas" — only the first word is Title-cased
-//   - "RENATO RIQUELME MUÑOZ" — secretaries sometimes type in ALL-CAPS
-function extractCapitalizedStartNames(text: string): string[] {
-  const results: string[] = [];
-  const tokens = text.split(/\s+/).filter(Boolean);
-
-  for (let i = 0; i < tokens.length; i++) {
-    const token = tokens[i]!;
-    // Accept Title-case ("Nadia") OR all-caps sequences of 3+ letters ("RENATO").
-    // Pure lowercase tokens are handled by extractLowercaseNameHints instead.
-    const isTitleCase = /^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]/.test(token);
-    const isAllCaps = /^[A-ZÁÉÍÓÚÑ]{3,}$/.test(token);
-    if (!isTitleCase && !isAllCaps) continue;
-    const normalized = normalizeName(token);
-    if (!normalized || normalized.length < 3 || LOWERCASE_NAME_STOPWORDS.has(normalized)) continue;
-
-    const sequence = [normalized];
-    for (let j = i + 1; j < Math.min(i + 4, tokens.length); j++) {
-      const next = tokens[j]!;
-      // Hyphen-prefixed tokens are field labels ("-Rut:", "-Edad") — stop here.
-      if (next.startsWith("-")) break;
-      // Tokens like "VIDAUX,vacuna" normalize to "vidaux vacuna" (embedded space).
-      // Only use the first word; the rest is a new clause separated by a comma.
-      const rawNorm = normalizeName(next);
-      const nextNorm = rawNorm.split(" ")[0]!;
-      if (!nextNorm || nextNorm.length < 3 || /\d/.test(nextNorm) || LOWERCASE_NAME_STOPWORDS.has(nextNorm)) break;
-      sequence.push(nextNorm);
-      if (rawNorm !== nextNorm) break; // comma/separator found — don't extend further
-    }
-
-    if (sequence.length >= 2) results.push(sequence.join(" "));
-  }
-
-  return [...new Set(results)];
-}
-
 function extractNamesFromText(text: string): string[] {
   if (!text) return [];
-  return [
-    ...extractRutAdjacentNames(text),
-    ...extractCapitalizedStartNames(text),
-    ...extractLowercaseNameHints(text),
-  ];
+  // High-confidence: names anchored immediately before a RUT in the raw text.
+  const rutNames = extractRutAdjacentNames(text);
+  // Strip all noise then extract name sequences from what remains.
+  const cleanedNames = extractNamesFromCleanedText(stripNoiseFromText(text));
+  return [...new Set([...rutNames, ...cleanedNames])];
 }
 
 export function extractIdentityHints(summary: null | string, description: null | string) {
