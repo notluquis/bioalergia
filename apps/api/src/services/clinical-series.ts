@@ -1807,9 +1807,10 @@ export interface ClinicalSeriesDuplicate {
 export async function detectDuplicateSeries(): Promise<ClinicalSeriesDuplicate[]> {
   // Fetch all series that have at least one event, ordered by id ASC so the
   // lower (older) id becomes the target and the higher (newer) becomes source.
-  type SeriesRow = { id: number; kind: ClinicalSeriesKind; patientName: string | null; patientRut: string | null; _count: { events: number } };
+  type SeriesRow = { beneficiaryRut: null | string; id: number; kind: ClinicalSeriesKind; patientName: string | null; patientRut: string | null; _count: { events: number } };
   const allSeries: SeriesRow[] = await db.clinicalSeries.findMany({
     select: {
+      beneficiaryRut: true,
       id: true,
       kind: true,
       patientName: true,
@@ -1824,12 +1825,13 @@ export async function detectDuplicateSeries(): Promise<ClinicalSeriesDuplicate[]
   const usedAsSources = new Set<number>();
 
   // ── Pass 1: RUT-based grouping — O(n) ────────────────────────────────────
-  // Group by (normalizedRut, kind). Within each group the lowest id is the
-  // target; all others are sources. This replaces the inner O(n) scan.
+  // Group by (normalizedRut, beneficiaryRut, kind). Series with different
+  // beneficiaryRuts serve different patients (e.g. family members under one
+  // account) and must NOT be treated as duplicates.
   const rutGroups = new Map<string, SeriesRow[]>();
   for (const s of allSeries) {
     if (!s.patientRut) continue;
-    const key = `${normalizeRut(s.patientRut)}:${s.kind}`;
+    const key = `${normalizeRut(s.patientRut)}:${s.beneficiaryRut ?? ""}:${s.kind}`;
     const group = rutGroups.get(key);
     if (group) group.push(s);
     else rutGroups.set(key, [s]);
