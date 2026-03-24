@@ -32,6 +32,7 @@
   },
   "devDependencies": {
     "@types/node": "25.5.0",
+    "@typescript/native-preview": "7.0.0-dev.20260323.1",
     "@zenstackhq/cli": "3.4.6",
     "@zenstackhq/sdk": "3.4.6",
     "husky": "^9.1.7",
