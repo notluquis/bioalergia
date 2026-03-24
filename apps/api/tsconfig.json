@@ -9,7 +9,8 @@
     "tsBuildInfoFile": "./tsconfig.tsbuildinfo",
     "outDir": "dist",
     "esModuleInterop": true,
-    "noEmit": true
+    "noEmit": true,
+    "types": ["node"]
   },
   "include": ["src/**/*"],
   "references": [
