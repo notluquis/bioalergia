@@ -1175,9 +1175,7 @@ function SourceEventsList({ sourceId }: { sourceId: number }) {
                 className="flex items-baseline gap-1.5 text-[11px] text-foreground-400"
               >
                 <span className="font-mono shrink-0">{ev.eventDate.slice(0, 10)}</span>
-                <span className="truncate">
-                  {ev.seriesStageLabel ?? ev.summary?.split(":")[0]?.trim() ?? "—"}
-                </span>
+                <span className="truncate">{ev.seriesStageLabel ?? ev.patientName ?? "—"}</span>
               </div>
             ))
           )}
