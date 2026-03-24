@@ -16,7 +16,7 @@
   "dependencies": {
     "@hono/node-server": "1.19.11",
     "cli-progress": "^3.12.0",
-    "hono": "4.12.8",
+    "hono": "4.12.9",
     "imapflow": "1.2.16",
     "nodemailer": "^8.0.3",
     "zod": "^4.3.6"
@@ -26,7 +26,7 @@
     "@types/node": "^25.5.0",
     "@types/nodemailer": "^7.0.11",
     "tsx": "^4.21.0",
-    "typescript": "^5.9.3"
+    "typescript": "^6.0.2"
   },
   "engines": {
     "node": ">=25",
