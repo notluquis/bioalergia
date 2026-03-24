@@ -446,6 +446,13 @@ export function extractPatientHints(summary: null | string, description: null | 
 }
 
 // Extract name tokens from the raw text immediately before each RUT occurrence.
+/** Returns null if the RUT body is outside the valid personal range (1M–50M). */
+function sanitizeRut(rut: null | string): null | string {
+  if (!rut) return null;
+  const body = Number(normalizeRut(rut)?.split("-")[0]);
+  return body >= 1_000_000 && body < 50_000_000 ? rut : null;
+}
+
 // This is the highest-confidence source: secretaries typically write the
 // patient name right before the RUT ("Nadia Yañez Rojas 12.345.678-9 ...").
 function extractRutAdjacentNames(text: string): string[] {
@@ -1228,9 +1235,9 @@ async function assignEventToSeries(event: EventSeriesCandidate, ctx?: SeriesAssi
   // Fall back to whatever is already in the DB if extraction returns nothing.
   const identity = {
     beneficiaryName: inferredIdentity.beneficiaryName ?? event.beneficiaryName,
-    beneficiaryRut: inferredIdentity.beneficiaryRut ?? event.beneficiaryRut,
+    beneficiaryRut: sanitizeRut(inferredIdentity.beneficiaryRut ?? event.beneficiaryRut),
     patientName: inferredIdentity.patientName ?? event.patientName,
-    patientRut: inferredIdentity.patientRut ?? event.patientRut,
+    patientRut: sanitizeRut(inferredIdentity.patientRut ?? event.patientRut),
   };
 
   await db.event.update({
