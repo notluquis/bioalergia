@@ -22,7 +22,7 @@ export const calendarQueryInputSchema = z.object({
   patientRut: z.string().optional(),
   search: z.string().optional(),
   seriesKind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT"]).optional(),
-  seriesStatus: z.enum(["ACTIVE", "COMPLETED", "CANCELLED"]).optional(),
+  seriesStatus: z.enum(["PLANNED", "ACTIVE", "INACTIVE", "COMPLETED", "CANCELLED"]).optional(),
   maxDays: z.coerce.number().positive().int().optional(),
 });
 
@@ -170,7 +170,7 @@ export const calendarFiltersOutputSchema = z.object({
   patientRut: z.string().optional(),
   search: z.string().optional(),
   seriesKind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT"]).optional(),
-  seriesStatus: z.enum(["ACTIVE", "COMPLETED", "CANCELLED"]).optional(),
+  seriesStatus: z.enum(["PLANNED", "ACTIVE", "INACTIVE", "COMPLETED", "CANCELLED"]).optional(),
   to: z.string(),
 });
 
@@ -273,7 +273,7 @@ export const calendarTreatmentAnalyticsInputSchema = z.object({
   granularity: z.enum(["day", "week", "month", "all"]).optional(),
   patientRut: z.string().optional(),
   seriesKind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT"]).optional(),
-  seriesStatus: z.enum(["ACTIVE", "COMPLETED", "CANCELLED"]).optional(),
+  seriesStatus: z.enum(["PLANNED", "ACTIVE", "INACTIVE", "COMPLETED", "CANCELLED"]).optional(),
   to: z.string().optional(),
 });
 

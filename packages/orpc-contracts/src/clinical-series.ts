@@ -2,7 +2,7 @@ import { oc } from "@orpc/contract";
 import { z } from "zod";
 
 export const clinicalSeriesKindSchema = z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT"]);
-export const clinicalSeriesStatusSchema = z.enum(["ACTIVE", "COMPLETED", "CANCELLED"]);
+export const clinicalSeriesStatusSchema = z.enum(["PLANNED", "ACTIVE", "INACTIVE", "COMPLETED", "CANCELLED"]);
 export const clinicalSeriesSortColumnSchema = z.enum([
   "financial",
   "kind",
