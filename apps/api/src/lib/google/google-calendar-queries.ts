@@ -47,7 +47,7 @@ export type CalendarEventFilters = {
   patientRut?: string;
   search?: string;
   seriesKind?: "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT";
-  seriesStatus?: "ACTIVE" | "CANCELLED" | "COMPLETED";
+  seriesStatus?: "ACTIVE" | "CANCELLED" | "COMPLETED" | "PLANNED" | "INACTIVE";
   dates?: string[];
 };
 
@@ -830,7 +830,7 @@ export type TreatmentAnalyticsFilters = {
   clinicalSeriesId?: number;
   patientRut?: string;
   seriesKind?: "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT";
-  seriesStatus?: "ACTIVE" | "CANCELLED" | "COMPLETED";
+  seriesStatus?: "ACTIVE" | "CANCELLED" | "COMPLETED" | "PLANNED" | "INACTIVE";
 };
 
 export type TreatmentAnalyticsGranularity = "all" | "day" | "week" | "month";

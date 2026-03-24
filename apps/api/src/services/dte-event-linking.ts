@@ -201,14 +201,14 @@ interface SameKindRutConflictRow {
   patientName: null | string;
   patientRut: null | string;
   seriesId: number;
-  status: "ACTIVE" | "CANCELLED" | "COMPLETED";
+  status: "ACTIVE" | "CANCELLED" | "COMPLETED" | "PLANNED" | "INACTIVE";
 }
 
 export interface CrossSeriesConflict {
   patientName: null | string;
   patientRut: null | string;
   seriesId: number;
-  status: "ACTIVE" | "CANCELLED" | "COMPLETED";
+  status: "ACTIVE" | "CANCELLED" | "COMPLETED" | "PLANNED" | "INACTIVE";
 }
 
 type CrossSeriesConflictInfo = { conflicts: CrossSeriesConflict[]; message: string };

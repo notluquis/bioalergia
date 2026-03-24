@@ -64,8 +64,10 @@ const KIND_OPTIONS: { label: string; value: ClinicalSeriesKind }[] = [
 ];
 
 const STATUS_OPTIONS: { label: string; value: ClinicalSeriesStatus }[] = [
+  { label: "Planificada", value: "PLANNED" },
   { label: "Activa", value: "ACTIVE" },
-  { label: "Completada", value: "COMPLETED" },
+  { label: "Inactiva", value: "INACTIVE" },
+  { label: "Finalizada", value: "COMPLETED" },
   { label: "Cancelada", value: "CANCELLED" },
 ];
 
@@ -81,8 +83,10 @@ const KIND_COLORS: Record<ClinicalSeriesKind, "accent" | "success" | "warning"> 
   SUBCUTANEOUS_TREATMENT: "success",
 };
 
-const STATUS_COLORS: Record<ClinicalSeriesStatus, "success" | "default" | "danger"> = {
+const STATUS_COLORS: Record<ClinicalSeriesStatus, "success" | "default" | "danger" | "warning"> = {
+  PLANNED: "default",
   ACTIVE: "success",
+  INACTIVE: "warning",
   COMPLETED: "default",
   CANCELLED: "danger",
 };
@@ -114,9 +118,11 @@ const INSURANCE_COLORS: Record<HealthInsuranceType, "success" | "warning" | "def
 };
 
 const STATUS_LABELS: Record<ClinicalSeriesStatus, string> = {
+  PLANNED: "Planificada",
   ACTIVE: "Activa",
+  INACTIVE: "Inactiva",
+  COMPLETED: "Finalizada",
   CANCELLED: "Cancelada",
-  COMPLETED: "Completada",
 };
 
 // ─── Debounce Hook ────────────────────────────────────────────────────────────

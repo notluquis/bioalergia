@@ -1649,7 +1649,9 @@ enum DeliveryModality {
 }
 
 enum ClinicalSeriesStatus {
+  PLANNED
   ACTIVE
+  INACTIVE
   COMPLETED
   CANCELLED
 }

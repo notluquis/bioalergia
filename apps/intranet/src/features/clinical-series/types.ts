@@ -6,7 +6,7 @@
 import { z } from "zod";
 
 export type ClinicalSeriesKind = "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT";
-export type ClinicalSeriesStatus = "ACTIVE" | "COMPLETED" | "CANCELLED";
+export type ClinicalSeriesStatus = "PLANNED" | "ACTIVE" | "INACTIVE" | "COMPLETED" | "CANCELLED";
 export type SubcutaneousAllergenType = "ACAROS" | "ACAROS_GRAMINEAS" | "GRAMINEAS";
 export type SubcutaneousVaccineProduct =
   | "ALXOID"
@@ -179,7 +179,7 @@ export const ClinicalSeriesSnapshotSchema = z.object({
   beneficiaryRut: z.string().nullable(),
   id: z.number(),
   kind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT"]),
-  status: z.enum(["ACTIVE", "COMPLETED", "CANCELLED"]),
+  status: z.enum(["PLANNED", "ACTIVE", "INACTIVE", "COMPLETED", "CANCELLED"]),
   displayName: z.string().nullable(),
   patientName: z.string().nullable(),
   patientRut: z.string().nullable(),

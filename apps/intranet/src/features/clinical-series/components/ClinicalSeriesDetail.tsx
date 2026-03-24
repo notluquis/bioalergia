@@ -28,9 +28,19 @@ const KIND_LABELS: Record<ClinicalSeriesKind, string> = {
 };
 
 const STATUS_LABELS: Record<ClinicalSeriesStatus, string> = {
+  PLANNED: "Planificada",
   ACTIVE: "Activa",
+  INACTIVE: "Inactiva",
+  COMPLETED: "Finalizada",
   CANCELLED: "Cancelada",
-  COMPLETED: "Completada",
+};
+
+const STATUS_COLORS: Record<ClinicalSeriesStatus, "success" | "default" | "danger" | "warning"> = {
+  PLANNED: "default",
+  ACTIVE: "success",
+  INACTIVE: "warning",
+  COMPLETED: "default",
+  CANCELLED: "danger",
 };
 
 interface ClinicalSeriesDetailProps {
@@ -81,9 +91,7 @@ export function ClinicalSeriesDetail({ id, onBack }: ClinicalSeriesDetailProps) 
       <div className="space-y-2">
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold">{series.displayName || "Serie clínica"}</h1>
-          <Badge color={series.status === "ACTIVE" ? "success" : "default"}>
-            {STATUS_LABELS[series.status]}
-          </Badge>
+          <Badge color={STATUS_COLORS[series.status]}>{STATUS_LABELS[series.status]}</Badge>
         </div>
       </div>
 

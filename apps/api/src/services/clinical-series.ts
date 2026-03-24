@@ -314,7 +314,7 @@ export interface ClinicalSeriesSnapshot {
   patientRut: null | string;
   remainingExpected: number;
   remainingPaid: number;
-  status: "ACTIVE" | "CANCELLED" | "COMPLETED";
+  status: "ACTIVE" | "CANCELLED" | "COMPLETED" | "PLANNED" | "INACTIVE";
   totalExpected: number;
   totalLinkedAmount: number;
   totalPaid: number;
@@ -341,7 +341,7 @@ type ClinicalSeriesFilters = {
     | "totalEvents"
     | "upcomingEvents";
   sortDirection?: "ascending" | "descending";
-  status?: "ACTIVE" | "CANCELLED" | "COMPLETED";
+  status?: "ACTIVE" | "CANCELLED" | "COMPLETED" | "PLANNED" | "INACTIVE";
 };
 
 function normalizeName(value: string): string {
@@ -1379,6 +1379,62 @@ export async function syncClinicalSeriesForExternalEvents(
   }
 }
 
+/**
+ * Computes and persists the derived status for all clinical series based on
+ * event dates and series kind. Preserves CANCELLED status.
+ *
+ * Tests (PATCH_TEST, SKIN_TEST):
+ *   PLANNED   → no past events
+ *   ACTIVE    → has both past and future events
+ *   COMPLETED → has past events but no future events
+ *
+ * Subcutaneous treatment:
+ *   PLANNED   → no past events
+ *   ACTIVE    → last event ≤ 60 days ago
+ *   INACTIVE  → last event 61–180 days ago
+ *   COMPLETED → last event > 180 days ago
+ */
+export async function updateAllSeriesStatuses(): Promise<{ updated: number }> {
+  const today = dayjs().tz(TIMEZONE).format("YYYY-MM-DD");
+  const result = await db.$executeRaw`
+    UPDATE clinical_series cs
+    SET status = (
+      -- Preserve manual CANCELLED
+      CASE WHEN cs.status = 'CANCELLED' THEN 'CANCELLED'::\"ClinicalSeriesStatus\"
+      ELSE (
+        WITH event_dates AS (
+          SELECT
+            MAX(CASE WHEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
+                     THEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) END) AS last_past,
+            MIN(CASE WHEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) > ${today}::date
+                     THEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) END) AS next_future
+          FROM events e
+          WHERE e.clinical_series_id = cs.id
+        )
+        SELECT
+          CASE cs.kind
+            WHEN 'SUBCUTANEOUS_TREATMENT' THEN
+              CASE
+                WHEN (SELECT last_past FROM event_dates) IS NULL                                THEN 'PLANNED'
+                WHEN (SELECT last_past FROM event_dates) >= (${today}::date - INTERVAL '60 days')  THEN 'ACTIVE'
+                WHEN (SELECT last_past FROM event_dates) >= (${today}::date - INTERVAL '180 days') THEN 'INACTIVE'
+                ELSE 'COMPLETED'
+              END
+            ELSE -- PATCH_TEST, SKIN_TEST
+              CASE
+                WHEN (SELECT last_past FROM event_dates) IS NULL                                THEN 'PLANNED'
+                WHEN (SELECT next_future FROM event_dates) IS NOT NULL                          THEN 'ACTIVE'
+                ELSE 'COMPLETED'
+              END
+          END::\"ClinicalSeriesStatus\"
+        FROM event_dates
+      )
+      END
+    )
+  `;
+  return { updated: result };
+}
+
 export async function rebuildClinicalSeries(
   params?: { autoMerge?: boolean; from?: string; to?: string },
   onProgress?: (processed: number, total: number) => void,
@@ -1417,6 +1473,9 @@ export async function rebuildClinicalSeries(
     }
     deduped = duplicates.length;
   }
+
+  // Update derived statuses for all series based on event dates.
+  await updateAllSeriesStatuses();
 
   return {
     deleted,
