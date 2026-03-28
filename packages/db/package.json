@@ -34,6 +34,11 @@
       "types": "./dist/zenstack/hooks/index.d.ts",
       "import": "./dist/zenstack/hooks/index.js",
       "default": "./dist/zenstack/hooks/index.js"
+    },
+    "./zod": {
+      "types": "./dist/zod.d.ts",
+      "import": "./dist/zod.js",
+      "default": "./dist/zod.js"
     }
   },
   "scripts": {
@@ -50,12 +55,13 @@
     "lint:fix": "oxlint --fix && oxfmt --write ."
   },
   "dependencies": {
-    "@zenstackhq/language": "3.4.6",
-    "@zenstackhq/orm": "3.4.6",
-    "@zenstackhq/plugin-policy": "3.4.6",
-    "@zenstackhq/schema": "3.4.6",
-    "@zenstackhq/server": "3.4.6",
-    "@zenstackhq/tanstack-query": "3.4.6",
+    "@zenstackhq/language": "^3.5.1",
+    "@zenstackhq/orm": "^3.5.1",
+    "@zenstackhq/plugin-policy": "^3.5.1",
+    "@zenstackhq/schema": "^3.5.1",
+    "@zenstackhq/server": "^3.5.1",
+    "@zenstackhq/tanstack-query": "^3.5.1",
+    "@zenstackhq/zod": "^3.5.1",
     "hono": "^4.12.9",
     "kysely": "^0.28.14",
     "pg": "8.20.0",
@@ -67,8 +73,8 @@
     "@types/node": "^25.5.0",
     "@types/pg": "^8.20.0",
     "@types/react": "^19.2.14",
-    "@zenstackhq/cli": "^3.4.6",
-    "@zenstackhq/sdk": "^3.4.6",
+    "@zenstackhq/cli": "^3.5.1",
+    "@zenstackhq/sdk": "^3.5.1",
     "react": "^19.2.4",
     "ts-morph": "^27.0.2",
     "ts-pattern": "^5.9.0",

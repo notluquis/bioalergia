@@ -1,8 +1,8 @@
 # oRPC + Zenstack v3 Architecture
 
-**Last Updated:** March 10, 2026  
+**Last Updated:** March 28, 2026
 **Status:** oRPC-first in production, with intentional REST exceptions  
-**Version:** oRPC v1.13.6 + Zenstack v3.4.4
+**Version:** oRPC v1.13.9 + Zenstack v3.5.1
 
 ## ⚠️ Key: Zenstack v3 is NOT Prisma
 
@@ -588,6 +588,94 @@ pnpm db:push
 # 5. Rebuild backend/frontend
 pnpm build
 ```
+
+---
+
+## ZenStack v3.5 Features in Use
+
+### `$diagnostics` — Performance monitoring
+
+`db.$diagnostics` devuelve `Promise<{ zodCache, slowQueries }>`. El cliente está configurado para registrar queries lentas (>1s):
+
+```typescript
+// packages/db/src/client.ts
+const db = new ZenStackClient(schema, {
+  dialect: ...,
+  diagnostics: {
+    slowQueryThresholdMs: 1000,
+    slowQueryMaxRecords: 100,
+  },
+});
+
+// En cualquier handler:
+const { slowQueries, zodCache } = await db.$diagnostics;
+```
+
+El endpoint `/api/orpc/system/health` expone `orm.slowQueryCount` y `orm.zodCacheSize` en cada response.
+
+---
+
+### `@zenstackhq/zod` — Zod schemas desde el schema ZenStack
+
+En lugar de mantener schemas Zod a mano en `packages/orpc-contracts`, usa `createSchemaFactory` para generar schemas que siempre están sincronizados con el ZModel:
+
+```typescript
+import { createSchemaFactory } from "@zenstackhq/zod";
+import { schema } from "@finanzas/db/zod";
+
+const schemas = createSchemaFactory(schema);
+
+// Todos los campos escalares del modelo Employee (strict)
+const employeeSchema = schemas.makeModelSchema("Employee");
+
+// Solo campos específicos + relación person
+const employeeWithPerson = schemas.makeModelSchema("Employee", {
+  select: { id: true, position: true, baseSalary: true, status: true, person: true },
+});
+
+// Todos los scalars excepto campos sensibles
+const safeUser = schemas.makeModelSchema("User", {
+  omit: { passwordHash: true, mfaSecret: true },
+  include: { person: true },
+});
+
+// Para inputs de creación/actualización (excluye @id, @default, @updatedAt)
+const createPayload = schemas.makeModelCreateSchema("Employee");
+const updatePayload = schemas.makeModelUpdateSchema("Employee");
+```
+
+**Cuándo usarlo:** Para endpoints nuevos o al refactorizar contratos existentes que duplican la forma del modelo. Los schemas generados son `ZodObject` estrictos con tipos correctos — incluyendo relaciones opcionales.
+
+**No aplica para:** Schemas de input/payload con campos renombrados (ej. `snake_case` → `camelCase`), validaciones de negocio, o campos computados post-query.
+
+---
+
+### Computed fields (v3.5) — Pendiente de implementar
+
+ZenStack v3.5 soporta campos computados mediante expresiones SQL declaradas en el ZModel. Requiere:
+
+1. Declarar el campo en el ZModel (confirmar sintaxis exacta con docs)
+2. Ejecutar `pnpm generate` para regenerar tipos
+3. Proveer la expresión SQL en el constructor del cliente:
+
+```typescript
+const db = new ZenStackClient(schema, {
+  dialect: ...,
+  computedFields: {
+    inventoryItem: {
+      categoryName: (eb) => eb.ref("InventoryCategory.name"),
+    },
+  },
+});
+```
+
+Esto eliminaría el `items.map((item) => ({ ...item, category_name: item.category?.name }))` manual en `services/inventory.ts`.
+
+---
+
+### VSCode Extension — Documentación de ZModel
+
+La extensión ZenStack v3 para VSCode genera documentación legible del schema `.zmodel` automáticamente. Actualiza la extensión ZenStack en VSCode a la versión más reciente para activarla.
 
 ---
 

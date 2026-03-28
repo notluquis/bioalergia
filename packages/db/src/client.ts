@@ -46,6 +46,11 @@ const pool = new Pool({
 // Base ORM client (no access control)
 export const db = new ZenStackClient(schema, {
   dialect: new PostgresDialect({ pool }),
+  diagnostics: {
+    // Queries slower than 1s are recorded in db.$diagnostics.slowQueries
+    slowQueryThresholdMs: 1000,
+    slowQueryMaxRecords: 100,
+  },
 });
 
 // ORM client with access control policies

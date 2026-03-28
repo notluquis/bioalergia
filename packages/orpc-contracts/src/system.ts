@@ -9,6 +9,12 @@ export const systemHealthResponseSchema = z.object({
       status: z.enum(["error", "ok"]),
     }),
   }),
+  orm: z
+    .object({
+      slowQueryCount: z.number().int(),
+      zodCacheSize: z.number().int(),
+    })
+    .optional(),
   status: z.enum(["degraded", "error", "ok"]),
   timestamp: z.coerce.date(),
 });

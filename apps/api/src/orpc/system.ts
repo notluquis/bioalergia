@@ -1,3 +1,4 @@
+import { db } from "@finanzas/db";
 import {
   systemHealthResponseSchema,
   systemRailwayDeploymentsResponseSchema,
@@ -7,6 +8,7 @@ import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
+import { performance } from "node:perf_hooks";
 import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
@@ -56,16 +58,37 @@ const systemORPCRouterBase = {
   health: base
     .route({ method: "GET", path: "/health" })
     .output(systemHealthResponseSchema)
-    .handler(async () => ({
-      checks: {
-        db: {
-          latency: null,
-          status: "ok" as const,
+    .handler(async () => {
+      const start = performance.now();
+      let dbStatus: "error" | "ok" = "ok";
+      let dbMessage: string | undefined;
+
+      try {
+        await db.$executeRaw`SELECT 1`;
+      } catch (err) {
+        dbStatus = "error";
+        dbMessage = err instanceof Error ? err.message : "DB ping failed";
+      }
+
+      const latency = Math.round(performance.now() - start);
+      const diagnostics = await db.$diagnostics;
+
+      return {
+        checks: {
+          db: {
+            latency,
+            status: dbStatus,
+            ...(dbMessage ? { message: dbMessage } : {}),
+          },
         },
-      },
-      status: "ok" as const,
-      timestamp: new Date(),
-    })),
+        orm: {
+          slowQueryCount: diagnostics.slowQueries.length,
+          zodCacheSize: diagnostics.zodCache.size,
+        },
+        status: dbStatus === "error" ? ("error" as const) : ("ok" as const),
+        timestamp: new Date(),
+      };
+    }),
 };
 
 export const systemORPCRouter = base.prefix("/api/orpc/system").router(systemORPCRouterBase);
