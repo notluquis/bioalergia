@@ -10,6 +10,11 @@
       "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
+    "./attendance": {
+      "types": "./dist/attendance.d.ts",
+      "import": "./dist/attendance.js",
+      "default": "./dist/attendance.js"
+    },
     "./auth": {
       "types": "./dist/auth.d.ts",
       "import": "./dist/auth.js",

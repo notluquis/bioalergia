@@ -17,6 +17,7 @@ import { Route as VerifyIdRouteImport } from "./routes/verify.$id";
 import { Route as AuthedSettingsRouteImport } from "./routes/_authed/settings";
 import { Route as AuthedServicesRouteImport } from "./routes/_authed/services";
 import { Route as AuthedOperationsRouteImport } from "./routes/_authed/operations";
+import { Route as AuthedMarcarRouteImport } from "./routes/_authed/marcar";
 import { Route as AuthedHrRouteImport } from "./routes/_authed/hr";
 import { Route as AuthedFinanzasRouteImport } from "./routes/_authed/finanzas";
 import { Route as AuthedClinicalRouteImport } from "./routes/_authed/clinical";
@@ -43,6 +44,7 @@ import { Route as AuthedHrTimesheetsRouteImport } from "./routes/_authed/hr/time
 import { Route as AuthedHrReportsRouteImport } from "./routes/_authed/hr/reports";
 import { Route as AuthedHrEmployeesRouteImport } from "./routes/_authed/hr/employees";
 import { Route as AuthedHrAuditRouteImport } from "./routes/_authed/hr/audit";
+import { Route as AuthedHrAttendanceRouteImport } from "./routes/_authed/hr/attendance";
 import { Route as AuthedFinanzasStatisticsRouteImport } from "./routes/_authed/finanzas/statistics";
 import { Route as AuthedFinanzasProductionBalancesRouteImport } from "./routes/_authed/finanzas/production-balances";
 import { Route as AuthedFinanzasPersonalCreditsRouteImport } from "./routes/_authed/finanzas/personal-credits";
@@ -108,6 +110,11 @@ const AuthedServicesRoute = AuthedServicesRouteImport.update({
 const AuthedOperationsRoute = AuthedOperationsRouteImport.update({
   id: "/operations",
   path: "/operations",
+  getParentRoute: () => AuthedRoute,
+} as any);
+const AuthedMarcarRoute = AuthedMarcarRouteImport.update({
+  id: "/marcar",
+  path: "/marcar",
   getParentRoute: () => AuthedRoute,
 } as any);
 const AuthedHrRoute = AuthedHrRouteImport.update({
@@ -238,6 +245,11 @@ const AuthedHrEmployeesRoute = AuthedHrEmployeesRouteImport.update({
 const AuthedHrAuditRoute = AuthedHrAuditRouteImport.update({
   id: "/audit",
   path: "/audit",
+  getParentRoute: () => AuthedHrRoute,
+} as any);
+const AuthedHrAttendanceRoute = AuthedHrAttendanceRouteImport.update({
+  id: "/attendance",
+  path: "/attendance",
   getParentRoute: () => AuthedHrRoute,
 } as any);
 const AuthedFinanzasStatisticsRoute = AuthedFinanzasStatisticsRouteImport.update({
@@ -387,6 +399,7 @@ export interface FileRoutesByFullPath {
   "/clinical": typeof AuthedClinicalRouteWithChildren;
   "/finanzas": typeof AuthedFinanzasRouteWithChildren;
   "/hr": typeof AuthedHrRouteWithChildren;
+  "/marcar": typeof AuthedMarcarRoute;
   "/operations": typeof AuthedOperationsRouteWithChildren;
   "/services": typeof AuthedServicesRouteWithChildren;
   "/settings": typeof AuthedSettingsRouteWithChildren;
@@ -410,6 +423,7 @@ export interface FileRoutesByFullPath {
   "/finanzas/personal-credits": typeof AuthedFinanzasPersonalCreditsRouteWithChildren;
   "/finanzas/production-balances": typeof AuthedFinanzasProductionBalancesRoute;
   "/finanzas/statistics": typeof AuthedFinanzasStatisticsRoute;
+  "/hr/attendance": typeof AuthedHrAttendanceRoute;
   "/hr/audit": typeof AuthedHrAuditRoute;
   "/hr/employees": typeof AuthedHrEmployeesRoute;
   "/hr/reports": typeof AuthedHrReportsRoute;
@@ -446,6 +460,7 @@ export interface FileRoutesByTo {
   "/calendar": typeof AuthedCalendarRouteWithChildren;
   "/certificates": typeof AuthedCertificatesRouteWithChildren;
   "/finanzas": typeof AuthedFinanzasRouteWithChildren;
+  "/marcar": typeof AuthedMarcarRoute;
   "/operations": typeof AuthedOperationsRouteWithChildren;
   "/verify/$id": typeof VerifyIdRoute;
   "/": typeof AuthedIndexRoute;
@@ -468,6 +483,7 @@ export interface FileRoutesByTo {
   "/finanzas/personal-credits": typeof AuthedFinanzasPersonalCreditsRouteWithChildren;
   "/finanzas/production-balances": typeof AuthedFinanzasProductionBalancesRoute;
   "/finanzas/statistics": typeof AuthedFinanzasStatisticsRoute;
+  "/hr/attendance": typeof AuthedHrAttendanceRoute;
   "/hr/audit": typeof AuthedHrAuditRoute;
   "/hr/employees": typeof AuthedHrEmployeesRoute;
   "/hr/reports": typeof AuthedHrReportsRoute;
@@ -508,6 +524,7 @@ export interface FileRoutesById {
   "/_authed/clinical": typeof AuthedClinicalRouteWithChildren;
   "/_authed/finanzas": typeof AuthedFinanzasRouteWithChildren;
   "/_authed/hr": typeof AuthedHrRouteWithChildren;
+  "/_authed/marcar": typeof AuthedMarcarRoute;
   "/_authed/operations": typeof AuthedOperationsRouteWithChildren;
   "/_authed/services": typeof AuthedServicesRouteWithChildren;
   "/_authed/settings": typeof AuthedSettingsRouteWithChildren;
@@ -532,6 +549,7 @@ export interface FileRoutesById {
   "/_authed/finanzas/personal-credits": typeof AuthedFinanzasPersonalCreditsRouteWithChildren;
   "/_authed/finanzas/production-balances": typeof AuthedFinanzasProductionBalancesRoute;
   "/_authed/finanzas/statistics": typeof AuthedFinanzasStatisticsRoute;
+  "/_authed/hr/attendance": typeof AuthedHrAttendanceRoute;
   "/_authed/hr/audit": typeof AuthedHrAuditRoute;
   "/_authed/hr/employees": typeof AuthedHrEmployeesRoute;
   "/_authed/hr/reports": typeof AuthedHrReportsRoute;
@@ -573,6 +591,7 @@ export interface FileRouteTypes {
     | "/clinical"
     | "/finanzas"
     | "/hr"
+    | "/marcar"
     | "/operations"
     | "/services"
     | "/settings"
@@ -596,6 +615,7 @@ export interface FileRouteTypes {
     | "/finanzas/personal-credits"
     | "/finanzas/production-balances"
     | "/finanzas/statistics"
+    | "/hr/attendance"
     | "/hr/audit"
     | "/hr/employees"
     | "/hr/reports"
@@ -632,6 +652,7 @@ export interface FileRouteTypes {
     | "/calendar"
     | "/certificates"
     | "/finanzas"
+    | "/marcar"
     | "/operations"
     | "/verify/$id"
     | "/"
@@ -654,6 +675,7 @@ export interface FileRouteTypes {
     | "/finanzas/personal-credits"
     | "/finanzas/production-balances"
     | "/finanzas/statistics"
+    | "/hr/attendance"
     | "/hr/audit"
     | "/hr/employees"
     | "/hr/reports"
@@ -693,6 +715,7 @@ export interface FileRouteTypes {
     | "/_authed/clinical"
     | "/_authed/finanzas"
     | "/_authed/hr"
+    | "/_authed/marcar"
     | "/_authed/operations"
     | "/_authed/services"
     | "/_authed/settings"
@@ -717,6 +740,7 @@ export interface FileRouteTypes {
     | "/_authed/finanzas/personal-credits"
     | "/_authed/finanzas/production-balances"
     | "/_authed/finanzas/statistics"
+    | "/_authed/hr/attendance"
     | "/_authed/hr/audit"
     | "/_authed/hr/employees"
     | "/_authed/hr/reports"
@@ -810,6 +834,13 @@ declare module "@tanstack/react-router" {
       path: "/operations";
       fullPath: "/operations";
       preLoaderRoute: typeof AuthedOperationsRouteImport;
+      parentRoute: typeof AuthedRoute;
+    };
+    "/_authed/marcar": {
+      id: "/_authed/marcar";
+      path: "/marcar";
+      fullPath: "/marcar";
+      preLoaderRoute: typeof AuthedMarcarRouteImport;
       parentRoute: typeof AuthedRoute;
     };
     "/_authed/hr": {
@@ -992,6 +1023,13 @@ declare module "@tanstack/react-router" {
       path: "/audit";
       fullPath: "/hr/audit";
       preLoaderRoute: typeof AuthedHrAuditRouteImport;
+      parentRoute: typeof AuthedHrRoute;
+    };
+    "/_authed/hr/attendance": {
+      id: "/_authed/hr/attendance";
+      path: "/attendance";
+      fullPath: "/hr/attendance";
+      preLoaderRoute: typeof AuthedHrAttendanceRouteImport;
       parentRoute: typeof AuthedHrRoute;
     };
     "/_authed/finanzas/statistics": {
@@ -1276,6 +1314,7 @@ const AuthedFinanzasRouteWithChildren = AuthedFinanzasRoute._addFileChildren(
 );
 
 interface AuthedHrRouteChildren {
+  AuthedHrAttendanceRoute: typeof AuthedHrAttendanceRoute;
   AuthedHrAuditRoute: typeof AuthedHrAuditRoute;
   AuthedHrEmployeesRoute: typeof AuthedHrEmployeesRoute;
   AuthedHrReportsRoute: typeof AuthedHrReportsRoute;
@@ -1284,6 +1323,7 @@ interface AuthedHrRouteChildren {
 }
 
 const AuthedHrRouteChildren: AuthedHrRouteChildren = {
+  AuthedHrAttendanceRoute: AuthedHrAttendanceRoute,
   AuthedHrAuditRoute: AuthedHrAuditRoute,
   AuthedHrEmployeesRoute: AuthedHrEmployeesRoute,
   AuthedHrReportsRoute: AuthedHrReportsRoute,
@@ -1360,6 +1400,7 @@ interface AuthedRouteChildren {
   AuthedClinicalRoute: typeof AuthedClinicalRouteWithChildren;
   AuthedFinanzasRoute: typeof AuthedFinanzasRouteWithChildren;
   AuthedHrRoute: typeof AuthedHrRouteWithChildren;
+  AuthedMarcarRoute: typeof AuthedMarcarRoute;
   AuthedOperationsRoute: typeof AuthedOperationsRouteWithChildren;
   AuthedServicesRoute: typeof AuthedServicesRouteWithChildren;
   AuthedSettingsRoute: typeof AuthedSettingsRouteWithChildren;
@@ -1380,6 +1421,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedClinicalRoute: AuthedClinicalRouteWithChildren,
   AuthedFinanzasRoute: AuthedFinanzasRouteWithChildren,
   AuthedHrRoute: AuthedHrRouteWithChildren,
+  AuthedMarcarRoute: AuthedMarcarRoute,
   AuthedOperationsRoute: AuthedOperationsRouteWithChildren,
   AuthedServicesRoute: AuthedServicesRouteWithChildren,
   AuthedSettingsRoute: AuthedSettingsRouteWithChildren,
