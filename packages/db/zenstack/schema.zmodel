@@ -79,6 +79,7 @@ model User {
   eventDteAutoLinkAttempts EventDteAutoLinkAttempt[]
   eventDteMatchReviews    EventDteMatchReview[]
   eventDteSaleLinks       EventDteSaleLink[]
+  attendanceMarkCorrections AttendanceMark[]
   person                  Person                   @relation(fields: [personId], references: [id], onDelete: Cascade)
 
   // This model represents the authenticated user
@@ -223,6 +224,7 @@ model Employee {
   overtimeRate      Decimal?            @map("overtime_rate") @db.Decimal(10, 2)
   retentionRate     Decimal             @default(0.145) @map("retention_rate") @db.Decimal(5, 4)
   timesheets        EmployeeTimesheet[]
+  attendanceMarks   AttendanceMark[]
   person            Person              @relation(fields: [personId], references: [id], onDelete: Cascade)
 
   // Access policies
@@ -231,6 +233,46 @@ model Employee {
   @@allow('create,update,delete', auth().status == 'ACTIVE')
 
   @@map("employees")
+}
+
+model AttendanceMark {
+  id              BigInt             @id @default(autoincrement())
+  employeeId      Int                @map("employee_id")
+  markedAt        DateTime           @map("marked_at")
+  type            AttendanceMarkType
+  latitude        Float?
+  longitude       Float?
+  accuracyMeters  Float?             @map("accuracy_meters")
+  ipAddress       String?            @map("ip_address") @db.VarChar(45)
+  isOfficeNetwork Boolean            @default(false) @map("is_office_network")
+  userAgent       String?            @map("user_agent") @db.VarChar(512)
+  notes           String?
+  createdByUserId Int?               @map("created_by_user_id")
+  employee        Employee           @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  createdByUser   User?              @relation(fields: [createdByUserId], references: [id])
+
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create', auth().status == 'ACTIVE')
+  // update/delete restricted to admin via CASL checks in the handler
+
+  @@index([employeeId, markedAt])
+  @@map("attendance_marks")
+}
+
+model OfficeNetwork {
+  id       Int     @id @default(autoincrement())
+  name     String
+  cidr     String  @db.VarChar(50)
+  isActive Boolean @default(true) @map("is_active")
+
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("office_networks")
 }
 
 model Counterpart {
@@ -1501,6 +1543,11 @@ enum EmployeeStatus {
 enum EmployeeSalaryType {
   HOURLY
   FIXED
+}
+
+enum AttendanceMarkType {
+  CLOCK_IN
+  CLOCK_OUT
 }
 
 enum TransactionDirection {

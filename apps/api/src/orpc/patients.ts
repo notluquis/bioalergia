@@ -11,6 +11,13 @@ import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone.js";
 import Decimal from "decimal.js";
 import type { Context as HonoContext } from "hono";
+import type {
+  Consultation,
+  MedicalCertificate,
+  PatientAttachment,
+  Person,
+} from "@finanzas/db/models";
+import { createSchemaFactory, schema } from "@finanzas/db/zod";
 import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
@@ -23,6 +30,8 @@ import { SuperJSONRPCHandler } from "./superjson";
 
 configureSuperjson();
 dayjs.extend(timezone);
+
+const dbSchemas = createSchemaFactory(schema);
 
 const TIMEZONE = "America/Santiago";
 
@@ -136,65 +145,22 @@ const budgetSchema = z.object({
   updatedAt: z.date(),
 });
 
-const personSchema = z.object({
-  address: z.string().nullable().optional(),
-  createdAt: z.date(),
-  email: z.string().nullable().optional(),
-  fatherName: z.string().nullable().optional(),
-  id: z.number().int(),
-  motherName: z.string().nullable().optional(),
-  names: z.string(),
-  personType: z.string(),
-  phone: z.string().nullable().optional(),
-  rut: z.string(),
-  updatedAt: z.date(),
-});
+// ZenStack's ZodObject<GetModelFieldsShape<...>, $strict> doesn't directly satisfy
+// z.ZodType<T> without excessive type instantiation (TS2589). The cast is safe:
+// makeModelSchema generates a schema that validates exactly to the model type.
+const personSchema = dbSchemas.makeModelSchema("Person") as unknown as z.ZodType<Person>;
 
-const consultationSchema = z.object({
-  createdAt: z.date(),
-  date: z.date(),
-  diagnosis: z.string().nullable().optional(),
-  eventId: z.number().nullable().optional(),
-  id: z.number().int(),
-  notes: z.string().nullable().optional(),
-  patientId: z.number().int(),
-  reason: z.string(),
-  treatment: z.string().nullable().optional(),
-  updatedAt: z.date(),
-});
+const consultationSchema = dbSchemas.makeModelSchema(
+  "Consultation",
+) as unknown as z.ZodType<Consultation>;
 
-const attachmentSchema = z.object({
-  driveFileId: z.string(),
-  id: z.string(),
-  mimeType: z.string().nullable().optional(),
-  name: z.string(),
-  patientId: z.number().int(),
-  type: z.string(),
-  uploadedAt: z.date(),
-  uploadedBy: z.number().int(),
-  webViewLink: z.string().optional(),
-});
+const attachmentSchema = dbSchemas.makeModelSchema("PatientAttachment").extend({
+  webViewLink: z.string().optional(), // added by Google Drive upload, not stored in DB
+}) as unknown as z.ZodType<PatientAttachment & { webViewLink?: string }>;
 
-const medicalCertificateSchema = z.object({
-  address: z.string(),
-  birthDate: z.date(),
-  diagnosis: z.string(),
-  driveFileId: z.string(),
-  id: z.string(),
-  issuedAt: z.date(),
-  issuedBy: z.number().int(),
-  metadata: z.unknown().nullable().optional(),
-  patientId: z.number().nullable().optional(),
-  patientName: z.string(),
-  patientRut: z.string(),
-  pdfHash: z.string(),
-  purpose: z.string(),
-  purposeDetail: z.string().nullable().optional(),
-  restDays: z.number().nullable().optional(),
-  restEndDate: z.date().nullable().optional(),
-  restStartDate: z.date().nullable().optional(),
-  symptoms: z.string().nullable().optional(),
-});
+const medicalCertificateSchema = dbSchemas.makeModelSchema(
+  "MedicalCertificate",
+) as unknown as z.ZodType<MedicalCertificate>;
 
 const patientListItemSchema = z.object({
   birthDate: z.date().nullable().optional(),

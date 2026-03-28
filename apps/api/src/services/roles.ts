@@ -266,6 +266,9 @@ export async function syncPermissions() {
     "ServiceTemplate",
     "TimesheetList",
     "TimesheetAudit",
+    // Attendance
+    "Attendance",
+    "AttendanceAdmin",
   ];
 
   // 3. Combine and merge

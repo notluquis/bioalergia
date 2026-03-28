@@ -7,7 +7,7 @@
     "build": "node -e \"console.log('@finanzas/api uses the tsx runtime in production; no JS bundle is emitted during build.')\"",
     "start": "node --import tsx src/index.ts",
     "type-check": "tsgo --noEmit --pretty false",
-    "type-check:watch": "tsgo --noEmit --watch --pretty false",
+    "type-check:watch": "tsgo --watch --pretty false",
     "google:auth": "tsx src/scripts/google-auth.ts",
     "doctoralia:diagnose-login": "tsx src/scripts/diagnose-doctoralia-login.ts",
     "debug:intranet-request": "tsx src/scripts/debug-intranet-request.ts",

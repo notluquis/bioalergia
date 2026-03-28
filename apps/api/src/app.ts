@@ -52,6 +52,7 @@ import {
 import { createHonoORPCRequest } from "./orpc/superjson";
 import { suppliesOpenAPIHandler, suppliesORPCHandler } from "./orpc/supplies";
 import { systemOpenAPIHandler, systemORPCHandler } from "./orpc/system";
+import { attendanceOpenAPIHandler, attendanceORPCHandler } from "./orpc/attendance";
 import { timesheetsOpenAPIHandler, timesheetsORPCHandler } from "./orpc/timesheets";
 import {
   transactionsInsightsOpenAPIHandler,
@@ -586,7 +587,7 @@ app.use("/api/orpc/calendar/rpc/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/certificates/rpc/*", async (c, next) => {
@@ -599,7 +600,7 @@ app.use("/api/orpc/certificates/rpc/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 // ─── Clinical Series SSE progress stream ──────────────────────────────────────
@@ -655,7 +656,7 @@ app.use("/api/orpc/clinical-series/rpc/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/system/rpc/*", async (c, next) => {
@@ -668,7 +669,7 @@ app.use("/api/orpc/system/rpc/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/backups/rpc/*", async (c, next) => {
@@ -681,7 +682,7 @@ app.use("/api/orpc/backups/rpc/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/balances/rpc/*", async (c, next) => {
@@ -694,7 +695,7 @@ app.use("/api/orpc/balances/rpc/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/release-transactions/rpc/*", async (c, next) => {
@@ -710,7 +711,7 @@ app.use("/api/orpc/release-transactions/rpc/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/settlement-transactions/rpc/*", async (c, next) => {
@@ -726,7 +727,7 @@ app.use("/api/orpc/settlement-transactions/rpc/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/transactions-insights/rpc/*", async (c, next) => {
@@ -742,7 +743,7 @@ app.use("/api/orpc/transactions-insights/rpc/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/dte-analytics/event-links/rpc/*", async (c, next) => {
@@ -755,7 +756,7 @@ app.use("/api/orpc/dte-analytics/event-links/rpc/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/dte-analytics/rpc/*", async (c, next) => {
@@ -768,7 +769,7 @@ app.use("/api/orpc/dte-analytics/rpc/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/dte/rpc/*", async (c, next) => {
@@ -781,7 +782,7 @@ app.use("/api/orpc/dte/rpc/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/employees/rpc/*", async (c, next) => {
@@ -794,7 +795,7 @@ app.use("/api/orpc/employees/rpc/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/expenses/rpc/*", async (c, next) => {
@@ -807,7 +808,7 @@ app.use("/api/orpc/expenses/rpc/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/csv-upload/rpc/*", async (c, next) => {
@@ -820,7 +821,7 @@ app.use("/api/orpc/csv-upload/rpc/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/haulmer/rpc/*", async (c, next) => {
@@ -833,7 +834,7 @@ app.use("/api/orpc/haulmer/rpc/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/integrations/rpc/*", async (c, next) => {
@@ -846,7 +847,7 @@ app.use("/api/orpc/integrations/rpc/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/mercadopago/rpc/*", async (c, next) => {
@@ -859,7 +860,7 @@ app.use("/api/orpc/mercadopago/rpc/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/inventory/rpc/*", async (c, next) => {
@@ -872,7 +873,7 @@ app.use("/api/orpc/inventory/rpc/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/loans/rpc/*", async (c, next) => {
@@ -885,7 +886,7 @@ app.use("/api/orpc/loans/rpc/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/roles/rpc/*", async (c, next) => {
@@ -898,7 +899,7 @@ app.use("/api/orpc/roles/rpc/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/counterparts/rpc/*", async (c, next) => {
@@ -911,7 +912,7 @@ app.use("/api/orpc/counterparts/rpc/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/finance/rpc/*", async (c, next) => {
@@ -924,7 +925,7 @@ app.use("/api/orpc/finance/rpc/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/users/rpc/*", async (c, next) => {
@@ -937,7 +938,7 @@ app.use("/api/orpc/users/rpc/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/people/rpc/*", async (c, next) => {
@@ -950,7 +951,7 @@ app.use("/api/orpc/people/rpc/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/personal-finance/rpc/*", async (c, next) => {
@@ -963,7 +964,7 @@ app.use("/api/orpc/personal-finance/rpc/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/settings/rpc/*", async (c, next) => {
@@ -976,7 +977,7 @@ app.use("/api/orpc/settings/rpc/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/notifications/rpc/*", async (c, next) => {
@@ -989,7 +990,7 @@ app.use("/api/orpc/notifications/rpc/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/services/rpc/*", async (c, next) => {
@@ -1002,7 +1003,7 @@ app.use("/api/orpc/services/rpc/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/supplies/rpc/*", async (c, next) => {
@@ -1015,7 +1016,7 @@ app.use("/api/orpc/supplies/rpc/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/timesheets/rpc/*", async (c, next) => {
@@ -1028,7 +1029,20 @@ app.use("/api/orpc/timesheets/rpc/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
+});
+
+app.use("/api/orpc/attendance/rpc/*", async (c, next) => {
+  const { matched, response } = await attendanceORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/attendance/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
 });
 
 app.use("/api/orpc/production-balances/rpc/*", async (c, next) => {
@@ -1044,7 +1058,7 @@ app.use("/api/orpc/production-balances/rpc/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/auth/rpc/*", async (c, next) => {
@@ -1057,7 +1071,7 @@ app.use("/api/orpc/auth/rpc/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/patients/rpc/*", async (c, next) => {
@@ -1070,7 +1084,7 @@ app.use("/api/orpc/patients/rpc/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/doctoralia/rpc/*", async (c, next) => {
@@ -1083,7 +1097,7 @@ app.use("/api/orpc/doctoralia/rpc/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/dte-analytics/event-links/*", async (c, next) => {
@@ -1095,7 +1109,7 @@ app.use("/api/orpc/dte-analytics/event-links/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/dte-analytics/*", async (c, next) => {
@@ -1107,7 +1121,7 @@ app.use("/api/orpc/dte-analytics/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/dte/*", async (c, next) => {
@@ -1119,7 +1133,7 @@ app.use("/api/orpc/dte/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/inventory/*", async (c, next) => {
@@ -1131,7 +1145,7 @@ app.use("/api/orpc/inventory/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/loans/*", async (c, next) => {
@@ -1143,7 +1157,7 @@ app.use("/api/orpc/loans/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/csv-upload/*", async (c, next) => {
@@ -1155,7 +1169,7 @@ app.use("/api/orpc/csv-upload/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/haulmer/*", async (c, next) => {
@@ -1167,7 +1181,7 @@ app.use("/api/orpc/haulmer/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/employees/*", async (c, next) => {
@@ -1179,7 +1193,7 @@ app.use("/api/orpc/employees/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/expenses/*", async (c, next) => {
@@ -1191,7 +1205,7 @@ app.use("/api/orpc/expenses/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/integrations/*", async (c, next) => {
@@ -1203,7 +1217,7 @@ app.use("/api/orpc/integrations/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/mercadopago/*", async (c, next) => {
@@ -1215,7 +1229,7 @@ app.use("/api/orpc/mercadopago/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/roles/*", async (c, next) => {
@@ -1227,7 +1241,7 @@ app.use("/api/orpc/roles/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/counterparts/*", async (c, next) => {
@@ -1239,7 +1253,7 @@ app.use("/api/orpc/counterparts/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/finance/*", async (c, next) => {
@@ -1251,7 +1265,7 @@ app.use("/api/orpc/finance/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/users/*", async (c, next) => {
@@ -1263,7 +1277,7 @@ app.use("/api/orpc/users/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/people/*", async (c, next) => {
@@ -1275,7 +1289,7 @@ app.use("/api/orpc/people/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/personal-finance/*", async (c, next) => {
@@ -1290,7 +1304,7 @@ app.use("/api/orpc/personal-finance/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/settings/*", async (c, next) => {
@@ -1302,7 +1316,7 @@ app.use("/api/orpc/settings/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/notifications/*", async (c, next) => {
@@ -1314,7 +1328,7 @@ app.use("/api/orpc/notifications/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/services/*", async (c, next) => {
@@ -1326,7 +1340,7 @@ app.use("/api/orpc/services/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/supplies/*", async (c, next) => {
@@ -1338,7 +1352,7 @@ app.use("/api/orpc/supplies/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/timesheets/*", async (c, next) => {
@@ -1350,7 +1364,19 @@ app.use("/api/orpc/timesheets/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
+});
+
+app.use("/api/orpc/attendance/*", async (c, next) => {
+  const { matched, response } = await attendanceOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
 });
 
 app.use("/api/orpc/production-balances/*", async (c, next) => {
@@ -1365,7 +1391,7 @@ app.use("/api/orpc/production-balances/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/auth/*", async (c, next) => {
@@ -1377,7 +1403,7 @@ app.use("/api/orpc/auth/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/patients/*", async (c, next) => {
@@ -1389,7 +1415,7 @@ app.use("/api/orpc/patients/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/doctoralia/*", async (c, next) => {
@@ -1401,7 +1427,7 @@ app.use("/api/orpc/doctoralia/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/calendar/*", async (c, next) => {
@@ -1413,7 +1439,7 @@ app.use("/api/orpc/calendar/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/certificates/*", async (c, next) => {
@@ -1425,7 +1451,7 @@ app.use("/api/orpc/certificates/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/clinical-series/*", async (c, next) => {
@@ -1440,7 +1466,7 @@ app.use("/api/orpc/clinical-series/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/system/*", async (c, next) => {
@@ -1452,7 +1478,7 @@ app.use("/api/orpc/system/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/backups/*", async (c, next) => {
@@ -1464,7 +1490,7 @@ app.use("/api/orpc/backups/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/balances/*", async (c, next) => {
@@ -1476,7 +1502,7 @@ app.use("/api/orpc/balances/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/release-transactions/*", async (c, next) => {
@@ -1491,7 +1517,7 @@ app.use("/api/orpc/release-transactions/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/settlement-transactions/*", async (c, next) => {
@@ -1506,7 +1532,7 @@ app.use("/api/orpc/settlement-transactions/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/transactions-insights/*", async (c, next) => {
@@ -1521,7 +1547,7 @@ app.use("/api/orpc/transactions-insights/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/whatsapp/rpc/*", async (c, next) => {
@@ -1534,7 +1560,7 @@ app.use("/api/orpc/whatsapp/rpc/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 app.use("/api/orpc/whatsapp/*", async (c, next) => {
@@ -1546,7 +1572,7 @@ app.use("/api/orpc/whatsapp/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
-  await next();
+  return next();
 });
 
 // WhatsApp webhook (Meta platform)
