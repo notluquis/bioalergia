@@ -9,6 +9,11 @@ import {
   Select,
   Skeleton,
   Table,
+  TableBody,
+  TableCell,
+  TableColumn,
+  TableHeader,
+  TableRow,
   TextField,
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -166,25 +171,25 @@ function MarksTable({ isDeletingId, marks, onDelete }: MarksTableProps) {
 
   return (
     <Table>
-      <Table.Header>
-        <Table.Column isRowHeader>Empleado</Table.Column>
-        <Table.Column>Tipo</Table.Column>
-        <Table.Column>Hora (Santiago)</Table.Column>
-        <Table.Column>Red</Table.Column>
-        <Table.Column>GPS</Table.Column>
-        <Table.Column>Notas</Table.Column>
-        <Table.Column>{""}</Table.Column>
-      </Table.Header>
-      <Table.Body>
+      <TableHeader>
+        <TableColumn isRowHeader>Empleado</TableColumn>
+        <TableColumn>Tipo</TableColumn>
+        <TableColumn>Hora (Santiago)</TableColumn>
+        <TableColumn>Red</TableColumn>
+        <TableColumn>GPS</TableColumn>
+        <TableColumn>Notas</TableColumn>
+        <TableColumn>{""}</TableColumn>
+      </TableHeader>
+      <TableBody>
         {marks.map((mark) => (
-          <Table.Row key={mark.id}>
-            <Table.Cell>
+          <TableRow key={mark.id}>
+            <TableCell>
               <p className="font-medium">{mark.employeeName ?? `ID ${mark.employeeId}`}</p>
               {mark.employeeRut && (
                 <p className="text-xs text-foreground-400">{mark.employeeRut}</p>
               )}
-            </Table.Cell>
-            <Table.Cell>
+            </TableCell>
+            <TableCell>
               <Chip
                 color={mark.type === "CLOCK_IN" ? "success" : "danger"}
                 size="sm"
@@ -192,11 +197,11 @@ function MarksTable({ isDeletingId, marks, onDelete }: MarksTableProps) {
               >
                 {mark.type === "CLOCK_IN" ? "Entrada" : "Salida"}
               </Chip>
-            </Table.Cell>
-            <Table.Cell className="font-medium">
+            </TableCell>
+            <TableCell className="font-medium">
               {dayjs(mark.markedAt).tz(TIMEZONE).format("DD/MM/YYYY HH:mm")}
-            </Table.Cell>
-            <Table.Cell>
+            </TableCell>
+            <TableCell>
               <Chip
                 color={mark.isOfficeNetwork ? "success" : "default"}
                 size="sm"
@@ -204,8 +209,8 @@ function MarksTable({ isDeletingId, marks, onDelete }: MarksTableProps) {
               >
                 {mark.isOfficeNetwork ? "Oficina" : "Externa"}
               </Chip>
-            </Table.Cell>
-            <Table.Cell>
+            </TableCell>
+            <TableCell>
               {mark.latitude !== null && mark.longitude !== null ? (
                 <a
                   className="text-accent hover:underline"
@@ -219,9 +224,9 @@ function MarksTable({ isDeletingId, marks, onDelete }: MarksTableProps) {
               ) : (
                 <span className="text-foreground-300">—</span>
               )}
-            </Table.Cell>
-            <Table.Cell className="text-foreground-500">{mark.notes ?? "—"}</Table.Cell>
-            <Table.Cell>
+            </TableCell>
+            <TableCell className="text-foreground-500">{mark.notes ?? "—"}</TableCell>
+            <TableCell>
               <Button
                 isDisabled={isDeletingId === mark.id}
                 variant="danger-soft"
@@ -229,10 +234,10 @@ function MarksTable({ isDeletingId, marks, onDelete }: MarksTableProps) {
               >
                 {isDeletingId === mark.id ? "..." : "Eliminar"}
               </Button>
-            </Table.Cell>
-          </Table.Row>
+            </TableCell>
+          </TableRow>
         ))}
-      </Table.Body>
+      </TableBody>
     </Table>
   );
 }
