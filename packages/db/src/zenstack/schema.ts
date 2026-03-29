@@ -848,6 +848,12 @@ export class SchemaType implements SchemaDef {
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("user_agent") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(512) }] }] as readonly AttributeApplication[]
                 },
+                connectionType: {
+                    name: "connectionType",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("connection_type") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] }] as readonly AttributeApplication[]
+                },
                 notes: {
                     name: "notes",
                     type: "String",
@@ -5610,6 +5616,109 @@ export class SchemaType implements SchemaDef {
                 period_rut_docType: { period: { type: "String" }, rut: { type: "String" }, docType: { type: "String" } }
             }
         },
+        DoctoraliaEmailNotification: {
+            name: "DoctoraliaEmailNotification",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("cuid") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                emailMessageId: {
+                    name: "emailMessageId",
+                    type: "String",
+                    unique: true,
+                    attributes: [{ name: "@unique" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("email_message_id") }] }] as readonly AttributeApplication[]
+                },
+                eventType: {
+                    name: "eventType",
+                    type: "DoctoraliaEmailEventType",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("BOOKING") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("event_type") }] }] as readonly AttributeApplication[],
+                    default: "BOOKING" as FieldDefault
+                },
+                patientName: {
+                    name: "patientName",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_name") }] }] as readonly AttributeApplication[]
+                },
+                patientPhone: {
+                    name: "patientPhone",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_phone") }] }] as readonly AttributeApplication[]
+                },
+                patientEmail: {
+                    name: "patientEmail",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_email") }] }] as readonly AttributeApplication[]
+                },
+                isFirstAppointment: {
+                    name: "isFirstAppointment",
+                    type: "Boolean",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("is_first_appointment") }] }] as readonly AttributeApplication[],
+                    default: false as FieldDefault
+                },
+                appointmentDate: {
+                    name: "appointmentDate",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("appointment_date") }] }] as readonly AttributeApplication[]
+                },
+                previousAppointmentDate: {
+                    name: "previousAppointmentDate",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("previous_appointment_date") }] }] as readonly AttributeApplication[]
+                },
+                appointmentService: {
+                    name: "appointmentService",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("appointment_service") }] }] as readonly AttributeApplication[]
+                },
+                appointmentDoctor: {
+                    name: "appointmentDoctor",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("appointment_doctor") }] }] as readonly AttributeApplication[]
+                },
+                clinicAddress: {
+                    name: "clinicAddress",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("clinic_address") }] }] as readonly AttributeApplication[]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                }
+            },
+            attributes: [
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("createdAt")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DoctoraliaEmailEventType", [ExpressionUtils.field("eventType")]) }] },
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "!=", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("doctoralia_email_notifications") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" },
+                emailMessageId: { type: "String" }
+            }
+        },
         WhatsappNotification: {
             name: "WhatsappNotification",
             fields: {
@@ -8054,6 +8163,14 @@ export class SchemaType implements SchemaDef {
         }
     } as const;
     enums = {
+        DoctoraliaEmailEventType: {
+            name: "DoctoraliaEmailEventType",
+            values: {
+                BOOKING: "BOOKING",
+                MODIFICATION: "MODIFICATION",
+                CANCELLATION: "CANCELLATION"
+            }
+        },
         WhatsappNotificationStatus: {
             name: "WhatsappNotificationStatus",
             values: {

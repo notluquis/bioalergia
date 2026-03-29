@@ -11,6 +11,7 @@ const TIMEZONE = "America/Santiago";
 
 export type AttendanceMarkType = "CLOCK_IN" | "CLOCK_OUT";
 export type AttendanceCurrentStatus = "CLOCKED_IN" | "CLOCKED_OUT" | "NO_MARKS_TODAY";
+type WeekDayStatus = "worked" | "incomplete" | "absent" | "today";
 
 export interface AttendanceMarkData {
   id: number;
@@ -23,8 +24,16 @@ export interface AttendanceMarkData {
   ipAddress: string | null;
   isOfficeNetwork: boolean;
   userAgent: string | null;
+  connectionType: string | null;
   notes: string | null;
   createdByUserId: number | null;
+}
+
+export interface WeekDaySummary {
+  date: string;
+  isWeekend: boolean;
+  status: WeekDayStatus;
+  workedMinutes: number | null;
 }
 
 export interface CreateMarkPayload {
@@ -33,6 +42,7 @@ export interface CreateMarkPayload {
   latitude?: number;
   longitude?: number;
   accuracyMeters?: number;
+  connectionType?: string;
   createdByUserId?: number;
   notes?: string;
 }
@@ -53,6 +63,7 @@ function mapMark(raw: {
   ipAddress: string | null;
   isOfficeNetwork: boolean;
   userAgent: string | null;
+  connectionType: string | null;
   notes: string | null;
   createdByUserId: number | null;
 }): AttendanceMarkData {
@@ -67,9 +78,21 @@ function mapMark(raw: {
     ipAddress: raw.ipAddress,
     isOfficeNetwork: raw.isOfficeNetwork,
     userAgent: raw.userAgent,
+    connectionType: raw.connectionType,
     notes: raw.notes,
     createdByUserId: raw.createdByUserId,
   };
+}
+
+/** Compute worked minutes between earliest CLOCK_IN and latest CLOCK_OUT in a set of marks */
+function computeWorkedMinutes(dayMarks: AttendanceMarkData[]): number | null {
+  const clockIns = dayMarks.filter((m) => m.type === "CLOCK_IN").sort((a, b) => a.markedAt.getTime() - b.markedAt.getTime());
+  const clockOuts = dayMarks.filter((m) => m.type === "CLOCK_OUT").sort((a, b) => b.markedAt.getTime() - a.markedAt.getTime());
+  if (clockIns.length === 0 || clockOuts.length === 0) return null;
+  const firstIn = clockIns[0]!;
+  const lastOut = clockOuts[0]!;
+  if (lastOut.markedAt <= firstIn.markedAt) return null;
+  return Math.floor((lastOut.markedAt.getTime() - firstIn.markedAt.getTime()) / 60_000);
 }
 
 /**
@@ -86,7 +109,6 @@ export async function findEmployeeByUserId(userId: number) {
 /**
  * Check if a given IP address matches any active OfficeNetwork CIDR.
  * Supports exact IP match or simple /24, /16, /8 subnet checks.
- * For production use, consider a proper CIDR library (e.g. ip-cidr).
  */
 export async function checkIsOfficeNetwork(ip: string): Promise<boolean> {
   if (!ip) return false;
@@ -97,22 +119,14 @@ export async function checkIsOfficeNetwork(ip: string): Promise<boolean> {
   });
 
   for (const { cidr } of networks) {
-    if (ipMatchesCidr(ip, cidr)) {
-      return true;
-    }
+    if (ipMatchesCidr(ip, cidr)) return true;
   }
 
   return false;
 }
 
-/**
- * Minimal CIDR matching without external dependencies.
- * Supports IPv4 exact match ("x.x.x.x") and prefix notation ("x.x.x.x/prefix").
- */
 function ipMatchesCidr(ip: string, cidr: string): boolean {
-  if (!cidr.includes("/")) {
-    return ip === cidr;
-  }
+  if (!cidr.includes("/")) return ip === cidr;
 
   const [network, prefixStr] = cidr.split("/");
   if (!network || prefixStr === undefined) return false;
@@ -129,9 +143,7 @@ function ipMatchesCidr(ip: string, cidr: string): boolean {
 
 function ipToNumber(ip: string): number | null {
   const parts = ip.split(".").map(Number);
-  if (parts.length !== 4 || parts.some((p) => Number.isNaN(p) || p < 0 || p > 255)) {
-    return null;
-  }
+  if (parts.length !== 4 || parts.some((p) => Number.isNaN(p) || p < 0 || p > 255)) return null;
   return ((parts[0]! << 24) | (parts[1]! << 16) | (parts[2]! << 8) | parts[3]!) >>> 0;
 }
 
@@ -156,6 +168,7 @@ export async function createMark(
       ipAddress: meta.ip ?? null,
       isOfficeNetwork,
       userAgent: meta.userAgent ?? null,
+      connectionType: payload.connectionType ?? null,
       notes: payload.notes ?? null,
       createdByUserId: payload.createdByUserId ?? null,
     },
@@ -188,6 +201,7 @@ export async function createAdminMark(
       ipAddress: null,
       isOfficeNetwork: false,
       userAgent: null,
+      connectionType: null,
       notes: notes ?? null,
       createdByUserId: adminUserId,
     },
@@ -201,8 +215,6 @@ export async function createAdminMark(
 
 /**
  * Sync attendance marks to EmployeeTimesheet for the day containing `referenceTime`.
- * Uses the earliest CLOCK_IN and latest CLOCK_OUT of the day.
- * Returns true if a timesheet was upserted.
  */
 export async function syncMarkToTimesheet(
   employeeId: number,
@@ -214,26 +226,19 @@ export async function syncMarkToTimesheet(
   const workDateStr = dayInSantiago.format("YYYY-MM-DD");
 
   const marks = await db.attendanceMark.findMany({
-    where: {
-      employeeId,
-      markedAt: { gte: dayStart, lte: dayEnd },
-    },
+    where: { employeeId, markedAt: { gte: dayStart, lte: dayEnd } },
     orderBy: { markedAt: "asc" },
   });
 
   const clockIns = marks.filter((m) => m.type === "CLOCK_IN");
   const clockOuts = marks.filter((m) => m.type === "CLOCK_OUT");
 
-  if (clockIns.length === 0 || clockOuts.length === 0) {
-    return false;
-  }
+  if (clockIns.length === 0 || clockOuts.length === 0) return false;
 
   const firstIn = clockIns[0]!.markedAt;
   const lastOut = clockOuts[clockOuts.length - 1]!.markedAt;
 
-  if (lastOut <= firstIn) {
-    return false;
-  }
+  if (lastOut <= firstIn) return false;
 
   const workedMinutes = Math.floor((lastOut.getTime() - firstIn.getTime()) / 60_000);
 
@@ -251,48 +256,145 @@ export async function syncMarkToTimesheet(
 }
 
 /**
- * Get today's marks and status for a given employee.
+ * Get today's status + week summary + month stats for a given employee.
+ * Single DB query covers the full month for efficiency.
  */
 export async function getTodayStatus(employeeId: number): Promise<{
   currentStatus: AttendanceCurrentStatus;
   lastMark: AttendanceMarkData | null;
   todayMarks: AttendanceMarkData[];
+  clockedInAt: Date | null;
+  hasIncompleteYesterday: boolean;
+  weekSummary: WeekDaySummary[];
+  monthStats: { daysWorked: number; totalMinutes: number };
 }> {
   const now = dayjs().tz(TIMEZONE);
-  const dayStart = now.startOf("day").toDate();
+  const monthStart = now.startOf("month").toDate();
   const dayEnd = now.endOf("day").toDate();
 
   const rawMarks = await db.attendanceMark.findMany({
-    where: {
-      employeeId,
-      markedAt: { gte: dayStart, lte: dayEnd },
-    },
+    where: { employeeId, markedAt: { gte: monthStart, lte: dayEnd } },
     orderBy: { markedAt: "asc" },
   });
 
-  const todayMarks = rawMarks.map(mapMark);
+  const marks = rawMarks.map(mapMark);
 
-  if (todayMarks.length === 0) {
-    return { currentStatus: "NO_MARKS_TODAY", lastMark: null, todayMarks };
+  // Group marks by local date
+  const byDate = new Map<string, AttendanceMarkData[]>();
+  for (const mark of marks) {
+    const date = dayjs(mark.markedAt).tz(TIMEZONE).format("YYYY-MM-DD");
+    const existing = byDate.get(date);
+    if (existing) existing.push(mark);
+    else byDate.set(date, [mark]);
   }
 
-  const lastMark = todayMarks[todayMarks.length - 1]!;
-  const currentStatus: AttendanceCurrentStatus =
-    lastMark.type === "CLOCK_IN" ? "CLOCKED_IN" : "CLOCKED_OUT";
+  const today = now.format("YYYY-MM-DD");
+  const yesterday = now.subtract(1, "day").format("YYYY-MM-DD");
+  const todayMarks = byDate.get(today) ?? [];
 
-  return { currentStatus, lastMark, todayMarks };
+  // Current status
+  const lastMark = todayMarks.length > 0 ? todayMarks[todayMarks.length - 1]! : null;
+  let currentStatus: AttendanceCurrentStatus;
+  if (todayMarks.length === 0) currentStatus = "NO_MARKS_TODAY";
+  else if (lastMark?.type === "CLOCK_IN") currentStatus = "CLOCKED_IN";
+  else currentStatus = "CLOCKED_OUT";
+
+  // First CLOCK_IN today (for live timer on client)
+  const clockedInAt =
+    currentStatus === "CLOCKED_IN"
+      ? (todayMarks.find((m) => m.type === "CLOCK_IN")?.markedAt ?? null)
+      : null;
+
+  // Yesterday incomplete: has CLOCK_IN but no CLOCK_OUT
+  const yesterdayMarks = byDate.get(yesterday) ?? [];
+  const hasIncompleteYesterday =
+    yesterdayMarks.some((m) => m.type === "CLOCK_IN") &&
+    !yesterdayMarks.some((m) => m.type === "CLOCK_OUT");
+
+  // Week summary (Mon → today)
+  const dayOfWeek = now.day(); // 0=Sun, 1=Mon, ..., 6=Sat
+  const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  const weekMonday = now.subtract(daysFromMonday, "day").startOf("day");
+
+  const weekSummary: WeekDaySummary[] = [];
+  for (let i = 0; i < 7; i++) {
+    const day = weekMonday.add(i, "day");
+    if (day.isAfter(now, "day")) break;
+    const dateStr = day.format("YYYY-MM-DD");
+    const isWeekend = day.day() === 0 || day.day() === 6;
+    const dayMarks = byDate.get(dateStr) ?? [];
+    const hasCI = dayMarks.some((m) => m.type === "CLOCK_IN");
+    const hasCO = dayMarks.some((m) => m.type === "CLOCK_OUT");
+
+    let status: WeekDayStatus;
+    let workedMinutes: number | null = null;
+
+    if (dateStr === today) {
+      status = "today";
+      if (hasCI && hasCO) {
+        workedMinutes = computeWorkedMinutes(dayMarks);
+      } else if (hasCI) {
+        const firstCI = dayMarks.find((m) => m.type === "CLOCK_IN")!;
+        workedMinutes = Math.floor((Date.now() - firstCI.markedAt.getTime()) / 60_000);
+      }
+    } else if (!hasCI && !hasCO) {
+      status = "absent";
+    } else if (hasCI && hasCO) {
+      status = "worked";
+      workedMinutes = computeWorkedMinutes(dayMarks);
+    } else {
+      status = "incomplete";
+    }
+
+    weekSummary.push({ date: dateStr, isWeekend, status, workedMinutes });
+  }
+
+  // Month stats (completed days only, exclude today which may be in progress)
+  let daysWorked = 0;
+  let totalMinutes = 0;
+  for (const [dateStr, dayMarks] of byDate.entries()) {
+    if (dateStr === today) continue;
+    const hasCI = dayMarks.some((m) => m.type === "CLOCK_IN");
+    const hasCO = dayMarks.some((m) => m.type === "CLOCK_OUT");
+    if (hasCI && hasCO) {
+      const minutes = computeWorkedMinutes(dayMarks);
+      if (minutes !== null) {
+        daysWorked++;
+        totalMinutes += minutes;
+      }
+    }
+  }
+
+  return {
+    currentStatus,
+    lastMark,
+    todayMarks,
+    clockedInAt,
+    hasIncompleteYesterday,
+    weekSummary,
+    monthStats: { daysWorked, totalMinutes },
+  };
 }
 
 /**
  * List marks with optional filters (admin use).
+ * Returns isDayIncomplete per mark and aggregate summary.
  */
 export async function listMarks(options: {
   employeeId?: number;
   from?: string;
   to?: string;
-}): Promise<Array<AttendanceMarkData & { employeeName?: string; employeeRut?: string }>> {
-  const fromDate = options.from ? dayjs.tz(options.from, "YYYY-MM-DD", TIMEZONE).startOf("day").toDate() : undefined;
-  const toDate = options.to ? dayjs.tz(options.to, "YYYY-MM-DD", TIMEZONE).endOf("day").toDate() : undefined;
+  completionStatus?: "all" | "complete" | "incomplete";
+}): Promise<{
+  marks: Array<AttendanceMarkData & { employeeName?: string; employeeRut?: string; isDayIncomplete: boolean }>;
+  summary: { totalMarks: number; incompleteDays: number; totalWorkedMinutes: number };
+}> {
+  const fromDate = options.from
+    ? dayjs.tz(options.from, "YYYY-MM-DD", TIMEZONE).startOf("day").toDate()
+    : undefined;
+  const toDate = options.to
+    ? dayjs.tz(options.to, "YYYY-MM-DD", TIMEZONE).endOf("day").toDate()
+    : undefined;
 
   const rawMarks = await db.attendanceMark.findMany({
     where: {
@@ -314,13 +416,64 @@ export async function listMarks(options: {
     orderBy: { markedAt: "desc" },
   });
 
-  return rawMarks.map((raw) => ({
-    ...mapMark(raw),
-    employeeName: [raw.employee.person.names, raw.employee.person.fatherName]
-      .filter(Boolean)
-      .join(" "),
-    employeeRut: raw.employee.person.rut,
-  }));
+  // Group by employeeId+date to detect incomplete sessions
+  const sessionMap = new Map<string, { clockIns: Date[]; clockOuts: Date[] }>();
+  for (const raw of rawMarks) {
+    const dateStr = dayjs(raw.markedAt).tz(TIMEZONE).format("YYYY-MM-DD");
+    const key = `${raw.employeeId}:${dateStr}`;
+    const existing = sessionMap.get(key);
+    if (!existing) {
+      sessionMap.set(key, { clockIns: [], clockOuts: [] });
+    }
+    const session = sessionMap.get(key)!;
+    if (raw.type === "CLOCK_IN") session.clockIns.push(raw.markedAt);
+    else session.clockOuts.push(raw.markedAt);
+  }
+
+  // Compute which day-keys are incomplete + total worked minutes
+  const incompleteDayKeys = new Set<string>();
+  let incompleteDays = 0;
+  let totalWorkedMinutes = 0;
+
+  for (const [key, session] of sessionMap.entries()) {
+    const isIncomplete = session.clockIns.length === 0 || session.clockOuts.length === 0;
+    if (isIncomplete) {
+      incompleteDayKeys.add(key);
+      incompleteDays++;
+    } else {
+      const firstCI = session.clockIns.sort((a, b) => a.getTime() - b.getTime())[0]!;
+      const lastCO = session.clockOuts.sort((a, b) => b.getTime() - a.getTime())[0]!;
+      if (lastCO > firstCI) {
+        totalWorkedMinutes += Math.floor((lastCO.getTime() - firstCI.getTime()) / 60_000);
+      }
+    }
+  }
+
+  // Build result with isDayIncomplete flag
+  let allMarks = rawMarks.map((raw) => {
+    const dateStr = dayjs(raw.markedAt).tz(TIMEZONE).format("YYYY-MM-DD");
+    const key = `${raw.employeeId}:${dateStr}`;
+    return {
+      ...mapMark(raw),
+      employeeName: [raw.employee.person.names, raw.employee.person.fatherName]
+        .filter(Boolean)
+        .join(" "),
+      employeeRut: raw.employee.person.rut ?? undefined,
+      isDayIncomplete: incompleteDayKeys.has(key),
+    };
+  });
+
+  // Apply completionStatus filter
+  if (options.completionStatus === "complete") {
+    allMarks = allMarks.filter((m) => !m.isDayIncomplete);
+  } else if (options.completionStatus === "incomplete") {
+    allMarks = allMarks.filter((m) => m.isDayIncomplete);
+  }
+
+  return {
+    marks: allMarks,
+    summary: { totalMarks: allMarks.length, incompleteDays, totalWorkedMinutes },
+  };
 }
 
 /**

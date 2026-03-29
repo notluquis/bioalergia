@@ -35,9 +35,13 @@ function MarcarContent() {
   return (
     <div className="flex flex-col gap-6">
       <AttendanceStatusCard
+        clockedInAt={data.clockedInAt}
         currentStatus={currentStatus}
-        lastMark={lastMark}
+        hasIncompleteYesterday={data.hasIncompleteYesterday}
         isOfficeNetwork={isOfficeNetwork}
+        lastMark={lastMark}
+        monthStats={data.monthStats}
+        weekSummary={data.weekSummary}
       />
 
       <MarkButton currentStatus={currentStatus} onSuccess={handleMarkSuccess} />
@@ -59,7 +63,8 @@ export function MarcarPage() {
       <Suspense
         fallback={
           <div className="flex flex-col gap-4">
-            <Skeleton className="h-24 w-full rounded-2xl" />
+            <Skeleton className="h-36 w-full rounded-2xl" />
+            <Skeleton className="h-24 w-full rounded-xl" />
             <Skeleton className="h-12 w-full rounded-xl" />
           </div>
         }

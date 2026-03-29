@@ -30,6 +30,17 @@ function getGpsPosition(): Promise<GeolocationPosition | null> {
   });
 }
 
+/** Capture network connection type if available (Network Information API) */
+function getConnectionType(): string | undefined {
+  const nav = navigator as unknown as {
+    connection?: { type?: string; effectiveType?: string };
+    mozConnection?: { type?: string; effectiveType?: string };
+    webkitConnection?: { type?: string; effectiveType?: string };
+  };
+  const conn = nav.connection ?? nav.mozConnection ?? nav.webkitConnection;
+  return conn?.type ?? conn?.effectiveType ?? undefined;
+}
+
 export function MarkButton({ currentStatus, onSuccess }: MarkButtonProps) {
   const queryClient = useQueryClient();
   const [gpsError, setGpsError] = useState(false);
@@ -45,6 +56,7 @@ export function MarkButton({ currentStatus, onSuccess }: MarkButtonProps) {
 
       return attendanceORPCClient.mark({
         accuracyMeters: position?.coords.accuracy,
+        connectionType: getConnectionType(),
         latitude: position?.coords.latitude,
         longitude: position?.coords.longitude,
         type: markType,

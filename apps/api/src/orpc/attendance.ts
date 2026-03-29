@@ -107,6 +107,7 @@ const attendanceORPCRouterBase = {
           latitude: input.latitude,
           longitude: input.longitude,
           accuracyMeters: input.accuracyMeters,
+          connectionType: input.connectionType,
         },
         { ip, userAgent },
       );
@@ -143,12 +144,13 @@ const attendanceORPCRouterBase = {
     .input(attendanceListInputSchema)
     .output(attendanceListResponseSchema)
     .handler(async ({ input }) => {
-      const marks = await listMarks({
+      const { marks, summary } = await listMarks({
         employeeId: input.employeeId,
         from: input.from,
         to: input.to,
+        completionStatus: input.completionStatus,
       });
-      return { marks, status: "ok" as const };
+      return { marks, summary, status: "ok" as const };
     }),
 
   /**

@@ -9,7 +9,12 @@ export const attendanceQueries = {
       refetchInterval: 60_000, // re-fetch every minute
     }),
 
-  list: (params: { employeeId?: number; from?: string; to?: string }) =>
+  list: (params: {
+    employeeId?: number;
+    from?: string;
+    to?: string;
+    completionStatus?: "all" | "complete" | "incomplete";
+  }) =>
     queryOptions({
       queryKey: ["attendance", "list", params],
       queryFn: () => attendanceORPCClient.listMarks(params),

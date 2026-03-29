@@ -713,6 +713,11 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true
                 },
+                connectionType: {
+                    name: "connectionType",
+                    type: "String",
+                    optional: true
+                },
                 notes: {
                     name: "notes",
                     type: "String",
@@ -4577,6 +4582,87 @@ export class SchemaType implements SchemaDef {
                 period_rut_docType: { period: { type: "String" }, rut: { type: "String" }, docType: { type: "String" } }
             }
         },
+        DoctoraliaEmailNotification: {
+            name: "DoctoraliaEmailNotification",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                emailMessageId: {
+                    name: "emailMessageId",
+                    type: "String",
+                    unique: true
+                },
+                eventType: {
+                    name: "eventType",
+                    type: "DoctoraliaEmailEventType",
+                    default: "BOOKING" as FieldDefault
+                },
+                patientName: {
+                    name: "patientName",
+                    type: "String"
+                },
+                patientPhone: {
+                    name: "patientPhone",
+                    type: "String",
+                    optional: true
+                },
+                patientEmail: {
+                    name: "patientEmail",
+                    type: "String",
+                    optional: true
+                },
+                isFirstAppointment: {
+                    name: "isFirstAppointment",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                appointmentDate: {
+                    name: "appointmentDate",
+                    type: "DateTime",
+                    optional: true
+                },
+                previousAppointmentDate: {
+                    name: "previousAppointmentDate",
+                    type: "DateTime",
+                    optional: true
+                },
+                appointmentService: {
+                    name: "appointmentService",
+                    type: "String",
+                    optional: true
+                },
+                appointmentDoctor: {
+                    name: "appointmentDoctor",
+                    type: "String",
+                    optional: true
+                },
+                clinicAddress: {
+                    name: "clinicAddress",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" },
+                emailMessageId: { type: "String" }
+            }
+        },
         WhatsappNotification: {
             name: "WhatsappNotification",
             fields: {
@@ -6557,6 +6643,14 @@ export class SchemaType implements SchemaDef {
         }
     } as const;
     enums = {
+        DoctoraliaEmailEventType: {
+            name: "DoctoraliaEmailEventType",
+            values: {
+                BOOKING: "BOOKING",
+                MODIFICATION: "MODIFICATION",
+                CANCELLATION: "CANCELLATION"
+            }
+        },
         WhatsappNotificationStatus: {
             name: "WhatsappNotificationStatus",
             values: {

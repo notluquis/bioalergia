@@ -32,8 +32,18 @@ const TIMEZONE = "America/Santiago";
 type AttendanceMark = z.infer<typeof attendanceMarkSchema> & {
   employeeName?: string;
   employeeRut?: string;
+  isDayIncomplete: boolean;
 };
 type MarkType = z.infer<typeof attendanceMarkTypeSchema>;
+type CompletionFilter = "all" | "complete" | "incomplete";
+
+function formatMinutes(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return `${m}m`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}m`;
+}
 
 // ── Corrección manual modal ───────────────────────────────────────────────────
 
@@ -150,9 +160,10 @@ interface MarksTableProps {
   isDeletingId: number | null;
   marks: AttendanceMark[];
   onDelete: (id: number) => void;
+  summary: { totalMarks: number; incompleteDays: number; totalWorkedMinutes: number };
 }
 
-function MarksTable({ isDeletingId, marks, onDelete }: MarksTableProps) {
+function MarksTable({ isDeletingId, marks, onDelete, summary }: MarksTableProps) {
   if (marks.length === 0) {
     return (
       <Alert status="default">
@@ -165,79 +176,118 @@ function MarksTable({ isDeletingId, marks, onDelete }: MarksTableProps) {
   }
 
   return (
-    <Table>
-      <Table.ScrollContainer>
-        <Table.Content aria-label="Registros de asistencia">
-          <Table.Header>
-            <Table.Column isRowHeader>Empleado</Table.Column>
-            <Table.Column>Tipo</Table.Column>
-            <Table.Column>Hora (Santiago)</Table.Column>
-            <Table.Column>Red</Table.Column>
-            <Table.Column>GPS</Table.Column>
-            <Table.Column>Notas</Table.Column>
-            <Table.Column>{""}</Table.Column>
-          </Table.Header>
-          <Table.Body items={marks}>
-            {(mark) => (
-              <Table.Row id={String(mark.id)}>
-                <Table.Cell>
-                  <p className="font-medium">{mark.employeeName ?? `ID ${mark.employeeId}`}</p>
-                  {mark.employeeRut && (
-                    <p className="text-xs text-foreground-400">{mark.employeeRut}</p>
-                  )}
-                </Table.Cell>
-                <Table.Cell>
-                  <Chip
-                    color={mark.type === "CLOCK_IN" ? "success" : "danger"}
-                    size="sm"
-                    variant="soft"
-                  >
-                    {mark.type === "CLOCK_IN" ? "Entrada" : "Salida"}
-                  </Chip>
-                </Table.Cell>
-                <Table.Cell className="font-medium">
-                  {dayjs(mark.markedAt).tz(TIMEZONE).format("DD/MM/YYYY HH:mm")}
-                </Table.Cell>
-                <Table.Cell>
-                  <Chip
-                    color={mark.isOfficeNetwork ? "success" : "default"}
-                    size="sm"
-                    variant="secondary"
-                  >
-                    {mark.isOfficeNetwork ? "Oficina" : "Externa"}
-                  </Chip>
-                </Table.Cell>
-                <Table.Cell>
-                  {mark.latitude !== null && mark.longitude !== null ? (
-                    <a
-                      className="text-accent hover:underline"
-                      href={`https://www.google.com/maps?q=${mark.latitude},${mark.longitude}`}
-                      rel="noopener noreferrer"
-                      target="_blank"
-                      title={`Precisión: ${mark.accuracyMeters?.toFixed(0) ?? "?"}m`}
+    <div className="flex flex-col gap-3">
+      {/* Summary bar */}
+      <div className="flex flex-wrap items-center gap-4 rounded-xl border border-default-100 bg-default-50 px-4 py-3 text-sm">
+        <span className="text-foreground-500">
+          <span className="font-semibold text-foreground">{summary.totalMarks}</span> registros
+        </span>
+        {summary.incompleteDays > 0 && (
+          <span className="text-warning">
+            <span className="font-semibold">{summary.incompleteDays}</span> días incompletos
+          </span>
+        )}
+        {summary.totalWorkedMinutes > 0 && (
+          <span className="text-foreground-500">
+            Total:{" "}
+            <span className="font-semibold text-foreground">
+              {formatMinutes(summary.totalWorkedMinutes)}
+            </span>
+          </span>
+        )}
+      </div>
+
+      <Table>
+        <Table.ScrollContainer>
+          <Table.Content aria-label="Registros de asistencia">
+            <Table.Header>
+              <Table.Column isRowHeader>Empleado</Table.Column>
+              <Table.Column>Tipo</Table.Column>
+              <Table.Column>Hora (Santiago)</Table.Column>
+              <Table.Column>Red</Table.Column>
+              <Table.Column>Conexión</Table.Column>
+              <Table.Column>GPS</Table.Column>
+              <Table.Column>Notas</Table.Column>
+              <Table.Column>{""}</Table.Column>
+            </Table.Header>
+            <Table.Body items={marks}>
+              {(mark) => (
+                <Table.Row id={String(mark.id)}>
+                  <Table.Cell>
+                    <div className="flex flex-col gap-0.5">
+                      <p className="font-medium">{mark.employeeName ?? `ID ${mark.employeeId}`}</p>
+                      {mark.employeeRut && (
+                        <p className="text-xs text-foreground-400">{mark.employeeRut}</p>
+                      )}
+                      {mark.isDayIncomplete && (
+                        <Chip color="warning" size="sm" variant="soft">
+                          Día incompleto
+                        </Chip>
+                      )}
+                    </div>
+                  </Table.Cell>
+                  <Table.Cell>
+                    <Chip
+                      color={mark.type === "CLOCK_IN" ? "success" : "danger"}
+                      size="sm"
+                      variant="soft"
                     >
-                      Ver mapa
-                    </a>
-                  ) : (
-                    <span className="text-foreground-300">—</span>
-                  )}
-                </Table.Cell>
-                <Table.Cell className="text-foreground-500">{mark.notes ?? "—"}</Table.Cell>
-                <Table.Cell>
-                  <Button
-                    isDisabled={isDeletingId === mark.id}
-                    variant="danger-soft"
-                    onPress={() => onDelete(mark.id)}
-                  >
-                    {isDeletingId === mark.id ? "..." : "Eliminar"}
-                  </Button>
-                </Table.Cell>
-              </Table.Row>
-            )}
-          </Table.Body>
-        </Table.Content>
-      </Table.ScrollContainer>
-    </Table>
+                      {mark.type === "CLOCK_IN" ? "Entrada" : "Salida"}
+                    </Chip>
+                  </Table.Cell>
+                  <Table.Cell className="font-medium tabular-nums">
+                    {dayjs(mark.markedAt).tz(TIMEZONE).format("DD/MM/YYYY HH:mm")}
+                  </Table.Cell>
+                  <Table.Cell>
+                    <Chip
+                      color={mark.isOfficeNetwork ? "success" : "default"}
+                      size="sm"
+                      variant="secondary"
+                    >
+                      {mark.isOfficeNetwork ? "Oficina" : "Externa"}
+                    </Chip>
+                  </Table.Cell>
+                  <Table.Cell>
+                    {mark.connectionType ? (
+                      <Chip size="sm" variant="secondary">
+                        {mark.connectionType}
+                      </Chip>
+                    ) : (
+                      <span className="text-foreground-300">—</span>
+                    )}
+                  </Table.Cell>
+                  <Table.Cell>
+                    {mark.latitude !== null && mark.longitude !== null ? (
+                      <a
+                        className="text-accent hover:underline"
+                        href={`https://www.google.com/maps?q=${mark.latitude},${mark.longitude}`}
+                        rel="noopener noreferrer"
+                        target="_blank"
+                        title={`Precisión: ${mark.accuracyMeters?.toFixed(0) ?? "?"}m`}
+                      >
+                        Ver mapa
+                      </a>
+                    ) : (
+                      <span className="text-foreground-300">—</span>
+                    )}
+                  </Table.Cell>
+                  <Table.Cell className="text-foreground-500">{mark.notes ?? "—"}</Table.Cell>
+                  <Table.Cell>
+                    <Button
+                      isDisabled={isDeletingId === mark.id}
+                      variant="danger-soft"
+                      onPress={() => onDelete(mark.id)}
+                    >
+                      {isDeletingId === mark.id ? "..." : "Eliminar"}
+                    </Button>
+                  </Table.Cell>
+                </Table.Row>
+              )}
+            </Table.Body>
+          </Table.Content>
+        </Table.ScrollContainer>
+      </Table>
+    </div>
   );
 }
 
@@ -250,17 +300,20 @@ function AdminAttendanceContent() {
     dayjs().tz(TIMEZONE).startOf("month").format("YYYY-MM-DD")
   );
   const [toFilter, setToFilter] = useState(dayjs().tz(TIMEZONE).format("YYYY-MM-DD"));
+  const [completionFilter, setCompletionFilter] = useState<CompletionFilter>("all");
   const [showModal, setShowModal] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const params = {
+    completionStatus: completionFilter === "all" ? undefined : completionFilter,
     employeeId: employeeIdFilter ? Number(employeeIdFilter) : undefined,
     from: fromFilter || undefined,
     to: toFilter || undefined,
   };
 
   const { data, isLoading } = useQuery(attendanceQueries.list(params));
-  const marks = data?.marks ?? [];
+  const marks = (data?.marks ?? []) as AttendanceMark[];
+  const summary = data?.summary ?? { totalMarks: 0, incompleteDays: 0, totalWorkedMinutes: 0 };
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => attendanceORPCClient.deleteMark({ id }),
@@ -294,6 +347,27 @@ function AdminAttendanceContent() {
           <Input />
         </TextField>
 
+        <Select
+          className="w-44"
+          value={completionFilter}
+          onChange={(key) => {
+            if (key) setCompletionFilter(key as CompletionFilter);
+          }}
+        >
+          <Label>Estado</Label>
+          <Select.Trigger>
+            <Select.Value />
+            <Select.Indicator />
+          </Select.Trigger>
+          <Select.Popover>
+            <ListBox>
+              <ListBox.Item id="all">Todos</ListBox.Item>
+              <ListBox.Item id="complete">Completos</ListBox.Item>
+              <ListBox.Item id="incomplete">Incompletos</ListBox.Item>
+            </ListBox>
+          </Select.Popover>
+        </Select>
+
         <div className="ml-auto">
           <Button variant="primary" onPress={() => setShowModal(true)}>
             Corrección manual
@@ -312,6 +386,7 @@ function AdminAttendanceContent() {
           isDeletingId={deletingId}
           marks={marks}
           onDelete={(id) => deleteMutation.mutate(id)}
+          summary={summary}
         />
       )}
 
