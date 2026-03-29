@@ -52,7 +52,7 @@ export function MarkButton({ currentStatus, onSuccess }: MarkButtonProps) {
     },
     onSuccess: (data) => {
       onSuccess(data.mark);
-      queryClient.invalidateQueries({ queryKey: ["attendance", "status"] });
+      void queryClient.invalidateQueries({ queryKey: ["attendance", "status"] });
     },
     onError: (error) => {
       const apiError = toAttendanceApiError(error);

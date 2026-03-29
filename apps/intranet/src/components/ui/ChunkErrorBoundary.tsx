@@ -1,44 +1,22 @@
-import { Component, type ReactNode } from "react";
+import { type ReactNode } from "react";
+import { ErrorBoundary } from "react-error-boundary";
 
 import { signalAppFallback } from "@/lib/app-recovery";
 
 const CHUNK_ERROR_REGEX =
   /Failed to fetch dynamically imported module|Importing a module script failed/i;
 
-interface Props {
-  children: ReactNode;
+function handleChunkError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (CHUNK_ERROR_REGEX.test(message)) {
+    signalAppFallback("chunk");
+  }
 }
 
-interface State {
-  hasError: boolean;
-}
-
-/**
- * Error Boundary para capturar errores de carga de chunks (dynamic imports)
- * Patrón estándar en React 2025 para manejar code-splitting failures
- */
-export class ChunkErrorBoundary extends Component<Props, State> {
-  constructor(props: Props) {
-    super(props);
-    this.state = { hasError: false };
-  }
-
-  static getDerivedStateFromError(): State {
-    return { hasError: true };
-  }
-
-  override componentDidCatch(error: Error) {
-    // Detectar si es un error de chunk
-    if (CHUNK_ERROR_REGEX.test(error.message)) {
-      signalAppFallback("chunk");
-    }
-  }
-
-  override render(): React.ReactNode {
-    if (this.state.hasError) {
-      return null;
-    }
-
-    return this.props.children;
-  }
+export function ChunkErrorBoundary({ children }: { children: ReactNode }) {
+  return (
+    <ErrorBoundary fallback={null} onError={handleChunkError}>
+      {children}
+    </ErrorBoundary>
+  );
 }

@@ -46,7 +46,7 @@ function AdminMarkModal({ onClose }: AdminMarkModalProps) {
         notes: notes || undefined,
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["attendance", "list"] });
+      void queryClient.invalidateQueries({ queryKey: ["attendance", "list"] });
       onClose();
     },
     onError: (err) => {
@@ -236,7 +236,7 @@ function AdminAttendanceContent() {
     onMutate: (id) => setDeletingId(id),
     onSettled: () => setDeletingId(null),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["attendance", "list"] });
+      void queryClient.invalidateQueries({ queryKey: ["attendance", "list"] });
     },
   });
 
