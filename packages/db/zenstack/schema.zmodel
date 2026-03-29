@@ -1508,6 +1508,7 @@ model DoctoraliaEmailNotification {
 enum DoctoraliaEmailEventType {
   BOOKING
   MODIFICATION
+  CANCELLATION
 }
 
 // ============================================================

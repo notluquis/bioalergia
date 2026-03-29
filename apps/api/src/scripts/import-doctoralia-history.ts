@@ -212,7 +212,7 @@ interface ParsedBooking {
   messageId: string;
   account: string;
   subject: string;
-  eventType: "BOOKING" | "MODIFICATION";
+  eventType: "BOOKING" | "MODIFICATION" | "CANCELLATION";
   patientName: string;
   patientPhone: string | null;
   patientEmail: string | null;

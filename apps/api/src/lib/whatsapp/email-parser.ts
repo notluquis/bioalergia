@@ -10,7 +10,7 @@
  *  - Old (2025):  charset=iso-8859-1, sender @doctoralia.com, 24h time or range
  */
 
-export type DoctoraliaEmailEventType = "BOOKING" | "MODIFICATION";
+export type DoctoraliaEmailEventType = "BOOKING" | "MODIFICATION" | "CANCELLATION";
 
 export interface DoctoraliaBookingInfo {
   eventType: DoctoraliaEmailEventType;
@@ -115,7 +115,12 @@ export function parseDoctoraliaEmail(text: string): DoctoraliaBookingInfo | null
 
   // --- Email type ---
   const isModification = lines.some((l) => /ha modificado la cita/i.test(l));
-  const eventType: DoctoraliaEmailEventType = isModification ? "MODIFICATION" : "BOOKING";
+  const isCancellation = !isModification && lines.some((l) => /cancel\w*\s+la\s+cita/i.test(l));
+  const eventType: DoctoraliaEmailEventType = isModification
+    ? "MODIFICATION"
+    : isCancellation
+      ? "CANCELLATION"
+      : "BOOKING";
 
   // --- Patient ---
   const patientLinePattern = /^(.+?)\s*\(\s*([^)]+)\s*\)\s*$/;
@@ -163,15 +168,14 @@ export function parseDoctoraliaEmail(text: string): DoctoraliaBookingInfo | null
   let appointmentDate: Date | null = null;
   let previousAppointmentDate: Date | null = null;
 
-  if (!isModification) {
+  if (!isModification && !isCancellation) {
     // BOOKING: look for "Fecha y hora" label, then take the next line(s)
     const dateIdx = lines.findIndex((l) => /^fecha\s+y\s+hora$/i.test(l));
     if (dateIdx !== -1) {
       [appointmentDate] = findDateAt(lines, dateIdx + 1);
     }
-  } else {
+  } else if (isModification) {
     // MODIFICATION: two date blocks appear in sequence — new date first, old date second.
-    // Scan all lines for date patterns.
     const datePairs: Date[] = [];
     let i = 0;
     while (i < lines.length && datePairs.length < 2) {
@@ -188,12 +192,27 @@ export function parseDoctoraliaEmail(text: string): DoctoraliaBookingInfo | null
     }
     appointmentDate = datePairs[0] ?? null;
     previousAppointmentDate = datePairs[1] ?? null;
+  } else {
+    // CANCELLATION: single date (the cancelled appointment)
+    let i = 0;
+    while (i < lines.length) {
+      const line = lines[i];
+      if (line && /\d{1,2}\s+de\s+\w+\s+de\s+\d{4}/.test(line)) {
+        const [d, nextI] = findDateAt(lines, i);
+        if (d) {
+          appointmentDate = d;
+          i = nextI;
+          break;
+        }
+      }
+      i++;
+    }
   }
 
   // --- Service ---
   let appointmentService: string | null = null;
 
-  if (!isModification) {
+  if (!isModification && !isCancellation) {
     // BOOKING: line after "Servicio" label
     const serviceIdx = lines.findIndex((l) => /^servicio$/i.test(l));
     if (serviceIdx !== -1) appointmentService = lines[serviceIdx + 1] ?? null;
@@ -213,12 +232,12 @@ export function parseDoctoraliaEmail(text: string): DoctoraliaBookingInfo | null
   // --- Doctor ---
   let appointmentDoctor: string | null = null;
 
-  if (!isModification) {
+  if (!isModification && !isCancellation) {
     // BOOKING: line after "Profesional" label
     const profIdx = lines.findIndex((l) => /^profesional$/i.test(l));
     if (profIdx !== -1) appointmentDoctor = lines[profIdx + 1] ?? null;
   } else {
-    // MODIFICATION: doctor appears directly after service (no label)
+    // MODIFICATION / CANCELLATION: doctor appears directly after service (no label)
     const serviceLineIdx = lines.findIndex((l) => /\(\d+\s*min\)/i.test(l));
     if (serviceLineIdx !== -1) {
       const candidate = lines[serviceLineIdx + 1];
@@ -232,12 +251,12 @@ export function parseDoctoraliaEmail(text: string): DoctoraliaBookingInfo | null
   // --- Clinic address ---
   let clinicAddress: string | null = null;
 
-  if (!isModification) {
+  if (!isModification && !isCancellation) {
     // BOOKING: line after "Dirección" label
     const dirIdx = lines.findIndex((l) => /^direcci[oó]n$/i.test(l));
     if (dirIdx !== -1) clinicAddress = lines[dirIdx + 1] ?? null;
   } else {
-    // MODIFICATION: clinic appears after doctor (two lines after service)
+    // MODIFICATION / CANCELLATION: clinic appears after doctor (two lines after service)
     const serviceLineIdx = lines.findIndex((l) => /\(\d+\s*min\)/i.test(l));
     if (serviceLineIdx !== -1 && appointmentDoctor) {
       clinicAddress = lines[serviceLineIdx + 2] ?? null;
@@ -276,6 +295,7 @@ export function htmlToText(html: string): string {
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
+    .replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(parseInt(code, 10)))
     // Normalize Unicode whitespace variants to regular space
     .replace(/[\u00A0\u202F\u2009\u200A\u2002\u2003]/g, " ")
     .replace(/[ \t]+/g, " ")
