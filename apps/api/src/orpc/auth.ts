@@ -731,23 +731,28 @@ const authORPCRouterBase = {
         authError("UNAUTHORIZED", "Credencial no encontrada");
       }
 
-      const verification = await import("@simplewebauthn/server").then(
-        ({ verifyAuthenticationResponse }) =>
-          verifyAuthenticationResponse({
-            credential: {
-              counter: Number(passkey.counter),
-              id: passkey.credentialId,
-              publicKey: new Uint8Array(passkey.publicKey),
-              transports:
-                (passkey.transports as AuthenticatorTransportFuture[] | null) || undefined,
-            },
-            expectedChallenge: input.challenge,
-            expectedOrigin: ORIGIN,
-            expectedRPID: RP_ID,
-            requireUserVerification: false,
-            response: responseBody,
-          }),
-      );
+      let verification: Awaited<ReturnType<typeof import("@simplewebauthn/server").verifyAuthenticationResponse>>;
+      try {
+        verification = await import("@simplewebauthn/server").then(
+          ({ verifyAuthenticationResponse }) =>
+            verifyAuthenticationResponse({
+              credential: {
+                counter: Number(passkey.counter),
+                id: passkey.credentialId,
+                publicKey: new Uint8Array(passkey.publicKey),
+                transports:
+                  (passkey.transports as AuthenticatorTransportFuture[] | null) || undefined,
+              },
+              expectedChallenge: input.challenge,
+              expectedOrigin: ORIGIN,
+              expectedRPID: RP_ID,
+              requireUserVerification: false,
+              response: responseBody,
+            }),
+        );
+      } catch (err) {
+        authError("UNAUTHORIZED", err instanceof Error ? err.message : "Verificación fallida");
+      }
 
       if (!verification.verified) {
         authError("UNAUTHORIZED", "Verificación fallida");
