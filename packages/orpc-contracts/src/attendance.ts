@@ -14,6 +14,7 @@ export const attendanceMarkSchema = z.object({
   ipAddress: z.string().nullable(),
   isOfficeNetwork: z.boolean(),
   userAgent: z.string().nullable(),
+  connectionType: z.string().nullable(),
   notes: z.string().nullable(),
   createdByUserId: z.number().nullable(),
 });
@@ -21,6 +22,7 @@ export const attendanceMarkSchema = z.object({
 export const attendanceMarkWithEmployeeSchema = attendanceMarkSchema.extend({
   employeeName: z.string().optional(),
   employeeRut: z.string().optional(),
+  isDayIncomplete: z.boolean(),
 });
 
 // POST /attendance/mark — empleado marca entrada o salida
@@ -29,6 +31,7 @@ export const attendanceMarkInputSchema = z.object({
   latitude: z.number().optional(),
   longitude: z.number().optional(),
   accuracyMeters: z.number().optional(),
+  connectionType: z.string().optional(), // navigator.connection?.type ?? effectiveType
 });
 
 export const attendanceMarkResponseSchema = z.object({
@@ -37,11 +40,25 @@ export const attendanceMarkResponseSchema = z.object({
   status: z.literal("ok"),
 });
 
-// GET /attendance/status — estado del empleado autenticado hoy
+// GET /attendance/status — estado del empleado autenticado
+export const weekDaySummarySchema = z.object({
+  date: z.string(), // YYYY-MM-DD
+  isWeekend: z.boolean(),
+  status: z.enum(["worked", "incomplete", "absent", "today"]),
+  workedMinutes: z.number().nullable(),
+});
+
 export const attendanceStatusResponseSchema = z.object({
   currentStatus: z.enum(["CLOCKED_IN", "CLOCKED_OUT", "NO_MARKS_TODAY"]),
   lastMark: attendanceMarkSchema.nullable(),
   todayMarks: z.array(attendanceMarkSchema),
+  clockedInAt: z.coerce.date().nullable(), // primer CLOCK_IN hoy (para timer en vivo)
+  hasIncompleteYesterday: z.boolean(),
+  weekSummary: z.array(weekDaySummarySchema),
+  monthStats: z.object({
+    daysWorked: z.number(),
+    totalMinutes: z.number(),
+  }),
   status: z.literal("ok"),
 });
 
@@ -56,10 +73,18 @@ export const attendanceListInputSchema = z.object({
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/)
     .optional(),
+  completionStatus: z.enum(["all", "complete", "incomplete"]).optional(),
+});
+
+export const attendanceListSummarySchema = z.object({
+  totalMarks: z.number(),
+  incompleteDays: z.number(),
+  totalWorkedMinutes: z.number(),
 });
 
 export const attendanceListResponseSchema = z.object({
   marks: z.array(attendanceMarkWithEmployeeSchema),
+  summary: attendanceListSummarySchema,
   status: z.literal("ok"),
 });
 
@@ -96,7 +121,7 @@ export const officeNetworksResponseSchema = z.object({
 // POST /attendance/office-networks
 export const officeNetworkCreateInputSchema = z.object({
   name: z.string().min(1),
-  cidr: z.string().min(7), // at minimum "x.x.x.x"
+  cidr: z.string().min(7),
 });
 
 // PUT /attendance/office-networks/{id}
