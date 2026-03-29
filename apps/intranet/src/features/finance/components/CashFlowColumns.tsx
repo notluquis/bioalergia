@@ -340,10 +340,11 @@ export const columns: ColumnDef<CashFlowTransaction>[] = [
     cell: ({ row, table }) => {
       const meta = table.options.meta;
       const cat = row.original.category;
-      const categories =
-        meta?.transactionCategories?.filter(
-          (category) => category.type == null || category.type === row.original.type
-        ) ?? [];
+      const allCategories = meta?.transactionCategories ?? [];
+      const typeFilteredCategories = allCategories.filter(
+        (category) => category.type == null || category.type === row.original.type
+      );
+      const categories = typeFilteredCategories.length > 0 ? typeFilteredCategories : allCategories;
       const isUpdating = meta?.updatingCategoryIds?.has(row.original.id) ?? false;
       const selectedValue =
         row.original.categoryId == null ? "__none__" : String(row.original.categoryId);
