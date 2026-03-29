@@ -1,6 +1,7 @@
 {
-  "$schema": "https://turbo.build/schema.json",
-  "globalEnv": ["NODE_ENV"],
+  "$schema": "https://turborepo.dev/schema.json",
+  "globalEnv": ["NODE_ENV", "CI"],
+  "ui": "tui",
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
@@ -14,11 +15,18 @@
       "cache": false,
       "persistent": true
     },
-    "lint": {},
-    "type-check": {
-      "dependsOn": ["^build"]
+    "lint": {
+      "outputs": []
     },
-    "format": {},
-    "check": {}
+    "type-check": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "format": {
+      "outputs": []
+    },
+    "check": {
+      "outputs": []
+    }
   }
 }
