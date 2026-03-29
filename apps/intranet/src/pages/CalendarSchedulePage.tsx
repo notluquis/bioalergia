@@ -13,7 +13,9 @@ import type { CalendarEventDetail, CalendarSearchParams } from "@/features/calen
 import {
   fetchDoctoraliaCalendarAppointments,
   fetchDoctoraliaCalendarAuthStatus,
+  fetchDoctoraliaEmailCalendar,
 } from "@/features/doctoralia/api";
+import type { DoctoraliaEmailNotification } from "@/features/doctoralia/types";
 import { useCan } from "@/hooks/use-can";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { numberFormatter } from "@/lib/format";
@@ -25,7 +27,7 @@ dayjs.extend(isoWeek);
 dayjs.locale("es");
 
 const DATE_FORMAT = "YYYY-MM-DD";
-type CalendarSource = "doctoralia" | "google";
+type CalendarSource = "doctoralia" | "doctoralia-email" | "google";
 const DOCTORALIA_STANDBY = true;
 
 function toCalendarEventDetail(
@@ -57,6 +59,45 @@ function toCalendarEventDetail(
     transparency: null,
     visibility: null,
   }));
+}
+
+function toEmailCalendarEventDetail(
+  notifications: DoctoraliaEmailNotification[]
+): CalendarEventDetail[] {
+  return notifications.map((n) => {
+    const dateStr = n.appointmentDate
+      ? (n.appointmentDate.toISOString().split("T")[0] ?? null)
+      : null;
+    const dateIso = n.appointmentDate ? n.appointmentDate.toISOString() : null;
+    const descParts = [n.appointmentService, n.appointmentDoctor].filter(Boolean);
+    return {
+      calendarId: "doctoralia-email",
+      category: null,
+      colorId: n.eventType === "CANCELLATION" ? "11" : n.eventType === "MODIFICATION" ? "5" : null,
+      controlIncluded: null,
+      description: descParts.length ? descParts.join(" · ") : null,
+      endDate: null,
+      endDateTime: null,
+      endTimeZone: null,
+      eventCreatedAt: null,
+      eventDate: dateStr ?? "",
+      eventDateTime: dateIso,
+      eventId: n.id,
+      eventType: "doctoralia-email",
+      eventUpdatedAt: null,
+      hangoutLink: null,
+      location: n.clinicAddress,
+      patientName: n.patientName,
+      rawEvent: n,
+      startDate: dateStr,
+      startDateTime: dateIso,
+      startTimeZone: null,
+      status: n.eventType,
+      summary: `${n.patientName}${n.appointmentService ? ` — ${n.appointmentService}` : ""}`,
+      transparency: null,
+      visibility: null,
+    };
+  });
 }
 
 async function waitForDoctoraliaOAuthPopup(popup: Window, origin: string): Promise<void> {
@@ -239,6 +280,9 @@ function CalendarSourceSelector({
           <ListBox.Item id="doctoralia" textValue="Doctoralia Calendar">
             Doctoralia Calendar
           </ListBox.Item>
+          <ListBox.Item id="doctoralia-email" textValue="Doctoralia Email">
+            Doctoralia Email
+          </ListBox.Item>
         </ListBox>
       </Select.Popover>
     </Select>
@@ -316,9 +360,10 @@ function CalendarSchedulePage() {
   const { can } = useCan();
   const navigate = routeApi.useNavigate();
   const search = routeApi.useSearch();
-  const source: CalendarSource = search.source ?? "google";
+  const source: CalendarSource = (search.source as CalendarSource) ?? "google";
   const isGoogleSource = source === "google";
   const isDoctoraliaSource = source === "doctoralia";
+  const isEmailSource = source === "doctoralia-email";
   const canConnectDoctoralia = can("update", "DoctoraliaFacility");
 
   const { isOpen: filtersOpen, set: setFiltersOpen } = useDisclosure(false);
@@ -339,6 +384,19 @@ function CalendarSchedulePage() {
       return toCalendarEventDetail(appointments);
     },
     queryKey: ["doctoralia", "calendar", "appointments", search.from, search.to],
+  });
+
+  const { data: emailEvents = [], isLoading: emailLoading } = useQuery({
+    enabled: isEmailSource && Boolean(search.from) && Boolean(search.to),
+    queryFn: async () => {
+      if (!search.from || !search.to) return [];
+      const notifications = await fetchDoctoraliaEmailCalendar({
+        from: search.from,
+        to: search.to,
+      });
+      return toEmailCalendarEventDetail(notifications);
+    },
+    queryKey: ["doctoralia", "email-calendar", search.from, search.to],
   });
 
   const { onConnectDoctoralia } = useDoctoraliaCalendarAuth({
@@ -376,16 +434,19 @@ function CalendarSchedulePage() {
   // No need to re-filter on the client.
   const displayedWeekEvents = isGoogleSource
     ? (daily?.days.flatMap((day) => day.events) ?? [])
-    : doctoraliaEvents;
+    : isEmailSource
+      ? emailEvents
+      : doctoraliaEvents;
 
   const onSourceChange = useCallback(
     (nextSourceKey: string) => {
-      const nextSource = nextSourceKey === "doctoralia" ? "doctoralia" : "google";
+      const nextSource = nextSourceKey as CalendarSource;
+      const isNonGoogle = nextSource !== "google";
       void navigate({
         search: (prev) => ({
           ...prev,
-          source: nextSource === "google" ? undefined : "doctoralia",
-          ...(nextSource === "doctoralia"
+          source: nextSource === "google" ? undefined : nextSource,
+          ...(isNonGoogle
             ? {
                 calendarId: undefined,
                 category: undefined,
@@ -423,7 +484,11 @@ function CalendarSchedulePage() {
   }, [defaults, navigate]);
 
   const totalEvents = isGoogleSource ? (summary?.totals.events ?? 0) : displayedWeekEvents.length;
-  const calendarLoading = isGoogleSource ? loading : doctoraliaLoading;
+  const calendarLoading = isGoogleSource
+    ? loading
+    : isEmailSource
+      ? emailLoading
+      : doctoraliaLoading;
   const onFilterChange = useCallback((key: string, value: unknown) => {
     setDraftFilters((prev) => ({ ...prev, [key]: value }));
   }, []);

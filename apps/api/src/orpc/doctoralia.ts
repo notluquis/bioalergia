@@ -79,6 +79,43 @@ const calendarAppointmentsQuerySchema = z.object({
   to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
 });
 
+const emailNotificationsCalendarQuerySchema = z.object({
+  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+});
+
+const emailNotificationsCalendarResponseSchema = z.object({
+  data: z.object({
+    count: z.number(),
+    notifications: z.array(z.unknown()),
+  }),
+  status: z.literal("ok"),
+});
+
+const emailNotificationsPatientsQuerySchema = z.object({
+  search: z.string().optional(),
+});
+
+const emailNotificationsPatientsResponseSchema = z.object({
+  data: z.object({
+    patients: z.array(z.unknown()),
+    total: z.number(),
+  }),
+  status: z.literal("ok"),
+});
+
+const emailNotificationsPatientHistoryQuerySchema = z.object({
+  patientName: z.string(),
+  patientPhone: z.string().nullable().optional(),
+});
+
+const emailNotificationsPatientHistoryResponseSchema = z.object({
+  data: z.object({
+    notifications: z.array(z.unknown()),
+  }),
+  status: z.literal("ok"),
+});
+
 const syncInputSchema = z.object({});
 
 const statusResponseSchema = z.object({
@@ -457,6 +494,116 @@ const doctoraliaORPCRouterBase = {
       })),
       status: "ok",
     })),
+
+  emailNotificationsCalendar: authed
+    .route({ method: "GET", path: "/email-notifications/calendar" })
+    .input(emailNotificationsCalendarQuerySchema)
+    .output(emailNotificationsCalendarResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof emailNotificationsCalendarQuerySchema> }) => {
+      const fromDate = new Date(`${input.from}T00:00:00.000Z`);
+      const toDate = new Date(`${input.to}T23:59:59.999Z`);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const notifications = await (db.$qb as any)
+        .selectFrom("DoctoraliaEmailNotification")
+        .selectAll()
+        .where("appointmentDate", ">=", fromDate)
+        .where("appointmentDate", "<=", toDate)
+        .orderBy("appointmentDate", "asc")
+        .execute();
+
+      return {
+        data: { count: notifications.length, notifications },
+        status: "ok",
+      };
+    }),
+
+  emailNotificationsPatients: authed
+    .route({ method: "GET", path: "/email-notifications/patients" })
+    .input(emailNotificationsPatientsQuerySchema)
+    .output(emailNotificationsPatientsResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof emailNotificationsPatientsQuerySchema> }) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let query = (db.$qb as any)
+        .selectFrom("DoctoraliaEmailNotification")
+        .select(["id", "patientName", "patientPhone", "patientEmail", "appointmentDate"]);
+
+      if (input.search) {
+        query = query.where("patientName", "ilike", `%${input.search}%`);
+      }
+
+      const rows = await query.orderBy("appointmentDate", "desc").execute() as Array<{
+        id: string;
+        patientName: string;
+        patientPhone: string | null;
+        patientEmail: string | null;
+        appointmentDate: string | null;
+      }>;
+
+      // Group by patient identity (name + phone) in JS
+      const patientMap = new Map<string, {
+        patientName: string;
+        patientPhone: string | null;
+        patientEmail: string | null;
+        totalBookings: number;
+        lastAppointmentDate: Date | null;
+      }>();
+
+      for (const row of rows) {
+        const key = `${row.patientName}|||${row.patientPhone ?? ""}`;
+        const apptDate = row.appointmentDate ? new Date(row.appointmentDate) : null;
+        const existing = patientMap.get(key);
+
+        if (!existing) {
+          patientMap.set(key, {
+            patientName: row.patientName,
+            patientPhone: row.patientPhone,
+            patientEmail: row.patientEmail,
+            totalBookings: 1,
+            lastAppointmentDate: apptDate,
+          });
+        } else {
+          existing.totalBookings++;
+          if (apptDate && (!existing.lastAppointmentDate || apptDate > existing.lastAppointmentDate)) {
+            existing.lastAppointmentDate = apptDate;
+          }
+        }
+      }
+
+      const patients = Array.from(patientMap.values()).sort((a, b) => {
+        if (!a.lastAppointmentDate) return 1;
+        if (!b.lastAppointmentDate) return -1;
+        return b.lastAppointmentDate.getTime() - a.lastAppointmentDate.getTime();
+      });
+
+      return {
+        data: { patients, total: patients.length },
+        status: "ok",
+      };
+    }),
+
+  emailNotificationsPatientHistory: authed
+    .route({ method: "GET", path: "/email-notifications/patients/history" })
+    .input(emailNotificationsPatientHistoryQuerySchema)
+    .output(emailNotificationsPatientHistoryResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof emailNotificationsPatientHistoryQuerySchema> }) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let query = (db.$qb as any)
+        .selectFrom("DoctoraliaEmailNotification")
+        .selectAll()
+        .where("patientName", "=", input.patientName);
+
+      if (input.patientPhone) {
+        query = query.where("patientPhone", "=", input.patientPhone);
+      }
+
+      const notifications = await query.orderBy("appointmentDate", "desc").execute();
+
+      return {
+        data: { notifications },
+        status: "ok",
+      };
+    }),
 };
 
 export const doctoraliaORPCRouter = base

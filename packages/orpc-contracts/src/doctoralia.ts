@@ -183,6 +183,66 @@ export const syncResponseSchema = z.object({
   status: z.literal("accepted"),
 });
 
+export const emailNotificationsCalendarQuerySchema = z.object({
+  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+});
+
+export const emailNotificationSchema = z.strictObject({
+  appointmentDate: z.coerce.date().nullable(),
+  appointmentDoctor: z.string().nullable(),
+  appointmentService: z.string().nullable(),
+  clinicAddress: z.string().nullable(),
+  emailMessageId: z.string(),
+  eventType: z.enum(["BOOKING", "MODIFICATION", "CANCELLATION"]),
+  id: z.string(),
+  isFirstAppointment: z.boolean(),
+  patientEmail: z.string().nullable(),
+  patientName: z.string(),
+  patientPhone: z.string().nullable(),
+  previousAppointmentDate: z.coerce.date().nullable(),
+});
+
+export const emailNotificationsCalendarResponseSchema = z.object({
+  data: z.object({
+    count: z.number(),
+    notifications: z.array(emailNotificationSchema),
+  }),
+  status: z.literal("ok"),
+});
+
+export const emailNotificationsPatientsQuerySchema = z.object({
+  search: z.string().optional(),
+});
+
+export const emailPatientSchema = z.strictObject({
+  lastAppointmentDate: z.coerce.date().nullable(),
+  patientEmail: z.string().nullable(),
+  patientName: z.string(),
+  patientPhone: z.string().nullable(),
+  totalBookings: z.number(),
+});
+
+export const emailNotificationsPatientsResponseSchema = z.object({
+  data: z.object({
+    patients: z.array(emailPatientSchema),
+    total: z.number(),
+  }),
+  status: z.literal("ok"),
+});
+
+export const emailNotificationsPatientHistoryQuerySchema = z.object({
+  patientName: z.string(),
+  patientPhone: z.string().nullable().optional(),
+});
+
+export const emailNotificationsPatientHistoryResponseSchema = z.object({
+  data: z.object({
+    notifications: z.array(emailNotificationSchema),
+  }),
+  status: z.literal("ok"),
+});
+
 export const calendarAuthStatusSchema = z.object({
   data: z.object({
     connected: z.boolean(),
@@ -238,6 +298,18 @@ export const doctoraliaContract = {
   facilities: oc.route({ method: "GET", path: "/facilities" }).output(facilitiesResponseSchema),
   bookings: oc.route({ method: "GET", path: "/bookings" }).input(slotsAndBookingsQuerySchema).output(bookingsResponseSchema),
   slots: oc.route({ method: "GET", path: "/slots" }).input(slotsAndBookingsQuerySchema).output(slotsResponseSchema),
+  emailNotificationsCalendar: oc
+    .route({ method: "GET", path: "/email-notifications/calendar" })
+    .input(emailNotificationsCalendarQuerySchema)
+    .output(emailNotificationsCalendarResponseSchema),
+  emailNotificationsPatients: oc
+    .route({ method: "GET", path: "/email-notifications/patients" })
+    .input(emailNotificationsPatientsQuerySchema)
+    .output(emailNotificationsPatientsResponseSchema),
+  emailNotificationsPatientHistory: oc
+    .route({ method: "GET", path: "/email-notifications/patients/history" })
+    .input(emailNotificationsPatientHistoryQuerySchema)
+    .output(emailNotificationsPatientHistoryResponseSchema),
   status: oc.route({ method: "GET", path: "/status" }).output(statusResponseSchema),
   sync: oc.route({ method: "POST", path: "/sync" }).input(syncInputSchema).output(syncResponseSchema),
   syncLogs: oc.route({ method: "GET", path: "/sync/logs" }).output(syncLogsResponseSchema),

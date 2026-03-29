@@ -246,6 +246,7 @@ model AttendanceMark {
   ipAddress       String?            @map("ip_address") @db.VarChar(45)
   isOfficeNetwork Boolean            @default(false) @map("is_office_network")
   userAgent       String?            @map("user_agent") @db.VarChar(512)
+  connectionType  String?            @map("connection_type") @db.VarChar(50)
   notes           String?
   createdByUserId Int?               @map("created_by_user_id")
   employee        Employee           @relation(fields: [employeeId], references: [id], onDelete: Cascade)

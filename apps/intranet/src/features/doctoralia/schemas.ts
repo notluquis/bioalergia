@@ -61,7 +61,7 @@ export const DoctoraliaSlotSchema = z.strictObject({
       z.strictObject({
         id: z.string(),
         name: z.string(),
-      }),
+      })
     )
     .optional(),
   start: z.coerce.date(),
@@ -159,6 +159,52 @@ export const BookingResponseSchema = z.strictObject({
 });
 
 export const StatusOkSchema = z.strictObject({ status: z.literal("ok") });
+
+export const DoctoraliaEmailNotificationSchema = z.strictObject({
+  appointmentDate: z.coerce.date().nullable(),
+  appointmentDoctor: z.string().nullable(),
+  appointmentService: z.string().nullable(),
+  clinicAddress: z.string().nullable(),
+  emailMessageId: z.string(),
+  eventType: z.enum(["BOOKING", "MODIFICATION", "CANCELLATION"]),
+  id: z.string(),
+  isFirstAppointment: z.boolean(),
+  patientEmail: z.string().nullable(),
+  patientName: z.string(),
+  patientPhone: z.string().nullable(),
+  previousAppointmentDate: z.coerce.date().nullable(),
+});
+
+export const DoctoraliaEmailNotificationsCalendarResponseSchema = z.strictObject({
+  data: z.strictObject({
+    count: z.number(),
+    notifications: z.array(DoctoraliaEmailNotificationSchema),
+  }),
+  status: z.literal("ok"),
+});
+
+export const DoctoraliaEmailPatientSchema = z.strictObject({
+  lastAppointmentDate: z.coerce.date().nullable(),
+  patientEmail: z.string().nullable(),
+  patientName: z.string(),
+  patientPhone: z.string().nullable(),
+  totalBookings: z.number(),
+});
+
+export const DoctoraliaEmailPatientsResponseSchema = z.strictObject({
+  data: z.strictObject({
+    patients: z.array(DoctoraliaEmailPatientSchema),
+    total: z.number(),
+  }),
+  status: z.literal("ok"),
+});
+
+export const DoctoraliaEmailPatientHistoryResponseSchema = z.strictObject({
+  data: z.strictObject({
+    notifications: z.array(DoctoraliaEmailNotificationSchema),
+  }),
+  status: z.literal("ok"),
+});
 
 export const DoctoraliaCalendarAuthStartResponseSchema = z.strictObject({
   data: z.strictObject({

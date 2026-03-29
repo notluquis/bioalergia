@@ -210,3 +210,26 @@ export interface DoctoraliaCalendarAuthStatusResponse {
   };
   status: "ok";
 }
+
+export interface DoctoraliaEmailNotification {
+  appointmentDate: Date | null;
+  appointmentDoctor: string | null;
+  appointmentService: string | null;
+  clinicAddress: string | null;
+  emailMessageId: string;
+  eventType: "BOOKING" | "CANCELLATION" | "MODIFICATION";
+  id: string;
+  isFirstAppointment: boolean;
+  patientEmail: string | null;
+  patientName: string;
+  patientPhone: string | null;
+  previousAppointmentDate: Date | null;
+}
+
+export interface DoctoraliaEmailPatient {
+  lastAppointmentDate: Date | null;
+  patientEmail: string | null;
+  patientName: string;
+  patientPhone: string | null;
+  totalBookings: number;
+}

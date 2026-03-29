@@ -13,6 +13,9 @@ import {
   DoctoraliaCalendarAuthStartResponseSchema,
   DoctoraliaCalendarAuthStatusResponseSchema,
   DoctoraliaDoctorsResponseSchema,
+  DoctoraliaEmailNotificationsCalendarResponseSchema,
+  DoctoraliaEmailPatientHistoryResponseSchema,
+  DoctoraliaEmailPatientsResponseSchema,
   DoctoraliaFacilitiesResponseSchema,
   DoctoraliaSlotsResponseSchema,
   DoctoraliaStatusResponseSchema,
@@ -32,6 +35,8 @@ import type {
   DoctoraliaCalendarAuthStatusResponse,
   DoctoraliaDoctor,
   DoctoraliaDoctorsResponse,
+  DoctoraliaEmailNotification,
+  DoctoraliaEmailPatient,
   DoctoraliaFacilitiesResponse,
   DoctoraliaFacility,
   DoctoraliaSlot,
@@ -47,7 +52,7 @@ export async function bookDoctoraliaSlot(
   doctorId: string,
   addressId: string,
   slotStart: string,
-  payload: BookSlotPayload,
+  payload: BookSlotPayload
 ): Promise<DoctoraliaBooking> {
   let response: { booking: DoctoraliaBooking; status: "ok" };
   try {
@@ -58,7 +63,7 @@ export async function bookDoctoraliaSlot(
         addressId,
         slotStart,
         body: payload,
-      }),
+      })
     );
   } catch (error) {
     throw toDoctoraliaApiError(error);
@@ -76,7 +81,7 @@ export async function cancelDoctoraliaBooking(
   doctorId: string,
   addressId: string,
   bookingId: string,
-  reason?: string,
+  reason?: string
 ): Promise<void> {
   try {
     StatusOkSchema.parse(
@@ -86,7 +91,7 @@ export async function cancelDoctoraliaBooking(
         addressId,
         bookingId,
         reason,
-      }),
+      })
     );
   } catch (error) {
     throw toDoctoraliaApiError(error);
@@ -107,7 +112,7 @@ export async function fetchDoctoraliaBookings(query: DoctoraliaBookingQuery): Pr
         end,
         facilityId,
         start,
-      }),
+      })
     );
   } catch (error) {
     throw toDoctoraliaApiError(error);
@@ -127,7 +132,7 @@ export async function fetchDoctoraliaDoctors(facilityId: number): Promise<Doctor
   let response: DoctoraliaDoctorsResponse;
   try {
     response = DoctoraliaDoctorsResponseSchema.parse(
-      await doctoraliaORPCClient.doctors({ facilityId }),
+      await doctoraliaORPCClient.doctors({ facilityId })
     );
   } catch (error) {
     throw toDoctoraliaApiError(error);
@@ -166,7 +171,7 @@ export async function fetchDoctoraliaSlots(query: DoctoraliaSlotQuery): Promise<
         end,
         facilityId,
         start,
-      }),
+      })
     );
   } catch (error) {
     throw toDoctoraliaApiError(error);
@@ -201,7 +206,7 @@ export async function fetchDoctoraliaStatus(): Promise<{
 }
 
 export async function fetchDoctoraliaCalendarAppointments(
-  query: DoctoraliaCalendarAppointmentsQuery,
+  query: DoctoraliaCalendarAppointmentsQuery
 ): Promise<DoctoraliaCalendarAppointment[]> {
   let response: DoctoraliaCalendarAppointmentsResponse;
   try {
@@ -210,7 +215,7 @@ export async function fetchDoctoraliaCalendarAppointments(
         from: query.from,
         to: query.to,
         scheduleIds: query.scheduleIds?.length ? query.scheduleIds : undefined,
-      }),
+      })
     );
   } catch (error) {
     throw toDoctoraliaApiError(error);
@@ -264,7 +269,7 @@ export async function fetchDoctoraliaCalendarAuthStatus(): Promise<{
   let response: DoctoraliaCalendarAuthStatusResponse;
   try {
     response = DoctoraliaCalendarAuthStatusResponseSchema.parse(
-      await doctoraliaORPCClient.calendarAuthStatus(),
+      await doctoraliaORPCClient.calendarAuthStatus()
     );
   } catch (error) {
     throw toDoctoraliaApiError(error);
@@ -283,7 +288,7 @@ export async function startDoctoraliaCalendarOAuth(): Promise<{
 }> {
   const response = await apiClient.get<DoctoraliaCalendarAuthStartResponse>(
     "/api/doctoralia/calendar/auth/start",
-    { responseSchema: DoctoraliaCalendarAuthStartResponseSchema },
+    { responseSchema: DoctoraliaCalendarAuthStartResponseSchema }
   );
 
   if (response.status !== "ok") {
@@ -291,4 +296,63 @@ export async function startDoctoraliaCalendarOAuth(): Promise<{
   }
 
   return response.data;
+}
+
+export async function fetchDoctoraliaEmailCalendar(query: {
+  from: string;
+  to: string;
+}): Promise<DoctoraliaEmailNotification[]> {
+  let response;
+  try {
+    response = DoctoraliaEmailNotificationsCalendarResponseSchema.parse(
+      await doctoraliaORPCClient.emailNotificationsCalendar(query)
+    );
+  } catch (error) {
+    throw toDoctoraliaApiError(error);
+  }
+
+  if (response.status !== "ok") {
+    throw new Error("No se pudo obtener las notificaciones de email de Doctoralia");
+  }
+
+  return response.data.notifications;
+}
+
+export async function fetchDoctoraliaEmailPatients(query?: {
+  search?: string;
+}): Promise<DoctoraliaEmailPatient[]> {
+  let response;
+  try {
+    response = DoctoraliaEmailPatientsResponseSchema.parse(
+      await doctoraliaORPCClient.emailNotificationsPatients(query ?? {})
+    );
+  } catch (error) {
+    throw toDoctoraliaApiError(error);
+  }
+
+  if (response.status !== "ok") {
+    throw new Error("No se pudo obtener los pacientes de Doctoralia");
+  }
+
+  return response.data.patients;
+}
+
+export async function fetchDoctoraliaEmailPatientHistory(query: {
+  patientName: string;
+  patientPhone?: string | null;
+}): Promise<DoctoraliaEmailNotification[]> {
+  let response;
+  try {
+    response = DoctoraliaEmailPatientHistoryResponseSchema.parse(
+      await doctoraliaORPCClient.emailNotificationsPatientHistory(query)
+    );
+  } catch (error) {
+    throw toDoctoraliaApiError(error);
+  }
+
+  if (response.status !== "ok") {
+    throw new Error("No se pudo obtener el historial del paciente");
+  }
+
+  return response.data.notifications;
 }
