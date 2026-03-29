@@ -130,7 +130,7 @@ const router = createRouter({
   defaultPreloadStaleTime: 0,
   defaultErrorComponent: ({ error }) => {
     // Log the error immediately
-    React.useEffect(() => {
+    useEffect(() => {
       logGlobalError(error, "Router");
     }, [error]);
 
@@ -177,7 +177,7 @@ function InnerApp() {
 const ReactQueryDevtools =
   process.env.NODE_ENV === "production"
     ? () => null
-    : React.lazy(() =>
+    : lazy(() =>
         import("@tanstack/react-query-devtools").then((res) => ({
           default: res.ReactQueryDevtools,
         }))
@@ -197,7 +197,7 @@ if (!rootElement) {
 }
 
 ReactDOM.createRoot(rootElement).render(
-  <React.StrictMode>
+  <StrictMode>
     <AppFallback />
     <GlobalError>
       <ChunkErrorBoundary>
@@ -207,14 +207,14 @@ ReactDOM.createRoot(rootElement).render(
             <ToastProvider>
               <AbilityProvider>
                 <InnerApp />
-                <React.Suspense fallback={null}>
+                <Suspense fallback={null}>
                   <ReactQueryDevtools initialIsOpen={false} />
-                </React.Suspense>
+                </Suspense>
               </AbilityProvider>
             </ToastProvider>
           </SettingsProvider>
         </QueryClientProvider>
       </ChunkErrorBoundary>
     </GlobalError>
-  </React.StrictMode>
+  </StrictMode>
 );

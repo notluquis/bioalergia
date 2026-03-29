@@ -1,11 +1,11 @@
-import React from "react";
+import { useCallback, useEffect, useState } from "react";
 
 const THEME_KEY = "bioalergia:theme";
 export type Theme = "dark" | "light" | "system";
 
 export function useTheme() {
   // Initialize state from localStorage or default to 'system'
-  const [theme, setTheme] = React.useState<Theme>(() => {
+  const [theme, setTheme] = useState<Theme>(() => {
     try {
       if (typeof window === "undefined") {
         return "system";
@@ -18,7 +18,7 @@ export function useTheme() {
   });
 
   // Helper to determining system preference
-  const getPreferredThemeFromSystem = React.useCallback((): "dark" | "light" => {
+  const getPreferredThemeFromSystem = useCallback((): "dark" | "light" => {
     if (typeof window === "undefined") {
       return "light";
     }
@@ -26,7 +26,7 @@ export function useTheme() {
   }, []);
 
   // Sync with system changes when in 'system' mode
-  React.useEffect(() => {
+  useEffect(() => {
     if (theme !== "system") {
       return;
     }
@@ -41,7 +41,7 @@ export function useTheme() {
   }, [theme, getPreferredThemeFromSystem]);
 
   // Apply theme side-effects (class & localStorage)
-  React.useEffect(() => {
+  useEffect(() => {
     const resolved = theme === "system" ? getPreferredThemeFromSystem() : theme;
     applyTheme(resolved);
 
@@ -56,7 +56,7 @@ export function useTheme() {
     }
   }, [theme, getPreferredThemeFromSystem]);
 
-  const toggleTheme = React.useCallback(() => {
+  const toggleTheme = useCallback(() => {
     setTheme((prev) => {
       // Logic: If explicitly set, toggle to opposite.
       // If system, toggle to the opposite of what system currently is.

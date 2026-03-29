@@ -121,11 +121,11 @@ export function TimesheetExportPDF({
     "overtime",
   ];
 
-  const [selectedCols, setSelectedCols] = React.useState<TimesheetColumnKey[]>(
+  const [selectedCols, setSelectedCols] = useState<TimesheetColumnKey[]>(
     columns.length > 0 ? columns : [...defaultCols]
   );
-  const [showOptions, setShowOptions] = React.useState(false);
-  const pdfLibsRef = React.useRef<null | {
+  const [showOptions, setShowOptions] = useState(false);
+  const pdfLibsRef = useRef<null | {
     autoTable: AutoTableFactory["default"];
     jsPDF: JsPdfFactory["default"];
   }>(null);

@@ -26,20 +26,20 @@ interface InputBaseProps {
   helper?: string;
   label?: string;
   placeholder?: string;
-  rightElement?: React.ReactNode;
+  rightElement?: ReactNode;
   size?: "xs" | "sm" | "md" | "lg";
-  startContent?: React.ReactNode;
-  endContent?: React.ReactNode;
+  startContent?: ReactNode;
+  endContent?: ReactNode;
   type?: string;
   variant?: "primary" | "secondary";
 }
 
 type InputProps = InputBaseProps &
-  Omit<React.InputHTMLAttributes<HTMLInputElement>, "size"> & {
+  Omit<InputHTMLAttributes<HTMLInputElement>, "size"> & {
     enterKeyHint?: "done" | "enter" | "go" | "next" | "previous" | "search" | "send";
     inputMode?: "decimal" | "email" | "none" | "numeric" | "search" | "tel" | "text" | "url";
   };
-type TextareaProps = InputBaseProps & React.TextareaHTMLAttributes<HTMLTextAreaElement>;
+type TextareaProps = InputBaseProps & TextareaHTMLAttributes<HTMLTextAreaElement>;
 
 type Props = (InputProps & { as?: "input" }) | (TextareaProps & { as: "textarea" });
 
@@ -70,7 +70,7 @@ const getInputExtras = (props: Props) => {
 };
 
 const usePasswordToggle = (type?: string) => {
-  const [isPasswordVisible, setIsPasswordVisible] = React.useState(false);
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const isPassword = type === "password";
   const inputType = isPassword && isPasswordVisible ? "text" : type;
   const toggleVisibility = () => setIsPasswordVisible((prev) => !prev);
@@ -82,13 +82,13 @@ const usePasswordToggle = (type?: string) => {
 };
 
 const renderTextArea = (
-  props: React.TextareaHTMLAttributes<HTMLTextAreaElement>,
+  props: TextareaHTMLAttributes<HTMLTextAreaElement>,
   options: {
     className?: string;
     size: "xs" | "sm" | "md" | "lg";
-    labelElement: React.ReactNode;
-    descriptionElement: React.ReactNode;
-    errorElement: React.ReactNode;
+    labelElement: ReactNode;
+    descriptionElement: ReactNode;
+    errorElement: ReactNode;
     commonTextFieldProps: { className?: string; isInvalid: boolean };
     variant: "primary" | "secondary";
   }
@@ -108,17 +108,17 @@ const renderTextArea = (
 );
 
 const renderGroupedInput = (
-  props: React.InputHTMLAttributes<HTMLInputElement>,
+  props: InputHTMLAttributes<HTMLInputElement>,
   options: {
     className?: string;
     size: "xs" | "sm" | "md" | "lg";
-    labelElement: React.ReactNode;
-    descriptionElement: React.ReactNode;
-    errorElement: React.ReactNode;
+    labelElement: ReactNode;
+    descriptionElement: ReactNode;
+    errorElement: ReactNode;
     commonTextFieldProps: { className?: string; isInvalid: boolean };
     inputType?: string;
-    startContent?: React.ReactNode;
-    endContent?: React.ReactNode;
+    startContent?: ReactNode;
+    endContent?: ReactNode;
     placeholder?: string;
     hasError: boolean;
     variant: "primary" | "secondary";
@@ -147,13 +147,13 @@ const renderGroupedInput = (
 );
 
 const renderSimpleInput = (
-  props: React.InputHTMLAttributes<HTMLInputElement>,
+  props: InputHTMLAttributes<HTMLInputElement>,
   options: {
     className?: string;
     size: "xs" | "sm" | "md" | "lg";
-    labelElement: React.ReactNode;
-    descriptionElement: React.ReactNode;
-    errorElement: React.ReactNode;
+    labelElement: ReactNode;
+    descriptionElement: ReactNode;
+    errorElement: ReactNode;
     commonTextFieldProps: { className?: string; isInvalid: boolean };
     inputType?: string;
     placeholder?: string;
@@ -175,7 +175,7 @@ const renderSimpleInput = (
   </TextField>
 );
 export function Input(props: Props) {
-  const surface = React.useContext(SurfaceContext);
+  const surface = useContext(SurfaceContext);
   const {
     as = "input",
     className,
@@ -207,7 +207,7 @@ export function Input(props: Props) {
   const errorElement = error ? <FieldError>{error}</FieldError> : null;
 
   if (as === "textarea") {
-    return renderTextArea(rest as React.TextareaHTMLAttributes<HTMLTextAreaElement>, {
+    return renderTextArea(rest as TextareaHTMLAttributes<HTMLTextAreaElement>, {
       className,
       commonTextFieldProps,
       descriptionElement,
@@ -219,7 +219,7 @@ export function Input(props: Props) {
   }
 
   if (hasGroup) {
-    return renderGroupedInput(rest as React.InputHTMLAttributes<HTMLInputElement>, {
+    return renderGroupedInput(rest as InputHTMLAttributes<HTMLInputElement>, {
       className,
       commonTextFieldProps,
       descriptionElement,
@@ -235,7 +235,7 @@ export function Input(props: Props) {
     });
   }
 
-  return renderSimpleInput(rest as React.InputHTMLAttributes<HTMLInputElement>, {
+  return renderSimpleInput(rest as InputHTMLAttributes<HTMLInputElement>, {
     className,
     commonTextFieldProps,
     descriptionElement,

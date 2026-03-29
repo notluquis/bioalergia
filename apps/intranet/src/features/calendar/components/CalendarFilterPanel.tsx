@@ -71,13 +71,13 @@ export function CalendarFilterPanel({
   showSearch = false,
   variant: _variant = "card",
 }: Readonly<CalendarFilterPanelProps>) {
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     onApply();
   };
 
   // Calculate preview count based on current selection
-  const liveApplyCount = React.useMemo(() => {
+  const liveApplyCount = useMemo(() => {
     if (!filters.categories.length) {
       return applyCount;
     }

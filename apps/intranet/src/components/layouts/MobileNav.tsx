@@ -1,6 +1,6 @@
 import { Button } from "@heroui/react";
 import { useLocation, useNavigate, useRouter } from "@tanstack/react-router";
-import React from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useCan } from "@/hooks/use-can";
 import { getNavSections, type NavItem } from "@/lib/nav-generator";
 import { DeploymentStatusChip } from "./DeploymentStatusChip";
@@ -15,9 +15,9 @@ export function BottomNav({ buildLabel, isHidden = false }: Readonly<BottomNavPr
   const navigate = useNavigate();
   const router = useRouter();
   const { can } = useCan();
-  const [pendingPath, setPendingPath] = React.useState<null | string>(null);
+  const [pendingPath, setPendingPath] = useState<null | string>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (pendingPath && pendingPath === pathname) {
       setPendingPath(null);
     }
@@ -30,7 +30,7 @@ export function BottomNav({ buildLabel, isHidden = false }: Readonly<BottomNavPr
     return pathname.startsWith(path);
   };
 
-  const navItems = React.useMemo(() => {
+  const navItems = useMemo(() => {
     return getNavSections(router.routeTree)
       .flatMap((section) => section.items)
       .filter((item) => {

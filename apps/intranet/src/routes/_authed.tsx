@@ -1,7 +1,7 @@
 import { Button, Link, Tooltip } from "@heroui/react";
 import { useDebouncedValue } from "@tanstack/react-pacer";
 import { createFileRoute, getRouteApi, Outlet, useRouterState } from "@tanstack/react-router";
-import React from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { UpdateNotification } from "@/components/features/UpdateNotification";
 import { Header } from "@/components/layouts/Header";
 import { BottomNav } from "@/components/layouts/MobileNav";
@@ -60,7 +60,7 @@ function AuthedLayout() {
   const { settings } = useSettings();
   const sidebarId = "app-sidebar";
   const menuToggleButtonId = "mobile-menu-toggle";
-  const wasMobileSidebarOpenRef = React.useRef(false);
+  const wasMobileSidebarOpenRef = useRef(false);
 
   // Navigation state from TanStack Router
   const isNavigating = useRouterState({ select: (s) => s.status === "pending" });
@@ -71,15 +71,13 @@ function AuthedLayout() {
   });
 
   // Sidebar state: visible/hidden
-  const [sidebarOpen, setSidebarOpen] = React.useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   // Detect if mobile/tablet (md breakpoint)
-  const [isMobile, setIsMobile] = React.useState(
-    !globalThis.matchMedia("(min-width: 768px)").matches
-  );
+  const [isMobile, setIsMobile] = useState(!globalThis.matchMedia("(min-width: 768px)").matches);
   const [debouncedIsMobile] = useDebouncedValue(isMobile, { wait: 150 });
 
-  React.useEffect(() => {
+  useEffect(() => {
     const mql = globalThis.matchMedia("(min-width: 768px)");
     const onChange = (e: MediaQueryListEvent) => {
       setIsMobile(!e.matches);
@@ -92,7 +90,7 @@ function AuthedLayout() {
     };
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (debouncedIsMobile) {
       setSidebarOpen(false);
     } else {
@@ -103,10 +101,10 @@ function AuthedLayout() {
   const toggleSidebar = () => {
     setSidebarOpen((open) => !open);
   };
-  const closeSidebar = React.useCallback(() => {
+  const closeSidebar = useCallback(() => {
     setSidebarOpen(false);
   }, []);
-  const buildLabel = React.useMemo(() => {
+  const buildLabel = useMemo(() => {
     if (!BUILD_TIMESTAMP) {
       return "Desconocido";
     }
@@ -117,13 +115,13 @@ function AuthedLayout() {
     return parsed.toLocaleString("es-CL", { dateStyle: "short", timeStyle: "short" });
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (settings.pageTitle) {
       document.title = settings.pageTitle;
     }
   }, [settings.pageTitle]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isMobile) {
       wasMobileSidebarOpenRef.current = false;
       return;
@@ -143,7 +141,7 @@ function AuthedLayout() {
   }, [isMobile, sidebarOpen]);
 
   // Handle PWA File Launch (macOS/Windows "Open With")
-  React.useEffect(() => {
+  useEffect(() => {
     if ("launchQueue" in globalThis) {
       interface LaunchParams {
         files: FileSystemFileHandle[];
