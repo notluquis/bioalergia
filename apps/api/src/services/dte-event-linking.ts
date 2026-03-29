@@ -1896,6 +1896,7 @@ export async function getEventDteLinksByInternalEventId(
     FROM event_dte_sale_links l
     JOIN dte_sale_details s ON s.id = l.dte_sale_detail_id
     WHERE l.event_id = ${eventId}
+      AND l.status != 'REJECTED'
     ORDER BY s.document_date ASC, s.folio ASC
   `;
 

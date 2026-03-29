@@ -98,6 +98,7 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "cluxin",
   "clustek",
   "forte",
+  "oid",
   "multitest",
   "oral",
   "roxair",
@@ -200,6 +201,8 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "con",
   "del",
   "desde",
+  "pendiente",
+  "total",
   "doctor",
   "ella",
   "este",
@@ -1125,6 +1128,7 @@ async function refreshClinicalSeriesMetadata(seriesId: number) {
       JOIN events e ON e.id = l.event_id
       JOIN dte_sale_details s ON s.id = l.dte_sale_detail_id
       WHERE e.clinical_series_id = ${seriesId}
+        AND l.status != 'REJECTED'
     `;
 
     if (linkedDocuments.length === 1) {
@@ -1599,19 +1603,19 @@ export async function getClinicalSeriesSnapshotByExternalEvent(params: {
     JOIN events e ON e.id = l.event_id
     JOIN dte_sale_details s ON s.id = l.dte_sale_detail_id
     WHERE e.clinical_series_id = ${series.id}
+      AND l.status != 'REJECTED'
     ORDER BY s.id, l.updated_at DESC
   `;
 
-  const eventIds = series.events.map((e) => e.id);
-  const eventFolioRows = eventIds.length
-    ? await db.$queryRaw<Array<{ eventId: number; folios: string[] }>>`
-        SELECT l.event_id AS "eventId", ARRAY_AGG(s.folio ORDER BY s.document_date) AS "folios"
-        FROM event_dte_sale_links l
-        JOIN dte_sale_details s ON s.id = l.dte_sale_detail_id
-        WHERE l.event_id = ANY(${eventIds}::int[])
-        GROUP BY l.event_id
-      `
-    : [];
+  const eventFolioRows = await db.$queryRaw<Array<{ eventId: number; folios: string[] }>>`
+    SELECT l.event_id AS "eventId", ARRAY_AGG(s.folio ORDER BY s.document_date) AS "folios"
+    FROM event_dte_sale_links l
+    JOIN events e ON e.id = l.event_id
+    JOIN dte_sale_details s ON s.id = l.dte_sale_detail_id
+    WHERE e.clinical_series_id = ${series.id}
+      AND l.status != 'REJECTED'
+    GROUP BY l.event_id
+  `;
   const foliosByEventId = new Map(eventFolioRows.map((r) => [r.eventId, r.folios]));
 
   const events = series.events.map((item) => ({
