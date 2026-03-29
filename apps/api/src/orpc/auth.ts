@@ -744,6 +744,7 @@ const authORPCRouterBase = {
             expectedChallenge: input.challenge,
             expectedOrigin: ORIGIN,
             expectedRPID: RP_ID,
+            requireUserVerification: false,
             response: responseBody,
           }),
       );
