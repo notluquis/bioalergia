@@ -27,14 +27,14 @@ export class ChunkErrorBoundary extends Component<Props, State> {
     return { hasError: true };
   }
 
-  componentDidCatch(error: Error) {
+  override componentDidCatch(error: Error) {
     // Detectar si es un error de chunk
     if (CHUNK_ERROR_REGEX.test(error.message)) {
       signalAppFallback("chunk");
     }
   }
 
-  render(): React.ReactNode {
+  override render(): React.ReactNode {
     if (this.state.hasError) {
       return null;
     }

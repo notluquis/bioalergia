@@ -37,7 +37,7 @@ export class GlobalError extends Component<Props, State> {
     return { error, hasError: true };
   }
 
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  public override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     logger.error("Uncaught error:", { error, errorInfo });
 
     // Si es un error de deploy, no recargar automáticamente.
@@ -48,7 +48,7 @@ export class GlobalError extends Component<Props, State> {
     }
   }
 
-  public render(): React.JSX.Element {
+  public override render(): React.JSX.Element {
     if (this.state.hasError) {
       const isDeployIssue = isDeployError(this.state.error);
 
