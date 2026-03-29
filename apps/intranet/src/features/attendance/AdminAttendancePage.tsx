@@ -9,11 +9,6 @@ import {
   Select,
   Skeleton,
   Table,
-  TableBody,
-  TableCell,
-  TableColumn,
-  TableHeader,
-  TableRow,
   TextField,
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -171,73 +166,77 @@ function MarksTable({ isDeletingId, marks, onDelete }: MarksTableProps) {
 
   return (
     <Table>
-      <TableHeader>
-        <TableColumn isRowHeader>Empleado</TableColumn>
-        <TableColumn>Tipo</TableColumn>
-        <TableColumn>Hora (Santiago)</TableColumn>
-        <TableColumn>Red</TableColumn>
-        <TableColumn>GPS</TableColumn>
-        <TableColumn>Notas</TableColumn>
-        <TableColumn>{""}</TableColumn>
-      </TableHeader>
-      <TableBody>
-        {marks.map((mark) => (
-          <TableRow key={mark.id}>
-            <TableCell>
-              <p className="font-medium">{mark.employeeName ?? `ID ${mark.employeeId}`}</p>
-              {mark.employeeRut && (
-                <p className="text-xs text-foreground-400">{mark.employeeRut}</p>
-              )}
-            </TableCell>
-            <TableCell>
-              <Chip
-                color={mark.type === "CLOCK_IN" ? "success" : "danger"}
-                size="sm"
-                variant="soft"
-              >
-                {mark.type === "CLOCK_IN" ? "Entrada" : "Salida"}
-              </Chip>
-            </TableCell>
-            <TableCell className="font-medium">
-              {dayjs(mark.markedAt).tz(TIMEZONE).format("DD/MM/YYYY HH:mm")}
-            </TableCell>
-            <TableCell>
-              <Chip
-                color={mark.isOfficeNetwork ? "success" : "default"}
-                size="sm"
-                variant="secondary"
-              >
-                {mark.isOfficeNetwork ? "Oficina" : "Externa"}
-              </Chip>
-            </TableCell>
-            <TableCell>
-              {mark.latitude !== null && mark.longitude !== null ? (
-                <a
-                  className="text-accent hover:underline"
-                  href={`https://www.google.com/maps?q=${mark.latitude},${mark.longitude}`}
-                  rel="noopener noreferrer"
-                  target="_blank"
-                  title={`Precisión: ${mark.accuracyMeters?.toFixed(0) ?? "?"}m`}
-                >
-                  Ver mapa
-                </a>
-              ) : (
-                <span className="text-foreground-300">—</span>
-              )}
-            </TableCell>
-            <TableCell className="text-foreground-500">{mark.notes ?? "—"}</TableCell>
-            <TableCell>
-              <Button
-                isDisabled={isDeletingId === mark.id}
-                variant="danger-soft"
-                onPress={() => onDelete(mark.id)}
-              >
-                {isDeletingId === mark.id ? "..." : "Eliminar"}
-              </Button>
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
+      <Table.ScrollContainer>
+        <Table.Content aria-label="Registros de asistencia">
+          <Table.Header>
+            <Table.Column isRowHeader>Empleado</Table.Column>
+            <Table.Column>Tipo</Table.Column>
+            <Table.Column>Hora (Santiago)</Table.Column>
+            <Table.Column>Red</Table.Column>
+            <Table.Column>GPS</Table.Column>
+            <Table.Column>Notas</Table.Column>
+            <Table.Column>{""}</Table.Column>
+          </Table.Header>
+          <Table.Body items={marks}>
+            {(mark) => (
+              <Table.Row id={String(mark.id)}>
+                <Table.Cell>
+                  <p className="font-medium">{mark.employeeName ?? `ID ${mark.employeeId}`}</p>
+                  {mark.employeeRut && (
+                    <p className="text-xs text-foreground-400">{mark.employeeRut}</p>
+                  )}
+                </Table.Cell>
+                <Table.Cell>
+                  <Chip
+                    color={mark.type === "CLOCK_IN" ? "success" : "danger"}
+                    size="sm"
+                    variant="soft"
+                  >
+                    {mark.type === "CLOCK_IN" ? "Entrada" : "Salida"}
+                  </Chip>
+                </Table.Cell>
+                <Table.Cell className="font-medium">
+                  {dayjs(mark.markedAt).tz(TIMEZONE).format("DD/MM/YYYY HH:mm")}
+                </Table.Cell>
+                <Table.Cell>
+                  <Chip
+                    color={mark.isOfficeNetwork ? "success" : "default"}
+                    size="sm"
+                    variant="secondary"
+                  >
+                    {mark.isOfficeNetwork ? "Oficina" : "Externa"}
+                  </Chip>
+                </Table.Cell>
+                <Table.Cell>
+                  {mark.latitude !== null && mark.longitude !== null ? (
+                    <a
+                      className="text-accent hover:underline"
+                      href={`https://www.google.com/maps?q=${mark.latitude},${mark.longitude}`}
+                      rel="noopener noreferrer"
+                      target="_blank"
+                      title={`Precisión: ${mark.accuracyMeters?.toFixed(0) ?? "?"}m`}
+                    >
+                      Ver mapa
+                    </a>
+                  ) : (
+                    <span className="text-foreground-300">—</span>
+                  )}
+                </Table.Cell>
+                <Table.Cell className="text-foreground-500">{mark.notes ?? "—"}</Table.Cell>
+                <Table.Cell>
+                  <Button
+                    isDisabled={isDeletingId === mark.id}
+                    variant="danger-soft"
+                    onPress={() => onDelete(mark.id)}
+                  >
+                    {isDeletingId === mark.id ? "..." : "Eliminar"}
+                  </Button>
+                </Table.Cell>
+              </Table.Row>
+            )}
+          </Table.Body>
+        </Table.Content>
+      </Table.ScrollContainer>
     </Table>
   );
 }
