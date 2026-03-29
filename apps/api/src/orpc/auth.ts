@@ -731,7 +731,7 @@ const authORPCRouterBase = {
         authError("UNAUTHORIZED", "Credencial no encontrada");
       }
 
-      let verification: Awaited<ReturnType<typeof import("@simplewebauthn/server").verifyAuthenticationResponse>>;
+      let verification;
       try {
         verification = await import("@simplewebauthn/server").then(
           ({ verifyAuthenticationResponse }) =>
