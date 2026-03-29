@@ -718,6 +718,41 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true
                 },
+                downlinkMbps: {
+                    name: "downlinkMbps",
+                    type: "Float",
+                    optional: true
+                },
+                isMobile: {
+                    name: "isMobile",
+                    type: "Boolean",
+                    optional: true
+                },
+                clientTimezone: {
+                    name: "clientTimezone",
+                    type: "String",
+                    optional: true
+                },
+                deviceRam: {
+                    name: "deviceRam",
+                    type: "Int",
+                    optional: true
+                },
+                cpuCores: {
+                    name: "cpuCores",
+                    type: "Int",
+                    optional: true
+                },
+                screenResolution: {
+                    name: "screenResolution",
+                    type: "String",
+                    optional: true
+                },
+                devicePixelRatio: {
+                    name: "devicePixelRatio",
+                    type: "Float",
+                    optional: true
+                },
                 notes: {
                     name: "notes",
                     type: "String",

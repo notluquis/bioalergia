@@ -108,6 +108,13 @@ const attendanceORPCRouterBase = {
           longitude: input.longitude,
           accuracyMeters: input.accuracyMeters,
           connectionType: input.connectionType,
+          downlinkMbps: input.downlinkMbps,
+          isMobile: input.isMobile,
+          clientTimezone: input.clientTimezone,
+          deviceRam: input.deviceRam,
+          cpuCores: input.cpuCores,
+          screenResolution: input.screenResolution,
+          devicePixelRatio: input.devicePixelRatio,
         },
         { ip, userAgent },
       );

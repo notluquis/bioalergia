@@ -24,21 +24,46 @@ function getGpsPosition(): Promise<GeolocationPosition | null> {
     }
     navigator.geolocation.getCurrentPosition(
       (pos) => resolve(pos),
-      () => resolve(null), // GPS opcional — nunca bloquea
+      () => resolve(null),
       { enableHighAccuracy: true, maximumAge: 0, timeout: 8_000 }
     );
   });
 }
 
-/** Capture network connection type if available (Network Information API) */
-function getConnectionType(): string | undefined {
+type NavigatorConnection = { type?: string; effectiveType?: string; downlink?: number };
+
+function getNetworkInfo(): { connectionType?: string; downlinkMbps?: number } {
   const nav = navigator as unknown as {
-    connection?: { type?: string; effectiveType?: string };
-    mozConnection?: { type?: string; effectiveType?: string };
-    webkitConnection?: { type?: string; effectiveType?: string };
+    connection?: NavigatorConnection;
+    mozConnection?: NavigatorConnection;
+    webkitConnection?: NavigatorConnection;
   };
   const conn = nav.connection ?? nav.mozConnection ?? nav.webkitConnection;
-  return conn?.type ?? conn?.effectiveType ?? undefined;
+  if (!conn) return {};
+  return {
+    connectionType: conn.type ?? conn.effectiveType ?? undefined,
+    downlinkMbps: conn.downlink ?? undefined,
+  };
+}
+
+function getDeviceInfo(): {
+  isMobile: boolean;
+  clientTimezone: string;
+  deviceRam?: number;
+  cpuCores?: number;
+  screenResolution: string;
+  devicePixelRatio: number;
+} {
+  const nav = navigator as Navigator & { deviceMemory?: number };
+  const dpr = window.devicePixelRatio ?? 1;
+  return {
+    isMobile: navigator.maxTouchPoints > 0,
+    clientTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    deviceRam: nav.deviceMemory ?? undefined,
+    cpuCores: navigator.hardwareConcurrency ?? undefined,
+    screenResolution: `${screen.width}x${screen.height}@${dpr}x`,
+    devicePixelRatio: dpr,
+  };
 }
 
 export function MarkButton({ currentStatus, onSuccess }: MarkButtonProps) {
@@ -54,12 +79,16 @@ export function MarkButton({ currentStatus, onSuccess }: MarkButtonProps) {
       const position = await getGpsPosition();
       if (position === null) setGpsError(true);
 
+      const network = getNetworkInfo();
+      const device = getDeviceInfo();
+
       return attendanceORPCClient.mark({
         accuracyMeters: position?.coords.accuracy,
-        connectionType: getConnectionType(),
         latitude: position?.coords.latitude,
         longitude: position?.coords.longitude,
         type: markType,
+        ...network,
+        ...device,
       });
     },
     onError: (error) => {

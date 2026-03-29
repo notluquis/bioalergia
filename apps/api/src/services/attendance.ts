@@ -25,6 +25,13 @@ export interface AttendanceMarkData {
   isOfficeNetwork: boolean;
   userAgent: string | null;
   connectionType: string | null;
+  downlinkMbps: number | null;
+  isMobile: boolean | null;
+  clientTimezone: string | null;
+  deviceRam: number | null;
+  cpuCores: number | null;
+  screenResolution: string | null;
+  devicePixelRatio: number | null;
   notes: string | null;
   createdByUserId: number | null;
 }
@@ -43,6 +50,13 @@ export interface CreateMarkPayload {
   longitude?: number;
   accuracyMeters?: number;
   connectionType?: string;
+  downlinkMbps?: number;
+  isMobile?: boolean;
+  clientTimezone?: string;
+  deviceRam?: number;
+  cpuCores?: number;
+  screenResolution?: string;
+  devicePixelRatio?: number;
   createdByUserId?: number;
   notes?: string;
 }
@@ -64,6 +78,13 @@ function mapMark(raw: {
   isOfficeNetwork: boolean;
   userAgent: string | null;
   connectionType: string | null;
+  downlinkMbps: number | null;
+  isMobile: boolean | null;
+  clientTimezone: string | null;
+  deviceRam: number | null;
+  cpuCores: number | null;
+  screenResolution: string | null;
+  devicePixelRatio: number | null;
   notes: string | null;
   createdByUserId: number | null;
 }): AttendanceMarkData {
@@ -79,6 +100,13 @@ function mapMark(raw: {
     isOfficeNetwork: raw.isOfficeNetwork,
     userAgent: raw.userAgent,
     connectionType: raw.connectionType,
+    downlinkMbps: raw.downlinkMbps,
+    isMobile: raw.isMobile,
+    clientTimezone: raw.clientTimezone,
+    deviceRam: raw.deviceRam,
+    cpuCores: raw.cpuCores,
+    screenResolution: raw.screenResolution,
+    devicePixelRatio: raw.devicePixelRatio,
     notes: raw.notes,
     createdByUserId: raw.createdByUserId,
   };
@@ -169,6 +197,13 @@ export async function createMark(
       isOfficeNetwork,
       userAgent: meta.userAgent ?? null,
       connectionType: payload.connectionType ?? null,
+      downlinkMbps: payload.downlinkMbps ?? null,
+      isMobile: payload.isMobile ?? null,
+      clientTimezone: payload.clientTimezone ?? null,
+      deviceRam: payload.deviceRam ?? null,
+      cpuCores: payload.cpuCores ?? null,
+      screenResolution: payload.screenResolution ?? null,
+      devicePixelRatio: payload.devicePixelRatio ?? null,
       notes: payload.notes ?? null,
       createdByUserId: payload.createdByUserId ?? null,
     },
@@ -202,6 +237,13 @@ export async function createAdminMark(
       isOfficeNetwork: false,
       userAgent: null,
       connectionType: null,
+      downlinkMbps: null,
+      isMobile: null,
+      clientTimezone: null,
+      deviceRam: null,
+      cpuCores: null,
+      screenResolution: null,
+      devicePixelRatio: null,
       notes: notes ?? null,
       createdByUserId: adminUserId,
     },

@@ -854,6 +854,48 @@ export class SchemaType implements SchemaDef {
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("connection_type") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] }] as readonly AttributeApplication[]
                 },
+                downlinkMbps: {
+                    name: "downlinkMbps",
+                    type: "Float",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("downlink_mbps") }] }] as readonly AttributeApplication[]
+                },
+                isMobile: {
+                    name: "isMobile",
+                    type: "Boolean",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("is_mobile") }] }] as readonly AttributeApplication[]
+                },
+                clientTimezone: {
+                    name: "clientTimezone",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("client_timezone") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(100) }] }] as readonly AttributeApplication[]
+                },
+                deviceRam: {
+                    name: "deviceRam",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("device_ram") }] }] as readonly AttributeApplication[]
+                },
+                cpuCores: {
+                    name: "cpuCores",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("cpu_cores") }] }] as readonly AttributeApplication[]
+                },
+                screenResolution: {
+                    name: "screenResolution",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("screen_resolution") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(30) }] }] as readonly AttributeApplication[]
+                },
+                devicePixelRatio: {
+                    name: "devicePixelRatio",
+                    type: "Float",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("device_pixel_ratio") }] }] as readonly AttributeApplication[]
+                },
                 notes: {
                     name: "notes",
                     type: "String",

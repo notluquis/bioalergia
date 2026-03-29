@@ -15,6 +15,13 @@ export const attendanceMarkSchema = z.object({
   isOfficeNetwork: z.boolean(),
   userAgent: z.string().nullable(),
   connectionType: z.string().nullable(),
+  downlinkMbps: z.number().nullable(),
+  isMobile: z.boolean().nullable(),
+  clientTimezone: z.string().nullable(),
+  deviceRam: z.number().nullable(),
+  cpuCores: z.number().nullable(),
+  screenResolution: z.string().nullable(),
+  devicePixelRatio: z.number().nullable(),
   notes: z.string().nullable(),
   createdByUserId: z.number().nullable(),
 });
@@ -31,7 +38,14 @@ export const attendanceMarkInputSchema = z.object({
   latitude: z.number().optional(),
   longitude: z.number().optional(),
   accuracyMeters: z.number().optional(),
-  connectionType: z.string().optional(), // navigator.connection?.type ?? effectiveType
+  connectionType: z.string().optional(),
+  downlinkMbps: z.number().optional(),
+  isMobile: z.boolean().optional(),
+  clientTimezone: z.string().optional(),
+  deviceRam: z.number().optional(),
+  cpuCores: z.number().optional(),
+  screenResolution: z.string().optional(),
+  devicePixelRatio: z.number().optional(),
 });
 
 export const attendanceMarkResponseSchema = z.object({

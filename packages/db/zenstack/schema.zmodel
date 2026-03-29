@@ -247,6 +247,13 @@ model AttendanceMark {
   isOfficeNetwork Boolean            @default(false) @map("is_office_network")
   userAgent       String?            @map("user_agent") @db.VarChar(512)
   connectionType  String?            @map("connection_type") @db.VarChar(50)
+  downlinkMbps    Float?             @map("downlink_mbps")
+  isMobile        Boolean?           @map("is_mobile")
+  clientTimezone  String?            @map("client_timezone") @db.VarChar(100)
+  deviceRam       Int?               @map("device_ram")
+  cpuCores        Int?               @map("cpu_cores")
+  screenResolution String?           @map("screen_resolution") @db.VarChar(30)
+  devicePixelRatio Float?            @map("device_pixel_ratio")
   notes           String?
   createdByUserId Int?               @map("created_by_user_id")
   employee        Employee           @relation(fields: [employeeId], references: [id], onDelete: Cascade)

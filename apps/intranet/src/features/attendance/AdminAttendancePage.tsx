@@ -10,6 +10,7 @@ import {
   Skeleton,
   Table,
   TextField,
+  Tooltip,
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
@@ -207,6 +208,7 @@ function MarksTable({ isDeletingId, marks, onDelete, summary }: MarksTableProps)
               <Table.Column>Red</Table.Column>
               <Table.Column>Conexión</Table.Column>
               <Table.Column>GPS</Table.Column>
+              <Table.Column>Dispositivo</Table.Column>
               <Table.Column>Notas</Table.Column>
               <Table.Column>{""}</Table.Column>
             </Table.Header>
@@ -267,6 +269,39 @@ function MarksTable({ isDeletingId, marks, onDelete, summary }: MarksTableProps)
                       >
                         Ver mapa
                       </a>
+                    ) : (
+                      <span className="text-foreground-300">—</span>
+                    )}
+                  </Table.Cell>
+                  <Table.Cell>
+                    {mark.isMobile !== null || mark.screenResolution ? (
+                      <Tooltip>
+                        <Tooltip.Trigger>
+                          <div className="flex items-center gap-1.5">
+                            <Chip size="sm" variant="secondary">
+                              {mark.isMobile ? "Móvil" : "Desktop"}
+                            </Chip>
+                            {mark.screenResolution && (
+                              <span className="text-xs text-foreground-400">
+                                {mark.screenResolution}
+                              </span>
+                            )}
+                          </div>
+                        </Tooltip.Trigger>
+                        <Tooltip.Content>
+                          <div className="flex flex-col gap-0.5 text-xs">
+                            {mark.clientTimezone && <span>TZ: {mark.clientTimezone}</span>}
+                            {mark.cpuCores != null && <span>CPU: {mark.cpuCores} núcleos</span>}
+                            {mark.deviceRam != null && <span>RAM: {mark.deviceRam} GB</span>}
+                            {mark.devicePixelRatio != null && (
+                              <span>DPR: {mark.devicePixelRatio}x</span>
+                            )}
+                            {mark.downlinkMbps != null && (
+                              <span>Bajada: {mark.downlinkMbps} Mbps</span>
+                            )}
+                          </div>
+                        </Tooltip.Content>
+                      </Tooltip>
                     ) : (
                       <span className="text-foreground-300">—</span>
                     )}
