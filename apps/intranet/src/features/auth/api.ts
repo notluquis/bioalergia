@@ -1,10 +1,11 @@
-import type { PublicKeyCredentialCreationOptionsJSON } from "@simplewebauthn/browser";
 import { authORPCClient, toAuthApiError } from "./orpc";
 import {
   MfaSetupResponseSchema,
   PasskeyLoginOptionsResponseSchema,
   PasskeyRegistrationOptionsResponseSchema,
   StatusResponseSchema,
+  type PasskeyLoginOptions,
+  type PasskeyRegistrationOptions,
 } from "./schemas";
 
 export interface MfaEnableParams {
@@ -22,11 +23,7 @@ export interface MfaSetupResponse {
 
 // --- MFA ---
 
-export type PasskeyLoginOptions = PublicKeyCredentialCreationOptionsJSON & {
-  challenge: string;
-};
-
-export type PasskeyOptionsResponse = PublicKeyCredentialCreationOptionsJSON & {
+export type PasskeyOptionsResponse = {
   message?: string;
   status?: string;
 };
@@ -62,21 +59,19 @@ export type PasskeyLoginResult =
   | { type: "error"; status: "error"; message?: string };
 
 export type PasskeyRegistrationResult =
-  | { type: "success"; options: PublicKeyCredentialCreationOptionsJSON }
+  | { type: "success"; options: PasskeyRegistrationOptions }
   | { type: "error"; status: "error"; message?: string };
 
 export async function fetchPasskeyLoginOptions(): Promise<PasskeyLoginResult> {
   try {
     const result = PasskeyLoginOptionsResponseSchema.parse(
-      await authORPCClient.passkeyLoginOptions(),
+      await authORPCClient.passkeyLoginOptions()
     );
     if ("status" in result && result.status === "error") {
       // Discriminate between error and success responses
       return { type: "error", status: "error", message: result.message };
     }
-    // Cast the parsed result to the native @simplewebauthn type
-    // We use double cast because Zod's inferred type may not align 100% with the expected type
-    return { type: "success", options: result as unknown as PasskeyLoginOptions };
+    return { type: "success", options: result as PasskeyLoginOptions };
   } catch (error) {
     throw toAuthApiError(error);
   }
@@ -85,14 +80,13 @@ export async function fetchPasskeyLoginOptions(): Promise<PasskeyLoginResult> {
 export async function fetchPasskeyRegistrationOptions(): Promise<PasskeyRegistrationResult> {
   try {
     const result = PasskeyRegistrationOptionsResponseSchema.parse(
-      await authORPCClient.passkeyRegisterOptions(),
+      await authORPCClient.passkeyRegisterOptions()
     );
     if ("status" in result && result.status === "error") {
       // Discriminate between error and success responses
       return { type: "error", status: "error", message: result.message };
     }
-    // Cast the parsed result to the native @simplewebauthn type
-    return { type: "success", options: result as PublicKeyCredentialCreationOptionsJSON };
+    return { type: "success", options: result as PasskeyRegistrationOptions };
   } catch (error) {
     throw toAuthApiError(error);
   }
@@ -120,7 +114,7 @@ export async function verifyPasskeyRegistration({ body, challenge }: PasskeyVeri
       await authORPCClient.passkeyRegisterVerify({
         body: body as Record<string, unknown>,
         challenge,
-      }),
+      })
     );
   } catch (error) {
     throw toAuthApiError(error);

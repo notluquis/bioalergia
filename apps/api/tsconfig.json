@@ -3,16 +3,15 @@
     "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "Bundler",
-    "strict": true,
     "incremental": true,
     "skipLibCheck": true,
     "tsBuildInfoFile": "./tsconfig.tsbuildinfo",
-    "esModuleInterop": true,
     "noEmit": true,
     "types": ["node"],
 
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true,
     "noImplicitOverride": true
   },
   "include": ["src/**/*"],

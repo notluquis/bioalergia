@@ -38,6 +38,11 @@ declare module "@tanstack/react-table" {
     isAdmin?: boolean;
     onStatusChange?: (requestId: number, newStatus: SupplyRequest["status"]) => void;
 
+    reportTotals?: {
+      totalDays: number;
+      totalHours: number;
+    };
+
     onCategoryChange?: (row: TData, categoryId: null | number) => void;
     onReallocate?: (row: TData) => void;
     transactionCategories?: Array<{

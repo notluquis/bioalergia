@@ -5,7 +5,7 @@ import type { EmployeeWorkData } from "../types";
 import { minutesToTime } from "../utils";
 
 export interface HRReportsTableMeta {
-  totals?: {
+  reportTotals?: {
     totalDays: number;
     totalHours: number;
   };
@@ -33,7 +33,7 @@ export const getHRReportsColumns = (): ColumnDef<EmployeeWorkData>[] => [
     cell: ({ getValue }) => <div className="text-right font-medium">{getValue() as number}</div>,
     footer: ({ table }) => {
       const meta = table.options.meta as HRReportsTableMeta;
-      return <div className="text-right font-bold">{meta.totals?.totalDays ?? 0}</div>;
+      return <div className="text-right font-bold">{meta.reportTotals?.totalDays ?? 0}</div>;
     },
     header: "Días",
     meta: {
@@ -59,7 +59,7 @@ export const getHRReportsColumns = (): ColumnDef<EmployeeWorkData>[] => [
     },
     footer: ({ table }) => {
       const meta = table.options.meta as HRReportsTableMeta;
-      return <div className="text-right font-bold">{meta.totals?.totalHours ?? 0}</div>;
+      return <div className="text-right font-bold">{meta.reportTotals?.totalHours ?? 0}</div>;
     },
     header: "Horas",
     meta: {

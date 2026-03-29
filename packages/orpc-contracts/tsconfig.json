@@ -6,13 +6,12 @@
     "sourceMap": true,
     "outDir": "dist",
     "rootDir": "src",
-    "strict": true,
-    "esModuleInterop": true,
     "skipLibCheck": true,
     "declaration": true,
     "declarationMap": true,
     "composite": true,
-    "incremental": true
+    "incremental": true,
+    "noUncheckedSideEffectImports": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

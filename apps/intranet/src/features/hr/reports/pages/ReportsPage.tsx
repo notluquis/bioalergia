@@ -38,10 +38,10 @@ import "dayjs/locale/es";
 
 // Lazy-load chart components (Recharts ~400KB)
 const TemporalChart = lazy(() =>
-  import("../components/ReportCharts").then((m) => ({ default: m.TemporalChart })),
+  import("../components/ReportCharts").then((m) => ({ default: m.TemporalChart }))
 );
 const DistributionChart = lazy(() =>
-  import("../components/ReportCharts").then((m) => ({ default: m.DistributionChart })),
+  import("../components/ReportCharts").then((m) => ({ default: m.DistributionChart }))
 );
 
 dayjs.extend(isoWeek);
@@ -65,7 +65,7 @@ export function ReportsPage() {
   // Selection state
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [startDate, setStartDate] = useState<string>(() =>
-    dayjs().startOf("month").format(DATE_FORMAT),
+    dayjs().startOf("month").format(DATE_FORMAT)
   );
   const [endDate, setEndDate] = useState<string>(() => dayjs().endOf("month").format(DATE_FORMAT));
   const [granularity, setGranularity] = useState<ReportGranularity>("month");
@@ -102,7 +102,7 @@ export function ReportsPage() {
   });
 
   const activeEmployees = employees.filter(
-    (emp) => emp.status === "ACTIVE" && emp.salaryType !== "FIXED",
+    (emp) => emp.status === "ACTIVE" && emp.salaryType !== "FIXED"
   );
 
   const employeeOptions = activeEmployees.map((emp) => ({
@@ -156,7 +156,7 @@ export function ReportsPage() {
         entries as unknown as RawTimesheetEntry[],
         selectedEmployeeIds,
         employees,
-        salarySummary,
+        salarySummary
       );
     },
     queryKey: ["reports-data", dateParams, selectedEmployeeIds, timestamp, employees],
@@ -208,7 +208,7 @@ export function ReportsPage() {
   const columns = getHRReportsColumns();
 
   const meta: HRReportsTableMeta = {
-    totals: {
+    reportTotals: {
       totalDays: reportData.reduce((acc: number, e: EmployeeWorkData) => acc + e.totalDays, 0),
       totalHours: stats?.totalHours ?? 0,
     },
@@ -704,7 +704,7 @@ function ReportsResultsPanel({
             <div
               className={cn(
                 "flex flex-col rounded-3xl border border-default-100 bg-background p-6 shadow-sm",
-                reportData.length <= 1 && "lg:col-span-2",
+                reportData.length <= 1 && "lg:col-span-2"
               )}
             >
               <h3 className="mb-4 flex items-center gap-2 font-bold text-lg">
@@ -717,7 +717,7 @@ function ReportsResultsPanel({
                 containerVariant="plain"
                 enablePagination={false}
                 enableToolbar={false}
-                meta={meta as unknown as Record<string, unknown>}
+                meta={meta}
                 noDataMessage="No hay datos para mostrar."
                 scrollMaxHeight="min(56dvh, 640px)"
               />
@@ -736,7 +736,7 @@ function processRawEntries(
   salarySummary?: Record<
     string,
     Array<{ month: string; net: number; retention: number; subtotal: number }>
-  >,
+  >
 ): EmployeeWorkData[] {
   const map = initializeEmployeeDataMap(employeeIds, employees);
   accumulateEntryMetrics(map, entries);
@@ -795,7 +795,7 @@ function mergeSalarySummary(
   map: Map<number, EmployeeWorkData>,
   salarySummary:
     | Record<string, Array<{ month: string; net: number; retention: number; subtotal: number }>>
-    | undefined,
+    | undefined
 ) {
   if (!salarySummary) {
     return;

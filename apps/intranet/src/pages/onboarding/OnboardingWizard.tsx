@@ -77,11 +77,6 @@ function StepContent({
   if (!logic.profile) {
     return null;
   }
-  type M = { mutate: (x?: string) => void };
-  const mf = logic.mutations.mfaSetup as unknown as M;
-  const mv = logic.mutations.mfaVerify as unknown as M;
-  const mp = logic.mutations.passkeyRegister as unknown as M;
-  const mf2 = logic.mutations.finalSubmit as unknown as M;
   let stepNode: React.ReactNode = null;
   switch (currentStep) {
     case 0:
@@ -129,16 +124,21 @@ function StepContent({
           mfaSecret={logic.mfaSecret}
           mfaCode={logic.mfaCode}
           onMfaCodeChange={logic.setMfaCode}
-          onSetupMfa={() => mf.mutate()}
-          onVerifyMfa={() => mv.mutate(logic.mfaCode)}
-          onPasskeyRegister={() => mp.mutate()}
+          onSetupMfa={() => logic.mutations.mfaSetup.mutate()}
+          onVerifyMfa={() => logic.mutations.mfaVerify.mutate(logic.mfaCode)}
+          onPasskeyRegister={() => logic.mutations.passkeyRegister.mutate()}
           onSkip={logic.handleNext}
           isLoading={logic.isLoading}
         />
       );
       break;
     case 5:
-      stepNode = <CompleteStep onFinish={() => mf2.mutate()} isLoading={logic.isLoading} />;
+      stepNode = (
+        <CompleteStep
+          onFinish={() => logic.mutations.finalSubmit.mutate()}
+          isLoading={logic.isLoading}
+        />
+      );
       break;
     default:
       stepNode = null;

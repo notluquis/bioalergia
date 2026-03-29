@@ -474,9 +474,7 @@ function formatCLP(value: number | string): string {
   return num.toLocaleString("es-CL");
 }
 
-// Helper to safely extract retention rate from employee object
 function getEmployeeRetentionRate(employee: Employee): number {
-  // Try both property naming conventions due to ZenStack type inconsistencies
   const emp = employee as unknown as Record<string, unknown>;
   const rate = emp.retentionRate ?? emp.retention_rate;
   return typeof rate === "number" ? rate : getRetentionRateForYear(new Date().getFullYear());

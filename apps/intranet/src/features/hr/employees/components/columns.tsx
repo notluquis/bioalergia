@@ -10,11 +10,7 @@ export interface EmployeeTableMeta {
   onEdit: (employee: Employee) => void;
 }
 
-// Helper to safely extract retention rate
 function getEmployeeRetentionRate(employee: Employee): number {
-  // Use 'any' cast if properties are missing in type definition but present in runtime object
-  // or if using legacy fields.
-  // The logic from EmployeeTable.tsx:
   const emp = employee as unknown as Record<string, unknown>;
   const rate = emp.retentionRate ?? emp.retention_rate;
   return typeof rate === "number" ? rate : getRetentionRateForYear(new Date().getFullYear());

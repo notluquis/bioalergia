@@ -24,7 +24,7 @@ interface TimesheetDetailTableProps {
   onRowChange: (
     index: number,
     field: keyof Omit<BulkRow, "date" | "entryId">,
-    value: string,
+    value: string
   ) => void;
   onSalidaBlur: (index: number) => void;
   pendingCount: number;
@@ -118,7 +118,7 @@ export function TimesheetDetailTable({
         enableToolbar={false}
         enableVirtualization={false}
         isLoading={loadingDetail}
-        meta={meta as unknown as Record<string, unknown>}
+        meta={meta}
         noDataMessage={
           employeeOptions.length > 0
             ? "Selecciona un prestador para ver o editar sus tiempos."

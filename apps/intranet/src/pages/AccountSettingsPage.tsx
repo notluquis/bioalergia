@@ -292,7 +292,7 @@ export function AccountSettingsPage() {
               </p>
             </div>
 
-            {(user as unknown as { hasPasskey: boolean })?.hasPasskey ? (
+            {user?.hasPasskey ? (
               <div className="flex items-center gap-2 rounded-lg bg-success/10 px-4 py-3 text-sm text-success-foreground">
                 <Check className="size-4" />
                 <span className="font-medium">Passkey configurado.</span>

@@ -1,9 +1,5 @@
 import { z } from "zod";
-
-export type {
-  PublicKeyCredentialCreationOptionsJSON,
-  PublicKeyCredentialRequestOptionsJSON,
-} from "@simplewebauthn/browser";
+import type { startAuthentication, startRegistration } from "@simplewebauthn/browser";
 
 export const AuthUserSchema = z.strictObject({
   email: z.string(),
@@ -18,8 +14,18 @@ export const AuthUserSchema = z.strictObject({
   status: z.string(),
 });
 
+// Shape matches RawRuleOf<MongoAbility> from @casl/ability — validated at runtime
+const abilityRuleSchema = z.object({
+  action: z.union([z.string(), z.array(z.string())]),
+  conditions: z.record(z.string(), z.unknown()).optional(),
+  fields: z.union([z.string(), z.array(z.string())]).optional(),
+  inverted: z.boolean().optional(),
+  reason: z.string().optional(),
+  subject: z.union([z.string(), z.array(z.string())]).optional(),
+});
+
 export const AuthSessionResponseSchema = z.strictObject({
-  abilityRules: z.array(z.unknown()).nullable().optional(),
+  abilityRules: z.array(abilityRuleSchema).nullable().optional(),
   permissionVersion: z.number().nullable().optional(),
   status: z.string(),
   user: AuthUserSchema.nullable().optional(),
@@ -84,7 +90,7 @@ export const PasskeyRegistrationOptionsSchema = z.strictObject({
     z.strictObject({
       alg: z.number(),
       type: z.string(),
-    }),
+    })
   ),
   rp: z.strictObject({
     id: z.string().optional(),
@@ -112,10 +118,10 @@ export const PasskeyRegistrationOptionsResponseSchema = z.union([
 export type PasskeyRegistrationOptionsZod = z.infer<typeof PasskeyRegistrationOptionsSchema>;
 export type PasskeyLoginOptionsZod = z.infer<typeof PasskeyLoginOptionsSchema>;
 
-// Type-safe types using native @simplewebauthn/server types
-// These are what the oRPC actually returns and what @simplewebauthn/browser expects
-export type PasskeyRegistrationOptions = PublicKeyCredentialCreationOptionsJSON;
-export type PasskeyLoginOptions = PublicKeyCredentialRequestOptionsJSON;
+// Type-safe types derived from @simplewebauthn/browser function signatures
+// These match exactly what startAuthentication/startRegistration expect
+export type PasskeyLoginOptions = Parameters<typeof startAuthentication>[0]["optionsJSON"];
+export type PasskeyRegistrationOptions = Parameters<typeof startRegistration>[0]["optionsJSON"];
 export type PasskeyRegistrationOptionsResponse = PasskeyRegistrationOptions | StatusResponse;
 export type PasskeyLoginOptionsResponse = PasskeyLoginOptions | StatusResponse;
 export type StatusResponse = z.infer<typeof StatusResponseSchema>;

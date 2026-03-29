@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useStore } from "@tanstack/react-store";
 import { useCallback } from "react";
+import type { RawRuleOf, MongoAbility } from "@casl/ability";
 import { ApiError } from "@/lib/api-client";
 import { ability, updateAbility } from "@/lib/authz/ability";
 import { logger } from "@/lib/logger";
@@ -26,11 +27,8 @@ export function useAuth() {
         const payload = AuthSessionResponseSchema.parse(await authORPCClient.session());
 
         if (payload.status === "ok" && payload.user) {
-          // Note: ability update is handled in AuthListener
-          // Cast unknown[] to proper rule type since backend provides correctly formatted CASL rules
           return {
-            abilityRules:
-              (payload.abilityRules as unknown as AuthSessionData["abilityRules"]) ?? [],
+            abilityRules: (payload.abilityRules ?? []) as RawRuleOf<MongoAbility>[],
             permissionVersion: payload.permissionVersion ?? 0,
             user: payload.user,
           };
@@ -100,7 +98,7 @@ export function useAuth() {
       await authORPCClient.passkeyLoginVerify({
         body: authResponse as Record<string, unknown>,
         challenge,
-      }),
+      })
     );
 
     if (payload.status !== "ok" || !payload.user) {
@@ -146,7 +144,7 @@ export function useAuth() {
       const userRoles = new Set(effectiveUser.roles.map((r) => r.toUpperCase()));
       return rolesToCheck.some((r) => userRoles.has(r.toUpperCase()));
     },
-    [effectiveUser],
+    [effectiveUser]
   );
 
   const can = useCallback((action: string, subject: string, field?: string) => {
