@@ -57,6 +57,7 @@ import { Route as AuthedFinanzasCounterpartsRouteImport } from "./routes/_authed
 import { Route as AuthedFinanzasCashFlowRouteImport } from "./routes/_authed/finanzas/cash-flow";
 import { Route as AuthedDevRoutesAuditRouteImport } from "./routes/_authed/dev/routes-audit";
 import { Route as AuthedClinicalHeatmapRouteImport } from "./routes/_authed/clinical/heatmap";
+import { Route as AuthedClinicalDoctoraliaRouteImport } from "./routes/_authed/clinical/doctoralia";
 import { Route as AuthedClinicalDayRouteImport } from "./routes/_authed/clinical/day";
 import { Route as AuthedClinicalClassifyRouteImport } from "./routes/_authed/clinical/classify";
 import { Route as AuthedClinicalAnalyticsRouteImport } from "./routes/_authed/clinical/analytics";
@@ -312,6 +313,11 @@ const AuthedClinicalHeatmapRoute = AuthedClinicalHeatmapRouteImport.update({
   path: "/heatmap",
   getParentRoute: () => AuthedClinicalRoute,
 } as any);
+const AuthedClinicalDoctoraliaRoute = AuthedClinicalDoctoraliaRouteImport.update({
+  id: "/doctoralia",
+  path: "/doctoralia",
+  getParentRoute: () => AuthedClinicalRoute,
+} as any);
 const AuthedClinicalDayRoute = AuthedClinicalDayRouteImport.update({
   id: "/day",
   path: "/day",
@@ -411,6 +417,7 @@ export interface FileRoutesByFullPath {
   "/clinical/analytics": typeof AuthedClinicalAnalyticsRoute;
   "/clinical/classify": typeof AuthedClinicalClassifyRoute;
   "/clinical/day": typeof AuthedClinicalDayRoute;
+  "/clinical/doctoralia": typeof AuthedClinicalDoctoraliaRoute;
   "/clinical/heatmap": typeof AuthedClinicalHeatmapRoute;
   "/dev/routes-audit": typeof AuthedDevRoutesAuditRoute;
   "/finanzas/cash-flow": typeof AuthedFinanzasCashFlowRoute;
@@ -471,6 +478,7 @@ export interface FileRoutesByTo {
   "/clinical/analytics": typeof AuthedClinicalAnalyticsRoute;
   "/clinical/classify": typeof AuthedClinicalClassifyRoute;
   "/clinical/day": typeof AuthedClinicalDayRoute;
+  "/clinical/doctoralia": typeof AuthedClinicalDoctoraliaRoute;
   "/clinical/heatmap": typeof AuthedClinicalHeatmapRoute;
   "/dev/routes-audit": typeof AuthedDevRoutesAuditRoute;
   "/finanzas/cash-flow": typeof AuthedFinanzasCashFlowRoute;
@@ -537,6 +545,7 @@ export interface FileRoutesById {
   "/_authed/clinical/analytics": typeof AuthedClinicalAnalyticsRoute;
   "/_authed/clinical/classify": typeof AuthedClinicalClassifyRoute;
   "/_authed/clinical/day": typeof AuthedClinicalDayRoute;
+  "/_authed/clinical/doctoralia": typeof AuthedClinicalDoctoraliaRoute;
   "/_authed/clinical/heatmap": typeof AuthedClinicalHeatmapRoute;
   "/_authed/dev/routes-audit": typeof AuthedDevRoutesAuditRoute;
   "/_authed/finanzas/cash-flow": typeof AuthedFinanzasCashFlowRoute;
@@ -603,6 +612,7 @@ export interface FileRouteTypes {
     | "/clinical/analytics"
     | "/clinical/classify"
     | "/clinical/day"
+    | "/clinical/doctoralia"
     | "/clinical/heatmap"
     | "/dev/routes-audit"
     | "/finanzas/cash-flow"
@@ -663,6 +673,7 @@ export interface FileRouteTypes {
     | "/clinical/analytics"
     | "/clinical/classify"
     | "/clinical/day"
+    | "/clinical/doctoralia"
     | "/clinical/heatmap"
     | "/dev/routes-audit"
     | "/finanzas/cash-flow"
@@ -728,6 +739,7 @@ export interface FileRouteTypes {
     | "/_authed/clinical/analytics"
     | "/_authed/clinical/classify"
     | "/_authed/clinical/day"
+    | "/_authed/clinical/doctoralia"
     | "/_authed/clinical/heatmap"
     | "/_authed/dev/routes-audit"
     | "/_authed/finanzas/cash-flow"
@@ -1116,6 +1128,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedClinicalHeatmapRouteImport;
       parentRoute: typeof AuthedClinicalRoute;
     };
+    "/_authed/clinical/doctoralia": {
+      id: "/_authed/clinical/doctoralia";
+      path: "/doctoralia";
+      fullPath: "/clinical/doctoralia";
+      preLoaderRoute: typeof AuthedClinicalDoctoraliaRouteImport;
+      parentRoute: typeof AuthedClinicalRoute;
+    };
     "/_authed/clinical/day": {
       id: "/_authed/clinical/day";
       path: "/day";
@@ -1255,6 +1274,7 @@ interface AuthedClinicalRouteChildren {
   AuthedClinicalAnalyticsRoute: typeof AuthedClinicalAnalyticsRoute;
   AuthedClinicalClassifyRoute: typeof AuthedClinicalClassifyRoute;
   AuthedClinicalDayRoute: typeof AuthedClinicalDayRoute;
+  AuthedClinicalDoctoraliaRoute: typeof AuthedClinicalDoctoraliaRoute;
   AuthedClinicalHeatmapRoute: typeof AuthedClinicalHeatmapRoute;
   AuthedClinicalIndexRoute: typeof AuthedClinicalIndexRoute;
 }
@@ -1264,6 +1284,7 @@ const AuthedClinicalRouteChildren: AuthedClinicalRouteChildren = {
   AuthedClinicalAnalyticsRoute: AuthedClinicalAnalyticsRoute,
   AuthedClinicalClassifyRoute: AuthedClinicalClassifyRoute,
   AuthedClinicalDayRoute: AuthedClinicalDayRoute,
+  AuthedClinicalDoctoraliaRoute: AuthedClinicalDoctoraliaRoute,
   AuthedClinicalHeatmapRoute: AuthedClinicalHeatmapRoute,
   AuthedClinicalIndexRoute: AuthedClinicalIndexRoute,
 };

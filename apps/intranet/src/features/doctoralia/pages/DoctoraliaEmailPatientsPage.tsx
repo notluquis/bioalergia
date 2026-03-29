@@ -1,4 +1,5 @@
-import { Button, Input, Surface } from "@heroui/react";
+import { Button, Surface } from "@heroui/react";
+import { Input } from "@/components/ui/Input";
 import { useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { Search, X } from "lucide-react";
