@@ -2,6 +2,7 @@
 import { serve } from "@hono/node-server";
 import { app } from "./app";
 import { startDoctoraliaCalendarScheduler } from "./lib/doctoralia/doctoralia-calendar-scheduler";
+import { startDoctoraliaImapListener } from "./lib/doctoralia/imap-idle";
 import { startDTESyncScheduler } from "./lib/dte/dte-sync-cron";
 import { startGoogleCalendarScheduler } from "./lib/google/google-calendar-scheduler";
 import { scheduleWatchChannelSetup } from "./lib/google/google-calendar-watch";
@@ -33,6 +34,10 @@ if (process.env.ENABLE_DOCTORALIA_CALENDAR_SYNC === "true") {
 
 if (process.env.ENABLE_WHATSAPP_NOTIFICATIONS === "true") {
   startWhatsappScheduler();
+}
+
+if (process.env.ENABLE_DOCTORALIA_IMAP === "true") {
+  startDoctoraliaImapListener();
 }
 
 serve({ fetch: app.fetch, port });

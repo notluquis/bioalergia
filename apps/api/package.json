@@ -10,6 +10,7 @@
     "type-check:watch": "tsgo --watch --pretty false",
     "google:auth": "tsx src/scripts/google-auth.ts",
     "doctoralia:diagnose-login": "tsx src/scripts/diagnose-doctoralia-login.ts",
+    "doctoralia:import-history": "tsx src/scripts/import-doctoralia-history.ts",
     "debug:intranet-request": "tsx src/scripts/debug-intranet-request.ts",
     "debug:mp-download": "tsx src/scripts/debug-intranet-request.ts",
     "lint": "oxlint",
