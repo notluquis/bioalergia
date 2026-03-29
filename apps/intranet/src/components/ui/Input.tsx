@@ -10,7 +10,13 @@ import {
   TextField,
 } from "@heroui/react";
 import { Eye, EyeOff } from "lucide-react";
-import React from "react";
+import {
+  type InputHTMLAttributes,
+  type ReactNode,
+  type TextareaHTMLAttributes,
+  useContext,
+  useState,
+} from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -85,7 +91,7 @@ const renderTextArea = (
     errorElement: React.ReactNode;
     commonTextFieldProps: { className?: string; isInvalid: boolean };
     variant: "primary" | "secondary";
-  },
+  }
 ) => (
   <TextField {...options.commonTextFieldProps}>
     {options.labelElement}
@@ -116,7 +122,7 @@ const renderGroupedInput = (
     placeholder?: string;
     hasError: boolean;
     variant: "primary" | "secondary";
-  },
+  }
 ) => (
   <TextField {...options.commonTextFieldProps}>
     {options.labelElement}
@@ -152,7 +158,7 @@ const renderSimpleInput = (
     inputType?: string;
     placeholder?: string;
     variant: "primary" | "secondary";
-  },
+  }
 ) => (
   <TextField {...options.commonTextFieldProps}>
     {options.labelElement}

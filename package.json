@@ -32,9 +32,9 @@
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
-    "@typescript/native-preview": "^7.0.0-dev.20260328.1",
-    "@zenstackhq/cli": "^3.5.1",
-    "@zenstackhq/sdk": "^3.5.1",
+    "@typescript/native-preview": "7.0.0-dev.20260329.1",
+    "@zenstackhq/cli": "^3.5.2",
+    "@zenstackhq/sdk": "^3.5.2",
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
     "oxfmt": "^0.42.0",

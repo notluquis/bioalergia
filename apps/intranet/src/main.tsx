@@ -8,7 +8,7 @@
 import { Spinner } from "@heroui/react";
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
-import React from "react";
+import { lazy, StrictMode, Suspense, useEffect } from "react";
 import ReactDOM from "react-dom/client";
 import { ZodError } from "zod";
 import { AuthListener } from "@/features/auth/components/AuthListener";

@@ -1,7 +1,7 @@
 import { Button, Checkbox, Popover, Tooltip } from "@heroui/react";
 import dayjs from "dayjs";
 import type { CellHookData } from "jspdf-autotable";
-import React from "react";
+import { useRef, useState } from "react";
 import { useSettings } from "@/context/SettingsContext";
 import type { Employee } from "@/features/hr/employees/types";
 import { apiClient } from "@/lib/api-client";
@@ -87,7 +87,7 @@ function openPdfPreviewOrAlert(dataUri: string) {
     return;
   }
   alert(
-    "No se pudo abrir la vista previa. Revisa si el navegador bloqueó las ventanas emergentes.",
+    "No se pudo abrir la vista previa. Revisa si el navegador bloqueó las ventanas emergentes."
   );
 }
 
@@ -122,7 +122,7 @@ export function TimesheetExportPDF({
   ];
 
   const [selectedCols, setSelectedCols] = React.useState<TimesheetColumnKey[]>(
-    columns.length > 0 ? columns : [...defaultCols],
+    columns.length > 0 ? columns : [...defaultCols]
   );
   const [showOptions, setShowOptions] = React.useState(false);
   const pdfLibsRef = React.useRef<null | {
@@ -303,7 +303,7 @@ async function addPdfHeader(
   settings: { logoUrl?: string; orgName?: string; orgAddress?: string; orgPhone?: string },
   logoUrl: string,
   pageWidth: number,
-  margin: number,
+  margin: number
 ): Promise<HeaderResult> {
   const resolvedLogo = settings.logoUrl || logoUrl;
   let logoDataUrl: null | string = null;
@@ -334,10 +334,10 @@ async function addPdfHeader(
     "Resumen de Prestación de Servicios a Honorarios (para emisión de BHE)",
     pageWidth - margin,
     headerTopY + 7,
-    { align: "right" },
+    { align: "right" }
   );
   const rightLines = [orgName, orgAddress, orgPhone ? `Tel: ${orgPhone}` : null].filter(
-    Boolean,
+    Boolean
   ) as string[];
   let rightY = headerTopY + 8;
   for (const line of rightLines) {
@@ -355,7 +355,7 @@ function addPrestadorInfo(
   summary: null | TimesheetSummaryRow,
   pageWidth: number,
   margin: number,
-  infoStartY: number,
+  infoStartY: number
 ): void {
   dayjs.locale("es");
   let periodEs = monthLabel;
@@ -429,7 +429,7 @@ function drawDetailTable({
   startY,
 }: DetailTableProps) {
   const hasAnyOvertime = bulkRows.some(
-    (row) => row.overtime && row.overtime !== "0:00" && row.overtime !== "00:00",
+    (row) => row.overtime && row.overtime !== "0:00" && row.overtime !== "00:00"
   );
   const baseColKeys: TimesheetColumnKey[] =
     selectedCols.length > 0 ? selectedCols : [...defaultCols];
@@ -461,7 +461,7 @@ function drawDetailTable({
           return assertUnreachable(key);
         }
       }
-    }),
+    })
   );
 
   if (body.length === 0) {
@@ -527,7 +527,7 @@ function drawSummaryTable({
       ["Tarifa por hora", fmtCLP(summary.hourlyRate || 0)],
       ["Monto bruto de honorarios", fmtCLP(summary.subtotal || 0)],
       [`Retención (${retentionPercent})`, `-${fmtCLP(summary.retention || 0)}`],
-      ["Líquido estimado", fmtCLP(summary.net || 0)],
+      ["Líquido estimado", fmtCLP(summary.net || 0)]
     );
   }
 
