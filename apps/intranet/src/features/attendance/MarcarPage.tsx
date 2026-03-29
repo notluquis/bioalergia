@@ -43,7 +43,7 @@ function MarcarContent() {
       <MarkButton currentStatus={currentStatus} onSuccess={handleMarkSuccess} />
 
       <section>
-        <h2 className="mb-3 text-sm font-medium text-gray-500 uppercase tracking-wide">
+        <h2 className="mb-3 text-sm font-medium text-foreground-500 uppercase tracking-wide">
           Registros de hoy — {dayjs().tz(TIMEZONE).format("dddd D [de] MMMM")}
         </h2>
         <TodayMarksList marks={todayMarks} />
@@ -55,7 +55,7 @@ function MarcarContent() {
 export function MarcarPage() {
   return (
     <div className="mx-auto max-w-sm px-4 py-8">
-      <h1 className="mb-6 text-2xl font-bold text-gray-900">Marcaje de Asistencia</h1>
+      <h1 className="mb-6 text-2xl font-bold">Marcaje de Asistencia</h1>
       <Suspense
         fallback={
           <div className="flex flex-col gap-4">

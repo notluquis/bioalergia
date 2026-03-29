@@ -1,4 +1,4 @@
-import { Button } from "@heroui/react";
+import { Alert, Button } from "@heroui/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import type {
@@ -25,7 +25,7 @@ function getGpsPosition(): Promise<GeolocationPosition | null> {
     navigator.geolocation.getCurrentPosition(
       (pos) => resolve(pos),
       () => resolve(null), // GPS opcional — nunca bloquea
-      { enableHighAccuracy: true, timeout: 8_000, maximumAge: 0 }
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 8_000 }
     );
   });
 }
@@ -44,45 +44,60 @@ export function MarkButton({ currentStatus, onSuccess }: MarkButtonProps) {
       if (position === null) setGpsError(true);
 
       return attendanceORPCClient.mark({
-        type: markType,
+        accuracyMeters: position?.coords.accuracy,
         latitude: position?.coords.latitude,
         longitude: position?.coords.longitude,
-        accuracyMeters: position?.coords.accuracy,
+        type: markType,
       });
-    },
-    onSuccess: (data) => {
-      onSuccess(data.mark);
-      void queryClient.invalidateQueries({ queryKey: ["attendance", "status"] });
     },
     onError: (error) => {
       const apiError = toAttendanceApiError(error);
       console.error("[attendance] mark error:", apiError.message);
     },
+    onSuccess: (data) => {
+      onSuccess(data.mark);
+      void queryClient.invalidateQueries({ queryKey: ["attendance", "status"] });
+    },
   });
 
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div className="flex flex-col gap-2">
       <Button
-        variant={markType === "CLOCK_IN" ? "primary" : "danger"}
-        className="w-full max-w-xs"
+        className="w-full"
         isDisabled={mutation.isPending}
         onPress={() => mutation.mutate()}
+        variant={markType === "CLOCK_IN" ? "primary" : "danger"}
       >
         {mutation.isPending ? "Registrando..." : label}
       </Button>
 
       {gpsError && (
-        <p className="text-xs text-yellow-600">
-          GPS no disponible — marca registrada sin ubicación.
-        </p>
+        <Alert status="warning">
+          <Alert.Indicator />
+          <Alert.Content>
+            <Alert.Description>
+              GPS no disponible — marca registrada sin ubicación.
+            </Alert.Description>
+          </Alert.Content>
+        </Alert>
       )}
 
       {mutation.isError && (
-        <p className="text-xs text-red-500">{toAttendanceApiError(mutation.error).message}</p>
+        <Alert status="danger">
+          <Alert.Indicator />
+          <Alert.Content>
+            <Alert.Description>{toAttendanceApiError(mutation.error).message}</Alert.Description>
+          </Alert.Content>
+        </Alert>
       )}
 
       {mutation.isSuccess && (
-        <p className="text-xs text-green-600">¡Marca registrada correctamente!</p>
+        <Alert status="success">
+          <Alert.Indicator />
+          <Alert.Content>
+            <Alert.Description>¡Marca registrada correctamente!</Alert.Description>
+          </Alert.Content>
+        </Alert>
       )}
     </div>
   );
