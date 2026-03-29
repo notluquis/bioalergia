@@ -42,9 +42,7 @@ export async function fetchClinicalSeries(
   filters?: ClinicalSeriesFilters
 ): Promise<ClinicalSeriesListResult> {
   try {
-    const result = (await clinicalSeriesORPCClient.list(
-      compactORPCInput(filters) ?? {}
-    )) as unknown as ClinicalSeriesListResult;
+    const result = await clinicalSeriesORPCClient.list(compactORPCInput(filters) ?? {});
     return {
       items: ClinicalSeriesSnapshotSchema.array().parse(result.items),
       page: result.page,

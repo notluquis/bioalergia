@@ -2,12 +2,13 @@ import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import {
   detailExpenseInputSchema,
+  expenseDetailResponseSchema,
+  expenseLinkResponseSchema,
   expensePayloadSchema,
   expensesListResponseSchema,
   expensesStatsResponseSchema,
   linkTransactionInputSchema,
   listExpensesInputSchema,
-  placeholderExpenseResponseSchema,
   statsExpensesInputSchema,
   unlinkTransactionInputSchema,
 } from "@finanzas/orpc-contracts/expenses";
@@ -72,29 +73,28 @@ const updateExpenses = authed.use(async ({ context, next }) => {
   return next();
 });
 
-const notImplemented = {
-  message: "MonthlyExpense feature not yet implemented",
-  status: "error" as const,
-};
+function notImplemented(): never {
+  throw new ORPCError("NOT_IMPLEMENTED", { message: "MonthlyExpense feature not yet implemented" });
+}
 
 const expensesORPCRouterBase = {
   create: createExpenses
     .route({ method: "POST", path: "/" })
     .input(expensePayloadSchema)
-    .output(placeholderExpenseResponseSchema)
-    .handler(async () => notImplemented),
+    .output(expenseDetailResponseSchema)
+    .handler(async () => notImplemented()),
 
   detail: readExpenses
     .route({ method: "GET", path: "/{publicId}" })
     .input(detailExpenseInputSchema)
-    .output(placeholderExpenseResponseSchema)
-    .handler(async () => notImplemented),
+    .output(expenseDetailResponseSchema)
+    .handler(async () => notImplemented()),
 
   linkTransaction: updateExpenses
     .route({ method: "POST", path: "/{publicId}/link" })
     .input(linkTransactionInputSchema)
-    .output(placeholderExpenseResponseSchema)
-    .handler(async () => notImplemented),
+    .output(expenseLinkResponseSchema)
+    .handler(async () => notImplemented()),
 
   list: readExpenses
     .route({ method: "GET", path: "/" })
@@ -111,14 +111,14 @@ const expensesORPCRouterBase = {
   unlinkTransaction: updateExpenses
     .route({ method: "POST", path: "/{publicId}/unlink" })
     .input(unlinkTransactionInputSchema)
-    .output(placeholderExpenseResponseSchema)
-    .handler(async () => notImplemented),
+    .output(expenseLinkResponseSchema)
+    .handler(async () => notImplemented()),
 
   update: updateExpenses
     .route({ method: "PUT", path: "/{publicId}" })
     .input(detailExpenseInputSchema.extend({ payload: expensePayloadSchema }))
-    .output(placeholderExpenseResponseSchema)
-    .handler(async () => notImplemented),
+    .output(expenseDetailResponseSchema)
+    .handler(async () => notImplemented()),
 };
 
 export const expensesORPCRouter = base.prefix("/api/orpc/expenses").router(expensesORPCRouterBase);
