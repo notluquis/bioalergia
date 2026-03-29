@@ -885,13 +885,18 @@ const authORPCRouterBase = {
       }
 
       const responseBody = input.body as unknown as RegistrationResponseJSON;
-      const { verifyRegistrationResponse } = await import("@simplewebauthn/server");
-      const verification = await verifyRegistrationResponse({
-        expectedChallenge: input.challenge,
-        expectedOrigin: ORIGIN,
-        expectedRPID: RP_ID,
-        response: responseBody,
-      });
+      let verification;
+      try {
+        const { verifyRegistrationResponse } = await import("@simplewebauthn/server");
+        verification = await verifyRegistrationResponse({
+          expectedChallenge: input.challenge,
+          expectedOrigin: ORIGIN,
+          expectedRPID: RP_ID,
+          response: responseBody,
+        });
+      } catch (err) {
+        authError("BAD_REQUEST", err instanceof Error ? err.message : "Verificación fallida");
+      }
 
       if (!verification.verified || !verification.registrationInfo) {
         authError("BAD_REQUEST", "Verificación fallida");
