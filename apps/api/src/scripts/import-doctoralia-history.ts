@@ -121,7 +121,7 @@ interface RawEmail {
 }
 
 async function fetchFromAccount(account: AccountConfig): Promise<RawEmail[]> {
-  const senderFilter = account.senderFilter ?? "doctoralia.com";
+  const senderFilter = account.senderFilter ?? "doctoralia";
   const mailbox = account.mailbox ?? "INBOX";
 
   const client = new ImapFlow({
@@ -155,13 +155,19 @@ async function fetchFromAccount(account: AccountConfig): Promise<RawEmail[]> {
 
       for await (const msg of client.fetch(uids, {
         bodyParts: ["1", "TEXT"],
+        bodyStructure: true,
         envelope: true,
       })) {
         const messageId = msg.envelope?.messageId ?? `imap-${account.user}-${msg.uid}`;
         const subject = msg.envelope?.subject ?? "";
 
+        // Detect charset — old template uses iso-8859-1, new uses utf-8
+        const charset =
+          msg.bodyStructure?.parameters?.charset ??
+          msg.bodyStructure?.childNodes?.[0]?.parameters?.charset ??
+          "utf-8";
         const bodyBuffer = msg.bodyParts?.get("1") ?? msg.bodyParts?.get("TEXT");
-        const rawBody = bodyBuffer?.toString("utf-8") ?? "";
+        const rawBody = bodyBuffer ? new TextDecoder(charset).decode(bodyBuffer) : "";
 
         const body =
           rawBody.includes("<html") || rawBody.includes("<HTML")
@@ -206,11 +212,13 @@ interface ParsedBooking {
   messageId: string;
   account: string;
   subject: string;
+  eventType: "BOOKING" | "MODIFICATION";
   patientName: string;
   patientPhone: string | null;
   patientEmail: string | null;
   isFirstAppointment: boolean;
   appointmentDate: Date | null;
+  previousAppointmentDate: Date | null;
   appointmentService: string | null;
   appointmentDoctor: string | null;
   clinicAddress: string | null;
@@ -246,7 +254,21 @@ for (const raw of allRaw) {
   }
   seenContentKeys.add(key);
 
-  parsed.push({ ...booking, account: raw.account, messageId: raw.messageId, subject: raw.subject });
+  parsed.push({
+    account: raw.account,
+    appointmentDate: booking.appointmentDate,
+    appointmentDoctor: booking.appointmentDoctor,
+    appointmentService: booking.appointmentService,
+    clinicAddress: booking.clinicAddress,
+    eventType: booking.eventType,
+    isFirstAppointment: booking.isFirstAppointment,
+    messageId: raw.messageId,
+    patientEmail: booking.patientEmail,
+    patientName: booking.patientName,
+    patientPhone: booking.patientPhone,
+    previousAppointmentDate: booking.previousAppointmentDate,
+    subject: raw.subject,
+  });
 }
 
 console.log(`Parsed           : ${parsed.length}`);
@@ -284,7 +306,7 @@ if (DRY_RUN) {
   console.log("\n--- DRY RUN: would insert ---");
   for (const b of toInsert) {
     console.log(
-      `  ${b.patientName} | ${b.appointmentDate?.toISOString() ?? "no date"} | ${b.appointmentDoctor ?? "no doctor"} (${b.account})`,
+      `  [${b.eventType}] ${b.patientName} | ${b.appointmentDate?.toISOString() ?? "no date"} | ${b.appointmentDoctor ?? "no doctor"} (${b.account})`,
     );
   }
   process.exit(0);
@@ -306,11 +328,13 @@ for (const b of toInsert) {
         clinicAddress: b.clinicAddress ?? null,
         createdAt: now,
         emailMessageId: b.messageId,
+        eventType: b.eventType,
         id: createId(),
         isFirstAppointment: b.isFirstAppointment,
         patientEmail: b.patientEmail ?? null,
         patientName: b.patientName,
         patientPhone: b.patientPhone ?? null,
+        previousAppointmentDate: b.previousAppointmentDate?.toISOString() ?? null,
         updatedAt: now,
       })
       .execute();

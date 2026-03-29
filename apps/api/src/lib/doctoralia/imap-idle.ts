@@ -49,7 +49,7 @@ function getImapConfig(): ImapConfig | null {
     pass,
     port: parseInt(process.env.DOCTORALIA_IMAP_PORT ?? "993", 10),
     secure: process.env.DOCTORALIA_IMAP_SECURE !== "0",
-    senderFilter: process.env.DOCTORALIA_EMAIL_SENDER_FILTER ?? "doctoralia.com",
+    senderFilter: process.env.DOCTORALIA_EMAIL_SENDER_FILTER ?? "doctoralia",
     user,
   };
 }
@@ -69,8 +69,9 @@ async function processUnseen(client: ImapFlow, config: ImapConfig): Promise<void
   logEvent("doctoralia.imap.found", { count: uids.length });
 
   for await (const msg of client.fetch(uids, {
-    // bodyParts gives us the decoded (QP/base64 decoded) body content
+    // bodyParts gives us QP/base64-decoded bytes; bodyStructure gives charset
     bodyParts: ["1", "TEXT"],
+    bodyStructure: true,
     envelope: true,
   })) {
     const messageId = msg.envelope?.messageId ?? `imap-${msg.uid}`;
@@ -91,9 +92,13 @@ async function processUnseen(client: ImapFlow, config: ImapConfig): Promise<void
       continue;
     }
 
-    // Decode body — imapflow returns QP/base64-decoded buffers via bodyParts
+    // Detect charset from bodyStructure (old template uses iso-8859-1, new uses utf-8)
+    const charset =
+      msg.bodyStructure?.parameters?.charset ??
+      msg.bodyStructure?.childNodes?.[0]?.parameters?.charset ??
+      "utf-8";
     const bodyBuffer = msg.bodyParts?.get("1") ?? msg.bodyParts?.get("TEXT");
-    const rawBody = bodyBuffer?.toString("utf-8") ?? "";
+    const rawBody = bodyBuffer ? new TextDecoder(charset).decode(bodyBuffer) : "";
 
     const emailText = rawBody.includes("<html") || rawBody.includes("<HTML")
       ? htmlToText(rawBody)
@@ -120,16 +125,19 @@ async function processUnseen(client: ImapFlow, config: ImapConfig): Promise<void
           clinicAddress: booking.clinicAddress ?? null,
           createdAt: now,
           emailMessageId: messageId,
+          eventType: booking.eventType,
           id: createId(),
           isFirstAppointment: booking.isFirstAppointment,
           patientEmail: booking.patientEmail ?? null,
           patientName: booking.patientName,
           patientPhone: booking.patientPhone ?? null,
+          previousAppointmentDate: booking.previousAppointmentDate?.toISOString() ?? null,
           updatedAt: now,
         })
         .execute();
 
       logEvent("doctoralia.imap.saved", {
+        eventType: booking.eventType,
         isFirstAppointment: booking.isFirstAppointment,
         messageId,
         patientName: booking.patientName,

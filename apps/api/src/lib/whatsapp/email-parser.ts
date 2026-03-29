@@ -1,17 +1,27 @@
 /**
  * Doctoralia email parser.
- * Extracts patient booking info from Doctoralia notification emails.
+ * Handles two email types sent by Doctoralia:
  *
- * Sample patient line:  "Lucas Villagrán (+56987162160 sapf1983@gmail.com)"
- * Sample date line:     "Martes, 31 de marzo de 2026 a las 6:15 p. m."
+ *  BOOKING      — "Tiene un nuevo paciente que ha reservado una cita"
+ *  MODIFICATION — "X ha modificado la cita"
+ *
+ * Template variants:
+ *  - New (2026+): charset=utf-8, sender @doctoralia.cl, 12h time with p. m.
+ *  - Old (2025):  charset=iso-8859-1, sender @doctoralia.com, 24h time or range
  */
 
+export type DoctoraliaEmailEventType = "BOOKING" | "MODIFICATION";
+
 export interface DoctoraliaBookingInfo {
+  eventType: DoctoraliaEmailEventType;
   patientName: string;
   patientPhone: string | null;
   patientEmail: string | null;
   isFirstAppointment: boolean;
+  /** New appointment date (or the single date for BOOKING) */
   appointmentDate: Date | null;
+  /** Original date being replaced — only set for MODIFICATION */
+  previousAppointmentDate: Date | null;
   appointmentService: string | null;
   appointmentDoctor: string | null;
   clinicAddress: string | null;
@@ -32,23 +42,82 @@ const MONTH_MAP: Record<string, number> = {
   diciembre: 11,
 };
 
+// ---------------------------------------------------------------------------
+// Date helpers
+// ---------------------------------------------------------------------------
+
 /**
- * Extract booking info from an email's plain-text body.
- * Falls back gracefully if fields are not found.
+ * Parse a single-line date string in these formats:
+ *   "31 de marzo de 2026 a las 6:15 p. m."   (12h with am/pm)
+ *   "6 de mayo de 2025 a las 13:15"           (24h, no am/pm)
+ *   "20 de mayo de 2025 a las 11:00-11:40"    (range — only start is used)
  */
-export function parseDoctoraliaEmail(text: string): DoctoraliaBookingInfo | null {
-  if (!text) {
-    return null;
+function parseDateLine(line: string): Date | null {
+  const pattern =
+    /(\d{1,2})\s+de\s+(\w+)\s+de\s+(\d{4})\s+a\s+las\s+(\d{1,2}):(\d{2})(?:-\d{1,2}:\d{2})?(?:\s*(a\s*\.?\s*m\.?|p\s*\.?\s*m\.?))?/i;
+  const match = pattern.exec(line);
+  if (!match) return null;
+
+  const day = parseInt(match[1], 10);
+  const monthName = match[2].toLowerCase();
+  const year = parseInt(match[3], 10);
+  const hours = parseInt(match[4], 10);
+  const minutes = parseInt(match[5], 10);
+  const ampm = match[6]?.replace(/[\s.]/g, "").toLowerCase() ?? null;
+  const month = MONTH_MAP[monthName];
+  if (month === undefined) return null;
+
+  let h = hours;
+  if (ampm === "pm" && h < 12) h += 12;
+  if (ampm === "am" && h === 12) h = 0;
+  return new Date(year, month, day, h, minutes);
+}
+
+/**
+ * Look for a date across one or two consecutive lines.
+ * Handles both single-line ("Martes, 31 de marzo de 2026 a las 6:15 p. m.")
+ * and two-line ("Martes, 20 de mayo de 2025\na las 11:00-11:40") formats.
+ * Returns [date, nextLineIndex] where nextLineIndex is the line after the date.
+ */
+function findDateAt(lines: string[], startIdx: number): [Date | null, number] {
+  const line = lines[startIdx];
+  if (!line) return [null, startIdx + 1];
+
+  // Single-line: contains both date and time
+  const d = parseDateLine(line);
+  if (d) return [d, startIdx + 1];
+
+  // Two-line: date on this line, time on next
+  // Date-only pattern: "Martes, 20 de mayo de 2025" (no "a las")
+  if (/\d{1,2}\s+de\s+\w+\s+de\s+\d{4}/.test(line)) {
+    const nextLine = lines[startIdx + 1] ?? "";
+    if (/^a\s+las\s+/i.test(nextLine)) {
+      const combined = `${line} ${nextLine}`;
+      const d2 = parseDateLine(combined);
+      if (d2) return [d2, startIdx + 2];
+    }
   }
+
+  return [null, startIdx + 1];
+}
+
+// ---------------------------------------------------------------------------
+// Main parser
+// ---------------------------------------------------------------------------
+
+export function parseDoctoraliaEmail(text: string): DoctoraliaBookingInfo | null {
+  if (!text) return null;
 
   const lines = text
     .split(/\r?\n/)
     .map((l) => l.trim())
     .filter(Boolean);
 
-  // --- Patient name + phone + email ---
-  // Pattern: "Name Surname (+56912345678 email@example.com)"
-  // or just:  "Name Surname (+56912345678)"
+  // --- Email type ---
+  const isModification = lines.some((l) => /ha modificado la cita/i.test(l));
+  const eventType: DoctoraliaEmailEventType = isModification ? "MODIFICATION" : "BOOKING";
+
+  // --- Patient ---
   const patientLinePattern = /^(.+?)\s*\(\s*([^)]+)\s*\)\s*$/;
   let patientName: string | null = null;
   let patientPhone: string | null = null;
@@ -58,88 +127,81 @@ export function parseDoctoraliaEmail(text: string): DoctoraliaBookingInfo | null
     const match = patientLinePattern.exec(line);
     if (match) {
       const candidate = match[1].trim();
-      // Make sure it looks like a name (not a date or URL)
       if (candidate.length > 2 && !/\d{4}|http|@/.test(candidate)) {
         patientName = candidate;
         const inner = match[2].trim();
-        // Extract phone from inner group
         const phoneMatch = /\+?\d[\d\s]{7,14}/.exec(inner);
-        if (phoneMatch) {
-          patientPhone = phoneMatch[0].replace(/\s/g, "");
-        }
-        // Extract email from inner group
+        if (phoneMatch) patientPhone = phoneMatch[0].replace(/\s/g, "");
         const emailMatch = /[\w.+-]+@[\w.-]+\.[a-zA-Z]{2,}/.exec(inner);
-        if (emailMatch) {
-          patientEmail = emailMatch[0];
-        }
+        if (emailMatch) patientEmail = emailMatch[0];
         break;
       }
     }
   }
 
-  // Fallback: any line containing a Chilean phone number that also has a name
+  // Fallback: Chilean phone number on a line
   if (!patientName) {
     for (const line of lines) {
       const phoneMatch = /(\+?56\s*9\d{8}|\+\d{10,14})/.exec(line);
       if (phoneMatch) {
         patientPhone = phoneMatch[0].replace(/\s/g, "");
-        // Name is everything before the phone
         const namePart = line.slice(0, phoneMatch.index).trim().replace(/[(),]/g, "").trim();
-        if (namePart.length > 2) {
-          patientName = namePart;
-        }
+        if (namePart.length > 2) patientName = namePart;
         break;
       }
     }
   }
 
-  // --- First appointment ---
+  if (!patientName) return null;
+
+  // --- First appointment flag (BOOKING only) ---
   const isFirstAppointment = lines.some((l) =>
     /primera\s+cita\s+de\s+este\s+paciente/i.test(l),
   );
 
-  // --- Appointment date ---
-  // Line after "Fecha y hora" label.
-  // Format: "Martes, 31 de marzo de 2026 a las 6:15 p. m."
-  // Unicode spaces (U+00A0, U+202F) between time and am/pm are already normalized
-  // by htmlToText before this function is called.
+  // --- Dates ---
   let appointmentDate: Date | null = null;
-  const dateIdx = lines.findIndex((l) => /^fecha\s+y\s+hora$/i.test(l));
-  const dateLine = dateIdx !== -1 ? (lines[dateIdx + 1] ?? null) : null;
+  let previousAppointmentDate: Date | null = null;
 
-  if (dateLine) {
-    const datePattern =
-      /(\d{1,2})\s+de\s+(\w+)\s+de\s+(\d{4})\s+a\s+las\s+(\d{1,2}):(\d{2})\s*(a\s*\.?\s*m\.?|p\s*\.?\s*m\.?)/i;
-    const match = datePattern.exec(dateLine);
-    if (match) {
-      const day = parseInt(match[1], 10);
-      const monthName = match[2].toLowerCase();
-      const year = parseInt(match[3], 10);
-      const hours = parseInt(match[4], 10);
-      const minutes = parseInt(match[5], 10);
-      const ampm = match[6].replace(/[\s.]/g, "").toLowerCase();
-      const month = MONTH_MAP[monthName];
-
-      if (month !== undefined) {
-        let h = hours;
-        if (ampm === "pm" && h < 12) h += 12;
-        if (ampm === "am" && h === 12) h = 0;
-        appointmentDate = new Date(year, month, day, h, minutes);
-      }
+  if (!isModification) {
+    // BOOKING: look for "Fecha y hora" label, then take the next line(s)
+    const dateIdx = lines.findIndex((l) => /^fecha\s+y\s+hora$/i.test(l));
+    if (dateIdx !== -1) {
+      [appointmentDate] = findDateAt(lines, dateIdx + 1);
     }
+  } else {
+    // MODIFICATION: two date blocks appear in sequence — new date first, old date second.
+    // Scan all lines for date patterns.
+    const datePairs: Date[] = [];
+    let i = 0;
+    while (i < lines.length && datePairs.length < 2) {
+      const line = lines[i];
+      if (line && /\d{1,2}\s+de\s+\w+\s+de\s+\d{4}/.test(line)) {
+        const [d, nextI] = findDateAt(lines, i);
+        if (d) {
+          datePairs.push(d);
+          i = nextI;
+          continue;
+        }
+      }
+      i++;
+    }
+    appointmentDate = datePairs[0] ?? null;
+    previousAppointmentDate = datePairs[1] ?? null;
   }
 
   // --- Service ---
-  // Line after "Servicio" label
   let appointmentService: string | null = null;
-  const serviceIdx = lines.findIndex((l) => /^servicio$/i.test(l));
-  if (serviceIdx !== -1 && serviceIdx + 1 < lines.length) {
-    appointmentService = lines[serviceIdx + 1];
+
+  if (!isModification) {
+    // BOOKING: line after "Servicio" label
+    const serviceIdx = lines.findIndex((l) => /^servicio$/i.test(l));
+    if (serviceIdx !== -1) appointmentService = lines[serviceIdx + 1] ?? null;
   }
 
-  // Fallback: line that contains duration "(40 min)"
+  // Fallback for both types: line containing "(X min)"
   if (!appointmentService) {
-    const servicePattern = /\((\d+)\s*min\)/i;
+    const servicePattern = /\(\d+\s*min\)/i;
     for (const line of lines) {
       if (servicePattern.test(line)) {
         appointmentService = line.trim();
@@ -149,22 +211,37 @@ export function parseDoctoraliaEmail(text: string): DoctoraliaBookingInfo | null
   }
 
   // --- Doctor ---
-  // Line after "Profesional" label
   let appointmentDoctor: string | null = null;
-  const profIdx = lines.findIndex((l) => /^profesional$/i.test(l));
-  if (profIdx !== -1 && profIdx + 1 < lines.length) {
-    appointmentDoctor = lines[profIdx + 1];
+
+  if (!isModification) {
+    // BOOKING: line after "Profesional" label
+    const profIdx = lines.findIndex((l) => /^profesional$/i.test(l));
+    if (profIdx !== -1) appointmentDoctor = lines[profIdx + 1] ?? null;
+  } else {
+    // MODIFICATION: doctor appears directly after service (no label)
+    const serviceLineIdx = lines.findIndex((l) => /\(\d+\s*min\)/i.test(l));
+    if (serviceLineIdx !== -1) {
+      const candidate = lines[serviceLineIdx + 1];
+      // Basic name heuristic: at least two words, no digits, no URLs
+      if (candidate && /^[A-ZÁÉÍÓÚÜÑa-záéíóúüñ]/.test(candidate) && !/\d|http/.test(candidate)) {
+        appointmentDoctor = candidate;
+      }
+    }
   }
 
   // --- Clinic address ---
   let clinicAddress: string | null = null;
-  const dirIdx = lines.findIndex((l) => /^direcci[oó]n$/i.test(l));
-  if (dirIdx !== -1 && dirIdx + 1 < lines.length) {
-    clinicAddress = lines[dirIdx + 1];
-  }
 
-  if (!patientName) {
-    return null;
+  if (!isModification) {
+    // BOOKING: line after "Dirección" label
+    const dirIdx = lines.findIndex((l) => /^direcci[oó]n$/i.test(l));
+    if (dirIdx !== -1) clinicAddress = lines[dirIdx + 1] ?? null;
+  } else {
+    // MODIFICATION: clinic appears after doctor (two lines after service)
+    const serviceLineIdx = lines.findIndex((l) => /\(\d+\s*min\)/i.test(l));
+    if (serviceLineIdx !== -1 && appointmentDoctor) {
+      clinicAddress = lines[serviceLineIdx + 2] ?? null;
+    }
   }
 
   return {
@@ -172,16 +249,17 @@ export function parseDoctoraliaEmail(text: string): DoctoraliaBookingInfo | null
     appointmentDoctor,
     appointmentService,
     clinicAddress,
+    eventType,
     isFirstAppointment,
     patientEmail,
     patientName,
     patientPhone,
+    previousAppointmentDate,
   };
 }
 
 /**
  * Try to extract plain text from an HTML email body.
- * Simple approach: strip tags and decode common HTML entities.
  * Also normalizes Unicode whitespace (NBSP, narrow NBSP) to regular spaces.
  */
 export function htmlToText(html: string): string {
