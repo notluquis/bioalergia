@@ -4,6 +4,7 @@ import timezone from "dayjs/plugin/timezone.js";
 import utc from "dayjs/plugin/utc.js";
 import { sql } from "kysely";
 import { joinClinicalText, normalizeClinicalText } from "../lib/clinical-text";
+import { parseCalendarMetadata } from "../lib/parsers";
 import { normalizeRut } from "../lib/rut";
 
 dayjs.extend(utc);
@@ -543,6 +544,20 @@ function cleanStructuredFieldValue(value: string): string {
   return value.replace(/\s+/g, " ").replace(/[;,]+$/g, "").trim();
 }
 
+function trimBoletaBlock(value: string): string {
+  const normalized = value.trim();
+  if (!normalized) return normalized;
+
+  const patientSectionIndex = normalized.search(
+    /\n{2,}(?=(?:\d{1,3}\s*a[ñn]os?\b|\d{1,2}\.?\d{3}\.?\d{3}-?[\dkK]\b))/i,
+  );
+  if (patientSectionIndex >= 0) {
+    return normalized.slice(0, patientSectionIndex).trim();
+  }
+
+  return normalized;
+}
+
 function extractStructuredClinicalDescription(text: string): StructuredClinicalDescription {
   const empty: StructuredClinicalDescription = {
     beneficiaryCandidates: [],
@@ -599,11 +614,13 @@ function extractStructuredClinicalDescription(text: string): StructuredClinicalD
   for (let index = 0; index < sections.length; index += 1) {
     const section = sections[index]!;
     const end = sections[index + 1]?.matchIndex ?? text.length;
-    const value = cleanStructuredFieldValue(text.slice(section.valueStart, end));
+    const rawValue = text.slice(section.valueStart, end).trim();
+    const value =
+      section.key === "boleta" ? rawValue : cleanStructuredFieldValue(rawValue);
     if (value) values.set(section.key, value);
   }
 
-  const boletaBlock = values.get("boleta") ?? null;
+  const boletaBlock = values.get("boleta") ? trimBoletaBlock(values.get("boleta")!) : null;
   const beneficiaryCandidates: Array<{ name: null | string; rut: string }> = [];
   if (boletaBlock) {
     const boletaRutRegex = new RegExp(RUT_REGEX.source, "g");
@@ -612,11 +629,16 @@ function extractStructuredClinicalDescription(text: string): StructuredClinicalD
       const rut = sanitizeRut(normalizeRut(boletaMatch[0]));
       if (!rut) continue;
       const lineStart = boletaBlock.lastIndexOf("\n", boletaMatch.index) + 1;
-      const lineBeforeRut = cleanStructuredFieldValue(
+      let lineBeforeRut = cleanStructuredFieldValue(
         boletaBlock
           .slice(lineStart, boletaMatch.index)
           .replace(/^boleta\s*:\s*/i, ""),
       );
+      if (!lineBeforeRut) {
+        const beforeRutText = boletaBlock.slice(0, lineStart).replace(/^boleta\s*:\s*/i, "").trimEnd();
+        const previousLine = beforeRutText.split("\n").map((line) => cleanStructuredFieldValue(line)).filter(Boolean).at(-1);
+        lineBeforeRut = previousLine ?? "";
+      }
       const name = extractNamesFromText(lineBeforeRut)[0] ?? (normalizeName(lineBeforeRut) || null);
       if (!beneficiaryCandidates.some((candidate) => candidate.rut === rut)) {
         beneficiaryCandidates.push({ name, rut });
@@ -1388,6 +1410,10 @@ async function loadEventSeriesCandidatesByIds(
 // null if the event does not qualify for a clinical series.
 async function assignEventToSeries(event: EventSeriesCandidate, ctx?: SeriesAssignmentContext): Promise<null | number> {
   const kind = inferSeriesKind(event);
+  const inferredMetadata = parseCalendarMetadata({
+    description: event.description,
+    summary: event.summary,
+  });
   if (!kind) {
     if (event.clinicalSeriesId != null) {
       await db.event.update({
@@ -1408,14 +1434,20 @@ async function assignEventToSeries(event: EventSeriesCandidate, ctx?: SeriesAssi
     patientRut: sanitizeRut(inferredIdentity.patientRut ?? event.patientRut),
   };
 
+  const eventPatch = {
+    beneficiaryName: identity.beneficiaryName,
+    beneficiaryRut: identity.beneficiaryRut,
+    patientName: identity.patientName,
+    patientRut: identity.patientRut,
+    seriesStageKind: inferredMetadata.seriesStageKind ?? null,
+    seriesStageLabel: inferredMetadata.seriesStageLabel ?? null,
+    seriesStageNumber: inferredMetadata.seriesStageNumber ?? null,
+    treatmentStage: inferredMetadata.treatmentStage ?? null,
+  };
+
   await db.event.update({
     where: { id: event.eventId },
-    data: {
-      beneficiaryName: identity.beneficiaryName,
-      beneficiaryRut: identity.beneficiaryRut,
-      patientName: identity.patientName,
-      patientRut: identity.patientRut,
-    },
+    data: eventPatch,
   });
 
   if (!identity.patientName && !identity.patientRut) {

@@ -104,6 +104,50 @@ describe("extractPatientHints", () => {
     });
   });
 
+  describe("structured BOLETA parsing", () => {
+    it("keeps patient rut outside the BOLETA block when age and patient rut come after billing data", () => {
+      const hints = extractIdentityHints(
+        "llego1 dosis vacuna clustoid 0,1ml (20)Emilia Cardenas Faunes",
+        [
+          "BOLETA:Oscar Cardenas Barrientos",
+          "14041763-7",
+          'oscar.car.bar@gmail.com',
+          "993423246",
+          "",
+          "15 años",
+          "23.250.312-2",
+          "993423246",
+        ].join("\n"),
+      );
+
+      expect(hints.patientName).toBe("emilia cardenas faunes");
+      expect(hints.patientRut).toBe("23250312-2");
+      expect(hints.beneficiaryName).toBe("oscar cardenas barrientos");
+      expect(hints.beneficiaryRut).toBe("14041763-7");
+    });
+
+    it("keeps explicit billing holder separated from the patient across induction doses", () => {
+      const hints = extractIdentityHints(
+        "llego 2da dosis vacuna clustoid 0,2ml (30)Emilia Cardenas Faunes",
+        [
+          "BOLETA:",
+          "Oscar Cardenas Barrientos",
+          "14041763-7",
+          "oscar.car.bar@gmail.com",
+          "993423246",
+          "",
+          "15 años",
+          "23.250.312-2",
+        ].join("\n"),
+      );
+
+      expect(hints.patientName).toBe("emilia cardenas faunes");
+      expect(hints.patientRut).toBe("23250312-2");
+      expect(hints.beneficiaryName).toBe("oscar cardenas barrientos");
+      expect(hints.beneficiaryRut).toBe("14041763-7");
+    });
+  });
+
   describe("patientName — all-lowercase fallback (7+ chars per word)", () => {
     it("detects real case: celmira morales inostroza", () => {
       const { patientName } = extractPatientHints(

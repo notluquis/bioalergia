@@ -145,6 +145,19 @@ describe("parseCalendarMetadata - Classification Issues", () => {
     expect(attached.attended).toBe(true);
   });
 
+  it("should detect attached first dose numbers like 'llego1 dosis'", () => {
+    const result = parseCalendarMetadata({
+      summary: "llego1 dosis vacuna clustoid 0,1ml (20)Emilia Cardenas Faunes",
+      description: "",
+    });
+
+    expect(result.category).toBe("Tratamiento subcutáneo");
+    expect(result.treatmentStage).toBe("Inducción");
+    expect(result.seriesStageKind).toBe("DOSE");
+    expect(result.seriesStageLabel).toBe("1ra dosis");
+    expect(result.seriesStageNumber).toBe(1);
+  });
+
   it("should not parse '(1era dosis)' as amount and should keep trailing 20 as 20000", () => {
     const result = parseCalendarMetadata({
       summary:

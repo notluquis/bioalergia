@@ -872,7 +872,17 @@ function detectTestMetadata(
 }
 
 function detectOrdinalNumber(text: string, nounPattern: RegExp): number | null {
-  const directMatch = text.match(
+  const normalizedOrdinalText = text
+    .replace(
+      new RegExp(String.raw`([\p{L}])(\d{1,2})(?=\s*${nounPattern.source}\b)`, "giu"),
+      "$1 $2",
+    )
+    .replace(
+      new RegExp(String.raw`(\d{1,2})([\p{L}]+)(?=\s*${nounPattern.source}\b)`, "giu"),
+      "$1 $2",
+    );
+
+  const directMatch = normalizedOrdinalText.match(
     new RegExp(
       String.raw`\b(\d{1,2})[º°]?(?:era|ra|da|ta|va|ma|na|a)?\s*${nounPattern.source}\b`,
       "i",
@@ -884,7 +894,7 @@ function detectOrdinalNumber(text: string, nounPattern: RegExp): number | null {
   }
 
   for (const [value, pattern] of ORDINAL_TEXT_TO_NUMBER) {
-    if (pattern.test(text) && nounPattern.test(text)) {
+    if (pattern.test(normalizedOrdinalText) && nounPattern.test(normalizedOrdinalText)) {
       return value;
     }
   }
