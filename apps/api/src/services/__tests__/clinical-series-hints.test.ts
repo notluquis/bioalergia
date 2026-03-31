@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 // Mock DB so the module can be imported without a real database connection
 vi.mock("@finanzas/db", () => ({ db: {} }));
 
-const { extractIdentityHints, extractPatientHints } = await import("../clinical-series");
+const { extractIdentityHints, extractPatientHints, resolveClinicalIdentity } = await import("../clinical-series");
 
 describe("extractPatientHints", () => {
   describe("patientName — capitalized names", () => {
@@ -776,5 +776,61 @@ describe("extractIdentityHints", () => {
     expect(result.patientRut).toBe("12254595-8");
     expect(result.beneficiaryName).toBeNull();
     expect(result.beneficiaryRut).toBeNull();
+  });
+});
+
+describe("resolveClinicalIdentity", () => {
+  it("does not keep a stale stored patient RUT when current text only contains a phone number", () => {
+    const result = resolveClinicalIdentity(
+      "MULTITEST DANIEL IBAÑEZ 56251216",
+      null,
+      {
+        patientName: "daniel ibanez",
+        patientRut: "5625121-6",
+      },
+    );
+
+    expect(result.patientName).toBe("daniel ibanez");
+    expect(result.patientRut).toBeNull();
+  });
+
+  it("does not keep a stale stored beneficiary name when current text has no beneficiary", () => {
+    const result = resolveClinicalIdentity(
+      "Test cutaneo Antonella hermosilla Ortega",
+      [
+        "Antonella hermosilla Ortega",
+        "22.710.901-7",
+        "17 años",
+        "Coronel",
+        "FONASA",
+        "949394164",
+        "antonellahermosill4@gmail.com",
+      ].join("\n"),
+      {
+        beneficiaryName: "gmail com",
+        beneficiaryRut: "94939416-4",
+        patientName: "antonella hermosilla ortega",
+        patientRut: "22710901-7",
+      },
+    );
+
+    expect(result.patientName).toBe("antonella hermosilla ortega");
+    expect(result.patientRut).toBe("22710901-7");
+    expect(result.beneficiaryName).toBeNull();
+    expect(result.beneficiaryRut).toBeNull();
+  });
+
+  it("falls back to stored values only when the event has no identity text at all", () => {
+    const result = resolveClinicalIdentity(null, null, {
+      beneficiaryName: "marta rubio gajardo",
+      beneficiaryRut: "8193485-1",
+      patientName: "pedro tiznado rubio",
+      patientRut: "15175620-4",
+    });
+
+    expect(result.patientName).toBe("pedro tiznado rubio");
+    expect(result.patientRut).toBe("15175620-4");
+    expect(result.beneficiaryName).toBe("marta rubio gajardo");
+    expect(result.beneficiaryRut).toBe("8193485-1");
   });
 });

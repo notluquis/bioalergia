@@ -839,6 +839,51 @@ export function extractIdentityHints(summary: null | string, description: null |
   return { beneficiaryName, beneficiaryRut, patientName, patientRut };
 }
 
+type ClinicalIdentity = {
+  beneficiaryName: null | string;
+  beneficiaryRut: null | string;
+  patientName: null | string;
+  patientRut: null | string;
+};
+
+type StoredClinicalIdentity = {
+  beneficiaryName?: null | string;
+  beneficiaryRut?: null | string;
+  patientName?: null | string;
+  patientRut?: null | string;
+};
+
+function hasIdentitySourceText(summary: null | string, description: null | string): boolean {
+  return Boolean(normalizeClinicalText(summary) || normalizeClinicalText(description));
+}
+
+export function resolveClinicalIdentity(
+  summary: null | string,
+  description: null | string,
+  stored?: StoredClinicalIdentity,
+): ClinicalIdentity {
+  const inferred = extractIdentityHints(summary, description);
+  if (hasIdentitySourceText(summary, description)) {
+    return {
+      beneficiaryName: inferred.beneficiaryName,
+      beneficiaryRut: sanitizeRut(inferred.beneficiaryRut),
+      patientName: inferred.patientName,
+      patientRut: sanitizeRut(inferred.patientRut),
+    };
+  }
+
+  return {
+    beneficiaryName:
+      inferred.beneficiaryName ??
+      (stored?.beneficiaryName && isLikelyPersonName(stored.beneficiaryName)
+        ? stored.beneficiaryName
+        : null),
+    beneficiaryRut: sanitizeRut(inferred.beneficiaryRut ?? stored?.beneficiaryRut ?? null),
+    patientName: inferred.patientName ?? stored?.patientName ?? null,
+    patientRut: sanitizeRut(inferred.patientRut ?? stored?.patientRut ?? null),
+  };
+}
+
 const ACAROS_PATTERN = /\b[áa]caros?\b/i;
 const GRAMINEAS_PATTERN = /\bgram[íi]neas?\b/i;
 
@@ -1350,14 +1395,14 @@ async function refreshClinicalSeriesMetadata(seriesId: number) {
   }
 
   // Always re-extract from event text so an improved algorithm overwrites stale
-  // stored values. Fall back to the stored DB value if extraction finds nothing.
+  // stored values. Only fall back to stored values when an event has no text.
   let patientName: null | string = null;
   let patientRut: null | string = null;
   let beneficiaryName: null | string = null;
   let beneficiaryRut: null | string = null;
 
   for (const event of series.events) {
-    const hints = extractIdentityHints(event.summary, event.description);
+    const hints = resolveClinicalIdentity(event.summary, event.description);
     if (!patientRut && hints.patientRut) patientRut = hints.patientRut;
     if (!patientName && hints.patientName) patientName = hints.patientName;
     if (!beneficiaryRut && hints.beneficiaryRut) beneficiaryRut = hints.beneficiaryRut;
@@ -1365,14 +1410,19 @@ async function refreshClinicalSeriesMetadata(seriesId: number) {
     if (patientName && patientRut && beneficiaryName && beneficiaryRut) break;
   }
 
-  // Fall back to whatever was in the DB if fresh extraction came up empty.
-  patientName ??= series.patientName;
-  patientRut ??= series.patientRut;
-  beneficiaryName ??=
-    series.beneficiaryName && isLikelyPersonName(series.beneficiaryName)
-      ? series.beneficiaryName
-      : null;
-  beneficiaryRut ??= series.beneficiaryRut;
+  // Fall back only when the whole series has no usable text source at all.
+  const seriesHasIdentityText = series.events.some((event) =>
+    hasIdentitySourceText(event.summary, event.description),
+  );
+  if (!seriesHasIdentityText) {
+    patientName ??= series.patientName;
+    patientRut ??= series.patientRut;
+    beneficiaryName ??=
+      series.beneficiaryName && isLikelyPersonName(series.beneficiaryName)
+        ? series.beneficiaryName
+        : null;
+    beneficiaryRut ??= series.beneficiaryRut;
+  }
 
   if (!beneficiaryRut || !beneficiaryName) {
     const linkedDocuments = await db.$queryRaw<Array<{ clientName: string; clientRUT: string }>>`
@@ -1489,19 +1539,12 @@ async function assignEventToSeries(event: EventSeriesCandidate, ctx?: SeriesAssi
     return null;
   }
 
-  const inferredIdentity = extractIdentityHints(event.summary, event.description);
-  // Prefer fresh extraction so an improved algorithm overwrites stale stored values.
-  // Fall back to whatever is already in the DB if extraction returns nothing.
-  const identity = {
-    beneficiaryName:
-      inferredIdentity.beneficiaryName ??
-      (event.beneficiaryName && isLikelyPersonName(event.beneficiaryName)
-        ? event.beneficiaryName
-        : null),
-    beneficiaryRut: sanitizeRut(inferredIdentity.beneficiaryRut ?? event.beneficiaryRut),
-    patientName: inferredIdentity.patientName ?? event.patientName,
-    patientRut: sanitizeRut(inferredIdentity.patientRut ?? event.patientRut),
-  };
+  const identity = resolveClinicalIdentity(event.summary, event.description, {
+    beneficiaryName: event.beneficiaryName,
+    beneficiaryRut: event.beneficiaryRut,
+    patientName: event.patientName,
+    patientRut: event.patientRut,
+  });
 
   const eventPatch = {
     beneficiaryName: identity.beneficiaryName,

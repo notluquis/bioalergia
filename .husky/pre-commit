@@ -10,11 +10,7 @@ export CI="${CI:-true}"
 ROOT_DIR="$(git rev-parse --show-toplevel)"
 LINT_STAGED_BIN="$ROOT_DIR/node_modules/.bin/lint-staged"
 
-if [ ! -x "$LINT_STAGED_BIN" ]; then
-  echo "Skipping lint-staged: missing executable at $LINT_STAGED_BIN" >&2
-else
-  "$LINT_STAGED_BIN"
-fi
+"$LINT_STAGED_BIN"
 
 if grep -q '"audit:routes"' "$ROOT_DIR/apps/site/package.json"; then
   (cd "$ROOT_DIR/apps/site" && pnpm run audit:routes)
