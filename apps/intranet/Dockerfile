@@ -7,9 +7,10 @@ FROM node:25-slim AS pruner
 WORKDIR /app
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
+ENV HUSKY=0
 COPY . .
 RUN npm install -g pnpm@10.32.1
-RUN TURBO_TELEMETRY_DISABLED=1 npx turbo@2.9.1 prune @finanzas/intranet --docker
+RUN TURBO_TELEMETRY_DISABLED=1 pnpm dlx turbo@2.9.1 prune @finanzas/intranet --docker
 
 # ==========================================================================
 # Stage 2: Base deps
@@ -18,6 +19,7 @@ FROM node:25-slim AS base
 WORKDIR /app
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
+ENV HUSKY=0
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
