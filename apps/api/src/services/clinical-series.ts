@@ -5,7 +5,7 @@ import utc from "dayjs/plugin/utc.js";
 import { sql } from "kysely";
 import { joinClinicalText, normalizeClinicalText } from "../lib/clinical-text";
 import { parseCalendarMetadata } from "../lib/parsers";
-import { normalizeRut } from "../lib/rut";
+import { normalizeRut, validateRut } from "../lib/rut";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -763,6 +763,30 @@ function extractNamesFromText(text: string): string[] {
   return [...new Set([...rutNames, ...cleanedNames])];
 }
 
+function isExplicitRutContext(text: string, index: number): boolean {
+  const before = text.slice(Math.max(0, index - 32), index);
+  return /rut(?:\s+del\s+paciente)?[\s:;-]*$/i.test(before);
+}
+
+function isAcceptedRutCandidate(rawValue: string, index: number, text: string): boolean {
+  const normalized = normalizeRut(rawValue);
+  if (!normalized) return false;
+  const body = Number(normalized.split("-")[0]);
+  if (!(body >= 1_000_000 && body < 50_000_000)) return false;
+
+  const hasFormatting = /[.-]/.test(rawValue);
+  if (hasFormatting || isExplicitRutContext(text, index)) {
+    return true;
+  }
+
+  const digits = rawValue.replace(/\D/g, "");
+  if (digits.length >= 9 && digits.startsWith("9")) {
+    return false;
+  }
+
+  return validateRut(rawValue);
+}
+
 export function extractIdentityHints(summary: null | string, description: null | string) {
   const summaryText = normalizeIdentitySourceText(normalizeClinicalText(summary));
   const descriptionText = normalizeIdentitySourceText(normalizeClinicalText(description));
@@ -771,18 +795,14 @@ export function extractIdentityHints(summary: null | string, description: null |
   const combinedText = `${summaryText} ${descriptionText}`.trim();
   const ruts = [
     ...new Set(
-      (combinedText.match(RUT_REGEX) ?? [])
-        .map((value) => normalizeRut(value))
-        .filter((rut): rut is string => {
-          if (rut === null) return false;
-          const body = Number(rut.split("-")[0]);
-          // Reject company RUTs (body ≥ 50M) and noise (body < 1M).
-          // Personal RUTs in Chile are currently 1M–26M. The ≥50M check is
-          // sufficient to filter mobile numbers (9XXXXXXXX = 90M+); we do NOT
-          // require a valid checksum so that secretary typos in the DV digit
-          // (e.g. 26606696-1 instead of -5) still produce a usable match key.
-          return body >= 1_000_000 && body < 50_000_000;
-        }),
+      Array.from(combinedText.matchAll(new RegExp(RUT_REGEX.source, "g")))
+        .map((match) => {
+          const rawValue = match[0];
+          const index = match.index ?? 0;
+          if (!rawValue || !isAcceptedRutCandidate(rawValue, index, combinedText)) return null;
+          return normalizeRut(rawValue);
+        })
+        .filter((rut): rut is string => rut !== null),
     ),
   ];
 

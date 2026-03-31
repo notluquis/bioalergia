@@ -576,9 +576,27 @@ describe("extractPatientHints", () => {
       expect(patientRut).not.toBeNull();
     });
 
-    it("extracts a RUT without formatting", () => {
-      const { patientRut } = extractPatientHints("19511977-5 celmira morales", null);
-      expect(patientRut).not.toBeNull();
+    it("extracts a valid unformatted RUT when it passes checksum", () => {
+      const { patientRut } = extractPatientHints("123456785 Juan Pérez", null);
+      expect(patientRut).toBe("12345678-5");
+    });
+
+    it("rejects bare phone-like numbers without RUT label", () => {
+      const { patientName, patientRut } = extractPatientHints(
+        "MULTITEST DANIEL IBAÑEZ 56251216",
+        null,
+      );
+      expect(patientName).toBe("daniel ibanez");
+      expect(patientRut).toBeNull();
+    });
+
+    it("rejects bare mobile-like numbers that start with 9", () => {
+      const { patientName, patientRut } = extractPatientHints(
+        "LLEGO Control multitest Daniel Ibañez; 956251216",
+        null,
+      );
+      expect(patientName).toBe("daniel ibanez");
+      expect(patientRut).toBeNull();
     });
 
     it("extracts name and RUT together from real event text", () => {
