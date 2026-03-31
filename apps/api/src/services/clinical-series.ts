@@ -1121,7 +1121,9 @@ function getSignificantNameTokens(name: string): string[] {
 // O(1) map lookups and O(k) token-overlap scans.
 
 interface SeriesEntry {
+  beneficiaryName: null | string;
   beneficiaryRut: null | string;
+  eventCount: number;
   id: number;
   kind: ClinicalSeriesKind;
   maxDate: dayjs.Dayjs | null;
@@ -1130,10 +1132,45 @@ interface SeriesEntry {
   patientRut: null | string;
 }
 
+function scoreClinicalSeriesIdentityQuality(series: {
+  beneficiaryName?: null | string;
+  beneficiaryRut?: null | string;
+  eventCount?: number;
+  patientName?: null | string;
+  patientRut?: null | string;
+}): number {
+  let score = 0;
+  if (series.patientRut) score += 1_000;
+  if (series.beneficiaryRut) score += 200;
+  if (series.patientName && isLikelyPersonName(series.patientName)) score += 150;
+  if (series.beneficiaryName && isLikelyPersonName(series.beneficiaryName)) score += 75;
+  if (series.beneficiaryName && !isLikelyPersonName(series.beneficiaryName)) score -= 50;
+  score += Math.min(series.eventCount ?? 0, 500);
+  return score;
+}
+
+function compareSeriesCanonicalPriority<
+  T extends {
+    beneficiaryName?: null | string;
+    beneficiaryRut?: null | string;
+    eventCount?: number;
+    id: number;
+    patientName?: null | string;
+    patientRut?: null | string;
+  },
+>(a: T, b: T): number {
+  const scoreDelta = scoreClinicalSeriesIdentityQuality(b) - scoreClinicalSeriesIdentityQuality(a);
+  if (scoreDelta !== 0) return scoreDelta;
+  const eventDelta = (b.eventCount ?? 0) - (a.eventCount ?? 0);
+  if (eventDelta !== 0) return eventDelta;
+  return a.id - b.id;
+}
+
 class SeriesAssignmentContext {
-  // Oldest-wins indexes — first writer wins (load order: id ASC).
+  // RUT index stays single-valued; exact-name collisions keep all candidates so
+  // rebuild can prefer the best canonical series rather than the oldest id.
   private readonly rutKindIndex = new Map<string, number>();  // `${rut}:${kind}` → id
-  private readonly nameKindIndex = new Map<string, number>(); // `${name}:${kind}` → id
+  private readonly nameKindIndex = new Map<string, number[]>(); // `${name}:${kind}` → [id, …]
   // Token inverted index — insertion order matches id ASC load order.
   private readonly tokenIndex = new Map<string, number[]>(); // token → [id, …]
   readonly seriesById = new Map<number, SeriesEntry>();
@@ -1147,7 +1184,9 @@ class SeriesAssignmentContext {
     }
     if (entry.patientName) {
       const key = `${normalizeName(entry.patientName)}:${entry.kind}`;
-      if (!this.nameKindIndex.has(key)) this.nameKindIndex.set(key, entry.id);
+      const ids = this.nameKindIndex.get(key);
+      if (ids) ids.push(entry.id);
+      else this.nameKindIndex.set(key, [entry.id]);
       for (const token of getSignificantNameTokens(entry.patientName)) {
         const list = this.tokenIndex.get(token);
         if (list) list.push(entry.id);
@@ -1160,6 +1199,7 @@ class SeriesAssignmentContext {
     const ctx = new SeriesAssignmentContext();
     const rows = await db.clinicalSeries.findMany({
       select: {
+        beneficiaryName: true,
         beneficiaryRut: true,
         id: true,
         kind: true,
@@ -1176,7 +1216,9 @@ class SeriesAssignmentContext {
         .map((v) => dayjs(v).tz(TIMEZONE))
         .sort((a, b) => a.valueOf() - b.valueOf());
       ctx.addEntry({
+        beneficiaryName: s.beneficiaryName,
         beneficiaryRut: s.beneficiaryRut,
+        eventCount: s.events.length,
         id: s.id,
         kind: s.kind,
         maxDate: dates[dates.length - 1] ?? null,
@@ -1203,17 +1245,25 @@ class SeriesAssignmentContext {
 
   /** Exact normalized name match, closest within the date window. */
   findByName(name: string, kind: ClinicalSeriesKind, eventDate: dayjs.Dayjs, thresholdDays: number): number | undefined {
-    const id = this.nameKindIndex.get(`${normalizeName(name)}:${kind}`);
-    if (id == null) return undefined;
-    const entry = this.seriesById.get(id);
-    if (!entry) return undefined;
-    return this.dist(entry, eventDate) <= thresholdDays ? id : undefined;
+    const ids = this.nameKindIndex.get(`${normalizeName(name)}:${kind}`) ?? [];
+    const candidates = ids
+      .map((id) => this.seriesById.get(id))
+      .filter((entry): entry is SeriesEntry => !!entry && this.dist(entry, eventDate) <= thresholdDays)
+      .sort((a, b) => {
+        const distanceDelta = this.dist(a, eventDate) - this.dist(b, eventDate);
+        if (distanceDelta !== 0) return distanceDelta;
+        return compareSeriesCanonicalPriority(a, b);
+      });
+    return candidates[0]?.id;
   }
 
-  /** If there is exactly one same-kind series with this exact normalized name, return it. */
+  /** Choose the canonical same-kind series for this exact normalized name. */
   findUniqueByExactName(name: string, kind: ClinicalSeriesKind): number | undefined {
-    const id = this.nameKindIndex.get(`${normalizeName(name)}:${kind}`);
-    return id ?? undefined;
+    const ids = this.nameKindIndex.get(`${normalizeName(name)}:${kind}`) ?? [];
+    return ids
+      .map((id) => this.seriesById.get(id))
+      .filter((entry): entry is SeriesEntry => !!entry)
+      .sort(compareSeriesCanonicalPriority)[0]?.id;
   }
 
   /**
@@ -1260,7 +1310,7 @@ class SeriesAssignmentContext {
   }
 }
 
-async function findMatchingSeries(
+export async function findMatchingSeries(
   params: { eventDate: string; kind: ClinicalSeriesKind; patientName: null | string; patientRut: null | string },
   ctx?: SeriesAssignmentContext,
 ): Promise<null | number> {
@@ -1315,7 +1365,7 @@ async function findMatchingSeries(
       include: { events: eventSelect },
       orderBy: { id: "asc" },
     });
-    let best: null | { distance: number; id: number } = null;
+    let best: null | { distance: number; id: number; score: number } = null;
     for (const c of nameCandidates) {
       const dates = c.events
         .map((e) => e.startDate ?? e.startDateTime ?? e.endDate ?? e.endDateTime)
@@ -1331,10 +1381,44 @@ async function findMatchingSeries(
               return eventDateDjs.isBefore(s) ? s.diff(eventDateDjs, "day") : eventDateDjs.isAfter(e) ? eventDateDjs.diff(e, "day") : 0;
             })();
       if (distance > thresholdDays) continue;
-      if (!best || distance < best.distance) best = { distance, id: c.id };
+      const score = scoreClinicalSeriesIdentityQuality({
+        beneficiaryName: c.beneficiaryName,
+        beneficiaryRut: c.beneficiaryRut,
+        eventCount: c.events.length,
+        patientName: c.patientName,
+        patientRut: c.patientRut,
+      });
+      if (
+        !best ||
+        distance < best.distance ||
+        (distance === best.distance && (score > best.score || (score === best.score && c.id < best.id)))
+      ) {
+        best = { distance, id: c.id, score };
+      }
     }
     if (best) return best.id;
-    if (nameCandidates.length === 1) return nameCandidates[0]!.id;
+    if (nameCandidates.length > 0) {
+      return [...nameCandidates].sort((a, b) =>
+        compareSeriesCanonicalPriority(
+          {
+            beneficiaryName: a.beneficiaryName,
+            beneficiaryRut: a.beneficiaryRut,
+            eventCount: a.events.length,
+            id: a.id,
+            patientName: a.patientName,
+            patientRut: a.patientRut,
+          },
+          {
+            beneficiaryName: b.beneficiaryName,
+            beneficiaryRut: b.beneficiaryRut,
+            eventCount: b.events.length,
+            id: b.id,
+            patientName: b.patientName,
+            patientRut: b.patientRut,
+          },
+        ),
+      )[0]!.id;
+    }
 
     // Token-overlap fallback.
     const eventTokens = getSignificantNameTokens(params.patientName);
@@ -2253,20 +2337,23 @@ export async function detectDuplicateSeries(): Promise<ClinicalSeriesDuplicate[]
   const results: ClinicalSeriesDuplicate[] = [];
   const usedAsSources = new Set<number>();
 
-  const scoreSeries = (series: SeriesRow): number => {
-    let score = 0;
-    if (series.patientRut) score += 1_000;
-    if (series.beneficiaryRut) score += 200;
-    if (series.patientName && isLikelyPersonName(series.patientName)) score += 150;
-    if (series.beneficiaryName && isLikelyPersonName(series.beneficiaryName)) score += 75;
-    if (series.beneficiaryName && !isLikelyPersonName(series.beneficiaryName)) score -= 50;
-    score += Math.min(series._count.events, 500);
-    return score;
-  };
-
   const chooseCanonicalTarget = (group: SeriesRow[]): SeriesRow =>
     [...group].sort((a, b) => {
-      const scoreDelta = scoreSeries(b) - scoreSeries(a);
+      const scoreDelta =
+        scoreClinicalSeriesIdentityQuality({
+          beneficiaryName: b.beneficiaryName,
+          beneficiaryRut: b.beneficiaryRut,
+          eventCount: b._count.events,
+          patientName: b.patientName,
+          patientRut: b.patientRut,
+        }) -
+        scoreClinicalSeriesIdentityQuality({
+          beneficiaryName: a.beneficiaryName,
+          beneficiaryRut: a.beneficiaryRut,
+          eventCount: a._count.events,
+          patientName: a.patientName,
+          patientRut: a.patientRut,
+        });
       if (scoreDelta !== 0) return scoreDelta;
       const eventDelta = b._count.events - a._count.events;
       if (eventDelta !== 0) return eventDelta;

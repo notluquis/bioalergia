@@ -5,11 +5,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 // We set up the mock before importing the module so it picks up the stub.
 
 const mockFindMany = vi.fn();
+const mockFindFirst = vi.fn();
 const mockFindUnique = vi.fn();
 
 vi.mock("@finanzas/db", () => ({
   db: {
     clinicalSeries: {
+      findFirst: (...args: unknown[]) => mockFindFirst(...args),
       findMany: (...args: unknown[]) => mockFindMany(...args),
       findUnique: (...args: unknown[]) => mockFindUnique(...args),
     },
@@ -17,7 +19,7 @@ vi.mock("@finanzas/db", () => ({
   kysely: {},
 }));
 
-const { detectDuplicateSeries } = await import("../clinical-series");
+const { detectDuplicateSeries, findMatchingSeries } = await import("../clinical-series");
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -47,6 +49,7 @@ function makeSeries(
 
 describe("detectDuplicateSeries — same RUT, different name (subset)", () => {
   beforeEach(() => {
+    mockFindFirst.mockReset();
     mockFindMany.mockReset();
     mockFindUnique.mockReset();
   });
@@ -169,5 +172,44 @@ describe("detectDuplicateSeries — same RUT, different name (subset)", () => {
       targetId: 5988,
       sourceId: 36,
     });
+  });
+
+  it("assigns exact-name rebuild matches to the better canonical series, not the oldest id", async () => {
+    mockFindFirst.mockResolvedValueOnce(null);
+    mockFindMany.mockResolvedValueOnce([
+      {
+        beneficiaryName: "araneda ulloa",
+        beneficiaryRut: null,
+        events: [
+          { endDate: null, endDateTime: null, startDate: new Date("2024-01-01T00:00:00.000Z"), startDateTime: null },
+          { endDate: null, endDateTime: null, startDate: new Date("2024-02-01T00:00:00.000Z"), startDateTime: null },
+        ],
+        id: 36,
+        patientName: "cristian araneda ulloa",
+        patientRut: null,
+      },
+      {
+        beneficiaryName: "araneda ulloa",
+        beneficiaryRut: null,
+        events: [
+          { endDate: null, endDateTime: null, startDate: new Date("2025-01-01T00:00:00.000Z"), startDateTime: null },
+          { endDate: null, endDateTime: null, startDate: new Date("2025-06-01T00:00:00.000Z"), startDateTime: null },
+          { endDate: null, endDateTime: null, startDate: new Date("2025-12-01T00:00:00.000Z"), startDateTime: null },
+          { endDate: null, endDateTime: null, startDate: new Date("2026-02-01T00:00:00.000Z"), startDateTime: null },
+        ],
+        id: 5988,
+        patientName: "cristian araneda ulloa",
+        patientRut: "14213239-7",
+      },
+    ]);
+
+    const match = await findMatchingSeries({
+      eventDate: "2026-03-01",
+      kind: "SUBCUTANEOUS_TREATMENT",
+      patientName: "cristian araneda ulloa",
+      patientRut: null,
+    });
+
+    expect(match).toBe(5988);
   });
 });
