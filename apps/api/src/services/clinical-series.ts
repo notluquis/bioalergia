@@ -146,15 +146,18 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "evento",
   "florida",
   "fonasa",
+  "gmail",
+  "href",
   "hualpen",
   "isapre",
-  "lucas",
+  "mailto",
   "vida",
   "numero",
   "particular",
   "pago",
   "prevision",
   "rut",
+  "target",
   "vincular",
   // Communes / cities that appear as patient origin but are not names
   "angeles",
@@ -198,6 +201,7 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "entregar",
   "enviar",
   "enviara",
+  "hacer",
   "imprimir",
   "ingresar",
   "llamar",
@@ -212,6 +216,8 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   // Common Spanish words that appear in clinical notes but are not names
   "autorizado",
   "beneficiario",
+  "carnet",
+  "com",
   "nombre",
   "paciente",
   "como",
@@ -377,6 +383,10 @@ function normalizeName(value: string): string {
     .trim();
 }
 
+function stripNonNamePhrases(text: string): string {
+  return text.replace(/\bsan\s+pedro\b/gi, " ");
+}
+
 /**
  * If a stopword of ≥4 chars is glued directly to the start of `token`
  * (e.g. "llegodiego" = "llego" + "diego"), returns the remainder after the
@@ -440,7 +450,7 @@ function resolveClinicalSeriesOrderBy(
  * separators (dots in "12.345.678-9"), age before lone digits.
  */
 function stripNoiseFromText(text: string): string {
-  return text
+  return stripNonNamePhrases(text)
     .replace(TIME_REGEX, " ")            // 15:00, 9:30
     .replace(new RegExp(RUT_REGEX.source, "g"), " ") // 12.345.678-9
     .replace(AGE_REGEX, " ")             // "36 años"
@@ -722,10 +732,11 @@ function extractRutAdjacentNames(text: string): string[] {
 
 function extractNamesFromText(text: string): string[] {
   if (!text) return [];
+  const sanitizedText = stripNonNamePhrases(text);
   // High-confidence: names anchored immediately before a RUT in the raw text.
-  const rutNames = extractRutAdjacentNames(text);
+  const rutNames = extractRutAdjacentNames(sanitizedText);
   // Strip all noise then extract name sequences from what remains.
-  const cleanedNames = extractNamesFromCleanedText(stripNoiseFromText(text));
+  const cleanedNames = extractNamesFromCleanedText(stripNoiseFromText(sanitizedText));
   return [...new Set([...rutNames, ...cleanedNames])];
 }
 
@@ -1112,6 +1123,12 @@ class SeriesAssignmentContext {
     return this.dist(entry, eventDate) <= thresholdDays ? id : undefined;
   }
 
+  /** If there is exactly one same-kind series with this exact normalized name, return it. */
+  findUniqueByExactName(name: string, kind: ClinicalSeriesKind): number | undefined {
+    const id = this.nameKindIndex.get(`${normalizeName(name)}:${kind}`);
+    return id ?? undefined;
+  }
+
   /**
    * Token-overlap fallback: finds the oldest same-kind series that shares ≥2
    * significant tokens covering ≥2/3 of the shorter name. Used when exact
@@ -1181,6 +1198,8 @@ async function findMatchingSeries(
         }
         return exact;
       }
+      const uniqueExact = ctx.findUniqueByExactName(params.patientName, params.kind);
+      if (uniqueExact != null) return uniqueExact;
       if (!params.patientRut) {
         const fuzzy = ctx.findByTokenOverlap(params.patientName, params.kind, eventDateDjs, thresholdDays);
         if (fuzzy != null) return fuzzy;
@@ -1228,6 +1247,7 @@ async function findMatchingSeries(
       if (!best || distance < best.distance) best = { distance, id: c.id };
     }
     if (best) return best.id;
+    if (nameCandidates.length === 1) return nameCandidates[0]!.id;
 
     // Token-overlap fallback.
     const eventTokens = getSignificantNameTokens(params.patientName);
@@ -2115,9 +2135,18 @@ export interface ClinicalSeriesDuplicate {
 export async function detectDuplicateSeries(): Promise<ClinicalSeriesDuplicate[]> {
   // Fetch all series that have at least one event, ordered by id ASC so the
   // lower (older) id becomes the target and the higher (newer) becomes source.
-  type SeriesRow = { beneficiaryRut: null | string; id: number; kind: ClinicalSeriesKind; patientName: string | null; patientRut: string | null; _count: { events: number } };
+  type SeriesRow = {
+    beneficiaryName: null | string;
+    beneficiaryRut: null | string;
+    id: number;
+    kind: ClinicalSeriesKind;
+    patientName: string | null;
+    patientRut: string | null;
+    _count: { events: number };
+  };
   const allSeries: SeriesRow[] = await db.clinicalSeries.findMany({
     select: {
+      beneficiaryName: true,
       beneficiaryRut: true,
       id: true,
       kind: true,
@@ -2131,6 +2160,26 @@ export async function detectDuplicateSeries(): Promise<ClinicalSeriesDuplicate[]
 
   const results: ClinicalSeriesDuplicate[] = [];
   const usedAsSources = new Set<number>();
+
+  const scoreSeries = (series: SeriesRow): number => {
+    let score = 0;
+    if (series.patientRut) score += 1_000;
+    if (series.beneficiaryRut) score += 200;
+    if (series.patientName && isLikelyPersonName(series.patientName)) score += 150;
+    if (series.beneficiaryName && isLikelyPersonName(series.beneficiaryName)) score += 75;
+    if (series.beneficiaryName && !isLikelyPersonName(series.beneficiaryName)) score -= 50;
+    score += Math.min(series._count.events, 500);
+    return score;
+  };
+
+  const chooseCanonicalTarget = (group: SeriesRow[]): SeriesRow =>
+    [...group].sort((a, b) => {
+      const scoreDelta = scoreSeries(b) - scoreSeries(a);
+      if (scoreDelta !== 0) return scoreDelta;
+      const eventDelta = b._count.events - a._count.events;
+      if (eventDelta !== 0) return eventDelta;
+      return a.id - b.id;
+    })[0]!;
 
   // ── Pass 1: RUT-based grouping — O(n) ────────────────────────────────────
   // Group by (normalizedRut, beneficiaryRut, kind). Series with different
@@ -2147,9 +2196,9 @@ export async function detectDuplicateSeries(): Promise<ClinicalSeriesDuplicate[]
 
   for (const group of rutGroups.values()) {
     if (group.length < 2) continue;
-    const target = group[0]!; // sorted by id asc — oldest is target
-    for (let k = 1; k < group.length; k++) {
-      const src = group[k]!;
+    const target = chooseCanonicalTarget(group);
+    for (const src of group) {
+      if (src.id === target.id) continue;
       results.push({
         confidence: "high",
         kind: target.kind,
@@ -2183,7 +2232,9 @@ export async function detectDuplicateSeries(): Promise<ClinicalSeriesDuplicate[]
 
   for (const group of nameGroups.values()) {
     if (group.length !== 2) continue;
-    const [target, src] = group as [SeriesRow, SeriesRow];
+    const target = chooseCanonicalTarget(group);
+    const src = group.find((series) => series.id !== target.id);
+    if (!src) continue;
     results.push({
       confidence: "high",
       kind: target.kind,

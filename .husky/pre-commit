@@ -5,16 +5,17 @@ if [ -x /usr/libexec/path_helper ]; then
   eval "$(/usr/libexec/path_helper -s)"
 fi
 export PATH="/opt/homebrew/bin:$PATH"
+export CI="${CI:-true}"
 
-PNPM_CMD="pnpm"
-if ! command -v pnpm >/dev/null 2>&1; then
-  if command -v corepack >/dev/null 2>&1; then
-    PNPM_CMD="corepack pnpm"
-  else
-    echo "pnpm not found and corepack unavailable. Please install pnpm or enable corepack." >&2
-    exit 127
-  fi
+ROOT_DIR="$(git rev-parse --show-toplevel)"
+LINT_STAGED_BIN="$ROOT_DIR/node_modules/.bin/lint-staged"
+
+if [ ! -x "$LINT_STAGED_BIN" ]; then
+  echo "Skipping lint-staged: missing executable at $LINT_STAGED_BIN" >&2
+else
+  "$LINT_STAGED_BIN"
 fi
 
-$PNPM_CMD exec lint-staged
-$PNPM_CMD --filter ./apps/site --if-present audit:routes
+if grep -q '"audit:routes"' "$ROOT_DIR/apps/site/package.json"; then
+  (cd "$ROOT_DIR/apps/site" && pnpm run audit:routes)
+fi

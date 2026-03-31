@@ -55,6 +55,10 @@ ENV TURBO_TELEMETRY_DISABLED=1
 RUN --mount=type=cache,id=s/fbf6a604-cc46-46af-8d95-9e7503753301-/app/.turbo/cache,target=/app/.turbo/cache \
     pnpm turbo run build --filter=@finanzas/api...
 
+# Create a self-contained production app with only runtime files and prod deps.
+RUN --mount=type=cache,id=s/fbf6a604-cc46-46af-8d95-9e7503753301-/pnpm/store,target=/pnpm/store \
+    pnpm --filter=@finanzas/api --prod deploy /app/deploy
+
 # ============================================================================
 # STAGE 4: Runner - Production image
 # ============================================================================
@@ -63,23 +67,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 
-# Copy workspace configuration for proper package resolution
-COPY --from=build /app/package.json ./package.json
-COPY --from=build /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
-
-# Copy node_modules from build stage (includes proper workspace symlinks)
-COPY --from=build /app/node_modules ./node_modules
-
-# Copy built packages from build stage (includes @finanzas/db)
-COPY --from=build /app/packages ./packages
-
-# Copy built API to the correct location
-COPY --from=build /app/apps/api/src ./apps/api/src
-COPY --from=build /app/apps/api/tsconfig.json ./apps/api/tsconfig.json
-COPY --from=build /app/apps/api/package.json ./apps/api/package.json
-COPY --from=build /app/apps/api/node_modules ./apps/api/node_modules
-
-WORKDIR /app/apps/api
+COPY --from=build /app/deploy/ .
 
 USER node
 

@@ -93,6 +93,14 @@ describe("extractPatientHints", () => {
       expect(patientName).toBe("ingrid rivas vergara");
     });
 
+    it("does not use 'san pedro' as part of a patient name", () => {
+      const { patientName } = extractPatientHints(
+        "Vacuna Clustoid (50), Lucas medina, 13 años, San Pedro, 996990238",
+        null,
+      );
+      expect(patientName).toBe("lucas medina");
+    });
+
     it("does not use 'vincular' or 'evento' as name tokens", () => {
       // If someone wrote "Vincular evento con boleta DTE" in a description,
       // those words must be filtered as stopwords.

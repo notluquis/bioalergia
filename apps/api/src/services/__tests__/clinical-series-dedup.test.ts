@@ -27,8 +27,20 @@ function makeSeries(
   patientRut: string | null,
   kind: "SUBCUTANEOUS_TREATMENT" | "SKIN_TEST" | "PATCH_TEST",
   eventCount = 3,
+  extras?: {
+    beneficiaryName?: string | null;
+    beneficiaryRut?: string | null;
+  },
 ) {
-  return { id, kind, patientName, patientRut, _count: { events: eventCount } };
+  return {
+    beneficiaryName: extras?.beneficiaryName ?? null,
+    beneficiaryRut: extras?.beneficiaryRut ?? null,
+    id,
+    kind,
+    patientName,
+    patientRut,
+    _count: { events: eventCount },
+  };
 }
 
 // ── detectDuplicateSeries ────────────────────────────────────────────────────
@@ -57,8 +69,8 @@ describe("detectDuplicateSeries — same RUT, different name (subset)", () => {
     expect(dupes).toHaveLength(1);
     expect(dupes[0]).toMatchObject({
       confidence: "high",
-      targetId: 780,
-      sourceId: 957,
+      targetId: 957,
+      sourceId: 780,
       kind: "SUBCUTANEOUS_TREATMENT",
     });
   });
@@ -138,5 +150,24 @@ describe("detectDuplicateSeries — same RUT, different name (subset)", () => {
     expect(dupes).toHaveLength(3);
     expect(dupes.every((d) => d.targetId === 10)).toBe(true);
     expect(dupes.map((d) => d.sourceId).sort((a, b) => a - b)).toEqual([6227, 6228, 6229]);
+  });
+
+  it("prefers the better-populated canonical series over the oldest id for exact-name duplicates", async () => {
+    mockFindMany.mockResolvedValueOnce([
+      makeSeries(36, "cristian araneda ulloa", null, "SUBCUTANEOUS_TREATMENT", 10, {
+        beneficiaryName: "araneda ulloa",
+      }),
+      makeSeries(5988, "cristian araneda ulloa", "14213239-7", "SUBCUTANEOUS_TREATMENT", 27, {
+        beneficiaryName: "araneda ulloa",
+      }),
+    ]);
+
+    const dupes = await detectDuplicateSeries();
+
+    expect(dupes).toHaveLength(1);
+    expect(dupes[0]).toMatchObject({
+      targetId: 5988,
+      sourceId: 36,
+    });
   });
 });

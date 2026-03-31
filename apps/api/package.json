@@ -2,6 +2,7 @@
   "name": "@finanzas/api",
   "version": "0.0.1",
   "type": "module",
+  "files": ["src", "assets", "tsconfig.json"],
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "node -e \"console.log('@finanzas/api uses the tsx runtime in production; no JS bundle is emitted during build.')\"",
