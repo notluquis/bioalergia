@@ -2,6 +2,7 @@ import { db } from "@finanzas/db";
 import { calendar, type calendar_v3 } from "@googleapis/calendar";
 import { JWT } from "google-auth-library";
 import { compileExcludePatterns, googleCalendarConfig } from "../../config";
+import { joinClinicalText } from "../../lib/clinical-text";
 import type { CalendarEventRecord } from "../../lib/google/google-calendar";
 import {
   removeGoogleCalendarEvents,
@@ -14,7 +15,7 @@ function isEventExcluded(
   description: string | null | undefined,
   patterns: RegExp[],
 ): boolean {
-  const text = `${summary ?? ""}\n${description ?? ""}`.toLowerCase();
+  const text = joinClinicalText(summary, description, "\n").toLowerCase();
   return patterns.some((regex) => regex.test(text));
 }
 

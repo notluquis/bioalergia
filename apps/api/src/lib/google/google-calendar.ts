@@ -8,6 +8,7 @@ import { calendar, type calendar_v3 } from "@googleapis/calendar";
 import dayjs from "dayjs";
 import { JWT } from "google-auth-library";
 import { compileExcludePatterns, googleCalendarConfig } from "../../config";
+import { joinClinicalText } from "../../lib/clinical-text";
 import { parseCalendarMetadata } from "../../lib/parsers";
 import { loadSettings } from "../../services/settings";
 import { logEvent, logWarn } from "../logger";
@@ -104,7 +105,7 @@ type GoogleCalendarListParams = {
 let cachedClient: CalendarClient | null = null;
 
 function isEventExcluded(item: calendar_v3.Schema$Event, patterns: RegExp[]): boolean {
-  const text = `${item.summary ?? ""}\n${item.description ?? ""}`.toLowerCase();
+  const text = joinClinicalText(item.summary, item.description, "\n").toLowerCase();
   return patterns.some((regex) => regex.test(text));
 }
 

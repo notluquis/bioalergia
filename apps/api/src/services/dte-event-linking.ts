@@ -3,7 +3,8 @@ import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone.js";
 import utc from "dayjs/plugin/utc.js";
 import jaroWinkler from "talisman/metrics/jaro-winkler";
-import mongeElkan, { symmetric as mongeElkanSymmetric } from "talisman/metrics/monge-elkan";
+import { symmetric as mongeElkanSymmetric } from "talisman/metrics/monge-elkan";
+import { joinClinicalText } from "../lib/clinical-text";
 import { normalizeRut } from "../lib/rut";
 import {
   type ClinicalSeriesSnapshot,
@@ -561,7 +562,7 @@ function computeAmountHint(event: EventRow): null | number {
     return Number(event.amountExpected);
   }
 
-  const mergedText = `${event.summary ?? ""} ${event.description ?? ""}`;
+  const mergedText = joinClinicalText(event.summary, event.description);
   const amountMatches = Array.from(mergedText.matchAll(/\((\d{2,7})\)/g), (match) => match[1]);
   const first = amountMatches[0] ? Number(amountMatches[0]) : Number.NaN;
   return Number.isFinite(first) ? first : null;
@@ -584,7 +585,7 @@ function extractIdentityClaims(params: {
   sameDayOnly: boolean;
   series: ClinicalSeriesSnapshot | null;
 }): EventIdentityClaims {
-  const mergedText = `${params.event.summary ?? ""} ${params.event.description ?? ""}`;
+  const mergedText = joinClinicalText(params.event.summary, params.event.description);
   const identityHints = extractIdentityHints(params.event.summary, params.event.description);
   const rutClaims = [
     ...new Set(

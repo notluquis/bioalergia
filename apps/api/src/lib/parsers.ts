@@ -13,6 +13,7 @@ import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone.js";
 import utc from "dayjs/plugin/utc.js";
 import { z } from "zod";
+import { joinClinicalText, normalizeClinicalText } from "./clinical-text";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -362,7 +363,7 @@ const ORDINAL_TEXT_TO_NUMBER: Array<[number, RegExp]> = [
 const NormalizedTextSchema = z
   .string()
   .nullish()
-  .transform((value) => (value ?? "").normalize("NFC"));
+  .transform((value) => normalizeClinicalText(value).normalize("NFC"));
 
 const CalendarEventTextSchema = z.object({
   summary: NormalizedTextSchema,
@@ -379,7 +380,7 @@ const MAX_REASONABLE_AMOUNT = 100_000_000; // 100M CLP
 
 /** Check if event should be ignored based on summary */
 export function isIgnoredEvent(summary: string | null | undefined): boolean {
-  const text = (summary ?? "").toLowerCase();
+  const text = normalizeClinicalText(summary).toLowerCase();
   return IGNORE_PATTERNS.some((pattern) => pattern.test(text));
 }
 
@@ -610,7 +611,7 @@ function extractAmounts(summary: string, description: string) {
     amountExpected: null,
     amountPaid: null,
   };
-  const text = `${summary} ${description}`;
+  const text = joinClinicalText(summary, description);
 
   applySlashAmounts(text, amounts);
   applyParenAmounts(text, amounts);
@@ -641,7 +642,7 @@ function refineAmounts(
   summary: string,
   description: string,
 ) {
-  const text = `${summary} ${description}`;
+  const text = joinClinicalText(summary, description);
   const isNotAttended = matchesAny(text, NOT_ATTENDED_PATTERNS);
   const isPendingConfirmation = matchesAny(text, PENDING_CONFIRMATION_PATTERNS);
   const isConfirmed = matchesAny(text, MONEY_CONFIRMED_PATTERNS);
@@ -676,8 +677,8 @@ function refineAmounts(
 // ============================================================================
 
 function classifyCategory(summary: string, description: string): string | null {
-  const text = `${summary} ${description}`.toLowerCase();
-  const summaryOnly = (summary ?? "").toLowerCase();
+  const text = joinClinicalText(summary, description).toLowerCase();
+  const summaryOnly = normalizeClinicalText(summary).toLowerCase();
 
   // Skip ignored events
   if (IGNORE_PATTERNS.some((p) => p.test(summaryOnly) || p.test(text))) {
@@ -726,7 +727,7 @@ function classifyCategory(summary: string, description: string): string | null {
 // ============================================================================
 
 function detectAttendance(summary: string, description: string): boolean | null {
-  const text = `${summary} ${description}`;
+  const text = joinClinicalText(summary, description);
   if (matchesAny(text, NOT_ATTENDED_PATTERNS)) {
     return false;
   }
@@ -766,7 +767,7 @@ function extractDosage(
   summary: string,
   description: string,
 ): { value: number; unit: string } | null {
-  const text = `${summary} ${description}`;
+  const text = joinClinicalText(summary, description);
 
   // 1. Try explicit dosage patterns (0.5 ml, 1 cc, etc.)
   const explicit = parseExplicitDosage(text);
@@ -817,7 +818,7 @@ function normalizeSubcutaneousDosage(
 }
 
 function detectTreatmentStage(summary: string, description: string): string | null {
-  const text = `${summary} ${description}`;
+  const text = joinClinicalText(summary, description);
 
   // Explicit maintenance keywords take priority over ordinal induction markers.
   // e.g. "5ta dosis mensual clustoid" → Mantención (not "5ta dosis")
@@ -852,14 +853,14 @@ function detectTestMetadata(
     return null;
   }
 
-  const text = `${summary} ${description}`;
-  const firstReading = matchesAny(text, TEST_PARCHE_1_READING_PATTERNS);
-  const secondReading = matchesAny(text, TEST_PARCHE_2_READING_PATTERNS);
-  const thirdReading = matchesAny(text, TEST_PARCHE_3_READING_PATTERNS);
+  const normalizedText = joinClinicalText(summary, description);
+  const firstReading = matchesAny(normalizedText, TEST_PARCHE_1_READING_PATTERNS);
+  const secondReading = matchesAny(normalizedText, TEST_PARCHE_2_READING_PATTERNS);
+  const thirdReading = matchesAny(normalizedText, TEST_PARCHE_3_READING_PATTERNS);
   const hasAnyReading = firstReading || secondReading || thirdReading;
 
-  const skinTest = matchesAny(text, TEST_CUTANEO_PATTERNS);
-  const patchTest = matchesAny(text, TEST_PARCHE_PATTERNS) || hasAnyReading;
+  const skinTest = matchesAny(normalizedText, TEST_CUTANEO_PATTERNS);
+  const patchTest = matchesAny(normalizedText, TEST_PARCHE_PATTERNS) || hasAnyReading;
 
   return {
     firstReading,
@@ -919,7 +920,7 @@ function buildSeriesMetadata(params: {
   seriesStageLabel: string | null;
   seriesStageNumber: number | null;
 } {
-  const text = `${params.summary} ${params.description}`;
+  const normalizedText = joinClinicalText(params.summary, params.description);
   const isTest = params.category === "Test y exámenes";
   const isSubcut = params.category === "Tratamiento subcutáneo";
 
@@ -930,7 +931,7 @@ function buildSeriesMetadata(params: {
         ? 2
         : params.testMetadata?.thirdReading
           ? 3
-          : detectOrdinalNumber(text, /lectura/);
+      : detectOrdinalNumber(normalizedText, /lectura/);
 
     const clinicalSeriesKind: ClinicalSeriesKind = params.testMetadata?.patchTest
       ? "PATCH_TEST"
@@ -969,7 +970,7 @@ function buildSeriesMetadata(params: {
       };
     }
 
-    const doseNumber = detectOrdinalNumber(text, /dosis/);
+    const doseNumber = detectOrdinalNumber(normalizedText, /dosis/);
     if (doseNumber != null) {
       return {
         clinicalSeriesKind: "SUBCUTANEOUS_TREATMENT" as const,
@@ -1006,7 +1007,7 @@ export function parseCalendarMetadata(input: {
   description?: string | null;
 }): ParsedCalendarMetadata {
   const { summary, description } = CalendarEventTextSchema.parse(input);
-  const text = `${summary} ${description}`;
+  const text = joinClinicalText(summary, description);
 
   const rawAmounts = extractAmounts(summary, description);
   const amounts = refineAmounts(rawAmounts, summary, description);
