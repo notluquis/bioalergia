@@ -48,7 +48,7 @@ function MarcarContent() {
 
 export function MarcarPage() {
   return (
-    <div className="flex w-full flex-col gap-5 px-2 pt-16 pb-4 md:px-3 md:pt-4 md:pb-4">
+    <div className="flex w-full flex-col gap-4 px-1.5 pt-16 pb-3 md:gap-5 md:px-3 md:pt-4 md:pb-4">
       <Suspense
         fallback={
           <div className="grid gap-5 xl:grid-cols-[minmax(0,1.7fr)_360px]">
