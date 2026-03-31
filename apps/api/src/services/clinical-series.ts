@@ -79,6 +79,7 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "quinto",
   "reaccion",
   "refuerzo",
+  "resfria",
   "retiro",
   "retoma",
   "segunda",
@@ -181,6 +182,7 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "diciembre",
   // Relationship / family markers
   "mama",
+  "mucho",
   // Scheduling / administrative action words
   "agendar",
   "agendara",
@@ -517,6 +519,123 @@ function sanitizeRut(rut: null | string): null | string {
   return body >= 1_000_000 && body < 50_000_000 ? rut : null;
 }
 
+type StructuredClinicalDescription = {
+  beneficiaryCandidates: Array<{ name: null | string; rut: string }>;
+  beneficiaryRuts: string[];
+  boletaBlock: null | string;
+  commune: null | string;
+  contactPhone: null | string;
+  consultationReason: null | string;
+  diseases: null | string;
+  email: null | string;
+  evolution: null | string;
+  healthInsurance: null | string;
+  patientRut: null | string;
+};
+
+const STRUCTURED_CLINICAL_LABEL_REGEX =
+  /(?:^|\n|\s)-?\s*(BOLETA|Rut del paciente|Edad|Comuna|Previsi[oó]n|N[uú]mero de contacto|Correo electr[oó]nico|Motivo de la consulta|Tiempo de evoluci[oó]n|Enfermedades base)\s*:/gi;
+
+function cleanStructuredFieldValue(value: string): string {
+  return value.replace(/\s+/g, " ").replace(/[;,]+$/g, "").trim();
+}
+
+function extractStructuredClinicalDescription(text: string): StructuredClinicalDescription {
+  const empty: StructuredClinicalDescription = {
+    beneficiaryCandidates: [],
+    beneficiaryRuts: [],
+    boletaBlock: null,
+    commune: null,
+    contactPhone: null,
+    consultationReason: null,
+    diseases: null,
+    email: null,
+    evolution: null,
+    healthInsurance: null,
+    patientRut: null,
+  };
+  if (!text.trim()) return empty;
+
+  const sections: Array<{ key: string; matchIndex: number; valueStart: number }> = [];
+  let match: null | RegExpExecArray;
+  STRUCTURED_CLINICAL_LABEL_REGEX.lastIndex = 0;
+
+  while ((match = STRUCTURED_CLINICAL_LABEL_REGEX.exec(text)) !== null) {
+    const rawLabel = normalizeName(match[1] ?? "");
+    const key =
+      rawLabel === "boleta"
+        ? "boleta"
+        : rawLabel === "rut del paciente"
+          ? "patientRut"
+          : rawLabel === "comuna"
+            ? "commune"
+            : rawLabel === "prevision"
+              ? "healthInsurance"
+              : rawLabel === "numero de contacto"
+                ? "contactPhone"
+                : rawLabel === "correo electronico"
+                  ? "email"
+                  : rawLabel === "motivo de la consulta"
+                    ? "consultationReason"
+                    : rawLabel === "tiempo de evolucion"
+                      ? "evolution"
+                      : rawLabel === "enfermedades base"
+                        ? "diseases"
+                        : null;
+    if (!key) continue;
+    sections.push({
+      key,
+      matchIndex: match.index,
+      valueStart: match.index + match[0].length,
+    });
+  }
+
+  if (sections.length === 0) return empty;
+
+  const values = new Map<string, string>();
+  for (let index = 0; index < sections.length; index += 1) {
+    const section = sections[index]!;
+    const end = sections[index + 1]?.matchIndex ?? text.length;
+    const value = cleanStructuredFieldValue(text.slice(section.valueStart, end));
+    if (value) values.set(section.key, value);
+  }
+
+  const boletaBlock = values.get("boleta") ?? null;
+  const beneficiaryCandidates: Array<{ name: null | string; rut: string }> = [];
+  if (boletaBlock) {
+    const boletaRutRegex = new RegExp(RUT_REGEX.source, "g");
+    let boletaMatch: null | RegExpExecArray;
+    while ((boletaMatch = boletaRutRegex.exec(boletaBlock)) !== null) {
+      const rut = sanitizeRut(normalizeRut(boletaMatch[0]));
+      if (!rut) continue;
+      const lineStart = boletaBlock.lastIndexOf("\n", boletaMatch.index) + 1;
+      const lineBeforeRut = cleanStructuredFieldValue(
+        boletaBlock
+          .slice(lineStart, boletaMatch.index)
+          .replace(/^boleta\s*:\s*/i, ""),
+      );
+      const name = extractNamesFromText(lineBeforeRut)[0] ?? (normalizeName(lineBeforeRut) || null);
+      if (!beneficiaryCandidates.some((candidate) => candidate.rut === rut)) {
+        beneficiaryCandidates.push({ name, rut });
+      }
+    }
+  }
+
+  return {
+    beneficiaryCandidates,
+    beneficiaryRuts: beneficiaryCandidates.map((candidate) => candidate.rut),
+    boletaBlock,
+    commune: values.get("commune") ?? null,
+    contactPhone: values.get("contactPhone") ?? null,
+    consultationReason: values.get("consultationReason") ?? null,
+    diseases: values.get("diseases") ?? null,
+    email: values.get("email") ?? null,
+    evolution: values.get("evolution") ?? null,
+    healthInsurance: values.get("healthInsurance") ?? null,
+    patientRut: sanitizeRut(normalizeRut(values.get("patientRut") ?? null)),
+  };
+}
+
 // This is the highest-confidence source: secretaries typically write the
 // patient name right before the RUT ("Nadia Yañez Rojas 12.345.678-9 ...").
 function extractRutAdjacentNames(text: string): string[] {
@@ -586,6 +705,7 @@ function extractNamesFromText(text: string): string[] {
 }
 
 export function extractIdentityHints(summary: null | string, description: null | string) {
+  const structured = extractStructuredClinicalDescription((description ?? "").trim());
   // RUTs are extracted from combined text — they appear in either field.
   const combinedText = `${summary ?? ""} ${description ?? ""}`.trim();
   const ruts = [
@@ -610,13 +730,28 @@ export function extractIdentityHints(summary: null | string, description: null |
   // field labels like "-Rut del paciente:", previous visit history) from
   // overriding a clearly-identified name in the event title/summary.
   const summaryNames = extractNamesFromText((summary ?? "").trim());
-  const descriptionNames = extractNamesFromText((description ?? "").trim());
+  const descriptionWithoutBoleta =
+    structured.boletaBlock && description ? description.replace(structured.boletaBlock, " ") : (description ?? "");
+  const descriptionNames = extractNamesFromText(descriptionWithoutBoleta.trim());
+  const beneficiaryNames = structured.beneficiaryCandidates
+    .map((candidate) => candidate.name)
+    .filter((value): value is string => Boolean(value));
 
-  const uniqueNames = [...new Set([...summaryNames, ...descriptionNames])];
-  const patientRut = ruts[0] ?? null;
-  const beneficiaryRut = ruts.find((value) => value !== patientRut) ?? null;
-  const patientName = uniqueNames[0] ?? null;
-  const beneficiaryName = uniqueNames.find((value) => value !== patientName) ?? null;
+  const uniquePatientNames = [...new Set([...summaryNames, ...descriptionNames])];
+  const patientRut =
+    structured.patientRut ??
+    ruts.find((value) => !structured.beneficiaryRuts.includes(value)) ??
+    ruts[0] ??
+    null;
+  const beneficiaryRut =
+    structured.beneficiaryRuts.find((value) => value !== patientRut) ??
+    ruts.find((value) => value !== patientRut) ??
+    null;
+  const uniqueBeneficiaryNames = [...new Set([...beneficiaryNames, ...summaryNames, ...descriptionNames])];
+  const patientName = uniquePatientNames[0] ?? null;
+  const beneficiaryName =
+    uniqueBeneficiaryNames.find((value) => value !== patientName) ??
+    null;
 
   return { beneficiaryName, beneficiaryRut, patientName, patientRut };
 }

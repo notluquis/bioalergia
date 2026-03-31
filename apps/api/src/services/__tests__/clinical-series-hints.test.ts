@@ -479,6 +479,22 @@ describe("extractPatientHints", () => {
       );
       expect(patientName).toBeNull();
     });
+
+    it("does not include symptom chatter like 'resfria mucho' as part of the patient name", () => {
+      const { patientName } = extractPatientHints(
+        "resfria mucho carolina elizabeth fierro moya",
+        null,
+      );
+      expect(patientName).toBe("carolina elizabeth fierro moya");
+    });
+
+    it("strips glued symptom chatter like 'muchocarolina' before the patient name", () => {
+      const { patientName } = extractPatientHints(
+        "resfria muchocarolina elizabeth fierro moya",
+        null,
+      );
+      expect(patientName).toBe("carolina elizabeth fierro moya");
+    });
   });
 
   describe("patientRut", () => {
@@ -556,5 +572,40 @@ describe("extractIdentityHints", () => {
     // Personal RUTs are currently up to ~26M — must still be accepted.
     const result = extractIdentityHints("test cutaneo 12.345.678-5 Ana López", null);
     expect(result.patientRut).toBe("12345678-5");
+  });
+
+  it("prefers '-Rut del paciente' over BOLETA recipients when assigning patient identity", () => {
+    const result = extractIdentityHints(
+      "confirmaPedro Tiznado rubio Dosis mensual clustoid (50)",
+      [
+        "BOLETA: EDUARDO BEBIN SOLANO, 9543240-9",
+        "Marta Rubio Gajardo, 8193485-1",
+        "",
+        "-Rut del paciente: 15175620-4 -Edad: 41 años -Comuna: Lota -Previsión: Fonasa -Número de contacto: 995990301",
+        "-Correo electrónico: pedro.tiznado@gmail.com",
+        "-Motivo de la consulta: Rinitis alérgica",
+      ].join("\n"),
+    );
+
+    expect(result.patientName).toBe("pedro tiznado rubio");
+    expect(result.patientRut).toBe("15175620-4");
+    expect(result.beneficiaryName).toBe("eduardo bebin solano");
+    expect(result.beneficiaryRut).toBe("9543240-9");
+  });
+
+  it("does not let BOLETA names override the patient name when the summary already identifies the patient", () => {
+    const result = extractIdentityHints(
+      "Pedro Tiznado rubio Dosis mensual clustoid (50) (0,5)",
+      [
+        "BOLETA: MARTA RUBIO GAJARDO, 8193485-1",
+        "",
+        "-Rut del paciente: 15175620-4 -Edad: 41 años -Comuna: Lota -Previsión: Fonasa",
+      ].join("\n"),
+    );
+
+    expect(result.patientName).toBe("pedro tiznado rubio");
+    expect(result.patientRut).toBe("15175620-4");
+    expect(result.beneficiaryName).toBe("marta rubio gajardo");
+    expect(result.beneficiaryRut).toBe("8193485-1");
   });
 });
