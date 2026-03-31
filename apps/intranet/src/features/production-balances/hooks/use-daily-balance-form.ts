@@ -12,6 +12,21 @@ import { generateWeekData, useDailyBalanceStore } from "./use-daily-balance-stor
 const AUTOSAVE_DELAY_MS = 2000;
 
 const DATE_FORMAT = "YYYY-MM-DD";
+const EMPTY_FORM_DATA: DailyBalanceFormData = {
+  consultas: 0,
+  controles: 0,
+  efectivo: 0,
+  gastos: 0,
+  licencias: 0,
+  nota: "",
+  otros: 0,
+  roxair: 0,
+  tarjeta: 0,
+  tests: 0,
+  transferencia: 0,
+  vacunas: 0,
+};
+
 type SaveOptions = {
   errorMessage?: string;
   loadingMessage?: string;
@@ -51,7 +66,50 @@ function getSelectedDayItem(
   );
 }
 
+function areFormDataEqual(a: DailyBalanceFormData, b: DailyBalanceFormData): boolean {
+  return (
+    a.consultas === b.consultas &&
+    a.controles === b.controles &&
+    a.efectivo === b.efectivo &&
+    a.gastos === b.gastos &&
+    a.licencias === b.licencias &&
+    a.nota === b.nota &&
+    a.otros === b.otros &&
+    a.roxair === b.roxair &&
+    a.tarjeta === b.tarjeta &&
+    a.tests === b.tests &&
+    a.transferencia === b.transferencia &&
+    a.vacunas === b.vacunas
+  );
+}
+
+function areWeekDataEqual(
+  currentWeek: ReturnType<typeof generateWeekData> | null,
+  nextWeek: ReturnType<typeof generateWeekData>
+): boolean {
+  if (!currentWeek) return false;
+  if (currentWeek.weekLabel !== nextWeek.weekLabel) return false;
+  if (currentWeek.days.length !== nextWeek.days.length) return false;
+
+  return currentWeek.days.every((day, index) => {
+    const nextDay = nextWeek.days[index];
+    if (!nextDay) return false;
+    return (
+      day.dayName === nextDay.dayName &&
+      day.dayNumber === nextDay.dayNumber &&
+      day.isSelected === nextDay.isSelected &&
+      day.isToday === nextDay.isToday &&
+      day.status === nextDay.status &&
+      day.total === nextDay.total &&
+      dayjs(day.date).isSame(nextDay.date, "day")
+    );
+  });
+}
+
 function useSyncSelectedDayForm(params: {
+  currentEntryId: null | number;
+  formData: DailyBalanceFormData;
+  originalData: DailyBalanceFormData;
   resetForm: () => void;
   selectedDate: Date;
   setOriginalData: (data: DailyBalanceFormData, entryId?: number) => void;
@@ -62,17 +120,40 @@ function useSyncSelectedDayForm(params: {
 
   useEffect(() => {
     if (selectedDayItem) {
-      params.setOriginalData(mapApiToForm(selectedDayItem), selectedDayItem.id);
+      const nextFormData = mapApiToForm(selectedDayItem);
+      const sameEntry = params.currentEntryId === selectedDayItem.id;
+      const sameForm =
+        areFormDataEqual(params.formData, nextFormData) &&
+        areFormDataEqual(params.originalData, nextFormData);
+      if (!sameEntry || !sameForm) {
+        params.setOriginalData(nextFormData, selectedDayItem.id);
+      }
       return;
     }
     if (params.weekSuccess) {
-      params.resetForm();
+      const isAlreadyReset =
+        params.currentEntryId == null &&
+        areFormDataEqual(params.formData, EMPTY_FORM_DATA) &&
+        areFormDataEqual(params.originalData, EMPTY_FORM_DATA);
+      if (!isAlreadyReset) {
+        params.resetForm();
+      }
     }
-  }, [params, selectedDayItem]);
+  }, [
+    params.currentEntryId,
+    params.formData,
+    params.originalData,
+    params.resetForm,
+    params.selectedDate,
+    params.setOriginalData,
+    params.weekSuccess,
+    selectedDayItem,
+  ]);
 }
 
 function useSyncWeekData(params: {
   selectedDate: Date;
+  storeWeekData: ReturnType<typeof generateWeekData> | null;
   setWeekData: (week: ReturnType<typeof generateWeekData>) => void;
   weekData: ProductionBalanceApiItem[] | undefined;
 }) {
@@ -92,8 +173,10 @@ function useSyncWeekData(params: {
       }
     }
     const week = generateWeekData(params.selectedDate, entries);
-    params.setWeekData(week);
-  }, [params]);
+    if (!areWeekDataEqual(params.storeWeekData, week)) {
+      params.setWeekData(week);
+    }
+  }, [params.selectedDate, params.setWeekData, params.storeWeekData, params.weekData]);
 }
 
 function useAutosaveEffect(params: {
@@ -138,6 +221,7 @@ export function useDailyBalanceForm() {
     isSaving,
     lastSaved,
     markSaved,
+    originalData,
     resetForm,
     selectedDate,
     setIsSaving,
@@ -158,13 +242,16 @@ export function useDailyBalanceForm() {
   const weekQuery = useSuspenseQuery(productionBalanceKeys.week(startOfWeek, endOfWeek));
 
   useSyncSelectedDayForm({
+    currentEntryId,
+    formData,
+    originalData,
     resetForm,
     selectedDate,
     setOriginalData,
     weekData: weekQuery.data,
     weekSuccess: weekQuery.isSuccess,
   });
-  useSyncWeekData({ selectedDate, setWeekData, weekData: weekQuery.data });
+  useSyncWeekData({ selectedDate, setWeekData, storeWeekData: weekData, weekData: weekQuery.data });
 
   const { user } = useAuth();
 
