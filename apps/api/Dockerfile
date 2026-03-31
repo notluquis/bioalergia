@@ -50,7 +50,8 @@ ENV CI=true
 ENV TURBO_TELEMETRY_DISABLED=1
 
 # Build API workspace dependencies
-RUN pnpm turbo run build --filter=@finanzas/api...
+RUN --mount=type=cache,id=s/fbf6a604-cc46-46af-8d95-9e7503753301-/app/.turbo/cache,target=/app/.turbo/cache \
+    pnpm turbo run build --filter=@finanzas/api...
 
 # ============================================================================
 # STAGE 4: Runner - Production image

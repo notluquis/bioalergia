@@ -106,7 +106,7 @@ function AuthedLayout() {
   }, []);
   const buildLabel = useMemo(() => {
     if (!BUILD_TIMESTAMP) {
-      return "Desconocido";
+      return undefined;
     }
     const parsed = new Date(BUILD_TIMESTAMP);
     if (Number.isNaN(parsed.getTime())) {
@@ -251,7 +251,7 @@ function AuthedLayout() {
 
           <footer className="surface-elevated hidden px-4 py-2 text-foreground text-sm md:flex md:px-6">
             <div className="grid w-full grid-cols-3 items-center gap-2 text-xs">
-              <span className="text-default-500">Build: {buildLabel}</span>
+              <span className="text-default-500">{buildLabel ? `Build: ${buildLabel}` : ""}</span>
               <div className="flex justify-center">
                 <Tooltip>
                   <Tooltip.Trigger>

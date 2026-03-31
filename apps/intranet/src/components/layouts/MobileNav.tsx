@@ -49,7 +49,9 @@ export function BottomNav({ buildLabel, isHidden = false }: Readonly<BottomNavPr
   return (
     <nav className="fixed bottom-[calc(env(safe-area-inset-bottom)+1.5rem)] left-1/2 z-50 w-[min(100%-2rem,400px)] -translate-x-1/2 md:hidden">
       <div className="mb-2 flex items-center justify-between rounded-2xl border border-default-100 bg-background/80 px-3 py-1.5 text-[10px] shadow-lg backdrop-blur-xl">
-        <span className="truncate text-default-500">Build: {buildLabel ?? "Desconocido"}</span>
+        <span className="truncate text-default-500">
+          {buildLabel ? `Build: ${buildLabel}` : ""}
+        </span>
         <DeploymentStatusChip compact />
       </div>
       <div className="flex items-center justify-between gap-1 rounded-4xl border border-default-100 bg-background/80 p-2 shadow-2xl backdrop-blur-xl">

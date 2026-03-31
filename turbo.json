@@ -5,24 +5,23 @@
     "affectedUsingTaskInputs": true,
     "watchUsingTaskInputs": true
   },
+  "globalDependencies": ["tsconfig.solution.json"],
   "globalEnv": ["NODE_ENV", "CI"],
   "ui": "tui",
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "env": ["VITE_*"],
       "inputs": ["$TURBO_DEFAULT$", ".env", ".env.*", "!.turbo/**", "!dist/**", "!.next/**"],
       "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
     },
     "build:fast": {
       "dependsOn": ["^build"],
-      "env": ["VITE_*"],
       "inputs": ["$TURBO_DEFAULT$", ".env", ".env.*", "!.turbo/**", "!dist/**"],
       "outputs": ["dist/**"]
     },
     "build-storybook": {
       "dependsOn": ["^build"],
-      "env": ["VITE_*", "STORYBOOK_*"],
+      "env": ["STORYBOOK_*"],
       "inputs": ["$TURBO_DEFAULT$", ".env", ".env.*", "!.turbo/**", "!storybook-static/**"],
       "outputs": ["storybook-static/**"]
     },
@@ -52,6 +51,9 @@
     "check": {
       "dependsOn": ["lint", "type-check"],
       "outputs": []
+    },
+    "transit": {
+      "dependsOn": ["^transit"]
     }
   }
 }

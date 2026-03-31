@@ -43,6 +43,7 @@
   },
   "scripts": {
     "build": "zen generate --lite && pnpm fix-imports && tsc",
+    "type-check": "tsgo --noEmit",
     "fix-imports": "node scripts/fix-imports.mjs",
     "generate": "zen generate --lite",
     "zen:watch": "zen generate --watch",

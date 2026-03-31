@@ -13,7 +13,7 @@
     "lint:fix": "oxlint --fix",
     "lint:ci": "oxlint --format=github",
     "lint:ci:sarif": "oxlint --format=sarif --reporter-file=./reports/oxlint.sarif",
-    "type-check": "turbo run type-check --continue=never --filter=@finanzas/intranet",
+    "type-check": "turbo run type-check --continue=never",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
     "check": "pnpm lint && pnpm type-check",

@@ -37,7 +37,8 @@ ENV CI=true
 ENV TURBO_TELEMETRY_DISABLED=1
 ENV VITE_PUBLIC_POSTHOG_KEY=${VITE_PUBLIC_POSTHOG_KEY}
 ENV VITE_PUBLIC_POSTHOG_HOST=${VITE_PUBLIC_POSTHOG_HOST}
-RUN pnpm -w turbo run build --filter=@finanzas/site
+RUN --mount=type=cache,id=s/15a5a9cb-b1d7-4fa9-8082-b013705c6f0f-/app/.turbo/cache,target=/app/.turbo/cache \
+    pnpm -w turbo run build --filter=@finanzas/site
 
 # ==========================================================================
 # Stage 4: Runner - Caddy (modern HTTP/3 server)

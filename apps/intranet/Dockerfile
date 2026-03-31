@@ -36,11 +36,16 @@ RUN --mount=type=cache,id=s/31aed601-107c-408b-b13e-96b37282ee93-/pnpm/store,tar
 # Stage 3: Build
 # ==========================================================================
 FROM base AS build
+ARG VITE_APP_BUILD_TIMESTAMP
 COPY --from=pruner /app/out/full/ .
 ENV CI=true
 ENV TURBO_TELEMETRY_DISABLED=1
-RUN pnpm turbo run type-check --filter=@finanzas/intranet
-RUN pnpm turbo run build --filter=@finanzas/intranet...
+ENV VITE_APP_BUILD_TIMESTAMP=${VITE_APP_BUILD_TIMESTAMP}
+RUN --mount=type=cache,id=s/31aed601-107c-408b-b13e-96b37282ee93-/app/.turbo/cache,target=/app/.turbo/cache \
+    pnpm turbo run type-check --filter=@finanzas/intranet
+RUN --mount=type=cache,id=s/31aed601-107c-408b-b13e-96b37282ee93-/app/.turbo/cache,target=/app/.turbo/cache \
+    VITE_APP_BUILD_TIMESTAMP="${VITE_APP_BUILD_TIMESTAMP:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}" \
+    pnpm turbo run build --filter=@finanzas/intranet...
 
 # ==========================================================================
 # Stage 4: Runner - Caddy (modern HTTP/3 server)

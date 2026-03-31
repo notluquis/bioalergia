@@ -17,6 +17,7 @@
     "build-storybook": "storybook build",
     "chromatic": "chromatic --project-token=$CHROMATIC_PROJECT_TOKEN --exit-once-uploaded",
     "lint": "oxlint",
+    "type-check": "tsgo --noEmit",
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
     "test": "vitest",

@@ -8,6 +8,8 @@
     "dev": "node ./scripts/run-agent.mjs",
     "prestart": "node ./scripts/free-port.mjs",
     "start": "node ./scripts/run-agent.mjs start",
+    "lint": "oxlint",
+    "type-check": "tsgo --noEmit",
     "test:send-self": "tsx src/scripts/send-self-test.ts",
     "import:eml": "tsx src/scripts/import-eml-backup.ts",
     "import:list-folders": "tsx src/scripts/list-imap-folders.ts",
