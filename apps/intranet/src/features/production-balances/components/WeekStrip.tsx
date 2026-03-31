@@ -55,10 +55,10 @@ export function WeekStrip({
   }
 
   return (
-    <div className="mb-4 rounded-2xl border border-default-100 bg-default-50/30 p-4">
+    <div className="mb-4 rounded-[28px] border border-default-100 bg-default-50/30 p-3 md:p-4">
       {/* Week header */}
-      <div className="mb-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2 overflow-x-auto">
           <Button isIconOnly size="sm" variant="ghost" onPress={onPrevWeek}>
             <ChevronLeft className="size-4" />
           </Button>
@@ -71,14 +71,14 @@ export function WeekStrip({
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onPress={onGoToToday}>
+          <Button className="w-full sm:w-auto" variant="outline" size="sm" onPress={onGoToToday}>
             Hoy
           </Button>
         </div>
       </div>
 
       {/* Days grid */}
-      <div className="grid grid-cols-7 gap-2">
+      <div className="grid grid-cols-7 gap-1.5 md:gap-2">
         {weekData?.days.map((day) => (
           <DayCellButton
             day={day}
@@ -120,7 +120,7 @@ function DayCellButton({
   return (
     <Button
       className={cn(
-        "relative h-19! min-w-0 flex-col items-center justify-center rounded-xl p-2 ",
+        "relative h-18! min-w-0 flex-col items-center justify-center rounded-xl p-1.5 md:h-19! md:p-2",
         "hover:bg-default-50",
         isSelected && "bg-primary/10 ring-1 ring-primary/60",
         isToday && !isSelected && "ring-1 ring-primary/30"

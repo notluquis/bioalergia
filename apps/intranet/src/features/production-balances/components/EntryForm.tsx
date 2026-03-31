@@ -1,4 +1,4 @@
-import { Label, NumberField, TextArea } from "@heroui/react";
+import { Input as HeroInput, Label, NumberField, Surface, TextArea } from "@heroui/react";
 import { CreditCard, Receipt } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -8,7 +8,7 @@ interface EntryFormProps {
   disabled?: boolean;
   onChange: <K extends keyof DailyBalanceFormData>(
     field: K,
-    value: DailyBalanceFormData[K],
+    value: DailyBalanceFormData[K]
   ) => void;
   values: DailyBalanceFormData;
 }
@@ -28,9 +28,10 @@ function CurrencyInput({
 }>) {
   return (
     <NumberField
+      className="w-full"
       formatOptions={{
         currency: "CLP",
-        currencyDisplay: "symbol",
+        currencyDisplay: "narrowSymbol",
         maximumFractionDigits: 0,
         minimumFractionDigits: 0,
         style: "currency",
@@ -43,9 +44,7 @@ function CurrencyInput({
         {icon}
         {label}
       </Label>
-      <NumberField.Group>
-        <NumberField.Input />
-      </NumberField.Group>
+      <HeroInput className="w-full" variant="secondary" />
     </NumberField>
   );
 }
@@ -58,8 +57,8 @@ export function EntryForm({ disabled = false, onChange, values }: EntryFormProps
   return (
     <div className="space-y-4">
       {/* Ingresos por método */}
-      <section className="rounded-2xl border border-default-100 bg-default-50/30 p-4">
-        <div className="mb-4 flex items-center gap-2">
+      <Surface className="rounded-[28px] space-y-4 p-4 md:p-5" variant="secondary">
+        <div className="flex items-center gap-2">
           <CreditCard className="size-5 text-default-500" />
           <h3 className="font-semibold text-base">Ingresos por método</h3>
         </div>
@@ -92,11 +91,11 @@ export function EntryForm({ disabled = false, onChange, values }: EntryFormProps
             value={values.efectivo}
           />
         </div>
-      </section>
+      </Surface>
 
       {/* Gastos */}
-      <section className="rounded-2xl border border-default-100 bg-default-50/30 p-4">
-        <div className="mb-4 flex items-center gap-2">
+      <Surface className="rounded-[28px] space-y-4 p-4 md:p-5" variant="secondary">
+        <div className="flex items-center gap-2">
           <Receipt className="size-5 text-default-500" />
           <h3 className="font-semibold text-base">Gastos</h3>
         </div>
@@ -127,11 +126,11 @@ export function EntryForm({ disabled = false, onChange, values }: EntryFormProps
             />
           </div>
         </div>
-      </section>
+      </Surface>
 
       {/* Ingresos por servicio (desglose) */}
-      <section className="mt-4 rounded-2xl border border-default-100 bg-default-50/30 p-4">
-        <h3 className="mb-4 font-semibold text-base">Desglose por servicio</h3>
+      <Surface className="space-y-4 rounded-[28px] p-4 md:p-5" variant="secondary">
+        <h3 className="font-semibold text-base">Desglose por servicio</h3>
         <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
           <CurrencyInput
             disabled={disabled}
@@ -190,7 +189,7 @@ export function EntryForm({ disabled = false, onChange, values }: EntryFormProps
             value={values.otros}
           />
         </div>
-      </section>
+      </Surface>
     </div>
   );
 }

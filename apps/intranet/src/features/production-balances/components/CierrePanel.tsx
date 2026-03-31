@@ -1,4 +1,4 @@
-import { Button } from "@heroui/react";
+import { Button, Surface } from "@heroui/react";
 import { fmtCLP } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -45,84 +45,84 @@ export function CierrePanel({
   const canFinalize = summary.cuadra && summary.totalMetodos > 0;
 
   return (
-    <aside
-      className={cn(
-        "sticky top-4 rounded-2xl border border-default-200 bg-default-50/50 p-4 backdrop-blur-sm",
-        className,
-      )}
-    >
-      {/* Header */}
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="font-semibold text-lg">Cierre</h2>
-        <span className={cn("rounded-full px-3 py-1 font-medium text-xs", statusColors[status])}>
-          {statusLabels[status]}
-        </span>
-      </div>
+    <aside className={className}>
+      <Surface
+        className="sticky top-4 rounded-[28px] p-4 backdrop-blur-sm md:p-5"
+        variant="secondary"
+      >
+        {/* Header */}
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="font-semibold text-lg">Cierre</h2>
+          <span className={cn("rounded-full px-3 py-1 font-medium text-xs", statusColors[status])}>
+            {statusLabels[status]}
+          </span>
+        </div>
 
-      {/* Summary rows */}
-      <div className="space-y-1 rounded-xl border border-default-100 bg-default-100/30 p-3">
-        <SummaryRow label="Métodos" value={summary.totalMetodos} />
-        <SummaryRow label="Servicios" value={summary.totalServicios} />
-        <SummaryRow label="Gastos" muted value={summary.gastos} />
+        {/* Summary rows */}
+        <div className="space-y-1 rounded-xl border border-default-100 bg-default-100/30 p-3">
+          <SummaryRow label="Métodos" value={summary.totalMetodos} />
+          <SummaryRow label="Servicios" value={summary.totalServicios} />
+          <SummaryRow label="Gastos" muted value={summary.gastos} />
 
-        {/* Diferencia - highlighted */}
-        <div className="mt-2 border-default-200 border-t pt-2">
-          <div className="flex items-baseline justify-between">
-            <span
-              className={cn(
-                "font-medium text-sm",
-                summary.cuadra ? "text-success" : "text-warning",
-              )}
-            >
-              Diferencia
-            </span>
-            <span
-              className={cn(
-                "font-bold text-xl tabular-nums",
-                summary.cuadra ? "text-success" : "text-warning",
-              )}
-            >
-              {fmtCLP(summary.diferencia)}
-            </span>
+          {/* Diferencia - highlighted */}
+          <div className="mt-2 border-default-200 border-t pt-2">
+            <div className="flex items-baseline justify-between">
+              <span
+                className={cn(
+                  "font-medium text-sm",
+                  summary.cuadra ? "text-success" : "text-warning"
+                )}
+              >
+                Diferencia
+              </span>
+              <span
+                className={cn(
+                  "font-bold text-xl tabular-nums",
+                  summary.cuadra ? "text-success" : "text-warning"
+                )}
+              >
+                {fmtCLP(summary.diferencia)}
+              </span>
+            </div>
+
+            {!summary.cuadra && summary.totalMetodos > 0 && (
+              <p className="mt-1 text-default-400 text-xs">
+                {summary.diferencia > 0
+                  ? "Asigna más a servicios"
+                  : "Reduce servicios o aumenta métodos"}
+              </p>
+            )}
           </div>
-
-          {!summary.cuadra && summary.totalMetodos > 0 && (
-            <p className="mt-1 text-default-400 text-xs">
-              {summary.diferencia > 0
-                ? "Asigna más a servicios"
-                : "Reduce servicios o aumenta métodos"}
-            </p>
-          )}
         </div>
-      </div>
 
-      {/* Last saved indicator */}
-      {lastSaved && (
-        <div className="mt-3 text-center text-default-300 text-xs">
-          {isSaving ? "Guardando..." : `Guardado hace ${formatSaveTime(lastSaved)}`}
+        {/* Last saved indicator */}
+        {lastSaved && (
+          <div className="mt-3 text-center text-default-300 text-xs">
+            {isSaving ? "Guardando..." : `Guardado hace ${formatSaveTime(lastSaved)}`}
+          </div>
+        )}
+
+        {/* Action buttons */}
+        <div className="mt-4 hidden gap-2 lg:flex">
+          <Button
+            variant="outline"
+            className="flex-1 rounded-xl"
+            isPending={isSaving}
+            isDisabled={isSaving}
+            onPress={onSaveDraft}
+          >
+            Guardar
+          </Button>
+          <Button
+            variant="primary"
+            className="flex-1 rounded-xl"
+            isDisabled={!canFinalize || isSaving}
+            onPress={onFinalize}
+          >
+            Finalizar
+          </Button>
         </div>
-      )}
-
-      {/* Action buttons */}
-      <div className="mt-4 hidden gap-2 lg:flex">
-        <Button
-          variant="outline"
-          className="flex-1 rounded-xl"
-          isPending={isSaving}
-          isDisabled={isSaving}
-          onPress={onSaveDraft}
-        >
-          Guardar
-        </Button>
-        <Button
-          variant="primary"
-          className="flex-1 rounded-xl"
-          isDisabled={!canFinalize || isSaving}
-          onPress={onFinalize}
-        >
-          Finalizar
-        </Button>
-      </div>
+      </Surface>
     </aside>
   );
 }

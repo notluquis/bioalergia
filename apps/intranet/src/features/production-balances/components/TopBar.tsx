@@ -48,8 +48,8 @@ export function TopBar({ date, isSaving, onSave, status }: TopBarProps) {
   };
 
   return (
-    <div className="sticky top-0 z-10 mb-3 rounded-2xl border border-default-100 bg-background/90 px-4 py-3 backdrop-blur-md sm:px-5">
-      <div className="flex items-center justify-between gap-3">
+    <div className="sticky top-0 z-10 mb-3 rounded-[28px] border border-default-100 bg-background/90 px-4 py-3 backdrop-blur-md sm:px-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <p className="truncate font-semibold text-default-900 text-lg capitalize sm:text-xl">
             {formatDateFull(date)}
@@ -64,7 +64,7 @@ export function TopBar({ date, isSaving, onSave, status }: TopBarProps) {
         </div>
 
         <Button
-          className="shrink-0 gap-2 rounded-xl px-4"
+          className="h-11 w-full shrink-0 gap-2 rounded-2xl px-4 sm:w-auto"
           isPending={isSaving}
           onPress={onSave}
           size="sm"
