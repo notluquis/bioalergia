@@ -18,29 +18,28 @@ interface TodayMarksListProps {
 
 export function TodayMarksList({ marks }: TodayMarksListProps) {
   return (
-    <Card className="border border-default-200/60 shadow-sm">
+    <Card className="rounded-3xl shadow-sm" variant="default">
       <Card.Header className="flex flex-col items-start gap-1 p-5 pb-3">
         <Card.Title className="text-base">Registros de hoy</Card.Title>
-        <Card.Description>
-          Historial del d&iacute;a con hora, tipo de marca y contexto de red.
-        </Card.Description>
+        <Card.Description>Hora, tipo de marca y contexto de red.</Card.Description>
       </Card.Header>
 
       <Card.Content className="flex flex-col gap-3 p-5 pt-0">
         {marks.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-default-200 bg-content1 px-4 py-8 text-center">
-            <p className="text-sm font-medium text-foreground">No hay registros de hoy.</p>
-            <p className="mt-1 text-sm text-foreground-500">
-              Tu primera marca aparecer&aacute; aqu&iacute; apenas la registres.
-            </p>
-          </div>
+          <Card
+            className="rounded-2xl border border-dashed border-default-200/70 shadow-none"
+            variant="transparent"
+          >
+            <Card.Content className="px-4 py-8 text-center">
+              <p className="text-sm font-medium text-foreground">No hay registros de hoy.</p>
+              <p className="mt-1 text-sm text-foreground-500">
+                Tu primera marca aparecera aqui apenas la registres.
+              </p>
+            </Card.Content>
+          </Card>
         ) : (
           marks.map((mark) => (
-            <Card
-              key={mark.id}
-              className="border border-default-200/70 bg-content1 shadow-none"
-              variant="transparent"
-            >
+            <Card key={mark.id} className="rounded-2xl shadow-none" variant="secondary">
               <Card.Content className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-3">
                   <Chip

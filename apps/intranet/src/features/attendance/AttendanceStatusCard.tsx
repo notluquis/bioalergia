@@ -1,4 +1,4 @@
-import { Alert, Card, Chip, Tooltip } from "@heroui/react";
+import { Alert, Card, Chip, Surface, Tooltip } from "@heroui/react";
 import type {
   attendanceMarkSchema,
   attendanceStatusResponseSchema,
@@ -87,94 +87,99 @@ export function AttendanceStatusCard({
   weekSummary,
 }: AttendanceStatusCardProps) {
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4">
       {hasIncompleteYesterday && (
         <Alert status="warning">
           <Alert.Indicator />
           <Alert.Content>
+            <Alert.Title>Salida pendiente</Alert.Title>
             <Alert.Description>
-              Ayer no registraste salida. Contacta a tu administrador si necesitas una corrección.
+              Ayer no registraste salida. Contacta a tu administrador si necesitas una correccion.
             </Alert.Description>
           </Alert.Content>
         </Alert>
       )}
 
-      <Card className="overflow-hidden border border-default-200/60 bg-linear-to-br from-content1 via-content1 to-content2 shadow-sm">
-        <Card.Header className="flex flex-col items-start gap-4 border-b border-default-100/80 p-6 md:p-7">
-          <div className="flex w-full flex-col gap-3 md:flex-row md:items-start md:justify-between">
-            <div className="space-y-3">
-              <Chip color={STATUS_COLOR[currentStatus]} size="lg" variant="soft">
+      <Card className="rounded-3xl shadow-sm" variant="tertiary">
+        <Card.Header className="flex flex-col gap-5 p-5 md:p-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="space-y-2">
+              <Chip color={STATUS_COLOR[currentStatus]} size="sm" variant="soft">
                 {STATUS_LABEL[currentStatus]}
               </Chip>
-              <div className="space-y-1">
-                <Card.Title className="text-2xl md:text-3xl">
+              <div className="space-y-2">
+                <Card.Title className="text-2xl leading-tight md:text-[2rem]">
                   {currentStatus === "CLOCKED_IN"
-                    ? "Tu jornada est&aacute; en curso"
+                    ? "Tu jornada esta en curso"
                     : currentStatus === "CLOCKED_OUT"
-                      ? "Tu &uacute;ltima marca fue una salida"
-                      : "Todav&iacute;a no registras actividad hoy"}
+                      ? "Ya cerraste tu ultima jornada"
+                      : "Todavia no registras actividad hoy"}
                 </Card.Title>
-                <Card.Description className="max-w-2xl text-sm leading-6 md:text-base">
+                <Card.Description className="max-w-2xl text-sm leading-6">
                   {lastMark
                     ? `Última marca a las ${dayjs(lastMark.markedAt).tz(TIMEZONE).format("HH:mm")} como ${
                         lastMark.type === "CLOCK_IN" ? "entrada" : "salida"
                       }.`
-                    : "Cuando registres tu primera marca del día, aparecerá aquí junto con el resumen de tiempo."}
+                    : "Cuando registres tu primera marca del dia, aparecera aqui junto con el resumen de tiempo."}
                 </Card.Description>
               </div>
             </div>
 
-            <Chip color={isOfficeNetwork ? "success" : "warning"} size="sm" variant="soft">
-              {isOfficeNetwork ? "Red de oficina" : "Red externa"}
-            </Chip>
+            <Surface className="min-w-52 rounded-2xl px-4 py-3" variant="default">
+              <p className="text-xs font-medium uppercase tracking-wide text-foreground-400">
+                Red detectada
+              </p>
+              <p className="mt-2 text-sm font-semibold text-foreground">
+                {isOfficeNetwork ? "Oficina" : "Externa"}
+              </p>
+              <p className="mt-1 text-xs text-foreground-500">
+                La validacion de origen se registra junto con cada marca.
+              </p>
+            </Surface>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-3">
+            <Surface className="rounded-2xl px-4 py-4" variant="default">
+              <p className="text-xs font-medium uppercase tracking-wide text-foreground-400">
+                Estado actual
+              </p>
+              <p className="mt-3 text-lg font-semibold text-foreground">
+                {STATUS_LABEL[currentStatus]}
+              </p>
+            </Surface>
+
+            <Surface className="rounded-2xl px-4 py-4" variant="default">
+              <p className="text-xs font-medium uppercase tracking-wide text-foreground-400">
+                Tiempo acumulado
+              </p>
+              <div className="mt-3 text-lg font-semibold text-foreground">
+                {currentStatus === "CLOCKED_IN" && clockedInAt ? (
+                  <LiveTimer clockedInAt={clockedInAt} />
+                ) : monthStats.totalMinutes > 0 ? (
+                  formatMinutes(monthStats.totalMinutes)
+                ) : (
+                  "Sin horas hoy"
+                )}
+              </div>
+            </Surface>
+
+            <Surface className="rounded-2xl px-4 py-4" variant="default">
+              <p className="text-xs font-medium uppercase tracking-wide text-foreground-400">
+                Dias trabajados
+              </p>
+              <p className="mt-3 text-lg font-semibold text-foreground">
+                {monthStats.daysWorked} dias
+              </p>
+            </Surface>
           </div>
         </Card.Header>
-
-        <Card.Content className="grid gap-4 p-6 md:grid-cols-3 md:p-7">
-          <div className="rounded-2xl border border-default-200/70 bg-content1 p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-foreground-400">
-              Estado actual
-            </p>
-            <p className="mt-3 text-lg font-semibold text-foreground">
-              {STATUS_LABEL[currentStatus]}
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-default-200/70 bg-content1 p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-foreground-400">
-              Tiempo acumulado
-            </p>
-            <div className="mt-3 text-lg font-semibold text-foreground">
-              {currentStatus === "CLOCKED_IN" && clockedInAt ? (
-                <LiveTimer clockedInAt={clockedInAt} />
-              ) : monthStats.totalMinutes > 0 ? (
-                formatMinutes(monthStats.totalMinutes)
-              ) : (
-                "Sin horas hoy"
-              )}
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-default-200/70 bg-content1 p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-foreground-400">
-              Días trabajados
-            </p>
-            <p className="mt-3 text-lg font-semibold text-foreground">
-              {monthStats.daysWorked} d&iacute;as
-            </p>
-          </div>
-        </Card.Content>
       </Card>
 
       {weekSummary.length > 0 && (
-        <Card className="border border-default-200/60 shadow-sm">
-          <Card.Header className="flex items-center justify-between gap-4 p-5 pb-2">
-            <div>
-              <Card.Title className="text-base">Semana actual</Card.Title>
-              <Card.Description>
-                Sigue el ritmo de asistencia y detecta d&iacute;as incompletos de inmediato.
-              </Card.Description>
-            </div>
+        <Card className="rounded-3xl shadow-sm" variant="default">
+          <Card.Header className="gap-1 p-5 pb-2">
+            <Card.Title className="text-base">Semana actual</Card.Title>
+            <Card.Description>Lectura rapida de continuidad y dias incompletos.</Card.Description>
           </Card.Header>
           <Card.Content className="grid grid-cols-2 gap-3 p-5 pt-3 sm:grid-cols-4 xl:grid-cols-7">
             {weekSummary.map((day, i) => {
@@ -182,12 +187,15 @@ export function AttendanceStatusCard({
               const tooltipContent =
                 day.workedMinutes !== null
                   ? `${dayjs(day.date).format("DD/MM")} · ${formatMinutes(day.workedMinutes)}`
-                  : `${dayjs(day.date).format("DD/MM")} · ${day.status === "absent" ? "Sin registro" : day.status === "incomplete" ? "Incompleto" : ""}`;
+                  : `${dayjs(day.date).format("DD/MM")} · ${day.status === "absent" ? "Sin registro" : day.status === "incomplete" ? "Incompleto" : "Sin marca"}`;
 
               return (
                 <Tooltip key={day.date}>
                   <Tooltip.Trigger>
-                    <div className="flex min-h-24 flex-col justify-between rounded-2xl border border-default-200/70 bg-content1 p-3">
+                    <Surface
+                      className="flex min-h-24 flex-col justify-between rounded-2xl px-3 py-3"
+                      variant="secondary"
+                    >
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-xs font-medium text-foreground-500">{label}</span>
                         <div
@@ -212,7 +220,7 @@ export function AttendanceStatusCard({
                             : "Sin marca"}
                         </p>
                       </div>
-                    </div>
+                    </Surface>
                   </Tooltip.Trigger>
                   <Tooltip.Content>{tooltipContent}</Tooltip.Content>
                 </Tooltip>
@@ -223,22 +231,24 @@ export function AttendanceStatusCard({
       )}
 
       {(monthStats.daysWorked > 0 || currentStatus !== "NO_MARKS_TODAY") && (
-        <Card className="border border-default-200/60 shadow-sm">
+        <Card className="rounded-3xl shadow-sm" variant="default">
           <Card.Content className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-xs font-medium uppercase tracking-wide text-foreground-400">
                 Resumen mensual
               </p>
               <p className="mt-1 text-sm text-foreground-500">
-                Consolidado r&aacute;pido para validar continuidad y carga horaria.
+                Consolidado rapido para validar continuidad y carga horaria.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <Chip color="accent" variant="soft">
-                {monthStats.daysWorked} d&iacute;as trabajados
+              <Chip color="accent" size="sm" variant="secondary">
+                {monthStats.daysWorked} dias trabajados
               </Chip>
               {monthStats.totalMinutes > 0 && (
-                <Chip variant="secondary">{formatMinutes(monthStats.totalMinutes)}</Chip>
+                <Chip color="default" size="sm" variant="secondary">
+                  {formatMinutes(monthStats.totalMinutes)}
+                </Chip>
               )}
             </div>
           </Card.Content>

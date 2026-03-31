@@ -102,7 +102,7 @@ export function MarkButton({ currentStatus, onSuccess }: MarkButtonProps) {
   });
 
   return (
-    <Card className="border border-default-200/60 shadow-sm">
+    <Card className="rounded-3xl shadow-sm" variant="secondary">
       <Card.Header className="flex flex-col items-start gap-3 p-5 pb-3">
         <Chip color={markType === "CLOCK_IN" ? "success" : "danger"} size="sm" variant="soft">
           {markType === "CLOCK_IN" ? "Entrada" : "Salida"}
@@ -113,7 +113,7 @@ export function MarkButton({ currentStatus, onSuccess }: MarkButtonProps) {
           </Card.Title>
           <Card.Description className="text-sm leading-6">
             {markType === "CLOCK_IN"
-              ? "Registra tu ingreso cuando est&eacute;s listo para comenzar."
+              ? "Registra tu ingreso cuando estes listo para comenzar."
               : "Marca tu salida al terminar para mantener el historial correcto."}
           </Card.Description>
         </div>
@@ -135,7 +135,7 @@ export function MarkButton({ currentStatus, onSuccess }: MarkButtonProps) {
             <Alert.Indicator />
             <Alert.Content>
               <Alert.Description>
-                GPS no disponible. La marca se registrar&aacute; sin ubicaci&oacute;n.
+                GPS no disponible. La marca se registrara sin ubicacion.
               </Alert.Description>
             </Alert.Content>
           </Alert>
