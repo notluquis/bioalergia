@@ -1,4 +1,4 @@
-import { Skeleton } from "@heroui/react";
+import { Card, Chip, Skeleton } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone";
@@ -33,39 +33,74 @@ function MarcarContent() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <AttendanceStatusCard
-        clockedInAt={data.clockedInAt}
-        currentStatus={currentStatus}
-        hasIncompleteYesterday={data.hasIncompleteYesterday}
-        isOfficeNetwork={isOfficeNetwork}
-        lastMark={lastMark}
-        monthStats={data.monthStats}
-        weekSummary={data.weekSummary}
-      />
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.95fr)]">
+      <div className="flex min-w-0 flex-col gap-6">
+        <AttendanceStatusCard
+          clockedInAt={data.clockedInAt}
+          currentStatus={currentStatus}
+          hasIncompleteYesterday={data.hasIncompleteYesterday}
+          isOfficeNetwork={isOfficeNetwork}
+          lastMark={lastMark}
+          monthStats={data.monthStats}
+          weekSummary={data.weekSummary}
+        />
+      </div>
 
-      <MarkButton currentStatus={currentStatus} onSuccess={handleMarkSuccess} />
+      <div className="flex min-w-0 flex-col gap-6">
+        <MarkButton currentStatus={currentStatus} onSuccess={handleMarkSuccess} />
 
-      <section>
-        <h2 className="mb-3 text-sm font-medium text-foreground-500 uppercase tracking-wide">
-          Registros de hoy — {dayjs().tz(TIMEZONE).format("dddd D [de] MMMM")}
-        </h2>
         <TodayMarksList marks={todayMarks} />
-      </section>
+      </div>
     </div>
   );
 }
 
 export function MarcarPage() {
+  const currentDate = dayjs().tz(TIMEZONE);
+
   return (
-    <div className="mx-auto max-w-sm px-4 py-8">
-      <h1 className="mb-6 text-2xl font-bold">Marcaje de Asistencia</h1>
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 md:px-6 md:py-8">
+      <Card className="overflow-hidden border border-default-200/60 bg-linear-to-br from-content1 via-content1 to-primary/5 shadow-sm">
+        <Card.Content className="flex flex-col gap-6 p-6 md:p-8">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div className="space-y-3">
+              <Chip color="accent" size="sm" variant="soft">
+                Asistencia
+              </Chip>
+              <div className="space-y-2">
+                <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
+                  Marcaje de asistencia
+                </h1>
+                <p className="max-w-2xl text-sm leading-6 text-foreground-500 md:text-base">
+                  Revisa tu estado actual, marca entrada o salida y valida tus registros del
+                  d&iacute;a sin salir de esta vista.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <Chip size="sm" variant="secondary">
+                {currentDate.format("dddd D [de] MMMM")}
+              </Chip>
+              <Chip color="default" size="sm" variant="soft">
+                {currentDate.format("HH:mm")}
+              </Chip>
+            </div>
+          </div>
+        </Card.Content>
+      </Card>
+
       <Suspense
         fallback={
-          <div className="flex flex-col gap-4">
-            <Skeleton className="h-36 w-full rounded-2xl" />
-            <Skeleton className="h-24 w-full rounded-xl" />
-            <Skeleton className="h-12 w-full rounded-xl" />
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.95fr)]">
+            <div className="flex flex-col gap-6">
+              <Skeleton className="h-72 w-full rounded-3xl" />
+              <Skeleton className="h-56 w-full rounded-3xl" />
+            </div>
+            <div className="flex flex-col gap-6">
+              <Skeleton className="h-56 w-full rounded-3xl" />
+              <Skeleton className="h-80 w-full rounded-3xl" />
+            </div>
           </div>
         }
       >

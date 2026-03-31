@@ -30,14 +30,14 @@ interface AttendanceStatusCardProps {
 }
 
 const STATUS_LABEL: Record<AttendanceStatus, string> = {
-  CLOCKED_IN: "En consulta",
-  CLOCKED_OUT: "Fuera de consulta",
+  CLOCKED_IN: "Jornada activa",
+  CLOCKED_OUT: "Jornada cerrada",
   NO_MARKS_TODAY: "Sin registros hoy",
 };
 
-const STATUS_COLOR: Record<AttendanceStatus, "default" | "success"> = {
+const STATUS_COLOR: Record<AttendanceStatus, "accent" | "default" | "success"> = {
   CLOCKED_IN: "success",
-  CLOCKED_OUT: "default",
+  CLOCKED_OUT: "accent",
   NO_MARKS_TODAY: "default",
 };
 
@@ -99,41 +99,84 @@ export function AttendanceStatusCard({
         </Alert>
       )}
 
-      <Card className="flex flex-col items-center gap-3 p-6 text-center">
-        <Chip color={STATUS_COLOR[currentStatus]} size="lg" variant="soft">
-          {STATUS_LABEL[currentStatus]}
-        </Chip>
+      <Card className="overflow-hidden border border-default-200/60 bg-linear-to-br from-content1 via-content1 to-content2 shadow-sm">
+        <Card.Header className="flex flex-col items-start gap-4 border-b border-default-100/80 p-6 md:p-7">
+          <div className="flex w-full flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div className="space-y-3">
+              <Chip color={STATUS_COLOR[currentStatus]} size="lg" variant="soft">
+                {STATUS_LABEL[currentStatus]}
+              </Chip>
+              <div className="space-y-1">
+                <Card.Title className="text-2xl md:text-3xl">
+                  {currentStatus === "CLOCKED_IN"
+                    ? "Tu jornada est&aacute; en curso"
+                    : currentStatus === "CLOCKED_OUT"
+                      ? "Tu &uacute;ltima marca fue una salida"
+                      : "Todav&iacute;a no registras actividad hoy"}
+                </Card.Title>
+                <Card.Description className="max-w-2xl text-sm leading-6 md:text-base">
+                  {lastMark
+                    ? `Última marca a las ${dayjs(lastMark.markedAt).tz(TIMEZONE).format("HH:mm")} como ${
+                        lastMark.type === "CLOCK_IN" ? "entrada" : "salida"
+                      }.`
+                    : "Cuando registres tu primera marca del día, aparecerá aquí junto con el resumen de tiempo."}
+                </Card.Description>
+              </div>
+            </div>
 
-        {lastMark && (
-          <p className="text-sm text-foreground-500">
-            Última marca:{" "}
-            <span className="font-medium">
-              {dayjs(lastMark.markedAt).tz(TIMEZONE).format("HH:mm")}
-            </span>
-            {" — "}
-            {lastMark.type === "CLOCK_IN" ? "Entrada" : "Salida"}
-          </p>
-        )}
-
-        {currentStatus === "CLOCKED_IN" && clockedInAt && (
-          <div className="flex items-center gap-1.5 text-sm text-foreground-500">
-            <span>Tiempo trabajado:</span>
-            <LiveTimer clockedInAt={clockedInAt} />
+            <Chip color={isOfficeNetwork ? "success" : "warning"} size="sm" variant="soft">
+              {isOfficeNetwork ? "Red de oficina" : "Red externa"}
+            </Chip>
           </div>
-        )}
+        </Card.Header>
 
-        <Chip color={isOfficeNetwork ? "success" : "warning"} size="sm" variant="secondary">
-          Red: {isOfficeNetwork ? "Oficina" : "Externa"}
-        </Chip>
+        <Card.Content className="grid gap-4 p-6 md:grid-cols-3 md:p-7">
+          <div className="rounded-2xl border border-default-200/70 bg-content1 p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-foreground-400">
+              Estado actual
+            </p>
+            <p className="mt-3 text-lg font-semibold text-foreground">
+              {STATUS_LABEL[currentStatus]}
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-default-200/70 bg-content1 p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-foreground-400">
+              Tiempo acumulado
+            </p>
+            <div className="mt-3 text-lg font-semibold text-foreground">
+              {currentStatus === "CLOCKED_IN" && clockedInAt ? (
+                <LiveTimer clockedInAt={clockedInAt} />
+              ) : monthStats.totalMinutes > 0 ? (
+                formatMinutes(monthStats.totalMinutes)
+              ) : (
+                "Sin horas hoy"
+              )}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-default-200/70 bg-content1 p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-foreground-400">
+              Días trabajados
+            </p>
+            <p className="mt-3 text-lg font-semibold text-foreground">
+              {monthStats.daysWorked} d&iacute;as
+            </p>
+          </div>
+        </Card.Content>
       </Card>
 
-      {/* Semana */}
       {weekSummary.length > 0 && (
-        <Card className="p-4">
-          <p className="mb-3 text-xs font-medium uppercase tracking-wide text-foreground-400">
-            Esta semana
-          </p>
-          <div className="flex justify-between gap-1">
+        <Card className="border border-default-200/60 shadow-sm">
+          <Card.Header className="flex items-center justify-between gap-4 p-5 pb-2">
+            <div>
+              <Card.Title className="text-base">Semana actual</Card.Title>
+              <Card.Description>
+                Sigue el ritmo de asistencia y detecta d&iacute;as incompletos de inmediato.
+              </Card.Description>
+            </div>
+          </Card.Header>
+          <Card.Content className="grid grid-cols-2 gap-3 p-5 pt-3 sm:grid-cols-4 xl:grid-cols-7">
             {weekSummary.map((day, i) => {
               const label = WEEK_DAY_LABELS[i] ?? "";
               const tooltipContent =
@@ -144,18 +187,30 @@ export function AttendanceStatusCard({
               return (
                 <Tooltip key={day.date}>
                   <Tooltip.Trigger>
-                    <div className="flex flex-1 flex-col items-center gap-1">
-                      <span className="text-[10px] text-foreground-400">{label}</span>
-                      <div
-                        className={`flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-bold ${WEEK_STATUS_COLOR[day.status]}`}
-                      >
-                        {day.status === "worked" || day.status === "today"
-                          ? day.workedMinutes !== null
-                            ? `${Math.floor(day.workedMinutes / 60)}h`
-                            : "·"
-                          : day.status === "incomplete"
-                            ? "!"
-                            : "·"}
+                    <div className="flex min-h-24 flex-col justify-between rounded-2xl border border-default-200/70 bg-content1 p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-medium text-foreground-500">{label}</span>
+                        <div
+                          className={`flex h-8 min-w-8 items-center justify-center rounded-full px-2 text-[10px] font-bold ${WEEK_STATUS_COLOR[day.status]}`}
+                        >
+                          {day.status === "worked" || day.status === "today"
+                            ? day.workedMinutes !== null
+                              ? `${Math.max(1, Math.floor(day.workedMinutes / 60))}h`
+                              : "Hoy"
+                            : day.status === "incomplete"
+                              ? "!"
+                              : "·"}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs text-foreground-400">
+                          {dayjs(day.date).format("DD/MM")}
+                        </p>
+                        <p className="text-sm font-medium text-foreground">
+                          {day.workedMinutes !== null
+                            ? formatMinutes(day.workedMinutes)
+                            : "Sin marca"}
+                        </p>
                       </div>
                     </div>
                   </Tooltip.Trigger>
@@ -163,22 +218,30 @@ export function AttendanceStatusCard({
                 </Tooltip>
               );
             })}
-          </div>
+          </Card.Content>
         </Card>
       )}
 
-      {/* Mes */}
       {(monthStats.daysWorked > 0 || currentStatus !== "NO_MARKS_TODAY") && (
-        <Card className="flex flex-row items-center justify-between px-4 py-3">
-          <p className="text-xs font-medium uppercase tracking-wide text-foreground-400">
-            Este mes
-          </p>
-          <div className="flex items-center gap-3 text-sm">
-            <span className="font-semibold">{monthStats.daysWorked} días</span>
-            {monthStats.totalMinutes > 0 && (
-              <span className="text-foreground-500">{formatMinutes(monthStats.totalMinutes)}</span>
-            )}
-          </div>
+        <Card className="border border-default-200/60 shadow-sm">
+          <Card.Content className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-foreground-400">
+                Resumen mensual
+              </p>
+              <p className="mt-1 text-sm text-foreground-500">
+                Consolidado r&aacute;pido para validar continuidad y carga horaria.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Chip color="accent" variant="soft">
+                {monthStats.daysWorked} d&iacute;as trabajados
+              </Chip>
+              {monthStats.totalMinutes > 0 && (
+                <Chip variant="secondary">{formatMinutes(monthStats.totalMinutes)}</Chip>
+              )}
+            </div>
+          </Card.Content>
         </Card>
       )}
     </div>

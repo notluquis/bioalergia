@@ -1,4 +1,4 @@
-import { Alert, Button } from "@heroui/react";
+import { Alert, Button, Card, Chip } from "@heroui/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import type {
@@ -102,44 +102,63 @@ export function MarkButton({ currentStatus, onSuccess }: MarkButtonProps) {
   });
 
   return (
-    <div className="flex flex-col gap-2">
-      <Button
-        className="w-full"
-        isDisabled={mutation.isPending}
-        onPress={() => mutation.mutate()}
-        variant={markType === "CLOCK_IN" ? "primary" : "danger"}
-      >
-        {mutation.isPending ? "Registrando..." : label}
-      </Button>
+    <Card className="border border-default-200/60 shadow-sm">
+      <Card.Header className="flex flex-col items-start gap-3 p-5 pb-3">
+        <Chip color={markType === "CLOCK_IN" ? "success" : "danger"} size="sm" variant="soft">
+          {markType === "CLOCK_IN" ? "Entrada" : "Salida"}
+        </Chip>
+        <div className="space-y-1">
+          <Card.Title className="text-base">
+            {markType === "CLOCK_IN" ? "Iniciar jornada" : "Cerrar jornada"}
+          </Card.Title>
+          <Card.Description className="text-sm leading-6">
+            {markType === "CLOCK_IN"
+              ? "Registra tu ingreso cuando est&eacute;s listo para comenzar."
+              : "Marca tu salida al terminar para mantener el historial correcto."}
+          </Card.Description>
+        </div>
+      </Card.Header>
 
-      {gpsError && (
-        <Alert status="warning">
-          <Alert.Indicator />
-          <Alert.Content>
-            <Alert.Description>
-              GPS no disponible — marca registrada sin ubicación.
-            </Alert.Description>
-          </Alert.Content>
-        </Alert>
-      )}
+      <Card.Content className="flex flex-col gap-3 p-5 pt-0">
+        <Button
+          className="h-12 w-full text-base font-semibold"
+          isDisabled={mutation.isPending}
+          isPending={mutation.isPending}
+          onPress={() => mutation.mutate()}
+          variant={markType === "CLOCK_IN" ? "primary" : "danger"}
+        >
+          {mutation.isPending ? "Registrando..." : label}
+        </Button>
 
-      {mutation.isError && (
-        <Alert status="danger">
-          <Alert.Indicator />
-          <Alert.Content>
-            <Alert.Description>{toAttendanceApiError(mutation.error).message}</Alert.Description>
-          </Alert.Content>
-        </Alert>
-      )}
+        {gpsError && (
+          <Alert status="warning">
+            <Alert.Indicator />
+            <Alert.Content>
+              <Alert.Description>
+                GPS no disponible. La marca se registrar&aacute; sin ubicaci&oacute;n.
+              </Alert.Description>
+            </Alert.Content>
+          </Alert>
+        )}
 
-      {mutation.isSuccess && (
-        <Alert status="success">
-          <Alert.Indicator />
-          <Alert.Content>
-            <Alert.Description>¡Marca registrada correctamente!</Alert.Description>
-          </Alert.Content>
-        </Alert>
-      )}
-    </div>
+        {mutation.isError && (
+          <Alert status="danger">
+            <Alert.Indicator />
+            <Alert.Content>
+              <Alert.Description>{toAttendanceApiError(mutation.error).message}</Alert.Description>
+            </Alert.Content>
+          </Alert>
+        )}
+
+        {mutation.isSuccess && (
+          <Alert status="success">
+            <Alert.Indicator />
+            <Alert.Content>
+              <Alert.Description>Marca registrada correctamente.</Alert.Description>
+            </Alert.Content>
+          </Alert>
+        )}
+      </Card.Content>
+    </Card>
   );
 }
