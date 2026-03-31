@@ -2036,6 +2036,7 @@ export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilter
       AND (${filters?.status ?? null}::text IS NULL OR cs.status::text = ${filters?.status ?? null})
       AND (${normalizedPatientName}::text IS NULL OR lower(coalesce(cs.patient_name, '')) LIKE ${normalizedPatientName})
       AND (${filters?.patientRut ? normalizeRut(filters.patientRut) : null}::text IS NULL OR cs.patient_rut = ${filters?.patientRut ? normalizeRut(filters.patientRut) : null})
+      AND ${queryFilterSql}
     ORDER BY ${orderBy}
     LIMIT ${pageSize}
     OFFSET ${(page - 1) * pageSize}
