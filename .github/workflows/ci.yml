@@ -18,20 +18,56 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: latest
+          version: 10.32.1
 
-      - name: Use Node.js current
+      - name: Use Node.js 25
         uses: actions/setup-node@v4
         with:
-          node-version: current
+          node-version: 25
           cache: pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Full CI pipeline
-        run: pnpm ci
+      - name: Lint, type-check and test
+        env:
+          TURBO_TELEMETRY_DISABLED: "1"
+          TURBO_RUN_FLAGS: ${{ github.event_name == 'pull_request' && '--affected' || '' }}
+        run: pnpm turbo run lint type-check test $TURBO_RUN_FLAGS --continue=never --summarize --output-logs=errors-only
+
+  build:
+    needs: quality
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.1
+
+      - name: Use Node.js 25
+        uses: actions/setup-node@v4
+        with:
+          node-version: 25
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build affected packages
+        env:
+          TURBO_TELEMETRY_DISABLED: "1"
+          TURBO_RUN_FLAGS: ${{ github.event_name == 'pull_request' && '--affected' || '' }}
+        run: pnpm turbo run build $TURBO_RUN_FLAGS --continue=never --summarize --output-logs=errors-only

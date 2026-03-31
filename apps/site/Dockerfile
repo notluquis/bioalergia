@@ -3,22 +3,22 @@
 # ==========================================================================
 # Stage 1: Prune monorepo for site
 # ==========================================================================
-FROM node:current-slim AS pruner
+FROM node:25-slim AS pruner
 WORKDIR /app
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 COPY . .
-RUN npm install -g pnpm@latest
-RUN TURBO_TELEMETRY_DISABLED=1 npx turbo@^2 prune @finanzas/site --docker
+RUN npm install -g pnpm@10.32.1
+RUN TURBO_TELEMETRY_DISABLED=1 npx turbo@2.9.1 prune @finanzas/site --docker
 
 # ==========================================================================
 # Stage 2: Base deps
 # ==========================================================================
-FROM node:current-slim AS base
+FROM node:25-slim AS base
 WORKDIR /app
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN npm install -g pnpm@latest
+RUN npm install -g pnpm@10.32.1
 
 COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml

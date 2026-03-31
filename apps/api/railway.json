@@ -5,6 +5,14 @@
     "dockerfilePath": "apps/api/Dockerfile"
   },
   "deploy": {
-    "watchPatterns": ["apps/api/**", "packages/db/**", "pnpm-lock.yaml", "pnpm-workspace.yaml"]
+    "watchPatterns": [
+      "apps/api/**",
+      "packages/db/**",
+      "packages/orpc-contracts/**",
+      "package.json",
+      "turbo.json",
+      "pnpm-lock.yaml",
+      "pnpm-workspace.yaml"
+    ]
   }
 }

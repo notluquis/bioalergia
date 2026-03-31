@@ -164,7 +164,13 @@ export default defineConfig(({ mode }) => {
     ].filter(Boolean),
     define: {
       "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV || "development"),
-      "import.meta.env.VITE_APP_BUILD_TIMESTAMP": JSON.stringify(new Date().toISOString()),
+      "import.meta.env.VITE_APP_BUILD_TIMESTAMP": JSON.stringify(
+        process.env.VITE_APP_BUILD_TIMESTAMP ??
+          process.env.SOURCE_DATE_EPOCH ??
+          process.env.RAILWAY_GIT_COMMIT_SHA ??
+          process.env.GITHUB_SHA ??
+          ""
+      ),
     },
     optimizeDeps: {
       include: [

@@ -3,21 +3,21 @@
 
 # ============================================================================
 # STAGE 1: Prune - Generate a minimal lockfile from the monorepo
-# Using npx turbo@^2 as recommended by Turborepo docs for Docker prune stage
+# Using a pinned turbo version for deterministic Docker prune stages
 # ============================================================================
-FROM node:current-slim AS pruner
+FROM node:25-slim AS pruner
 WORKDIR /app
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 COPY . .
-RUN npm install -g pnpm@latest
-# npx downloads turbo pinned to major version - fastest approach for prune-only stage
-RUN TURBO_TELEMETRY_DISABLED=1 npx turbo@^2 prune @finanzas/api --docker
+RUN npm install -g pnpm@10.32.1
+# npx downloads a pinned turbo version for the prune-only stage
+RUN TURBO_TELEMETRY_DISABLED=1 npx turbo@2.9.1 prune @finanzas/api --docker
 
 # ============================================================================
 # STAGE 2: Base - Install dependencies for pruned workspace
 # ============================================================================
-FROM node:current-slim AS base
+FROM node:25-slim AS base
 WORKDIR /app
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
@@ -28,8 +28,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     && rm -rf /var/lib/apt/lists/*
 
-# Install latest pnpm directly (corepack removed in Node.js 25+)
-RUN npm install -g pnpm@latest
+# Install the workspace-pinned pnpm directly (corepack removed in Node.js 25+)
+RUN npm install -g pnpm@10.32.1
 
 # Copy dependencies from pruner
 COPY --from=pruner /app/out/json/ .
@@ -55,7 +55,7 @@ RUN pnpm turbo run build --filter=@finanzas/api...
 # ============================================================================
 # STAGE 4: Runner - Production image
 # ============================================================================
-FROM node:current-slim AS runner
+FROM node:25-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000

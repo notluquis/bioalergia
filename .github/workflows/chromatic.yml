@@ -7,6 +7,10 @@ on:
     paths:
       - "apps/intranet/**"
       - "apps/site/**"
+      - "packages/db/**"
+      - "packages/orpc-contracts/**"
+      - "package.json"
+      - "turbo.json"
       - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
       - ".github/workflows/chromatic.yml"
@@ -16,6 +20,10 @@ on:
     paths:
       - "apps/intranet/**"
       - "apps/site/**"
+      - "packages/db/**"
+      - "packages/orpc-contracts/**"
+      - "package.json"
+      - "turbo.json"
       - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
       - ".github/workflows/chromatic.yml"
@@ -29,16 +37,35 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Detect changes
-        uses: dorny/paths-filter@v3
-        id: filter
         with:
-          filters: |
-            intranet:
-              - "apps/intranet/**"
-            site:
-              - "apps/site/**"
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.1
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 25
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Detect affected storybooks
+        id: filter
+        env:
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+          TURBO_TELEMETRY_DISABLED: "1"
+        run: |
+          pnpm turbo query affected --packages @finanzas/intranet --tasks build-storybook --base "$BASE_SHA" --head "$HEAD_SHA" > intranet-affected.json
+          pnpm turbo query affected --packages @finanzas/site --tasks build-storybook --base "$BASE_SHA" --head "$HEAD_SHA" > site-affected.json
+          echo "intranet=$(node -e "const fs=require('fs');const v=JSON.parse(fs.readFileSync('intranet-affected.json','utf8'));process.stdout.write(String((v.data?.affectedTasks?.length ?? 0) > 0))")" >> "$GITHUB_OUTPUT"
+          echo "site=$(node -e "const fs=require('fs');const v=JSON.parse(fs.readFileSync('site-affected.json','utf8'));process.stdout.write(String((v.data?.affectedTasks?.length ?? 0) > 0))")" >> "$GITHUB_OUTPUT"
 
   chromatic-intranet:
     needs: changes
@@ -51,13 +78,13 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: current
+          node-version: 25
           cache: pnpm
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: latest
+          version: 10.32.1
           run_install: false
 
       - name: Install dependencies
@@ -79,13 +106,13 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: current
+          node-version: 25
           cache: pnpm
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: latest
+          version: 10.32.1
           run_install: false
 
       - name: Install dependencies

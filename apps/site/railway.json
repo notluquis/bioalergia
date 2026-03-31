@@ -5,6 +5,12 @@
     "dockerfilePath": "apps/site/Dockerfile"
   },
   "deploy": {
-    "watchPatterns": ["apps/site/**", "pnpm-lock.yaml", "pnpm-workspace.yaml"]
+    "watchPatterns": [
+      "apps/site/**",
+      "package.json",
+      "turbo.json",
+      "pnpm-lock.yaml",
+      "pnpm-workspace.yaml"
+    ]
   }
 }
