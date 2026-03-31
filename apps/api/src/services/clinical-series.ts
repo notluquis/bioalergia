@@ -549,9 +549,30 @@ type StructuredClinicalDescription = {
 
 const STRUCTURED_CLINICAL_LABEL_REGEX =
   /(?:^|\n|\s)-?\s*(BOLETA|Rut del paciente|Edad|Comuna|Previsi[oó]n|N[uú]mero de contacto|Correo electr[oó]nico|Motivo de la consulta|Tiempo de evoluci[oó]n|Enfermedades base)\s*:/gi;
+const STRUCTURED_NOISE_LINE_REGEX =
+  /(?:^|\n)\s*[-•]?\s*(?:correo(?:\s+electr[oó]nico)?|motivo(?:\s+de\s+la\s+consulta)?|tiempo(?:\s+de\s+evoluci[oó]n)?|tratamiento\s+usado|enfermedades\s+base|n[uú]mero\s+de\s+contacto|n[uú]mero|telefono|tel[eé]fono|edad|comuna|previsi[oó]n|rut\s+del\s+paciente)\s*:\s*[^\n]*/gi;
+const EMAIL_REGEX = /\b[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}\b/gi;
+const GLUED_RUT_FOLLOWED_BY_AGE_REGEX = /(\d{7,8}-?[\dkK])(?=\d{1,3}\s*a[ñn]os?\b)/gi;
+const GLUED_RUT_FOLLOWED_BY_LABEL_REGEX =
+  /(\d{7,8}-?[\dkK])(?=-?(?:edad|comuna|previsi[oó]n|n[uú]mero(?:\s+de\s+contacto)?|correo(?:\s+electr[oó]nico)?|motivo(?:\s+de\s+la\s+consulta)?|tiempo(?:\s+de\s+evoluci[oó]n)?|enfermedades\s+base|tratamiento\s+usado)\b)/gi;
 
 function cleanStructuredFieldValue(value: string): string {
   return value.replace(/\s+/g, " ").replace(/[;,]+$/g, "").trim();
+}
+
+function normalizeIdentitySourceText(value: string): string {
+  return value
+    .replace(GLUED_RUT_FOLLOWED_BY_AGE_REGEX, "$1 ")
+    .replace(GLUED_RUT_FOLLOWED_BY_LABEL_REGEX, "$1 ");
+}
+
+function stripStructuredNoiseForNames(value: string): string {
+  return value
+    .replace(STRUCTURED_NOISE_LINE_REGEX, "\n")
+    .replace(EMAIL_REGEX, " ")
+    .replace(/\b(?:href|mailto|target|blank)\b/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function trimBoletaBlock(value: string): string {
@@ -649,7 +670,9 @@ function extractStructuredClinicalDescription(text: string): StructuredClinicalD
         const previousLine = beforeRutText.split("\n").map((line) => cleanStructuredFieldValue(line)).filter(Boolean).at(-1);
         lineBeforeRut = previousLine ?? "";
       }
-      const name = extractNamesFromText(lineBeforeRut)[0] ?? (normalizeName(lineBeforeRut) || null);
+      const extractedName =
+        extractNamesFromText(lineBeforeRut)[0] ?? (normalizeName(lineBeforeRut) || null);
+      const name = extractedName && isLikelyPersonName(extractedName) ? extractedName : null;
       if (!beneficiaryCandidates.some((candidate) => candidate.rut === rut)) {
         beneficiaryCandidates.push({ name, rut });
       }
@@ -741,8 +764,8 @@ function extractNamesFromText(text: string): string[] {
 }
 
 export function extractIdentityHints(summary: null | string, description: null | string) {
-  const summaryText = normalizeClinicalText(summary);
-  const descriptionText = normalizeClinicalText(description);
+  const summaryText = normalizeIdentitySourceText(normalizeClinicalText(summary));
+  const descriptionText = normalizeIdentitySourceText(normalizeClinicalText(description));
   const structured = extractStructuredClinicalDescription(descriptionText);
   // RUTs are extracted from combined text — they appear in either field.
   const combinedText = `${summaryText} ${descriptionText}`.trim();
@@ -770,10 +793,10 @@ export function extractIdentityHints(summary: null | string, description: null |
   const summaryNames = extractNamesFromText(summaryText.trim());
   const descriptionWithoutBoleta =
     structured.boletaBlock ? descriptionText.replace(structured.boletaBlock, " ") : descriptionText;
-  const descriptionNames = extractNamesFromText(descriptionWithoutBoleta.trim());
+  const descriptionNames = extractNamesFromText(stripStructuredNoiseForNames(descriptionWithoutBoleta));
   const beneficiaryNames = structured.beneficiaryCandidates
     .map((candidate) => candidate.name)
-    .filter((value): value is string => Boolean(value));
+    .filter((value): value is string => Boolean(value) && isLikelyPersonName(value));
 
   const uniquePatientNames = [...new Set([...summaryNames, ...descriptionNames])];
   const patientRut =
@@ -785,13 +808,12 @@ export function extractIdentityHints(summary: null | string, description: null |
     structured.beneficiaryRuts.find((value) => value !== patientRut) ??
     ruts.find((value) => value !== patientRut) ??
     null;
-  const uniqueBeneficiaryNames = [...new Set([...beneficiaryNames, ...summaryNames, ...descriptionNames])];
   const hasExplicitBeneficiary =
     structured.beneficiaryCandidates.length > 0 || beneficiaryRut != null;
   const patientName = uniquePatientNames[0] ?? null;
   const beneficiaryName =
     hasExplicitBeneficiary
-      ? uniqueBeneficiaryNames.find((value) => value !== patientName) ?? null
+      ? beneficiaryNames.find((value) => value !== patientName) ?? null
       : null;
 
   return { beneficiaryName, beneficiaryRut, patientName, patientRut };
@@ -1326,7 +1348,10 @@ async function refreshClinicalSeriesMetadata(seriesId: number) {
   // Fall back to whatever was in the DB if fresh extraction came up empty.
   patientName ??= series.patientName;
   patientRut ??= series.patientRut;
-  beneficiaryName ??= series.beneficiaryName;
+  beneficiaryName ??=
+    series.beneficiaryName && isLikelyPersonName(series.beneficiaryName)
+      ? series.beneficiaryName
+      : null;
   beneficiaryRut ??= series.beneficiaryRut;
 
   if (!beneficiaryRut || !beneficiaryName) {
@@ -1448,7 +1473,11 @@ async function assignEventToSeries(event: EventSeriesCandidate, ctx?: SeriesAssi
   // Prefer fresh extraction so an improved algorithm overwrites stale stored values.
   // Fall back to whatever is already in the DB if extraction returns nothing.
   const identity = {
-    beneficiaryName: inferredIdentity.beneficiaryName ?? event.beneficiaryName,
+    beneficiaryName:
+      inferredIdentity.beneficiaryName ??
+      (event.beneficiaryName && isLikelyPersonName(event.beneficiaryName)
+        ? event.beneficiaryName
+        : null),
     beneficiaryRut: sanitizeRut(inferredIdentity.beneficiaryRut ?? event.beneficiaryRut),
     patientName: inferredIdentity.patientName ?? event.patientName,
     patientRut: sanitizeRut(inferredIdentity.patientRut ?? event.patientRut),

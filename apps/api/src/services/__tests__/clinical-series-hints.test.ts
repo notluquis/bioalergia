@@ -154,6 +154,18 @@ describe("extractPatientHints", () => {
       expect(hints.beneficiaryName).toBe("oscar cardenas barrientos");
       expect(hints.beneficiaryRut).toBe("14041763-7");
     });
+
+    it("extracts a patient RUT even when it is glued to the age annotation", () => {
+      const hints = extractIdentityHints(
+        "1327 Vacuna Clustoid (50), Lucas medina, 22988126-413 años, San Pedro, 996990238",
+        null,
+      );
+
+      expect(hints.patientName).toBe("lucas medina");
+      expect(hints.patientRut).toBe("22988126-4");
+      expect(hints.beneficiaryName).toBeNull();
+      expect(hints.beneficiaryRut).toBeNull();
+    });
   });
 
   describe("patientName — all-lowercase fallback (7+ chars per word)", () => {
@@ -703,6 +715,47 @@ describe("extractIdentityHints", () => {
 
     expect(result.patientName).toBe("pedro eduardo tiznado rubio");
     expect(result.patientRut).toBe("15175620-4");
+    expect(result.beneficiaryName).toBeNull();
+    expect(result.beneficiaryRut).toBeNull();
+  });
+
+  it("does not invent a beneficiary from unlabeled contact and email lines", () => {
+    const result = extractIdentityHints(
+      "Test cutaneo Antonella hermosilla Ortega",
+      [
+        "Antonella hermosilla Ortega",
+        "22.710.901-7",
+        "17 años",
+        "Coronel",
+        "FONASA",
+        "949394164",
+        "antonellahermosill4@gmail.com",
+      ].join("\n"),
+    );
+
+    expect(result.patientName).toBe("antonella hermosilla ortega");
+    expect(result.patientRut).toBe("22710901-7");
+    expect(result.beneficiaryName).toBeNull();
+    expect(result.beneficiaryRut).toBeNull();
+  });
+
+  it("does not invent a beneficiary from HTML email anchors or clinical history text", () => {
+    const result = extractIdentityHints(
+      "1450 Vacuna clustoid (50) Vicente Agustin Paredes Cruces",
+      [
+        "12254595-8",
+        "11 años",
+        "Coronel",
+        "Particular",
+        "977733560",
+        '-Correo electrónico: <a href="mailto:Coratoti@gmail.com" target="_blank">Coratoti@gmail.com</a>',
+        "-Motivo de la consulta: Dermatitis cronica",
+        "-Tratamiento usado: Desloratadina, unguentos",
+      ].join("\n"),
+    );
+
+    expect(result.patientName).toBe("vicente agustin paredes cruces");
+    expect(result.patientRut).toBe("12254595-8");
     expect(result.beneficiaryName).toBeNull();
     expect(result.beneficiaryRut).toBeNull();
   });
