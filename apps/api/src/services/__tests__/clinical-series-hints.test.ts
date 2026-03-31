@@ -93,6 +93,14 @@ describe("extractPatientHints", () => {
       expect(patientName).toBe("ingrid rivas vergara");
     });
 
+    it("does not use the typo 'cosulta' as a name token", () => {
+      const { patientName } = extractPatientHints(
+        "16.38, 1era cosulta (40) pablo sanchez rivero, 16 años, 22.479.080-5",
+        null,
+      );
+      expect(patientName).toBe("pablo sanchez rivero");
+    });
+
     it("does not use 'san pedro' as part of a patient name", () => {
       const { patientName } = extractPatientHints(
         "Vacuna Clustoid (50), Lucas medina, 13 años, San Pedro, 996990238",

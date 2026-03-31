@@ -39,6 +39,7 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "clustoid",
   "confirma",
   "consulta",
+  "cosulta",
   "control",
   "costo",
   "cutaneo",
@@ -1149,6 +1150,24 @@ function scoreClinicalSeriesIdentityQuality(series: {
   return score;
 }
 
+function scoreRepresentativeIdentity(identity: ClinicalIdentity & { eventCount?: number }): number {
+  let score = scoreClinicalSeriesIdentityQuality(identity);
+  score += getSignificantNameTokens(identity.patientName ?? "").length * 20;
+  score += getSignificantNameTokens(identity.beneficiaryName ?? "").length * 10;
+  return score;
+}
+
+function compareRepresentativeIdentity(
+  a: ClinicalIdentity & { eventCount?: number },
+  b: ClinicalIdentity & { eventCount?: number },
+): number {
+  const scoreDelta = scoreRepresentativeIdentity(b) - scoreRepresentativeIdentity(a);
+  if (scoreDelta !== 0) return scoreDelta;
+  const eventDelta = (b.eventCount ?? 0) - (a.eventCount ?? 0);
+  if (eventDelta !== 0) return eventDelta;
+  return (b.patientName ?? "").length - (a.patientName ?? "").length;
+}
+
 function compareSeriesCanonicalPriority<
   T extends {
     beneficiaryName?: null | string;
@@ -1164,6 +1183,21 @@ function compareSeriesCanonicalPriority<
   const eventDelta = (b.eventCount ?? 0) - (a.eventCount ?? 0);
   if (eventDelta !== 0) return eventDelta;
   return a.id - b.id;
+}
+
+function isCloseNormalizedRut(a: null | string, b: null | string): boolean {
+  if (!a || !b) return false;
+  const left = normalizeRut(a);
+  const right = normalizeRut(b);
+  if (left === right) return true;
+  if (left.length !== right.length) return false;
+
+  let differences = 0;
+  for (let i = 0; i < left.length; i++) {
+    if (left[i] !== right[i]) differences++;
+    if (differences > 1) return false;
+  }
+  return differences === 1;
 }
 
 class SeriesAssignmentContext {
@@ -1266,6 +1300,15 @@ class SeriesAssignmentContext {
       .sort(compareSeriesCanonicalPriority)[0]?.id;
   }
 
+  findDuplicateCanonicalByExactName(name: string, kind: ClinicalSeriesKind): number | undefined {
+    const ids = this.nameKindIndex.get(`${normalizeName(name)}:${kind}`) ?? [];
+    if (ids.length !== 2) return undefined;
+    return ids
+      .map((id) => this.seriesById.get(id))
+      .filter((entry): entry is SeriesEntry => !!entry)
+      .sort(compareSeriesCanonicalPriority)[0]?.id;
+  }
+
   /**
    * Token-overlap fallback: finds the oldest same-kind series that shares ≥2
    * significant tokens covering ≥2/3 of the shorter name. Used when exact
@@ -1283,7 +1326,7 @@ class SeriesAssignmentContext {
       }
     }
 
-    let bestId: number | undefined;
+    let best: SeriesEntry | undefined;
     for (const [id, overlap] of overlapCount) {
       if (overlap < 2) continue;
       const entry = this.seriesById.get(id);
@@ -1291,9 +1334,18 @@ class SeriesAssignmentContext {
       const shorterLen = Math.min(eventTokens.length, getSignificantNameTokens(entry.patientName).length);
       if (overlap / shorterLen < 2 / 3) continue;
       if (this.dist(entry, eventDate) > thresholdDays) continue;
-      if (bestId === undefined || id < bestId) bestId = id; // oldest wins
+      if (
+        !best ||
+        overlap > eventTokens.filter((t) => getSignificantNameTokens(best.patientName ?? "").includes(t)).length ||
+        (
+          overlap === eventTokens.filter((t) => getSignificantNameTokens(best.patientName ?? "").includes(t)).length &&
+          compareSeriesCanonicalPriority(entry, best) < 0
+        )
+      ) {
+        best = entry;
+      }
     }
-    return bestId;
+    return best?.id;
   }
 
   /** Register a newly created series so subsequent lookups can find it. */
@@ -1311,7 +1363,13 @@ class SeriesAssignmentContext {
 }
 
 export async function findMatchingSeries(
-  params: { eventDate: string; kind: ClinicalSeriesKind; patientName: null | string; patientRut: null | string },
+  params: {
+    beneficiaryRut?: null | string;
+    eventDate: string;
+    kind: ClinicalSeriesKind;
+    patientName: null | string;
+    patientRut: null | string;
+  },
   ctx?: SeriesAssignmentContext,
 ): Promise<null | number> {
   const eventDateDjs = dayjs.tz(params.eventDate, TIMEZONE);
@@ -1319,6 +1377,29 @@ export async function findMatchingSeries(
 
   // ── Fast path: all lookups in memory (O(1) / O(k)) ───────────────────────
   if (ctx) {
+    if (params.patientName) {
+      const duplicateCanonical = ctx.findDuplicateCanonicalByExactName(params.patientName, params.kind);
+      if (duplicateCanonical != null) {
+        const canonical = ctx.seriesById.get(duplicateCanonical);
+        if (
+          canonical &&
+          (
+            !params.patientRut ||
+            canonical.patientRut === params.patientRut ||
+            canonical.beneficiaryRut === params.patientRut ||
+            canonical.patientRut === params.beneficiaryRut ||
+            canonical.beneficiaryRut === params.beneficiaryRut ||
+            isCloseNormalizedRut(canonical.patientRut, params.patientRut) ||
+            isCloseNormalizedRut(canonical.beneficiaryRut, params.patientRut) ||
+            isCloseNormalizedRut(canonical.patientRut, params.beneficiaryRut ?? null) ||
+            isCloseNormalizedRut(canonical.beneficiaryRut, params.beneficiaryRut ?? null)
+          )
+        ) {
+          return duplicateCanonical;
+        }
+      }
+    }
+
     if (params.patientRut) {
       const id = ctx.findByRut(params.patientRut, params.kind);
       if (id != null) return id;
@@ -1347,6 +1428,56 @@ export async function findMatchingSeries(
 
   // ── Slow path: DB queries (single-event incremental sync) ─────────────────
   const eventSelect = { select: { endDate: true, endDateTime: true, startDate: true, startDateTime: true } } as const;
+
+  if (params.patientName) {
+    const duplicateCandidates = await db.clinicalSeries.findMany({
+      where: { kind: params.kind, patientName: params.patientName },
+      select: {
+        beneficiaryName: true,
+        beneficiaryRut: true,
+        id: true,
+        patientName: true,
+        patientRut: true,
+        _count: { select: { events: true } },
+      },
+      orderBy: { id: "asc" },
+    });
+    if (duplicateCandidates.length === 2) {
+      const canonical = [...duplicateCandidates].sort((a, b) =>
+        compareSeriesCanonicalPriority(
+          {
+            beneficiaryName: a.beneficiaryName,
+            beneficiaryRut: a.beneficiaryRut,
+            eventCount: a._count.events,
+            id: a.id,
+            patientName: a.patientName,
+            patientRut: a.patientRut,
+          },
+          {
+            beneficiaryName: b.beneficiaryName,
+            beneficiaryRut: b.beneficiaryRut,
+            eventCount: b._count.events,
+            id: b.id,
+            patientName: b.patientName,
+            patientRut: b.patientRut,
+          },
+        ),
+      )[0]!;
+      if (
+        !params.patientRut ||
+        canonical.patientRut === params.patientRut ||
+        canonical.beneficiaryRut === params.patientRut ||
+        canonical.patientRut === params.beneficiaryRut ||
+        canonical.beneficiaryRut === params.beneficiaryRut ||
+        isCloseNormalizedRut(canonical.patientRut, params.patientRut) ||
+        isCloseNormalizedRut(canonical.beneficiaryRut, params.patientRut) ||
+        isCloseNormalizedRut(canonical.patientRut, params.beneficiaryRut ?? null) ||
+        isCloseNormalizedRut(canonical.beneficiaryRut, params.beneficiaryRut ?? null)
+      ) {
+        return canonical.id;
+      }
+    }
+  }
 
   if (params.patientRut) {
     // RUT uniquely identifies the patient — return oldest series for this rut+kind.
@@ -1428,6 +1559,7 @@ export async function findMatchingSeries(
         include: { events: eventSelect },
         orderBy: { id: "asc" },
       });
+      let bestFuzzy: null | { distance: number; id: number; overlap: number; score: number } = null;
       for (const c of allSameKind) {
         if (!c.patientName) continue;
         const cTokens = getSignificantNameTokens(c.patientName);
@@ -1447,12 +1579,134 @@ export async function findMatchingSeries(
                 return eventDateDjs.isBefore(s) ? s.diff(eventDateDjs, "day") : eventDateDjs.isAfter(e) ? eventDateDjs.diff(e, "day") : 0;
               })();
         if (distance > thresholdDays) continue;
-        return c.id; // sorted id ASC — oldest qualifies first
+        const score = scoreClinicalSeriesIdentityQuality({
+          beneficiaryName: c.beneficiaryName,
+          beneficiaryRut: c.beneficiaryRut,
+          eventCount: c.events.length,
+          patientName: c.patientName,
+          patientRut: c.patientRut,
+        });
+        if (
+          !bestFuzzy ||
+          overlap > bestFuzzy.overlap ||
+          (
+            overlap === bestFuzzy.overlap &&
+            (
+              distance < bestFuzzy.distance ||
+              (
+                distance === bestFuzzy.distance &&
+                (score > bestFuzzy.score || (score === bestFuzzy.score && c.id < bestFuzzy.id))
+              )
+            )
+          )
+        ) {
+          bestFuzzy = { distance, id: c.id, overlap, score };
+        }
       }
+      if (bestFuzzy) return bestFuzzy.id;
     }
   }
 
   return null;
+}
+
+function buildIdentityGroupKey(name: null | string, rut: null | string): null | string {
+  const normalizedRut = sanitizeRut(rut);
+  if (normalizedRut) return `rut:${normalizedRut}`;
+  const normalizedName = name ? normalizeName(name) : "";
+  return normalizedName ? `name:${normalizedName}` : null;
+}
+
+function choosePreferredIdentityName(current: null | string, incoming: null | string): null | string {
+  if (!incoming) return current;
+  if (!current) return incoming;
+  const currentTokens = getSignificantNameTokens(current);
+  const incomingTokens = getSignificantNameTokens(incoming);
+  if (incomingTokens.length !== currentTokens.length) {
+    return incomingTokens.length > currentTokens.length ? incoming : current;
+  }
+  return incoming.length > current.length ? incoming : current;
+}
+
+export function selectRepresentativeClinicalIdentity(
+  events: Array<{
+    description: null | string;
+    summary: null | string;
+  }>,
+  stored?: StoredClinicalIdentity,
+): ClinicalIdentity {
+  const patientGroups = new Map<string, ClinicalIdentity & { eventCount: number }>();
+  const beneficiaryGroups = new Map<string, ClinicalIdentity & { eventCount: number }>();
+  let hasText = false;
+
+  for (const event of events) {
+    const eventHasText = hasIdentitySourceText(event.summary, event.description);
+    hasText ||= eventHasText;
+    const hints = resolveClinicalIdentity(event.summary, event.description);
+
+    const patientKey = buildIdentityGroupKey(hints.patientName, hints.patientRut);
+    if (patientKey) {
+      const current = patientGroups.get(patientKey);
+      patientGroups.set(patientKey, {
+        beneficiaryName: null,
+        beneficiaryRut: null,
+        eventCount: (current?.eventCount ?? 0) + 1,
+        patientName: choosePreferredIdentityName(current?.patientName ?? null, hints.patientName),
+        patientRut: hints.patientRut ?? current?.patientRut ?? null,
+      });
+    }
+
+    const beneficiaryKey = buildIdentityGroupKey(hints.beneficiaryName, hints.beneficiaryRut);
+    const sameAsPatient =
+      beneficiaryKey != null &&
+      patientKey != null &&
+      beneficiaryKey === patientKey;
+    if (beneficiaryKey && !sameAsPatient) {
+      const current = beneficiaryGroups.get(beneficiaryKey);
+      beneficiaryGroups.set(beneficiaryKey, {
+        beneficiaryName: choosePreferredIdentityName(
+          current?.beneficiaryName ?? null,
+          hints.beneficiaryName,
+        ),
+        beneficiaryRut: hints.beneficiaryRut ?? current?.beneficiaryRut ?? null,
+        eventCount: (current?.eventCount ?? 0) + 1,
+        patientName: null,
+        patientRut: null,
+      });
+    }
+  }
+
+  if (!hasText) {
+    return {
+      beneficiaryName:
+        stored?.beneficiaryName && isLikelyPersonName(stored.beneficiaryName)
+          ? stored.beneficiaryName
+          : null,
+      beneficiaryRut: sanitizeRut(stored?.beneficiaryRut ?? null),
+      patientName: stored?.patientName ?? null,
+      patientRut: sanitizeRut(stored?.patientRut ?? null),
+    };
+  }
+
+  const patient = [...patientGroups.values()].sort(compareRepresentativeIdentity)[0] ?? null;
+  const patientKey = buildIdentityGroupKey(patient?.patientName ?? null, patient?.patientRut ?? null);
+  const beneficiary =
+    [...beneficiaryGroups.values()]
+      .filter((candidate) => {
+        const candidateKey = buildIdentityGroupKey(
+          candidate.beneficiaryName ?? null,
+          candidate.beneficiaryRut ?? null,
+        );
+        return candidateKey != null && candidateKey !== patientKey;
+      })
+      .sort(compareRepresentativeIdentity)[0] ?? null;
+
+  return {
+    beneficiaryName: beneficiary?.beneficiaryName ?? null,
+    beneficiaryRut: beneficiary?.beneficiaryRut ?? null,
+    patientName: patient?.patientName ?? null,
+    patientRut: patient?.patientRut ?? null,
+  };
 }
 
 async function refreshClinicalSeriesMetadata(seriesId: number) {
@@ -1479,34 +1733,15 @@ async function refreshClinicalSeriesMetadata(seriesId: number) {
   }
 
   // Always re-extract from event text so an improved algorithm overwrites stale
-  // stored values. Only fall back to stored values when an event has no text.
-  let patientName: null | string = null;
-  let patientRut: null | string = null;
-  let beneficiaryName: null | string = null;
-  let beneficiaryRut: null | string = null;
-
-  for (const event of series.events) {
-    const hints = resolveClinicalIdentity(event.summary, event.description);
-    if (!patientRut && hints.patientRut) patientRut = hints.patientRut;
-    if (!patientName && hints.patientName) patientName = hints.patientName;
-    if (!beneficiaryRut && hints.beneficiaryRut) beneficiaryRut = hints.beneficiaryRut;
-    if (!beneficiaryName && hints.beneficiaryName) beneficiaryName = hints.beneficiaryName;
-    if (patientName && patientRut && beneficiaryName && beneficiaryRut) break;
-  }
-
-  // Fall back only when the whole series has no usable text source at all.
-  const seriesHasIdentityText = series.events.some((event) =>
-    hasIdentitySourceText(event.summary, event.description),
-  );
-  if (!seriesHasIdentityText) {
-    patientName ??= series.patientName;
-    patientRut ??= series.patientRut;
-    beneficiaryName ??=
-      series.beneficiaryName && isLikelyPersonName(series.beneficiaryName)
-        ? series.beneficiaryName
-        : null;
-    beneficiaryRut ??= series.beneficiaryRut;
-  }
+  // stored values. When there is usable text, choose the dominant identity
+  // across the whole series instead of trusting the first non-null event.
+  let { patientName, patientRut, beneficiaryName, beneficiaryRut } =
+    selectRepresentativeClinicalIdentity(series.events, {
+      beneficiaryName: series.beneficiaryName,
+      beneficiaryRut: series.beneficiaryRut,
+      patientName: series.patientName,
+      patientRut: series.patientRut,
+    });
 
   if (!beneficiaryRut || !beneficiaryName) {
     const linkedDocuments = await db.$queryRaw<Array<{ clientName: string; clientRUT: string }>>`
@@ -1655,7 +1890,13 @@ async function assignEventToSeries(event: EventSeriesCandidate, ctx?: SeriesAssi
   // with the smallest date distance. This ensures that during a rebuild an event
   // already sitting in a newer duplicate series gets re-assigned to the original.
   let targetSeriesId = await findMatchingSeries(
-    { eventDate: event.eventDate, kind, patientName: identity.patientName, patientRut: identity.patientRut },
+    {
+      beneficiaryRut: identity.beneficiaryRut,
+      eventDate: event.eventDate,
+      kind,
+      patientName: identity.patientName,
+      patientRut: identity.patientRut,
+    },
     ctx,
   );
 
@@ -1697,7 +1938,9 @@ async function assignEventToSeries(event: EventSeriesCandidate, ctx?: SeriesAssi
     targetSeriesId = created.id;
     // Register new series in the context so subsequent events find it.
     ctx?.register({
+      beneficiaryName: identity.beneficiaryName,
       beneficiaryRut: identity.beneficiaryRut,
+      eventCount: 1,
       id: targetSeriesId,
       kind,
       maxDate: eventDateDjs,

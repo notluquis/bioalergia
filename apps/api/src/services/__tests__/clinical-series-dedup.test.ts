@@ -19,7 +19,7 @@ vi.mock("@finanzas/db", () => ({
   kysely: {},
 }));
 
-const { detectDuplicateSeries, findMatchingSeries } = await import("../clinical-series");
+const { detectDuplicateSeries, findMatchingSeries, selectRepresentativeClinicalIdentity } = await import("../clinical-series");
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -178,6 +178,7 @@ describe("detectDuplicateSeries — same RUT, different name (subset)", () => {
     mockFindFirst.mockResolvedValueOnce(null);
     mockFindMany.mockResolvedValueOnce([
       {
+        _count: { events: 2 },
         beneficiaryName: "araneda ulloa",
         beneficiaryRut: null,
         events: [
@@ -189,6 +190,7 @@ describe("detectDuplicateSeries — same RUT, different name (subset)", () => {
         patientRut: null,
       },
       {
+        _count: { events: 4 },
         beneficiaryName: "araneda ulloa",
         beneficiaryRut: null,
         events: [
@@ -211,5 +213,130 @@ describe("detectDuplicateSeries — same RUT, different name (subset)", () => {
     });
 
     expect(match).toBe(5988);
+  });
+
+  it("prefers the canonical exact-name duplicate when the source event has no patient RUT", async () => {
+    mockFindMany.mockResolvedValueOnce([
+      makeSeries(47, "vicente agustin paredes cruces", null, "SUBCUTANEOUS_TREATMENT", 15),
+      makeSeries(707, "vicente agustin paredes cruces", "21335160-5", "SUBCUTANEOUS_TREATMENT", 4),
+    ]);
+
+    const match = await findMatchingSeries({
+      eventDate: "2026-03-01",
+      kind: "SUBCUTANEOUS_TREATMENT",
+      patientName: "vicente agustin paredes cruces",
+      patientRut: null,
+    });
+
+    expect(match).toBe(707);
+  });
+
+  it("prefers the canonical exact-name duplicate when patient and beneficiary RUT are swapped", async () => {
+    mockFindMany.mockResolvedValueOnce([
+      makeSeries(49, "franco munoz jara", "13300260-K", "SUBCUTANEOUS_TREATMENT", 14, {
+        beneficiaryName: "ximena jara suazo",
+        beneficiaryRut: "21850411-6",
+      }),
+      makeSeries(5962, "franco munoz jara", "21850411-6", "SUBCUTANEOUS_TREATMENT", 21, {
+        beneficiaryName: "ximena jara suazo",
+        beneficiaryRut: "13300260-K",
+      }),
+    ]);
+
+    const match = await findMatchingSeries({
+      beneficiaryRut: "21850411-6",
+      eventDate: "2026-03-01",
+      kind: "SUBCUTANEOUS_TREATMENT",
+      patientName: "franco munoz jara",
+      patientRut: "13300260-K",
+    });
+
+    expect(match).toBe(5962);
+  });
+
+  it("prefers the canonical exact-name duplicate when the incoming patient RUT is a one-digit typo", async () => {
+    mockFindMany.mockResolvedValueOnce([
+      makeSeries(1403, "esteban escobar ortiz", "20159822-2", "SUBCUTANEOUS_TREATMENT", 2),
+      makeSeries(1671, "esteban escobar ortiz", "23159822-2", "SUBCUTANEOUS_TREATMENT", 2),
+    ]);
+
+    const match = await findMatchingSeries({
+      eventDate: "2026-03-01",
+      kind: "SUBCUTANEOUS_TREATMENT",
+      patientName: "esteban escobar ortiz",
+      patientRut: "23159822-2",
+    });
+
+    expect(match).toBe(1403);
+  });
+
+  it("prefers the fuller canonical series when the incoming event only has a partial last name", async () => {
+    mockFindFirst.mockResolvedValueOnce(null);
+    mockFindMany.mockResolvedValueOnce([]);
+    mockFindMany.mockResolvedValueOnce([]);
+    mockFindMany.mockResolvedValueOnce([
+      {
+        beneficiaryName: null,
+        beneficiaryRut: null,
+        events: [
+          { endDate: null, endDateTime: null, startDate: new Date("2025-01-01T00:00:00.000Z"), startDateTime: null },
+          { endDate: null, endDateTime: null, startDate: new Date("2025-02-01T00:00:00.000Z"), startDateTime: null },
+        ],
+        id: 1682,
+        patientName: "yolerana chavez",
+        patientRut: null,
+      },
+      {
+        beneficiaryName: null,
+        beneficiaryRut: null,
+        events: [
+          { endDate: null, endDateTime: null, startDate: new Date("2025-10-01T00:00:00.000Z"), startDateTime: null },
+          { endDate: null, endDateTime: null, startDate: new Date("2025-11-01T00:00:00.000Z"), startDateTime: null },
+          { endDate: null, endDateTime: null, startDate: new Date("2025-12-01T00:00:00.000Z"), startDateTime: null },
+          { endDate: null, endDateTime: null, startDate: new Date("2026-01-01T00:00:00.000Z"), startDateTime: null },
+          { endDate: null, endDateTime: null, startDate: new Date("2026-02-01T00:00:00.000Z"), startDateTime: null },
+        ],
+        id: 5969,
+        patientName: "yolerana chavez seguel",
+        patientRut: "13512855-4",
+      },
+    ]);
+
+    const match = await findMatchingSeries({
+      eventDate: "2026-02-15",
+      kind: "SUBCUTANEOUS_TREATMENT",
+      patientName: "yolerana chavez",
+      patientRut: null,
+    });
+
+    expect(match).toBe(5969);
+  });
+});
+
+describe("selectRepresentativeClinicalIdentity", () => {
+  it("chooses the dominant patient identity across events instead of the first outlier", () => {
+    const identity = selectRepresentativeClinicalIdentity([
+      {
+        description: null,
+        summary: "llego vacuna clustoid natalia mardones mardones 18110888-6",
+      },
+      {
+        description: null,
+        summary: "llego vacuna clustoid natalia mardones mardones 18110888-6",
+      },
+      {
+        description: null,
+        summary: "llego vacuna clustoid natalia mardones mardones 18110888-6",
+      },
+      {
+        description: null,
+        summary: "llego vacuna clustoid benjamin mardones parra 23794542-5",
+      },
+    ]);
+
+    expect(identity).toMatchObject({
+      patientName: "natalia mardones mardones",
+      patientRut: "18110888-6",
+    });
   });
 });
