@@ -17,6 +17,7 @@ const STANDALONE_NUMBER_REGEX = /\b\d+\b/g;
 const SEPARATOR_REGEX = /[;:,()[\]{}/\\]+/g;
 const LOWERCASE_NAME_STOPWORDS = new Set([
   // Allergy / treatment terms
+  "acaro",
   "acaros",
   "administracion",
   "aeroalergenos",
@@ -42,6 +43,7 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "diagnostico",
   "dosis",
   "entrega",
+  "esquema",
   "examen",
   "fase",
   "frasco",
@@ -54,6 +56,7 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "instalacion",
   "lectura",
   "mantencion",
+  "mas",
   "mensual",
   "mil",
   "papa",
@@ -119,14 +122,17 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "ali",
   "alergenos",
   "alergeno",
+  "ban",
   "estandar",
   "standar",
   "amb",
   "ambiental",
+  "ahora",
   "banmedica",
   "blanca",
   "boleta",
   "ccp",
+  "comuna",
   "colmena",
   "consalud",
   "contacto",
@@ -135,13 +141,16 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "dte",
   "edad",
   "evento",
+  "florida",
   "fonasa",
   "hualpen",
   "isapre",
   "lucas",
+  "vida",
   "numero",
   "particular",
   "pago",
+  "prevision",
   "rut",
   "vincular",
   // Communes / cities that appear as patient origin but are not names
@@ -151,10 +160,13 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "chillan",
   "concepcion",
   "coronel",
+  "linares",
   "lota",
+  "alamos",
   "penco",
   "talcahuano",
   "tome",
+  "yerbas",
   // Month names (appear as appointment date notes, not names)
   "enero",
   "febrero",
@@ -205,6 +217,7 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "total",
   "doctor",
   "ella",
+  "evaluacion",
   "este",
   "hace",
   "hijo",
@@ -219,6 +232,7 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "para",
   "pero",
   "por",
+  "porque",
   "retiran",
   "humana",
   "sale",
@@ -366,11 +380,21 @@ function normalizeName(value: string): string {
 function stripStopwordPrefix(token: string): string {
   let best = "";
   for (const sw of LOWERCASE_NAME_STOPWORDS) {
-    if (sw.length >= 4 && sw.length > best.length && token.startsWith(sw) && token.length > sw.length) {
+    const remainderLength = token.length - sw.length;
+    if (
+      sw.length >= 4 &&
+      sw.length > best.length &&
+      token.startsWith(sw) &&
+      remainderLength >= 4
+    ) {
       best = sw;
     }
   }
   return best ? token.slice(best.length) : token;
+}
+
+function normalizeNameToken(token: string): string {
+  return stripStopwordPrefix(token).replace(/^-+|-+$/g, "");
 }
 
 function resolveClinicalSeriesOrderBy(
@@ -431,7 +455,8 @@ function extractNamesFromCleanedText(text: string): string[] {
   const tokens = normalizeName(text)
     .split(" ")
     .filter(Boolean)
-    .map((t) => stripStopwordPrefix(t));
+    .map((t) => normalizeNameToken(t))
+    .filter(Boolean);
 
   const isNameToken = (t: string) =>
     t.length >= 3 && !/\d/.test(t) && !LOWERCASE_NAME_STOPWORDS.has(t);
@@ -534,7 +559,7 @@ function extractRutAdjacentNames(text: string): string[] {
       const nWords0 = normalized.split(" ").filter(Boolean);
       if (nWords0.some((w) => LOWERCASE_NAME_STOPWORDS.has(w))) break;
       // Deglue stopword prefixes glued without a space ("llegodiego" → "diego").
-      const n = stripStopwordPrefix(normalized);
+      const n = normalizeNameToken(normalized);
       if (!n || /\d/.test(n)) break;
       // Check word lengths rather than total token length: "s/c" normalizes to
       // "s c" (3 chars) and would pass `n.length < 3`, but each word is 1 char.
@@ -1385,21 +1410,22 @@ export async function syncClinicalSeriesForExternalEvents(
 
 /**
  * Computes and persists the derived status for all clinical series based on
- * event dates and series kind. Preserves CANCELLED status.
+ * event schedule and series kind. Preserves CANCELLED status.
  *
  * Tests (PATCH_TEST, SKIN_TEST):
- *   PLANNED   → no past events
- *   ACTIVE    → has both past and future events
- *   COMPLETED → has past events but no future events
+ *   PLANNED   → no events whose scheduled instant has started yet
+ *   ACTIVE    → at least one event has started and there are future events pending
+ *   COMPLETED → at least one event has started and no future events remain
  *
  * Subcutaneous treatment:
- *   PLANNED   → no past events
- *   ACTIVE    → last event ≤ 60 days ago
+ *   PLANNED   → no events whose scheduled instant has started yet
+ *   ACTIVE    → last started event ≤ 60 days ago
  *   INACTIVE  → last event 61–180 days ago
- *   COMPLETED → last event > 180 days ago
+ *   COMPLETED → last started event > 180 days ago
  */
 export async function updateAllSeriesStatuses(): Promise<{ updated: number }> {
   const today = dayjs().tz(TIMEZONE).format("YYYY-MM-DD");
+  const now = dayjs().tz(TIMEZONE).toDate();
   const result = await db.$executeRaw`
     UPDATE clinical_series cs
     SET status = (
@@ -1408,10 +1434,24 @@ export async function updateAllSeriesStatuses(): Promise<{ updated: number }> {
       ELSE (
         WITH event_dates AS (
           SELECT
-            MAX(CASE WHEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
-                     THEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) END) AS last_past,
-            MIN(CASE WHEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) > ${today}::date
-                     THEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) END) AS next_future
+            MAX(
+              CASE
+                WHEN COALESCE(
+                  e.start_date_time AT TIME ZONE ${TIMEZONE},
+                  e.start_date::timestamp AT TIME ZONE ${TIMEZONE}
+                ) <= ${now}::timestamptz
+                THEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date)
+              END
+            ) AS last_past,
+            MIN(
+              CASE
+                WHEN COALESCE(
+                  e.start_date_time AT TIME ZONE ${TIMEZONE},
+                  e.start_date::timestamp AT TIME ZONE ${TIMEZONE}
+                ) > ${now}::timestamptz
+                THEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date)
+              END
+            ) AS next_future
           FROM events e
           WHERE e.clinical_series_id = cs.id
         )

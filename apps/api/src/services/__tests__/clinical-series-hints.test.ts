@@ -275,6 +275,22 @@ describe("extractPatientHints", () => {
       );
       expect(patientName).toBe("lorena ortiz fierro");
     });
+
+    it("does not include 'esquema' as part of the patient name", () => {
+      const { patientName } = extractPatientHints(
+        "esquema florencia carrasco albornoz",
+        null,
+      );
+      expect(patientName).toBe("florencia carrasco albornoz");
+    });
+
+    it("does not include 'acaro' as part of the patient name", () => {
+      const { patientName } = extractPatientHints(
+        "acaro nicolas vergara bustos",
+        null,
+      );
+      expect(patientName).toBe("nicolas vergara bustos");
+    });
   });
 
   // ── Ordinal dose words ───────────────────────────────────────────────────
@@ -414,6 +430,54 @@ describe("extractPatientHints", () => {
         null,
       );
       expect(patientName).toBe("joaquin garcia torres");
+    });
+
+    it("does not include hyphen-prefixed labels like -edad -comuna florida -prevision", () => {
+      const { patientName } = extractPatientHints(
+        "nicolas vergara bustos -edad 18 años -comuna florida -prevision colmena",
+        null,
+      );
+      expect(patientName).toBe("nicolas vergara bustos");
+    });
+
+    it("does not include insurance phrases like 'mas vida' as part of the patient name", () => {
+      const { patientName } = extractPatientHints(
+        "mas vida nicolas vergara bustos",
+        null,
+      );
+      expect(patientName).toBe("nicolas vergara bustos");
+    });
+
+    it("does not include short insurance prefixes like 'ban' as part of the patient name", () => {
+      const { patientName } = extractPatientHints(
+        "ban esteban escobar ortiz",
+        null,
+      );
+      expect(patientName).toBe("esteban escobar ortiz");
+    });
+
+    it("does not include locality tails like 'yerbas buenas linares' as part of the patient name", () => {
+      const { patientName } = extractPatientHints(
+        "maria gonzalez soto yerbas buenas linares",
+        null,
+      );
+      expect(patientName).toBe("maria gonzalez soto");
+    });
+
+    it("does not include locality tails like 'los alamos' as part of the patient name", () => {
+      const { patientName } = extractPatientHints(
+        "damaris villar castro los alamos",
+        null,
+      );
+      expect(patientName).toBe("damaris villar castro");
+    });
+
+    it("does not treat admin or clinical phrases like 'alimentaria y ahora evaluacion de porque' as a name", () => {
+      const { patientName } = extractPatientHints(
+        "alimentaria y ahora evaluacion de porque",
+        null,
+      );
+      expect(patientName).toBeNull();
     });
   });
 
