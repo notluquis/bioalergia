@@ -70,6 +70,7 @@ export const clinicalSeriesListInputSchema = z.object({
   kind: clinicalSeriesKindSchema.optional(),
   page: z.number().int().positive().default(1),
   pageSize: z.number().int().positive().max(100).default(20),
+  query: z.string().optional(),
   patientName: z.string().optional(),
   patientRut: z.string().optional(),
   sortColumn: clinicalSeriesSortColumnSchema.optional(),

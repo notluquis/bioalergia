@@ -27,7 +27,7 @@ import {
 } from "@heroui/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Key, Selection } from "@heroui/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { EventDteLinkModal } from "@/features/calendar/components/EventDteLinkModal";
 import type { CalendarEventDetail } from "@/features/calendar/types";
 import {
@@ -277,15 +277,16 @@ export function ClinicalSeriesView() {
   const [pageSize, setPageSize] = useState<(typeof PAGE_SIZE_OPTIONS)[number]>(20);
 
   // Raw filter states (debounced for text fields)
+  const [queryRaw, setQueryRaw] = useState("");
   const [rutRaw, setRutRaw] = useState("");
   const [beneficiaryRutRaw, setBeneficiaryRutRaw] = useState("");
-  const [nameRaw, setNameRaw] = useState("");
   const [kind, setKind] = useState<ClinicalSeriesKind | undefined>(undefined);
   const [status, setStatus] = useState<ClinicalSeriesStatus | undefined>(undefined);
 
+  const deferredQuery = useDeferredValue(queryRaw);
+  const debouncedQuery = useDebounce(deferredQuery);
   const debouncedRut = useDebounce(rutRaw);
   const debouncedBeneficiaryRut = useDebounce(beneficiaryRutRaw);
-  const debouncedName = useDebounce(nameRaw);
 
   // Sorting
   const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({
@@ -296,7 +297,7 @@ export function ClinicalSeriesView() {
   // Reset page when filters or page size change
   useEffect(() => {
     setPage(1);
-  }, [debouncedBeneficiaryRut, debouncedRut, debouncedName, kind, status, pageSize]);
+  }, [debouncedBeneficiaryRut, debouncedQuery, debouncedRut, kind, status, pageSize]);
 
   // Detail drawer
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -306,9 +307,9 @@ export function ClinicalSeriesView() {
   const filters: ClinicalSeriesFilters = {
     page,
     pageSize: pageSize,
+    ...(debouncedQuery && { query: debouncedQuery }),
     ...(debouncedBeneficiaryRut && { beneficiaryRut: debouncedBeneficiaryRut }),
     ...(debouncedRut && { patientRut: debouncedRut }),
-    ...(debouncedName && { patientName: debouncedName }),
     ...(kind && { kind }),
     sortColumn: sortDescriptor.column as ClinicalSeriesSortColumn,
     sortDirection: sortDescriptor.direction,
@@ -365,12 +366,12 @@ export function ClinicalSeriesView() {
   };
 
   const hasFilters =
-    !!debouncedBeneficiaryRut || !!debouncedRut || !!debouncedName || !!kind || !!status;
+    !!debouncedBeneficiaryRut || !!debouncedQuery || !!debouncedRut || !!kind || !!status;
 
   const clearFilters = () => {
+    setQueryRaw("");
     setRutRaw("");
     setBeneficiaryRutRaw("");
-    setNameRaw("");
     setKind(undefined);
     setStatus(undefined);
   };
@@ -489,25 +490,23 @@ export function ClinicalSeriesView() {
       {/* ── Filters ──────────────────────────────────────────────────────── */}
       <Surface className="rounded-xl p-3">
         <div className="flex flex-wrap gap-3 items-end">
-          {/* RUT */}
-          <TextField className="flex-1 min-w-35" value={rutRaw} onChange={setRutRaw}>
-            <Label>RUT</Label>
+          <TextField className="min-w-70 flex-[2_1_28rem]" value={queryRaw} onChange={setQueryRaw}>
+            <Label>Búsqueda</Label>
+            <Input placeholder="Paciente, RUT paciente, RUT beneficiario o beneficiario..." />
+          </TextField>
+
+          <TextField className="min-w-35 flex-1" value={rutRaw} onChange={setRutRaw}>
+            <Label>RUT paciente exacto</Label>
             <Input placeholder="12345678-9" />
           </TextField>
 
           <TextField
-            className="flex-1 min-w-35"
+            className="min-w-35 flex-1"
             value={beneficiaryRutRaw}
             onChange={setBeneficiaryRutRaw}
           >
-            <Label>RUT beneficiario</Label>
+            <Label>RUT beneficiario exacto</Label>
             <Input placeholder="12345678-9" />
-          </TextField>
-
-          {/* Nombre */}
-          <TextField className="flex-1 min-w-35" value={nameRaw} onChange={setNameRaw}>
-            <Label>Paciente</Label>
-            <Input placeholder="Nombre..." />
           </TextField>
 
           {/* Tipo */}

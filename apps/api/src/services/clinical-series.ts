@@ -349,6 +349,7 @@ type ClinicalSeriesFilters = {
   kind?: ClinicalSeriesKind;
   page?: number;
   pageSize?: number;
+  query?: string;
   patientName?: string;
   patientRut?: string;
   sortColumn?:
@@ -1925,21 +1926,47 @@ export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilter
   const page = Math.max(1, filters?.page ?? 1);
   const pageSize = Math.min(100, Math.max(1, filters?.pageSize ?? 20));
   const today = dayjs().tz(TIMEZONE).format("YYYY-MM-DD");
+  const normalizedQuery = filters?.query ? normalizeName(filters.query) : null;
+  const queryRut = filters?.query ? normalizeRut(filters.query) : null;
+  const queryTokens = normalizedQuery
+    ? normalizedQuery
+        .split(" ")
+        .map((token) => token.trim())
+        .filter((token) => token.length >= 2)
+    : [];
 
-  const baseWhere = {
-    beneficiaryRut: filters?.beneficiaryRut ? normalizeRut(filters.beneficiaryRut) : undefined,
-    kind: filters?.kind,
-    status: filters?.status,
-    patientName: filters?.patientName
-      ? {
-          contains: normalizeName(filters.patientName),
-        }
-      : undefined,
-    patientRut: filters?.patientRut ? normalizeRut(filters.patientRut) : undefined,
-  };
+  const textHaystack = sql`lower(concat_ws(' ', coalesce(cs.patient_name, ''), coalesce(cs.beneficiary_name, ''), coalesce(cs.display_name, ''), coalesce(cs.patient_rut, ''), coalesce(cs.beneficiary_rut, '')))`;
+  const queryFilterSql =
+    normalizedQuery || queryRut
+      ? sql`(
+          (${queryRut}::text IS NOT NULL AND (cs.patient_rut = ${queryRut} OR cs.beneficiary_rut = ${queryRut}))
+          OR (${normalizedQuery ? `%${normalizedQuery}%` : null}::text IS NOT NULL AND ${textHaystack} LIKE ${normalizedQuery ? `%${normalizedQuery}%` : null})
+          OR ${
+            queryTokens.length > 0
+              ? sql.join(
+                  queryTokens.map((token) => sql`${textHaystack} LIKE ${`%${token}%`}`),
+                  sql` AND `,
+                )
+              : sql`FALSE`
+          }
+        )`
+      : sql`TRUE`;
 
   // Count total matching records (without pagination)
-  const total = await db.clinicalSeries.count({ where: baseWhere });
+  const total = Number(
+    (
+      await sql<{ count: number }>`
+        SELECT COUNT(*)::int AS count
+        FROM clinical_series cs
+        WHERE (${filters?.beneficiaryRut ? normalizeRut(filters.beneficiaryRut) : null}::text IS NULL OR cs.beneficiary_rut = ${filters?.beneficiaryRut ? normalizeRut(filters.beneficiaryRut) : null})
+          AND (${filters?.kind ?? null}::text IS NULL OR cs.kind::text = ${filters?.kind ?? null})
+          AND (${filters?.status ?? null}::text IS NULL OR cs.status::text = ${filters?.status ?? null})
+          AND (${filters?.patientRut ? normalizeRut(filters.patientRut) : null}::text IS NULL OR cs.patient_rut = ${filters?.patientRut ? normalizeRut(filters.patientRut) : null})
+          AND (${filters?.patientName ? `%${normalizeName(filters.patientName)}%` : null}::text IS NULL OR lower(coalesce(cs.patient_name, '')) LIKE ${filters?.patientName ? `%${normalizeName(filters.patientName)}%` : null})
+          AND ${queryFilterSql}
+      `.execute(kysely)
+    ).rows[0]?.count ?? 0,
+  );
 
   const normalizedPatientName = filters?.patientName ? `%${normalizeName(filters.patientName)}%` : null;
   const orderBy = resolveClinicalSeriesOrderBy(filters);

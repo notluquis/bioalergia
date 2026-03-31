@@ -98,6 +98,7 @@ export interface ClinicalSeriesFilters {
   kind?: ClinicalSeriesKind;
   page?: number;
   pageSize?: number;
+  query?: string;
   patientName?: string;
   patientRut?: string;
   sortColumn?: ClinicalSeriesSortColumn;
