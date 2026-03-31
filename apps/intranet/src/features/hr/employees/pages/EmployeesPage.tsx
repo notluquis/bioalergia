@@ -10,7 +10,7 @@ import { columns } from "@/features/hr/employees/components/columns";
 import { EmployeeForm } from "@/features/hr/employees/components/EmployeeForm";
 import { employeeKeys } from "@/features/hr/employees/queries";
 import type { Employee } from "@/features/hr/employees/types";
-import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
+import { PAGE_CONTAINER } from "@/lib/styles";
 // ... existing imports
 export function EmployeesPage() {
   const { can } = useAuth();
@@ -58,7 +58,7 @@ export function EmployeesPage() {
         onSuccess: () => {
           void queryClient.invalidateQueries({ queryKey: employeeKeys.all });
         },
-      },
+      }
     );
   }
 
@@ -72,7 +72,7 @@ export function EmployeesPage() {
         onSuccess: () => {
           void queryClient.invalidateQueries({ queryKey: employeeKeys.all });
         },
-      },
+      }
     );
   }
 
@@ -94,7 +94,6 @@ export function EmployeesPage() {
   return (
     <section className={PAGE_CONTAINER}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <h1 className={TITLE_LG}>Equipo y tarifas</h1>
         <div className="flex flex-wrap items-center gap-3">
           <Switch
             isSelected={includeInactive}

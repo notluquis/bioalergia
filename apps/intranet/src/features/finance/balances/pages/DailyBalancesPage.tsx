@@ -67,16 +67,11 @@ export function DailyBalances() {
     <section className="space-y-4">
       {can("read", "DailyBalance") ? (
         <>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h1 className="font-semibold text-primary text-xl">Saldos diarios</h1>
-              {derivedInitial != null && (
-                <p className="text-default-500 text-sm">
-                  Saldo anterior: <strong>{formatBalanceInput(derivedInitial)}</strong>
-                </p>
-              )}
-            </div>
-          </div>
+          {derivedInitial != null && (
+            <p className="text-default-500 text-sm">
+              Saldo anterior: <strong>{formatBalanceInput(derivedInitial)}</strong>
+            </p>
+          )}
 
           <Card>
             <Card.Content>

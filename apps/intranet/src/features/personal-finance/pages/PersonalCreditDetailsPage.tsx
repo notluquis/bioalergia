@@ -14,7 +14,7 @@ import type { PersonalCreditInstallment } from "../types";
 
 const installmentColumns = (
   currency: string,
-  creditId: number,
+  creditId: number
 ): ColumnDef<PersonalCreditInstallment>[] => [
   {
     accessorKey: "installmentNumber",
@@ -80,9 +80,6 @@ export function PersonalCreditDetailsPage({ creditId }: { creditId: number }) {
             <ArrowLeftIcon className="size-4" />
           </Button>
         </Link>
-        <h1 className="font-bold text-3xl tracking-tight">
-          {credit.bankName} - {credit.description || credit.creditNumber}
-        </h1>
         <Chip
           color={credit.status === "ACTIVE" ? "accent" : "default"}
           variant={credit.status === "ACTIVE" ? "primary" : "secondary"}

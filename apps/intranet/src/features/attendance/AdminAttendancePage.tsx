@@ -433,12 +433,6 @@ function AdminAttendanceContent() {
 export function AdminAttendancePage() {
   return (
     <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Asistencia</h1>
-        <p className="mt-1 text-sm text-foreground-500">
-          Registros de marcaje de entrada y salida del equipo.
-        </p>
-      </div>
       <Suspense
         fallback={
           <div className="flex flex-col gap-3">

@@ -12,7 +12,6 @@ import {
 import { useToast } from "@/context/ToastContext";
 import { createPatient } from "@/features/patients/api";
 import { formatRut, validateRut } from "@/lib/rut";
-import { TITLE_LG } from "@/lib/styles";
 
 export const Route = createFileRoute("/_authed/patients/new")({
   staticData: {
@@ -83,11 +82,7 @@ function AddPatientPage() {
 
   return (
     <section className="mx-auto max-w-4xl space-y-8">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className={TITLE_LG}>Registrar Nuevo Paciente</h1>
-          <p className="text-default-500 text-sm">Crea un perfil clínico para un nuevo paciente</p>
-        </div>
+      <div className="flex justify-end">
         <Button variant="ghost" onPress={() => navigate({ to: "/patients" })} className="gap-2">
           <X size={18} />
           Cancelar

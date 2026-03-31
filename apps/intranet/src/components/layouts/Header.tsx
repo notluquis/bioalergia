@@ -84,11 +84,7 @@ export function Header() {
   const uniqueCrumbs = crumbs.filter(
     (item, index, array) => index === array.findIndex((candidate) => candidate.to === item.to)
   );
-  const pageTitle = uniqueCrumbs[uniqueCrumbs.length - 1]?.label ?? "Inicio";
-  const breadcrumbItems =
-    uniqueCrumbs.length > 1 && uniqueCrumbs[uniqueCrumbs.length - 1]?.label === pageTitle
-      ? uniqueCrumbs.slice(0, -1)
-      : uniqueCrumbs;
+  const breadcrumbItems = uniqueCrumbs;
   const showBreadcrumbs = breadcrumbItems.length > 0;
 
   const handleLogout = async () => {
@@ -118,14 +114,11 @@ export function Header() {
               })}
             </Breadcrumbs>
           ) : null}
-          <div className="flex items-center gap-2">
-            <h1 className="truncate font-semibold text-foreground text-lg">{pageTitle}</h1>
-            {isNavigating && (
-              <span className="flex items-center gap-1 font-semibold text-primary text-xs">
-                <Loader2 className="h-3 w-3 " />
-              </span>
-            )}
-          </div>
+          {isNavigating && (
+            <span className="mt-1 flex items-center gap-1 font-semibold text-primary text-xs">
+              <Loader2 className="h-3 w-3 " />
+            </span>
+          )}
         </div>
 
         <div className="ml-0 flex shrink-0 flex-col items-start gap-2 md:ml-4 md:items-end">

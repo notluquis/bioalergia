@@ -111,7 +111,7 @@ function NewPaymentPage() {
 
   return (
     <div className={PAGE_CONTAINER}>
-      <header className="mb-6 flex items-center gap-4">
+      <div className="mb-6">
         <Button
           variant="ghost"
           onPress={() => navigate({ to: "/patients/$id", params: { id: String(id) } })}
@@ -120,11 +120,7 @@ function NewPaymentPage() {
           <ChevronLeft size={20} />
           Volver
         </Button>
-        <div>
-          <h1 className="font-bold text-2xl text-foreground">Registrar Pago de Paciente</h1>
-          <p className="text-default-500 text-sm">Registro de ingresos financieros por servicios</p>
-        </div>
-      </header>
+      </div>
 
       <Card className="p-6">
         <form

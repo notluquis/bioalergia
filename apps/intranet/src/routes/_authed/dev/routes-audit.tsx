@@ -100,15 +100,6 @@ function RoutesAuditPage() {
 
   return (
     <div className="w-full space-y-6 px-4 py-8 md:px-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-bold text-3xl">Routes Audit</h1>
-          <p className="text-muted-foreground">
-            Overview of route capabilities and compliance with navigation standards
-          </p>
-        </div>
-      </div>
-
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-4">
         <Card>

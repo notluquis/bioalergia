@@ -85,7 +85,7 @@ function NewBudgetPage() {
 
   return (
     <div className={PAGE_CONTAINER}>
-      <header className="mb-6 flex items-center gap-4">
+      <div className="mb-6">
         <Button
           variant="ghost"
           onPress={() => navigate({ to: "/patients/$id", params: { id: String(id) } })}
@@ -94,11 +94,7 @@ function NewBudgetPage() {
           <ChevronLeft size={20} />
           Volver
         </Button>
-        <div>
-          <h1 className="font-bold text-2xl text-foreground">Nuevo Presupuesto</h1>
-          <p className="text-default-500 text-sm">Cruce de servicios y valores estimados</p>
-        </div>
-      </header>
+      </div>
 
       <Form
         onSubmit={(e: React.FormEvent<HTMLFormElement>) => {

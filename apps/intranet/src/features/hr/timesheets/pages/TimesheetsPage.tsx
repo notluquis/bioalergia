@@ -10,7 +10,7 @@ import { TimesheetEditor } from "@/features/hr/timesheets/components/TimesheetEd
 import { TimesheetSummaryTable } from "@/features/hr/timesheets/components/TimesheetSummaryTable";
 import { useMonths } from "@/features/hr/timesheets/hooks/use-months";
 import { useWakeLock } from "@/hooks/use-wake-lock";
-import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
+import { PAGE_CONTAINER } from "@/lib/styles";
 
 const MONTH_STRING_REGEX = /^\d{4}-\d{2}$/;
 export function TimesheetsPage() {
@@ -71,7 +71,6 @@ export function TimesheetsPage() {
   return (
     <section className={PAGE_CONTAINER}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <h1 className={TITLE_LG}>Registro de horas y pagos</h1>
         <div className="flex flex-col gap-3 sm:flex-row">
           <div className="min-w-52">
             <Select

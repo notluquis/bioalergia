@@ -7,7 +7,6 @@ import { DashboardParticipantsSection } from "@/features/dashboard/components/Da
 import { DashboardPersonalLiabilities } from "@/features/dashboard/components/DashboardPersonalLiabilities";
 import { DashboardTransactionsSection } from "@/features/dashboard/components/DashboardTransactionsSection";
 import { daysAgo, today } from "@/lib/dates";
-import { CARD_COMPACT, TITLE_MD } from "@/lib/styles";
 import { useAppBadge } from "../hooks/use-app-badge";
 import { useWakeLock } from "../hooks/use-wake-lock";
 
@@ -42,13 +41,6 @@ export function Home() {
 
   return (
     <section className="space-y-4">
-      <header className={CARD_COMPACT}>
-        <div className="card-body">
-          <h1 className={TITLE_MD}>Panel</h1>
-          <p className="text-default-600 text-sm">Últimos {RANGE_DAYS} días</p>
-        </div>
-      </header>
-
       {canReadTransactions && (
         <Suspense fallback={<DashboardSkeleton />}>
           <DashboardTransactionsSection statsParams={statsParams} />
@@ -72,7 +64,7 @@ export function Home() {
         </div>
       )}
 
-      {/* If can read transactions, QuickLinks and Participants are inside the layout? 
+      {/* If can read transactions, QuickLinks and Participants are inside the layout?
  Wait, in previous layout:
  grid lg:grid-cols-[1.5fr_1fr]
  left: Charts + QuickLinks

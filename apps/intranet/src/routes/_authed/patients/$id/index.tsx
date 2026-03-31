@@ -444,18 +444,13 @@ function PatientDetailsHeader({
         >
           <ChevronLeft size={24} />
         </Button>
-        <div>
-          <h1 className="font-bold text-2xl text-foreground">
-            {person.names} {person.fatherName}
-          </h1>
-          <div className="mt-1 flex items-center gap-2">
-            <span className="font-mono text-default-500 text-sm">{person.rut}</span>
-            {age !== null ? (
-              <div className="rounded-full bg-primary/10 px-2 py-0.5 font-medium text-primary text-xs">
-                {age} años
-              </div>
-            ) : null}
-          </div>
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-default-500 text-sm">{person.rut}</span>
+          {age !== null ? (
+            <div className="rounded-full bg-primary/10 px-2 py-0.5 font-medium text-primary text-xs">
+              {age} años
+            </div>
+          ) : null}
         </div>
       </div>
       <div className="flex flex-wrap gap-2">

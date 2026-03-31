@@ -77,7 +77,7 @@ function NewConsultationPage() {
 
   return (
     <div className={PAGE_CONTAINER}>
-      <header className="mb-6 flex items-center gap-4">
+      <div className="mb-6">
         <Button
           variant="ghost"
           onPress={() => navigate({ to: "/patients/$id", params: { id: String(id) } })}
@@ -86,11 +86,7 @@ function NewConsultationPage() {
           <ChevronLeft size={20} />
           Volver
         </Button>
-        <div>
-          <h1 className="font-bold text-2xl text-foreground">Nueva Consulta Médica</h1>
-          <p className="text-default-500 text-sm">Registro de atención clínica</p>
-        </div>
-      </header>
+      </div>
 
       <Card className="p-6">
         <Form

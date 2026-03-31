@@ -10,18 +10,7 @@ export const Route = createFileRoute("/_authed/certificates")({
 function CertificatesLayout() {
   return (
     <div className={PAGE_CONTAINER}>
-      {/* No navigation tabs for now - single page */}
-      <div className="space-y-6">
-        <header>
-          <h1 className="font-bold text-2xl text-foreground">Certificados Médicos</h1>
-          <p className="mt-1 text-foreground-500 text-sm">
-            Genera certificados médicos con firma digital FEA
-          </p>
-        </header>
-
-        {/* Content rendered by child routes */}
-        <Outlet />
-      </div>
+      <Outlet />
     </div>
   );
 }

@@ -123,15 +123,6 @@ export function DoctoraliaEmailPatientsPage() {
 
   return (
     <section className="space-y-4">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold text-default-900">Pacientes Doctoralia</h1>
-          <p className="text-default-500 text-sm">
-            Pacientes registrados a través de notificaciones de email de Doctoralia
-          </p>
-        </div>
-      </header>
-
       <div className="max-w-xs">
         <Input
           placeholder="Buscar paciente…"
