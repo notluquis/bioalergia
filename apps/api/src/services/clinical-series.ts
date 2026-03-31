@@ -206,6 +206,7 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "postergar",
   "quiero",
   "reagendar",
+  "reagendara",
   "respirar",
   // Common Spanish words that appear in clinical notes but are not names
   "autorizado",

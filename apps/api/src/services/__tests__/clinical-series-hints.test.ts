@@ -85,6 +85,14 @@ describe("extractPatientHints", () => {
       expect(patientName).toBe("matias aguirre");
     });
 
+    it("does not use 'reagendara' as a name token", () => {
+      const { patientName } = extractPatientHints(
+        "reagendara ingrid rivas vergara",
+        null,
+      );
+      expect(patientName).toBe("ingrid rivas vergara");
+    });
+
     it("does not use 'vincular' or 'evento' as name tokens", () => {
       // If someone wrote "Vincular evento con boleta DTE" in a description,
       // those words must be filtered as stopwords.
