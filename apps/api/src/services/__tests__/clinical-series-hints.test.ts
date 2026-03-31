@@ -608,4 +608,42 @@ describe("extractIdentityHints", () => {
     expect(result.beneficiaryName).toBe("marta rubio gajardo");
     expect(result.beneficiaryRut).toBe("8193485-1");
   });
+
+  it("parses HTML-formatted Google Calendar descriptions before extracting patient and beneficiary RUTs", () => {
+    const result = extractIdentityHints(
+      "17:00confirma Pedro Eduardo Tiznado Rubio, dosis mesual clustoid (50)",
+      [
+        "<b>BOLETA: EDUARDO BEBIN SOLANO, 9543240-9</b>",
+        "<br><b>Marta Rubio Gajardo, 8193485-1</b>",
+        "<br><b><br></b><br>-Rut del paciente: 15175620-4 -Edad: 41 años -Comuna: Lota -Previsión: Fonasa -Número de contacto: 995990301",
+        "<b><br></b><br>-Correo electrónico: <a href=\"mailto:pedro.tiznado@gmail.com\" target=\"_blank\">pedro.tiznado@gmail.com</a>",
+        "<br>-Motivo de la consulta: Rinitis alérgica",
+        "<br>-Tiempo de evolución: 20 años -Tratamiento usado: diferentes antihistamínicos, puff nasal",
+        "<br>-Enfermedades base: ninguna",
+      ].join(""),
+    );
+
+    expect(result.patientName).toBe("pedro eduardo tiznado rubio");
+    expect(result.patientRut).toBe("15175620-4");
+    expect(result.beneficiaryName).toBe("eduardo bebin solano");
+    expect(result.beneficiaryRut).toBe("9543240-9");
+  });
+
+  it("does not invent a beneficiary from structured clinical history when only the patient is identified", () => {
+    const result = extractIdentityHints(
+      "11.11 test cutaneo ambiental I (40) Pedro Eduardo Tiznado Rubio -Rut del paciente: 15175620-4 -Edad: 41 años -Comuna: Lota -Previsión: Fonasa -Número de contacto: 995990301",
+      [
+        "-Correo electrónico: pedro.tiznado@gmail.com",
+        "-Motivo de la consulta: Rinitis alérgica",
+        "-Tiempo de evolución: 20 años",
+        "-Tratamiento usado: diferentes antihistamínicos, puff nasal",
+        "-Enfermedades base: ninguna",
+      ].join("\n"),
+    );
+
+    expect(result.patientName).toBe("pedro eduardo tiznado rubio");
+    expect(result.patientRut).toBe("15175620-4");
+    expect(result.beneficiaryName).toBeNull();
+    expect(result.beneficiaryRut).toBeNull();
+  });
 });

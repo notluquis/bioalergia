@@ -3,6 +3,7 @@ import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone.js";
 import utc from "dayjs/plugin/utc.js";
 import { sql } from "kysely";
+import { joinClinicalText, normalizeClinicalText } from "../lib/clinical-text";
 import { normalizeRut } from "../lib/rut";
 
 dayjs.extend(utc);
@@ -705,9 +706,11 @@ function extractNamesFromText(text: string): string[] {
 }
 
 export function extractIdentityHints(summary: null | string, description: null | string) {
-  const structured = extractStructuredClinicalDescription((description ?? "").trim());
+  const summaryText = normalizeClinicalText(summary);
+  const descriptionText = normalizeClinicalText(description);
+  const structured = extractStructuredClinicalDescription(descriptionText);
   // RUTs are extracted from combined text — they appear in either field.
-  const combinedText = `${summary ?? ""} ${description ?? ""}`.trim();
+  const combinedText = `${summaryText} ${descriptionText}`.trim();
   const ruts = [
     ...new Set(
       (combinedText.match(RUT_REGEX) ?? [])
@@ -729,9 +732,9 @@ export function extractIdentityHints(summary: null | string, description: null |
   // Running extractors separately prevents description noise (clinical notes,
   // field labels like "-Rut del paciente:", previous visit history) from
   // overriding a clearly-identified name in the event title/summary.
-  const summaryNames = extractNamesFromText((summary ?? "").trim());
+  const summaryNames = extractNamesFromText(summaryText.trim());
   const descriptionWithoutBoleta =
-    structured.boletaBlock && description ? description.replace(structured.boletaBlock, " ") : (description ?? "");
+    structured.boletaBlock ? descriptionText.replace(structured.boletaBlock, " ") : descriptionText;
   const descriptionNames = extractNamesFromText(descriptionWithoutBoleta.trim());
   const beneficiaryNames = structured.beneficiaryCandidates
     .map((candidate) => candidate.name)
@@ -748,10 +751,13 @@ export function extractIdentityHints(summary: null | string, description: null |
     ruts.find((value) => value !== patientRut) ??
     null;
   const uniqueBeneficiaryNames = [...new Set([...beneficiaryNames, ...summaryNames, ...descriptionNames])];
+  const hasExplicitBeneficiary =
+    structured.beneficiaryCandidates.length > 0 || beneficiaryRut != null;
   const patientName = uniquePatientNames[0] ?? null;
   const beneficiaryName =
-    uniqueBeneficiaryNames.find((value) => value !== patientName) ??
-    null;
+    hasExplicitBeneficiary
+      ? uniqueBeneficiaryNames.find((value) => value !== patientName) ?? null
+      : null;
 
   return { beneficiaryName, beneficiaryRut, patientName, patientRut };
 }
@@ -770,7 +776,7 @@ function inferAllergenType(
   let hasGramineas = false;
 
   for (const event of events) {
-    const text = `${event.summary ?? ""} ${event.description ?? ""}`;
+    const text = joinClinicalText(event.summary, event.description);
     if (!hasAcaros && ACAROS_PATTERN.test(text)) hasAcaros = true;
     if (!hasGramineas && GRAMINEAS_PATTERN.test(text)) hasGramineas = true;
     if (hasAcaros && hasGramineas) break;
@@ -801,7 +807,7 @@ function inferVaccineProduct(
   let hasB120 = false;
 
   for (const event of events) {
-    const text = `${event.summary ?? ""} ${event.description ?? ""}`;
+    const text = joinClinicalText(event.summary, event.description);
     if (!hasOralTec && ORAL_TEC_PATTERN.test(text)) hasOralTec = true;
     if (!hasAlxoid && ALXOID_PATTERN.test(text)) hasAlxoid = true;
     if (!hasClustoid && CLUSTOID_BASE_PATTERN.test(text)) hasClustoid = true;
@@ -829,7 +835,7 @@ function inferHealthInsurance(
   events: Array<{ description: null | string; summary: null | string }>,
 ): HealthInsuranceType | null {
   for (const event of events) {
-    const text = `${event.summary ?? ""} ${event.description ?? ""}`;
+    const text = joinClinicalText(event.summary, event.description);
     if (FONASA_PATTERN.test(text)) return "FONASA";
     if (ISAPRE_PATTERN.test(text)) return "ISAPRE";
     if (PARTICULAR_PATTERN.test(text)) return "PARTICULAR";
@@ -845,7 +851,7 @@ function inferDeliveryModality(
   events: Array<{ description: null | string; summary: null | string }>,
 ): DeliveryModality {
   for (const event of events) {
-    const text = `${event.summary ?? ""} ${event.description ?? ""}`;
+    const text = joinClinicalText(event.summary, event.description);
     if (DOMICILIO_DELIVERY_PATTERN.test(text)) return "DOMICILIO";
   }
   return "PRESENCIAL";
