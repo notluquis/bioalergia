@@ -9,6 +9,7 @@ import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
 import { useEffect, useState } from "react";
 import type { z } from "zod";
+import { getAttendanceNetworkOrigin } from "./network-origin";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -23,7 +24,6 @@ interface AttendanceStatusCardProps {
   clockedInAt: Date | null;
   currentStatus: AttendanceStatus;
   hasIncompleteYesterday: boolean;
-  isOfficeNetwork: boolean;
   lastMark: AttendanceMark | null;
   monthStats: { daysWorked: number; totalMinutes: number };
   weekSummary: WeekDaySummary[];
@@ -81,11 +81,12 @@ export function AttendanceStatusCard({
   clockedInAt,
   currentStatus,
   hasIncompleteYesterday,
-  isOfficeNetwork,
   lastMark,
   monthStats,
   weekSummary,
 }: AttendanceStatusCardProps) {
+  const networkOrigin = getAttendanceNetworkOrigin(lastMark);
+
   return (
     <div className="flex flex-col gap-4">
       {hasIncompleteYesterday && (
@@ -129,12 +130,8 @@ export function AttendanceStatusCard({
               <p className="text-xs font-medium uppercase tracking-wide text-foreground-400">
                 Red detectada
               </p>
-              <p className="mt-2 text-sm font-semibold text-foreground">
-                {isOfficeNetwork ? "Oficina" : "Externa"}
-              </p>
-              <p className="mt-1 text-xs text-foreground-500">
-                La validacion de origen se registra junto con cada marca.
-              </p>
+              <p className="mt-2 text-sm font-semibold text-foreground">{networkOrigin.label}</p>
+              <p className="mt-1 text-xs text-foreground-500">{networkOrigin.description}</p>
             </Surface>
           </div>
 

@@ -15,8 +15,6 @@ function MarcarContent() {
   const [currentStatus, setCurrentStatus] = useState(data.currentStatus);
   const [lastMark, setLastMark] = useState(data.lastMark);
 
-  const isOfficeNetwork = lastMark?.isOfficeNetwork ?? false;
-
   function handleMarkSuccess(mark: AttendanceMark) {
     setTodayMarks((prev) => [...prev, mark]);
     setLastMark(mark);
@@ -31,7 +29,6 @@ function MarcarContent() {
           clockedInAt={data.clockedInAt}
           currentStatus={currentStatus}
           hasIncompleteYesterday={data.hasIncompleteYesterday}
-          isOfficeNetwork={isOfficeNetwork}
           lastMark={lastMark}
           monthStats={data.monthStats}
           weekSummary={data.weekSummary}

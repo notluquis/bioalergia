@@ -4,6 +4,7 @@ import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
 import type { z } from "zod";
+import { getAttendanceNetworkOrigin } from "./network-origin";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -38,49 +39,48 @@ export function TodayMarksList({ marks }: TodayMarksListProps) {
             </Card.Content>
           </Card>
         ) : (
-          marks.map((mark) => (
-            <Card key={mark.id} className="rounded-2xl shadow-none" variant="secondary">
-              <Card.Content className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-3">
-                  <Chip
-                    color={mark.type === "CLOCK_IN" ? "success" : "danger"}
-                    size="sm"
-                    variant="soft"
-                  >
-                    {mark.type === "CLOCK_IN" ? "Entrada" : "Salida"}
-                  </Chip>
-                  <div>
-                    <p className="text-base font-semibold text-foreground">
-                      {dayjs(mark.markedAt).tz(TIMEZONE).format("HH:mm")}
-                    </p>
-                    <p className="text-sm text-foreground-500">
-                      {dayjs(mark.markedAt).tz(TIMEZONE).format("dddd D [de] MMMM")}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <Chip
-                    color={mark.isOfficeNetwork ? "success" : "warning"}
-                    size="sm"
-                    variant="secondary"
-                  >
-                    {mark.isOfficeNetwork ? "Oficina" : "Red externa"}
-                  </Chip>
-                  {mark.latitude !== null && mark.longitude !== null && (
-                    <Link
-                      className="text-sm"
-                      href={`https://www.google.com/maps?q=${mark.latitude},${mark.longitude}`}
-                      rel="noopener noreferrer"
-                      target="_blank"
+          marks.map((mark) => {
+            const networkOrigin = getAttendanceNetworkOrigin(mark);
+            return (
+              <Card key={mark.id} className="rounded-2xl shadow-none" variant="secondary">
+                <Card.Content className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-center gap-3">
+                    <Chip
+                      color={mark.type === "CLOCK_IN" ? "success" : "danger"}
+                      size="sm"
+                      variant="soft"
                     >
-                      Ver GPS
-                    </Link>
-                  )}
-                </div>
-              </Card.Content>
-            </Card>
-          ))
+                      {mark.type === "CLOCK_IN" ? "Entrada" : "Salida"}
+                    </Chip>
+                    <div>
+                      <p className="text-base font-semibold text-foreground">
+                        {dayjs(mark.markedAt).tz(TIMEZONE).format("HH:mm")}
+                      </p>
+                      <p className="text-sm text-foreground-500">
+                        {dayjs(mark.markedAt).tz(TIMEZONE).format("dddd D [de] MMMM")}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Chip color={networkOrigin.tone} size="sm" variant="secondary">
+                      {networkOrigin.label}
+                    </Chip>
+                    {mark.latitude !== null && mark.longitude !== null && (
+                      <Link
+                        className="text-sm"
+                        href={`https://www.google.com/maps?q=${mark.latitude},${mark.longitude}`}
+                        rel="noopener noreferrer"
+                        target="_blank"
+                      >
+                        Ver GPS
+                      </Link>
+                    )}
+                  </div>
+                </Card.Content>
+              </Card>
+            );
+          })
         )}
       </Card.Content>
     </Card>

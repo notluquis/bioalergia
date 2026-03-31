@@ -1,6 +1,7 @@
 import {
   Alert,
   Button,
+  Card,
   Chip,
   Input,
   Label,
@@ -20,9 +21,11 @@ import { Suspense, useState } from "react";
 import type {
   attendanceMarkSchema,
   attendanceMarkTypeSchema,
+  officeNetworkSchema,
 } from "@finanzas/orpc-contracts/attendance";
 import type { z } from "zod";
 import { attendanceORPCClient, toAttendanceApiError } from "./orpc";
+import { getAttendanceNetworkOrigin } from "./network-origin";
 import { attendanceQueries } from "./queries";
 
 dayjs.extend(utc);
@@ -36,6 +39,7 @@ type AttendanceMark = z.infer<typeof attendanceMarkSchema> & {
   isDayIncomplete: boolean;
 };
 type MarkType = z.infer<typeof attendanceMarkTypeSchema>;
+type OfficeNetwork = z.infer<typeof officeNetworkSchema>;
 type CompletionFilter = "all" | "complete" | "incomplete";
 
 function formatMinutes(minutes: number): string {
@@ -213,116 +217,321 @@ function MarksTable({ isDeletingId, marks, onDelete, summary }: MarksTableProps)
               <Table.Column>{""}</Table.Column>
             </Table.Header>
             <Table.Body items={marks}>
-              {(mark) => (
-                <Table.Row id={String(mark.id)}>
-                  <Table.Cell>
-                    <div className="flex flex-col gap-0.5">
-                      <p className="font-medium">{mark.employeeName ?? `ID ${mark.employeeId}`}</p>
-                      {mark.employeeRut && (
-                        <p className="text-xs text-foreground-400">{mark.employeeRut}</p>
-                      )}
-                      {mark.isDayIncomplete && (
-                        <Chip color="warning" size="sm" variant="soft">
-                          Día incompleto
-                        </Chip>
-                      )}
-                    </div>
-                  </Table.Cell>
-                  <Table.Cell>
-                    <Chip
-                      color={mark.type === "CLOCK_IN" ? "success" : "danger"}
-                      size="sm"
-                      variant="soft"
-                    >
-                      {mark.type === "CLOCK_IN" ? "Entrada" : "Salida"}
-                    </Chip>
-                  </Table.Cell>
-                  <Table.Cell className="font-medium tabular-nums">
-                    {dayjs(mark.markedAt).tz(TIMEZONE).format("DD/MM/YYYY HH:mm")}
-                  </Table.Cell>
-                  <Table.Cell>
-                    <Chip
-                      color={mark.isOfficeNetwork ? "success" : "default"}
-                      size="sm"
-                      variant="secondary"
-                    >
-                      {mark.isOfficeNetwork ? "Oficina" : "Externa"}
-                    </Chip>
-                  </Table.Cell>
-                  <Table.Cell>
-                    {mark.connectionType ? (
-                      <Chip size="sm" variant="secondary">
-                        {mark.connectionType}
-                      </Chip>
-                    ) : (
-                      <span className="text-foreground-300">—</span>
-                    )}
-                  </Table.Cell>
-                  <Table.Cell>
-                    {mark.latitude !== null && mark.longitude !== null ? (
-                      <a
-                        className="text-accent hover:underline"
-                        href={`https://www.google.com/maps?q=${mark.latitude},${mark.longitude}`}
-                        rel="noopener noreferrer"
-                        target="_blank"
-                        title={`Precisión: ${mark.accuracyMeters?.toFixed(0) ?? "?"}m`}
+              {(mark) => {
+                const networkOrigin = getAttendanceNetworkOrigin(mark);
+                return (
+                  <Table.Row id={String(mark.id)}>
+                    <Table.Cell>
+                      <div className="flex flex-col gap-0.5">
+                        <p className="font-medium">
+                          {mark.employeeName ?? `ID ${mark.employeeId}`}
+                        </p>
+                        {mark.employeeRut && (
+                          <p className="text-xs text-foreground-400">{mark.employeeRut}</p>
+                        )}
+                        {mark.isDayIncomplete && (
+                          <Chip color="warning" size="sm" variant="soft">
+                            Día incompleto
+                          </Chip>
+                        )}
+                      </div>
+                    </Table.Cell>
+                    <Table.Cell>
+                      <Chip
+                        color={mark.type === "CLOCK_IN" ? "success" : "danger"}
+                        size="sm"
+                        variant="soft"
                       >
-                        Ver mapa
-                      </a>
-                    ) : (
-                      <span className="text-foreground-300">—</span>
-                    )}
-                  </Table.Cell>
-                  <Table.Cell>
-                    {mark.isMobile !== null || mark.screenResolution ? (
-                      <Tooltip>
-                        <Tooltip.Trigger>
-                          <div className="flex items-center gap-1.5">
-                            <Chip size="sm" variant="secondary">
-                              {mark.isMobile ? "Móvil" : "Desktop"}
-                            </Chip>
-                            {mark.screenResolution && (
-                              <span className="text-xs text-foreground-400">
-                                {mark.screenResolution}
-                              </span>
-                            )}
-                          </div>
-                        </Tooltip.Trigger>
-                        <Tooltip.Content>
-                          <div className="flex flex-col gap-0.5 text-xs">
-                            {mark.clientTimezone && <span>TZ: {mark.clientTimezone}</span>}
-                            {mark.cpuCores != null && <span>CPU: {mark.cpuCores} núcleos</span>}
-                            {mark.deviceRam != null && <span>RAM: {mark.deviceRam} GB</span>}
-                            {mark.devicePixelRatio != null && (
-                              <span>DPR: {mark.devicePixelRatio}x</span>
-                            )}
-                            {mark.downlinkMbps != null && (
-                              <span>Bajada: {mark.downlinkMbps} Mbps</span>
-                            )}
-                          </div>
-                        </Tooltip.Content>
-                      </Tooltip>
-                    ) : (
-                      <span className="text-foreground-300">—</span>
-                    )}
-                  </Table.Cell>
-                  <Table.Cell className="text-foreground-500">{mark.notes ?? "—"}</Table.Cell>
-                  <Table.Cell>
-                    <Button
-                      isDisabled={isDeletingId === mark.id}
-                      variant="danger-soft"
-                      onPress={() => onDelete(mark.id)}
-                    >
-                      {isDeletingId === mark.id ? "..." : "Eliminar"}
-                    </Button>
-                  </Table.Cell>
-                </Table.Row>
-              )}
+                        {mark.type === "CLOCK_IN" ? "Entrada" : "Salida"}
+                      </Chip>
+                    </Table.Cell>
+                    <Table.Cell className="font-medium tabular-nums">
+                      {dayjs(mark.markedAt).tz(TIMEZONE).format("DD/MM/YYYY HH:mm")}
+                    </Table.Cell>
+                    <Table.Cell>
+                      <Chip color={networkOrigin.tone} size="sm" variant="secondary">
+                        {networkOrigin.label}
+                      </Chip>
+                    </Table.Cell>
+                    <Table.Cell>
+                      {mark.connectionType ? (
+                        <Chip size="sm" variant="secondary">
+                          {mark.connectionType}
+                        </Chip>
+                      ) : (
+                        <span className="text-foreground-300">—</span>
+                      )}
+                    </Table.Cell>
+                    <Table.Cell>
+                      {mark.latitude !== null && mark.longitude !== null ? (
+                        <a
+                          className="text-accent hover:underline"
+                          href={`https://www.google.com/maps?q=${mark.latitude},${mark.longitude}`}
+                          rel="noopener noreferrer"
+                          target="_blank"
+                          title={`Precisión: ${mark.accuracyMeters?.toFixed(0) ?? "?"}m`}
+                        >
+                          Ver mapa
+                        </a>
+                      ) : (
+                        <span className="text-foreground-300">—</span>
+                      )}
+                    </Table.Cell>
+                    <Table.Cell>
+                      {mark.isMobile !== null || mark.screenResolution ? (
+                        <Tooltip>
+                          <Tooltip.Trigger>
+                            <div className="flex items-center gap-1.5">
+                              <Chip size="sm" variant="secondary">
+                                {mark.isMobile ? "Móvil" : "Desktop"}
+                              </Chip>
+                              {mark.screenResolution && (
+                                <span className="text-xs text-foreground-400">
+                                  {mark.screenResolution}
+                                </span>
+                              )}
+                            </div>
+                          </Tooltip.Trigger>
+                          <Tooltip.Content>
+                            <div className="flex flex-col gap-0.5 text-xs">
+                              {mark.clientTimezone && <span>TZ: {mark.clientTimezone}</span>}
+                              {mark.cpuCores != null && <span>CPU: {mark.cpuCores} núcleos</span>}
+                              {mark.deviceRam != null && <span>RAM: {mark.deviceRam} GB</span>}
+                              {mark.devicePixelRatio != null && (
+                                <span>DPR: {mark.devicePixelRatio}x</span>
+                              )}
+                              {mark.downlinkMbps != null && (
+                                <span>Bajada: {mark.downlinkMbps} Mbps</span>
+                              )}
+                            </div>
+                          </Tooltip.Content>
+                        </Tooltip>
+                      ) : (
+                        <span className="text-foreground-300">—</span>
+                      )}
+                    </Table.Cell>
+                    <Table.Cell className="text-foreground-500">{mark.notes ?? "—"}</Table.Cell>
+                    <Table.Cell>
+                      <Button
+                        isDisabled={isDeletingId === mark.id}
+                        variant="danger-soft"
+                        onPress={() => onDelete(mark.id)}
+                      >
+                        {isDeletingId === mark.id ? "..." : "Eliminar"}
+                      </Button>
+                    </Table.Cell>
+                  </Table.Row>
+                );
+              }}
             </Table.Body>
           </Table.Content>
         </Table.ScrollContainer>
       </Table>
     </div>
+  );
+}
+
+interface OfficeNetworkModalProps {
+  initialValue?: OfficeNetwork | null;
+  onClose: () => void;
+}
+
+function OfficeNetworkModal({ initialValue, onClose }: OfficeNetworkModalProps) {
+  const queryClient = useQueryClient();
+  const [name, setName] = useState(initialValue?.name ?? "");
+  const [cidr, setCidr] = useState(initialValue?.cidr ?? "");
+  const [error, setError] = useState<string | null>(null);
+  const isEditing = Boolean(initialValue);
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      setError(null);
+      if (isEditing && initialValue) {
+        return attendanceORPCClient.updateOfficeNetwork({
+          cidr,
+          id: initialValue.id,
+          name,
+        });
+      }
+      return attendanceORPCClient.createOfficeNetwork({ cidr, name });
+    },
+    onError: (err) => {
+      setError(toAttendanceApiError(err).message);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["attendance", "office-networks"] });
+      onClose();
+    },
+  });
+
+  return (
+    <Modal>
+      <Modal.Backdrop
+        isOpen
+        onOpenChange={(open) => {
+          if (!open) onClose();
+        }}
+      >
+        <Modal.Container placement="center">
+          <Modal.Dialog className="w-full max-w-md">
+            <Modal.Header>
+              <Modal.Heading>
+                {isEditing ? "Editar red de oficina" : "Agregar red de oficina"}
+              </Modal.Heading>
+            </Modal.Header>
+
+            <Modal.Body className="flex flex-col gap-3">
+              <TextField value={name} onChange={setName}>
+                <Label>Nombre</Label>
+                <Input placeholder="Casa matriz, sucursal, VPN..." />
+              </TextField>
+
+              <TextField value={cidr} onChange={setCidr}>
+                <Label>CIDR o IP</Label>
+                <Input placeholder="Ej: 200.10.20.0/24 o 200.10.20.15" />
+              </TextField>
+
+              {error && (
+                <Alert status="danger">
+                  <Alert.Indicator />
+                  <Alert.Content>
+                    <Alert.Description>{error}</Alert.Description>
+                  </Alert.Content>
+                </Alert>
+              )}
+            </Modal.Body>
+
+            <div className="flex justify-end gap-2 p-6 pt-0">
+              <Button variant="secondary" onPress={onClose}>
+                Cancelar
+              </Button>
+              <Button
+                isDisabled={!name.trim() || !cidr.trim() || mutation.isPending}
+                variant="primary"
+                onPress={() => mutation.mutate()}
+              >
+                {mutation.isPending ? "Guardando..." : isEditing ? "Guardar cambios" : "Agregar"}
+              </Button>
+            </div>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
+    </Modal>
+  );
+}
+
+function OfficeNetworksCard() {
+  const queryClient = useQueryClient();
+  const { data, isLoading } = useQuery(attendanceQueries.officeNetworks());
+  const [editingNetwork, setEditingNetwork] = useState<OfficeNetwork | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [busyId, setBusyId] = useState<number | null>(null);
+  const networks = data?.networks ?? [];
+
+  const toggleMutation = useMutation({
+    mutationFn: async (network: OfficeNetwork) =>
+      attendanceORPCClient.updateOfficeNetwork({
+        id: network.id,
+        isActive: !network.isActive,
+      }),
+    onMutate: (network) => setBusyId(network.id),
+    onSettled: () => setBusyId(null),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["attendance", "office-networks"] });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => attendanceORPCClient.deleteOfficeNetwork({ id }),
+    onMutate: (id) => setBusyId(id),
+    onSettled: () => setBusyId(null),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["attendance", "office-networks"] });
+    },
+  });
+
+  return (
+    <>
+      <Card className="rounded-3xl shadow-sm" variant="default">
+        <Card.Header className="flex flex-col gap-3 p-5 pb-3 md:flex-row md:items-start md:justify-between">
+          <div className="space-y-1">
+            <Card.Title className="text-base">Redes de oficina</Card.Title>
+            <Card.Description className="max-w-2xl text-sm leading-6">
+              Aqui se define que IP o rango CIDR se considera interno para el marcaje. Todo lo que
+              no haga match cae como red externa; las correcciones admin quedan aparte.
+            </Card.Description>
+          </div>
+          <Button variant="primary" onPress={() => setShowCreateModal(true)}>
+            Agregar red
+          </Button>
+        </Card.Header>
+
+        <Card.Content className="flex flex-col gap-3 p-5 pt-0">
+          {isLoading ? (
+            <div className="flex flex-col gap-3">
+              <Skeleton className="h-14 w-full rounded-xl" />
+              <Skeleton className="h-14 w-full rounded-xl" />
+            </div>
+          ) : networks.length === 0 ? (
+            <Alert status="default">
+              <Alert.Indicator />
+              <Alert.Content>
+                <Alert.Description>
+                  No hay redes registradas. Todas las marcas quedaran como externas hasta agregar
+                  una.
+                </Alert.Description>
+              </Alert.Content>
+            </Alert>
+          ) : (
+            networks.map((network) => (
+              <div
+                key={network.id}
+                className="flex flex-col gap-3 rounded-2xl border border-default-200 px-4 py-4 md:flex-row md:items-center md:justify-between"
+              >
+                <div className="space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-medium text-foreground">{network.name}</p>
+                    <Chip color={network.isActive ? "success" : "default"} size="sm" variant="soft">
+                      {network.isActive ? "Activa" : "Inactiva"}
+                    </Chip>
+                  </div>
+                  <p className="font-mono text-sm text-foreground-500">{network.cidr}</p>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    isDisabled={busyId === network.id}
+                    variant="secondary"
+                    onPress={() => setEditingNetwork(network)}
+                  >
+                    Editar
+                  </Button>
+                  <Button
+                    isDisabled={busyId === network.id}
+                    variant="secondary"
+                    onPress={() => toggleMutation.mutate(network)}
+                  >
+                    {network.isActive ? "Desactivar" : "Activar"}
+                  </Button>
+                  <Button
+                    isDisabled={busyId === network.id}
+                    variant="danger-soft"
+                    onPress={() => deleteMutation.mutate(network.id)}
+                  >
+                    Eliminar
+                  </Button>
+                </div>
+              </div>
+            ))
+          )}
+        </Card.Content>
+      </Card>
+
+      {showCreateModal && <OfficeNetworkModal onClose={() => setShowCreateModal(false)} />}
+      {editingNetwork && (
+        <OfficeNetworkModal initialValue={editingNetwork} onClose={() => setEditingNetwork(null)} />
+      )}
+    </>
   );
 }
 
@@ -361,6 +570,8 @@ function AdminAttendanceContent() {
 
   return (
     <div className="flex flex-col gap-5">
+      <OfficeNetworksCard />
+
       <div className="flex flex-wrap items-end gap-3">
         <TextField
           className="w-40"
