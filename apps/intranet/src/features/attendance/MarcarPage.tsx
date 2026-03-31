@@ -23,8 +23,12 @@ function MarcarContent() {
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.95fr)]">
-      <div className="flex min-w-0 flex-col gap-6">
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.95fr)] lg:gap-6">
+      <div className="order-1 min-w-0 lg:order-2">
+        <MarkButton currentStatus={currentStatus} onSuccess={handleMarkSuccess} />
+      </div>
+
+      <div className="order-2 min-w-0 lg:order-1">
         <AttendanceStatusCard
           clockedInAt={data.clockedInAt}
           currentStatus={currentStatus}
@@ -35,9 +39,7 @@ function MarcarContent() {
         />
       </div>
 
-      <div className="flex min-w-0 flex-col gap-6">
-        <MarkButton currentStatus={currentStatus} onSuccess={handleMarkSuccess} />
-
+      <div className="order-3 min-w-0 lg:col-start-2">
         <TodayMarksList marks={todayMarks} />
       </div>
     </div>
@@ -46,17 +48,17 @@ function MarcarContent() {
 
 export function MarcarPage() {
   return (
-    <div className="flex w-full flex-col gap-5 px-2 py-3 md:px-3 md:py-4">
+    <div className="flex w-full flex-col gap-5 px-2 pt-16 pb-4 md:px-3 md:pt-4 md:pb-4">
       <Suspense
         fallback={
           <div className="grid gap-5 xl:grid-cols-[minmax(0,1.7fr)_360px]">
             <div className="flex flex-col gap-6">
+              <Skeleton className="h-44 w-full rounded-3xl" />
               <Skeleton className="h-64 w-full rounded-3xl" />
-              <Skeleton className="h-48 w-full rounded-3xl" />
+              <Skeleton className="h-72 w-full rounded-3xl" />
             </div>
             <div className="flex flex-col gap-6">
-              <Skeleton className="h-44 w-full rounded-3xl" />
-              <Skeleton className="h-72 w-full rounded-3xl" />
+              <Skeleton className="h-48 w-full rounded-3xl" />
             </div>
           </div>
         }

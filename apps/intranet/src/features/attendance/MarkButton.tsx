@@ -102,26 +102,38 @@ export function MarkButton({ currentStatus, onSuccess }: MarkButtonProps) {
   });
 
   return (
-    <Card className="rounded-3xl shadow-sm" variant="secondary">
+    <Card className="rounded-3xl border border-primary/10 shadow-sm" variant="secondary">
       <Card.Header className="flex flex-col items-start gap-3 p-5 pb-3">
-        <Chip color={markType === "CLOCK_IN" ? "success" : "danger"} size="sm" variant="soft">
-          {markType === "CLOCK_IN" ? "Entrada" : "Salida"}
-        </Chip>
-        <div className="space-y-1">
-          <Card.Title className="text-base">
-            {markType === "CLOCK_IN" ? "Iniciar jornada" : "Cerrar jornada"}
-          </Card.Title>
-          <Card.Description className="text-sm leading-6">
-            {markType === "CLOCK_IN"
-              ? "Registra tu ingreso cuando estes listo para comenzar."
-              : "Marca tu salida al terminar para mantener el historial correcto."}
-          </Card.Description>
+        <div className="flex w-full items-start justify-between gap-3">
+          <div className="space-y-3">
+            <Chip color={markType === "CLOCK_IN" ? "success" : "danger"} size="sm" variant="soft">
+              {markType === "CLOCK_IN" ? "Entrada" : "Salida"}
+            </Chip>
+            <div className="space-y-1">
+              <p className="text-xs font-medium uppercase tracking-wide text-foreground-400">
+                Accion principal
+              </p>
+              <Card.Title className="text-base">
+                {markType === "CLOCK_IN" ? "Iniciar jornada" : "Cerrar jornada"}
+              </Card.Title>
+              <Card.Description className="text-sm leading-6">
+                {markType === "CLOCK_IN"
+                  ? "Registra tu ingreso apenas empieces para dejar la jornada abierta."
+                  : "Marca tu salida al terminar para cerrar el dia correctamente."}
+              </Card.Description>
+            </div>
+          </div>
+
+          <div className="hidden rounded-2xl bg-primary/[0.08] px-3 py-2 text-right text-xs text-foreground-500 sm:block">
+            <p className="font-medium text-foreground">Marcaje</p>
+            <p>{markType === "CLOCK_IN" ? "Primer paso del dia" : "Ultimo paso del dia"}</p>
+          </div>
         </div>
       </Card.Header>
 
       <Card.Content className="flex flex-col gap-3 p-5 pt-0">
         <Button
-          className="h-12 w-full text-base font-semibold"
+          className="h-13 w-full text-base font-semibold shadow-sm"
           isDisabled={mutation.isPending}
           isPending={mutation.isPending}
           onPress={() => mutation.mutate()}

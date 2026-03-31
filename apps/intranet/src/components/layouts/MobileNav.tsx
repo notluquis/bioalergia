@@ -31,6 +31,8 @@ export function BottomNav({ buildLabel, isHidden = false }: Readonly<BottomNavPr
   };
 
   const navItems = useMemo(() => {
+    const preferredOrder = ["/marcar"];
+
     return getNavSections(router.routeTree)
       .flatMap((section) => section.items)
       .filter((item) => {
@@ -38,6 +40,16 @@ export function BottomNav({ buildLabel, isHidden = false }: Readonly<BottomNavPr
           item.requiredPermission &&
           !can(item.requiredPermission.action, item.requiredPermission.subject)
         );
+      })
+      .sort((a, b) => {
+        const aPriority = preferredOrder.indexOf(a.to);
+        const bPriority = preferredOrder.indexOf(b.to);
+        const normalizedAPriority = aPriority === -1 ? Number.MAX_SAFE_INTEGER : aPriority;
+        const normalizedBPriority = bPriority === -1 ? Number.MAX_SAFE_INTEGER : bPriority;
+        if (normalizedAPriority !== normalizedBPriority) {
+          return normalizedAPriority - normalizedBPriority;
+        }
+        return 0;
       })
       .slice(0, 4);
   }, [can, router.routeTree]);
