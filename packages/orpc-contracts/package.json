@@ -203,7 +203,7 @@
     "lint:fix": "oxlint --fix && oxfmt --write .",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
-    "type-check": "tsgo --noEmit"
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@orpc/contract": "^1.13.13",
