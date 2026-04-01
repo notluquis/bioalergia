@@ -14,6 +14,32 @@ describe("parseCalendarMetadata - Classification Issues", () => {
     expect(result.dosageUnit).toBe("ml");
   });
 
+  it("should keep explicit 4th dose as induction even when amount implies 0.5ml", () => {
+    const result = parseCalendarMetadata({
+      summary: "4ta dosis acaros(50) clustoid: Marco Peña Medina",
+      description: "",
+    });
+
+    expect(result.category).toBe("Tratamiento subcutáneo");
+    expect(result.treatmentStage).toBe("Inducción");
+    expect(result.seriesStageKind).toBe("DOSE");
+    expect(result.seriesStageLabel).toBe("4ta dosis");
+    expect(result.seriesStageNumber).toBe(4);
+    expect(result.dosageValue).toBeNull();
+  });
+
+  it("should keep explicit monthly dose as maintenance even with an ordinal marker", () => {
+    const result = parseCalendarMetadata({
+      summary: "5ta dosis mensual clustoid Marco Peña Medina",
+      description: "",
+    });
+
+    expect(result.category).toBe("Tratamiento subcutáneo");
+    expect(result.treatmentStage).toBe("Mantención");
+    expect(result.seriesStageKind).toBe("MAINTENANCE");
+    expect(result.seriesStageLabel).toBe("Mantención");
+  });
+
   it("should classify '1ra lec S/C test parche' as Test y exámenes", () => {
     const result = parseCalendarMetadata({
       summary: "1ra lec S/C test parche tomas david mellado parra",

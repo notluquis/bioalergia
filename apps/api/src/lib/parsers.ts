@@ -264,7 +264,7 @@ const INDUCTION_PATTERNS = [
 ];
 
 /** Patterns for maintenance stage */
-const MAINTENANCE_PATTERNS = [
+const EXPLICIT_MAINTENANCE_PATTERNS = [
   /\bmantenci[oó]n\b/i, // mantención, mantencion
   /\bmantencio\b/i, // typo: missing final 'n'
   /\bmant\b/i, // abbreviated
@@ -272,12 +272,14 @@ const MAINTENANCE_PATTERNS = [
   /\bmesual\b/i, // typo: mensual
   /\bmensaul\b/i, // typo: mensual
   /\bvacuna\s+mensual\s+clustoid\b/i, // "vacuna mensual clustoid" = maintenance
-  // NOTE: Removed "dosis clustoid" - it conflicts with "2da dosis clustoid" which is induction
+  /\brefuerzo\b/i, // refuerzo (booster) = maintenance
+];
+
+const MAINTENANCE_FALLBACK_PATTERNS = [
   /\(\s*50\s*\)/i, // (50) - parenthesized 50 indicates maintenance dose
   /\(\s*60\s*\)/i, // (60) is also maintenance in local business rule
   /\b50\s*(?:$|\))/i, // "50" at end of text or before closing paren
   /\b60\s*(?:$|\))/i, // "60" at end of text or before closing paren
-  /\brefuerzo\b/i, // refuerzo (booster) = maintenance
 ];
 const DOSE_CLUSTOID_PATTERN = /\bdosis\s+clust(?:oid)?\b/i;
 
@@ -819,16 +821,21 @@ function normalizeSubcutaneousDosage(
 
 function detectTreatmentStage(summary: string, description: string): string | null {
   const text = joinClinicalText(summary, description);
+  const hasOrdinalInduction = matchesAny(text, INDUCTION_PATTERNS);
 
   // Explicit maintenance keywords take priority over ordinal induction markers.
   // e.g. "5ta dosis mensual clustoid" → Mantención (not "5ta dosis")
-  if (matchesAny(text, MAINTENANCE_PATTERNS)) {
+  if (matchesAny(text, EXPLICIT_MAINTENANCE_PATTERNS)) {
     return "Mantención";
   }
 
   // Induction: numbered doses 1-5 with no maintenance markers present.
-  if (matchesAny(text, INDUCTION_PATTERNS)) {
+  if (hasOrdinalInduction) {
     return "Inducción";
+  }
+
+  if (matchesAny(text, MAINTENANCE_FALLBACK_PATTERNS)) {
+    return "Mantención";
   }
 
   // "dosis clustoid" without ordinal marker defaults to maintenance.
