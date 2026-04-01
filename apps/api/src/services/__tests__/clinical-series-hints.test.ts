@@ -166,12 +166,36 @@ describe("extractPatientHints", () => {
       expect(patientName).toBe("gustavo saez saez");
     });
 
+    it("does not keep age month text as part of the patient name", () => {
+      const { patientName } = extractPatientHints(
+        "17.40 Multitest 1.2.3. Ácaros, (40) Emilia Briones Vega, 5 años 8 meses, Fonasa, San Pedro, 944268788",
+        null,
+      );
+      expect(patientName).toBe("emilia briones vega");
+    });
+
+    it("does not keep age month text in alternate spelling variants", () => {
+      const { patientName } = extractPatientHints(
+        "12:40 Confirma Multitest 1.2.3. acaros(40) Emila Briones Vega, 5 años 8 meses, fonasa, San pedro de la paz,944268788",
+        null,
+      );
+      expect(patientName).toBe("emila briones vega");
+    });
+
     it("does not use 'san pedro' as part of a patient name", () => {
       const { patientName } = extractPatientHints(
         "Vacuna Clustoid (50), Lucas medina, 13 años, San Pedro, 996990238",
         null,
       );
       expect(patientName).toBe("lucas medina");
+    });
+
+    it("does not use 'san carlos' as part of a patient name", () => {
+      const { patientName } = extractPatientHints(
+        "se lleva vacuna de mayo Vacuna Clustoid 0,5ml, (50) Sara Muñoz Muñoz, 43 años, San Carlos, Fonasa, 984137627",
+        null,
+      );
+      expect(patientName).toBe("sara munoz munoz");
     });
 
     it("does not use 'vincular' or 'evento' as name tokens", () => {

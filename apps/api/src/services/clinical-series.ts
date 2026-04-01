@@ -13,7 +13,8 @@ dayjs.extend(timezone);
 const TIMEZONE = "America/Santiago";
 const RUT_REGEX = /\b\d{1,2}\.?\d{3}\.?\d{3}-?[\dkK]\b/g;
 const TIME_REGEX = /\b\d{1,2}:\d{2}\b/g;
-const AGE_REGEX = /\b\d{1,3}\s*a[ñn]os?\b/gi;
+const AGE_REGEX =
+  /\b\d{1,3}\s*(?:a[ñn]os?|a)(?:\s+\d{1,2}\s*mes(?:es)?)?\b|\b\d{1,2}\s*mes(?:es)?\b/gi;
 const LONG_NUMBER_REGEX = /\b\d{5,}\b/g;
 const STANDALONE_NUMBER_REGEX = /\b\d+\b/g;
 const SEPARATOR_REGEX = /[;:,()[\]{}/\\]+/g;
@@ -406,6 +407,7 @@ function stripNonNamePhrases(text: string): string {
       /,\s*(?:pap[aá]|mam[aá]|tutor(?:a)?)\s+[^,;()]{3,80}(?=(?:\s*,|\s*\(|$))/gi,
       " ",
     )
+    .replace(/\bsan\s+carlos\b/gi, " ")
     .replace(/\bsan\s+pedro\s+de\s+la\s+paz\b/gi, " ")
     .replace(/\bde\s+la\s+paz\b/gi, " ")
     .replace(/\bsan\s+pedro\b/gi, " ");
