@@ -26,6 +26,7 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "alergia",
   "alergico",
   "alergica",
+  "alergias",
   "alimento",
   "alimentario",
   "alimentos",
@@ -43,6 +44,8 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "control",
   "costo",
   "cutaneo",
+  "cylondon",
+  "dactilon",
   "diagnostico",
   "dosis",
   "entrega",
@@ -121,9 +124,11 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "pricktest",
   "testcutaneo",
   "vac",
+  "vacunas",
   // Chilean health/admin terms that appear in clinical notes but are not names
   "aer",
   "ali",
+  "aliment",
   "alergenos",
   "alergeno",
   "ban",
@@ -148,15 +153,20 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "florida",
   "fonasa",
   "gmail",
+  "horario",
   "href",
+  "hrs",
   "hualpen",
+  "hualqui",
   "isapre",
+  "manana",
   "mailto",
   "vida",
   "numero",
   "particular",
   "pago",
   "prevision",
+  "rinitis",
   "rut",
   "target",
   "vincular",
@@ -214,6 +224,7 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "reagendar",
   "reagendara",
   "respirar",
+  "whatsapp",
   // Common Spanish words that appear in clinical notes but are not names
   "autorizado",
   "beneficiario",
@@ -255,6 +266,7 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "trae",
   "traen",
   "venir",
+  "vendra",
   "ver",
   "viene",
 ]);
@@ -385,7 +397,18 @@ function normalizeName(value: string): string {
 }
 
 function stripNonNamePhrases(text: string): string {
-  return text.replace(/\bsan\s+pedro\b/gi, " ");
+  return text
+    .replace(
+      /,\s*[^,;()]{3,80}\(\s*(?:pap[aá]|mam[aá]|tutor(?:a)?)\s*\)(?=(?:\s*,|\s*\(|$))/gi,
+      " ",
+    )
+    .replace(
+      /,\s*(?:pap[aá]|mam[aá]|tutor(?:a)?)\s+[^,;()]{3,80}(?=(?:\s*,|\s*\(|$))/gi,
+      " ",
+    )
+    .replace(/\bsan\s+pedro\s+de\s+la\s+paz\b/gi, " ")
+    .replace(/\bde\s+la\s+paz\b/gi, " ")
+    .replace(/\bsan\s+pedro\b/gi, " ");
 }
 
 /**
@@ -811,7 +834,7 @@ export function extractIdentityHints(summary: null | string, description: null |
   // Running extractors separately prevents description noise (clinical notes,
   // field labels like "-Rut del paciente:", previous visit history) from
   // overriding a clearly-identified name in the event title/summary.
-  const summaryNames = extractNamesFromText(summaryText.trim());
+  const summaryNames = extractNamesFromText(stripStructuredNoiseForNames(summaryText.trim()));
   const descriptionWithoutBoleta =
     structured.boletaBlock ? descriptionText.replace(structured.boletaBlock, " ") : descriptionText;
   const descriptionNames = extractNamesFromText(stripStructuredNoiseForNames(descriptionWithoutBoleta));
@@ -819,7 +842,8 @@ export function extractIdentityHints(summary: null | string, description: null |
     .map((candidate) => candidate.name)
     .filter((value): value is string => Boolean(value) && isLikelyPersonName(value));
 
-  const uniquePatientNames = [...new Set([...summaryNames, ...descriptionNames])];
+  const uniquePatientNames = [...new Set([...summaryNames, ...descriptionNames])]
+    .filter((value) => isLikelyPersonName(value));
   const patientRut =
     structured.patientRut ??
     ruts.find((value) => !structured.beneficiaryRuts.includes(value)) ??
@@ -1111,9 +1135,13 @@ async function loadEventSeriesCandidateByExternalIds(
 
 // Returns significant tokens from a normalized name: length ≥ 3, not a stopword.
 function getSignificantNameTokens(name: string): string[] {
-  return normalizeName(name)
-    .split(" ")
-    .filter((t) => t.length >= 3 && !LOWERCASE_NAME_STOPWORDS.has(t));
+  return [
+    ...new Set(
+      normalizeName(name)
+        .split(" ")
+        .filter((t) => t.length >= 3 && !LOWERCASE_NAME_STOPWORDS.has(t)),
+    ),
+  ];
 }
 
 // ── SeriesAssignmentContext ───────────────────────────────────────────────────
@@ -1151,10 +1179,7 @@ function scoreClinicalSeriesIdentityQuality(series: {
 }
 
 function scoreRepresentativeIdentity(identity: ClinicalIdentity & { eventCount?: number }): number {
-  let score = scoreClinicalSeriesIdentityQuality(identity);
-  score += getSignificantNameTokens(identity.patientName ?? "").length * 20;
-  score += getSignificantNameTokens(identity.beneficiaryName ?? "").length * 10;
-  return score;
+  return scoreClinicalSeriesIdentityQuality(identity);
 }
 
 function compareRepresentativeIdentity(
@@ -2124,7 +2149,10 @@ export async function rebuildClinicalSeries(
   const rows = await db.$queryRaw<Array<{ eventId: number }>>`
     SELECT e.id AS "eventId"
     FROM events e
-    WHERE e.category IN ('Test y exámenes', 'Tratamiento subcutáneo')
+    WHERE (
+      e.category IN ('Test y exámenes', 'Tratamiento subcutáneo')
+      OR e.clinical_series_id IS NOT NULL
+    )
       AND (
         ${params?.from ?? null}::date IS NULL
         OR COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) >= ${params?.from ?? null}::date

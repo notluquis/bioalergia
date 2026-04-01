@@ -93,12 +93,77 @@ describe("extractPatientHints", () => {
       expect(patientName).toBe("ingrid rivas vergara");
     });
 
+    it("does not use 'vendra' as a name token", () => {
+      const { patientName } = extractPatientHints(
+        "avisara ella cuando vendra Marcela Andra Aravena Alarcón, Vacuna de refuerzo Clustoid 0,3(30)",
+        null,
+      );
+      expect(patientName).toBe("marcela andra aravena alarcon");
+    });
+
     it("does not use the typo 'cosulta' as a name token", () => {
       const { patientName } = extractPatientHints(
         "16.38, 1era cosulta (40) pablo sanchez rivero, 16 años, 22.479.080-5",
         null,
       );
       expect(patientName).toBe("pablo sanchez rivero");
+    });
+
+    it("does not treat schedule announcements as patient names", () => {
+      const { patientName } = extractPatientHints(
+        "horario vacunas MAÑANA 10:00 a 12:00 hrs.",
+        null,
+      );
+      expect(patientName).toBeNull();
+    });
+
+    it("extracts Mia Isabella San Martin from a structured summary without keeping clinical noise", () => {
+      const { patientName } = extractPatientHints(
+        "15.28 test cutaneo ambiental y aliment (80), Mia Isabella San Martín San Martín,Edad: 6 años, Mamá: Yohana San Martín, Numero de teléfono: 923761767 (solo whatsapp)",
+        null,
+      );
+      expect(patientName).toBe("mia isabella san martin san martin");
+    });
+
+    it("does not append a parent name written after the patient", () => {
+      const { patientName } = extractPatientHints(
+        "llego 14:47mantención Clustoid 50 mil (0.5 ml), Antonia Paz Concha Coronado, Cristian Concha Medina (papá), (7 años), 976068776, Alergias, Particular, Curanilahue",
+        null,
+      );
+      expect(patientName).toBe("antonia paz concha coronado");
+    });
+
+    it("does not append a parent name written with a leading parent label", () => {
+      const { patientName } = extractPatientHints(
+        "11:30 confirma,vacuna mantención Clustoid 50 mil (0.5ml),Antonia Paz Concha Coronado , 7 años, papá Cristian Concha Medina, Particular, Curanilahue, 976068776",
+        null,
+      );
+      expect(patientName).toBe("antonia paz concha coronado");
+    });
+
+    it("does not treat allergen/product tails as patient names", () => {
+      const { patientName } = extractPatientHints(
+        "Gustavo Saez mantencion Clustoid(50) gramineas cylondon dactilon",
+        null,
+      );
+      expect(patientName).toBe("gustavo saez");
+    });
+
+    it("does not append commune or diagnosis terms to the patient name", () => {
+      const { patientName, patientRut } = extractPatientHints(
+        "13.10,Vac. Clustoid (50) Gustavo Sáez Sáez,19.109.016-0 27 años, hualqui, rinitis alérgica, 994025774",
+        null,
+      );
+      expect(patientName).toBe("gustavo saez saez");
+      expect(patientRut).toBe("19109016-0");
+    });
+
+    it("does not append commune or diagnosis terms when no rut is present", () => {
+      const { patientName } = extractPatientHints(
+        "11:30confirma, 1 dosis clustoid 25)Gustavo Saez Saez, 27 años, hualqui, rinitis alergica, 994025774",
+        null,
+      );
+      expect(patientName).toBe("gustavo saez saez");
     });
 
     it("does not use 'san pedro' as part of a patient name", () => {

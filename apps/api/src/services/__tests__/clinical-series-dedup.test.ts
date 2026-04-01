@@ -321,6 +321,33 @@ describe("detectDuplicateSeries — same RUT, different name (subset)", () => {
 
     expect(match).toBe(5969);
   });
+
+  it("does not match a different patient just because a surname is repeated twice", async () => {
+    mockFindFirst.mockResolvedValueOnce(null);
+    mockFindMany.mockResolvedValueOnce([]);
+    mockFindMany.mockResolvedValueOnce([]);
+    mockFindMany.mockResolvedValueOnce([
+      {
+        beneficiaryName: "MACARENA PATRICIA MUNOZ PARRA",
+        beneficiaryRut: "15589687-6",
+        events: [
+          { endDate: null, endDateTime: null, startDate: new Date("2024-01-01T00:00:00.000Z"), startDateTime: null },
+        ],
+        id: 257,
+        patientName: "matias allende munoz",
+        patientRut: "15589687-6",
+      },
+    ]);
+
+    const match = await findMatchingSeries({
+      eventDate: "2024-02-01",
+      kind: "SUBCUTANEOUS_TREATMENT",
+      patientName: "sara munoz munoz san carlos",
+      patientRut: null,
+    });
+
+    expect(match).toBeNull();
+  });
 });
 
 describe("selectRepresentativeClinicalIdentity", () => {
