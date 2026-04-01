@@ -1185,6 +1185,30 @@ function compareSeriesCanonicalPriority<
   return a.id - b.id;
 }
 
+function hasConflictingPrimaryIdentity<
+  T extends {
+    beneficiaryRut?: null | string;
+    patientRut?: null | string;
+  },
+>(a: T, b: T): boolean {
+  if (!a.patientRut || !b.patientRut) return false;
+  if (a.patientRut === b.patientRut) return false;
+  if (isCloseNormalizedRut(a.patientRut, b.patientRut)) return false;
+  if (
+    a.beneficiaryRut &&
+    (a.beneficiaryRut === b.patientRut || isCloseNormalizedRut(a.beneficiaryRut, b.patientRut))
+  ) {
+    return false;
+  }
+  if (
+    b.beneficiaryRut &&
+    (b.beneficiaryRut === a.patientRut || isCloseNormalizedRut(b.beneficiaryRut, a.patientRut))
+  ) {
+    return false;
+  }
+  return true;
+}
+
 function isCloseNormalizedRut(a: null | string, b: null | string): boolean {
   if (!a || !b) return false;
   const left = normalizeRut(a);
@@ -2657,6 +2681,7 @@ export async function detectDuplicateSeries(): Promise<ClinicalSeriesDuplicate[]
     const target = chooseCanonicalTarget(group);
     const src = group.find((series) => series.id !== target.id);
     if (!src) continue;
+    if (hasConflictingPrimaryIdentity(target, src)) continue;
     results.push({
       confidence: "high",
       kind: target.kind,

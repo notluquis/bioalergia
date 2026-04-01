@@ -109,15 +109,11 @@ describe("detectDuplicateSeries — same RUT, different name (subset)", () => {
       makeSeries(2, "juan perez garcia", "98765432-1", "SUBCUTANEOUS_TREATMENT", 3),
     ]);
 
-    // Same name but different RUTs → name check fails (names ARE equal) but
-    // the loop reaches the name-equality branch first; let's verify only one
-    // duplicate (by name) is found, not a false RUT-based merge.
+    // Same name but different valid patient RUTs should be treated as distinct
+    // people, not as a name-based duplicate.
     const dupes = await detectDuplicateSeries();
 
-    // Names are identical → detected as high-confidence name duplicate.
-    // The important thing is it does NOT falsely match by RUT.
-    expect(dupes).toHaveLength(1);
-    expect(dupes[0]!.reason).toContain("nombre");
+    expect(dupes).toHaveLength(0);
   });
 
   it("merges ALL same-RUT series into one target in a single pass", async () => {
@@ -172,6 +168,20 @@ describe("detectDuplicateSeries — same RUT, different name (subset)", () => {
       targetId: 5988,
       sourceId: 36,
     });
+  });
+
+  it("does not flag same-name duplicates when both series have distinct patient RUTs", async () => {
+    mockFindMany.mockResolvedValueOnce([
+      makeSeries(375, "catalina valenzuela", "24615586-0", "SKIN_TEST", 1, {
+        beneficiaryName: "Catalina Ignacia Valenzuela Cortes",
+        beneficiaryRut: "24615586-0",
+      }),
+      makeSeries(4608, "catalina valenzuela", "26342739-4", "SKIN_TEST", 1),
+    ]);
+
+    const dupes = await detectDuplicateSeries();
+
+    expect(dupes).toHaveLength(0);
   });
 
   it("assigns exact-name rebuild matches to the better canonical series, not the oldest id", async () => {
