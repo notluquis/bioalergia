@@ -1,8 +1,7 @@
-import { parseTime } from "@internationalized/date";
-import { Button, Dropdown, TimeField, Tooltip } from "@heroui/react";
+import { Button, Dropdown, Input, Tooltip } from "@heroui/react";
 import { createColumnHelper } from "@tanstack/react-table";
 import dayjs from "dayjs";
-import type { FocusEvent } from "react";
+import type { ChangeEvent } from "react";
 
 import type { BulkRow } from "../types";
 
@@ -10,7 +9,6 @@ import {
   calculateWorkedMinutes,
   computeStatus,
   formatDateLabel,
-  isValidTimeString,
   isRowDirty,
   minutesToDuration,
 } from "../utils";
@@ -47,48 +45,23 @@ function TimeFieldInput({
   onChange: (next: string) => void;
   value: string;
 }>) {
-  const timeValue = parseTimeValue(value);
-
-  const handleBlur = (event: FocusEvent<Element>) => {
-    if (event.currentTarget.contains(event.relatedTarget)) {
-      return;
-    }
-    onBlur?.();
+  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
+    onChange(event.target.value);
   };
 
   return (
-    <TimeField
+    <Input
       aria-label="Hora"
       className={className}
-      granularity="minute"
-      hourCycle={24}
-      isDisabled={disabled}
-      onBlur={handleBlur}
-      onChange={(next) => {
-        onChange(next ? formatTimeValue(next) : "");
-      }}
-      placeholderValue={EMPTY_TIME_VALUE}
-      shouldForceLeadingZeros
-      value={timeValue}
-    >
-      <TimeField.Group fullWidth variant="secondary">
-        <TimeField.Input>{(segment) => <TimeField.Segment segment={segment} />}</TimeField.Input>
-      </TimeField.Group>
-    </TimeField>
+      disabled={disabled}
+      onBlur={onBlur}
+      onChange={handleChange}
+      step={60}
+      type="time"
+      value={value}
+      variant="secondary"
+    />
   );
-}
-
-const EMPTY_TIME_VALUE = parseTime("00:00");
-
-function parseTimeValue(value: string) {
-  if (!isValidTimeString(value)) {
-    return null;
-  }
-  return parseTime(value);
-}
-
-function formatTimeValue(value: { hour: number; minute: number }) {
-  return `${String(value.hour).padStart(2, "0")}:${String(value.minute).padStart(2, "0")}`;
 }
 
 const DateCell = ({ meta, row }: { meta: TimesheetTableMeta; row: BulkRow }) => {
