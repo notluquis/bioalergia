@@ -285,7 +285,7 @@ function DataTableContent<TData>({
           <Table.Row
             className={cn(onRowClick && "cursor-pointer")}
             id={item.id}
-            onClick={() => onRowClick?.(item.row.original)}
+            onAction={() => onRowClick?.(item.row.original)}
           >
             {visibleCells.map((cell) => (
               <Table.Cell key={cell.id}>
