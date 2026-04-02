@@ -74,29 +74,21 @@
     },
     {
       "files": ["packages/db/src/zenstack/schema.ts", "packages/db/src/zenstack/schema-lite.ts"],
-      "rules": {
-        "no-secrets": "off"
-      }
+      "rules": {}
     },
     {
       "files": ["apps/api/src/config.ts", "apps/api/src/lib/mercadopago/mercadopago-scheduler.ts"],
-      "rules": {
-        "no-secrets": "off"
-      }
+      "rules": {}
     },
     {
       "files": [
         "apps/intranet/src/features/finance/mercadopago/components/SettlementReleaseColumns.tsx"
       ],
-      "rules": {
-        "no-secrets": "off"
-      }
+      "rules": {}
     },
     {
       "files": ["packages/db/src/client.ts", "packages/db/src/input.ts"],
-      "rules": {
-        "oxc/prefer-barrel": "off"
-      }
+      "rules": {}
     },
   ]
 }
