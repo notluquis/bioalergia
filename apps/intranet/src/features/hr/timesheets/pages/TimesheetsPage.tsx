@@ -36,17 +36,17 @@ export function TimesheetsPage() {
     ? (employees.find((e) => e.id === selectedEmployeeId) ?? null)
     : null;
 
-  // 2. Summary (Depends on Month + potentially SelectedEmployee)
+  // 2. Summary (Month-level dataset; employee selection only drives the editor)
   const { data: summaryData } = useSuspenseQuery({
-    queryFn: () => fetchTimesheetSummary(formatMonthString(month), selectedEmployeeId),
-    queryKey: ["timesheet-summary", month, selectedEmployeeId],
+    queryFn: () => fetchTimesheetSummary(formatMonthString(month)),
+    queryKey: ["timesheet-summary", month],
   });
 
   const employeeSummaryRow = (() => {
-    if (!summaryData || !selectedEmployee) {
+    if (!summaryData || selectedEmployeeId == null) {
       return null;
     }
-    return summaryData.employees.find((e) => e.employeeId === selectedEmployee.id) ?? null;
+    return summaryData.employees.find((e) => e.employeeId === selectedEmployeeId) ?? null;
   })();
 
   const monthLabel = (() => {

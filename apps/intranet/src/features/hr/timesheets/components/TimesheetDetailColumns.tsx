@@ -24,7 +24,7 @@ export interface TimesheetTableMeta {
   onRowChange: (
     index: number,
     field: keyof Omit<BulkRow, "date" | "entryId">,
-    value: string,
+    value: string
   ) => void;
   onSalidaBlur: (index: number) => void;
   openOvertimeEditors: Set<string>;
@@ -75,8 +75,15 @@ function TimeFieldInput({
       shouldForceLeadingZeros
       value={timeValue}
     >
-      <TimeField.Group key={value}>
-        <TimeField.Input>{(segment) => <TimeField.Segment segment={segment} />}</TimeField.Input>
+      <TimeField.Group className="w-full justify-center rounded-2xl" fullWidth variant="secondary">
+        <TimeField.Input className="justify-center gap-0 px-3 py-2 text-center font-medium tabular-nums">
+          {(segment) => (
+            <TimeField.Segment
+              className={segment.type === "literal" ? "px-0 text-default-400" : "px-0"}
+              segment={segment}
+            />
+          )}
+        </TimeField.Input>
       </TimeField.Group>
     </TimeField>
   );
