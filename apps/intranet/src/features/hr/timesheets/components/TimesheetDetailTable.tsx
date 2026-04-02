@@ -27,7 +27,7 @@ interface TimesheetDetailTableProps {
     field: keyof Omit<BulkRow, "date" | "entryId">,
     value: string
   ) => void;
-  onSalidaBlur: (index: number) => void;
+  onTimeBlur: (index: number) => void;
   pendingCount: number;
   saving: boolean;
   selectedEmployee: Employee | null;
@@ -44,7 +44,7 @@ export function TimesheetDetailTable({
   onRemoveEntry,
   onResetRow,
   onRowChange,
-  onSalidaBlur,
+  onTimeBlur,
   pendingCount,
   saving,
   selectedEmployee,
@@ -81,7 +81,7 @@ export function TimesheetDetailTable({
     onRemoveEntry,
     onResetRow,
     onRowChange,
-    onSalidaBlur,
+    onTimeBlur,
     openOvertimeEditors,
     setCommentPreview,
     setNotWorkedDays,

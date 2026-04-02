@@ -28,7 +28,7 @@ export interface TimesheetTableMeta {
     field: keyof Omit<BulkRow, "date" | "entryId">,
     value: string
   ) => void;
-  onSalidaBlur: (index: number) => void;
+  onTimeBlur: (index: number) => void;
   openOvertimeEditors: Set<string>;
   setCommentPreview: (data: null | { date: Date; text: string }) => void;
   setNotWorkedDays: (cb: (prev: Set<string>) => Set<string>) => void;
@@ -152,7 +152,7 @@ const InputCell = ({
       <TimeFieldInput
         className="w-24 sm:w-28"
         disabled={!canEditRow}
-        onBlur={() => field === "salida" && meta.onSalidaBlur(index)}
+        onBlur={() => meta.onTimeBlur(index)}
         onChange={(value) => {
           meta.onRowChange(index, field, value);
         }}

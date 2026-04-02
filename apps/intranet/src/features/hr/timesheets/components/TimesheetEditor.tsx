@@ -57,7 +57,7 @@ export function TimesheetEditor({
   summaryRow,
 }: TimesheetEditorProps) {
   // --- Query ---
-  const { data: detailData, dataUpdatedAt } = useSuspenseQuery({
+  const { data: detailData } = useSuspenseQuery({
     queryFn: () => fetchTimesheetDetail(employeeId, formatMonthString(month)),
     queryKey: ["timesheet-detail", employeeId, month],
   });
@@ -66,7 +66,7 @@ export function TimesheetEditor({
 
   return (
     <TimesheetEditorInner
-      key={dataUpdatedAt}
+      key={`${employeeId}-${month}`}
       activeEmployees={activeEmployees}
       employeeId={employeeId}
       initialRows={initialRows}
@@ -184,7 +184,7 @@ function TimesheetEditorInner({
     upsertMutate,
   });
 
-  const handleSalidaBlur = createHandleSalidaBlur(saveRowImmediately);
+  const handleTimeBlur = createHandleTimeBlur(saveRowImmediately);
 
   const { mutate: deleteMutate } = deleteMutation;
   const handleRemoveEntry = createHandleRemoveEntry(deleteMutate);
@@ -230,7 +230,7 @@ function TimesheetEditorInner({
         onRemoveEntry={handleRemoveEntry}
         onResetRow={handleResetRow}
         onRowChange={handleRowChange}
-        onSalidaBlur={handleSalidaBlur}
+        onTimeBlur={handleTimeBlur}
         pendingCount={pendingCount}
         saving={upsertMutation.isPending}
         selectedEmployee={selectedEmployee}
@@ -310,7 +310,7 @@ function TimesheetEditorTable({
   onRemoveEntry,
   onResetRow,
   onRowChange,
-  onSalidaBlur,
+  onTimeBlur,
   pendingCount,
   saving,
   selectedEmployee,
@@ -329,7 +329,7 @@ function TimesheetEditorTable({
     field: keyof Omit<BulkRow, "date" | "entryId">,
     value: string
   ) => void;
-  onSalidaBlur: (index: number) => void;
+  onTimeBlur: (index: number) => void;
   pendingCount: number;
   saving: boolean;
   selectedEmployee: Employee;
@@ -347,7 +347,7 @@ function TimesheetEditorTable({
       onRemoveEntry={onRemoveEntry}
       onResetRow={onResetRow}
       onRowChange={onRowChange}
-      onSalidaBlur={onSalidaBlur}
+      onTimeBlur={onTimeBlur}
       pendingCount={pendingCount}
       saving={saving}
       selectedEmployee={selectedEmployee}
@@ -798,7 +798,7 @@ function createSaveRowImmediately({
   };
 }
 
-function createHandleSalidaBlur(saveRowImmediately: (index: number) => Promise<void>) {
+function createHandleTimeBlur(saveRowImmediately: (index: number) => Promise<void>) {
   return (index: number) => {
     setTimeout(() => {
       void saveRowImmediately(index);
