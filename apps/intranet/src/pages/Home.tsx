@@ -1,4 +1,4 @@
-import { Skeleton } from "@heroui/react";
+import { Skeleton, Surface } from "@heroui/react";
 import { Link } from "@tanstack/react-router";
 import { ArrowRightLeft, ArrowUpRight, CalendarDays, Users, Wallet } from "lucide-react";
 import { Suspense, useEffect } from "react";
@@ -42,9 +42,25 @@ export function Home() {
   return (
     <section className="space-y-4">
       {canReadTransactions && (
-        <Suspense fallback={<DashboardSkeleton />}>
-          <DashboardTransactionsSection statsParams={statsParams} />
-        </Suspense>
+        <>
+          <Suspense fallback={<DashboardSkeleton />}>
+            <DashboardTransactionsSection statsParams={statsParams} />
+          </Suspense>
+
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.95fr)]">
+            <div className="space-y-4">
+              <DashboardPersonalLiabilities />
+              <QuickLinksSection can={can} />
+            </div>
+            <aside className="space-y-4">
+              {canReadPersons && (
+                <Suspense fallback={<Skeleton className="h-64 rounded-3xl" />}>
+                  <DashboardParticipantsSection params={leaderboardParams} />
+                </Suspense>
+              )}
+            </aside>
+          </div>
+        </>
       )}
 
       {!canReadTransactions && (
@@ -84,7 +100,7 @@ export function Home() {
 
 function DashboardSkeleton() {
   return (
-    <div className=" space-y-4">
+    <div className="space-y-4">
       <div className="grid grid-cols-3 gap-3">
         <div className="h-24 rounded-xl bg-default-50" />
         <div className="h-24 rounded-xl bg-default-50" />
@@ -149,30 +165,33 @@ function QuickLinksSection({ can }: { can: (action: string, subject: string) => 
   }
 
   return (
-    <div className="card card-compact bg-background shadow-sm">
-      <div className="card-body">
-        <h3 className="mb-2 font-semibold text-foreground text-sm">Accesos rápidos</h3>
-        <div className="grid gap-2 sm:grid-cols-2">
-          {links.map((link) => (
-            <Link
-              className="group flex items-center gap-3 rounded-lg border border-default-100 bg-default-50/50 p-3 hover:bg-default-50"
-              key={link.to}
-              to={link.to}
-            >
-              <div
-                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${link.bg} ${link.color}`}
-              >
-                <link.icon className="h-5 w-5" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-medium text-foreground text-sm">{link.title}</p>
-                <p className="truncate text-default-600 text-xs">{link.description}</p>
-              </div>
-              <ArrowUpRight className="h-4 w-4 shrink-0 text-default-500 group-" />
-            </Link>
-          ))}
-        </div>
+    <Surface className="space-y-4 rounded-3xl p-5 shadow-inner" variant="secondary">
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="font-semibold text-foreground text-sm">Accesos rápidos</h3>
+        <span className="rounded-full border border-default-200/80 bg-background px-3 py-1 text-[11px] text-default-500 uppercase tracking-wide">
+          {links.length} accesos
+        </span>
       </div>
-    </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {links.map((link) => (
+          <Link
+            className="group flex items-center gap-3 rounded-2xl border border-default-200/70 bg-background/70 p-4 transition hover:border-primary/35 hover:bg-background"
+            key={link.to}
+            to={link.to}
+          >
+            <div
+              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${link.bg} ${link.color}`}
+            >
+              <link.icon className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-medium text-foreground text-sm">{link.title}</p>
+              <p className="line-clamp-2 text-default-500 text-xs">{link.description}</p>
+            </div>
+            <ArrowUpRight className="h-4 w-4 shrink-0 text-default-400 transition group-hover:text-primary" />
+          </Link>
+        ))}
+      </div>
+    </Surface>
   );
 }

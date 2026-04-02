@@ -1,5 +1,5 @@
-import { Skeleton } from "@heroui/react";
-import { Link } from "@tanstack/react-router";
+import { Button, Skeleton } from "@heroui/react";
+import { useNavigate } from "@tanstack/react-router";
 
 import { fmtCLP } from "@/lib/format";
 import { formatRut } from "@/lib/rut";
@@ -14,18 +14,22 @@ export function TopParticipantsWidget({
   error: null | string;
   loading: boolean;
 }) {
+  const navigate = useNavigate();
+
   return (
     <article className="surface-recessed space-y-4 p-6">
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-base text-secondary drop-shadow-sm">
           Retiros destacados
         </h3>
-        <Link
-          className="inline-flex items-center rounded-full border border-secondary/40 bg-secondary/15 px-3 py-1 font-semibold text-secondary text-xs uppercase tracking-wide"
-          to="/finanzas/counterparts"
+        <Button
+          onPress={() => navigate({ to: "/finanzas/counterparts" })}
+          size="sm"
+          type="button"
+          variant="secondary"
         >
           Ver todos
-        </Link>
+        </Button>
       </div>
       {error && <p className="text-danger text-xs">{error}</p>}
       {loading && (

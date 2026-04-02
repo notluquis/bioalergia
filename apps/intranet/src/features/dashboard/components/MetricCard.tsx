@@ -61,30 +61,35 @@ export function MetricCard({
 
   return (
     <Card
-      className={`relative overflow-hidden rounded-4xl bg-linear-to-br ${theme.gradient} shadow-lg ring-1 ring-inset ${theme.ring}`}
+      className={`relative overflow-hidden rounded-[30px] border border-default-200/70 bg-background shadow-sm ring-1 ring-inset ${theme.ring}`}
     >
       <div
         aria-hidden="true"
-        className={`pointer-events-none absolute inset-0 rounded-3xl bg-linear-to-br ${theme.gradient}`}
+        className={`pointer-events-none absolute inset-0 bg-linear-to-br ${theme.gradient}`}
       />
 
-      <Card.Content className="relative flex flex-col gap-2 p-2.5">
+      <Card.Content className="relative flex min-h-28 flex-col gap-3 p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2">
             <div
-              className={`flex h-8 w-8 items-center justify-center rounded-full bg-background/50 ring-1 ring-inset backdrop-blur-sm ${theme.ring}`}
+              className={`flex h-10 w-10 items-center justify-center rounded-2xl bg-background/80 ring-1 ring-inset backdrop-blur-sm ${theme.ring}`}
             >
               <Icon className={`h-4 w-4 ${theme.iconColor}`} />
             </div>
-            <h2 className="typ-caption text-default-600">{title}</h2>
+            <div className="space-y-1">
+              <h2 className="font-medium text-default-700 text-xl/none">{title}</h2>
+              <p className="text-default-500 text-xs">Resumen del periodo actual</p>
+            </div>
           </div>
           <span
-            className={`hidden rounded-full px-3 py-1 font-semibold text-[11px] uppercase tracking-wide lg:inline-flex ${theme.badge}`}
+            className={`inline-flex rounded-full px-3 py-1 font-semibold text-[11px] uppercase tracking-wide ${theme.badge}`}
           >
             {theme.badgeLabel}
           </span>
         </div>
-        <p className={`typ-subtitle ${theme.value} pl-1`}>{loading ? "—" : fmtCLP(value)}</p>
+        <p className={`font-semibold text-3xl leading-none tracking-tight ${theme.value}`}>
+          {loading ? "—" : fmtCLP(value)}
+        </p>
       </Card.Content>
     </Card>
   );
