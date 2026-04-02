@@ -1,7 +1,7 @@
 import { Alert, Button } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useToast } from "@/context/ToastContext";
 import {
   bulkUpsertTimesheets,
@@ -90,13 +90,23 @@ function TimesheetEditorInner({
   const queryClient = useQueryClient();
   const { success: toastSuccess } = useToast();
   const detailQueryKey = ["timesheet-detail", employeeId, month];
-  const summaryQueryKey = ["timesheet-summary", month, employeeId];
+  const summaryQueryKey = ["timesheet-summary", month];
 
   const [bulkRows, setBulkRows] = useState<BulkRow[]>(() => initialRows);
   const [errorLocal, setErrorLocal] = useState<null | string>(null);
+  const bulkRowsRef = useRef(bulkRows);
+  const initialRowsRef = useRef(initialRows);
 
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [emailPrepareStatus, setEmailPrepareStatus] = useState<PrepareStatus>(null);
+
+  useEffect(() => {
+    bulkRowsRef.current = bulkRows;
+  }, [bulkRows]);
+
+  useEffect(() => {
+    initialRowsRef.current = initialRows;
+  }, [initialRows]);
 
   // --- Mutations ---
 
@@ -166,9 +176,9 @@ function TimesheetEditorInner({
   const { isPending: isUpsertPending, mutateAsync: upsertMutate } = upsertMutation;
 
   const saveRowImmediately = createSaveRowImmediately({
-    bulkRows,
     employeeId,
-    initialRows,
+    getBulkRows: () => bulkRowsRef.current,
+    getInitialRows: () => initialRowsRef.current,
     isUpsertPending,
     toastSuccess,
     upsertMutate,
@@ -731,16 +741,16 @@ function buildImmediateSaveEntry(row: BulkRow): null | TimesheetUpsertEntry {
 }
 
 function createSaveRowImmediately({
-  bulkRows,
   employeeId,
-  initialRows,
+  getBulkRows,
+  getInitialRows,
   isUpsertPending,
   toastSuccess,
   upsertMutate,
 }: {
-  bulkRows: BulkRow[];
   employeeId: number;
-  initialRows: BulkRow[];
+  getBulkRows: () => BulkRow[];
+  getInitialRows: () => BulkRow[];
   isUpsertPending: boolean;
   toastSuccess: (message: string) => void;
   upsertMutate: (args: {
@@ -753,6 +763,8 @@ function createSaveRowImmediately({
     if (isUpsertPending) {
       return;
     }
+    const bulkRows = getBulkRows();
+    const initialRows = getInitialRows();
     const row = bulkRows[index];
     const initial = initialRows[index];
     if (!row || !initial) {

@@ -1,7 +1,8 @@
+import { parseTime } from "@internationalized/date";
 import { Button, Dropdown, TimeField, Tooltip } from "@heroui/react";
-import { parseTime, type Time } from "@internationalized/date";
 import { createColumnHelper } from "@tanstack/react-table";
 import dayjs from "dayjs";
+import type { FocusEvent } from "react";
 
 import type { BulkRow } from "../types";
 
@@ -9,6 +10,7 @@ import {
   calculateWorkedMinutes,
   computeStatus,
   formatDateLabel,
+  isValidTimeString,
   isRowDirty,
   minutesToDuration,
 } from "../utils";
@@ -45,22 +47,14 @@ function TimeFieldInput({
   onChange: (next: string) => void;
   value: string;
 }>) {
-  const formatTimeValue = (time: Time) => {
-    const hours = String(time.hour).padStart(2, "0");
-    const minutes = String(time.minute).padStart(2, "0");
-    return `${hours}:${minutes}`;
-  };
+  const timeValue = parseTimeValue(value);
 
-  // TimeField handles all validation natively
-  let timeValue: Time | null = null;
-  if (value) {
-    try {
-      timeValue = parseTime(value);
-    } catch {
-      // If value is invalid, TimeField will handle it gracefully
-      timeValue = null;
+  const handleBlur = (event: FocusEvent<Element>) => {
+    if (event.currentTarget.contains(event.relatedTarget)) {
+      return;
     }
-  }
+    onBlur?.();
+  };
 
   return (
     <TimeField
@@ -69,24 +63,32 @@ function TimeFieldInput({
       granularity="minute"
       hourCycle={24}
       isDisabled={disabled}
-      onBlur={onBlur}
-      onChange={(next: Time | null) => onChange(next ? formatTimeValue(next) : "")}
-      placeholderValue={parseTime("00:00")}
+      onBlur={handleBlur}
+      onChange={(next) => {
+        onChange(next ? formatTimeValue(next) : "");
+      }}
+      placeholderValue={EMPTY_TIME_VALUE}
       shouldForceLeadingZeros
       value={timeValue}
     >
-      <TimeField.Group className="w-full justify-center rounded-2xl" fullWidth variant="secondary">
-        <TimeField.Input className="justify-center gap-0 px-3 py-2 text-center font-medium tabular-nums">
-          {(segment) => (
-            <TimeField.Segment
-              className={segment.type === "literal" ? "px-0 text-default-400" : "px-0"}
-              segment={segment}
-            />
-          )}
-        </TimeField.Input>
+      <TimeField.Group fullWidth variant="secondary">
+        <TimeField.Input>{(segment) => <TimeField.Segment segment={segment} />}</TimeField.Input>
       </TimeField.Group>
     </TimeField>
   );
+}
+
+const EMPTY_TIME_VALUE = parseTime("00:00");
+
+function parseTimeValue(value: string) {
+  if (!isValidTimeString(value)) {
+    return null;
+  }
+  return parseTime(value);
+}
+
+function formatTimeValue(value: { hour: number; minute: number }) {
+  return `${String(value.hour).padStart(2, "0")}:${String(value.minute).padStart(2, "0")}`;
 }
 
 const DateCell = ({ meta, row }: { meta: TimesheetTableMeta; row: BulkRow }) => {
