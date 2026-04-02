@@ -1,7 +1,7 @@
-import { Button, Modal } from "@heroui/react";
+import { Button, Modal, Surface } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { useAuth } from "@/context/AuthContext";
 import type { Employee } from "@/features/hr/employees/types";
@@ -14,6 +14,7 @@ import { getTimesheetDetailColumns, type TimesheetTableMeta } from "./TimesheetD
 interface TimesheetDetailTableProps {
   bulkRows: BulkRow[];
   employeeOptions: Employee[];
+  headerActions: ReactNode;
   initialRows: BulkRow[];
   loadingDetail: boolean;
   modifiedCount: number;
@@ -34,6 +35,7 @@ interface TimesheetDetailTableProps {
 export function TimesheetDetailTable({
   bulkRows,
   employeeOptions,
+  headerActions,
   initialRows,
   loadingDetail,
   modifiedCount,
@@ -85,30 +87,46 @@ export function TimesheetDetailTable({
     setNotWorkedDays,
   };
 
+  const hasChanges = pendingCount > 0 || modifiedCount > 0;
+
   return (
-    <div className="space-y-4 bg-background p-4 sm:p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="text-default-600 text-sm">
-          <span className="font-semibold">{monthLabel}</span>
-          {selectedEmployee && (
-            <span className="ml-2 text-default-500">· {selectedEmployee.full_name}</span>
-          )}
-        </div>
-        {canEdit && (
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              isDisabled={saving || (pendingCount === 0 && modifiedCount === 0)}
-              onPress={onBulkSave}
-              variant="primary"
-            >
-              Guardar cambios
-            </Button>
-            <div className="text-default-500 text-xs sm:text-sm">
-              {pendingCount > 0 && <span className="mr-2">Pendientes: {pendingCount}</span>}
-              {modifiedCount > 0 && <span>Modificados: {modifiedCount}</span>}
-            </div>
+    <Surface
+      className="space-y-4 rounded-[28px] border border-default-200/70 p-4 sm:p-6"
+      variant="secondary"
+    >
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="space-y-2">
+          <div className="text-default-700 text-sm">
+            <span className="font-semibold">{monthLabel}</span>
+            {selectedEmployee && (
+              <span className="ml-2 text-default-500">· {selectedEmployee.full_name}</span>
+            )}
           </div>
-        )}
+          <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
+            <span className="rounded-full border border-default-200/80 bg-background px-3 py-1 text-default-500">
+              Pendientes: {pendingCount}
+            </span>
+            <span className="rounded-full border border-default-200/80 bg-background px-3 py-1 text-default-500">
+              Modificados: {modifiedCount}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex flex-col items-stretch gap-3 sm:items-end">
+          <div className="flex flex-wrap items-center justify-start gap-2 sm:justify-end">
+            {headerActions}
+            {canEdit && (
+              <Button
+                isDisabled={saving || !hasChanges}
+                isPending={saving}
+                onPress={onBulkSave}
+                variant="primary"
+              >
+                Guardar cambios
+              </Button>
+            )}
+          </div>
+        </div>
       </div>
 
       <DataTable
@@ -150,6 +168,6 @@ export function TimesheetDetailTable({
           </Modal.Container>
         </Modal.Backdrop>
       </Modal>
-    </div>
+    </Surface>
   );
 }

@@ -1,7 +1,8 @@
-import { Button, Dropdown, Input, Tooltip } from "@heroui/react";
+import { parseTime, type Time } from "@internationalized/date";
+import { Button, Dropdown, TimeField, Tooltip } from "@heroui/react";
 import { createColumnHelper } from "@tanstack/react-table";
 import dayjs from "dayjs";
-import type { ChangeEvent } from "react";
+import { useEffect, useState, type FocusEvent } from "react";
 
 import type { BulkRow } from "../types";
 
@@ -9,6 +10,7 @@ import {
   calculateWorkedMinutes,
   computeStatus,
   formatDateLabel,
+  isValidTimeString,
   isRowDirty,
   minutesToDuration,
 } from "../utils";
@@ -45,23 +47,65 @@ function TimeFieldInput({
   onChange: (next: string) => void;
   value: string;
 }>) {
-  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
-    onChange(event.target.value);
+  const [draftValue, setDraftValue] = useState<null | Time>(() => parseTimeValue(value));
+  const [isEditing, setIsEditing] = useState(false);
+
+  useEffect(() => {
+    if (!isEditing) {
+      setDraftValue(parseTimeValue(value));
+    }
+  }, [isEditing, value]);
+
+  const handleBlur = (event: FocusEvent<Element>) => {
+    if (event.currentTarget.contains(event.relatedTarget)) {
+      return;
+    }
+    setIsEditing(false);
+    onChange(draftValue ? formatTimeValue(draftValue) : "");
+    onBlur?.();
   };
 
   return (
-    <Input
+    <TimeField
       aria-label="Hora"
       className={className}
-      disabled={disabled}
-      onBlur={onBlur}
-      onChange={handleChange}
-      step={60}
-      type="time"
-      value={value}
-      variant="secondary"
-    />
+      fullWidth
+      granularity="minute"
+      hourCycle={24}
+      isDisabled={disabled}
+      onBlur={handleBlur}
+      onChange={(next) => {
+        setDraftValue(next ? toTimeValue(next) : null);
+      }}
+      onFocus={() => {
+        setIsEditing(true);
+      }}
+      placeholderValue={EMPTY_TIME_VALUE}
+      shouldForceLeadingZeros
+      value={draftValue}
+    >
+      <TimeField.Group fullWidth variant="secondary">
+        <TimeField.Input>{(segment) => <TimeField.Segment segment={segment} />}</TimeField.Input>
+      </TimeField.Group>
+    </TimeField>
   );
+}
+
+const EMPTY_TIME_VALUE = parseTime("00:00");
+
+function parseTimeValue(value: string) {
+  if (!isValidTimeString(value)) {
+    return null;
+  }
+  return parseTime(value);
+}
+
+function formatTimeValue(value: { hour: number; minute: number }) {
+  return `${String(value.hour).padStart(2, "0")}:${String(value.minute).padStart(2, "0")}`;
+}
+
+function toTimeValue(value: { hour: number; minute: number }) {
+  return parseTime(formatTimeValue(value));
 }
 
 const DateCell = ({ meta, row }: { meta: TimesheetTableMeta; row: BulkRow }) => {

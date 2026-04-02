@@ -1,7 +1,7 @@
 import { Alert, Button } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import { useToast } from "@/context/ToastContext";
 import {
   bulkUpsertTimesheets,
@@ -201,25 +201,28 @@ function TimesheetEditorInner({
   const pendingCount = bulkRows.filter((row) => !row.entryId && hasRowData(row)).length;
   const modifiedCount = bulkRows.filter((row, index) => isRowDirty(row, initialRows[index])).length;
 
+  const headerActions = (
+    <TimesheetHeaderActions
+      bulkRows={bulkRows}
+      employeeEmail={selectedEmployee.person?.email ?? null}
+      monthLabel={monthLabel}
+      onOpenEmailModal={() => {
+        setEmailModalOpen(true);
+        setEmailPrepareStatus(null);
+      }}
+      selectedEmployee={selectedEmployee}
+      summaryRow={summaryRow}
+    />
+  );
+
   return (
     <>
-      <TimesheetHeaderActions
-        bulkRows={bulkRows}
-        employeeEmail={selectedEmployee.person?.email ?? null}
-        monthLabel={monthLabel}
-        onOpenEmailModal={() => {
-          setEmailModalOpen(true);
-          setEmailPrepareStatus(null);
-        }}
-        selectedEmployee={selectedEmployee}
-        summaryRow={summaryRow}
-      />
-
       {errorLocal && <Alert status="danger">{errorLocal}</Alert>}
 
       <TimesheetEditorTable
         activeEmployees={activeEmployees}
         bulkRows={bulkRows}
+        headerActions={headerActions}
         initialRows={initialRows}
         modifiedCount={modifiedCount}
         monthLabel={monthLabel}
@@ -266,7 +269,7 @@ function TimesheetHeaderActions({
   summaryRow: null | TimesheetSummaryRow;
 }) {
   return (
-    <div className="mb-4 flex justify-end gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <Button
         className="gap-2"
         isDisabled={!summaryRow || !employeeEmail}
@@ -278,7 +281,7 @@ function TimesheetHeaderActions({
       </Button>
       <Suspense
         fallback={
-          <Button className="cursor-wait" isDisabled isPending variant="primary">
+          <Button className="cursor-wait" isDisabled isPending variant="secondary">
             Exportar PDF
           </Button>
         }
@@ -299,6 +302,7 @@ function TimesheetHeaderActions({
 function TimesheetEditorTable({
   activeEmployees,
   bulkRows,
+  headerActions,
   initialRows,
   modifiedCount,
   monthLabel,
@@ -313,6 +317,7 @@ function TimesheetEditorTable({
 }: {
   activeEmployees: Employee[];
   bulkRows: BulkRow[];
+  headerActions: ReactNode;
   initialRows: BulkRow[];
   modifiedCount: number;
   monthLabel: string;
@@ -333,6 +338,7 @@ function TimesheetEditorTable({
     <TimesheetDetailTable
       bulkRows={bulkRows}
       employeeOptions={activeEmployees}
+      headerActions={headerActions}
       initialRows={initialRows}
       loadingDetail={false}
       modifiedCount={modifiedCount}

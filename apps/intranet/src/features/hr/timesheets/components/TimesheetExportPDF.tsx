@@ -188,13 +188,8 @@ export function TimesheetExportPDF({
 
   return (
     <div className="flex items-center gap-2">
-      <div className="relative inline-block">
-        <Button
-          className="rounded-xl bg-primary px-4 py-2 font-semibold text-primary-foreground text-sm shadow-md hover:bg-primary/85 focus-visible:outline-2 focus-visible:outline-primary/35 focus-visible:outline-offset-2"
-          onPress={() => handleExport(true)}
-          type="button"
-          variant="primary"
-        >
+      <div className="relative inline-flex items-center gap-2">
+        <Button onPress={() => handleExport(true)} type="button" variant="secondary">
           Exportar PDF
         </Button>
         <Popover isOpen={showOptions} onOpenChange={setShowOptions}>
@@ -202,7 +197,7 @@ export function TimesheetExportPDF({
             <Tooltip>
               <Tooltip.Trigger>
                 <Button
-                  className="ml-1 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-default-200 bg-background text-primary shadow hover:bg-background/90"
+                  className="inline-flex h-9 w-9 items-center justify-center"
                   size="sm"
                   type="button"
                   variant="secondary"

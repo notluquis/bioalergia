@@ -1,4 +1,4 @@
-import { Label, ListBox, Select, Skeleton } from "@heroui/react";
+import { Label, ListBox, Select, Skeleton, Surface } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { startTransition, Suspense, useState } from "react";
@@ -70,8 +70,11 @@ export function TimesheetsPage() {
 
   return (
     <section className={PAGE_CONTAINER}>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="flex flex-col gap-3 sm:flex-row">
+      <Surface
+        className="rounded-[28px] border border-default-200/70 p-4 sm:p-5"
+        variant="secondary"
+      >
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-52">
             <Select
               className="w-full"
@@ -139,7 +142,7 @@ export function TimesheetsPage() {
             </Select>
           </div>
         </div>
-      </div>
+      </Surface>
 
       <TimesheetSummaryTable
         loading={false}

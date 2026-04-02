@@ -1,3 +1,4 @@
+import { Surface } from "@heroui/react";
 import type { TableMeta } from "@tanstack/react-table";
 import { DataTable } from "@/components/data-table/DataTable";
 
@@ -31,7 +32,10 @@ export function TimesheetSummaryTable({
   })();
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-primary/15 bg-background shadow-sm">
+    <Surface
+      className="overflow-hidden rounded-[28px] border border-default-200/70 shadow-sm"
+      variant="secondary"
+    >
       <DataTable
         columns={columns}
         data={summary?.employees ?? []}
@@ -49,6 +53,6 @@ export function TimesheetSummaryTable({
         rowSelection={rowSelection}
         scrollMaxHeight="min(56dvh, 640px)"
       />
-    </div>
+    </Surface>
   );
 }
