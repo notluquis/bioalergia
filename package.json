@@ -31,16 +31,18 @@
     "superjson": "^2.2.6"
   },
   "devDependencies": {
+    "@emnapi/core": "^1.9.2",
+    "@emnapi/runtime": "^1.9.2",
     "@types/node": "^25.5.0",
     "@typescript/native-preview": "7.0.0-dev.20260330.1",
-    "@zenstackhq/cli": "^3.5.2",
-    "@zenstackhq/sdk": "^3.5.2",
+    "@zenstackhq/cli": "^3.5.3",
+    "@zenstackhq/sdk": "^3.5.3",
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
     "oxfmt": "^0.42.0",
-    "oxlint": "^1.57.0",
+    "oxlint": "^1.58.0",
     "oxlint-tsgolint": "^0.18.1",
-    "turbo": "^2.9.1"
+    "turbo": "^2.9.3"
   },
   "engines": {
     "node": ">=25",

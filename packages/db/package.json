@@ -2,7 +2,9 @@
   "name": "@finanzas/db",
   "version": "0.0.1",
   "type": "module",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "main": "./dist/zenstack/schema.js",
   "types": "./dist/zenstack/schema.d.ts",
   "exports": {
@@ -57,26 +59,26 @@
     "lint:fix": "oxlint --fix && oxfmt --write ."
   },
   "dependencies": {
-    "@zenstackhq/language": "^3.5.2",
-    "@zenstackhq/orm": "^3.5.2",
-    "@zenstackhq/plugin-policy": "^3.5.2",
-    "@zenstackhq/schema": "^3.5.2",
-    "@zenstackhq/server": "^3.5.2",
-    "@zenstackhq/tanstack-query": "^3.5.2",
-    "@zenstackhq/zod": "^3.5.2",
-    "hono": "^4.12.9",
+    "@zenstackhq/language": "^3.5.3",
+    "@zenstackhq/orm": "^3.5.3",
+    "@zenstackhq/plugin-policy": "^3.5.3",
+    "@zenstackhq/schema": "^3.5.3",
+    "@zenstackhq/server": "^3.5.3",
+    "@zenstackhq/tanstack-query": "^3.5.3",
+    "@zenstackhq/zod": "^3.5.3",
+    "hono": "^4.12.10",
     "kysely": "^0.28.15",
     "pg": "8.20.0",
     "pg-types": "^4.1.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@tanstack/react-query": "^5.95.2",
+    "@tanstack/react-query": "^5.96.1",
     "@types/node": "^25.5.0",
     "@types/pg": "^8.20.0",
     "@types/react": "^19.2.14",
-    "@zenstackhq/cli": "^3.5.2",
-    "@zenstackhq/sdk": "^3.5.2",
+    "@zenstackhq/cli": "^3.5.3",
+    "@zenstackhq/sdk": "^3.5.3",
     "react": "^19.2.4",
     "ts-morph": "^27.0.2",
     "ts-pattern": "^5.9.0",
