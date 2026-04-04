@@ -112,13 +112,14 @@ interface WhatsappStatusEntry {
   errors?: Array<{ code: number; title: string }>;
   id: string;
   recipient_id?: string;
-  status: "delivered" | "failed" | "read" | "sent";
+  status: "delivered" | "failed" | "played" | "read" | "sent";
   timestamp: string;
 }
 
 interface WhatsappIncomingMessage {
   from?: string;
   id: string;
+  errors?: Array<{ code?: number; message?: string; title?: string }>;
   text?: {
     body?: string;
   };
@@ -241,6 +242,20 @@ async function processWebhookPayload(payload: WhatsappWebhookPayload) {
 
 async function handleIncomingMessage(message: WhatsappIncomingMessage, waId: null | string) {
   if (!message.from || !message.id) {
+    return;
+  }
+
+  if (message.type === "unsupported") {
+    logEvent("whatsapp.webhook.unsupported_message", {
+      errors: message.errors?.map((error) => ({
+        code: error.code ?? null,
+        message: error.message ?? null,
+        title: error.title ?? null,
+      })),
+      messageId: message.id,
+      phone: message.from,
+      waId,
+    });
     return;
   }
 
@@ -378,6 +393,8 @@ async function updateNotificationStatus(entry: WhatsappStatusEntry, waId: null |
       updateValues = { ...updateValues, deliveredAt: now, status: "DELIVERED" };
     } else if (entry.status === "read") {
       updateValues = { ...updateValues, readAt: now, status: "READ" };
+    } else if (entry.status === "played") {
+      updateValues = { ...updateValues, playedAt: now, status: "PLAYED" };
     } else if (entry.status === "failed") {
       const errorMsg = entry.errors?.map((error) => error.title).join(", ") ?? "Unknown error";
       updateValues = { ...updateValues, errorMessage: errorMsg, status: "FAILED" };

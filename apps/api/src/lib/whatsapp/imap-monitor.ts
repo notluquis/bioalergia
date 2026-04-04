@@ -43,10 +43,14 @@ function getImapConfig(): ImapConfig | null {
 }
 
 function getWhatsappTemplate() {
-  return {
-    languageCode: process.env.WHATSAPP_TEMPLATE_LANGUAGE ?? "en_US",
-    name: process.env.WHATSAPP_TEMPLATE_NAME ?? "hello_world",
-  };
+  const name = process.env.WHATSAPP_TEMPLATE_NAME?.trim();
+  const languageCode = process.env.WHATSAPP_TEMPLATE_LANGUAGE?.trim();
+
+  if (!name || !languageCode) {
+    return null;
+  }
+
+  return { languageCode, name };
 }
 
 function buildDoctoraliaFreeformMessage(booking: NonNullable<ReturnType<typeof parseDoctoraliaEmail>>) {
@@ -192,7 +196,6 @@ export async function runImapPoll(): Promise<PollResult> {
       }
 
       // Send WhatsApp message
-      const template = getWhatsappTemplate();
       const normalizedPhone = normalizePhone(booking.patientPhone);
       const dispatch = await resolveWhatsappDispatchDecision(normalizedPhone);
       const canUseFreeform = dispatch.mode === "text";
@@ -211,28 +214,50 @@ export async function runImapPoll(): Promise<PollResult> {
           );
         }
 
-        const sendResult =
-          canUseFreeform && freeformBody
-            ? await sendTextMessage(booking.patientPhone, freeformBody)
-            : await sendTemplateMessage(
-                booking.patientPhone,
-                template.name,
-                template.languageCode,
-              );
-        waMessageId = sendResult.messageId;
-        recipientWaId = sendResult.contacts[0]?.waId ?? null;
-        messagePacingStatus = sendResult.messageStatus ?? null;
-        sentAt = new Date();
-        result.sent++;
-        logEvent("whatsapp.message.sent", {
-          hasOptIn: dispatch.hasOptIn,
-          mode: canUseFreeform ? "text" : "template",
-          messageId,
-          patientName: booking.patientName,
-          phone: normalizedPhone,
-          recipientWaId,
-          waMessageId,
-        });
+        if (!canUseFreeform) {
+          const template = getWhatsappTemplate();
+          if (!template) {
+            throw new Error(
+              "WhatsApp no enviado: faltan WHATSAPP_TEMPLATE_NAME o WHATSAPP_TEMPLATE_LANGUAGE para el envío por template.",
+            );
+          }
+
+          const sendResult = await sendTemplateMessage(
+            booking.patientPhone,
+            template.name,
+            template.languageCode,
+          );
+          waMessageId = sendResult.messageId;
+          recipientWaId = sendResult.contacts[0]?.waId ?? null;
+          messagePacingStatus = sendResult.messageStatus ?? null;
+          sentAt = new Date();
+          result.sent++;
+          logEvent("whatsapp.message.sent", {
+            hasOptIn: dispatch.hasOptIn,
+            mode: "template",
+            messageId,
+            patientName: booking.patientName,
+            phone: normalizedPhone,
+            recipientWaId,
+            waMessageId,
+          });
+        } else {
+          const sendResult = await sendTextMessage(booking.patientPhone, freeformBody ?? "");
+          waMessageId = sendResult.messageId;
+          recipientWaId = sendResult.contacts[0]?.waId ?? null;
+          messagePacingStatus = sendResult.messageStatus ?? null;
+          sentAt = new Date();
+          result.sent++;
+          logEvent("whatsapp.message.sent", {
+            hasOptIn: dispatch.hasOptIn,
+            mode: "text",
+            messageId,
+            patientName: booking.patientName,
+            phone: normalizedPhone,
+            recipientWaId,
+            waMessageId,
+          });
+        }
       } catch (err) {
         status = "FAILED";
         errorMessage = err instanceof Error ? err.message : String(err);

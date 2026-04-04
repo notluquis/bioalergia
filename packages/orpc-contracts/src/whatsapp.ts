@@ -7,6 +7,7 @@ export const whatsappNotificationStatusSchema = z.enum([
   "FAILED",
   "DELIVERED",
   "READ",
+  "PLAYED",
 ]);
 
 export const whatsappOptInStatusSchema = z.enum(["UNKNOWN", "OPTED_IN", "OPTED_OUT"]);
@@ -24,6 +25,7 @@ export const whatsappNotificationSchema = z.object({
   patientEmail: z.string().nullable().optional(),
   patientName: z.string(),
   patientPhone: z.string(),
+  playedAt: z.coerce.date().nullable().optional(),
   readAt: z.coerce.date().nullable().optional(),
   recipientWaId: z.string().nullable().optional(),
   sentAt: z.coerce.date().nullable().optional(),
@@ -47,6 +49,7 @@ export const whatsappStatsSchema = z.object({
   delivered: z.number(),
   failed: z.number(),
   pending: z.number(),
+  played: z.number(),
   read: z.number(),
   sent: z.number(),
   total: z.number(),
@@ -114,8 +117,8 @@ export const whatsappOverviewSchema = z.object({
   supportsMedia: z.boolean(),
   supportsReactions: z.boolean(),
   supportsTypingIndicator: z.boolean(),
-  templateLanguage: z.string(),
-  templateName: z.string(),
+  templateLanguage: z.string().nullable(),
+  templateName: z.string().nullable(),
   unknownConsentContacts: z.number().int().min(0),
   webhookReady: z.boolean(),
   webhookVerifyTokenConfigured: z.boolean(),

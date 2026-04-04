@@ -5973,6 +5973,12 @@ export class SchemaType implements SchemaDef {
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("read_at") }] }] as readonly AttributeApplication[]
                 },
+                playedAt: {
+                    name: "playedAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("played_at") }] }] as readonly AttributeApplication[]
+                },
                 createdAt: {
                     name: "createdAt",
                     type: "DateTime",
@@ -8465,7 +8471,8 @@ export class SchemaType implements SchemaDef {
                 SENT: "SENT",
                 FAILED: "FAILED",
                 DELIVERED: "DELIVERED",
-                READ: "READ"
+                READ: "READ",
+                PLAYED: "PLAYED"
             }
         },
         WhatsappOptInStatus: {

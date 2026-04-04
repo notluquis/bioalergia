@@ -57,30 +57,6 @@ const MEDIA_KIND_OPTIONS: Array<{ label: string; value: MediaKind }> = [
   { label: "Sticker", value: "sticker" },
 ];
 
-const DEFAULT_BUTTONS = ["confirmar|Confirmar", "reprogramar|Reprogramar"].join("\n");
-
-const DEFAULT_LIST_SECTIONS = JSON.stringify(
-  [
-    {
-      rows: [
-        {
-          description: "Mantener la hora actual",
-          id: "confirmar",
-          title: "Confirmar",
-        },
-        {
-          description: "Buscar un nuevo horario",
-          id: "reprogramar",
-          title: "Reprogramar",
-        },
-      ],
-      title: "Acciones",
-    },
-  ],
-  null,
-  2
-);
-
 function parseReplyButtons(raw: string) {
   const buttons = raw
     .split("\n")
@@ -132,18 +108,18 @@ export function WhatsappSettingsPage() {
   const [opsPhone, setOpsPhone] = useState("");
   const [opsMessageId, setOpsMessageId] = useState("");
   const [opsReplyBody, setOpsReplyBody] = useState("");
-  const [opsReactionEmoji, setOpsReactionEmoji] = useState("👍");
-  const [interactiveKind, setInteractiveKind] = useState<InteractiveKind>("cta_url");
+  const [opsReactionEmoji, setOpsReactionEmoji] = useState("");
+  const [interactiveKind, setInteractiveKind] = useState<"" | InteractiveKind>("");
   const [interactivePhone, setInteractivePhone] = useState("");
   const [interactiveBody, setInteractiveBody] = useState("");
   const [interactiveHeader, setInteractiveHeader] = useState("");
   const [interactiveFooter, setInteractiveFooter] = useState("");
-  const [interactiveCtaText, setInteractiveCtaText] = useState("Abrir enlace");
+  const [interactiveCtaText, setInteractiveCtaText] = useState("");
   const [interactiveCtaUrl, setInteractiveCtaUrl] = useState("");
-  const [interactiveButtons, setInteractiveButtons] = useState(DEFAULT_BUTTONS);
-  const [interactiveButtonText, setInteractiveButtonText] = useState("Seleccionar");
-  const [interactiveSections, setInteractiveSections] = useState(DEFAULT_LIST_SECTIONS);
-  const [mediaKind, setMediaKind] = useState<MediaKind>("image");
+  const [interactiveButtons, setInteractiveButtons] = useState("");
+  const [interactiveButtonText, setInteractiveButtonText] = useState("");
+  const [interactiveSections, setInteractiveSections] = useState("");
+  const [mediaKind, setMediaKind] = useState<"" | MediaKind>("");
   const [mediaPhone, setMediaPhone] = useState("");
   const [mediaLink, setMediaLink] = useState("");
   const [mediaCaption, setMediaCaption] = useState("");
@@ -220,6 +196,7 @@ export function WhatsappSettingsPage() {
       overview.phoneNumberIdConfigured,
       overview.webhookVerifyTokenConfigured,
       overview.appSecretConfigured,
+      Boolean(overview.templateName && overview.templateLanguage),
     ];
     return Math.round((checks.filter(Boolean).length / checks.length) * 100);
   }, [overview]);
@@ -231,8 +208,11 @@ export function WhatsappSettingsPage() {
     if (!overview.phoneNumberIdConfigured) items.push("phone number ID");
     if (!overview.webhookVerifyTokenConfigured) items.push("verify token");
     if (!overview.appSecretConfigured) items.push("app secret");
+    if (!overview.templateName || !overview.templateLanguage) items.push("template fallback");
     return items;
   }, [overview]);
+
+  const templateFallbackReady = Boolean(overview?.templateName && overview?.templateLanguage);
 
   const testModeLabel =
     testMutation.data?.mode === "text"
@@ -309,6 +289,11 @@ export function WhatsappSettingsPage() {
   };
 
   const handleInteractiveSend = () => {
+    if (!interactiveKind) {
+      showError("Selecciona un tipo de mensaje interactivo.");
+      return;
+    }
+
     if (interactiveKind === "cta_url") {
       customMutation.mutate({
         body: interactiveBody,
@@ -354,6 +339,11 @@ export function WhatsappSettingsPage() {
   };
 
   const handleMediaSend = () => {
+    if (!mediaKind) {
+      showError("Selecciona un tipo de media.");
+      return;
+    }
+
     customMutation.mutate({
       caption: mediaCaption || undefined,
       filename: mediaFilename || undefined,
@@ -366,60 +356,7 @@ export function WhatsappSettingsPage() {
 
   return (
     <div className={PAGE_CONTAINER}>
-      <Surface className="rounded-[28px] border border-default-200 bg-gradient-to-br from-background via-default-50 to-primary/5 p-6 shadow-inner">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <Chip color={overview?.outboundReady ? "success" : "warning"} variant="soft">
-                {overview?.outboundReady ? "Canal listo para salida" : "Canal incompleto"}
-              </Chip>
-              <Chip color={overview?.webhookReady ? "success" : "warning"} variant="soft">
-                {overview?.webhookReady ? "Webhook validado" : "Webhook pendiente"}
-              </Chip>
-              <Chip color="accent" variant="soft">
-                Ventanas activas: {overview?.activeCustomerServiceWindows ?? 0}
-              </Chip>
-            </div>
-
-            <div>
-              <h1 className="font-semibold text-2xl">WhatsApp</h1>
-              <Description className="max-w-3xl text-default-600 text-sm">
-                Configuración del canal, webhook, consentimiento, reglas de ventana de 24 horas y
-                operaciones del canal. Todo lo de correo e IMAP quedó separado en Doctoralia.
-              </Description>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <MetricPill
-              subtitle="Graph API"
-              title="Salida"
-              tone={overview?.outboundReady ? "success" : "warning"}
-              value={overview?.outboundReady ? "OK" : "Pend."}
-            />
-            <MetricPill
-              subtitle="firma + verify"
-              title="Webhook"
-              tone={overview?.webhookReady ? "success" : "warning"}
-              value={overview?.webhookReady ? "OK" : "Pend."}
-            />
-            <MetricPill
-              subtitle="últimas 24h"
-              title="Ventanas"
-              tone="accent"
-              value={overview?.activeCustomerServiceWindows ?? 0}
-            />
-            <MetricPill
-              subtitle="template actual"
-              title="Default"
-              tone="primary"
-              value={overview?.templateName ?? "—"}
-            />
-          </div>
-        </div>
-      </Surface>
-
-      <Tabs className="mt-6" defaultSelectedKey="channel">
+      <Tabs defaultSelectedKey="channel">
         <Tabs.ListContainer>
           <Tabs.List aria-label="Secciones de WhatsApp">
             <Tabs.Tab id="channel">
@@ -500,6 +437,12 @@ export function WhatsappSettingsPage() {
                       icon={ShieldCheck}
                       ready={overview.appSecretConfigured}
                       title="Firma de webhook"
+                    />
+                    <ChecklistRow
+                      description="Template configurado para envíos fuera de ventana de 24 horas."
+                      icon={Send}
+                      ready={templateFallbackReady}
+                      title="Template fallback"
                     />
                   </>
                 ) : (
@@ -591,6 +534,19 @@ export function WhatsappSettingsPage() {
 
                 <Surface className="rounded-2xl border border-default-200 px-4 py-3">
                   <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
+                    Observabilidad extra
+                  </Description>
+                  <p className="mt-1 font-medium text-sm">
+                    `played` y `unsupported messages` ya no se pierden
+                  </p>
+                  <Description className="text-default-500 text-xs">
+                    Los voice messages reproducidos quedan registrados y los inbound no soportados
+                    se loguean para diagnóstico.
+                  </Description>
+                </Surface>
+
+                <Surface className="rounded-2xl border border-default-200 px-4 py-3">
+                  <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
                     No procesa todavía
                   </Description>
                   <p className="mt-1 font-medium text-sm">
@@ -670,7 +626,7 @@ export function WhatsappSettingsPage() {
                 </Description>
               </Card.Header>
               <Card.Content className="space-y-3">
-                {!overviewPending && overview && !overview.outboundReady ? (
+                {!overviewPending && overview && missingBlocks.length > 0 ? (
                   <Alert status="warning">
                     El canal no está completo todavía. Falta: {missingBlocks.join(", ")}.
                   </Alert>
@@ -681,7 +637,8 @@ export function WhatsappSettingsPage() {
                     Resuelto
                   </Description>
                   <p className="mt-1 font-medium text-sm">
-                    Opt-in, inbound por llamadas, Graph API v25, parseo enriquecido y expiración
+                    Opt-in, inbound por llamadas, Graph API{" "}
+                    {overview?.graphApiVersion ?? "sin definir"}, parseo enriquecido y expiración
                     canónica de ventana.
                   </p>
                 </Surface>
@@ -743,7 +700,7 @@ export function WhatsappSettingsPage() {
                   onChange={setOpsReactionEmoji}
                   value={opsReactionEmoji}
                 >
-                  <Input placeholder="👍" type="text" />
+                  <Input placeholder="Emoji" type="text" />
                 </TextField>
 
                 <div className="flex flex-wrap gap-2">
@@ -810,7 +767,7 @@ export function WhatsappSettingsPage() {
               </Card.Header>
               <Card.Content className="space-y-4">
                 <Select
-                  onChange={(value) => setInteractiveKind(value as InteractiveKind)}
+                  onChange={(value) => setInteractiveKind(value as "" | InteractiveKind)}
                   value={interactiveKind}
                 >
                   <Label>Tipo interactivo</Label>
@@ -871,7 +828,7 @@ export function WhatsappSettingsPage() {
                       onChange={setInteractiveCtaText}
                       value={interactiveCtaText}
                     >
-                      <Input placeholder="Abrir enlace" type="text" />
+                      <Input placeholder="Texto del botón" type="text" />
                     </TextField>
                     <TextField
                       className="w-full"
@@ -902,13 +859,13 @@ export function WhatsappSettingsPage() {
                       onChange={setInteractiveButtonText}
                       value={interactiveButtonText}
                     >
-                      <Input placeholder="Seleccionar" type="text" />
+                      <Input placeholder="Texto del botón de lista" type="text" />
                     </TextField>
                     <TextField className="w-full">
                       <TextArea
                         className="font-mono text-xs"
                         onChange={(event) => setInteractiveSections(event.target.value)}
-                        placeholder={DEFAULT_LIST_SECTIONS}
+                        placeholder="JSON de sections"
                         rows={8}
                         value={interactiveSections}
                         variant="secondary"
@@ -946,7 +903,10 @@ export function WhatsappSettingsPage() {
               </Card.Header>
               <Card.Content className="space-y-4">
                 <div className="grid gap-4 xl:grid-cols-[220px_1fr_1fr]">
-                  <Select onChange={(value) => setMediaKind(value as MediaKind)} value={mediaKind}>
+                  <Select
+                    onChange={(value) => setMediaKind(value as "" | MediaKind)}
+                    value={mediaKind}
+                  >
                     <Label>Tipo media</Label>
                     <Select.Trigger>
                       <Select.Value />
@@ -1225,6 +1185,13 @@ export function WhatsappSettingsPage() {
                   Si el número ya respondió o llamó por WhatsApp en las últimas 24 horas, el test
                   sale como texto. Si no, usa el template configurado.
                 </Description>
+
+                {!templateFallbackReady ? (
+                  <Alert status="warning">
+                    El fallback por template no está configurado. Define `WHATSAPP_TEMPLATE_NAME` y
+                    `WHATSAPP_TEMPLATE_LANGUAGE` antes de probar envíos fuera de ventana.
+                  </Alert>
+                ) : null}
 
                 {testMutation.data ? (
                   <Alert status={testMutation.data.status === "ok" ? "success" : "danger"}>

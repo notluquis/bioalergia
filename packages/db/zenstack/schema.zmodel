@@ -1567,6 +1567,7 @@ model WhatsappNotification {
   sentAt             DateTime?                    @map("sent_at")
   deliveredAt        DateTime?                    @map("delivered_at")
   readAt             DateTime?                    @map("read_at")
+  playedAt           DateTime?                    @map("played_at")
   createdAt          DateTime                     @default(now()) @map("created_at")
   updatedAt          DateTime                     @default(now()) @updatedAt @map("updated_at")
 
@@ -1616,6 +1617,7 @@ enum WhatsappNotificationStatus {
   FAILED
   DELIVERED
   READ
+  PLAYED
 }
 
 enum WhatsappOptInStatus {

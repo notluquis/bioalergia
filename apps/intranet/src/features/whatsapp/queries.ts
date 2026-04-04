@@ -12,7 +12,7 @@ export const whatsappKeys = {
   notifications: (params: {
     limit?: number;
     offset?: number;
-    status?: "PENDING" | "SENT" | "FAILED" | "DELIVERED" | "READ";
+    status?: "PENDING" | "SENT" | "FAILED" | "DELIVERED" | "READ" | "PLAYED";
   }) =>
     queryOptions({
       queryFn: () => fetchWhatsappNotifications(params),

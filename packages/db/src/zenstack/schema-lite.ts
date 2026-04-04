@@ -4873,6 +4873,11 @@ export class SchemaType implements SchemaDef {
                     type: "DateTime",
                     optional: true
                 },
+                playedAt: {
+                    name: "playedAt",
+                    type: "DateTime",
+                    optional: true
+                },
                 createdAt: {
                     name: "createdAt",
                     type: "DateTime",
@@ -6891,7 +6896,8 @@ export class SchemaType implements SchemaDef {
                 SENT: "SENT",
                 FAILED: "FAILED",
                 DELIVERED: "DELIVERED",
-                READ: "READ"
+                READ: "READ",
+                PLAYED: "PLAYED"
             }
         },
         WhatsappOptInStatus: {

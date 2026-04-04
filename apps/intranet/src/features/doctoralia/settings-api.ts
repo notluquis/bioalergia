@@ -11,7 +11,7 @@ export async function fetchDoctoraliaPipelineOverview() {
 export async function fetchDoctoraliaDispatchNotifications(params: {
   limit?: number;
   offset?: number;
-  status?: "PENDING" | "SENT" | "FAILED" | "DELIVERED" | "READ";
+  status?: "PENDING" | "SENT" | "FAILED" | "DELIVERED" | "READ" | "PLAYED";
 }) {
   try {
     return await whatsappORPCClient.listNotifications(params);

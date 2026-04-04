@@ -11,7 +11,7 @@ export const doctoraliaSettingsKeys = {
   notifications: (params: {
     limit?: number;
     offset?: number;
-    status?: "PENDING" | "SENT" | "FAILED" | "DELIVERED" | "READ";
+    status?: "PENDING" | "SENT" | "FAILED" | "DELIVERED" | "READ" | "PLAYED";
   }) =>
     queryOptions({
       queryFn: () => fetchDoctoraliaDispatchNotifications(params),

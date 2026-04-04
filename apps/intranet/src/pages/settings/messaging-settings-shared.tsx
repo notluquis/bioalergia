@@ -10,9 +10,10 @@ export type WaNotification = {
   patientPhone: string;
   appointmentDate: Date | null | undefined;
   appointmentService: string | null | undefined;
-  status: "PENDING" | "SENT" | "FAILED" | "DELIVERED" | "READ";
+  status: "PENDING" | "SENT" | "FAILED" | "DELIVERED" | "READ" | "PLAYED";
   sentAt: Date | null | undefined;
   deliveredAt: Date | null | undefined;
+  playedAt?: Date | null | undefined;
   readAt: Date | null | undefined;
   errorMessage: string | null | undefined;
   createdAt: Date;
@@ -22,6 +23,7 @@ const STATUS_LABELS: Record<WaNotification["status"], string> = {
   DELIVERED: "Entregado",
   FAILED: "Fallido",
   PENDING: "Pendiente",
+  PLAYED: "Reproducido",
   READ: "Leído",
   SENT: "Enviado",
 };
@@ -31,6 +33,7 @@ const STATUS_COLORS: Record<WaNotification["status"], React.ComponentProps<typeo
     DELIVERED: "accent",
     FAILED: "danger",
     PENDING: "warning",
+    PLAYED: "accent",
     READ: "success",
     SENT: "default",
   };
@@ -160,6 +163,12 @@ export const whatsappNotificationColumns: ColumnDef<WaNotification>[] = [
     cell: ({ row }) =>
       row.original.deliveredAt ? dayjs(row.original.deliveredAt).format("DD/MM HH:mm") : "—",
     header: "Entregado",
+  },
+  {
+    accessorKey: "playedAt",
+    cell: ({ row }) =>
+      row.original.playedAt ? dayjs(row.original.playedAt).format("DD/MM HH:mm") : "—",
+    header: "Reproducido",
   },
   {
     accessorKey: "readAt",

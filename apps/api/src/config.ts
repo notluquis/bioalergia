@@ -145,8 +145,8 @@ export interface WhatsappConfig {
   autoOptInOnInbound: boolean;
   phoneNumberId: string;
   graphApiVersion: string;
-  templateName: string;
-  templateLanguage: string;
+  templateName: string | null;
+  templateLanguage: null | string;
   freeformMessage: string | null;
   requireOptIn: boolean;
   webhookVerifyToken: string | null;
@@ -183,8 +183,8 @@ export const whatsappConfig: WhatsappConfig | null =
         pollCron: process.env.WHATSAPP_POLL_CRON ?? "*/2 * * * *",
         requireOptIn: process.env.WHATSAPP_REQUIRE_OPT_IN !== "false",
         senderFilter: process.env.DOCTORALIA_EMAIL_SENDER_FILTER ?? "doctoralia.com",
-        templateLanguage: process.env.WHATSAPP_TEMPLATE_LANGUAGE ?? "en_US",
-        templateName: process.env.WHATSAPP_TEMPLATE_NAME ?? "hello_world",
+        templateLanguage: process.env.WHATSAPP_TEMPLATE_LANGUAGE ?? null,
+        templateName: process.env.WHATSAPP_TEMPLATE_NAME ?? null,
         webhookVerifyToken: process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN ?? null,
       }
     : null;

@@ -87,6 +87,17 @@ function formatSendResponse(message: string, result: WhatsappSendResult) {
   };
 }
 
+function getConfiguredTemplate() {
+  const templateName = process.env.WHATSAPP_TEMPLATE_NAME?.trim() ?? null;
+  const languageCode = process.env.WHATSAPP_TEMPLATE_LANGUAGE?.trim() ?? null;
+
+  if (!templateName || !languageCode) {
+    return null;
+  }
+
+  return { languageCode, templateName };
+}
+
 async function ensureServiceWindow(phone: string) {
   const dispatch = await resolveWhatsappDispatchDecision(phone);
   if (!dispatch.hasActiveWindow) {
@@ -125,12 +136,12 @@ const whatsappORPCRouterBase = {
         query = query.where(
           "status",
           "=",
-          input.status as "PENDING" | "SENT" | "FAILED" | "DELIVERED" | "READ",
+          input.status as "PENDING" | "SENT" | "FAILED" | "DELIVERED" | "READ" | "PLAYED",
         );
         countQuery = countQuery.where(
           "status",
           "=",
-          input.status as "PENDING" | "SENT" | "FAILED" | "DELIVERED" | "READ",
+          input.status as "PENDING" | "SENT" | "FAILED" | "DELIVERED" | "READ" | "PLAYED",
         );
       }
 
@@ -153,6 +164,7 @@ const whatsappORPCRouterBase = {
           patientEmail: row.patientEmail ?? null,
           patientName: row.patientName,
           patientPhone: row.patientPhone,
+          playedAt: row.playedAt ?? null,
           readAt: row.readAt ?? null,
           recipientWaId: row.recipientWaId ?? null,
           sentAt: row.sentAt ?? null,
@@ -192,6 +204,7 @@ const whatsappORPCRouterBase = {
         delivered: counts.DELIVERED ?? 0,
         failed: counts.FAILED ?? 0,
         pending: counts.PENDING ?? 0,
+        played: counts.PLAYED ?? 0,
         read: counts.READ ?? 0,
         sent: counts.SENT ?? 0,
         total,
@@ -261,8 +274,8 @@ const whatsappORPCRouterBase = {
         supportsMedia: true,
         supportsReactions: true,
         supportsTypingIndicator: true,
-        templateLanguage: process.env.WHATSAPP_TEMPLATE_LANGUAGE ?? "en_US",
-        templateName: process.env.WHATSAPP_TEMPLATE_NAME ?? "hello_world",
+        templateLanguage: process.env.WHATSAPP_TEMPLATE_LANGUAGE?.trim() ?? null,
+        templateName: process.env.WHATSAPP_TEMPLATE_NAME?.trim() ?? null,
         unknownConsentContacts: consentSummary.unknown,
         webhookReady,
         webhookVerifyTokenConfigured,
@@ -326,8 +339,6 @@ const whatsappORPCRouterBase = {
     .input(whatsappTestSendInputSchema)
     .output(whatsappStatusResponseSchema)
     .handler(async ({ input }) => {
-      const templateName = process.env.WHATSAPP_TEMPLATE_NAME ?? "hello_world";
-      const languageCode = process.env.WHATSAPP_TEMPLATE_LANGUAGE ?? "en_US";
       const normalizedPhone = normalizePhone(input.phone);
 
       try {
@@ -347,7 +358,20 @@ const whatsappORPCRouterBase = {
                 normalizedPhone,
                 "Hola, este es un mensaje de prueba de Bioalergia por WhatsApp.",
               )
-            : await sendTemplateMessage(normalizedPhone, templateName, languageCode);
+            : await (() => {
+                const template = getConfiguredTemplate();
+                if (!template) {
+                  throw new Error(
+                    "No hay template configurado. Define WHATSAPP_TEMPLATE_NAME y WHATSAPP_TEMPLATE_LANGUAGE antes de probar el envío por template.",
+                  );
+                }
+
+                return sendTemplateMessage(
+                  normalizedPhone,
+                  template.templateName,
+                  template.languageCode,
+                );
+              })();
 
         return {
           ...formatSendResponse(
