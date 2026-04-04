@@ -1,14 +1,14 @@
-import { Label, ListBox, Select, Skeleton, Surface } from "@heroui/react";
+import { Label, ListBox, Select, Surface } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { startTransition, Suspense, useState } from "react";
+import { startTransition, useState } from "react";
 
 import { useAuth } from "@/context/AuthContext";
 import { employeeKeys } from "@/features/hr/employees/queries";
-import { fetchTimesheetSummary } from "@/features/hr/timesheets/api";
 import { TimesheetEditor } from "@/features/hr/timesheets/components/TimesheetEditor";
 import { TimesheetSummaryTable } from "@/features/hr/timesheets/components/TimesheetSummaryTable";
 import { useMonths } from "@/features/hr/timesheets/hooks/use-months";
+import { timesheetQueries } from "@/features/hr/timesheets/queries";
 import { useWakeLock } from "@/hooks/use-wake-lock";
 import { PAGE_CONTAINER } from "@/lib/styles";
 
@@ -38,8 +38,7 @@ export function TimesheetsPage() {
 
   // 2. Summary (Month-level dataset; employee selection only drives the editor)
   const { data: summaryData } = useSuspenseQuery({
-    queryFn: () => fetchTimesheetSummary(formatMonthString(month)),
-    queryKey: ["timesheet-summary", month],
+    ...timesheetQueries.summary(formatMonthString(month)),
   });
 
   const employeeSummaryRow = (() => {
@@ -154,23 +153,14 @@ export function TimesheetsPage() {
       />
 
       {selectedEmployee && month && (
-        <Suspense
-          fallback={
-            <div className="space-y-3 rounded-2xl border border-default-200 bg-background p-4">
-              <Skeleton className="h-8 w-52 rounded-md" />
-              <Skeleton className="h-72 w-full rounded-xl" />
-            </div>
-          }
-        >
-          <TimesheetEditor
-            activeEmployees={activeEmployees}
-            employeeId={selectedEmployee.id}
-            month={month}
-            monthLabel={monthLabel}
-            selectedEmployee={selectedEmployee}
-            summaryRow={employeeSummaryRow}
-          />
-        </Suspense>
+        <TimesheetEditor
+          activeEmployees={activeEmployees}
+          employeeId={selectedEmployee.id}
+          month={month}
+          monthLabel={monthLabel}
+          selectedEmployee={selectedEmployee}
+          summaryRow={employeeSummaryRow}
+        />
       )}
     </section>
   );

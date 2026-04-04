@@ -1,12 +1,11 @@
 import { Alert, Button } from "@heroui/react";
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useToast } from "@/context/ToastContext";
 import {
   bulkUpsertTimesheets,
   deleteTimesheet,
-  fetchTimesheetDetail,
   prepareTimesheetEmailPayload,
 } from "@/features/hr/timesheets/api";
 import type { PrepareStatus } from "@/features/hr/timesheets/components/EmailPreviewModal";
@@ -22,10 +21,12 @@ import {
   buildBulkRows,
   formatDateLabel,
   hasRowData,
+  isBulkRowsDirty,
   isRowDirty,
   isValidTimeString,
   parseDuration,
 } from "@/features/hr/timesheets/utils";
+import { timesheetKeys, timesheetQueries } from "@/features/hr/timesheets/queries";
 import type { Employee } from "../../employees/types";
 
 const MONTH_STRING_REGEX = /^\d{4}-\d{2}$/;
@@ -57,20 +58,33 @@ export function TimesheetEditor({
   summaryRow,
 }: TimesheetEditorProps) {
   // --- Query ---
-  const { data: detailData } = useSuspenseQuery({
-    queryFn: () => fetchTimesheetDetail(employeeId, formatMonthString(month)),
-    queryKey: ["timesheet-detail", employeeId, month],
+  const normalizedMonth = formatMonthString(month);
+  const { data: detailData } = useQuery({
+    ...timesheetQueries.detail(employeeId, normalizedMonth),
+    placeholderData: keepPreviousData,
   });
 
-  const initialRows = buildBulkRows(formatMonthString(month), detailData.entries);
+  const initialRows = useMemo(
+    () => buildBulkRows(normalizedMonth, detailData?.entries ?? []),
+    [detailData?.entries, normalizedMonth]
+  );
+
+  if (!detailData) {
+    return (
+      <div className="space-y-3 rounded-2xl border border-default-200 bg-background p-4">
+        <div className="h-8 w-52 animate-pulse rounded-md bg-default-200" />
+        <div className="h-72 w-full animate-pulse rounded-xl bg-default-200" />
+      </div>
+    );
+  }
 
   return (
     <TimesheetEditorInner
-      key={`${employeeId}-${month}`}
+      key={`${employeeId}-${normalizedMonth}`}
       activeEmployees={activeEmployees}
       employeeId={employeeId}
       initialRows={initialRows}
-      month={month}
+      month={normalizedMonth}
       monthLabel={monthLabel}
       selectedEmployee={selectedEmployee}
       summaryRow={summaryRow}
@@ -89,13 +103,14 @@ function TimesheetEditorInner({
 }: TimesheetEditorProps & { initialRows: BulkRow[] }) {
   const queryClient = useQueryClient();
   const { success: toastSuccess } = useToast();
-  const detailQueryKey = ["timesheet-detail", employeeId, month];
-  const summaryQueryKey = ["timesheet-summary", month];
+  const detailQueryKey = timesheetKeys.detail(employeeId, month);
+  const summaryQueryKey = timesheetKeys.summary(month);
 
   const [bulkRows, setBulkRows] = useState<BulkRow[]>(() => initialRows);
   const [errorLocal, setErrorLocal] = useState<null | string>(null);
   const bulkRowsRef = useRef(bulkRows);
   const initialRowsRef = useRef(initialRows);
+  const shouldHydrateFromServerRef = useRef(false);
 
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [emailPrepareStatus, setEmailPrepareStatus] = useState<PrepareStatus>(null);
@@ -104,9 +119,23 @@ function TimesheetEditorInner({
     bulkRowsRef.current = bulkRows;
   }, [bulkRows]);
 
+  const initialRowsSignature = useMemo(() => serializeBulkRows(initialRows), [initialRows]);
+
   useEffect(() => {
+    const previousInitialRows = initialRowsRef.current;
+    const shouldHydrate =
+      shouldHydrateFromServerRef.current ||
+      !isBulkRowsDirty(bulkRowsRef.current, previousInitialRows);
+
     initialRowsRef.current = initialRows;
-  }, [initialRows]);
+
+    if (!shouldHydrate) {
+      return;
+    }
+
+    shouldHydrateFromServerRef.current = false;
+    setBulkRows(initialRows);
+  }, [initialRows, initialRowsSignature]);
 
   // --- Mutations ---
 
@@ -123,8 +152,9 @@ function TimesheetEditorInner({
       setErrorLocal(message);
     },
     onSuccess: () => {
-      void queryClient.refetchQueries({ queryKey: detailQueryKey });
-      void queryClient.refetchQueries({ queryKey: summaryQueryKey });
+      shouldHydrateFromServerRef.current = true;
+      void queryClient.invalidateQueries({ queryKey: detailQueryKey });
+      void queryClient.invalidateQueries({ queryKey: summaryQueryKey });
     },
   });
 
@@ -136,8 +166,9 @@ function TimesheetEditorInner({
       setErrorLocal(err instanceof Error ? err.message : "Error al eliminar");
     },
     onSuccess: () => {
-      void queryClient.refetchQueries({ queryKey: detailQueryKey });
-      void queryClient.refetchQueries({ queryKey: summaryQueryKey });
+      shouldHydrateFromServerRef.current = true;
+      void queryClient.invalidateQueries({ queryKey: detailQueryKey });
+      void queryClient.invalidateQueries({ queryKey: summaryQueryKey });
       toastSuccess("Registro eliminado");
     },
   });
@@ -385,6 +416,19 @@ function TimesheetEditorEmailModal({
       prepareStatus={emailPrepareStatus}
       summary={summaryRow ?? null}
     />
+  );
+}
+
+function serializeBulkRows(rows: BulkRow[]) {
+  return JSON.stringify(
+    rows.map((row) => ({
+      comment: row.comment,
+      date: dayjs(row.date).format("YYYY-MM-DD"),
+      entrada: row.entrada,
+      entryId: row.entryId,
+      overtime: row.overtime,
+      salida: row.salida,
+    }))
   );
 }
 

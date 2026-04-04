@@ -27,7 +27,7 @@ export function buildBulkRows(month: string, entries: TimesheetEntry[]): BulkRow
 
 export function hasRowData(row: BulkRow): boolean {
   return Boolean(
-    row.entrada.trim() || row.salida.trim() || row.overtime.trim() || row.comment.trim(),
+    row.entrada.trim() || row.salida.trim() || row.overtime.trim() || row.comment.trim()
   );
 }
 
@@ -127,6 +127,21 @@ export function isRowDirty(row: BulkRow, initial?: BulkRow): boolean {
     return hasRowData(row);
   }
   return editableFields.some((field) => row[field] !== initial[field]);
+}
+
+export function isBulkRowsDirty(rows: BulkRow[], initialRows: BulkRow[]): boolean {
+  const total = Math.max(rows.length, initialRows.length);
+  for (let index = 0; index < total; index += 1) {
+    const row = rows[index];
+    const initial = initialRows[index];
+    if (!row || !initial) {
+      return true;
+    }
+    if (row.entryId !== initial.entryId || isRowDirty(row, initial)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 export function minutesToDuration(totalMinutes: number): string {
