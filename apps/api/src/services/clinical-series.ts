@@ -3,6 +3,7 @@ import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone.js";
 import utc from "dayjs/plugin/utc.js";
 import { sql } from "kysely";
+import jaroWinkler from "talisman/metrics/jaro-winkler";
 import { joinClinicalText, normalizeClinicalText } from "../lib/clinical-text";
 import { parseCalendarMetadata } from "../lib/parsers";
 import { normalizeRut, validateRut } from "../lib/rut";
@@ -1840,6 +1841,54 @@ export function selectRepresentativeClinicalIdentity(
   };
 }
 
+/**
+ * If the DTE clientName (from SII, typically full legal name) is a more complete
+ * version of the current patientName, return the DTE name as the upgrade.
+ *
+ * Matches when:
+ * - All significant tokens of the current name fuzzy-match a token in the DTE name
+ *   (Jaro-Winkler >= 0.90 to tolerate minor spelling differences like "krausse"/"krause")
+ * - The DTE name has at least 2 significant tokens
+ * - The DTE name has strictly more tokens than the current name
+ */
+function upgradePatientNameFromDte(
+  currentName: null | string,
+  dteRecords: Array<{ clientName: string }>,
+): null | string {
+  if (!currentName) return dteRecords[0]?.clientName ?? null;
+
+  const currentTokens = getSignificantNameTokens(currentName);
+  if (currentTokens.length === 0) return null;
+
+  let best: null | string = null;
+  let bestTokenCount = currentTokens.length;
+
+  for (const dte of dteRecords) {
+    if (!dte.clientName) continue;
+    const dteTokens = getSignificantNameTokens(dte.clientName);
+
+    // Must be a plausible person name: at least 2 significant tokens
+    if (dteTokens.length < 2) continue;
+
+    // The DTE name must have strictly more information
+    if (dteTokens.length <= currentTokens.length) continue;
+
+    // Every current token must fuzzy-match at least one DTE token (JW >= 0.90)
+    const allMatch = currentTokens.every((ct) =>
+      dteTokens.some((dt) => jaroWinkler(ct, dt) >= 0.9),
+    );
+    if (!allMatch) continue;
+
+    // Prefer the DTE name with the most tokens (most complete)
+    if (dteTokens.length > bestTokenCount) {
+      best = dte.clientName;
+      bestTokenCount = dteTokens.length;
+    }
+  }
+
+  return best;
+}
+
 async function refreshClinicalSeriesMetadata(seriesId: number) {
   const series = await db.clinicalSeries.findUnique({
     where: { id: seriesId },
@@ -1873,6 +1922,23 @@ async function refreshClinicalSeriesMetadata(seriesId: number) {
       patientName: series.patientName,
       patientRut: series.patientRut,
     });
+
+  // Upgrade patientName from DTE when the DTE clientRUT matches patientRut and
+  // the clientName is a more complete version of the current name (e.g. calendar
+  // has "villegas krausse" but the DTE has "JULIO RODRIGO VILLEGAS KRAUSE").
+  if (patientRut) {
+    const dteByPatientRut = await db.$queryRaw<Array<{ clientName: string; clientRUT: string }>>`
+      SELECT DISTINCT s.client_name AS "clientName", s.client_rut AS "clientRUT"
+      FROM dte_sale_details s
+      WHERE s.client_rut = ${patientRut}
+      LIMIT 5
+    `;
+
+    if (dteByPatientRut.length > 0) {
+      const upgraded = upgradePatientNameFromDte(patientName, dteByPatientRut);
+      if (upgraded) patientName = upgraded;
+    }
+  }
 
   if (!beneficiaryRut || !beneficiaryName) {
     const linkedDocuments = await db.$queryRaw<Array<{ clientName: string; clientRUT: string }>>`
