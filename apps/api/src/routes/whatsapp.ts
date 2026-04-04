@@ -37,24 +37,61 @@ whatsappWebhookRoutes.post("/", async (c) => {
 
   if (appSecret && signature) {
     const rawBody = await c.req.text();
+    let payload: WhatsappWebhookPayload | null = null;
+
+    try {
+      payload = JSON.parse(rawBody) as WhatsappWebhookPayload;
+    } catch (err) {
+      logError("whatsapp.webhook.parse_error", err, { hasSignature: true });
+    }
+
+    logEvent("whatsapp.webhook.post_received", {
+      ...summarizePayload(payload),
+      hasAppSecret: true,
+      hasSignature: true,
+    });
+
     const expectedSig =
       "sha256=" + createHmac("sha256", appSecret).update(rawBody).digest("hex");
     if (signature !== expectedSig) {
+      logEvent("whatsapp.webhook.post_rejected", {
+        ...summarizePayload(payload),
+        hasSignature: true,
+        reason: "invalid_signature",
+      });
       return c.json({ status: "error", message: "Invalid signature" }, 403);
     }
-    // Re-parse body since we consumed the stream
-    try {
-      const payload = JSON.parse(rawBody) as WhatsappWebhookPayload;
+
+    if (payload) {
       await processWebhookPayload(payload);
-    } catch (err) {
-      logError("whatsapp.webhook.parse_error", err, {});
     }
+
+    logEvent("whatsapp.webhook.post_accepted", {
+      ...summarizePayload(payload),
+      hasSignature: true,
+      statusCode: 200,
+    });
   } else {
+    let payload: WhatsappWebhookPayload | null = null;
+
     try {
-      const payload = (await c.req.json()) as WhatsappWebhookPayload;
+      payload = (await c.req.json()) as WhatsappWebhookPayload;
+      logEvent("whatsapp.webhook.post_received", {
+        ...summarizePayload(payload),
+        hasAppSecret: Boolean(appSecret),
+        hasSignature: false,
+      });
       await processWebhookPayload(payload);
+      logEvent("whatsapp.webhook.post_accepted", {
+        ...summarizePayload(payload),
+        hasSignature: false,
+        statusCode: 200,
+      });
     } catch (err) {
-      logError("whatsapp.webhook.process_error", err, {});
+      logError("whatsapp.webhook.process_error", err, {
+        hasAppSecret: Boolean(appSecret),
+        hasSignature: false,
+      });
     }
   }
 
@@ -73,11 +110,36 @@ interface WhatsappWebhookPayload {
   object?: string;
   entry?: Array<{
     changes?: Array<{
+      field?: string;
       value?: {
         statuses?: WhatsappStatusEntry[];
+        messages?: Array<{ type?: string }>;
       };
     }>;
   }>;
+}
+
+function summarizePayload(payload: null | WhatsappWebhookPayload) {
+  const changes = payload?.entry?.flatMap((entry) => entry.changes ?? []) ?? [];
+  const fields = changes
+    .map((change) => change.field)
+    .filter((field): field is string => Boolean(field));
+  const statusCount = changes.reduce(
+    (count, change) => count + (change.value?.statuses?.length ?? 0),
+    0,
+  );
+  const messageCount = changes.reduce(
+    (count, change) => count + (change.value?.messages?.length ?? 0),
+    0,
+  );
+
+  return {
+    fieldCount: fields.length,
+    fields,
+    messageCount,
+    object: payload?.object ?? null,
+    statusCount,
+  };
 }
 
 async function processWebhookPayload(payload: WhatsappWebhookPayload) {
