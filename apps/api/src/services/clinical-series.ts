@@ -398,6 +398,11 @@ function normalizePhoneSearch(value: null | string | undefined): null | string {
   return digits.length > 0 ? digits : null;
 }
 
+function compactRut(value: null | string | undefined): null | string {
+  if (!value) return null;
+  return value.replace(/[^0-9K]/gi, "").toUpperCase() || null;
+}
+
 function normalizeName(value: string): string {
   return value
     .normalize("NFKD")
@@ -2339,12 +2344,16 @@ export async function getClinicalSeriesSnapshotByExternalEvent(params: {
   const identityRuts = [series.patientRut, series.beneficiaryRut].filter(
     (value): value is string => Boolean(value),
   );
+  const compactIdentityRuts = identityRuts
+    .map((value) => compactRut(value))
+    .filter((value): value is string => Boolean(value));
   const identityRows =
-    identityRuts.length > 0
+    compactIdentityRuts.length > 0
       ? await db.$queryRaw<Array<{ phone: null | string; rut: string }>>`
           SELECT p.rut, p.phone
           FROM people p
-          WHERE p.rut IN (${sql.join(identityRuts.map((value) => sql`${value}`), sql`, `)})
+          WHERE regexp_replace(upper(coalesce(p.rut, '')), '[^0-9K]', '', 'g')
+            IN (${sql.join(compactIdentityRuts.map((value) => sql`${value}`), sql`, `)})
         `
       : [];
   const phoneByRut = new Map(
@@ -2502,6 +2511,8 @@ export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilter
         .map((token) => token.trim())
         .filter((token) => token.length >= 2)
     : [];
+  const patientRutJoin = sql`regexp_replace(upper(coalesce(pp.rut, '')), '[^0-9K]', '', 'g') = regexp_replace(upper(coalesce(cs.patient_rut, '')), '[^0-9K]', '', 'g')`;
+  const beneficiaryRutJoin = sql`regexp_replace(upper(coalesce(pb.rut, '')), '[^0-9K]', '', 'g') = regexp_replace(upper(coalesce(cs.beneficiary_rut, '')), '[^0-9K]', '', 'g')`;
 
   const textHaystack = sql`lower(concat_ws(' ', coalesce(cs.patient_name, ''), coalesce(cs.beneficiary_name, ''), coalesce(cs.display_name, ''), coalesce(cs.patient_rut, ''), coalesce(cs.beneficiary_rut, ''), coalesce(pp.phone, ''), coalesce(pb.phone, '')))`;
   const queryFilterSql =
@@ -2542,8 +2553,8 @@ export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilter
         SELECT COUNT(*)::int AS count
         FROM clinical_series cs
         LEFT JOIN event_stats es ON es.series_id = cs.id
-        LEFT JOIN people pp ON pp.rut = cs.patient_rut
-        LEFT JOIN people pb ON pb.rut = cs.beneficiary_rut
+        LEFT JOIN people pp ON ${patientRutJoin}
+        LEFT JOIN people pb ON ${beneficiaryRutJoin}
         WHERE (${normalizedBeneficiaryRut}::text IS NULL OR cs.beneficiary_rut = ${normalizedBeneficiaryRut})
           AND (${filters?.kind ?? null}::text IS NULL OR cs.kind::text = ${filters?.kind ?? null})
           AND (${filters?.status ?? null}::text IS NULL OR cs.status::text = ${filters?.status ?? null})
@@ -2619,8 +2630,8 @@ export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilter
     FROM clinical_series cs
     LEFT JOIN event_stats es ON es.series_id = cs.id
     LEFT JOIN linked_totals lt ON lt.series_id = cs.id
-    LEFT JOIN people pp ON pp.rut = cs.patient_rut
-    LEFT JOIN people pb ON pb.rut = cs.beneficiary_rut
+    LEFT JOIN people pp ON ${patientRutJoin}
+    LEFT JOIN people pb ON ${beneficiaryRutJoin}
     WHERE (${normalizedBeneficiaryRut}::text IS NULL OR cs.beneficiary_rut = ${normalizedBeneficiaryRut})
       AND (${filters?.kind ?? null}::text IS NULL OR cs.kind::text = ${filters?.kind ?? null})
       AND (${filters?.status ?? null}::text IS NULL OR cs.status::text = ${filters?.status ?? null})

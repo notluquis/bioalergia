@@ -11,7 +11,6 @@ import {
   Chip,
   DateField,
   DateRangePicker,
-  Dropdown,
   Drawer,
   Input,
   Label,
@@ -122,47 +121,27 @@ const INSURANCE_COLORS: Record<HealthInsuranceType, "success" | "warning" | "def
   PARTICULAR: "default",
 };
 
-type ContactKind = "RUT" | "TEL";
-type ContactRole = "BENEFICIARIO" | "PACIENTE" | "UNCLASSIFIED";
+function toChileWhatsAppNumber(value: string): null | string {
+  const digits = value.replace(/\D+/g, "");
+  if (!digits) return null;
 
-type ContactEntry = {
-  kind: ContactKind;
-  role: ContactRole;
-  value: string;
-};
+  if (digits.startsWith("00")) {
+    return toChileWhatsAppNumber(digits.slice(2));
+  }
 
-const CONTACT_ROLE_LABELS: Record<ContactRole, string> = {
-  BENEFICIARIO: "Beneficiario",
-  PACIENTE: "Paciente",
-  UNCLASSIFIED: "Sin clasificar",
-};
+  if (digits.startsWith("56") && digits.length >= 11) {
+    return digits;
+  }
 
-function buildContactEntries(snapshot: ClinicalSeriesSnapshot): ContactEntry[] {
-  const buckets = new Map<string, { kind: ContactKind; roles: Set<ContactRole>; value: string }>();
+  if (digits.length === 9 && digits.startsWith("9")) {
+    return `56${digits}`;
+  }
 
-  const pushEntry = (kind: ContactKind, role: ContactRole, value: null | string | undefined) => {
-    if (!value) return;
-    const trimmedValue = value.trim();
-    if (!trimmedValue) return;
-    const key = `${kind}:${trimmedValue}`;
-    const bucket = buckets.get(key);
-    if (bucket) {
-      bucket.roles.add(role);
-      return;
-    }
-    buckets.set(key, { kind, roles: new Set([role]), value: trimmedValue });
-  };
+  if (digits.length === 8) {
+    return `569${digits}`;
+  }
 
-  pushEntry("RUT", "PACIENTE", snapshot.patientRut);
-  pushEntry("RUT", "BENEFICIARIO", snapshot.beneficiaryRut);
-  pushEntry("TEL", "PACIENTE", snapshot.patientPhone);
-  pushEntry("TEL", "BENEFICIARIO", snapshot.beneficiaryPhone);
-
-  return Array.from(buckets.values()).map(({ kind, roles, value }) => {
-    const role =
-      roles.size === 1 ? (Array.from(roles)[0] ?? "UNCLASSIFIED") : ("UNCLASSIFIED" as ContactRole);
-    return { kind, role, value };
-  });
+  return null;
 }
 
 const STATUS_LABELS: Record<ClinicalSeriesStatus, string> = {
@@ -787,61 +766,63 @@ export function ClinicalSeriesView() {
                               <span className="text-foreground-400 italic">Sin nombre</span>
                             )}
                           </span>
-                          {(() => {
-                            const contacts = buildContactEntries(s);
-                            const primaryRut =
-                              contacts.find((contact) => contact.kind === "RUT")?.value ?? "—";
-
-                            return (
-                              <>
-                                <span className="text-xs text-foreground-400 font-mono">
-                                  {primaryRut}
+                          <span className="text-xs text-foreground-400 font-mono">
+                            {s.patientRut ?? "—"}
+                          </span>
+                          {s.beneficiaryRut ||
+                          s.patientPhone ||
+                          (s.beneficiaryPhone && s.beneficiaryPhone !== s.patientPhone) ? (
+                            <div className="flex flex-col gap-1">
+                              {s.beneficiaryRut && s.beneficiaryRut !== s.patientRut && (
+                                <span className="text-[11px] text-foreground-300 font-mono">
+                                  Beneficiario: {s.beneficiaryRut}
                                 </span>
-                                {contacts.length > 0 && (
-                                  <Dropdown>
-                                    <Dropdown.Trigger>
-                                      <Button
-                                        className="h-7 w-fit px-2 text-xs"
-                                        size="sm"
-                                        variant="outline"
-                                        onPress={(event) => {
-                                          event.continuePropagation();
-                                        }}
-                                      >
-                                        Identificadores ({contacts.length})
-                                      </Button>
-                                    </Dropdown.Trigger>
-                                    <Dropdown.Popover className="min-w-72" placement="bottom start">
-                                      <Dropdown.Menu aria-label="RUT y teléfonos registrados">
-                                        {contacts.map((contact) => (
-                                          <Dropdown.Item
-                                            id={`${s.id}-${contact.kind}-${contact.value}`}
-                                            isDisabled
-                                            key={`${s.id}-${contact.kind}-${contact.value}`}
-                                            textValue={`${contact.kind} ${contact.value}`}
-                                          >
-                                            <div className="flex flex-col gap-1 py-1">
-                                              <div className="flex items-center gap-2">
-                                                <Chip size="sm" variant="soft">
-                                                  {contact.kind === "RUT" ? "RUT" : "Teléfono"}
-                                                </Chip>
-                                                <Chip size="sm" color="default" variant="tertiary">
-                                                  {CONTACT_ROLE_LABELS[contact.role]}
-                                                </Chip>
-                                              </div>
-                                              <span className="font-mono text-xs text-foreground">
-                                                {contact.value}
-                                              </span>
-                                            </div>
-                                          </Dropdown.Item>
-                                        ))}
-                                      </Dropdown.Menu>
-                                    </Dropdown.Popover>
-                                  </Dropdown>
-                                )}
-                              </>
-                            );
-                          })()}
+                              )}
+                              {s.patientPhone &&
+                                (() => {
+                                  const whatsappNumber = toChileWhatsAppNumber(s.patientPhone);
+                                  return whatsappNumber ? (
+                                    <a
+                                      className="w-fit font-mono text-[11px] text-success-400 underline-offset-4 hover:underline"
+                                      href={`https://wa.me/${whatsappNumber}`}
+                                      onClick={(event) => {
+                                        event.stopPropagation();
+                                      }}
+                                      rel="noreferrer"
+                                      target="_blank"
+                                    >
+                                      Paciente: {s.patientPhone}
+                                    </a>
+                                  ) : (
+                                    <span className="text-[11px] text-foreground-300 font-mono">
+                                      Paciente: {s.patientPhone}
+                                    </span>
+                                  );
+                                })()}
+                              {s.beneficiaryPhone &&
+                                s.beneficiaryPhone !== s.patientPhone &&
+                                (() => {
+                                  const whatsappNumber = toChileWhatsAppNumber(s.beneficiaryPhone);
+                                  return whatsappNumber ? (
+                                    <a
+                                      className="w-fit font-mono text-[11px] text-accent underline-offset-4 hover:underline"
+                                      href={`https://wa.me/${whatsappNumber}`}
+                                      onClick={(event) => {
+                                        event.stopPropagation();
+                                      }}
+                                      rel="noreferrer"
+                                      target="_blank"
+                                    >
+                                      Beneficiario: {s.beneficiaryPhone}
+                                    </a>
+                                  ) : (
+                                    <span className="text-[11px] text-foreground-300 font-mono">
+                                      Beneficiario: {s.beneficiaryPhone}
+                                    </span>
+                                  );
+                                })()}
+                            </div>
+                          ) : null}
                         </div>
                       </Table.Cell>
                       <Table.Cell>
