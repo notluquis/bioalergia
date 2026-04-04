@@ -357,23 +357,8 @@ export async function upsertTimesheetEntry(
   payload: UpsertTimesheetPayload,
 ): Promise<TimesheetEntry> {
   const normalized = normalizeUpsertPayload(payload);
-
-  try {
-    const result = await runTimesheetUpsertQuery(payload, normalized);
-    return mapUpsertResult(result);
-  } catch (error: unknown) {
-    const errorDetails = extractErrorDetails(error);
-    console.error("[timesheets] upsert error details:", {
-      ...errorDetails,
-      payload: {
-        ...payload,
-        startTimeStr: normalized.startTimeStr,
-        endTimeStr: normalized.endTimeStr,
-        workDateType: typeof normalized.workDateObj,
-      },
-    });
-    throw error;
-  }
+  const result = await runTimesheetUpsertQuery(payload, normalized);
+  return mapUpsertResult(result);
 }
 
 type NormalizedUpsertPayload = {
@@ -390,13 +375,6 @@ function normalizeUpsertPayload(payload: UpsertTimesheetPayload): NormalizedUpse
   const endTimeStr = payload.end_time ? normalizeTimeString(payload.end_time) : null;
   const workedMinutes = calculateWorkedMinutes(payload);
   const workDateDb = dayjs(workDateObj).format("YYYY-MM-DD");
-
-  console.log("[timesheets] upsert input:", {
-    payload_start: payload.start_time,
-    payload_end: payload.end_time,
-    normalized_start: startTimeStr,
-    normalized_end: endTimeStr,
-  });
 
   return { endTimeStr, startTimeStr, workDateDb, workDateObj, workedMinutes };
 }
@@ -443,14 +421,6 @@ async function runTimesheetUpsertQuery(
 function mapUpsertResult(
   result: Awaited<ReturnType<typeof runTimesheetUpsertQuery>>,
 ): TimesheetEntry {
-  console.log("[timesheets] upsert result from DB:", {
-    id: result.id,
-    start_time: result.startTime,
-    end_time: result.endTime,
-    start_type: typeof result.startTime,
-    end_type: typeof result.endTime,
-  });
-
   return {
     id: Number(result.id),
     employee_id: result.employeeId,
@@ -460,24 +430,6 @@ function mapUpsertResult(
     worked_minutes: result.workedMinutes,
     overtime_minutes: result.overtimeMinutes,
     comment: result.comment || "",
-  };
-}
-
-function extractErrorDetails(error: unknown) {
-  const errorMessage = error instanceof Error ? error.message : String(error);
-  const errorCode =
-    error instanceof Object && "code" in error
-      ? (error as Record<string, unknown>).code
-      : undefined;
-  const errorMeta =
-    error instanceof Object && "meta" in error
-      ? (error as Record<string, unknown>).meta
-      : undefined;
-
-  return {
-    code: errorCode,
-    message: errorMessage,
-    meta: errorMeta,
   };
 }
 
@@ -491,17 +443,12 @@ export async function updateTimesheetEntry(
     return getTimesheetEntryById(id);
   }
 
-  try {
-    const entry = await db.employeeTimesheet.update({
-      where: { id: BigInt(id) },
-      data: updateData,
-    });
+  const entry = await db.employeeTimesheet.update({
+    where: { id: BigInt(id) },
+    data: updateData,
+  });
 
-    return mapTimesheetEntry(entry);
-  } catch (error: unknown) {
-    logTimesheetUpdateError(id, updateData, error);
-    throw error;
-  }
+  return mapTimesheetEntry(entry);
 }
 
 async function buildTimesheetUpdateData(
@@ -538,19 +485,6 @@ async function buildTimesheetUpdateData(
   const isEmpty = Object.keys(updateData).length === 0;
 
   return { isEmpty, updateData };
-}
-
-function logTimesheetUpdateError(
-  id: number,
-  updateData: EmployeeTimesheetUpdateInput,
-  error: unknown,
-) {
-  const errorDetails = extractErrorDetails(error);
-  console.error("[timesheets] update error details:", {
-    id,
-    ...errorDetails,
-    updateData,
-  });
 }
 
 export async function deleteTimesheetEntry(id: number): Promise<void> {
