@@ -883,12 +883,14 @@ export function ClinicalSeriesView() {
                       <Table.Cell>
                         <div className="flex flex-col gap-1">
                           <span className="text-sm font-medium text-foreground group-hover:text-accent transition-colors">
-                            {s.patientName || (
+                            {s.patientName ?? s.displayName ?? (
                               <span className="text-foreground-400 italic">Sin nombre</span>
                             )}
                           </span>
-                          {s.displayName && s.displayName !== s.patientName && (
-                            <span className="text-xs text-foreground-400">{s.displayName}</span>
+                          {s.beneficiaryName && s.beneficiaryName !== s.patientName && (
+                            <span className="text-xs text-foreground-400">
+                              Beneficiario: {s.beneficiaryName}
+                            </span>
                           )}
                         </div>
                       </Table.Cell>
