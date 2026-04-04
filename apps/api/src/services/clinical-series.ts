@@ -1940,6 +1940,27 @@ async function refreshClinicalSeriesMetadata(seriesId: number) {
     }
   }
 
+  // When there is no patientRut but the beneficiaryRut matches a DTE, upgrade
+  // the beneficiary name and promote beneficiary → patient (since the beneficiary
+  // is effectively the patient in this case).
+  if (!patientRut && beneficiaryRut) {
+    const dteByBeneficiaryRut = await db.$queryRaw<Array<{ clientName: string; clientRUT: string }>>`
+      SELECT DISTINCT s.client_name AS "clientName", s.client_rut AS "clientRUT"
+      FROM dte_sale_details s
+      WHERE s.client_rut = ${beneficiaryRut}
+      LIMIT 5
+    `;
+
+    if (dteByBeneficiaryRut.length > 0) {
+      const upgradedBenef = upgradePatientNameFromDte(beneficiaryName, dteByBeneficiaryRut);
+      if (upgradedBenef) beneficiaryName = upgradedBenef;
+
+      // Promote to patient since there is no patient identity yet
+      patientRut = beneficiaryRut;
+      patientName = beneficiaryName ?? dteByBeneficiaryRut[0]?.clientName ?? null;
+    }
+  }
+
   if (!beneficiaryRut || !beneficiaryName) {
     const linkedDocuments = await db.$queryRaw<Array<{ clientName: string; clientRUT: string }>>`
       SELECT DISTINCT
@@ -2506,6 +2527,7 @@ export async function getClinicalSeriesSnapshotByExternalEvent(params: {
     beneficiaryName: item.beneficiaryName ?? null,
     beneficiaryRut: item.beneficiaryRut ?? null,
     calendarGoogleId: item.calendar.googleId,
+    description: item.description ?? null,
     dosageUnit: item.dosageUnit ?? null,
     dosageValue: item.dosageValue ?? null,
     eventDate: dayjs(item.startDate ?? item.startDateTime ?? item.endDate ?? item.endDateTime)
