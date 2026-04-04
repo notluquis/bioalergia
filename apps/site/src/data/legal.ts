@@ -32,7 +32,7 @@ export interface LegalDocument {
 
 export const legalOwner = {
   address: contactInfo.address,
-  companyName: "Bioalergia SpA",
+  companyName: "DR. JOSÉ MANUÉL MARTÍNEZ Y COMPAÑIA LIMITADA",
   country: "Chile",
   email: contactInfo.email,
   privacyEmail: contactInfo.email,

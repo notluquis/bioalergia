@@ -1,5 +1,5 @@
 export const APP_CONFIG = {
-  companyLegalName: "Bioalergia SpA",
+  companyLegalName: "DR. JOSÉ MANUÉL MARTÍNEZ Y COMPAÑÍA LIMITADA",
   // Default System Settings
   defaults: {
     calendarDailyMaxDays: "31",
@@ -24,7 +24,7 @@ export const APP_CONFIG = {
     primaryCurrency: "CLP",
     secondaryColor: "oklch(var(--s))",
     supportEmail: "contacto@bioalergia.cl",
-    tagline: "Suite de administración",
+    tagline: "Intranet",
   },
   name: "Bioalergia",
 
