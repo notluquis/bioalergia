@@ -35,8 +35,8 @@
     "@emnapi/runtime": "^1.9.2",
     "@types/node": "^25.5.2",
     "@typescript/native-preview": "7.0.0-dev.20260404.1",
-    "@zenstackhq/cli": "^3.5.4",
-    "@zenstackhq/sdk": "^3.5.4",
+    "@zenstackhq/cli": "^3.5.5",
+    "@zenstackhq/sdk": "^3.5.5",
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
     "oxfmt": "^0.43.0",
@@ -53,10 +53,9 @@
   "pnpm": {
     "onlyBuiltDependencies": [
       "argon2",
-      "core-js",
+      "baileys",
       "esbuild",
-      "msw",
-      "protobufjs"
+      "msw"
     ]
   }
 }
