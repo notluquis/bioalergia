@@ -17,7 +17,7 @@ import makeWASocket, {
 } from "baileys";
 import qrcode from "qrcode";
 import { logError, logEvent, logWarn } from "../logger";
-import { usePostgresAuthState } from "./baileys-auth-state";
+import { clearAuthState, usePostgresAuthState } from "./baileys-auth-state";
 import {
   recordInboundWhatsappCall,
   recordInboundWhatsappMessage,
@@ -33,10 +33,12 @@ let connectionState: "close" | "connecting" | "open" = "close";
 let currentQrDataUrl: string | null = null;
 let lastDisconnectReason: number | null = null;
 let reconnectAttempts = 0;
+let authClearAttempts = 0;
 let saveCreds: (() => Promise<void>) | null = null;
 
 const MAX_BACKOFF_MS = 60_000;
 const BASE_BACKOFF_MS = 2_000;
+const MAX_AUTH_CLEAR_ATTEMPTS = 3;
 
 // ---------------------------------------------------------------------------
 // Public API — lifecycle
@@ -96,9 +98,11 @@ export async function disconnectBaileys(): Promise<void> {
   if (sock) {
     sock.end(undefined);
     sock = null;
-    connectionState = "close";
-    currentQrDataUrl = null;
   }
+  connectionState = "close";
+  currentQrDataUrl = null;
+  reconnectAttempts = 0;
+  authClearAttempts = 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -216,6 +220,7 @@ function registerEventHandlers(socket: WASocket, saveCredsFn: () => Promise<void
       currentQrDataUrl = null;
       lastDisconnectReason = null;
       reconnectAttempts = 0;
+      authClearAttempts = 0;
       logEvent("baileys.connected", {});
     }
 
@@ -229,11 +234,32 @@ function registerEventHandlers(socket: WASocket, saveCredsFn: () => Promise<void
 
       logWarn("baileys.disconnected", { reason: statusCode });
 
-      if (statusCode === DisconnectReason.loggedOut) {
-        logWarn("baileys.logged_out", {
-          message: "Session logged out. Delete auth dir and re-scan QR.",
+      // Auth/session failure → clear DB creds and reconnect for fresh QR
+      const isAuthFailure =
+        statusCode === DisconnectReason.loggedOut ||
+        statusCode === 405 ||
+        statusCode === DisconnectReason.multideviceMismatch;
+
+      if (isAuthFailure) {
+        authClearAttempts++;
+        if (authClearAttempts > MAX_AUTH_CLEAR_ATTEMPTS) {
+          logWarn("baileys.auth_failure_max_retries", {
+            message: "Too many auth failures. Giving up — toggle connection off/on to retry.",
+          });
+          sock = null;
+          return;
+        }
+        logWarn("baileys.auth_failure", {
+          attempt: authClearAttempts,
+          message: "Session invalid. Clearing auth state for fresh QR scan.",
+          reason: statusCode,
         });
         sock = null;
+        await clearAuthState();
+        // Reconnect immediately to generate a new QR
+        initBaileysSocket().catch((err) =>
+          logError("baileys.reconnect_error", err, {}),
+        );
         return;
       }
 

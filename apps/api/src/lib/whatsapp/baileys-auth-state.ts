@@ -147,6 +147,15 @@ async function writeKeys(data: SignalDataSet): Promise<void> {
  * Creates a DB-backed auth state for Baileys.
  * Drop-in replacement for `useMultiFileAuthState`.
  */
+/**
+ * Clear all Baileys auth state from the DB.
+ * Forces a fresh QR scan on next connection.
+ */
+export async function clearAuthState(): Promise<void> {
+  await db.deleteFrom("baileys_auth_keys").execute();
+  await db.deleteFrom("baileys_auth_creds").execute();
+}
+
 export async function usePostgresAuthState(): Promise<{
   saveCreds: () => Promise<void>;
   state: AuthenticationState;

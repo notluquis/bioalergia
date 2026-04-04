@@ -32,7 +32,7 @@ export function WhatsappSettingsPage() {
   const [contactSearch, setContactSearch] = useState("");
   const [testPhone, setTestPhone] = useState("");
 
-  const { data: overview, isPending: overviewPending } = useQuery({
+  const { data: overview } = useQuery({
     ...whatsappKeys.overview(),
     refetchInterval: 30_000,
   });
