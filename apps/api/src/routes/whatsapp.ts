@@ -1,20 +1,21 @@
 /**
  * WhatsApp webhook routes.
  * GET  /api/webhooks/whatsapp  → Meta webhook challenge verification
- * POST /api/webhooks/whatsapp  → Incoming messages and outbound status updates
+ * POST /api/webhooks/whatsapp  → Incoming messages, calls, preferences, and outbound status updates
  */
 import { db } from "@finanzas/db";
 import { createHmac } from "node:crypto";
 import { Hono } from "hono";
 import { logError, logEvent } from "../lib/logger";
 import {
+  recordInboundWhatsappCall,
   recordInboundWhatsappMessage,
-  touchWhatsappConversation,
+  recordWhatsappUserPreference,
+  syncWhatsappConversationStatus,
 } from "../lib/whatsapp/conversation-state";
 
 export const whatsappWebhookRoutes = new Hono();
 
-/** Meta webhook challenge verification (GET) */
 whatsappWebhookRoutes.get("/", (c) => {
   const mode = c.req.query("hub.mode");
   const token = c.req.query("hub.verify_token");
@@ -33,15 +34,13 @@ whatsappWebhookRoutes.get("/", (c) => {
   return c.text("Forbidden", 403);
 });
 
-/** Incoming WhatsApp webhook events (POST) */
 whatsappWebhookRoutes.post("/", async (c) => {
-  // Verify signature
   const signature = c.req.header("x-hub-signature-256");
   const appSecret = process.env.WHATSAPP_APP_SECRET;
 
   if (appSecret && signature) {
     const rawBody = await c.req.text();
-    let payload: WhatsappWebhookPayload | null = null;
+    let payload: null | WhatsappWebhookPayload = null;
 
     try {
       payload = JSON.parse(rawBody) as WhatsappWebhookPayload;
@@ -76,7 +75,7 @@ whatsappWebhookRoutes.post("/", async (c) => {
       statusCode: 200,
     });
   } else {
-    let payload: WhatsappWebhookPayload | null = null;
+    let payload: null | WhatsappWebhookPayload = null;
 
     try {
       payload = (await c.req.json()) as WhatsappWebhookPayload;
@@ -99,21 +98,22 @@ whatsappWebhookRoutes.post("/", async (c) => {
     }
   }
 
-  // Always return 200 to Meta to prevent retries
   return c.json({ status: "ok" });
 });
 
+interface WhatsappConversationMeta {
+  expiration_timestamp?: string;
+  id?: string;
+  origin?: { type?: string };
+}
+
 interface WhatsappStatusEntry {
-  conversation?: {
-    expiration_timestamp?: string;
-    id?: string;
-    origin?: { type?: string };
-  };
+  conversation?: WhatsappConversationMeta;
+  errors?: Array<{ code: number; title: string }>;
   id: string;
   recipient_id?: string;
-  status: "sent" | "delivered" | "read" | "failed";
+  status: "delivered" | "failed" | "read" | "sent";
   timestamp: string;
-  errors?: Array<{ code: number; title: string }>;
 }
 
 interface WhatsappIncomingMessage {
@@ -126,20 +126,38 @@ interface WhatsappIncomingMessage {
   type?: string;
 }
 
+interface WhatsappCallEntry {
+  event?: string;
+  from?: string;
+  id?: string;
+  timestamp?: number | string;
+  to?: string;
+}
+
+interface WhatsappUserPreferenceEntry {
+  category?: string;
+  timestamp?: number | string;
+  value?: string;
+  wa_id?: string;
+}
+
 interface WhatsappWebhookPayload {
-  object?: string;
   entry?: Array<{
     changes?: Array<{
       field?: string;
       value?: {
+        calls?: WhatsappCallEntry[];
         contacts?: Array<{
+          profile?: { name?: string };
           wa_id?: string;
         }>;
-        statuses?: WhatsappStatusEntry[];
         messages?: WhatsappIncomingMessage[];
+        statuses?: WhatsappStatusEntry[];
+        user_preferences?: WhatsappUserPreferenceEntry[];
       };
     }>;
   }>;
+  object?: string;
 }
 
 function summarizePayload(payload: null | WhatsappWebhookPayload) {
@@ -155,12 +173,22 @@ function summarizePayload(payload: null | WhatsappWebhookPayload) {
     (count, change) => count + (change.value?.messages?.length ?? 0),
     0,
   );
+  const callCount = changes.reduce(
+    (count, change) => count + (change.value?.calls?.length ?? 0),
+    0,
+  );
+  const preferenceCount = changes.reduce(
+    (count, change) => count + (change.value?.user_preferences?.length ?? 0),
+    0,
+  );
 
   return {
+    callCount,
     fieldCount: fields.length,
     fields,
     messageCount,
     object: payload?.object ?? null,
+    preferenceCount,
     statusCount,
   };
 }
@@ -170,8 +198,12 @@ async function processWebhookPayload(payload: WhatsappWebhookPayload) {
     return;
   }
 
-  const statuses: WhatsappStatusEntry[] = [];
+  const statuses: Array<{ status: WhatsappStatusEntry; waId: null | string }> = [];
   const incomingMessages: Array<{ message: WhatsappIncomingMessage; waId: null | string }> = [];
+  const incomingCalls: Array<{ call: WhatsappCallEntry; waId: null | string }> = [];
+  const userPreferences: Array<{ preference: WhatsappUserPreferenceEntry; waId: null | string }> =
+    [];
+
   for (const entry of payload.entry ?? []) {
     for (const change of entry.changes ?? []) {
       const waId = change.value?.contacts?.[0]?.wa_id ?? null;
@@ -179,7 +211,13 @@ async function processWebhookPayload(payload: WhatsappWebhookPayload) {
         incomingMessages.push({ message, waId });
       }
       for (const status of change.value?.statuses ?? []) {
-        statuses.push(status);
+        statuses.push({ status, waId });
+      }
+      for (const call of change.value?.calls ?? []) {
+        incomingCalls.push({ call, waId });
+      }
+      for (const preference of change.value?.user_preferences ?? []) {
+        userPreferences.push({ preference, waId });
       }
     }
   }
@@ -188,8 +226,16 @@ async function processWebhookPayload(payload: WhatsappWebhookPayload) {
     await handleIncomingMessage(message, waId);
   }
 
-  for (const status of statuses) {
-    await updateNotificationStatus(status);
+  for (const { call, waId } of incomingCalls) {
+    await handleIncomingCall(call, waId);
+  }
+
+  for (const { preference, waId } of userPreferences) {
+    await handleUserPreference(preference, waId);
+  }
+
+  for (const { status, waId } of statuses) {
+    await updateNotificationStatus(status, waId);
   }
 }
 
@@ -207,11 +253,15 @@ async function handleIncomingMessage(message: WhatsappIncomingMessage, waId: nul
       waId,
     });
 
+    if (!state) {
+      return;
+    }
+
     logEvent("whatsapp.webhook.inbound_recorded", {
       messageId: message.id,
       phone: state.phone,
       type: message.type ?? "unknown",
-      windowExpiresAt: state.windowExpiresAt.toISOString(),
+      windowExpiresAt: state.windowExpiresAt?.toISOString() ?? null,
     });
   } catch (err) {
     logError("whatsapp.webhook.inbound_record_error", err, {
@@ -222,14 +272,91 @@ async function handleIncomingMessage(message: WhatsappIncomingMessage, waId: nul
   }
 }
 
-async function updateNotificationStatus(entry: WhatsappStatusEntry) {
+async function handleIncomingCall(call: WhatsappCallEntry, waId: null | string) {
+  if (!call.from) {
+    return;
+  }
+
+  try {
+    const state = await recordInboundWhatsappCall({
+      callId: call.id ?? null,
+      from: call.from,
+      timestamp: call.timestamp != null ? String(call.timestamp) : null,
+      waId,
+    });
+
+    if (!state) {
+      return;
+    }
+
+    logEvent("whatsapp.webhook.call_recorded", {
+      callId: call.id ?? null,
+      event: call.event ?? "unknown",
+      phone: state.phone,
+      windowExpiresAt: state.windowExpiresAt?.toISOString() ?? null,
+    });
+  } catch (err) {
+    logError("whatsapp.webhook.call_record_error", err, {
+      callId: call.id ?? null,
+      phone: call.from,
+    });
+  }
+}
+
+async function handleUserPreference(
+  preference: WhatsappUserPreferenceEntry,
+  waId: null | string,
+) {
+  const phone = preference.wa_id ?? waId;
+  if (!phone || !preference.value) {
+    return;
+  }
+
+  const normalized = preference.value.toLowerCase();
+  const nextPreference =
+    normalized === "stop" || normalized === "opt_out"
+      ? "OPTED_OUT"
+      : normalized === "resume" || normalized === "start" || normalized === "opt_in"
+        ? "OPTED_IN"
+        : null;
+
+  if (!nextPreference) {
+    return;
+  }
+
+  try {
+    const state = await recordWhatsappUserPreference({
+      phone,
+      preference: nextPreference,
+      source: preference.category ?? "user_preference",
+      timestamp: preference.timestamp != null ? String(preference.timestamp) : null,
+      waId,
+    });
+
+    logEvent("whatsapp.webhook.preference_recorded", {
+      optInStatus: state?.optInStatus ?? null,
+      phone: state?.phone ?? phone,
+      value: preference.value,
+    });
+  } catch (err) {
+    logError("whatsapp.webhook.preference_record_error", err, {
+      phone,
+      value: preference.value,
+    });
+  }
+}
+
+async function updateNotificationStatus(entry: WhatsappStatusEntry, waId: null | string) {
   const now = new Date();
 
   try {
     if (entry.recipient_id) {
-      await touchWhatsappConversation({
+      await syncWhatsappConversationStatus({
         conversationId: entry.conversation?.id ?? null,
+        expirationTimestamp: entry.conversation?.expiration_timestamp ?? null,
+        originType: entry.conversation?.origin?.type ?? null,
         phone: entry.recipient_id,
+        waId,
       });
     }
 
@@ -245,12 +372,14 @@ async function updateNotificationStatus(entry: WhatsappStatusEntry) {
 
     let updateValues: Record<string, unknown> = { updatedAt: now };
 
-    if (entry.status === "delivered") {
+    if (entry.status === "sent") {
+      updateValues = { ...updateValues, status: "SENT" };
+    } else if (entry.status === "delivered") {
       updateValues = { ...updateValues, deliveredAt: now, status: "DELIVERED" };
     } else if (entry.status === "read") {
       updateValues = { ...updateValues, readAt: now, status: "READ" };
     } else if (entry.status === "failed") {
-      const errorMsg = entry.errors?.map((e) => e.title).join(", ") ?? "Unknown error";
+      const errorMsg = entry.errors?.map((error) => error.title).join(", ") ?? "Unknown error";
       updateValues = { ...updateValues, errorMessage: errorMsg, status: "FAILED" };
     }
 

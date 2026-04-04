@@ -1560,6 +1560,8 @@ model WhatsappNotification {
   appointmentDoctor  String?                      @map("appointment_doctor")
   emailMessageId     String                       @unique @map("email_message_id")
   waMessageId        String?                      @map("wa_message_id")
+  recipientWaId      String?                      @map("recipient_wa_id")
+  messagePacingStatus String?                     @map("message_pacing_status")
   status             WhatsappNotificationStatus   @default(PENDING)
   errorMessage       String?                      @map("error_message")
   sentAt             DateTime?                    @map("sent_at")
@@ -1583,7 +1585,15 @@ model WhatsappConversationState {
   lastInboundMessageId String?   @map("last_inbound_message_id")
   lastInboundAt        DateTime? @map("last_inbound_at")
   lastInboundText      String?   @map("last_inbound_text")
+  lastInboundCallId    String?   @map("last_inbound_call_id")
+  lastInboundCallAt    DateTime? @map("last_inbound_call_at")
+  optInStatus          WhatsappOptInStatus @default(UNKNOWN) @map("opt_in_status")
+  optedInAt            DateTime? @map("opted_in_at")
+  optedOutAt           DateTime? @map("opted_out_at")
+  optInSource          String?   @map("opt_in_source")
   conversationId       String?   @map("conversation_id")
+  conversationOriginType String? @map("conversation_origin_type")
+  conversationExpiresAt DateTime? @map("conversation_expires_at")
   windowExpiresAt      DateTime? @map("window_expires_at")
   createdAt            DateTime  @default(now()) @map("created_at")
   updatedAt            DateTime  @default(now()) @updatedAt @map("updated_at")
@@ -1606,6 +1616,12 @@ enum WhatsappNotificationStatus {
   FAILED
   DELIVERED
   READ
+}
+
+enum WhatsappOptInStatus {
+  UNKNOWN
+  OPTED_IN
+  OPTED_OUT
 }
 
 enum PersonType {

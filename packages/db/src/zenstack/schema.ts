@@ -5931,6 +5931,18 @@ export class SchemaType implements SchemaDef {
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("wa_message_id") }] }] as readonly AttributeApplication[]
                 },
+                recipientWaId: {
+                    name: "recipientWaId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("recipient_wa_id") }] }] as readonly AttributeApplication[]
+                },
+                messagePacingStatus: {
+                    name: "messagePacingStatus",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("message_pacing_status") }] }] as readonly AttributeApplication[]
+                },
                 status: {
                     name: "status",
                     type: "WhatsappNotificationStatus",
@@ -6022,11 +6034,59 @@ export class SchemaType implements SchemaDef {
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("last_inbound_text") }] }] as readonly AttributeApplication[]
                 },
+                lastInboundCallId: {
+                    name: "lastInboundCallId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("last_inbound_call_id") }] }] as readonly AttributeApplication[]
+                },
+                lastInboundCallAt: {
+                    name: "lastInboundCallAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("last_inbound_call_at") }] }] as readonly AttributeApplication[]
+                },
+                optInStatus: {
+                    name: "optInStatus",
+                    type: "WhatsappOptInStatus",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("UNKNOWN") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("opt_in_status") }] }] as readonly AttributeApplication[],
+                    default: "UNKNOWN" as FieldDefault
+                },
+                optedInAt: {
+                    name: "optedInAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("opted_in_at") }] }] as readonly AttributeApplication[]
+                },
+                optedOutAt: {
+                    name: "optedOutAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("opted_out_at") }] }] as readonly AttributeApplication[]
+                },
+                optInSource: {
+                    name: "optInSource",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("opt_in_source") }] }] as readonly AttributeApplication[]
+                },
                 conversationId: {
                     name: "conversationId",
                     type: "String",
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("conversation_id") }] }] as readonly AttributeApplication[]
+                },
+                conversationOriginType: {
+                    name: "conversationOriginType",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("conversation_origin_type") }] }] as readonly AttributeApplication[]
+                },
+                conversationExpiresAt: {
+                    name: "conversationExpiresAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("conversation_expires_at") }] }] as readonly AttributeApplication[]
                 },
                 windowExpiresAt: {
                     name: "windowExpiresAt",
@@ -8406,6 +8466,14 @@ export class SchemaType implements SchemaDef {
                 FAILED: "FAILED",
                 DELIVERED: "DELIVERED",
                 READ: "READ"
+            }
+        },
+        WhatsappOptInStatus: {
+            name: "WhatsappOptInStatus",
+            values: {
+                UNKNOWN: "UNKNOWN",
+                OPTED_IN: "OPTED_IN",
+                OPTED_OUT: "OPTED_OUT"
             }
         },
         PersonType: {

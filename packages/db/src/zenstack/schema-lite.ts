@@ -4838,6 +4838,16 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true
                 },
+                recipientWaId: {
+                    name: "recipientWaId",
+                    type: "String",
+                    optional: true
+                },
+                messagePacingStatus: {
+                    name: "messagePacingStatus",
+                    type: "String",
+                    optional: true
+                },
                 status: {
                     name: "status",
                     type: "WhatsappNotificationStatus",
@@ -4909,9 +4919,49 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true
                 },
+                lastInboundCallId: {
+                    name: "lastInboundCallId",
+                    type: "String",
+                    optional: true
+                },
+                lastInboundCallAt: {
+                    name: "lastInboundCallAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                optInStatus: {
+                    name: "optInStatus",
+                    type: "WhatsappOptInStatus",
+                    default: "UNKNOWN" as FieldDefault
+                },
+                optedInAt: {
+                    name: "optedInAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                optedOutAt: {
+                    name: "optedOutAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                optInSource: {
+                    name: "optInSource",
+                    type: "String",
+                    optional: true
+                },
                 conversationId: {
                     name: "conversationId",
                     type: "String",
+                    optional: true
+                },
+                conversationOriginType: {
+                    name: "conversationOriginType",
+                    type: "String",
+                    optional: true
+                },
+                conversationExpiresAt: {
+                    name: "conversationExpiresAt",
+                    type: "DateTime",
                     optional: true
                 },
                 windowExpiresAt: {
@@ -6842,6 +6892,14 @@ export class SchemaType implements SchemaDef {
                 FAILED: "FAILED",
                 DELIVERED: "DELIVERED",
                 READ: "READ"
+            }
+        },
+        WhatsappOptInStatus: {
+            name: "WhatsappOptInStatus",
+            values: {
+                UNKNOWN: "UNKNOWN",
+                OPTED_IN: "OPTED_IN",
+                OPTED_OUT: "OPTED_OUT"
             }
         },
         PersonType: {

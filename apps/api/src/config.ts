@@ -142,10 +142,13 @@ if (googleCalendarEnvMissing.length > 0) {
 // WhatsApp Config
 export interface WhatsappConfig {
   accessToken: string;
+  autoOptInOnInbound: boolean;
   phoneNumberId: string;
+  graphApiVersion: string;
   templateName: string;
   templateLanguage: string;
   freeformMessage: string | null;
+  requireOptIn: boolean;
   webhookVerifyToken: string | null;
   appSecret: string | null;
   pollCron: string;
@@ -168,7 +171,9 @@ export const whatsappConfig: WhatsappConfig | null =
     ? {
         accessToken: waAccessToken,
         appSecret: process.env.WHATSAPP_APP_SECRET ?? null,
+        autoOptInOnInbound: process.env.WHATSAPP_AUTO_OPT_IN_ON_INBOUND !== "false",
         freeformMessage: process.env.WHATSAPP_FREEFORM_MESSAGE ?? null,
+        graphApiVersion: process.env.WHATSAPP_GRAPH_API_VERSION ?? "v25.0",
         imapHost: process.env.DOCTORALIA_IMAP_HOST ?? null,
         imapMailbox: process.env.DOCTORALIA_IMAP_MAILBOX ?? "INBOX",
         imapPass: process.env.DOCTORALIA_IMAP_PASS ?? null,
@@ -176,6 +181,7 @@ export const whatsappConfig: WhatsappConfig | null =
         imapUser: process.env.DOCTORALIA_IMAP_USER ?? null,
         phoneNumberId: waPhoneNumberId,
         pollCron: process.env.WHATSAPP_POLL_CRON ?? "*/2 * * * *",
+        requireOptIn: process.env.WHATSAPP_REQUIRE_OPT_IN !== "false",
         senderFilter: process.env.DOCTORALIA_EMAIL_SENDER_FILTER ?? "doctoralia.com",
         templateLanguage: process.env.WHATSAPP_TEMPLATE_LANGUAGE ?? "en_US",
         templateName: process.env.WHATSAPP_TEMPLATE_NAME ?? "hello_world",

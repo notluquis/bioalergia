@@ -56,13 +56,18 @@ export * from "./timesheets";
 export * from "./transactions-insights";
 export * from "./users";
 export {
+  listWhatsappContactStatesResponseSchema,
   whatsappContract,
+  whatsappContactStateSchema,
   whatsappNotificationSchema,
   whatsappNotificationStatusSchema,
+  whatsappOptInStatusSchema,
   whatsappOverviewSchema,
   whatsappSendModeSchema,
+  whatsappSetContactConsentInputSchema,
   whatsappStatsSchema,
   listWhatsappNotificationsResponseSchema,
+  whatsappCustomMessageInputSchema,
   whatsappStatusResponseSchema,
   type WhatsappContract,
 } from "./whatsapp";

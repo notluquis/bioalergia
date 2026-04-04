@@ -34,6 +34,7 @@ import { Route as AuthedSettingsRolesRouteImport } from "./routes/_authed/settin
 import { Route as AuthedSettingsMercadopagoRouteImport } from "./routes/_authed/settings/mercadopago";
 import { Route as AuthedSettingsInventarioRouteImport } from "./routes/_authed/settings/inventario";
 import { Route as AuthedSettingsHaulmerRouteImport } from "./routes/_authed/settings/haulmer";
+import { Route as AuthedSettingsDoctoraliaRouteImport } from "./routes/_authed/settings/doctoralia";
 import { Route as AuthedSettingsCsvUploadRouteImport } from "./routes/_authed/settings/csv-upload";
 import { Route as AuthedSettingsBackupsRouteImport } from "./routes/_authed/settings/backups";
 import { Route as AuthedServicesAgendaRouteImport } from "./routes/_authed/services/agenda";
@@ -196,6 +197,11 @@ const AuthedSettingsInventarioRoute = AuthedSettingsInventarioRouteImport.update
 const AuthedSettingsHaulmerRoute = AuthedSettingsHaulmerRouteImport.update({
   id: "/haulmer",
   path: "/haulmer",
+  getParentRoute: () => AuthedSettingsRoute,
+} as any);
+const AuthedSettingsDoctoraliaRoute = AuthedSettingsDoctoraliaRouteImport.update({
+  id: "/doctoralia",
+  path: "/doctoralia",
   getParentRoute: () => AuthedSettingsRoute,
 } as any);
 const AuthedSettingsCsvUploadRoute = AuthedSettingsCsvUploadRouteImport.update({
@@ -441,6 +447,7 @@ export interface FileRoutesByFullPath {
   "/services/agenda": typeof AuthedServicesAgendaRoute;
   "/settings/backups": typeof AuthedSettingsBackupsRoute;
   "/settings/csv-upload": typeof AuthedSettingsCsvUploadRoute;
+  "/settings/doctoralia": typeof AuthedSettingsDoctoraliaRoute;
   "/settings/haulmer": typeof AuthedSettingsHaulmerRoute;
   "/settings/inventario": typeof AuthedSettingsInventarioRoute;
   "/settings/mercadopago": typeof AuthedSettingsMercadopagoRoute;
@@ -502,6 +509,7 @@ export interface FileRoutesByTo {
   "/services/agenda": typeof AuthedServicesAgendaRoute;
   "/settings/backups": typeof AuthedSettingsBackupsRoute;
   "/settings/csv-upload": typeof AuthedSettingsCsvUploadRoute;
+  "/settings/doctoralia": typeof AuthedSettingsDoctoraliaRoute;
   "/settings/haulmer": typeof AuthedSettingsHaulmerRoute;
   "/settings/inventario": typeof AuthedSettingsInventarioRoute;
   "/settings/mercadopago": typeof AuthedSettingsMercadopagoRoute;
@@ -569,6 +577,7 @@ export interface FileRoutesById {
   "/_authed/services/agenda": typeof AuthedServicesAgendaRoute;
   "/_authed/settings/backups": typeof AuthedSettingsBackupsRoute;
   "/_authed/settings/csv-upload": typeof AuthedSettingsCsvUploadRoute;
+  "/_authed/settings/doctoralia": typeof AuthedSettingsDoctoraliaRoute;
   "/_authed/settings/haulmer": typeof AuthedSettingsHaulmerRoute;
   "/_authed/settings/inventario": typeof AuthedSettingsInventarioRoute;
   "/_authed/settings/mercadopago": typeof AuthedSettingsMercadopagoRoute;
@@ -636,6 +645,7 @@ export interface FileRouteTypes {
     | "/services/agenda"
     | "/settings/backups"
     | "/settings/csv-upload"
+    | "/settings/doctoralia"
     | "/settings/haulmer"
     | "/settings/inventario"
     | "/settings/mercadopago"
@@ -697,6 +707,7 @@ export interface FileRouteTypes {
     | "/services/agenda"
     | "/settings/backups"
     | "/settings/csv-upload"
+    | "/settings/doctoralia"
     | "/settings/haulmer"
     | "/settings/inventario"
     | "/settings/mercadopago"
@@ -763,6 +774,7 @@ export interface FileRouteTypes {
     | "/_authed/services/agenda"
     | "/_authed/settings/backups"
     | "/_authed/settings/csv-upload"
+    | "/_authed/settings/doctoralia"
     | "/_authed/settings/haulmer"
     | "/_authed/settings/inventario"
     | "/_authed/settings/mercadopago"
@@ -965,6 +977,13 @@ declare module "@tanstack/react-router" {
       path: "/haulmer";
       fullPath: "/settings/haulmer";
       preLoaderRoute: typeof AuthedSettingsHaulmerRouteImport;
+      parentRoute: typeof AuthedSettingsRoute;
+    };
+    "/_authed/settings/doctoralia": {
+      id: "/_authed/settings/doctoralia";
+      path: "/doctoralia";
+      fullPath: "/settings/doctoralia";
+      preLoaderRoute: typeof AuthedSettingsDoctoraliaRouteImport;
       parentRoute: typeof AuthedSettingsRoute;
     };
     "/_authed/settings/csv-upload": {
@@ -1387,6 +1406,7 @@ const AuthedServicesRouteWithChildren = AuthedServicesRoute._addFileChildren(
 interface AuthedSettingsRouteChildren {
   AuthedSettingsBackupsRoute: typeof AuthedSettingsBackupsRoute;
   AuthedSettingsCsvUploadRoute: typeof AuthedSettingsCsvUploadRoute;
+  AuthedSettingsDoctoraliaRoute: typeof AuthedSettingsDoctoraliaRoute;
   AuthedSettingsHaulmerRoute: typeof AuthedSettingsHaulmerRoute;
   AuthedSettingsInventarioRoute: typeof AuthedSettingsInventarioRoute;
   AuthedSettingsMercadopagoRoute: typeof AuthedSettingsMercadopagoRoute;
@@ -1400,6 +1420,7 @@ interface AuthedSettingsRouteChildren {
 const AuthedSettingsRouteChildren: AuthedSettingsRouteChildren = {
   AuthedSettingsBackupsRoute: AuthedSettingsBackupsRoute,
   AuthedSettingsCsvUploadRoute: AuthedSettingsCsvUploadRoute,
+  AuthedSettingsDoctoraliaRoute: AuthedSettingsDoctoraliaRoute,
   AuthedSettingsHaulmerRoute: AuthedSettingsHaulmerRoute,
   AuthedSettingsInventarioRoute: AuthedSettingsInventarioRoute,
   AuthedSettingsMercadopagoRoute: AuthedSettingsMercadopagoRoute,

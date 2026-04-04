@@ -1,9 +1,14 @@
 import { db } from "@finanzas/db";
 import {
+  listWhatsappContactStatesInputSchema,
+  listWhatsappContactStatesResponseSchema,
   listWhatsappNotificationsInputSchema as contractListInput,
   listWhatsappNotificationsResponseSchema as contractListResponse,
+  whatsappContactStateSchema,
+  whatsappCustomMessageInputSchema,
   whatsappNotificationStatusSchema,
   whatsappOverviewSchema,
+  whatsappSetContactConsentInputSchema,
   whatsappStatsSchema,
   whatsappStatusResponseSchema,
   whatsappTestSendInputSchema,
@@ -17,9 +22,25 @@ import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
 import {
   countActiveCustomerServiceWindows,
-  hasActiveCustomerServiceWindow,
+  getWhatsappConsentSummary,
+  listWhatsappConversationStates,
+  resolveWhatsappDispatchDecision,
+  setWhatsappContactConsent,
 } from "../lib/whatsapp/conversation-state";
-import { normalizePhone, sendTemplateMessage, sendTextMessage } from "../lib/whatsapp/whatsapp-client";
+import {
+  markMessageAsRead,
+  normalizePhone,
+  sendContextualTextReply,
+  sendInteractiveCtaUrlMessage,
+  sendInteractiveListMessage,
+  sendInteractiveReplyButtonsMessage,
+  sendMediaMessage,
+  sendReactionMessage,
+  sendTemplateMessage,
+  sendTextMessage,
+  sendTypingIndicator,
+  type WhatsappSendResult,
+} from "../lib/whatsapp/whatsapp-client";
 import { runWhatsappPoll } from "../lib/whatsapp/whatsapp-scheduler";
 import { configureSuperjson } from "../lib/superjson-config";
 import { SuperJSONRPCHandler } from "./superjson";
@@ -55,6 +76,27 @@ const integrationCreate = authed.use(async ({ context, next }) => {
   }
   return next();
 });
+
+function formatSendResponse(message: string, result: WhatsappSendResult) {
+  return {
+    contacts: result.contacts,
+    message,
+    messageId: result.messageId,
+    messageStatus: result.messageStatus,
+    status: "ok" as const,
+  };
+}
+
+async function ensureServiceWindow(phone: string) {
+  const dispatch = await resolveWhatsappDispatchDecision(phone);
+  if (!dispatch.hasActiveWindow) {
+    throw new Error(
+      "La ventana de atención de 24 horas no está activa para ese número. Necesitas un inbound reciente o una llamada entrante.",
+    );
+  }
+
+  return dispatch;
+}
 
 const whatsappORPCRouterBase = {
   listNotifications: integrationRead
@@ -97,8 +139,6 @@ const whatsappORPCRouterBase = {
         countQuery.executeTakeFirst(),
       ]);
 
-      const total = parseInt(countRow?.count ?? "0", 10);
-
       return {
         notifications: rows.map((row) => ({
           appointmentDate: row.appointmentDate ?? null,
@@ -109,16 +149,18 @@ const whatsappORPCRouterBase = {
           emailMessageId: row.emailMessageId,
           errorMessage: row.errorMessage ?? null,
           id: row.id,
+          messagePacingStatus: row.messagePacingStatus ?? null,
           patientEmail: row.patientEmail ?? null,
           patientName: row.patientName,
           patientPhone: row.patientPhone,
           readAt: row.readAt ?? null,
+          recipientWaId: row.recipientWaId ?? null,
           sentAt: row.sentAt ?? null,
           status: whatsappNotificationStatusSchema.parse(row.status),
           updatedAt: row.updatedAt,
           waMessageId: row.waMessageId ?? null,
         })),
-        total,
+        total: parseInt(countRow?.count ?? "0", 10),
       };
     }),
 
@@ -139,11 +181,11 @@ const whatsappORPCRouterBase = {
 
       const counts: Record<string, number> = {};
       let total = 0;
+
       for (const row of rows) {
-        const n = parseInt(row.count, 10);
-        const statusKey = String(row.status);
-        counts[statusKey] = n;
-        total += n;
+        const count = parseInt(row.count, 10);
+        counts[String(row.status)] = count;
+        total += count;
       }
 
       return {
@@ -177,36 +219,101 @@ const whatsappORPCRouterBase = {
       const webhookReady = webhookVerifyTokenConfigured && appSecretConfigured;
       const imapReady = imapHostConfigured && imapUserConfigured && imapPassConfigured;
       const automaticFlowReady = automaticNotificationsEnabled && outboundReady && imapReady;
+
       let activeCustomerServiceWindows = 0;
+      let consentSummary = { optedIn: 0, optedOut: 0, total: 0, unknown: 0 };
 
       try {
-        activeCustomerServiceWindows = await countActiveCustomerServiceWindows();
+        [activeCustomerServiceWindows, consentSummary] = await Promise.all([
+          countActiveCustomerServiceWindows(),
+          getWhatsappConsentSummary(),
+        ]);
       } catch (err) {
-        logError("whatsapp.overview.active_windows_error", err, {});
+        logError("whatsapp.overview.summary_error", err, {});
       }
 
       return {
         accessTokenConfigured,
         activeCustomerServiceWindows,
         appSecretConfigured,
+        autoOptInOnInbound: process.env.WHATSAPP_AUTO_OPT_IN_ON_INBOUND !== "false",
         automaticFlowReady,
         automaticNotificationsEnabled,
         freeformMessageConfigured: Boolean(process.env.WHATSAPP_FREEFORM_MESSAGE?.trim()),
+        graphApiVersion: process.env.WHATSAPP_GRAPH_API_VERSION ?? "v25.0",
         hybridFlowReady: automaticFlowReady && webhookReady,
         imapHostConfigured,
         imapMailbox: process.env.DOCTORALIA_IMAP_MAILBOX ?? "INBOX",
         imapPassConfigured,
         imapReady,
         imapUserConfigured,
+        optInRequired: process.env.WHATSAPP_REQUIRE_OPT_IN !== "false",
+        optedInContacts: consentSummary.optedIn,
+        optedOutContacts: consentSummary.optedOut,
         outboundReady,
         phoneNumberIdConfigured,
         pollCron: process.env.WHATSAPP_POLL_CRON ?? "*/2 * * * *",
         senderFilter: process.env.DOCTORALIA_EMAIL_SENDER_FILTER ?? "doctoralia.com",
+        supportsCalls: true,
+        supportsContextualReplies: true,
+        supportsInteractive: true,
+        supportsMarkAsRead: true,
+        supportsMedia: true,
+        supportsReactions: true,
+        supportsTypingIndicator: true,
         templateLanguage: process.env.WHATSAPP_TEMPLATE_LANGUAGE ?? "en_US",
         templateName: process.env.WHATSAPP_TEMPLATE_NAME ?? "hello_world",
+        unknownConsentContacts: consentSummary.unknown,
         webhookReady,
         webhookVerifyTokenConfigured,
       };
+    }),
+
+  listContacts: integrationRead
+    .route({
+      method: "GET",
+      path: "/contacts",
+      summary: "List WhatsApp contact states",
+      tags: ["WhatsApp"],
+    })
+    .input(listWhatsappContactStatesInputSchema)
+    .output(listWhatsappContactStatesResponseSchema)
+    .handler(async ({ input }) => {
+      const result = await listWhatsappConversationStates({
+        limit: input.limit,
+        offset: input.offset,
+        search: input.search,
+      });
+
+      return {
+        contacts: result.records.map((record) => whatsappContactStateSchema.parse(record)),
+        total: result.total,
+      };
+    }),
+
+  setContactConsent: integrationCreate
+    .route({
+      method: "POST",
+      path: "/contacts/consent",
+      summary: "Set WhatsApp contact consent",
+      tags: ["WhatsApp"],
+    })
+    .input(whatsappSetContactConsentInputSchema)
+    .output(whatsappContactStateSchema)
+    .handler(async ({ input }) => {
+      const state = await setWhatsappContactConsent({
+        phone: input.phone,
+        source: input.source ?? "manual_settings",
+        status: input.status,
+      });
+
+      if (!state) {
+        throw new ORPCError("INTERNAL_SERVER_ERROR", {
+          message: "No se pudo guardar el consentimiento de WhatsApp",
+        });
+      }
+
+      return whatsappContactStateSchema.parse(state);
     }),
 
   testSend: integrationCreate
@@ -224,24 +331,140 @@ const whatsappORPCRouterBase = {
       const normalizedPhone = normalizePhone(input.phone);
 
       try {
-        const canUseFreeform = await hasActiveCustomerServiceWindow(normalizedPhone);
-        const result = canUseFreeform
-          ? await sendTextMessage(
-              normalizedPhone,
-              "Hola, este es un mensaje de prueba de Bioalergia por WhatsApp.",
-            )
-          : await sendTemplateMessage(
-              normalizedPhone,
-              templateName,
-              languageCode,
-            );
+        const dispatch = await resolveWhatsappDispatchDecision(normalizedPhone);
+
+        if (dispatch.reason === "missing_opt_in") {
+          return {
+            message:
+              "El número no tiene consentimiento registrado. Marca opt-in o espera un inbound/call antes de enviar.",
+            status: "error" as const,
+          };
+        }
+
+        const result =
+          dispatch.mode === "text"
+            ? await sendTextMessage(
+                normalizedPhone,
+                "Hola, este es un mensaje de prueba de Bioalergia por WhatsApp.",
+              )
+            : await sendTemplateMessage(normalizedPhone, templateName, languageCode);
+
         return {
-          message: canUseFreeform
-            ? `Mensaje enviado en modo texto. ID: ${result.messageId}`
-            : `Mensaje enviado en modo template. ID: ${result.messageId}`,
-          mode: canUseFreeform ? "text" as const : "template" as const,
-          status: "ok" as const,
+          ...formatSendResponse(
+            dispatch.mode === "text"
+              ? `Mensaje enviado en modo texto. ID: ${result.messageId}`
+              : `Mensaje enviado en modo template. ID: ${result.messageId}`,
+            result,
+          ),
+          mode: dispatch.mode,
         };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        return { message, status: "error" as const };
+      }
+    }),
+
+  sendCustomMessage: integrationCreate
+    .route({
+      method: "POST",
+      path: "/send-custom",
+      summary: "Send advanced WhatsApp messages",
+      tags: ["WhatsApp"],
+    })
+    .input(whatsappCustomMessageInputSchema)
+    .output(whatsappStatusResponseSchema)
+    .handler(async ({ input }) => {
+      try {
+        switch (input.kind) {
+          case "contextual_text": {
+            await ensureServiceWindow(input.phone);
+            const result = await sendContextualTextReply(
+              input.phone,
+              input.body,
+              input.quotedMessageId,
+              { previewUrl: input.previewUrl },
+            );
+            return formatSendResponse("Respuesta contextual enviada.", result);
+          }
+          case "cta_url": {
+            await ensureServiceWindow(input.phone);
+            const result = await sendInteractiveCtaUrlMessage({
+              body: input.body,
+              displayText: input.displayText,
+              footer: input.footer,
+              headerText: input.headerText,
+              phone: input.phone,
+              url: input.url,
+            });
+            return formatSendResponse("Mensaje interactivo CTA enviado.", result);
+          }
+          case "reaction": {
+            await ensureServiceWindow(input.phone);
+            const result = await sendReactionMessage({
+              emoji: input.emoji,
+              messageId: input.messageId,
+              phone: input.phone,
+            });
+            return formatSendResponse("Reacción enviada.", result);
+          }
+          case "mark_read": {
+            const result = await markMessageAsRead(input.messageId);
+            return formatSendResponse("Mensaje marcado como leído.", result);
+          }
+          case "list": {
+            await ensureServiceWindow(input.phone);
+            const result = await sendInteractiveListMessage({
+              body: input.body,
+              buttonText: input.buttonText,
+              footer: input.footer,
+              headerText: input.headerText,
+              phone: input.phone,
+              sections: input.sections,
+            });
+            return formatSendResponse("Lista interactiva enviada.", result);
+          }
+          case "image":
+          case "audio":
+          case "document":
+          case "video":
+          case "sticker": {
+            await ensureServiceWindow(input.phone);
+            const result = await sendMediaMessage({
+              media: {
+                caption: input.caption,
+                filename: input.filename,
+                id: input.mediaId,
+                link: input.link,
+              },
+              mediaType: input.kind,
+              phone: input.phone,
+              replyToMessageId: input.replyToMessageId,
+            });
+            return formatSendResponse(`Mensaje ${input.kind} enviado.`, result);
+          }
+          case "reply_buttons": {
+            await ensureServiceWindow(input.phone);
+            const result = await sendInteractiveReplyButtonsMessage({
+              body: input.body,
+              buttons: input.buttons,
+              footer: input.footer,
+              headerText: input.headerText,
+              phone: input.phone,
+            });
+            return formatSendResponse("Botones interactivos enviados.", result);
+          }
+          case "typing": {
+            const result = await sendTypingIndicator(input.messageId);
+            return formatSendResponse("Typing indicator enviado.", result);
+          }
+          default: {
+            const neverInput: never = input;
+            return {
+              message: `Tipo de mensaje no soportado: ${String(neverInput)}`,
+              status: "error" as const,
+            };
+          }
+        }
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         return { message, status: "error" as const };
@@ -258,11 +481,8 @@ const whatsappORPCRouterBase = {
     .output(whatsappStatusResponseSchema)
     .handler(async () => {
       const result = await runWhatsappPoll({ trigger: "manual" });
-      if (!result) {
-        return { message: "Poll ya en ejecución o IMAP no configurado", status: "ok" as const };
-      }
       return {
-        message: `Poll completado: ${result.sent} enviados, ${result.failed} fallidos, ${result.skipped} omitidos`,
+        message: `Poll ejecutado. Revisados: ${result.checked}, enviados: ${result.sent}, fallidos: ${result.failed}, omitidos: ${result.skipped}`,
         status: "ok" as const,
       };
     }),
@@ -270,7 +490,6 @@ const whatsappORPCRouterBase = {
 
 export const whatsappORPCRouter = base
   .prefix("/api/orpc/whatsapp")
-  .tag("WhatsApp")
   .router(whatsappORPCRouterBase);
 
 export const whatsappORPCHandler = new SuperJSONRPCHandler(whatsappORPCRouter, {
@@ -289,10 +508,13 @@ export const whatsappOpenAPIHandler = new OpenAPIHandler(whatsappORPCRouter, {
   ],
   plugins: [
     new OpenAPIReferencePlugin({
-      docsTitle: "Bioalergia WhatsApp API Reference",
       schemaConverters: [new ZodToJsonSchemaConverter()],
       specGenerateOptions: {
-        info: { title: "Bioalergia WhatsApp API", version: "1.0.0" },
+        info: {
+          description: "Contratos oRPC/OpenAPI para WhatsApp Cloud API y el flujo Doctoralia.",
+          title: "Bioalergia WhatsApp oRPC",
+          version: "1.0.0",
+        },
       },
     }),
   ],

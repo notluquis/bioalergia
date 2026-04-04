@@ -8,7 +8,7 @@ import { createId } from "@paralleldrive/cuid2";
 import dayjs from "dayjs";
 import { ImapFlow } from "imapflow";
 import { logError, logEvent, logWarn } from "../logger";
-import { hasActiveCustomerServiceWindow } from "./conversation-state";
+import { resolveWhatsappDispatchDecision } from "./conversation-state";
 import { htmlToText, parseDoctoraliaEmail } from "./email-parser";
 import { normalizePhone, sendTemplateMessage, sendTextMessage } from "./whatsapp-client";
 
@@ -194,29 +194,43 @@ export async function runImapPoll(): Promise<PollResult> {
       // Send WhatsApp message
       const template = getWhatsappTemplate();
       const normalizedPhone = normalizePhone(booking.patientPhone);
-      const canUseFreeform = await hasActiveCustomerServiceWindow(normalizedPhone);
+      const dispatch = await resolveWhatsappDispatchDecision(normalizedPhone);
+      const canUseFreeform = dispatch.mode === "text";
       const freeformBody = canUseFreeform ? buildDoctoraliaFreeformMessage(booking) : null;
       let waMessageId: string | null = null;
+      let recipientWaId: string | null = null;
+      let messagePacingStatus: string | null = null;
       let status: "SENT" | "FAILED" = "SENT";
       let errorMessage: string | null = null;
       let sentAt: Date | null = null;
 
       try {
-        const sendResult = canUseFreeform && freeformBody
-          ? await sendTextMessage(booking.patientPhone, freeformBody)
-          : await sendTemplateMessage(
-              booking.patientPhone,
-              template.name,
-              template.languageCode,
-            );
+        if (dispatch.reason === "missing_opt_in") {
+          throw new Error(
+            "WhatsApp no enviado: el número no tiene consentimiento registrado para mensajes del negocio.",
+          );
+        }
+
+        const sendResult =
+          canUseFreeform && freeformBody
+            ? await sendTextMessage(booking.patientPhone, freeformBody)
+            : await sendTemplateMessage(
+                booking.patientPhone,
+                template.name,
+                template.languageCode,
+              );
         waMessageId = sendResult.messageId;
+        recipientWaId = sendResult.contacts[0]?.waId ?? null;
+        messagePacingStatus = sendResult.messageStatus ?? null;
         sentAt = new Date();
         result.sent++;
         logEvent("whatsapp.message.sent", {
+          hasOptIn: dispatch.hasOptIn,
           mode: canUseFreeform ? "text" : "template",
           messageId,
           patientName: booking.patientName,
           phone: normalizedPhone,
+          recipientWaId,
           waMessageId,
         });
       } catch (err) {
@@ -224,9 +238,12 @@ export async function runImapPoll(): Promise<PollResult> {
         errorMessage = err instanceof Error ? err.message : String(err);
         result.failed++;
         logError("whatsapp.message.failed", err, {
+          hasOptIn: dispatch.hasOptIn,
           mode: canUseFreeform ? "text" : "template",
           messageId,
           patientName: booking.patientName,
+          phone: normalizedPhone,
+          reason: dispatch.reason,
         });
       }
 
@@ -243,9 +260,11 @@ export async function runImapPoll(): Promise<PollResult> {
             emailMessageId: messageId,
             errorMessage: errorMessage ?? null,
             id: createId(),
+            messagePacingStatus,
             patientEmail: booking.patientEmail ?? null,
             patientName: booking.patientName,
             patientPhone: booking.patientPhone,
+            recipientWaId,
             sentAt: sentAt?.toISOString() ?? null,
             status,
             updatedAt: now,
