@@ -1851,6 +1851,10 @@ export function selectRepresentativeClinicalIdentity(
  * - The DTE name has at least 2 significant tokens
  * - The DTE name has strictly more tokens than the current name
  */
+function isAllLowercase(name: string): boolean {
+  return name === name.toLowerCase() && name !== name.toUpperCase();
+}
+
 function upgradePatientNameFromDte(
   currentName: null | string,
   dteRecords: Array<{ clientName: string }>,
@@ -1862,6 +1866,7 @@ function upgradePatientNameFromDte(
 
   let best: null | string = null;
   let bestTokenCount = currentTokens.length;
+  let bestIsCaseUpgrade = false;
 
   for (const dte of dteRecords) {
     if (!dte.clientName) continue;
@@ -1869,9 +1874,6 @@ function upgradePatientNameFromDte(
 
     // Must be a plausible person name: at least 2 significant tokens
     if (dteTokens.length < 2) continue;
-
-    // The DTE name must have strictly more information
-    if (dteTokens.length <= currentTokens.length) continue;
 
     // Every current token must fuzzy-match at least one DTE token (JW >= 0.90)
     const allMatch = currentTokens.every((ct) =>
@@ -1883,6 +1885,17 @@ function upgradePatientNameFromDte(
     if (dteTokens.length > bestTokenCount) {
       best = dte.clientName;
       bestTokenCount = dteTokens.length;
+      bestIsCaseUpgrade = false;
+    } else if (
+      dteTokens.length >= currentTokens.length &&
+      !bestIsCaseUpgrade &&
+      best === null &&
+      isAllLowercase(currentName) &&
+      !isAllLowercase(dte.clientName)
+    ) {
+      // Current name is all lowercase but DTE has proper casing — adopt it
+      best = dte.clientName;
+      bestIsCaseUpgrade = true;
     }
   }
 

@@ -121,90 +121,81 @@ export function WhatsappSettingsPage() {
         </Tabs.ListContainer>
 
         <Tabs.Panel id="channel">
-          <div className="mt-4 grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-            <Card>
-              <Card.Header className="flex items-center justify-between">
-                <div className="flex flex-col gap-1">
-                  <h2 className="font-semibold text-base">Conexión WhatsApp</h2>
+          <div className="mt-4 space-y-4">
+            {/* ── Connection toggle ─────────────────────────────────── */}
+            <Surface className="flex items-center justify-between rounded-2xl border border-default-200 px-5 py-4">
+              <div className="flex items-center gap-3">
+                {connected ? (
+                  <Wifi className="h-5 w-5 text-success" />
+                ) : (
+                  <WifiOff className="h-5 w-5 text-default-400" />
+                )}
+                <div>
+                  <p className="font-semibold text-sm">
+                    {connected
+                      ? "WhatsApp conectado"
+                      : enabled && connecting
+                        ? "Conectando..."
+                        : enabled
+                          ? "Esperando vinculación"
+                          : "WhatsApp desactivado"}
+                  </p>
                   <Description className="text-default-500 text-xs">
-                    Conexión directa vía Baileys. Escanea el código QR para vincular.
+                    {connected
+                      ? "Listo para enviar y recibir mensajes"
+                      : "Conexión directa vía Baileys"}
                   </Description>
                 </div>
-                <Switch
-                  isDisabled={toggleMutation.isPending}
-                  isSelected={enabled}
-                  onChange={() => toggleMutation.mutate()}
-                >
-                  <Switch.Control>
-                    <Switch.Thumb />
-                  </Switch.Control>
-                  <Switch.Content>{enabled ? "Activo" : "Inactivo"}</Switch.Content>
-                </Switch>
-              </Card.Header>
-              <Card.Content className="space-y-4">
-                {!enabled ? (
-                  <Alert status="default">
-                    WhatsApp está desactivado. Activa el switch para iniciar la conexión.
-                  </Alert>
-                ) : (
-                  <>
-                    <div className="flex items-center gap-3">
-                      {connected ? (
-                        <Wifi className="h-5 w-5 text-success" />
-                      ) : (
-                        <WifiOff className="h-5 w-5 text-default-400" />
-                      )}
-                      <Chip
-                        color={connected ? "success" : connecting ? "warning" : "danger"}
-                        size="sm"
-                        variant="soft"
-                      >
-                        {connected ? "Conectado" : connecting ? "Conectando..." : "Desconectado"}
-                      </Chip>
-                      {connectionStatus?.lastDisconnectReason != null && !connected && (
-                        <Description className="text-default-500 text-xs">
-                          Código {connectionStatus.lastDisconnectReason}
-                        </Description>
-                      )}
-                    </div>
+              </div>
+              <Switch
+                isDisabled={toggleMutation.isPending}
+                isSelected={enabled}
+                onChange={() => toggleMutation.mutate()}
+              >
+                <Switch.Control>
+                  <Switch.Thumb />
+                </Switch.Control>
+              </Switch>
+            </Surface>
 
-                    {!connected && connectionStatus?.qrDataUrl ? (
-                      <div className="flex flex-col items-center gap-3 py-2">
-                        <img
-                          alt="QR code para vincular WhatsApp"
-                          className="h-64 w-64 rounded-xl border border-default-200"
-                          src={connectionStatus.qrDataUrl}
-                        />
-                        <Description className="max-w-xs text-center text-default-500 text-xs">
-                          Abre WhatsApp → Configuración → Dispositivos vinculados → Vincular un
-                          dispositivo.
-                        </Description>
-                      </div>
-                    ) : !connected && connecting && !connectionStatus?.qrDataUrl ? (
-                      <div className="flex flex-col items-center gap-3 py-2">
-                        <Skeleton className="h-64 w-64 rounded-xl" />
-                        <Description className="text-default-400 text-xs">
-                          Esperando código QR...
-                        </Description>
-                      </div>
-                    ) : null}
+            {/* ── QR code (only when enabled + not connected) ──────── */}
+            {enabled && !connected && (
+              <Card>
+                <Card.Content className="flex flex-col items-center gap-4 py-8">
+                  {connectionStatus?.qrDataUrl ? (
+                    <>
+                      <img
+                        alt="QR code para vincular WhatsApp"
+                        className="h-64 w-64 rounded-xl border border-default-200"
+                        src={connectionStatus.qrDataUrl}
+                      />
+                      <Description className="max-w-xs text-center text-default-500 text-xs">
+                        Abre WhatsApp → Configuración → Dispositivos vinculados → Vincular un
+                        dispositivo.
+                      </Description>
+                    </>
+                  ) : (
+                    <>
+                      <Skeleton className="h-64 w-64 rounded-xl" />
+                      <Description className="text-default-400 text-xs">
+                        Esperando código QR...
+                      </Description>
+                    </>
+                  )}
+                </Card.Content>
+              </Card>
+            )}
 
-                    {connected && (
-                      <Alert status="success">
-                        WhatsApp conectado y listo para enviar mensajes.
-                      </Alert>
-                    )}
-                  </>
-                )}
-
-                {enabled && overviewPending ? (
-                  <Skeleton className="h-16 w-full rounded-2xl" />
-                ) : enabled && overview ? (
-                  <div className="space-y-2">
-                    <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
-                      Flujo automático
-                    </Description>
-                    <div className="flex flex-wrap gap-2">
+            {/* ── Stats + Flow status (only when connected) ────────── */}
+            {enabled && connected && (
+              <div className="grid gap-4 lg:grid-cols-2">
+                {/* Flow status chips */}
+                {overview && (
+                  <Card>
+                    <Card.Header>
+                      <h2 className="font-semibold text-sm">Flujo automático</h2>
+                    </Card.Header>
+                    <Card.Content className="flex flex-wrap gap-2">
                       <Chip
                         color={overview.automaticFlowReady ? "success" : "warning"}
                         size="sm"
@@ -217,7 +208,7 @@ export function WhatsappSettingsPage() {
                         size="sm"
                         variant="soft"
                       >
-                        IMAP {overview.imapReady ? "OK" : "sin configurar"}
+                        IMAP {overview.imapReady ? "OK" : "pendiente"}
                       </Chip>
                       <Chip
                         color={overview.automaticNotificationsEnabled ? "success" : "default"}
@@ -226,60 +217,63 @@ export function WhatsappSettingsPage() {
                       >
                         Notificaciones {overview.automaticNotificationsEnabled ? "ON" : "OFF"}
                       </Chip>
-                    </div>
-                  </div>
-                ) : null}
-              </Card.Content>
-            </Card>
+                    </Card.Content>
+                  </Card>
+                )}
 
-            {stats ? (
-              <Card>
-                <Card.Header className="flex flex-col items-start gap-1">
-                  <h2 className="font-semibold text-base">Mensajes</h2>
-                  <Description className="text-default-500 text-xs">
-                    Estadísticas en tiempo real desde la base de datos.
-                  </Description>
-                </Card.Header>
-                <Card.Content className="grid gap-3 sm:grid-cols-3">
-                  <MetricPill
-                    subtitle="total"
-                    title="Enviados"
-                    tone="primary"
-                    value={stats.sent + stats.delivered + stats.read + stats.played}
-                  />
-                  <MetricPill
-                    subtitle="total"
-                    title="Entregados"
-                    tone="success"
-                    value={stats.delivered + stats.read + stats.played}
-                  />
-                  <MetricPill
-                    subtitle="total"
-                    title="Leídos"
-                    tone="accent"
-                    value={stats.read + stats.played}
-                  />
-                  <MetricPill
-                    subtitle="total"
-                    title="Pendientes"
-                    tone="warning"
-                    value={stats.pending}
-                  />
-                  <MetricPill
-                    subtitle="total"
-                    title="Fallidos"
-                    tone="warning"
-                    value={stats.failed}
-                  />
-                  <MetricPill
-                    subtitle="total"
-                    title="Reproducidos"
-                    tone="success"
-                    value={stats.played}
-                  />
-                </Card.Content>
-              </Card>
-            ) : null}
+                {/* Message stats */}
+                {stats &&
+                  stats.sent +
+                    stats.delivered +
+                    stats.read +
+                    stats.played +
+                    stats.pending +
+                    stats.failed >
+                    0 && (
+                    <Card>
+                      <Card.Header>
+                        <h2 className="font-semibold text-sm">Mensajes</h2>
+                      </Card.Header>
+                      <Card.Content className="grid grid-cols-3 gap-3">
+                        <MetricPill
+                          subtitle="total"
+                          title="Enviados"
+                          tone="primary"
+                          value={stats.sent + stats.delivered + stats.read + stats.played}
+                        />
+                        <MetricPill
+                          subtitle="total"
+                          title="Entregados"
+                          tone="success"
+                          value={stats.delivered + stats.read + stats.played}
+                        />
+                        <MetricPill
+                          subtitle="total"
+                          title="Leídos"
+                          tone="accent"
+                          value={stats.read + stats.played}
+                        />
+                        {stats.pending > 0 && (
+                          <MetricPill
+                            subtitle="total"
+                            title="Pendientes"
+                            tone="warning"
+                            value={stats.pending}
+                          />
+                        )}
+                        {stats.failed > 0 && (
+                          <MetricPill
+                            subtitle="total"
+                            title="Fallidos"
+                            tone="warning"
+                            value={stats.failed}
+                          />
+                        )}
+                      </Card.Content>
+                    </Card>
+                  )}
+              </div>
+            )}
           </div>
         </Tabs.Panel>
 
