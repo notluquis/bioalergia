@@ -34,6 +34,7 @@ import { parseDate } from "@internationalized/date";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Key, Selection } from "@heroui/react";
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { buildPaginationItems } from "@/components/pagination/pagination-items";
 import { EventDteLinkModal } from "@/features/calendar/components/EventDteLinkModal";
 import type { CalendarEventDetail } from "@/features/calendar/types";
 import {
@@ -498,6 +499,10 @@ export function ClinicalSeriesView() {
   });
 
   const totalPages = data ? Math.ceil(data.total / pageSize) : 1;
+  const pageItems = buildPaginationItems({
+    currentPage: page,
+    totalPages,
+  });
 
   const derivedItems = useMemo(() => {
     if (!data?.items) return [];
