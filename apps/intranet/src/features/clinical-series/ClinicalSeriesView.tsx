@@ -14,6 +14,7 @@ import {
   Drawer,
   Input,
   Label,
+  Link,
   ListBox,
   Modal,
   Pagination,
@@ -728,12 +729,14 @@ export function ClinicalSeriesView() {
                 onSelectionChange={handleRowSelect}
                 sortDescriptor={sortDescriptor}
                 onSortChange={setSortDescriptor}
-                className="min-w-5xl"
+                className="min-w-[96rem]"
               >
                 <Table.Header>
-                  <Table.Column allowsSorting id="patient" isRowHeader className="w-[24%]">
+                  <Table.Column allowsSorting id="patient" isRowHeader className="w-[18%]">
                     Paciente
                   </Table.Column>
+                  <Table.Column className="w-[16%]">RUTs</Table.Column>
+                  <Table.Column className="w-[18%]">Teléfonos</Table.Column>
                   <Table.Column allowsSorting id="kind" className="w-[11%]">
                     Tipo
                   </Table.Column>
@@ -760,74 +763,88 @@ export function ClinicalSeriesView() {
                   {derivedItems.map((s) => (
                     <Table.Row key={s.id} id={s.id} className="cursor-pointer group">
                       <Table.Cell>
-                        <div className="flex flex-col gap-2">
+                        <div className="flex flex-col gap-1">
                           <span className="text-sm font-medium text-foreground group-hover:text-accent transition-colors">
                             {s.patientName || (
                               <span className="text-foreground-400 italic">Sin nombre</span>
                             )}
                           </span>
-                          <span className="text-xs text-foreground-400 font-mono">
-                            {s.patientRut ?? "—"}
-                          </span>
-                          {s.beneficiaryRut ||
-                          s.patientPhones.length > 0 ||
-                          s.beneficiaryPhones.length > 0 ? (
-                            <div className="flex flex-col gap-1">
-                              {s.beneficiaryRut && s.beneficiaryRut !== s.patientRut && (
-                                <span className="text-[11px] text-foreground-300 font-mono">
-                                  Beneficiario: {s.beneficiaryRut}
-                                </span>
-                              )}
-                              {s.patientPhones.map((phone) => {
-                                const whatsappNumber = toChileWhatsAppNumber(phone);
-                                return whatsappNumber ? (
-                                  <a
-                                    className="w-fit font-mono text-[11px] text-success-400 underline-offset-4 hover:underline"
-                                    href={`https://wa.me/${whatsappNumber}`}
-                                    key={`patient-${phone}`}
-                                    onClick={(event) => {
-                                      event.stopPropagation();
-                                    }}
-                                    rel="noreferrer"
-                                    target="_blank"
-                                  >
-                                    Paciente: {phone}
-                                  </a>
-                                ) : (
-                                  <span
-                                    className="text-[11px] text-foreground-300 font-mono"
-                                    key={`patient-${phone}`}
-                                  >
-                                    Paciente: {phone}
-                                  </span>
-                                );
-                              })}
-                              {s.beneficiaryPhones.map((phone) => {
-                                const whatsappNumber = toChileWhatsAppNumber(phone);
-                                return whatsappNumber ? (
-                                  <a
-                                    className="w-fit font-mono text-[11px] text-accent underline-offset-4 hover:underline"
-                                    href={`https://wa.me/${whatsappNumber}`}
-                                    key={`beneficiary-${phone}`}
-                                    onClick={(event) => {
-                                      event.stopPropagation();
-                                    }}
-                                    rel="noreferrer"
-                                    target="_blank"
-                                  >
-                                    Beneficiario: {phone}
-                                  </a>
-                                ) : (
-                                  <span
-                                    className="text-[11px] text-foreground-300 font-mono"
-                                    key={`beneficiary-${phone}`}
-                                  >
-                                    Beneficiario: {phone}
-                                  </span>
-                                );
-                              })}
-                            </div>
+                          {s.displayName && s.displayName !== s.patientName && (
+                            <span className="text-xs text-foreground-400">{s.displayName}</span>
+                          )}
+                        </div>
+                      </Table.Cell>
+                      <Table.Cell>
+                        <div className="flex flex-wrap gap-1.5">
+                          {s.patientRut ? (
+                            <Chip size="sm" variant="tertiary">
+                              Paciente: {s.patientRut}
+                            </Chip>
+                          ) : (
+                            <Chip size="sm" variant="tertiary">
+                              Paciente: —
+                            </Chip>
+                          )}
+                          {s.beneficiaryRut && s.beneficiaryRut !== s.patientRut && (
+                            <Chip color="default" size="sm" variant="tertiary">
+                              Beneficiario: {s.beneficiaryRut}
+                            </Chip>
+                          )}
+                        </div>
+                      </Table.Cell>
+                      <Table.Cell>
+                        <div className="flex flex-col gap-1">
+                          {s.patientPhones.length === 0 && s.beneficiaryPhones.length === 0 ? (
+                            <span className="text-xs text-foreground-400">—</span>
                           ) : null}
+                          {s.patientPhones.map((phone) => {
+                            const whatsappNumber = toChileWhatsAppNumber(phone);
+                            return whatsappNumber ? (
+                              <Link
+                                className="w-fit text-xs text-success-400 font-mono"
+                                href={`https://wa.me/${whatsappNumber}`}
+                                key={`patient-${phone}`}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                }}
+                                rel="noreferrer"
+                                target="_blank"
+                              >
+                                Paciente: {phone}
+                              </Link>
+                            ) : (
+                              <span
+                                className="text-xs text-foreground-300 font-mono"
+                                key={`patient-${phone}`}
+                              >
+                                Paciente: {phone}
+                              </span>
+                            );
+                          })}
+                          {s.beneficiaryPhones.map((phone) => {
+                            const whatsappNumber = toChileWhatsAppNumber(phone);
+                            return whatsappNumber ? (
+                              <Link
+                                className="w-fit text-xs text-accent font-mono"
+                                href={`https://wa.me/${whatsappNumber}`}
+                                key={`beneficiary-${phone}`}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                }}
+                                rel="noreferrer"
+                                target="_blank"
+                              >
+                                Beneficiario: {phone}
+                              </Link>
+                            ) : (
+                              <span
+                                className="text-xs text-foreground-300 font-mono"
+                                key={`beneficiary-${phone}`}
+                              >
+                                Beneficiario: {phone}
+                              </span>
+                            );
+                          })}
                         </div>
                       </Table.Cell>
                       <Table.Cell>
