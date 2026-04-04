@@ -132,6 +132,10 @@ function normalizeChileWhatsAppPhone(value: string): null | { display: string; w
     return normalizeChileWhatsAppPhone(digits.slice(2));
   }
 
+  if (digits.startsWith("0")) {
+    return normalizeChileWhatsAppPhone(digits.slice(1));
+  }
+
   if (digits.startsWith("56") && digits.length === 11 && digits[2] === "9") {
     return { display: `+${digits}`, waNumber: digits };
   }
@@ -166,10 +170,13 @@ function buildRutEntries(snapshot: ClinicalSeriesSnapshot): IdentityListEntry[] 
 
 function buildPhoneEntries(snapshot: ClinicalSeriesSnapshot): IdentityListEntry[] {
   const entries: IdentityListEntry[] = [];
+  const seen = new Set<string>();
 
   for (const phone of snapshot.patientPhones) {
     const normalized = normalizeChileWhatsAppPhone(phone);
     if (!normalized) continue;
+    if (seen.has(normalized.waNumber)) continue;
+    seen.add(normalized.waNumber);
     entries.push({
       href: `https://wa.me/${normalized.waNumber}`,
       roleLabel: "Paciente",
@@ -180,6 +187,8 @@ function buildPhoneEntries(snapshot: ClinicalSeriesSnapshot): IdentityListEntry[
   for (const phone of snapshot.beneficiaryPhones) {
     const normalized = normalizeChileWhatsAppPhone(phone);
     if (!normalized) continue;
+    if (seen.has(normalized.waNumber)) continue;
+    seen.add(normalized.waNumber);
     entries.push({
       href: `https://wa.me/${normalized.waNumber}`,
       roleLabel: "Beneficiario",
