@@ -43,9 +43,17 @@ const BASE_BACKOFF_MS = 2_000;
 // ---------------------------------------------------------------------------
 
 export async function initBaileysSocket(): Promise<void> {
-  const authState = await usePostgresAuthState();
-  saveCreds = authState.saveCreds;
+  let authState: Awaited<ReturnType<typeof usePostgresAuthState>>;
+  try {
+    authState = await usePostgresAuthState();
+  } catch (err) {
+    logError("baileys.auth_state_error", err, {
+      hint: "¿Se aplicó la migración baileys_auth_creds / baileys_auth_keys?",
+    });
+    throw err;
+  }
 
+  saveCreds = authState.saveCreds;
   connectionState = "connecting";
   currentQrDataUrl = null;
 
@@ -56,7 +64,7 @@ export async function initBaileysSocket(): Promise<void> {
     },
     browser: ["Bioalergia", "Server", "1.0"],
     markOnlineOnConnect: false,
-    printQRInTerminal: false,
+    printQRInTerminal: process.env.NODE_ENV !== "production",
     getMessage: async (_key) => {
       // Required by Baileys for message retry/resend.
       // We don't persist raw messages, so retries will fail silently.

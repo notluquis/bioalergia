@@ -5,38 +5,20 @@ import {
   Chip,
   Description,
   Input,
-  Label,
-  ListBox,
-  Select,
   Skeleton,
   Surface,
   Tabs,
-  TextArea,
   TextField,
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { CheckCheck, MessageCircleReply, Send, Wifi, WifiOff } from "lucide-react";
+import { Send, Wifi, WifiOff } from "lucide-react";
 import { useState } from "react";
 
 import { useToast } from "@/context/ToastContext";
-import {
-  sendWhatsappCustomMessage,
-  sendWhatsappTest,
-  setWhatsappContactConsent,
-} from "@/features/whatsapp/api";
+import { sendWhatsappTest, setWhatsappContactConsent } from "@/features/whatsapp/api";
 import { whatsappKeys } from "@/features/whatsapp/queries";
 import { PAGE_CONTAINER } from "@/lib/styles";
-
-type MediaKind = "audio" | "document" | "image" | "sticker" | "video";
-
-const MEDIA_KIND_OPTIONS: Array<{ label: string; value: MediaKind }> = [
-  { label: "Imagen", value: "image" },
-  { label: "Audio", value: "audio" },
-  { label: "Documento", value: "document" },
-  { label: "Video", value: "video" },
-  { label: "Sticker", value: "sticker" },
-];
 
 export function WhatsappSettingsPage() {
   const { error: showError, success: showSuccess } = useToast();
@@ -44,15 +26,6 @@ export function WhatsappSettingsPage() {
   const [consentPhone, setConsentPhone] = useState("");
   const [contactSearch, setContactSearch] = useState("");
   const [testPhone, setTestPhone] = useState("");
-  const [opsPhone, setOpsPhone] = useState("");
-  const [opsMessageId, setOpsMessageId] = useState("");
-  const [opsReplyBody, setOpsReplyBody] = useState("");
-  const [opsReactionEmoji, setOpsReactionEmoji] = useState("");
-  const [mediaKind, setMediaKind] = useState<"" | MediaKind>("");
-  const [mediaPhone, setMediaPhone] = useState("");
-  const [mediaLink, setMediaLink] = useState("");
-  const [mediaCaption, setMediaCaption] = useState("");
-  const [mediaFilename, setMediaFilename] = useState("");
 
   const { data: overview, isPending: overviewPending } = useQuery({
     ...whatsappKeys.overview(),
@@ -103,22 +76,6 @@ export function WhatsappSettingsPage() {
     },
   });
 
-  const customMutation = useMutation({
-    mutationFn: sendWhatsappCustomMessage,
-    onError: (err: Error) => showError(`Error al ejecutar la operación: ${err.message}`),
-    onSuccess: (result) => {
-      if (result.status === "ok") {
-        showSuccess(result.message, "Operación enviada");
-      } else {
-        showError(result.message, "Operación rechazada");
-      }
-      void Promise.all([
-        queryClient.invalidateQueries({ queryKey: whatsappKeys.overview().queryKey }),
-        queryClient.invalidateQueries({ queryKey: ["whatsapp", "contacts"] }),
-      ]);
-    },
-  });
-
   const { data: stats } = useQuery({
     ...whatsappKeys.stats(),
     refetchInterval: 30_000,
@@ -126,55 +83,6 @@ export function WhatsappSettingsPage() {
 
   const connected = connectionStatus?.connectionState === "open";
   const connecting = connectionStatus?.connectionState === "connecting";
-  const actionResult = customMutation.data;
-
-  const handleContextualReply = () => {
-    customMutation.mutate({
-      body: opsReplyBody,
-      kind: "contextual_text",
-      phone: opsPhone,
-      quotedMessageId: opsMessageId,
-    });
-  };
-
-  const handleReaction = () => {
-    customMutation.mutate({
-      emoji: opsReactionEmoji,
-      kind: "reaction",
-      messageId: opsMessageId,
-      phone: opsPhone,
-    });
-  };
-
-  const handleMarkRead = () => {
-    customMutation.mutate({
-      kind: "mark_read",
-      messageId: opsMessageId,
-      phone: opsPhone,
-    });
-  };
-
-  const handleTypingIndicator = () => {
-    customMutation.mutate({
-      kind: "typing",
-      phone: opsPhone,
-    });
-  };
-
-  const handleMediaSend = () => {
-    if (!mediaKind) {
-      showError("Selecciona un tipo de media.");
-      return;
-    }
-
-    customMutation.mutate({
-      caption: mediaCaption || undefined,
-      filename: mediaFilename || undefined,
-      kind: mediaKind,
-      link: mediaLink,
-      phone: mediaPhone,
-    });
-  };
 
   return (
     <div className={PAGE_CONTAINER}>
@@ -183,10 +91,6 @@ export function WhatsappSettingsPage() {
           <Tabs.List aria-label="Secciones de WhatsApp">
             <Tabs.Tab id="channel">
               Canal
-              <Tabs.Indicator />
-            </Tabs.Tab>
-            <Tabs.Tab id="operations">
-              Operaciones
               <Tabs.Indicator />
             </Tabs.Tab>
             <Tabs.Tab id="consent">
@@ -238,9 +142,18 @@ export function WhatsappSettingsPage() {
                       src={connectionStatus.qrDataUrl}
                     />
                     <Description className="text-center text-default-500 text-xs">
-                      Abre WhatsApp en tu teléfono, ve a Dispositivos vinculados y escanea este
-                      código. Se actualiza automáticamente cada ~60s.
+                      Abre WhatsApp en tu teléfono → Configuración → Dispositivos vinculados →
+                      Vincular un dispositivo. Se actualiza automáticamente.
                     </Description>
+                  </div>
+                ) : !connected && !connecting ? (
+                  <Alert status="warning">
+                    Baileys no está conectado. Asegúrate de que ENABLE_WHATSAPP=true en el servidor
+                    y que la migración de auth state esté aplicada.
+                  </Alert>
+                ) : !connected && connecting && !connectionStatus?.qrDataUrl ? (
+                  <div className="flex items-center gap-2 text-sm text-default-500">
+                    <Skeleton className="h-64 w-64 rounded-xl" />
                   </div>
                 ) : null}
 
@@ -331,170 +244,6 @@ export function WhatsappSettingsPage() {
                 </Card.Content>
               </Card>
             ) : null}
-          </div>
-        </Tabs.Panel>
-
-        <Tabs.Panel id="operations">
-          <div className="mt-4 grid gap-4 xl:grid-cols-[1fr_1fr]">
-            <Card>
-              <Card.Header className="flex flex-col items-start gap-1">
-                <h2 className="font-semibold text-base">Reply y estado del chat</h2>
-                <Description className="text-default-500 text-xs">
-                  Herramientas para responder sobre un mensaje previo o actualizar su estado.
-                </Description>
-              </Card.Header>
-              <Card.Content className="space-y-4">
-                <TextField className="w-full" onChange={setOpsPhone} value={opsPhone}>
-                  <Input placeholder="+56912345678" type="tel" />
-                </TextField>
-
-                <TextField className="w-full" onChange={setOpsMessageId} value={opsMessageId}>
-                  <Input placeholder="Message ID" type="text" />
-                </TextField>
-
-                <TextField className="w-full">
-                  <TextArea
-                    onChange={(event) => setOpsReplyBody(event.target.value)}
-                    placeholder="Texto de la respuesta contextual"
-                    rows={4}
-                    value={opsReplyBody}
-                    variant="secondary"
-                  />
-                </TextField>
-
-                <TextField
-                  className="w-full"
-                  onChange={setOpsReactionEmoji}
-                  value={opsReactionEmoji}
-                >
-                  <Input placeholder="Emoji" type="text" />
-                </TextField>
-
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    isDisabled={
-                      customMutation.isPending ||
-                      !opsPhone.trim() ||
-                      !opsMessageId.trim() ||
-                      !opsReplyBody.trim()
-                    }
-                    isPending={customMutation.isPending}
-                    onPress={handleContextualReply}
-                    size="sm"
-                    variant="primary"
-                  >
-                    <MessageCircleReply className="h-4 w-4" />
-                    Reply contextual
-                  </Button>
-                  <Button
-                    isDisabled={
-                      customMutation.isPending || !opsPhone.trim() || !opsMessageId.trim()
-                    }
-                    onPress={handleMarkRead}
-                    size="sm"
-                    variant="secondary"
-                  >
-                    <CheckCheck className="h-4 w-4" />
-                    Mark as read
-                  </Button>
-                  <Button
-                    isDisabled={customMutation.isPending || !opsPhone.trim()}
-                    onPress={handleTypingIndicator}
-                    size="sm"
-                    variant="secondary"
-                  >
-                    Typing
-                  </Button>
-                  <Button
-                    isDisabled={
-                      customMutation.isPending ||
-                      !opsPhone.trim() ||
-                      !opsMessageId.trim() ||
-                      !opsReactionEmoji.trim()
-                    }
-                    onPress={handleReaction}
-                    size="sm"
-                    variant="secondary"
-                  >
-                    Reacción
-                  </Button>
-                </div>
-              </Card.Content>
-            </Card>
-
-            <Card>
-              <Card.Header className="flex flex-col items-start gap-1">
-                <h2 className="font-semibold text-base">Media por link</h2>
-                <Description className="text-default-500 text-xs">
-                  Soporta image, audio, document, video y sticker.
-                </Description>
-              </Card.Header>
-              <Card.Content className="space-y-4">
-                <div className="grid gap-4 xl:grid-cols-[220px_1fr]">
-                  <Select
-                    onChange={(value) => setMediaKind(value as "" | MediaKind)}
-                    value={mediaKind}
-                  >
-                    <Label>Tipo media</Label>
-                    <Select.Trigger>
-                      <Select.Value />
-                      <Select.Indicator />
-                    </Select.Trigger>
-                    <Select.Popover>
-                      <ListBox>
-                        {MEDIA_KIND_OPTIONS.map((option) => (
-                          <ListBox.Item id={option.value} key={option.value}>
-                            {option.label}
-                          </ListBox.Item>
-                        ))}
-                      </ListBox>
-                    </Select.Popover>
-                  </Select>
-
-                  <TextField className="w-full" onChange={setMediaPhone} value={mediaPhone}>
-                    <Input placeholder="+56912345678" type="tel" />
-                  </TextField>
-                </div>
-
-                <div className="grid gap-4 xl:grid-cols-[1.3fr_0.7fr]">
-                  <TextField className="w-full" onChange={setMediaLink} value={mediaLink}>
-                    <Input placeholder="https://..." type="url" />
-                  </TextField>
-                  <TextField className="w-full" onChange={setMediaFilename} value={mediaFilename}>
-                    <Input placeholder="archivo.pdf" type="text" />
-                  </TextField>
-                </div>
-
-                <TextField className="w-full">
-                  <TextArea
-                    onChange={(event) => setMediaCaption(event.target.value)}
-                    placeholder="Caption opcional"
-                    rows={3}
-                    value={mediaCaption}
-                    variant="secondary"
-                  />
-                </TextField>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button
-                    isDisabled={customMutation.isPending || !mediaPhone.trim() || !mediaLink.trim()}
-                    isPending={customMutation.isPending}
-                    onPress={handleMediaSend}
-                    size="sm"
-                    variant="primary"
-                  >
-                    <Send className="h-4 w-4" />
-                    Enviar media
-                  </Button>
-                </div>
-
-                {actionResult ? (
-                  <Alert status={actionResult.status === "ok" ? "success" : "danger"}>
-                    {actionResult.message}
-                  </Alert>
-                ) : null}
-              </Card.Content>
-            </Card>
           </div>
         </Tabs.Panel>
 

@@ -34,7 +34,9 @@ if (process.env.ENABLE_DOCTORALIA_CALENDAR_SYNC === "true") {
 }
 
 // Initialize Baileys WhatsApp connection
-initBaileysSocket().catch((err) => console.error("Failed to initialize Baileys:", err));
+if (process.env.ENABLE_WHATSAPP === "true") {
+  initBaileysSocket().catch((err) => console.error("Failed to initialize Baileys:", err));
+}
 
 if (process.env.ENABLE_WHATSAPP_NOTIFICATIONS === "true") {
   startWhatsappScheduler();
