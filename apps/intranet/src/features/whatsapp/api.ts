@@ -87,3 +87,11 @@ export async function triggerWhatsappPoll() {
     throw toWhatsappApiError(error);
   }
 }
+
+export async function toggleWhatsappConnection() {
+  try {
+    return await whatsappORPCClient.toggleConnection({});
+  } catch (error) {
+    throw toWhatsappApiError(error);
+  }
+}

@@ -109,6 +109,7 @@ export const whatsappOverviewSchema = z.object({
 
 export const whatsappConnectionStatusSchema = z.object({
   connectionState: whatsappConnectionStateSchema,
+  enabled: z.boolean(),
   lastDisconnectReason: z.number().nullable(),
   qrDataUrl: z.string().nullable(),
 });
@@ -259,6 +260,15 @@ export const whatsappContract = {
       tags: ["WhatsApp"],
     })
     .output(whatsappConnectionStatusSchema),
+
+  toggleConnection: oc
+    .route({
+      method: "POST",
+      path: "/toggle-connection",
+      summary: "Enable or disable Baileys WhatsApp connection",
+      tags: ["WhatsApp"],
+    })
+    .output(whatsappStatusResponseSchema),
 
   triggerPoll: oc
     .route({

@@ -27,7 +27,9 @@ import {
   setWhatsappContactConsent,
 } from "../lib/whatsapp/conversation-state";
 import {
+  disconnectBaileys,
   getConnectionStatus,
+  initBaileysSocket,
   markAsRead,
   sendMedia,
   sendReaction,
@@ -36,6 +38,7 @@ import {
 } from "../lib/whatsapp/baileys-socket";
 import { normalizePhone, phoneToJid } from "../lib/whatsapp/jid";
 import { runWhatsappPoll } from "../lib/whatsapp/whatsapp-scheduler";
+import { getSetting, updateSetting } from "../services/settings";
 import { configureSuperjson } from "../lib/superjson-config";
 import { SuperJSONRPCHandler } from "./superjson";
 
@@ -376,7 +379,31 @@ const whatsappORPCRouterBase = {
     })
     .output(whatsappConnectionStatusSchema)
     .handler(async () => {
-      return getConnectionStatus();
+      const enabled = (await getSetting("whatsapp.enabled")) === "true";
+      return { ...getConnectionStatus(), enabled };
+    }),
+
+  toggleConnection: integrationCreate
+    .route({
+      method: "POST",
+      path: "/toggle-connection",
+      summary: "Enable or disable Baileys WhatsApp connection",
+      tags: ["WhatsApp"],
+    })
+    .output(whatsappStatusResponseSchema)
+    .handler(async () => {
+      const current = (await getSetting("whatsapp.enabled")) === "true";
+      const next = !current;
+
+      await updateSetting("whatsapp.enabled", String(next));
+
+      if (next) {
+        await initBaileysSocket();
+        return { message: "WhatsApp activado. Esperando QR...", status: "ok" as const };
+      }
+
+      await disconnectBaileys();
+      return { message: "WhatsApp desactivado.", status: "ok" as const };
     }),
 
   triggerPoll: integrationCreate

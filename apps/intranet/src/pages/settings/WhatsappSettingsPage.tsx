@@ -7,6 +7,7 @@ import {
   Input,
   Skeleton,
   Surface,
+  Switch,
   Tabs,
   TextField,
 } from "@heroui/react";
@@ -16,7 +17,11 @@ import { Send, Wifi, WifiOff } from "lucide-react";
 import { useState } from "react";
 
 import { useToast } from "@/context/ToastContext";
-import { sendWhatsappTest, setWhatsappContactConsent } from "@/features/whatsapp/api";
+import {
+  sendWhatsappTest,
+  setWhatsappContactConsent,
+  toggleWhatsappConnection,
+} from "@/features/whatsapp/api";
 import { whatsappKeys } from "@/features/whatsapp/queries";
 import { PAGE_CONTAINER } from "@/lib/styles";
 
@@ -76,11 +81,22 @@ export function WhatsappSettingsPage() {
     },
   });
 
+  const toggleMutation = useMutation({
+    mutationFn: toggleWhatsappConnection,
+    onError: (err: Error) => showError(`Error: ${err.message}`),
+    onSuccess: (result) => {
+      if (result.status === "ok") showSuccess(result.message);
+      else showError(result.message);
+      void queryClient.invalidateQueries({ queryKey: ["whatsapp"] });
+    },
+  });
+
   const { data: stats } = useQuery({
     ...whatsappKeys.stats(),
     refetchInterval: 30_000,
   });
 
+  const enabled = connectionStatus?.enabled ?? false;
   const connected = connectionStatus?.connectionState === "open";
   const connecting = connectionStatus?.connectionState === "connecting";
 
@@ -107,63 +123,83 @@ export function WhatsappSettingsPage() {
         <Tabs.Panel id="channel">
           <div className="mt-4 grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
             <Card>
-              <Card.Header className="flex flex-col items-start gap-1">
-                <h2 className="font-semibold text-base">Conexión WhatsApp</h2>
-                <Description className="text-default-500 text-xs">
-                  Conexión directa vía Baileys. Escanea el código QR para vincular.
-                </Description>
+              <Card.Header className="flex items-center justify-between">
+                <div className="flex flex-col gap-1">
+                  <h2 className="font-semibold text-base">Conexión WhatsApp</h2>
+                  <Description className="text-default-500 text-xs">
+                    Conexión directa vía Baileys. Escanea el código QR para vincular.
+                  </Description>
+                </div>
+                <Switch
+                  isDisabled={toggleMutation.isPending}
+                  isSelected={enabled}
+                  onChange={() => toggleMutation.mutate()}
+                >
+                  <Switch.Control>
+                    <Switch.Thumb />
+                  </Switch.Control>
+                  <Switch.Content>{enabled ? "Activo" : "Inactivo"}</Switch.Content>
+                </Switch>
               </Card.Header>
               <Card.Content className="space-y-4">
-                <div className="flex items-center gap-3">
-                  {connected ? (
-                    <Wifi className="h-5 w-5 text-success" />
-                  ) : (
-                    <WifiOff className="h-5 w-5 text-danger" />
-                  )}
-                  <Chip
-                    color={connected ? "success" : connecting ? "warning" : "danger"}
-                    size="sm"
-                    variant="soft"
-                  >
-                    {connected ? "Conectado" : connecting ? "Conectando..." : "Desconectado"}
-                  </Chip>
-                  {connectionStatus?.lastDisconnectReason != null && !connected ? (
-                    <Description className="text-default-500 text-xs">
-                      Desconexión: código {connectionStatus.lastDisconnectReason}
-                    </Description>
-                  ) : null}
-                </div>
-
-                {!connected && connectionStatus?.qrDataUrl ? (
-                  <div className="flex flex-col items-center gap-3">
-                    <img
-                      alt="QR code para vincular WhatsApp"
-                      className="h-64 w-64 rounded-xl border border-default-200"
-                      src={connectionStatus.qrDataUrl}
-                    />
-                    <Description className="text-center text-default-500 text-xs">
-                      Abre WhatsApp en tu teléfono → Configuración → Dispositivos vinculados →
-                      Vincular un dispositivo. Se actualiza automáticamente.
-                    </Description>
-                  </div>
-                ) : !connected && !connecting ? (
-                  <Alert status="warning">
-                    Baileys no está conectado. Asegúrate de que ENABLE_WHATSAPP=true en el servidor
-                    y que la migración de auth state esté aplicada.
+                {!enabled ? (
+                  <Alert status="default">
+                    WhatsApp está desactivado. Activa el switch para iniciar la conexión.
                   </Alert>
-                ) : !connected && connecting && !connectionStatus?.qrDataUrl ? (
-                  <div className="flex items-center gap-2 text-sm text-default-500">
-                    <Skeleton className="h-64 w-64 rounded-xl" />
-                  </div>
-                ) : null}
+                ) : (
+                  <>
+                    <div className="flex items-center gap-3">
+                      {connected ? (
+                        <Wifi className="h-5 w-5 text-success" />
+                      ) : (
+                        <WifiOff className="h-5 w-5 text-default-400" />
+                      )}
+                      <Chip
+                        color={connected ? "success" : connecting ? "warning" : "danger"}
+                        size="sm"
+                        variant="soft"
+                      >
+                        {connected ? "Conectado" : connecting ? "Conectando..." : "Desconectado"}
+                      </Chip>
+                      {connectionStatus?.lastDisconnectReason != null && !connected && (
+                        <Description className="text-default-500 text-xs">
+                          Código {connectionStatus.lastDisconnectReason}
+                        </Description>
+                      )}
+                    </div>
 
-                {connected ? (
-                  <Alert status="success">WhatsApp conectado y listo para enviar mensajes.</Alert>
-                ) : null}
+                    {!connected && connectionStatus?.qrDataUrl ? (
+                      <div className="flex flex-col items-center gap-3 py-2">
+                        <img
+                          alt="QR code para vincular WhatsApp"
+                          className="h-64 w-64 rounded-xl border border-default-200"
+                          src={connectionStatus.qrDataUrl}
+                        />
+                        <Description className="max-w-xs text-center text-default-500 text-xs">
+                          Abre WhatsApp → Configuración → Dispositivos vinculados → Vincular un
+                          dispositivo.
+                        </Description>
+                      </div>
+                    ) : !connected && connecting && !connectionStatus?.qrDataUrl ? (
+                      <div className="flex flex-col items-center gap-3 py-2">
+                        <Skeleton className="h-64 w-64 rounded-xl" />
+                        <Description className="text-default-400 text-xs">
+                          Esperando código QR...
+                        </Description>
+                      </div>
+                    ) : null}
 
-                {overviewPending ? (
+                    {connected && (
+                      <Alert status="success">
+                        WhatsApp conectado y listo para enviar mensajes.
+                      </Alert>
+                    )}
+                  </>
+                )}
+
+                {enabled && overviewPending ? (
                   <Skeleton className="h-16 w-full rounded-2xl" />
-                ) : overview ? (
+                ) : enabled && overview ? (
                   <div className="space-y-2">
                     <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
                       Flujo automático

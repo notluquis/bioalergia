@@ -9,6 +9,7 @@ import { scheduleWatchChannelSetup } from "./lib/google/google-calendar-watch";
 import { startMercadoPagoScheduler } from "./lib/mercadopago/mercadopago-scheduler";
 import { initBaileysSocket } from "./lib/whatsapp/baileys-socket";
 import { startWhatsappScheduler } from "./lib/whatsapp/whatsapp-scheduler";
+import { getSetting } from "./services/settings";
 
 const port = Number(process.env.PORT) || 3000;
 console.log(`🚀 Finanzas API starting on port ${port}`);
@@ -33,10 +34,12 @@ if (process.env.ENABLE_DOCTORALIA_CALENDAR_SYNC === "true") {
   startDoctoraliaCalendarScheduler();
 }
 
-// Initialize Baileys WhatsApp connection
-if (process.env.ENABLE_WHATSAPP === "true") {
-  initBaileysSocket().catch((err) => console.error("Failed to initialize Baileys:", err));
-}
+// Initialize Baileys WhatsApp connection if enabled in DB settings
+getSetting("whatsapp.enabled").then((val) => {
+  if (val === "true") {
+    initBaileysSocket().catch((err) => console.error("Failed to initialize Baileys:", err));
+  }
+}).catch(() => {});
 
 if (process.env.ENABLE_WHATSAPP_NOTIFICATIONS === "true") {
   startWhatsappScheduler();
