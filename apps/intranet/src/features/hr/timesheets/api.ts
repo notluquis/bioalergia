@@ -106,8 +106,24 @@ const PrepareEmailPayloadSchema = z.object({
   ),
 });
 
+const PreviewEmailSchema = z.object({
+  attachmentName: z.string(),
+  attachmentType: z.string(),
+  from: z.email(),
+  html: z.string(),
+  subject: z.string(),
+  text: z.string(),
+  to: z.email(),
+});
+
 const PrepareEmailPayloadResponseSchema = z.object({
   payload: PrepareEmailPayloadSchema,
+  message: z.string().optional(),
+  status: z.string(),
+});
+
+const PreviewEmailResponseSchema = z.object({
+  preview: PreviewEmailSchema,
   message: z.string().optional(),
   status: z.string(),
 });
@@ -283,6 +299,42 @@ export async function prepareTimesheetEmailPayload(payload: {
   }
 
   return data;
+}
+
+export async function fetchTimesheetEmailPreview(payload: {
+  employeeEmail: string;
+  employeeId: number;
+  employeeName: string;
+  month: string;
+  monthLabel: string;
+  summary: {
+    net: number;
+    overtimeMinutes: number;
+    payDate: string;
+    retention: number;
+    retention_rate?: null | number;
+    retentionRate?: null | number;
+    role: string;
+    subtotal: number;
+    workedMinutes: number;
+  };
+}) {
+  let data: {
+    preview: z.infer<typeof PreviewEmailSchema>;
+    message?: string;
+    status: string;
+  };
+  try {
+    data = PreviewEmailResponseSchema.parse(await timesheetsORPCClient.previewEmail(payload));
+  } catch (error) {
+    throw toTimesheetsApiError(error);
+  }
+
+  if (data.status !== "ok") {
+    throw new Error(data.message || "Error al preparar la vista previa");
+  }
+
+  return data.preview;
 }
 
 export async function updateTimesheet(id: number, payload: Partial<TimesheetPayload>) {

@@ -5,6 +5,8 @@ import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import {
   timesheetBulkInputSchema,
+  timesheetEmailPreviewInputSchema,
+  timesheetEmailPreviewResponseSchema,
   timesheetEmailPayloadInputSchema,
   timesheetEmployeeDetailInputSchema,
   timesheetEmployeeRangeInputSchema,
@@ -38,6 +40,7 @@ import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
 import { getEmployeeById } from "../services/employees";
+import { buildTimesheetEmailComposition } from "../services/timesheet-email-template";
 import {
   buildMonthlySummary,
   deleteTimesheetEntry,
@@ -62,18 +65,6 @@ type TimesheetsORPCContext = {
 };
 
 const base = os.$context<TimesheetsORPCContext>();
-
-const emailSummarySchema = z.object({
-  net: z.number(),
-  overtimeMinutes: z.number().optional(),
-  payDate: z.string(),
-  retention: z.number(),
-  retention_rate: z.number().nullable().optional(),
-  retentionRate: z.number().nullable().optional(),
-  role: z.string(),
-  subtotal: z.number(),
-  workedMinutes: z.number().optional(),
-});
 
 const multiDetailEntrySchema = z.looseObject({
   comment: z.string().nullable(),
@@ -158,52 +149,19 @@ async function buildSalarySummaryData(from: string, to: string, employeeIds?: nu
   return data;
 }
 
-function buildTimesheetEmailHtml({
-  employeeName,
-  month,
-  monthLabel,
-  summary,
-}: {
-  employeeName: string;
-  month: string;
-  monthLabel: string;
-  summary: z.infer<typeof emailSummarySchema>;
-}) {
-  const totalMinutes = (summary.workedMinutes || 0) + (summary.overtimeMinutes || 0);
-  const totalHrs = Math.floor(totalMinutes / 60);
-  const totalMins = totalMinutes % 60;
-  const totalHoursFormatted = `${String(totalHrs).padStart(2, "0")}:${String(totalMins).padStart(2, "0")}`;
-  const boletaDescription = `SERVICIOS PROFESIONALES DE ${summary.role.toUpperCase()} - PERIODO ${monthLabel.toUpperCase()} - TIEMPO FACTURABLE ${totalHoursFormatted}`;
-  const fmtCLP = (amount: number) =>
-    new Intl.NumberFormat("es-CL", { currency: "CLP", style: "currency" }).format(amount);
-  const summaryYear = month
-    ? Number.parseInt(month.split("-")[0] ?? "2024", 10)
-    : new Date().getFullYear();
-  const employeeRate = summary.retentionRate || summary.retention_rate || null;
-  const effectiveRate = employeeRate ?? (summaryYear >= 2024 ? 0.1275 : 0.1);
-  const retentionPercent = `${(effectiveRate * 100).toFixed(2)}%`;
-
-  return `
-<!DOCTYPE html>
-<html><head><meta charset="utf-8"></head><body>
-<p>Estimado/a <strong>${employeeName}</strong>,</p>
-<p>Periodo <strong>${monthLabel}</strong>.</p>
-<p>${boletaDescription}</p>
-<p>Monto bruto: ${fmtCLP(summary.subtotal)}</p>
-<p>Retención (${retentionPercent}): ${fmtCLP(summary.retention)}</p>
-<p>Líquido estimado: ${fmtCLP(summary.net)}</p>
-<p>Fecha estimada de pago: ${summary.payDate}</p>
-</body></html>`.trim();
-}
-
 function buildTimesheetEmailPayload({
   employeeEmail,
   employeeName,
-  month,
   monthLabel,
   pdfBase64,
   summary,
 }: z.infer<typeof timesheetEmailPayloadInputSchema>) {
+  const composition = buildTimesheetEmailComposition({
+    employeeName,
+    monthLabel,
+    summary,
+  });
+
   return {
     attachments: [
       {
@@ -213,14 +171,39 @@ function buildTimesheetEmailPayload({
       },
     ],
     from: EMAIL_FROM_ADDRESS,
-    html: buildTimesheetEmailHtml({ employeeName, month, monthLabel, summary }),
-    subject: `Boleta de Honorarios - ${monthLabel} - ${employeeName}`,
+    html: composition.html,
+    subject: composition.subject,
+    text: composition.text,
     to: employeeEmail,
   };
 }
 
+function buildTimesheetEmailPreview({
+  employeeEmail,
+  employeeName,
+  monthLabel,
+  summary,
+}: z.infer<typeof timesheetEmailPreviewInputSchema>) {
+  const composition = buildTimesheetEmailComposition({
+    employeeName,
+    monthLabel,
+    summary,
+  });
+
+  return timesheetEmailPreviewResponseSchema.shape.preview.parse({
+    attachmentName: PDF_FILENAME,
+    attachmentType: "application/pdf",
+    from: EMAIL_FROM_ADDRESS,
+    html: composition.html,
+    subject: composition.subject,
+    text: composition.text,
+    to: employeeEmail,
+  });
+}
+
 function buildEmlFromPayload(payload: ReturnType<typeof buildTimesheetEmailPayload>) {
   const boundary = `----=_Part_${Date.now()}`;
+  const boundaryAlt = `----=_Alt_${Date.now()}`;
   return [
     "MIME-Version: 1.0",
     `Content-Type: multipart/mixed; boundary="${boundary}"`,
@@ -229,10 +212,21 @@ function buildEmlFromPayload(payload: ReturnType<typeof buildTimesheetEmailPaylo
     `To: ${payload.to}`,
     "",
     `--${boundary}`,
+    `Content-Type: multipart/alternative; boundary="${boundaryAlt}"`,
+    "",
+    `--${boundaryAlt}`,
+    "Content-Type: text/plain; charset=utf-8",
+    "Content-Transfer-Encoding: 8bit",
+    "",
+    payload.text ?? "",
+    "",
+    `--${boundaryAlt}`,
     "Content-Type: text/html; charset=utf-8",
     "Content-Transfer-Encoding: 8bit",
     "",
     payload.html,
+    "",
+    `--${boundaryAlt}--`,
     "",
     `--${boundary}`,
     `Content-Type: ${payload.attachments[0].contentType}; name="${payload.attachments[0].filename}"`,
@@ -472,6 +466,20 @@ const timesheetsORPCRouterBase = {
     .output(timesheetPrepareEmailPayloadResponseSchema)
     .handler(async ({ input }) => ({
       payload: buildTimesheetEmailPayload(input),
+      status: "ok" as const,
+    })),
+
+  previewEmail: readTimesheets
+    .route({
+      method: "POST",
+      path: "/preview-email",
+      summary: "Prepare email preview payload",
+      tags: ["Timesheets"],
+    })
+    .input(timesheetEmailPreviewInputSchema)
+    .output(timesheetEmailPreviewResponseSchema)
+    .handler(async ({ input }) => ({
+      preview: buildTimesheetEmailPreview(input),
       status: "ok" as const,
     })),
 

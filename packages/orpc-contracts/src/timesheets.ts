@@ -121,6 +121,10 @@ export const timesheetEmailPayloadInputSchema = z.object({
   summary: timesheetEmailSummarySchema,
 });
 
+export const timesheetEmailPreviewInputSchema = timesheetEmailPayloadInputSchema.omit({
+  pdfBase64: true,
+});
+
 export const timesheetSummaryEmployeeSchema = z.object({
   email: z.string().nullable(),
   employeeId: z.number(),
@@ -218,6 +222,20 @@ export const timesheetPrepareEmailPayloadResponseSchema = z.object({
     from: z.string(),
     html: z.string(),
     subject: z.string(),
+    text: z.string().optional(),
+    to: z.string(),
+  }),
+  status: z.literal("ok"),
+});
+
+export const timesheetEmailPreviewResponseSchema = z.object({
+  preview: z.object({
+    attachmentName: z.string(),
+    attachmentType: z.string(),
+    from: z.string(),
+    html: z.string(),
+    subject: z.string(),
+    text: z.string(),
     to: z.string(),
   }),
   status: z.literal("ok"),
@@ -289,6 +307,10 @@ export const timesheetsContract = {
     .route({ method: "POST", path: "/prepare-email-payload" })
     .input(timesheetEmailPayloadInputSchema)
     .output(timesheetPrepareEmailPayloadResponseSchema),
+  previewEmail: oc
+    .route({ method: "POST", path: "/preview-email" })
+    .input(timesheetEmailPreviewInputSchema)
+    .output(timesheetEmailPreviewResponseSchema),
   remove: oc
     .route({ method: "DELETE", path: "/entry" })
     .input(timesheetRemoveInputSchema)
