@@ -59,6 +59,8 @@ export {
   whatsappContract,
   whatsappNotificationSchema,
   whatsappNotificationStatusSchema,
+  whatsappOverviewSchema,
+  whatsappSendModeSchema,
   whatsappStatsSchema,
   listWhatsappNotificationsResponseSchema,
   whatsappStatusResponseSchema,

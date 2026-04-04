@@ -1,12 +1,16 @@
 /**
  * WhatsApp webhook routes.
  * GET  /api/webhooks/whatsapp  → Meta webhook challenge verification
- * POST /api/webhooks/whatsapp  → Incoming status update events (delivered, read, failed)
+ * POST /api/webhooks/whatsapp  → Incoming messages and outbound status updates
  */
 import { db } from "@finanzas/db";
 import { createHmac } from "node:crypto";
 import { Hono } from "hono";
 import { logError, logEvent } from "../lib/logger";
+import {
+  recordInboundWhatsappMessage,
+  touchWhatsappConversation,
+} from "../lib/whatsapp/conversation-state";
 
 export const whatsappWebhookRoutes = new Hono();
 
@@ -29,7 +33,7 @@ whatsappWebhookRoutes.get("/", (c) => {
   return c.text("Forbidden", 403);
 });
 
-/** Incoming WhatsApp status events (POST) */
+/** Incoming WhatsApp webhook events (POST) */
 whatsappWebhookRoutes.post("/", async (c) => {
   // Verify signature
   const signature = c.req.header("x-hub-signature-256");
@@ -100,10 +104,26 @@ whatsappWebhookRoutes.post("/", async (c) => {
 });
 
 interface WhatsappStatusEntry {
+  conversation?: {
+    expiration_timestamp?: string;
+    id?: string;
+    origin?: { type?: string };
+  };
   id: string;
+  recipient_id?: string;
   status: "sent" | "delivered" | "read" | "failed";
   timestamp: string;
   errors?: Array<{ code: number; title: string }>;
+}
+
+interface WhatsappIncomingMessage {
+  from?: string;
+  id: string;
+  text?: {
+    body?: string;
+  };
+  timestamp?: string;
+  type?: string;
 }
 
 interface WhatsappWebhookPayload {
@@ -112,8 +132,11 @@ interface WhatsappWebhookPayload {
     changes?: Array<{
       field?: string;
       value?: {
+        contacts?: Array<{
+          wa_id?: string;
+        }>;
         statuses?: WhatsappStatusEntry[];
-        messages?: Array<{ type?: string }>;
+        messages?: WhatsappIncomingMessage[];
       };
     }>;
   }>;
@@ -148,16 +171,21 @@ async function processWebhookPayload(payload: WhatsappWebhookPayload) {
   }
 
   const statuses: WhatsappStatusEntry[] = [];
+  const incomingMessages: Array<{ message: WhatsappIncomingMessage; waId: null | string }> = [];
   for (const entry of payload.entry ?? []) {
     for (const change of entry.changes ?? []) {
+      const waId = change.value?.contacts?.[0]?.wa_id ?? null;
+      for (const message of change.value?.messages ?? []) {
+        incomingMessages.push({ message, waId });
+      }
       for (const status of change.value?.statuses ?? []) {
         statuses.push(status);
       }
     }
   }
 
-  if (statuses.length === 0) {
-    return;
+  for (const { message, waId } of incomingMessages) {
+    await handleIncomingMessage(message, waId);
   }
 
   for (const status of statuses) {
@@ -165,10 +193,46 @@ async function processWebhookPayload(payload: WhatsappWebhookPayload) {
   }
 }
 
+async function handleIncomingMessage(message: WhatsappIncomingMessage, waId: null | string) {
+  if (!message.from || !message.id) {
+    return;
+  }
+
+  try {
+    const state = await recordInboundWhatsappMessage({
+      from: message.from,
+      messageId: message.id,
+      text: message.text?.body ?? null,
+      timestamp: message.timestamp ?? null,
+      waId,
+    });
+
+    logEvent("whatsapp.webhook.inbound_recorded", {
+      messageId: message.id,
+      phone: state.phone,
+      type: message.type ?? "unknown",
+      windowExpiresAt: state.windowExpiresAt.toISOString(),
+    });
+  } catch (err) {
+    logError("whatsapp.webhook.inbound_record_error", err, {
+      messageId: message.id,
+      phone: message.from,
+      type: message.type ?? "unknown",
+    });
+  }
+}
+
 async function updateNotificationStatus(entry: WhatsappStatusEntry) {
   const now = new Date();
 
   try {
+    if (entry.recipient_id) {
+      await touchWhatsappConversation({
+        conversationId: entry.conversation?.id ?? null,
+        phone: entry.recipient_id,
+      });
+    }
+
     const notification = await db.$qb
       .selectFrom("WhatsappNotification")
       .select(["id", "status"])

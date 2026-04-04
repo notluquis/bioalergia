@@ -5,10 +5,12 @@
  */
 import { db } from "@finanzas/db";
 import { createId } from "@paralleldrive/cuid2";
+import dayjs from "dayjs";
 import { ImapFlow } from "imapflow";
 import { logError, logEvent, logWarn } from "../logger";
+import { hasActiveCustomerServiceWindow } from "./conversation-state";
 import { htmlToText, parseDoctoraliaEmail } from "./email-parser";
-import { normalizePhone, sendTemplateMessage } from "./whatsapp-client";
+import { normalizePhone, sendTemplateMessage, sendTextMessage } from "./whatsapp-client";
 
 interface ImapConfig {
   host: string;
@@ -45,6 +47,41 @@ function getWhatsappTemplate() {
     languageCode: process.env.WHATSAPP_TEMPLATE_LANGUAGE ?? "en_US",
     name: process.env.WHATSAPP_TEMPLATE_NAME ?? "hello_world",
   };
+}
+
+function buildDoctoraliaFreeformMessage(booking: NonNullable<ReturnType<typeof parseDoctoraliaEmail>>) {
+  const template = process.env.WHATSAPP_FREEFORM_MESSAGE?.trim();
+  const appointmentDate = booking.appointmentDate
+    ? dayjs(booking.appointmentDate).format("DD/MM/YYYY HH:mm")
+    : "";
+  const replacements: Record<string, string> = {
+    appointmentDate,
+    appointmentDoctor: booking.appointmentDoctor ?? "",
+    appointmentService: booking.appointmentService ?? "",
+    clinicAddress: booking.clinicAddress ?? "",
+    patientName: booking.patientName,
+  };
+
+  if (template) {
+    return template.replace(/\{\{\s*(\w+)\s*\}\}/g, (_match, key: string) => replacements[key] ?? "");
+  }
+
+  const details = [
+    booking.appointmentService ? `Servicio: ${booking.appointmentService}` : null,
+    booking.appointmentDoctor ? `Profesional: ${booking.appointmentDoctor}` : null,
+    appointmentDate ? `Fecha: ${appointmentDate}` : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  return [
+    `Hola ${booking.patientName}, te escribimos de Bioalergia.`,
+    "Vimos tu reserva en Doctoralia.",
+    details,
+    "Si necesitas ajustar o confirmar algo, responde este mensaje.",
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 export interface PollResult {
@@ -156,24 +193,30 @@ export async function runImapPoll(): Promise<PollResult> {
 
       // Send WhatsApp message
       const template = getWhatsappTemplate();
+      const normalizedPhone = normalizePhone(booking.patientPhone);
+      const canUseFreeform = await hasActiveCustomerServiceWindow(normalizedPhone);
+      const freeformBody = canUseFreeform ? buildDoctoraliaFreeformMessage(booking) : null;
       let waMessageId: string | null = null;
       let status: "SENT" | "FAILED" = "SENT";
       let errorMessage: string | null = null;
       let sentAt: Date | null = null;
 
       try {
-        const sendResult = await sendTemplateMessage(
-          booking.patientPhone,
-          template.name,
-          template.languageCode,
-        );
+        const sendResult = canUseFreeform && freeformBody
+          ? await sendTextMessage(booking.patientPhone, freeformBody)
+          : await sendTemplateMessage(
+              booking.patientPhone,
+              template.name,
+              template.languageCode,
+            );
         waMessageId = sendResult.messageId;
         sentAt = new Date();
         result.sent++;
         logEvent("whatsapp.message.sent", {
+          mode: canUseFreeform ? "text" : "template",
           messageId,
           patientName: booking.patientName,
-          phone: normalizePhone(booking.patientPhone),
+          phone: normalizedPhone,
           waMessageId,
         });
       } catch (err) {
@@ -181,6 +224,7 @@ export async function runImapPoll(): Promise<PollResult> {
         errorMessage = err instanceof Error ? err.message : String(err);
         result.failed++;
         logError("whatsapp.message.failed", err, {
+          mode: canUseFreeform ? "text" : "template",
           messageId,
           patientName: booking.patientName,
         });

@@ -4881,6 +4881,61 @@ export class SchemaType implements SchemaDef {
                 emailMessageId: { type: "String" }
             }
         },
+        WhatsappConversationState: {
+            name: "WhatsappConversationState",
+            fields: {
+                phone: {
+                    name: "phone",
+                    type: "String",
+                    id: true
+                },
+                waId: {
+                    name: "waId",
+                    type: "String",
+                    optional: true
+                },
+                lastInboundMessageId: {
+                    name: "lastInboundMessageId",
+                    type: "String",
+                    optional: true
+                },
+                lastInboundAt: {
+                    name: "lastInboundAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                lastInboundText: {
+                    name: "lastInboundText",
+                    type: "String",
+                    optional: true
+                },
+                conversationId: {
+                    name: "conversationId",
+                    type: "String",
+                    optional: true
+                },
+                windowExpiresAt: {
+                    name: "windowExpiresAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                }
+            },
+            idFields: ["phone"],
+            uniqueFields: {
+                phone: { type: "String" }
+            }
+        },
         PersonalCredit: {
             name: "PersonalCredit",
             fields: {

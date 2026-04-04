@@ -1,5 +1,13 @@
 import { toWhatsappApiError, whatsappORPCClient } from "./orpc";
 
+export async function fetchWhatsappOverview() {
+  try {
+    return await whatsappORPCClient.getOverview({});
+  } catch (error) {
+    throw toWhatsappApiError(error);
+  }
+}
+
 export async function fetchWhatsappNotifications(params: {
   limit?: number;
   offset?: number;

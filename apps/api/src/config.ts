@@ -145,6 +145,7 @@ export interface WhatsappConfig {
   phoneNumberId: string;
   templateName: string;
   templateLanguage: string;
+  freeformMessage: string | null;
   webhookVerifyToken: string | null;
   appSecret: string | null;
   pollCron: string;
@@ -167,6 +168,7 @@ export const whatsappConfig: WhatsappConfig | null =
     ? {
         accessToken: waAccessToken,
         appSecret: process.env.WHATSAPP_APP_SECRET ?? null,
+        freeformMessage: process.env.WHATSAPP_FREEFORM_MESSAGE ?? null,
         imapHost: process.env.DOCTORALIA_IMAP_HOST ?? null,
         imapMailbox: process.env.DOCTORALIA_IMAP_MAILBOX ?? "INBOX",
         imapPass: process.env.DOCTORALIA_IMAP_PASS ?? null,

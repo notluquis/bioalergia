@@ -1577,6 +1577,25 @@ model WhatsappNotification {
   @@map("whatsapp_notifications")
 }
 
+model WhatsappConversationState {
+  phone                String    @id
+  waId                 String?   @map("wa_id")
+  lastInboundMessageId String?   @map("last_inbound_message_id")
+  lastInboundAt        DateTime? @map("last_inbound_at")
+  lastInboundText      String?   @map("last_inbound_text")
+  conversationId       String?   @map("conversation_id")
+  windowExpiresAt      DateTime? @map("window_expires_at")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  @@index([windowExpiresAt(sort: Desc)])
+  @@deny('all', auth() == null)
+  @@allow('read', auth() != null)
+  @@allow('create,update', auth().status == 'ACTIVE')
+
+  @@map("whatsapp_conversation_state")
+}
+
 // ============================================================
 // ENUMS
 // ============================================================

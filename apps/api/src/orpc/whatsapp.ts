@@ -3,6 +3,7 @@ import {
   listWhatsappNotificationsInputSchema as contractListInput,
   listWhatsappNotificationsResponseSchema as contractListResponse,
   whatsappNotificationStatusSchema,
+  whatsappOverviewSchema,
   whatsappStatsSchema,
   whatsappStatusResponseSchema,
   whatsappTestSendInputSchema,
@@ -14,7 +15,11 @@ import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
 import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
-import { normalizePhone, sendTemplateMessage } from "../lib/whatsapp/whatsapp-client";
+import {
+  countActiveCustomerServiceWindows,
+  hasActiveCustomerServiceWindow,
+} from "../lib/whatsapp/conversation-state";
+import { normalizePhone, sendTemplateMessage, sendTextMessage } from "../lib/whatsapp/whatsapp-client";
 import { runWhatsappPoll } from "../lib/whatsapp/whatsapp-scheduler";
 import { configureSuperjson } from "../lib/superjson-config";
 import { SuperJSONRPCHandler } from "./superjson";
@@ -151,6 +156,59 @@ const whatsappORPCRouterBase = {
       };
     }),
 
+  getOverview: integrationRead
+    .route({
+      method: "GET",
+      path: "/overview",
+      summary: "Get WhatsApp integration overview",
+      tags: ["WhatsApp"],
+    })
+    .output(whatsappOverviewSchema)
+    .handler(async () => {
+      const accessTokenConfigured = Boolean(process.env.WHATSAPP_ACCESS_TOKEN);
+      const phoneNumberIdConfigured = Boolean(process.env.WHATSAPP_PHONE_NUMBER_ID);
+      const webhookVerifyTokenConfigured = Boolean(process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN);
+      const appSecretConfigured = Boolean(process.env.WHATSAPP_APP_SECRET);
+      const imapHostConfigured = Boolean(process.env.DOCTORALIA_IMAP_HOST);
+      const imapUserConfigured = Boolean(process.env.DOCTORALIA_IMAP_USER);
+      const imapPassConfigured = Boolean(process.env.DOCTORALIA_IMAP_PASS);
+      const automaticNotificationsEnabled = process.env.ENABLE_WHATSAPP_NOTIFICATIONS === "true";
+      const outboundReady = accessTokenConfigured && phoneNumberIdConfigured;
+      const webhookReady = webhookVerifyTokenConfigured && appSecretConfigured;
+      const imapReady = imapHostConfigured && imapUserConfigured && imapPassConfigured;
+      const automaticFlowReady = automaticNotificationsEnabled && outboundReady && imapReady;
+      let activeCustomerServiceWindows = 0;
+
+      try {
+        activeCustomerServiceWindows = await countActiveCustomerServiceWindows();
+      } catch (err) {
+        logError("whatsapp.overview.active_windows_error", err, {});
+      }
+
+      return {
+        accessTokenConfigured,
+        activeCustomerServiceWindows,
+        appSecretConfigured,
+        automaticFlowReady,
+        automaticNotificationsEnabled,
+        freeformMessageConfigured: Boolean(process.env.WHATSAPP_FREEFORM_MESSAGE?.trim()),
+        hybridFlowReady: automaticFlowReady && webhookReady,
+        imapHostConfigured,
+        imapMailbox: process.env.DOCTORALIA_IMAP_MAILBOX ?? "INBOX",
+        imapPassConfigured,
+        imapReady,
+        imapUserConfigured,
+        outboundReady,
+        phoneNumberIdConfigured,
+        pollCron: process.env.WHATSAPP_POLL_CRON ?? "*/2 * * * *",
+        senderFilter: process.env.DOCTORALIA_EMAIL_SENDER_FILTER ?? "doctoralia.com",
+        templateLanguage: process.env.WHATSAPP_TEMPLATE_LANGUAGE ?? "en_US",
+        templateName: process.env.WHATSAPP_TEMPLATE_NAME ?? "hello_world",
+        webhookReady,
+        webhookVerifyTokenConfigured,
+      };
+    }),
+
   testSend: integrationCreate
     .route({
       method: "POST",
@@ -163,15 +221,25 @@ const whatsappORPCRouterBase = {
     .handler(async ({ input }) => {
       const templateName = process.env.WHATSAPP_TEMPLATE_NAME ?? "hello_world";
       const languageCode = process.env.WHATSAPP_TEMPLATE_LANGUAGE ?? "en_US";
+      const normalizedPhone = normalizePhone(input.phone);
 
       try {
-        const result = await sendTemplateMessage(
-          normalizePhone(input.phone),
-          templateName,
-          languageCode,
-        );
+        const canUseFreeform = await hasActiveCustomerServiceWindow(normalizedPhone);
+        const result = canUseFreeform
+          ? await sendTextMessage(
+              normalizedPhone,
+              "Hola, este es un mensaje de prueba de Bioalergia por WhatsApp.",
+            )
+          : await sendTemplateMessage(
+              normalizedPhone,
+              templateName,
+              languageCode,
+            );
         return {
-          message: `Mensaje enviado. ID: ${result.messageId}`,
+          message: canUseFreeform
+            ? `Mensaje enviado en modo texto. ID: ${result.messageId}`
+            : `Mensaje enviado en modo template. ID: ${result.messageId}`,
+          mode: canUseFreeform ? "text" as const : "template" as const,
           status: "ok" as const,
         };
       } catch (err) {

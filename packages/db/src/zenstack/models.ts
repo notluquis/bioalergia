@@ -63,6 +63,7 @@ export type DoctoraliaCalendarSyncLog = $ModelResult<$Schema, "DoctoraliaCalenda
 export type HaulmerSyncLog = $ModelResult<$Schema, "HaulmerSyncLog">;
 export type DoctoraliaEmailNotification = $ModelResult<$Schema, "DoctoraliaEmailNotification">;
 export type WhatsappNotification = $ModelResult<$Schema, "WhatsappNotification">;
+export type WhatsappConversationState = $ModelResult<$Schema, "WhatsappConversationState">;
 export type PersonalCredit = $ModelResult<$Schema, "PersonalCredit">;
 export type PersonalCreditInstallment = $ModelResult<$Schema, "PersonalCreditInstallment">;
 export type MedicalCertificate = $ModelResult<$Schema, "MedicalCertificate">;

@@ -48,13 +48,39 @@ export const whatsappStatsSchema = z.object({
   total: z.number(),
 });
 
+export const whatsappSendModeSchema = z.enum(["template", "text"]);
+
+export const whatsappOverviewSchema = z.object({
+  accessTokenConfigured: z.boolean(),
+  activeCustomerServiceWindows: z.number().int().min(0),
+  appSecretConfigured: z.boolean(),
+  automaticFlowReady: z.boolean(),
+  automaticNotificationsEnabled: z.boolean(),
+  freeformMessageConfigured: z.boolean(),
+  hybridFlowReady: z.boolean(),
+  imapHostConfigured: z.boolean(),
+  imapMailbox: z.string(),
+  imapPassConfigured: z.boolean(),
+  imapReady: z.boolean(),
+  imapUserConfigured: z.boolean(),
+  outboundReady: z.boolean(),
+  phoneNumberIdConfigured: z.boolean(),
+  pollCron: z.string(),
+  senderFilter: z.string(),
+  templateLanguage: z.string(),
+  templateName: z.string(),
+  webhookReady: z.boolean(),
+  webhookVerifyTokenConfigured: z.boolean(),
+});
+
 export const whatsappTestSendInputSchema = z.object({
   phone: z.string().min(5),
 });
 
 export const whatsappStatusResponseSchema = z.object({
-  status: z.enum(["ok", "error"]),
   message: z.string(),
+  mode: whatsappSendModeSchema.optional(),
+  status: z.enum(["ok", "error"]),
 });
 
 export const whatsappContract = {
@@ -76,6 +102,15 @@ export const whatsappContract = {
       tags: ["WhatsApp"],
     })
     .output(whatsappStatsSchema),
+
+  getOverview: oc
+    .route({
+      method: "GET",
+      path: "/overview",
+      summary: "Get WhatsApp integration overview",
+      tags: ["WhatsApp"],
+    })
+    .output(whatsappOverviewSchema),
 
   testSend: oc
     .route({

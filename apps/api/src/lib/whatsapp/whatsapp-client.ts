@@ -72,6 +72,42 @@ export async function sendTemplateMessage(
   return { messageId, status: "sent" };
 }
 
+export async function sendTextMessage(
+  to: string,
+  body: string,
+): Promise<WhatsappSendResult> {
+  const { accessToken, phoneNumberId } = getConfig();
+
+  const res = await fetch(`${GRAPH_API_BASE}/${phoneNumberId}/messages`, {
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      to: normalizePhone(to),
+      type: "text",
+      text: {
+        body,
+      },
+    }),
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    method: "POST",
+  });
+
+  if (!res.ok) {
+    const errorText = await res.text().catch(() => "unknown error");
+    throw new Error(`WhatsApp API error ${res.status}: ${errorText}`);
+  }
+
+  const data = (await res.json()) as {
+    messages?: Array<{ id: string }>;
+  };
+
+  const messageId = data.messages?.[0]?.id ?? "";
+  return { messageId, status: "sent" };
+}
+
 /**
  * Normalize a Chilean phone number to E.164 format.
  * Accepts: +56912345678, 56912345678, 912345678, 09..., etc.
