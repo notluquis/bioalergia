@@ -770,57 +770,62 @@ export function ClinicalSeriesView() {
                             {s.patientRut ?? "—"}
                           </span>
                           {s.beneficiaryRut ||
-                          s.patientPhone ||
-                          (s.beneficiaryPhone && s.beneficiaryPhone !== s.patientPhone) ? (
+                          s.patientPhones.length > 0 ||
+                          s.beneficiaryPhones.length > 0 ? (
                             <div className="flex flex-col gap-1">
                               {s.beneficiaryRut && s.beneficiaryRut !== s.patientRut && (
                                 <span className="text-[11px] text-foreground-300 font-mono">
                                   Beneficiario: {s.beneficiaryRut}
                                 </span>
                               )}
-                              {s.patientPhone &&
-                                (() => {
-                                  const whatsappNumber = toChileWhatsAppNumber(s.patientPhone);
-                                  return whatsappNumber ? (
-                                    <a
-                                      className="w-fit font-mono text-[11px] text-success-400 underline-offset-4 hover:underline"
-                                      href={`https://wa.me/${whatsappNumber}`}
-                                      onClick={(event) => {
-                                        event.stopPropagation();
-                                      }}
-                                      rel="noreferrer"
-                                      target="_blank"
-                                    >
-                                      Paciente: {s.patientPhone}
-                                    </a>
-                                  ) : (
-                                    <span className="text-[11px] text-foreground-300 font-mono">
-                                      Paciente: {s.patientPhone}
-                                    </span>
-                                  );
-                                })()}
-                              {s.beneficiaryPhone &&
-                                s.beneficiaryPhone !== s.patientPhone &&
-                                (() => {
-                                  const whatsappNumber = toChileWhatsAppNumber(s.beneficiaryPhone);
-                                  return whatsappNumber ? (
-                                    <a
-                                      className="w-fit font-mono text-[11px] text-accent underline-offset-4 hover:underline"
-                                      href={`https://wa.me/${whatsappNumber}`}
-                                      onClick={(event) => {
-                                        event.stopPropagation();
-                                      }}
-                                      rel="noreferrer"
-                                      target="_blank"
-                                    >
-                                      Beneficiario: {s.beneficiaryPhone}
-                                    </a>
-                                  ) : (
-                                    <span className="text-[11px] text-foreground-300 font-mono">
-                                      Beneficiario: {s.beneficiaryPhone}
-                                    </span>
-                                  );
-                                })()}
+                              {s.patientPhones.map((phone) => {
+                                const whatsappNumber = toChileWhatsAppNumber(phone);
+                                return whatsappNumber ? (
+                                  <a
+                                    className="w-fit font-mono text-[11px] text-success-400 underline-offset-4 hover:underline"
+                                    href={`https://wa.me/${whatsappNumber}`}
+                                    key={`patient-${phone}`}
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                    }}
+                                    rel="noreferrer"
+                                    target="_blank"
+                                  >
+                                    Paciente: {phone}
+                                  </a>
+                                ) : (
+                                  <span
+                                    className="text-[11px] text-foreground-300 font-mono"
+                                    key={`patient-${phone}`}
+                                  >
+                                    Paciente: {phone}
+                                  </span>
+                                );
+                              })}
+                              {s.beneficiaryPhones.map((phone) => {
+                                const whatsappNumber = toChileWhatsAppNumber(phone);
+                                return whatsappNumber ? (
+                                  <a
+                                    className="w-fit font-mono text-[11px] text-accent underline-offset-4 hover:underline"
+                                    href={`https://wa.me/${whatsappNumber}`}
+                                    key={`beneficiary-${phone}`}
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                    }}
+                                    rel="noreferrer"
+                                    target="_blank"
+                                  >
+                                    Beneficiario: {phone}
+                                  </a>
+                                ) : (
+                                  <span
+                                    className="text-[11px] text-foreground-300 font-mono"
+                                    key={`beneficiary-${phone}`}
+                                  >
+                                    Beneficiario: {phone}
+                                  </span>
+                                );
+                              })}
                             </div>
                           ) : null}
                         </div>

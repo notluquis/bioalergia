@@ -47,7 +47,7 @@ export const clinicalSeriesLinkedDocumentSchema = z.object({
 
 export const clinicalSeriesSnapshotSchema = z.object({
   beneficiaryName: z.string().nullable(),
-  beneficiaryPhone: z.string().nullable().optional(),
+  beneficiaryPhones: z.array(z.string()).catch([]),
   beneficiaryRut: z.string().nullable(),
   displayName: z.string().nullable(),
   eligibleDocumentDateFrom: z.string(),
@@ -57,7 +57,7 @@ export const clinicalSeriesSnapshotSchema = z.object({
   kind: clinicalSeriesKindSchema,
   linkedDocuments: z.array(clinicalSeriesLinkedDocumentSchema),
   patientName: z.string().nullable(),
-  patientPhone: z.string().nullable().optional(),
+  patientPhones: z.array(z.string()).catch([]),
   patientRut: z.string().nullable(),
   remainingExpected: z.number(),
   remainingPaid: z.number(),
