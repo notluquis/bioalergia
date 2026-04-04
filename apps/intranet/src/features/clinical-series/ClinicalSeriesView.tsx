@@ -11,6 +11,7 @@ import {
   Chip,
   DateField,
   DateRangePicker,
+  Dropdown,
   Drawer,
   Input,
   Label,
@@ -120,6 +121,49 @@ const INSURANCE_COLORS: Record<HealthInsuranceType, "success" | "warning" | "def
   ISAPRE: "warning",
   PARTICULAR: "default",
 };
+
+type ContactKind = "RUT" | "TEL";
+type ContactRole = "BENEFICIARIO" | "PACIENTE" | "UNCLASSIFIED";
+
+type ContactEntry = {
+  kind: ContactKind;
+  role: ContactRole;
+  value: string;
+};
+
+const CONTACT_ROLE_LABELS: Record<ContactRole, string> = {
+  BENEFICIARIO: "Beneficiario",
+  PACIENTE: "Paciente",
+  UNCLASSIFIED: "Sin clasificar",
+};
+
+function buildContactEntries(snapshot: ClinicalSeriesSnapshot): ContactEntry[] {
+  const buckets = new Map<string, { kind: ContactKind; roles: Set<ContactRole>; value: string }>();
+
+  const pushEntry = (kind: ContactKind, role: ContactRole, value: null | string | undefined) => {
+    if (!value) return;
+    const trimmedValue = value.trim();
+    if (!trimmedValue) return;
+    const key = `${kind}:${trimmedValue}`;
+    const bucket = buckets.get(key);
+    if (bucket) {
+      bucket.roles.add(role);
+      return;
+    }
+    buckets.set(key, { kind, roles: new Set([role]), value: trimmedValue });
+  };
+
+  pushEntry("RUT", "PACIENTE", snapshot.patientRut);
+  pushEntry("RUT", "BENEFICIARIO", snapshot.beneficiaryRut);
+  pushEntry("TEL", "PACIENTE", snapshot.patientPhone);
+  pushEntry("TEL", "BENEFICIARIO", snapshot.beneficiaryPhone);
+
+  return Array.from(buckets.values()).map(({ kind, roles, value }) => {
+    const role =
+      roles.size === 1 ? (Array.from(roles)[0] ?? "UNCLASSIFIED") : ("UNCLASSIFIED" as ContactRole);
+    return { kind, role, value };
+  });
+}
 
 const STATUS_LABELS: Record<ClinicalSeriesStatus, string> = {
   PLANNED: "Planificada",
@@ -737,30 +781,67 @@ export function ClinicalSeriesView() {
                   {derivedItems.map((s) => (
                     <Table.Row key={s.id} id={s.id} className="cursor-pointer group">
                       <Table.Cell>
-                        <div className="flex flex-col">
+                        <div className="flex flex-col gap-2">
                           <span className="text-sm font-medium text-foreground group-hover:text-accent transition-colors">
                             {s.patientName || (
                               <span className="text-foreground-400 italic">Sin nombre</span>
                             )}
                           </span>
-                          <span className="text-xs text-foreground-400 font-mono">
-                            {s.patientRut ?? "—"}
-                          </span>
-                          {s.patientPhone && (
-                            <span className="text-[11px] text-foreground-300 font-mono">
-                              Tel.: {s.patientPhone}
-                            </span>
-                          )}
-                          {s.beneficiaryRut && s.beneficiaryRut !== s.patientRut && (
-                            <span className="text-[11px] text-foreground-300 font-mono">
-                              Benef.: {s.beneficiaryRut}
-                            </span>
-                          )}
-                          {s.beneficiaryPhone && s.beneficiaryPhone !== s.patientPhone && (
-                            <span className="text-[11px] text-foreground-300 font-mono">
-                              Benef. tel.: {s.beneficiaryPhone}
-                            </span>
-                          )}
+                          {(() => {
+                            const contacts = buildContactEntries(s);
+                            const primaryRut =
+                              contacts.find((contact) => contact.kind === "RUT")?.value ?? "—";
+
+                            return (
+                              <>
+                                <span className="text-xs text-foreground-400 font-mono">
+                                  {primaryRut}
+                                </span>
+                                {contacts.length > 0 && (
+                                  <Dropdown>
+                                    <Dropdown.Trigger>
+                                      <Button
+                                        className="h-7 w-fit px-2 text-xs"
+                                        size="sm"
+                                        variant="outline"
+                                        onPress={(event) => {
+                                          event.continuePropagation();
+                                        }}
+                                      >
+                                        Identificadores ({contacts.length})
+                                      </Button>
+                                    </Dropdown.Trigger>
+                                    <Dropdown.Popover className="min-w-72" placement="bottom start">
+                                      <Dropdown.Menu aria-label="RUT y teléfonos registrados">
+                                        {contacts.map((contact) => (
+                                          <Dropdown.Item
+                                            id={`${s.id}-${contact.kind}-${contact.value}`}
+                                            isDisabled
+                                            key={`${s.id}-${contact.kind}-${contact.value}`}
+                                            textValue={`${contact.kind} ${contact.value}`}
+                                          >
+                                            <div className="flex flex-col gap-1 py-1">
+                                              <div className="flex items-center gap-2">
+                                                <Chip size="sm" variant="soft">
+                                                  {contact.kind === "RUT" ? "RUT" : "Teléfono"}
+                                                </Chip>
+                                                <Chip size="sm" color="default" variant="tertiary">
+                                                  {CONTACT_ROLE_LABELS[contact.role]}
+                                                </Chip>
+                                              </div>
+                                              <span className="font-mono text-xs text-foreground">
+                                                {contact.value}
+                                              </span>
+                                            </div>
+                                          </Dropdown.Item>
+                                        ))}
+                                      </Dropdown.Menu>
+                                    </Dropdown.Popover>
+                                  </Dropdown>
+                                )}
+                              </>
+                            );
+                          })()}
                         </div>
                       </Table.Cell>
                       <Table.Cell>
