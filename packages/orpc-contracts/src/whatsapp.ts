@@ -55,8 +55,6 @@ export const whatsappStatsSchema = z.object({
   total: z.number(),
 });
 
-export const whatsappSendModeSchema = z.enum(["template", "text"]);
-
 export const whatsappContactStateSchema = z.object({
   conversationExpiresAt: z.coerce.date().nullable().optional(),
   conversationId: z.string().nullable().optional(),
@@ -88,16 +86,14 @@ export const listWhatsappContactStatesResponseSchema = z.object({
   total: z.number(),
 });
 
+export const whatsappConnectionStateSchema = z.enum(["open", "connecting", "close"]);
+
 export const whatsappOverviewSchema = z.object({
-  accessTokenConfigured: z.boolean(),
-  activeCustomerServiceWindows: z.number().int().min(0),
-  appSecretConfigured: z.boolean(),
   autoOptInOnInbound: z.boolean(),
+  connected: z.boolean(),
+  connectionState: whatsappConnectionStateSchema,
   automaticFlowReady: z.boolean(),
   automaticNotificationsEnabled: z.boolean(),
-  freeformMessageConfigured: z.boolean(),
-  graphApiVersion: z.string(),
-  hybridFlowReady: z.boolean(),
   imapHostConfigured: z.boolean(),
   imapMailbox: z.string(),
   imapPassConfigured: z.boolean(),
@@ -106,58 +102,15 @@ export const whatsappOverviewSchema = z.object({
   optInRequired: z.boolean(),
   optedInContacts: z.number().int().min(0),
   optedOutContacts: z.number().int().min(0),
-  outboundReady: z.boolean(),
-  phoneNumberIdConfigured: z.boolean(),
   pollCron: z.string(),
   senderFilter: z.string(),
-  templateFallbackReady: z.boolean(),
-  templateLanguage: z.string().nullable(),
-  templateName: z.string().nullable(),
   unknownConsentContacts: z.number().int().min(0),
-  webhookReady: z.boolean(),
-  webhookVerifyTokenConfigured: z.boolean(),
 });
 
-export const whatsappTemplateSchema = z.object({
-  category: z.string(),
-  components: z.array(
-    z.object({
-      example: z.unknown().optional(),
-      text: z.string().optional(),
-      type: z.string(),
-    }),
-  ),
-  id: z.string(),
-  language: z.string(),
-  name: z.string(),
-  status: z.string(),
-});
-
-export const listWhatsappTemplatesResponseSchema = z.object({
-  templates: z.array(whatsappTemplateSchema),
-});
-
-export const whatsappAccountInfoSchema = z.object({
-  codeVerificationStatus: z.string().nullable(),
-  displayPhoneNumber: z.string(),
-  messagingLimitTier: z.string().nullable(),
-  nameStatus: z.string().nullable(),
-  phoneNumberId: z.string(),
-  qualityRating: z.string().nullable(),
-  status: z.string().nullable(),
-  throughput: z.string().nullable(),
-  verifiedName: z.string(),
-  wabaId: z.string(),
-});
-
-export const whatsappBusinessProfileSchema = z.object({
-  about: z.string().nullable(),
-  address: z.string().nullable(),
-  description: z.string().nullable(),
-  email: z.string().nullable(),
-  profilePictureUrl: z.string().nullable(),
-  vertical: z.string().nullable(),
-  websites: z.array(z.string()),
+export const whatsappConnectionStatusSchema = z.object({
+  connectionState: whatsappConnectionStateSchema,
+  lastDisconnectReason: z.number().nullable(),
+  qrDataUrl: z.string().nullable(),
 });
 
 export const whatsappTestSendInputSchema = z.object({
@@ -170,34 +123,17 @@ export const whatsappSetContactConsentInputSchema = z.object({
   status: whatsappOptInStatusSchema.exclude(["UNKNOWN"]),
 });
 
-const whatsappReplyButtonSchema = z.object({
-  id: z.string().min(1),
-  title: z.string().min(1).max(20),
-});
-
-const whatsappListSectionSchema = z.object({
-  rows: z.array(
-    z.object({
-      description: z.string().min(1).max(72).optional(),
-      id: z.string().min(1),
-      title: z.string().min(1).max(24),
-    }),
-  ),
-  title: z.string().min(1).max(24),
-});
-
 const whatsappMediaBaseSchema = z
   .object({
     caption: z.string().min(1).max(1024).optional(),
     filename: z.string().min(1).optional(),
     link: z.url().optional(),
-    mediaId: z.string().min(1).optional(),
     phone: z.string().min(5),
     replyToMessageId: z.string().min(1).optional(),
   })
-  .refine((value) => Boolean(value.link || value.mediaId), {
-    message: "Debes enviar mediaId o link",
-    path: ["mediaId"],
+  .refine((value) => Boolean(value.link), {
+    message: "Debes enviar una URL del medio",
+    path: ["link"],
   });
 
 export const whatsappCustomMessageInputSchema = z.discriminatedUnion("kind", [
@@ -209,15 +145,6 @@ export const whatsappCustomMessageInputSchema = z.discriminatedUnion("kind", [
     quotedMessageId: z.string().min(1),
   }),
   z.object({
-    body: z.string().min(1),
-    footer: z.string().min(1).max(60).optional(),
-    kind: z.literal("cta_url"),
-    phone: z.string().min(5),
-    displayText: z.string().min(1).max(20),
-    headerText: z.string().min(1).max(60).optional(),
-    url: z.url(),
-  }),
-  z.object({
     emoji: z.string().min(1).max(8),
     kind: z.literal("reaction"),
     messageId: z.string().min(1),
@@ -226,15 +153,7 @@ export const whatsappCustomMessageInputSchema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("mark_read"),
     messageId: z.string().min(1),
-  }),
-  z.object({
-    body: z.string().min(1),
-    buttonText: z.string().min(1).max(20),
-    footer: z.string().min(1).max(60).optional(),
-    headerText: z.string().min(1).max(60).optional(),
-    kind: z.literal("list"),
     phone: z.string().min(5),
-    sections: z.array(whatsappListSectionSchema).min(1),
   }),
   whatsappMediaBaseSchema.extend({
     kind: z.literal("image"),
@@ -252,32 +171,14 @@ export const whatsappCustomMessageInputSchema = z.discriminatedUnion("kind", [
     kind: z.literal("sticker"),
   }),
   z.object({
-    body: z.string().min(1),
-    buttons: z.array(whatsappReplyButtonSchema).min(1).max(3),
-    footer: z.string().min(1).max(60).optional(),
-    headerText: z.string().min(1).max(60).optional(),
-    kind: z.literal("reply_buttons"),
-    phone: z.string().min(5),
-  }),
-  z.object({
     kind: z.literal("typing"),
-    messageId: z.string().min(1),
+    phone: z.string().min(5),
   }),
 ]);
 
 export const whatsappStatusResponseSchema = z.object({
-  contacts: z
-    .array(
-      z.object({
-        input: z.string().nullable().optional(),
-        waId: z.string().nullable().optional(),
-      }),
-    )
-    .optional(),
   message: z.string(),
   messageId: z.string().optional(),
-  messageStatus: z.string().nullable().optional(),
-  mode: whatsappSendModeSchema.optional(),
   status: z.enum(["ok", "error"]),
 });
 
@@ -350,32 +251,14 @@ export const whatsappContract = {
     .input(whatsappCustomMessageInputSchema)
     .output(whatsappStatusResponseSchema),
 
-  listTemplates: oc
+  getConnectionStatus: oc
     .route({
       method: "GET",
-      path: "/templates",
-      summary: "List WhatsApp message templates from Meta API",
+      path: "/connection-status",
+      summary: "Get Baileys WhatsApp connection status and QR code",
       tags: ["WhatsApp"],
     })
-    .output(listWhatsappTemplatesResponseSchema),
-
-  getAccountInfo: oc
-    .route({
-      method: "GET",
-      path: "/account-info",
-      summary: "Get WhatsApp account info from Meta API",
-      tags: ["WhatsApp"],
-    })
-    .output(whatsappAccountInfoSchema),
-
-  getBusinessProfile: oc
-    .route({
-      method: "GET",
-      path: "/business-profile",
-      summary: "Get WhatsApp Business profile from Meta API",
-      tags: ["WhatsApp"],
-    })
-    .output(whatsappBusinessProfileSchema),
+    .output(whatsappConnectionStatusSchema),
 
   triggerPoll: oc
     .route({
