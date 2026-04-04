@@ -47,6 +47,7 @@ export const clinicalSeriesLinkedDocumentSchema = z.object({
 
 export const clinicalSeriesSnapshotSchema = z.object({
   beneficiaryName: z.string().nullable(),
+  beneficiaryPhone: z.string().nullable().optional(),
   beneficiaryRut: z.string().nullable(),
   displayName: z.string().nullable(),
   eligibleDocumentDateFrom: z.string(),
@@ -56,6 +57,7 @@ export const clinicalSeriesSnapshotSchema = z.object({
   kind: clinicalSeriesKindSchema,
   linkedDocuments: z.array(clinicalSeriesLinkedDocumentSchema),
   patientName: z.string().nullable(),
+  patientPhone: z.string().nullable().optional(),
   patientRut: z.string().nullable(),
   remainingExpected: z.number(),
   remainingPaid: z.number(),
@@ -68,8 +70,11 @@ export const clinicalSeriesSnapshotSchema = z.object({
 export const clinicalSeriesListInputSchema = z.object({
   beneficiaryRut: z.string().optional(),
   kind: clinicalSeriesKindSchema.optional(),
+  nextVisitFrom: z.string().optional(),
+  nextVisitTo: z.string().optional(),
   page: z.number().int().positive().default(1),
   pageSize: z.number().int().positive().max(100).default(20),
+  patientPhone: z.string().optional(),
   query: z.string().optional(),
   patientName: z.string().optional(),
   patientRut: z.string().optional(),

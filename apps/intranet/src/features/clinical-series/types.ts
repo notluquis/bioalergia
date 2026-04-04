@@ -64,6 +64,7 @@ export interface ClinicalSeriesSnapshot {
   healthInsurance: HealthInsuranceType | null;
   deliveryModality: DeliveryModality | null;
   beneficiaryName: string | null;
+  beneficiaryPhone?: string | null;
   beneficiaryRut: string | null;
   id: number;
   kind: ClinicalSeriesKind;
@@ -80,6 +81,7 @@ export interface ClinicalSeriesSnapshot {
   remainingPaid: number;
   eligibleDocumentDateFrom: string; // YYYY-MM-DD
   eligibleDocumentDateTo: string; // YYYY-MM-DD
+  patientPhone?: string | null;
 }
 
 export interface ClinicalSeriesListItem {
@@ -96,8 +98,11 @@ export interface ClinicalSeriesListItem {
 export interface ClinicalSeriesFilters {
   beneficiaryRut?: string;
   kind?: ClinicalSeriesKind;
+  nextVisitFrom?: string;
+  nextVisitTo?: string;
   page?: number;
   pageSize?: number;
+  patientPhone?: string;
   query?: string;
   patientName?: string;
   patientRut?: string;
@@ -177,12 +182,14 @@ export const ClinicalSeriesSnapshotSchema = z.object({
   healthInsurance: z.enum(["FONASA", "ISAPRE", "PARTICULAR"]).nullable().catch(null),
   deliveryModality: z.enum(["DOMICILIO", "PRESENCIAL"]).nullable().catch(null),
   beneficiaryName: z.string().nullable(),
+  beneficiaryPhone: z.string().nullable().optional(),
   beneficiaryRut: z.string().nullable(),
   id: z.number(),
   kind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT"]),
   status: z.enum(["PLANNED", "ACTIVE", "INACTIVE", "COMPLETED", "CANCELLED"]),
   displayName: z.string().nullable(),
   patientName: z.string().nullable(),
+  patientPhone: z.string().nullable().optional(),
   patientRut: z.string().nullable(),
   events: z.array(ClinicalSeriesEventSchema),
   linkedDocuments: z.array(ClinicalSeriesLinkedDocumentSchema),

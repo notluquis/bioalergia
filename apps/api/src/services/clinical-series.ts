@@ -344,6 +344,7 @@ export interface ClinicalSeriesSnapshot {
   healthInsurance: null | HealthInsuranceType;
   deliveryModality: null | DeliveryModality;
   beneficiaryName: null | string;
+  beneficiaryPhone?: null | string;
   beneficiaryRut: null | string;
   displayName: null | string;
   eligibleDocumentDateFrom: string;
@@ -353,6 +354,7 @@ export interface ClinicalSeriesSnapshot {
   kind: ClinicalSeriesKind;
   linkedDocuments: ClinicalSeriesLinkedDocument[];
   patientName: null | string;
+  patientPhone?: null | string;
   patientRut: null | string;
   remainingExpected: number;
   remainingPaid: number;
@@ -369,8 +371,11 @@ function isPastOrTodayEvent(eventDate: string, today: string) {
 type ClinicalSeriesFilters = {
   beneficiaryRut?: string;
   kind?: ClinicalSeriesKind;
+  nextVisitFrom?: string;
+  nextVisitTo?: string;
   page?: number;
   pageSize?: number;
+  patientPhone?: string;
   query?: string;
   patientName?: string;
   patientRut?: string;
@@ -386,6 +391,12 @@ type ClinicalSeriesFilters = {
   sortDirection?: "ascending" | "descending";
   status?: "ACTIVE" | "CANCELLED" | "COMPLETED" | "PLANNED" | "INACTIVE";
 };
+
+function normalizePhoneSearch(value: null | string | undefined): null | string {
+  if (!value) return null;
+  const digits = value.replace(/\D+/g, "");
+  return digits.length > 0 ? digits : null;
+}
 
 function normalizeName(value: string): string {
   return value
@@ -2325,6 +2336,20 @@ export async function getClinicalSeriesSnapshotByExternalEvent(params: {
     GROUP BY l.event_id
   `;
   const foliosByEventId = new Map(eventFolioRows.map((r) => [r.eventId, r.folios]));
+  const identityRuts = [series.patientRut, series.beneficiaryRut].filter(
+    (value): value is string => Boolean(value),
+  );
+  const identityRows =
+    identityRuts.length > 0
+      ? await db.$queryRaw<Array<{ phone: null | string; rut: string }>>`
+          SELECT p.rut, p.phone
+          FROM people p
+          WHERE p.rut IN (${sql.join(identityRuts.map((value) => sql`${value}`), sql`, `)})
+        `
+      : [];
+  const phoneByRut = new Map(
+    identityRows.map((row) => [normalizeRut(row.rut) ?? row.rut, row.phone ?? null]),
+  );
 
   const events = series.events.map((item) => ({
     amountExpected: item.amountExpected,
@@ -2374,6 +2399,10 @@ export async function getClinicalSeriesSnapshotByExternalEvent(params: {
     healthInsurance: (series.healthInsurance as HealthInsuranceType | null) ?? null,
     deliveryModality: (series.deliveryModality as DeliveryModality | null) ?? null,
     beneficiaryName: series.beneficiaryName ?? null,
+    beneficiaryPhone:
+      (series.beneficiaryRut
+        ? phoneByRut.get(normalizeRut(series.beneficiaryRut) ?? series.beneficiaryRut)
+        : null) ?? null,
     beneficiaryRut: series.beneficiaryRut ?? null,
     displayName: series.displayName ?? null,
     eligibleDocumentDateFrom,
@@ -2383,6 +2412,10 @@ export async function getClinicalSeriesSnapshotByExternalEvent(params: {
     kind: series.kind as ClinicalSeriesKind,
     linkedDocuments,
     patientName: series.patientName ?? null,
+    patientPhone:
+      (series.patientRut
+        ? phoneByRut.get(normalizeRut(series.patientRut) ?? series.patientRut)
+        : null) ?? null,
     patientRut: series.patientRut ?? null,
     remainingExpected: Math.max(0, totalExpectedDue - totalLinkedAmount),
     remainingPaid: Math.max(0, totalPaidDue - totalLinkedAmount),
@@ -2420,6 +2453,7 @@ export async function getClinicalSeriesSnapshotById(id: number): Promise<Clinica
     return {
       allergenType: (series.allergenType as SubcutaneousAllergenType | null) ?? null,
       beneficiaryName: series.beneficiaryName ?? null,
+      beneficiaryPhone: null,
       beneficiaryRut: series.beneficiaryRut ?? null,
       deliveryModality: (series.deliveryModality as DeliveryModality | null) ?? null,
       displayName: series.displayName ?? null,
@@ -2431,6 +2465,7 @@ export async function getClinicalSeriesSnapshotById(id: number): Promise<Clinica
       kind: series.kind as ClinicalSeriesKind,
       linkedDocuments: [],
       patientName: series.patientName ?? null,
+      patientPhone: null,
       patientRut: series.patientRut ?? null,
       remainingExpected: 0,
       remainingPaid: 0,
@@ -2452,8 +2487,15 @@ export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilter
   const page = Math.max(1, filters?.page ?? 1);
   const pageSize = Math.min(100, Math.max(1, filters?.pageSize ?? 20));
   const today = dayjs().tz(TIMEZONE).format("YYYY-MM-DD");
+  const normalizedBeneficiaryRut = filters?.beneficiaryRut ? normalizeRut(filters.beneficiaryRut) : null;
+  const normalizedPatientRut = filters?.patientRut ? normalizeRut(filters.patientRut) : null;
+  const normalizedPatientName = filters?.patientName ? `%${normalizeName(filters.patientName)}%` : null;
+  const normalizedPatientPhone = filters?.patientPhone ? `%${normalizePhoneSearch(filters.patientPhone)}%` : null;
+  const nextVisitFrom = filters?.nextVisitFrom ?? null;
+  const nextVisitTo = filters?.nextVisitTo ?? null;
   const normalizedQuery = filters?.query ? normalizeName(filters.query) : null;
   const queryRut = filters?.query ? normalizeRut(filters.query) : null;
+  const queryPhone = filters?.query ? normalizePhoneSearch(filters.query) : null;
   const queryTokens = normalizedQuery
     ? normalizedQuery
         .split(" ")
@@ -2461,11 +2503,12 @@ export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilter
         .filter((token) => token.length >= 2)
     : [];
 
-  const textHaystack = sql`lower(concat_ws(' ', coalesce(cs.patient_name, ''), coalesce(cs.beneficiary_name, ''), coalesce(cs.display_name, ''), coalesce(cs.patient_rut, ''), coalesce(cs.beneficiary_rut, '')))`;
+  const textHaystack = sql`lower(concat_ws(' ', coalesce(cs.patient_name, ''), coalesce(cs.beneficiary_name, ''), coalesce(cs.display_name, ''), coalesce(cs.patient_rut, ''), coalesce(cs.beneficiary_rut, ''), coalesce(pp.phone, ''), coalesce(pb.phone, '')))`;
   const queryFilterSql =
-    normalizedQuery || queryRut
+    normalizedQuery || queryRut || queryPhone
       ? sql`(
           (${queryRut}::text IS NOT NULL AND (cs.patient_rut = ${queryRut} OR cs.beneficiary_rut = ${queryRut}))
+          OR (${queryPhone}::text IS NOT NULL AND (regexp_replace(coalesce(pp.phone, ''), '\D', '', 'g') LIKE ${queryPhone ? `%${queryPhone}%` : null} OR regexp_replace(coalesce(pb.phone, ''), '\D', '', 'g') LIKE ${queryPhone ? `%${queryPhone}%` : null}))
           OR (${normalizedQuery ? `%${normalizedQuery}%` : null}::text IS NOT NULL AND ${textHaystack} LIKE ${normalizedQuery ? `%${normalizedQuery}%` : null})
           OR ${
             queryTokens.length > 0
@@ -2482,19 +2525,38 @@ export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilter
   const total = Number(
     (
       await sql<{ count: number }>`
+        WITH event_stats AS (
+          SELECT
+            e.clinical_series_id AS series_id,
+            MIN(
+              CASE
+                WHEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) > ${today}::date
+                THEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date)
+                ELSE NULL
+              END
+            ) AS next_event_date
+          FROM events e
+          WHERE e.clinical_series_id IS NOT NULL
+          GROUP BY e.clinical_series_id
+        )
         SELECT COUNT(*)::int AS count
         FROM clinical_series cs
-        WHERE (${filters?.beneficiaryRut ? normalizeRut(filters.beneficiaryRut) : null}::text IS NULL OR cs.beneficiary_rut = ${filters?.beneficiaryRut ? normalizeRut(filters.beneficiaryRut) : null})
+        LEFT JOIN event_stats es ON es.series_id = cs.id
+        LEFT JOIN people pp ON pp.rut = cs.patient_rut
+        LEFT JOIN people pb ON pb.rut = cs.beneficiary_rut
+        WHERE (${normalizedBeneficiaryRut}::text IS NULL OR cs.beneficiary_rut = ${normalizedBeneficiaryRut})
           AND (${filters?.kind ?? null}::text IS NULL OR cs.kind::text = ${filters?.kind ?? null})
           AND (${filters?.status ?? null}::text IS NULL OR cs.status::text = ${filters?.status ?? null})
-          AND (${filters?.patientRut ? normalizeRut(filters.patientRut) : null}::text IS NULL OR cs.patient_rut = ${filters?.patientRut ? normalizeRut(filters.patientRut) : null})
-          AND (${filters?.patientName ? `%${normalizeName(filters.patientName)}%` : null}::text IS NULL OR lower(coalesce(cs.patient_name, '')) LIKE ${filters?.patientName ? `%${normalizeName(filters.patientName)}%` : null})
+          AND (${normalizedPatientRut}::text IS NULL OR cs.patient_rut = ${normalizedPatientRut})
+          AND (${normalizedPatientName}::text IS NULL OR lower(coalesce(cs.patient_name, '')) LIKE ${normalizedPatientName})
+          AND (${normalizedPatientPhone}::text IS NULL OR regexp_replace(coalesce(pp.phone, ''), '\D', '', 'g') LIKE ${normalizedPatientPhone} OR regexp_replace(coalesce(pb.phone, ''), '\D', '', 'g') LIKE ${normalizedPatientPhone})
+          AND (${nextVisitFrom}::date IS NULL OR es.next_event_date >= ${nextVisitFrom}::date)
+          AND (${nextVisitTo}::date IS NULL OR es.next_event_date <= ${nextVisitTo}::date)
           AND ${queryFilterSql}
       `.execute(kysely)
     ).rows[0]?.count ?? 0,
   );
 
-  const normalizedPatientName = filters?.patientName ? `%${normalizeName(filters.patientName)}%` : null;
   const orderBy = resolveClinicalSeriesOrderBy(filters);
   const seriesResult = await sql<{ id: number }>`
     WITH event_stats AS (
@@ -2557,11 +2619,16 @@ export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilter
     FROM clinical_series cs
     LEFT JOIN event_stats es ON es.series_id = cs.id
     LEFT JOIN linked_totals lt ON lt.series_id = cs.id
-    WHERE (${filters?.beneficiaryRut ? normalizeRut(filters.beneficiaryRut) : null}::text IS NULL OR cs.beneficiary_rut = ${filters?.beneficiaryRut ? normalizeRut(filters.beneficiaryRut) : null})
+    LEFT JOIN people pp ON pp.rut = cs.patient_rut
+    LEFT JOIN people pb ON pb.rut = cs.beneficiary_rut
+    WHERE (${normalizedBeneficiaryRut}::text IS NULL OR cs.beneficiary_rut = ${normalizedBeneficiaryRut})
       AND (${filters?.kind ?? null}::text IS NULL OR cs.kind::text = ${filters?.kind ?? null})
       AND (${filters?.status ?? null}::text IS NULL OR cs.status::text = ${filters?.status ?? null})
       AND (${normalizedPatientName}::text IS NULL OR lower(coalesce(cs.patient_name, '')) LIKE ${normalizedPatientName})
-      AND (${filters?.patientRut ? normalizeRut(filters.patientRut) : null}::text IS NULL OR cs.patient_rut = ${filters?.patientRut ? normalizeRut(filters.patientRut) : null})
+      AND (${normalizedPatientRut}::text IS NULL OR cs.patient_rut = ${normalizedPatientRut})
+      AND (${normalizedPatientPhone}::text IS NULL OR regexp_replace(coalesce(pp.phone, ''), '\D', '', 'g') LIKE ${normalizedPatientPhone} OR regexp_replace(coalesce(pb.phone, ''), '\D', '', 'g') LIKE ${normalizedPatientPhone})
+      AND (${nextVisitFrom}::date IS NULL OR es.next_event_date >= ${nextVisitFrom}::date)
+      AND (${nextVisitTo}::date IS NULL OR es.next_event_date <= ${nextVisitTo}::date)
       AND ${queryFilterSql}
     ORDER BY ${orderBy}
     LIMIT ${pageSize}

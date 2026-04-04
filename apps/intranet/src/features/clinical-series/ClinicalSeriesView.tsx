@@ -9,6 +9,8 @@ import {
   Card,
   Checkbox,
   Chip,
+  DateField,
+  DateRangePicker,
   Drawer,
   Input,
   Label,
@@ -16,6 +18,7 @@ import {
   Modal,
   Pagination,
   ProgressBar,
+  RangeCalendar,
   Select,
   Separator,
   Skeleton,
@@ -25,6 +28,7 @@ import {
   Table,
   TextField,
 } from "@heroui/react";
+import { parseDate } from "@internationalized/date";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Key, Selection } from "@heroui/react";
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
@@ -280,13 +284,17 @@ export function ClinicalSeriesView() {
   const [queryRaw, setQueryRaw] = useState("");
   const [rutRaw, setRutRaw] = useState("");
   const [beneficiaryRutRaw, setBeneficiaryRutRaw] = useState("");
+  const [phoneRaw, setPhoneRaw] = useState("");
   const [kind, setKind] = useState<ClinicalSeriesKind | undefined>(undefined);
   const [status, setStatus] = useState<ClinicalSeriesStatus | undefined>(undefined);
+  const [nextVisitFrom, setNextVisitFrom] = useState<string | undefined>(undefined);
+  const [nextVisitTo, setNextVisitTo] = useState<string | undefined>(undefined);
 
   const deferredQuery = useDeferredValue(queryRaw);
   const debouncedQuery = useDebounce(deferredQuery);
   const debouncedRut = useDebounce(rutRaw);
   const debouncedBeneficiaryRut = useDebounce(beneficiaryRutRaw);
+  const debouncedPhone = useDebounce(phoneRaw);
 
   // Sorting
   const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({
@@ -297,7 +305,17 @@ export function ClinicalSeriesView() {
   // Reset page when filters or page size change
   useEffect(() => {
     setPage(1);
-  }, [debouncedBeneficiaryRut, debouncedQuery, debouncedRut, kind, status, pageSize]);
+  }, [
+    debouncedBeneficiaryRut,
+    debouncedPhone,
+    debouncedQuery,
+    debouncedRut,
+    kind,
+    nextVisitFrom,
+    nextVisitTo,
+    pageSize,
+    status,
+  ]);
 
   // Detail drawer
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -309,8 +327,11 @@ export function ClinicalSeriesView() {
     pageSize: pageSize,
     ...(debouncedQuery && { query: debouncedQuery }),
     ...(debouncedBeneficiaryRut && { beneficiaryRut: debouncedBeneficiaryRut }),
+    ...(debouncedPhone && { patientPhone: debouncedPhone }),
     ...(debouncedRut && { patientRut: debouncedRut }),
     ...(kind && { kind }),
+    ...(nextVisitFrom && { nextVisitFrom }),
+    ...(nextVisitTo && { nextVisitTo }),
     sortColumn: sortDescriptor.column as ClinicalSeriesSortColumn,
     sortDirection: sortDescriptor.direction,
     ...(status && { status }),
@@ -366,13 +387,23 @@ export function ClinicalSeriesView() {
   };
 
   const hasFilters =
-    !!debouncedBeneficiaryRut || !!debouncedQuery || !!debouncedRut || !!kind || !!status;
+    !!debouncedBeneficiaryRut ||
+    !!debouncedPhone ||
+    !!debouncedQuery ||
+    !!debouncedRut ||
+    !!kind ||
+    !!nextVisitFrom ||
+    !!nextVisitTo ||
+    !!status;
 
   const clearFilters = () => {
     setQueryRaw("");
     setRutRaw("");
     setBeneficiaryRutRaw("");
+    setPhoneRaw("");
     setKind(undefined);
+    setNextVisitFrom(undefined);
+    setNextVisitTo(undefined);
     setStatus(undefined);
   };
 
@@ -509,6 +540,11 @@ export function ClinicalSeriesView() {
             <Input placeholder="12345678-9" />
           </TextField>
 
+          <TextField className="min-w-40 flex-1" value={phoneRaw} onChange={setPhoneRaw}>
+            <Label>Teléfono registrado</Label>
+            <Input placeholder="+56912345678" />
+          </TextField>
+
           {/* Tipo */}
           <div className="flex flex-col gap-1 min-w-40">
             <Select
@@ -559,6 +595,64 @@ export function ClinicalSeriesView() {
                 </ListBox>
               </Select.Popover>
             </Select>
+          </div>
+
+          <div className="min-w-70 flex-[2_1_26rem]">
+            <DateRangePicker
+              aria-label="Rango de próxima visita"
+              onChange={(value) => {
+                setNextVisitFrom(value?.start?.toString());
+                setNextVisitTo(value?.end?.toString());
+              }}
+              value={
+                nextVisitFrom && nextVisitTo
+                  ? { end: parseDate(nextVisitTo), start: parseDate(nextVisitFrom) }
+                  : undefined
+              }
+            >
+              <Label>Próxima visita</Label>
+              <DateField.Group fullWidth variant="secondary">
+                <DateField.InputContainer>
+                  <DateField.Input slot="start">
+                    {(segment) => <DateField.Segment segment={segment} />}
+                  </DateField.Input>
+                  <DateRangePicker.RangeSeparator />
+                  <DateField.Input slot="end">
+                    {(segment) => <DateField.Segment segment={segment} />}
+                  </DateField.Input>
+                </DateField.InputContainer>
+                <DateField.Suffix>
+                  <DateRangePicker.Trigger>
+                    <DateRangePicker.TriggerIndicator />
+                  </DateRangePicker.Trigger>
+                </DateField.Suffix>
+              </DateField.Group>
+              <DateRangePicker.Popover>
+                <RangeCalendar aria-label="Rango de próxima visita" visibleDuration={{ months: 2 }}>
+                  <RangeCalendar.Header>
+                    <RangeCalendar.YearPickerTrigger>
+                      <RangeCalendar.YearPickerTriggerHeading />
+                      <RangeCalendar.YearPickerTriggerIndicator />
+                    </RangeCalendar.YearPickerTrigger>
+                    <RangeCalendar.NavButton slot="previous" />
+                    <RangeCalendar.NavButton slot="next" />
+                  </RangeCalendar.Header>
+                  <RangeCalendar.Grid>
+                    <RangeCalendar.GridHeader>
+                      {(day) => <RangeCalendar.HeaderCell>{day}</RangeCalendar.HeaderCell>}
+                    </RangeCalendar.GridHeader>
+                    <RangeCalendar.GridBody>
+                      {(date) => <RangeCalendar.Cell date={date} />}
+                    </RangeCalendar.GridBody>
+                  </RangeCalendar.Grid>
+                  <RangeCalendar.YearPickerGrid>
+                    <RangeCalendar.YearPickerGridBody>
+                      {({ year }) => <RangeCalendar.YearPickerCell year={year} />}
+                    </RangeCalendar.YearPickerGridBody>
+                  </RangeCalendar.YearPickerGrid>
+                </RangeCalendar>
+              </DateRangePicker.Popover>
+            </DateRangePicker>
           </div>
 
           {/* Clear filters */}
@@ -652,9 +746,19 @@ export function ClinicalSeriesView() {
                           <span className="text-xs text-foreground-400 font-mono">
                             {s.patientRut ?? "—"}
                           </span>
+                          {s.patientPhone && (
+                            <span className="text-[11px] text-foreground-300 font-mono">
+                              Tel.: {s.patientPhone}
+                            </span>
+                          )}
                           {s.beneficiaryRut && s.beneficiaryRut !== s.patientRut && (
                             <span className="text-[11px] text-foreground-300 font-mono">
                               Benef.: {s.beneficiaryRut}
+                            </span>
+                          )}
+                          {s.beneficiaryPhone && s.beneficiaryPhone !== s.patientPhone && (
+                            <span className="text-[11px] text-foreground-300 font-mono">
+                              Benef. tel.: {s.beneficiaryPhone}
                             </span>
                           )}
                         </div>
