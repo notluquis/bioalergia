@@ -6,7 +6,6 @@ import {
   Description,
   Input,
   Label,
-  Link,
   ListBox,
   ProgressBar,
   Select,
@@ -19,13 +18,11 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import {
-  BadgeInfo,
   CheckCheck,
   MessageCircleReply,
   MessagesSquare,
   Send,
   ShieldCheck,
-  SquareArrowOutUpRight,
   Webhook,
 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -38,7 +35,7 @@ import {
 } from "@/features/whatsapp/api";
 import { whatsappKeys } from "@/features/whatsapp/queries";
 import { PAGE_CONTAINER } from "@/lib/styles";
-import { ChecklistRow, FlowStep, ReadyChip } from "./messaging-settings-shared";
+import { ChecklistRow } from "./messaging-settings-shared";
 
 type InteractiveKind = "cta_url" | "list" | "reply_buttons";
 type MediaKind = "audio" | "document" | "image" | "sticker" | "video";
@@ -199,6 +196,16 @@ export function WhatsappSettingsPage() {
     enabled: overview?.outboundReady === true,
   });
 
+  const { data: businessProfile } = useQuery({
+    ...whatsappKeys.businessProfile(),
+    enabled: overview?.outboundReady === true,
+  });
+
+  const { data: stats } = useQuery({
+    ...whatsappKeys.stats(),
+    refetchInterval: 30_000,
+  });
+
   const readiness = useMemo(() => {
     if (!overview) return 0;
     const checks = [
@@ -209,17 +216,6 @@ export function WhatsappSettingsPage() {
       overview.templateFallbackReady,
     ];
     return Math.round((checks.filter(Boolean).length / checks.length) * 100);
-  }, [overview]);
-
-  const missingBlocks = useMemo(() => {
-    if (!overview) return [];
-    const items: string[] = [];
-    if (!overview.accessTokenConfigured) items.push("access token");
-    if (!overview.phoneNumberIdConfigured) items.push("phone number ID");
-    if (!overview.webhookVerifyTokenConfigured) items.push("verify token");
-    if (!overview.appSecretConfigured) items.push("app secret");
-    if (!overview.templateFallbackReady) items.push("template fallback");
-    return items;
   }, [overview]);
 
   const templateFallbackReady = overview?.templateFallbackReady ?? false;
@@ -234,39 +230,6 @@ export function WhatsappSettingsPage() {
       : testMutation.data?.mode === "template"
         ? "Template"
         : null;
-
-  const capabilityCards = [
-    {
-      description: "Respuesta citando el mensaje original.",
-      ready: overview?.supportsContextualReplies ?? false,
-      title: "Contextual replies",
-    },
-    {
-      description: "Mark as read y typing indicator.",
-      ready: Boolean(overview?.supportsMarkAsRead && overview?.supportsTypingIndicator),
-      title: "Read + typing",
-    },
-    {
-      description: "Imagen, audio, documento, video y sticker.",
-      ready: overview?.supportsMedia ?? false,
-      title: "Media",
-    },
-    {
-      description: "CTA URL, botones y listas.",
-      ready: overview?.supportsInteractive ?? false,
-      title: "Interactive",
-    },
-    {
-      description: "Emoji sobre mensajes inbound previos.",
-      ready: overview?.supportsReactions ?? false,
-      title: "Reactions",
-    },
-    {
-      description: "Llamadas inbound refrescan la ventana de 24h.",
-      ready: overview?.supportsCalls ?? false,
-      title: "Calls",
-    },
-  ];
 
   const actionResult = customMutation.data;
 
@@ -377,14 +340,6 @@ export function WhatsappSettingsPage() {
               Canal
               <Tabs.Indicator />
             </Tabs.Tab>
-            <Tabs.Tab id="webhook">
-              Webhook
-              <Tabs.Indicator />
-            </Tabs.Tab>
-            <Tabs.Tab id="messages">
-              Mensajería
-              <Tabs.Indicator />
-            </Tabs.Tab>
             <Tabs.Tab id="operations">
               Operaciones
               <Tabs.Indicator />
@@ -465,32 +420,54 @@ export function WhatsappSettingsPage() {
               </Card.Content>
             </Card>
 
-            <Card>
-              <Card.Header className="flex flex-col items-start gap-1">
-                <h2 className="font-semibold text-base">Capacidades implementadas</h2>
-                <Description className="text-default-500 text-xs">
-                  Lo que hoy soporta el repo según la API interna y el contrato oRPC.
-                </Description>
-              </Card.Header>
-              <Card.Content className="grid gap-3 sm:grid-cols-2">
-                {capabilityCards.map((item) => (
-                  <Surface
-                    key={item.title}
-                    className="rounded-2xl border border-default-200 px-4 py-3"
-                  >
-                    <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
-                      {item.title}
-                    </Description>
-                    <div className="mt-2">
-                      <ReadyChip value={item.ready} />
-                    </div>
-                    <Description className="mt-2 text-default-500 text-xs">
-                      {item.description}
-                    </Description>
-                  </Surface>
-                ))}
-              </Card.Content>
-            </Card>
+            {stats ? (
+              <Card>
+                <Card.Header className="flex flex-col items-start gap-1">
+                  <h2 className="font-semibold text-base">Mensajes</h2>
+                  <Description className="text-default-500 text-xs">
+                    Estadísticas en tiempo real desde la base de datos.
+                  </Description>
+                </Card.Header>
+                <Card.Content className="grid gap-3 sm:grid-cols-3">
+                  <MetricPill
+                    subtitle="total"
+                    title="Enviados"
+                    tone="primary"
+                    value={stats.sent + stats.delivered + stats.read + stats.played}
+                  />
+                  <MetricPill
+                    subtitle="total"
+                    title="Entregados"
+                    tone="success"
+                    value={stats.delivered + stats.read + stats.played}
+                  />
+                  <MetricPill
+                    subtitle="total"
+                    title="Leídos"
+                    tone="accent"
+                    value={stats.read + stats.played}
+                  />
+                  <MetricPill
+                    subtitle="total"
+                    title="Pendientes"
+                    tone="warning"
+                    value={stats.pending}
+                  />
+                  <MetricPill
+                    subtitle="total"
+                    title="Fallidos"
+                    tone="warning"
+                    value={stats.failed}
+                  />
+                  <MetricPill
+                    subtitle="total"
+                    title="Reproducidos"
+                    tone="success"
+                    value={stats.played}
+                  />
+                </Card.Content>
+              </Card>
+            ) : null}
           </div>
 
           <div className="mt-4 grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
@@ -499,15 +476,30 @@ export function WhatsappSettingsPage() {
                 <Card.Header className="flex flex-col items-start gap-1">
                   <h2 className="font-semibold text-base">Cuenta WhatsApp Business</h2>
                   <Description className="text-default-500 text-xs">
-                    Datos obtenidos en tiempo real desde la Meta Graph API.
+                    Datos en tiempo real desde la Meta Graph API.
                   </Description>
                 </Card.Header>
                 <Card.Content className="space-y-3">
                   <Surface className="rounded-2xl border border-default-200 px-4 py-3">
-                    <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
-                      Nombre verificado
-                    </Description>
-                    <p className="mt-1 font-medium text-sm">{accountInfo.verifiedName || "—"}</p>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
+                          Nombre verificado
+                        </Description>
+                        <p className="mt-1 font-medium text-sm">
+                          {accountInfo.verifiedName || "—"}
+                        </p>
+                      </div>
+                      {accountInfo.nameStatus ? (
+                        <Chip
+                          color={accountInfo.nameStatus === "APPROVED" ? "success" : "warning"}
+                          size="sm"
+                          variant="soft"
+                        >
+                          {accountInfo.nameStatus}
+                        </Chip>
+                      ) : null}
+                    </div>
                   </Surface>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <Surface className="rounded-2xl border border-default-200 px-4 py-3">
@@ -517,46 +509,90 @@ export function WhatsappSettingsPage() {
                       <p className="mt-1 font-medium text-sm">
                         {accountInfo.displayPhoneNumber || "—"}
                       </p>
+                      {accountInfo.status ? (
+                        <Chip
+                          className="mt-1"
+                          color={accountInfo.status === "CONNECTED" ? "success" : "warning"}
+                          size="sm"
+                          variant="soft"
+                        >
+                          {accountInfo.status}
+                        </Chip>
+                      ) : null}
                     </Surface>
                     <Surface className="rounded-2xl border border-default-200 px-4 py-3">
                       <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
-                        WABA ID
+                        IDs
                       </Description>
-                      <p className="mt-1 font-mono text-sm">{accountInfo.wabaId || "—"}</p>
+                      <p className="mt-1 font-mono text-xs">WABA: {accountInfo.wabaId || "—"}</p>
+                      <p className="font-mono text-xs">Phone: {accountInfo.phoneNumberId}</p>
                     </Surface>
                   </div>
-                  <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="grid gap-3 sm:grid-cols-3">
                     <Surface className="rounded-2xl border border-default-200 px-4 py-3">
                       <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
                         Calidad
                       </Description>
-                      <p className="mt-1 font-medium text-sm">
-                        <Chip
-                          color={
-                            accountInfo.qualityRating === "GREEN"
-                              ? "success"
-                              : accountInfo.qualityRating === "YELLOW"
-                                ? "warning"
-                                : accountInfo.qualityRating === "RED"
-                                  ? "danger"
-                                  : "default"
-                          }
-                          size="sm"
-                          variant="soft"
-                        >
-                          {accountInfo.qualityRating ?? "—"}
-                        </Chip>
-                      </p>
+                      <Chip
+                        className="mt-1"
+                        color={
+                          accountInfo.qualityRating === "GREEN"
+                            ? "success"
+                            : accountInfo.qualityRating === "YELLOW"
+                              ? "warning"
+                              : accountInfo.qualityRating === "RED"
+                                ? "danger"
+                                : "default"
+                        }
+                        size="sm"
+                        variant="soft"
+                      >
+                        {accountInfo.qualityRating ?? "—"}
+                      </Chip>
                     </Surface>
                     <Surface className="rounded-2xl border border-default-200 px-4 py-3">
                       <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
-                        Límite de mensajería
+                        Tier de mensajería
                       </Description>
                       <p className="mt-1 font-medium text-sm">
                         {accountInfo.messagingLimitTier ?? "—"}
                       </p>
                     </Surface>
+                    <Surface className="rounded-2xl border border-default-200 px-4 py-3">
+                      <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
+                        Throughput
+                      </Description>
+                      <p className="mt-1 font-medium text-sm">{accountInfo.throughput ?? "—"}</p>
+                    </Surface>
                   </div>
+                  {businessProfile ? (
+                    <Surface className="rounded-2xl border border-default-200 px-4 py-3">
+                      <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
+                        Perfil de negocio
+                      </Description>
+                      <div className="mt-1 space-y-1">
+                        {businessProfile.about ? (
+                          <p className="text-sm">{businessProfile.about}</p>
+                        ) : null}
+                        {businessProfile.vertical ? (
+                          <Chip size="sm" variant="soft">
+                            {businessProfile.vertical}
+                          </Chip>
+                        ) : null}
+                        {businessProfile.address ? (
+                          <p className="text-default-500 text-xs">{businessProfile.address}</p>
+                        ) : null}
+                        {businessProfile.email ? (
+                          <p className="text-default-500 text-xs">{businessProfile.email}</p>
+                        ) : null}
+                        {businessProfile.websites.length > 0 ? (
+                          <p className="text-default-500 text-xs">
+                            {businessProfile.websites.join(", ")}
+                          </p>
+                        ) : null}
+                      </div>
+                    </Surface>
+                  ) : null}
                 </Card.Content>
               </Card>
             ) : null}
@@ -617,193 +653,6 @@ export function WhatsappSettingsPage() {
                     template(s) en otro estado (pendiente, rechazado, etc.)
                   </Description>
                 ) : null}
-              </Card.Content>
-            </Card>
-          </div>
-        </Tabs.Panel>
-
-        <Tabs.Panel id="webhook">
-          <div className="mt-4 grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
-            <Card>
-              <Card.Header className="flex flex-col items-start gap-1">
-                <h2 className="font-semibold text-base">Flujo inbound del webhook</h2>
-                <Description className="text-default-500 text-xs">
-                  El webhook verifica firma, recibe eventos del canal y actualiza conversación,
-                  consentimiento y estados salientes.
-                </Description>
-              </Card.Header>
-              <Card.Content className="space-y-3">
-                <FlowStep
-                  body="Meta valida el callback con verify token y luego firma los POST con App Secret."
-                  icon={Webhook}
-                  step="01"
-                  title="Verificación y firma"
-                />
-                <FlowStep
-                  body="Los eventos `messages` y `calls` entrantes abren o refrescan la ventana de 24 horas."
-                  icon={MessageCircleReply}
-                  step="02"
-                  title="Inbound actualiza la ventana"
-                />
-                <FlowStep
-                  body="Los eventos `statuses` actualizan sent, delivered, read o failed sobre mensajes salientes."
-                  icon={BadgeInfo}
-                  step="03"
-                  title="Statuses actualizan trazabilidad"
-                />
-              </Card.Content>
-            </Card>
-
-            <Card>
-              <Card.Header className="flex flex-col items-start gap-1">
-                <h2 className="font-semibold text-base">Notas operativas</h2>
-                <Description className="text-default-500 text-xs">
-                  Alcance real del handler respecto a la plataforma.
-                </Description>
-              </Card.Header>
-              <Card.Content className="space-y-3">
-                <Surface className="rounded-2xl border border-default-200 px-4 py-3">
-                  <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
-                    Sí procesa
-                  </Description>
-                  <p className="mt-1 font-medium text-sm">
-                    `messages[]`, `statuses[]`, `calls[]` y `user_preferences[]`
-                  </p>
-                  <Description className="text-default-500 text-xs">
-                    Con eso sincroniza opt-in, expiración de ventana, conversación y delivery state.
-                  </Description>
-                </Surface>
-
-                <Surface className="rounded-2xl border border-default-200 px-4 py-3">
-                  <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
-                    Observabilidad extra
-                  </Description>
-                  <p className="mt-1 font-medium text-sm">
-                    `played` y `unsupported messages` ya no se pierden
-                  </p>
-                  <Description className="text-default-500 text-xs">
-                    Los voice messages reproducidos quedan registrados y los inbound no soportados
-                    se loguean para diagnóstico.
-                  </Description>
-                </Surface>
-
-                <Surface className="rounded-2xl border border-default-200 px-4 py-3">
-                  <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
-                    No procesa todavía
-                  </Description>
-                  <p className="mt-1 font-medium text-sm">
-                    address, contacts, location, flows y voice-call outbound
-                  </p>
-                  <Description className="text-default-500 text-xs">
-                    Esos quedan fuera del scope actual y no fueron parte de los hallazgos
-                    priorizados.
-                  </Description>
-                </Surface>
-
-                <Surface className="rounded-2xl border border-default-200 px-4 py-3">
-                  <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
-                    Ventanas activas
-                  </Description>
-                  <p className="mt-1 font-medium text-sm">
-                    {overview?.activeCustomerServiceWindows ?? 0}
-                  </p>
-                  <Description className="text-default-500 text-xs">
-                    La expiración usa `conversation.expiration_timestamp` cuando Meta lo entrega y
-                    cae a actividad + 24h como respaldo.
-                  </Description>
-                </Surface>
-              </Card.Content>
-            </Card>
-          </div>
-        </Tabs.Panel>
-
-        <Tabs.Panel id="messages">
-          <div className="mt-4 grid gap-4 xl:grid-cols-[1fr_1fr]">
-            <Card>
-              <Card.Header className="flex flex-col items-start gap-1">
-                <h2 className="font-semibold text-base">Regla de 24 horas</h2>
-                <Description className="text-default-500 text-xs">
-                  Esto es lo que el canal hace hoy para mantenerse dentro de las reglas de Meta.
-                </Description>
-              </Card.Header>
-              <Card.Content className="space-y-3">
-                <Surface className="rounded-2xl border border-default-200 px-4 py-3">
-                  <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
-                    Fuera de ventana
-                  </Description>
-                  <p className="mt-1 font-medium text-sm">Template + consentimiento obligatorio</p>
-                  <Description className="text-default-500 text-xs">
-                    Si no hay ventana activa y no existe opt-in, el backend bloquea el envío.
-                  </Description>
-                </Surface>
-
-                <Surface className="rounded-2xl border border-default-200 px-4 py-3">
-                  <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
-                    Ventana abierta
-                  </Description>
-                  <p className="mt-1 font-medium text-sm">Texto libre y operaciones avanzadas</p>
-                  <Description className="text-default-500 text-xs">
-                    Respuestas contextuales, reacciones, interactive y media se habilitan cuando hay
-                    ventana activa.
-                  </Description>
-                </Surface>
-
-                <Surface className="rounded-2xl border border-default-200 px-4 py-3">
-                  <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
-                    Normalización
-                  </Description>
-                  <p className="mt-1 font-medium text-sm">Se intenta enviar en E.164</p>
-                  <Description className="text-default-500 text-xs">
-                    Hoy la normalización está optimizada principalmente para números chilenos.
-                  </Description>
-                </Surface>
-              </Card.Content>
-            </Card>
-
-            <Card>
-              <Card.Header className="flex flex-col items-start gap-1">
-                <h2 className="font-semibold text-base">Cumplimiento actual</h2>
-                <Description className="text-default-500 text-xs">
-                  Qué quedó cubierto frente a los hallazgos contra la documentación de envío.
-                </Description>
-              </Card.Header>
-              <Card.Content className="space-y-3">
-                {!overviewPending && overview && missingBlocks.length > 0 ? (
-                  <Alert status="warning">
-                    El canal no está completo todavía. Falta: {missingBlocks.join(", ")}.
-                  </Alert>
-                ) : null}
-
-                <Surface className="rounded-2xl border border-default-200 px-4 py-3">
-                  <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
-                    Resuelto
-                  </Description>
-                  <p className="mt-1 font-medium text-sm">
-                    Opt-in, inbound por llamadas, Graph API{" "}
-                    {overview?.graphApiVersion ?? "sin definir"}, parseo enriquecido y expiración
-                    canónica de ventana.
-                  </p>
-                </Surface>
-
-                <Surface className="rounded-2xl border border-default-200 px-4 py-3">
-                  <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
-                    También agregado
-                  </Description>
-                  <p className="mt-1 font-medium text-sm">
-                    Mark as read, typing, replies contextuales, reacciones, media e interactive vía
-                    API interna.
-                  </p>
-                </Surface>
-
-                <Surface className="rounded-2xl border border-default-200 px-4 py-3">
-                  <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
-                    Sigue fuera
-                  </Description>
-                  <p className="mt-1 font-medium text-sm">
-                    No se implementó el catálogo completo de Meta: address, contacts, location,
-                    flows y voice-call outbound.
-                  </p>
-                </Surface>
               </Card.Content>
             </Card>
           </div>
@@ -1288,13 +1137,12 @@ export function WhatsappSettingsPage() {
         </Tabs.Panel>
 
         <Tabs.Panel id="testing">
-          <div className="mt-4 grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
+          <div className="mt-4 max-w-xl">
             <Card>
               <Card.Header className="flex flex-col items-start gap-1">
                 <h2 className="font-semibold text-base">Enviar mensaje de prueba</h2>
                 <Description className="text-default-500 text-xs">
-                  El backend decide al enviar: texto libre si el número tiene ventana activa; si no,
-                  template.
+                  Texto libre si hay ventana activa, template si no.
                 </Description>
               </Card.Header>
               <Card.Content className="space-y-4">
@@ -1323,11 +1171,6 @@ export function WhatsappSettingsPage() {
                   ) : null}
                 </div>
 
-                <Description className="text-default-500 text-xs">
-                  Si el número ya respondió o llamó por WhatsApp en las últimas 24 horas, el test
-                  sale como texto. Si no, usa el template configurado.
-                </Description>
-
                 {!templateFallbackReady ? (
                   <Alert status="warning">
                     No hay ningún template aprobado disponible. Crea uno en Meta Business Manager
@@ -1345,70 +1188,6 @@ export function WhatsappSettingsPage() {
                     {testMutation.data.message}
                   </Alert>
                 ) : null}
-              </Card.Content>
-            </Card>
-
-            <Card>
-              <Card.Header className="flex flex-col items-start gap-1">
-                <h2 className="font-semibold text-base">Referencias</h2>
-                <Description className="text-default-500 text-xs">
-                  Puntos clave para validar el canal y las reglas de envío.
-                </Description>
-              </Card.Header>
-              <Card.Content className="space-y-3">
-                <Surface className="rounded-2xl border border-default-200 px-4 py-3">
-                  <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
-                    Sending messages
-                  </Description>
-                  <Link
-                    className="mt-1 inline-flex items-center gap-1 font-medium text-primary text-sm"
-                    href="https://developers.facebook.com/docs/whatsapp/cloud-api/"
-                    rel="noreferrer"
-                    target="_blank"
-                  >
-                    WhatsApp Cloud API
-                    <SquareArrowOutUpRight className="h-3.5 w-3.5" />
-                  </Link>
-                </Surface>
-
-                <Surface className="rounded-2xl border border-default-200 px-4 py-3">
-                  <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
-                    Sandbox
-                  </Description>
-                  <p className="mt-1 font-medium text-sm">
-                    Con número de prueba no puedes enviar a cualquiera
-                  </p>
-                  <Description className="text-default-500 text-xs">
-                    El destinatario tiene que estar habilitado o registrado en el entorno de test.
-                  </Description>
-                </Surface>
-
-                <Surface className="rounded-2xl border border-default-200 px-4 py-3">
-                  <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
-                    Consentimiento
-                  </Description>
-                  <p className="mt-1 font-medium text-sm">
-                    {overview?.optInRequired
-                      ? "Se exige opt-in fuera de ventana"
-                      : "Opt-in desactivado por configuración"}
-                  </p>
-                  <Description className="text-default-500 text-xs">
-                    Si el número no tiene ventana activa y tampoco opt-in, el envío de prueba se
-                    bloquea.
-                  </Description>
-                </Surface>
-
-                <Surface className="rounded-2xl border border-default-200 px-4 py-3">
-                  <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
-                    Formato recomendado
-                  </Description>
-                  <p className="mt-1 font-medium text-sm">
-                    Usa E.164 con código país y prefijo `+`
-                  </p>
-                  <Description className="text-default-500 text-xs">
-                    Evita ambigüedad de país al probar o enviar desde la API.
-                  </Description>
-                </Surface>
               </Card.Content>
             </Card>
           </div>

@@ -446,9 +446,14 @@ export async function getWabaId(): Promise<string> {
 }
 
 export interface WhatsappAccountInfo {
+  codeVerificationStatus: string | null;
   displayPhoneNumber: string;
   messagingLimitTier: string | null;
+  nameStatus: string | null;
+  phoneNumberId: string;
   qualityRating: string | null;
+  status: string | null;
+  throughput: string | null;
   verifiedName: string;
   wabaId: string;
 }
@@ -457,7 +462,7 @@ export async function getAccountInfo(): Promise<WhatsappAccountInfo> {
   const { accessToken, phoneNumberId } = getConfig();
 
   const res = await fetch(
-    `${GRAPH_API_BASE}/${phoneNumberId}?fields=display_phone_number,verified_name,quality_rating,messaging_limit_tier,whatsapp_business_account`,
+    `${GRAPH_API_BASE}/${phoneNumberId}?fields=display_phone_number,verified_name,quality_rating,messaging_limit_tier,whatsapp_business_account,status,name_status,code_verification_status,throughput`,
     { headers: { Authorization: `Bearer ${accessToken}` } },
   );
 
@@ -467,9 +472,13 @@ export async function getAccountInfo(): Promise<WhatsappAccountInfo> {
   }
 
   const body = (await res.json()) as {
+    code_verification_status?: string;
     display_phone_number?: string;
     messaging_limit_tier?: string;
+    name_status?: string;
     quality_rating?: string;
+    status?: string;
+    throughput?: { level?: string };
     verified_name?: string;
     whatsapp_business_account?: { id: string };
   };
@@ -478,11 +487,63 @@ export async function getAccountInfo(): Promise<WhatsappAccountInfo> {
   if (wabaId) cachedWabaId = wabaId;
 
   return {
+    codeVerificationStatus: body.code_verification_status ?? null,
     displayPhoneNumber: body.display_phone_number ?? "",
     messagingLimitTier: body.messaging_limit_tier ?? null,
+    nameStatus: body.name_status ?? null,
+    phoneNumberId,
     qualityRating: body.quality_rating ?? null,
+    status: body.status ?? null,
+    throughput: body.throughput?.level ?? null,
     verifiedName: body.verified_name ?? "",
     wabaId,
+  };
+}
+
+export interface WhatsappBusinessProfile {
+  about: string | null;
+  address: string | null;
+  description: string | null;
+  email: string | null;
+  profilePictureUrl: string | null;
+  vertical: string | null;
+  websites: string[];
+}
+
+export async function getBusinessProfile(): Promise<WhatsappBusinessProfile> {
+  const { accessToken, phoneNumberId } = getConfig();
+
+  const res = await fetch(
+    `${GRAPH_API_BASE}/${phoneNumberId}/whatsapp_business_profile?fields=about,address,description,email,profile_picture_url,websites,vertical`,
+    { headers: { Authorization: `Bearer ${accessToken}` } },
+  );
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "unknown error");
+    throw new Error(`Meta API error fetching business profile (${res.status}): ${text}`);
+  }
+
+  const body = (await res.json()) as {
+    data?: Array<{
+      about?: string;
+      address?: string;
+      description?: string;
+      email?: string;
+      profile_picture_url?: string;
+      vertical?: string;
+      websites?: string[];
+    }>;
+  };
+
+  const profile = body.data?.[0];
+  return {
+    about: profile?.about ?? null,
+    address: profile?.address ?? null,
+    description: profile?.description ?? null,
+    email: profile?.email ?? null,
+    profilePictureUrl: profile?.profile_picture_url ?? null,
+    vertical: profile?.vertical ?? null,
+    websites: profile?.websites ?? [],
   };
 }
 

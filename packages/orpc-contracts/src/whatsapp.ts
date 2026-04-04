@@ -110,13 +110,6 @@ export const whatsappOverviewSchema = z.object({
   phoneNumberIdConfigured: z.boolean(),
   pollCron: z.string(),
   senderFilter: z.string(),
-  supportsCalls: z.boolean(),
-  supportsContextualReplies: z.boolean(),
-  supportsInteractive: z.boolean(),
-  supportsMarkAsRead: z.boolean(),
-  supportsMedia: z.boolean(),
-  supportsReactions: z.boolean(),
-  supportsTypingIndicator: z.boolean(),
   templateFallbackReady: z.boolean(),
   templateLanguage: z.string().nullable(),
   templateName: z.string().nullable(),
@@ -145,11 +138,26 @@ export const listWhatsappTemplatesResponseSchema = z.object({
 });
 
 export const whatsappAccountInfoSchema = z.object({
+  codeVerificationStatus: z.string().nullable(),
   displayPhoneNumber: z.string(),
   messagingLimitTier: z.string().nullable(),
+  nameStatus: z.string().nullable(),
+  phoneNumberId: z.string(),
   qualityRating: z.string().nullable(),
+  status: z.string().nullable(),
+  throughput: z.string().nullable(),
   verifiedName: z.string(),
   wabaId: z.string(),
+});
+
+export const whatsappBusinessProfileSchema = z.object({
+  about: z.string().nullable(),
+  address: z.string().nullable(),
+  description: z.string().nullable(),
+  email: z.string().nullable(),
+  profilePictureUrl: z.string().nullable(),
+  vertical: z.string().nullable(),
+  websites: z.array(z.string()),
 });
 
 export const whatsappTestSendInputSchema = z.object({
@@ -359,6 +367,15 @@ export const whatsappContract = {
       tags: ["WhatsApp"],
     })
     .output(whatsappAccountInfoSchema),
+
+  getBusinessProfile: oc
+    .route({
+      method: "GET",
+      path: "/business-profile",
+      summary: "Get WhatsApp Business profile from Meta API",
+      tags: ["WhatsApp"],
+    })
+    .output(whatsappBusinessProfileSchema),
 
   triggerPoll: oc
     .route({

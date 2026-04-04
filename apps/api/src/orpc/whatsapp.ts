@@ -6,6 +6,7 @@ import {
   listWhatsappNotificationsResponseSchema as contractListResponse,
   listWhatsappTemplatesResponseSchema,
   whatsappAccountInfoSchema,
+  whatsappBusinessProfileSchema,
   whatsappContactStateSchema,
   whatsappCustomMessageInputSchema,
   whatsappNotificationStatusSchema,
@@ -31,6 +32,7 @@ import {
 } from "../lib/whatsapp/conversation-state";
 import {
   getAccountInfo,
+  getBusinessProfile,
   getFirstApprovedTemplate,
   listMessageTemplates,
   markMessageAsRead,
@@ -286,13 +288,6 @@ const whatsappORPCRouterBase = {
         phoneNumberIdConfigured,
         pollCron: process.env.WHATSAPP_POLL_CRON ?? "*/2 * * * *",
         senderFilter: process.env.DOCTORALIA_EMAIL_SENDER_FILTER ?? "doctoralia.com",
-        supportsCalls: true,
-        supportsContextualReplies: true,
-        supportsInteractive: true,
-        supportsMarkAsRead: true,
-        supportsMedia: true,
-        supportsReactions: true,
-        supportsTypingIndicator: true,
         templateFallbackReady: resolvedTemplate !== null,
         templateLanguage: resolvedTemplate?.languageCode ?? null,
         templateName: resolvedTemplate?.templateName ?? null,
@@ -538,6 +533,18 @@ const whatsappORPCRouterBase = {
     .output(whatsappAccountInfoSchema)
     .handler(async () => {
       return await getAccountInfo();
+    }),
+
+  getBusinessProfile: integrationRead
+    .route({
+      method: "GET",
+      path: "/business-profile",
+      summary: "Get WhatsApp Business profile from Meta API",
+      tags: ["WhatsApp"],
+    })
+    .output(whatsappBusinessProfileSchema)
+    .handler(async () => {
+      return await getBusinessProfile();
     }),
 
   triggerPoll: integrationCreate

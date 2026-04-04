@@ -88,6 +88,14 @@ export async function fetchWhatsappAccountInfo() {
   }
 }
 
+export async function fetchWhatsappBusinessProfile() {
+  try {
+    return await whatsappORPCClient.getBusinessProfile({});
+  } catch (error) {
+    throw toWhatsappApiError(error);
+  }
+}
+
 export async function triggerWhatsappPoll() {
   try {
     return await whatsappORPCClient.triggerPoll({});

@@ -1,6 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import {
   fetchWhatsappAccountInfo,
+  fetchWhatsappBusinessProfile,
   fetchWhatsappContacts,
   fetchWhatsappNotifications,
   fetchWhatsappOverview,
@@ -49,5 +50,11 @@ export const whatsappKeys = {
     queryOptions({
       queryFn: () => fetchWhatsappAccountInfo(),
       queryKey: ["whatsapp", "account-info"],
+    }),
+
+  businessProfile: () =>
+    queryOptions({
+      queryFn: () => fetchWhatsappBusinessProfile(),
+      queryKey: ["whatsapp", "business-profile"],
     }),
 };
