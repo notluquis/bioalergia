@@ -33,6 +33,7 @@ export interface ClinicalSeriesEvent {
   beneficiaryName: string | null;
   beneficiaryRut: string | null;
   calendarGoogleId: string;
+  description: string | null;
   eventDate: string;
   eventId: number;
   externalEventId: string;
@@ -148,6 +149,7 @@ export const ClinicalSeriesEventSchema = z.object({
   beneficiaryName: z.string().nullable(),
   beneficiaryRut: z.string().nullable(),
   calendarGoogleId: z.string(),
+  description: z.string().nullable().catch(null),
   eventDate: z.string(),
   eventId: z.number(),
   externalEventId: z.string(),

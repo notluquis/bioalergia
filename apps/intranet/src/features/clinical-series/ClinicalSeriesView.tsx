@@ -4,6 +4,7 @@
  */
 
 import {
+  Accordion,
   Alert,
   Button,
   Card,
@@ -1266,95 +1267,119 @@ export function ClinicalSeriesView() {
                                     </Chip>
                                     <Separator className="flex-1" />
                                   </div>
-                                  {byYear[year]!.map((event) => {
-                                    const isFuture = event.eventDate > today;
-                                    return (
-                                      <Button
-                                        className="h-auto min-h-0 w-full justify-start p-0 text-left"
-                                        key={event.eventId}
-                                        onPress={() =>
-                                          setSelectedSeriesEvent(toCalendarEventDetail(event))
-                                        }
-                                        variant="ghost"
-                                      >
-                                        <Surface
-                                          className={`w-full rounded-lg p-2.5 text-xs${isFuture ? " ring-1 ring-accent/30" : ""}`}
+                                  <Accordion
+                                    className="p-0 gap-1.5"
+                                    hideSeparator
+                                    variant="default"
+                                  >
+                                    {byYear[year]!.map((event) => {
+                                      const isFuture = event.eventDate > today;
+                                      return (
+                                        <Accordion.Item
+                                          key={event.eventId}
+                                          aria-label={clinicalEventHeadline(event)}
+                                          className="p-0"
                                         >
-                                          <div className="flex items-center justify-between gap-2">
-                                            <span
-                                              className={`font-medium${isFuture ? " text-accent" : ""}`}
+                                          <Accordion.Heading>
+                                            <Accordion.Trigger
+                                              className={`w-full rounded-lg p-2.5 text-xs text-left hover:bg-default-100/50 data-[hover=true]:bg-default-100/50${isFuture ? " ring-1 ring-accent/30" : ""}`}
                                             >
-                                              {formatEventDate(event.eventDate)}
-                                            </span>
-                                            <div className="flex items-center gap-1.5">
-                                              {isFuture && (
-                                                <span className="text-[10px] text-accent font-medium uppercase tracking-wide">
-                                                  próximo
-                                                </span>
+                                              <div className="flex-1">
+                                                <div className="flex items-center justify-between gap-2">
+                                                  <span
+                                                    className={`font-medium${isFuture ? " text-accent" : ""}`}
+                                                  >
+                                                    {formatEventDate(event.eventDate)}
+                                                  </span>
+                                                  <div className="flex items-center gap-1.5">
+                                                    {isFuture && (
+                                                      <span className="text-[10px] text-accent font-medium uppercase tracking-wide">
+                                                        próximo
+                                                      </span>
+                                                    )}
+                                                    {event.seriesStageLabel && event.summary && (
+                                                      <span className="text-foreground-400">
+                                                        {event.seriesStageLabel}
+                                                      </span>
+                                                    )}
+                                                  </div>
+                                                </div>
+                                                <p className="mt-0.5 font-medium text-foreground">
+                                                  {clinicalEventHeadline(event)}
+                                                </p>
+                                                {clinicalEventSupportText(event) && (
+                                                  <p className="text-foreground-400 truncate mt-0.5">
+                                                    {clinicalEventSupportText(event)}
+                                                  </p>
+                                                )}
+                                              </div>
+                                              <Accordion.Indicator className="text-foreground-400" />
+                                            </Accordion.Trigger>
+                                          </Accordion.Heading>
+                                          <Accordion.Panel className="pb-0">
+                                            <Accordion.Body className="px-2.5 pb-2.5 pt-0 text-xs">
+                                              {event.description && (
+                                                <p className="text-foreground-500 whitespace-pre-line mb-2">
+                                                  {event.description}
+                                                </p>
                                               )}
-                                              {event.seriesStageLabel && event.summary && (
-                                                <span className="text-foreground-400">
-                                                  {event.seriesStageLabel}
-                                                </span>
+                                              {(() => {
+                                                const efs = eventFinancialStatus(event);
+                                                if (efs === "unknown") return null;
+                                                if (efs === "free")
+                                                  return (
+                                                    <p className="font-medium italic text-success">
+                                                      Sin costo
+                                                    </p>
+                                                  );
+                                                return (
+                                                  <p className="text-foreground-400">
+                                                    $
+                                                    {(event.amountPaid ?? 0).toLocaleString(
+                                                      "es-CL"
+                                                    )}{" "}
+                                                    / $
+                                                    {event.amountExpected!.toLocaleString("es-CL")}
+                                                  </p>
+                                                );
+                                              })()}
+                                              {event.linkedFolios.length > 0 && (
+                                                <div className="flex flex-wrap gap-1 mt-1">
+                                                  {event.linkedFolios.map((folio) => (
+                                                    <Chip
+                                                      key={folio}
+                                                      size="sm"
+                                                      color="success"
+                                                      variant="soft"
+                                                    >
+                                                      Boleta N°{folio}
+                                                    </Chip>
+                                                  ))}
+                                                </div>
                                               )}
-                                            </div>
-                                          </div>
-                                          <p className="mt-0.5 font-medium text-foreground">
-                                            {clinicalEventHeadline(event)}
-                                          </p>
-                                          {clinicalEventSupportText(event) && (
-                                            <p className="text-foreground-400 truncate mt-0.5">
-                                              {clinicalEventSupportText(event)}
-                                            </p>
-                                          )}
-                                          {(() => {
-                                            const efs = eventFinancialStatus(event);
-                                            if (efs === "unknown")
-                                              return (
-                                                <p className="mt-0.5 italic text-foreground-300">
-                                                  Ver boletas y sugerencias
+                                              {!isFuture && event.linkedFolios.length === 0 && (
+                                                <p className="text-[10px] text-foreground-300 italic">
+                                                  Sin boleta vinculada
                                                 </p>
-                                              );
-                                            if (efs === "free")
-                                              return (
-                                                <p className="mt-0.5 font-medium italic text-success">
-                                                  Sin costo · Ver boletas
-                                                </p>
-                                              );
-                                            return (
-                                              <>
-                                                <p className="mt-0.5 text-foreground-400">
-                                                  ${(event.amountPaid ?? 0).toLocaleString("es-CL")}{" "}
-                                                  / ${event.amountExpected!.toLocaleString("es-CL")}
-                                                </p>
-                                                <p className="text-[11px] font-medium text-accent">
-                                                  Abrir boletas y sugerencias
-                                                </p>
-                                              </>
-                                            );
-                                          })()}
-                                          {event.linkedFolios.length > 0 ? (
-                                            <div className="flex flex-wrap gap-1 mt-1">
-                                              {event.linkedFolios.map((folio) => (
-                                                <Chip
-                                                  key={folio}
-                                                  size="sm"
-                                                  color="success"
-                                                  variant="soft"
-                                                >
-                                                  Boleta N°{folio}
-                                                </Chip>
-                                              ))}
-                                            </div>
-                                          ) : !isFuture ? (
-                                            <p className="mt-1 text-[10px] text-foreground-300 italic">
-                                              Sin boleta vinculada
-                                            </p>
-                                          ) : null}
-                                        </Surface>
-                                      </Button>
-                                    );
-                                  })}
+                                              )}
+                                              <Button
+                                                className="mt-2"
+                                                size="sm"
+                                                variant="ghost"
+                                                onPress={() =>
+                                                  setSelectedSeriesEvent(
+                                                    toCalendarEventDetail(event)
+                                                  )
+                                                }
+                                              >
+                                                Ver boletas y sugerencias
+                                              </Button>
+                                            </Accordion.Body>
+                                          </Accordion.Panel>
+                                        </Accordion.Item>
+                                      );
+                                    })}
+                                  </Accordion>
                                 </div>
                               ))}
                             </div>
