@@ -8,7 +8,9 @@
 import { db } from "@finanzas/db";
 import { Boom } from "@hapi/boom";
 import makeWASocket, {
+  Browsers,
   DisconnectReason,
+  fetchLatestBaileysVersion,
   makeCacheableSignalKeyStore,
   WAMessageStatus,
   type WAMessage,
@@ -59,14 +61,18 @@ export async function initBaileysSocket(): Promise<void> {
   connectionState = "connecting";
   currentQrDataUrl = null;
 
+  const { version } = await fetchLatestBaileysVersion();
+  logEvent("baileys.version", { version });
+
   sock = makeWASocket({
     auth: {
       creds: authState.state.creds,
       keys: makeCacheableSignalKeyStore(authState.state.keys, undefined),
     },
-    browser: ["Bioalergia", "Server", "1.0"],
+    browser: Browsers.ubuntu("Chrome"),
     markOnlineOnConnect: false,
     printQRInTerminal: process.env.NODE_ENV !== "production",
+    version,
     getMessage: async (_key) => {
       // Required by Baileys for message retry/resend.
       // We don't persist raw messages, so retries will fail silently.
@@ -237,7 +243,6 @@ function registerEventHandlers(socket: WASocket, saveCredsFn: () => Promise<void
       // Auth/session failure → clear DB creds and reconnect for fresh QR
       const isAuthFailure =
         statusCode === DisconnectReason.loggedOut ||
-        statusCode === 405 ||
         statusCode === DisconnectReason.multideviceMismatch;
 
       if (isAuthFailure) {
