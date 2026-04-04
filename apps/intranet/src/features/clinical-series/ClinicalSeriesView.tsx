@@ -11,6 +11,7 @@ import {
   Chip,
   DateField,
   DateRangePicker,
+  Dropdown,
   Drawer,
   Input,
   Label,
@@ -143,6 +144,115 @@ function toChileWhatsAppNumber(value: string): null | string {
   }
 
   return null;
+}
+
+type IdentityListEntry = {
+  href?: string;
+  roleLabel: string;
+  value: string;
+};
+
+function buildRutEntries(snapshot: ClinicalSeriesSnapshot): IdentityListEntry[] {
+  const entries: IdentityListEntry[] = [];
+  if (snapshot.patientRut) {
+    entries.push({ roleLabel: "Paciente", value: snapshot.patientRut });
+  }
+  if (snapshot.beneficiaryRut && snapshot.beneficiaryRut !== snapshot.patientRut) {
+    entries.push({ roleLabel: "Beneficiario", value: snapshot.beneficiaryRut });
+  }
+  return entries;
+}
+
+function buildPhoneEntries(snapshot: ClinicalSeriesSnapshot): IdentityListEntry[] {
+  return [
+    ...snapshot.patientPhones.map((phone) => ({
+      href: toChileWhatsAppNumber(phone)
+        ? `https://wa.me/${toChileWhatsAppNumber(phone)}`
+        : undefined,
+      roleLabel: "Paciente",
+      value: phone,
+    })),
+    ...snapshot.beneficiaryPhones.map((phone) => ({
+      href: toChileWhatsAppNumber(phone)
+        ? `https://wa.me/${toChileWhatsAppNumber(phone)}`
+        : undefined,
+      roleLabel: "Beneficiario",
+      value: phone,
+    })),
+  ];
+}
+
+function IdentityDropdownCell({
+  emptyLabel = "—",
+  entries,
+  title,
+}: {
+  emptyLabel?: string;
+  entries: IdentityListEntry[];
+  title: string;
+}) {
+  if (entries.length === 0) {
+    return <span className="text-xs text-foreground-400">{emptyLabel}</span>;
+  }
+
+  return (
+    <Dropdown>
+      <Dropdown.Trigger>
+        <Button
+          className="h-8 w-full justify-between rounded-full px-3 text-xs"
+          size="sm"
+          variant="outline"
+          onClick={(event) => {
+            event.stopPropagation();
+          }}
+        >
+          <span className="truncate">{title}</span>
+          <Chip size="sm" variant="soft">
+            {entries.length}
+          </Chip>
+        </Button>
+      </Dropdown.Trigger>
+      <Dropdown.Popover className="w-80 p-0" placement="bottom start">
+        <div className="flex flex-col gap-2 p-2">
+          <div className="flex items-center justify-between px-1 pt-1">
+            <span className="text-sm font-medium text-foreground">{title}</span>
+            <Chip size="sm" variant="tertiary">
+              {entries.length}
+            </Chip>
+          </div>
+          <div className="flex flex-col gap-2">
+            {entries.map((entry) => (
+              <div
+                className="rounded-large border border-border/60 bg-content2 px-3 py-2"
+                key={`${title}-${entry.roleLabel}-${entry.value}`}
+              >
+                <div className="mb-1">
+                  <Chip size="sm" variant="tertiary">
+                    {entry.roleLabel}
+                  </Chip>
+                </div>
+                {entry.href ? (
+                  <Link
+                    className="text-sm font-mono"
+                    href={entry.href}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                    }}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    {entry.value}
+                  </Link>
+                ) : (
+                  <span className="text-sm text-foreground font-mono">{entry.value}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </Dropdown.Popover>
+    </Dropdown>
+  );
 }
 
 const STATUS_LABELS: Record<ClinicalSeriesStatus, string> = {
@@ -771,77 +881,10 @@ export function ClinicalSeriesView() {
                         </div>
                       </Table.Cell>
                       <Table.Cell>
-                        <div className="flex flex-wrap gap-1.5">
-                          {s.patientRut ? (
-                            <Chip size="sm" variant="tertiary">
-                              Paciente: {s.patientRut}
-                            </Chip>
-                          ) : (
-                            <Chip size="sm" variant="tertiary">
-                              Paciente: —
-                            </Chip>
-                          )}
-                          {s.beneficiaryRut && s.beneficiaryRut !== s.patientRut && (
-                            <Chip color="default" size="sm" variant="tertiary">
-                              Beneficiario: {s.beneficiaryRut}
-                            </Chip>
-                          )}
-                        </div>
+                        <IdentityDropdownCell entries={buildRutEntries(s)} title="RUTs" />
                       </Table.Cell>
                       <Table.Cell>
-                        <div className="flex flex-col gap-1">
-                          {s.patientPhones.length === 0 && s.beneficiaryPhones.length === 0 ? (
-                            <span className="text-xs text-foreground-400">—</span>
-                          ) : null}
-                          {s.patientPhones.map((phone) => {
-                            const whatsappNumber = toChileWhatsAppNumber(phone);
-                            return whatsappNumber ? (
-                              <Link
-                                className="w-fit text-xs text-success-400 font-mono"
-                                href={`https://wa.me/${whatsappNumber}`}
-                                key={`patient-${phone}`}
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                }}
-                                rel="noreferrer"
-                                target="_blank"
-                              >
-                                Paciente: {phone}
-                              </Link>
-                            ) : (
-                              <span
-                                className="text-xs text-foreground-300 font-mono"
-                                key={`patient-${phone}`}
-                              >
-                                Paciente: {phone}
-                              </span>
-                            );
-                          })}
-                          {s.beneficiaryPhones.map((phone) => {
-                            const whatsappNumber = toChileWhatsAppNumber(phone);
-                            return whatsappNumber ? (
-                              <Link
-                                className="w-fit text-xs text-accent font-mono"
-                                href={`https://wa.me/${whatsappNumber}`}
-                                key={`beneficiary-${phone}`}
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                }}
-                                rel="noreferrer"
-                                target="_blank"
-                              >
-                                Beneficiario: {phone}
-                              </Link>
-                            ) : (
-                              <span
-                                className="text-xs text-foreground-300 font-mono"
-                                key={`beneficiary-${phone}`}
-                              >
-                                Beneficiario: {phone}
-                              </span>
-                            );
-                          })}
-                        </div>
+                        <IdentityDropdownCell entries={buildPhoneEntries(s)} title="Teléfonos" />
                       </Table.Cell>
                       <Table.Cell>
                         <div className="flex flex-col gap-1 items-start">
