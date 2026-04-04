@@ -75,6 +75,8 @@ model User {
   permissionVersion       UserPermissionVersion?
   roles                   UserRoleAssignment[]
   medicalCertificates     MedicalCertificate[]
+  issuedDebugTokens       DebugToken[]               @relation("DebugTokenIssuedBy")
+  targetDebugTokens       DebugToken[]               @relation("DebugTokenTarget")
   patientAttachments      PatientAttachment[]
   eventDteAutoLinkAttempts EventDteAutoLinkAttempt[]
   eventDteMatchReviews    EventDteMatchReview[]
@@ -93,6 +95,29 @@ model User {
   @@allow('all', auth().status == 'ACTIVE')
 
   @@map("users")
+}
+
+model DebugToken {
+  id             Int       @id @default(autoincrement())
+  jti            String    @unique
+  issuedByUserId Int       @map("issued_by_user_id")
+  targetUserId   Int       @map("target_user_id")
+  audience       String
+  reason         String
+  scopes         Json
+  expiresAt      DateTime  @map("expires_at")
+  usedAt         DateTime? @map("used_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  issuedByUser   User      @relation("DebugTokenIssuedBy", fields: [issuedByUserId], references: [id], onDelete: Restrict)
+  targetUser     User      @relation("DebugTokenTarget", fields: [targetUserId], references: [id], onDelete: Restrict)
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth() != null)
+  @@allow('create,update', auth().status == 'ACTIVE')
+
+  @@index([targetUserId])
+  @@index([expiresAt])
+  @@map("debug_tokens")
 }
 
 model Passkey {

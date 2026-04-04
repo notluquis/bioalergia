@@ -203,6 +203,18 @@ export class SchemaType implements SchemaDef {
                     array: true,
                     relation: { opposite: "issuer" }
                 },
+                issuedDebugTokens: {
+                    name: "issuedDebugTokens",
+                    type: "DebugToken",
+                    array: true,
+                    relation: { opposite: "issuedByUser", name: "DebugTokenIssuedBy" }
+                },
+                targetDebugTokens: {
+                    name: "targetDebugTokens",
+                    type: "DebugToken",
+                    array: true,
+                    relation: { opposite: "targetUser", name: "DebugTokenTarget" }
+                },
                 patientAttachments: {
                     name: "patientAttachments",
                     type: "PatientAttachment",
@@ -244,6 +256,77 @@ export class SchemaType implements SchemaDef {
                 id: { type: "Int" },
                 personId: { type: "Int" },
                 loginEmail: { type: "String" }
+            }
+        },
+        DebugToken: {
+            name: "DebugToken",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                jti: {
+                    name: "jti",
+                    type: "String",
+                    unique: true
+                },
+                issuedByUserId: {
+                    name: "issuedByUserId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "issuedByUser"
+                    ] as readonly string[]
+                },
+                targetUserId: {
+                    name: "targetUserId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "targetUser"
+                    ] as readonly string[]
+                },
+                audience: {
+                    name: "audience",
+                    type: "String"
+                },
+                reason: {
+                    name: "reason",
+                    type: "String"
+                },
+                scopes: {
+                    name: "scopes",
+                    type: "Json"
+                },
+                expiresAt: {
+                    name: "expiresAt",
+                    type: "DateTime"
+                },
+                usedAt: {
+                    name: "usedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                issuedByUser: {
+                    name: "issuedByUser",
+                    type: "User",
+                    relation: { opposite: "issuedDebugTokens", name: "DebugTokenIssuedBy", fields: ["issuedByUserId"], references: ["id"], onDelete: "Restrict" }
+                },
+                targetUser: {
+                    name: "targetUser",
+                    type: "User",
+                    relation: { opposite: "targetDebugTokens", name: "DebugTokenTarget", fields: ["targetUserId"], references: ["id"], onDelete: "Restrict" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                jti: { type: "String" }
             }
         },
         Passkey: {

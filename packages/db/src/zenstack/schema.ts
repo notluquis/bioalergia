@@ -228,6 +228,20 @@ export class SchemaType implements SchemaDef {
                     array: true,
                     relation: { opposite: "issuer" }
                 },
+                issuedDebugTokens: {
+                    name: "issuedDebugTokens",
+                    type: "DebugToken",
+                    array: true,
+                    attributes: [{ name: "@relation", args: [{ name: "name", value: ExpressionUtils.literal("DebugTokenIssuedBy") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "issuedByUser", name: "DebugTokenIssuedBy" }
+                },
+                targetDebugTokens: {
+                    name: "targetDebugTokens",
+                    type: "DebugToken",
+                    array: true,
+                    attributes: [{ name: "@relation", args: [{ name: "name", value: ExpressionUtils.literal("DebugTokenTarget") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "targetUser", name: "DebugTokenTarget" }
+                },
                 patientAttachments: {
                     name: "patientAttachments",
                     type: "PatientAttachment",
@@ -278,6 +292,94 @@ export class SchemaType implements SchemaDef {
                 id: { type: "Int" },
                 personId: { type: "Int" },
                 loginEmail: { type: "String" }
+            }
+        },
+        DebugToken: {
+            name: "DebugToken",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                jti: {
+                    name: "jti",
+                    type: "String",
+                    unique: true,
+                    attributes: [{ name: "@unique" }] as readonly AttributeApplication[]
+                },
+                issuedByUserId: {
+                    name: "issuedByUserId",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("issued_by_user_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "issuedByUser"
+                    ] as readonly string[]
+                },
+                targetUserId: {
+                    name: "targetUserId",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("target_user_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "targetUser"
+                    ] as readonly string[]
+                },
+                audience: {
+                    name: "audience",
+                    type: "String"
+                },
+                reason: {
+                    name: "reason",
+                    type: "String"
+                },
+                scopes: {
+                    name: "scopes",
+                    type: "Json"
+                },
+                expiresAt: {
+                    name: "expiresAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("expires_at") }] }] as readonly AttributeApplication[]
+                },
+                usedAt: {
+                    name: "usedAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("used_at") }] }] as readonly AttributeApplication[]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                issuedByUser: {
+                    name: "issuedByUser",
+                    type: "User",
+                    attributes: [{ name: "@relation", args: [{ name: "name", value: ExpressionUtils.literal("DebugTokenIssuedBy") }, { name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("issuedByUserId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Restrict") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "issuedDebugTokens", name: "DebugTokenIssuedBy", fields: ["issuedByUserId"], references: ["id"], onDelete: "Restrict" }
+                },
+                targetUser: {
+                    name: "targetUser",
+                    type: "User",
+                    attributes: [{ name: "@relation", args: [{ name: "name", value: ExpressionUtils.literal("DebugTokenTarget") }, { name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("targetUserId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Restrict") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "targetDebugTokens", name: "DebugTokenTarget", fields: ["targetUserId"], references: ["id"], onDelete: "Restrict" }
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "!=", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("targetUserId")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("expiresAt")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("debug_tokens") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                jti: { type: "String" }
             }
         },
         Passkey: {
