@@ -856,7 +856,7 @@ export function ClinicalSeriesView() {
                 onSelectionChange={handleRowSelect}
                 sortDescriptor={sortDescriptor}
                 onSortChange={setSortDescriptor}
-                className="min-w-[96rem]"
+                className="min-w-384"
               >
                 <Table.Header>
                   <Table.Column allowsSorting id="patient" isRowHeader className="w-[18%]">

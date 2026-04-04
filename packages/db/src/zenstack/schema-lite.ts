@@ -2785,6 +2785,11 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true
                 },
+                patientPhones: {
+                    name: "patientPhones",
+                    type: "Json",
+                    optional: true
+                },
                 beneficiaryName: {
                     name: "beneficiaryName",
                     type: "String",
@@ -2793,6 +2798,11 @@ export class SchemaType implements SchemaDef {
                 beneficiaryRut: {
                     name: "beneficiaryRut",
                     type: "String",
+                    optional: true
+                },
+                beneficiaryPhones: {
+                    name: "beneficiaryPhones",
+                    type: "Json",
                     optional: true
                 },
                 allergenType: {

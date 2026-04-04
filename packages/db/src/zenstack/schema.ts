@@ -3372,6 +3372,12 @@ export class SchemaType implements SchemaDef {
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_rut") }] }] as readonly AttributeApplication[]
                 },
+                patientPhones: {
+                    name: "patientPhones",
+                    type: "Json",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_phones") }] }] as readonly AttributeApplication[]
+                },
                 beneficiaryName: {
                     name: "beneficiaryName",
                     type: "String",
@@ -3383,6 +3389,12 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("beneficiary_rut") }] }] as readonly AttributeApplication[]
+                },
+                beneficiaryPhones: {
+                    name: "beneficiaryPhones",
+                    type: "Json",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("beneficiary_phones") }] }] as readonly AttributeApplication[]
                 },
                 allergenType: {
                     name: "allergenType",

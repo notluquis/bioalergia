@@ -456,6 +456,17 @@ function extractSeriesPhones(summary: null | string, description: null | string)
   };
 }
 
+function normalizeStoredPhoneArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set<string>();
+  for (const item of value) {
+    const normalized = normalizeExtractedPhone(typeof item === "string" ? item : null);
+    if (!normalized) continue;
+    seen.add(normalized);
+  }
+  return [...seen];
+}
+
 function normalizeName(value: string): string {
   return value
     .normalize("NFKD")
@@ -1886,6 +1897,15 @@ async function refreshClinicalSeriesMetadata(seriesId: number) {
   const vaccineProduct = isSubcut ? inferVaccineProduct(series.events) : null;
   const healthInsurance = inferHealthInsurance(series.events);
   const deliveryModality = isSubcut ? inferDeliveryModality(series.events) : null;
+  const seriesPhones = series.events.reduce(
+    (acc, item) => {
+      const extracted = extractSeriesPhones(item.summary ?? null, item.description ?? null);
+      extracted.patientPhones.forEach((phone) => acc.patientPhones.add(phone));
+      extracted.beneficiaryPhones.forEach((phone) => acc.beneficiaryPhones.add(phone));
+      return acc;
+    },
+    { beneficiaryPhones: new Set<string>(), patientPhones: new Set<string>() },
+  );
 
   await db.clinicalSeries.update({
     where: { id: seriesId },
@@ -1895,6 +1915,7 @@ async function refreshClinicalSeriesMetadata(seriesId: number) {
       healthInsurance,
       deliveryModality,
       beneficiaryName,
+      beneficiaryPhones: [...seriesPhones.beneficiaryPhones],
       beneficiaryRut,
       displayName: buildSeriesDisplayName({
         kind: series.kind as ClinicalSeriesKind,
@@ -1903,6 +1924,7 @@ async function refreshClinicalSeriesMetadata(seriesId: number) {
       }),
       expectedSessions: computeExpectedSessions(series.events),
       patientName,
+      patientPhones: [...seriesPhones.patientPhones],
       patientRut,
     },
   });
@@ -2394,15 +2416,23 @@ export async function getClinicalSeriesSnapshotByExternalEvent(params: {
     GROUP BY l.event_id
   `;
   const foliosByEventId = new Map(eventFolioRows.map((r) => [r.eventId, r.folios]));
-  const seriesPhones = series.events.reduce(
-    (acc, item) => {
-      const extracted = extractSeriesPhones(item.summary ?? null, item.description ?? null);
-      extracted.patientPhones.forEach((phone) => acc.patientPhones.add(phone));
-      extracted.beneficiaryPhones.forEach((phone) => acc.beneficiaryPhones.add(phone));
-      return acc;
-    },
-    { beneficiaryPhones: new Set<string>(), patientPhones: new Set<string>() },
-  );
+  const storedPatientPhones = normalizeStoredPhoneArray(series.patientPhones);
+  const storedBeneficiaryPhones = normalizeStoredPhoneArray(series.beneficiaryPhones);
+  const seriesPhones =
+    storedPatientPhones.length > 0 || storedBeneficiaryPhones.length > 0
+      ? {
+          beneficiaryPhones: new Set(storedBeneficiaryPhones),
+          patientPhones: new Set(storedPatientPhones),
+        }
+      : series.events.reduce(
+          (acc, item) => {
+            const extracted = extractSeriesPhones(item.summary ?? null, item.description ?? null);
+            extracted.patientPhones.forEach((phone) => acc.patientPhones.add(phone));
+            extracted.beneficiaryPhones.forEach((phone) => acc.beneficiaryPhones.add(phone));
+            return acc;
+          },
+          { beneficiaryPhones: new Set<string>(), patientPhones: new Set<string>() },
+        );
 
   const events = series.events.map((item) => ({
     amountExpected: item.amountExpected,
@@ -2500,7 +2530,7 @@ export async function getClinicalSeriesSnapshotById(id: number): Promise<Clinica
     return {
       allergenType: (series.allergenType as SubcutaneousAllergenType | null) ?? null,
       beneficiaryName: series.beneficiaryName ?? null,
-      beneficiaryPhones: [],
+      beneficiaryPhones: normalizeStoredPhoneArray(series.beneficiaryPhones),
       beneficiaryRut: series.beneficiaryRut ?? null,
       deliveryModality: (series.deliveryModality as DeliveryModality | null) ?? null,
       displayName: series.displayName ?? null,
@@ -2512,7 +2542,7 @@ export async function getClinicalSeriesSnapshotById(id: number): Promise<Clinica
       kind: series.kind as ClinicalSeriesKind,
       linkedDocuments: [],
       patientName: series.patientName ?? null,
-      patientPhones: [],
+      patientPhones: normalizeStoredPhoneArray(series.patientPhones),
       patientRut: series.patientRut ?? null,
       remainingExpected: 0,
       remainingPaid: 0,
@@ -2549,6 +2579,11 @@ export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilter
         .map((token) => token.trim())
         .filter((token) => token.length >= 2)
     : [];
+  const persistedPhoneFilterSql = (phonePattern: null | string) =>
+    sql`(
+      regexp_replace(coalesce(cs.patient_phones::text, '[]'), '\D', '', 'g') LIKE ${phonePattern}
+      OR regexp_replace(coalesce(cs.beneficiary_phones::text, '[]'), '\D', '', 'g') LIKE ${phonePattern}
+    )`;
   const eventPhoneFilterSql = (phonePattern: null | string) =>
     sql`EXISTS (
       SELECT 1
@@ -2556,13 +2591,15 @@ export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilter
       WHERE ef.clinical_series_id = cs.id
         AND regexp_replace(concat_ws(' ', coalesce(ef.summary, ''), coalesce(ef.description, '')), '\D', '', 'g') LIKE ${phonePattern}
     )`;
+  const phoneFilterSql = (phonePattern: null | string) =>
+    sql`(${persistedPhoneFilterSql(phonePattern)} OR ${eventPhoneFilterSql(phonePattern)})`;
 
   const textHaystack = sql`lower(concat_ws(' ', coalesce(cs.patient_name, ''), coalesce(cs.beneficiary_name, ''), coalesce(cs.display_name, ''), coalesce(cs.patient_rut, ''), coalesce(cs.beneficiary_rut, '')))`;
   const queryFilterSql =
     normalizedQuery || queryRut || queryPhone
       ? sql`(
           (${queryRut}::text IS NOT NULL AND (cs.patient_rut = ${queryRut} OR cs.beneficiary_rut = ${queryRut}))
-          OR (${queryPhone}::text IS NOT NULL AND ${eventPhoneFilterSql(queryPhone ? `%${queryPhone}%` : null)})
+          OR (${queryPhone}::text IS NOT NULL AND ${phoneFilterSql(queryPhone ? `%${queryPhone}%` : null)})
           OR (${normalizedQuery ? `%${normalizedQuery}%` : null}::text IS NOT NULL AND ${textHaystack} LIKE ${normalizedQuery ? `%${normalizedQuery}%` : null})
           OR ${
             queryTokens.length > 0
@@ -2601,7 +2638,7 @@ export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilter
           AND (${filters?.status ?? null}::text IS NULL OR cs.status::text = ${filters?.status ?? null})
           AND (${normalizedPatientRut}::text IS NULL OR cs.patient_rut = ${normalizedPatientRut})
           AND (${normalizedPatientName}::text IS NULL OR lower(coalesce(cs.patient_name, '')) LIKE ${normalizedPatientName})
-          AND (${normalizedPatientPhone}::text IS NULL OR ${eventPhoneFilterSql(normalizedPatientPhone)})
+          AND (${normalizedPatientPhone}::text IS NULL OR ${phoneFilterSql(normalizedPatientPhone)})
           AND (${nextVisitFrom}::date IS NULL OR es.next_event_date >= ${nextVisitFrom}::date)
           AND (${nextVisitTo}::date IS NULL OR es.next_event_date <= ${nextVisitTo}::date)
           AND ${queryFilterSql}
@@ -2676,7 +2713,7 @@ export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilter
       AND (${filters?.status ?? null}::text IS NULL OR cs.status::text = ${filters?.status ?? null})
       AND (${normalizedPatientName}::text IS NULL OR lower(coalesce(cs.patient_name, '')) LIKE ${normalizedPatientName})
       AND (${normalizedPatientRut}::text IS NULL OR cs.patient_rut = ${normalizedPatientRut})
-      AND (${normalizedPatientPhone}::text IS NULL OR ${eventPhoneFilterSql(normalizedPatientPhone)})
+      AND (${normalizedPatientPhone}::text IS NULL OR ${phoneFilterSql(normalizedPatientPhone)})
       AND (${nextVisitFrom}::date IS NULL OR es.next_event_date >= ${nextVisitFrom}::date)
       AND (${nextVisitTo}::date IS NULL OR es.next_event_date <= ${nextVisitTo}::date)
       AND ${queryFilterSql}
