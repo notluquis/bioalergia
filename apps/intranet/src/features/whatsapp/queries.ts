@@ -1,12 +1,10 @@
 import { queryOptions } from "@tanstack/react-query";
 import {
-  fetchWhatsappAccountInfo,
-  fetchWhatsappBusinessProfile,
+  fetchWhatsappConnectionStatus,
   fetchWhatsappContacts,
   fetchWhatsappNotifications,
   fetchWhatsappOverview,
   fetchWhatsappStats,
-  fetchWhatsappTemplates,
 } from "./api";
 
 export const whatsappKeys = {
@@ -40,21 +38,10 @@ export const whatsappKeys = {
       queryKey: ["whatsapp", "overview"],
     }),
 
-  templates: () =>
+  connectionStatus: () =>
     queryOptions({
-      queryFn: () => fetchWhatsappTemplates(),
-      queryKey: ["whatsapp", "templates"],
-    }),
-
-  accountInfo: () =>
-    queryOptions({
-      queryFn: () => fetchWhatsappAccountInfo(),
-      queryKey: ["whatsapp", "account-info"],
-    }),
-
-  businessProfile: () =>
-    queryOptions({
-      queryFn: () => fetchWhatsappBusinessProfile(),
-      queryKey: ["whatsapp", "business-profile"],
+      queryFn: () => fetchWhatsappConnectionStatus(),
+      queryKey: ["whatsapp", "connection-status"],
+      refetchInterval: 3_000,
     }),
 };

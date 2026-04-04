@@ -100,7 +100,7 @@ export function DoctoraliaSettingsPage() {
 
   return (
     <div className={PAGE_CONTAINER}>
-      <Surface className="rounded-[28px] border border-default-200 bg-gradient-to-br from-background via-default-50 to-warning/5 p-6 shadow-inner">
+      <Surface className="rounded-[28px] border border-default-200 bg-linear-to-br from-background via-default-50 to-warning/5 p-6 shadow-inner">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2">
@@ -115,8 +115,8 @@ export function DoctoraliaSettingsPage() {
                 tone={overview?.automaticNotificationsEnabled ? "success" : "warning"}
               />
               <StatusPill
-                label={overview?.outboundReady ? "WhatsApp disponible" : "WhatsApp pendiente"}
-                tone={overview?.outboundReady ? "accent" : "warning"}
+                label={overview?.connected ? "WhatsApp disponible" : "WhatsApp pendiente"}
+                tone={overview?.connected ? "accent" : "warning"}
               />
             </div>
 
@@ -266,7 +266,7 @@ export function DoctoraliaSettingsPage() {
                     Dependencia de salida
                   </Description>
                   <p className="mt-1 font-medium text-sm">
-                    {overview?.outboundReady ? "WhatsApp disponible" : "WhatsApp no listo"}
+                    {overview?.connected ? "WhatsApp disponible" : "WhatsApp no listo"}
                   </p>
                   <Description className="text-default-500 text-xs">
                     Doctoralia puede leer y parsear correos, pero el despacho final depende del

@@ -7,7 +7,6 @@ import {
   Input,
   Label,
   ListBox,
-  ProgressBar,
   Select,
   Skeleton,
   Surface,
@@ -17,15 +16,8 @@ import {
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import {
-  CheckCheck,
-  MessageCircleReply,
-  MessagesSquare,
-  Send,
-  ShieldCheck,
-  Webhook,
-} from "lucide-react";
-import { useMemo, useState } from "react";
+import { CheckCheck, MessageCircleReply, Send, Wifi, WifiOff } from "lucide-react";
+import { useState } from "react";
 
 import { useToast } from "@/context/ToastContext";
 import {
@@ -35,16 +27,8 @@ import {
 } from "@/features/whatsapp/api";
 import { whatsappKeys } from "@/features/whatsapp/queries";
 import { PAGE_CONTAINER } from "@/lib/styles";
-import { ChecklistRow } from "./messaging-settings-shared";
 
-type InteractiveKind = "cta_url" | "list" | "reply_buttons";
 type MediaKind = "audio" | "document" | "image" | "sticker" | "video";
-
-const INTERACTIVE_KIND_OPTIONS: Array<{ label: string; value: InteractiveKind }> = [
-  { label: "CTA URL", value: "cta_url" },
-  { label: "Reply buttons", value: "reply_buttons" },
-  { label: "Lista", value: "list" },
-];
 
 const MEDIA_KIND_OPTIONS: Array<{ label: string; value: MediaKind }> = [
   { label: "Imagen", value: "image" },
@@ -53,48 +37,6 @@ const MEDIA_KIND_OPTIONS: Array<{ label: string; value: MediaKind }> = [
   { label: "Video", value: "video" },
   { label: "Sticker", value: "sticker" },
 ];
-
-function parseReplyButtons(raw: string) {
-  const buttons = raw
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => {
-      const [id, title] = line.split("|").map((segment) => segment?.trim());
-      if (!id || !title) {
-        throw new Error(
-          "Cada botón debe ir en una línea con el formato id|Título. Ejemplo: confirmar|Confirmar"
-        );
-      }
-      return { id, title };
-    });
-
-  if (buttons.length === 0) {
-    throw new Error("Debes definir al menos un botón.");
-  }
-
-  return buttons;
-}
-
-function parseInteractiveSections(raw: string) {
-  try {
-    const parsed = JSON.parse(raw) as Array<{
-      rows: Array<{ description?: string; id: string; title: string }>;
-      title: string;
-    }>;
-
-    if (!Array.isArray(parsed) || parsed.length === 0) {
-      throw new Error("Debes enviar un arreglo JSON con al menos una sección.");
-    }
-
-    return parsed;
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(`Sections inválidas: ${error.message}`);
-    }
-    throw new Error("Sections inválidas: JSON no válido.");
-  }
-}
 
 export function WhatsappSettingsPage() {
   const { error: showError, success: showSuccess } = useToast();
@@ -106,27 +48,18 @@ export function WhatsappSettingsPage() {
   const [opsMessageId, setOpsMessageId] = useState("");
   const [opsReplyBody, setOpsReplyBody] = useState("");
   const [opsReactionEmoji, setOpsReactionEmoji] = useState("");
-  const [interactiveKind, setInteractiveKind] = useState<"" | InteractiveKind>("");
-  const [interactivePhone, setInteractivePhone] = useState("");
-  const [interactiveBody, setInteractiveBody] = useState("");
-  const [interactiveHeader, setInteractiveHeader] = useState("");
-  const [interactiveFooter, setInteractiveFooter] = useState("");
-  const [interactiveCtaText, setInteractiveCtaText] = useState("");
-  const [interactiveCtaUrl, setInteractiveCtaUrl] = useState("");
-  const [interactiveButtons, setInteractiveButtons] = useState("");
-  const [interactiveButtonText, setInteractiveButtonText] = useState("");
-  const [interactiveSections, setInteractiveSections] = useState("");
   const [mediaKind, setMediaKind] = useState<"" | MediaKind>("");
   const [mediaPhone, setMediaPhone] = useState("");
   const [mediaLink, setMediaLink] = useState("");
   const [mediaCaption, setMediaCaption] = useState("");
   const [mediaFilename, setMediaFilename] = useState("");
-  const [mediaReplyTo, setMediaReplyTo] = useState("");
 
   const { data: overview, isPending: overviewPending } = useQuery({
     ...whatsappKeys.overview(),
     refetchInterval: 30_000,
   });
+
+  const { data: connectionStatus } = useQuery(whatsappKeys.connectionStatus());
 
   const { data: contactsData, isPending: contactsPending } = useQuery({
     ...whatsappKeys.contacts({
@@ -186,51 +119,13 @@ export function WhatsappSettingsPage() {
     },
   });
 
-  const { data: templatesData, isPending: templatesPending } = useQuery({
-    ...whatsappKeys.templates(),
-    enabled: overview?.outboundReady === true,
-  });
-
-  const { data: accountInfo } = useQuery({
-    ...whatsappKeys.accountInfo(),
-    enabled: overview?.outboundReady === true,
-  });
-
-  const { data: businessProfile } = useQuery({
-    ...whatsappKeys.businessProfile(),
-    enabled: overview?.outboundReady === true,
-  });
-
   const { data: stats } = useQuery({
     ...whatsappKeys.stats(),
     refetchInterval: 30_000,
   });
 
-  const readiness = useMemo(() => {
-    if (!overview) return 0;
-    const checks = [
-      overview.accessTokenConfigured,
-      overview.phoneNumberIdConfigured,
-      overview.webhookVerifyTokenConfigured,
-      overview.appSecretConfigured,
-      overview.templateFallbackReady,
-    ];
-    return Math.round((checks.filter(Boolean).length / checks.length) * 100);
-  }, [overview]);
-
-  const templateFallbackReady = overview?.templateFallbackReady ?? false;
-  const approvedTemplates = useMemo(
-    () => templatesData?.templates.filter((t) => t.status === "APPROVED") ?? [],
-    [templatesData]
-  );
-
-  const testModeLabel =
-    testMutation.data?.mode === "text"
-      ? "Texto libre"
-      : testMutation.data?.mode === "template"
-        ? "Template"
-        : null;
-
+  const connected = connectionStatus?.connectionState === "open";
+  const connecting = connectionStatus?.connectionState === "connecting";
   const actionResult = customMutation.data;
 
   const handleContextualReply = () => {
@@ -255,64 +150,15 @@ export function WhatsappSettingsPage() {
     customMutation.mutate({
       kind: "mark_read",
       messageId: opsMessageId,
+      phone: opsPhone,
     });
   };
 
   const handleTypingIndicator = () => {
     customMutation.mutate({
       kind: "typing",
-      messageId: opsMessageId,
+      phone: opsPhone,
     });
-  };
-
-  const handleInteractiveSend = () => {
-    if (!interactiveKind) {
-      showError("Selecciona un tipo de mensaje interactivo.");
-      return;
-    }
-
-    if (interactiveKind === "cta_url") {
-      customMutation.mutate({
-        body: interactiveBody,
-        displayText: interactiveCtaText,
-        footer: interactiveFooter || undefined,
-        headerText: interactiveHeader || undefined,
-        kind: "cta_url",
-        phone: interactivePhone,
-        url: interactiveCtaUrl,
-      });
-      return;
-    }
-
-    if (interactiveKind === "reply_buttons") {
-      try {
-        customMutation.mutate({
-          body: interactiveBody,
-          buttons: parseReplyButtons(interactiveButtons),
-          footer: interactiveFooter || undefined,
-          headerText: interactiveHeader || undefined,
-          kind: "reply_buttons",
-          phone: interactivePhone,
-        });
-      } catch (error) {
-        showError(error instanceof Error ? error.message : "No se pudo parsear los botones.");
-      }
-      return;
-    }
-
-    try {
-      customMutation.mutate({
-        body: interactiveBody,
-        buttonText: interactiveButtonText,
-        footer: interactiveFooter || undefined,
-        headerText: interactiveHeader || undefined,
-        kind: "list",
-        phone: interactivePhone,
-        sections: parseInteractiveSections(interactiveSections),
-      });
-    } catch (error) {
-      showError(error instanceof Error ? error.message : "No se pudo parsear las secciones.");
-    }
   };
 
   const handleMediaSend = () => {
@@ -327,7 +173,6 @@ export function WhatsappSettingsPage() {
       kind: mediaKind,
       link: mediaLink,
       phone: mediaPhone,
-      replyToMessageId: mediaReplyTo || undefined,
     });
   };
 
@@ -359,64 +204,82 @@ export function WhatsappSettingsPage() {
           <div className="mt-4 grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
             <Card>
               <Card.Header className="flex flex-col items-start gap-1">
-                <h2 className="font-semibold text-base">Estado del canal</h2>
+                <h2 className="font-semibold text-base">Conexión WhatsApp</h2>
                 <Description className="text-default-500 text-xs">
-                  Esto cubre sólo WhatsApp Cloud API: credenciales, número y webhook.
+                  Conexión directa vía Baileys. Escanea el código QR para vincular.
                 </Description>
               </Card.Header>
               <Card.Content className="space-y-4">
-                {overviewPending ? (
-                  <Skeleton className="h-72 w-full rounded-2xl" />
-                ) : overview ? (
-                  <>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Description className="text-default-500 text-xs uppercase tracking-wide">
-                          Preparación del canal
-                        </Description>
-                        <span className="font-semibold text-sm">{readiness}%</span>
-                      </div>
-                      <ProgressBar aria-label="Preparación del canal" value={readiness}>
-                        <ProgressBar.Track className="h-2 rounded-full bg-default-100">
-                          <ProgressBar.Fill className="bg-primary" />
-                        </ProgressBar.Track>
-                      </ProgressBar>
-                    </div>
+                <div className="flex items-center gap-3">
+                  {connected ? (
+                    <Wifi className="h-5 w-5 text-success" />
+                  ) : (
+                    <WifiOff className="h-5 w-5 text-danger" />
+                  )}
+                  <Chip
+                    color={connected ? "success" : connecting ? "warning" : "danger"}
+                    size="sm"
+                    variant="soft"
+                  >
+                    {connected ? "Conectado" : connecting ? "Conectando..." : "Desconectado"}
+                  </Chip>
+                  {connectionStatus?.lastDisconnectReason != null && !connected ? (
+                    <Description className="text-default-500 text-xs">
+                      Desconexión: código {connectionStatus.lastDisconnectReason}
+                    </Description>
+                  ) : null}
+                </div>
 
-                    <ChecklistRow
-                      description="Token permanente válido con permisos para enviar mensajes por la Cloud API."
-                      icon={ShieldCheck}
-                      ready={overview.accessTokenConfigured}
-                      title="Access token"
+                {!connected && connectionStatus?.qrDataUrl ? (
+                  <div className="flex flex-col items-center gap-3">
+                    <img
+                      alt="QR code para vincular WhatsApp"
+                      className="h-64 w-64 rounded-xl border border-default-200"
+                      src={connectionStatus.qrDataUrl}
                     />
-                    <ChecklistRow
-                      description="Phone Number ID real del número conectado a WhatsApp Business."
-                      icon={MessagesSquare}
-                      ready={overview.phoneNumberIdConfigured}
-                      title="Phone Number ID"
-                    />
-                    <ChecklistRow
-                      description="Verify token configurado para la verificación inicial del webhook."
-                      icon={Webhook}
-                      ready={overview.webhookVerifyTokenConfigured}
-                      title="Verify token"
-                    />
-                    <ChecklistRow
-                      description="App Secret presente para validar la firma x-hub-signature-256."
-                      icon={ShieldCheck}
-                      ready={overview.appSecretConfigured}
-                      title="Firma de webhook"
-                    />
-                    <ChecklistRow
-                      description="Template configurado para envíos fuera de ventana de 24 horas."
-                      icon={Send}
-                      ready={templateFallbackReady}
-                      title="Template fallback"
-                    />
-                  </>
-                ) : (
-                  <Alert status="danger">No se pudo cargar el estado de WhatsApp.</Alert>
-                )}
+                    <Description className="text-center text-default-500 text-xs">
+                      Abre WhatsApp en tu teléfono, ve a Dispositivos vinculados y escanea este
+                      código. Se actualiza automáticamente cada ~60s.
+                    </Description>
+                  </div>
+                ) : null}
+
+                {connected ? (
+                  <Alert status="success">WhatsApp conectado y listo para enviar mensajes.</Alert>
+                ) : null}
+
+                {overviewPending ? (
+                  <Skeleton className="h-16 w-full rounded-2xl" />
+                ) : overview ? (
+                  <div className="space-y-2">
+                    <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
+                      Flujo automático
+                    </Description>
+                    <div className="flex flex-wrap gap-2">
+                      <Chip
+                        color={overview.automaticFlowReady ? "success" : "warning"}
+                        size="sm"
+                        variant="soft"
+                      >
+                        {overview.automaticFlowReady ? "Listo" : "No listo"}
+                      </Chip>
+                      <Chip
+                        color={overview.imapReady ? "success" : "default"}
+                        size="sm"
+                        variant="soft"
+                      >
+                        IMAP {overview.imapReady ? "OK" : "sin configurar"}
+                      </Chip>
+                      <Chip
+                        color={overview.automaticNotificationsEnabled ? "success" : "default"}
+                        size="sm"
+                        variant="soft"
+                      >
+                        Notificaciones {overview.automaticNotificationsEnabled ? "ON" : "OFF"}
+                      </Chip>
+                    </div>
+                  </div>
+                ) : null}
               </Card.Content>
             </Card>
 
@@ -469,193 +332,6 @@ export function WhatsappSettingsPage() {
               </Card>
             ) : null}
           </div>
-
-          <div className="mt-4 grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-            {accountInfo ? (
-              <Card>
-                <Card.Header className="flex flex-col items-start gap-1">
-                  <h2 className="font-semibold text-base">Cuenta WhatsApp Business</h2>
-                  <Description className="text-default-500 text-xs">
-                    Datos en tiempo real desde la Meta Graph API.
-                  </Description>
-                </Card.Header>
-                <Card.Content className="space-y-3">
-                  <Surface className="rounded-2xl border border-default-200 px-4 py-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
-                          Nombre verificado
-                        </Description>
-                        <p className="mt-1 font-medium text-sm">
-                          {accountInfo.verifiedName || "—"}
-                        </p>
-                      </div>
-                      {accountInfo.nameStatus ? (
-                        <Chip
-                          color={accountInfo.nameStatus === "APPROVED" ? "success" : "warning"}
-                          size="sm"
-                          variant="soft"
-                        >
-                          {accountInfo.nameStatus}
-                        </Chip>
-                      ) : null}
-                    </div>
-                  </Surface>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <Surface className="rounded-2xl border border-default-200 px-4 py-3">
-                      <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
-                        Teléfono
-                      </Description>
-                      <p className="mt-1 font-medium text-sm">
-                        {accountInfo.displayPhoneNumber || "—"}
-                      </p>
-                      {accountInfo.status ? (
-                        <Chip
-                          className="mt-1"
-                          color={accountInfo.status === "CONNECTED" ? "success" : "warning"}
-                          size="sm"
-                          variant="soft"
-                        >
-                          {accountInfo.status}
-                        </Chip>
-                      ) : null}
-                    </Surface>
-                    <Surface className="rounded-2xl border border-default-200 px-4 py-3">
-                      <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
-                        IDs
-                      </Description>
-                      <p className="mt-1 font-mono text-xs">WABA: {accountInfo.wabaId || "—"}</p>
-                      <p className="font-mono text-xs">Phone: {accountInfo.phoneNumberId}</p>
-                    </Surface>
-                  </div>
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    <Surface className="rounded-2xl border border-default-200 px-4 py-3">
-                      <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
-                        Calidad
-                      </Description>
-                      <Chip
-                        className="mt-1"
-                        color={
-                          accountInfo.qualityRating === "GREEN"
-                            ? "success"
-                            : accountInfo.qualityRating === "YELLOW"
-                              ? "warning"
-                              : accountInfo.qualityRating === "RED"
-                                ? "danger"
-                                : "default"
-                        }
-                        size="sm"
-                        variant="soft"
-                      >
-                        {accountInfo.qualityRating ?? "—"}
-                      </Chip>
-                    </Surface>
-                    <Surface className="rounded-2xl border border-default-200 px-4 py-3">
-                      <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
-                        Tier de mensajería
-                      </Description>
-                      <p className="mt-1 font-medium text-sm">
-                        {accountInfo.messagingLimitTier ?? "—"}
-                      </p>
-                    </Surface>
-                    <Surface className="rounded-2xl border border-default-200 px-4 py-3">
-                      <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
-                        Throughput
-                      </Description>
-                      <p className="mt-1 font-medium text-sm">{accountInfo.throughput ?? "—"}</p>
-                    </Surface>
-                  </div>
-                  {businessProfile ? (
-                    <Surface className="rounded-2xl border border-default-200 px-4 py-3">
-                      <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
-                        Perfil de negocio
-                      </Description>
-                      <div className="mt-1 space-y-1">
-                        {businessProfile.about ? (
-                          <p className="text-sm">{businessProfile.about}</p>
-                        ) : null}
-                        {businessProfile.vertical ? (
-                          <Chip size="sm" variant="soft">
-                            {businessProfile.vertical}
-                          </Chip>
-                        ) : null}
-                        {businessProfile.address ? (
-                          <p className="text-default-500 text-xs">{businessProfile.address}</p>
-                        ) : null}
-                        {businessProfile.email ? (
-                          <p className="text-default-500 text-xs">{businessProfile.email}</p>
-                        ) : null}
-                        {businessProfile.websites.length > 0 ? (
-                          <p className="text-default-500 text-xs">
-                            {businessProfile.websites.join(", ")}
-                          </p>
-                        ) : null}
-                      </div>
-                    </Surface>
-                  ) : null}
-                </Card.Content>
-              </Card>
-            ) : null}
-
-            <Card>
-              <Card.Header className="flex flex-col items-start gap-1">
-                <h2 className="font-semibold text-base">Templates disponibles</h2>
-                <Description className="text-default-500 text-xs">
-                  Listados en tiempo real desde Meta. El primero aprobado se usa como fallback
-                  automático.
-                </Description>
-              </Card.Header>
-              <Card.Content className="space-y-3">
-                {templatesPending ? (
-                  <Skeleton className="h-40 w-full rounded-2xl" />
-                ) : approvedTemplates.length > 0 ? (
-                  <div className="grid gap-3">
-                    {approvedTemplates.map((tpl) => (
-                      <Surface
-                        key={tpl.id}
-                        className="rounded-2xl border border-default-200 px-4 py-3"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-medium text-sm">{tpl.name}</p>
-                            <Description className="text-default-500 text-xs">
-                              {tpl.language} · {tpl.category}
-                            </Description>
-                          </div>
-                          <Chip
-                            color={tpl.status === "APPROVED" ? "success" : "default"}
-                            size="sm"
-                            variant="soft"
-                          >
-                            {tpl.status}
-                          </Chip>
-                        </div>
-                        {tpl.components
-                          .filter((c) => c.text)
-                          .map((c, i) => (
-                            <Description key={i} className="mt-1 text-default-500 text-xs">
-                              [{c.type}] {c.text}
-                            </Description>
-                          ))}
-                      </Surface>
-                    ))}
-                  </div>
-                ) : (
-                  <Alert status="warning">
-                    No hay templates aprobados en tu cuenta de Meta. Crea uno desde el Business
-                    Manager.
-                  </Alert>
-                )}
-
-                {templatesData?.templates.filter((t) => t.status !== "APPROVED").length ? (
-                  <Description className="text-default-500 text-xs">
-                    {templatesData.templates.filter((t) => t.status !== "APPROVED").length}{" "}
-                    template(s) en otro estado (pendiente, rechazado, etc.)
-                  </Description>
-                ) : null}
-              </Card.Content>
-            </Card>
-          </div>
         </Tabs.Panel>
 
         <Tabs.Panel id="operations">
@@ -673,7 +349,7 @@ export function WhatsappSettingsPage() {
                 </TextField>
 
                 <TextField className="w-full" onChange={setOpsMessageId} value={opsMessageId}>
-                  <Input placeholder="wamid.HBgL..." type="text" />
+                  <Input placeholder="Message ID" type="text" />
                 </TextField>
 
                 <TextField className="w-full">
@@ -711,7 +387,9 @@ export function WhatsappSettingsPage() {
                     Reply contextual
                   </Button>
                   <Button
-                    isDisabled={customMutation.isPending || !opsMessageId.trim()}
+                    isDisabled={
+                      customMutation.isPending || !opsPhone.trim() || !opsMessageId.trim()
+                    }
                     onPress={handleMarkRead}
                     size="sm"
                     variant="secondary"
@@ -720,7 +398,7 @@ export function WhatsappSettingsPage() {
                     Mark as read
                   </Button>
                   <Button
-                    isDisabled={customMutation.isPending || !opsMessageId.trim()}
+                    isDisabled={customMutation.isPending || !opsPhone.trim()}
                     onPress={handleTypingIndicator}
                     size="sm"
                     variant="secondary"
@@ -741,159 +419,18 @@ export function WhatsappSettingsPage() {
                     Reacción
                   </Button>
                 </div>
-
-                <Description className="text-default-500 text-xs">
-                  Las acciones ligadas al número requieren ventana activa. `mark_read` y `typing`
-                  sólo necesitan el `message_id`.
-                </Description>
               </Card.Content>
             </Card>
 
             <Card>
               <Card.Header className="flex flex-col items-start gap-1">
-                <h2 className="font-semibold text-base">Interactive</h2>
+                <h2 className="font-semibold text-base">Media por link</h2>
                 <Description className="text-default-500 text-xs">
-                  CTA URL, reply buttons y listas sobre el mismo endpoint interno.
+                  Soporta image, audio, document, video y sticker.
                 </Description>
               </Card.Header>
               <Card.Content className="space-y-4">
-                <Select
-                  onChange={(value) => setInteractiveKind(value as "" | InteractiveKind)}
-                  value={interactiveKind}
-                >
-                  <Label>Tipo interactivo</Label>
-                  <Select.Trigger>
-                    <Select.Value />
-                    <Select.Indicator />
-                  </Select.Trigger>
-                  <Select.Popover>
-                    <ListBox>
-                      {INTERACTIVE_KIND_OPTIONS.map((option) => (
-                        <ListBox.Item id={option.value} key={option.value}>
-                          {option.label}
-                        </ListBox.Item>
-                      ))}
-                    </ListBox>
-                  </Select.Popover>
-                </Select>
-
-                <TextField
-                  className="w-full"
-                  onChange={setInteractivePhone}
-                  value={interactivePhone}
-                >
-                  <Input placeholder="+56912345678" type="tel" />
-                </TextField>
-
-                <TextField className="w-full">
-                  <TextArea
-                    onChange={(event) => setInteractiveBody(event.target.value)}
-                    placeholder="Cuerpo del mensaje"
-                    rows={4}
-                    value={interactiveBody}
-                    variant="secondary"
-                  />
-                </TextField>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <TextField
-                    className="w-full"
-                    onChange={setInteractiveHeader}
-                    value={interactiveHeader}
-                  >
-                    <Input placeholder="Header opcional" type="text" />
-                  </TextField>
-                  <TextField
-                    className="w-full"
-                    onChange={setInteractiveFooter}
-                    value={interactiveFooter}
-                  >
-                    <Input placeholder="Footer opcional" type="text" />
-                  </TextField>
-                </div>
-
-                {interactiveKind === "cta_url" ? (
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <TextField
-                      className="w-full"
-                      onChange={setInteractiveCtaText}
-                      value={interactiveCtaText}
-                    >
-                      <Input placeholder="Texto del botón" type="text" />
-                    </TextField>
-                    <TextField
-                      className="w-full"
-                      onChange={setInteractiveCtaUrl}
-                      value={interactiveCtaUrl}
-                    >
-                      <Input placeholder="https://bioalergia.cl" type="url" />
-                    </TextField>
-                  </div>
-                ) : null}
-
-                {interactiveKind === "reply_buttons" ? (
-                  <TextField className="w-full">
-                    <TextArea
-                      onChange={(event) => setInteractiveButtons(event.target.value)}
-                      placeholder="id|Título"
-                      rows={5}
-                      value={interactiveButtons}
-                      variant="secondary"
-                    />
-                  </TextField>
-                ) : null}
-
-                {interactiveKind === "list" ? (
-                  <>
-                    <TextField
-                      className="w-full"
-                      onChange={setInteractiveButtonText}
-                      value={interactiveButtonText}
-                    >
-                      <Input placeholder="Texto del botón de lista" type="text" />
-                    </TextField>
-                    <TextField className="w-full">
-                      <TextArea
-                        className="font-mono text-xs"
-                        onChange={(event) => setInteractiveSections(event.target.value)}
-                        placeholder="JSON de sections"
-                        rows={8}
-                        value={interactiveSections}
-                        variant="secondary"
-                      />
-                    </TextField>
-                  </>
-                ) : null}
-
-                <Button
-                  isDisabled={
-                    customMutation.isPending ||
-                    !interactivePhone.trim() ||
-                    !interactiveBody.trim() ||
-                    (interactiveKind === "cta_url" &&
-                      (!interactiveCtaText.trim() || !interactiveCtaUrl.trim()))
-                  }
-                  isPending={customMutation.isPending}
-                  onPress={handleInteractiveSend}
-                  size="sm"
-                  variant="primary"
-                >
-                  <Send className="h-4 w-4" />
-                  Enviar interactive
-                </Button>
-              </Card.Content>
-            </Card>
-
-            <Card className="xl:col-span-2">
-              <Card.Header className="flex flex-col items-start gap-1">
-                <h2 className="font-semibold text-base">Media por link o media ID</h2>
-                <Description className="text-default-500 text-xs">
-                  Esta operación usa la ventana activa y soporta `image`, `audio`, `document`,
-                  `video` y `sticker`.
-                </Description>
-              </Card.Header>
-              <Card.Content className="space-y-4">
-                <div className="grid gap-4 xl:grid-cols-[220px_1fr_1fr]">
+                <div className="grid gap-4 xl:grid-cols-[220px_1fr]">
                   <Select
                     onChange={(value) => setMediaKind(value as "" | MediaKind)}
                     value={mediaKind}
@@ -916,10 +453,6 @@ export function WhatsappSettingsPage() {
 
                   <TextField className="w-full" onChange={setMediaPhone} value={mediaPhone}>
                     <Input placeholder="+56912345678" type="tel" />
-                  </TextField>
-
-                  <TextField className="w-full" onChange={setMediaReplyTo} value={mediaReplyTo}>
-                    <Input placeholder="Reply to message ID opcional" type="text" />
                   </TextField>
                 </div>
 
@@ -953,9 +486,6 @@ export function WhatsappSettingsPage() {
                     <Send className="h-4 w-4" />
                     Enviar media
                   </Button>
-                  <Description className="text-default-500 text-xs">
-                    Si usas documento, `filename` es opcional pero recomendable.
-                  </Description>
                 </div>
 
                 {actionResult ? (
@@ -974,8 +504,7 @@ export function WhatsappSettingsPage() {
               <Card.Header className="flex flex-col items-start gap-1">
                 <h2 className="font-semibold text-base">Registrar consentimiento</h2>
                 <Description className="text-default-500 text-xs">
-                  Usa esto para marcar manualmente un número como `opt-in` u `opt-out` cuando el
-                  consentimiento exista fuera de WhatsApp.
+                  Usa esto para marcar manualmente un número como opt-in u opt-out.
                 </Description>
               </Card.Header>
               <Card.Content className="space-y-4">
@@ -1029,8 +558,8 @@ export function WhatsappSettingsPage() {
                 </div>
 
                 <Description className="text-default-500 text-xs">
-                  Los inbound messages y calls pueden auto-marcar `opt-in` si
-                  `WHATSAPP_AUTO_OPT_IN_ON_INBOUND` está activo.
+                  Los inbound messages y calls pueden auto-marcar opt-in si
+                  WHATSAPP_AUTO_OPT_IN_ON_INBOUND está activo.
                 </Description>
               </Card.Content>
             </Card>
@@ -1088,12 +617,6 @@ export function WhatsappSettingsPage() {
                                 ? dayjs(contact.lastInboundCallAt).format("DD/MM/YYYY HH:mm")
                                 : "—"}
                             </Description>
-                            <Description className="text-default-500 text-xs">
-                              Ventana expira:{" "}
-                              {contact.windowExpiresAt
-                                ? dayjs(contact.windowExpiresAt).format("DD/MM/YYYY HH:mm")
-                                : "—"}
-                            </Description>
                           </div>
 
                           <div className="flex flex-wrap gap-2">
@@ -1142,7 +665,7 @@ export function WhatsappSettingsPage() {
               <Card.Header className="flex flex-col items-start gap-1">
                 <h2 className="font-semibold text-base">Enviar mensaje de prueba</h2>
                 <Description className="text-default-500 text-xs">
-                  Texto libre si hay ventana activa, template si no.
+                  Envía un mensaje de texto de prueba al número indicado.
                 </Description>
               </Card.Header>
               <Card.Content className="space-y-4">
@@ -1152,7 +675,7 @@ export function WhatsappSettingsPage() {
 
                 <div className="flex flex-wrap items-center gap-2">
                   <Button
-                    isDisabled={testMutation.isPending || !testPhone.trim()}
+                    isDisabled={testMutation.isPending || !testPhone.trim() || !connected}
                     isPending={testMutation.isPending}
                     onPress={() => testMutation.mutate()}
                     size="sm"
@@ -1161,27 +684,18 @@ export function WhatsappSettingsPage() {
                     <Send className="h-4 w-4" />
                     Enviar
                   </Button>
-                  {testModeLabel ? (
-                    <Chip
-                      color={testMutation.data?.mode === "text" ? "accent" : "default"}
-                      variant="soft"
-                    >
-                      {testModeLabel}
+                  {!connected ? (
+                    <Chip color="danger" size="sm" variant="soft">
+                      Sin conexión
                     </Chip>
                   ) : null}
                 </div>
 
-                {!templateFallbackReady ? (
+                {!connected ? (
                   <Alert status="warning">
-                    No hay ningún template aprobado disponible. Crea uno en Meta Business Manager
-                    para poder enviar fuera de la ventana de 24 horas.
+                    WhatsApp no está conectado. Ve a la pestaña Canal para vincular el dispositivo.
                   </Alert>
-                ) : (
-                  <Alert status="success">
-                    Template activo: <strong>{overview?.templateName}</strong> (
-                    {overview?.templateLanguage})
-                  </Alert>
-                )}
+                ) : null}
 
                 {testMutation.data ? (
                   <Alert status={testMutation.data.status === "ok" ? "success" : "danger"}>

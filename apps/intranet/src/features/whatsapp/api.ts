@@ -72,25 +72,9 @@ export async function sendWhatsappCustomMessage(payload: WhatsappCustomMessageIn
   }
 }
 
-export async function fetchWhatsappTemplates() {
+export async function fetchWhatsappConnectionStatus() {
   try {
-    return await whatsappORPCClient.listTemplates({});
-  } catch (error) {
-    throw toWhatsappApiError(error);
-  }
-}
-
-export async function fetchWhatsappAccountInfo() {
-  try {
-    return await whatsappORPCClient.getAccountInfo({});
-  } catch (error) {
-    throw toWhatsappApiError(error);
-  }
-}
-
-export async function fetchWhatsappBusinessProfile() {
-  try {
-    return await whatsappORPCClient.getBusinessProfile({});
+    return await whatsappORPCClient.getConnectionStatus({});
   } catch (error) {
     throw toWhatsappApiError(error);
   }
