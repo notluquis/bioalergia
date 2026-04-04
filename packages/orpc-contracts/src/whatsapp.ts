@@ -117,11 +117,39 @@ export const whatsappOverviewSchema = z.object({
   supportsMedia: z.boolean(),
   supportsReactions: z.boolean(),
   supportsTypingIndicator: z.boolean(),
+  templateFallbackReady: z.boolean(),
   templateLanguage: z.string().nullable(),
   templateName: z.string().nullable(),
   unknownConsentContacts: z.number().int().min(0),
   webhookReady: z.boolean(),
   webhookVerifyTokenConfigured: z.boolean(),
+});
+
+export const whatsappTemplateSchema = z.object({
+  category: z.string(),
+  components: z.array(
+    z.object({
+      example: z.unknown().optional(),
+      text: z.string().optional(),
+      type: z.string(),
+    }),
+  ),
+  id: z.string(),
+  language: z.string(),
+  name: z.string(),
+  status: z.string(),
+});
+
+export const listWhatsappTemplatesResponseSchema = z.object({
+  templates: z.array(whatsappTemplateSchema),
+});
+
+export const whatsappAccountInfoSchema = z.object({
+  displayPhoneNumber: z.string(),
+  messagingLimitTier: z.string().nullable(),
+  qualityRating: z.string().nullable(),
+  verifiedName: z.string(),
+  wabaId: z.string(),
 });
 
 export const whatsappTestSendInputSchema = z.object({
@@ -313,6 +341,24 @@ export const whatsappContract = {
     })
     .input(whatsappCustomMessageInputSchema)
     .output(whatsappStatusResponseSchema),
+
+  listTemplates: oc
+    .route({
+      method: "GET",
+      path: "/templates",
+      summary: "List WhatsApp message templates from Meta API",
+      tags: ["WhatsApp"],
+    })
+    .output(listWhatsappTemplatesResponseSchema),
+
+  getAccountInfo: oc
+    .route({
+      method: "GET",
+      path: "/account-info",
+      summary: "Get WhatsApp account info from Meta API",
+      tags: ["WhatsApp"],
+    })
+    .output(whatsappAccountInfoSchema),
 
   triggerPoll: oc
     .route({

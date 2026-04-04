@@ -4,6 +4,8 @@ import {
   listWhatsappContactStatesResponseSchema,
   listWhatsappNotificationsInputSchema as contractListInput,
   listWhatsappNotificationsResponseSchema as contractListResponse,
+  listWhatsappTemplatesResponseSchema,
+  whatsappAccountInfoSchema,
   whatsappContactStateSchema,
   whatsappCustomMessageInputSchema,
   whatsappNotificationStatusSchema,
@@ -28,6 +30,9 @@ import {
   setWhatsappContactConsent,
 } from "../lib/whatsapp/conversation-state";
 import {
+  getAccountInfo,
+  getFirstApprovedTemplate,
+  listMessageTemplates,
   markMessageAsRead,
   normalizePhone,
   sendContextualTextReply,
@@ -87,7 +92,7 @@ function formatSendResponse(message: string, result: WhatsappSendResult) {
   };
 }
 
-function getConfiguredTemplate() {
+function getEnvTemplate() {
   const templateName = process.env.WHATSAPP_TEMPLATE_NAME?.trim() ?? null;
   const languageCode = process.env.WHATSAPP_TEMPLATE_LANGUAGE?.trim() ?? null;
 
@@ -96,6 +101,15 @@ function getConfiguredTemplate() {
   }
 
   return { languageCode, templateName };
+}
+
+async function resolveTemplate(): Promise<{
+  languageCode: string;
+  templateName: string;
+} | null> {
+  const envTemplate = getEnvTemplate();
+  if (envTemplate) return envTemplate;
+  return await getFirstApprovedTemplate();
 }
 
 async function ensureServiceWindow(phone: string) {
@@ -235,12 +249,17 @@ const whatsappORPCRouterBase = {
 
       let activeCustomerServiceWindows = 0;
       let consentSummary = { optedIn: 0, optedOut: 0, total: 0, unknown: 0 };
+      let resolvedTemplate: { languageCode: string; templateName: string } | null = null;
 
       try {
-        [activeCustomerServiceWindows, consentSummary] = await Promise.all([
+        const [windows, consent, template] = await Promise.all([
           countActiveCustomerServiceWindows(),
           getWhatsappConsentSummary(),
+          outboundReady ? resolveTemplate() : Promise.resolve(null),
         ]);
+        activeCustomerServiceWindows = windows;
+        consentSummary = consent;
+        resolvedTemplate = template;
       } catch (err) {
         logError("whatsapp.overview.summary_error", err, {});
       }
@@ -274,8 +293,9 @@ const whatsappORPCRouterBase = {
         supportsMedia: true,
         supportsReactions: true,
         supportsTypingIndicator: true,
-        templateLanguage: process.env.WHATSAPP_TEMPLATE_LANGUAGE?.trim() ?? null,
-        templateName: process.env.WHATSAPP_TEMPLATE_NAME?.trim() ?? null,
+        templateFallbackReady: resolvedTemplate !== null,
+        templateLanguage: resolvedTemplate?.languageCode ?? null,
+        templateName: resolvedTemplate?.templateName ?? null,
         unknownConsentContacts: consentSummary.unknown,
         webhookReady,
         webhookVerifyTokenConfigured,
@@ -358,11 +378,11 @@ const whatsappORPCRouterBase = {
                 normalizedPhone,
                 "Hola, este es un mensaje de prueba de Bioalergia por WhatsApp.",
               )
-            : await (() => {
-                const template = getConfiguredTemplate();
+            : await (async () => {
+                const template = await resolveTemplate();
                 if (!template) {
                   throw new Error(
-                    "No hay template configurado. Define WHATSAPP_TEMPLATE_NAME y WHATSAPP_TEMPLATE_LANGUAGE antes de probar el envío por template.",
+                    "No hay ningún template aprobado disponible. Crea uno en Meta Business Manager.",
                   );
                 }
 
@@ -493,6 +513,31 @@ const whatsappORPCRouterBase = {
         const message = err instanceof Error ? err.message : String(err);
         return { message, status: "error" as const };
       }
+    }),
+
+  listTemplates: integrationRead
+    .route({
+      method: "GET",
+      path: "/templates",
+      summary: "List WhatsApp message templates from Meta API",
+      tags: ["WhatsApp"],
+    })
+    .output(listWhatsappTemplatesResponseSchema)
+    .handler(async () => {
+      const templates = await listMessageTemplates();
+      return { templates };
+    }),
+
+  getAccountInfo: integrationRead
+    .route({
+      method: "GET",
+      path: "/account-info",
+      summary: "Get WhatsApp account info from Meta API",
+      tags: ["WhatsApp"],
+    })
+    .output(whatsappAccountInfoSchema)
+    .handler(async () => {
+      return await getAccountInfo();
     }),
 
   triggerPoll: integrationCreate

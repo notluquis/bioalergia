@@ -341,6 +341,151 @@ export async function sendInteractiveCtaUrlMessage(args: {
   });
 }
 
+// ---------------------------------------------------------------------------
+// Meta Business API — read-only queries
+// ---------------------------------------------------------------------------
+
+export interface MetaTemplateComponentDef {
+  example?: unknown;
+  text?: string;
+  type: string;
+}
+
+export interface WhatsappTemplate {
+  category: string;
+  components: MetaTemplateComponentDef[];
+  id: string;
+  language: string;
+  name: string;
+  status: string;
+}
+
+interface MetaTemplatesResponse {
+  data: Array<{
+    category: string;
+    components: MetaTemplateComponentDef[];
+    id: string;
+    language: string;
+    name: string;
+    status: string;
+  }>;
+  paging?: { cursors?: { after?: string; before?: string }; next?: string };
+}
+
+export async function listMessageTemplates(opts?: {
+  limit?: number;
+  status?: string;
+}): Promise<WhatsappTemplate[]> {
+  const { accessToken } = getConfig();
+  const wabaId = await getWabaId();
+
+  const params = new URLSearchParams();
+  params.set("limit", String(opts?.limit ?? 100));
+  if (opts?.status) params.set("status", opts.status);
+
+  const res = await fetch(
+    `${GRAPH_API_BASE}/${wabaId}/message_templates?${params}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } },
+  );
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "unknown error");
+    throw new Error(`Meta API error listing templates (${res.status}): ${text}`);
+  }
+
+  const body = (await res.json()) as MetaTemplatesResponse;
+  return body.data.map((t) => ({
+    category: t.category,
+    components: t.components,
+    id: t.id,
+    language: t.language,
+    name: t.name,
+    status: t.status,
+  }));
+}
+
+export async function getFirstApprovedTemplate(): Promise<{
+  languageCode: string;
+  templateName: string;
+} | null> {
+  try {
+    const templates = await listMessageTemplates({ status: "APPROVED" });
+    if (templates.length === 0) return null;
+    return { languageCode: templates[0].language, templateName: templates[0].name };
+  } catch {
+    return null;
+  }
+}
+
+let cachedWabaId: string | null = null;
+
+export async function getWabaId(): Promise<string> {
+  if (cachedWabaId) return cachedWabaId;
+
+  const { accessToken, phoneNumberId } = getConfig();
+  const res = await fetch(
+    `${GRAPH_API_BASE}/${phoneNumberId}?fields=whatsapp_business_account`,
+    { headers: { Authorization: `Bearer ${accessToken}` } },
+  );
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "unknown error");
+    throw new Error(`Meta API error fetching WABA ID (${res.status}): ${text}`);
+  }
+
+  const body = (await res.json()) as {
+    whatsapp_business_account?: { id: string };
+  };
+
+  if (!body.whatsapp_business_account?.id) {
+    throw new Error("No se encontró el WABA ID asociado al Phone Number ID.");
+  }
+
+  cachedWabaId = body.whatsapp_business_account.id;
+  return cachedWabaId;
+}
+
+export interface WhatsappAccountInfo {
+  displayPhoneNumber: string;
+  messagingLimitTier: string | null;
+  qualityRating: string | null;
+  verifiedName: string;
+  wabaId: string;
+}
+
+export async function getAccountInfo(): Promise<WhatsappAccountInfo> {
+  const { accessToken, phoneNumberId } = getConfig();
+
+  const res = await fetch(
+    `${GRAPH_API_BASE}/${phoneNumberId}?fields=display_phone_number,verified_name,quality_rating,messaging_limit_tier,whatsapp_business_account`,
+    { headers: { Authorization: `Bearer ${accessToken}` } },
+  );
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "unknown error");
+    throw new Error(`Meta API error fetching account info (${res.status}): ${text}`);
+  }
+
+  const body = (await res.json()) as {
+    display_phone_number?: string;
+    messaging_limit_tier?: string;
+    quality_rating?: string;
+    verified_name?: string;
+    whatsapp_business_account?: { id: string };
+  };
+
+  const wabaId = body.whatsapp_business_account?.id ?? "";
+  if (wabaId) cachedWabaId = wabaId;
+
+  return {
+    displayPhoneNumber: body.display_phone_number ?? "",
+    messagingLimitTier: body.messaging_limit_tier ?? null,
+    qualityRating: body.quality_rating ?? null,
+    verifiedName: body.verified_name ?? "",
+    wabaId,
+  };
+}
+
 /**
  * Normalize a Chilean phone number to E.164 format.
  * Accepts: +56912345678, 56912345678, 912345678, 09..., etc.

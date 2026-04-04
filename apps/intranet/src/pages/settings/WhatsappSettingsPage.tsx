@@ -189,6 +189,16 @@ export function WhatsappSettingsPage() {
     },
   });
 
+  const { data: templatesData, isPending: templatesPending } = useQuery({
+    ...whatsappKeys.templates(),
+    enabled: overview?.outboundReady === true,
+  });
+
+  const { data: accountInfo } = useQuery({
+    ...whatsappKeys.accountInfo(),
+    enabled: overview?.outboundReady === true,
+  });
+
   const readiness = useMemo(() => {
     if (!overview) return 0;
     const checks = [
@@ -196,7 +206,7 @@ export function WhatsappSettingsPage() {
       overview.phoneNumberIdConfigured,
       overview.webhookVerifyTokenConfigured,
       overview.appSecretConfigured,
-      Boolean(overview.templateName && overview.templateLanguage),
+      overview.templateFallbackReady,
     ];
     return Math.round((checks.filter(Boolean).length / checks.length) * 100);
   }, [overview]);
@@ -208,11 +218,15 @@ export function WhatsappSettingsPage() {
     if (!overview.phoneNumberIdConfigured) items.push("phone number ID");
     if (!overview.webhookVerifyTokenConfigured) items.push("verify token");
     if (!overview.appSecretConfigured) items.push("app secret");
-    if (!overview.templateName || !overview.templateLanguage) items.push("template fallback");
+    if (!overview.templateFallbackReady) items.push("template fallback");
     return items;
   }, [overview]);
 
-  const templateFallbackReady = Boolean(overview?.templateName && overview?.templateLanguage);
+  const templateFallbackReady = overview?.templateFallbackReady ?? false;
+  const approvedTemplates = useMemo(
+    () => templatesData?.templates.filter((t) => t.status === "APPROVED") ?? [],
+    [templatesData]
+  );
 
   const testModeLabel =
     testMutation.data?.mode === "text"
@@ -475,6 +489,134 @@ export function WhatsappSettingsPage() {
                     </Description>
                   </Surface>
                 ))}
+              </Card.Content>
+            </Card>
+          </div>
+
+          <div className="mt-4 grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+            {accountInfo ? (
+              <Card>
+                <Card.Header className="flex flex-col items-start gap-1">
+                  <h2 className="font-semibold text-base">Cuenta WhatsApp Business</h2>
+                  <Description className="text-default-500 text-xs">
+                    Datos obtenidos en tiempo real desde la Meta Graph API.
+                  </Description>
+                </Card.Header>
+                <Card.Content className="space-y-3">
+                  <Surface className="rounded-2xl border border-default-200 px-4 py-3">
+                    <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
+                      Nombre verificado
+                    </Description>
+                    <p className="mt-1 font-medium text-sm">{accountInfo.verifiedName || "—"}</p>
+                  </Surface>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <Surface className="rounded-2xl border border-default-200 px-4 py-3">
+                      <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
+                        Teléfono
+                      </Description>
+                      <p className="mt-1 font-medium text-sm">
+                        {accountInfo.displayPhoneNumber || "—"}
+                      </p>
+                    </Surface>
+                    <Surface className="rounded-2xl border border-default-200 px-4 py-3">
+                      <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
+                        WABA ID
+                      </Description>
+                      <p className="mt-1 font-mono text-sm">{accountInfo.wabaId || "—"}</p>
+                    </Surface>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <Surface className="rounded-2xl border border-default-200 px-4 py-3">
+                      <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
+                        Calidad
+                      </Description>
+                      <p className="mt-1 font-medium text-sm">
+                        <Chip
+                          color={
+                            accountInfo.qualityRating === "GREEN"
+                              ? "success"
+                              : accountInfo.qualityRating === "YELLOW"
+                                ? "warning"
+                                : accountInfo.qualityRating === "RED"
+                                  ? "danger"
+                                  : "default"
+                          }
+                          size="sm"
+                          variant="soft"
+                        >
+                          {accountInfo.qualityRating ?? "—"}
+                        </Chip>
+                      </p>
+                    </Surface>
+                    <Surface className="rounded-2xl border border-default-200 px-4 py-3">
+                      <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
+                        Límite de mensajería
+                      </Description>
+                      <p className="mt-1 font-medium text-sm">
+                        {accountInfo.messagingLimitTier ?? "—"}
+                      </p>
+                    </Surface>
+                  </div>
+                </Card.Content>
+              </Card>
+            ) : null}
+
+            <Card>
+              <Card.Header className="flex flex-col items-start gap-1">
+                <h2 className="font-semibold text-base">Templates disponibles</h2>
+                <Description className="text-default-500 text-xs">
+                  Listados en tiempo real desde Meta. El primero aprobado se usa como fallback
+                  automático.
+                </Description>
+              </Card.Header>
+              <Card.Content className="space-y-3">
+                {templatesPending ? (
+                  <Skeleton className="h-40 w-full rounded-2xl" />
+                ) : approvedTemplates.length > 0 ? (
+                  <div className="grid gap-3">
+                    {approvedTemplates.map((tpl) => (
+                      <Surface
+                        key={tpl.id}
+                        className="rounded-2xl border border-default-200 px-4 py-3"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-sm">{tpl.name}</p>
+                            <Description className="text-default-500 text-xs">
+                              {tpl.language} · {tpl.category}
+                            </Description>
+                          </div>
+                          <Chip
+                            color={tpl.status === "APPROVED" ? "success" : "default"}
+                            size="sm"
+                            variant="soft"
+                          >
+                            {tpl.status}
+                          </Chip>
+                        </div>
+                        {tpl.components
+                          .filter((c) => c.text)
+                          .map((c, i) => (
+                            <Description key={i} className="mt-1 text-default-500 text-xs">
+                              [{c.type}] {c.text}
+                            </Description>
+                          ))}
+                      </Surface>
+                    ))}
+                  </div>
+                ) : (
+                  <Alert status="warning">
+                    No hay templates aprobados en tu cuenta de Meta. Crea uno desde el Business
+                    Manager.
+                  </Alert>
+                )}
+
+                {templatesData?.templates.filter((t) => t.status !== "APPROVED").length ? (
+                  <Description className="text-default-500 text-xs">
+                    {templatesData.templates.filter((t) => t.status !== "APPROVED").length}{" "}
+                    template(s) en otro estado (pendiente, rechazado, etc.)
+                  </Description>
+                ) : null}
               </Card.Content>
             </Card>
           </div>
@@ -1188,10 +1330,15 @@ export function WhatsappSettingsPage() {
 
                 {!templateFallbackReady ? (
                   <Alert status="warning">
-                    El fallback por template no está configurado. Define `WHATSAPP_TEMPLATE_NAME` y
-                    `WHATSAPP_TEMPLATE_LANGUAGE` antes de probar envíos fuera de ventana.
+                    No hay ningún template aprobado disponible. Crea uno en Meta Business Manager
+                    para poder enviar fuera de la ventana de 24 horas.
                   </Alert>
-                ) : null}
+                ) : (
+                  <Alert status="success">
+                    Template activo: <strong>{overview?.templateName}</strong> (
+                    {overview?.templateLanguage})
+                  </Alert>
+                )}
 
                 {testMutation.data ? (
                   <Alert status={testMutation.data.status === "ok" ? "success" : "danger"}>

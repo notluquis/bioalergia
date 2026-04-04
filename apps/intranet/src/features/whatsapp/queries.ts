@@ -1,9 +1,11 @@
 import { queryOptions } from "@tanstack/react-query";
 import {
+  fetchWhatsappAccountInfo,
   fetchWhatsappContacts,
   fetchWhatsappNotifications,
   fetchWhatsappOverview,
   fetchWhatsappStats,
+  fetchWhatsappTemplates,
 } from "./api";
 
 export const whatsappKeys = {
@@ -35,5 +37,17 @@ export const whatsappKeys = {
     queryOptions({
       queryFn: () => fetchWhatsappOverview(),
       queryKey: ["whatsapp", "overview"],
+    }),
+
+  templates: () =>
+    queryOptions({
+      queryFn: () => fetchWhatsappTemplates(),
+      queryKey: ["whatsapp", "templates"],
+    }),
+
+  accountInfo: () =>
+    queryOptions({
+      queryFn: () => fetchWhatsappAccountInfo(),
+      queryKey: ["whatsapp", "account-info"],
     }),
 };

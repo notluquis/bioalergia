@@ -72,6 +72,22 @@ export async function sendWhatsappCustomMessage(payload: WhatsappCustomMessageIn
   }
 }
 
+export async function fetchWhatsappTemplates() {
+  try {
+    return await whatsappORPCClient.listTemplates({});
+  } catch (error) {
+    throw toWhatsappApiError(error);
+  }
+}
+
+export async function fetchWhatsappAccountInfo() {
+  try {
+    return await whatsappORPCClient.getAccountInfo({});
+  } catch (error) {
+    throw toWhatsappApiError(error);
+  }
+}
+
 export async function triggerWhatsappPoll() {
   try {
     return await whatsappORPCClient.triggerPoll({});

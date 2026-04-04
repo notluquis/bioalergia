@@ -10,7 +10,12 @@ import { ImapFlow } from "imapflow";
 import { logError, logEvent, logWarn } from "../logger";
 import { resolveWhatsappDispatchDecision } from "./conversation-state";
 import { htmlToText, parseDoctoraliaEmail } from "./email-parser";
-import { normalizePhone, sendTemplateMessage, sendTextMessage } from "./whatsapp-client";
+import {
+  getFirstApprovedTemplate,
+  normalizePhone,
+  sendTemplateMessage,
+  sendTextMessage,
+} from "./whatsapp-client";
 
 interface ImapConfig {
   host: string;
@@ -42,7 +47,7 @@ function getImapConfig(): ImapConfig | null {
   };
 }
 
-function getWhatsappTemplate() {
+function getEnvWhatsappTemplate() {
   const name = process.env.WHATSAPP_TEMPLATE_NAME?.trim();
   const languageCode = process.env.WHATSAPP_TEMPLATE_LANGUAGE?.trim();
 
@@ -51,6 +56,18 @@ function getWhatsappTemplate() {
   }
 
   return { languageCode, name };
+}
+
+async function resolveWhatsappTemplate(): Promise<{
+  languageCode: string;
+  name: string;
+} | null> {
+  const envTemplate = getEnvWhatsappTemplate();
+  if (envTemplate) return envTemplate;
+
+  const apiTemplate = await getFirstApprovedTemplate();
+  if (!apiTemplate) return null;
+  return { languageCode: apiTemplate.languageCode, name: apiTemplate.templateName };
 }
 
 function buildDoctoraliaFreeformMessage(booking: NonNullable<ReturnType<typeof parseDoctoraliaEmail>>) {
@@ -215,10 +232,10 @@ export async function runImapPoll(): Promise<PollResult> {
         }
 
         if (!canUseFreeform) {
-          const template = getWhatsappTemplate();
+          const template = await resolveWhatsappTemplate();
           if (!template) {
             throw new Error(
-              "WhatsApp no enviado: faltan WHATSAPP_TEMPLATE_NAME o WHATSAPP_TEMPLATE_LANGUAGE para el envío por template.",
+              "WhatsApp no enviado: no hay ningún template aprobado disponible. Crea uno en Meta Business Manager.",
             );
           }
 
