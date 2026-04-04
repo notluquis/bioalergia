@@ -47,6 +47,8 @@ export async function fetchParticipantLeaderboard(params?: {
       throw new Error("No se pudo obtener la información del participante");
     }
 
+    const mode = params?.mode ?? "combined";
+
     return {
       participants: data.data.map((item: (typeof data.data)[number]) => ({
         bankAccountHolder: null,
@@ -56,10 +58,10 @@ export async function fetchParticipantLeaderboard(params?: {
         bankName: null,
         displayName: item.personName,
         identificationNumber: null,
-        incomingAmount: 0,
-        incomingCount: 0,
-        outgoingAmount: 0,
-        outgoingCount: 0,
+        incomingAmount: mode === "incoming" ? item.total : 0,
+        incomingCount: mode === "incoming" ? item.count : 0,
+        outgoingAmount: mode === "outgoing" ? item.total : 0,
+        outgoingCount: mode === "outgoing" ? item.count : 0,
         participant: item.personId,
         totalAmount: item.total,
         totalCount: item.count,

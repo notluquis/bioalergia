@@ -5,6 +5,17 @@ import dayjs from "dayjs";
 import type { Transaction } from "@/features/finance/types";
 
 import { fmtCLP } from "@/lib/format";
+
+function getDisplayAmount(row: Transaction) {
+  if (typeof row.settlementNetAmount === "number" && row.settlementNetAmount !== 0) {
+    return row.transactionAmount != null && row.transactionAmount < 0
+      ? -Math.abs(row.settlementNetAmount)
+      : row.settlementNetAmount;
+  }
+
+  return row.transactionAmount ?? 0;
+}
+
 export function RecentMovementsWidget({ rows }: { rows: Transaction[] }) {
   const navigate = useNavigate();
 
@@ -26,29 +37,33 @@ export function RecentMovementsWidget({ rows }: { rows: Transaction[] }) {
       </div>
       {rows.length > 0 ? (
         <ul className="space-y-3 text-foreground text-xs">
-          {rows.map((row) => (
-            <li
-              className="flex items-start justify-between gap-3 rounded-2xl border border-default-200/70 bg-background/70 px-4 py-3 transition hover:border-default-300/80 hover:bg-background"
-              key={row.id}
-            >
-              <div className="min-w-0">
-                <Chip size="sm" variant="tertiary">
-                  {row.transactionType || "movimiento"}
-                </Chip>
-                <p className="mt-2 truncate font-medium text-foreground">
-                  {row.description ?? row.sourceId ?? "(sin descripción)"}
-                </p>
-                <p className="text-default-500 text-xs uppercase tracking-wide">
-                  {dayjs(row.transactionDate).format("DD MMM YYYY HH:mm")}
-                </p>
-              </div>
-              <span
-                className={`shrink-0 font-semibold text-sm ${(row.transactionAmount ?? 0) >= 0 ? "text-success" : "text-danger"}`}
+          {rows.map((row) => {
+            const amount = getDisplayAmount(row);
+
+            return (
+              <li
+                className="flex items-start justify-between gap-3 rounded-2xl border border-default-200/70 bg-background/70 px-4 py-3 transition hover:border-default-300/80 hover:bg-background"
+                key={row.id}
               >
-                {fmtCLP(row.transactionAmount ?? 0)}
-              </span>
-            </li>
-          ))}
+                <div className="min-w-0">
+                  <Chip size="sm" variant="tertiary">
+                    {row.transactionType || "movimiento"}
+                  </Chip>
+                  <p className="mt-2 truncate font-medium text-foreground">
+                    {row.description ?? row.sourceId ?? "(sin descripción)"}
+                  </p>
+                  <p className="text-default-500 text-xs uppercase tracking-wide">
+                    {dayjs(row.transactionDate).format("DD MMM YYYY HH:mm")}
+                  </p>
+                </div>
+                <span
+                  className={`shrink-0 font-semibold text-sm ${amount >= 0 ? "text-success" : "text-danger"}`}
+                >
+                  {fmtCLP(amount)}
+                </span>
+              </li>
+            );
+          })}
         </ul>
       ) : (
         <p className="text-foreground text-xs">Sin movimientos cargados aún.</p>
