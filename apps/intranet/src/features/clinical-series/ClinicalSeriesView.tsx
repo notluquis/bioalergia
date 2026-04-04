@@ -543,85 +543,78 @@ export function ClinicalSeriesView() {
       </div>
 
       {/* ── Filters ──────────────────────────────────────────────────────── */}
-      <Surface className="rounded-xl p-3">
-        <div className="flex flex-wrap gap-3 items-end">
-          <TextField className="min-w-70 flex-[2_1_28rem]" value={queryRaw} onChange={setQueryRaw}>
+      <Surface className="rounded-xl p-4">
+        <div className="flex flex-col gap-4">
+          <TextField className="w-full max-w-3xl" value={queryRaw} onChange={setQueryRaw}>
             <Label>Búsqueda</Label>
             <Input placeholder="Paciente, RUT paciente, RUT beneficiario o beneficiario..." />
           </TextField>
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_12rem_12rem_minmax(18rem,1.25fr)_auto]">
+            <TextField className="w-full" value={rutRaw} onChange={setRutRaw}>
+              <Label>RUT paciente</Label>
+              <Input placeholder="12345678-9" />
+            </TextField>
 
-          <TextField className="min-w-35 flex-1" value={rutRaw} onChange={setRutRaw}>
-            <Label>RUT paciente exacto</Label>
-            <Input placeholder="12345678-9" />
-          </TextField>
+            <TextField className="w-full" value={beneficiaryRutRaw} onChange={setBeneficiaryRutRaw}>
+              <Label>RUT beneficiario</Label>
+              <Input placeholder="12345678-9" />
+            </TextField>
 
-          <TextField
-            className="min-w-35 flex-1"
-            value={beneficiaryRutRaw}
-            onChange={setBeneficiaryRutRaw}
-          >
-            <Label>RUT beneficiario exacto</Label>
-            <Input placeholder="12345678-9" />
-          </TextField>
+            <TextField className="w-full" value={phoneRaw} onChange={setPhoneRaw}>
+              <Label>Teléfono</Label>
+              <Input placeholder="+56912345678" />
+            </TextField>
 
-          <TextField className="min-w-40 flex-1" value={phoneRaw} onChange={setPhoneRaw}>
-            <Label>Teléfono registrado</Label>
-            <Input placeholder="+56912345678" />
-          </TextField>
+            <div className="flex flex-col gap-1">
+              <Select
+                onChange={handleKindChange}
+                value={(kind as Key) ?? null}
+                placeholder="Todos"
+                variant="secondary"
+              >
+                <Label>Tipo</Label>
+                <Select.Trigger>
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover>
+                  <ListBox>
+                    {KIND_OPTIONS.map((item) => (
+                      <ListBox.Item id={item.value} key={item.value} textValue={item.label}>
+                        {item.label}
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                    ))}
+                  </ListBox>
+                </Select.Popover>
+              </Select>
+            </div>
 
-          {/* Tipo */}
-          <div className="flex flex-col gap-1 min-w-40">
-            <Select
-              onChange={handleKindChange}
-              value={(kind as Key) ?? null}
-              placeholder="Todos los tipos"
-              variant="secondary"
-            >
-              <Label>Tipo</Label>
-              <Select.Trigger>
-                <Select.Value />
-                <Select.Indicator />
-              </Select.Trigger>
-              <Select.Popover>
-                <ListBox>
-                  {KIND_OPTIONS.map((item) => (
-                    <ListBox.Item id={item.value} key={item.value} textValue={item.label}>
-                      {item.label}
-                      <ListBox.ItemIndicator />
-                    </ListBox.Item>
-                  ))}
-                </ListBox>
-              </Select.Popover>
-            </Select>
-          </div>
+            <div className="flex flex-col gap-1">
+              <Select
+                onChange={handleStatusChange}
+                value={(status as Key) ?? null}
+                placeholder="Todos"
+                variant="secondary"
+              >
+                <Label>Estado</Label>
+                <Select.Trigger>
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover>
+                  <ListBox>
+                    {STATUS_OPTIONS.map((item) => (
+                      <ListBox.Item id={item.value} key={item.value} textValue={item.label}>
+                        {item.label}
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                    ))}
+                  </ListBox>
+                </Select.Popover>
+              </Select>
+            </div>
 
-          {/* Estado */}
-          <div className="flex flex-col gap-1 min-w-35">
-            <Select
-              onChange={handleStatusChange}
-              value={(status as Key) ?? null}
-              placeholder="Todos los estados"
-              variant="secondary"
-            >
-              <Label>Estado</Label>
-              <Select.Trigger>
-                <Select.Value />
-                <Select.Indicator />
-              </Select.Trigger>
-              <Select.Popover>
-                <ListBox>
-                  {STATUS_OPTIONS.map((item) => (
-                    <ListBox.Item id={item.value} key={item.value} textValue={item.label}>
-                      {item.label}
-                      <ListBox.ItemIndicator />
-                    </ListBox.Item>
-                  ))}
-                </ListBox>
-              </Select.Popover>
-            </Select>
-          </div>
-
-          <div className="min-w-70 flex-[2_1_26rem]">
             <DateRangePicker
               aria-label="Rango de próxima visita"
               onChange={(value) => {
@@ -677,14 +670,17 @@ export function ClinicalSeriesView() {
                 </RangeCalendar>
               </DateRangePicker.Popover>
             </DateRangePicker>
-          </div>
 
-          {/* Clear filters */}
-          {hasFilters && (
-            <Button onPress={clearFilters} variant="ghost" size="sm" className="self-end">
-              Limpiar
-            </Button>
-          )}
+            <div className="flex items-end justify-end">
+              {hasFilters ? (
+                <Button onPress={clearFilters} size="sm" variant="ghost">
+                  Limpiar
+                </Button>
+              ) : (
+                <div />
+              )}
+            </div>
+          </div>
         </div>
       </Surface>
 
