@@ -403,10 +403,11 @@ const PHONE_CANDIDATE_REGEX = /(?:\+?56[\s-]*)?(?:9[\s-]*)?(?:\d[\s-]*){8,9}/g;
 function normalizeExtractedPhone(value: null | string | undefined): null | string {
   const digits = normalizePhoneSearch(value);
   if (!digits) return null;
-  if (digits.startsWith("56") && digits.length >= 11) return `+${digits}`;
+  if (digits.startsWith("00")) return normalizeExtractedPhone(digits.slice(2));
+  if (digits.startsWith("56") && digits.length === 11 && digits[2] === "9") return `+${digits}`;
   if (digits.length === 9 && digits.startsWith("9")) return `+56${digits}`;
   if (digits.length === 8) return `+569${digits}`;
-  return digits.length >= 8 ? digits : null;
+  return null;
 }
 
 function extractPhoneCandidates(text: null | string | undefined): string[] {

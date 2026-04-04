@@ -123,24 +123,24 @@ const INSURANCE_COLORS: Record<HealthInsuranceType, "success" | "warning" | "def
   PARTICULAR: "default",
 };
 
-function toChileWhatsAppNumber(value: string): null | string {
+function normalizeChileWhatsAppPhone(value: string): null | { display: string; waNumber: string } {
   const digits = value.replace(/\D+/g, "");
   if (!digits) return null;
 
   if (digits.startsWith("00")) {
-    return toChileWhatsAppNumber(digits.slice(2));
+    return normalizeChileWhatsAppPhone(digits.slice(2));
   }
 
-  if (digits.startsWith("56") && digits.length >= 11) {
-    return digits;
+  if (digits.startsWith("56") && digits.length === 11 && digits[2] === "9") {
+    return { display: `+${digits}`, waNumber: digits };
   }
 
   if (digits.length === 9 && digits.startsWith("9")) {
-    return `56${digits}`;
+    return { display: `+56${digits}`, waNumber: `56${digits}` };
   }
 
   if (digits.length === 8) {
-    return `569${digits}`;
+    return { display: `+569${digits}`, waNumber: `569${digits}` };
   }
 
   return null;
@@ -164,22 +164,29 @@ function buildRutEntries(snapshot: ClinicalSeriesSnapshot): IdentityListEntry[] 
 }
 
 function buildPhoneEntries(snapshot: ClinicalSeriesSnapshot): IdentityListEntry[] {
-  return [
-    ...snapshot.patientPhones.map((phone) => ({
-      href: toChileWhatsAppNumber(phone)
-        ? `https://wa.me/${toChileWhatsAppNumber(phone)}`
-        : undefined,
+  const entries: IdentityListEntry[] = [];
+
+  for (const phone of snapshot.patientPhones) {
+    const normalized = normalizeChileWhatsAppPhone(phone);
+    if (!normalized) continue;
+    entries.push({
+      href: `https://wa.me/${normalized.waNumber}`,
       roleLabel: "Paciente",
-      value: phone,
-    })),
-    ...snapshot.beneficiaryPhones.map((phone) => ({
-      href: toChileWhatsAppNumber(phone)
-        ? `https://wa.me/${toChileWhatsAppNumber(phone)}`
-        : undefined,
+      value: normalized.display,
+    });
+  }
+
+  for (const phone of snapshot.beneficiaryPhones) {
+    const normalized = normalizeChileWhatsAppPhone(phone);
+    if (!normalized) continue;
+    entries.push({
+      href: `https://wa.me/${normalized.waNumber}`,
       roleLabel: "Beneficiario",
-      value: phone,
-    })),
-  ];
+      value: normalized.display,
+    });
+  }
+
+  return entries;
 }
 
 function IdentityDropdownCell({
