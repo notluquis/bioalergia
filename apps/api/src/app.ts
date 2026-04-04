@@ -60,7 +60,6 @@ import {
 } from "./orpc/transactions-insights";
 import { usersOpenAPIHandler, usersORPCHandler } from "./orpc/users";
 import { whatsappOpenAPIHandler, whatsappORPCHandler } from "./orpc/whatsapp";
-import { whatsappWebhookRoutes } from "./routes/whatsapp";
 import { googleCalendarWebhookRoutes } from "./routes/google-calendar-webhook";
 import { errorReply } from "./utils/error-reply";
 import { normalizeErrorResponse } from "./utils/normalize-error-response";
@@ -1574,9 +1573,6 @@ app.use("/api/orpc/whatsapp/*", async (c, next) => {
 
   return next();
 });
-
-// WhatsApp webhook (Meta platform)
-app.route("/api/webhooks/whatsapp", whatsappWebhookRoutes);
 
 // Share Target (PWA)
 

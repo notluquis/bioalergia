@@ -1,6 +1,6 @@
 import { kysely, type SchemaType } from "@finanzas/db";
 import type { Kysely } from "kysely";
-import { normalizePhone } from "./whatsapp-client";
+import { normalizePhone } from "./jid";
 
 const CUSTOMER_SERVICE_WINDOW_MS = 24 * 60 * 60 * 1000;
 
@@ -57,23 +57,12 @@ type ConsentSummary = {
   unknown: number;
 };
 
-type DispatchDecision = {
-  hasActiveWindow: boolean;
-  hasOptIn: boolean;
-  mode: "template" | "text";
-  normalizedPhone: string;
-  reason: "missing_opt_in" | "ok";
-};
-
 const conversationDb = kysely as unknown as Kysely<WhatsappConversationStateDb>;
 
 function shouldAutoOptInOnInbound() {
   return process.env.WHATSAPP_AUTO_OPT_IN_ON_INBOUND !== "false";
 }
 
-function shouldRequireOptIn() {
-  return process.env.WHATSAPP_REQUIRE_OPT_IN !== "false";
-}
 
 function parseWebhookTimestamp(timestamp?: null | string) {
   if (!timestamp) {
@@ -256,76 +245,6 @@ export async function getWhatsappConsentSummary(): Promise<ConsentSummary> {
     optedOut: counts.OPTED_OUT,
     total: counts.OPTED_IN + counts.OPTED_OUT + counts.UNKNOWN,
     unknown: counts.UNKNOWN,
-  };
-}
-
-export async function hasWhatsappOptIn(phone: string) {
-  try {
-    const state = await getWhatsappConversationState(phone);
-    return state?.optInStatus === "OPTED_IN";
-  } catch {
-    return false;
-  }
-}
-
-export async function hasActiveCustomerServiceWindow(phone: string, now = new Date()) {
-  try {
-    const state = await getWhatsappConversationState(phone);
-    if (!state?.windowExpiresAt) {
-      return false;
-    }
-    return state.windowExpiresAt.getTime() > now.getTime();
-  } catch {
-    return false;
-  }
-}
-
-export async function countActiveCustomerServiceWindows(now = new Date()) {
-  const row = await conversationDb
-    .selectFrom("whatsapp_conversation_state")
-    .select((eb) => eb.fn.count<string>("phone").as("count"))
-    .where("window_expires_at", ">", now)
-    .executeTakeFirst();
-
-  return Number(row?.count ?? 0);
-}
-
-export async function resolveWhatsappDispatchDecision(
-  phone: string,
-  now = new Date(),
-): Promise<DispatchDecision> {
-  const normalizedPhone = normalizePhone(phone);
-  const [hasWindow, hasOptIn] = await Promise.all([
-    hasActiveCustomerServiceWindow(normalizedPhone, now),
-    hasWhatsappOptIn(normalizedPhone),
-  ]);
-
-  if (hasWindow) {
-    return {
-      hasActiveWindow: true,
-      hasOptIn,
-      mode: "text",
-      normalizedPhone,
-      reason: "ok",
-    };
-  }
-
-  if (shouldRequireOptIn() && !hasOptIn) {
-    return {
-      hasActiveWindow: false,
-      hasOptIn: false,
-      mode: "template",
-      normalizedPhone,
-      reason: "missing_opt_in",
-    };
-  }
-
-  return {
-    hasActiveWindow: false,
-    hasOptIn,
-    mode: "template",
-    normalizedPhone,
-    reason: "ok",
   };
 }
 
@@ -554,80 +473,3 @@ export async function recordWhatsappUserPreference(args: {
   });
 }
 
-export async function syncWhatsappConversationStatus(args: {
-  conversationId?: null | string;
-  expirationTimestamp?: null | string;
-  originType?: null | string;
-  phone: string;
-  waId?: null | string;
-}) {
-  const phone = normalizePhone(args.phone);
-  const existing = await getWhatsappConversationState(phone);
-  if (!existing && !args.conversationId && !args.expirationTimestamp && !args.originType) {
-    return null;
-  }
-
-  const now = new Date();
-  const conversationExpiresAt = parseExpirationTimestamp(args.expirationTimestamp) ?? existing?.conversationExpiresAt ?? null;
-  const windowExpiresAt = deriveWindowExpiresAt({
-    activityAt: latestActivityAt(existing),
-    canonicalExpiresAt: args.originType === "service" ? conversationExpiresAt : null,
-    existing,
-  });
-  const shouldPromoteOptIn =
-    shouldAutoOptInOnInbound() &&
-    args.originType === "service" &&
-    conversationExpiresAt != null &&
-    (existing?.optInStatus ?? "UNKNOWN") !== "OPTED_OUT";
-  const nextOptInStatus = shouldPromoteOptIn ? "OPTED_IN" : existing?.optInStatus ?? "UNKNOWN";
-
-  await conversationDb
-    .insertInto("whatsapp_conversation_state")
-    .values({
-      conversation_expires_at: conversationExpiresAt,
-      conversation_id: args.conversationId ?? existing?.conversationId ?? null,
-      conversation_origin_type: args.originType ?? existing?.conversationOriginType ?? null,
-      created_at: now,
-      last_inbound_at: existing?.lastInboundAt ?? null,
-      last_inbound_call_at: existing?.lastInboundCallAt ?? null,
-      last_inbound_call_id: existing?.lastInboundCallId ?? null,
-      last_inbound_message_id: existing?.lastInboundMessageId ?? null,
-      last_inbound_text: existing?.lastInboundText ?? null,
-      opt_in_source:
-        shouldPromoteOptIn
-          ? existing?.optInSource ?? "service_conversation"
-          : existing?.optInSource ?? null,
-      opt_in_status: nextOptInStatus,
-      opted_in_at:
-        shouldPromoteOptIn
-          ? existing?.optedInAt ?? now
-          : existing?.optedInAt ?? null,
-      opted_out_at: existing?.optedOutAt ?? null,
-      phone,
-      updated_at: now,
-      wa_id: args.waId ?? existing?.waId ?? phone,
-      window_expires_at: windowExpiresAt,
-    })
-    .onConflict((oc) =>
-      oc.column("phone").doUpdateSet({
-        conversation_expires_at: conversationExpiresAt,
-        conversation_id: args.conversationId ?? existing?.conversationId ?? null,
-        conversation_origin_type: args.originType ?? existing?.conversationOriginType ?? null,
-        opt_in_source:
-          shouldPromoteOptIn
-            ? existing?.optInSource ?? "service_conversation"
-            : existing?.optInSource ?? null,
-        opt_in_status: nextOptInStatus,
-        opted_in_at:
-          shouldPromoteOptIn
-            ? existing?.optedInAt ?? now
-            : existing?.optedInAt ?? null,
-        updated_at: now,
-        wa_id: args.waId ?? existing?.waId ?? phone,
-        window_expires_at: windowExpiresAt,
-      }),
-    )
-    .execute();
-
-  return await getWhatsappConversationState(phone);
-}

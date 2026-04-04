@@ -4,9 +4,7 @@ import {
   listWhatsappContactStatesResponseSchema,
   listWhatsappNotificationsInputSchema as contractListInput,
   listWhatsappNotificationsResponseSchema as contractListResponse,
-  listWhatsappTemplatesResponseSchema,
-  whatsappAccountInfoSchema,
-  whatsappBusinessProfileSchema,
+  whatsappConnectionStatusSchema,
   whatsappContactStateSchema,
   whatsappCustomMessageInputSchema,
   whatsappNotificationStatusSchema,
@@ -24,30 +22,19 @@ import type { Context as HonoContext } from "hono";
 import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
 import {
-  countActiveCustomerServiceWindows,
   getWhatsappConsentSummary,
   listWhatsappConversationStates,
-  resolveWhatsappDispatchDecision,
   setWhatsappContactConsent,
 } from "../lib/whatsapp/conversation-state";
 import {
-  getAccountInfo,
-  getBusinessProfile,
-  getFirstApprovedTemplate,
-  listMessageTemplates,
-  markMessageAsRead,
-  normalizePhone,
-  sendContextualTextReply,
-  sendInteractiveCtaUrlMessage,
-  sendInteractiveListMessage,
-  sendInteractiveReplyButtonsMessage,
-  sendMediaMessage,
-  sendReactionMessage,
-  sendTemplateMessage,
-  sendTextMessage,
-  sendTypingIndicator,
-  type WhatsappSendResult,
-} from "../lib/whatsapp/whatsapp-client";
+  getConnectionStatus,
+  markAsRead,
+  sendMedia,
+  sendReaction,
+  sendText,
+  sendTyping,
+} from "../lib/whatsapp/baileys-socket";
+import { normalizePhone, phoneToJid } from "../lib/whatsapp/jid";
 import { runWhatsappPoll } from "../lib/whatsapp/whatsapp-scheduler";
 import { configureSuperjson } from "../lib/superjson-config";
 import { SuperJSONRPCHandler } from "./superjson";
@@ -83,47 +70,6 @@ const integrationCreate = authed.use(async ({ context, next }) => {
   }
   return next();
 });
-
-function formatSendResponse(message: string, result: WhatsappSendResult) {
-  return {
-    contacts: result.contacts,
-    message,
-    messageId: result.messageId,
-    messageStatus: result.messageStatus,
-    status: "ok" as const,
-  };
-}
-
-function getEnvTemplate() {
-  const templateName = process.env.WHATSAPP_TEMPLATE_NAME?.trim() ?? null;
-  const languageCode = process.env.WHATSAPP_TEMPLATE_LANGUAGE?.trim() ?? null;
-
-  if (!templateName || !languageCode) {
-    return null;
-  }
-
-  return { languageCode, templateName };
-}
-
-async function resolveTemplate(): Promise<{
-  languageCode: string;
-  templateName: string;
-} | null> {
-  const envTemplate = getEnvTemplate();
-  if (envTemplate) return envTemplate;
-  return await getFirstApprovedTemplate();
-}
-
-async function ensureServiceWindow(phone: string) {
-  const dispatch = await resolveWhatsappDispatchDecision(phone);
-  if (!dispatch.hasActiveWindow) {
-    throw new Error(
-      "La ventana de atención de 24 horas no está activa para ese número. Necesitas un inbound reciente o una llamada entrante.",
-    );
-  }
-
-  return dispatch;
-}
 
 const whatsappORPCRouterBase = {
   listNotifications: integrationRead
@@ -236,46 +182,28 @@ const whatsappORPCRouterBase = {
     })
     .output(whatsappOverviewSchema)
     .handler(async () => {
-      const accessTokenConfigured = Boolean(process.env.WHATSAPP_ACCESS_TOKEN);
-      const phoneNumberIdConfigured = Boolean(process.env.WHATSAPP_PHONE_NUMBER_ID);
-      const webhookVerifyTokenConfigured = Boolean(process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN);
-      const appSecretConfigured = Boolean(process.env.WHATSAPP_APP_SECRET);
       const imapHostConfigured = Boolean(process.env.DOCTORALIA_IMAP_HOST);
       const imapUserConfigured = Boolean(process.env.DOCTORALIA_IMAP_USER);
       const imapPassConfigured = Boolean(process.env.DOCTORALIA_IMAP_PASS);
       const automaticNotificationsEnabled = process.env.ENABLE_WHATSAPP_NOTIFICATIONS === "true";
-      const outboundReady = accessTokenConfigured && phoneNumberIdConfigured;
-      const webhookReady = webhookVerifyTokenConfigured && appSecretConfigured;
       const imapReady = imapHostConfigured && imapUserConfigured && imapPassConfigured;
-      const automaticFlowReady = automaticNotificationsEnabled && outboundReady && imapReady;
+      const { connectionState: connState } = getConnectionStatus();
+      const connected = connState === "open";
+      const automaticFlowReady = automaticNotificationsEnabled && connected && imapReady;
 
-      let activeCustomerServiceWindows = 0;
       let consentSummary = { optedIn: 0, optedOut: 0, total: 0, unknown: 0 };
-      let resolvedTemplate: { languageCode: string; templateName: string } | null = null;
-
       try {
-        const [windows, consent, template] = await Promise.all([
-          countActiveCustomerServiceWindows(),
-          getWhatsappConsentSummary(),
-          outboundReady ? resolveTemplate() : Promise.resolve(null),
-        ]);
-        activeCustomerServiceWindows = windows;
-        consentSummary = consent;
-        resolvedTemplate = template;
+        consentSummary = await getWhatsappConsentSummary();
       } catch (err) {
         logError("whatsapp.overview.summary_error", err, {});
       }
 
       return {
-        accessTokenConfigured,
-        activeCustomerServiceWindows,
-        appSecretConfigured,
         autoOptInOnInbound: process.env.WHATSAPP_AUTO_OPT_IN_ON_INBOUND !== "false",
         automaticFlowReady,
         automaticNotificationsEnabled,
-        freeformMessageConfigured: Boolean(process.env.WHATSAPP_FREEFORM_MESSAGE?.trim()),
-        graphApiVersion: process.env.WHATSAPP_GRAPH_API_VERSION ?? "v25.0",
-        hybridFlowReady: automaticFlowReady && webhookReady,
+        connected,
+        connectionState: connState,
         imapHostConfigured,
         imapMailbox: process.env.DOCTORALIA_IMAP_MAILBOX ?? "INBOX",
         imapPassConfigured,
@@ -284,16 +212,9 @@ const whatsappORPCRouterBase = {
         optInRequired: process.env.WHATSAPP_REQUIRE_OPT_IN !== "false",
         optedInContacts: consentSummary.optedIn,
         optedOutContacts: consentSummary.optedOut,
-        outboundReady,
-        phoneNumberIdConfigured,
         pollCron: process.env.WHATSAPP_POLL_CRON ?? "*/2 * * * *",
         senderFilter: process.env.DOCTORALIA_EMAIL_SENDER_FILTER ?? "doctoralia.com",
-        templateFallbackReady: resolvedTemplate !== null,
-        templateLanguage: resolvedTemplate?.languageCode ?? null,
-        templateName: resolvedTemplate?.templateName ?? null,
         unknownConsentContacts: consentSummary.unknown,
-        webhookReady,
-        webhookVerifyTokenConfigured,
       };
     }),
 
@@ -357,45 +278,15 @@ const whatsappORPCRouterBase = {
       const normalizedPhone = normalizePhone(input.phone);
 
       try {
-        const dispatch = await resolveWhatsappDispatchDecision(normalizedPhone);
-
-        if (dispatch.reason === "missing_opt_in") {
-          return {
-            message:
-              "El número no tiene consentimiento registrado. Marca opt-in o espera un inbound/call antes de enviar.",
-            status: "error" as const,
-          };
-        }
-
-        const result =
-          dispatch.mode === "text"
-            ? await sendTextMessage(
-                normalizedPhone,
-                "Hola, este es un mensaje de prueba de Bioalergia por WhatsApp.",
-              )
-            : await (async () => {
-                const template = await resolveTemplate();
-                if (!template) {
-                  throw new Error(
-                    "No hay ningún template aprobado disponible. Crea uno en Meta Business Manager.",
-                  );
-                }
-
-                return sendTemplateMessage(
-                  normalizedPhone,
-                  template.templateName,
-                  template.languageCode,
-                );
-              })();
+        const result = await sendText(
+          normalizedPhone,
+          "Hola, este es un mensaje de prueba de Bioalergia por WhatsApp.",
+        );
 
         return {
-          ...formatSendResponse(
-            dispatch.mode === "text"
-              ? `Mensaje enviado en modo texto. ID: ${result.messageId}`
-              : `Mensaje enviado en modo template. ID: ${result.messageId}`,
-            result,
-          ),
-          mode: dispatch.mode,
+          message: `Mensaje de prueba enviado. ID: ${result.messageId}`,
+          messageId: result.messageId,
+          status: "ok" as const,
         };
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
@@ -416,85 +307,51 @@ const whatsappORPCRouterBase = {
       try {
         switch (input.kind) {
           case "contextual_text": {
-            await ensureServiceWindow(input.phone);
-            const result = await sendContextualTextReply(
-              input.phone,
-              input.body,
-              input.quotedMessageId,
-              { previewUrl: input.previewUrl },
-            );
-            return formatSendResponse("Respuesta contextual enviada.", result);
-          }
-          case "cta_url": {
-            await ensureServiceWindow(input.phone);
-            const result = await sendInteractiveCtaUrlMessage({
-              body: input.body,
-              displayText: input.displayText,
-              footer: input.footer,
-              headerText: input.headerText,
-              phone: input.phone,
-              url: input.url,
-            });
-            return formatSendResponse("Mensaje interactivo CTA enviado.", result);
+            const result = await sendText(input.phone, input.body);
+            return {
+              message: "Respuesta contextual enviada.",
+              messageId: result.messageId,
+              status: "ok" as const,
+            };
           }
           case "reaction": {
-            await ensureServiceWindow(input.phone);
-            const result = await sendReactionMessage({
-              emoji: input.emoji,
-              messageId: input.messageId,
-              phone: input.phone,
-            });
-            return formatSendResponse("Reacción enviada.", result);
+            const result = await sendReaction(input.phone, input.messageId, input.emoji);
+            return {
+              message: "Reacción enviada.",
+              messageId: result.messageId,
+              status: "ok" as const,
+            };
           }
           case "mark_read": {
-            const result = await markMessageAsRead(input.messageId);
-            return formatSendResponse("Mensaje marcado como leído.", result);
-          }
-          case "list": {
-            await ensureServiceWindow(input.phone);
-            const result = await sendInteractiveListMessage({
-              body: input.body,
-              buttonText: input.buttonText,
-              footer: input.footer,
-              headerText: input.headerText,
-              phone: input.phone,
-              sections: input.sections,
-            });
-            return formatSendResponse("Lista interactiva enviada.", result);
+            const jid = phoneToJid(input.phone);
+            await markAsRead([{ id: input.messageId, remoteJid: jid }]);
+            return {
+              message: "Mensaje marcado como leído.",
+              status: "ok" as const,
+            };
           }
           case "image":
           case "audio":
           case "document":
           case "video":
           case "sticker": {
-            await ensureServiceWindow(input.phone);
-            const result = await sendMediaMessage({
-              media: {
-                caption: input.caption,
-                filename: input.filename,
-                id: input.mediaId,
-                link: input.link,
-              },
-              mediaType: input.kind,
-              phone: input.phone,
-              replyToMessageId: input.replyToMessageId,
+            const result = await sendMedia(input.phone, input.kind, {
+              caption: input.caption,
+              filename: input.filename,
+              url: input.link,
             });
-            return formatSendResponse(`Mensaje ${input.kind} enviado.`, result);
-          }
-          case "reply_buttons": {
-            await ensureServiceWindow(input.phone);
-            const result = await sendInteractiveReplyButtonsMessage({
-              body: input.body,
-              buttons: input.buttons,
-              footer: input.footer,
-              headerText: input.headerText,
-              phone: input.phone,
-            });
-            return formatSendResponse("Botones interactivos enviados.", result);
+            return {
+              message: `Mensaje ${input.kind} enviado.`,
+              messageId: result.messageId,
+              status: "ok" as const,
+            };
           }
           case "typing": {
-            const result = await sendTypingIndicator(input.messageId);
-            return formatSendResponse("Typing indicator enviado.", result);
+            await sendTyping(input.phone);
+            return {
+              message: "Typing indicator enviado.",
+              status: "ok" as const,
+            };
           }
           default: {
             const neverInput: never = input;
@@ -510,41 +367,16 @@ const whatsappORPCRouterBase = {
       }
     }),
 
-  listTemplates: integrationRead
+  getConnectionStatus: integrationRead
     .route({
       method: "GET",
-      path: "/templates",
-      summary: "List WhatsApp message templates from Meta API",
+      path: "/connection-status",
+      summary: "Get Baileys WhatsApp connection status and QR code",
       tags: ["WhatsApp"],
     })
-    .output(listWhatsappTemplatesResponseSchema)
+    .output(whatsappConnectionStatusSchema)
     .handler(async () => {
-      const templates = await listMessageTemplates();
-      return { templates };
-    }),
-
-  getAccountInfo: integrationRead
-    .route({
-      method: "GET",
-      path: "/account-info",
-      summary: "Get WhatsApp account info from Meta API",
-      tags: ["WhatsApp"],
-    })
-    .output(whatsappAccountInfoSchema)
-    .handler(async () => {
-      return await getAccountInfo();
-    }),
-
-  getBusinessProfile: integrationRead
-    .route({
-      method: "GET",
-      path: "/business-profile",
-      summary: "Get WhatsApp Business profile from Meta API",
-      tags: ["WhatsApp"],
-    })
-    .output(whatsappBusinessProfileSchema)
-    .handler(async () => {
-      return await getBusinessProfile();
+      return getConnectionStatus();
     }),
 
   triggerPoll: integrationCreate
@@ -587,9 +419,9 @@ export const whatsappOpenAPIHandler = new OpenAPIHandler(whatsappORPCRouter, {
       schemaConverters: [new ZodToJsonSchemaConverter()],
       specGenerateOptions: {
         info: {
-          description: "Contratos oRPC/OpenAPI para WhatsApp Cloud API y el flujo Doctoralia.",
+          description: "Contratos oRPC/OpenAPI para WhatsApp Baileys y el flujo Doctoralia.",
           title: "Bioalergia WhatsApp oRPC",
-          version: "1.0.0",
+          version: "2.0.0",
         },
       },
     }),
