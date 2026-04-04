@@ -124,6 +124,9 @@ docs/*backup*.ipynb
 titan_backup/
 email_backup/
 
+# Baileys WhatsApp auth state
+data/
+
 # Sensitive data files
 **/credentials.json
 **/secrets.json
