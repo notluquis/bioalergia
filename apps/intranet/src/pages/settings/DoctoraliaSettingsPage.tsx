@@ -618,11 +618,12 @@ function MetricPill({
 }: {
   subtitle: string;
   title: string;
-  tone: "accent" | "primary" | "success" | "warning";
+  tone: "accent" | "default" | "primary" | "success" | "warning";
   value: number | string;
 }) {
   const toneClasses: Record<typeof tone, string> = {
     accent: "border-accent/20 bg-accent/8 text-accent",
+    default: "border-default-200 bg-default-100/70 text-default-700",
     primary: "border-primary/20 bg-primary/8 text-primary",
     success: "border-success/20 bg-success/8 text-success",
     warning: "border-warning/20 bg-warning/8 text-warning",
