@@ -24,7 +24,11 @@ import { db } from "@finanzas/db";
 import { createId } from "@paralleldrive/cuid2";
 import { ImapFlow } from "imapflow";
 import { logError, logEvent, logWarn } from "../logger";
-import { htmlToText, parseDoctoraliaEmail } from "../whatsapp/email-parser";
+import {
+  htmlToText,
+  isLikelyDoctoraliaEmail,
+  parseDoctoraliaEmail,
+} from "../whatsapp/email-parser";
 
 interface ImapConfig {
   host: string;
@@ -149,6 +153,14 @@ async function processUnseen(client: ImapFlow, config: ImapConfig): Promise<void
     const emailText = rawBody.includes("<html") || rawBody.includes("<HTML")
       ? htmlToText(rawBody)
       : rawBody;
+
+    if (!isLikelyDoctoraliaEmail(emailText)) {
+      logWarn("doctoralia.imap.skip_non_doctoralia", {
+        messageId,
+        subject: msg.envelope?.subject,
+      });
+      continue;
+    }
 
     const booking = emailText ? parseDoctoraliaEmail(emailText) : null;
 

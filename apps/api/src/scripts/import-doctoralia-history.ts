@@ -38,7 +38,7 @@ config({ path: path.resolve(process.cwd(), ".env") });
 
 // Dynamic import after env is loaded
 const { db } = await import("@finanzas/db");
-const { htmlToText, parseDoctoraliaEmail } = await import(
+const { htmlToText, isLikelyDoctoraliaEmail, parseDoctoraliaEmail } = await import(
   "../lib/whatsapp/email-parser.js"
 );
 
@@ -493,6 +493,12 @@ for (const raw of allRaw) {
     continue;
   }
   seenMessageIds.add(raw.messageId);
+
+  if (!isLikelyDoctoraliaEmail(raw.body)) {
+    skippedUnparseable++;
+    console.warn(`  Skipped non-Doctoralia email: ${raw.subject} (${raw.account})`);
+    continue;
+  }
 
   const booking = parseDoctoraliaEmail(raw.body);
   if (!booking) {

@@ -27,6 +27,17 @@ export interface DoctoraliaBookingInfo {
   clinicAddress: string | null;
 }
 
+const DOCTORALIA_SIGNATURE_PATTERNS = [
+  /doctoralia\.(cl|com|es|mx|ar|co|pe)/i,
+  /tiene\s+un\s+nuevo\s+paciente\s+que\s+ha\s+reservado\s+una\s+cita/i,
+  /ha\s+modificado\s+la\s+cita/i,
+  /cancel\w*\s+la\s+cita/i,
+  /^fecha\s+y\s+hora$/im,
+  /^servicio$/im,
+  /^profesional$/im,
+  /^direcci[oó]n$/im,
+];
+
 const MONTH_MAP: Record<string, number> = {
   enero: 0,
   febrero: 1,
@@ -275,6 +286,25 @@ export function parseDoctoraliaEmail(text: string): DoctoraliaBookingInfo | null
     patientPhone,
     previousAppointmentDate,
   };
+}
+
+export function isLikelyDoctoraliaEmail(text: string): boolean {
+  if (!text) return false;
+
+  const normalizedText = text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+  let matched = 0;
+  for (const pattern of DOCTORALIA_SIGNATURE_PATTERNS) {
+    if (pattern.test(normalizedText)) {
+      matched++;
+      if (matched >= 2) return true;
+    }
+  }
+
+  return false;
 }
 
 /**

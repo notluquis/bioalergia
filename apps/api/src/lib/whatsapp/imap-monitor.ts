@@ -9,7 +9,7 @@ import dayjs from "dayjs";
 import { ImapFlow } from "imapflow";
 import { logError, logEvent, logWarn } from "../logger";
 import { sendText } from "./baileys-socket";
-import { htmlToText, parseDoctoraliaEmail } from "./email-parser";
+import { htmlToText, isLikelyDoctoraliaEmail, parseDoctoraliaEmail } from "./email-parser";
 import { normalizePhone } from "./jid";
 
 interface ImapConfig {
@@ -169,6 +169,16 @@ export async function runImapPoll(): Promise<PollResult> {
         }
       } catch (err) {
         logError("whatsapp.imap.parse_error", err, { messageId });
+      }
+
+      if (emailText && !isLikelyDoctoraliaEmail(emailText)) {
+        logWarn("whatsapp.imap.skip_non_doctoralia", {
+          messageId,
+          subject: msg.envelope?.subject,
+        });
+        await client.messageFlagsAdd({ uid: msg.uid }, ["\\Seen"]);
+        result.skipped++;
+        continue;
       }
 
       const booking = emailText ? parseDoctoraliaEmail(emailText) : null;
