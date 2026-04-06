@@ -114,7 +114,7 @@ export function DoctoraliaSettingsPage() {
 
     const stateMeta: Record<
       typeof listener.state,
-      { description: string; tone: "accent" | "primary" | "success" | "warning" }
+      { description: string; tone: "accent" | "default" | "success" | "warning" }
     > = {
       connected: {
         description: "Conexión activa al buzón y espera de nuevos correos.",
@@ -136,7 +136,7 @@ export function DoctoraliaSettingsPage() {
         description: listener.enabled
           ? "El proceso todavía no inició el listener IMAP."
           : "El listener IMAP no está habilitado en este entorno.",
-        tone: "primary",
+        tone: "default",
       },
     };
 
@@ -642,7 +642,7 @@ function StatusPill({
   tone,
 }: {
   label: string;
-  tone: "accent" | "primary" | "success" | "warning";
+  tone: "accent" | "default" | "success" | "warning";
 }) {
   return (
     <Chip color={tone} variant="soft">
