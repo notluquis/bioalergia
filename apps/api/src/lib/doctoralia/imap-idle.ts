@@ -25,6 +25,7 @@ import { createId } from "@paralleldrive/cuid2";
 import { ImapFlow } from "imapflow";
 import { logError, logEvent, logWarn } from "../logger";
 import {
+  decodeEmailBody,
   htmlToText,
   isLikelyDoctoraliaEmail,
   parseDoctoraliaEmail,
@@ -190,8 +191,10 @@ async function ingestMailbox(client: ImapFlow, config: ImapConfig): Promise<Doct
       msg.bodyStructure?.parameters?.charset ??
       msg.bodyStructure?.childNodes?.[0]?.parameters?.charset ??
       "utf-8";
+    const encoding =
+      msg.bodyStructure?.encoding ?? msg.bodyStructure?.childNodes?.[0]?.encoding ?? null;
     const bodyBuffer = msg.bodyParts?.get("1") ?? msg.bodyParts?.get("TEXT");
-    const rawBody = bodyBuffer ? new TextDecoder(charset).decode(bodyBuffer) : "";
+    const rawBody = decodeEmailBody({ bodyBuffer, charset, encoding });
 
     const emailText = rawBody.includes("<html") || rawBody.includes("<HTML")
       ? htmlToText(rawBody)

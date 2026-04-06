@@ -27,6 +27,77 @@ export interface DoctoraliaBookingInfo {
   clinicAddress: string | null;
 }
 
+function cleanExtractedText(value: null | string | undefined): null | string {
+  if (!value) return null;
+
+  const cleaned = value
+    .replace(/[\u00AD\u200B-\u200D\uFEFF]/g, "")
+    .replace(/[ \t]+/g, " ")
+    .replace(/=\s*$/g, "")
+    .trim();
+
+  return cleaned.length > 0 ? cleaned : null;
+}
+
+function decodeQuotedPrintableBytes(input: string): Uint8Array {
+  const normalized = input.replace(/=(\r?\n)/g, "");
+  const bytes: number[] = [];
+
+  for (let i = 0; i < normalized.length; i++) {
+    const current = normalized[i];
+    const hex = normalized.slice(i + 1, i + 3);
+
+    if (current === "=" && /^[0-9A-Fa-f]{2}$/.test(hex)) {
+      bytes.push(Number.parseInt(hex, 16));
+      i += 2;
+      continue;
+    }
+
+    bytes.push(normalized.charCodeAt(i) & 0xff);
+  }
+
+  return Uint8Array.from(bytes);
+}
+
+function decodeText(bytes: Uint8Array, charset: string): string {
+  try {
+    return new TextDecoder(charset).decode(bytes);
+  } catch {
+    return new TextDecoder("utf-8").decode(bytes);
+  }
+}
+
+function looksQuotedPrintable(text: string): boolean {
+  return /=\r?\n|=[0-9A-F]{2}/i.test(text);
+}
+
+export function decodeEmailBody({
+  bodyBuffer,
+  charset,
+  encoding,
+}: {
+  bodyBuffer: Uint8Array | null | undefined;
+  charset?: null | string;
+  encoding?: null | string;
+}): string {
+  if (!bodyBuffer) return "";
+
+  const normalizedCharset = charset?.trim().toLowerCase() || "utf-8";
+  const normalizedEncoding = encoding?.trim().toLowerCase() || null;
+
+  if (normalizedEncoding === "quoted-printable") {
+    const qpSource = new TextDecoder("utf-8").decode(bodyBuffer);
+    return decodeText(decodeQuotedPrintableBytes(qpSource), normalizedCharset);
+  }
+
+  const decoded = decodeText(bodyBuffer, normalizedCharset);
+  if (looksQuotedPrintable(decoded)) {
+    return decodeText(decodeQuotedPrintableBytes(decoded), normalizedCharset);
+  }
+
+  return decoded;
+}
+
 const DOCTORALIA_SIGNATURE_PATTERNS = [
   /doctoralia\.(cl|com|es|mx|ar|co|pe)/i,
   /tiene\s+un\s+nuevo\s+paciente\s+que\s+ha\s+reservado\s+una\s+cita/i,
@@ -143,9 +214,13 @@ export function parseDoctoraliaEmail(text: string): DoctoraliaBookingInfo | null
     const match = patientLinePattern.exec(line);
     if (match) {
       const candidate = match[1].trim();
+      const inner = match[2].trim();
       if (candidate.length > 2 && !/\d{4}|http|@/.test(candidate)) {
-        patientName = candidate;
-        const inner = match[2].trim();
+        if (/\b\d+\s*min\b/i.test(inner)) {
+          continue;
+        }
+
+        patientName = cleanExtractedText(candidate);
         const phoneMatch = /\+?\d[\d\s]{7,14}/.exec(inner);
         if (phoneMatch) patientPhone = phoneMatch[0].replace(/\s/g, "");
         const emailMatch = /[\w.+-]+@[\w.-]+\.[a-zA-Z]{2,}/.exec(inner);
@@ -162,7 +237,27 @@ export function parseDoctoraliaEmail(text: string): DoctoraliaBookingInfo | null
       if (phoneMatch) {
         patientPhone = phoneMatch[0].replace(/\s/g, "");
         const namePart = line.slice(0, phoneMatch.index).trim().replace(/[(),]/g, "").trim();
-        if (namePart.length > 2) patientName = namePart;
+        if (namePart.length > 2) patientName = cleanExtractedText(namePart);
+        break;
+      }
+    }
+  }
+
+  if (!patientPhone) {
+    for (const line of lines) {
+      const phoneMatch = /(\+?56\s*9\d{8}|\+?\d[\d\s()-]{8,})/.exec(line);
+      if (phoneMatch) {
+        patientPhone = phoneMatch[0].replace(/[()\s-]/g, "");
+        break;
+      }
+    }
+  }
+
+  if (!patientEmail) {
+    for (const line of lines) {
+      const emailMatch = /[\w.+-]+@[\w.-]+\.[a-zA-Z]{2,}/.exec(line);
+      if (emailMatch) {
+        patientEmail = emailMatch[0];
         break;
       }
     }
@@ -226,7 +321,7 @@ export function parseDoctoraliaEmail(text: string): DoctoraliaBookingInfo | null
   if (!isModification && !isCancellation) {
     // BOOKING: line after "Servicio" label
     const serviceIdx = lines.findIndex((l) => /^servicio$/i.test(l));
-    if (serviceIdx !== -1) appointmentService = lines[serviceIdx + 1] ?? null;
+    if (serviceIdx !== -1) appointmentService = cleanExtractedText(lines[serviceIdx + 1] ?? null);
   }
 
   // Fallback for both types: line containing "(X min)"
@@ -234,7 +329,7 @@ export function parseDoctoraliaEmail(text: string): DoctoraliaBookingInfo | null
     const servicePattern = /\(\d+\s*min\)/i;
     for (const line of lines) {
       if (servicePattern.test(line)) {
-        appointmentService = line.trim();
+        appointmentService = cleanExtractedText(line.trim());
         break;
       }
     }
@@ -243,15 +338,14 @@ export function parseDoctoraliaEmail(text: string): DoctoraliaBookingInfo | null
   // --- Doctor ---
   let appointmentDoctor: string | null = null;
 
-  if (!isModification && !isCancellation) {
-    // BOOKING: line after "Profesional" label
-    const profIdx = lines.findIndex((l) => /^profesional$/i.test(l));
-    if (profIdx !== -1) appointmentDoctor = lines[profIdx + 1] ?? null;
-  } else {
+  const profIdx = lines.findIndex((l) => /^profesional$/i.test(l));
+  if (profIdx !== -1) {
+    appointmentDoctor = cleanExtractedText(lines[profIdx + 1] ?? null);
+  } else if (isModification || isCancellation) {
     // MODIFICATION / CANCELLATION: doctor appears directly after service (no label)
     const serviceLineIdx = lines.findIndex((l) => /\(\d+\s*min\)/i.test(l));
     if (serviceLineIdx !== -1) {
-      const candidate = lines[serviceLineIdx + 1];
+      const candidate = cleanExtractedText(lines[serviceLineIdx + 1]);
       // Basic name heuristic: at least two words, no digits, no URLs
       if (candidate && /^[A-ZÁÉÍÓÚÜÑa-záéíóúüñ]/.test(candidate) && !/\d|http/.test(candidate)) {
         appointmentDoctor = candidate;
@@ -262,27 +356,26 @@ export function parseDoctoraliaEmail(text: string): DoctoraliaBookingInfo | null
   // --- Clinic address ---
   let clinicAddress: string | null = null;
 
-  if (!isModification && !isCancellation) {
-    // BOOKING: line after "Dirección" label
-    const dirIdx = lines.findIndex((l) => /^direcci[oó]n$/i.test(l));
-    if (dirIdx !== -1) clinicAddress = lines[dirIdx + 1] ?? null;
-  } else {
+  const dirIdx = lines.findIndex((l) => /^direcci[oó]n$/i.test(l));
+  if (dirIdx !== -1) {
+    clinicAddress = cleanExtractedText(lines[dirIdx + 1] ?? null);
+  } else if (isModification || isCancellation) {
     // MODIFICATION / CANCELLATION: clinic appears after doctor (two lines after service)
     const serviceLineIdx = lines.findIndex((l) => /\(\d+\s*min\)/i.test(l));
     if (serviceLineIdx !== -1 && appointmentDoctor) {
-      clinicAddress = lines[serviceLineIdx + 2] ?? null;
+      clinicAddress = cleanExtractedText(lines[serviceLineIdx + 2] ?? null);
     }
   }
 
   return {
     appointmentDate,
-    appointmentDoctor,
-    appointmentService,
-    clinicAddress,
+    appointmentDoctor: cleanExtractedText(appointmentDoctor),
+    appointmentService: cleanExtractedText(appointmentService),
+    clinicAddress: cleanExtractedText(clinicAddress),
     eventType,
     isFirstAppointment,
     patientEmail,
-    patientName,
+    patientName: cleanExtractedText(patientName) ?? patientName,
     patientPhone,
     previousAppointmentDate,
   };

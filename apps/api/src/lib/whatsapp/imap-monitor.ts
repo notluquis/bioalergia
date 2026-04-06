@@ -9,7 +9,7 @@ import dayjs from "dayjs";
 import { ImapFlow } from "imapflow";
 import { logError, logEvent, logWarn } from "../logger";
 import { sendText } from "./baileys-socket";
-import { htmlToText, isLikelyDoctoraliaEmail, parseDoctoraliaEmail } from "./email-parser";
+import { decodeEmailBody, htmlToText, isLikelyDoctoraliaEmail, parseDoctoraliaEmail } from "./email-parser";
 import { normalizePhone } from "./jid";
 
 interface ImapConfig {
@@ -129,6 +129,7 @@ export async function runImapPoll(): Promise<PollResult> {
 
     for await (const msg of client.fetch(uids, {
       bodyParts: ["TEXT", "1"],
+      bodyStructure: true,
       envelope: true,
       source: true,
     })) {
@@ -157,9 +158,16 @@ export async function runImapPoll(): Promise<PollResult> {
       // Parse the email body
       let emailText = "";
       try {
-        const rawBuffer = msg.source;
+        const charset =
+          msg.bodyStructure?.parameters?.charset ??
+          msg.bodyStructure?.childNodes?.[0]?.parameters?.charset ??
+          "utf-8";
+        const encoding =
+          msg.bodyStructure?.encoding ?? msg.bodyStructure?.childNodes?.[0]?.encoding ?? null;
+        const rawBuffer = msg.bodyParts?.get("1") ?? msg.bodyParts?.get("TEXT");
+
         if (rawBuffer) {
-          const rawText = rawBuffer.toString("utf-8");
+          const rawText = decodeEmailBody({ bodyBuffer: rawBuffer, charset, encoding });
           // Try to extract plain text from HTML
           if (rawText.includes("<html") || rawText.includes("<HTML")) {
             emailText = htmlToText(rawText);

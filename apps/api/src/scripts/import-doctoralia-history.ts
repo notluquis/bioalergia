@@ -38,7 +38,7 @@ config({ path: path.resolve(process.cwd(), ".env") });
 
 // Dynamic import after env is loaded
 const { db } = await import("@finanzas/db");
-const { htmlToText, isLikelyDoctoraliaEmail, parseDoctoraliaEmail } = await import(
+const { decodeEmailBody, htmlToText, isLikelyDoctoraliaEmail, parseDoctoraliaEmail } = await import(
   "../lib/whatsapp/email-parser.js"
 );
 
@@ -421,8 +421,10 @@ async function fetchFromAccount(account: AccountConfig): Promise<RawEmail[]> {
           msg.bodyStructure?.parameters?.charset ??
           msg.bodyStructure?.childNodes?.[0]?.parameters?.charset ??
           "utf-8";
+        const encoding =
+          msg.bodyStructure?.encoding ?? msg.bodyStructure?.childNodes?.[0]?.encoding ?? null;
         const bodyBuffer = msg.bodyParts?.get("1") ?? msg.bodyParts?.get("TEXT");
-        const rawBody = bodyBuffer ? new TextDecoder(charset).decode(bodyBuffer) : "";
+        const rawBody = decodeEmailBody({ bodyBuffer, charset, encoding });
 
         const body =
           rawBody.includes("<html") || rawBody.includes("<HTML")
