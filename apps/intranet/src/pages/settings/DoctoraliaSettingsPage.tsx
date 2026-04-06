@@ -11,7 +11,17 @@ import {
 } from "@heroui/react";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { PaginationState } from "@tanstack/react-table";
-import { CalendarClock, Mail, MessageCircleReply, RefreshCw, Send, Workflow } from "lucide-react";
+import dayjs from "dayjs";
+import {
+  Activity,
+  AlertCircle,
+  CalendarClock,
+  Mail,
+  MessageCircleReply,
+  RefreshCw,
+  Send,
+  Workflow,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { DataTable } from "@/components/data-table/DataTable";
@@ -98,6 +108,45 @@ export function DoctoraliaSettingsPage() {
     return items;
   }, [overview]);
 
+  const listenerSummary = useMemo(() => {
+    const listener = overview?.doctoraliaImapListener;
+    if (!listener) return null;
+
+    const stateMeta: Record<
+      typeof listener.state,
+      { description: string; tone: "accent" | "primary" | "success" | "warning" }
+    > = {
+      connected: {
+        description: "Conexión activa al buzón y espera de nuevos correos.",
+        tone: "success",
+      },
+      connecting: {
+        description: "Intentando abrir la conexión IMAP del buzón configurado.",
+        tone: "accent",
+      },
+      error: {
+        description: "La conexión IMAP falló y quedó esperando reintento.",
+        tone: "warning",
+      },
+      missing_config: {
+        description: "El listener está habilitado, pero faltan variables IMAP.",
+        tone: "warning",
+      },
+      stopped: {
+        description: listener.enabled
+          ? "El proceso todavía no inició el listener IMAP."
+          : "El listener IMAP no está habilitado en este entorno.",
+        tone: "primary",
+      },
+    };
+
+    const meta = stateMeta[listener.state];
+    return {
+      ...meta,
+      label: listener.state.replaceAll("_", " "),
+    };
+  }, [overview]);
+
   return (
     <div className={PAGE_CONTAINER}>
       <Surface className="rounded-[28px] border border-default-200 bg-linear-to-br from-background via-default-50 to-warning/5 p-6 shadow-inner">
@@ -107,6 +156,10 @@ export function DoctoraliaSettingsPage() {
               <StatusPill
                 label={overview?.imapReady ? "IMAP listo" : "IMAP pendiente"}
                 tone={overview?.imapReady ? "success" : "warning"}
+              />
+              <StatusPill
+                label={listenerSummary ? `Listener ${listenerSummary.label}` : "Listener pendiente"}
+                tone={listenerSummary?.tone ?? "warning"}
               />
               <StatusPill
                 label={
@@ -131,10 +184,10 @@ export function DoctoraliaSettingsPage() {
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <MetricPill
-              subtitle="host, user y pass"
-              title="IMAP"
-              tone={overview?.imapReady ? "success" : "warning"}
-              value={overview?.imapReady ? "OK" : "Pend."}
+              subtitle="runtime"
+              title="Listener"
+              tone={listenerSummary?.tone ?? "warning"}
+              value={listenerSummary?.label ?? "Pend."}
             />
             <MetricPill
               subtitle="scheduler"
@@ -177,7 +230,7 @@ export function DoctoraliaSettingsPage() {
               <Card.Header className="flex flex-col items-start gap-1">
                 <h2 className="font-semibold text-base">Estado de la ingesta</h2>
                 <Description className="text-default-500 text-xs">
-                  Esto cubre mailbox, remitente, cron y dependencia del canal de salida.
+                  Esto cubre configuración, listener IMAP y dependencia del canal de salida.
                 </Description>
               </Card.Header>
               <Card.Content className="space-y-4">
@@ -223,6 +276,12 @@ export function DoctoraliaSettingsPage() {
                       ready={overview.automaticNotificationsEnabled}
                       title="Poll automático"
                     />
+                    <ChecklistRow
+                      description={listenerSummary?.description ?? "Estado real del listener IMAP."}
+                      icon={Activity}
+                      ready={overview.doctoraliaImapListener.state === "connected"}
+                      title="Listener IMAP"
+                    />
                   </>
                 ) : (
                   <Alert status="danger">No se pudo cargar el estado de Doctoralia.</Alert>
@@ -259,6 +318,34 @@ export function DoctoraliaSettingsPage() {
                     Cron
                   </Description>
                   <p className="mt-1 font-medium font-mono text-sm">{overview?.pollCron ?? "—"}</p>
+                </Surface>
+
+                <Surface className="rounded-2xl border border-default-200 px-4 py-3">
+                  <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
+                    Estado del listener
+                  </Description>
+                  <p className="mt-1 font-medium text-sm">{listenerSummary?.label ?? "—"}</p>
+                  <Description className="text-default-500 text-xs">
+                    {listenerSummary?.description ?? "Sin telemetría del listener."}
+                  </Description>
+                </Surface>
+
+                <Surface className="rounded-2xl border border-default-200 px-4 py-3">
+                  <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
+                    Última conexión
+                  </Description>
+                  <p className="mt-1 font-medium text-sm">
+                    {formatStatusDate(overview?.doctoraliaImapListener.lastConnectedAt)}
+                  </p>
+                </Surface>
+
+                <Surface className="rounded-2xl border border-default-200 px-4 py-3">
+                  <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
+                    Último correo procesado
+                  </Description>
+                  <p className="mt-1 font-medium text-sm">
+                    {formatStatusDate(overview?.doctoraliaImapListener.lastProcessedAt)}
+                  </p>
                 </Surface>
 
                 <Surface className="rounded-2xl border border-default-200 px-4 py-3">
@@ -338,6 +425,23 @@ export function DoctoraliaSettingsPage() {
                 {!overviewPending && overview && missingBlocks.length > 0 ? (
                   <Alert status="warning">
                     La ingesta aún no está completa. Falta: {missingBlocks.join(", ")}.
+                  </Alert>
+                ) : null}
+
+                {!overviewPending && overview?.doctoraliaImapListener.lastErrorMessage ? (
+                  <Alert status="warning">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                      <div>
+                        <p className="font-medium text-sm">Último error IMAP</p>
+                        <Description className="text-xs">
+                          {overview.doctoraliaImapListener.lastErrorMessage}
+                        </Description>
+                        <Description className="text-default-500 text-xs">
+                          {formatStatusDate(overview.doctoraliaImapListener.lastErrorAt)}
+                        </Description>
+                      </div>
+                    </div>
                   </Alert>
                 ) : null}
 
@@ -533,10 +637,20 @@ function MetricPill({
   );
 }
 
-function StatusPill({ label, tone }: { label: string; tone: "accent" | "success" | "warning" }) {
+function StatusPill({
+  label,
+  tone,
+}: {
+  label: string;
+  tone: "accent" | "primary" | "success" | "warning";
+}) {
   return (
     <Chip color={tone} variant="soft">
       {label}
     </Chip>
   );
+}
+
+function formatStatusDate(value: Date | null | undefined) {
+  return value ? dayjs(value).format("DD/MM/YYYY HH:mm") : "Sin registro";
 }

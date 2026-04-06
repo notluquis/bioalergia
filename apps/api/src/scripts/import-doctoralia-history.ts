@@ -13,7 +13,12 @@
  * accounts.json format:
  *   [
  *     { "host": "imap.gmail.com", "user": "clinica@bioalergia.cl", "pass": "xxx" },
- *     { "host": "imap.gmail.com", "user": "otro@bioalergia.cl", "pass": "yyy" }
+ *     {
+ *       "host": "outlook.office365.com",
+ *       "user": "persona@hotmail.com",
+ *       "authType": "oauth-device-code",
+ *       "oauth": { "clientId": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" }
+ *     }
  *   ]
  *
  * Dedup strategy (two layers):
@@ -43,23 +48,40 @@ const { htmlToText, parseDoctoraliaEmail } = await import(
 
 const args = process.argv.slice(2);
 const DRY_RUN = args.includes("--dry-run");
-const sinceArg = args[args.indexOf("--since") + 1];
-const accountsArg = args[args.indexOf("--accounts") + 1];
+const sinceIndex = args.indexOf("--since");
+const accountsIndex = args.indexOf("--accounts");
+const sinceArg = sinceIndex >= 0 ? args[sinceIndex + 1] : undefined;
+const accountsArg = accountsIndex >= 0 ? args[accountsIndex + 1] : undefined;
 
 const since: Date | null = sinceArg ? new Date(sinceArg) : null;
+if (sinceArg && Number.isNaN(since.getTime())) {
+  console.error(`Error: invalid --since value "${sinceArg}". Expected YYYY-MM-DD.`);
+  process.exit(1);
+}
 
 // ---------------------------------------------------------------------------
 // Account config
 // ---------------------------------------------------------------------------
 
+type AuthType = "oauth-device-code" | "password";
+
+interface OAuthConfig {
+  clientId?: string;
+  scope?: string;
+  tenant?: string;
+  tokenCacheFile?: string;
+}
+
 interface AccountConfig {
+  authType?: AuthType;
   host: string;
+  mailbox?: string;
+  oauth?: OAuthConfig;
+  pass?: string;
   port?: number;
   secure?: boolean;
-  user: string;
-  pass: string;
-  mailbox?: string;
   senderFilter?: string;
+  user: string;
 }
 
 function loadAccounts(): AccountConfig[] {
@@ -81,6 +103,223 @@ function loadAccounts(): AccountConfig[] {
   }
 
   return [{ host, pass, user }];
+}
+
+// ---------------------------------------------------------------------------
+// Microsoft OAuth device code for Outlook/Hotmail IMAP
+// ---------------------------------------------------------------------------
+
+interface TokenCache {
+  accessToken: string;
+  expiresAt: string;
+  refreshToken?: string;
+  scope: string;
+}
+
+const DEFAULT_MICROSOFT_SCOPE = "offline_access https://outlook.office.com/IMAP.AccessAsUser.All";
+const DEFAULT_MICROSOFT_TENANT = "consumers";
+
+function getOAuthConfig(account: AccountConfig): OAuthConfig {
+  return account.oauth ?? {};
+}
+
+function getMicrosoftClientId(account: AccountConfig): null | string {
+  return (
+    getOAuthConfig(account).clientId ??
+    process.env.DOCTORALIA_IMAP_MICROSOFT_CLIENT_ID ??
+    process.env.MICROSOFT_OAUTH_CLIENT_ID ??
+    null
+  );
+}
+
+function getMicrosoftScope(account: AccountConfig): string {
+  return getOAuthConfig(account).scope ?? DEFAULT_MICROSOFT_SCOPE;
+}
+
+function getMicrosoftTenant(account: AccountConfig): string {
+  return getOAuthConfig(account).tenant ?? DEFAULT_MICROSOFT_TENANT;
+}
+
+function getTokenCachePath(account: AccountConfig): string {
+  const configured = getOAuthConfig(account).tokenCacheFile;
+  if (configured) {
+    return path.resolve(configured);
+  }
+
+  const safeAccountId = `${account.user}-${account.host}`.replace(/[^a-zA-Z0-9._-]+/g, "_");
+  return path.resolve(process.cwd(), ".doctoralia-oauth", `${safeAccountId}.json`);
+}
+
+function loadTokenCache(filePath: string): null | TokenCache {
+  try {
+    if (!fs.existsSync(filePath)) return null;
+    return JSON.parse(fs.readFileSync(filePath, "utf-8")) as TokenCache;
+  } catch {
+    return null;
+  }
+}
+
+function saveTokenCache(filePath: string, cache: TokenCache): void {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, `${JSON.stringify(cache, null, 2)}\n`, "utf-8");
+}
+
+async function requestMicrosoftToken(params: {
+  clientId: string;
+  deviceCode?: string;
+  grantType: string;
+  refreshToken?: string;
+  scope: string;
+  tenant: string;
+}): Promise<Record<string, unknown>> {
+  const tokenEndpoint = `https://login.microsoftonline.com/${params.tenant}/oauth2/v2.0/token`;
+  const body = new URLSearchParams({
+    client_id: params.clientId,
+    grant_type: params.grantType,
+  });
+
+  if (params.deviceCode) body.set("device_code", params.deviceCode);
+  if (params.refreshToken) body.set("refresh_token", params.refreshToken);
+  if (params.scope) body.set("scope", params.scope);
+
+  const response = await fetch(tokenEndpoint, {
+    body,
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    method: "POST",
+  });
+
+  return await response.json() as Record<string, unknown>;
+}
+
+async function getDeviceCode(params: {
+  clientId: string;
+  scope: string;
+  tenant: string;
+}): Promise<{
+  deviceCode: string;
+  expiresIn: number;
+  interval: number;
+  message: string;
+}> {
+  const endpoint = `https://login.microsoftonline.com/${params.tenant}/oauth2/v2.0/devicecode`;
+  const response = await fetch(endpoint, {
+    body: new URLSearchParams({
+      client_id: params.clientId,
+      scope: params.scope,
+    }),
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    method: "POST",
+  });
+
+  const data = await response.json() as Record<string, unknown>;
+  if (!response.ok) {
+    throw new Error(
+      `Microsoft device code failed: ${String(data.error ?? response.status)} ${String(data.error_description ?? "")}`.trim(),
+    );
+  }
+
+  return {
+    deviceCode: String(data.device_code),
+    expiresIn: Number(data.expires_in ?? 900),
+    interval: Number(data.interval ?? 5),
+    message: String(data.message ?? ""),
+  };
+}
+
+async function getMicrosoftAccessToken(account: AccountConfig): Promise<string> {
+  const clientId = getMicrosoftClientId(account);
+  if (!clientId) {
+    throw new Error(
+      `Missing Microsoft OAuth client ID for ${account.user}. Set oauth.clientId in accounts JSON or DOCTORALIA_IMAP_MICROSOFT_CLIENT_ID.`,
+    );
+  }
+
+  const scope = getMicrosoftScope(account);
+  const tenant = getMicrosoftTenant(account);
+  const cachePath = getTokenCachePath(account);
+  const cached = loadTokenCache(cachePath);
+  const now = Date.now();
+
+  if (cached?.accessToken && cached.expiresAt) {
+    const expiresAtMs = new Date(cached.expiresAt).getTime();
+    if (Number.isFinite(expiresAtMs) && expiresAtMs - now > 60_000) {
+      return cached.accessToken;
+    }
+  }
+
+  if (cached?.refreshToken) {
+    const refreshed = await requestMicrosoftToken({
+      clientId,
+      grantType: "refresh_token",
+      refreshToken: cached.refreshToken,
+      scope,
+      tenant,
+    });
+
+    if (typeof refreshed.access_token === "string") {
+      const nextCache: TokenCache = {
+        accessToken: refreshed.access_token,
+        expiresAt: new Date(now + Number(refreshed.expires_in ?? 3600) * 1000).toISOString(),
+        refreshToken:
+          typeof refreshed.refresh_token === "string" ? refreshed.refresh_token : cached.refreshToken,
+        scope,
+      };
+      saveTokenCache(cachePath, nextCache);
+      return nextCache.accessToken;
+    }
+  }
+
+  const device = await getDeviceCode({ clientId, scope, tenant });
+  console.log("");
+  console.log("Microsoft OAuth requerido para IMAP.");
+  console.log(device.message || "Abre la URL indicada por Microsoft y autentica la cuenta.");
+  console.log("");
+
+  const deadline = now + device.expiresIn * 1000;
+  let intervalMs = Math.max(device.interval, 5) * 1000;
+
+  while (Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
+
+    const tokenResponse = await requestMicrosoftToken({
+      clientId,
+      deviceCode: device.deviceCode,
+      grantType: "urn:ietf:params:oauth:grant-type:device_code",
+      scope,
+      tenant,
+    });
+
+    if (typeof tokenResponse.access_token === "string") {
+      const nextCache: TokenCache = {
+        accessToken: tokenResponse.access_token,
+        expiresAt: new Date(Date.now() + Number(tokenResponse.expires_in ?? 3600) * 1000).toISOString(),
+        refreshToken:
+          typeof tokenResponse.refresh_token === "string" ? tokenResponse.refresh_token : undefined,
+        scope,
+      };
+      saveTokenCache(cachePath, nextCache);
+      return nextCache.accessToken;
+    }
+
+    const errorCode = String(tokenResponse.error ?? "");
+    if (errorCode === "authorization_pending") continue;
+    if (errorCode === "slow_down") {
+      intervalMs += 5_000;
+      continue;
+    }
+    if (errorCode === "authorization_declined") {
+      throw new Error(`Microsoft OAuth declined for ${account.user}.`);
+    }
+    if (errorCode === "expired_token") {
+      throw new Error(`Microsoft device code expired for ${account.user}. Retry the command.`);
+    }
+
+    throw new Error(
+      `Microsoft token exchange failed for ${account.user}: ${errorCode} ${String(tokenResponse.error_description ?? "")}`.trim(),
+    );
+  }
+
+  throw new Error(`Microsoft device code timed out for ${account.user}. Retry the command.`);
 }
 
 // ---------------------------------------------------------------------------
@@ -123,9 +362,25 @@ interface RawEmail {
 async function fetchFromAccount(account: AccountConfig): Promise<RawEmail[]> {
   const senderFilter = account.senderFilter ?? "doctoralia";
   const mailbox = account.mailbox ?? "INBOX";
+  const authType: AuthType = account.authType ?? "password";
+
+  if (authType === "password" && !account.pass) {
+    throw new Error(`Missing pass for IMAP account ${account.user}.`);
+  }
+
+  const auth =
+    authType === "oauth-device-code"
+      ? {
+          accessToken: await getMicrosoftAccessToken(account),
+          user: account.user,
+        }
+      : {
+          pass: account.pass!,
+          user: account.user,
+        };
 
   const client = new ImapFlow({
-    auth: { pass: account.pass, user: account.user },
+    auth,
     host: account.host,
     logger: false,
     port: account.port ?? 993,

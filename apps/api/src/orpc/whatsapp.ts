@@ -21,6 +21,7 @@ import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
 import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
+import { getDoctoraliaImapListenerStatus } from "../lib/doctoralia/imap-idle";
 import {
   getWhatsappConsentSummary,
   listWhatsappConversationStates,
@@ -185,6 +186,7 @@ const whatsappORPCRouterBase = {
     })
     .output(whatsappOverviewSchema)
     .handler(async () => {
+      const doctoraliaImapEnabled = process.env.ENABLE_DOCTORALIA_IMAP === "true";
       const imapHostConfigured = Boolean(process.env.DOCTORALIA_IMAP_HOST);
       const imapUserConfigured = Boolean(process.env.DOCTORALIA_IMAP_USER);
       const imapPassConfigured = Boolean(process.env.DOCTORALIA_IMAP_PASS);
@@ -193,6 +195,10 @@ const whatsappORPCRouterBase = {
       const { connectionState: connState } = getConnectionStatus();
       const connected = connState === "open";
       const automaticFlowReady = automaticNotificationsEnabled && connected && imapReady;
+      const doctoraliaImapListener = {
+        ...getDoctoraliaImapListenerStatus(),
+        enabled: doctoraliaImapEnabled,
+      };
 
       let consentSummary = { optedIn: 0, optedOut: 0, total: 0, unknown: 0 };
       try {
@@ -207,6 +213,7 @@ const whatsappORPCRouterBase = {
         automaticNotificationsEnabled,
         connected,
         connectionState: connState,
+        doctoraliaImapListener,
         imapHostConfigured,
         imapMailbox: process.env.DOCTORALIA_IMAP_MAILBOX ?? "INBOX",
         imapPassConfigured,

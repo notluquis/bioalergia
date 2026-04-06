@@ -12,6 +12,8 @@ junit.xml
 # Environment & local files
 .env.local
 .env.*.local
+doctoralia-accounts.json
+.doctoralia-oauth/
 
 # Editor & IDE local configs
 .vscode/settings.json

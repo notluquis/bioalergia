@@ -36,6 +36,27 @@ interface ImapConfig {
   senderFilter: string;
 }
 
+type DoctoraliaImapListenerState =
+  | "stopped"
+  | "missing_config"
+  | "connecting"
+  | "connected"
+  | "error";
+
+interface DoctoraliaImapListenerStatus {
+  enabled: boolean;
+  host: null | string;
+  lastConnectedAt: null | string;
+  lastErrorAt: null | string;
+  lastErrorMessage: null | string;
+  lastProcessedAt: null | string;
+  lastStartedAt: null | string;
+  mailbox: null | string;
+  reconnectDelayMs: null | number;
+  state: DoctoraliaImapListenerState;
+  user: null | string;
+}
+
 function getImapConfig(): ImapConfig | null {
   const user = process.env.DOCTORALIA_IMAP_USER;
   const pass = process.env.DOCTORALIA_IMAP_PASS;
@@ -61,6 +82,29 @@ const MAX_RECONNECT_DELAY_MS = 5 * 60_000;
 
 let reconnectDelay = RECONNECT_DELAY_MS;
 let stopped = false;
+const listenerStatus: DoctoraliaImapListenerStatus = {
+  enabled: false,
+  host: null,
+  lastConnectedAt: null,
+  lastErrorAt: null,
+  lastErrorMessage: null,
+  lastProcessedAt: null,
+  lastStartedAt: null,
+  mailbox: null,
+  reconnectDelayMs: null,
+  state: "stopped",
+  user: null,
+};
+
+function markStatus(
+  patch: Partial<DoctoraliaImapListenerStatus>,
+): void {
+  Object.assign(listenerStatus, patch);
+}
+
+export function getDoctoraliaImapListenerStatus(): DoctoraliaImapListenerStatus {
+  return { ...listenerStatus };
+}
 
 async function processUnseen(client: ImapFlow, config: ImapConfig): Promise<void> {
   const uids = await client.search({ from: config.senderFilter });
@@ -136,6 +180,8 @@ async function processUnseen(client: ImapFlow, config: ImapConfig): Promise<void
         })
         .execute();
 
+      markStatus({ lastProcessedAt: now });
+
       logEvent("doctoralia.imap.saved", {
         eventType: booking.eventType,
         isFirstAppointment: booking.isFirstAppointment,
@@ -152,6 +198,15 @@ async function processUnseen(client: ImapFlow, config: ImapConfig): Promise<void
 async function connect(config: ImapConfig): Promise<void> {
   if (stopped) return;
 
+  markStatus({
+    host: config.host,
+    lastErrorMessage: null,
+    mailbox: config.mailbox,
+    reconnectDelayMs: reconnectDelay,
+    state: "connecting",
+    user: config.user,
+  });
+
   const client = new ImapFlow({
     auth: { pass: config.pass, user: config.user },
     host: config.host,
@@ -162,6 +217,11 @@ async function connect(config: ImapConfig): Promise<void> {
 
   try {
     await client.connect();
+    markStatus({
+      lastConnectedAt: new Date().toISOString(),
+      reconnectDelayMs: RECONNECT_DELAY_MS,
+      state: "connected",
+    });
     logEvent("doctoralia.imap.connected", { host: config.host, user: config.user });
     reconnectDelay = RECONNECT_DELAY_MS; // reset backoff on successful connect
 
@@ -179,12 +239,19 @@ async function connect(config: ImapConfig): Promise<void> {
       lock.release();
     }
   } catch (err) {
+    markStatus({
+      lastErrorAt: new Date().toISOString(),
+      lastErrorMessage: err instanceof Error ? err.message : String(err),
+      reconnectDelayMs: reconnectDelay,
+      state: "error",
+    });
     logError("doctoralia.imap.error", err, { host: config.host });
   } finally {
     await client.logout().catch(() => undefined);
   }
 
   if (!stopped) {
+    markStatus({ reconnectDelayMs: reconnectDelay });
     logEvent("doctoralia.imap.reconnect", { delayMs: reconnectDelay });
     setTimeout(() => connect(config), reconnectDelay);
     reconnectDelay = Math.min(reconnectDelay * 2, MAX_RECONNECT_DELAY_MS);
@@ -193,6 +260,16 @@ async function connect(config: ImapConfig): Promise<void> {
 
 export function startDoctoraliaImapListener(): void {
   const config = getImapConfig();
+  stopped = false;
+  markStatus({
+    enabled: true,
+    host: config?.host ?? null,
+    lastStartedAt: new Date().toISOString(),
+    mailbox: config?.mailbox ?? null,
+    reconnectDelayMs: null,
+    state: config ? "connecting" : "missing_config",
+    user: config?.user ?? null,
+  });
   if (!config) {
     logWarn("doctoralia.imap.skip", { reason: "missing_imap_config" });
     return;
@@ -204,4 +281,9 @@ export function startDoctoraliaImapListener(): void {
 
 export function stopDoctoraliaImapListener(): void {
   stopped = true;
+  markStatus({
+    enabled: false,
+    reconnectDelayMs: null,
+    state: "stopped",
+  });
 }
