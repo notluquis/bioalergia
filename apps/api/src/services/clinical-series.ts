@@ -290,6 +290,7 @@ type EventSeriesCandidate = {
   clinicalSeriesId: null | number;
   description: null | string;
   eventDate: string;
+  eventTime: null | string;
   eventId: number;
   externalEventId: string;
   patientName: null | string;
@@ -314,9 +315,11 @@ type ClinicalSeriesEventSnapshot = {
   beneficiaryName: null | string;
   beneficiaryRut: null | string;
   calendarGoogleId: string;
+  description: null | string;
   dosageUnit: null | string;
   dosageValue: null | number;
   eventDate: string;
+  eventTime: null | string;
   eventId: number;
   externalEventId: string;
   linkedFolios: string[];
@@ -1161,6 +1164,7 @@ async function loadEventSeriesCandidateByInternalId(
       e.beneficiary_name AS "beneficiaryName",
       e.beneficiary_rut AS "beneficiaryRut",
       COALESCE(to_char(e.start_date, 'YYYY-MM-DD'), to_char((e.start_date_time AT TIME ZONE ${TIMEZONE})::date, 'YYYY-MM-DD')) AS "eventDate",
+      to_char(e.start_date_time AT TIME ZONE ${TIMEZONE}, 'HH24:MI') AS "eventTime",
       e.summary AS "summary",
       e.description AS "description",
       e.category AS "category",
@@ -1195,6 +1199,7 @@ async function loadEventSeriesCandidateByExternalIds(
       e.beneficiary_name AS "beneficiaryName",
       e.beneficiary_rut AS "beneficiaryRut",
       COALESCE(to_char(e.start_date, 'YYYY-MM-DD'), to_char((e.start_date_time AT TIME ZONE ${TIMEZONE})::date, 'YYYY-MM-DD')) AS "eventDate",
+      to_char(e.start_date_time AT TIME ZONE ${TIMEZONE}, 'HH24:MI') AS "eventTime",
       e.summary AS "summary",
       e.description AS "description",
       e.category AS "category",
@@ -2063,6 +2068,7 @@ async function loadEventSeriesCandidatesByIds(
       e.beneficiary_name AS "beneficiaryName",
       e.beneficiary_rut AS "beneficiaryRut",
       COALESCE(to_char(e.start_date, 'YYYY-MM-DD'), to_char((e.start_date_time AT TIME ZONE ${TIMEZONE})::date, 'YYYY-MM-DD')) AS "eventDate",
+      to_char(e.start_date_time AT TIME ZONE ${TIMEZONE}, 'HH24:MI') AS "eventTime",
       e.summary AS "summary",
       e.description AS "description",
       e.category AS "category",
@@ -2546,6 +2552,12 @@ export async function getClinicalSeriesSnapshotByExternalEvent(params: {
     eventDate: dayjs(item.startDate ?? item.startDateTime ?? item.endDate ?? item.endDateTime)
       .tz(TIMEZONE)
       .format("YYYY-MM-DD"),
+    eventTime:
+      item.startDateTime != null
+        ? dayjs(item.startDateTime).tz(TIMEZONE).format("HH:mm")
+        : item.endDateTime != null
+          ? dayjs(item.endDateTime).tz(TIMEZONE).format("HH:mm")
+          : null,
     eventId: item.id,
     externalEventId: item.externalEventId,
     linkedFolios: foliosByEventId.get(item.id) ?? [],

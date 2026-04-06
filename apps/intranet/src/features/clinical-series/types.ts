@@ -35,6 +35,7 @@ export interface ClinicalSeriesEvent {
   calendarGoogleId: string;
   description: string | null;
   eventDate: string;
+  eventTime: string | null;
   eventId: number;
   externalEventId: string;
   linkedFolios: string[];
@@ -151,6 +152,7 @@ export const ClinicalSeriesEventSchema = z.object({
   calendarGoogleId: z.string(),
   description: z.string().nullable().catch(null),
   eventDate: z.string(),
+  eventTime: z.string().nullable().catch(null),
   eventId: z.number(),
   externalEventId: z.string(),
   linkedFolios: z.array(z.string()).catch([]),

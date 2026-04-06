@@ -21,11 +21,14 @@ export const clinicalSeriesEventSchema = z.object({
   beneficiaryName: z.string().nullable(),
   beneficiaryRut: z.string().nullable(),
   calendarGoogleId: z.string(),
+  description: z.string().nullable(),
   dosageUnit: z.string().nullable(),
   dosageValue: z.number().nullable(),
   eventDate: z.string(),
+  eventTime: z.string().nullable(),
   eventId: z.number(),
   externalEventId: z.string(),
+  linkedFolios: z.array(z.string()).catch([]),
   patientName: z.string().nullable(),
   patientRut: z.string().nullable(),
   seriesStageKind: z.enum(["DOSE", "INSTALLATION", "MAINTENANCE", "READING"]).nullable(),
@@ -46,6 +49,8 @@ export const clinicalSeriesLinkedDocumentSchema = z.object({
 });
 
 export const clinicalSeriesSnapshotSchema = z.object({
+  allergenType: z.enum(["ACAROS", "ACAROS_GRAMINEAS", "GRAMINEAS"]).nullable().catch(null),
+  deliveryModality: z.enum(["DOMICILIO", "PRESENCIAL"]).nullable().catch(null),
   beneficiaryName: z.string().nullable(),
   beneficiaryPhones: z.array(z.string()).catch([]),
   beneficiaryRut: z.string().nullable(),
@@ -53,6 +58,7 @@ export const clinicalSeriesSnapshotSchema = z.object({
   eligibleDocumentDateFrom: z.string(),
   eligibleDocumentDateTo: z.string(),
   events: z.array(clinicalSeriesEventSchema),
+  healthInsurance: z.enum(["FONASA", "ISAPRE", "PARTICULAR"]).nullable().catch(null),
   id: z.number(),
   kind: clinicalSeriesKindSchema,
   linkedDocuments: z.array(clinicalSeriesLinkedDocumentSchema),
@@ -65,6 +71,10 @@ export const clinicalSeriesSnapshotSchema = z.object({
   totalExpected: z.number(),
   totalLinkedAmount: z.number(),
   totalPaid: z.number(),
+  vaccineProduct: z
+    .enum(["ALXOID", "CLUSTOID", "CLUSTOID_B120", "CLUSTOID_FORTE", "ORAL_TEC"])
+    .nullable()
+    .catch(null),
 });
 
 export const clinicalSeriesListInputSchema = z.object({

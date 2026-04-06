@@ -152,6 +152,69 @@ function normalizeChileWhatsAppPhone(value: string): null | { display: string; w
   return null;
 }
 
+function normalizeClinicalIdentityName(value: null | string | undefined): string {
+  if (!value) return "";
+  return value
+    .normalize("NFKD")
+    .replace(/\p{M}+/gu, "")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s-]+/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function normalizeClinicalIdentityRut(value: null | string | undefined): string {
+  return value?.replace(/[^0-9kK]+/g, "").toLowerCase() ?? "";
+}
+
+function tokenizeClinicalIdentityName(value: null | string | undefined): string[] {
+  return normalizeClinicalIdentityName(value)
+    .split(" ")
+    .filter((token) => token.length >= 3);
+}
+
+function areLikelySameClinicalPerson(params: {
+  beneficiaryName: null | string;
+  beneficiaryRut: null | string;
+  patientName: null | string;
+  patientRut: null | string;
+}): boolean {
+  const normalizedPatientRut = normalizeClinicalIdentityRut(params.patientRut);
+  const normalizedBeneficiaryRut = normalizeClinicalIdentityRut(params.beneficiaryRut);
+
+  if (normalizedPatientRut && normalizedBeneficiaryRut) {
+    return normalizedPatientRut === normalizedBeneficiaryRut;
+  }
+
+  const patientTokens = tokenizeClinicalIdentityName(params.patientName);
+  const beneficiaryTokens = tokenizeClinicalIdentityName(params.beneficiaryName);
+
+  if (patientTokens.length < 2 || beneficiaryTokens.length < 2) {
+    return false;
+  }
+
+  const [shorter, longer] =
+    patientTokens.length <= beneficiaryTokens.length
+      ? [patientTokens, beneficiaryTokens]
+      : [beneficiaryTokens, patientTokens];
+
+  return shorter.every((token) => longer.includes(token));
+}
+
+function isSamePatientAndBeneficiary(
+  snapshot: Pick<
+    ClinicalSeriesSnapshot,
+    "beneficiaryName" | "beneficiaryRut" | "patientName" | "patientRut"
+  >
+): boolean {
+  return areLikelySameClinicalPerson({
+    beneficiaryName: snapshot.beneficiaryName,
+    beneficiaryRut: snapshot.beneficiaryRut,
+    patientName: snapshot.patientName,
+    patientRut: snapshot.patientRut,
+  });
+}
+
 type IdentityListEntry = {
   href?: string;
   roleLabel: string;
@@ -160,10 +223,11 @@ type IdentityListEntry = {
 
 function buildRutEntries(snapshot: ClinicalSeriesSnapshot): IdentityListEntry[] {
   const entries: IdentityListEntry[] = [];
+  const samePerson = isSamePatientAndBeneficiary(snapshot);
   if (snapshot.patientRut) {
     entries.push({ roleLabel: "Paciente", value: snapshot.patientRut });
   }
-  if (snapshot.beneficiaryRut && snapshot.beneficiaryRut !== snapshot.patientRut) {
+  if (snapshot.beneficiaryRut && !samePerson) {
     entries.push({ roleLabel: "Beneficiario", value: snapshot.beneficiaryRut });
   }
   return entries;
@@ -172,6 +236,7 @@ function buildRutEntries(snapshot: ClinicalSeriesSnapshot): IdentityListEntry[] 
 function buildPhoneEntries(snapshot: ClinicalSeriesSnapshot): IdentityListEntry[] {
   const entries: IdentityListEntry[] = [];
   const seen = new Set<string>();
+  const samePerson = isSamePatientAndBeneficiary(snapshot);
 
   for (const phone of snapshot.patientPhones) {
     const normalized = normalizeChileWhatsAppPhone(phone);
@@ -192,7 +257,7 @@ function buildPhoneEntries(snapshot: ClinicalSeriesSnapshot): IdentityListEntry[
     seen.add(normalized.waNumber);
     entries.push({
       href: `https://wa.me/${normalized.waNumber}`,
-      roleLabel: "Beneficiario",
+      roleLabel: samePerson ? "Paciente" : "Beneficiario",
       value: normalized.display,
     });
   }
@@ -347,12 +412,30 @@ function compareSeriesEventsDesc(a: ClinicalSeriesEvent, b: ClinicalSeriesEvent)
 }
 
 function clinicalEventHeadline(event: ClinicalSeriesEvent): string {
-  return event.seriesStageLabel ?? event.summary ?? "Evento";
+  return event.summary?.trim() ?? event.seriesStageLabel?.trim() ?? "Evento";
 }
 
-function clinicalEventSupportText(event: ClinicalSeriesEvent): null | string {
-  if (event.seriesStageLabel && event.summary) return event.summary;
-  return null;
+function clinicalEventStageLabel(event: ClinicalSeriesEvent): null | string {
+  const stageLabel = event.seriesStageLabel?.trim();
+  if (!stageLabel) return null;
+  const headline = clinicalEventHeadline(event);
+  return normalizeClinicalIdentityName(stageLabel) === normalizeClinicalIdentityName(headline)
+    ? null
+    : stageLabel;
+}
+
+function clinicalEventDescription(event: ClinicalSeriesEvent): null | string {
+  const description = event.description?.trim();
+  if (!description) return null;
+  const headline = clinicalEventHeadline(event);
+  return normalizeClinicalIdentityName(description) === normalizeClinicalIdentityName(headline)
+    ? null
+    : description;
+}
+
+function clinicalEventDateTimeLabel(event: ClinicalSeriesEvent): string {
+  const dateLabel = formatEventDate(event.eventDate);
+  return event.eventTime ? `${dateLabel} · ${event.eventTime} h` : dateLabel;
 }
 
 function toCalendarEventDetail(event: ClinicalSeriesEvent): CalendarEventDetail {
@@ -888,118 +971,123 @@ export function ClinicalSeriesView() {
                   </Table.Column>
                 </Table.Header>
                 <Table.Body>
-                  {derivedItems.map((s) => (
-                    <Table.Row key={s.id} id={s.id} className="cursor-pointer group">
-                      <Table.Cell>
-                        <div className="flex flex-col gap-1">
-                          <span className="text-sm font-medium text-foreground group-hover:text-accent transition-colors">
-                            {s.patientName ?? s.displayName ?? (
-                              <span className="text-foreground-400 italic">Sin nombre</span>
-                            )}
-                          </span>
-                          {s.beneficiaryName && s.beneficiaryName !== s.patientName && (
-                            <span className="text-xs text-foreground-400">
-                              Beneficiario: {s.beneficiaryName}
+                  {derivedItems.map((s) => {
+                    const samePerson = isSamePatientAndBeneficiary(s);
+                    return (
+                      <Table.Row key={s.id} id={s.id} className="cursor-pointer group">
+                        <Table.Cell>
+                          <div className="flex flex-col gap-1">
+                            <span className="text-sm font-medium text-foreground transition-colors group-hover:text-accent">
+                              {s.patientName ?? s.displayName ?? (
+                                <span className="text-foreground-400 italic">Sin nombre</span>
+                              )}
                             </span>
-                          )}
-                        </div>
-                      </Table.Cell>
-                      <Table.Cell>
-                        <IdentityDropdownCell entries={buildRutEntries(s)} title="RUTs" />
-                      </Table.Cell>
-                      <Table.Cell>
-                        <IdentityDropdownCell entries={buildPhoneEntries(s)} title="Teléfonos" />
-                      </Table.Cell>
-                      <Table.Cell>
-                        <div className="flex flex-col gap-1 items-start">
-                          <Chip size="sm" color={KIND_COLORS[s.kind]} variant="tertiary">
-                            {KIND_LABELS[s.kind]}
+                            {s.beneficiaryName && !samePerson && (
+                              <span className="text-xs text-foreground-400">
+                                Beneficiario: {s.beneficiaryName}
+                              </span>
+                            )}
+                          </div>
+                        </Table.Cell>
+                        <Table.Cell>
+                          <IdentityDropdownCell entries={buildRutEntries(s)} title="RUTs" />
+                        </Table.Cell>
+                        <Table.Cell>
+                          <IdentityDropdownCell entries={buildPhoneEntries(s)} title="Teléfonos" />
+                        </Table.Cell>
+                        <Table.Cell>
+                          <div className="flex flex-col items-start gap-1">
+                            <Chip size="sm" color={KIND_COLORS[s.kind]} variant="tertiary">
+                              {KIND_LABELS[s.kind]}
+                            </Chip>
+                            {s.allergenType && (
+                              <Chip size="sm" color="accent" variant="tertiary">
+                                {ALLERGEN_LABELS[s.allergenType]}
+                              </Chip>
+                            )}
+                            {s.vaccineProduct && (
+                              <Chip size="sm" color="default" variant="tertiary">
+                                {VACCINE_LABELS[s.vaccineProduct]}
+                              </Chip>
+                            )}
+                            {s.healthInsurance && (
+                              <Chip
+                                size="sm"
+                                color={INSURANCE_COLORS[s.healthInsurance]}
+                                variant="tertiary"
+                              >
+                                {INSURANCE_LABELS[s.healthInsurance]}
+                              </Chip>
+                            )}
+                          </div>
+                        </Table.Cell>
+                        <Table.Cell>
+                          <Chip size="sm" color={STATUS_COLORS[s.status]} variant="soft">
+                            {STATUS_LABELS[s.status]}
                           </Chip>
-                          {s.allergenType && (
-                            <Chip size="sm" color="accent" variant="tertiary">
-                              {ALLERGEN_LABELS[s.allergenType]}
-                            </Chip>
-                          )}
-                          {s.vaccineProduct && (
-                            <Chip size="sm" color="default" variant="tertiary">
-                              {VACCINE_LABELS[s.vaccineProduct]}
-                            </Chip>
-                          )}
-                          {s.healthInsurance && (
-                            <Chip
-                              size="sm"
-                              color={INSURANCE_COLORS[s.healthInsurance]}
-                              variant="tertiary"
-                            >
-                              {INSURANCE_LABELS[s.healthInsurance]}
-                            </Chip>
-                          )}
-                        </div>
-                      </Table.Cell>
-                      <Table.Cell>
-                        <Chip size="sm" color={STATUS_COLORS[s.status]} variant="soft">
-                          {STATUS_LABELS[s.status]}
-                        </Chip>
-                      </Table.Cell>
-                      <Table.Cell>
-                        <span className="text-xs text-foreground-400">
-                          {s.lastEventDate ? formatEventDate(s.lastEventDate, true) : "—"}
-                        </span>
-                      </Table.Cell>
-                      <Table.Cell>
-                        {s.nextEventDate ? (
-                          <span className="text-xs font-medium text-accent">
-                            {formatEventDate(s.nextEventDate)}
+                        </Table.Cell>
+                        <Table.Cell>
+                          <span className="text-xs text-foreground-400">
+                            {s.lastEventDate ? formatEventDate(s.lastEventDate, true) : "—"}
                           </span>
-                        ) : (
-                          <span className="text-xs text-foreground-400">—</span>
-                        )}
-                      </Table.Cell>
-                      <Table.Cell className="text-right">
-                        <span className="text-xs tabular-nums text-foreground-500">
-                          {s.events.length}
-                        </span>
-                      </Table.Cell>
-                      <Table.Cell className="text-right">
-                        {s.upcomingCount > 0 ? (
-                          <Chip size="sm" color="accent" variant="soft">
-                            {s.upcomingCount}
-                          </Chip>
-                        ) : (
-                          <span className="text-xs text-foreground-400">—</span>
-                        )}
-                      </Table.Cell>
-                      <Table.Cell className="text-right">
-                        <div className="flex flex-col items-end gap-0.5">
-                          {(() => {
-                            const fs = seriesFinancialStatus(s.events);
-                            if (fs === "unknown")
+                        </Table.Cell>
+                        <Table.Cell>
+                          {s.nextEventDate ? (
+                            <span className="text-xs font-medium text-accent">
+                              {formatEventDate(s.nextEventDate)}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-foreground-400">—</span>
+                          )}
+                        </Table.Cell>
+                        <Table.Cell className="text-right">
+                          <span className="text-xs tabular-nums text-foreground-500">
+                            {s.events.length}
+                          </span>
+                        </Table.Cell>
+                        <Table.Cell className="text-right">
+                          {s.upcomingCount > 0 ? (
+                            <Chip size="sm" color="accent" variant="soft">
+                              {s.upcomingCount}
+                            </Chip>
+                          ) : (
+                            <span className="text-xs text-foreground-400">—</span>
+                          )}
+                        </Table.Cell>
+                        <Table.Cell className="text-right">
+                          <div className="flex flex-col items-end gap-0.5">
+                            {(() => {
+                              const fs = seriesFinancialStatus(s.events);
+                              if (fs === "unknown")
+                                return (
+                                  <span className="text-xs text-foreground-300 italic">
+                                    Por definir
+                                  </span>
+                                );
+                              if (fs === "free")
+                                return (
+                                  <span className="text-xs text-success italic">Sin costo</span>
+                                );
                               return (
-                                <span className="text-xs text-foreground-300 italic">
-                                  Por definir
+                                <span className="text-xs text-foreground-400">
+                                  ${s.totalPaid.toLocaleString("es-CL")} /
+                                  <span className="text-foreground-500">
+                                    {" "}
+                                    ${s.totalExpected.toLocaleString("es-CL")}
+                                  </span>
                                 </span>
                               );
-                            if (fs === "free")
-                              return <span className="text-xs text-success italic">Sin costo</span>;
-                            return (
-                              <span className="text-xs text-foreground-400">
-                                ${s.totalPaid.toLocaleString("es-CL")} /
-                                <span className="text-foreground-500">
-                                  {" "}
-                                  ${s.totalExpected.toLocaleString("es-CL")}
-                                </span>
+                            })()}
+                            {s.remainingExpected > 0 && (
+                              <span className="text-xs font-medium text-danger">
+                                −${s.remainingExpected.toLocaleString("es-CL")} pend.
                               </span>
-                            );
-                          })()}
-                          {s.remainingExpected > 0 && (
-                            <span className="text-xs text-danger font-medium">
-                              −${s.remainingExpected.toLocaleString("es-CL")} pend.
-                            </span>
-                          )}
-                        </div>
-                      </Table.Cell>
-                    </Table.Row>
-                  ))}
+                            )}
+                          </div>
+                        </Table.Cell>
+                      </Table.Row>
+                    );
+                  })}
                 </Table.Body>
               </Table.Content>
             </Table.ScrollContainer>
@@ -1096,10 +1184,10 @@ export function ClinicalSeriesView() {
       {/* ── Detail Drawer ────────────────────────────────────────────────── */}
       <Drawer>
         <Drawer.Backdrop isOpen={drawerOpen} onOpenChange={handleDrawerOpenChange} variant="blur">
-          <Drawer.Content placement="right">
-            <Drawer.Dialog>
+          <Drawer.Content placement="right" className="p-0 sm:p-3">
+            <Drawer.Dialog className="flex h-full max-h-dvh flex-col overflow-hidden rounded-l-3xl border border-border/60 bg-overlay shadow-2xl sm:rounded-3xl">
               <Drawer.CloseTrigger />
-              <Drawer.Header>
+              <Drawer.Header className="border-b border-border/60 pb-4">
                 <Drawer.Heading>
                   {isLoadingDetail ? (
                     <Skeleton className="h-5 w-32 rounded-lg" />
@@ -1116,7 +1204,7 @@ export function ClinicalSeriesView() {
                     {detail.patientRut}
                   </p>
                 )}
-                {detail?.beneficiaryRut && detail.beneficiaryRut !== detail.patientRut && (
+                {detail && detail.beneficiaryRut && !isSamePatientAndBeneficiary(detail) && (
                   <p className="font-mono text-[11px] text-foreground-300 mt-0.5">
                     Beneficiario: {detail.beneficiaryRut}
                   </p>
@@ -1140,7 +1228,7 @@ export function ClinicalSeriesView() {
                   })()}
               </Drawer.Header>
 
-              <Drawer.Body>
+              <Drawer.Body className="pt-4">
                 {isLoadingDetail ? (
                   <div className="flex justify-center pt-8">
                     <Spinner />
@@ -1274,6 +1362,8 @@ export function ClinicalSeriesView() {
                                   >
                                     {byYear[year]!.map((event) => {
                                       const isFuture = event.eventDate > today;
+                                      const description = clinicalEventDescription(event);
+                                      const stageLabel = clinicalEventStageLabel(event);
                                       return (
                                         <Accordion.Item
                                           key={event.eventId}
@@ -1282,34 +1372,34 @@ export function ClinicalSeriesView() {
                                         >
                                           <Accordion.Heading>
                                             <Accordion.Trigger
-                                              className={`w-full rounded-lg p-2.5 text-xs text-left hover:bg-default-100/50 data-[hover=true]:bg-default-100/50${isFuture ? " ring-1 ring-accent/30" : ""}`}
+                                              className={`w-full rounded-2xl px-3 py-3 text-left hover:bg-default-100/60 data-[hover=true]:bg-default-100/60${isFuture ? " ring-1 ring-accent/30" : ""}`}
                                             >
-                                              <div className="flex-1">
-                                                <div className="flex items-center justify-between gap-2">
-                                                  <span
-                                                    className={`font-medium${isFuture ? " text-accent" : ""}`}
-                                                  >
-                                                    {formatEventDate(event.eventDate)}
-                                                  </span>
-                                                  <div className="flex items-center gap-1.5">
+                                              <div className="flex min-w-0 flex-1 flex-col gap-2">
+                                                <div className="flex flex-wrap items-start justify-between gap-2">
+                                                  <div className="flex flex-wrap items-center gap-2">
+                                                    <span
+                                                      className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${isFuture ? "text-accent" : "text-foreground-500"}`}
+                                                    >
+                                                      {clinicalEventDateTimeLabel(event)}
+                                                    </span>
                                                     {isFuture && (
-                                                      <span className="text-[10px] text-accent font-medium uppercase tracking-wide">
-                                                        próximo
-                                                      </span>
-                                                    )}
-                                                    {event.seriesStageLabel && event.summary && (
-                                                      <span className="text-foreground-400">
-                                                        {event.seriesStageLabel}
-                                                      </span>
+                                                      <Chip size="sm" color="accent" variant="soft">
+                                                        Próximo
+                                                      </Chip>
                                                     )}
                                                   </div>
+                                                  {stageLabel && (
+                                                    <Chip size="sm" variant="tertiary">
+                                                      {stageLabel}
+                                                    </Chip>
+                                                  )}
                                                 </div>
-                                                <p className="mt-0.5 font-medium text-foreground">
+                                                <p className="text-sm font-semibold leading-snug text-foreground">
                                                   {clinicalEventHeadline(event)}
                                                 </p>
-                                                {clinicalEventSupportText(event) && (
-                                                  <p className="text-foreground-400 truncate mt-0.5">
-                                                    {clinicalEventSupportText(event)}
+                                                {description && (
+                                                  <p className="text-xs leading-relaxed text-foreground-500 whitespace-pre-line break-words">
+                                                    {description}
                                                   </p>
                                                 )}
                                               </div>
@@ -1317,63 +1407,72 @@ export function ClinicalSeriesView() {
                                             </Accordion.Trigger>
                                           </Accordion.Heading>
                                           <Accordion.Panel className="pb-0">
-                                            <Accordion.Body className="px-2.5 pb-2.5 pt-0 text-xs">
-                                              {event.description && (
-                                                <p className="text-foreground-500 whitespace-pre-line mb-2">
-                                                  {event.description}
-                                                </p>
-                                              )}
-                                              {(() => {
-                                                const efs = eventFinancialStatus(event);
-                                                if (efs === "unknown") return null;
-                                                if (efs === "free")
+                                            <Accordion.Body className="px-3 pb-3 pt-0 text-xs">
+                                              <div className="space-y-2 border-border/50 border-t pt-3">
+                                                {description && (
+                                                  <div className="space-y-1">
+                                                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-foreground-400">
+                                                      Descripción
+                                                    </p>
+                                                    <p className="text-foreground-500 whitespace-pre-line">
+                                                      {description}
+                                                    </p>
+                                                  </div>
+                                                )}
+                                                {(() => {
+                                                  const efs = eventFinancialStatus(event);
+                                                  if (efs === "unknown") return null;
+                                                  if (efs === "free")
+                                                    return (
+                                                      <p className="font-medium italic text-success">
+                                                        Sin costo
+                                                      </p>
+                                                    );
                                                   return (
-                                                    <p className="font-medium italic text-success">
-                                                      Sin costo
+                                                    <p className="text-foreground-400">
+                                                      $
+                                                      {(event.amountPaid ?? 0).toLocaleString(
+                                                        "es-CL"
+                                                      )}{" "}
+                                                      / $
+                                                      {event.amountExpected!.toLocaleString(
+                                                        "es-CL"
+                                                      )}
                                                     </p>
                                                   );
-                                                return (
-                                                  <p className="text-foreground-400">
-                                                    $
-                                                    {(event.amountPaid ?? 0).toLocaleString(
-                                                      "es-CL"
-                                                    )}{" "}
-                                                    / $
-                                                    {event.amountExpected!.toLocaleString("es-CL")}
+                                                })()}
+                                                {event.linkedFolios.length > 0 && (
+                                                  <div className="mt-1 flex flex-wrap gap-1">
+                                                    {event.linkedFolios.map((folio) => (
+                                                      <Chip
+                                                        key={folio}
+                                                        size="sm"
+                                                        color="success"
+                                                        variant="soft"
+                                                      >
+                                                        Boleta N°{folio}
+                                                      </Chip>
+                                                    ))}
+                                                  </div>
+                                                )}
+                                                {!isFuture && event.linkedFolios.length === 0 && (
+                                                  <p className="text-[10px] italic text-foreground-300">
+                                                    Sin boleta vinculada
                                                   </p>
-                                                );
-                                              })()}
-                                              {event.linkedFolios.length > 0 && (
-                                                <div className="flex flex-wrap gap-1 mt-1">
-                                                  {event.linkedFolios.map((folio) => (
-                                                    <Chip
-                                                      key={folio}
-                                                      size="sm"
-                                                      color="success"
-                                                      variant="soft"
-                                                    >
-                                                      Boleta N°{folio}
-                                                    </Chip>
-                                                  ))}
-                                                </div>
-                                              )}
-                                              {!isFuture && event.linkedFolios.length === 0 && (
-                                                <p className="text-[10px] text-foreground-300 italic">
-                                                  Sin boleta vinculada
-                                                </p>
-                                              )}
-                                              <Button
-                                                className="mt-2"
-                                                size="sm"
-                                                variant="ghost"
-                                                onPress={() =>
-                                                  setSelectedSeriesEvent(
-                                                    toCalendarEventDetail(event)
-                                                  )
-                                                }
-                                              >
-                                                Ver boletas y sugerencias
-                                              </Button>
+                                                )}
+                                                <Button
+                                                  className="mt-2"
+                                                  size="sm"
+                                                  variant="ghost"
+                                                  onPress={() =>
+                                                    setSelectedSeriesEvent(
+                                                      toCalendarEventDetail(event)
+                                                    )
+                                                  }
+                                                >
+                                                  Ver boletas y sugerencias
+                                                </Button>
+                                              </div>
                                             </Accordion.Body>
                                           </Accordion.Panel>
                                         </Accordion.Item>
