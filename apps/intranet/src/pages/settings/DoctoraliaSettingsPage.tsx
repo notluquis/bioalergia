@@ -69,6 +69,11 @@ export function DoctoraliaSettingsPage() {
     mutationFn: triggerDoctoraliaEmailPoll,
     onError: (err: Error) => showError(`Error al disparar poll: ${err.message}`),
     onSuccess: (result) => {
+      if (result.status === "error") {
+        showError(result.message, "Poll fallido");
+        return;
+      }
+
       showSuccess(result.message, "Poll completado");
       void queryClient.invalidateQueries({ queryKey: doctoraliaSettingsKeys.all });
     },

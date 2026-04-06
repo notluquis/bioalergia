@@ -423,6 +423,13 @@ const whatsappORPCRouterBase = {
     .output(whatsappStatusResponseSchema)
     .handler(async () => {
       const result = await runWhatsappPoll({ trigger: "manual" });
+      if (!result) {
+        return {
+          message: "El poll IMAP falló. Revisa los logs del servidor para el detalle.",
+          status: "error" as const,
+        };
+      }
+
       return {
         message: `Poll ejecutado. Revisados: ${result.checked}, enviados: ${result.sent}, fallidos: ${result.failed}, omitidos: ${result.skipped}`,
         status: "ok" as const,
