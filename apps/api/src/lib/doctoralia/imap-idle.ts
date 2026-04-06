@@ -79,6 +79,8 @@ function getImapConfig(): ImapConfig | null {
 const RECONNECT_DELAY_MS = 10_000;
 // Maximum backoff delay
 const MAX_RECONNECT_DELAY_MS = 5 * 60_000;
+const IMAP_MAX_IDLE_TIME_MS = 4 * 60_000;
+const IMAP_SOCKET_TIMEOUT_MS = 10 * 60_000;
 
 let reconnectDelay = RECONNECT_DELAY_MS;
 let stopped = false;
@@ -209,10 +211,24 @@ async function connect(config: ImapConfig): Promise<void> {
 
   const client = new ImapFlow({
     auth: { pass: config.pass, user: config.user },
+    disableAutoIdle: true,
     host: config.host,
     logger: false,
+    maxIdleTime: IMAP_MAX_IDLE_TIME_MS,
+    missingIdleCommand: "NOOP",
     port: config.port,
     secure: config.secure,
+    socketTimeout: IMAP_SOCKET_TIMEOUT_MS,
+  });
+
+  client.on("error", (err) => {
+    markStatus({
+      lastErrorAt: new Date().toISOString(),
+      lastErrorMessage: err instanceof Error ? err.message : String(err),
+      reconnectDelayMs: reconnectDelay,
+      state: "error",
+    });
+    logError("doctoralia.imap.client_error", err, { host: config.host });
   });
 
   try {

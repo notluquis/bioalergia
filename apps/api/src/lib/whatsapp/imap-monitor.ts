@@ -95,10 +95,17 @@ export async function runImapPoll(): Promise<PollResult> {
 
   const client = new ImapFlow({
     auth: { pass: config.pass, user: config.user },
+    disableAutoIdle: true,
     host: config.host,
     logger: false,
+    missingIdleCommand: "NOOP",
     port: config.port,
     secure: config.secure,
+    socketTimeout: 10 * 60_000,
+  });
+
+  client.on("error", (err) => {
+    logError("whatsapp.imap.client_error", err, { host: config.host });
   });
 
   try {
