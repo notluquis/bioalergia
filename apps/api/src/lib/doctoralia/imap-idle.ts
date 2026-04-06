@@ -61,6 +61,14 @@ interface DoctoraliaImapListenerStatus {
   user: null | string;
 }
 
+export interface DoctoraliaImapIngestResult {
+  alreadyProcessed: number;
+  checked: number;
+  failed: number;
+  saved: number;
+  skipped: number;
+}
+
 function getImapConfig(): ImapConfig | null {
   const user = process.env.DOCTORALIA_IMAP_USER;
   const pass = process.env.DOCTORALIA_IMAP_PASS;
@@ -74,7 +82,7 @@ function getImapConfig(): ImapConfig | null {
     pass,
     port: parseInt(process.env.DOCTORALIA_IMAP_PORT ?? "993", 10),
     secure: process.env.DOCTORALIA_IMAP_SECURE !== "0",
-    senderFilter: process.env.DOCTORALIA_EMAIL_SENDER_FILTER ?? "doctoralia",
+    senderFilter: process.env.DOCTORALIA_EMAIL_SENDER_FILTER ?? "doctoralia.com",
     user,
   };
 }
@@ -112,9 +120,42 @@ export function getDoctoraliaImapListenerStatus(): DoctoraliaImapListenerStatus 
   return { ...listenerStatus };
 }
 
-async function processUnseen(client: ImapFlow, config: ImapConfig): Promise<void> {
+function createImapClient(config: ImapConfig): ImapFlow {
+  const client = new ImapFlow({
+    auth: { pass: config.pass, user: config.user },
+    disableAutoIdle: true,
+    host: config.host,
+    logger: false,
+    maxIdleTime: IMAP_MAX_IDLE_TIME_MS,
+    missingIdleCommand: "NOOP",
+    port: config.port,
+    secure: config.secure,
+    socketTimeout: IMAP_SOCKET_TIMEOUT_MS,
+  });
+
+  client.on("error", (err) => {
+    markStatus({
+      lastErrorAt: new Date().toISOString(),
+      lastErrorMessage: err instanceof Error ? err.message : String(err),
+      reconnectDelayMs: reconnectDelay,
+      state: "error",
+    });
+    logError("doctoralia.imap.client_error", err, { host: config.host });
+  });
+
+  return client;
+}
+
+async function ingestMailbox(client: ImapFlow, config: ImapConfig): Promise<DoctoraliaImapIngestResult> {
   const uids = await client.search({ from: config.senderFilter });
-  if (!uids.length) return;
+  const result: DoctoraliaImapIngestResult = {
+    alreadyProcessed: 0,
+    checked: uids.length,
+    failed: 0,
+    saved: 0,
+    skipped: 0,
+  };
+  if (!uids.length) return result;
 
   logEvent("doctoralia.imap.found", { count: uids.length });
 
@@ -135,9 +176,11 @@ async function processUnseen(client: ImapFlow, config: ImapConfig): Promise<void
         .executeTakeFirst();
 
       if (existing) {
+        result.alreadyProcessed++;
         continue;
       }
     } catch (err) {
+      result.failed++;
       logError("doctoralia.imap.dedup_error", err, { messageId });
       continue;
     }
@@ -155,6 +198,7 @@ async function processUnseen(client: ImapFlow, config: ImapConfig): Promise<void
       : rawBody;
 
     if (!isLikelyDoctoraliaEmail(emailText)) {
+      result.skipped++;
       logWarn("doctoralia.imap.skip_non_doctoralia", {
         messageId,
         subject: msg.envelope?.subject,
@@ -165,6 +209,7 @@ async function processUnseen(client: ImapFlow, config: ImapConfig): Promise<void
     const booking = emailText ? parseDoctoraliaEmail(emailText) : null;
 
     if (!booking) {
+      result.skipped++;
       logWarn("doctoralia.imap.no_booking", {
         messageId,
         subject: msg.envelope?.subject,
@@ -194,6 +239,7 @@ async function processUnseen(client: ImapFlow, config: ImapConfig): Promise<void
         })
         .execute();
 
+      result.saved++;
       markStatus({ lastProcessedAt: now });
 
       logEvent("doctoralia.imap.saved", {
@@ -203,10 +249,13 @@ async function processUnseen(client: ImapFlow, config: ImapConfig): Promise<void
         patientName: booking.patientName,
       });
     } catch (dbErr) {
+      result.failed++;
       logError("doctoralia.imap.db_error", dbErr, { messageId });
     }
 
   }
+
+  return result;
 }
 
 async function connect(config: ImapConfig): Promise<void> {
@@ -221,27 +270,7 @@ async function connect(config: ImapConfig): Promise<void> {
     user: config.user,
   });
 
-  const client = new ImapFlow({
-    auth: { pass: config.pass, user: config.user },
-    disableAutoIdle: true,
-    host: config.host,
-    logger: false,
-    maxIdleTime: IMAP_MAX_IDLE_TIME_MS,
-    missingIdleCommand: "NOOP",
-    port: config.port,
-    secure: config.secure,
-    socketTimeout: IMAP_SOCKET_TIMEOUT_MS,
-  });
-
-  client.on("error", (err) => {
-    markStatus({
-      lastErrorAt: new Date().toISOString(),
-      lastErrorMessage: err instanceof Error ? err.message : String(err),
-      reconnectDelayMs: reconnectDelay,
-      state: "error",
-    });
-    logError("doctoralia.imap.client_error", err, { host: config.host });
-  });
+  const client = createImapClient(config);
 
   try {
     await client.connect();
@@ -261,7 +290,7 @@ async function connect(config: ImapConfig): Promise<void> {
       // re-enter IDLE immediately.
       while (!stopped) {
         await client.idle();
-        await processUnseen(client, config);
+        await ingestMailbox(client, config);
       }
     } finally {
       lock.release();
@@ -314,4 +343,25 @@ export function stopDoctoraliaImapListener(): void {
     reconnectDelayMs: null,
     state: "stopped",
   });
+}
+
+export async function runDoctoraliaImapIngestOnce(): Promise<DoctoraliaImapIngestResult> {
+  const config = getImapConfig();
+  if (!config) {
+    throw new Error("Missing Doctoralia IMAP config.");
+  }
+
+  const client = createImapClient(config);
+
+  try {
+    await client.connect();
+    const lock = await client.getMailboxLock(config.mailbox);
+    try {
+      return await ingestMailbox(client, config);
+    } finally {
+      lock.release();
+    }
+  } finally {
+    await client.logout().catch(() => undefined);
+  }
 }

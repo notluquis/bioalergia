@@ -10,31 +10,27 @@ import {
   Tabs,
 } from "@heroui/react";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { PaginationState } from "@tanstack/react-table";
+import type { ColumnDef, PaginationState } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import {
   Activity,
   AlertCircle,
-  CalendarClock,
   Mail,
   MessageCircleReply,
   RefreshCw,
   Send,
   Workflow,
 } from "lucide-react";
+import type React from "react";
 import { useMemo, useState } from "react";
 
 import { DataTable } from "@/components/data-table/DataTable";
 import { useToast } from "@/context/ToastContext";
-import { triggerDoctoraliaEmailPoll } from "@/features/doctoralia/settings-api";
+import { triggerDoctoraliaEmailIngest } from "@/features/doctoralia/settings-api";
 import { doctoraliaSettingsKeys } from "@/features/doctoralia/settings-queries";
 import { PAGE_CONTAINER } from "@/lib/styles";
-import {
-  ChecklistRow,
-  FlowStep,
-  type WaNotification,
-  whatsappNotificationColumns,
-} from "./messaging-settings-shared";
+import { ChecklistRow, FlowStep } from "./messaging-settings-shared";
+import type { DoctoraliaEmailNotification } from "@/features/doctoralia/types";
 
 export function DoctoraliaSettingsPage() {
   const { error: showError, success: showSuccess } = useToast();
@@ -57,24 +53,19 @@ export function DoctoraliaSettingsPage() {
   const { data: notificationsData, isPending: notificationsPending } = useQuery({
     ...doctoraliaSettingsKeys.notifications({ limit, offset }),
     placeholderData: keepPreviousData,
-    refetchInterval: (query) => {
-      const data = query.state.data;
-      if (!data) return false;
-      const hasPending = data.notifications.some((n) => n.status === "PENDING");
-      return hasPending ? 15_000 : false;
-    },
+    refetchInterval: 30_000,
   });
 
-  const pollMutation = useMutation({
-    mutationFn: triggerDoctoraliaEmailPoll,
-    onError: (err: Error) => showError(`Error al disparar poll: ${err.message}`),
+  const ingestMutation = useMutation({
+    mutationFn: triggerDoctoraliaEmailIngest,
+    onError: (err: Error) => showError(`Error al disparar la ingesta: ${err.message}`),
     onSuccess: (result) => {
       if (result.status === "error") {
-        showError(result.message, "Poll fallido");
+        showError(result.message, "Ingesta fallida");
         return;
       }
 
-      showSuccess(result.message, "Poll completado");
+      showSuccess(result.message, "Ingesta completada");
       void queryClient.invalidateQueries({ queryKey: doctoraliaSettingsKeys.all });
     },
   });
@@ -82,23 +73,13 @@ export function DoctoraliaSettingsPage() {
   const notifications = notificationsData?.notifications ?? [];
   const pageCount = Math.ceil((notificationsData?.total ?? 0) / limit);
 
-  const deliveryRate = useMemo(() => {
-    if (!stats?.sent) return 0;
-    return Math.round((stats.delivered / stats.sent) * 100);
-  }, [stats]);
-
-  const readRate = useMemo(() => {
-    if (!stats?.delivered) return 0;
-    return Math.round((stats.read / stats.delivered) * 100);
-  }, [stats]);
-
   const readiness = useMemo(() => {
     if (!overview) return 0;
     const checks = [
       overview.imapHostConfigured,
       overview.imapUserConfigured,
       overview.imapPassConfigured,
-      overview.automaticNotificationsEnabled,
+      overview.listener.state === "connected",
     ];
     return Math.round((checks.filter(Boolean).length / checks.length) * 100);
   }, [overview]);
@@ -109,12 +90,12 @@ export function DoctoraliaSettingsPage() {
     if (!overview.imapHostConfigured) items.push("host IMAP");
     if (!overview.imapUserConfigured) items.push("usuario IMAP");
     if (!overview.imapPassConfigured) items.push("password IMAP");
-    if (!overview.automaticNotificationsEnabled) items.push("poll automático");
+    if (overview.listener.state !== "connected") items.push("listener IMAP");
     return items;
   }, [overview]);
 
   const listenerSummary = useMemo(() => {
-    const listener = overview?.doctoraliaImapListener;
+    const listener = overview?.listener;
     if (!listener) return null;
 
     const stateMeta: Record<
@@ -167,22 +148,16 @@ export function DoctoraliaSettingsPage() {
                 tone={listenerSummary?.tone ?? "warning"}
               />
               <StatusPill
-                label={
-                  overview?.automaticNotificationsEnabled ? "Poll activo" : "Poll deshabilitado"
-                }
-                tone={overview?.automaticNotificationsEnabled ? "success" : "warning"}
-              />
-              <StatusPill
-                label={overview?.connected ? "WhatsApp disponible" : "WhatsApp pendiente"}
-                tone={overview?.connected ? "accent" : "warning"}
+                label={stats ? `${stats.total} eventos` : "Sin eventos"}
+                tone={stats && stats.total > 0 ? "accent" : "default"}
               />
             </div>
 
             <div>
               <h1 className="font-semibold text-2xl">Doctoralia</h1>
               <Description className="max-w-3xl text-default-600 text-sm">
-                Flujo de notificaciones por correo: lectura IMAP, parseo de reservas, poll
-                automático y despacho al canal de WhatsApp.
+                Ingesta de correos Doctoralia: listener IMAP en escucha, validación del mensaje,
+                parseo de reservas y persistencia en base de datos.
               </Description>
             </div>
           </div>
@@ -195,18 +170,23 @@ export function DoctoraliaSettingsPage() {
               value={listenerSummary?.label ?? "Pend."}
             />
             <MetricPill
-              subtitle="scheduler"
-              title="Poll"
-              tone={overview?.automaticNotificationsEnabled ? "success" : "warning"}
-              value={overview?.automaticNotificationsEnabled ? "ON" : "OFF"}
+              subtitle="registros"
+              title="Eventos"
+              tone={stats && stats.total > 0 ? "accent" : "default"}
+              value={stats?.total ?? 0}
             />
             <MetricPill
-              subtitle="entrega"
-              title="Delivery"
-              tone="accent"
-              value={`${deliveryRate}%`}
+              subtitle="paciente"
+              title="Con teléfono"
+              tone={stats && stats.withPhone > 0 ? "success" : "default"}
+              value={stats?.withPhone ?? 0}
             />
-            <MetricPill subtitle="lectura" title="Read" tone="primary" value={`${readRate}%`} />
+            <MetricPill
+              subtitle="primera vez"
+              title="Primeras citas"
+              tone="primary"
+              value={stats?.firstAppointments ?? 0}
+            />
           </div>
         </div>
       </Surface>
@@ -235,7 +215,8 @@ export function DoctoraliaSettingsPage() {
               <Card.Header className="flex flex-col items-start gap-1">
                 <h2 className="font-semibold text-base">Estado de la ingesta</h2>
                 <Description className="text-default-500 text-xs">
-                  Esto cubre configuración, listener IMAP y dependencia del canal de salida.
+                  Esto cubre configuración IMAP, estado del listener y registro de eventos de
+                  correo.
                 </Description>
               </Card.Header>
               <Card.Content className="space-y-4">
@@ -276,15 +257,9 @@ export function DoctoraliaSettingsPage() {
                       title="Password IMAP"
                     />
                     <ChecklistRow
-                      description="Scheduler activo para revisar correos sin intervención manual."
-                      icon={CalendarClock}
-                      ready={overview.automaticNotificationsEnabled}
-                      title="Poll automático"
-                    />
-                    <ChecklistRow
                       description={listenerSummary?.description ?? "Estado real del listener IMAP."}
                       icon={Activity}
-                      ready={overview.doctoraliaImapListener.state === "connected"}
+                      ready={overview.listener.state === "connected"}
                       title="Listener IMAP"
                     />
                   </>
@@ -298,7 +273,7 @@ export function DoctoraliaSettingsPage() {
               <Card.Header className="flex flex-col items-start gap-1">
                 <h2 className="font-semibold text-base">Parámetros del flujo</h2>
                 <Description className="text-default-500 text-xs">
-                  Valores activos que afectan cómo entra el correo y cuándo se dispara el envío.
+                  Valores activos que afectan cómo entra el correo y cómo se registra la ingesta.
                 </Description>
               </Card.Header>
               <Card.Content className="space-y-3">
@@ -320,9 +295,9 @@ export function DoctoraliaSettingsPage() {
 
                 <Surface className="rounded-2xl border border-default-200 px-4 py-3">
                   <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
-                    Cron
+                    Usuario conectado
                   </Description>
-                  <p className="mt-1 font-medium font-mono text-sm">{overview?.pollCron ?? "—"}</p>
+                  <p className="mt-1 font-medium text-sm">{overview?.listener.user ?? "—"}</p>
                 </Surface>
 
                 <Surface className="rounded-2xl border border-default-200 px-4 py-3">
@@ -340,7 +315,7 @@ export function DoctoraliaSettingsPage() {
                     Última conexión
                   </Description>
                   <p className="mt-1 font-medium text-sm">
-                    {formatStatusDate(overview?.doctoraliaImapListener.lastConnectedAt)}
+                    {formatStatusDate(overview?.listener.lastConnectedAt)}
                   </p>
                 </Surface>
 
@@ -349,20 +324,20 @@ export function DoctoraliaSettingsPage() {
                     Último correo procesado
                   </Description>
                   <p className="mt-1 font-medium text-sm">
-                    {formatStatusDate(overview?.doctoraliaImapListener.lastProcessedAt)}
+                    {formatStatusDate(overview?.listener.lastProcessedAt)}
                   </p>
                 </Surface>
 
                 <Surface className="rounded-2xl border border-default-200 px-4 py-3">
                   <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
-                    Dependencia de salida
+                    Siguiente etapa
                   </Description>
                   <p className="mt-1 font-medium text-sm">
-                    {overview?.connected ? "WhatsApp disponible" : "WhatsApp no listo"}
+                    WhatsApp y automatizaciones posteriores
                   </p>
                   <Description className="text-default-500 text-xs">
-                    Doctoralia puede leer y parsear correos, pero el despacho final depende del
-                    canal de WhatsApp.
+                    Esta pantalla valida primero que el correo entre y se guarde en la base de
+                    datos.
                   </Description>
                 </Surface>
               </Card.Content>
@@ -377,44 +352,45 @@ export function DoctoraliaSettingsPage() {
                 <div>
                   <h2 className="font-semibold text-base">Flujo Doctoralia → WhatsApp</h2>
                   <Description className="text-default-500 text-xs">
-                    Este pipeline es distinto del canal; aquí se decide cuándo disparar el envío.
+                    El flujo correcto es correo Doctoralia → parseo → base de datos →
+                    automatizaciones posteriores.
                   </Description>
                 </div>
                 <Button
-                  isDisabled={pollMutation.isPending}
-                  isPending={pollMutation.isPending}
-                  onPress={() => pollMutation.mutate()}
+                  isDisabled={ingestMutation.isPending}
+                  isPending={ingestMutation.isPending}
+                  onPress={() => ingestMutation.mutate()}
                   size="sm"
                   variant="secondary"
                 >
                   <RefreshCw className="h-4 w-4" />
-                  Revisar emails
+                  Ejecutar ingesta
                 </Button>
               </Card.Header>
               <Card.Content className="space-y-3">
                 <FlowStep
-                  body="El scheduler revisa correos no leídos del buzón configurado usando IMAP."
+                  body="El listener IMAP mantiene el buzón abierto y reacciona cuando llega un correo nuevo."
                   icon={Mail}
                   step="01"
                   title="Lectura del buzón"
                 />
                 <FlowStep
-                  body="Se extraen nombre, teléfono, fecha y servicio desde el correo de Doctoralia."
+                  body="Se valida que el correo sea realmente de Doctoralia y se extraen nombre, teléfono, fecha y servicio."
                   icon={Workflow}
                   step="02"
                   title="Parseo de la reserva"
                 />
                 <FlowStep
-                  body="Si el paciente no tiene ventana activa de 24h, el módulo usa template; si la tiene, usa texto libre."
+                  body="El evento se guarda en la tabla de notificaciones de correo de Doctoralia como fuente de verdad."
                   icon={MessageCircleReply}
                   step="03"
-                  title="Decisión del tipo de mensaje"
+                  title="Persistencia en base de datos"
                 />
                 <FlowStep
-                  body="Se registra el resultado para trazabilidad y el webhook posterior actualiza entregado/leído/fallido."
+                  body="Después, otros módulos como WhatsApp pueden consumir esos eventos y disparar mensajes automáticos."
                   icon={Send}
                   step="04"
-                  title="Registro y seguimiento"
+                  title="Automatizaciones posteriores"
                 />
               </Card.Content>
             </Card>
@@ -433,17 +409,17 @@ export function DoctoraliaSettingsPage() {
                   </Alert>
                 ) : null}
 
-                {!overviewPending && overview?.doctoraliaImapListener.lastErrorMessage ? (
+                {!overviewPending && overview?.listener.lastErrorMessage ? (
                   <Alert status="warning">
                     <div className="flex items-start gap-2">
                       <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                       <div>
                         <p className="font-medium text-sm">Último error IMAP</p>
                         <Description className="text-xs">
-                          {overview.doctoraliaImapListener.lastErrorMessage}
+                          {overview.listener.lastErrorMessage}
                         </Description>
                         <Description className="text-default-500 text-xs">
-                          {formatStatusDate(overview.doctoraliaImapListener.lastErrorAt)}
+                          {formatStatusDate(overview.listener.lastErrorAt)}
                         </Description>
                       </div>
                     </div>
@@ -455,7 +431,7 @@ export function DoctoraliaSettingsPage() {
                     Responsabilidad de Doctoralia
                   </Description>
                   <p className="mt-1 font-medium text-sm">
-                    Detectar y transformar el correo en un evento usable
+                    Detectar, validar y guardar el correo en la base de datos
                   </p>
                 </Surface>
 
@@ -464,7 +440,7 @@ export function DoctoraliaSettingsPage() {
                     Responsabilidad de WhatsApp
                   </Description>
                   <p className="mt-1 font-medium text-sm">
-                    Enviar, recibir webhook y mantener la ventana de atención
+                    Consumir esos eventos si existe una automatización de salida configurada
                   </p>
                 </Surface>
 
@@ -473,10 +449,10 @@ export function DoctoraliaSettingsPage() {
                     Métrica operativa
                   </Description>
                   <p className="mt-1 font-medium text-sm">
-                    {stats?.total ?? 0} notificaciones registradas
+                    {stats?.total ?? 0} eventos Doctoralia guardados
                   </p>
                   <Description className="text-default-500 text-xs">
-                    Esta tabla refleja el flujo disparado desde correos de Doctoralia.
+                    Esta vista ya no depende del despacho de WhatsApp para mostrar actividad.
                   </Description>
                 </Surface>
               </Card.Content>
@@ -491,7 +467,7 @@ export function DoctoraliaSettingsPage() {
                 <Card.Header className="flex flex-col items-start gap-1">
                   <h2 className="font-semibold text-base">Actividad del flujo</h2>
                   <Description className="text-default-500 text-xs">
-                    Entrega y lectura de los mensajes disparados desde notificaciones por correo.
+                    Eventos de correo Doctoralia ya parseados y guardados en la base de datos.
                   </Description>
                 </Card.Header>
                 <Card.Content className="space-y-4">
@@ -502,64 +478,34 @@ export function DoctoraliaSettingsPage() {
                       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
                         <MetricPill
                           title="Total"
-                          subtitle="registrados"
+                          subtitle="eventos"
                           tone="primary"
                           value={stats.total}
                         />
                         <MetricPill
-                          title="Enviados"
-                          subtitle="aceptados"
+                          title="Reservas"
+                          subtitle="bookings"
                           tone="success"
-                          value={stats.sent}
+                          value={stats.bookings}
                         />
                         <MetricPill
-                          title="Entregados"
-                          subtitle="delivery"
+                          title="Modificaciones"
+                          subtitle="changes"
                           tone="accent"
-                          value={stats.delivered}
+                          value={stats.modifications}
                         />
                         <MetricPill
-                          title="Leídos"
-                          subtitle="read"
-                          tone="success"
-                          value={stats.read}
-                        />
-                        <MetricPill
-                          title="Fallidos"
-                          subtitle="errores"
+                          title="Cancelaciones"
+                          subtitle="cancellations"
                           tone="warning"
-                          value={stats.failed}
+                          value={stats.cancellations}
                         />
-                      </div>
-
-                      <div className="grid gap-4 md:grid-cols-2">
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <Description className="font-medium text-default-600 text-xs uppercase tracking-wide">
-                              Entrega sobre enviados
-                            </Description>
-                            <span className="font-semibold text-sm">{deliveryRate}%</span>
-                          </div>
-                          <ProgressBar aria-label="Entrega sobre enviados" value={deliveryRate}>
-                            <ProgressBar.Track className="h-2 rounded-full bg-default-100">
-                              <ProgressBar.Fill className="bg-success" />
-                            </ProgressBar.Track>
-                          </ProgressBar>
-                        </div>
-
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <Description className="font-medium text-default-600 text-xs uppercase tracking-wide">
-                              Lectura sobre entregados
-                            </Description>
-                            <span className="font-semibold text-sm">{readRate}%</span>
-                          </div>
-                          <ProgressBar aria-label="Lectura sobre entregados" value={readRate}>
-                            <ProgressBar.Track className="h-2 rounded-full bg-default-100">
-                              <ProgressBar.Fill className="bg-accent" />
-                            </ProgressBar.Track>
-                          </ProgressBar>
-                        </div>
+                        <MetricPill
+                          title="Con teléfono"
+                          subtitle="contactables"
+                          tone="success"
+                          value={stats.withPhone}
+                        />
                       </div>
                     </>
                   ) : (
@@ -572,23 +518,23 @@ export function DoctoraliaSettingsPage() {
                 <Card.Header className="flex flex-col items-start gap-1">
                   <h2 className="font-semibold text-base">Intervención manual</h2>
                   <Description className="text-default-500 text-xs">
-                    Fuerza una revisión del buzón sin esperar al próximo cron.
+                    Ejecuta una lectura puntual del buzón además del listener IMAP continuo.
                   </Description>
                 </Card.Header>
                 <Card.Content className="space-y-3">
                   <Button
-                    isDisabled={pollMutation.isPending}
-                    isPending={pollMutation.isPending}
-                    onPress={() => pollMutation.mutate()}
+                    isDisabled={ingestMutation.isPending}
+                    isPending={ingestMutation.isPending}
+                    onPress={() => ingestMutation.mutate()}
                     variant="primary"
                   >
                     <RefreshCw className="h-4 w-4" />
-                    Ejecutar poll ahora
+                    Ejecutar ingesta ahora
                   </Button>
 
                   <Description className="text-default-500 text-xs">
-                    Útil para validar el parseo o forzar el pipeline después de una prueba de
-                    correo.
+                    Relee el buzón, valida correos Doctoralia y guarda eventos en la base de datos,
+                    sin depender de WhatsApp.
                   </Description>
                 </Card.Content>
               </Card>
@@ -598,8 +544,8 @@ export function DoctoraliaSettingsPage() {
               <Skeleton className="h-64 w-full rounded-lg" />
             ) : (
               <DataTable
-                columns={whatsappNotificationColumns}
-                data={notifications as WaNotification[]}
+                columns={doctoraliaNotificationColumns}
+                data={notifications as DoctoraliaEmailNotification[]}
                 enableExport={false}
                 enableGlobalFilter={false}
                 onPaginationChange={setPagination}
@@ -660,3 +606,72 @@ function StatusPill({
 function formatStatusDate(value: Date | null | undefined) {
   return value ? dayjs(value).format("DD/MM/YYYY HH:mm") : "Sin registro";
 }
+
+const EVENT_TYPE_LABELS: Record<DoctoraliaEmailNotification["eventType"], string> = {
+  BOOKING: "Reserva",
+  CANCELLATION: "Cancelación",
+  MODIFICATION: "Modificación",
+};
+
+const EVENT_TYPE_COLORS: Record<
+  DoctoraliaEmailNotification["eventType"],
+  React.ComponentProps<typeof Chip>["color"]
+> = {
+  BOOKING: "success",
+  CANCELLATION: "warning",
+  MODIFICATION: "accent",
+};
+
+const doctoraliaNotificationColumns: ColumnDef<DoctoraliaEmailNotification>[] = [
+  {
+    accessorKey: "patientName",
+    cell: ({ row }) => <span className="font-medium">{row.original.patientName}</span>,
+    header: "Paciente",
+  },
+  {
+    accessorKey: "patientPhone",
+    cell: ({ row }) => row.original.patientPhone ?? "—",
+    header: "Teléfono",
+  },
+  {
+    accessorKey: "appointmentDate",
+    cell: ({ row }) =>
+      row.original.appointmentDate
+        ? dayjs(row.original.appointmentDate).format("DD/MM/YYYY HH:mm")
+        : "—",
+    header: "Fecha cita",
+  },
+  {
+    accessorKey: "appointmentService",
+    cell: ({ row }) => (
+      <span className="max-w-56 truncate text-sm">{row.original.appointmentService ?? "—"}</span>
+    ),
+    header: "Servicio",
+  },
+  {
+    accessorKey: "eventType",
+    cell: ({ row }) => (
+      <Chip color={EVENT_TYPE_COLORS[row.original.eventType]} size="sm" variant="soft">
+        {EVENT_TYPE_LABELS[row.original.eventType]}
+      </Chip>
+    ),
+    header: "Evento",
+  },
+  {
+    accessorKey: "appointmentDoctor",
+    cell: ({ row }) => row.original.appointmentDoctor ?? "—",
+    header: "Profesional",
+  },
+  {
+    accessorKey: "isFirstAppointment",
+    cell: ({ row }) =>
+      row.original.isFirstAppointment ? (
+        <Chip color="accent" size="sm" variant="soft">
+          Primera
+        </Chip>
+      ) : (
+        "—"
+      ),
+    header: "Primera cita",
+  },
+];

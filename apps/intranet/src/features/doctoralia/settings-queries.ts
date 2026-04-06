@@ -1,32 +1,28 @@
 import { queryOptions } from "@tanstack/react-query";
 import {
-  fetchDoctoraliaDispatchNotifications,
-  fetchDoctoraliaDispatchStats,
-  fetchDoctoraliaPipelineOverview,
+  fetchDoctoraliaEmailNotifications,
+  fetchDoctoraliaEmailOverview,
+  fetchDoctoraliaEmailStats,
 } from "./settings-api";
 
 export const doctoraliaSettingsKeys = {
   all: ["doctoralia", "settings"] as const,
 
-  notifications: (params: {
-    limit?: number;
-    offset?: number;
-    status?: "PENDING" | "SENT" | "FAILED" | "DELIVERED" | "READ" | "PLAYED";
-  }) =>
+  notifications: (params: { limit?: number; offset?: number }) =>
     queryOptions({
-      queryFn: () => fetchDoctoraliaDispatchNotifications(params),
+      queryFn: () => fetchDoctoraliaEmailNotifications(params),
       queryKey: ["doctoralia", "settings", "notifications", params],
     }),
 
   stats: () =>
     queryOptions({
-      queryFn: () => fetchDoctoraliaDispatchStats(),
+      queryFn: () => fetchDoctoraliaEmailStats(),
       queryKey: ["doctoralia", "settings", "stats"],
     }),
 
   overview: () =>
     queryOptions({
-      queryFn: () => fetchDoctoraliaPipelineOverview(),
+      queryFn: () => fetchDoctoraliaEmailOverview(),
       queryKey: ["doctoralia", "settings", "overview"],
     }),
 };

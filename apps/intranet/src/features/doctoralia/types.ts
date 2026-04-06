@@ -233,3 +233,53 @@ export interface DoctoraliaEmailPatient {
   patientPhone: string | null;
   totalBookings: number;
 }
+
+export interface DoctoraliaEmailListener {
+  enabled: boolean;
+  host: string | null;
+  lastConnectedAt: Date | null;
+  lastErrorAt: Date | null;
+  lastErrorMessage: string | null;
+  lastProcessedAt: Date | null;
+  lastStartedAt: Date | null;
+  mailbox: string | null;
+  reconnectDelayMs: number | null;
+  state: "stopped" | "missing_config" | "connecting" | "connected" | "error";
+  user: string | null;
+}
+
+export interface DoctoraliaEmailOverview {
+  imapHostConfigured: boolean;
+  imapMailbox: string;
+  imapPassConfigured: boolean;
+  imapReady: boolean;
+  imapUserConfigured: boolean;
+  listener: DoctoraliaEmailListener;
+  senderFilter: string;
+}
+
+export interface DoctoraliaEmailStats {
+  bookings: number;
+  cancellations: number;
+  firstAppointments: number;
+  modifications: number;
+  total: number;
+  withPhone: number;
+}
+
+export interface DoctoraliaEmailListResponse {
+  notifications: DoctoraliaEmailNotification[];
+  total: number;
+}
+
+export interface DoctoraliaEmailIngestResponse {
+  data: {
+    alreadyProcessed: number;
+    checked: number;
+    failed: number;
+    saved: number;
+    skipped: number;
+  };
+  message: string;
+  status: "ok" | "error";
+}

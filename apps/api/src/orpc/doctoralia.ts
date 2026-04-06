@@ -13,6 +13,10 @@ import {
   getSlots,
 } from "../lib/doctoralia/doctoralia-client";
 import { isDoctoraliaConfigured } from "../lib/doctoralia/doctoralia-core";
+import {
+  getDoctoraliaImapListenerStatus,
+  runDoctoraliaImapIngestOnce,
+} from "../lib/doctoralia/imap-idle";
 import { logError, logEvent } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
 import {
@@ -84,12 +88,74 @@ const emailNotificationsCalendarQuerySchema = z.object({
   to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
 });
 
+const emailNotificationsListQuerySchema = z.object({
+  limit: z.number().int().min(1).max(200).optional(),
+  offset: z.number().int().min(0).optional(),
+});
+
 const emailNotificationsCalendarResponseSchema = z.object({
   data: z.object({
     count: z.number(),
     notifications: z.array(z.unknown()),
   }),
   status: z.literal("ok"),
+});
+
+const emailNotificationsOverviewResponseSchema = z.object({
+  data: z.object({
+    imapHostConfigured: z.boolean(),
+    imapMailbox: z.string(),
+    imapPassConfigured: z.boolean(),
+    imapReady: z.boolean(),
+    imapUserConfigured: z.boolean(),
+    listener: z.object({
+      enabled: z.boolean(),
+      host: z.string().nullable(),
+      lastConnectedAt: z.string().nullable(),
+      lastErrorAt: z.string().nullable(),
+      lastErrorMessage: z.string().nullable(),
+      lastProcessedAt: z.string().nullable(),
+      lastStartedAt: z.string().nullable(),
+      mailbox: z.string().nullable(),
+      reconnectDelayMs: z.number().nullable(),
+      state: z.enum(["stopped", "missing_config", "connecting", "connected", "error"]),
+      user: z.string().nullable(),
+    }),
+    senderFilter: z.string(),
+  }),
+  status: z.literal("ok"),
+});
+
+const emailNotificationsListResponseSchema = z.object({
+  data: z.object({
+    notifications: z.array(z.unknown()),
+    total: z.number(),
+  }),
+  status: z.literal("ok"),
+});
+
+const emailNotificationsStatsResponseSchema = z.object({
+  data: z.object({
+    bookings: z.number(),
+    cancellations: z.number(),
+    firstAppointments: z.number(),
+    modifications: z.number(),
+    total: z.number(),
+    withPhone: z.number(),
+  }),
+  status: z.literal("ok"),
+});
+
+const emailNotificationsIngestResponseSchema = z.object({
+  data: z.object({
+    alreadyProcessed: z.number(),
+    checked: z.number(),
+    failed: z.number(),
+    saved: z.number(),
+    skipped: z.number(),
+  }),
+  message: z.string(),
+  status: z.enum(["ok", "error"]),
 });
 
 const emailNotificationsPatientsQuerySchema = z.object({
@@ -518,6 +584,83 @@ const doctoraliaORPCRouterBase = {
       };
     }),
 
+  emailNotificationsOverview: authed
+    .route({ method: "GET", path: "/email-notifications/overview" })
+    .output(emailNotificationsOverviewResponseSchema)
+    .handler(async () => {
+      const imapHostConfigured = Boolean(process.env.DOCTORALIA_IMAP_HOST);
+      const imapUserConfigured = Boolean(process.env.DOCTORALIA_IMAP_USER);
+      const imapPassConfigured = Boolean(process.env.DOCTORALIA_IMAP_PASS);
+      const listener = {
+        ...getDoctoraliaImapListenerStatus(),
+        enabled: process.env.ENABLE_DOCTORALIA_IMAP === "true",
+      };
+
+      return {
+        data: {
+          imapHostConfigured,
+          imapMailbox: process.env.DOCTORALIA_IMAP_MAILBOX ?? "INBOX",
+          imapPassConfigured,
+          imapReady: imapHostConfigured && imapUserConfigured && imapPassConfigured,
+          imapUserConfigured,
+          listener,
+          senderFilter: process.env.DOCTORALIA_EMAIL_SENDER_FILTER ?? "doctoralia.com",
+        },
+        status: "ok",
+      };
+    }),
+
+  emailNotificationsList: authed
+    .route({ method: "GET", path: "/email-notifications" })
+    .input(emailNotificationsListQuerySchema)
+    .output(emailNotificationsListResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof emailNotificationsListQuerySchema> }) => {
+      const limit = input.limit ?? 50;
+      const offset = input.offset ?? 0;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const baseQuery = (db.$qb as any).selectFrom("DoctoraliaEmailNotification");
+      const [notifications, countRow] = await Promise.all([
+        baseQuery.selectAll().orderBy("createdAt", "desc").limit(limit).offset(offset).execute(),
+        baseQuery.select((eb: any) => eb.fn.count("id").as("count")).executeTakeFirst(),
+      ]);
+
+      return {
+        data: {
+          notifications,
+          total: parseInt(countRow?.count ?? "0", 10),
+        },
+        status: "ok",
+      };
+    }),
+
+  emailNotificationsStats: authed
+    .route({ method: "GET", path: "/email-notifications/stats" })
+    .output(emailNotificationsStatsResponseSchema)
+    .handler(async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const rows = await (db.$qb as any)
+        .selectFrom("DoctoraliaEmailNotification")
+        .select(["eventType", "isFirstAppointment", "patientPhone"])
+        .execute() as Array<{
+        eventType: "BOOKING" | "CANCELLATION" | "MODIFICATION";
+        isFirstAppointment: boolean;
+        patientPhone: string | null;
+      }>;
+
+      return {
+        data: {
+          bookings: rows.filter((row) => row.eventType === "BOOKING").length,
+          cancellations: rows.filter((row) => row.eventType === "CANCELLATION").length,
+          firstAppointments: rows.filter((row) => row.isFirstAppointment).length,
+          modifications: rows.filter((row) => row.eventType === "MODIFICATION").length,
+          total: rows.length,
+          withPhone: rows.filter((row) => Boolean(row.patientPhone)).length,
+        },
+        status: "ok",
+      };
+    }),
+
   emailNotificationsPatients: authed
     .route({ method: "GET", path: "/email-notifications/patients" })
     .input(emailNotificationsPatientsQuerySchema)
@@ -603,6 +746,33 @@ const doctoraliaORPCRouterBase = {
         data: { notifications },
         status: "ok",
       };
+    }),
+
+  emailNotificationsIngest: canManageFacility
+    .route({ method: "POST", path: "/email-notifications/ingest" })
+    .input(z.object({}))
+    .output(emailNotificationsIngestResponseSchema)
+    .handler(async () => {
+      try {
+        const result = await runDoctoraliaImapIngestOnce();
+        return {
+          data: result,
+          message: `Ingesta completada. Revisados: ${result.checked}, guardados: ${result.saved}, ya existentes: ${result.alreadyProcessed}, omitidos: ${result.skipped}, fallidos: ${result.failed}`,
+          status: "ok" as const,
+        };
+      } catch (error) {
+        return {
+          data: {
+            alreadyProcessed: 0,
+            checked: 0,
+            failed: 0,
+            saved: 0,
+            skipped: 0,
+          },
+          message: error instanceof Error ? error.message : "La ingesta de Doctoralia falló.",
+          status: "error" as const,
+        };
+      }
     }),
 };
 

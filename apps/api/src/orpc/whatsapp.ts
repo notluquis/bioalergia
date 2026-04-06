@@ -21,7 +21,6 @@ import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
 import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
-import { getDoctoraliaImapListenerStatus } from "../lib/doctoralia/imap-idle";
 import {
   getWhatsappConsentSummary,
   listWhatsappConversationStates,
@@ -186,19 +185,10 @@ const whatsappORPCRouterBase = {
     })
     .output(whatsappOverviewSchema)
     .handler(async () => {
-      const doctoraliaImapEnabled = process.env.ENABLE_DOCTORALIA_IMAP === "true";
-      const imapHostConfigured = Boolean(process.env.DOCTORALIA_IMAP_HOST);
-      const imapUserConfigured = Boolean(process.env.DOCTORALIA_IMAP_USER);
-      const imapPassConfigured = Boolean(process.env.DOCTORALIA_IMAP_PASS);
       const automaticNotificationsEnabled = process.env.ENABLE_WHATSAPP_NOTIFICATIONS === "true";
-      const imapReady = imapHostConfigured && imapUserConfigured && imapPassConfigured;
       const { connectionState: connState } = getConnectionStatus();
       const connected = connState === "open";
-      const automaticFlowReady = automaticNotificationsEnabled && connected && imapReady;
-      const doctoraliaImapListener = {
-        ...getDoctoraliaImapListenerStatus(),
-        enabled: doctoraliaImapEnabled,
-      };
+      const automaticFlowReady = automaticNotificationsEnabled && connected;
 
       let consentSummary = { optedIn: 0, optedOut: 0, total: 0, unknown: 0 };
       try {
@@ -213,17 +203,9 @@ const whatsappORPCRouterBase = {
         automaticNotificationsEnabled,
         connected,
         connectionState: connState,
-        doctoraliaImapListener,
-        imapHostConfigured,
-        imapMailbox: process.env.DOCTORALIA_IMAP_MAILBOX ?? "INBOX",
-        imapPassConfigured,
-        imapReady,
-        imapUserConfigured,
         optInRequired: process.env.WHATSAPP_REQUIRE_OPT_IN !== "false",
         optedInContacts: consentSummary.optedIn,
         optedOutContacts: consentSummary.optedOut,
-        pollCron: process.env.WHATSAPP_POLL_CRON ?? "*/2 * * * *",
-        senderFilter: process.env.DOCTORALIA_EMAIL_SENDER_FILTER ?? "doctoralia.com",
         unknownConsentContacts: consentSummary.unknown,
       };
     }),
@@ -417,7 +399,7 @@ const whatsappORPCRouterBase = {
     .route({
       method: "POST",
       path: "/trigger-poll",
-      summary: "Manually trigger IMAP poll",
+      summary: "Manually trigger the legacy Doctoralia IMAP poll",
       tags: ["WhatsApp"],
     })
     .output(whatsappStatusResponseSchema)

@@ -14,8 +14,12 @@ import {
   DoctoraliaCalendarAuthStatusResponseSchema,
   DoctoraliaDoctorsResponseSchema,
   DoctoraliaEmailNotificationsCalendarResponseSchema,
+  DoctoraliaEmailNotificationsListResponseSchema,
+  DoctoraliaEmailOverviewResponseSchema,
   DoctoraliaEmailPatientHistoryResponseSchema,
   DoctoraliaEmailPatientsResponseSchema,
+  DoctoraliaEmailStatsResponseSchema,
+  DoctoraliaEmailIngestResponseSchema,
   DoctoraliaFacilitiesResponseSchema,
   DoctoraliaSlotsResponseSchema,
   DoctoraliaStatusResponseSchema,
@@ -36,7 +40,11 @@ import type {
   DoctoraliaDoctor,
   DoctoraliaDoctorsResponse,
   DoctoraliaEmailNotification,
+  DoctoraliaEmailListResponse,
+  DoctoraliaEmailOverview,
   DoctoraliaEmailPatient,
+  DoctoraliaEmailIngestResponse,
+  DoctoraliaEmailStats,
   DoctoraliaFacilitiesResponse,
   DoctoraliaFacility,
   DoctoraliaSlot,
@@ -316,6 +324,58 @@ export async function fetchDoctoraliaEmailCalendar(query: {
   }
 
   return response.data.notifications;
+}
+
+export async function fetchDoctoraliaEmailOverview(): Promise<DoctoraliaEmailOverview> {
+  let response;
+  try {
+    response = DoctoraliaEmailOverviewResponseSchema.parse(
+      await doctoraliaORPCClient.emailNotificationsOverview()
+    );
+  } catch (error) {
+    throw toDoctoraliaApiError(error);
+  }
+
+  return response.data;
+}
+
+export async function fetchDoctoraliaEmailNotifications(params: {
+  limit?: number;
+  offset?: number;
+}): Promise<DoctoraliaEmailListResponse> {
+  let response;
+  try {
+    response = DoctoraliaEmailNotificationsListResponseSchema.parse(
+      await doctoraliaORPCClient.emailNotificationsList(params)
+    );
+  } catch (error) {
+    throw toDoctoraliaApiError(error);
+  }
+
+  return response.data;
+}
+
+export async function fetchDoctoraliaEmailStats(): Promise<DoctoraliaEmailStats> {
+  let response;
+  try {
+    response = DoctoraliaEmailStatsResponseSchema.parse(
+      await doctoraliaORPCClient.emailNotificationsStats()
+    );
+  } catch (error) {
+    throw toDoctoraliaApiError(error);
+  }
+
+  return response.data;
+}
+
+export async function triggerDoctoraliaEmailIngest(): Promise<DoctoraliaEmailIngestResponse> {
+  try {
+    return DoctoraliaEmailIngestResponseSchema.parse(
+      await doctoraliaORPCClient.emailNotificationsIngest({})
+    );
+  } catch (error) {
+    throw toDoctoraliaApiError(error);
+  }
 }
 
 export async function fetchDoctoraliaEmailPatients(query?: {

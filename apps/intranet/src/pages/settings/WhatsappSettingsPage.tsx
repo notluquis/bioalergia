@@ -158,6 +158,11 @@ export function WhatsappSettingsPage() {
               </Switch>
             </Surface>
 
+            <Alert status="accent">
+              Esta pantalla cubre el canal de salida de WhatsApp: sesión, consentimiento y envío. La
+              ingesta de correos Doctoralia se revisa en Settings → Doctoralia.
+            </Alert>
+
             {/* ── QR code (only when enabled + not connected) ──────── */}
             {enabled && !connected && (
               <Card>
@@ -186,14 +191,14 @@ export function WhatsappSettingsPage() {
               </Card>
             )}
 
-            {/* ── Stats + Flow status (only when connected) ────────── */}
-            {enabled && connected && (
+            {/* ── Stats + Channel automation ───────────────────────── */}
+            {enabled && (
               <div className="grid gap-4 lg:grid-cols-2">
-                {/* Flow status chips */}
+                {/* Channel automation */}
                 {overview && (
                   <Card>
                     <Card.Header>
-                      <h2 className="font-semibold text-sm">Flujo automático</h2>
+                      <h2 className="font-semibold text-sm">Canal y automatización</h2>
                     </Card.Header>
                     <Card.Content className="flex flex-wrap gap-2">
                       <Chip
@@ -201,28 +206,29 @@ export function WhatsappSettingsPage() {
                         size="sm"
                         variant="soft"
                       >
-                        {overview.automaticFlowReady ? "Listo" : "No listo"}
+                        {overview.automaticFlowReady ? "Canal listo" : "Canal incompleto"}
                       </Chip>
                       <Chip
-                        color={overview.imapReady ? "success" : "default"}
+                        color={overview.connected ? "success" : "default"}
                         size="sm"
                         variant="soft"
                       >
-                        IMAP {overview.imapReady ? "OK" : "pendiente"}
+                        WhatsApp {overview.connected ? "OK" : "pendiente"}
                       </Chip>
                       <Chip
                         color={overview.automaticNotificationsEnabled ? "success" : "default"}
                         size="sm"
                         variant="soft"
                       >
-                        Notificaciones {overview.automaticNotificationsEnabled ? "ON" : "OFF"}
+                        Automatización {overview.automaticNotificationsEnabled ? "ON" : "OFF"}
                       </Chip>
                     </Card.Content>
                   </Card>
                 )}
 
                 {/* Message stats */}
-                {stats &&
+                {connected &&
+                  stats &&
                   stats.sent +
                     stats.delivered +
                     stats.read +

@@ -183,6 +183,63 @@ export const DoctoraliaEmailNotificationsCalendarResponseSchema = z.strictObject
   status: z.literal("ok"),
 });
 
+export const DoctoraliaEmailOverviewResponseSchema = z.strictObject({
+  data: z.strictObject({
+    imapHostConfigured: z.boolean(),
+    imapMailbox: z.string(),
+    imapPassConfigured: z.boolean(),
+    imapReady: z.boolean(),
+    imapUserConfigured: z.boolean(),
+    listener: z.strictObject({
+      enabled: z.boolean(),
+      host: z.string().nullable(),
+      lastConnectedAt: z.coerce.date().nullable(),
+      lastErrorAt: z.coerce.date().nullable(),
+      lastErrorMessage: z.string().nullable(),
+      lastProcessedAt: z.coerce.date().nullable(),
+      lastStartedAt: z.coerce.date().nullable(),
+      mailbox: z.string().nullable(),
+      reconnectDelayMs: z.number().nullable(),
+      state: z.enum(["stopped", "missing_config", "connecting", "connected", "error"]),
+      user: z.string().nullable(),
+    }),
+    senderFilter: z.string(),
+  }),
+  status: z.literal("ok"),
+});
+
+export const DoctoraliaEmailNotificationsListResponseSchema = z.strictObject({
+  data: z.strictObject({
+    notifications: z.array(DoctoraliaEmailNotificationSchema),
+    total: z.number(),
+  }),
+  status: z.literal("ok"),
+});
+
+export const DoctoraliaEmailStatsResponseSchema = z.strictObject({
+  data: z.strictObject({
+    bookings: z.number(),
+    cancellations: z.number(),
+    firstAppointments: z.number(),
+    modifications: z.number(),
+    total: z.number(),
+    withPhone: z.number(),
+  }),
+  status: z.literal("ok"),
+});
+
+export const DoctoraliaEmailIngestResponseSchema = z.strictObject({
+  data: z.strictObject({
+    alreadyProcessed: z.number(),
+    checked: z.number(),
+    failed: z.number(),
+    saved: z.number(),
+    skipped: z.number(),
+  }),
+  message: z.string(),
+  status: z.enum(["ok", "error"]),
+});
+
 export const DoctoraliaEmailPatientSchema = z.strictObject({
   lastAppointmentDate: z.coerce.date().nullable(),
   patientEmail: z.string().nullable(),

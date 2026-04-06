@@ -88,45 +88,15 @@ export const listWhatsappContactStatesResponseSchema = z.object({
 
 export const whatsappConnectionStateSchema = z.enum(["open", "connecting", "close"]);
 
-export const doctoraliaImapListenerStateSchema = z.enum([
-  "stopped",
-  "missing_config",
-  "connecting",
-  "connected",
-  "error",
-]);
-
-export const doctoraliaImapListenerStatusSchema = z.object({
-  enabled: z.boolean(),
-  host: z.string().nullable(),
-  lastConnectedAt: z.coerce.date().nullable(),
-  lastErrorAt: z.coerce.date().nullable(),
-  lastErrorMessage: z.string().nullable(),
-  lastProcessedAt: z.coerce.date().nullable(),
-  lastStartedAt: z.coerce.date().nullable(),
-  mailbox: z.string().nullable(),
-  reconnectDelayMs: z.number().int().nullable(),
-  state: doctoraliaImapListenerStateSchema,
-  user: z.string().nullable(),
-});
-
 export const whatsappOverviewSchema = z.object({
   autoOptInOnInbound: z.boolean(),
   connected: z.boolean(),
   connectionState: whatsappConnectionStateSchema,
   automaticFlowReady: z.boolean(),
   automaticNotificationsEnabled: z.boolean(),
-  doctoraliaImapListener: doctoraliaImapListenerStatusSchema,
-  imapHostConfigured: z.boolean(),
-  imapMailbox: z.string(),
-  imapPassConfigured: z.boolean(),
-  imapReady: z.boolean(),
-  imapUserConfigured: z.boolean(),
   optInRequired: z.boolean(),
   optedInContacts: z.number().int().min(0),
   optedOutContacts: z.number().int().min(0),
-  pollCron: z.string(),
-  senderFilter: z.string(),
   unknownConsentContacts: z.number().int().min(0),
 });
 
@@ -297,7 +267,7 @@ export const whatsappContract = {
     .route({
       method: "POST",
       path: "/trigger-poll",
-      summary: "Manually trigger IMAP poll for Doctoralia emails",
+      summary: "Manually trigger the legacy Doctoralia IMAP poll",
       tags: ["WhatsApp"],
     })
     .output(whatsappStatusResponseSchema),

@@ -188,6 +188,11 @@ export const emailNotificationsCalendarQuerySchema = z.object({
   to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
 });
 
+export const emailNotificationsListQuerySchema = z.object({
+  limit: z.number().int().min(1).max(200).optional(),
+  offset: z.number().int().min(0).optional(),
+});
+
 export const emailNotificationSchema = z.strictObject({
   appointmentDate: z.coerce.date().nullable(),
   appointmentDoctor: z.string().nullable(),
@@ -209,6 +214,73 @@ export const emailNotificationsCalendarResponseSchema = z.object({
     notifications: z.array(emailNotificationSchema),
   }),
   status: z.literal("ok"),
+});
+
+export const doctoraliaImapListenerStateSchema = z.enum([
+  "stopped",
+  "missing_config",
+  "connecting",
+  "connected",
+  "error",
+]);
+
+export const doctoraliaImapListenerSchema = z.object({
+  enabled: z.boolean(),
+  host: z.string().nullable(),
+  lastConnectedAt: z.coerce.date().nullable(),
+  lastErrorAt: z.coerce.date().nullable(),
+  lastErrorMessage: z.string().nullable(),
+  lastProcessedAt: z.coerce.date().nullable(),
+  lastStartedAt: z.coerce.date().nullable(),
+  mailbox: z.string().nullable(),
+  reconnectDelayMs: z.number().int().nullable(),
+  state: doctoraliaImapListenerStateSchema,
+  user: z.string().nullable(),
+});
+
+export const emailNotificationsOverviewResponseSchema = z.object({
+  data: z.object({
+    imapHostConfigured: z.boolean(),
+    imapMailbox: z.string(),
+    imapPassConfigured: z.boolean(),
+    imapReady: z.boolean(),
+    imapUserConfigured: z.boolean(),
+    listener: doctoraliaImapListenerSchema,
+    senderFilter: z.string(),
+  }),
+  status: z.literal("ok"),
+});
+
+export const emailNotificationsListResponseSchema = z.object({
+  data: z.object({
+    notifications: z.array(emailNotificationSchema),
+    total: z.number(),
+  }),
+  status: z.literal("ok"),
+});
+
+export const emailNotificationsStatsResponseSchema = z.object({
+  data: z.object({
+    bookings: z.number(),
+    cancellations: z.number(),
+    firstAppointments: z.number(),
+    modifications: z.number(),
+    total: z.number(),
+    withPhone: z.number(),
+  }),
+  status: z.literal("ok"),
+});
+
+export const emailNotificationsIngestResponseSchema = z.object({
+  data: z.object({
+    alreadyProcessed: z.number(),
+    checked: z.number(),
+    failed: z.number(),
+    saved: z.number(),
+    skipped: z.number(),
+  }),
+  message: z.string(),
+  status: z.enum(["ok", "error"]),
 });
 
 export const emailNotificationsPatientsQuerySchema = z.object({
@@ -302,6 +374,16 @@ export const doctoraliaContract = {
     .route({ method: "GET", path: "/email-notifications/calendar" })
     .input(emailNotificationsCalendarQuerySchema)
     .output(emailNotificationsCalendarResponseSchema),
+  emailNotificationsOverview: oc
+    .route({ method: "GET", path: "/email-notifications/overview" })
+    .output(emailNotificationsOverviewResponseSchema),
+  emailNotificationsList: oc
+    .route({ method: "GET", path: "/email-notifications" })
+    .input(emailNotificationsListQuerySchema)
+    .output(emailNotificationsListResponseSchema),
+  emailNotificationsStats: oc
+    .route({ method: "GET", path: "/email-notifications/stats" })
+    .output(emailNotificationsStatsResponseSchema),
   emailNotificationsPatients: oc
     .route({ method: "GET", path: "/email-notifications/patients" })
     .input(emailNotificationsPatientsQuerySchema)
@@ -310,6 +392,10 @@ export const doctoraliaContract = {
     .route({ method: "GET", path: "/email-notifications/patients/history" })
     .input(emailNotificationsPatientHistoryQuerySchema)
     .output(emailNotificationsPatientHistoryResponseSchema),
+  emailNotificationsIngest: oc
+    .route({ method: "POST", path: "/email-notifications/ingest" })
+    .input(z.object({}))
+    .output(emailNotificationsIngestResponseSchema),
   status: oc.route({ method: "GET", path: "/status" }).output(statusResponseSchema),
   sync: oc.route({ method: "POST", path: "/sync" }).input(syncInputSchema).output(syncResponseSchema),
   syncLogs: oc.route({ method: "GET", path: "/sync/logs" }).output(syncLogsResponseSchema),

@@ -360,7 +360,7 @@ interface RawEmail {
 }
 
 async function fetchFromAccount(account: AccountConfig): Promise<RawEmail[]> {
-  const senderFilter = account.senderFilter ?? "doctoralia";
+  const senderFilter = account.senderFilter ?? "doctoralia.com";
   const mailbox = account.mailbox ?? "INBOX";
   const authType: AuthType = account.authType ?? "password";
 
