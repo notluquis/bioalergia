@@ -50,7 +50,11 @@ export function DoctoraliaSettingsPage() {
     refetchInterval: 30_000,
   });
 
-  const { data: notificationsData, isPending: notificationsPending } = useQuery({
+  const {
+    data: notificationsData,
+    error: notificationsError,
+    isPending: notificationsPending,
+  } = useQuery({
     ...doctoraliaSettingsKeys.notifications({ limit, offset }),
     placeholderData: keepPreviousData,
     refetchInterval: 30_000,
@@ -136,58 +140,15 @@ export function DoctoraliaSettingsPage() {
   return (
     <div className={PAGE_CONTAINER}>
       <Surface className="rounded-[28px] border border-default-200 bg-linear-to-br from-background via-default-50 to-warning/5 p-6 shadow-inner">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <StatusPill
-                label={overview?.imapReady ? "IMAP listo" : "IMAP pendiente"}
-                tone={overview?.imapReady ? "success" : "warning"}
-              />
-              <StatusPill
-                label={listenerSummary ? `Listener ${listenerSummary.label}` : "Listener pendiente"}
-                tone={listenerSummary?.tone ?? "warning"}
-              />
-              <StatusPill
-                label={stats ? `${stats.total} eventos` : "Sin eventos"}
-                tone={stats && stats.total > 0 ? "accent" : "default"}
-              />
-            </div>
-
-            <div>
-              <h1 className="font-semibold text-2xl">Doctoralia</h1>
-              <Description className="max-w-3xl text-default-600 text-sm">
-                Ingesta de correos Doctoralia: listener IMAP en escucha, validación del mensaje,
-                parseo de reservas y persistencia en base de datos.
-              </Description>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <MetricPill
-              subtitle="runtime"
-              title="Listener"
-              tone={listenerSummary?.tone ?? "warning"}
-              value={listenerSummary?.label ?? "Pend."}
-            />
-            <MetricPill
-              subtitle="registros"
-              title="Eventos"
-              tone={stats && stats.total > 0 ? "accent" : "default"}
-              value={stats?.total ?? 0}
-            />
-            <MetricPill
-              subtitle="paciente"
-              title="Con teléfono"
-              tone={stats && stats.withPhone > 0 ? "success" : "default"}
-              value={stats?.withPhone ?? 0}
-            />
-            <MetricPill
-              subtitle="primera vez"
-              title="Primeras citas"
-              tone="primary"
-              value={stats?.firstAppointments ?? 0}
-            />
-          </div>
+        <div>
+          <h1 className="font-semibold text-2xl">Doctoralia</h1>
+          <Description className="mt-2 max-w-3xl text-default-600 text-sm">
+            Ingesta de correos Doctoralia: listener IMAP en escucha, validación del mensaje, parseo
+            de reservas y persistencia en base de datos.
+          </Description>
+          <Description className="mt-1 text-default-500 text-xs">
+            El estado operativo y los volúmenes del flujo están en las tabs de Ingesta y Actividad.
+          </Description>
         </div>
       </Surface>
 
@@ -542,6 +503,12 @@ export function DoctoraliaSettingsPage() {
 
             {notificationsPending ? (
               <Skeleton className="h-64 w-full rounded-lg" />
+            ) : notificationsError ? (
+              <Alert status="danger">
+                {notificationsError instanceof Error
+                  ? notificationsError.message
+                  : "No se pudo cargar la tabla de eventos de Doctoralia."}
+              </Alert>
             ) : (
               <DataTable
                 columns={doctoraliaNotificationColumns}
@@ -586,20 +553,6 @@ function MetricPill({
       <div className="mt-1 truncate font-semibold text-base">{value}</div>
       <Description className="text-[11px] opacity-75">{subtitle}</Description>
     </div>
-  );
-}
-
-function StatusPill({
-  label,
-  tone,
-}: {
-  label: string;
-  tone: "accent" | "default" | "success" | "warning";
-}) {
-  return (
-    <Chip color={tone} variant="soft">
-      {label}
-    </Chip>
   );
 }
 

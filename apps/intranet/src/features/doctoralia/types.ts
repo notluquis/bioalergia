@@ -216,6 +216,7 @@ export interface DoctoraliaEmailNotification {
   appointmentDoctor: string | null;
   appointmentService: string | null;
   clinicAddress: string | null;
+  createdAt: Date;
   emailMessageId: string;
   eventType: "BOOKING" | "CANCELLATION" | "MODIFICATION";
   id: string;
@@ -224,6 +225,7 @@ export interface DoctoraliaEmailNotification {
   patientName: string;
   patientPhone: string | null;
   previousAppointmentDate: Date | null;
+  updatedAt: Date;
 }
 
 export interface DoctoraliaEmailPatient {

@@ -198,6 +198,7 @@ export const emailNotificationSchema = z.strictObject({
   appointmentDoctor: z.string().nullable(),
   appointmentService: z.string().nullable(),
   clinicAddress: z.string().nullable(),
+  createdAt: z.coerce.date(),
   emailMessageId: z.string(),
   eventType: z.enum(["BOOKING", "MODIFICATION", "CANCELLATION"]),
   id: z.string(),
@@ -206,6 +207,7 @@ export const emailNotificationSchema = z.strictObject({
   patientName: z.string(),
   patientPhone: z.string().nullable(),
   previousAppointmentDate: z.coerce.date().nullable(),
+  updatedAt: z.coerce.date(),
 });
 
 export const emailNotificationsCalendarResponseSchema = z.object({
