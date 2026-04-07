@@ -568,12 +568,31 @@ function computeAmountHint(event: EventRow): null | number {
   return Number.isFinite(first) ? first : null;
 }
 
-function computeSeriesAmountHint(series: ClinicalSeriesSnapshot | null, event: EventRow): null | number {
-  if (series) {
-    if (series.remainingPaid > 0) return series.remainingPaid;
-    if (series.remainingExpected > 0) return series.remainingExpected;
+export function resolveMatchAmountHint(params: {
+  event: Pick<EventRow, "amountExpected" | "amountPaid" | "description" | "summary">;
+  sameDayOnly: boolean;
+  series: ClinicalSeriesSnapshot | null;
+}): null | number {
+  const eventAmountHint = computeAmountHint(params.event as EventRow);
+
+  // Same-day matching is event-scoped: the right target is the amount of the
+  // concrete session being linked, not the remaining balance of the whole
+  // clinical series. Using series.remaining* here makes single-session vaccine
+  // events look wildly out of range and blocks otherwise exact matches.
+  if (params.sameDayOnly) {
+    return eventAmountHint;
   }
-  return computeAmountHint(event);
+
+  if (eventAmountHint != null) {
+    return eventAmountHint;
+  }
+
+  if (params.series) {
+    if (params.series.remainingPaid > 0) return params.series.remainingPaid;
+    if (params.series.remainingExpected > 0) return params.series.remainingExpected;
+  }
+
+  return null;
 }
 
 function toSignal(code: string, label: string, weight: number, value?: null | string): MatchSignal {
@@ -622,7 +641,11 @@ function extractIdentityClaims(params: {
   ];
 
   return {
-    amountHint: computeSeriesAmountHint(params.series, params.event),
+    amountHint: resolveMatchAmountHint({
+      event: params.event,
+      sameDayOnly: params.sameDayOnly,
+      series: params.series,
+    }),
     beneficiaryName: identityHints.beneficiaryName ?? params.series?.beneficiaryName ?? null,
     beneficiaryRut: identityHints.beneficiaryRut ?? params.series?.beneficiaryRut ?? null,
     eventDate: params.event.eventDate,
