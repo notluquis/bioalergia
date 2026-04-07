@@ -543,20 +543,45 @@ function stripNonNamePhrases(text: string): string {
  * stopword so downstream checks can evaluate it on its own.
  * Uses the longest matching prefix to avoid partial matches.
  */
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function buildFlexibleStopwordPrefixRegex(stopword: string) {
+  return new RegExp(`^${[...stopword].map((char) => `${escapeRegex(char)}+`).join("")}`);
+}
+
 function stripStopwordPrefix(token: string): string {
-  let best = "";
-  for (const sw of LOWERCASE_NAME_STOPWORDS) {
-    const remainderLength = token.length - sw.length;
-    if (
-      sw.length >= 4 &&
-      sw.length > best.length &&
-      token.startsWith(sw) &&
-      remainderLength >= 4
-    ) {
-      best = sw;
+  let current = token;
+
+  while (current.length > 0) {
+    let bestMatchedPrefixLength = 0;
+    let bestStopwordLength = 0;
+
+    for (const sw of LOWERCASE_NAME_STOPWORDS) {
+      if (sw.length < 4) continue;
+
+      const match = current.match(buildFlexibleStopwordPrefixRegex(sw));
+      if (!match) continue;
+
+      const matchedPrefixLength = match[0].length;
+      const remainderLength = current.length - matchedPrefixLength;
+      if (remainderLength !== 0 && remainderLength < 4) continue;
+
+      if (
+        sw.length > bestStopwordLength ||
+        (sw.length === bestStopwordLength && matchedPrefixLength > bestMatchedPrefixLength)
+      ) {
+        bestMatchedPrefixLength = matchedPrefixLength;
+        bestStopwordLength = sw.length;
+      }
     }
+
+    if (bestMatchedPrefixLength === 0) break;
+    current = current.slice(bestMatchedPrefixLength);
   }
-  return best ? token.slice(best.length) : token;
+
+  return current;
 }
 
 function normalizeNameToken(token: string): string {

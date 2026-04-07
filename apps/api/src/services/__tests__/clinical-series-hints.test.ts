@@ -336,6 +336,14 @@ describe("extractPatientHints", () => {
       expect(patientName).toBe("diego musiet");
     });
 
+    it("drops chained administrative prefixes with typos before the real patient name", () => {
+      const { patientName } = extractPatientHints(
+        "lleegoconfirma paola andrea gonzalez gamboa",
+        null,
+      );
+      expect(patientName).toBe("paola andrea gonzalez gamboa");
+    });
+
     it("does not extract 'autorizado por doctor' as a person name", () => {
       // Real case: note "autorizado por doctor miriam" was matched as a
       // duplicate because isLikelyPersonName counted clinical words as tokens.
