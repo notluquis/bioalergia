@@ -115,6 +115,14 @@ export const clinicalSeriesListOutputSchema = z.object({
   total: z.number(),
 });
 
+export const clinicalSeriesInsuranceStatsSchema = z.object({
+  fonasa: z.number().int(),
+  isapre: z.number().int(),
+  particular: z.number().int(),
+  total: z.number().int(),
+  unidentified: z.number().int(),
+});
+
 export const clinicalSeriesDetailInputSchema = z.object({
   id: z.number().int().positive(),
 });
@@ -167,6 +175,10 @@ export const clinicalSeriesContract = {
     .route({ method: "GET", path: "/" })
     .input(clinicalSeriesListInputSchema)
     .output(clinicalSeriesListOutputSchema),
+  insuranceStats: oc
+    .route({ method: "GET", path: "/stats/insurance" })
+    .input(clinicalSeriesListInputSchema)
+    .output(clinicalSeriesInsuranceStatsSchema),
   rebuild: oc
     .route({ method: "POST", path: "/rebuild" })
     .input(clinicalSeriesRebuildInputSchema)

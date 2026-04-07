@@ -35,7 +35,7 @@ import {
 import { parseDate } from "@internationalized/date";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Key, Selection } from "@heroui/react";
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { buildPaginationItems } from "@/components/pagination/pagination-items";
 import { EventDteLinkModal } from "@/features/calendar/components/EventDteLinkModal";
 import type { CalendarEventDetail } from "@/features/calendar/types";
@@ -45,6 +45,7 @@ import {
   fetchDetectDuplicates,
   useClinicalSeries,
   useClinicalSeriesDetail,
+  useClinicalSeriesInsuranceStats,
   useClinicalSeriesRebuildProgress,
   useRebuildClinicalSeries,
   useMergeClinicalSeries,
@@ -58,6 +59,7 @@ import type {
   ClinicalSeriesSnapshot,
   ClinicalSeriesSortColumn,
   ClinicalSeriesStatus,
+  ClinicalSeriesInsuranceStats,
   ClinicalSeriesViewMode,
   SubcutaneousAllergenType,
   SubcutaneousVaccineProduct,
@@ -127,6 +129,197 @@ const INSURANCE_COLORS: Record<HealthInsuranceType, "success" | "warning" | "def
   ISAPRE: "warning",
   PARTICULAR: "default",
 };
+
+type ClinicalSeriesTab = ClinicalSeriesViewMode | "insurance";
+
+function InsuranceStatsPanel({
+  hasFilters,
+  isLoading,
+  stats,
+}: {
+  hasFilters: boolean;
+  isLoading: boolean;
+  stats: ClinicalSeriesInsuranceStats | undefined;
+}) {
+  if (isLoading) {
+    return (
+      <Card className="flex-1 min-h-0 overflow-hidden">
+        <Card.Content className="space-y-4 p-5">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <Skeleton className="h-28 rounded-2xl" />
+            <Skeleton className="h-28 rounded-2xl" />
+            <Skeleton className="h-28 rounded-2xl" />
+            <Skeleton className="h-28 rounded-2xl" />
+          </div>
+          <Skeleton className="h-72 rounded-2xl" />
+        </Card.Content>
+      </Card>
+    );
+  }
+
+  if (!stats || stats.total === 0) {
+    return (
+      <Card className="flex-1 min-h-0 overflow-hidden">
+        <Card.Content className="flex h-48 flex-col items-center justify-center gap-2 p-5 text-center">
+          <p className="text-foreground-400 text-sm">
+            {hasFilters
+              ? "No hay series para calcular la estadística con los filtros actuales"
+              : "No hay series para calcular la estadística de previsión"}
+          </p>
+        </Card.Content>
+      </Card>
+    );
+  }
+
+  const rows = [
+    {
+      key: "fonasa",
+      label: "Fonasa",
+      toneClass: "bg-success",
+      value: stats.fonasa,
+    },
+    {
+      key: "isapre",
+      label: "Isapre",
+      toneClass: "bg-warning",
+      value: stats.isapre,
+    },
+    {
+      key: "particular",
+      label: "Particular",
+      toneClass: "bg-default-400",
+      value: stats.particular,
+    },
+    {
+      key: "unidentified",
+      label: "Sin identificar",
+      toneClass: "bg-danger",
+      value: stats.unidentified,
+    },
+  ] as const;
+
+  const ratio = (value: number) => (stats.total > 0 ? (value / stats.total) * 100 : 0);
+
+  return (
+    <div className="flex flex-1 min-h-0 flex-col gap-4">
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        {rows.map((row) => (
+          <Surface key={row.key} className="rounded-2xl border border-separator/60 p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-[0.16em] text-foreground-400">
+                  {row.label}
+                </p>
+                <p className="mt-2 font-semibold text-3xl text-foreground">
+                  {row.value.toLocaleString("es-CL")}
+                </p>
+              </div>
+              <div className={`h-3 w-3 rounded-full ${row.toneClass}`} />
+            </div>
+            <p className="mt-2 text-sm text-foreground-500">
+              {ratio(row.value).toFixed(1)}% del total filtrado
+            </p>
+          </Surface>
+        ))}
+      </div>
+
+      <Card className="border-default-200 shadow-sm">
+        <Card.Header className="pb-2">
+          <div className="flex flex-col gap-1">
+            <span className="font-semibold text-foreground text-base">
+              Distribución de previsión
+            </span>
+            <span className="text-foreground-400 text-sm">
+              {stats.total.toLocaleString("es-CL")} series consideradas
+            </span>
+          </div>
+        </Card.Header>
+        <Card.Content className="space-y-4">
+          <div className="space-y-3">
+            {rows.map((row) => (
+              <div key={row.key} className="space-y-1.5">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <div className={`h-2.5 w-2.5 rounded-full ${row.toneClass}`} />
+                    <span className="text-sm font-medium text-foreground">{row.label}</span>
+                  </div>
+                  <span className="text-xs tabular-nums text-foreground-500">
+                    {row.value.toLocaleString("es-CL")} · {ratio(row.value).toFixed(1)}%
+                  </span>
+                </div>
+                <div className="h-2.5 overflow-hidden rounded-full bg-default-100">
+                  <div
+                    className={`h-full rounded-full ${row.toneClass}`}
+                    style={{ width: `${Math.max(ratio(row.value), row.value > 0 ? 2 : 0)}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="grid gap-3 lg:grid-cols-[minmax(0,1.4fr)_minmax(18rem,0.9fr)]">
+            <Surface className="rounded-2xl border border-separator/60 p-4">
+              <div className="grid grid-cols-[minmax(0,1fr)_6.5rem_5.5rem] gap-y-2 text-sm">
+                <span className="font-medium text-foreground">Categoría</span>
+                <span className="text-right font-medium text-foreground">Series</span>
+                <span className="text-right font-medium text-foreground">%</span>
+                {rows.map((row) => (
+                  <Fragment key={row.key}>
+                    <span key={`${row.key}-label`} className="text-foreground-500">
+                      {row.label}
+                    </span>
+                    <span
+                      key={`${row.key}-count`}
+                      className="text-right tabular-nums text-foreground"
+                    >
+                      {row.value.toLocaleString("es-CL")}
+                    </span>
+                    <span
+                      key={`${row.key}-ratio`}
+                      className="text-right tabular-nums text-foreground-500"
+                    >
+                      {ratio(row.value).toFixed(1)}%
+                    </span>
+                  </Fragment>
+                ))}
+              </div>
+            </Surface>
+
+            <Surface className="rounded-2xl border border-separator/60 p-4">
+              <p className="text-xs font-medium uppercase tracking-[0.16em] text-foreground-400">
+                Lectura rápida
+              </p>
+              <div className="mt-3 space-y-2 text-sm text-foreground-500">
+                <p>
+                  La mayor cobertura actual es{" "}
+                  <span className="font-medium text-foreground">
+                    {
+                      rows.reduce((best, row) => (row.value > best.value ? row : best), rows[0])!
+                        .label
+                    }
+                  </span>
+                  .
+                </p>
+                <p>
+                  Hay{" "}
+                  <span className="font-medium text-foreground">
+                    {stats.unidentified.toLocaleString("es-CL")}
+                  </span>{" "}
+                  series sin previsión identificada.
+                </p>
+                <p>
+                  Las series marcadas como{" "}
+                  <span className="font-medium text-foreground">Particular</span> se muestran aparte
+                  y no se suman a Isapre.
+                </p>
+              </div>
+            </Surface>
+          </div>
+        </Card.Content>
+      </Card>
+    </div>
+  );
+}
 
 function normalizeChileWhatsAppPhone(value: string): null | { display: string; waNumber: string } {
   const digits = value.replace(/\D+/g, "");
@@ -515,10 +708,14 @@ function toCalendarEventDetail(event: ClinicalSeriesEvent): CalendarEventDetail 
 
 export function ClinicalSeriesView() {
   const queryClient = useQueryClient();
-  const [viewMode, setViewMode] = useState<ClinicalSeriesViewMode>("series");
+  const [activeTab, setActiveTab] = useState<ClinicalSeriesTab>("series");
   const [abandonmentBucket, setAbandonmentBucket] = useState<
     ClinicalSeriesAbandonmentBucket | undefined
   >(undefined);
+  const viewMode: ClinicalSeriesViewMode = activeTab === "abandonment" ? "abandonment" : "series";
+  const isAbandonmentTab = activeTab === "abandonment";
+  const isInsuranceTab = activeTab === "insurance";
+  const isSeriesLikeTab = !isAbandonmentTab;
   // Pagination state
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<(typeof PAGE_SIZE_OPTIONS)[number]>(20);
@@ -550,14 +747,14 @@ export function ClinicalSeriesView() {
     setSelectedId(null);
     setDrawerOpen(false);
     setSortDescriptor(
-      viewMode === "abandonment"
+      isAbandonmentTab
         ? { column: "daysSinceLastEvent", direction: "descending" }
         : (current) =>
             current.column === "daysSinceLastEvent"
               ? { column: "lastEvent", direction: "descending" }
               : current
     );
-  }, [viewMode]);
+  }, [isAbandonmentTab]);
 
   // Reset page when filters or page size change
   useEffect(() => {
@@ -588,12 +785,12 @@ export function ClinicalSeriesView() {
     ...(debouncedBeneficiaryRut && { beneficiaryRut: debouncedBeneficiaryRut }),
     ...(debouncedPhone && { patientPhone: debouncedPhone }),
     ...(debouncedRut && { patientRut: debouncedRut }),
-    ...(viewMode === "series" && kind && { kind }),
+    ...(isSeriesLikeTab && kind && { kind }),
     ...(nextVisitFrom && { nextVisitFrom }),
     ...(nextVisitTo && { nextVisitTo }),
     sortColumn: sortDescriptor.column as ClinicalSeriesSortColumn,
     sortDirection: sortDescriptor.direction,
-    ...(viewMode === "series" && status && { status }),
+    ...(isSeriesLikeTab && status && { status }),
     view: viewMode,
   };
 
@@ -601,6 +798,23 @@ export function ClinicalSeriesView() {
   const [duplicatesModalOpen, setDuplicatesModalOpen] = useState(false);
 
   const { data, isLoading, error } = useClinicalSeries(filters);
+  const insuranceStatsFilters: ClinicalSeriesFilters = {
+    abandonmentBucket: undefined,
+    ...(debouncedQuery && { query: debouncedQuery }),
+    ...(debouncedBeneficiaryRut && { beneficiaryRut: debouncedBeneficiaryRut }),
+    ...(debouncedPhone && { patientPhone: debouncedPhone }),
+    ...(debouncedRut && { patientRut: debouncedRut }),
+    ...(kind && { kind }),
+    ...(nextVisitFrom && { nextVisitFrom }),
+    ...(nextVisitTo && { nextVisitTo }),
+    ...(status && { status }),
+    view: "series",
+  };
+  const {
+    data: insuranceStats,
+    error: insuranceStatsError,
+    isLoading: isLoadingInsuranceStats,
+  } = useClinicalSeriesInsuranceStats(insuranceStatsFilters);
   const { data: detail, isLoading: isLoadingDetail } = useClinicalSeriesDetail(selectedId ?? 0);
   const rebuildMutation = useRebuildClinicalSeries();
   const rebuildJob = useClinicalSeriesRebuildProgress();
@@ -645,15 +859,15 @@ export function ClinicalSeriesView() {
   };
 
   const hasFilters =
-    !!abandonmentBucket ||
+    (isAbandonmentTab && !!abandonmentBucket) ||
     !!debouncedBeneficiaryRut ||
     !!debouncedPhone ||
     !!debouncedQuery ||
     !!debouncedRut ||
-    (viewMode === "series" && !!kind) ||
+    (isSeriesLikeTab && !!kind) ||
     !!nextVisitFrom ||
     !!nextVisitTo ||
-    (viewMode === "series" && !!status);
+    (isSeriesLikeTab && !!status);
 
   const clearFilters = () => {
     setQueryRaw("");
@@ -673,10 +887,18 @@ export function ClinicalSeriesView() {
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
           <p className="text-sm text-foreground-400">
-            {data && (
+            {isInsuranceTab && insuranceStats ? (
               <>
-                <span className="font-medium text-foreground-600">{data.total}</span> series totales
+                <span className="font-medium text-foreground-600">{insuranceStats.total}</span>{" "}
+                series consideradas
               </>
+            ) : (
+              data && (
+                <>
+                  <span className="font-medium text-foreground-600">{data.total}</span> series
+                  totales
+                </>
+              )
             )}
           </p>
           <div className="flex items-center gap-2">
@@ -779,8 +1001,8 @@ export function ClinicalSeriesView() {
       </div>
 
       <Tabs
-        selectedKey={viewMode}
-        onSelectionChange={(key) => setViewMode(key as ClinicalSeriesViewMode)}
+        selectedKey={activeTab}
+        onSelectionChange={(key) => setActiveTab(key as ClinicalSeriesTab)}
       >
         <Tabs.ListContainer>
           <Tabs.List aria-label="Vistas de series clínicas" className="w-full justify-start">
@@ -790,6 +1012,10 @@ export function ClinicalSeriesView() {
             </Tabs.Tab>
             <Tabs.Tab id="abandonment">
               Abandono
+              <Tabs.Indicator />
+            </Tabs.Tab>
+            <Tabs.Tab id="insurance">
+              Previsión
               <Tabs.Indicator />
             </Tabs.Tab>
           </Tabs.List>
@@ -805,7 +1031,7 @@ export function ClinicalSeriesView() {
           </TextField>
           <div
             className={
-              viewMode === "series"
+              isSeriesLikeTab
                 ? "grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_12rem_12rem_minmax(18rem,1.25fr)_auto]"
                 : "grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto]"
             }
@@ -825,7 +1051,7 @@ export function ClinicalSeriesView() {
               <Input placeholder="+56912345678" />
             </TextField>
 
-            {viewMode === "series" ? (
+            {isSeriesLikeTab ? (
               <>
                 <div className="flex flex-col gap-1">
                   <Select
@@ -948,7 +1174,7 @@ export function ClinicalSeriesView() {
               )}
             </div>
           </div>
-          {viewMode === "abandonment" ? (
+          {isAbandonmentTab ? (
             <>
               <Alert status="warning">
                 <Alert.Indicator />
@@ -994,343 +1220,373 @@ export function ClinicalSeriesView() {
           </Alert.Content>
         </Alert>
       )}
+      {isInsuranceTab && insuranceStatsError && (
+        <Alert status="danger">
+          <Alert.Indicator />
+          <Alert.Content>
+            <Alert.Description>
+              {insuranceStatsError instanceof Error
+                ? insuranceStatsError.message
+                : "Error al cargar la estadística de previsión"}
+            </Alert.Description>
+          </Alert.Content>
+        </Alert>
+      )}
 
       {/* ── Table ──────────────────────────────────────────────────────────── */}
-      <Card className="flex-1 min-h-0 flex flex-col overflow-hidden">
-        {isLoading ? (
-          <div className="flex justify-center items-center h-48">
-            <Spinner size="lg" />
-          </div>
-        ) : !data || data.items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-48 gap-2">
-            <p className="text-foreground-400 text-sm">
-              {hasFilters
-                ? "No hay resultados para los filtros aplicados"
-                : viewMode === "abandonment"
-                  ? "No hay pacientes en abandono con los criterios actuales"
-                  : "No hay series clínicas"}
-            </p>
-            {hasFilters && (
-              <Button onPress={clearFilters} variant="ghost" size="sm">
-                Limpiar filtros
-              </Button>
-            )}
-          </div>
-        ) : (
-          <Table className="flex-1 min-h-0 flex flex-col">
-            <Table.ScrollContainer className="flex-1 min-h-0">
-              <Table.Content
-                aria-label="Series Clínicas"
-                selectionMode="single"
-                selectedKeys={selectedId !== null ? new Set([selectedId]) : new Set()}
-                onSelectionChange={handleRowSelect}
-                sortDescriptor={sortDescriptor}
-                onSortChange={setSortDescriptor}
-                className="min-w-384"
-              >
-                <Table.Header>
-                  {viewMode === "abandonment" ? (
-                    <>
-                      <Table.Column allowsSorting id="patient" isRowHeader className="w-[22%]">
-                        Paciente
-                      </Table.Column>
-                      <Table.Column className="w-[16%]">RUTs</Table.Column>
-                      <Table.Column className="w-[18%]">Teléfonos</Table.Column>
-                      <Table.Column allowsSorting id="lastEvent" className="w-[12%]">
-                        Últ. sesión
-                      </Table.Column>
-                      <Table.Column
-                        allowsSorting
-                        id="daysSinceLastEvent"
-                        className="w-[10%] text-right"
-                      >
-                        Días
-                      </Table.Column>
-                      <Table.Column className="w-[11%]">Bucket</Table.Column>
-                      <Table.Column allowsSorting id="status" className="w-[11%]">
-                        Estado
-                      </Table.Column>
-                    </>
-                  ) : (
-                    <>
-                      <Table.Column allowsSorting id="patient" isRowHeader className="w-[18%]">
-                        Paciente
-                      </Table.Column>
-                      <Table.Column className="w-[16%]">RUTs</Table.Column>
-                      <Table.Column className="w-[18%]">Teléfonos</Table.Column>
-                      <Table.Column allowsSorting id="kind" className="w-[11%]">
-                        Tipo
-                      </Table.Column>
-                      <Table.Column allowsSorting id="status" className="w-[10%]">
-                        Estado
-                      </Table.Column>
-                      <Table.Column allowsSorting id="lastEvent" className="w-[10%]">
-                        Últ. evento
-                      </Table.Column>
-                      <Table.Column allowsSorting id="nextEvent" className="w-[10%]">
-                        Próx. visita
-                      </Table.Column>
-                      <Table.Column allowsSorting id="totalEvents" className="w-[7%] text-right">
-                        Eventos
-                      </Table.Column>
-                      <Table.Column allowsSorting id="upcomingEvents" className="w-[8%] text-right">
-                        Próximos
-                      </Table.Column>
-                      <Table.Column allowsSorting id="financial" className="w-[20%] text-right">
-                        Financiero
-                      </Table.Column>
-                    </>
-                  )}
-                </Table.Header>
-                <Table.Body>
-                  {data.items.map((s) => {
-                    const samePerson = isSamePatientAndBeneficiary(s);
-                    return (
-                      <Table.Row key={s.id} id={s.id} className="cursor-pointer group">
-                        <Table.Cell>
-                          <div className="flex flex-col gap-1">
-                            <span className="text-sm font-medium text-foreground transition-colors group-hover:text-accent">
-                              {s.patientName ?? s.displayName ?? (
-                                <span className="text-foreground-400 italic">Sin nombre</span>
-                              )}
-                            </span>
-                            {s.beneficiaryName && !samePerson && (
-                              <span className="text-xs text-foreground-400">
-                                Beneficiario: {s.beneficiaryName}
+      {isInsuranceTab ? (
+        <InsuranceStatsPanel
+          hasFilters={hasFilters}
+          isLoading={isLoadingInsuranceStats}
+          stats={insuranceStats}
+        />
+      ) : (
+        <Card className="flex-1 min-h-0 flex flex-col overflow-hidden">
+          {isLoading ? (
+            <div className="flex justify-center items-center h-48">
+              <Spinner size="lg" />
+            </div>
+          ) : !data || data.items.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-48 gap-2">
+              <p className="text-foreground-400 text-sm">
+                {hasFilters
+                  ? "No hay resultados para los filtros aplicados"
+                  : isAbandonmentTab
+                    ? "No hay pacientes en abandono con los criterios actuales"
+                    : "No hay series clínicas"}
+              </p>
+              {hasFilters && (
+                <Button onPress={clearFilters} variant="ghost" size="sm">
+                  Limpiar filtros
+                </Button>
+              )}
+            </div>
+          ) : (
+            <Table className="flex-1 min-h-0 flex flex-col">
+              <Table.ScrollContainer className="flex-1 min-h-0">
+                <Table.Content
+                  aria-label="Series Clínicas"
+                  selectionMode="single"
+                  selectedKeys={selectedId !== null ? new Set([selectedId]) : new Set()}
+                  onSelectionChange={handleRowSelect}
+                  sortDescriptor={sortDescriptor}
+                  onSortChange={setSortDescriptor}
+                  className="min-w-384"
+                >
+                  <Table.Header>
+                    {isAbandonmentTab ? (
+                      <>
+                        <Table.Column allowsSorting id="patient" isRowHeader className="w-[22%]">
+                          Paciente
+                        </Table.Column>
+                        <Table.Column className="w-[16%]">RUTs</Table.Column>
+                        <Table.Column className="w-[18%]">Teléfonos</Table.Column>
+                        <Table.Column allowsSorting id="lastEvent" className="w-[12%]">
+                          Últ. sesión
+                        </Table.Column>
+                        <Table.Column
+                          allowsSorting
+                          id="daysSinceLastEvent"
+                          className="w-[10%] text-right"
+                        >
+                          Días
+                        </Table.Column>
+                        <Table.Column className="w-[11%]">Bucket</Table.Column>
+                        <Table.Column allowsSorting id="status" className="w-[11%]">
+                          Estado
+                        </Table.Column>
+                      </>
+                    ) : (
+                      <>
+                        <Table.Column allowsSorting id="patient" isRowHeader className="w-[18%]">
+                          Paciente
+                        </Table.Column>
+                        <Table.Column className="w-[16%]">RUTs</Table.Column>
+                        <Table.Column className="w-[18%]">Teléfonos</Table.Column>
+                        <Table.Column allowsSorting id="kind" className="w-[11%]">
+                          Tipo
+                        </Table.Column>
+                        <Table.Column allowsSorting id="status" className="w-[10%]">
+                          Estado
+                        </Table.Column>
+                        <Table.Column allowsSorting id="lastEvent" className="w-[10%]">
+                          Últ. evento
+                        </Table.Column>
+                        <Table.Column allowsSorting id="nextEvent" className="w-[10%]">
+                          Próx. visita
+                        </Table.Column>
+                        <Table.Column allowsSorting id="totalEvents" className="w-[7%] text-right">
+                          Eventos
+                        </Table.Column>
+                        <Table.Column
+                          allowsSorting
+                          id="upcomingEvents"
+                          className="w-[8%] text-right"
+                        >
+                          Próximos
+                        </Table.Column>
+                        <Table.Column allowsSorting id="financial" className="w-[20%] text-right">
+                          Financiero
+                        </Table.Column>
+                      </>
+                    )}
+                  </Table.Header>
+                  <Table.Body>
+                    {data.items.map((s) => {
+                      const samePerson = isSamePatientAndBeneficiary(s);
+                      return (
+                        <Table.Row key={s.id} id={s.id} className="cursor-pointer group">
+                          <Table.Cell>
+                            <div className="flex flex-col gap-1">
+                              <span className="text-sm font-medium text-foreground transition-colors group-hover:text-accent">
+                                {s.patientName ?? s.displayName ?? (
+                                  <span className="text-foreground-400 italic">Sin nombre</span>
+                                )}
                               </span>
-                            )}
-                          </div>
-                        </Table.Cell>
-                        <Table.Cell>
-                          <IdentityDropdownCell entries={buildRutEntries(s)} title="RUTs" />
-                        </Table.Cell>
-                        <Table.Cell>
-                          <IdentityDropdownCell entries={buildPhoneEntries(s)} title="Teléfonos" />
-                        </Table.Cell>
-                        {viewMode === "abandonment" ? (
-                          <>
-                            <Table.Cell>
-                              <span className="text-xs text-foreground-400">
-                                {s.lastEventDate ? formatEventDate(s.lastEventDate, true) : "—"}
-                              </span>
-                            </Table.Cell>
-                            <Table.Cell className="text-right">
-                              {s.daysSinceLastEvent != null ? (
-                                <span className="text-xs font-medium tabular-nums text-foreground-600">
-                                  {s.daysSinceLastEvent}
+                              {s.beneficiaryName && !samePerson && (
+                                <span className="text-xs text-foreground-400">
+                                  Beneficiario: {s.beneficiaryName}
                                 </span>
-                              ) : (
-                                <span className="text-xs text-foreground-400">—</span>
                               )}
-                            </Table.Cell>
-                            <Table.Cell>
-                              {s.abandonmentBucket ? (
-                                <Chip
-                                  size="sm"
-                                  color={ABANDONMENT_BUCKET_COLORS[s.abandonmentBucket]}
-                                  variant="soft"
-                                >
-                                  {ABANDONMENT_BUCKET_LABELS[s.abandonmentBucket]}
-                                </Chip>
-                              ) : (
-                                <span className="text-xs text-foreground-400">—</span>
-                              )}
-                            </Table.Cell>
-                            <Table.Cell>
-                              <Chip size="sm" color={STATUS_COLORS[s.status]} variant="soft">
-                                {STATUS_LABELS[s.status]}
-                              </Chip>
-                            </Table.Cell>
-                          </>
-                        ) : (
-                          <>
-                            <Table.Cell>
-                              <div className="flex flex-col items-start gap-1">
-                                <Chip size="sm" color={KIND_COLORS[s.kind]} variant="tertiary">
-                                  {KIND_LABELS[s.kind]}
-                                </Chip>
-                                {s.allergenType && (
-                                  <Chip size="sm" color="accent" variant="tertiary">
-                                    {ALLERGEN_LABELS[s.allergenType]}
-                                  </Chip>
+                            </div>
+                          </Table.Cell>
+                          <Table.Cell>
+                            <IdentityDropdownCell entries={buildRutEntries(s)} title="RUTs" />
+                          </Table.Cell>
+                          <Table.Cell>
+                            <IdentityDropdownCell
+                              entries={buildPhoneEntries(s)}
+                              title="Teléfonos"
+                            />
+                          </Table.Cell>
+                          {isAbandonmentTab ? (
+                            <>
+                              <Table.Cell>
+                                <span className="text-xs text-foreground-400">
+                                  {s.lastEventDate ? formatEventDate(s.lastEventDate, true) : "—"}
+                                </span>
+                              </Table.Cell>
+                              <Table.Cell className="text-right">
+                                {s.daysSinceLastEvent != null ? (
+                                  <span className="text-xs font-medium tabular-nums text-foreground-600">
+                                    {s.daysSinceLastEvent}
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-foreground-400">—</span>
                                 )}
-                                {s.vaccineProduct && (
-                                  <Chip size="sm" color="default" variant="tertiary">
-                                    {VACCINE_LABELS[s.vaccineProduct]}
-                                  </Chip>
-                                )}
-                                {s.healthInsurance && (
+                              </Table.Cell>
+                              <Table.Cell>
+                                {s.abandonmentBucket ? (
                                   <Chip
                                     size="sm"
-                                    color={INSURANCE_COLORS[s.healthInsurance]}
-                                    variant="tertiary"
+                                    color={ABANDONMENT_BUCKET_COLORS[s.abandonmentBucket]}
+                                    variant="soft"
                                   >
-                                    {INSURANCE_LABELS[s.healthInsurance]}
+                                    {ABANDONMENT_BUCKET_LABELS[s.abandonmentBucket]}
                                   </Chip>
+                                ) : (
+                                  <span className="text-xs text-foreground-400">—</span>
                                 )}
-                              </div>
-                            </Table.Cell>
-                            <Table.Cell>
-                              <Chip size="sm" color={STATUS_COLORS[s.status]} variant="soft">
-                                {STATUS_LABELS[s.status]}
-                              </Chip>
-                            </Table.Cell>
-                            <Table.Cell>
-                              <span className="text-xs text-foreground-400">
-                                {s.lastEventDate ? formatEventDate(s.lastEventDate, true) : "—"}
-                              </span>
-                            </Table.Cell>
-                            <Table.Cell>
-                              {s.nextEventDate ? (
-                                <span className="text-xs font-medium text-accent">
-                                  {formatEventDate(s.nextEventDate)}
-                                </span>
-                              ) : (
-                                <span className="text-xs text-foreground-400">—</span>
-                              )}
-                            </Table.Cell>
-                            <Table.Cell className="text-right">
-                              <span className="text-xs tabular-nums text-foreground-500">
-                                {s.events.length}
-                              </span>
-                            </Table.Cell>
-                            <Table.Cell className="text-right">
-                              {s.upcomingCount > 0 ? (
-                                <Chip size="sm" color="accent" variant="soft">
-                                  {s.upcomingCount}
+                              </Table.Cell>
+                              <Table.Cell>
+                                <Chip size="sm" color={STATUS_COLORS[s.status]} variant="soft">
+                                  {STATUS_LABELS[s.status]}
                                 </Chip>
-                              ) : (
-                                <span className="text-xs text-foreground-400">—</span>
-                              )}
-                            </Table.Cell>
-                            <Table.Cell className="text-right">
-                              <div className="flex flex-col items-end gap-0.5">
-                                {(() => {
-                                  const fs = seriesFinancialStatus(s.events);
-                                  if (fs === "unknown")
-                                    return (
-                                      <span className="text-xs text-foreground-300 italic">
-                                        Por definir
-                                      </span>
-                                    );
-                                  if (fs === "free")
-                                    return (
-                                      <span className="text-xs text-success italic">Sin costo</span>
-                                    );
-                                  return (
-                                    <span className="text-xs text-foreground-400">
-                                      ${s.totalPaid.toLocaleString("es-CL")} /
-                                      <span className="text-foreground-500">
-                                        {" "}
-                                        ${s.totalExpected.toLocaleString("es-CL")}
-                                      </span>
-                                    </span>
-                                  );
-                                })()}
-                                {s.remainingExpected > 0 && (
-                                  <span className="text-xs font-medium text-danger">
-                                    −${s.remainingExpected.toLocaleString("es-CL")} pend.
+                              </Table.Cell>
+                            </>
+                          ) : (
+                            <>
+                              <Table.Cell>
+                                <div className="flex flex-col items-start gap-1">
+                                  <Chip size="sm" color={KIND_COLORS[s.kind]} variant="tertiary">
+                                    {KIND_LABELS[s.kind]}
+                                  </Chip>
+                                  {s.allergenType && (
+                                    <Chip size="sm" color="accent" variant="tertiary">
+                                      {ALLERGEN_LABELS[s.allergenType]}
+                                    </Chip>
+                                  )}
+                                  {s.vaccineProduct && (
+                                    <Chip size="sm" color="default" variant="tertiary">
+                                      {VACCINE_LABELS[s.vaccineProduct]}
+                                    </Chip>
+                                  )}
+                                  {s.healthInsurance && (
+                                    <Chip
+                                      size="sm"
+                                      color={INSURANCE_COLORS[s.healthInsurance]}
+                                      variant="tertiary"
+                                    >
+                                      {INSURANCE_LABELS[s.healthInsurance]}
+                                    </Chip>
+                                  )}
+                                </div>
+                              </Table.Cell>
+                              <Table.Cell>
+                                <Chip size="sm" color={STATUS_COLORS[s.status]} variant="soft">
+                                  {STATUS_LABELS[s.status]}
+                                </Chip>
+                              </Table.Cell>
+                              <Table.Cell>
+                                <span className="text-xs text-foreground-400">
+                                  {s.lastEventDate ? formatEventDate(s.lastEventDate, true) : "—"}
+                                </span>
+                              </Table.Cell>
+                              <Table.Cell>
+                                {s.nextEventDate ? (
+                                  <span className="text-xs font-medium text-accent">
+                                    {formatEventDate(s.nextEventDate)}
                                   </span>
+                                ) : (
+                                  <span className="text-xs text-foreground-400">—</span>
                                 )}
-                              </div>
-                            </Table.Cell>
-                          </>
-                        )}
-                      </Table.Row>
-                    );
-                  })}
-                </Table.Body>
-              </Table.Content>
-            </Table.ScrollContainer>
-            <Table.Footer className="border-t border-separator/60">
-              <div className="flex flex-col items-start justify-between gap-3 px-4 py-3 sm:flex-row sm:items-center">
-                <div className="flex flex-wrap items-center gap-3 text-default-500 text-sm">
-                  <span>
-                    {data.total > 0
-                      ? `${((page - 1) * pageSize + 1).toLocaleString("es-CL")}–${Math.min(
-                          page * pageSize,
-                          data.total
-                        ).toLocaleString("es-CL")} de ${data.total.toLocaleString("es-CL")}`
-                      : `${data.total.toLocaleString("es-CL")} resultados`}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-xs uppercase tracking-wide">Filas</span>
-                    <Select
-                      aria-label="Filas por página"
-                      className="w-24"
-                      value={String(pageSize)}
-                      onChange={(key) =>
-                        key && setPageSize(Number(key) as (typeof PAGE_SIZE_OPTIONS)[number])
-                      }
-                      variant="secondary"
-                    >
-                      <Label className="sr-only">Filas por página</Label>
-                      <Select.Trigger>
-                        <Select.Value />
-                        <Select.Indicator />
-                      </Select.Trigger>
-                      <Select.Popover>
-                        <ListBox>
-                          {PAGE_SIZE_OPTIONS.map((n) => (
-                            <ListBox.Item key={n} id={String(n)} textValue={`${n}`}>
-                              {n}
-                              <ListBox.ItemIndicator />
-                            </ListBox.Item>
-                          ))}
-                        </ListBox>
-                      </Select.Popover>
-                    </Select>
+                              </Table.Cell>
+                              <Table.Cell className="text-right">
+                                <span className="text-xs tabular-nums text-foreground-500">
+                                  {s.events.length}
+                                </span>
+                              </Table.Cell>
+                              <Table.Cell className="text-right">
+                                {s.upcomingCount > 0 ? (
+                                  <Chip size="sm" color="accent" variant="soft">
+                                    {s.upcomingCount}
+                                  </Chip>
+                                ) : (
+                                  <span className="text-xs text-foreground-400">—</span>
+                                )}
+                              </Table.Cell>
+                              <Table.Cell className="text-right">
+                                <div className="flex flex-col items-end gap-0.5">
+                                  {(() => {
+                                    const fs = seriesFinancialStatus(s.events);
+                                    if (fs === "unknown")
+                                      return (
+                                        <span className="text-xs text-foreground-300 italic">
+                                          Por definir
+                                        </span>
+                                      );
+                                    if (fs === "free")
+                                      return (
+                                        <span className="text-xs text-success italic">
+                                          Sin costo
+                                        </span>
+                                      );
+                                    return (
+                                      <span className="text-xs text-foreground-400">
+                                        ${s.totalPaid.toLocaleString("es-CL")} /
+                                        <span className="text-foreground-500">
+                                          {" "}
+                                          ${s.totalExpected.toLocaleString("es-CL")}
+                                        </span>
+                                      </span>
+                                    );
+                                  })()}
+                                  {s.remainingExpected > 0 && (
+                                    <span className="text-xs font-medium text-danger">
+                                      −${s.remainingExpected.toLocaleString("es-CL")} pend.
+                                    </span>
+                                  )}
+                                </div>
+                              </Table.Cell>
+                            </>
+                          )}
+                        </Table.Row>
+                      );
+                    })}
+                  </Table.Body>
+                </Table.Content>
+              </Table.ScrollContainer>
+              <Table.Footer className="border-t border-separator/60">
+                <div className="flex flex-col items-start justify-between gap-3 px-4 py-3 sm:flex-row sm:items-center">
+                  <div className="flex flex-wrap items-center gap-3 text-default-500 text-sm">
+                    <span>
+                      {data.total > 0
+                        ? `${((page - 1) * pageSize + 1).toLocaleString("es-CL")}–${Math.min(
+                            page * pageSize,
+                            data.total
+                          ).toLocaleString("es-CL")} de ${data.total.toLocaleString("es-CL")}`
+                        : `${data.total.toLocaleString("es-CL")} resultados`}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-xs uppercase tracking-wide">Filas</span>
+                      <Select
+                        aria-label="Filas por página"
+                        className="w-24"
+                        value={String(pageSize)}
+                        onChange={(key) =>
+                          key && setPageSize(Number(key) as (typeof PAGE_SIZE_OPTIONS)[number])
+                        }
+                        variant="secondary"
+                      >
+                        <Label className="sr-only">Filas por página</Label>
+                        <Select.Trigger>
+                          <Select.Value />
+                          <Select.Indicator />
+                        </Select.Trigger>
+                        <Select.Popover>
+                          <ListBox>
+                            {PAGE_SIZE_OPTIONS.map((n) => (
+                              <ListBox.Item key={n} id={String(n)} textValue={`${n}`}>
+                                {n}
+                                <ListBox.ItemIndicator />
+                              </ListBox.Item>
+                            ))}
+                          </ListBox>
+                        </Select.Popover>
+                      </Select>
+                    </div>
                   </div>
-                </div>
 
-                {totalPages > 1 ? (
-                  <Pagination className="w-full sm:w-auto" size="sm">
-                    <Pagination.Summary className="text-default-500 text-sm">
-                      Página {page.toLocaleString("es-CL")} de {totalPages.toLocaleString("es-CL")}
-                    </Pagination.Summary>
-                    <Pagination.Content>
-                      <Pagination.Item>
-                        <Pagination.Previous
-                          isDisabled={page === 1}
-                          onPress={() => setPage((p) => Math.max(1, p - 1))}
-                        >
-                          <Pagination.PreviousIcon />
-                          <span>Anterior</span>
-                        </Pagination.Previous>
-                      </Pagination.Item>
-                      {pageItems.map((item) =>
-                        item.type === "ellipsis" ? (
-                          <Pagination.Item key={item.key}>
-                            <Pagination.Ellipsis />
-                          </Pagination.Item>
-                        ) : (
-                          <Pagination.Item key={item.key}>
-                            <Pagination.Link
-                              isActive={item.value === page}
-                              onPress={() => setPage(item.value ?? 1)}
-                            >
-                              {item.value}
-                            </Pagination.Link>
-                          </Pagination.Item>
-                        )
-                      )}
-                      <Pagination.Item>
-                        <Pagination.Next
-                          isDisabled={page === totalPages}
-                          onPress={() => setPage((p) => Math.min(totalPages, p + 1))}
-                        >
-                          <span>Siguiente</span>
-                          <Pagination.NextIcon />
-                        </Pagination.Next>
-                      </Pagination.Item>
-                    </Pagination.Content>
-                  </Pagination>
-                ) : null}
-              </div>
-            </Table.Footer>
-          </Table>
-        )}
-      </Card>
+                  {totalPages > 1 ? (
+                    <Pagination className="w-full sm:w-auto" size="sm">
+                      <Pagination.Summary className="text-default-500 text-sm">
+                        Página {page.toLocaleString("es-CL")} de{" "}
+                        {totalPages.toLocaleString("es-CL")}
+                      </Pagination.Summary>
+                      <Pagination.Content>
+                        <Pagination.Item>
+                          <Pagination.Previous
+                            isDisabled={page === 1}
+                            onPress={() => setPage((p) => Math.max(1, p - 1))}
+                          >
+                            <Pagination.PreviousIcon />
+                            <span>Anterior</span>
+                          </Pagination.Previous>
+                        </Pagination.Item>
+                        {pageItems.map((item) =>
+                          item.type === "ellipsis" ? (
+                            <Pagination.Item key={item.key}>
+                              <Pagination.Ellipsis />
+                            </Pagination.Item>
+                          ) : (
+                            <Pagination.Item key={item.key}>
+                              <Pagination.Link
+                                isActive={item.value === page}
+                                onPress={() => setPage(item.value ?? 1)}
+                              >
+                                {item.value}
+                              </Pagination.Link>
+                            </Pagination.Item>
+                          )
+                        )}
+                        <Pagination.Item>
+                          <Pagination.Next
+                            isDisabled={page === totalPages}
+                            onPress={() => setPage((p) => Math.min(totalPages, p + 1))}
+                          >
+                            <span>Siguiente</span>
+                            <Pagination.NextIcon />
+                          </Pagination.Next>
+                        </Pagination.Item>
+                      </Pagination.Content>
+                    </Pagination>
+                  ) : null}
+                </div>
+              </Table.Footer>
+            </Table>
+          )}
+        </Card>
+      )}
 
       {/* ── Detail Drawer ────────────────────────────────────────────────── */}
       <Drawer>

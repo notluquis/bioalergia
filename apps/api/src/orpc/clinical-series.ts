@@ -3,6 +3,7 @@ import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import {
   clinicalSeriesDetailInputSchema,
   clinicalSeriesDetectDuplicatesOutputSchema,
+  clinicalSeriesInsuranceStatsSchema,
   clinicalSeriesListInputSchema,
   clinicalSeriesListOutputSchema,
   clinicalSeriesMergeInputSchema,
@@ -20,6 +21,7 @@ import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
 import {
   detectDuplicateSeries,
+  getClinicalSeriesInsuranceStats,
   getClinicalSeriesSnapshotById,
   listClinicalSeriesSnapshots,
   mergeClinicalSeries,
@@ -78,6 +80,14 @@ const clinicalSeriesORPCRouterBase = {
     .output(clinicalSeriesListOutputSchema)
     .handler(async ({ input }: { input: z.input<typeof clinicalSeriesListInputSchema> }) => {
       return await listClinicalSeriesSnapshots(input);
+    }),
+
+  insuranceStats: readClinicalSeries
+    .route({ method: "GET", path: "/stats/insurance" })
+    .input(clinicalSeriesListInputSchema)
+    .output(clinicalSeriesInsuranceStatsSchema)
+    .handler(async ({ input }: { input: z.input<typeof clinicalSeriesListInputSchema> }) => {
+      return await getClinicalSeriesInsuranceStats(input);
     }),
 
   rebuild: updateClinicalSeries

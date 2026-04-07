@@ -130,6 +130,14 @@ export interface ClinicalSeriesListResult {
   total: number;
 }
 
+export interface ClinicalSeriesInsuranceStats {
+  fonasa: number;
+  isapre: number;
+  particular: number;
+  total: number;
+  unidentified: number;
+}
+
 export interface RebuildSeriesParams {
   autoMerge?: boolean;
   from?: string; // ISO date
@@ -227,6 +235,14 @@ export const ClinicalSeriesSnapshotSchema = z.object({
 export const RebuildSeriesResultSchema = z.object({
   jobId: z.string(),
   message: z.string(),
+});
+
+export const ClinicalSeriesInsuranceStatsSchema = z.object({
+  fonasa: z.number().int(),
+  isapre: z.number().int(),
+  particular: z.number().int(),
+  total: z.number().int(),
+  unidentified: z.number().int(),
 });
 
 export interface ClinicalSeriesDuplicate {

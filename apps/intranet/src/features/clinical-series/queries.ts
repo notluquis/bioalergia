@@ -9,6 +9,7 @@ import { compactORPCInput } from "@/lib/orpc-input";
 import type {
   ClinicalSeriesDuplicate,
   ClinicalSeriesFilters,
+  ClinicalSeriesInsuranceStats,
   ClinicalSeriesListResult,
   ClinicalSeriesSnapshot,
   MergeClinicalSeriesParams,
@@ -19,6 +20,7 @@ import type {
 } from "./types";
 import { clinicalSeriesORPCClient, toClinicalSeriesApiError } from "./orpc";
 import {
+  ClinicalSeriesInsuranceStatsSchema,
   ClinicalSeriesSnapshotSchema,
   DetectDuplicatesResultSchema,
   MergeClinicalSeriesResultSchema,
@@ -33,6 +35,8 @@ export const clinicalSeriesKeys = {
   details: () => [...clinicalSeriesKeys.all, "detail"] as const,
   detail: (id: number) => [...clinicalSeriesKeys.details(), id] as const,
   duplicates: () => [...clinicalSeriesKeys.all, "duplicates"] as const,
+  insuranceStats: (filters?: ClinicalSeriesFilters) =>
+    [...clinicalSeriesKeys.all, "insurance-stats", filters] as const,
 };
 
 /**
@@ -60,6 +64,18 @@ export async function fetchClinicalSeries(
 export async function fetchClinicalSeriesDetail(id: number): Promise<ClinicalSeriesSnapshot> {
   try {
     return ClinicalSeriesSnapshotSchema.parse(await clinicalSeriesORPCClient.detail({ id }));
+  } catch (error) {
+    throw toClinicalSeriesApiError(error);
+  }
+}
+
+export async function fetchClinicalSeriesInsuranceStats(
+  filters?: ClinicalSeriesFilters
+): Promise<ClinicalSeriesInsuranceStats> {
+  try {
+    return ClinicalSeriesInsuranceStatsSchema.parse(
+      await clinicalSeriesORPCClient.insuranceStats(compactORPCInput(filters) ?? {})
+    );
   } catch (error) {
     throw toClinicalSeriesApiError(error);
   }
@@ -98,6 +114,13 @@ export function useClinicalSeriesDetail(id: number) {
     enabled: !!id,
     queryFn: () => fetchClinicalSeriesDetail(id),
     queryKey: clinicalSeriesKeys.detail(id),
+  });
+}
+
+export function useClinicalSeriesInsuranceStats(filters?: ClinicalSeriesFilters) {
+  return useQuery({
+    queryFn: () => fetchClinicalSeriesInsuranceStats(filters),
+    queryKey: clinicalSeriesKeys.insuranceStats(filters),
   });
 }
 

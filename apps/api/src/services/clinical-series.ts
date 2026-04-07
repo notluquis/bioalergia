@@ -428,12 +428,144 @@ type ClinicalSeriesFilters = {
   view?: "abandonment" | "series";
 };
 
+export type ClinicalSeriesInsuranceStats = {
+  fonasa: number;
+  isapre: number;
+  particular: number;
+  total: number;
+  unidentified: number;
+};
+
 function resolveAbandonmentBucket(daysSinceLastEvent: null | number) {
   if (daysSinceLastEvent == null || daysSinceLastEvent < 30) return null;
   if (daysSinceLastEvent < 60) return "month_1" as const;
   if (daysSinceLastEvent < 90) return "month_2" as const;
   if (daysSinceLastEvent < 120) return "month_3" as const;
   return "month_4_plus" as const;
+}
+
+type PreparedClinicalSeriesFilters = {
+  abandonmentFilterSql: ReturnType<typeof sql>;
+  effectiveKind: ClinicalSeriesKind | null;
+  effectiveStatus: ClinicalSeriesFilters["status"] | null;
+  nextVisitFrom: null | string;
+  nextVisitTo: null | string;
+  normalizedBeneficiaryRut: null | string;
+  normalizedPatientName: null | string;
+  normalizedPatientPhone: null | string;
+  normalizedPatientRut: null | string;
+  orderBy: ReturnType<typeof sql>;
+  page: number;
+  pageSize: number;
+  phoneFilterSql: (phonePattern: null | string) => ReturnType<typeof sql>;
+  queryFilterSql: ReturnType<typeof sql>;
+  today: string;
+  view: "abandonment" | "series";
+};
+
+function prepareClinicalSeriesFilters(filters?: ClinicalSeriesFilters): PreparedClinicalSeriesFilters {
+  const page = Math.max(1, filters?.page ?? 1);
+  const pageSize = Math.min(100, Math.max(1, filters?.pageSize ?? 20));
+  const today = dayjs().tz(TIMEZONE).format("YYYY-MM-DD");
+  const view = filters?.view ?? "series";
+  const normalizedBeneficiaryRut = filters?.beneficiaryRut ? normalizeRut(filters.beneficiaryRut) : null;
+  const normalizedPatientRut = filters?.patientRut ? normalizeRut(filters.patientRut) : null;
+  const normalizedPatientName = filters?.patientName ? `%${normalizeName(filters.patientName)}%` : null;
+  const normalizedPatientPhone = filters?.patientPhone ? `%${normalizePhoneSearch(filters.patientPhone)}%` : null;
+  const nextVisitFrom = filters?.nextVisitFrom ?? null;
+  const nextVisitTo = filters?.nextVisitTo ?? null;
+  const normalizedQuery = filters?.query ? normalizeName(filters.query) : null;
+  const queryRut = filters?.query ? normalizeRut(filters.query) : null;
+  const queryPhone = filters?.query ? normalizePhoneSearch(filters.query) : null;
+  const queryTokens = normalizedQuery
+    ? normalizedQuery
+        .split(" ")
+        .map((token) => token.trim())
+        .filter((token) => token.length >= 2)
+    : [];
+  const persistedPhoneFilterSql = (phonePattern: null | string) =>
+    sql`(
+      regexp_replace(coalesce(cs.patient_phones::text, '[]'), '\D', '', 'g') LIKE ${phonePattern}
+      OR regexp_replace(coalesce(cs.beneficiary_phones::text, '[]'), '\D', '', 'g') LIKE ${phonePattern}
+    )`;
+  const eventPhoneFilterSql = (phonePattern: null | string) =>
+    sql`EXISTS (
+      SELECT 1
+      FROM events ef
+      WHERE ef.clinical_series_id = cs.id
+        AND regexp_replace(concat_ws(' ', coalesce(ef.summary, ''), coalesce(ef.description, '')), '\D', '', 'g') LIKE ${phonePattern}
+    )`;
+  const phoneFilterSql = (phonePattern: null | string) =>
+    sql`(${persistedPhoneFilterSql(phonePattern)} OR ${eventPhoneFilterSql(phonePattern)})`;
+
+  const textHaystack = sql`lower(concat_ws(' ', coalesce(cs.patient_name, ''), coalesce(cs.beneficiary_name, ''), coalesce(cs.display_name, ''), coalesce(cs.patient_rut, ''), coalesce(cs.beneficiary_rut, '')))`;
+  const queryFilterSql =
+    normalizedQuery || queryRut || queryPhone
+      ? sql`(
+          (${queryRut}::text IS NOT NULL AND (cs.patient_rut = ${queryRut} OR cs.beneficiary_rut = ${queryRut}))
+          OR (${queryPhone}::text IS NOT NULL AND ${phoneFilterSql(queryPhone ? `%${queryPhone}%` : null)})
+          OR (${normalizedQuery ? `%${normalizedQuery}%` : null}::text IS NOT NULL AND ${textHaystack} LIKE ${normalizedQuery ? `%${normalizedQuery}%` : null})
+          OR ${
+            queryTokens.length > 0
+              ? sql.join(
+                  queryTokens.map((token) => sql`${textHaystack} LIKE ${`%${token}%`}`),
+                  sql` AND `,
+                )
+              : sql`FALSE`
+          }
+        )`
+      : sql`TRUE`;
+  const effectiveKind = view === "abandonment" ? "SUBCUTANEOUS_TREATMENT" : (filters?.kind ?? null);
+  const effectiveStatus = view === "abandonment" ? null : (filters?.status ?? null);
+  const daysSinceLastEventSql = sql<number | null>`CASE
+    WHEN es.last_event_date IS NULL THEN NULL
+    ELSE (${today}::date - es.last_event_date)
+  END`;
+  const abandonmentBucketSql = sql<string | null>`CASE
+    WHEN ${daysSinceLastEventSql} IS NULL OR ${daysSinceLastEventSql} < 30 THEN NULL
+    WHEN ${daysSinceLastEventSql} < 60 THEN 'month_1'
+    WHEN ${daysSinceLastEventSql} < 90 THEN 'month_2'
+    WHEN ${daysSinceLastEventSql} < 120 THEN 'month_3'
+    ELSE 'month_4_plus'
+  END`;
+  const abandonmentFilterSql =
+    view === "abandonment"
+      ? sql`(
+          cs.kind::text = 'SUBCUTANEOUS_TREATMENT'
+          AND cs.status::text NOT IN ('COMPLETED', 'CANCELLED')
+          AND es.last_event_date IS NOT NULL
+          AND es.next_event_date IS NULL
+          AND ${daysSinceLastEventSql} >= 30
+          AND (${filters?.abandonmentBucket ?? null}::text IS NULL OR ${abandonmentBucketSql} = ${
+            filters?.abandonmentBucket ?? null
+          }::text)
+        )`
+      : sql`TRUE`;
+  const orderBy = resolveClinicalSeriesOrderBy(
+    view === "abandonment" && filters?.sortColumn == null
+      ? { ...filters, sortColumn: "daysSinceLastEvent", sortDirection: "descending" }
+      : filters,
+    today,
+  );
+
+  return {
+    abandonmentFilterSql,
+    effectiveKind,
+    effectiveStatus,
+    nextVisitFrom,
+    nextVisitTo,
+    normalizedBeneficiaryRut,
+    normalizedPatientName,
+    normalizedPatientPhone,
+    normalizedPatientRut,
+    orderBy,
+    page,
+    pageSize,
+    phoneFilterSql,
+    queryFilterSql,
+    today,
+    view,
+  };
 }
 
 function normalizePhoneSearch(value: null | string | undefined): null | string {
@@ -1125,20 +1257,74 @@ function inferVaccineProduct(
   return null;
 }
 
-// Health insurance — detect from descriptions ("fonasa", "isapre", known ISAPREs).
+// Health insurance — detect from descriptions using a normalized/fuzzy pass so
+// secretary notes with separators, casing differences, and mild typos still map
+// to FONASA / ISAPRE / PARTICULAR reliably.
 const FONASA_PATTERN = /\bfonasa\b/i;
-const ISAPRE_PATTERN =
-  /\bisapre\b|\bcolmena\b|\bconsalud\b|\bbanm[eé]dica\b|\bcruz\s*blanca\b|\bvida\s*tres\b|\bnueva\s*m[aá]s\s*vida\b/i;
 const PARTICULAR_PATTERN = /\bparticular\b/i;
+const ISAPRE_ALIAS_CANDIDATES = [
+  "banmedica",
+  "isalud",
+  "colmena",
+  "consalud",
+  "cruz blanca",
+  "cruzblanca",
+  "cruz del norte",
+  "cruzdelnorte",
+  "nueva masvida",
+  "nuevamasvida",
+  "masvida",
+  "fundacion",
+  "vida tres",
+  "vidatres",
+  "esencial",
+  "codelco",
+] as const;
+
+function textContainsNormalizedAlias(text: string, alias: string) {
+  const compactText = text.replace(/\s+/g, "");
+  const compactAlias = alias.replace(/\s+/g, "");
+  return text.includes(alias) || compactText.includes(compactAlias);
+}
+
+function hasCloseInsuranceAlias(text: string) {
+  const tokens = text.split(" ").filter((token) => token.length >= 4);
+  const compactText = text.replace(/\s+/g, "");
+
+  for (const alias of ISAPRE_ALIAS_CANDIDATES) {
+    if (textContainsNormalizedAlias(text, alias)) return true;
+
+    const aliasTokens = alias.split(" ").filter((token) => token.length >= 4);
+    if (
+      aliasTokens.length > 1 &&
+      aliasTokens.every((aliasToken) =>
+        tokens.some((token) => jaroWinkler(token, aliasToken) >= 0.92),
+      )
+    ) {
+      return true;
+    }
+
+    const compactAlias = alias.replace(/\s+/g, "");
+    if (compactAlias.length >= 6 && jaroWinkler(compactText, compactAlias) >= 0.9) {
+      return true;
+    }
+    if (tokens.some((token) => jaroWinkler(token, compactAlias) >= 0.9)) {
+      return true;
+    }
+  }
+
+  return false;
+}
 
 function inferHealthInsurance(
   events: Array<{ description: null | string; summary: null | string }>,
 ): HealthInsuranceType | null {
   for (const event of events) {
     const text = joinClinicalText(event.summary, event.description);
+    const normalizedText = normalizeName(text);
     if (FONASA_PATTERN.test(text)) return "FONASA";
-    if (ISAPRE_PATTERN.test(text)) return "ISAPRE";
     if (PARTICULAR_PATTERN.test(text)) return "PARTICULAR";
+    if (normalizedText.includes("isapre") || hasCloseInsuranceAlias(normalizedText)) return "ISAPRE";
   }
   return null;
 }
@@ -2762,83 +2948,24 @@ export async function getClinicalSeriesSnapshotById(id: number): Promise<Clinica
 }
 
 export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilters) {
-  const page = Math.max(1, filters?.page ?? 1);
-  const pageSize = Math.min(100, Math.max(1, filters?.pageSize ?? 20));
-  const today = dayjs().tz(TIMEZONE).format("YYYY-MM-DD");
-  const view = filters?.view ?? "series";
-  const normalizedBeneficiaryRut = filters?.beneficiaryRut ? normalizeRut(filters.beneficiaryRut) : null;
-  const normalizedPatientRut = filters?.patientRut ? normalizeRut(filters.patientRut) : null;
-  const normalizedPatientName = filters?.patientName ? `%${normalizeName(filters.patientName)}%` : null;
-  const normalizedPatientPhone = filters?.patientPhone ? `%${normalizePhoneSearch(filters.patientPhone)}%` : null;
-  const nextVisitFrom = filters?.nextVisitFrom ?? null;
-  const nextVisitTo = filters?.nextVisitTo ?? null;
-  const normalizedQuery = filters?.query ? normalizeName(filters.query) : null;
-  const queryRut = filters?.query ? normalizeRut(filters.query) : null;
-  const queryPhone = filters?.query ? normalizePhoneSearch(filters.query) : null;
-  const queryTokens = normalizedQuery
-    ? normalizedQuery
-        .split(" ")
-        .map((token) => token.trim())
-        .filter((token) => token.length >= 2)
-    : [];
-  const persistedPhoneFilterSql = (phonePattern: null | string) =>
-    sql`(
-      regexp_replace(coalesce(cs.patient_phones::text, '[]'), '\D', '', 'g') LIKE ${phonePattern}
-      OR regexp_replace(coalesce(cs.beneficiary_phones::text, '[]'), '\D', '', 'g') LIKE ${phonePattern}
-    )`;
-  const eventPhoneFilterSql = (phonePattern: null | string) =>
-    sql`EXISTS (
-      SELECT 1
-      FROM events ef
-      WHERE ef.clinical_series_id = cs.id
-        AND regexp_replace(concat_ws(' ', coalesce(ef.summary, ''), coalesce(ef.description, '')), '\D', '', 'g') LIKE ${phonePattern}
-    )`;
-  const phoneFilterSql = (phonePattern: null | string) =>
-    sql`(${persistedPhoneFilterSql(phonePattern)} OR ${eventPhoneFilterSql(phonePattern)})`;
-
-  const textHaystack = sql`lower(concat_ws(' ', coalesce(cs.patient_name, ''), coalesce(cs.beneficiary_name, ''), coalesce(cs.display_name, ''), coalesce(cs.patient_rut, ''), coalesce(cs.beneficiary_rut, '')))`;
-  const queryFilterSql =
-    normalizedQuery || queryRut || queryPhone
-      ? sql`(
-          (${queryRut}::text IS NOT NULL AND (cs.patient_rut = ${queryRut} OR cs.beneficiary_rut = ${queryRut}))
-          OR (${queryPhone}::text IS NOT NULL AND ${phoneFilterSql(queryPhone ? `%${queryPhone}%` : null)})
-          OR (${normalizedQuery ? `%${normalizedQuery}%` : null}::text IS NOT NULL AND ${textHaystack} LIKE ${normalizedQuery ? `%${normalizedQuery}%` : null})
-          OR ${
-            queryTokens.length > 0
-              ? sql.join(
-                  queryTokens.map((token) => sql`${textHaystack} LIKE ${`%${token}%`}`),
-                  sql` AND `,
-                )
-              : sql`FALSE`
-          }
-        )`
-      : sql`TRUE`;
-  const effectiveKind = view === "abandonment" ? "SUBCUTANEOUS_TREATMENT" : (filters?.kind ?? null);
-  const effectiveStatus = view === "abandonment" ? null : (filters?.status ?? null);
-  const daysSinceLastEventSql = sql<number | null>`CASE
-    WHEN es.last_event_date IS NULL THEN NULL
-    ELSE (${today}::date - es.last_event_date)
-  END`;
-  const abandonmentBucketSql = sql<string | null>`CASE
-    WHEN ${daysSinceLastEventSql} IS NULL OR ${daysSinceLastEventSql} < 30 THEN NULL
-    WHEN ${daysSinceLastEventSql} < 60 THEN 'month_1'
-    WHEN ${daysSinceLastEventSql} < 90 THEN 'month_2'
-    WHEN ${daysSinceLastEventSql} < 120 THEN 'month_3'
-    ELSE 'month_4_plus'
-  END`;
-  const abandonmentFilterSql =
-    view === "abandonment"
-      ? sql`(
-          cs.kind::text = 'SUBCUTANEOUS_TREATMENT'
-          AND cs.status::text NOT IN ('COMPLETED', 'CANCELLED')
-          AND es.last_event_date IS NOT NULL
-          AND es.next_event_date IS NULL
-          AND ${daysSinceLastEventSql} >= 30
-          AND (${filters?.abandonmentBucket ?? null}::text IS NULL OR ${abandonmentBucketSql} = ${
-            filters?.abandonmentBucket ?? null
-          }::text)
-        )`
-      : sql`TRUE`;
+  const {
+    abandonmentFilterSql,
+    effectiveKind,
+    effectiveStatus,
+    nextVisitFrom,
+    nextVisitTo,
+    normalizedBeneficiaryRut,
+    normalizedPatientName,
+    normalizedPatientPhone,
+    normalizedPatientRut,
+    orderBy,
+    page,
+    pageSize,
+    phoneFilterSql,
+    queryFilterSql,
+    today,
+    view,
+  } = prepareClinicalSeriesFilters(filters);
 
   // Count total matching records (without pagination)
   const total = Number(
@@ -2882,12 +3009,6 @@ export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilter
     ).rows[0]?.count ?? 0,
   );
 
-  const orderBy = resolveClinicalSeriesOrderBy(
-    view === "abandonment" && filters?.sortColumn == null
-      ? { ...filters, sortColumn: "daysSinceLastEvent", sortDirection: "descending" }
-      : filters,
-    today,
-  );
   const seriesResult = await sql<{ id: number }>`
     WITH event_stats AS (
       SELECT
@@ -2971,6 +3092,119 @@ export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilter
   ).filter((item): item is ClinicalSeriesSnapshot => item != null);
 
   return { items, page, pageSize, total };
+}
+
+export async function getClinicalSeriesInsuranceStats(
+  filters?: ClinicalSeriesFilters,
+): Promise<ClinicalSeriesInsuranceStats> {
+  const {
+    abandonmentFilterSql,
+    effectiveKind,
+    effectiveStatus,
+    nextVisitFrom,
+    nextVisitTo,
+    normalizedBeneficiaryRut,
+    normalizedPatientName,
+    normalizedPatientPhone,
+    normalizedPatientRut,
+    phoneFilterSql,
+    queryFilterSql,
+    today,
+  } = prepareClinicalSeriesFilters({
+    ...filters,
+    page: 1,
+    pageSize: 100,
+    view: "series",
+  });
+
+  const matchingSeries = await sql<{
+    healthInsurance: HealthInsuranceType | null;
+    id: number;
+  }>`
+    WITH event_stats AS (
+      SELECT
+        e.clinical_series_id AS series_id,
+        MAX(
+          CASE
+            WHEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
+            THEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date)
+            ELSE NULL
+          END
+        ) AS last_event_date,
+        MIN(
+          CASE
+            WHEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) > ${today}::date
+            THEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date)
+            ELSE NULL
+          END
+        ) AS next_event_date
+      FROM events e
+      WHERE e.clinical_series_id IS NOT NULL
+      GROUP BY e.clinical_series_id
+    )
+    SELECT
+      cs.id,
+      cs.health_insurance::text AS "healthInsurance"
+    FROM clinical_series cs
+    LEFT JOIN event_stats es ON es.series_id = cs.id
+    WHERE (${normalizedBeneficiaryRut}::text IS NULL OR cs.beneficiary_rut = ${normalizedBeneficiaryRut})
+      AND (${effectiveKind}::text IS NULL OR cs.kind::text = ${effectiveKind})
+      AND (${effectiveStatus}::text IS NULL OR cs.status::text = ${effectiveStatus})
+      AND (${normalizedPatientName}::text IS NULL OR lower(coalesce(cs.patient_name, '')) LIKE ${normalizedPatientName})
+      AND (${normalizedPatientRut}::text IS NULL OR cs.patient_rut = ${normalizedPatientRut})
+      AND (${normalizedPatientPhone}::text IS NULL OR ${phoneFilterSql(normalizedPatientPhone)})
+      AND (${nextVisitFrom}::date IS NULL OR es.next_event_date >= ${nextVisitFrom}::date)
+      AND (${nextVisitTo}::date IS NULL OR es.next_event_date <= ${nextVisitTo}::date)
+      AND ${queryFilterSql}
+      AND ${abandonmentFilterSql}
+  `.execute(kysely);
+
+  const inferredById = new Map<number, HealthInsuranceType | null>();
+  const matchingIds = matchingSeries.rows.map((row) => row.id);
+  if (matchingIds.length > 0) {
+    const matchedSeries = await db.clinicalSeries.findMany({
+      select: {
+        events: {
+          select: {
+            description: true,
+            summary: true,
+          },
+        },
+        id: true,
+      },
+      where: { id: { in: matchingIds } },
+    });
+
+    for (const series of matchedSeries) {
+      inferredById.set(series.id, inferHealthInsurance(series.events));
+    }
+  }
+
+  let fonasa = 0;
+  let isapre = 0;
+  let particular = 0;
+  let unidentified = 0;
+
+  for (const row of matchingSeries.rows) {
+    const insurance = inferredById.get(row.id) ?? row.healthInsurance ?? null;
+    if (insurance === "FONASA") {
+      fonasa += 1;
+    } else if (insurance === "ISAPRE") {
+      isapre += 1;
+    } else if (insurance === "PARTICULAR") {
+      particular += 1;
+    } else {
+      unidentified += 1;
+    }
+  }
+
+  return {
+    fonasa,
+    isapre,
+    particular,
+    total: matchingSeries.rows.length,
+    unidentified,
+  };
 }
 
 // ─── Duplicate Detection & Merge ─────────────────────────────────────────────
