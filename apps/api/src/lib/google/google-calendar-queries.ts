@@ -17,6 +17,56 @@ const EVENT_DATE_SQL = sql<string>`
     (e.start_date_time AT TIME ZONE ${TIMEZONE})::date
   )
 `;
+const HAS_LINKED_DTE_SQL = sql<boolean>`
+  EXISTS (
+    SELECT 1
+    FROM event_dte_sale_links l
+    WHERE l.event_id = e.id
+      AND l.status != 'REJECTED'
+  )
+`;
+const LINKED_DTE_TOTAL_AMOUNT_SQL = sql<number>`
+  (
+    SELECT COALESCE(SUM(COALESCE(s.total_amount, 0)), 0)::float
+    FROM event_dte_sale_links l
+    JOIN dte_sale_details s ON s.id = l.dte_sale_detail_id
+    WHERE l.event_id = e.id
+      AND l.status != 'REJECTED'
+  )
+`;
+const EFFECTIVE_AMOUNT_EXPECTED_SQL = sql<number>`
+  CASE
+    WHEN ${HAS_LINKED_DTE_SQL} THEN ${LINKED_DTE_TOTAL_AMOUNT_SQL}
+    ELSE COALESCE(e.amount_expected, 0)
+  END
+`;
+const EFFECTIVE_AMOUNT_PAID_SQL = sql<number>`
+  CASE
+    WHEN ${HAS_LINKED_DTE_SQL} THEN ${LINKED_DTE_TOTAL_AMOUNT_SQL}
+    ELSE COALESCE(e.amount_paid, 0)
+  END
+`;
+const EFFECTIVE_ATTENDED_SQL = sql<boolean | null>`
+  CASE
+    WHEN ${HAS_LINKED_DTE_SQL} THEN true
+    ELSE e.attended
+  END
+`;
+const LINKED_PATIENT_NAME_SQL = sql<string | null>`
+  (
+    SELECT s.client_name
+    FROM event_dte_sale_links l
+    JOIN dte_sale_details s ON s.id = l.dte_sale_detail_id
+    WHERE l.event_id = e.id
+      AND l.status != 'REJECTED'
+      AND s.client_rut = COALESCE(e.patient_rut, cs.patient_rut)
+    ORDER BY l.updated_at DESC, s.document_date DESC, s.folio DESC
+    LIMIT 1
+  )
+`;
+const EFFECTIVE_PATIENT_NAME_SQL = sql<string | null>`
+  coalesce(${LINKED_PATIENT_NAME_SQL}, e.patient_name, cs.patient_name)
+`;
 
 const formatDateOnly = (value: string | Date | null | undefined): string => {
   if (!value) {
@@ -230,8 +280,8 @@ function getTotals(query: EventBaseQuery) {
     .select([
       sql<number>`count(e.id)`.as("events"),
       sql<number>`count(distinct ${EVENT_DATE_ONLY})`.as("days"),
-      sql<number>`coalesce(sum(e.amount_expected), 0)`.as("amountExpected"),
-      sql<number>`coalesce(sum(e.amount_paid), 0)`.as("amountPaid"),
+      sql<number>`coalesce(sum(${EFFECTIVE_AMOUNT_EXPECTED_SQL}), 0)`.as("amountExpected"),
+      sql<number>`coalesce(sum(${EFFECTIVE_AMOUNT_PAID_SQL}), 0)`.as("amountPaid"),
     ])
     .executeTakeFirst();
 }
@@ -242,8 +292,8 @@ function getByMonth(query: EventBaseQuery) {
       EVENT_YEAR.as("year"),
       EVENT_MONTH.as("month"),
       sql<number>`count(e.id)`.as("total"),
-      sql<number>`coalesce(sum(e.amount_expected), 0)`.as("amountExpected"),
-      sql<number>`coalesce(sum(e.amount_paid), 0)`.as("amountPaid"),
+      sql<number>`coalesce(sum(${EFFECTIVE_AMOUNT_EXPECTED_SQL}), 0)`.as("amountExpected"),
+      sql<number>`coalesce(sum(${EFFECTIVE_AMOUNT_PAID_SQL}), 0)`.as("amountPaid"),
     ])
     .groupBy([EVENT_YEAR, EVENT_MONTH])
     .orderBy(EVENT_YEAR, "desc")
@@ -257,8 +307,8 @@ function getByWeek(query: EventBaseQuery) {
       EVENT_ISO_YEAR.as("isoYear"),
       EVENT_ISO_WEEK.as("isoWeek"),
       sql<number>`count(e.id)`.as("total"),
-      sql<number>`coalesce(sum(e.amount_expected), 0)`.as("amountExpected"),
-      sql<number>`coalesce(sum(e.amount_paid), 0)`.as("amountPaid"),
+      sql<number>`coalesce(sum(${EFFECTIVE_AMOUNT_EXPECTED_SQL}), 0)`.as("amountExpected"),
+      sql<number>`coalesce(sum(${EFFECTIVE_AMOUNT_PAID_SQL}), 0)`.as("amountPaid"),
     ])
     .groupBy([EVENT_ISO_YEAR, EVENT_ISO_WEEK])
     .orderBy(EVENT_ISO_YEAR, "desc")
@@ -271,8 +321,8 @@ function getByDate(query: EventBaseQuery) {
     .select([
       EVENT_DATE_ONLY.as("date"),
       sql<number>`count(e.id)`.as("total"),
-      sql<number>`coalesce(sum(e.amount_expected), 0)`.as("amountExpected"),
-      sql<number>`coalesce(sum(e.amount_paid), 0)`.as("amountPaid"),
+      sql<number>`coalesce(sum(${EFFECTIVE_AMOUNT_EXPECTED_SQL}), 0)`.as("amountExpected"),
+      sql<number>`coalesce(sum(${EFFECTIVE_AMOUNT_PAID_SQL}), 0)`.as("amountPaid"),
     ])
     .groupBy(EVENT_DATE_ONLY)
     .orderBy(EVENT_DATE_ONLY, "desc")
@@ -296,8 +346,8 @@ function getByWeekday(query: EventBaseQuery) {
     .select([
       EVENT_WEEKDAY.as("weekday"),
       sql<number>`count(e.id)`.as("total"),
-      sql<number>`coalesce(sum(e.amount_expected), 0)`.as("amountExpected"),
-      sql<number>`coalesce(sum(e.amount_paid), 0)`.as("amountPaid"),
+      sql<number>`coalesce(sum(${EFFECTIVE_AMOUNT_EXPECTED_SQL}), 0)`.as("amountExpected"),
+      sql<number>`coalesce(sum(${EFFECTIVE_AMOUNT_PAID_SQL}), 0)`.as("amountPaid"),
     ])
     .groupBy(EVENT_WEEKDAY)
     .orderBy("total", "desc")
@@ -438,10 +488,9 @@ function applySearchFilter(query: EventBaseQuery, search: string) {
     eb.or([
       eb("e.summary", "ilike", term),
       eb("e.description", "ilike", term),
-      eb("e.patientName", "ilike", term),
       eb("e.beneficiaryName", "ilike", term),
-      eb("cs.patientName", "ilike", term),
       eb("cs.beneficiaryName", "ilike", term),
+      eb(EFFECTIVE_PATIENT_NAME_SQL, "ilike", term),
     ]),
   );
 }
@@ -482,7 +531,7 @@ function applyFilters(query: EventBaseQuery, filters: CalendarEventFilters): Eve
 
   if (filters.patientName) {
     q = q.where(
-      sql<string>`coalesce(e.patient_name, cs.patient_name)`,
+      EFFECTIVE_PATIENT_NAME_SQL,
       "ilike",
       `%${filters.patientName}%`,
     );
@@ -635,7 +684,7 @@ export async function getCalendarEventsByDate(
       "e.endTimeZone as endTimeZone",
       "e.colorId as colorId",
       "e.location",
-      "e.patientName as patientName",
+      EFFECTIVE_PATIENT_NAME_SQL.as("patientName"),
       "e.patientRut as patientRut",
       "e.beneficiaryName as beneficiaryName",
       "e.beneficiaryRut as beneficiaryRut",
@@ -644,9 +693,9 @@ export async function getCalendarEventsByDate(
       "e.hangoutLink as hangoutLink",
       "e.eventCreatedAt as eventCreatedAt",
       "e.eventUpdatedAt as eventUpdatedAt",
-      "e.amountExpected as amountExpected",
-      "e.amountPaid as amountPaid",
-      "e.attended",
+      EFFECTIVE_AMOUNT_EXPECTED_SQL.as("amountExpected"),
+      EFFECTIVE_AMOUNT_PAID_SQL.as("amountPaid"),
+      EFFECTIVE_ATTENDED_SQL.as("attended"),
       sql<number | null>`e.clinical_series_id`.as("clinicalSeriesId"),
       sql<string | null>`e.series_stage_kind`.as("seriesStageKind"),
       sql<string | null>`e.series_stage_label`.as("seriesStageLabel"),
@@ -987,8 +1036,8 @@ async function getTreatmentTotals(baseQuery: ReturnType<typeof buildTreatmentBas
   return baseQuery
     .select([
       sql<number>`count(e.id)`.as("events"),
-      sql<number>`coalesce(sum(e.amount_expected), 0)`.as("amountExpected"),
-      sql<number>`coalesce(sum(e.amount_paid), 0)`.as("amountPaid"),
+      sql<number>`coalesce(sum(${EFFECTIVE_AMOUNT_EXPECTED_SQL}), 0)`.as("amountExpected"),
+      sql<number>`coalesce(sum(${EFFECTIVE_AMOUNT_PAID_SQL}), 0)`.as("amountPaid"),
       dosageAggregateSql.as("dosageMl"),
       sql<number>`sum(case when e.is_domicilio = true then 1 else 0 end)`.as("domicilioCount"),
       sql<number>`sum(case when e.treatment_stage = 'Inducción' then 1 else 0 end)`.as(
@@ -1004,8 +1053,8 @@ async function getTreatmentTotals(baseQuery: ReturnType<typeof buildTreatmentBas
 async function getTreatmentByDate(baseQuery: ReturnType<typeof buildTreatmentBaseQuery>) {
   const byDateBase = baseQuery.select([
     EVENT_DATE_SQL.as("date"),
-    sql<number>`e.amount_expected`.as("amountExpectedRaw"),
-    sql<number>`e.amount_paid`.as("amountPaidRaw"),
+    EFFECTIVE_AMOUNT_EXPECTED_SQL.as("amountExpectedRaw"),
+    EFFECTIVE_AMOUNT_PAID_SQL.as("amountPaidRaw"),
     sql<number>`e.dosage_value`.as("dosageValueRaw"),
     sql<boolean>`e.is_domicilio`.as("isDomicilioRaw"),
     sql<string>`e.treatment_stage`.as("treatmentStageRaw"),
@@ -1043,8 +1092,8 @@ async function getTreatmentByWeek(baseQuery: ReturnType<typeof buildTreatmentBas
       sql<number>`extract(isoyear from coalesce(e.start_date_time, e.start_date))`.as("isoYear"),
       sql<number>`extract(week from coalesce(e.start_date_time, e.start_date))`.as("isoWeek"),
       sql<number>`count(e.id)`.as("events"),
-      sql<number>`coalesce(sum(e.amount_expected), 0)`.as("amountExpected"),
-      sql<number>`coalesce(sum(e.amount_paid), 0)`.as("amountPaid"),
+      sql<number>`coalesce(sum(${EFFECTIVE_AMOUNT_EXPECTED_SQL}), 0)`.as("amountExpected"),
+      sql<number>`coalesce(sum(${EFFECTIVE_AMOUNT_PAID_SQL}), 0)`.as("amountPaid"),
       dosageAggregateSql.as("dosageMl"),
       sql<number>`sum(case when e.is_domicilio = true then 1 else 0 end)`.as("domicilioCount"),
       sql<number>`sum(case when e.treatment_stage = 'Inducción' then 1 else 0 end)`.as(
@@ -1069,8 +1118,8 @@ async function getTreatmentByMonth(baseQuery: ReturnType<typeof buildTreatmentBa
       sql<number>`extract(year from coalesce(e.start_date_time, e.start_date))`.as("year"),
       sql<number>`extract(month from coalesce(e.start_date_time, e.start_date))`.as("month"),
       sql<number>`count(e.id)`.as("events"),
-      sql<number>`coalesce(sum(e.amount_expected), 0)`.as("amountExpected"),
-      sql<number>`coalesce(sum(e.amount_paid), 0)`.as("amountPaid"),
+      sql<number>`coalesce(sum(${EFFECTIVE_AMOUNT_EXPECTED_SQL}), 0)`.as("amountExpected"),
+      sql<number>`coalesce(sum(${EFFECTIVE_AMOUNT_PAID_SQL}), 0)`.as("amountPaid"),
       dosageAggregateSql.as("dosageMl"),
       sql<number>`sum(case when e.is_domicilio = true then 1 else 0 end)`.as("domicilioCount"),
       sql<number>`sum(case when e.treatment_stage = 'Inducción' then 1 else 0 end)`.as(
