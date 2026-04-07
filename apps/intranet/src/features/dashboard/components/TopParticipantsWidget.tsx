@@ -17,11 +17,14 @@ export function TopParticipantsWidget({
   const navigate = useNavigate();
 
   return (
-    <article className="surface-recessed space-y-4 p-6">
+    <article className="surface-recessed space-y-4 rounded-[28px] p-5 sm:p-6">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-base text-secondary drop-shadow-sm">
-          Retiros destacados
-        </h3>
+        <div className="space-y-1">
+          <h3 className="font-semibold text-base text-secondary drop-shadow-sm">
+            Retiros destacados
+          </h3>
+          <p className="text-default-500 text-xs">Contrapartes con mayor salida acumulada.</p>
+        </div>
         <Button
           onPress={() => navigate({ to: "/finanzas/counterparts" })}
           size="sm"
@@ -58,7 +61,7 @@ export function TopParticipantsWidget({
             const account = item.bankAccountNumber || item.withdrawId || "-";
             return (
               <li
-                className="flex items-center justify-between gap-3 rounded-2xl border border-default-200 bg-default-50 px-4 py-3 shadow-sm"
+                className="flex items-center justify-between gap-3 rounded-[22px] border border-default-200/70 bg-background/70 px-4 py-3 shadow-sm"
                 key={`${item.participant}-${item.withdrawId ?? ""}`}
               >
                 <div>

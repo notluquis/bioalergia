@@ -20,7 +20,7 @@ export function RecentMovementsWidget({ rows }: { rows: Transaction[] }) {
   const navigate = useNavigate();
 
   return (
-    <article className="surface-recessed space-y-4 rounded-3xl p-5 sm:p-6">
+    <article className="surface-recessed space-y-4 rounded-[28px] p-5 sm:p-6">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <h3 className="font-semibold text-base text-foreground">Últimos movimientos</h3>
@@ -42,14 +42,14 @@ export function RecentMovementsWidget({ rows }: { rows: Transaction[] }) {
 
             return (
               <li
-                className="flex items-start justify-between gap-3 rounded-2xl border border-default-200/70 bg-background/70 px-4 py-3 transition hover:border-default-300/80 hover:bg-background"
+                className="flex items-start justify-between gap-3 rounded-[22px] border border-default-200/70 bg-background/70 px-4 py-3 transition hover:border-default-300/80 hover:bg-background"
                 key={row.id}
               >
                 <div className="min-w-0">
                   <Chip size="sm" variant="tertiary">
                     {row.transactionType || "movimiento"}
                   </Chip>
-                  <p className="mt-2 truncate font-medium text-foreground">
+                  <p className="mt-2 line-clamp-2 font-medium text-foreground text-sm">
                     {row.description ?? row.sourceId ?? "(sin descripción)"}
                   </p>
                   <p className="text-default-500 text-xs uppercase tracking-wide">

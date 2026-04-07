@@ -1,4 +1,4 @@
-import { Skeleton, Surface } from "@heroui/react";
+import { Skeleton } from "@heroui/react";
 import { Link } from "@tanstack/react-router";
 import { ArrowRightLeft, ArrowUpRight, CalendarDays, Users, Wallet } from "lucide-react";
 import { Suspense, useEffect } from "react";
@@ -40,19 +40,19 @@ export function Home() {
   }
 
   return (
-    <section className="space-y-4">
+    <section className="mx-auto flex w-full max-w-[1680px] flex-col gap-6">
       {canReadTransactions && (
         <>
           <Suspense fallback={<DashboardSkeleton />}>
             <DashboardTransactionsSection statsParams={statsParams} />
           </Suspense>
 
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.95fr)]">
-            <div className="space-y-4">
+          <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(340px,0.95fr)]">
+            <div className="space-y-5">
               <DashboardPersonalLiabilities />
               <QuickLinksSection can={can} />
             </div>
-            <aside className="space-y-4">
+            <aside className="space-y-5">
               {canReadPersons && (
                 <Suspense fallback={<Skeleton className="h-64 rounded-3xl" />}>
                   <DashboardParticipantsSection params={leaderboardParams} />
@@ -64,12 +64,12 @@ export function Home() {
       )}
 
       {!canReadTransactions && (
-        <div className="grid gap-4 lg:grid-cols-[1.5fr_1fr]">
-          <div className="space-y-4">
+        <div className="grid items-start gap-5 lg:grid-cols-[1.5fr_1fr]">
+          <div className="space-y-5">
             <DashboardPersonalLiabilities />
             <QuickLinksSection can={can} />
           </div>
-          <aside className="space-y-4">
+          <aside className="space-y-5">
             {/* If can't read transactions, maybe can read participants? */}
             {canReadPersons && (
               <Suspense fallback={<Skeleton className="h-64 w-full" />}>
@@ -79,21 +79,6 @@ export function Home() {
           </aside>
         </div>
       )}
-
-      {/* If can read transactions, QuickLinks and Participants are inside the layout?
- Wait, in previous layout:
- grid lg:grid-cols-[1.5fr_1fr]
- left: Charts + QuickLinks
- right: Participants + RecentMovements
- 
- My wrapper `DashboardTransactionsSection` returns:
- Metrics (full width)
- Grid (Charts + RecentMovements)
- 
- It MISSES QuickLinks and Participants inside the grid structure.
- 
- I need to compose them better.
- */}
     </section>
   );
 }
@@ -165,17 +150,20 @@ function QuickLinksSection({ can }: { can: (action: string, subject: string) => 
   }
 
   return (
-    <Surface className="space-y-4 rounded-3xl p-5 shadow-inner" variant="secondary">
+    <section className="rounded-[28px] border border-default-200/70 bg-linear-to-br from-default-100/60 via-default-50/30 to-background p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
       <div className="flex items-center justify-between gap-3">
-        <h3 className="font-semibold text-foreground text-sm">Accesos rápidos</h3>
+        <div className="space-y-1">
+          <h3 className="font-semibold text-foreground text-sm">Accesos rápidos</h3>
+          <p className="text-default-500 text-xs">Atajos para las acciones que más se repiten.</p>
+        </div>
         <span className="rounded-full border border-default-200/80 bg-background px-3 py-1 text-[11px] text-default-500 uppercase tracking-wide">
           {links.length} accesos
         </span>
       </div>
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
         {links.map((link) => (
           <Link
-            className="group flex items-center gap-3 rounded-2xl border border-default-200/70 bg-background/70 p-4 transition hover:border-primary/35 hover:bg-background"
+            className="group flex items-center gap-3 rounded-[22px] border border-default-200/70 bg-background/80 p-4 transition hover:-translate-y-0.5 hover:border-primary/35 hover:bg-background"
             key={link.to}
             to={link.to}
           >
@@ -192,6 +180,6 @@ function QuickLinksSection({ can }: { can: (action: string, subject: string) => 
           </Link>
         ))}
       </div>
-    </Surface>
+    </section>
   );
 }
