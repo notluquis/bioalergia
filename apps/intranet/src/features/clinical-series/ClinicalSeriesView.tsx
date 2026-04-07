@@ -175,51 +175,62 @@ function InsuranceStatsPanel({
     {
       key: "fonasa",
       label: "Fonasa",
-      toneClass: "bg-success",
       value: stats.fonasa,
     },
     {
       key: "isapre",
       label: "Isapre",
-      toneClass: "bg-warning",
       value: stats.isapre,
     },
     {
       key: "particular",
       label: "Particular",
-      toneClass: "bg-default-400",
       value: stats.particular,
     },
     {
       key: "unidentified",
       label: "Sin identificar",
-      toneClass: "bg-danger",
       value: stats.unidentified,
     },
   ] as const;
 
   const ratio = (value: number) => (stats.total > 0 ? (value / stats.total) * 100 : 0);
+  const isapreRatio = (value: number) => (stats.isapre > 0 ? (value / stats.isapre) * 100 : 0);
+  const maxCoverage = rows.reduce((best, row) => (row.value > best.value ? row : best), rows[0]);
 
   return (
     <div className="flex flex-1 min-h-0 flex-col gap-4">
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {rows.map((row) => (
-          <Surface key={row.key} className="rounded-2xl border border-separator/60 p-4">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-medium uppercase tracking-[0.16em] text-foreground-400">
-                  {row.label}
-                </p>
-                <p className="mt-2 font-semibold text-3xl text-foreground">
-                  {row.value.toLocaleString("es-CL")}
-                </p>
+          <Card key={row.key} className="border-default-200 shadow-sm">
+            <Card.Content className="p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-[0.16em] text-foreground-400">
+                    {row.label}
+                  </p>
+                  <p className="mt-2 font-semibold text-3xl text-foreground">
+                    {row.value.toLocaleString("es-CL")}
+                  </p>
+                </div>
+                <Chip
+                  color={
+                    row.key === "fonasa"
+                      ? "success"
+                      : row.key === "isapre"
+                        ? "warning"
+                        : row.key === "particular"
+                          ? "default"
+                          : "danger"
+                  }
+                  size="sm"
+                  variant="flat"
+                >
+                  {ratio(row.value).toFixed(1)}%
+                </Chip>
               </div>
-              <div className={`h-3 w-3 rounded-full ${row.toneClass}`} />
-            </div>
-            <p className="mt-2 text-sm text-foreground-500">
-              {ratio(row.value).toFixed(1)}% del total filtrado
-            </p>
-          </Surface>
+            </Card.Content>
+          </Card>
         ))}
       </div>
 
@@ -240,81 +251,163 @@ function InsuranceStatsPanel({
               <div key={row.key} className="space-y-1.5">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
-                    <div className={`h-2.5 w-2.5 rounded-full ${row.toneClass}`} />
+                    <Chip
+                      className="min-w-0 px-0"
+                      color={
+                        row.key === "fonasa"
+                          ? "success"
+                          : row.key === "isapre"
+                            ? "warning"
+                            : row.key === "particular"
+                              ? "default"
+                              : "danger"
+                      }
+                      size="sm"
+                      variant="dot"
+                    />
                     <span className="text-sm font-medium text-foreground">{row.label}</span>
                   </div>
                   <span className="text-xs tabular-nums text-foreground-500">
                     {row.value.toLocaleString("es-CL")} · {ratio(row.value).toFixed(1)}%
                   </span>
                 </div>
-                <div className="h-2.5 overflow-hidden rounded-full bg-default-100">
-                  <div
-                    className={`h-full rounded-full ${row.toneClass}`}
-                    style={{ width: `${Math.max(ratio(row.value), row.value > 0 ? 2 : 0)}%` }}
-                  />
-                </div>
+                <ProgressBar
+                  aria-label={`Distribución ${row.label}`}
+                  className="w-full"
+                  color={
+                    row.key === "fonasa"
+                      ? "success"
+                      : row.key === "isapre"
+                        ? "warning"
+                        : row.key === "particular"
+                          ? "default"
+                          : "danger"
+                  }
+                  value={ratio(row.value)}
+                >
+                  <ProgressBar.Track>
+                    <ProgressBar.Fill />
+                  </ProgressBar.Track>
+                </ProgressBar>
               </div>
             ))}
           </div>
 
           <div className="grid gap-3 lg:grid-cols-[minmax(0,1.4fr)_minmax(18rem,0.9fr)]">
-            <Surface className="rounded-2xl border border-separator/60 p-4">
-              <div className="grid grid-cols-[minmax(0,1fr)_6.5rem_5.5rem] gap-y-2 text-sm">
-                <span className="font-medium text-foreground">Categoría</span>
-                <span className="text-right font-medium text-foreground">Series</span>
-                <span className="text-right font-medium text-foreground">%</span>
-                {rows.map((row) => (
-                  <Fragment key={row.key}>
-                    <span key={`${row.key}-label`} className="text-foreground-500">
-                      {row.label}
-                    </span>
-                    <span
-                      key={`${row.key}-count`}
-                      className="text-right tabular-nums text-foreground"
-                    >
-                      {row.value.toLocaleString("es-CL")}
-                    </span>
-                    <span
-                      key={`${row.key}-ratio`}
-                      className="text-right tabular-nums text-foreground-500"
-                    >
-                      {ratio(row.value).toFixed(1)}%
-                    </span>
-                  </Fragment>
-                ))}
-              </div>
-            </Surface>
+            <Card className="border-default-200 shadow-sm">
+              <Card.Content className="p-4">
+                <div className="grid grid-cols-[minmax(0,1fr)_6.5rem_5.5rem] gap-y-2 text-sm">
+                  <span className="font-medium text-foreground">Categoría</span>
+                  <span className="text-right font-medium text-foreground">Series</span>
+                  <span className="text-right font-medium text-foreground">%</span>
+                  {rows.map((row) => (
+                    <Fragment key={row.key}>
+                      <span key={`${row.key}-label`} className="text-foreground-500">
+                        {row.label}
+                      </span>
+                      <span
+                        key={`${row.key}-count`}
+                        className="text-right tabular-nums text-foreground"
+                      >
+                        {row.value.toLocaleString("es-CL")}
+                      </span>
+                      <span
+                        key={`${row.key}-ratio`}
+                        className="text-right tabular-nums text-foreground-500"
+                      >
+                        {ratio(row.value).toFixed(1)}%
+                      </span>
+                    </Fragment>
+                  ))}
+                </div>
+              </Card.Content>
+            </Card>
 
-            <Surface className="rounded-2xl border border-separator/60 p-4">
-              <p className="text-xs font-medium uppercase tracking-[0.16em] text-foreground-400">
-                Lectura rápida
-              </p>
-              <div className="mt-3 space-y-2 text-sm text-foreground-500">
-                <p>
-                  La mayor cobertura actual es{" "}
-                  <span className="font-medium text-foreground">
-                    {
-                      rows.reduce((best, row) => (row.value > best.value ? row : best), rows[0])!
-                        .label
-                    }
-                  </span>
-                  .
+            <Card className="border-default-200 shadow-sm">
+              <Card.Content className="p-4">
+                <p className="text-xs font-medium uppercase tracking-[0.16em] text-foreground-400">
+                  Lectura rápida
                 </p>
-                <p>
-                  Hay{" "}
-                  <span className="font-medium text-foreground">
-                    {stats.unidentified.toLocaleString("es-CL")}
-                  </span>{" "}
-                  series sin previsión identificada.
+                <div className="mt-3 space-y-2 text-sm text-foreground-500">
+                  <p>
+                    La mayor cobertura actual es{" "}
+                    <span className="font-medium text-foreground">{maxCoverage.label}</span>.
+                  </p>
+                  <p>
+                    Hay{" "}
+                    <span className="font-medium text-foreground">
+                      {stats.unidentified.toLocaleString("es-CL")}
+                    </span>{" "}
+                    series sin previsión identificada.
+                  </p>
+                  <p>
+                    Las series marcadas como{" "}
+                    <span className="font-medium text-foreground">Particular</span> se muestran
+                    aparte y no se suman a Isapre.
+                  </p>
+                </div>
+              </Card.Content>
+            </Card>
+          </div>
+
+          <Card className="border-default-200 shadow-sm">
+            <Card.Header className="items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-[0.16em] text-foreground-400">
+                  Detalle Isapre
                 </p>
-                <p>
-                  Las series marcadas como{" "}
-                  <span className="font-medium text-foreground">Particular</span> se muestran aparte
-                  y no se suman a Isapre.
+                <p className="mt-1 text-sm text-foreground-500">
+                  Distribución interna de las series clasificadas como Isapre
                 </p>
               </div>
-            </Surface>
-          </div>
+              <Chip size="sm" color="warning" variant="soft">
+                {stats.isapre.toLocaleString("es-CL")} Isapre
+              </Chip>
+            </Card.Header>
+            <Card.Content className="space-y-3">
+              {stats.isapre === 0 ? (
+                <p className="text-sm text-foreground-400">
+                  No hay series clasificadas como Isapre en los filtros actuales.
+                </p>
+              ) : (
+                <>
+                  {stats.isapreProviders.map((provider) => (
+                    <div key={provider.providerName} className="space-y-1.5">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-sm font-medium text-foreground">
+                          {provider.providerName}
+                        </span>
+                        <span className="text-xs tabular-nums text-foreground-500">
+                          {provider.total.toLocaleString("es-CL")} ·{" "}
+                          {isapreRatio(provider.total).toFixed(1)}%
+                        </span>
+                      </div>
+                      <ProgressBar
+                        aria-label={`Distribución ${provider.providerName}`}
+                        className="w-full"
+                        color="warning"
+                        value={isapreRatio(provider.total)}
+                      >
+                        <ProgressBar.Track>
+                          <ProgressBar.Fill />
+                        </ProgressBar.Track>
+                      </ProgressBar>
+                    </div>
+                  ))}
+                  {stats.isapreUnidentified > 0 && (
+                    <Card className="border-default-200 bg-default-50 shadow-none">
+                      <Card.Content className="flex items-center justify-between px-3 py-2 text-sm">
+                        <span className="text-foreground-500">Isapre sin nombre identificado</span>
+                        <span className="tabular-nums text-foreground">
+                          {stats.isapreUnidentified.toLocaleString("es-CL")}
+                        </span>
+                      </Card.Content>
+                    </Card>
+                  )}
+                </>
+              )}
+            </Card.Content>
+          </Card>
         </Card.Content>
       </Card>
     </div>
@@ -1417,7 +1510,9 @@ export function ClinicalSeriesView() {
                                       color={INSURANCE_COLORS[s.healthInsurance]}
                                       variant="tertiary"
                                     >
-                                      {INSURANCE_LABELS[s.healthInsurance]}
+                                      {s.healthInsurance === "ISAPRE" && s.isapreName
+                                        ? `${INSURANCE_LABELS[s.healthInsurance]} · ${s.isapreName}`
+                                        : INSURANCE_LABELS[s.healthInsurance]}
                                     </Chip>
                                   )}
                                 </div>
@@ -1720,7 +1815,9 @@ export function ClinicalSeriesView() {
                           color={INSURANCE_COLORS[detail.healthInsurance]}
                           variant="soft"
                         >
-                          {INSURANCE_LABELS[detail.healthInsurance]}
+                          {detail.healthInsurance === "ISAPRE" && detail.isapreName
+                            ? `${INSURANCE_LABELS[detail.healthInsurance]} · ${detail.isapreName}`
+                            : INSURANCE_LABELS[detail.healthInsurance]}
                         </Chip>
                       )}
                       {detail.deliveryModality === "DOMICILIO" && (
@@ -1805,7 +1902,7 @@ export function ClinicalSeriesView() {
                                                   {clinicalEventHeadline(event)}
                                                 </p>
                                                 {description && (
-                                                  <p className="text-xs leading-relaxed text-foreground-500 whitespace-pre-line break-words">
+                                                  <p className="text-xs leading-relaxed text-foreground-500 whitespace-pre-line wrap-break-word">
                                                     {description}
                                                   </p>
                                                 )}

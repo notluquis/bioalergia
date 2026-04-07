@@ -348,6 +348,7 @@ export interface ClinicalSeriesSnapshot {
   daysSinceLastEvent: null | number;
   vaccineProduct: null | SubcutaneousVaccineProduct;
   healthInsurance: null | HealthInsuranceType;
+  isapreName: null | string;
   deliveryModality: null | DeliveryModality;
   beneficiaryName: null | string;
   beneficiaryPhones: string[];
@@ -431,6 +432,8 @@ type ClinicalSeriesFilters = {
 export type ClinicalSeriesInsuranceStats = {
   fonasa: number;
   isapre: number;
+  isapreProviders: Array<{ providerName: string; total: number }>;
+  isapreUnidentified: number;
   particular: number;
   total: number;
   unidentified: number;
@@ -1262,24 +1265,33 @@ function inferVaccineProduct(
 // to FONASA / ISAPRE / PARTICULAR reliably.
 const FONASA_PATTERN = /\bfonasa\b/i;
 const PARTICULAR_PATTERN = /\bparticular\b/i;
-const ISAPRE_ALIAS_CANDIDATES = [
-  "banmedica",
-  "isalud",
-  "colmena",
-  "consalud",
-  "cruz blanca",
-  "cruzblanca",
-  "cruz del norte",
-  "cruzdelnorte",
-  "nueva masvida",
-  "nuevamasvida",
-  "masvida",
-  "fundacion",
-  "vida tres",
-  "vidatres",
-  "esencial",
-  "codelco",
+const ISAPRE_PROVIDER_CANDIDATES = [
+  { aliases: ["banmedica", "banmedica sa"], providerName: "Banmédica" },
+  { aliases: ["isalud", "isapre decodelco", "decodelco", "codelco"], providerName: "Isalud" },
+  { aliases: ["colmena", "golden cross", "colmena golden cross"], providerName: "Colmena" },
+  { aliases: ["consalud"], providerName: "Consalud" },
+  { aliases: ["cruz blanca", "cruzblanca"], providerName: "Cruz Blanca" },
+  { aliases: ["cruz del norte", "cruzdelnorte"], providerName: "Cruz del Norte" },
+  { aliases: ["nueva masvida", "nuevamasvida", "masvida"], providerName: "Nueva Masvida" },
+  { aliases: ["fundacion", "isapre fundacion"], providerName: "Fundación" },
+  { aliases: ["vida tres", "vidatres"], providerName: "Vida Tres" },
+  { aliases: ["esencial", "somos esencial"], providerName: "Esencial" },
 ] as const;
+
+type InsuranceResolution = {
+  healthInsurance: HealthInsuranceType | null;
+  isapreName: null | string;
+};
+
+type InsuranceEventLike = {
+  description: null | string;
+  eventDate?: null | string;
+  eventId?: null | number;
+  id?: null | number;
+  startDate?: Date | null;
+  startDateTime?: Date | null;
+  summary: null | string;
+};
 
 function textContainsNormalizedAlias(text: string, alias: string) {
   const compactText = text.replace(/\s+/g, "");
@@ -1287,46 +1299,116 @@ function textContainsNormalizedAlias(text: string, alias: string) {
   return text.includes(alias) || compactText.includes(compactAlias);
 }
 
-function hasCloseInsuranceAlias(text: string) {
+function findIsapreProvider(text: string): null | string {
   const tokens = text.split(" ").filter((token) => token.length >= 4);
   const compactText = text.replace(/\s+/g, "");
 
-  for (const alias of ISAPRE_ALIAS_CANDIDATES) {
-    if (textContainsNormalizedAlias(text, alias)) return true;
+  for (const provider of ISAPRE_PROVIDER_CANDIDATES) {
+    for (const alias of provider.aliases) {
+      if (textContainsNormalizedAlias(text, alias)) return provider.providerName;
 
-    const aliasTokens = alias.split(" ").filter((token) => token.length >= 4);
-    if (
-      aliasTokens.length > 1 &&
-      aliasTokens.every((aliasToken) =>
-        tokens.some((token) => jaroWinkler(token, aliasToken) >= 0.92),
-      )
-    ) {
-      return true;
-    }
+      const aliasTokens = alias.split(" ").filter((token) => token.length >= 4);
+      if (
+        aliasTokens.length > 1 &&
+        aliasTokens.every((aliasToken) =>
+          tokens.some((token) => jaroWinkler(token, aliasToken) >= 0.92),
+        )
+      ) {
+        return provider.providerName;
+      }
 
-    const compactAlias = alias.replace(/\s+/g, "");
-    if (compactAlias.length >= 6 && jaroWinkler(compactText, compactAlias) >= 0.9) {
-      return true;
-    }
-    if (tokens.some((token) => jaroWinkler(token, compactAlias) >= 0.9)) {
-      return true;
+      const compactAlias = alias.replace(/\s+/g, "");
+      if (compactAlias.length >= 6 && jaroWinkler(compactText, compactAlias) >= 0.9) {
+        return provider.providerName;
+      }
+      if (tokens.some((token) => jaroWinkler(token, compactAlias) >= 0.9)) {
+        return provider.providerName;
+      }
     }
   }
 
-  return false;
+  return null;
 }
 
-function inferHealthInsurance(
-  events: Array<{ description: null | string; summary: null | string }>,
-): HealthInsuranceType | null {
-  for (const event of events) {
-    const text = joinClinicalText(event.summary, event.description);
-    const normalizedText = normalizeName(text);
-    if (FONASA_PATTERN.test(text)) return "FONASA";
-    if (PARTICULAR_PATTERN.test(text)) return "PARTICULAR";
-    if (normalizedText.includes("isapre") || hasCloseInsuranceAlias(normalizedText)) return "ISAPRE";
+function inferInsuranceFromEventText(
+  summary: null | string,
+  description: null | string,
+): InsuranceResolution {
+  const text = joinClinicalText(summary, description);
+  const normalizedText = normalizeName(text);
+  if (!normalizedText) return { healthInsurance: null, isapreName: null };
+  if (FONASA_PATTERN.test(text)) return { healthInsurance: "FONASA", isapreName: null };
+  if (PARTICULAR_PATTERN.test(text)) return { healthInsurance: "PARTICULAR", isapreName: null };
+
+  const isapreName = findIsapreProvider(normalizedText);
+  if (normalizedText.includes("isapre") || isapreName) {
+    return { healthInsurance: "ISAPRE", isapreName };
   }
-  return null;
+
+  return { healthInsurance: null, isapreName: null };
+}
+
+function resolveInsuranceEventSortKey(event: InsuranceEventLike) {
+  if (event.eventDate) return `${event.eventDate}T23:59:59`;
+  if (event.startDateTime) return dayjs(event.startDateTime).tz(TIMEZONE).toISOString();
+  if (event.startDate) return dayjs(event.startDate).tz(TIMEZONE).endOf("day").toISOString();
+  return "0000-00-00T00:00:00.000Z";
+}
+
+export function inferHealthInsurance(
+  events: InsuranceEventLike[],
+): InsuranceResolution {
+  const recentEvents = [...events]
+    .sort((a, b) => {
+      const keyCompare = resolveInsuranceEventSortKey(b).localeCompare(resolveInsuranceEventSortKey(a));
+      if (keyCompare !== 0) return keyCompare;
+      return (b.eventId ?? b.id ?? 0) - (a.eventId ?? a.id ?? 0);
+    })
+    .slice(0, 3);
+
+  const eventSignals = recentEvents
+    .map((event) => inferInsuranceFromEventText(event.summary, event.description))
+    .filter((signal) => signal.healthInsurance != null);
+
+  if (eventSignals.length === 0) {
+    return { healthInsurance: null, isapreName: null };
+  }
+
+  const counts = new Map<HealthInsuranceType, number>();
+  for (const signal of eventSignals) {
+    const healthInsurance = signal.healthInsurance;
+    if (!healthInsurance) continue;
+    counts.set(healthInsurance, (counts.get(healthInsurance) ?? 0) + 1);
+  }
+
+  const rankedTypes = [...counts.entries()].sort((a, b) => b[1] - a[1]);
+  if (rankedTypes.length === 0) {
+    return { healthInsurance: null, isapreName: null };
+  }
+
+  if (rankedTypes.length > 1 && rankedTypes[0]![1] === rankedTypes[1]![1]) {
+    return { healthInsurance: null, isapreName: null };
+  }
+
+  const healthInsurance = rankedTypes[0]![0];
+  if (healthInsurance !== "ISAPRE") {
+    return { healthInsurance, isapreName: null };
+  }
+
+  const providerCounts = new Map<string, number>();
+  for (const signal of eventSignals) {
+    if (signal.healthInsurance !== "ISAPRE" || !signal.isapreName) continue;
+    providerCounts.set(signal.isapreName, (providerCounts.get(signal.isapreName) ?? 0) + 1);
+  }
+
+  const rankedProviders = [...providerCounts.entries()].sort((a, b) => b[1] - a[1]);
+  const isapreName =
+    rankedProviders.length === 0 ||
+    (rankedProviders.length > 1 && rankedProviders[0]![1] === rankedProviders[1]![1])
+      ? null
+      : rankedProviders[0]![0];
+
+  return { healthInsurance, isapreName };
 }
 
 // Delivery modality — domicilio if any event was sent/picked up; otherwise presencial.
@@ -2253,7 +2335,7 @@ async function refreshClinicalSeriesMetadata(seriesId: number) {
   const isSubcut = series.kind === "SUBCUTANEOUS_TREATMENT";
   const allergenType = isSubcut ? inferAllergenType(series.events) : null;
   const vaccineProduct = isSubcut ? inferVaccineProduct(series.events) : null;
-  const healthInsurance = inferHealthInsurance(series.events);
+  const { healthInsurance } = inferHealthInsurance(series.events);
   const deliveryModality = isSubcut ? inferDeliveryModality(series.events) : null;
   const seriesPhones = series.events.reduce(
     (acc, item) => {
@@ -2841,13 +2923,25 @@ export async function getClinicalSeriesSnapshotByExternalEvent(params: {
     .isAfter(dayjs().tz(TIMEZONE))
     ? dayjs().tz(TIMEZONE).format("YYYY-MM-DD")
     : dayjs.tz(endDate, TIMEZONE).add(30, "day").format("YYYY-MM-DD");
+  const inferredInsurance = inferHealthInsurance(
+    series.events.map((item) => ({
+      description: item.description ?? null,
+      eventDate: dayjs(item.startDate ?? item.startDateTime ?? item.endDate ?? item.endDateTime)
+        .tz(TIMEZONE)
+        .format("YYYY-MM-DD"),
+      eventId: item.id,
+      summary: item.summary ?? null,
+    })),
+  );
 
   const baseSnapshot: ClinicalSeriesSnapshot = {
     allergenType: (series.allergenType as SubcutaneousAllergenType | null) ?? null,
     abandonmentBucket: null,
     daysSinceLastEvent: null,
     vaccineProduct: (series.vaccineProduct as SubcutaneousVaccineProduct | null) ?? null,
-    healthInsurance: (series.healthInsurance as HealthInsuranceType | null) ?? null,
+    healthInsurance:
+      inferredInsurance.healthInsurance ?? (series.healthInsurance as HealthInsuranceType | null) ?? null,
+    isapreName: inferredInsurance.isapreName,
     deliveryModality: (series.deliveryModality as DeliveryModality | null) ?? null,
     beneficiaryName: series.beneficiaryName ?? null,
     beneficiaryPhones: [...seriesPhones.beneficiaryPhones],
@@ -2903,6 +2997,16 @@ export async function getClinicalSeriesSnapshotById(id: number): Promise<Clinica
 
   const syntheticEvent = series.events[0];
   const today = dayjs().tz(TIMEZONE).format("YYYY-MM-DD");
+  const inferredInsurance = inferHealthInsurance(
+    series.events.map((item) => ({
+      description: item.description ?? null,
+      eventDate: dayjs(item.startDate ?? item.startDateTime ?? item.endDate ?? item.endDateTime)
+        .tz(TIMEZONE)
+        .format("YYYY-MM-DD"),
+      eventId: item.id,
+      summary: item.summary ?? null,
+    })),
+  );
   if (!syntheticEvent) {
     return {
       allergenType: (series.allergenType as SubcutaneousAllergenType | null) ?? null,
@@ -2916,8 +3020,10 @@ export async function getClinicalSeriesSnapshotById(id: number): Promise<Clinica
       eligibleDocumentDateFrom: dayjs().tz(TIMEZONE).format("YYYY-MM-DD"),
       eligibleDocumentDateTo: dayjs().tz(TIMEZONE).format("YYYY-MM-DD"),
       events: [],
-      healthInsurance: (series.healthInsurance as HealthInsuranceType | null) ?? null,
+      healthInsurance:
+        inferredInsurance.healthInsurance ?? (series.healthInsurance as HealthInsuranceType | null) ?? null,
       id: series.id,
+      isapreName: inferredInsurance.isapreName,
       kind: series.kind as ClinicalSeriesKind,
       lastEventDate: null,
       linkedDocuments: [],
@@ -3159,14 +3265,18 @@ export async function getClinicalSeriesInsuranceStats(
       AND ${abandonmentFilterSql}
   `.execute(kysely);
 
-  const inferredById = new Map<number, HealthInsuranceType | null>();
+  const inferredById = new Map<number, InsuranceResolution>();
   const matchingIds = matchingSeries.rows.map((row) => row.id);
   if (matchingIds.length > 0) {
     const matchedSeries = await db.clinicalSeries.findMany({
       select: {
         events: {
+          orderBy: [{ startDate: "desc" }, { startDateTime: "desc" }, { id: "desc" }],
           select: {
             description: true,
+            id: true,
+            startDate: true,
+            startDateTime: true,
             summary: true,
           },
         },
@@ -3180,18 +3290,31 @@ export async function getClinicalSeriesInsuranceStats(
     }
   }
 
+  const isapreProviders = new Map<string, number>();
   let fonasa = 0;
   let isapre = 0;
+  let isapreUnidentified = 0;
   let particular = 0;
   let unidentified = 0;
 
   for (const row of matchingSeries.rows) {
-    const insurance = inferredById.get(row.id) ?? row.healthInsurance ?? null;
-    if (insurance === "FONASA") {
+    const insuranceResolution = inferredById.get(row.id) ?? {
+      healthInsurance: row.healthInsurance ?? null,
+      isapreName: null,
+    };
+    if (insuranceResolution.healthInsurance === "FONASA") {
       fonasa += 1;
-    } else if (insurance === "ISAPRE") {
+    } else if (insuranceResolution.healthInsurance === "ISAPRE") {
       isapre += 1;
-    } else if (insurance === "PARTICULAR") {
+      if (insuranceResolution.isapreName) {
+        isapreProviders.set(
+          insuranceResolution.isapreName,
+          (isapreProviders.get(insuranceResolution.isapreName) ?? 0) + 1,
+        );
+      } else {
+        isapreUnidentified += 1;
+      }
+    } else if (insuranceResolution.healthInsurance === "PARTICULAR") {
       particular += 1;
     } else {
       unidentified += 1;
@@ -3201,6 +3324,10 @@ export async function getClinicalSeriesInsuranceStats(
   return {
     fonasa,
     isapre,
+    isapreProviders: [...isapreProviders.entries()]
+      .map(([providerName, total]) => ({ providerName, total }))
+      .sort((a, b) => b.total - a.total || a.providerName.localeCompare(b.providerName, "es")),
+    isapreUnidentified,
     particular,
     total: matchingSeries.rows.length,
     unidentified,

@@ -69,6 +69,7 @@ export interface ClinicalSeriesSnapshot {
   daysSinceLastEvent: number | null;
   vaccineProduct: SubcutaneousVaccineProduct | null;
   healthInsurance: HealthInsuranceType | null;
+  isapreName: string | null;
   deliveryModality: DeliveryModality | null;
   beneficiaryName: string | null;
   beneficiaryPhones: string[];
@@ -133,6 +134,8 @@ export interface ClinicalSeriesListResult {
 export interface ClinicalSeriesInsuranceStats {
   fonasa: number;
   isapre: number;
+  isapreProviders: Array<{ providerName: string; total: number }>;
+  isapreUnidentified: number;
   particular: number;
   total: number;
   unidentified: number;
@@ -207,6 +210,7 @@ export const ClinicalSeriesSnapshotSchema = z.object({
     .nullable()
     .catch(null),
   healthInsurance: z.enum(["FONASA", "ISAPRE", "PARTICULAR"]).nullable().catch(null),
+  isapreName: z.string().nullable().catch(null),
   deliveryModality: z.enum(["DOMICILIO", "PRESENCIAL"]).nullable().catch(null),
   beneficiaryName: z.string().nullable(),
   beneficiaryPhones: z.array(z.string()).catch([]),
@@ -240,6 +244,13 @@ export const RebuildSeriesResultSchema = z.object({
 export const ClinicalSeriesInsuranceStatsSchema = z.object({
   fonasa: z.number().int(),
   isapre: z.number().int(),
+  isapreProviders: z.array(
+    z.object({
+      providerName: z.string(),
+      total: z.number().int(),
+    })
+  ),
+  isapreUnidentified: z.number().int(),
   particular: z.number().int(),
   total: z.number().int(),
   unidentified: z.number().int(),

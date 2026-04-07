@@ -3,7 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 // Mock DB so the module can be imported without a real database connection
 vi.mock("@finanzas/db", () => ({ db: {} }));
 
-const { extractIdentityHints, extractPatientHints, resolveClinicalIdentity } = await import("../clinical-series");
+const { extractIdentityHints, extractPatientHints, inferHealthInsurance, resolveClinicalIdentity } =
+  await import("../clinical-series");
 
 describe("extractPatientHints", () => {
   describe("patientName — capitalized names", () => {
@@ -937,5 +938,47 @@ describe("resolveClinicalIdentity", () => {
     expect(result.patientRut).toBe("15175620-4");
     expect(result.beneficiaryName).toBe("marta rubio gajardo");
     expect(result.beneficiaryRut).toBe("8193485-1");
+  });
+});
+
+describe("inferHealthInsurance", () => {
+  it("uses the last 3 events and resolves the majority insurance type", () => {
+    const result = inferHealthInsurance([
+      { description: "prevision fonasa", eventDate: "2026-04-01", summary: "control" },
+      { description: "prevision fonasa", eventDate: "2026-04-03", summary: "control" },
+      { description: "prevision consalud", eventDate: "2026-04-05", summary: "control" },
+      { description: "prevision particular", eventDate: "2026-01-01", summary: "viejo" },
+    ]);
+
+    expect(result).toEqual({
+      healthInsurance: "FONASA",
+      isapreName: null,
+    });
+  });
+
+  it("returns the dominant isapre name from the last 3 events", () => {
+    const result = inferHealthInsurance([
+      { description: "isapre colmena", eventDate: "2026-04-01", summary: "control" },
+      { description: "isapre consalud", eventDate: "2026-04-03", summary: "control" },
+      { description: "prevision colmena golden cross", eventDate: "2026-04-05", summary: "control" },
+    ]);
+
+    expect(result).toEqual({
+      healthInsurance: "ISAPRE",
+      isapreName: "Colmena",
+    });
+  });
+
+  it("returns indeterminate when the last 3 events tie across insurance types", () => {
+    const result = inferHealthInsurance([
+      { description: "fonasa", eventDate: "2026-04-01", summary: "control" },
+      { description: "particular", eventDate: "2026-04-03", summary: "control" },
+      { description: "isapre banmedica", eventDate: "2026-04-05", summary: "control" },
+    ]);
+
+    expect(result).toEqual({
+      healthInsurance: null,
+      isapreName: null,
+    });
   });
 });

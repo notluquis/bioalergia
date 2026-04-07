@@ -70,6 +70,7 @@ export const clinicalSeriesSnapshotSchema = z.object({
   events: z.array(clinicalSeriesEventSchema),
   healthInsurance: z.enum(["FONASA", "ISAPRE", "PARTICULAR"]).nullable().catch(null),
   id: z.number(),
+  isapreName: z.string().nullable().catch(null),
   kind: clinicalSeriesKindSchema,
   linkedDocuments: z.array(clinicalSeriesLinkedDocumentSchema),
   lastEventDate: z.string().nullable(),
@@ -118,6 +119,13 @@ export const clinicalSeriesListOutputSchema = z.object({
 export const clinicalSeriesInsuranceStatsSchema = z.object({
   fonasa: z.number().int(),
   isapre: z.number().int(),
+  isapreProviders: z.array(
+    z.object({
+      providerName: z.string(),
+      total: z.number().int(),
+    }),
+  ),
+  isapreUnidentified: z.number().int(),
   particular: z.number().int(),
   total: z.number().int(),
   unidentified: z.number().int(),
