@@ -250,23 +250,21 @@ function InsuranceStatsPanel({
             {rows.map((row) => (
               <div key={row.key} className="space-y-1.5">
                 <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <Chip
-                      className="min-w-0 px-0"
-                      color={
-                        row.key === "fonasa"
-                          ? "success"
-                          : row.key === "isapre"
-                            ? "warning"
-                            : row.key === "particular"
-                              ? "default"
-                              : "danger"
-                      }
-                      size="sm"
-                      variant="soft"
-                    />
-                    <span className="text-sm font-medium text-foreground">{row.label}</span>
-                  </div>
+                  <Chip
+                    color={
+                      row.key === "fonasa"
+                        ? "success"
+                        : row.key === "isapre"
+                          ? "warning"
+                          : row.key === "particular"
+                            ? "default"
+                            : "danger"
+                    }
+                    size="sm"
+                    variant="soft"
+                  >
+                    <Chip.Label className="font-medium">{row.label}</Chip.Label>
+                  </Chip>
                   <span className="text-xs tabular-nums text-foreground-500">
                     {row.value.toLocaleString("es-CL")} · {ratio(row.value).toFixed(1)}%
                   </span>
