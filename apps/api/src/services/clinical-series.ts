@@ -3298,23 +3298,24 @@ export async function getClinicalSeriesInsuranceStats(
   let unidentified = 0;
 
   for (const row of matchingSeries.rows) {
-    const insuranceResolution = inferredById.get(row.id) ?? {
-      healthInsurance: row.healthInsurance ?? null,
+    const storedHealthInsurance = row.healthInsurance ?? null;
+    const inferredInsurance = inferredById.get(row.id) ?? {
+      healthInsurance: null,
       isapreName: null,
     };
-    if (insuranceResolution.healthInsurance === "FONASA") {
+    if (storedHealthInsurance === "FONASA") {
       fonasa += 1;
-    } else if (insuranceResolution.healthInsurance === "ISAPRE") {
+    } else if (storedHealthInsurance === "ISAPRE") {
       isapre += 1;
-      if (insuranceResolution.isapreName) {
+      if (inferredInsurance.isapreName) {
         isapreProviders.set(
-          insuranceResolution.isapreName,
-          (isapreProviders.get(insuranceResolution.isapreName) ?? 0) + 1,
+          inferredInsurance.isapreName,
+          (isapreProviders.get(inferredInsurance.isapreName) ?? 0) + 1,
         );
       } else {
         isapreUnidentified += 1;
       }
-    } else if (insuranceResolution.healthInsurance === "PARTICULAR") {
+    } else if (storedHealthInsurance === "PARTICULAR") {
       particular += 1;
     } else {
       unidentified += 1;
