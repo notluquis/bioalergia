@@ -149,7 +149,19 @@ describe("parseCalendarMetadata - Classification Issues", () => {
       description: "",
     });
 
+    expect(result.category).toBe("Roxair");
     expect(result.attended).toBe(true);
+    expect(result.amountExpected).toBe(150000);
+  });
+
+  it("should classify typo 'muñtitest' as Test y exámenes and infer skin test", () => {
+    const result = parseCalendarMetadata({
+      summary: "Matteo moreno gonzalez (30) muñtitest 1 2 3 g8",
+      description: "",
+    });
+
+    expect(result.category).toBe("Test y exámenes");
+    expect(result.clinicalSeriesKind).toBe("SKIN_TEST");
   });
 
   it("should parse attendance typo variants like 'lllego' and 'llegp'", () => {

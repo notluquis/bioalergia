@@ -65,6 +65,13 @@ export type ParsedCalendarMetadata = {
 type ClinicalSeriesKind = ParsedCalendarMetadata["clinicalSeriesKind"];
 type ClinicalSeriesStageKind = ParsedCalendarMetadata["seriesStageKind"];
 
+function canonicalizeClassificationText(value: null | string | undefined): string {
+  return normalizeClinicalText(value)
+    .normalize("NFKD")
+    .replace(/\p{M}+/gu, "")
+    .toLowerCase();
+}
+
 // ============================================================================
 // PATTERN DEFINITIONS (by category, ordered by priority)
 // ============================================================================
@@ -111,11 +118,11 @@ const TEST_PATTERNS = [
   /cut[áa]neo/i,
   /ambiental/i,
   /panel/i,
-  /multi\s*tes?t?/i, // multitest
+  /m(?:ul|un)ti\s*tes?t?/i, // multitest, muntitest / muñtitest
   /prick/i, // prick test
   /aeroal[eé]rgenos?/i, // aeroalergenos
 ];
-const TEST_CUTANEO_PATTERNS = [/\btest\s*cut[áa]neo\b/i, /\bprick\b/i, /multi\s*tes?t?/i];
+const TEST_CUTANEO_PATTERNS = [/\btest\s*cut[áa]neo\b/i, /\bprick\b/i, /m(?:ul|un)ti\s*tes?t?/i];
 const TEST_PARCHE_PATTERNS = [/\btest\s*(de\s*)?parche\b/i, /\bparche\b/i];
 const TEST_PARCHE_1_READING_PATTERNS = [
   /\b1(?:ra|era|a|ª|º)?\s*lectura\b/i,
@@ -185,7 +192,7 @@ const CONSULTA_PATTERNS = [
  * - retira roxair: "RETIRA ROXAIR (pagado): Alondra valenzuela"
  * - enviar roxair: "enviar roxair a Santino (pagado)"
  */
-const ROXAIR_PATTERNS = [/\broxair\b/i, /\bretira\s+roxair\b/i, /\benviar\s+roxair\b/i];
+const ROXAIR_PATTERNS = [/\broxair?\b/i, /\bretira\s+roxair?\b/i, /\benviar\s+roxair?\b/i];
 const ROXAIR_DEFAULT_AMOUNT = 150000;
 
 /** Patterns for "Servicio de inyección" (Patient brings med or specific injection service) */
@@ -401,6 +408,10 @@ export function normalizeEventDate(value: string | null | undefined): string | n
 /** Helper to test if any pattern matches */
 function matchesAny(text: string, patterns: RegExp[]): boolean {
   return patterns.some((p) => p.test(text));
+}
+
+function matchesAnyVariant(patterns: RegExp[], ...texts: string[]): boolean {
+  return texts.some((text) => text.length > 0 && matchesAny(text, patterns));
 }
 
 // ============================================================================
@@ -680,39 +691,49 @@ function refineAmounts(
 
 function classifyCategory(summary: string, description: string): string | null {
   const text = joinClinicalText(summary, description).toLowerCase();
+  const canonicalText = canonicalizeClassificationText(joinClinicalText(summary, description));
   const summaryOnly = normalizeClinicalText(summary).toLowerCase();
+  const canonicalSummaryOnly = canonicalizeClassificationText(summary);
 
   // Skip ignored events
-  if (IGNORE_PATTERNS.some((p) => p.test(summaryOnly) || p.test(text))) {
+  if (
+    IGNORE_PATTERNS.some(
+      (p) =>
+        p.test(summaryOnly) ||
+        p.test(text) ||
+        p.test(canonicalSummaryOnly) ||
+        p.test(canonicalText),
+    )
+  ) {
     return null;
   }
 
   // Priority order: Test → Injection Service (specific meds) → Subcutáneo (explicit) → Roxair → Licencia → Control → Consulta → Subcutáneo (implicit)
-  if (matchesAny(text, TEST_PATTERNS)) {
+  if (matchesAnyVariant(TEST_PATTERNS, text, canonicalText)) {
     return "Test y exámenes";
   }
 
   // Injection service check - must come BEFORE subcutaneous to prioritize specific meds like Dupixent
-  if (matchesAny(text, INJECTION_PATTERNS)) {
+  if (matchesAnyVariant(INJECTION_PATTERNS, text, canonicalText)) {
     return "Servicio de inyección";
   }
 
   // Explicit Subcutaneous keywords (strong signals)
-  if (matchesAny(text, SUBCUT_PATTERNS)) {
+  if (matchesAnyVariant(SUBCUT_PATTERNS, text, canonicalText)) {
     return "Tratamiento subcutáneo";
   }
 
-  if (matchesAny(text, ROXAIR_PATTERNS)) {
+  if (matchesAnyVariant(ROXAIR_PATTERNS, text, canonicalText)) {
     return "Roxair";
   }
 
-  if (matchesAny(text, LICENCIA_PATTERNS)) {
+  if (matchesAnyVariant(LICENCIA_PATTERNS, text, canonicalText)) {
     return "Licencia médica";
   }
-  if (matchesAny(text, CONTROL_PATTERNS)) {
+  if (matchesAnyVariant(CONTROL_PATTERNS, text, canonicalText)) {
     return "Control médico";
   }
-  if (matchesAny(text, CONSULTA_PATTERNS)) {
+  if (matchesAnyVariant(CONSULTA_PATTERNS, text, canonicalText)) {
     return "Consulta médica";
   }
 
@@ -861,13 +882,18 @@ function detectTestMetadata(
   }
 
   const normalizedText = joinClinicalText(summary, description);
-  const firstReading = matchesAny(normalizedText, TEST_PARCHE_1_READING_PATTERNS);
-  const secondReading = matchesAny(normalizedText, TEST_PARCHE_2_READING_PATTERNS);
-  const thirdReading = matchesAny(normalizedText, TEST_PARCHE_3_READING_PATTERNS);
+  const canonicalText = canonicalizeClassificationText(normalizedText);
+  const firstReading = matchesAnyVariant(TEST_PARCHE_1_READING_PATTERNS, normalizedText, canonicalText);
+  const secondReading = matchesAnyVariant(
+    TEST_PARCHE_2_READING_PATTERNS,
+    normalizedText,
+    canonicalText,
+  );
+  const thirdReading = matchesAnyVariant(TEST_PARCHE_3_READING_PATTERNS, normalizedText, canonicalText);
   const hasAnyReading = firstReading || secondReading || thirdReading;
 
-  const skinTest = matchesAny(normalizedText, TEST_CUTANEO_PATTERNS);
-  const patchTest = matchesAny(normalizedText, TEST_PARCHE_PATTERNS) || hasAnyReading;
+  const skinTest = matchesAnyVariant(TEST_CUTANEO_PATTERNS, normalizedText, canonicalText);
+  const patchTest = matchesAnyVariant(TEST_PARCHE_PATTERNS, normalizedText, canonicalText) || hasAnyReading;
 
   return {
     firstReading,
