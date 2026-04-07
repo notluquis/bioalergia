@@ -169,7 +169,6 @@ export const DoctoraliaEmailNotificationSchema = z.strictObject({
   emailMessageId: z.string(),
   eventType: z.enum(["BOOKING", "MODIFICATION", "CANCELLATION"]),
   id: z.string(),
-  isFirstAppointment: z.boolean(),
   patientEmail: z.string().nullable(),
   patientName: z.string(),
   patientPhone: z.string().nullable(),
@@ -222,7 +221,6 @@ export const DoctoraliaEmailStatsResponseSchema = z.strictObject({
   data: z.strictObject({
     bookings: z.number(),
     cancellations: z.number(),
-    firstAppointments: z.number(),
     modifications: z.number(),
     total: z.number(),
     withPhone: z.number(),

@@ -10,6 +10,8 @@
  *  - Old (2025):  charset=iso-8859-1, sender @doctoralia.com, 24h time or range
  */
 
+import { normalizePhone } from "./jid";
+
 export type DoctoraliaEmailEventType = "BOOKING" | "MODIFICATION" | "CANCELLATION";
 
 export interface DoctoraliaBookingInfo {
@@ -17,7 +19,6 @@ export interface DoctoraliaBookingInfo {
   patientName: string;
   patientPhone: string | null;
   patientEmail: string | null;
-  isFirstAppointment: boolean;
   /** New appointment date (or the single date for BOOKING) */
   appointmentDate: Date | null;
   /** Original date being replaced — only set for MODIFICATION */
@@ -222,7 +223,7 @@ export function parseDoctoraliaEmail(text: string): DoctoraliaBookingInfo | null
 
         patientName = cleanExtractedText(candidate);
         const phoneMatch = /\+?\d[\d\s]{7,14}/.exec(inner);
-        if (phoneMatch) patientPhone = phoneMatch[0].replace(/\s/g, "");
+        if (phoneMatch) patientPhone = normalizePhone(phoneMatch[0]);
         const emailMatch = /[\w.+-]+@[\w.-]+\.[a-zA-Z]{2,}/.exec(inner);
         if (emailMatch) patientEmail = emailMatch[0];
         break;
@@ -235,7 +236,7 @@ export function parseDoctoraliaEmail(text: string): DoctoraliaBookingInfo | null
     for (const line of lines) {
       const phoneMatch = /(\+?56\s*9\d{8}|\+\d{10,14})/.exec(line);
       if (phoneMatch) {
-        patientPhone = phoneMatch[0].replace(/\s/g, "");
+        patientPhone = normalizePhone(phoneMatch[0]);
         const namePart = line.slice(0, phoneMatch.index).trim().replace(/[(),]/g, "").trim();
         if (namePart.length > 2) patientName = cleanExtractedText(namePart);
         break;
@@ -247,7 +248,7 @@ export function parseDoctoraliaEmail(text: string): DoctoraliaBookingInfo | null
     for (const line of lines) {
       const phoneMatch = /(\+?56\s*9\d{8}|\+?\d[\d\s()-]{8,})/.exec(line);
       if (phoneMatch) {
-        patientPhone = phoneMatch[0].replace(/[()\s-]/g, "");
+        patientPhone = normalizePhone(phoneMatch[0]);
         break;
       }
     }
@@ -264,11 +265,6 @@ export function parseDoctoraliaEmail(text: string): DoctoraliaBookingInfo | null
   }
 
   if (!patientName) return null;
-
-  // --- First appointment flag (BOOKING only) ---
-  const isFirstAppointment = lines.some((l) =>
-    /primera\s+cita\s+de\s+este\s+paciente/i.test(l),
-  );
 
   // --- Dates ---
   let appointmentDate: Date | null = null;
@@ -373,7 +369,6 @@ export function parseDoctoraliaEmail(text: string): DoctoraliaBookingInfo | null
     appointmentService: cleanExtractedText(appointmentService),
     clinicAddress: cleanExtractedText(clinicAddress),
     eventType,
-    isFirstAppointment,
     patientEmail,
     patientName: cleanExtractedText(patientName) ?? patientName,
     patientPhone,

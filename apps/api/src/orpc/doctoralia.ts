@@ -138,7 +138,6 @@ const emailNotificationsStatsResponseSchema = z.object({
   data: z.object({
     bookings: z.number(),
     cancellations: z.number(),
-    firstAppointments: z.number(),
     modifications: z.number(),
     total: z.number(),
     withPhone: z.number(),
@@ -641,10 +640,9 @@ const doctoraliaORPCRouterBase = {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const rows = await (db.$qb as any)
         .selectFrom("DoctoraliaEmailNotification")
-        .select(["eventType", "isFirstAppointment", "patientPhone"])
+        .select(["eventType", "patientPhone"])
         .execute() as Array<{
         eventType: "BOOKING" | "CANCELLATION" | "MODIFICATION";
-        isFirstAppointment: boolean;
         patientPhone: string | null;
       }>;
 
@@ -652,7 +650,6 @@ const doctoraliaORPCRouterBase = {
         data: {
           bookings: rows.filter((row) => row.eventType === "BOOKING").length,
           cancellations: rows.filter((row) => row.eventType === "CANCELLATION").length,
-          firstAppointments: rows.filter((row) => row.isFirstAppointment).length,
           modifications: rows.filter((row) => row.eventType === "MODIFICATION").length,
           total: rows.length,
           withPhone: rows.filter((row) => Boolean(row.patientPhone)).length,

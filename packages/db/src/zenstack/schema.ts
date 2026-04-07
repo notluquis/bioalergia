@@ -5811,12 +5811,6 @@ export class SchemaType implements SchemaDef {
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_email") }] }] as readonly AttributeApplication[]
                 },
-                isFirstAppointment: {
-                    name: "isFirstAppointment",
-                    type: "Boolean",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("is_first_appointment") }] }] as readonly AttributeApplication[],
-                    default: false as FieldDefault
-                },
                 appointmentDate: {
                     name: "appointmentDate",
                     type: "DateTime",

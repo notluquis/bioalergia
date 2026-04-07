@@ -139,20 +139,7 @@ export function DoctoraliaSettingsPage() {
 
   return (
     <div className={PAGE_CONTAINER}>
-      <Surface className="rounded-[28px] border border-default-200 bg-linear-to-br from-background via-default-50 to-warning/5 p-6 shadow-inner">
-        <div>
-          <h1 className="font-semibold text-2xl">Doctoralia</h1>
-          <Description className="mt-2 max-w-3xl text-default-600 text-sm">
-            Ingesta de correos Doctoralia: listener IMAP en escucha, validación del mensaje, parseo
-            de reservas y persistencia en base de datos.
-          </Description>
-          <Description className="mt-1 text-default-500 text-xs">
-            El estado operativo y los volúmenes del flujo están en las tabs de Ingesta y Actividad.
-          </Description>
-        </div>
-      </Surface>
-
-      <Tabs className="mt-6" defaultSelectedKey="overview">
+      <Tabs defaultSelectedKey="overview">
         <Tabs.ListContainer>
           <Tabs.List aria-label="Secciones de Doctoralia">
             <Tabs.Tab id="overview">
@@ -614,17 +601,5 @@ const doctoraliaNotificationColumns: ColumnDef<DoctoraliaEmailNotification>[] = 
     accessorKey: "appointmentDoctor",
     cell: ({ row }) => row.original.appointmentDoctor ?? "—",
     header: "Profesional",
-  },
-  {
-    accessorKey: "isFirstAppointment",
-    cell: ({ row }) =>
-      row.original.isFirstAppointment ? (
-        <Chip color="accent" size="sm" variant="soft">
-          Primera
-        </Chip>
-      ) : (
-        "—"
-      ),
-    header: "Primera cita",
   },
 ];

@@ -1522,7 +1522,6 @@ model DoctoraliaEmailNotification {
   patientName             String                        @map("patient_name")
   patientPhone            String?                       @map("patient_phone")
   patientEmail            String?                       @map("patient_email")
-  isFirstAppointment      Boolean                       @default(false) @map("is_first_appointment")
   appointmentDate         DateTime?                     @map("appointment_date")
   previousAppointmentDate DateTime?                     @map("previous_appointment_date")
   appointmentService      String?                       @map("appointment_service")

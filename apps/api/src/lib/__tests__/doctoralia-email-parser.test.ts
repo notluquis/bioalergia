@@ -44,10 +44,9 @@ describe("doctoralia email parser", () => {
       appointmentService: "Visitas Sucesivas Inmunólogo Alergólogo (40 min)",
       clinicAddress: "Bioalergia",
       eventType: "BOOKING",
-      isFirstAppointment: false,
       patientEmail: "Ruth.marlene1141@gmail.com",
       patientName: "Daniela Isidora Bustos aguilera",
-      patientPhone: "982173854",
+      patientPhone: "+56982173854",
       previousAppointmentDate: null,
     });
     expect(parsed?.appointmentDate).toBeInstanceOf(Date);

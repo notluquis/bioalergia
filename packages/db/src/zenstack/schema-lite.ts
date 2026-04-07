@@ -4743,11 +4743,6 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true
                 },
-                isFirstAppointment: {
-                    name: "isFirstAppointment",
-                    type: "Boolean",
-                    default: false as FieldDefault
-                },
                 appointmentDate: {
                     name: "appointmentDate",
                     type: "DateTime",

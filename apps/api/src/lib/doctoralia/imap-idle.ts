@@ -233,7 +233,6 @@ async function ingestMailbox(client: ImapFlow, config: ImapConfig): Promise<Doct
           emailMessageId: messageId,
           eventType: booking.eventType,
           id: createId(),
-          isFirstAppointment: booking.isFirstAppointment,
           patientEmail: booking.patientEmail ?? null,
           patientName: booking.patientName,
           patientPhone: booking.patientPhone ?? null,
@@ -247,7 +246,6 @@ async function ingestMailbox(client: ImapFlow, config: ImapConfig): Promise<Doct
 
       logEvent("doctoralia.imap.saved", {
         eventType: booking.eventType,
-        isFirstAppointment: booking.isFirstAppointment,
         messageId,
         patientName: booking.patientName,
       });

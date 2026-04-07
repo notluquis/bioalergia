@@ -220,7 +220,6 @@ export interface DoctoraliaEmailNotification {
   emailMessageId: string;
   eventType: "BOOKING" | "CANCELLATION" | "MODIFICATION";
   id: string;
-  isFirstAppointment: boolean;
   patientEmail: string | null;
   patientName: string;
   patientPhone: string | null;
@@ -263,7 +262,6 @@ export interface DoctoraliaEmailOverview {
 export interface DoctoraliaEmailStats {
   bookings: number;
   cancellations: number;
-  firstAppointments: number;
   modifications: number;
   total: number;
   withPhone: number;

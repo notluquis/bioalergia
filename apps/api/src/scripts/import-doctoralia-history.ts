@@ -473,7 +473,6 @@ interface ParsedBooking {
   patientName: string;
   patientPhone: string | null;
   patientEmail: string | null;
-  isFirstAppointment: boolean;
   appointmentDate: Date | null;
   previousAppointmentDate: Date | null;
   appointmentService: string | null;
@@ -524,7 +523,6 @@ for (const raw of allRaw) {
     appointmentService: booking.appointmentService,
     clinicAddress: booking.clinicAddress,
     eventType: booking.eventType,
-    isFirstAppointment: booking.isFirstAppointment,
     messageId: raw.messageId,
     patientEmail: booking.patientEmail,
     patientName: booking.patientName,
@@ -593,7 +591,6 @@ for (const b of toInsert) {
         emailMessageId: b.messageId,
         eventType: b.eventType,
         id: createId(),
-        isFirstAppointment: b.isFirstAppointment,
         patientEmail: b.patientEmail ?? null,
         patientName: b.patientName,
         patientPhone: b.patientPhone ?? null,

@@ -24,6 +24,11 @@ export function normalizePhone(raw: string): string {
     return `+56${cleaned}`;
   }
 
+  // Doctoralia sometimes drops the leading mobile 9 and sends only local 8 digits.
+  if (/^\d{8}$/.test(cleaned)) {
+    return `+569${cleaned}`;
+  }
+
   return cleaned.startsWith("+") ? cleaned : `+${cleaned}`;
 }
 

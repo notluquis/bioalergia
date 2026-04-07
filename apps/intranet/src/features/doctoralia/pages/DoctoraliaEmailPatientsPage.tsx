@@ -91,11 +91,6 @@ function PatientHistoryDrawer({
                   <p className="text-default-500 text-xs">{n.appointmentDoctor}</p>
                 )}
                 {n.clinicAddress && <p className="text-default-400 text-xs">{n.clinicAddress}</p>}
-                {n.isFirstAppointment && (
-                  <span className="mt-1 inline-block rounded-full bg-primary-50 px-2 py-0.5 text-primary-700 text-[11px]">
-                    Primera cita
-                  </span>
-                )}
               </li>
             ))}
           </ul>
