@@ -3,7 +3,15 @@ import { z } from "zod";
 
 export const clinicalSeriesKindSchema = z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT"]);
 export const clinicalSeriesStatusSchema = z.enum(["PLANNED", "ACTIVE", "INACTIVE", "COMPLETED", "CANCELLED"]);
+export const clinicalSeriesViewModeSchema = z.enum(["series", "abandonment"]);
+export const clinicalSeriesAbandonmentBucketSchema = z.enum([
+  "month_1",
+  "month_2",
+  "month_3",
+  "month_4_plus",
+]);
 export const clinicalSeriesSortColumnSchema = z.enum([
+  "daysSinceLastEvent",
   "financial",
   "kind",
   "lastEvent",
@@ -50,6 +58,8 @@ export const clinicalSeriesLinkedDocumentSchema = z.object({
 
 export const clinicalSeriesSnapshotSchema = z.object({
   allergenType: z.enum(["ACAROS", "ACAROS_GRAMINEAS", "GRAMINEAS"]).nullable().catch(null),
+  abandonmentBucket: clinicalSeriesAbandonmentBucketSchema.nullable().catch(null),
+  daysSinceLastEvent: z.number().int().nullable(),
   deliveryModality: z.enum(["DOMICILIO", "PRESENCIAL"]).nullable().catch(null),
   beneficiaryName: z.string().nullable(),
   beneficiaryPhones: z.array(z.string()).catch([]),
@@ -62,6 +72,8 @@ export const clinicalSeriesSnapshotSchema = z.object({
   id: z.number(),
   kind: clinicalSeriesKindSchema,
   linkedDocuments: z.array(clinicalSeriesLinkedDocumentSchema),
+  lastEventDate: z.string().nullable(),
+  nextEventDate: z.string().nullable(),
   patientName: z.string().nullable(),
   patientPhones: z.array(z.string()).catch([]),
   patientRut: z.string().nullable(),
@@ -71,6 +83,7 @@ export const clinicalSeriesSnapshotSchema = z.object({
   totalExpected: z.number(),
   totalLinkedAmount: z.number(),
   totalPaid: z.number(),
+  upcomingCount: z.number().int(),
   vaccineProduct: z
     .enum(["ALXOID", "CLUSTOID", "CLUSTOID_B120", "CLUSTOID_FORTE", "ORAL_TEC"])
     .nullable()
@@ -78,6 +91,7 @@ export const clinicalSeriesSnapshotSchema = z.object({
 });
 
 export const clinicalSeriesListInputSchema = z.object({
+  abandonmentBucket: clinicalSeriesAbandonmentBucketSchema.optional(),
   beneficiaryRut: z.string().optional(),
   kind: clinicalSeriesKindSchema.optional(),
   nextVisitFrom: z.string().optional(),
@@ -91,6 +105,7 @@ export const clinicalSeriesListInputSchema = z.object({
   sortColumn: clinicalSeriesSortColumnSchema.optional(),
   sortDirection: clinicalSeriesSortDirectionSchema.optional(),
   status: clinicalSeriesStatusSchema.optional(),
+  view: clinicalSeriesViewModeSchema.default("series").optional(),
 });
 
 export const clinicalSeriesListOutputSchema = z.object({

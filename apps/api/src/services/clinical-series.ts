@@ -344,6 +344,8 @@ type ClinicalSeriesLinkedDocument = {
 
 export interface ClinicalSeriesSnapshot {
   allergenType: null | SubcutaneousAllergenType;
+  abandonmentBucket: null | "month_1" | "month_2" | "month_3" | "month_4_plus";
+  daysSinceLastEvent: null | number;
   vaccineProduct: null | SubcutaneousVaccineProduct;
   healthInsurance: null | HealthInsuranceType;
   deliveryModality: null | DeliveryModality;
@@ -356,7 +358,9 @@ export interface ClinicalSeriesSnapshot {
   events: ClinicalSeriesEventSnapshot[];
   id: number;
   kind: ClinicalSeriesKind;
+  lastEventDate: null | string;
   linkedDocuments: ClinicalSeriesLinkedDocument[];
+  nextEventDate: null | string;
   patientName: null | string;
   patientPhones: string[];
   patientRut: null | string;
@@ -366,13 +370,39 @@ export interface ClinicalSeriesSnapshot {
   totalExpected: number;
   totalLinkedAmount: number;
   totalPaid: number;
+  upcomingCount: number;
 }
 
 function isPastOrTodayEvent(eventDate: string, today: string) {
   return eventDate <= today;
 }
 
+function computeSnapshotTiming(snapshot: Pick<ClinicalSeriesSnapshot, "events">, today: string) {
+  const past = snapshot.events.filter((event) => event.eventDate <= today);
+  const future = snapshot.events.filter((event) => event.eventDate > today);
+
+  const lastEventDate = past.length
+    ? past.reduce((acc, event) => (event.eventDate > acc ? event.eventDate : acc), past[0]!.eventDate)
+    : null;
+  const nextEventDate = future.length
+    ? future.reduce((acc, event) => (event.eventDate < acc ? event.eventDate : acc), future[0]!.eventDate)
+    : null;
+  const upcomingCount = future.length;
+  const daysSinceLastEvent = lastEventDate
+    ? dayjs(today, "YYYY-MM-DD").diff(dayjs(lastEventDate, "YYYY-MM-DD"), "day")
+    : null;
+
+  return {
+    abandonmentBucket: resolveAbandonmentBucket(daysSinceLastEvent),
+    daysSinceLastEvent,
+    lastEventDate,
+    nextEventDate,
+    upcomingCount,
+  };
+}
+
 type ClinicalSeriesFilters = {
+  abandonmentBucket?: "month_1" | "month_2" | "month_3" | "month_4_plus";
   beneficiaryRut?: string;
   kind?: ClinicalSeriesKind;
   nextVisitFrom?: string;
@@ -384,6 +414,7 @@ type ClinicalSeriesFilters = {
   patientName?: string;
   patientRut?: string;
   sortColumn?:
+    | "daysSinceLastEvent"
     | "financial"
     | "kind"
     | "lastEvent"
@@ -394,7 +425,16 @@ type ClinicalSeriesFilters = {
     | "upcomingEvents";
   sortDirection?: "ascending" | "descending";
   status?: "ACTIVE" | "CANCELLED" | "COMPLETED" | "PLANNED" | "INACTIVE";
+  view?: "abandonment" | "series";
 };
+
+function resolveAbandonmentBucket(daysSinceLastEvent: null | number) {
+  if (daysSinceLastEvent == null || daysSinceLastEvent < 30) return null;
+  if (daysSinceLastEvent < 60) return "month_1" as const;
+  if (daysSinceLastEvent < 90) return "month_2" as const;
+  if (daysSinceLastEvent < 120) return "month_3" as const;
+  return "month_4_plus" as const;
+}
 
 function normalizePhoneSearch(value: null | string | undefined): null | string {
   if (!value) return null;
@@ -525,6 +565,7 @@ function normalizeNameToken(token: string): string {
 
 function resolveClinicalSeriesOrderBy(
   filters?: ClinicalSeriesFilters,
+  today = dayjs().tz(TIMEZONE).format("YYYY-MM-DD"),
 ): ReturnType<typeof sql> {
   const sortColumn = filters?.sortColumn ?? "lastEvent";
   const sortDirection = filters?.sortDirection === "ascending" ? "ASC" : "DESC";
@@ -533,6 +574,8 @@ function resolveClinicalSeriesOrderBy(
     switch (sortColumn) {
       case "patient":
         return "lower(coalesce(cs.patient_name, ''))";
+      case "daysSinceLastEvent":
+        return `CASE WHEN es.last_event_date IS NULL THEN NULL ELSE ('${today}'::date - es.last_event_date) END`;
       case "kind":
         return "cs.kind::text";
       case "status":
@@ -550,7 +593,6 @@ function resolveClinicalSeriesOrderBy(
         return "es.last_event_date";
     }
   })();
-
   return sql.raw(`${columnExpression} ${sortDirection} NULLS LAST, cs.id DESC`);
 }
 
@@ -2589,8 +2631,10 @@ export async function getClinicalSeriesSnapshotByExternalEvent(params: {
     ? dayjs().tz(TIMEZONE).format("YYYY-MM-DD")
     : dayjs.tz(endDate, TIMEZONE).add(30, "day").format("YYYY-MM-DD");
 
-  return {
+  const baseSnapshot: ClinicalSeriesSnapshot = {
     allergenType: (series.allergenType as SubcutaneousAllergenType | null) ?? null,
+    abandonmentBucket: null,
+    daysSinceLastEvent: null,
     vaccineProduct: (series.vaccineProduct as SubcutaneousVaccineProduct | null) ?? null,
     healthInsurance: (series.healthInsurance as HealthInsuranceType | null) ?? null,
     deliveryModality: (series.deliveryModality as DeliveryModality | null) ?? null,
@@ -2603,7 +2647,9 @@ export async function getClinicalSeriesSnapshotByExternalEvent(params: {
     events,
     id: series.id,
     kind: series.kind as ClinicalSeriesKind,
+    lastEventDate: null,
     linkedDocuments,
+    nextEventDate: null,
     patientName: series.patientName ?? null,
     patientPhones: [...seriesPhones.patientPhones],
     patientRut: series.patientRut ?? null,
@@ -2613,6 +2659,12 @@ export async function getClinicalSeriesSnapshotByExternalEvent(params: {
     totalExpected: totalExpectedDue,
     totalLinkedAmount,
     totalPaid: totalPaidDue,
+    upcomingCount: 0,
+  };
+
+  return {
+    ...baseSnapshot,
+    ...computeSnapshotTiming(baseSnapshot, today),
   };
 }
 
@@ -2639,12 +2691,15 @@ export async function getClinicalSeriesSnapshotById(id: number): Promise<Clinica
   }
 
   const syntheticEvent = series.events[0];
+  const today = dayjs().tz(TIMEZONE).format("YYYY-MM-DD");
   if (!syntheticEvent) {
     return {
       allergenType: (series.allergenType as SubcutaneousAllergenType | null) ?? null,
+      abandonmentBucket: null,
       beneficiaryName: series.beneficiaryName ?? null,
       beneficiaryPhones: normalizeStoredPhoneArray(series.beneficiaryPhones),
       beneficiaryRut: series.beneficiaryRut ?? null,
+      daysSinceLastEvent: null,
       deliveryModality: (series.deliveryModality as DeliveryModality | null) ?? null,
       displayName: series.displayName ?? null,
       eligibleDocumentDateFrom: dayjs().tz(TIMEZONE).format("YYYY-MM-DD"),
@@ -2653,7 +2708,9 @@ export async function getClinicalSeriesSnapshotById(id: number): Promise<Clinica
       healthInsurance: (series.healthInsurance as HealthInsuranceType | null) ?? null,
       id: series.id,
       kind: series.kind as ClinicalSeriesKind,
+      lastEventDate: null,
       linkedDocuments: [],
+      nextEventDate: null,
       patientName: series.patientName ?? null,
       patientPhones: normalizeStoredPhoneArray(series.patientPhones),
       patientRut: series.patientRut ?? null,
@@ -2664,19 +2721,26 @@ export async function getClinicalSeriesSnapshotById(id: number): Promise<Clinica
       totalExpected: 0,
       totalLinkedAmount: 0,
       totalPaid: 0,
+      upcomingCount: 0,
     };
   }
 
-  return getClinicalSeriesSnapshotByExternalEvent({
+  const snapshot = await getClinicalSeriesSnapshotByExternalEvent({
     calendarId: syntheticEvent.calendar.googleId,
     eventId: syntheticEvent.externalEventId,
   });
+  if (!snapshot) return null;
+  return {
+    ...snapshot,
+    ...computeSnapshotTiming(snapshot, today),
+  };
 }
 
 export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilters) {
   const page = Math.max(1, filters?.page ?? 1);
   const pageSize = Math.min(100, Math.max(1, filters?.pageSize ?? 20));
   const today = dayjs().tz(TIMEZONE).format("YYYY-MM-DD");
+  const view = filters?.view ?? "series";
   const normalizedBeneficiaryRut = filters?.beneficiaryRut ? normalizeRut(filters.beneficiaryRut) : null;
   const normalizedPatientRut = filters?.patientRut ? normalizeRut(filters.patientRut) : null;
   const normalizedPatientName = filters?.patientName ? `%${normalizeName(filters.patientName)}%` : null;
@@ -2724,6 +2788,32 @@ export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilter
           }
         )`
       : sql`TRUE`;
+  const effectiveKind = view === "abandonment" ? "SUBCUTANEOUS_TREATMENT" : (filters?.kind ?? null);
+  const effectiveStatus = view === "abandonment" ? null : (filters?.status ?? null);
+  const daysSinceLastEventSql = sql<number | null>`CASE
+    WHEN es.last_event_date IS NULL THEN NULL
+    ELSE (${today}::date - es.last_event_date)
+  END`;
+  const abandonmentBucketSql = sql<string | null>`CASE
+    WHEN ${daysSinceLastEventSql} IS NULL OR ${daysSinceLastEventSql} < 30 THEN NULL
+    WHEN ${daysSinceLastEventSql} < 60 THEN 'month_1'
+    WHEN ${daysSinceLastEventSql} < 90 THEN 'month_2'
+    WHEN ${daysSinceLastEventSql} < 120 THEN 'month_3'
+    ELSE 'month_4_plus'
+  END`;
+  const abandonmentFilterSql =
+    view === "abandonment"
+      ? sql`(
+          cs.kind::text = 'SUBCUTANEOUS_TREATMENT'
+          AND cs.status::text NOT IN ('COMPLETED', 'CANCELLED')
+          AND es.last_event_date IS NOT NULL
+          AND es.next_event_date IS NULL
+          AND ${daysSinceLastEventSql} >= 30
+          AND (${filters?.abandonmentBucket ?? null}::text IS NULL OR ${abandonmentBucketSql} = ${
+            filters?.abandonmentBucket ?? null
+          }::text)
+        )`
+      : sql`TRUE`;
 
   // Count total matching records (without pagination)
   const total = Number(
@@ -2732,6 +2822,13 @@ export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilter
         WITH event_stats AS (
           SELECT
             e.clinical_series_id AS series_id,
+            MAX(
+              CASE
+                WHEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
+                THEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date)
+                ELSE NULL
+              END
+            ) AS last_event_date,
             MIN(
               CASE
                 WHEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) > ${today}::date
@@ -2747,19 +2844,25 @@ export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilter
         FROM clinical_series cs
         LEFT JOIN event_stats es ON es.series_id = cs.id
         WHERE (${normalizedBeneficiaryRut}::text IS NULL OR cs.beneficiary_rut = ${normalizedBeneficiaryRut})
-          AND (${filters?.kind ?? null}::text IS NULL OR cs.kind::text = ${filters?.kind ?? null})
-          AND (${filters?.status ?? null}::text IS NULL OR cs.status::text = ${filters?.status ?? null})
+          AND (${effectiveKind}::text IS NULL OR cs.kind::text = ${effectiveKind})
+          AND (${effectiveStatus}::text IS NULL OR cs.status::text = ${effectiveStatus})
           AND (${normalizedPatientRut}::text IS NULL OR cs.patient_rut = ${normalizedPatientRut})
           AND (${normalizedPatientName}::text IS NULL OR lower(coalesce(cs.patient_name, '')) LIKE ${normalizedPatientName})
           AND (${normalizedPatientPhone}::text IS NULL OR ${phoneFilterSql(normalizedPatientPhone)})
           AND (${nextVisitFrom}::date IS NULL OR es.next_event_date >= ${nextVisitFrom}::date)
           AND (${nextVisitTo}::date IS NULL OR es.next_event_date <= ${nextVisitTo}::date)
           AND ${queryFilterSql}
+          AND ${abandonmentFilterSql}
       `.execute(kysely)
     ).rows[0]?.count ?? 0,
   );
 
-  const orderBy = resolveClinicalSeriesOrderBy(filters);
+  const orderBy = resolveClinicalSeriesOrderBy(
+    view === "abandonment" && filters?.sortColumn == null
+      ? { ...filters, sortColumn: "daysSinceLastEvent", sortDirection: "descending" }
+      : filters,
+    today,
+  );
   const seriesResult = await sql<{ id: number }>`
     WITH event_stats AS (
       SELECT
@@ -2822,14 +2925,15 @@ export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilter
     LEFT JOIN event_stats es ON es.series_id = cs.id
     LEFT JOIN linked_totals lt ON lt.series_id = cs.id
     WHERE (${normalizedBeneficiaryRut}::text IS NULL OR cs.beneficiary_rut = ${normalizedBeneficiaryRut})
-      AND (${filters?.kind ?? null}::text IS NULL OR cs.kind::text = ${filters?.kind ?? null})
-      AND (${filters?.status ?? null}::text IS NULL OR cs.status::text = ${filters?.status ?? null})
+      AND (${effectiveKind}::text IS NULL OR cs.kind::text = ${effectiveKind})
+      AND (${effectiveStatus}::text IS NULL OR cs.status::text = ${effectiveStatus})
       AND (${normalizedPatientName}::text IS NULL OR lower(coalesce(cs.patient_name, '')) LIKE ${normalizedPatientName})
       AND (${normalizedPatientRut}::text IS NULL OR cs.patient_rut = ${normalizedPatientRut})
       AND (${normalizedPatientPhone}::text IS NULL OR ${phoneFilterSql(normalizedPatientPhone)})
       AND (${nextVisitFrom}::date IS NULL OR es.next_event_date >= ${nextVisitFrom}::date)
       AND (${nextVisitTo}::date IS NULL OR es.next_event_date <= ${nextVisitTo}::date)
       AND ${queryFilterSql}
+      AND ${abandonmentFilterSql}
     ORDER BY ${orderBy}
     LIMIT ${pageSize}
     OFFSET ${(page - 1) * pageSize}

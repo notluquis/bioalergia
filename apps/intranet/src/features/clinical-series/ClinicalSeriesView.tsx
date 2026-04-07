@@ -29,6 +29,7 @@ import {
   Spinner,
   Surface,
   Table,
+  Tabs,
   TextField,
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
@@ -50,12 +51,14 @@ import {
 } from "./queries";
 import type {
   ClinicalSeriesDuplicate,
+  ClinicalSeriesAbandonmentBucket,
   ClinicalSeriesEvent,
   ClinicalSeriesFilters,
   ClinicalSeriesKind,
   ClinicalSeriesSnapshot,
   ClinicalSeriesSortColumn,
   ClinicalSeriesStatus,
+  ClinicalSeriesViewMode,
   SubcutaneousAllergenType,
   SubcutaneousVaccineProduct,
   HealthInsuranceType,
@@ -346,6 +349,31 @@ const STATUS_LABELS: Record<ClinicalSeriesStatus, string> = {
   CANCELLED: "Cancelada",
 };
 
+const ABANDONMENT_BUCKET_OPTIONS: Array<{
+  description: string;
+  label: string;
+  value: ClinicalSeriesAbandonmentBucket;
+}> = [
+  { description: "30 a 59 días", label: "1 mes", value: "month_1" },
+  { description: "60 a 89 días", label: "2 meses", value: "month_2" },
+  { description: "90 a 119 días", label: "3 meses", value: "month_3" },
+  { description: "120 días o más", label: "4+ meses", value: "month_4_plus" },
+];
+
+const ABANDONMENT_BUCKET_LABELS: Record<ClinicalSeriesAbandonmentBucket, string> = {
+  month_1: "1 mes",
+  month_2: "2 meses",
+  month_3: "3 meses",
+  month_4_plus: "4+ meses",
+};
+
+const ABANDONMENT_BUCKET_COLORS: Record<ClinicalSeriesAbandonmentBucket, "warning" | "danger"> = {
+  month_1: "warning",
+  month_2: "warning",
+  month_3: "danger",
+  month_4_plus: "danger",
+};
+
 // ─── Debounce Hook ────────────────────────────────────────────────────────────
 
 function useDebounce<T>(value: T, delay = 350): T {
@@ -483,34 +511,14 @@ function toCalendarEventDetail(event: ClinicalSeriesEvent): CalendarEventDetail 
   };
 }
 
-// ─── Derived snapshot ─────────────────────────────────────────────────────────
-// Pre-compute per-row event stats once so sort comparisons are O(1).
-
-type DerivedSnapshot = ClinicalSeriesSnapshot & {
-  firstEventDate: string;
-  lastEventDate: string;
-  nextEventDate: string;
-  upcomingCount: number;
-};
-
-function deriveSnapshot(s: ClinicalSeriesSnapshot, today: string): DerivedSnapshot {
-  const past = s.events.filter((e) => e.eventDate <= today);
-  const future = s.events.filter((e) => e.eventDate > today);
-  const all = s.events.map((e) => e.eventDate);
-  const firstEventDate = all.length ? all.reduce((a, b) => (b < a ? b : a)) : "";
-  const lastEventDate = past.length
-    ? past.reduce((acc, e) => (e.eventDate > acc ? e.eventDate : acc), past[0]!.eventDate)
-    : "";
-  const nextEventDate = future.length
-    ? future.reduce((acc, e) => (e.eventDate < acc ? e.eventDate : acc), future[0]!.eventDate)
-    : "";
-  return { ...s, firstEventDate, lastEventDate, nextEventDate, upcomingCount: future.length };
-}
-
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function ClinicalSeriesView() {
   const queryClient = useQueryClient();
+  const [viewMode, setViewMode] = useState<ClinicalSeriesViewMode>("series");
+  const [abandonmentBucket, setAbandonmentBucket] = useState<
+    ClinicalSeriesAbandonmentBucket | undefined
+  >(undefined);
   // Pagination state
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<(typeof PAGE_SIZE_OPTIONS)[number]>(20);
@@ -537,10 +545,25 @@ export function ClinicalSeriesView() {
     direction: "descending",
   });
 
+  useEffect(() => {
+    setPage(1);
+    setSelectedId(null);
+    setDrawerOpen(false);
+    setSortDescriptor(
+      viewMode === "abandonment"
+        ? { column: "daysSinceLastEvent", direction: "descending" }
+        : (current) =>
+            current.column === "daysSinceLastEvent"
+              ? { column: "lastEvent", direction: "descending" }
+              : current
+    );
+  }, [viewMode]);
+
   // Reset page when filters or page size change
   useEffect(() => {
     setPage(1);
   }, [
+    abandonmentBucket,
     debouncedBeneficiaryRut,
     debouncedPhone,
     debouncedQuery,
@@ -558,18 +581,20 @@ export function ClinicalSeriesView() {
   const [selectedSeriesEvent, setSelectedSeriesEvent] = useState<CalendarEventDetail | null>(null);
 
   const filters: ClinicalSeriesFilters = {
+    abandonmentBucket,
     page,
     pageSize: pageSize,
     ...(debouncedQuery && { query: debouncedQuery }),
     ...(debouncedBeneficiaryRut && { beneficiaryRut: debouncedBeneficiaryRut }),
     ...(debouncedPhone && { patientPhone: debouncedPhone }),
     ...(debouncedRut && { patientRut: debouncedRut }),
-    ...(kind && { kind }),
+    ...(viewMode === "series" && kind && { kind }),
     ...(nextVisitFrom && { nextVisitFrom }),
     ...(nextVisitTo && { nextVisitTo }),
     sortColumn: sortDescriptor.column as ClinicalSeriesSortColumn,
     sortDirection: sortDescriptor.direction,
-    ...(status && { status }),
+    ...(viewMode === "series" && status && { status }),
+    view: viewMode,
   };
 
   const [rebuildModalOpen, setRebuildModalOpen] = useState(false);
@@ -597,12 +622,6 @@ export function ClinicalSeriesView() {
     totalPages,
   });
 
-  const derivedItems = useMemo(() => {
-    if (!data?.items) return [];
-    const today = getTodayStr();
-    return data.items.map((s) => deriveSnapshot(s, today));
-  }, [data?.items]);
-
   const handleRowSelect = (keys: Selection) => {
     if (keys === "all") return;
     const [firstKey] = keys;
@@ -626,14 +645,15 @@ export function ClinicalSeriesView() {
   };
 
   const hasFilters =
+    !!abandonmentBucket ||
     !!debouncedBeneficiaryRut ||
     !!debouncedPhone ||
     !!debouncedQuery ||
     !!debouncedRut ||
-    !!kind ||
+    (viewMode === "series" && !!kind) ||
     !!nextVisitFrom ||
     !!nextVisitTo ||
-    !!status;
+    (viewMode === "series" && !!status);
 
   const clearFilters = () => {
     setQueryRaw("");
@@ -644,6 +664,7 @@ export function ClinicalSeriesView() {
     setNextVisitFrom(undefined);
     setNextVisitTo(undefined);
     setStatus(undefined);
+    setAbandonmentBucket(undefined);
   };
 
   return (
@@ -757,6 +778,24 @@ export function ClinicalSeriesView() {
         )}
       </div>
 
+      <Tabs
+        selectedKey={viewMode}
+        onSelectionChange={(key) => setViewMode(key as ClinicalSeriesViewMode)}
+      >
+        <Tabs.ListContainer>
+          <Tabs.List aria-label="Vistas de series clínicas" className="w-full justify-start">
+            <Tabs.Tab id="series">
+              Series
+              <Tabs.Indicator />
+            </Tabs.Tab>
+            <Tabs.Tab id="abandonment">
+              Abandono
+              <Tabs.Indicator />
+            </Tabs.Tab>
+          </Tabs.List>
+        </Tabs.ListContainer>
+      </Tabs>
+
       {/* ── Filters ──────────────────────────────────────────────────────── */}
       <Surface className="rounded-xl p-4">
         <div className="flex flex-col gap-4">
@@ -764,7 +803,13 @@ export function ClinicalSeriesView() {
             <Label>Búsqueda</Label>
             <Input placeholder="Paciente, RUT paciente, RUT beneficiario o beneficiario..." />
           </TextField>
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_12rem_12rem_minmax(18rem,1.25fr)_auto]">
+          <div
+            className={
+              viewMode === "series"
+                ? "grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_12rem_12rem_minmax(18rem,1.25fr)_auto]"
+                : "grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto]"
+            }
+          >
             <TextField className="w-full" value={rutRaw} onChange={setRutRaw}>
               <Label>RUT paciente</Label>
               <Input placeholder="12345678-9" />
@@ -780,111 +825,118 @@ export function ClinicalSeriesView() {
               <Input placeholder="+56912345678" />
             </TextField>
 
-            <div className="flex flex-col gap-1">
-              <Select
-                onChange={handleKindChange}
-                value={(kind as Key) ?? null}
-                placeholder="Todos"
-                variant="secondary"
-              >
-                <Label>Tipo</Label>
-                <Select.Trigger>
-                  <Select.Value />
-                  <Select.Indicator />
-                </Select.Trigger>
-                <Select.Popover>
-                  <ListBox>
-                    {KIND_OPTIONS.map((item) => (
-                      <ListBox.Item id={item.value} key={item.value} textValue={item.label}>
-                        {item.label}
-                        <ListBox.ItemIndicator />
-                      </ListBox.Item>
-                    ))}
-                  </ListBox>
-                </Select.Popover>
-              </Select>
-            </div>
+            {viewMode === "series" ? (
+              <>
+                <div className="flex flex-col gap-1">
+                  <Select
+                    onChange={handleKindChange}
+                    value={(kind as Key) ?? null}
+                    placeholder="Todos"
+                    variant="secondary"
+                  >
+                    <Label>Tipo</Label>
+                    <Select.Trigger>
+                      <Select.Value />
+                      <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        {KIND_OPTIONS.map((item) => (
+                          <ListBox.Item id={item.value} key={item.value} textValue={item.label}>
+                            {item.label}
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                        ))}
+                      </ListBox>
+                    </Select.Popover>
+                  </Select>
+                </div>
 
-            <div className="flex flex-col gap-1">
-              <Select
-                onChange={handleStatusChange}
-                value={(status as Key) ?? null}
-                placeholder="Todos"
-                variant="secondary"
-              >
-                <Label>Estado</Label>
-                <Select.Trigger>
-                  <Select.Value />
-                  <Select.Indicator />
-                </Select.Trigger>
-                <Select.Popover>
-                  <ListBox>
-                    {STATUS_OPTIONS.map((item) => (
-                      <ListBox.Item id={item.value} key={item.value} textValue={item.label}>
-                        {item.label}
-                        <ListBox.ItemIndicator />
-                      </ListBox.Item>
-                    ))}
-                  </ListBox>
-                </Select.Popover>
-              </Select>
-            </div>
+                <div className="flex flex-col gap-1">
+                  <Select
+                    onChange={handleStatusChange}
+                    value={(status as Key) ?? null}
+                    placeholder="Todos"
+                    variant="secondary"
+                  >
+                    <Label>Estado</Label>
+                    <Select.Trigger>
+                      <Select.Value />
+                      <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        {STATUS_OPTIONS.map((item) => (
+                          <ListBox.Item id={item.value} key={item.value} textValue={item.label}>
+                            {item.label}
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                        ))}
+                      </ListBox>
+                    </Select.Popover>
+                  </Select>
+                </div>
 
-            <DateRangePicker
-              aria-label="Rango de próxima visita"
-              onChange={(value) => {
-                setNextVisitFrom(value?.start?.toString());
-                setNextVisitTo(value?.end?.toString());
-              }}
-              value={
-                nextVisitFrom && nextVisitTo
-                  ? { end: parseDate(nextVisitTo), start: parseDate(nextVisitFrom) }
-                  : undefined
-              }
-            >
-              <Label>Próxima visita</Label>
-              <DateField.Group fullWidth variant="secondary">
-                <DateField.InputContainer>
-                  <DateField.Input slot="start">
-                    {(segment) => <DateField.Segment segment={segment} />}
-                  </DateField.Input>
-                  <DateRangePicker.RangeSeparator />
-                  <DateField.Input slot="end">
-                    {(segment) => <DateField.Segment segment={segment} />}
-                  </DateField.Input>
-                </DateField.InputContainer>
-                <DateField.Suffix>
-                  <DateRangePicker.Trigger>
-                    <DateRangePicker.TriggerIndicator />
-                  </DateRangePicker.Trigger>
-                </DateField.Suffix>
-              </DateField.Group>
-              <DateRangePicker.Popover>
-                <RangeCalendar aria-label="Rango de próxima visita" visibleDuration={{ months: 2 }}>
-                  <RangeCalendar.Header>
-                    <RangeCalendar.YearPickerTrigger>
-                      <RangeCalendar.YearPickerTriggerHeading />
-                      <RangeCalendar.YearPickerTriggerIndicator />
-                    </RangeCalendar.YearPickerTrigger>
-                    <RangeCalendar.NavButton slot="previous" />
-                    <RangeCalendar.NavButton slot="next" />
-                  </RangeCalendar.Header>
-                  <RangeCalendar.Grid>
-                    <RangeCalendar.GridHeader>
-                      {(day) => <RangeCalendar.HeaderCell>{day}</RangeCalendar.HeaderCell>}
-                    </RangeCalendar.GridHeader>
-                    <RangeCalendar.GridBody>
-                      {(date) => <RangeCalendar.Cell date={date} />}
-                    </RangeCalendar.GridBody>
-                  </RangeCalendar.Grid>
-                  <RangeCalendar.YearPickerGrid>
-                    <RangeCalendar.YearPickerGridBody>
-                      {({ year }) => <RangeCalendar.YearPickerCell year={year} />}
-                    </RangeCalendar.YearPickerGridBody>
-                  </RangeCalendar.YearPickerGrid>
-                </RangeCalendar>
-              </DateRangePicker.Popover>
-            </DateRangePicker>
+                <DateRangePicker
+                  aria-label="Rango de próxima visita"
+                  onChange={(value) => {
+                    setNextVisitFrom(value?.start?.toString());
+                    setNextVisitTo(value?.end?.toString());
+                  }}
+                  value={
+                    nextVisitFrom && nextVisitTo
+                      ? { end: parseDate(nextVisitTo), start: parseDate(nextVisitFrom) }
+                      : undefined
+                  }
+                >
+                  <Label>Próxima visita</Label>
+                  <DateField.Group fullWidth variant="secondary">
+                    <DateField.InputContainer>
+                      <DateField.Input slot="start">
+                        {(segment) => <DateField.Segment segment={segment} />}
+                      </DateField.Input>
+                      <DateRangePicker.RangeSeparator />
+                      <DateField.Input slot="end">
+                        {(segment) => <DateField.Segment segment={segment} />}
+                      </DateField.Input>
+                    </DateField.InputContainer>
+                    <DateField.Suffix>
+                      <DateRangePicker.Trigger>
+                        <DateRangePicker.TriggerIndicator />
+                      </DateRangePicker.Trigger>
+                    </DateField.Suffix>
+                  </DateField.Group>
+                  <DateRangePicker.Popover>
+                    <RangeCalendar
+                      aria-label="Rango de próxima visita"
+                      visibleDuration={{ months: 2 }}
+                    >
+                      <RangeCalendar.Header>
+                        <RangeCalendar.YearPickerTrigger>
+                          <RangeCalendar.YearPickerTriggerHeading />
+                          <RangeCalendar.YearPickerTriggerIndicator />
+                        </RangeCalendar.YearPickerTrigger>
+                        <RangeCalendar.NavButton slot="previous" />
+                        <RangeCalendar.NavButton slot="next" />
+                      </RangeCalendar.Header>
+                      <RangeCalendar.Grid>
+                        <RangeCalendar.GridHeader>
+                          {(day) => <RangeCalendar.HeaderCell>{day}</RangeCalendar.HeaderCell>}
+                        </RangeCalendar.GridHeader>
+                        <RangeCalendar.GridBody>
+                          {(date) => <RangeCalendar.Cell date={date} />}
+                        </RangeCalendar.GridBody>
+                      </RangeCalendar.Grid>
+                      <RangeCalendar.YearPickerGrid>
+                        <RangeCalendar.YearPickerGridBody>
+                          {({ year }) => <RangeCalendar.YearPickerCell year={year} />}
+                        </RangeCalendar.YearPickerGridBody>
+                      </RangeCalendar.YearPickerGrid>
+                    </RangeCalendar>
+                  </DateRangePicker.Popover>
+                </DateRangePicker>
+              </>
+            ) : null}
 
             <div className="flex items-end justify-end">
               {hasFilters ? (
@@ -896,6 +948,38 @@ export function ClinicalSeriesView() {
               )}
             </div>
           </div>
+          {viewMode === "abandonment" ? (
+            <>
+              <Alert status="warning">
+                <Alert.Indicator />
+                <Alert.Content>
+                  <Alert.Description>
+                    Se consideran abandono las series subcutáneas activas o inactivas sin próxima
+                    visita futura y con 30 días o más desde la última sesión registrada.
+                  </Alert.Description>
+                </Alert.Content>
+              </Alert>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant={abandonmentBucket == null ? "primary" : "outline"}
+                  onPress={() => setAbandonmentBucket(undefined)}
+                >
+                  Todos
+                </Button>
+                {ABANDONMENT_BUCKET_OPTIONS.map((bucket) => (
+                  <Button
+                    key={bucket.value}
+                    size="sm"
+                    variant={abandonmentBucket === bucket.value ? "primary" : "outline"}
+                    onPress={() => setAbandonmentBucket(bucket.value)}
+                  >
+                    {bucket.label}
+                  </Button>
+                ))}
+              </div>
+            </>
+          ) : null}
         </div>
       </Surface>
 
@@ -922,7 +1006,9 @@ export function ClinicalSeriesView() {
             <p className="text-foreground-400 text-sm">
               {hasFilters
                 ? "No hay resultados para los filtros aplicados"
-                : "No hay series clínicas"}
+                : viewMode === "abandonment"
+                  ? "No hay pacientes en abandono con los criterios actuales"
+                  : "No hay series clínicas"}
             </p>
             {hasFilters && (
               <Button onPress={clearFilters} variant="ghost" size="sm">
@@ -943,35 +1029,61 @@ export function ClinicalSeriesView() {
                 className="min-w-384"
               >
                 <Table.Header>
-                  <Table.Column allowsSorting id="patient" isRowHeader className="w-[18%]">
-                    Paciente
-                  </Table.Column>
-                  <Table.Column className="w-[16%]">RUTs</Table.Column>
-                  <Table.Column className="w-[18%]">Teléfonos</Table.Column>
-                  <Table.Column allowsSorting id="kind" className="w-[11%]">
-                    Tipo
-                  </Table.Column>
-                  <Table.Column allowsSorting id="status" className="w-[10%]">
-                    Estado
-                  </Table.Column>
-                  <Table.Column allowsSorting id="lastEvent" className="w-[10%]">
-                    Últ. evento
-                  </Table.Column>
-                  <Table.Column allowsSorting id="nextEvent" className="w-[10%]">
-                    Próx. visita
-                  </Table.Column>
-                  <Table.Column allowsSorting id="totalEvents" className="w-[7%] text-right">
-                    Eventos
-                  </Table.Column>
-                  <Table.Column allowsSorting id="upcomingEvents" className="w-[8%] text-right">
-                    Próximos
-                  </Table.Column>
-                  <Table.Column allowsSorting id="financial" className="w-[20%] text-right">
-                    Financiero
-                  </Table.Column>
+                  {viewMode === "abandonment" ? (
+                    <>
+                      <Table.Column allowsSorting id="patient" isRowHeader className="w-[22%]">
+                        Paciente
+                      </Table.Column>
+                      <Table.Column className="w-[16%]">RUTs</Table.Column>
+                      <Table.Column className="w-[18%]">Teléfonos</Table.Column>
+                      <Table.Column allowsSorting id="lastEvent" className="w-[12%]">
+                        Últ. sesión
+                      </Table.Column>
+                      <Table.Column
+                        allowsSorting
+                        id="daysSinceLastEvent"
+                        className="w-[10%] text-right"
+                      >
+                        Días
+                      </Table.Column>
+                      <Table.Column className="w-[11%]">Bucket</Table.Column>
+                      <Table.Column allowsSorting id="status" className="w-[11%]">
+                        Estado
+                      </Table.Column>
+                    </>
+                  ) : (
+                    <>
+                      <Table.Column allowsSorting id="patient" isRowHeader className="w-[18%]">
+                        Paciente
+                      </Table.Column>
+                      <Table.Column className="w-[16%]">RUTs</Table.Column>
+                      <Table.Column className="w-[18%]">Teléfonos</Table.Column>
+                      <Table.Column allowsSorting id="kind" className="w-[11%]">
+                        Tipo
+                      </Table.Column>
+                      <Table.Column allowsSorting id="status" className="w-[10%]">
+                        Estado
+                      </Table.Column>
+                      <Table.Column allowsSorting id="lastEvent" className="w-[10%]">
+                        Últ. evento
+                      </Table.Column>
+                      <Table.Column allowsSorting id="nextEvent" className="w-[10%]">
+                        Próx. visita
+                      </Table.Column>
+                      <Table.Column allowsSorting id="totalEvents" className="w-[7%] text-right">
+                        Eventos
+                      </Table.Column>
+                      <Table.Column allowsSorting id="upcomingEvents" className="w-[8%] text-right">
+                        Próximos
+                      </Table.Column>
+                      <Table.Column allowsSorting id="financial" className="w-[20%] text-right">
+                        Financiero
+                      </Table.Column>
+                    </>
+                  )}
                 </Table.Header>
                 <Table.Body>
-                  {derivedItems.map((s) => {
+                  {data.items.map((s) => {
                     const samePerson = isSamePatientAndBeneficiary(s);
                     return (
                       <Table.Row key={s.id} id={s.id} className="cursor-pointer group">
@@ -995,96 +1107,135 @@ export function ClinicalSeriesView() {
                         <Table.Cell>
                           <IdentityDropdownCell entries={buildPhoneEntries(s)} title="Teléfonos" />
                         </Table.Cell>
-                        <Table.Cell>
-                          <div className="flex flex-col items-start gap-1">
-                            <Chip size="sm" color={KIND_COLORS[s.kind]} variant="tertiary">
-                              {KIND_LABELS[s.kind]}
-                            </Chip>
-                            {s.allergenType && (
-                              <Chip size="sm" color="accent" variant="tertiary">
-                                {ALLERGEN_LABELS[s.allergenType]}
-                              </Chip>
-                            )}
-                            {s.vaccineProduct && (
-                              <Chip size="sm" color="default" variant="tertiary">
-                                {VACCINE_LABELS[s.vaccineProduct]}
-                              </Chip>
-                            )}
-                            {s.healthInsurance && (
-                              <Chip
-                                size="sm"
-                                color={INSURANCE_COLORS[s.healthInsurance]}
-                                variant="tertiary"
-                              >
-                                {INSURANCE_LABELS[s.healthInsurance]}
-                              </Chip>
-                            )}
-                          </div>
-                        </Table.Cell>
-                        <Table.Cell>
-                          <Chip size="sm" color={STATUS_COLORS[s.status]} variant="soft">
-                            {STATUS_LABELS[s.status]}
-                          </Chip>
-                        </Table.Cell>
-                        <Table.Cell>
-                          <span className="text-xs text-foreground-400">
-                            {s.lastEventDate ? formatEventDate(s.lastEventDate, true) : "—"}
-                          </span>
-                        </Table.Cell>
-                        <Table.Cell>
-                          {s.nextEventDate ? (
-                            <span className="text-xs font-medium text-accent">
-                              {formatEventDate(s.nextEventDate)}
-                            </span>
-                          ) : (
-                            <span className="text-xs text-foreground-400">—</span>
-                          )}
-                        </Table.Cell>
-                        <Table.Cell className="text-right">
-                          <span className="text-xs tabular-nums text-foreground-500">
-                            {s.events.length}
-                          </span>
-                        </Table.Cell>
-                        <Table.Cell className="text-right">
-                          {s.upcomingCount > 0 ? (
-                            <Chip size="sm" color="accent" variant="soft">
-                              {s.upcomingCount}
-                            </Chip>
-                          ) : (
-                            <span className="text-xs text-foreground-400">—</span>
-                          )}
-                        </Table.Cell>
-                        <Table.Cell className="text-right">
-                          <div className="flex flex-col items-end gap-0.5">
-                            {(() => {
-                              const fs = seriesFinancialStatus(s.events);
-                              if (fs === "unknown")
-                                return (
-                                  <span className="text-xs text-foreground-300 italic">
-                                    Por definir
-                                  </span>
-                                );
-                              if (fs === "free")
-                                return (
-                                  <span className="text-xs text-success italic">Sin costo</span>
-                                );
-                              return (
-                                <span className="text-xs text-foreground-400">
-                                  ${s.totalPaid.toLocaleString("es-CL")} /
-                                  <span className="text-foreground-500">
-                                    {" "}
-                                    ${s.totalExpected.toLocaleString("es-CL")}
-                                  </span>
-                                </span>
-                              );
-                            })()}
-                            {s.remainingExpected > 0 && (
-                              <span className="text-xs font-medium text-danger">
-                                −${s.remainingExpected.toLocaleString("es-CL")} pend.
+                        {viewMode === "abandonment" ? (
+                          <>
+                            <Table.Cell>
+                              <span className="text-xs text-foreground-400">
+                                {s.lastEventDate ? formatEventDate(s.lastEventDate, true) : "—"}
                               </span>
-                            )}
-                          </div>
-                        </Table.Cell>
+                            </Table.Cell>
+                            <Table.Cell className="text-right">
+                              {s.daysSinceLastEvent != null ? (
+                                <span className="text-xs font-medium tabular-nums text-foreground-600">
+                                  {s.daysSinceLastEvent}
+                                </span>
+                              ) : (
+                                <span className="text-xs text-foreground-400">—</span>
+                              )}
+                            </Table.Cell>
+                            <Table.Cell>
+                              {s.abandonmentBucket ? (
+                                <Chip
+                                  size="sm"
+                                  color={ABANDONMENT_BUCKET_COLORS[s.abandonmentBucket]}
+                                  variant="soft"
+                                >
+                                  {ABANDONMENT_BUCKET_LABELS[s.abandonmentBucket]}
+                                </Chip>
+                              ) : (
+                                <span className="text-xs text-foreground-400">—</span>
+                              )}
+                            </Table.Cell>
+                            <Table.Cell>
+                              <Chip size="sm" color={STATUS_COLORS[s.status]} variant="soft">
+                                {STATUS_LABELS[s.status]}
+                              </Chip>
+                            </Table.Cell>
+                          </>
+                        ) : (
+                          <>
+                            <Table.Cell>
+                              <div className="flex flex-col items-start gap-1">
+                                <Chip size="sm" color={KIND_COLORS[s.kind]} variant="tertiary">
+                                  {KIND_LABELS[s.kind]}
+                                </Chip>
+                                {s.allergenType && (
+                                  <Chip size="sm" color="accent" variant="tertiary">
+                                    {ALLERGEN_LABELS[s.allergenType]}
+                                  </Chip>
+                                )}
+                                {s.vaccineProduct && (
+                                  <Chip size="sm" color="default" variant="tertiary">
+                                    {VACCINE_LABELS[s.vaccineProduct]}
+                                  </Chip>
+                                )}
+                                {s.healthInsurance && (
+                                  <Chip
+                                    size="sm"
+                                    color={INSURANCE_COLORS[s.healthInsurance]}
+                                    variant="tertiary"
+                                  >
+                                    {INSURANCE_LABELS[s.healthInsurance]}
+                                  </Chip>
+                                )}
+                              </div>
+                            </Table.Cell>
+                            <Table.Cell>
+                              <Chip size="sm" color={STATUS_COLORS[s.status]} variant="soft">
+                                {STATUS_LABELS[s.status]}
+                              </Chip>
+                            </Table.Cell>
+                            <Table.Cell>
+                              <span className="text-xs text-foreground-400">
+                                {s.lastEventDate ? formatEventDate(s.lastEventDate, true) : "—"}
+                              </span>
+                            </Table.Cell>
+                            <Table.Cell>
+                              {s.nextEventDate ? (
+                                <span className="text-xs font-medium text-accent">
+                                  {formatEventDate(s.nextEventDate)}
+                                </span>
+                              ) : (
+                                <span className="text-xs text-foreground-400">—</span>
+                              )}
+                            </Table.Cell>
+                            <Table.Cell className="text-right">
+                              <span className="text-xs tabular-nums text-foreground-500">
+                                {s.events.length}
+                              </span>
+                            </Table.Cell>
+                            <Table.Cell className="text-right">
+                              {s.upcomingCount > 0 ? (
+                                <Chip size="sm" color="accent" variant="soft">
+                                  {s.upcomingCount}
+                                </Chip>
+                              ) : (
+                                <span className="text-xs text-foreground-400">—</span>
+                              )}
+                            </Table.Cell>
+                            <Table.Cell className="text-right">
+                              <div className="flex flex-col items-end gap-0.5">
+                                {(() => {
+                                  const fs = seriesFinancialStatus(s.events);
+                                  if (fs === "unknown")
+                                    return (
+                                      <span className="text-xs text-foreground-300 italic">
+                                        Por definir
+                                      </span>
+                                    );
+                                  if (fs === "free")
+                                    return (
+                                      <span className="text-xs text-success italic">Sin costo</span>
+                                    );
+                                  return (
+                                    <span className="text-xs text-foreground-400">
+                                      ${s.totalPaid.toLocaleString("es-CL")} /
+                                      <span className="text-foreground-500">
+                                        {" "}
+                                        ${s.totalExpected.toLocaleString("es-CL")}
+                                      </span>
+                                    </span>
+                                  );
+                                })()}
+                                {s.remainingExpected > 0 && (
+                                  <span className="text-xs font-medium text-danger">
+                                    −${s.remainingExpected.toLocaleString("es-CL")} pend.
+                                  </span>
+                                )}
+                              </div>
+                            </Table.Cell>
+                          </>
+                        )}
                       </Table.Row>
                     );
                   })}

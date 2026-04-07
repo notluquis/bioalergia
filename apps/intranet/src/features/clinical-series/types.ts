@@ -7,6 +7,8 @@ import { z } from "zod";
 
 export type ClinicalSeriesKind = "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT";
 export type ClinicalSeriesStatus = "PLANNED" | "ACTIVE" | "INACTIVE" | "COMPLETED" | "CANCELLED";
+export type ClinicalSeriesViewMode = "series" | "abandonment";
+export type ClinicalSeriesAbandonmentBucket = "month_1" | "month_2" | "month_3" | "month_4_plus";
 export type SubcutaneousAllergenType = "ACAROS" | "ACAROS_GRAMINEAS" | "GRAMINEAS";
 export type SubcutaneousVaccineProduct =
   | "ALXOID"
@@ -17,6 +19,7 @@ export type SubcutaneousVaccineProduct =
 export type HealthInsuranceType = "FONASA" | "ISAPRE" | "PARTICULAR";
 export type DeliveryModality = "DOMICILIO" | "PRESENCIAL";
 export type ClinicalSeriesSortColumn =
+  | "daysSinceLastEvent"
   | "financial"
   | "kind"
   | "lastEvent"
@@ -62,6 +65,8 @@ export interface ClinicalSeriesLinkedDocument {
 
 export interface ClinicalSeriesSnapshot {
   allergenType: SubcutaneousAllergenType | null;
+  abandonmentBucket: ClinicalSeriesAbandonmentBucket | null;
+  daysSinceLastEvent: number | null;
   vaccineProduct: SubcutaneousVaccineProduct | null;
   healthInsurance: HealthInsuranceType | null;
   deliveryModality: DeliveryModality | null;
@@ -76,6 +81,8 @@ export interface ClinicalSeriesSnapshot {
   patientRut: string | null;
   events: ClinicalSeriesEvent[];
   linkedDocuments: ClinicalSeriesLinkedDocument[];
+  lastEventDate: string | null;
+  nextEventDate: string | null;
   totalExpected: number;
   totalPaid: number;
   totalLinkedAmount: number;
@@ -83,6 +90,7 @@ export interface ClinicalSeriesSnapshot {
   remainingPaid: number;
   eligibleDocumentDateFrom: string; // YYYY-MM-DD
   eligibleDocumentDateTo: string; // YYYY-MM-DD
+  upcomingCount: number;
   patientPhones: string[];
 }
 
@@ -98,6 +106,7 @@ export interface ClinicalSeriesListItem {
 }
 
 export interface ClinicalSeriesFilters {
+  abandonmentBucket?: ClinicalSeriesAbandonmentBucket;
   beneficiaryRut?: string;
   kind?: ClinicalSeriesKind;
   nextVisitFrom?: string;
@@ -111,6 +120,7 @@ export interface ClinicalSeriesFilters {
   sortColumn?: ClinicalSeriesSortColumn;
   sortDirection?: ClinicalSeriesSortDirection;
   status?: ClinicalSeriesStatus;
+  view?: ClinicalSeriesViewMode;
 }
 
 export interface ClinicalSeriesListResult {
@@ -179,6 +189,11 @@ export const ClinicalSeriesLinkedDocumentSchema = z.object({
 
 export const ClinicalSeriesSnapshotSchema = z.object({
   allergenType: z.enum(["ACAROS", "ACAROS_GRAMINEAS", "GRAMINEAS"]).nullable().catch(null),
+  abandonmentBucket: z
+    .enum(["month_1", "month_2", "month_3", "month_4_plus"])
+    .nullable()
+    .catch(null),
+  daysSinceLastEvent: z.number().int().nullable(),
   vaccineProduct: z
     .enum(["ALXOID", "CLUSTOID", "CLUSTOID_B120", "CLUSTOID_FORTE", "ORAL_TEC"])
     .nullable()
@@ -197,6 +212,8 @@ export const ClinicalSeriesSnapshotSchema = z.object({
   patientRut: z.string().nullable(),
   events: z.array(ClinicalSeriesEventSchema),
   linkedDocuments: z.array(ClinicalSeriesLinkedDocumentSchema),
+  lastEventDate: z.string().nullable(),
+  nextEventDate: z.string().nullable(),
   totalExpected: z.number(),
   totalPaid: z.number(),
   totalLinkedAmount: z.number(),
@@ -204,6 +221,7 @@ export const ClinicalSeriesSnapshotSchema = z.object({
   remainingPaid: z.number(),
   eligibleDocumentDateFrom: z.string(),
   eligibleDocumentDateTo: z.string(),
+  upcomingCount: z.number().int(),
 });
 
 export const RebuildSeriesResultSchema = z.object({
