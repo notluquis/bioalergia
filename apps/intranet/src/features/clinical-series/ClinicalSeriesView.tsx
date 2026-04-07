@@ -224,7 +224,7 @@ function InsuranceStatsPanel({
                           : "danger"
                   }
                   size="sm"
-                  variant="flat"
+                  variant="soft"
                 >
                   {ratio(row.value).toFixed(1)}%
                 </Chip>
@@ -263,7 +263,7 @@ function InsuranceStatsPanel({
                               : "danger"
                       }
                       size="sm"
-                      variant="dot"
+                      variant="soft"
                     />
                     <span className="text-sm font-medium text-foreground">{row.label}</span>
                   </div>
