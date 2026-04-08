@@ -348,7 +348,10 @@ async function upsertWhatsappConversation(args: {
     existing,
   });
   const shouldAutoOptIn =
-    shouldAutoOptInOnInbound() && activityAt != null && !isOlderActivity;
+    shouldAutoOptInOnInbound() &&
+    activityAt != null &&
+    !isOlderActivity &&
+    existing?.optInStatus !== "OPTED_OUT";
   const nextOptInStatus =
     shouldAutoOptIn && (args.activityType === "message" || args.activityType === "call")
       ? "OPTED_IN"
@@ -472,4 +475,3 @@ export async function recordWhatsappUserPreference(args: {
     waId: args.waId ?? null,
   });
 }
-

@@ -26,7 +26,10 @@ import { ImapFlow } from "imapflow";
 import { logError, logEvent, logWarn } from "../logger";
 import { resolveDoctoraliaSenderSearchTerms } from "./imap-search";
 import { sendText } from "../whatsapp/baileys-socket";
-import { setWhatsappContactConsent } from "../whatsapp/conversation-state";
+import {
+  getWhatsappConversationState,
+  setWhatsappContactConsent,
+} from "../whatsapp/conversation-state";
 import {
   decodeEmailBody,
   htmlToText,
@@ -239,12 +242,22 @@ async function markDoctoraliaOptIn(args: {
     subject: null | string;
     uid: number;
   };
-}) {
+}): Promise<boolean> {
   if (!args.booking.patientPhone) {
-    return;
+    return true;
   }
 
   try {
+    const existingState = await getWhatsappConversationState(args.booking.patientPhone);
+    if (existingState?.optInStatus === "OPTED_OUT") {
+      logEvent("whatsapp.imap.opt_in_skipped_opted_out", {
+        ...args.messageContext,
+        patientName: args.booking.patientName,
+        phone: normalizePhone(args.booking.patientPhone),
+      });
+      return false;
+    }
+
     await setWhatsappContactConsent({
       phone: args.booking.patientPhone,
       source: "doctoralia_imap",
@@ -257,12 +270,14 @@ async function markDoctoraliaOptIn(args: {
       patientName: args.booking.patientName,
       phone: normalizePhone(args.booking.patientPhone),
     });
+    return true;
   } catch (err) {
     logError("whatsapp.imap.opt_in_failed", err, {
       ...args.messageContext,
       patientName: args.booking.patientName,
       phone: normalizePhone(args.booking.patientPhone),
     });
+    return true;
   }
 }
 
@@ -528,15 +543,17 @@ async function processFetchedMessages(
         patientName: booking.patientName,
       });
 
-      await markDoctoraliaOptIn({
+      const canSendWhatsapp = await markDoctoraliaOptIn({
         booking,
         messageContext,
       });
 
-      await sendDoctoraliaWhatsapp({
-        booking,
-        messageContext,
-      });
+      if (canSendWhatsapp) {
+        await sendDoctoraliaWhatsapp({
+          booking,
+          messageContext,
+        });
+      }
     } catch (dbErr) {
       result.failed++;
       logError("doctoralia.imap.db_error", dbErr, {
