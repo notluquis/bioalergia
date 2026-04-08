@@ -5,6 +5,7 @@ import {
   Chip,
   Description,
   Input,
+  Label,
   Skeleton,
   Surface,
   Switch,
@@ -282,27 +283,35 @@ export function WhatsappSettingsPage() {
                   </Card.Header>
                   <Card.Content className="space-y-4">
                     <TextField value={messageTemplate} onChange={setMessageTemplate}>
+                      <Label>Mensaje automatico</Label>
                       <TextArea
                         className="w-full"
+                        description="Usa formato de WhatsApp como *negrita* y saltos de linea. La vista previa de abajo simula el resultado."
                         placeholder="Escribe el mensaje que se enviara por WhatsApp..."
                         rows={14}
                         variant="secondary"
                       />
                     </TextField>
-                    <div className="space-y-2 rounded-2xl border border-default-200 bg-default-50 p-4">
+                    <Surface
+                      className="space-y-3 rounded-2xl border border-default-200 p-4"
+                      variant="secondary"
+                    >
                       <div className="font-semibold text-default-700 text-xs uppercase tracking-wide">
                         Vista previa
                       </div>
-                      <div className="rounded-2xl bg-[#e7ffdb] px-4 py-3 text-sm text-foreground shadow-sm">
-                        <div className="mb-2 text-[11px] text-default-500">WhatsApp</div>
-                        <div className="space-y-1 whitespace-pre-wrap break-words">
+                      <Surface
+                        className="rounded-[24px] border border-default-200 bg-default-50 px-4 py-3 shadow-sm"
+                        variant="secondary"
+                      >
+                        <div className="mb-2 text-default-500 text-[11px]">WhatsApp</div>
+                        <div className="space-y-1 whitespace-pre-wrap break-words text-foreground text-sm leading-6">
                           {renderWhatsappPreview(
                             messageTemplate.trim() ||
                               "Se usara el mensaje por defecto del sistema si este campo queda vacio."
                           )}
                         </div>
-                      </div>
-                    </div>
+                      </Surface>
+                    </Surface>
                     <div className="flex justify-end">
                       <Button
                         isDisabled={messageTemplateMutation.isPending}
