@@ -14,9 +14,10 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { Send, Wifi, WifiOff } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useToast } from "@/context/ToastContext";
+import { useSettings } from "@/context/SettingsContext";
 import {
   sendWhatsappTest,
   setWhatsappContactConsent,
@@ -27,10 +28,12 @@ import { PAGE_CONTAINER } from "@/lib/styles";
 
 export function WhatsappSettingsPage() {
   const { error: showError, success: showSuccess } = useToast();
+  const { settings, updateSettings } = useSettings();
   const queryClient = useQueryClient();
   const [consentPhone, setConsentPhone] = useState("");
   const [contactSearch, setContactSearch] = useState("");
   const [testPhone, setTestPhone] = useState("");
+  const [messageTemplate, setMessageTemplate] = useState(settings.whatsappFreeformMessage);
 
   const { data: overview } = useQuery({
     ...whatsappKeys.overview(),
@@ -91,6 +94,17 @@ export function WhatsappSettingsPage() {
     },
   });
 
+  const messageTemplateMutation = useMutation({
+    mutationFn: async () => {
+      await updateSettings({
+        ...settings,
+        whatsappFreeformMessage: messageTemplate,
+      });
+    },
+    onError: (err: Error) => showError(`Error al guardar mensaje: ${err.message}`),
+    onSuccess: () => showSuccess("Mensaje de WhatsApp actualizado"),
+  });
+
   const { data: stats } = useQuery({
     ...whatsappKeys.stats(),
     refetchInterval: 30_000,
@@ -99,6 +113,10 @@ export function WhatsappSettingsPage() {
   const enabled = connectionStatus?.enabled ?? false;
   const connected = connectionStatus?.connectionState === "open";
   const connecting = connectionStatus?.connectionState === "connecting";
+
+  useEffect(() => {
+    setMessageTemplate(settings.whatsappFreeformMessage);
+  }, [settings.whatsappFreeformMessage]);
 
   return (
     <div className={PAGE_CONTAINER}>
@@ -225,6 +243,39 @@ export function WhatsappSettingsPage() {
                     </Card.Content>
                   </Card>
                 )}
+
+                <Card className="lg:col-span-2">
+                  <Card.Header className="flex flex-col items-start gap-1">
+                    <h2 className="font-semibold text-sm">Mensaje automatico</h2>
+                    <Description className="text-default-500 text-xs">
+                      Se usa para reservas de Doctoralia. Si queda vacio, el sistema usa el mensaje
+                      por defecto. Variables disponibles: {"{{patientName}}"},{" "}
+                      {"{{appointmentDate}}"}, {"{{appointmentDoctor}}"}, {"{{appointmentService}}"}{" "}
+                      y {"{{clinicAddress}}"}.
+                    </Description>
+                  </Card.Header>
+                  <Card.Content className="space-y-4">
+                    <textarea
+                      className="min-h-72 w-full rounded-xl border border-default-200 bg-background px-3 py-3 text-sm outline-none transition focus:border-primary"
+                      onChange={(event) => {
+                        setMessageTemplate(event.target.value);
+                      }}
+                      placeholder="Escribe el mensaje que se enviara por WhatsApp..."
+                      value={messageTemplate}
+                    />
+                    <div className="flex justify-end">
+                      <Button
+                        isDisabled={messageTemplateMutation.isPending}
+                        isPending={messageTemplateMutation.isPending}
+                        onPress={() => messageTemplateMutation.mutate()}
+                        size="sm"
+                        variant="primary"
+                      >
+                        Guardar mensaje
+                      </Button>
+                    </div>
+                  </Card.Content>
+                </Card>
 
                 {/* Message stats */}
                 {connected &&
