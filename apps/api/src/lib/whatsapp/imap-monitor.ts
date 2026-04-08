@@ -206,7 +206,7 @@ export async function runImapPoll(): Promise<PollResult> {
         logError("whatsapp.imap.parse_error", err, messageContext);
       }
 
-      if (emailText && !isLikelyDoctoraliaEmail(emailText)) {
+      if (emailText && !isLikelyDoctoraliaEmail(emailText, { subject })) {
         logWarn("whatsapp.imap.skip_non_doctoralia", {
           ...messageContext,
           extractedTextLength: emailText.length,

@@ -110,6 +110,13 @@ const DOCTORALIA_SIGNATURE_PATTERNS = [
   /^direcci[oó]n$/im,
 ];
 
+const DOCTORALIA_SUBJECT_PATTERNS = [
+  /^nueva cita:\s+.+\s+ha reservado desde doctoralia$/i,
+  /^.+\s+modific[oó]\s+su cita/i,
+  /^❌\s*.+\s+cancel[oó]\s+su cita/i,
+  /^invitaci[oó]n para acceder a la agenda de doctoralia$/i,
+];
+
 const MONTH_MAP: Record<string, number> = {
   enero: 0,
   febrero: 1,
@@ -376,13 +383,38 @@ export function parseDoctoraliaEmail(text: string): DoctoraliaBookingInfo | null
   };
 }
 
-export function isLikelyDoctoraliaEmail(text: string): boolean {
-  if (!text) return false;
-
-  const normalizedText = text
+function normalizeDoctoraliaMatchText(value: string): string {
+  return value
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
+}
+
+export function isLikelyDoctoraliaEmail(
+  text: string,
+  options?: { subject?: null | string },
+): boolean {
+  const normalizedSubject = options?.subject
+    ? normalizeDoctoraliaMatchText(options.subject)
+    : null;
+  if (normalizedSubject) {
+    for (const pattern of DOCTORALIA_SUBJECT_PATTERNS) {
+      if (pattern.test(normalizedSubject)) return true;
+    }
+  }
+
+  if (!text) return false;
+
+  const normalizedText = normalizeDoctoraliaMatchText(text);
+
+  if (
+    /^nueva cita:/im.test(normalizedText) ||
+    /ha reservado desde doctoralia/im.test(normalizedText) ||
+    /modifico su cita/im.test(normalizedText) ||
+    /cancelo su cita/im.test(normalizedText)
+  ) {
+    return true;
+  }
 
   let matched = 0;
   for (const pattern of DOCTORALIA_SIGNATURE_PATTERNS) {

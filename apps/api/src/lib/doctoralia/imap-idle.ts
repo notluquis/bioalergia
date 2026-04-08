@@ -287,7 +287,7 @@ async function ingestMailbox(client: ImapFlow, config: ImapConfig): Promise<Doct
       ? htmlToText(rawBody)
       : rawBody;
 
-    if (!isLikelyDoctoraliaEmail(emailText)) {
+    if (!isLikelyDoctoraliaEmail(emailText, { subject })) {
       result.skipped++;
       logWarn("doctoralia.imap.skip_non_doctoralia", {
         ...messageContext,
