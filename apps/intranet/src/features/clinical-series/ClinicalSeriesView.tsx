@@ -138,6 +138,7 @@ const INSURANCE_COLORS: Record<HealthInsuranceType, "success" | "warning" | "def
   PARTICULAR: "default",
 };
 
+const ISAPRE_ALL_OPTION = "__ALL__";
 const ISAPRE_UNIDENTIFIED_OPTION = "__UNIDENTIFIED__";
 
 type ClinicalSeriesTab = ClinicalSeriesViewMode | "insurance";
@@ -956,7 +957,7 @@ export function ClinicalSeriesView() {
   const showIsapreSpecificFilters = healthInsurance === "ISAPRE" || !!isapreProvider;
   const selectedIsapreFilter = isapreOnlyUnidentified
     ? ISAPRE_UNIDENTIFIED_OPTION
-    : (isapreProvider as Key | undefined);
+    : ((isapreProvider ?? ISAPRE_ALL_OPTION) as Key);
 
   const handleRowSelect = (keys: Selection) => {
     if (keys === "all") return;
@@ -987,6 +988,12 @@ export function ClinicalSeriesView() {
 
   const handleIsapreProviderChange = (value: Key | null) => {
     const nextValue = value ? String(value) : undefined;
+    if (!nextValue || nextValue === ISAPRE_ALL_OPTION) {
+      setIsapreOnlyUnidentified(false);
+      setIsapreProvider(undefined);
+      setHealthInsurance("ISAPRE");
+      return;
+    }
     if (nextValue === ISAPRE_UNIDENTIFIED_OPTION) {
       setIsapreOnlyUnidentified(true);
       setIsapreProvider(undefined);
@@ -1220,10 +1227,8 @@ export function ClinicalSeriesView() {
                 {showIsapreSpecificFilters && (
                   <div className="flex flex-col gap-1">
                     <Select
-                      isDisabled={isapreProviderOptions.length === 0 && !isapreOnlyUnidentified}
                       onChange={handleIsapreProviderChange}
                       value={selectedIsapreFilter ?? null}
-                      placeholder="Todas"
                       variant="secondary"
                     >
                       <Label>Isapre</Label>
@@ -1233,6 +1238,14 @@ export function ClinicalSeriesView() {
                       </Select.Trigger>
                       <Select.Popover>
                         <ListBox>
+                          <ListBox.Item
+                            id={ISAPRE_ALL_OPTION}
+                            key={ISAPRE_ALL_OPTION}
+                            textValue="Todas"
+                          >
+                            Todas
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
                           <ListBox.Item
                             id={ISAPRE_UNIDENTIFIED_OPTION}
                             key={ISAPRE_UNIDENTIFIED_OPTION}
@@ -1446,10 +1459,8 @@ export function ClinicalSeriesView() {
                 {showIsapreSpecificFilters && (
                   <div className="flex flex-col gap-1">
                     <Select
-                      isDisabled={isapreProviderOptions.length === 0 && !isapreOnlyUnidentified}
                       onChange={handleIsapreProviderChange}
                       value={selectedIsapreFilter ?? null}
-                      placeholder="Todas"
                       variant="secondary"
                     >
                       <Label>Isapre</Label>
@@ -1459,6 +1470,14 @@ export function ClinicalSeriesView() {
                       </Select.Trigger>
                       <Select.Popover>
                         <ListBox>
+                          <ListBox.Item
+                            id={ISAPRE_ALL_OPTION}
+                            key={ISAPRE_ALL_OPTION}
+                            textValue="Todas"
+                          >
+                            Todas
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
                           <ListBox.Item
                             id={ISAPRE_UNIDENTIFIED_OPTION}
                             key={ISAPRE_UNIDENTIFIED_OPTION}
