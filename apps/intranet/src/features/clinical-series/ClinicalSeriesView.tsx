@@ -138,6 +138,8 @@ const INSURANCE_COLORS: Record<HealthInsuranceType, "success" | "warning" | "def
   PARTICULAR: "default",
 };
 
+const ISAPRE_UNIDENTIFIED_OPTION = "__UNIDENTIFIED__";
+
 type ClinicalSeriesTab = ClinicalSeriesViewMode | "insurance";
 
 function InsuranceStatsPanel({
@@ -951,8 +953,10 @@ export function ClinicalSeriesView() {
     totalPages,
   });
   const isapreProviderOptions = insuranceStats?.isapreProviders ?? [];
-  const showIsapreSpecificFilters =
-    healthInsurance === "ISAPRE" || isapreOnlyUnidentified || !!isapreProvider;
+  const showIsapreSpecificFilters = healthInsurance === "ISAPRE" || !!isapreProvider;
+  const selectedIsapreFilter = isapreOnlyUnidentified
+    ? ISAPRE_UNIDENTIFIED_OPTION
+    : (isapreProvider as Key | undefined);
 
   const handleRowSelect = (keys: Selection) => {
     if (keys === "all") return;
@@ -983,18 +987,16 @@ export function ClinicalSeriesView() {
 
   const handleIsapreProviderChange = (value: Key | null) => {
     const nextValue = value ? String(value) : undefined;
+    if (nextValue === ISAPRE_UNIDENTIFIED_OPTION) {
+      setIsapreOnlyUnidentified(true);
+      setIsapreProvider(undefined);
+      setHealthInsurance("ISAPRE");
+      return;
+    }
+    setIsapreOnlyUnidentified(false);
     setIsapreProvider(nextValue);
     if (nextValue) {
       setHealthInsurance("ISAPRE");
-      setIsapreOnlyUnidentified(false);
-    }
-  };
-
-  const handleIsapreOnlyUnidentifiedChange = (checked: boolean) => {
-    setIsapreOnlyUnidentified(checked);
-    if (checked) {
-      setHealthInsurance("ISAPRE");
-      setIsapreProvider(undefined);
     }
   };
 
@@ -1191,7 +1193,7 @@ export function ClinicalSeriesView() {
             <div
               className={
                 showIsapreSpecificFilters
-                  ? "grid gap-3 md:grid-cols-2 xl:grid-cols-[12rem_12rem_12rem_14rem_14rem_minmax(18rem,1.25fr)_auto]"
+                  ? "grid gap-3 md:grid-cols-2 xl:grid-cols-[12rem_12rem_12rem_14rem_minmax(18rem,1.25fr)_auto]"
                   : "grid gap-3 md:grid-cols-2 xl:grid-cols-[12rem_12rem_12rem_minmax(18rem,1.25fr)_auto]"
               }
             >
@@ -1275,9 +1277,9 @@ export function ClinicalSeriesView() {
                   <>
                     <div className="flex flex-col gap-1">
                       <Select
-                        isDisabled={isapreOnlyUnidentified || isapreProviderOptions.length === 0}
+                        isDisabled={isapreProviderOptions.length === 0 && !isapreOnlyUnidentified}
                         onChange={handleIsapreProviderChange}
-                        value={(isapreProvider as Key) ?? null}
+                        value={selectedIsapreFilter ?? null}
                         placeholder="Todas"
                         variant="secondary"
                       >
@@ -1288,6 +1290,14 @@ export function ClinicalSeriesView() {
                         </Select.Trigger>
                         <Select.Popover>
                           <ListBox>
+                            <ListBox.Item
+                              id={ISAPRE_UNIDENTIFIED_OPTION}
+                              key={ISAPRE_UNIDENTIFIED_OPTION}
+                              textValue="Sin nombre identificado"
+                            >
+                              Sin nombre identificado
+                              <ListBox.ItemIndicator />
+                            </ListBox.Item>
                             {isapreProviderOptions.map((item) => (
                               <ListBox.Item
                                 id={item.providerName}
@@ -1301,16 +1311,6 @@ export function ClinicalSeriesView() {
                           </ListBox>
                         </Select.Popover>
                       </Select>
-                    </div>
-
-                    <div className="flex items-end">
-                      <Checkbox
-                        isSelected={isapreOnlyUnidentified}
-                        onChange={handleIsapreOnlyUnidentifiedChange}
-                        variant="secondary"
-                      >
-                        Solo sin nombre identificado
-                      </Checkbox>
                     </div>
                   </>
                 )}
@@ -1395,10 +1395,10 @@ export function ClinicalSeriesView() {
                 className={
                   isSeriesLikeTab
                     ? showIsapreSpecificFilters
-                      ? "grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_12rem_14rem_14rem_12rem_12rem_12rem_minmax(18rem,1.25fr)_auto]"
+                      ? "grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_12rem_14rem_12rem_12rem_12rem_minmax(18rem,1.25fr)_auto]"
                       : "grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_12rem_12rem_12rem_minmax(18rem,1.25fr)_auto]"
                     : showIsapreSpecificFilters
-                      ? "grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_12rem_14rem_14rem_auto]"
+                      ? "grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_12rem_14rem_auto]"
                       : "grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_12rem_auto]"
                 }
               >
@@ -1450,9 +1450,9 @@ export function ClinicalSeriesView() {
                   <>
                     <div className="flex flex-col gap-1">
                       <Select
-                        isDisabled={isapreOnlyUnidentified || isapreProviderOptions.length === 0}
+                        isDisabled={isapreProviderOptions.length === 0 && !isapreOnlyUnidentified}
                         onChange={handleIsapreProviderChange}
-                        value={(isapreProvider as Key) ?? null}
+                        value={selectedIsapreFilter ?? null}
                         placeholder="Todas"
                         variant="secondary"
                       >
@@ -1463,6 +1463,14 @@ export function ClinicalSeriesView() {
                         </Select.Trigger>
                         <Select.Popover>
                           <ListBox>
+                            <ListBox.Item
+                              id={ISAPRE_UNIDENTIFIED_OPTION}
+                              key={ISAPRE_UNIDENTIFIED_OPTION}
+                              textValue="Sin nombre identificado"
+                            >
+                              Sin nombre identificado
+                              <ListBox.ItemIndicator />
+                            </ListBox.Item>
                             {isapreProviderOptions.map((item) => (
                               <ListBox.Item
                                 id={item.providerName}
@@ -1476,16 +1484,6 @@ export function ClinicalSeriesView() {
                           </ListBox>
                         </Select.Popover>
                       </Select>
-                    </div>
-
-                    <div className="flex items-end">
-                      <Checkbox
-                        isSelected={isapreOnlyUnidentified}
-                        onChange={handleIsapreOnlyUnidentifiedChange}
-                        variant="secondary"
-                      >
-                        Solo sin nombre identificado
-                      </Checkbox>
                     </div>
                   </>
                 )}
