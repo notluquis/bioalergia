@@ -71,6 +71,12 @@ export interface DoctoraliaImapIngestResult {
   skipped: number;
 }
 
+interface ProcessMessagesOptions {
+  checked: number;
+  matchedSenderTermsByUid?: Map<number, Set<string>>;
+  uidValidity: bigint | null;
+}
+
 async function getLastRecordedDoctoraliaEmailDate(): Promise<Date | null> {
   const latest = await db.$qb
     .selectFrom("DoctoraliaEmailNotification")
@@ -122,6 +128,8 @@ const IMAP_SOCKET_TIMEOUT_MS = 10 * 60_000;
 
 let reconnectDelay = RECONNECT_DELAY_MS;
 let stopped = false;
+let activeClient: ImapFlow | null = null;
+const activeWaiters = new Set<() => void>();
 const listenerStatus: DoctoraliaImapListenerStatus = {
   enabled: false,
   host: null,
@@ -149,7 +157,6 @@ export function getDoctoraliaImapListenerStatus(): DoctoraliaImapListenerStatus 
 function createImapClient(config: ImapConfig): ImapFlow {
   const client = new ImapFlow({
     auth: { pass: config.pass, user: config.user },
-    disableAutoIdle: true,
     host: config.host,
     logger: false,
     maxIdleTime: IMAP_MAX_IDLE_TIME_MS,
@@ -199,51 +206,37 @@ function createImapClient(config: ImapConfig): ImapFlow {
   return client;
 }
 
-async function ingestMailbox(client: ImapFlow, config: ImapConfig): Promise<DoctoraliaImapIngestResult> {
-  const lastRecordedAt = await getLastRecordedDoctoraliaEmailDate();
-  const searchStart = buildMailboxSearchStart(lastRecordedAt);
-  const senderTerms = resolveDoctoraliaSenderSearchTerms(config.senderFilter);
-  const uidSet = new Set<number>();
-  const matchedSenderTermsByUid = new Map<number, Set<string>>();
+function buildStoredMessageId(messageId: null | string | undefined, uidValidity: bigint | null, uid: number): string {
+  if (messageId) return messageId;
+  return `imap-${uidValidity?.toString() ?? "unknown"}-${uid}`;
+}
 
-  for (const senderTerm of senderTerms) {
-    const matchingUids = await client.search(
-      searchStart ? { from: senderTerm, since: searchStart } : { from: senderTerm },
-    );
-    for (const uid of matchingUids) {
-      uidSet.add(uid);
-      const matchedTerms = matchedSenderTermsByUid.get(uid) ?? new Set<string>();
-      matchedTerms.add(senderTerm);
-      matchedSenderTermsByUid.set(uid, matchedTerms);
-    }
-  }
-
-  const uids = [...uidSet].sort((a, b) => a - b);
-  const result: DoctoraliaImapIngestResult = {
+function createEmptyIngestResult(checked: number): DoctoraliaImapIngestResult {
+  return {
     alreadyProcessed: 0,
-    checked: uids.length,
+    checked,
     failed: 0,
     saved: 0,
     skipped: 0,
   };
-  if (!uids.length) return result;
+}
 
-  logEvent("doctoralia.imap.found", {
-    count: uids.length,
-    lastRecordedAt: lastRecordedAt?.toISOString() ?? null,
-    searchStart: searchStart?.toISOString() ?? null,
-    senderTerms,
-  });
+async function processFetchedMessages(
+  messages: Array<any>,
+  options: ProcessMessagesOptions,
+): Promise<DoctoraliaImapIngestResult> {
+  const result: DoctoraliaImapIngestResult = {
+    ...createEmptyIngestResult(options.checked),
+    alreadyProcessed: 0,
+    failed: 0,
+    saved: 0,
+    skipped: 0,
+  };
 
-  for await (const msg of client.fetch(uids, {
-    // bodyParts gives us QP/base64-decoded bytes; bodyStructure gives charset
-    bodyParts: ["1", "TEXT"],
-    bodyStructure: true,
-    envelope: true,
-  })) {
-    const messageId = msg.envelope?.messageId ?? `imap-${msg.uid}`;
+  for (const msg of messages) {
+    const messageId = buildStoredMessageId(msg.envelope?.messageId, options.uidValidity, msg.uid);
     const subject = msg.envelope?.subject ?? null;
-    const matchedSenderTerms = [...(matchedSenderTermsByUid.get(msg.uid) ?? new Set<string>())];
+    const matchedSenderTerms = [...(options.matchedSenderTermsByUid?.get(msg.uid) ?? new Set<string>())];
     const messageContext = {
       matchedSenderTerms,
       messageId,
@@ -359,6 +352,78 @@ async function ingestMailbox(client: ImapFlow, config: ImapConfig): Promise<Doct
   return result;
 }
 
+async function ingestMailbox(client: ImapFlow, config: ImapConfig): Promise<DoctoraliaImapIngestResult> {
+  const lastRecordedAt = await getLastRecordedDoctoraliaEmailDate();
+  const searchStart = buildMailboxSearchStart(lastRecordedAt);
+  const senderTerms = resolveDoctoraliaSenderSearchTerms(config.senderFilter);
+  const matchedSenderTermsByUid = new Map<number, Set<string>>();
+
+  const uids = searchStart
+    ? await client.search({ since: searchStart }, { uid: true })
+    : [];
+
+  if (!uids.length && !searchStart) {
+    for (const senderTerm of senderTerms) {
+      const matchingUids = await client.search({ from: senderTerm }, { uid: true });
+      for (const uid of matchingUids) {
+        const matchedTerms = matchedSenderTermsByUid.get(uid) ?? new Set<string>();
+        matchedTerms.add(senderTerm);
+        matchedSenderTermsByUid.set(uid, matchedTerms);
+      }
+    }
+  }
+
+  const candidateUids = (
+    searchStart
+      ? uids
+      : [...matchedSenderTermsByUid.keys()]
+  ).sort((a, b) => a - b);
+
+  if (!candidateUids.length) return createEmptyIngestResult(0);
+
+  logEvent("doctoralia.imap.found", {
+    count: candidateUids.length,
+    lastRecordedAt: lastRecordedAt?.toISOString() ?? null,
+    searchStart: searchStart?.toISOString() ?? null,
+    senderTerms: searchStart ? [] : senderTerms,
+  });
+
+  const messages = await client.fetchAll(candidateUids, {
+    // bodyParts gives us QP/base64-decoded bytes; bodyStructure gives charset
+    bodyParts: ["1", "TEXT"],
+    bodyStructure: true,
+    envelope: true,
+  }, {
+    uid: true,
+  });
+
+  return processFetchedMessages(messages, {
+    checked: candidateUids.length,
+    matchedSenderTermsByUid,
+    uidValidity: client.mailbox?.uidValidity ?? null,
+  });
+}
+
+async function ingestNewMessagesSinceCount(
+  client: ImapFlow,
+  previousCount: number,
+): Promise<DoctoraliaImapIngestResult> {
+  const currentCount = client.mailbox?.exists ?? 0;
+  if (currentCount <= previousCount) return createEmptyIngestResult(0);
+
+  const range = `${previousCount + 1}:*`;
+  const messages = await client.fetchAll(range, {
+    bodyParts: ["1", "TEXT"],
+    bodyStructure: true,
+    envelope: true,
+  });
+
+  return processFetchedMessages(messages, {
+    checked: currentCount - previousCount,
+    uidValidity: client.mailbox?.uidValidity ?? null,
+  });
+}
+
 async function connect(config: ImapConfig): Promise<void> {
   if (stopped) return;
 
@@ -384,29 +449,45 @@ async function connect(config: ImapConfig): Promise<void> {
     reconnectDelay = RECONNECT_DELAY_MS; // reset backoff on successful connect
 
     const lock = await client.getMailboxLock(config.mailbox);
+    activeClient = client;
     let ingestInFlight = false;
-    let deferredReason: null | string = null;
-    const runIngest = async (reason: string) => {
+    let deferredTrigger: null | { previousCount?: number; reason: string } = null;
+    const runIngest = async (reason: string, previousCount?: number) => {
       if (stopped) return;
 
       if (ingestInFlight) {
-        deferredReason ??= reason;
-        logEvent("doctoralia.imap.ingest_deferred", { reason });
+        if (!deferredTrigger) {
+          deferredTrigger = { previousCount, reason };
+        } else if (
+          deferredTrigger.reason === "exists_event" &&
+          reason === "exists_event" &&
+          previousCount !== undefined
+        ) {
+          deferredTrigger.previousCount = deferredTrigger.previousCount === undefined
+            ? previousCount
+            : Math.min(deferredTrigger.previousCount, previousCount);
+        }
+
+        logEvent("doctoralia.imap.ingest_deferred", { previousCount: previousCount ?? null, reason });
         return;
       }
 
       ingestInFlight = true;
       try {
-        const result = await ingestMailbox(client, config);
+        const result = previousCount === undefined
+          ? await ingestMailbox(client, config)
+          : await ingestNewMessagesSinceCount(client, previousCount);
         logEvent("doctoralia.imap.ingest_complete", { phase: reason, result });
+      } catch (err) {
+        logError("doctoralia.imap.ingest_error", err, { phase: reason });
       } finally {
         ingestInFlight = false;
 
-        if (deferredReason) {
-          const nextReason = deferredReason;
-          deferredReason = null;
+        if (deferredTrigger) {
+          const nextTrigger = deferredTrigger;
+          deferredTrigger = null;
           queueMicrotask(() => {
-            void runIngest(`deferred:${nextReason}`);
+            void runIngest(`deferred:${nextTrigger.reason}`, nextTrigger.previousCount);
           });
         }
       }
@@ -414,7 +495,7 @@ async function connect(config: ImapConfig): Promise<void> {
 
     const existsHandler = (data: { count: number; path: string; prevCount: number }) => {
       if (data.path !== config.mailbox || data.count <= data.prevCount) return;
-      void runIngest("exists_event");
+      void runIngest("exists_event", data.prevCount);
     };
 
     client.on("exists", existsHandler);
@@ -422,23 +503,28 @@ async function connect(config: ImapConfig): Promise<void> {
     try {
       await runIngest("initial");
 
-      // IDLE loop: idle() blocks until the server interrupts it (new mail,
-      // keepalive, or transport-level wakeup). Real ingestion is driven by the
-      // `exists` event, so a generic wakeup alone should not trigger a
-      // mailbox scan.
-      while (!stopped) {
-        logEvent("doctoralia.imap.idle_wait", {
-          mailbox: config.mailbox,
-          maxIdleTimeMs: IMAP_MAX_IDLE_TIME_MS,
-        });
-        const idled = await client.idle();
-        logEvent("doctoralia.imap.idle_wakeup", {
-          idled,
-          mailbox: config.mailbox,
-        });
-      }
+      logEvent("doctoralia.imap.idle_wait", {
+        mailbox: config.mailbox,
+        maxIdleTimeMs: IMAP_MAX_IDLE_TIME_MS,
+      });
+
+      await new Promise<void>((resolve) => {
+        const finish = () => {
+          activeWaiters.delete(finish);
+          client.off("close", finish);
+          resolve();
+        };
+
+        activeWaiters.add(finish);
+        client.once("close", finish);
+
+        if (stopped) {
+          finish();
+        }
+      });
     } finally {
       client.off("exists", existsHandler);
+      if (activeClient === client) activeClient = null;
       lock.release();
     }
   } catch (err) {
@@ -484,6 +570,9 @@ export function startDoctoraliaImapListener(): void {
 
 export function stopDoctoraliaImapListener(): void {
   stopped = true;
+  for (const waiter of [...activeWaiters]) waiter();
+  activeClient?.close();
+  activeClient = null;
   markStatus({
     enabled: false,
     reconnectDelayMs: null,
