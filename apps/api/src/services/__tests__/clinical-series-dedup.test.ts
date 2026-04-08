@@ -31,15 +31,21 @@ function makeSeries(
   eventCount = 3,
   extras?: {
     beneficiaryName?: string | null;
+    beneficiaryPhones?: unknown;
     beneficiaryRut?: string | null;
+    events?: Array<{ description: null | string; summary: null | string }>;
+    patientPhones?: unknown;
   },
 ) {
   return {
     beneficiaryName: extras?.beneficiaryName ?? null,
+    beneficiaryPhones: extras?.beneficiaryPhones ?? null,
     beneficiaryRut: extras?.beneficiaryRut ?? null,
+    events: extras?.events ?? [],
     id,
     kind,
     patientName,
+    patientPhones: extras?.patientPhones ?? null,
     patientRut,
     _count: { events: eventCount },
   };
@@ -182,6 +188,27 @@ describe("detectDuplicateSeries — same RUT, different name (subset)", () => {
     const dupes = await detectDuplicateSeries();
 
     expect(dupes).toHaveLength(0);
+  });
+
+  it("detects duplicate by same phone + compatible name when one series lacks patient RUT", async () => {
+    mockFindMany.mockResolvedValueOnce([
+      makeSeries(1001, "pablo miguel reyes gacitua", "16612125-6", "SUBCUTANEOUS_TREATMENT", 3, {
+        patientPhones: ["+56963080233"],
+      }),
+      makeSeries(1002, "pablo reyes gacitua", null, "SUBCUTANEOUS_TREATMENT", 1, {
+        patientPhones: ["+56963080233"],
+      }),
+    ]);
+
+    const dupes = await detectDuplicateSeries();
+
+    expect(dupes).toHaveLength(1);
+    expect(dupes[0]).toMatchObject({
+      confidence: "medium",
+      kind: "SUBCUTANEOUS_TREATMENT",
+      sourceId: 1002,
+      targetId: 1001,
+    });
   });
 
   it("assigns exact-name rebuild matches to the better canonical series, not the oldest id", async () => {

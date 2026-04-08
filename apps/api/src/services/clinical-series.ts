@@ -13,6 +13,7 @@ dayjs.extend(timezone);
 
 const TIMEZONE = "America/Santiago";
 const RUT_REGEX = /\b\d{1,2}\.?\d{3}\.?\d{3}-?[\dkK]\b/g;
+const FORMATTED_RUT_REGEX = /\b(?:\d{1,2}\.\d{3}\.\d{3}-?[\dkK]|\d{7,8}-[\dkK])\b/g;
 const TIME_REGEX = /\b\d{1,2}:\d{2}\b/g;
 const AGE_REGEX =
   /\b\d{1,3}\s*(?:a[ñn]os?|a)(?:\s+\d{1,2}\s*mes(?:es)?)?\b|\b\d{1,2}\s*mes(?:es)?\b/gi;
@@ -625,7 +626,9 @@ function normalizeExtractedPhone(value: null | string | undefined): null | strin
 
 function extractPhoneCandidates(text: null | string | undefined): string[] {
   if (!text) return [];
-  const withoutRuts = text.replace(new RegExp(RUT_REGEX.source, "g"), " ");
+  // Strip only clearly formatted RUTs here. Bare 9-digit phones like
+  // "963080233" must survive this cleanup step.
+  const withoutRuts = text.replace(new RegExp(FORMATTED_RUT_REGEX.source, "g"), " ");
   const matches = withoutRuts.match(PHONE_CANDIDATE_REGEX) ?? [];
   return [...new Set(matches.map((match) => normalizeExtractedPhone(match)).filter((v): v is string => Boolean(v)))];
 }
@@ -673,6 +676,22 @@ function normalizeStoredPhoneArray(value: unknown): string[] {
     seen.add(normalized);
   }
   return [...seen];
+}
+
+function getSeriesPatientPhones(row: {
+  events?: Array<{ description: null | string; summary: null | string }>;
+  patientPhones: unknown;
+}): string[] {
+  const stored = normalizeStoredPhoneArray(row.patientPhones);
+  if (stored.length > 0) return stored;
+  if (!row.events?.length) return [];
+
+  const derived = new Set<string>();
+  for (const event of row.events) {
+    const extracted = extractSeriesPhones(event.summary ?? null, event.description ?? null);
+    for (const phone of extracted.patientPhones) derived.add(phone);
+  }
+  return [...derived];
 }
 
 function normalizeName(value: string): string {
@@ -1611,6 +1630,18 @@ interface SeriesEntry {
   minDate: dayjs.Dayjs | null;
   patientName: null | string;
   patientRut: null | string;
+}
+
+function haveCompatiblePatientNames(a: null | string, b: null | string): boolean {
+  if (!a || !b) return false;
+  const leftTokens = getSignificantNameTokens(a);
+  const rightTokens = getSignificantNameTokens(b);
+  if (leftTokens.length < 2 || rightTokens.length < 2) return false;
+
+  const overlap = leftTokens.filter((token) => rightTokens.includes(token)).length;
+  if (overlap < 2) return false;
+
+  return overlap / Math.min(leftTokens.length, rightTokens.length) >= 2 / 3;
 }
 
 function scoreClinicalSeriesIdentityQuality(series: {
@@ -3395,20 +3426,31 @@ export async function detectDuplicateSeries(): Promise<ClinicalSeriesDuplicate[]
   // lower (older) id becomes the target and the higher (newer) becomes source.
   type SeriesRow = {
     beneficiaryName: null | string;
+    beneficiaryPhones: unknown;
     beneficiaryRut: null | string;
+    events?: Array<{ description: null | string; summary: null | string }>;
     id: number;
     kind: ClinicalSeriesKind;
     patientName: string | null;
+    patientPhones: unknown;
     patientRut: string | null;
     _count: { events: number };
   };
   const allSeries: SeriesRow[] = await db.clinicalSeries.findMany({
     select: {
       beneficiaryName: true,
+      beneficiaryPhones: true,
       beneficiaryRut: true,
+      events: {
+        select: {
+          description: true,
+          summary: true,
+        },
+      },
       id: true,
       kind: true,
       patientName: true,
+      patientPhones: true,
       patientRut: true,
       _count: { select: { events: true } },
     },
@@ -3502,6 +3544,46 @@ export async function detectDuplicateSeries(): Promise<ClinicalSeriesDuplicate[]
       kind: target.kind,
       patientName: target.patientName,
       reason: `Mismo nombre de paciente (${target.patientName})`,
+      sourceEventCount: src._count.events,
+      sourceId: src.id,
+      sourcePatientName: src.patientName,
+      sourcePatientRut: src.patientRut,
+      targetEventCount: target._count.events,
+      targetId: target.id,
+    });
+    usedAsSources.add(src.id);
+  }
+
+  // ── Pass 3: phone + compatible-name grouping — O(n) over phone groups ────
+  // This catches cases where one series is missing patient RUT and the name is
+  // a subset/superset of the canonical name, but both series clearly share the
+  // same patient phone and kind.
+  const phoneGroups = new Map<string, SeriesRow[]>();
+  for (const s of allSeries) {
+    if (!s.patientName || usedAsSources.has(s.id)) continue;
+    const phones = getSeriesPatientPhones(s);
+    if (phones.length === 0) continue;
+    for (const phone of phones) {
+      const key = `${phone}:${s.kind}`;
+      const group = phoneGroups.get(key);
+      if (group) group.push(s);
+      else phoneGroups.set(key, [s]);
+    }
+  }
+
+  for (const group of phoneGroups.values()) {
+    if (group.length !== 2) continue;
+    const target = chooseCanonicalTarget(group);
+    const src = group.find((series) => series.id !== target.id);
+    if (!src) continue;
+    if (usedAsSources.has(src.id)) continue;
+    if (hasConflictingPrimaryIdentity(target, src)) continue;
+    if (!haveCompatiblePatientNames(target.patientName, src.patientName)) continue;
+    results.push({
+      confidence: "medium",
+      kind: target.kind,
+      patientName: target.patientName,
+      reason: `Mismo telefono de paciente y nombre compatible`,
       sourceEventCount: src._count.events,
       sourceId: src.id,
       sourcePatientName: src.patientName,
