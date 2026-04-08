@@ -429,9 +429,10 @@ async function connect(config: ImapConfig): Promise<void> {
         void runIngest("heartbeat");
       }, IMAP_HEARTBEAT_INGEST_MS);
 
-      // IDLE loop: idle() blocks until the server interrupts it (new mail or
-      // ~30 min keepalive timeout). On interruption we check for new mail and
-      // re-enter IDLE immediately.
+      // IDLE loop: idle() blocks until the server interrupts it (new mail,
+      // keepalive, or transport-level wakeup). Real ingestion is driven by the
+      // `exists` event plus the heartbeat fallback, so a generic wakeup alone
+      // should not trigger a mailbox scan.
       while (!stopped) {
         logEvent("doctoralia.imap.idle_wait", {
           mailbox: config.mailbox,
@@ -442,7 +443,6 @@ async function connect(config: ImapConfig): Promise<void> {
           idled,
           mailbox: config.mailbox,
         });
-        await runIngest("idle_wakeup");
       }
     } finally {
       client.off("exists", existsHandler);
