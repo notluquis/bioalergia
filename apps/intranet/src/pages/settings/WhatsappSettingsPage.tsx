@@ -20,6 +20,7 @@ import { Fragment, type ReactNode, useEffect, useState } from "react";
 
 import { useToast } from "@/context/ToastContext";
 import { useSettings } from "@/context/SettingsContext";
+import { DataTable } from "@/components/data-table/DataTable";
 import {
   sendWhatsappTest,
   setWhatsappContactConsent,
@@ -27,6 +28,7 @@ import {
 } from "@/features/whatsapp/api";
 import { whatsappKeys } from "@/features/whatsapp/queries";
 import { PAGE_CONTAINER } from "@/lib/styles";
+import { whatsappNotificationColumns } from "./messaging-settings-shared";
 
 function renderWhatsappInlineFormatting(text: string): ReactNode[] {
   return text.split(/(\*[^*\n]+\*)/g).map((part, index) => {
@@ -152,6 +154,11 @@ export function WhatsappSettingsPage() {
 
   const { data: stats } = useQuery({
     ...whatsappKeys.stats(),
+    refetchInterval: 30_000,
+  });
+
+  const { data: notificationsData, isPending: notificationsPending } = useQuery({
+    ...whatsappKeys.notifications({ limit: 15, offset: 0 }),
     refetchInterval: 30_000,
   });
 
@@ -403,6 +410,29 @@ export function WhatsappSettingsPage() {
                       </Card.Content>
                     </Card>
                   )}
+
+                <Card className="lg:col-span-2">
+                  <Card.Header className="flex flex-col items-start gap-1">
+                    <h2 className="font-semibold text-sm">Envios recientes</h2>
+                    <Description className="text-default-500 text-xs">
+                      Ultimos mensajes registrados en WhatsApp para reservas y otros envios.
+                    </Description>
+                  </Card.Header>
+                  <Card.Content>
+                    <DataTable
+                      columns={whatsappNotificationColumns}
+                      data={notificationsData?.notifications ?? []}
+                      enableExport={false}
+                      enableGlobalFilter={false}
+                      enablePageSizeSelector={false}
+                      enablePagination={false}
+                      estimatedRowHeight={44}
+                      isLoading={notificationsPending}
+                      noDataMessage="Aun no hay mensajes registrados."
+                      scrollMaxHeight={360}
+                    />
+                  </Card.Content>
+                </Card>
               </div>
             )}
           </div>
