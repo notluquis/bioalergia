@@ -453,6 +453,15 @@ function extractDisappearingDuration(result: unknown) {
   return typeof duration === "number" && Number.isFinite(duration) ? duration : null;
 }
 
+function toOptionalBusinessMinutes(
+  value: null | number | string | { toString: () => string } | undefined,
+) {
+  if (value == null) return undefined;
+  const numeric =
+    typeof value === "number" || typeof value === "string" ? Number(value) : Number(value.toString());
+  return Number.isFinite(numeric) ? numeric : undefined;
+}
+
 export async function fetchOlderHistory(args: {
   count: number;
   oldestMessageId: string;
@@ -583,10 +592,10 @@ export async function getBusinessProfile() {
       ? {
           config: (profile.business_hours.business_config ?? profile.business_hours.config ?? []).map(
             (item) => ({
-              closeTime: item.close_time,
+              closeTime: toOptionalBusinessMinutes(item.close_time),
               dayOfWeek: item.day_of_week,
               mode: item.mode,
-              openTime: item.open_time,
+              openTime: toOptionalBusinessMinutes(item.open_time),
             }),
           ),
           timezone: profile.business_hours.timezone,
