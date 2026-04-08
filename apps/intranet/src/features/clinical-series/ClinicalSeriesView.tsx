@@ -86,6 +86,12 @@ const STATUS_OPTIONS: { label: string; value: ClinicalSeriesStatus }[] = [
   { label: "Cancelada", value: "CANCELLED" },
 ];
 
+const HEALTH_INSURANCE_OPTIONS: { label: string; value: HealthInsuranceType }[] = [
+  { label: "Fonasa", value: "FONASA" },
+  { label: "Isapre", value: "ISAPRE" },
+  { label: "Particular", value: "PARTICULAR" },
+];
+
 const KIND_LABELS: Record<ClinicalSeriesKind, string> = {
   PATCH_TEST: "Parche",
   SKIN_TEST: "Test",
@@ -821,6 +827,9 @@ export function ClinicalSeriesView() {
   const [beneficiaryRutRaw, setBeneficiaryRutRaw] = useState("");
   const [phoneRaw, setPhoneRaw] = useState("");
   const [kind, setKind] = useState<ClinicalSeriesKind | undefined>(undefined);
+  const [healthInsurance, setHealthInsurance] = useState<HealthInsuranceType | undefined>(
+    undefined
+  );
   const [status, setStatus] = useState<ClinicalSeriesStatus | undefined>(undefined);
   const [lastVisitFrom, setLastVisitFrom] = useState<string | undefined>(undefined);
   const [lastVisitTo, setLastVisitTo] = useState<string | undefined>(undefined);
@@ -884,6 +893,7 @@ export function ClinicalSeriesView() {
     ...(debouncedBeneficiaryRut && { beneficiaryRut: debouncedBeneficiaryRut }),
     ...(debouncedPhone && { patientPhone: debouncedPhone }),
     ...(debouncedRut && { patientRut: debouncedRut }),
+    ...(healthInsurance && { healthInsurance }),
     ...(isSeriesLikeTab && kind && { kind }),
     ...(nextVisitFrom && { nextVisitFrom }),
     ...(nextVisitTo && { nextVisitTo }),
@@ -899,6 +909,7 @@ export function ClinicalSeriesView() {
   const { data, isLoading, error } = useClinicalSeries(filters);
   const insuranceStatsFilters: ClinicalSeriesFilters = {
     abandonmentBucket: undefined,
+    ...(healthInsurance && { healthInsurance }),
     ...(kind && { kind }),
     ...(lastVisitFrom && { lastVisitFrom }),
     ...(lastVisitTo && { lastVisitTo }),
@@ -949,13 +960,18 @@ export function ClinicalSeriesView() {
     setKind(value ? (value as ClinicalSeriesKind) : undefined);
   };
 
+  const handleHealthInsuranceChange = (value: Key | null) => {
+    setHealthInsurance(value ? (value as HealthInsuranceType) : undefined);
+  };
+
   const handleStatusChange = (value: Key | null) => {
     setStatus(value ? (value as ClinicalSeriesStatus) : undefined);
   };
 
   const hasFilters = isInsuranceTab
-    ? !!kind || !!status || !!lastVisitFrom || !!lastVisitTo
+    ? !!healthInsurance || !!kind || !!status || !!lastVisitFrom || !!lastVisitTo
     : (isAbandonmentTab && !!abandonmentBucket) ||
+      !!healthInsurance ||
       !!debouncedBeneficiaryRut ||
       !!debouncedPhone ||
       !!debouncedQuery ||
@@ -966,6 +982,7 @@ export function ClinicalSeriesView() {
       (isSeriesLikeTab && !!status);
 
   const clearFilters = () => {
+    setHealthInsurance(undefined);
     setKind(undefined);
     setStatus(undefined);
     if (isInsuranceTab) {
@@ -1127,8 +1144,33 @@ export function ClinicalSeriesView() {
       <Surface className="rounded-xl p-4">
         <div className="flex flex-col gap-4">
           {isInsuranceTab ? (
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[12rem_12rem_minmax(18rem,1.25fr)_auto]">
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[12rem_12rem_12rem_minmax(18rem,1.25fr)_auto]">
               <>
+                <div className="flex flex-col gap-1">
+                  <Select
+                    onChange={handleHealthInsuranceChange}
+                    value={(healthInsurance as Key) ?? null}
+                    placeholder="Todas"
+                    variant="secondary"
+                  >
+                    <Label>Previsión</Label>
+                    <Select.Trigger>
+                      <Select.Value />
+                      <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        {HEALTH_INSURANCE_OPTIONS.map((item) => (
+                          <ListBox.Item id={item.value} key={item.value} textValue={item.label}>
+                            {item.label}
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                        ))}
+                      </ListBox>
+                    </Select.Popover>
+                  </Select>
+                </div>
+
                 <div className="flex flex-col gap-1">
                   <Select
                     onChange={handleKindChange}
@@ -1258,8 +1300,8 @@ export function ClinicalSeriesView() {
               <div
                 className={
                   isSeriesLikeTab
-                    ? "grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_12rem_12rem_minmax(18rem,1.25fr)_auto]"
-                    : "grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto]"
+                    ? "grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_12rem_12rem_12rem_minmax(18rem,1.25fr)_auto]"
+                    : "grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_12rem_auto]"
                 }
               >
                 <TextField className="w-full" value={rutRaw} onChange={setRutRaw}>
@@ -1280,6 +1322,31 @@ export function ClinicalSeriesView() {
                   <Label>Teléfono</Label>
                   <Input placeholder="+56912345678" />
                 </TextField>
+
+                <div className="flex flex-col gap-1">
+                  <Select
+                    onChange={handleHealthInsuranceChange}
+                    value={(healthInsurance as Key) ?? null}
+                    placeholder="Todas"
+                    variant="secondary"
+                  >
+                    <Label>Previsión</Label>
+                    <Select.Trigger>
+                      <Select.Value />
+                      <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        {HEALTH_INSURANCE_OPTIONS.map((item) => (
+                          <ListBox.Item id={item.value} key={item.value} textValue={item.label}>
+                            {item.label}
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                        ))}
+                      </ListBox>
+                    </Select.Popover>
+                  </Select>
+                </div>
 
                 {isSeriesLikeTab ? (
                   <>

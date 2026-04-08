@@ -109,6 +109,7 @@ export interface ClinicalSeriesListItem {
 export interface ClinicalSeriesFilters {
   abandonmentBucket?: ClinicalSeriesAbandonmentBucket;
   beneficiaryRut?: string;
+  healthInsurance?: HealthInsuranceType;
   kind?: ClinicalSeriesKind;
   lastVisitFrom?: string;
   lastVisitTo?: string;

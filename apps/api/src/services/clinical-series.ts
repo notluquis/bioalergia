@@ -405,6 +405,7 @@ function computeSnapshotTiming(snapshot: Pick<ClinicalSeriesSnapshot, "events">,
 type ClinicalSeriesFilters = {
   abandonmentBucket?: "month_1" | "month_2" | "month_3" | "month_4_plus";
   beneficiaryRut?: string;
+  healthInsurance?: HealthInsuranceType;
   kind?: ClinicalSeriesKind;
   lastVisitFrom?: string;
   lastVisitTo?: string;
@@ -452,6 +453,7 @@ function resolveAbandonmentBucket(daysSinceLastEvent: null | number) {
 type PreparedClinicalSeriesFilters = {
   abandonmentFilterSql: ReturnType<typeof sql>;
   effectiveKind: ClinicalSeriesKind | null;
+  effectiveHealthInsurance: HealthInsuranceType | null;
   effectiveStatus: ClinicalSeriesFilters["status"] | null;
   lastVisitFrom: null | string;
   lastVisitTo: null | string;
@@ -525,6 +527,7 @@ function prepareClinicalSeriesFilters(filters?: ClinicalSeriesFilters): Prepared
         )`
       : sql`TRUE`;
   const effectiveKind = view === "abandonment" ? "SUBCUTANEOUS_TREATMENT" : (filters?.kind ?? null);
+  const effectiveHealthInsurance = filters?.healthInsurance ?? null;
   const effectiveStatus = view === "abandonment" ? null : (filters?.status ?? null);
   const daysSinceLastEventSql = sql<number | null>`CASE
     WHEN es.last_event_date IS NULL THEN NULL
@@ -560,6 +563,7 @@ function prepareClinicalSeriesFilters(filters?: ClinicalSeriesFilters): Prepared
   return {
     abandonmentFilterSql,
     effectiveKind,
+    effectiveHealthInsurance,
     effectiveStatus,
     lastVisitFrom,
     lastVisitTo,
@@ -3065,6 +3069,7 @@ export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilter
   const {
     abandonmentFilterSql,
     effectiveKind,
+    effectiveHealthInsurance,
     effectiveStatus,
     lastVisitFrom,
     lastVisitTo,
@@ -3191,6 +3196,7 @@ export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilter
     WHERE (${normalizedBeneficiaryRut}::text IS NULL OR cs.beneficiary_rut = ${normalizedBeneficiaryRut})
       AND (${effectiveKind}::text IS NULL OR cs.kind::text = ${effectiveKind})
       AND (${effectiveStatus}::text IS NULL OR cs.status::text = ${effectiveStatus})
+      AND (${effectiveHealthInsurance}::text IS NULL OR cs.health_insurance::text = ${effectiveHealthInsurance})
       AND (${normalizedPatientName}::text IS NULL OR lower(coalesce(cs.patient_name, '')) LIKE ${normalizedPatientName})
       AND (${normalizedPatientRut}::text IS NULL OR cs.patient_rut = ${normalizedPatientRut})
       AND (${normalizedPatientPhone}::text IS NULL OR ${phoneFilterSql(normalizedPatientPhone)})
@@ -3220,6 +3226,7 @@ export async function getClinicalSeriesInsuranceStats(
   const {
     abandonmentFilterSql,
     effectiveKind,
+    effectiveHealthInsurance,
     effectiveStatus,
     lastVisitFrom,
     lastVisitTo,
@@ -3272,6 +3279,7 @@ export async function getClinicalSeriesInsuranceStats(
     WHERE (${normalizedBeneficiaryRut}::text IS NULL OR cs.beneficiary_rut = ${normalizedBeneficiaryRut})
       AND (${effectiveKind}::text IS NULL OR cs.kind::text = ${effectiveKind})
       AND (${effectiveStatus}::text IS NULL OR cs.status::text = ${effectiveStatus})
+      AND (${effectiveHealthInsurance}::text IS NULL OR cs.health_insurance::text = ${effectiveHealthInsurance})
       AND (${normalizedPatientName}::text IS NULL OR lower(coalesce(cs.patient_name, '')) LIKE ${normalizedPatientName})
       AND (${normalizedPatientRut}::text IS NULL OR cs.patient_rut = ${normalizedPatientRut})
       AND (${normalizedPatientPhone}::text IS NULL OR ${phoneFilterSql(normalizedPatientPhone)})
