@@ -1607,6 +1607,149 @@ model WhatsappConversationState {
   @@map("whatsapp_conversation_state")
 }
 
+model WhatsappMessage {
+  id            String                   @id @default(cuid())
+  remoteJid     String                   @map("remote_jid")
+  messageId     String                   @map("message_id")
+  participantJid String?                 @map("participant_jid")
+  participantJidKey String               @default("") @map("participant_jid_key")
+  fromMe        Boolean                  @default(false) @map("from_me")
+  direction     WhatsappMessageDirection
+  messageType   String                   @map("message_type")
+  status        WhatsappMessageStatus    @default(PENDING)
+  phone         String?
+  waId          String?                  @map("wa_id")
+  textPreview   String?                  @map("text_preview")
+  sentAt        DateTime?                @map("sent_at")
+  deliveredAt   DateTime?                @map("delivered_at")
+  readAt        DateTime?                @map("read_at")
+  playedAt      DateTime?                @map("played_at")
+  messageTimestamp DateTime?             @map("message_timestamp")
+  rawMessageJson Json?                   @map("raw_message_json")
+  rawContentJson Json?                   @map("raw_content_json")
+  createdAt     DateTime                 @default(now()) @map("created_at")
+  updatedAt     DateTime                 @default(now()) @updatedAt @map("updated_at")
+
+  @@unique([remoteJid, messageId, participantJidKey])
+  @@index([phone, createdAt(sort: Desc)])
+  @@index([remoteJid, createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
+  @@deny('all', auth() == null)
+  @@allow('read', auth() != null)
+  @@allow('create,update', auth().status == 'ACTIVE')
+
+  @@map("whatsapp_messages")
+}
+
+model WhatsappChat {
+  id             String     @id @default(cuid())
+  jid            String     @unique
+  name           String?
+  conversationTimestamp DateTime? @map("conversation_timestamp")
+  unreadCount    Int?       @map("unread_count")
+  archived       Boolean?   @default(false)
+  pinned         Boolean?   @default(false)
+  muteEndTime    DateTime?  @map("mute_end_time")
+  notSpam        Boolean?   @map("not_spam")
+  lastMessageId  String?    @map("last_message_id")
+  rawChatJson    Json?      @map("raw_chat_json")
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @default(now()) @updatedAt @map("updated_at")
+
+  @@index([conversationTimestamp(sort: Desc)])
+  @@deny('all', auth() == null)
+  @@allow('read', auth() != null)
+  @@allow('create,update', auth().status == 'ACTIVE')
+
+  @@map("whatsapp_chats")
+}
+
+model WhatsappContact {
+  id             String   @id @default(cuid())
+  jid            String   @unique
+  phone          String?
+  name           String?
+  notify         String?
+  verifiedName   String?  @map("verified_name")
+  imgUrl         String?  @map("img_url")
+  rawContactJson Json?    @map("raw_contact_json")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@index([phone])
+  @@deny('all', auth() == null)
+  @@allow('read', auth() != null)
+  @@allow('create,update', auth().status == 'ACTIVE')
+
+  @@map("whatsapp_contacts")
+}
+
+model WhatsappBusinessQuickReply {
+  timestamp   String   @id
+  shortcut    String
+  message     String
+  keywords    Json?
+  count       Int?     @default(0)
+  deleted     Boolean  @default(false)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@index([deleted, updatedAt(sort: Desc)])
+  @@deny('all', auth() == null)
+  @@allow('read', auth() != null)
+  @@allow('create,update', auth().status == 'ACTIVE')
+
+  @@map("whatsapp_business_quick_replies")
+}
+
+model WhatsappBusinessLabel {
+  id          String   @id
+  name        String?
+  color       Int?
+  deleted     Boolean  @default(false)
+  predefinedId String? @map("predefined_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@index([deleted, updatedAt(sort: Desc)])
+  @@deny('all', auth() == null)
+  @@allow('read', auth() != null)
+  @@allow('create,update', auth().status == 'ACTIVE')
+
+  @@map("whatsapp_business_labels")
+}
+
+model WhatsappBusinessChatLabel {
+  labelId   String   @map("label_id")
+  chatJid   String   @map("chat_jid")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([labelId, chatJid])
+  @@index([chatJid, updatedAt(sort: Desc)])
+  @@deny('all', auth() == null)
+  @@allow('read', auth() != null)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("whatsapp_business_chat_labels")
+}
+
+model WhatsappBusinessMessageLabel {
+  labelId   String   @map("label_id")
+  chatJid   String   @map("chat_jid")
+  messageId String   @map("message_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([labelId, chatJid, messageId])
+  @@index([chatJid, messageId, updatedAt(sort: Desc)])
+  @@deny('all', auth() == null)
+  @@allow('read', auth() != null)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("whatsapp_business_message_labels")
+}
+
 // ============================================================
 // ENUMS
 // ============================================================
@@ -1624,6 +1767,21 @@ enum WhatsappOptInStatus {
   UNKNOWN
   OPTED_IN
   OPTED_OUT
+}
+
+enum WhatsappMessageDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum WhatsappMessageStatus {
+  PENDING
+  SENT
+  DELIVERED
+  READ
+  PLAYED
+  FAILED
+  RECEIVED
 }
 
 enum PersonType {
