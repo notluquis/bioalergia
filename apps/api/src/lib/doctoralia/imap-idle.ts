@@ -4,9 +4,8 @@
  * Maintains a persistent IMAP connection using the IDLE command so the server
  * pushes notifications instead of us polling. When new mail arrives the
  * connection wakes up, we fetch & parse any unseen Doctoralia emails, and
- * immediately save them to doctoralia_email_notifications.
- *
- * No WhatsApp logic here — that is intentionally separate.
+ * immediately save them to doctoralia_email_notifications. For future bookings
+ * we also mark the patient as OPTED_IN and attempt the WhatsApp notification.
  *
  * Required env vars:
  *   DOCTORALIA_IMAP_HOST
@@ -27,6 +26,7 @@ import { ImapFlow } from "imapflow";
 import { logError, logEvent, logWarn } from "../logger";
 import { resolveDoctoraliaSenderSearchTerms } from "./imap-search";
 import { sendText } from "../whatsapp/baileys-socket";
+import { setWhatsappContactConsent } from "../whatsapp/conversation-state";
 import {
   decodeEmailBody,
   htmlToText,
@@ -227,6 +227,41 @@ async function sendDoctoraliaWhatsapp(args: {
       errorMessage,
       messageId: args.messageContext.messageId,
       status: "FAILED",
+    });
+  }
+}
+
+async function markDoctoraliaOptIn(args: {
+  booking: NonNullable<ReturnType<typeof parseDoctoraliaEmail>>;
+  messageContext: {
+    matchedSenderTerms: string[];
+    messageId: string;
+    subject: null | string;
+    uid: number;
+  };
+}) {
+  if (!args.booking.patientPhone) {
+    return;
+  }
+
+  try {
+    await setWhatsappContactConsent({
+      phone: args.booking.patientPhone,
+      source: "doctoralia_imap",
+      status: "OPTED_IN",
+      waId: phoneToJid(args.booking.patientPhone),
+    });
+
+    logEvent("whatsapp.imap.opt_in_set", {
+      ...args.messageContext,
+      patientName: args.booking.patientName,
+      phone: normalizePhone(args.booking.patientPhone),
+    });
+  } catch (err) {
+    logError("whatsapp.imap.opt_in_failed", err, {
+      ...args.messageContext,
+      patientName: args.booking.patientName,
+      phone: normalizePhone(args.booking.patientPhone),
     });
   }
 }
@@ -491,6 +526,11 @@ async function processFetchedMessages(
         appointmentDate: booking.appointmentDate?.toISOString() ?? null,
         eventType: booking.eventType,
         patientName: booking.patientName,
+      });
+
+      await markDoctoraliaOptIn({
+        booking,
+        messageContext,
       });
 
       await sendDoctoraliaWhatsapp({
