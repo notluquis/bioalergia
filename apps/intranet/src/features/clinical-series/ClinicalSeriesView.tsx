@@ -38,7 +38,9 @@ import type { Key, Selection } from "@heroui/react";
 import { Fragment, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { buildPaginationItems } from "@/components/pagination/pagination-items";
 import { EventDteLinkModal } from "@/features/calendar/components/EventDteLinkModal";
+import { FormattedEventDescription } from "@/features/calendar/components/FormattedEventDescription";
 import type { CalendarEventDetail } from "@/features/calendar/types";
+import { formatEventDescriptionToPlainText } from "@/features/calendar/utils/format-event-description";
 import {
   clinicalSeriesKeys,
   fetchClinicalSeriesDetail,
@@ -737,7 +739,9 @@ function clinicalEventStageLabel(event: ClinicalSeriesEvent): null | string {
 }
 
 function clinicalEventDescription(event: ClinicalSeriesEvent): null | string {
-  const description = event.description?.trim();
+  const rawDescription = event.description?.trim();
+  if (!rawDescription) return null;
+  const description = formatEventDescriptionToPlainText(rawDescription);
   if (!description) return null;
   const headline = clinicalEventHeadline(event);
   return normalizeClinicalIdentityName(description) === normalizeClinicalIdentityName(headline)
@@ -2037,9 +2041,10 @@ export function ClinicalSeriesView() {
                                                   {clinicalEventHeadline(event)}
                                                 </p>
                                                 {description && (
-                                                  <p className="text-xs leading-relaxed text-foreground-500 whitespace-pre-line wrap-break-word">
-                                                    {description}
-                                                  </p>
+                                                  <FormattedEventDescription
+                                                    className="text-foreground-500"
+                                                    text={description}
+                                                  />
                                                 )}
                                               </div>
                                               <Accordion.Indicator className="text-foreground-400" />
@@ -2048,16 +2053,6 @@ export function ClinicalSeriesView() {
                                           <Accordion.Panel className="pb-0">
                                             <Accordion.Body className="px-3 pb-3 pt-0 text-xs">
                                               <div className="space-y-2 border-border/50 border-t pt-3">
-                                                {description && (
-                                                  <div className="space-y-1">
-                                                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-foreground-400">
-                                                      Descripción
-                                                    </p>
-                                                    <p className="text-foreground-500 whitespace-pre-line">
-                                                      {description}
-                                                    </p>
-                                                  </div>
-                                                )}
                                                 {(() => {
                                                   const efs = eventFinancialStatus(event);
                                                   if (efs === "unknown") return null;

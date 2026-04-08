@@ -17,6 +17,7 @@ import { confirmEventDteLink, unlinkEventDteLink } from "@/features/calendar/api
 import { calendarDteLinkKeys, calendarDteLinkQueries } from "@/features/calendar/queries";
 import type { CalendarEventDetail, EventDteMatchHypothesis } from "@/features/calendar/types";
 import { currencyFormatter } from "@/lib/format";
+import { FormattedEventDescription } from "./FormattedEventDescription";
 const WARNING_REASON_PREFIX = "Advertencia:";
 
 interface EventDteLinkModalProps {
@@ -247,7 +248,7 @@ export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDte
                     .join(" · ")}
                 </p>
                 {event?.description && event.description !== event.summary ? (
-                  <p className="text-default-400 mt-1 text-xs">{event.description}</p>
+                  <FormattedEventDescription className="mt-1" text={event.description} />
                 ) : null}
               </Surface>
 
