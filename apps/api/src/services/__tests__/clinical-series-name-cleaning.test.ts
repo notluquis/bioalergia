@@ -40,6 +40,10 @@ describe("clinical series patient-name cleaning", () => {
         "11.10 vacuna de clustoid (50), Emilio Sabath Saez, 9 años, Concepcion, Fonasa 990135760 (papá Gonzalo Sabath Saldivia)",
         "emilio sabath saez",
       ],
+      [
+        "12:40Mingtsu Leonardo Chang Liu primera dosis vacuna CLUSTOID(25)",
+        "mingtsu leonardo chang liu",
+      ],
       ["confirmocarlos joaquin varela chavez", "carlos joaquin varela chavez"],
     ] as const;
 

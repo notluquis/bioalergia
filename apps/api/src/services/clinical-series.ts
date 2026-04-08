@@ -957,6 +957,7 @@ const EMAIL_REGEX = /\b[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}\b/gi;
 const GLUED_RUT_FOLLOWED_BY_AGE_REGEX = /(\d{7,8}-?[\dkK])(?=\d{1,3}\s*a[ñn]os?\b)/gi;
 const GLUED_RUT_FOLLOWED_BY_LABEL_REGEX =
   /(\d{7,8}-?[\dkK])(?=-?(?:edad|comuna|previsi[oó]n|n[uú]mero(?:\s+de\s+contacto)?|correo(?:\s+electr[oó]nico)?|motivo(?:\s+de\s+la\s+consulta)?|tiempo(?:\s+de\s+evoluci[oó]n)?|enfermedades\s+base|tratamiento\s+usado)\b)/gi;
+const GLUED_TIME_FOLLOWED_BY_NAME_REGEX = /(\b\d{1,2}:\d{2})(?=[A-Za-zÁÉÍÓÚÑáéíóúñ])/g;
 
 function cleanStructuredFieldValue(value: string): string {
   return value.replace(/\s+/g, " ").replace(/[;,]+$/g, "").trim();
@@ -964,6 +965,7 @@ function cleanStructuredFieldValue(value: string): string {
 
 function normalizeIdentitySourceText(value: string): string {
   return value
+    .replace(GLUED_TIME_FOLLOWED_BY_NAME_REGEX, "$1 ")
     .replace(GLUED_RUT_FOLLOWED_BY_AGE_REGEX, "$1 ")
     .replace(GLUED_RUT_FOLLOWED_BY_LABEL_REGEX, "$1 ");
 }
