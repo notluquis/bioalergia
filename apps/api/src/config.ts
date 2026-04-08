@@ -182,7 +182,7 @@ export const whatsappConfig: WhatsappConfig | null =
         phoneNumberId: waPhoneNumberId,
         pollCron: process.env.WHATSAPP_POLL_CRON ?? "*/2 * * * *",
         requireOptIn: process.env.WHATSAPP_REQUIRE_OPT_IN !== "false",
-        senderFilter: process.env.DOCTORALIA_EMAIL_SENDER_FILTER ?? "doctoralia.com",
+        senderFilter: process.env.DOCTORALIA_EMAIL_SENDER_FILTER ?? "doctoralia",
         templateLanguage: process.env.WHATSAPP_TEMPLATE_LANGUAGE ?? null,
         templateName: process.env.WHATSAPP_TEMPLATE_NAME ?? null,
         webhookVerifyToken: process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN ?? null,

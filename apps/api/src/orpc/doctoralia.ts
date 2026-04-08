@@ -603,7 +603,7 @@ const doctoraliaORPCRouterBase = {
           imapReady: imapHostConfigured && imapUserConfigured && imapPassConfigured,
           imapUserConfigured,
           listener,
-          senderFilter: process.env.DOCTORALIA_EMAIL_SENDER_FILTER ?? "doctoralia.com",
+          senderFilter: process.env.DOCTORALIA_EMAIL_SENDER_FILTER ?? "doctoralia",
         },
         status: "ok",
       };

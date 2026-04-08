@@ -24,6 +24,7 @@ import { db } from "@finanzas/db";
 import { createId } from "@paralleldrive/cuid2";
 import { ImapFlow } from "imapflow";
 import { logError, logEvent, logWarn } from "../logger";
+import { resolveDoctoraliaSenderSearchTerms } from "./imap-search";
 import {
   decodeEmailBody,
   htmlToText,
@@ -83,7 +84,7 @@ function getImapConfig(): ImapConfig | null {
     pass,
     port: parseInt(process.env.DOCTORALIA_IMAP_PORT ?? "993", 10),
     secure: process.env.DOCTORALIA_IMAP_SECURE !== "0",
-    senderFilter: process.env.DOCTORALIA_EMAIL_SENDER_FILTER ?? "doctoralia.com",
+    senderFilter: process.env.DOCTORALIA_EMAIL_SENDER_FILTER ?? "doctoralia",
     user,
   };
 }
@@ -148,7 +149,21 @@ function createImapClient(config: ImapConfig): ImapFlow {
 }
 
 async function ingestMailbox(client: ImapFlow, config: ImapConfig): Promise<DoctoraliaImapIngestResult> {
-  const uids = await client.search({ from: config.senderFilter });
+  const senderTerms = resolveDoctoraliaSenderSearchTerms(config.senderFilter);
+  const uidSet = new Set<number>();
+  const matchedSenderTermsByUid = new Map<number, Set<string>>();
+
+  for (const senderTerm of senderTerms) {
+    const matchingUids = await client.search({ from: senderTerm });
+    for (const uid of matchingUids) {
+      uidSet.add(uid);
+      const matchedTerms = matchedSenderTermsByUid.get(uid) ?? new Set<string>();
+      matchedTerms.add(senderTerm);
+      matchedSenderTermsByUid.set(uid, matchedTerms);
+    }
+  }
+
+  const uids = [...uidSet].sort((a, b) => a - b);
   const result: DoctoraliaImapIngestResult = {
     alreadyProcessed: 0,
     checked: uids.length,
@@ -158,7 +173,7 @@ async function ingestMailbox(client: ImapFlow, config: ImapConfig): Promise<Doct
   };
   if (!uids.length) return result;
 
-  logEvent("doctoralia.imap.found", { count: uids.length });
+  logEvent("doctoralia.imap.found", { count: uids.length, senderTerms });
 
   for await (const msg of client.fetch(uids, {
     // bodyParts gives us QP/base64-decoded bytes; bodyStructure gives charset
@@ -167,6 +182,16 @@ async function ingestMailbox(client: ImapFlow, config: ImapConfig): Promise<Doct
     envelope: true,
   })) {
     const messageId = msg.envelope?.messageId ?? `imap-${msg.uid}`;
+    const subject = msg.envelope?.subject ?? null;
+    const matchedSenderTerms = [...(matchedSenderTermsByUid.get(msg.uid) ?? new Set<string>())];
+    const messageContext = {
+      matchedSenderTerms,
+      messageId,
+      subject,
+      uid: msg.uid,
+    };
+
+    logEvent("doctoralia.imap.message_seen", messageContext);
 
     // Dedup check
     try {
@@ -178,11 +203,12 @@ async function ingestMailbox(client: ImapFlow, config: ImapConfig): Promise<Doct
 
       if (existing) {
         result.alreadyProcessed++;
+        logEvent("doctoralia.imap.message_dedup_skip", messageContext);
         continue;
       }
     } catch (err) {
       result.failed++;
-      logError("doctoralia.imap.dedup_error", err, { messageId });
+      logError("doctoralia.imap.dedup_error", err, messageContext);
       continue;
     }
 
@@ -203,8 +229,8 @@ async function ingestMailbox(client: ImapFlow, config: ImapConfig): Promise<Doct
     if (!isLikelyDoctoraliaEmail(emailText)) {
       result.skipped++;
       logWarn("doctoralia.imap.skip_non_doctoralia", {
-        messageId,
-        subject: msg.envelope?.subject,
+        ...messageContext,
+        extractedTextLength: emailText.length,
       });
       continue;
     }
@@ -214,11 +240,20 @@ async function ingestMailbox(client: ImapFlow, config: ImapConfig): Promise<Doct
     if (!booking) {
       result.skipped++;
       logWarn("doctoralia.imap.no_booking", {
-        messageId,
-        subject: msg.envelope?.subject,
+        ...messageContext,
+        extractedTextLength: emailText.length,
       });
       continue;
     }
+
+    logEvent("doctoralia.imap.parse_ok", {
+      ...messageContext,
+      appointmentDate: booking.appointmentDate?.toISOString() ?? null,
+      eventType: booking.eventType,
+      patientName: booking.patientName,
+      patientPhone: booking.patientPhone ?? null,
+      service: booking.appointmentService ?? null,
+    });
 
     const now = new Date().toISOString();
     try {
@@ -245,13 +280,18 @@ async function ingestMailbox(client: ImapFlow, config: ImapConfig): Promise<Doct
       markStatus({ lastProcessedAt: now });
 
       logEvent("doctoralia.imap.saved", {
+        ...messageContext,
+        appointmentDate: booking.appointmentDate?.toISOString() ?? null,
         eventType: booking.eventType,
-        messageId,
         patientName: booking.patientName,
       });
     } catch (dbErr) {
       result.failed++;
-      logError("doctoralia.imap.db_error", dbErr, { messageId });
+      logError("doctoralia.imap.db_error", dbErr, {
+        ...messageContext,
+        eventType: booking.eventType,
+        patientName: booking.patientName,
+      });
     }
 
   }
@@ -286,6 +326,8 @@ async function connect(config: ImapConfig): Promise<void> {
     const lock = await client.getMailboxLock(config.mailbox);
 
     try {
+      await ingestMailbox(client, config);
+
       // IDLE loop: idle() blocks until the server interrupts it (new mail or
       // ~30 min keepalive timeout). On interruption we check for new mail and
       // re-enter IDLE immediately.

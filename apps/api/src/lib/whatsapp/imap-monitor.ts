@@ -7,6 +7,7 @@ import { db } from "@finanzas/db";
 import { createId } from "@paralleldrive/cuid2";
 import dayjs from "dayjs";
 import { ImapFlow } from "imapflow";
+import { resolveDoctoraliaSenderSearchTerms } from "../doctoralia/imap-search";
 import { logError, logEvent, logWarn } from "../logger";
 import { sendText } from "./baileys-socket";
 import { decodeEmailBody, htmlToText, isLikelyDoctoraliaEmail, parseDoctoraliaEmail } from "./email-parser";
@@ -37,7 +38,7 @@ function getImapConfig(): ImapConfig | null {
     pass,
     port: parseInt(process.env.DOCTORALIA_IMAP_PORT ?? "993", 10),
     secure: process.env.DOCTORALIA_IMAP_SECURE !== "0",
-    senderFilter: process.env.DOCTORALIA_EMAIL_SENDER_FILTER ?? "doctoralia.com",
+    senderFilter: process.env.DOCTORALIA_EMAIL_SENDER_FILTER ?? "doctoralia",
     user,
   };
 }
@@ -113,11 +114,22 @@ export async function runImapPoll(): Promise<PollResult> {
     await client.mailboxOpen(config.mailbox);
 
     // Search for unseen emails from Doctoralia
-    const searchResult = await client.search({
-      from: config.senderFilter,
-      seen: false,
-    });
-    const uids = Array.isArray(searchResult) ? searchResult : [];
+    const uidSet = new Set<number>();
+    const matchedSenderTermsByUid = new Map<number, Set<string>>();
+    for (const senderTerm of resolveDoctoraliaSenderSearchTerms(config.senderFilter)) {
+      const searchResult = await client.search({
+        from: senderTerm,
+        seen: false,
+      });
+      const matchingUids = Array.isArray(searchResult) ? searchResult : [];
+      for (const uid of matchingUids) {
+        uidSet.add(uid);
+        const matchedTerms = matchedSenderTermsByUid.get(uid) ?? new Set<string>();
+        matchedTerms.add(senderTerm);
+        matchedSenderTermsByUid.set(uid, matchedTerms);
+      }
+    }
+    const uids = [...uidSet].sort((a, b) => a - b);
 
     result.checked = uids.length;
 
@@ -125,7 +137,10 @@ export async function runImapPoll(): Promise<PollResult> {
       return result;
     }
 
-    logEvent("whatsapp.imap.found", { count: uids.length });
+    logEvent("whatsapp.imap.found", {
+      count: uids.length,
+      senderTerms: resolveDoctoraliaSenderSearchTerms(config.senderFilter),
+    });
 
     for await (const msg of client.fetch(uids, {
       bodyParts: ["TEXT", "1"],
@@ -134,6 +149,16 @@ export async function runImapPoll(): Promise<PollResult> {
       source: true,
     })) {
       const messageId = msg.envelope?.messageId ?? `imap-${msg.uid}`;
+      const subject = msg.envelope?.subject ?? null;
+      const matchedSenderTerms = [...(matchedSenderTermsByUid.get(msg.uid) ?? new Set<string>())];
+      const messageContext = {
+        matchedSenderTerms,
+        messageId,
+        subject,
+        uid: msg.uid,
+      };
+
+      logEvent("whatsapp.imap.message_seen", messageContext);
 
       // Check for dedup - already processed this email
       try {
@@ -145,6 +170,7 @@ export async function runImapPoll(): Promise<PollResult> {
 
         if (existing) {
           result.skipped++;
+          logEvent("whatsapp.imap.message_dedup_skip", messageContext);
           // Mark as seen so we don't keep re-fetching
           await client.messageFlagsAdd({ uid: msg.uid }, ["\\Seen"]);
           continue;
@@ -152,6 +178,7 @@ export async function runImapPoll(): Promise<PollResult> {
       } catch {
         // If DB check fails, skip this email to be safe
         result.skipped++;
+        logWarn("whatsapp.imap.message_dedup_failed", messageContext);
         continue;
       }
 
@@ -176,13 +203,13 @@ export async function runImapPoll(): Promise<PollResult> {
           }
         }
       } catch (err) {
-        logError("whatsapp.imap.parse_error", err, { messageId });
+        logError("whatsapp.imap.parse_error", err, messageContext);
       }
 
       if (emailText && !isLikelyDoctoraliaEmail(emailText)) {
         logWarn("whatsapp.imap.skip_non_doctoralia", {
-          messageId,
-          subject: msg.envelope?.subject,
+          ...messageContext,
+          extractedTextLength: emailText.length,
         });
         await client.messageFlagsAdd({ uid: msg.uid }, ["\\Seen"]);
         result.skipped++;
@@ -192,16 +219,28 @@ export async function runImapPoll(): Promise<PollResult> {
       const booking = emailText ? parseDoctoraliaEmail(emailText) : null;
 
       if (!booking) {
-        logWarn("whatsapp.imap.no_booking", { messageId, subject: msg.envelope?.subject });
+        logWarn("whatsapp.imap.no_booking", {
+          ...messageContext,
+          extractedTextLength: emailText.length,
+        });
         // Mark as seen so we don't re-process indefinitely
         await client.messageFlagsAdd({ uid: msg.uid }, ["\\Seen"]);
         result.skipped++;
         continue;
       }
 
+      logEvent("whatsapp.imap.parse_ok", {
+        ...messageContext,
+        appointmentDate: booking.appointmentDate?.toISOString() ?? null,
+        eventType: booking.eventType,
+        patientName: booking.patientName,
+        patientPhone: booking.patientPhone ?? null,
+        service: booking.appointmentService ?? null,
+      });
+
       if (!booking.patientPhone) {
         logWarn("whatsapp.imap.no_phone", {
-          messageId,
+          ...messageContext,
           patientName: booking.patientName,
         });
         await client.messageFlagsAdd({ uid: msg.uid }, ["\\Seen"]);
@@ -224,7 +263,7 @@ export async function runImapPoll(): Promise<PollResult> {
         result.sent++;
 
         logEvent("whatsapp.message.sent", {
-          messageId,
+          ...messageContext,
           patientName: booking.patientName,
           phone: normalizedPhone,
           waMessageId,
@@ -234,7 +273,7 @@ export async function runImapPoll(): Promise<PollResult> {
         errorMessage = err instanceof Error ? err.message : String(err);
         result.failed++;
         logError("whatsapp.message.failed", err, {
-          messageId,
+          ...messageContext,
           patientName: booking.patientName,
           phone: normalizedPhone,
         });
@@ -265,7 +304,11 @@ export async function runImapPoll(): Promise<PollResult> {
           })
           .execute();
       } catch (dbErr) {
-        logError("whatsapp.db.insert_error", dbErr, { messageId });
+        logError("whatsapp.db.insert_error", dbErr, {
+          ...messageContext,
+          patientName: booking.patientName,
+          status,
+        });
       }
 
       // Mark email as seen
