@@ -145,6 +145,33 @@ function createImapClient(config: ImapConfig): ImapFlow {
     logError("doctoralia.imap.client_error", err, { host: config.host });
   });
 
+  client.on("close", () => {
+    logWarn("doctoralia.imap.client_closed", { host: config.host, user: config.user });
+  });
+
+  client.on("mailboxOpen", (mailbox) => {
+    logEvent("doctoralia.imap.mailbox_open", {
+      exists: mailbox.exists,
+      path: mailbox.path,
+      uidNext: mailbox.uidNext,
+      uidValidity: mailbox.uidValidity,
+    });
+  });
+
+  client.on("mailboxClose", (mailbox) => {
+    logEvent("doctoralia.imap.mailbox_close", {
+      path: mailbox.path,
+    });
+  });
+
+  client.on("exists", (data) => {
+    logEvent("doctoralia.imap.exists", {
+      count: data.count,
+      path: data.path,
+      prevCount: data.prevCount,
+    });
+  });
+
   return client;
 }
 
@@ -326,14 +353,30 @@ async function connect(config: ImapConfig): Promise<void> {
     const lock = await client.getMailboxLock(config.mailbox);
 
     try {
-      await ingestMailbox(client, config);
+      const initialResult = await ingestMailbox(client, config);
+      logEvent("doctoralia.imap.ingest_complete", {
+        phase: "initial",
+        result: initialResult,
+      });
 
       // IDLE loop: idle() blocks until the server interrupts it (new mail or
       // ~30 min keepalive timeout). On interruption we check for new mail and
       // re-enter IDLE immediately.
       while (!stopped) {
-        await client.idle();
-        await ingestMailbox(client, config);
+        logEvent("doctoralia.imap.idle_wait", {
+          mailbox: config.mailbox,
+          maxIdleTimeMs: IMAP_MAX_IDLE_TIME_MS,
+        });
+        const idled = await client.idle();
+        logEvent("doctoralia.imap.idle_wakeup", {
+          idled,
+          mailbox: config.mailbox,
+        });
+        const loopResult = await ingestMailbox(client, config);
+        logEvent("doctoralia.imap.ingest_complete", {
+          phase: "idle_wakeup",
+          result: loopResult,
+        });
       }
     } finally {
       lock.release();
