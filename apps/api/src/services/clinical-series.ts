@@ -47,6 +47,7 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "cosulta",
   "control",
   "costo",
+  "covid",
   "cutaneo",
   "cylondon",
   "dactilon",
@@ -270,9 +271,11 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "evaluacion",
   "este",
   "hace",
+  "hizo",
   "hijo",
   "hija",
   "llego",
+  "llegop",
   "lleva",
   "llevara",
   "llevo",
@@ -283,6 +286,8 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "pero",
   "por",
   "porque",
+  "prox",
+  "proxima",
   "retiran",
   "humana",
   "sale",
@@ -296,6 +301,7 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "vendra",
   "ver",
   "viene",
+  "vino",
 ]);
 
 type ClinicalSeriesKind = "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT";
@@ -728,13 +734,18 @@ function normalizeName(value: string): string {
 function stripNonNamePhrases(text: string): string {
   return text
     .replace(
-      /(^|[\n,;]\s*)(?:(?:envio\s+de|toca|ultima|licencia|aca|incluir\s+huevos|ovo\s+y\s+nativos|quiere\s+de\s+standard|(?:lec|lectura)\s+de(?:\s+de)?|contesto|quiso\s+realizar(?:\s+confirmado)?|confirm(?:ado|ada|o|a|s|ara|aq)?|feb|mayo)(?:\s+(?:de|y))?\s+)/gi,
+      /(^|[\n,;]\s*)(?:(?:envio\s+de|toca|ultima|licencia|aca|incluir\s+huevos|ovo\s+y\s+nativos|quiere\s+de\s+standard|(?:lec|lectura)\s+de(?:\s+de)?|contesto|quiso\s+realizar(?:\s+confirmado)?|confirm(?:ado|ada|o|a|s|ara|aq)?|(?:no\s+)?vino(?:\s+confirma(?:do|da|o|a|s|ra)?)?|llego(?:p)?(?:\s+confirma(?:do|da|o|a|s|ra)?)?|se\s+llev(?:a|o)\s+vacuna\s+de\s+(?:enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)|feb|mayo)(?:\s+(?:de|y))?\s+)/gi,
+      "$1",
+    )
+    .replace(
+      /(^|[\n,;]\s*)(?:(?:prox|covid|(?:se\s+)?envi(?:a|ada|ado|ar))(?:\s+(?:de|y|vacuna|vacunas|dia|d[ií]a|lunes|martes|miercoles|miércoles|jueves|viernes|sabado|sábado|domingo|enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre))*\s+)/gi,
       "$1",
     )
     .replace(
       /,\s*[^,;()]{3,80}\(\s*(?:pap[aá]|mam[aá]|tutor(?:a)?)\s*\)(?=(?:\s*,|\s*\(|$))/gi,
       " ",
     )
+    .replace(/\(\s*(?:pap[aá]|mam[aá]|tutor(?:a)?)\s+[^)]*\)/gi, " ")
     .replace(
       /,\s*(?:pap[aá]|mam[aá]|tutor(?:a)?)\s+[^,;()]{3,80}(?=(?:\s*,|\s*\(|$))/gi,
       " ",
@@ -742,7 +753,13 @@ function stripNonNamePhrases(text: string): string {
     .replace(/\bsan\s+carlos\b/gi, " ")
     .replace(/\bsan\s+pedro\s+de\s+la\s+paz\b/gi, " ")
     .replace(/\bde\s+la\s+paz\b/gi, " ")
-    .replace(/\bsan\s+pedro\b/gi, " ");
+    .replace(/\bsan\s+pedro\b/gi, " ")
+    .replace(/\bhu[eé]pil\b/gi, " ")
+    .replace(/\bmulchen\b/gi, " ")
+    .replace(/\bcurico\b/gi, " ")
+    .replace(/\barauco\b/gi, " ")
+    .replace(/\branquil\b/gi, " ")
+    .replace(/\brespiratori[ao]s?\b/gi, " ");
 }
 
 /**
