@@ -4,6 +4,7 @@
  */
 
 const S_WHATSAPP_NET = "@s.whatsapp.net";
+const USER_JID_RE = /^\d{8,15}@s\.whatsapp\.net$/;
 
 /**
  * Normalize a Chilean phone number to E.164 format.
@@ -40,6 +41,10 @@ export function phoneToJid(phone: string): string {
   const normalized = normalizePhone(phone);
   const digits = normalized.replace(/^\+/, "");
   return `${digits}${S_WHATSAPP_NET}`;
+}
+
+export function isWhatsappUserJid(jid: string): boolean {
+  return USER_JID_RE.test(jid);
 }
 
 /**

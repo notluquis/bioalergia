@@ -24,7 +24,7 @@ import {
   recordInboundWhatsappCall,
   recordInboundWhatsappMessage,
 } from "./conversation-state";
-import { jidToPhone, phoneToJid } from "./jid";
+import { isWhatsappUserJid, jidToPhone, phoneToJid } from "./jid";
 
 // ---------------------------------------------------------------------------
 // Module state (singleton)
@@ -368,6 +368,7 @@ function registerEventHandlers(socket: WASocket, saveCredsFn: () => Promise<void
 
     for (const msg of messages) {
       if (!msg.key.remoteJid || msg.key.fromMe) continue;
+      if (!isWhatsappUserJid(msg.key.remoteJid)) continue;
 
       const phone = jidToPhone(msg.key.remoteJid);
       const textBody =
@@ -444,6 +445,7 @@ function registerEventHandlers(socket: WASocket, saveCredsFn: () => Promise<void
   socket.ev.on("call", async (calls) => {
     for (const call of calls) {
       if (call.status !== "offer" || !call.from) continue;
+      if (!isWhatsappUserJid(call.from)) continue;
 
       const phone = jidToPhone(call.from);
       try {

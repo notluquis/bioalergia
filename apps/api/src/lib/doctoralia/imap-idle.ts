@@ -22,15 +22,18 @@
 
 import { db } from "@finanzas/db";
 import { createId } from "@paralleldrive/cuid2";
+import dayjs from "dayjs";
 import { ImapFlow } from "imapflow";
 import { logError, logEvent, logWarn } from "../logger";
 import { resolveDoctoraliaSenderSearchTerms } from "./imap-search";
+import { sendText } from "../whatsapp/baileys-socket";
 import {
   decodeEmailBody,
   htmlToText,
   isLikelyDoctoraliaEmail,
   parseDoctoraliaEmail,
 } from "../whatsapp/email-parser";
+import { normalizePhone, phoneToJid } from "../whatsapp/jid";
 
 interface ImapConfig {
   host: string;
@@ -75,6 +78,157 @@ interface ProcessMessagesOptions {
   checked: number;
   matchedSenderTermsByUid?: Map<number, Set<string>>;
   uidValidity: bigint | null;
+}
+
+function buildDoctoraliaMessage(booking: NonNullable<ReturnType<typeof parseDoctoraliaEmail>>) {
+  const template = process.env.WHATSAPP_FREEFORM_MESSAGE?.trim();
+  const appointmentDate = booking.appointmentDate
+    ? dayjs(booking.appointmentDate).format("DD/MM/YYYY HH:mm")
+    : "";
+  const replacements: Record<string, string> = {
+    appointmentDate,
+    appointmentDoctor: booking.appointmentDoctor ?? "",
+    appointmentService: booking.appointmentService ?? "",
+    clinicAddress: booking.clinicAddress ?? "",
+    patientName: booking.patientName,
+  };
+
+  if (template) {
+    return template.replace(/\{\{\s*(\w+)\s*\}\}/g, (_match, key: string) => replacements[key] ?? "");
+  }
+
+  const details = [
+    booking.appointmentService ? `Servicio: ${booking.appointmentService}` : null,
+    booking.appointmentDoctor ? `Profesional: ${booking.appointmentDoctor}` : null,
+    appointmentDate ? `Fecha: ${appointmentDate}` : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  return [
+    `Hola ${booking.patientName}, te escribimos de Bioalergia.`,
+    "Vimos tu reserva en Doctoralia.",
+    details,
+    "Si necesitas ajustar o confirmar algo, responde este mensaje.",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+async function logWhatsappNotification(args: {
+  booking: NonNullable<ReturnType<typeof parseDoctoraliaEmail>>;
+  errorMessage?: null | string;
+  messageId: string;
+  status: "FAILED" | "SENT";
+  waMessageId?: null | string;
+}) {
+  const now = new Date().toISOString();
+
+  try {
+    await db.$qb
+      .insertInto("WhatsappNotification")
+      .values({
+        appointmentDate: args.booking.appointmentDate?.toISOString() ?? null,
+        appointmentDoctor: args.booking.appointmentDoctor ?? null,
+        appointmentService: args.booking.appointmentService ?? null,
+        createdAt: now,
+        emailMessageId: args.messageId,
+        errorMessage: args.errorMessage ?? null,
+        id: createId(),
+        messagePacingStatus: null,
+        patientEmail: args.booking.patientEmail ?? null,
+        patientName: args.booking.patientName,
+        patientPhone: args.booking.patientPhone ?? "",
+        recipientWaId: args.booking.patientPhone ? phoneToJid(args.booking.patientPhone) : null,
+        sentAt: args.status === "SENT" ? now : null,
+        status: args.status,
+        updatedAt: now,
+        waMessageId: args.waMessageId ?? null,
+      })
+      .execute();
+  } catch (dbErr) {
+    logError("whatsapp.db.insert_error", dbErr, {
+      emailMessageId: args.messageId,
+      patientName: args.booking.patientName,
+      status: args.status,
+    });
+  }
+}
+
+async function sendDoctoraliaWhatsapp(args: {
+  booking: NonNullable<ReturnType<typeof parseDoctoraliaEmail>>;
+  messageContext: {
+    matchedSenderTerms: string[];
+    messageId: string;
+    subject: null | string;
+    uid: number;
+  };
+}) {
+  const appointmentDate = args.booking.appointmentDate;
+  const now = new Date();
+
+  if (args.booking.eventType === "CANCELLATION") {
+    logEvent("whatsapp.imap.skip_event_type", {
+      ...args.messageContext,
+      eventType: args.booking.eventType,
+      patientName: args.booking.patientName,
+    });
+    return;
+  }
+
+  if (!appointmentDate || appointmentDate.getTime() <= now.getTime()) {
+    logEvent("whatsapp.imap.skip_past_appointment", {
+      ...args.messageContext,
+      appointmentDate: appointmentDate?.toISOString() ?? null,
+      eventType: args.booking.eventType,
+      patientName: args.booking.patientName,
+    });
+    return;
+  }
+
+  if (!args.booking.patientPhone) {
+    logWarn("whatsapp.imap.no_phone", {
+      ...args.messageContext,
+      patientName: args.booking.patientName,
+    });
+    return;
+  }
+
+  const normalizedPhone = normalizePhone(args.booking.patientPhone);
+  const message = buildDoctoraliaMessage(args.booking);
+
+  try {
+    const sendResult = await sendText(normalizedPhone, message);
+
+    logEvent("whatsapp.message.sent", {
+      ...args.messageContext,
+      patientName: args.booking.patientName,
+      phone: normalizedPhone,
+      waMessageId: sendResult.messageId,
+    });
+
+    await logWhatsappNotification({
+      booking: args.booking,
+      messageId: args.messageContext.messageId,
+      status: "SENT",
+      waMessageId: sendResult.messageId,
+    });
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : String(err);
+
+    logError("whatsapp.message.failed", err, {
+      ...args.messageContext,
+      patientName: args.booking.patientName,
+      phone: normalizedPhone,
+    });
+
+    await logWhatsappNotification({
+      booking: args.booking,
+      errorMessage,
+      messageId: args.messageContext.messageId,
+      status: "FAILED",
+    });
+  }
 }
 
 async function getLastRecordedDoctoraliaEmailDate(): Promise<Date | null> {
@@ -337,6 +491,11 @@ async function processFetchedMessages(
         appointmentDate: booking.appointmentDate?.toISOString() ?? null,
         eventType: booking.eventType,
         patientName: booking.patientName,
+      });
+
+      await sendDoctoraliaWhatsapp({
+        booking,
+        messageContext,
       });
     } catch (dbErr) {
       result.failed++;
