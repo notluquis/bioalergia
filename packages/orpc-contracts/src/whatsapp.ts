@@ -94,17 +94,22 @@ export const whatsappOverviewSchema = z.object({
   connectionState: whatsappConnectionStateSchema,
   automaticFlowReady: z.boolean(),
   automaticNotificationsEnabled: z.boolean(),
+  isReady: z.boolean(),
   optInRequired: z.boolean(),
   optedInContacts: z.number().int().min(0),
   optedOutContacts: z.number().int().min(0),
+  sessionReplaced: z.boolean(),
   unknownConsentContacts: z.number().int().min(0),
 });
 
 export const whatsappConnectionStatusSchema = z.object({
   connectionState: whatsappConnectionStateSchema,
   enabled: z.boolean(),
+  isReady: z.boolean(),
   lastDisconnectReason: z.number().nullable(),
   qrDataUrl: z.string().nullable(),
+  receivedPendingNotifications: z.boolean(),
+  sessionReplaced: z.boolean(),
 });
 
 export const whatsappTestSendInputSchema = z.object({

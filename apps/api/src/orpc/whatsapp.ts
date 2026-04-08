@@ -186,9 +186,13 @@ const whatsappORPCRouterBase = {
     .output(whatsappOverviewSchema)
     .handler(async () => {
       const automaticNotificationsEnabled = process.env.ENABLE_WHATSAPP_NOTIFICATIONS === "true";
-      const { connectionState: connState } = getConnectionStatus();
-      const connected = connState === "open";
-      const automaticFlowReady = automaticNotificationsEnabled && connected;
+      const {
+        connectionState: connState,
+        isReady,
+        sessionReplaced,
+      } = getConnectionStatus();
+      const connected = connState === "open" && !sessionReplaced;
+      const automaticFlowReady = automaticNotificationsEnabled && isReady && !sessionReplaced;
 
       let consentSummary = { optedIn: 0, optedOut: 0, total: 0, unknown: 0 };
       try {
@@ -203,9 +207,11 @@ const whatsappORPCRouterBase = {
         automaticNotificationsEnabled,
         connected,
         connectionState: connState,
+        isReady,
         optInRequired: process.env.WHATSAPP_REQUIRE_OPT_IN !== "false",
         optedInContacts: consentSummary.optedIn,
         optedOutContacts: consentSummary.optedOut,
+        sessionReplaced,
         unknownConsentContacts: consentSummary.unknown,
       };
     }),

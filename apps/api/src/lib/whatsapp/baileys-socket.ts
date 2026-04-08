@@ -37,10 +37,15 @@ let lastDisconnectReason: number | null = null;
 let reconnectAttempts = 0;
 let authClearAttempts = 0;
 let saveCreds: (() => Promise<void>) | null = null;
+let receivedPendingNotifications = false;
+let sessionReplaced = false;
+let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+let manualDisconnect = false;
 
 const MAX_BACKOFF_MS = 60_000;
 const BASE_BACKOFF_MS = 2_000;
 const MAX_AUTH_CLEAR_ATTEMPTS = 3;
+const BAILEYS_CLIENT_NAME = "Bioalergia";
 
 // ---------------------------------------------------------------------------
 // Public API — lifecycle
@@ -58,8 +63,12 @@ export async function initBaileysSocket(): Promise<void> {
   }
 
   saveCreds = authState.saveCreds;
+  manualDisconnect = false;
+  clearReconnectTimer();
   connectionState = "connecting";
   currentQrDataUrl = null;
+  receivedPendingNotifications = false;
+  sessionReplaced = false;
 
   const { version } = await fetchLatestBaileysVersion();
   logEvent("baileys.version", { version });
@@ -69,7 +78,7 @@ export async function initBaileysSocket(): Promise<void> {
       creds: authState.state.creds,
       keys: makeCacheableSignalKeyStore(authState.state.keys, undefined),
     },
-    browser: Browsers.ubuntu("Chrome"),
+    browser: Browsers.appropriate(BAILEYS_CLIENT_NAME),
     markOnlineOnConnect: false,
     printQRInTerminal: process.env.NODE_ENV !== "production",
     version,
@@ -95,20 +104,27 @@ export function getSocket(): WASocket {
 export function getConnectionStatus() {
   return {
     connectionState,
+    isReady: connectionState === "open" && receivedPendingNotifications && !sessionReplaced,
     lastDisconnectReason,
     qrDataUrl: currentQrDataUrl,
+    receivedPendingNotifications,
+    sessionReplaced,
   };
 }
 
 export async function disconnectBaileys(): Promise<void> {
+  manualDisconnect = true;
+  clearReconnectTimer();
   if (sock) {
     sock.end(undefined);
     sock = null;
   }
   connectionState = "close";
   currentQrDataUrl = null;
+  receivedPendingNotifications = false;
   reconnectAttempts = 0;
   authClearAttempts = 0;
+  sessionReplaced = false;
 }
 
 // ---------------------------------------------------------------------------
@@ -125,7 +141,7 @@ export async function sendText(
   body: string,
   options?: { quotedMessage?: WAMessage },
 ): Promise<SendResult> {
-  const s = getSocket();
+  const s = getReadySocket();
   const jid = phoneToJid(phone);
   const result = await s.sendMessage(
     jid,
@@ -140,7 +156,7 @@ export async function sendMedia(
   mediaType: "audio" | "document" | "image" | "sticker" | "video",
   payload: { caption?: string; filename?: string; url?: string },
 ): Promise<SendResult> {
-  const s = getSocket();
+  const s = getReadySocket();
   const jid = phoneToJid(phone);
 
   const mediaSource = payload.url ? { url: payload.url } : undefined;
@@ -183,7 +199,7 @@ export async function sendReaction(
   targetMessageId: string,
   emoji: string,
 ): Promise<SendResult> {
-  const s = getSocket();
+  const s = getReadySocket();
   const jid = phoneToJid(phone);
   const key: WAMessageKey = {
     id: targetMessageId,
@@ -194,12 +210,12 @@ export async function sendReaction(
 }
 
 export async function markAsRead(messageKeys: WAMessageKey[]): Promise<void> {
-  const s = getSocket();
+  const s = getReadySocket();
   await s.readMessages(messageKeys);
 }
 
 export async function sendTyping(phone: string): Promise<void> {
-  const s = getSocket();
+  const s = getReadySocket();
   const jid = phoneToJid(phone);
   await s.sendPresenceUpdate("composing", jid);
 }
@@ -210,7 +226,11 @@ export async function sendTyping(phone: string): Promise<void> {
 
 function registerEventHandlers(socket: WASocket, saveCredsFn: () => Promise<void>) {
   socket.ev.on("connection.update", async (update) => {
-    const { connection, lastDisconnect, qr } = update;
+    const { connection, lastDisconnect, qr, receivedPendingNotifications: pending } = update;
+
+    if (connection === "connecting") {
+      connectionState = "connecting";
+    }
 
     if (qr) {
       try {
@@ -227,12 +247,35 @@ function registerEventHandlers(socket: WASocket, saveCredsFn: () => Promise<void
       lastDisconnectReason = null;
       reconnectAttempts = 0;
       authClearAttempts = 0;
-      logEvent("baileys.connected", {});
+      sessionReplaced = false;
+      clearReconnectTimer();
+      logEvent("baileys.connected", {
+        browser: Browsers.appropriate(BAILEYS_CLIENT_NAME),
+      });
+
+      try {
+        await socket.sendPresenceUpdate("unavailable");
+      } catch (err) {
+        logError("baileys.presence_unavailable_error", err, {});
+      }
+    }
+
+    if (pending) {
+      receivedPendingNotifications = true;
+      logEvent("baileys.ready", {});
     }
 
     if (connection === "close") {
       connectionState = "close";
       currentQrDataUrl = null;
+      receivedPendingNotifications = false;
+
+      if (manualDisconnect) {
+        sock = null;
+        lastDisconnectReason = null;
+        logEvent("baileys.disconnected_manually", {});
+        return;
+      }
 
       const statusCode =
         (lastDisconnect?.error as Boom)?.output?.statusCode ?? 500;
@@ -241,30 +284,50 @@ function registerEventHandlers(socket: WASocket, saveCredsFn: () => Promise<void
       logWarn("baileys.disconnected", { reason: statusCode });
 
       // Auth/session failure → clear DB creds and reconnect for fresh QR
-      const isAuthFailure =
+      const shouldClearAuthState =
         statusCode === DisconnectReason.loggedOut ||
-        statusCode === DisconnectReason.multideviceMismatch;
+        statusCode === DisconnectReason.badSession;
 
-      if (isAuthFailure) {
+      if (shouldClearAuthState) {
         authClearAttempts++;
         if (authClearAttempts > MAX_AUTH_CLEAR_ATTEMPTS) {
           logWarn("baileys.auth_failure_max_retries", {
-            message: "Too many auth failures. Giving up — toggle connection off/on to retry.",
+            message: "Too many auth failures. Giving up until the connection is re-enabled.",
           });
           sock = null;
           return;
         }
         logWarn("baileys.auth_failure", {
           attempt: authClearAttempts,
-          message: "Session invalid. Clearing auth state for fresh QR scan.",
+          message: "Session invalid. Clearing auth state and waiting for manual restart.",
           reason: statusCode,
         });
         sock = null;
         await clearAuthState();
-        // Reconnect immediately to generate a new QR
-        initBaileysSocket().catch((err) =>
-          logError("baileys.reconnect_error", err, {}),
-        );
+        return;
+      }
+
+      if (statusCode === DisconnectReason.connectionReplaced) {
+        sessionReplaced = true;
+        sock = null;
+        clearReconnectTimer();
+        logWarn("baileys.session_replaced", {
+          message:
+            "WhatsApp session was replaced by another linked device. Automatic reconnect is paused.",
+        });
+        return;
+      }
+
+      if (
+        statusCode === DisconnectReason.multideviceMismatch ||
+        statusCode === DisconnectReason.forbidden
+      ) {
+        sock = null;
+        clearReconnectTimer();
+        logWarn("baileys.non_recoverable_disconnect", {
+          message: "WhatsApp connection stopped due to a non-recoverable disconnect reason.",
+          reason: statusCode,
+        });
         return;
       }
 
@@ -272,24 +335,29 @@ function registerEventHandlers(socket: WASocket, saveCredsFn: () => Promise<void
       // This is expected — reconnect immediately without backoff.
       if (statusCode === DisconnectReason.restartRequired) {
         logEvent("baileys.restart_required", {});
-        initBaileysSocket().catch((err) =>
-          logError("baileys.reconnect_error", err, {}),
-        );
+        scheduleReconnect(0);
         return;
       }
 
-      // Reconnect with exponential backoff for other disconnect reasons
+      const shouldReconnect =
+        statusCode === DisconnectReason.connectionClosed ||
+        statusCode === DisconnectReason.connectionLost ||
+        statusCode === DisconnectReason.timedOut ||
+        statusCode === DisconnectReason.unavailableService;
+
+      if (!shouldReconnect) {
+        sock = null;
+        clearReconnectTimer();
+        logWarn("baileys.reconnect_skipped", {
+          message: "Disconnect reason is not configured for automatic reconnect.",
+          reason: statusCode,
+        });
+        return;
+      }
+
       reconnectAttempts++;
-      const delay = Math.min(
-        BASE_BACKOFF_MS * 2 ** (reconnectAttempts - 1),
-        MAX_BACKOFF_MS,
-      );
-      logEvent("baileys.reconnecting", { attempt: reconnectAttempts, delayMs: delay });
-      setTimeout(() => {
-        initBaileysSocket().catch((err) =>
-          logError("baileys.reconnect_error", err, { attempt: reconnectAttempts }),
-        );
-      }, delay);
+      const delay = Math.min(BASE_BACKOFF_MS * 2 ** (reconnectAttempts - 1), MAX_BACKOFF_MS);
+      scheduleReconnect(delay);
     }
   });
 
@@ -394,4 +462,35 @@ function registerEventHandlers(socket: WASocket, saveCredsFn: () => Promise<void
       }
     }
   });
+}
+
+function clearReconnectTimer() {
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+  }
+}
+
+function scheduleReconnect(delayMs: number) {
+  clearReconnectTimer();
+  logEvent("baileys.reconnecting", { attempt: reconnectAttempts, delayMs });
+  reconnectTimer = setTimeout(() => {
+    reconnectTimer = null;
+    initBaileysSocket().catch((err) =>
+      logError("baileys.reconnect_error", err, { attempt: reconnectAttempts }),
+    );
+  }, delayMs);
+}
+
+function getReadySocket(): WASocket {
+  const status = getConnectionStatus();
+  if (status.sessionReplaced) {
+    throw new Error("WhatsApp session was replaced by another device. Re-enable the connection.");
+  }
+
+  if (!status.isReady) {
+    throw new Error("WhatsApp socket is not ready yet. Wait for pending notifications to finish.");
+  }
+
+  return getSocket();
 }
