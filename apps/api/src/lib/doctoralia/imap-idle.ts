@@ -119,7 +119,6 @@ const RECONNECT_DELAY_MS = 10_000;
 const MAX_RECONNECT_DELAY_MS = 5 * 60_000;
 const IMAP_MAX_IDLE_TIME_MS = 4 * 60_000;
 const IMAP_SOCKET_TIMEOUT_MS = 10 * 60_000;
-const IMAP_HEARTBEAT_INGEST_MS = 60_000;
 
 let reconnectDelay = RECONNECT_DELAY_MS;
 let stopped = false;
@@ -387,8 +386,6 @@ async function connect(config: ImapConfig): Promise<void> {
     const lock = await client.getMailboxLock(config.mailbox);
     let ingestInFlight = false;
     let deferredReason: null | string = null;
-    let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
-
     const runIngest = async (reason: string) => {
       if (stopped) return;
 
@@ -425,14 +422,10 @@ async function connect(config: ImapConfig): Promise<void> {
     try {
       await runIngest("initial");
 
-      heartbeatTimer = setInterval(() => {
-        void runIngest("heartbeat");
-      }, IMAP_HEARTBEAT_INGEST_MS);
-
       // IDLE loop: idle() blocks until the server interrupts it (new mail,
       // keepalive, or transport-level wakeup). Real ingestion is driven by the
-      // `exists` event plus the heartbeat fallback, so a generic wakeup alone
-      // should not trigger a mailbox scan.
+      // `exists` event, so a generic wakeup alone should not trigger a
+      // mailbox scan.
       while (!stopped) {
         logEvent("doctoralia.imap.idle_wait", {
           mailbox: config.mailbox,
@@ -446,7 +439,6 @@ async function connect(config: ImapConfig): Promise<void> {
       }
     } finally {
       client.off("exists", existsHandler);
-      if (heartbeatTimer) clearInterval(heartbeatTimer);
       lock.release();
     }
   } catch (err) {
