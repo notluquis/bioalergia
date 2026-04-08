@@ -345,6 +345,14 @@ describe("extractPatientHints", () => {
       expect(patientName).toBe("paola andrea gonzalez gamboa");
     });
 
+    it("drops 'cancela hasta aviso' before the real patient name", () => {
+      const { patientName } = extractPatientHints(
+        "cancela hasta aviso mario lopez gonzalez",
+        null,
+      );
+      expect(patientName).toBe("mario lopez gonzalez");
+    });
+
     it("does not extract 'autorizado por doctor' as a person name", () => {
       // Real case: note "autorizado por doctor miriam" was matched as a
       // duplicate because isLikelyPersonName counted clinical words as tokens.

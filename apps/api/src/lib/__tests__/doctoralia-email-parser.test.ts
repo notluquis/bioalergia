@@ -54,19 +54,4 @@ describe("doctoralia email parser", () => {
     expect(parsed?.appointmentDate?.getMonth()).toBe(3);
     expect(parsed?.appointmentDate?.getDate()).toBe(9);
   });
-
-  it("strips operational prefixes from patient names", () => {
-    const parsed = parseDoctoraliaEmail(`
-      cancela hasta aviso Mario Lopez Gonzalez (+56912345678)
-      9 de abril de 2026
-      10:00
-      Primera Consulta Inmunólogo Alergólogo (40 min)
-      José Manuel Martínez Martínez
-      Bioalergia
-    `);
-
-    expect(parsed).not.toBeNull();
-    expect(parsed?.patientName).toBe("Mario Lopez Gonzalez");
-    expect(parsed?.patientPhone).toBe("+56912345678");
-  });
 });
