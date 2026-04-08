@@ -406,6 +406,8 @@ type ClinicalSeriesFilters = {
   abandonmentBucket?: "month_1" | "month_2" | "month_3" | "month_4_plus";
   beneficiaryRut?: string;
   healthInsurance?: HealthInsuranceType;
+  isapreOnlyUnidentified?: boolean;
+  isapreProvider?: string;
   kind?: ClinicalSeriesKind;
   lastVisitFrom?: string;
   lastVisitTo?: string;
@@ -455,6 +457,9 @@ type PreparedClinicalSeriesFilters = {
   effectiveKind: ClinicalSeriesKind | null;
   effectiveHealthInsurance: HealthInsuranceType | null;
   effectiveStatus: ClinicalSeriesFilters["status"] | null;
+  hasIsapreResolutionFilter: boolean;
+  isapreOnlyUnidentified: boolean;
+  isapreProvider: string | null;
   lastVisitFrom: null | string;
   lastVisitTo: null | string;
   nextVisitFrom: null | string;
@@ -526,8 +531,13 @@ function prepareClinicalSeriesFilters(filters?: ClinicalSeriesFilters): Prepared
           }
         )`
       : sql`TRUE`;
+  const isapreProvider = filters?.isapreProvider?.trim() || null;
+  const isapreOnlyUnidentified = filters?.isapreOnlyUnidentified === true;
+  const hasIsapreResolutionFilter = !!isapreProvider || isapreOnlyUnidentified;
   const effectiveKind = view === "abandonment" ? "SUBCUTANEOUS_TREATMENT" : (filters?.kind ?? null);
-  const effectiveHealthInsurance = filters?.healthInsurance ?? null;
+  const effectiveHealthInsurance = hasIsapreResolutionFilter
+    ? "ISAPRE"
+    : (filters?.healthInsurance ?? null);
   const effectiveStatus = view === "abandonment" ? null : (filters?.status ?? null);
   const daysSinceLastEventSql = sql<number | null>`CASE
     WHEN es.last_event_date IS NULL THEN NULL
@@ -565,6 +575,9 @@ function prepareClinicalSeriesFilters(filters?: ClinicalSeriesFilters): Prepared
     effectiveKind,
     effectiveHealthInsurance,
     effectiveStatus,
+    hasIsapreResolutionFilter,
+    isapreOnlyUnidentified,
+    isapreProvider,
     lastVisitFrom,
     lastVisitTo,
     nextVisitFrom,
@@ -1421,6 +1434,53 @@ export function inferHealthInsurance(
       : rankedProviders[0]![0];
 
   return { healthInsurance, isapreName };
+}
+
+async function getSeriesInsuranceResolutionsByIds(seriesIds: number[]) {
+  if (seriesIds.length === 0) {
+    return new Map<number, InsuranceResolution>();
+  }
+
+  const matchedSeries = await db.clinicalSeries.findMany({
+    select: {
+      events: {
+        orderBy: [{ startDate: "desc" }, { startDateTime: "desc" }, { id: "desc" }],
+        select: {
+          description: true,
+          id: true,
+          startDate: true,
+          startDateTime: true,
+          summary: true,
+        },
+      },
+      id: true,
+    },
+    where: { id: { in: seriesIds } },
+  });
+
+  const inferredById = new Map<number, InsuranceResolution>();
+  for (const series of matchedSeries) {
+    inferredById.set(series.id, inferHealthInsurance(series.events));
+  }
+
+  return inferredById;
+}
+
+function matchesIsapreResolutionFilter(params: {
+  hasIsapreResolutionFilter: boolean;
+  isapreOnlyUnidentified: boolean;
+  isapreProvider: string | null;
+  resolution: InsuranceResolution;
+}) {
+  if (!params.hasIsapreResolutionFilter) return true;
+  if (params.resolution.healthInsurance !== "ISAPRE") return false;
+  if (params.isapreOnlyUnidentified) {
+    return !params.resolution.isapreName;
+  }
+  if (params.isapreProvider) {
+    return params.resolution.isapreName === params.isapreProvider;
+  }
+  return true;
 }
 
 // Delivery modality — domicilio if any event was sent/picked up; otherwise presencial.
@@ -3071,6 +3131,9 @@ export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilter
     effectiveKind,
     effectiveHealthInsurance,
     effectiveStatus,
+    hasIsapreResolutionFilter,
+    isapreOnlyUnidentified,
+    isapreProvider,
     lastVisitFrom,
     lastVisitTo,
     nextVisitFrom,
@@ -3087,6 +3150,104 @@ export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilter
     today,
     view,
   } = prepareClinicalSeriesFilters(filters);
+
+  if (hasIsapreResolutionFilter) {
+    const allSeriesResult = await sql<{ id: number }>`
+      WITH event_stats AS (
+        SELECT
+          e.clinical_series_id AS series_id,
+          MAX(
+            CASE
+              WHEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
+              THEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date)
+              ELSE NULL
+            END
+          ) AS last_event_date,
+          MIN(
+            CASE
+              WHEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) > ${today}::date
+              THEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date)
+              ELSE NULL
+            END
+          ) AS next_event_date,
+          COUNT(*)::int AS total_events,
+          SUM(
+            CASE
+              WHEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) > ${today}::date
+              THEN 1
+              ELSE 0
+            END
+          )::int AS upcoming_events,
+          COALESCE(SUM(e.amount_expected), 0)::float AS total_expected,
+          COALESCE(
+            SUM(
+              CASE
+                WHEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
+                THEN e.amount_expected
+                ELSE 0
+              END
+            ),
+            0
+          )::float AS total_expected_due
+        FROM events e
+        WHERE e.clinical_series_id IS NOT NULL
+        GROUP BY e.clinical_series_id
+      ),
+      linked_totals AS (
+        SELECT
+          linked.series_id,
+          COALESCE(SUM(linked.total_amount), 0)::float AS total_linked_amount
+        FROM (
+          SELECT DISTINCT ON (e.clinical_series_id, s.id)
+            e.clinical_series_id AS series_id,
+            COALESCE(s.total_amount, 0) AS total_amount
+          FROM event_dte_sale_links l
+          JOIN events e ON e.id = l.event_id
+          JOIN dte_sale_details s ON s.id = l.dte_sale_detail_id
+          WHERE e.clinical_series_id IS NOT NULL
+          ORDER BY e.clinical_series_id, s.id, l.updated_at DESC
+        ) AS linked
+        GROUP BY linked.series_id
+      )
+      SELECT cs.id
+      FROM clinical_series cs
+      LEFT JOIN event_stats es ON es.series_id = cs.id
+      LEFT JOIN linked_totals lt ON lt.series_id = cs.id
+      WHERE (${normalizedBeneficiaryRut}::text IS NULL OR cs.beneficiary_rut = ${normalizedBeneficiaryRut})
+        AND (${effectiveKind}::text IS NULL OR cs.kind::text = ${effectiveKind})
+        AND (${effectiveStatus}::text IS NULL OR cs.status::text = ${effectiveStatus})
+        AND (${effectiveHealthInsurance}::text IS NULL OR cs.health_insurance::text = ${effectiveHealthInsurance})
+        AND (${normalizedPatientName}::text IS NULL OR lower(coalesce(cs.patient_name, '')) LIKE ${normalizedPatientName})
+        AND (${normalizedPatientRut}::text IS NULL OR cs.patient_rut = ${normalizedPatientRut})
+        AND (${normalizedPatientPhone}::text IS NULL OR ${phoneFilterSql(normalizedPatientPhone)})
+        AND (${lastVisitFrom}::date IS NULL OR es.last_event_date >= ${lastVisitFrom}::date)
+        AND (${lastVisitTo}::date IS NULL OR es.last_event_date <= ${lastVisitTo}::date)
+        AND (${nextVisitFrom}::date IS NULL OR es.next_event_date >= ${nextVisitFrom}::date)
+        AND (${nextVisitTo}::date IS NULL OR es.next_event_date <= ${nextVisitTo}::date)
+        AND ${queryFilterSql}
+        AND ${abandonmentFilterSql}
+      ORDER BY ${orderBy}
+    `.execute(kysely);
+
+    const orderedIds = allSeriesResult.rows.map((row) => row.id);
+    const inferredById = await getSeriesInsuranceResolutionsByIds(orderedIds);
+    const filteredIds = orderedIds.filter((id) =>
+      matchesIsapreResolutionFilter({
+        hasIsapreResolutionFilter,
+        isapreOnlyUnidentified,
+        isapreProvider,
+        resolution: inferredById.get(id) ?? { healthInsurance: null, isapreName: null },
+      }),
+    );
+
+    const total = filteredIds.length;
+    const pagedIds = filteredIds.slice((page - 1) * pageSize, page * pageSize);
+    const items = (
+      await Promise.all(pagedIds.map((id) => getClinicalSeriesSnapshotById(id)))
+    ).filter((item): item is ClinicalSeriesSnapshot => item != null);
+
+    return { items, page, pageSize, total };
+  }
 
   // Count total matching records (without pagination)
   const total = Number(
@@ -3228,6 +3389,9 @@ export async function getClinicalSeriesInsuranceStats(
     effectiveKind,
     effectiveHealthInsurance,
     effectiveStatus,
+    hasIsapreResolutionFilter,
+    isapreOnlyUnidentified,
+    isapreProvider,
     lastVisitFrom,
     lastVisitTo,
     nextVisitFrom,
@@ -3291,30 +3455,8 @@ export async function getClinicalSeriesInsuranceStats(
       AND ${abandonmentFilterSql}
   `.execute(kysely);
 
-  const inferredById = new Map<number, InsuranceResolution>();
   const matchingIds = matchingSeries.rows.map((row) => row.id);
-  if (matchingIds.length > 0) {
-    const matchedSeries = await db.clinicalSeries.findMany({
-      select: {
-        events: {
-          orderBy: [{ startDate: "desc" }, { startDateTime: "desc" }, { id: "desc" }],
-          select: {
-            description: true,
-            id: true,
-            startDate: true,
-            startDateTime: true,
-            summary: true,
-          },
-        },
-        id: true,
-      },
-      where: { id: { in: matchingIds } },
-    });
-
-    for (const series of matchedSeries) {
-      inferredById.set(series.id, inferHealthInsurance(series.events));
-    }
-  }
+  const inferredById = await getSeriesInsuranceResolutionsByIds(matchingIds);
 
   const isapreProviders = new Map<string, number>();
   let fonasa = 0;
@@ -3323,7 +3465,19 @@ export async function getClinicalSeriesInsuranceStats(
   let particular = 0;
   let unidentified = 0;
 
-  for (const row of matchingSeries.rows) {
+  const filteredRows = matchingSeries.rows.filter((row) =>
+    matchesIsapreResolutionFilter({
+      hasIsapreResolutionFilter,
+      isapreOnlyUnidentified,
+      isapreProvider,
+      resolution: inferredById.get(row.id) ?? {
+        healthInsurance: null,
+        isapreName: null,
+      },
+    }),
+  );
+
+  for (const row of filteredRows) {
     const storedHealthInsurance = row.healthInsurance ?? null;
     const inferredInsurance = inferredById.get(row.id) ?? {
       healthInsurance: null,
@@ -3356,7 +3510,7 @@ export async function getClinicalSeriesInsuranceStats(
       .sort((a, b) => b.total - a.total || a.providerName.localeCompare(b.providerName, "es")),
     isapreUnidentified,
     particular,
-    total: matchingSeries.rows.length,
+    total: filteredRows.length,
     unidentified,
   };
 }

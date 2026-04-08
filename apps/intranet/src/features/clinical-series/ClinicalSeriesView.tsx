@@ -830,6 +830,8 @@ export function ClinicalSeriesView() {
   const [healthInsurance, setHealthInsurance] = useState<HealthInsuranceType | undefined>(
     undefined
   );
+  const [isapreOnlyUnidentified, setIsapreOnlyUnidentified] = useState(false);
+  const [isapreProvider, setIsapreProvider] = useState<string | undefined>(undefined);
   const [status, setStatus] = useState<ClinicalSeriesStatus | undefined>(undefined);
   const [lastVisitFrom, setLastVisitFrom] = useState<string | undefined>(undefined);
   const [lastVisitTo, setLastVisitTo] = useState<string | undefined>(undefined);
@@ -871,6 +873,9 @@ export function ClinicalSeriesView() {
     debouncedPhone,
     debouncedQuery,
     debouncedRut,
+    healthInsurance,
+    isapreOnlyUnidentified,
+    isapreProvider,
     kind,
     lastVisitFrom,
     lastVisitTo,
@@ -894,6 +899,8 @@ export function ClinicalSeriesView() {
     ...(debouncedPhone && { patientPhone: debouncedPhone }),
     ...(debouncedRut && { patientRut: debouncedRut }),
     ...(healthInsurance && { healthInsurance }),
+    ...(isapreOnlyUnidentified && { isapreOnlyUnidentified: true }),
+    ...(isapreProvider && { isapreProvider }),
     ...(isSeriesLikeTab && kind && { kind }),
     ...(nextVisitFrom && { nextVisitFrom }),
     ...(nextVisitTo && { nextVisitTo }),
@@ -910,6 +917,8 @@ export function ClinicalSeriesView() {
   const insuranceStatsFilters: ClinicalSeriesFilters = {
     abandonmentBucket: undefined,
     ...(healthInsurance && { healthInsurance }),
+    ...(isapreOnlyUnidentified && { isapreOnlyUnidentified: true }),
+    ...(isapreProvider && { isapreProvider }),
     ...(kind && { kind }),
     ...(lastVisitFrom && { lastVisitFrom }),
     ...(lastVisitTo && { lastVisitTo }),
@@ -941,6 +950,9 @@ export function ClinicalSeriesView() {
     currentPage: page,
     totalPages,
   });
+  const isapreProviderOptions = insuranceStats?.isapreProviders ?? [];
+  const showIsapreSpecificFilters =
+    healthInsurance === "ISAPRE" || isapreOnlyUnidentified || !!isapreProvider;
 
   const handleRowSelect = (keys: Selection) => {
     if (keys === "all") return;
@@ -961,7 +973,29 @@ export function ClinicalSeriesView() {
   };
 
   const handleHealthInsuranceChange = (value: Key | null) => {
-    setHealthInsurance(value ? (value as HealthInsuranceType) : undefined);
+    const nextValue = value ? (value as HealthInsuranceType) : undefined;
+    setHealthInsurance(nextValue);
+    if (nextValue !== "ISAPRE") {
+      setIsapreOnlyUnidentified(false);
+      setIsapreProvider(undefined);
+    }
+  };
+
+  const handleIsapreProviderChange = (value: Key | null) => {
+    const nextValue = value ? String(value) : undefined;
+    setIsapreProvider(nextValue);
+    if (nextValue) {
+      setHealthInsurance("ISAPRE");
+      setIsapreOnlyUnidentified(false);
+    }
+  };
+
+  const handleIsapreOnlyUnidentifiedChange = (checked: boolean) => {
+    setIsapreOnlyUnidentified(checked);
+    if (checked) {
+      setHealthInsurance("ISAPRE");
+      setIsapreProvider(undefined);
+    }
   };
 
   const handleStatusChange = (value: Key | null) => {
@@ -969,9 +1003,17 @@ export function ClinicalSeriesView() {
   };
 
   const hasFilters = isInsuranceTab
-    ? !!healthInsurance || !!kind || !!status || !!lastVisitFrom || !!lastVisitTo
+    ? !!healthInsurance ||
+      !!isapreOnlyUnidentified ||
+      !!isapreProvider ||
+      !!kind ||
+      !!status ||
+      !!lastVisitFrom ||
+      !!lastVisitTo
     : (isAbandonmentTab && !!abandonmentBucket) ||
       !!healthInsurance ||
+      !!isapreOnlyUnidentified ||
+      !!isapreProvider ||
       !!debouncedBeneficiaryRut ||
       !!debouncedPhone ||
       !!debouncedQuery ||
@@ -983,6 +1025,8 @@ export function ClinicalSeriesView() {
 
   const clearFilters = () => {
     setHealthInsurance(undefined);
+    setIsapreOnlyUnidentified(false);
+    setIsapreProvider(undefined);
     setKind(undefined);
     setStatus(undefined);
     if (isInsuranceTab) {
@@ -1144,7 +1188,13 @@ export function ClinicalSeriesView() {
       <Surface className="rounded-xl p-4">
         <div className="flex flex-col gap-4">
           {isInsuranceTab ? (
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[12rem_12rem_12rem_minmax(18rem,1.25fr)_auto]">
+            <div
+              className={
+                showIsapreSpecificFilters
+                  ? "grid gap-3 md:grid-cols-2 xl:grid-cols-[12rem_12rem_12rem_14rem_14rem_minmax(18rem,1.25fr)_auto]"
+                  : "grid gap-3 md:grid-cols-2 xl:grid-cols-[12rem_12rem_12rem_minmax(18rem,1.25fr)_auto]"
+              }
+            >
               <>
                 <div className="flex flex-col gap-1">
                   <Select
@@ -1220,6 +1270,50 @@ export function ClinicalSeriesView() {
                     </Select.Popover>
                   </Select>
                 </div>
+
+                {showIsapreSpecificFilters && (
+                  <>
+                    <div className="flex flex-col gap-1">
+                      <Select
+                        isDisabled={isapreOnlyUnidentified || isapreProviderOptions.length === 0}
+                        onChange={handleIsapreProviderChange}
+                        value={(isapreProvider as Key) ?? null}
+                        placeholder="Todas"
+                        variant="secondary"
+                      >
+                        <Label>Isapre</Label>
+                        <Select.Trigger>
+                          <Select.Value />
+                          <Select.Indicator />
+                        </Select.Trigger>
+                        <Select.Popover>
+                          <ListBox>
+                            {isapreProviderOptions.map((item) => (
+                              <ListBox.Item
+                                id={item.providerName}
+                                key={item.providerName}
+                                textValue={item.providerName}
+                              >
+                                {item.providerName}
+                                <ListBox.ItemIndicator />
+                              </ListBox.Item>
+                            ))}
+                          </ListBox>
+                        </Select.Popover>
+                      </Select>
+                    </div>
+
+                    <div className="flex items-end">
+                      <Checkbox
+                        isSelected={isapreOnlyUnidentified}
+                        onChange={handleIsapreOnlyUnidentifiedChange}
+                        variant="secondary"
+                      >
+                        Solo sin nombre identificado
+                      </Checkbox>
+                    </div>
+                  </>
+                )}
 
                 <DateRangePicker
                   aria-label="Rango de última visita"
@@ -1300,8 +1394,12 @@ export function ClinicalSeriesView() {
               <div
                 className={
                   isSeriesLikeTab
-                    ? "grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_12rem_12rem_12rem_minmax(18rem,1.25fr)_auto]"
-                    : "grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_12rem_auto]"
+                    ? showIsapreSpecificFilters
+                      ? "grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_12rem_14rem_14rem_12rem_12rem_12rem_minmax(18rem,1.25fr)_auto]"
+                      : "grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_12rem_12rem_12rem_minmax(18rem,1.25fr)_auto]"
+                    : showIsapreSpecificFilters
+                      ? "grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_12rem_14rem_14rem_auto]"
+                      : "grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_12rem_auto]"
                 }
               >
                 <TextField className="w-full" value={rutRaw} onChange={setRutRaw}>
@@ -1347,6 +1445,50 @@ export function ClinicalSeriesView() {
                     </Select.Popover>
                   </Select>
                 </div>
+
+                {showIsapreSpecificFilters && (
+                  <>
+                    <div className="flex flex-col gap-1">
+                      <Select
+                        isDisabled={isapreOnlyUnidentified || isapreProviderOptions.length === 0}
+                        onChange={handleIsapreProviderChange}
+                        value={(isapreProvider as Key) ?? null}
+                        placeholder="Todas"
+                        variant="secondary"
+                      >
+                        <Label>Isapre</Label>
+                        <Select.Trigger>
+                          <Select.Value />
+                          <Select.Indicator />
+                        </Select.Trigger>
+                        <Select.Popover>
+                          <ListBox>
+                            {isapreProviderOptions.map((item) => (
+                              <ListBox.Item
+                                id={item.providerName}
+                                key={item.providerName}
+                                textValue={item.providerName}
+                              >
+                                {item.providerName}
+                                <ListBox.ItemIndicator />
+                              </ListBox.Item>
+                            ))}
+                          </ListBox>
+                        </Select.Popover>
+                      </Select>
+                    </div>
+
+                    <div className="flex items-end">
+                      <Checkbox
+                        isSelected={isapreOnlyUnidentified}
+                        onChange={handleIsapreOnlyUnidentifiedChange}
+                        variant="secondary"
+                      >
+                        Solo sin nombre identificado
+                      </Checkbox>
+                    </div>
+                  </>
+                )}
 
                 {isSeriesLikeTab ? (
                   <>

@@ -110,6 +110,8 @@ export interface ClinicalSeriesFilters {
   abandonmentBucket?: ClinicalSeriesAbandonmentBucket;
   beneficiaryRut?: string;
   healthInsurance?: HealthInsuranceType;
+  isapreOnlyUnidentified?: boolean;
+  isapreProvider?: string;
   kind?: ClinicalSeriesKind;
   lastVisitFrom?: string;
   lastVisitTo?: string;
