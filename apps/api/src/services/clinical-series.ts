@@ -2204,6 +2204,17 @@ function choosePreferredIdentityName(current: null | string, incoming: null | st
   return incoming.length > current.length ? incoming : current;
 }
 
+export function shouldPromoteBeneficiaryToPatientIdentity(params: {
+  beneficiaryName: null | string;
+  dteClientNames?: string[];
+  patientName: null | string;
+}): boolean {
+  const { beneficiaryName, dteClientNames = [], patientName } = params;
+  if (!patientName) return true;
+  if (beneficiaryName && haveCompatiblePatientNames(patientName, beneficiaryName)) return true;
+  return dteClientNames.some((clientName) => haveCompatiblePatientNames(patientName, clientName));
+}
+
 export function selectRepresentativeClinicalIdentity(
   events: Array<{
     description: null | string;
@@ -2411,10 +2422,21 @@ async function refreshClinicalSeriesMetadata(seriesId: number) {
     if (dteByBeneficiaryRut.length > 0) {
       const upgradedBenef = upgradePatientNameFromDte(beneficiaryName, dteByBeneficiaryRut);
       if (upgradedBenef) beneficiaryName = upgradedBenef;
+      const shouldPromote = shouldPromoteBeneficiaryToPatientIdentity({
+        beneficiaryName,
+        dteClientNames: dteByBeneficiaryRut.map((record) => record.clientName),
+        patientName,
+      });
 
-      // Promote to patient since there is no patient identity yet
-      patientRut = beneficiaryRut;
-      patientName = beneficiaryName ?? dteByBeneficiaryRut[0]?.clientName ?? null;
+      // Only promote BOLETA identity to patient when it actually matches the patient.
+      if (shouldPromote) {
+        patientRut = beneficiaryRut;
+        patientName =
+          choosePreferredIdentityName(
+            patientName,
+            beneficiaryName ?? dteByBeneficiaryRut[0]?.clientName ?? null,
+          ) ?? dteByBeneficiaryRut[0]?.clientName ?? null;
+      }
     }
   }
 
