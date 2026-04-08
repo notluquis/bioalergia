@@ -9,6 +9,7 @@ import {
   Skeleton,
   Surface,
   Switch,
+  Table,
   Tabs,
   TextArea,
   TextField,
@@ -20,7 +21,6 @@ import { Fragment, type ReactNode, useEffect, useState } from "react";
 
 import { useToast } from "@/context/ToastContext";
 import { useSettings } from "@/context/SettingsContext";
-import { DataTable } from "@/components/data-table/DataTable";
 import {
   sendWhatsappTest,
   setWhatsappContactConsent,
@@ -28,7 +28,6 @@ import {
 } from "@/features/whatsapp/api";
 import { whatsappKeys } from "@/features/whatsapp/queries";
 import { PAGE_CONTAINER } from "@/lib/styles";
-import { whatsappNotificationColumns } from "./messaging-settings-shared";
 
 function renderWhatsappInlineFormatting(text: string): ReactNode[] {
   return text.split(/(\*[^*\n]+\*)/g).map((part, index) => {
@@ -70,6 +69,32 @@ function fillWhatsappTemplatePreview(text: string) {
       const key = doubleKey || singleKey;
       return WHATSAPP_TEMPLATE_PREVIEW_EXAMPLE[key] ?? _match;
     }
+  );
+}
+
+function renderWhatsappNotificationStatus(status: string) {
+  const colorMap: Record<string, React.ComponentProps<typeof Chip>["color"]> = {
+    DELIVERED: "accent",
+    FAILED: "danger",
+    PENDING: "warning",
+    PLAYED: "accent",
+    READ: "success",
+    SENT: "default",
+  };
+
+  const labelMap: Record<string, string> = {
+    DELIVERED: "Entregado",
+    FAILED: "Fallido",
+    PENDING: "Pendiente",
+    PLAYED: "Reproducido",
+    READ: "Leído",
+    SENT: "Enviado",
+  };
+
+  return (
+    <Chip color={colorMap[status] ?? "default"} size="sm" variant="soft">
+      {labelMap[status] ?? status}
+    </Chip>
   );
 }
 
@@ -419,18 +444,60 @@ export function WhatsappSettingsPage() {
                     </Description>
                   </Card.Header>
                   <Card.Content>
-                    <DataTable
-                      columns={whatsappNotificationColumns}
-                      data={notificationsData?.notifications ?? []}
-                      enableExport={false}
-                      enableGlobalFilter={false}
-                      enablePageSizeSelector={false}
-                      enablePagination={false}
-                      estimatedRowHeight={44}
-                      isLoading={notificationsPending}
-                      noDataMessage="Aun no hay mensajes registrados."
-                      scrollMaxHeight={360}
-                    />
+                    <Table variant="secondary">
+                      <Table.ScrollContainer className="max-h-[360px]">
+                        <Table.Content aria-label="Envios recientes de WhatsApp">
+                          <Table.Header>
+                            <Table.Column isRowHeader>Paciente</Table.Column>
+                            <Table.Column>Telefono</Table.Column>
+                            <Table.Column>Fecha cita</Table.Column>
+                            <Table.Column>Estado</Table.Column>
+                            <Table.Column>Enviado</Table.Column>
+                            <Table.Column>Registrado</Table.Column>
+                          </Table.Header>
+                          <Table.Body
+                            items={notificationsData?.notifications ?? []}
+                            renderEmptyState={() => (
+                              <div className="px-3 py-6 text-center text-default-500 text-sm">
+                                {notificationsPending
+                                  ? "Cargando envios..."
+                                  : "Aun no hay mensajes registrados."}
+                              </div>
+                            )}
+                          >
+                            {(notification) => (
+                              <Table.Row id={notification.id}>
+                                <Table.Cell>
+                                  <div className="min-w-0">
+                                    <div className="font-medium">{notification.patientName}</div>
+                                    <div className="truncate text-default-500 text-xs">
+                                      {notification.appointmentService ?? "Sin servicio"}
+                                    </div>
+                                  </div>
+                                </Table.Cell>
+                                <Table.Cell>{notification.patientPhone || "—"}</Table.Cell>
+                                <Table.Cell>
+                                  {notification.appointmentDate
+                                    ? dayjs(notification.appointmentDate).format("DD/MM/YYYY HH:mm")
+                                    : "—"}
+                                </Table.Cell>
+                                <Table.Cell>
+                                  {renderWhatsappNotificationStatus(notification.status)}
+                                </Table.Cell>
+                                <Table.Cell>
+                                  {notification.sentAt
+                                    ? dayjs(notification.sentAt).format("DD/MM HH:mm")
+                                    : "—"}
+                                </Table.Cell>
+                                <Table.Cell>
+                                  {dayjs(notification.createdAt).format("DD/MM HH:mm")}
+                                </Table.Cell>
+                              </Table.Row>
+                            )}
+                          </Table.Body>
+                        </Table.Content>
+                      </Table.ScrollContainer>
+                    </Table>
                   </Card.Content>
                 </Card>
               </div>
