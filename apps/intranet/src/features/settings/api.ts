@@ -55,6 +55,7 @@ const AppSettingsSchema = z.object({
   primaryCurrency: z.string(),
   secondaryColor: z.string(),
   supportEmail: z.string(),
+  whatsappFreeformMessage: z.string(),
   tagline: z.string(),
 });
 
@@ -85,7 +86,7 @@ export async function updateAppSettings(data: AppSettings) {
 export async function updateInternalSettings(data: object) {
   try {
     return StatusResponseSchema.parse(
-      await settingsORPCClient.updateInternal(data as { upsertChunkSize?: number }),
+      await settingsORPCClient.updateInternal(data as { upsertChunkSize?: number })
     );
   } catch (error) {
     throw toSettingsApiError(error);

@@ -25,6 +25,7 @@ export interface AppSettings {
   primaryCurrency: string;
   secondaryColor: string;
   supportEmail: string;
+  whatsappFreeformMessage: string;
   tagline: string;
 }
 
@@ -33,6 +34,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   orgAddress: "",
   orgName: APP_CONFIG.name,
   orgPhone: "",
+  whatsappFreeformMessage: "",
   ...APP_CONFIG.defaults,
 };
 
