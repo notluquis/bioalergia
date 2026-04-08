@@ -309,6 +309,10 @@ export function SettingsForm() {
       </div>
       <div className={GRID_2_COL_MD}>
         <GeneralSettingsFields form={form} onChange={handleChange} />
+        <WhatsappSettingsSection
+          value={form.whatsappFreeformMessage}
+          onChange={(value) => handleChange("whatsappFreeformMessage", value)}
+        />
         <LogoSection
           logoMode={logoMode}
           logoPreview={logoPreview}
@@ -402,6 +406,40 @@ function GeneralSettingsFields({
         </div>
       ))}
     </>
+  );
+}
+
+function WhatsappSettingsSection({
+  onChange,
+  value,
+}: {
+  onChange: (value: string) => void;
+  value: string;
+}) {
+  return (
+    <div className="col-span-full space-y-3 rounded-2xl border border-default-200 bg-default-50 p-4">
+      <div className="space-y-1">
+        <span className="font-semibold text-default-700 text-xs uppercase tracking-wide">
+          WhatsApp
+        </span>
+        <p className="text-default-600 text-sm">
+          Mensaje libre para reservas de Doctoralia. Si queda vacio, se usa el mensaje por defecto
+          del sistema. Variables disponibles: {"{{patientName}}"}, {"{{appointmentDate}}"},{" "}
+          {"{{appointmentDoctor}}"}, {"{{appointmentService}}"} y {"{{clinicAddress}}"}.
+        </p>
+      </div>
+      <label className="space-y-2">
+        <span className="font-semibold text-sm">Mensaje de confirmacion</span>
+        <textarea
+          className="min-h-72 w-full rounded-xl border border-default-200 bg-background px-3 py-3 text-sm outline-none transition focus:border-primary"
+          onChange={(event) => {
+            onChange(event.target.value);
+          }}
+          placeholder="Escribe el mensaje que se enviara por WhatsApp..."
+          value={value}
+        />
+      </label>
+    </div>
   );
 }
 
