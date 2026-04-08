@@ -71,6 +71,30 @@ export interface DoctoraliaImapIngestResult {
   skipped: number;
 }
 
+async function getLastRecordedDoctoraliaEmailDate(): Promise<Date | null> {
+  const latest = await db.$qb
+    .selectFrom("DoctoraliaEmailNotification")
+    .select(["createdAt"])
+    .orderBy("createdAt", "desc")
+    .executeTakeFirst();
+
+  if (!latest?.createdAt) return null;
+
+  const parsed = latest.createdAt instanceof Date ? latest.createdAt : new Date(latest.createdAt);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function buildMailboxSearchStart(lastRecordedAt: Date | null): Date | null {
+  if (!lastRecordedAt) return null;
+
+  // IMAP `SINCE` is day-granular and inclusive, so go one day back and rely on
+  // message-id deduplication to avoid missing messages around restarts/timezones.
+  const start = new Date(lastRecordedAt);
+  start.setDate(start.getDate() - 1);
+  start.setHours(0, 0, 0, 0);
+  return start;
+}
+
 function getImapConfig(): ImapConfig | null {
   const user = process.env.DOCTORALIA_IMAP_USER;
   const pass = process.env.DOCTORALIA_IMAP_PASS;
@@ -177,12 +201,16 @@ function createImapClient(config: ImapConfig): ImapFlow {
 }
 
 async function ingestMailbox(client: ImapFlow, config: ImapConfig): Promise<DoctoraliaImapIngestResult> {
+  const lastRecordedAt = await getLastRecordedDoctoraliaEmailDate();
+  const searchStart = buildMailboxSearchStart(lastRecordedAt);
   const senderTerms = resolveDoctoraliaSenderSearchTerms(config.senderFilter);
   const uidSet = new Set<number>();
   const matchedSenderTermsByUid = new Map<number, Set<string>>();
 
   for (const senderTerm of senderTerms) {
-    const matchingUids = await client.search({ from: senderTerm });
+    const matchingUids = await client.search(
+      searchStart ? { from: senderTerm, since: searchStart } : { from: senderTerm },
+    );
     for (const uid of matchingUids) {
       uidSet.add(uid);
       const matchedTerms = matchedSenderTermsByUid.get(uid) ?? new Set<string>();
@@ -201,7 +229,12 @@ async function ingestMailbox(client: ImapFlow, config: ImapConfig): Promise<Doct
   };
   if (!uids.length) return result;
 
-  logEvent("doctoralia.imap.found", { count: uids.length, senderTerms });
+  logEvent("doctoralia.imap.found", {
+    count: uids.length,
+    lastRecordedAt: lastRecordedAt?.toISOString() ?? null,
+    searchStart: searchStart?.toISOString() ?? null,
+    senderTerms,
+  });
 
   for await (const msg of client.fetch(uids, {
     // bodyParts gives us QP/base64-decoded bytes; bodyStructure gives charset
