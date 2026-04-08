@@ -286,11 +286,14 @@ export function WhatsappSettingsPage() {
                       <Label>Mensaje automatico</Label>
                       <TextArea
                         className="w-full"
-                        description="Usa formato de WhatsApp como *negrita* y saltos de linea. La vista previa de abajo simula el resultado."
                         placeholder="Escribe el mensaje que se enviara por WhatsApp..."
                         rows={14}
                         variant="secondary"
                       />
+                      <Description>
+                        Usa formato de WhatsApp como *negrita* y saltos de linea. La vista previa de
+                        abajo simula el resultado.
+                      </Description>
                     </TextField>
                     <Surface
                       className="space-y-3 rounded-2xl border border-default-200 p-4"
@@ -304,7 +307,7 @@ export function WhatsappSettingsPage() {
                         variant="secondary"
                       >
                         <div className="mb-2 text-default-500 text-[11px]">WhatsApp</div>
-                        <div className="space-y-1 whitespace-pre-wrap break-words text-foreground text-sm leading-6">
+                        <div className="space-y-1 whitespace-pre-wrap wrap-break-word text-foreground text-sm leading-6">
                           {renderWhatsappPreview(
                             messageTemplate.trim() ||
                               "Se usara el mensaje por defecto del sistema si este campo queda vacio."
