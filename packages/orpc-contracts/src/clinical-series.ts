@@ -95,6 +95,8 @@ export const clinicalSeriesListInputSchema = z.object({
   abandonmentBucket: clinicalSeriesAbandonmentBucketSchema.optional(),
   beneficiaryRut: z.string().optional(),
   kind: clinicalSeriesKindSchema.optional(),
+  lastVisitFrom: z.string().optional(),
+  lastVisitTo: z.string().optional(),
   nextVisitFrom: z.string().optional(),
   nextVisitTo: z.string().optional(),
   page: z.number().int().positive().default(1),

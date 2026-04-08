@@ -818,6 +818,8 @@ export function ClinicalSeriesView() {
   const [phoneRaw, setPhoneRaw] = useState("");
   const [kind, setKind] = useState<ClinicalSeriesKind | undefined>(undefined);
   const [status, setStatus] = useState<ClinicalSeriesStatus | undefined>(undefined);
+  const [lastVisitFrom, setLastVisitFrom] = useState<string | undefined>(undefined);
+  const [lastVisitTo, setLastVisitTo] = useState<string | undefined>(undefined);
   const [nextVisitFrom, setNextVisitFrom] = useState<string | undefined>(undefined);
   const [nextVisitTo, setNextVisitTo] = useState<string | undefined>(undefined);
 
@@ -857,6 +859,8 @@ export function ClinicalSeriesView() {
     debouncedQuery,
     debouncedRut,
     kind,
+    lastVisitFrom,
+    lastVisitTo,
     nextVisitFrom,
     nextVisitTo,
     pageSize,
@@ -891,13 +895,9 @@ export function ClinicalSeriesView() {
   const { data, isLoading, error } = useClinicalSeries(filters);
   const insuranceStatsFilters: ClinicalSeriesFilters = {
     abandonmentBucket: undefined,
-    ...(debouncedQuery && { query: debouncedQuery }),
-    ...(debouncedBeneficiaryRut && { beneficiaryRut: debouncedBeneficiaryRut }),
-    ...(debouncedPhone && { patientPhone: debouncedPhone }),
-    ...(debouncedRut && { patientRut: debouncedRut }),
     ...(kind && { kind }),
-    ...(nextVisitFrom && { nextVisitFrom }),
-    ...(nextVisitTo && { nextVisitTo }),
+    ...(lastVisitFrom && { lastVisitFrom }),
+    ...(lastVisitTo && { lastVisitTo }),
     ...(status && { status }),
     view: "series",
   };
@@ -949,26 +949,32 @@ export function ClinicalSeriesView() {
     setStatus(value ? (value as ClinicalSeriesStatus) : undefined);
   };
 
-  const hasFilters =
-    (isAbandonmentTab && !!abandonmentBucket) ||
-    !!debouncedBeneficiaryRut ||
-    !!debouncedPhone ||
-    !!debouncedQuery ||
-    !!debouncedRut ||
-    (isSeriesLikeTab && !!kind) ||
-    !!nextVisitFrom ||
-    !!nextVisitTo ||
-    (isSeriesLikeTab && !!status);
+  const hasFilters = isInsuranceTab
+    ? !!kind || !!status || !!lastVisitFrom || !!lastVisitTo
+    : (isAbandonmentTab && !!abandonmentBucket) ||
+      !!debouncedBeneficiaryRut ||
+      !!debouncedPhone ||
+      !!debouncedQuery ||
+      !!debouncedRut ||
+      (isSeriesLikeTab && !!kind) ||
+      !!nextVisitFrom ||
+      !!nextVisitTo ||
+      (isSeriesLikeTab && !!status);
 
   const clearFilters = () => {
+    setKind(undefined);
+    setStatus(undefined);
+    if (isInsuranceTab) {
+      setLastVisitFrom(undefined);
+      setLastVisitTo(undefined);
+      return;
+    }
     setQueryRaw("");
     setRutRaw("");
     setBeneficiaryRutRaw("");
     setPhoneRaw("");
-    setKind(undefined);
     setNextVisitFrom(undefined);
     setNextVisitTo(undefined);
-    setStatus(undefined);
     setAbandonmentBucket(undefined);
   };
 
@@ -1116,33 +1122,8 @@ export function ClinicalSeriesView() {
       {/* ── Filters ──────────────────────────────────────────────────────── */}
       <Surface className="rounded-xl p-4">
         <div className="flex flex-col gap-4">
-          <TextField className="w-full max-w-3xl" value={queryRaw} onChange={setQueryRaw}>
-            <Label>Búsqueda</Label>
-            <Input placeholder="Paciente, RUT paciente, RUT beneficiario o beneficiario..." />
-          </TextField>
-          <div
-            className={
-              isSeriesLikeTab
-                ? "grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_12rem_12rem_minmax(18rem,1.25fr)_auto]"
-                : "grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto]"
-            }
-          >
-            <TextField className="w-full" value={rutRaw} onChange={setRutRaw}>
-              <Label>RUT paciente</Label>
-              <Input placeholder="12345678-9" />
-            </TextField>
-
-            <TextField className="w-full" value={beneficiaryRutRaw} onChange={setBeneficiaryRutRaw}>
-              <Label>RUT beneficiario</Label>
-              <Input placeholder="12345678-9" />
-            </TextField>
-
-            <TextField className="w-full" value={phoneRaw} onChange={setPhoneRaw}>
-              <Label>Teléfono</Label>
-              <Input placeholder="+56912345678" />
-            </TextField>
-
-            {isSeriesLikeTab ? (
+          {isInsuranceTab ? (
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[12rem_12rem_minmax(18rem,1.25fr)_auto]">
               <>
                 <div className="flex flex-col gap-1">
                   <Select
@@ -1195,18 +1176,18 @@ export function ClinicalSeriesView() {
                 </div>
 
                 <DateRangePicker
-                  aria-label="Rango de próxima visita"
+                  aria-label="Rango de última visita"
                   onChange={(value) => {
-                    setNextVisitFrom(value?.start?.toString());
-                    setNextVisitTo(value?.end?.toString());
+                    setLastVisitFrom(value?.start?.toString());
+                    setLastVisitTo(value?.end?.toString());
                   }}
                   value={
-                    nextVisitFrom && nextVisitTo
-                      ? { end: parseDate(nextVisitTo), start: parseDate(nextVisitFrom) }
+                    lastVisitFrom && lastVisitTo
+                      ? { end: parseDate(lastVisitTo), start: parseDate(lastVisitFrom) }
                       : undefined
                   }
                 >
-                  <Label>Próxima visita</Label>
+                  <Label>Última visita</Label>
                   <DateField.Group fullWidth variant="secondary">
                     <DateField.InputContainer>
                       <DateField.Input slot="start">
@@ -1225,7 +1206,7 @@ export function ClinicalSeriesView() {
                   </DateField.Group>
                   <DateRangePicker.Popover>
                     <RangeCalendar
-                      aria-label="Rango de próxima visita"
+                      aria-label="Rango de última visita"
                       visibleDuration={{ months: 2 }}
                     >
                       <RangeCalendar.Header>
@@ -1253,18 +1234,174 @@ export function ClinicalSeriesView() {
                   </DateRangePicker.Popover>
                 </DateRangePicker>
               </>
-            ) : null}
 
-            <div className="flex items-end justify-end">
-              {hasFilters ? (
-                <Button onPress={clearFilters} size="sm" variant="ghost">
-                  Limpiar
-                </Button>
-              ) : (
-                <div />
-              )}
+              <div className="flex items-end justify-end">
+                {hasFilters ? (
+                  <Button onPress={clearFilters} size="sm" variant="ghost">
+                    Limpiar
+                  </Button>
+                ) : (
+                  <div />
+                )}
+              </div>
             </div>
-          </div>
+          ) : (
+            <>
+              <TextField className="w-full max-w-3xl" value={queryRaw} onChange={setQueryRaw}>
+                <Label>Búsqueda</Label>
+                <Input placeholder="Paciente, RUT paciente, RUT beneficiario o beneficiario..." />
+              </TextField>
+              <div
+                className={
+                  isSeriesLikeTab
+                    ? "grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_12rem_12rem_minmax(18rem,1.25fr)_auto]"
+                    : "grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto]"
+                }
+              >
+                <TextField className="w-full" value={rutRaw} onChange={setRutRaw}>
+                  <Label>RUT paciente</Label>
+                  <Input placeholder="12345678-9" />
+                </TextField>
+
+                <TextField
+                  className="w-full"
+                  value={beneficiaryRutRaw}
+                  onChange={setBeneficiaryRutRaw}
+                >
+                  <Label>RUT beneficiario</Label>
+                  <Input placeholder="12345678-9" />
+                </TextField>
+
+                <TextField className="w-full" value={phoneRaw} onChange={setPhoneRaw}>
+                  <Label>Teléfono</Label>
+                  <Input placeholder="+56912345678" />
+                </TextField>
+
+                {isSeriesLikeTab ? (
+                  <>
+                    <div className="flex flex-col gap-1">
+                      <Select
+                        onChange={handleKindChange}
+                        value={(kind as Key) ?? null}
+                        placeholder="Todos"
+                        variant="secondary"
+                      >
+                        <Label>Tipo</Label>
+                        <Select.Trigger>
+                          <Select.Value />
+                          <Select.Indicator />
+                        </Select.Trigger>
+                        <Select.Popover>
+                          <ListBox>
+                            {KIND_OPTIONS.map((item) => (
+                              <ListBox.Item id={item.value} key={item.value} textValue={item.label}>
+                                {item.label}
+                                <ListBox.ItemIndicator />
+                              </ListBox.Item>
+                            ))}
+                          </ListBox>
+                        </Select.Popover>
+                      </Select>
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <Select
+                        onChange={handleStatusChange}
+                        value={(status as Key) ?? null}
+                        placeholder="Todos"
+                        variant="secondary"
+                      >
+                        <Label>Estado</Label>
+                        <Select.Trigger>
+                          <Select.Value />
+                          <Select.Indicator />
+                        </Select.Trigger>
+                        <Select.Popover>
+                          <ListBox>
+                            {STATUS_OPTIONS.map((item) => (
+                              <ListBox.Item id={item.value} key={item.value} textValue={item.label}>
+                                {item.label}
+                                <ListBox.ItemIndicator />
+                              </ListBox.Item>
+                            ))}
+                          </ListBox>
+                        </Select.Popover>
+                      </Select>
+                    </div>
+
+                    <DateRangePicker
+                      aria-label="Rango de próxima visita"
+                      onChange={(value) => {
+                        setNextVisitFrom(value?.start?.toString());
+                        setNextVisitTo(value?.end?.toString());
+                      }}
+                      value={
+                        nextVisitFrom && nextVisitTo
+                          ? { end: parseDate(nextVisitTo), start: parseDate(nextVisitFrom) }
+                          : undefined
+                      }
+                    >
+                      <Label>Próxima visita</Label>
+                      <DateField.Group fullWidth variant="secondary">
+                        <DateField.InputContainer>
+                          <DateField.Input slot="start">
+                            {(segment) => <DateField.Segment segment={segment} />}
+                          </DateField.Input>
+                          <DateRangePicker.RangeSeparator />
+                          <DateField.Input slot="end">
+                            {(segment) => <DateField.Segment segment={segment} />}
+                          </DateField.Input>
+                        </DateField.InputContainer>
+                        <DateField.Suffix>
+                          <DateRangePicker.Trigger>
+                            <DateRangePicker.TriggerIndicator />
+                          </DateRangePicker.Trigger>
+                        </DateField.Suffix>
+                      </DateField.Group>
+                      <DateRangePicker.Popover>
+                        <RangeCalendar
+                          aria-label="Rango de próxima visita"
+                          visibleDuration={{ months: 2 }}
+                        >
+                          <RangeCalendar.Header>
+                            <RangeCalendar.YearPickerTrigger>
+                              <RangeCalendar.YearPickerTriggerHeading />
+                              <RangeCalendar.YearPickerTriggerIndicator />
+                            </RangeCalendar.YearPickerTrigger>
+                            <RangeCalendar.NavButton slot="previous" />
+                            <RangeCalendar.NavButton slot="next" />
+                          </RangeCalendar.Header>
+                          <RangeCalendar.Grid>
+                            <RangeCalendar.GridHeader>
+                              {(day) => <RangeCalendar.HeaderCell>{day}</RangeCalendar.HeaderCell>}
+                            </RangeCalendar.GridHeader>
+                            <RangeCalendar.GridBody>
+                              {(date) => <RangeCalendar.Cell date={date} />}
+                            </RangeCalendar.GridBody>
+                          </RangeCalendar.Grid>
+                          <RangeCalendar.YearPickerGrid>
+                            <RangeCalendar.YearPickerGridBody>
+                              {({ year }) => <RangeCalendar.YearPickerCell year={year} />}
+                            </RangeCalendar.YearPickerGridBody>
+                          </RangeCalendar.YearPickerGrid>
+                        </RangeCalendar>
+                      </DateRangePicker.Popover>
+                    </DateRangePicker>
+                  </>
+                ) : null}
+
+                <div className="flex items-end justify-end">
+                  {hasFilters ? (
+                    <Button onPress={clearFilters} size="sm" variant="ghost">
+                      Limpiar
+                    </Button>
+                  ) : (
+                    <div />
+                  )}
+                </div>
+              </div>
+            </>
+          )}
           {isAbandonmentTab ? (
             <>
               <Alert status="warning">

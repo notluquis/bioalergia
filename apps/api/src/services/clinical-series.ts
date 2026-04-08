@@ -406,6 +406,8 @@ type ClinicalSeriesFilters = {
   abandonmentBucket?: "month_1" | "month_2" | "month_3" | "month_4_plus";
   beneficiaryRut?: string;
   kind?: ClinicalSeriesKind;
+  lastVisitFrom?: string;
+  lastVisitTo?: string;
   nextVisitFrom?: string;
   nextVisitTo?: string;
   page?: number;
@@ -451,6 +453,8 @@ type PreparedClinicalSeriesFilters = {
   abandonmentFilterSql: ReturnType<typeof sql>;
   effectiveKind: ClinicalSeriesKind | null;
   effectiveStatus: ClinicalSeriesFilters["status"] | null;
+  lastVisitFrom: null | string;
+  lastVisitTo: null | string;
   nextVisitFrom: null | string;
   nextVisitTo: null | string;
   normalizedBeneficiaryRut: null | string;
@@ -475,6 +479,8 @@ function prepareClinicalSeriesFilters(filters?: ClinicalSeriesFilters): Prepared
   const normalizedPatientRut = filters?.patientRut ? normalizeRut(filters.patientRut) : null;
   const normalizedPatientName = filters?.patientName ? `%${normalizeName(filters.patientName)}%` : null;
   const normalizedPatientPhone = filters?.patientPhone ? `%${normalizePhoneSearch(filters.patientPhone)}%` : null;
+  const lastVisitFrom = filters?.lastVisitFrom ?? null;
+  const lastVisitTo = filters?.lastVisitTo ?? null;
   const nextVisitFrom = filters?.nextVisitFrom ?? null;
   const nextVisitTo = filters?.nextVisitTo ?? null;
   const normalizedQuery = filters?.query ? normalizeName(filters.query) : null;
@@ -555,6 +561,8 @@ function prepareClinicalSeriesFilters(filters?: ClinicalSeriesFilters): Prepared
     abandonmentFilterSql,
     effectiveKind,
     effectiveStatus,
+    lastVisitFrom,
+    lastVisitTo,
     nextVisitFrom,
     nextVisitTo,
     normalizedBeneficiaryRut,
@@ -3058,6 +3066,8 @@ export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilter
     abandonmentFilterSql,
     effectiveKind,
     effectiveStatus,
+    lastVisitFrom,
+    lastVisitTo,
     nextVisitFrom,
     nextVisitTo,
     normalizedBeneficiaryRut,
@@ -3107,6 +3117,8 @@ export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilter
           AND (${normalizedPatientRut}::text IS NULL OR cs.patient_rut = ${normalizedPatientRut})
           AND (${normalizedPatientName}::text IS NULL OR lower(coalesce(cs.patient_name, '')) LIKE ${normalizedPatientName})
           AND (${normalizedPatientPhone}::text IS NULL OR ${phoneFilterSql(normalizedPatientPhone)})
+          AND (${lastVisitFrom}::date IS NULL OR es.last_event_date >= ${lastVisitFrom}::date)
+          AND (${lastVisitTo}::date IS NULL OR es.last_event_date <= ${lastVisitTo}::date)
           AND (${nextVisitFrom}::date IS NULL OR es.next_event_date >= ${nextVisitFrom}::date)
           AND (${nextVisitTo}::date IS NULL OR es.next_event_date <= ${nextVisitTo}::date)
           AND ${queryFilterSql}
@@ -3182,6 +3194,8 @@ export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilter
       AND (${normalizedPatientName}::text IS NULL OR lower(coalesce(cs.patient_name, '')) LIKE ${normalizedPatientName})
       AND (${normalizedPatientRut}::text IS NULL OR cs.patient_rut = ${normalizedPatientRut})
       AND (${normalizedPatientPhone}::text IS NULL OR ${phoneFilterSql(normalizedPatientPhone)})
+      AND (${lastVisitFrom}::date IS NULL OR es.last_event_date >= ${lastVisitFrom}::date)
+      AND (${lastVisitTo}::date IS NULL OR es.last_event_date <= ${lastVisitTo}::date)
       AND (${nextVisitFrom}::date IS NULL OR es.next_event_date >= ${nextVisitFrom}::date)
       AND (${nextVisitTo}::date IS NULL OR es.next_event_date <= ${nextVisitTo}::date)
       AND ${queryFilterSql}
@@ -3207,6 +3221,8 @@ export async function getClinicalSeriesInsuranceStats(
     abandonmentFilterSql,
     effectiveKind,
     effectiveStatus,
+    lastVisitFrom,
+    lastVisitTo,
     nextVisitFrom,
     nextVisitTo,
     normalizedBeneficiaryRut,
@@ -3259,6 +3275,8 @@ export async function getClinicalSeriesInsuranceStats(
       AND (${normalizedPatientName}::text IS NULL OR lower(coalesce(cs.patient_name, '')) LIKE ${normalizedPatientName})
       AND (${normalizedPatientRut}::text IS NULL OR cs.patient_rut = ${normalizedPatientRut})
       AND (${normalizedPatientPhone}::text IS NULL OR ${phoneFilterSql(normalizedPatientPhone)})
+      AND (${lastVisitFrom}::date IS NULL OR es.last_event_date >= ${lastVisitFrom}::date)
+      AND (${lastVisitTo}::date IS NULL OR es.last_event_date <= ${lastVisitTo}::date)
       AND (${nextVisitFrom}::date IS NULL OR es.next_event_date >= ${nextVisitFrom}::date)
       AND (${nextVisitTo}::date IS NULL OR es.next_event_date <= ${nextVisitTo}::date)
       AND ${queryFilterSql}
