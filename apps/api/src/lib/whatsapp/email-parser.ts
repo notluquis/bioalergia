@@ -40,6 +40,20 @@ function cleanExtractedText(value: null | string | undefined): null | string {
   return cleaned.length > 0 ? cleaned : null;
 }
 
+function cleanPatientName(value: null | string | undefined): null | string {
+  const cleaned = cleanExtractedText(value);
+  if (!cleaned) return null;
+
+  const withoutLeadingOps = cleaned
+    .replace(/^\s*cancela\s+hasta\s+aviso\b[:\s-]*/i, "")
+    .replace(/^\s*nueva\s+cita:\s*/i, "")
+    .replace(/^\s*cancelaci[oó]n:\s*/i, "")
+    .replace(/\s+ha\s+reservado\s+desde\s+doctoralia\s*$/i, "")
+    .trim();
+
+  return withoutLeadingOps.length > 0 ? withoutLeadingOps : null;
+}
+
 function decodeQuotedPrintableBytes(input: string): Uint8Array {
   const normalized = input.replace(/=(\r?\n)/g, "");
   const bytes: number[] = [];
@@ -228,7 +242,7 @@ export function parseDoctoraliaEmail(text: string): DoctoraliaBookingInfo | null
           continue;
         }
 
-        patientName = cleanExtractedText(candidate);
+        patientName = cleanPatientName(candidate);
         const phoneMatch = /\+?\d[\d\s]{7,14}/.exec(inner);
         if (phoneMatch) patientPhone = normalizePhone(phoneMatch[0]);
         const emailMatch = /[\w.+-]+@[\w.-]+\.[a-zA-Z]{2,}/.exec(inner);
@@ -245,7 +259,7 @@ export function parseDoctoraliaEmail(text: string): DoctoraliaBookingInfo | null
       if (phoneMatch) {
         patientPhone = normalizePhone(phoneMatch[0]);
         const namePart = line.slice(0, phoneMatch.index).trim().replace(/[(),]/g, "").trim();
-        if (namePart.length > 2) patientName = cleanExtractedText(namePart);
+        if (namePart.length > 2) patientName = cleanPatientName(namePart);
         break;
       }
     }
@@ -377,7 +391,7 @@ export function parseDoctoraliaEmail(text: string): DoctoraliaBookingInfo | null
     clinicAddress: cleanExtractedText(clinicAddress),
     eventType,
     patientEmail,
-    patientName: cleanExtractedText(patientName) ?? patientName,
+    patientName: cleanPatientName(patientName) ?? patientName,
     patientPhone,
     previousAppointmentDate,
   };
