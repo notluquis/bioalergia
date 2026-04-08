@@ -34,6 +34,7 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "alimentario",
   "alimentos",
   "ambiente",
+  "ambientales",
   "ampolla",
   "antigenos",
   "antihistaminico",
@@ -727,7 +728,7 @@ function normalizeName(value: string): string {
 function stripNonNamePhrases(text: string): string {
   return text
     .replace(
-      /(^|[\n,;]\s*)(?:(?:envio\s+de|toca|ultima|licencia|aca|incluir\s+huevos|ovo\s+y\s+nativos|quiere\s+de\s+standard|(?:lec|lectura)\s+de|contesto|quiso\s+realizar(?:\s+confirmado)?|confirm(?:ado|ada|o|a|s|ara|aq)?|feb|mayo)\s+)/gi,
+      /(^|[\n,;]\s*)(?:(?:envio\s+de|toca|ultima|licencia|aca|incluir\s+huevos|ovo\s+y\s+nativos|quiere\s+de\s+standard|(?:lec|lectura)\s+de(?:\s+de)?|contesto|quiso\s+realizar(?:\s+confirmado)?|confirm(?:ado|ada|o|a|s|ara|aq)?|feb|mayo)(?:\s+(?:de|y))?\s+)/gi,
       "$1",
     )
     .replace(
