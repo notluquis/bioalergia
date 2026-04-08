@@ -1625,6 +1625,11 @@ model WhatsappMessage {
   readAt        DateTime?                @map("read_at")
   playedAt      DateTime?                @map("played_at")
   messageTimestamp DateTime?             @map("message_timestamp")
+  deletedForEveryone Boolean             @default(false) @map("deleted_for_everyone")
+  deletedForMe  Boolean                  @default(false) @map("deleted_for_me")
+  starred       Boolean                  @default(false)
+  hasMedia      Boolean                  @default(false) @map("has_media")
+  mediaMissing  Boolean                  @default(false) @map("media_missing")
   rawMessageJson Json?                   @map("raw_message_json")
   rawContentJson Json?                   @map("raw_content_json")
   createdAt     DateTime                 @default(now()) @map("created_at")
@@ -1652,6 +1657,11 @@ model WhatsappChat {
   muteEndTime    DateTime?  @map("mute_end_time")
   notSpam        Boolean?   @map("not_spam")
   lastMessageId  String?    @map("last_message_id")
+  lastMessagePreview String? @map("last_message_preview")
+  profilePictureUrl String?  @map("profile_picture_url")
+  ephemeralExpiration Int?   @map("ephemeral_expiration")
+  isBlocked      Boolean?    @default(false) @map("is_blocked")
+  isGroup        Boolean?    @default(false) @map("is_group")
   rawChatJson    Json?      @map("raw_chat_json")
   createdAt      DateTime   @default(now()) @map("created_at")
   updatedAt      DateTime   @default(now()) @updatedAt @map("updated_at")
@@ -1682,6 +1692,113 @@ model WhatsappContact {
   @@allow('create,update', auth().status == 'ACTIVE')
 
   @@map("whatsapp_contacts")
+}
+
+model WhatsappMessageReaction {
+  remoteJid   String   @map("remote_jid")
+  messageId   String   @map("message_id")
+  actorJid    String   @map("actor_jid")
+  emoji       String
+  removed     Boolean  @default(false)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([remoteJid, messageId, actorJid, emoji])
+  @@index([remoteJid, messageId, updatedAt(sort: Desc)])
+  @@deny('all', auth() == null)
+  @@allow('read', auth() != null)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("whatsapp_message_reactions")
+}
+
+model WhatsappMessageReceipt {
+  remoteJid      String   @map("remote_jid")
+  messageId      String   @map("message_id")
+  recipientJid   String   @map("recipient_jid")
+  receiptType    String   @map("receipt_type")
+  receiptAt      DateTime? @map("receipt_at")
+  readAt         DateTime? @map("read_at")
+  playedAt       DateTime? @map("played_at")
+  deliveredDevices Json?   @map("delivered_devices")
+  pendingDevices Json?     @map("pending_devices")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([remoteJid, messageId, recipientJid, receiptType])
+  @@index([remoteJid, messageId, updatedAt(sort: Desc)])
+  @@deny('all', auth() == null)
+  @@allow('read', auth() != null)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("whatsapp_message_receipts")
+}
+
+model WhatsappPresenceState {
+  chatJid          String   @map("chat_jid")
+  participantJid   String   @map("participant_jid")
+  lastKnownPresence String  @map("last_known_presence")
+  lastSeen         DateTime? @map("last_seen")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([chatJid, participantJid])
+  @@index([chatJid, updatedAt(sort: Desc)])
+  @@deny('all', auth() == null)
+  @@allow('read', auth() != null)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("whatsapp_presence_states")
+}
+
+model WhatsappGroup {
+  jid         String   @id
+  subject     String
+  owner       String?
+  desc        String?
+  creation    DateTime?
+  size        Int?
+  ephemeralDuration Int? @map("ephemeral_duration")
+  rawGroupJson Json?  @map("raw_group_json")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@index([updatedAt(sort: Desc)])
+  @@deny('all', auth() == null)
+  @@allow('read', auth() != null)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("whatsapp_groups")
+}
+
+model WhatsappGroupParticipant {
+  groupJid     String   @map("group_jid")
+  participantJid String @map("participant_jid")
+  admin        String?
+  isSuperAdmin Boolean? @map("is_super_admin")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([groupJid, participantJid])
+  @@index([groupJid, updatedAt(sort: Desc)])
+  @@deny('all', auth() == null)
+  @@allow('read', auth() != null)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("whatsapp_group_participants")
+}
+
+model WhatsappBlockedJid {
+  jid         String   @id
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@index([updatedAt(sort: Desc)])
+  @@deny('all', auth() == null)
+  @@allow('read', auth() != null)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("whatsapp_blocked_jids")
 }
 
 model WhatsappBusinessQuickReply {

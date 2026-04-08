@@ -17,10 +17,14 @@ type WhatsappMessageStatus = "DELIVERED" | "FAILED" | "PENDING" | "PLAYED" | "RE
 
 type WhatsappMessageRow = {
   created_at: Date | string;
+  deleted_for_everyone: boolean;
+  deleted_for_me: boolean;
   delivered_at: Date | string | null;
   direction: WhatsappMessageDirection;
   from_me: boolean;
+  has_media: boolean;
   id: string;
+  media_missing: boolean;
   message_id: string;
   message_timestamp: Date | string | null;
   message_type: string;
@@ -34,6 +38,7 @@ type WhatsappMessageRow = {
   remote_jid: string;
   sent_at: Date | string | null;
   status: WhatsappMessageStatus;
+  starred: boolean;
   text_preview: string | null;
   updated_at: Date | string;
   wa_id: string | null;
@@ -43,13 +48,18 @@ type WhatsappChatRow = {
   archived: boolean | null;
   conversation_timestamp: Date | string | null;
   created_at: Date | string;
+  ephemeral_expiration: number | null;
   id: string;
+  is_blocked: boolean | null;
+  is_group: boolean | null;
   jid: string;
   last_message_id: string | null;
+  last_message_preview: string | null;
   mute_end_time: Date | string | null;
   name: string | null;
   not_spam: boolean | null;
   pinned: boolean | null;
+  profile_picture_url: string | null;
   raw_chat_json: null | Record<string, unknown>;
   unread_count: number | null;
   updated_at: Date | string;
@@ -78,9 +88,13 @@ const historyDb = kysely as unknown as Kysely<WhatsappHistoryDb>;
 
 export type WhatsappMessageHistoryRecord = {
   createdAt: Date;
+  deletedForEveryone: boolean;
+  deletedForMe: boolean;
   deliveredAt: Date | null;
   direction: "inbound" | "outbound";
   fromMe: boolean;
+  hasMedia: boolean;
+  mediaMissing: boolean;
   messageId: string;
   messageTimestamp: Date | null;
   messageType: string;
@@ -90,6 +104,7 @@ export type WhatsappMessageHistoryRecord = {
   readAt: Date | null;
   remoteJid: string;
   sentAt: Date | null;
+  starred: boolean;
   status: WhatsappMessageStatus;
   textPreview: string | null;
   updatedAt: Date;
@@ -99,12 +114,17 @@ export type WhatsappMessageHistoryRecord = {
 export type WhatsappChatRecord = {
   archived: boolean | null;
   conversationTimestamp: Date | null;
+  ephemeralExpiration: number | null;
+  isBlocked: boolean | null;
+  isGroup: boolean | null;
   jid: string;
   lastMessageId: string | null;
+  lastMessagePreview: string | null;
   muteEndTime: Date | null;
   name: string | null;
   notSpam: boolean | null;
   pinned: boolean | null;
+  profilePictureUrl: string | null;
   unreadCount: number | null;
   updatedAt: Date;
 };
@@ -175,15 +195,26 @@ function messageTextPreview(message: WAMessage) {
 }
 
 function messageType(message: WAMessage) {
-  return getContentType(message.message) ?? "unknown";
+  return getContentType(message.message ?? undefined) ?? "unknown";
+}
+
+function messageHasMedia(message: WAMessage) {
+  const type = messageType(message);
+  return ["audioMessage", "documentMessage", "imageMessage", "stickerMessage", "videoMessage"].includes(
+    type,
+  );
 }
 
 function mapMessage(row: WhatsappMessageRow): WhatsappMessageHistoryRecord {
   return {
     createdAt: asDate(row.created_at) ?? new Date(),
+    deletedForEveryone: row.deleted_for_everyone,
+    deletedForMe: row.deleted_for_me,
     deliveredAt: asDate(row.delivered_at),
     direction: toPublicDirection(row.direction),
     fromMe: row.from_me,
+    hasMedia: row.has_media,
+    mediaMissing: row.media_missing,
     messageId: row.message_id,
     messageTimestamp: asDate(row.message_timestamp),
     messageType: row.message_type,
@@ -193,6 +224,7 @@ function mapMessage(row: WhatsappMessageRow): WhatsappMessageHistoryRecord {
     readAt: asDate(row.read_at),
     remoteJid: row.remote_jid,
     sentAt: asDate(row.sent_at),
+    starred: row.starred,
     status: row.status,
     textPreview: row.text_preview,
     updatedAt: asDate(row.updated_at) ?? new Date(),
@@ -204,12 +236,17 @@ function mapChat(row: WhatsappChatRow): WhatsappChatRecord {
   return {
     archived: row.archived,
     conversationTimestamp: asDate(row.conversation_timestamp),
+    ephemeralExpiration: row.ephemeral_expiration,
+    isBlocked: row.is_blocked,
+    isGroup: row.is_group,
     jid: row.jid,
     lastMessageId: row.last_message_id,
+    lastMessagePreview: row.last_message_preview,
     muteEndTime: asDate(row.mute_end_time),
     name: row.name,
     notSpam: row.not_spam,
     pinned: row.pinned,
+    profilePictureUrl: row.profile_picture_url,
     unreadCount: row.unread_count,
     updatedAt: asDate(row.updated_at) ?? new Date(),
   };
@@ -235,10 +272,14 @@ export async function upsertWhatsappMessage(args: {
     .insertInto("whatsapp_messages")
     .values({
       created_at: now,
+      deleted_for_everyone: false,
+      deleted_for_me: false,
       delivered_at: nextStatus === "DELIVERED" ? now : null,
       direction: toDirection(Boolean(message.key.fromMe)),
       from_me: Boolean(message.key.fromMe),
+      has_media: messageHasMedia(message),
       id: createId(),
+      media_missing: false,
       message_id: messageId,
       message_timestamp: messageTimestampToDate(message.messageTimestamp),
       message_type: messageType(message),
@@ -251,6 +292,7 @@ export async function upsertWhatsappMessage(args: {
       read_at: nextStatus === "READ" ? now : null,
       remote_jid: remoteJid,
       sent_at: sentAt,
+      starred: false,
       status: nextStatus,
       text_preview: messageTextPreview(message),
       updated_at: now,
@@ -259,8 +301,12 @@ export async function upsertWhatsappMessage(args: {
     .onConflict((oc) =>
       oc.columns(["remote_jid", "message_id", "participant_jid_key"]).doUpdateSet({
         delivered_at: (eb) => eb.ref("excluded.delivered_at"),
+        deleted_for_everyone: (eb) => eb.ref("excluded.deleted_for_everyone"),
+        deleted_for_me: (eb) => eb.ref("excluded.deleted_for_me"),
         direction: (eb) => eb.ref("excluded.direction"),
         from_me: (eb) => eb.ref("excluded.from_me"),
+        has_media: (eb) => eb.ref("excluded.has_media"),
+        media_missing: (eb) => eb.ref("excluded.media_missing"),
         message_timestamp: (eb) => eb.ref("excluded.message_timestamp"),
         message_type: (eb) => eb.ref("excluded.message_type"),
         participant_jid: (eb) => eb.ref("excluded.participant_jid"),
@@ -270,6 +316,7 @@ export async function upsertWhatsappMessage(args: {
         raw_message_json: (eb) => eb.ref("excluded.raw_message_json"),
         read_at: (eb) => eb.ref("excluded.read_at"),
         sent_at: (eb) => eb.ref("excluded.sent_at"),
+        starred: (eb) => eb.ref("excluded.starred"),
         status: (eb) => eb.ref("excluded.status"),
         text_preview: (eb) => eb.ref("excluded.text_preview"),
         updated_at: now,
@@ -306,18 +353,23 @@ export async function upsertWhatsappChats(chats: Chat[]) {
         await historyDb
           .insertInto("whatsapp_chats")
           .values({
-            archived: chat.archive ?? false,
+            archived: chat.archived ?? false,
             conversation_timestamp: chat.conversationTimestamp
               ? new Date(Number(chat.conversationTimestamp) * 1000)
               : null,
             created_at: now,
+            ephemeral_expiration: chat.ephemeralExpiration ?? null,
             id: createId(),
+            is_blocked: false,
+            is_group: chat.id!.endsWith("@g.us"),
             jid: chat.id,
-            last_message_id: chat.messages?.[0]?.key?.id ?? null,
+            last_message_id: null,
+            last_message_preview: null,
             mute_end_time: chat.muteEndTime ? new Date(Number(chat.muteEndTime) * 1000) : null,
             name: chat.name ?? null,
             not_spam: chat.notSpam ?? null,
-            pinned: chat.pin ?? false,
+            pinned: Boolean(chat.pinned),
+            profile_picture_url: null,
             raw_chat_json: chat as unknown as Record<string, unknown>,
             unread_count: chat.unreadCount ?? null,
             updated_at: now,
@@ -326,11 +378,15 @@ export async function upsertWhatsappChats(chats: Chat[]) {
             oc.column("jid").doUpdateSet({
               archived: (eb) => eb.ref("excluded.archived"),
               conversation_timestamp: (eb) => eb.ref("excluded.conversation_timestamp"),
+              ephemeral_expiration: (eb) => eb.ref("excluded.ephemeral_expiration"),
+              is_group: (eb) => eb.ref("excluded.is_group"),
               last_message_id: (eb) => eb.ref("excluded.last_message_id"),
+              last_message_preview: (eb) => eb.ref("excluded.last_message_preview"),
               mute_end_time: (eb) => eb.ref("excluded.mute_end_time"),
               name: (eb) => eb.ref("excluded.name"),
               not_spam: (eb) => eb.ref("excluded.not_spam"),
               pinned: (eb) => eb.ref("excluded.pinned"),
+              profile_picture_url: (eb) => eb.ref("excluded.profile_picture_url"),
               raw_chat_json: (eb) => eb.ref("excluded.raw_chat_json"),
               unread_count: (eb) => eb.ref("excluded.unread_count"),
               updated_at: now,
@@ -383,27 +439,45 @@ export async function applyWhatsappMessageUpdate(key: WAMessageKey, update: WAMe
   }
 
   const now = new Date();
-  const nextStatus = statusFromUpdate(update);
+  const updatePayload = update.update as Partial<WAMessage> & {
+    messageStubType?: number;
+    starred?: boolean;
+    status?: WAMessage["status"];
+  };
+  const nextStatus = statusFromUpdate(updatePayload);
   const patch: Partial<WhatsappMessageRow> = {
     updated_at: now,
   };
 
   if (nextStatus) {
     patch.status = nextStatus;
-    if (nextStatus === "SENT" && !patch.sent_at) {
+    if (nextStatus === "SENT") {
       patch.sent_at = now;
-    }
-    if (nextStatus in STATUS_TIMESTAMP_FIELD) {
-      patch[STATUS_TIMESTAMP_FIELD[nextStatus as keyof typeof STATUS_TIMESTAMP_FIELD]] = now;
+    } else if (nextStatus in STATUS_TIMESTAMP_FIELD) {
+      const timestampField = STATUS_TIMESTAMP_FIELD[nextStatus as keyof typeof STATUS_TIMESTAMP_FIELD];
+      if (timestampField === "delivered_at") patch.delivered_at = now;
+      if (timestampField === "read_at") patch.read_at = now;
+      if (timestampField === "played_at") patch.played_at = now;
     }
   }
 
-  if (update.message) {
-    patch.raw_content_json = update.message as unknown as Record<string, unknown>;
-    patch.message_type = getContentType(update.message) ?? "unknown";
+  if (updatePayload.message) {
+    patch.raw_content_json = updatePayload.message as unknown as Record<string, unknown>;
+    patch.message_type = getContentType(updatePayload.message ?? undefined) ?? "unknown";
   }
 
-  if (update.status == null && !update.message) {
+  if (typeof updatePayload.starred === "boolean") {
+    patch.starred = updatePayload.starred;
+  }
+
+  if (
+    typeof updatePayload.messageStubType === "number" &&
+    String(updatePayload.messageStubType).length > 0
+  ) {
+    patch.media_missing = false;
+  }
+
+  if (updatePayload.status == null && !updatePayload.message) {
     return await getWhatsappMessageByKey(key);
   }
 
@@ -418,7 +492,7 @@ export async function applyWhatsappMessageUpdate(key: WAMessageKey, update: WAMe
   return await getWhatsappMessageByKey(key);
 }
 
-function statusFromUpdate(update: WAMessageUpdate): WhatsappMessageStatus | null {
+function statusFromUpdate(update: { status?: WAMessage["status"] }): WhatsappMessageStatus | null {
   switch (update.status) {
     case WAMessageStatus.PENDING:
       return "PENDING";
@@ -483,6 +557,44 @@ export async function getWhatsappQuotedMessage(args: {
 
   const row = await query.orderBy("created_at", "desc").executeTakeFirst();
   return (row?.raw_message_json as WAMessage | undefined) ?? undefined;
+}
+
+export async function getLatestWhatsappMinimalMessage(args: {
+  jid?: string;
+  phone?: string;
+}) {
+  let query = historyDb
+    .selectFrom("whatsapp_messages")
+    .select([
+      "from_me",
+      "message_id",
+      "message_timestamp",
+      "participant_jid",
+      "remote_jid",
+    ])
+    .orderBy("created_at", "desc")
+    .limit(1);
+
+  if (args.jid) {
+    query = query.where("remote_jid", "=", args.jid);
+  } else if (args.phone) {
+    query = query.where("phone", "=", args.phone);
+  }
+
+  const row = await query.executeTakeFirst();
+  if (!row) return null;
+
+  return {
+    key: {
+      fromMe: row.from_me,
+      id: row.message_id,
+      participant: row.participant_jid ?? undefined,
+      remoteJid: row.remote_jid,
+    },
+    messageTimestamp: row.message_timestamp
+      ? Math.floor((asDate(row.message_timestamp) ?? new Date()).getTime() / 1000)
+      : undefined,
+  } satisfies Pick<WAMessage, "key" | "messageTimestamp">;
 }
 
 export async function listWhatsappMessageHistory(args?: {

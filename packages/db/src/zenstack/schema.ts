@@ -6226,6 +6226,36 @@ export class SchemaType implements SchemaDef {
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("message_timestamp") }] }] as readonly AttributeApplication[]
                 },
+                deletedForEveryone: {
+                    name: "deletedForEveryone",
+                    type: "Boolean",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("deleted_for_everyone") }] }] as readonly AttributeApplication[],
+                    default: false as FieldDefault
+                },
+                deletedForMe: {
+                    name: "deletedForMe",
+                    type: "Boolean",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("deleted_for_me") }] }] as readonly AttributeApplication[],
+                    default: false as FieldDefault
+                },
+                starred: {
+                    name: "starred",
+                    type: "Boolean",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }] as readonly AttributeApplication[],
+                    default: false as FieldDefault
+                },
+                hasMedia: {
+                    name: "hasMedia",
+                    type: "Boolean",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("has_media") }] }] as readonly AttributeApplication[],
+                    default: false as FieldDefault
+                },
+                mediaMissing: {
+                    name: "mediaMissing",
+                    type: "Boolean",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("media_missing") }] }] as readonly AttributeApplication[],
+                    default: false as FieldDefault
+                },
                 rawMessageJson: {
                     name: "rawMessageJson",
                     type: "Json",
@@ -6333,6 +6363,38 @@ export class SchemaType implements SchemaDef {
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("last_message_id") }] }] as readonly AttributeApplication[]
                 },
+                lastMessagePreview: {
+                    name: "lastMessagePreview",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("last_message_preview") }] }] as readonly AttributeApplication[]
+                },
+                profilePictureUrl: {
+                    name: "profilePictureUrl",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("profile_picture_url") }] }] as readonly AttributeApplication[]
+                },
+                ephemeralExpiration: {
+                    name: "ephemeralExpiration",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("ephemeral_expiration") }] }] as readonly AttributeApplication[]
+                },
+                isBlocked: {
+                    name: "isBlocked",
+                    type: "Boolean",
+                    optional: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("is_blocked") }] }] as readonly AttributeApplication[],
+                    default: false as FieldDefault
+                },
+                isGroup: {
+                    name: "isGroup",
+                    type: "Boolean",
+                    optional: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("is_group") }] }] as readonly AttributeApplication[],
+                    default: false as FieldDefault
+                },
                 rawChatJson: {
                     name: "rawChatJson",
                     type: "Json",
@@ -6439,6 +6501,361 @@ export class SchemaType implements SchemaDef {
             idFields: ["id"],
             uniqueFields: {
                 id: { type: "String" },
+                jid: { type: "String" }
+            }
+        },
+        WhatsappMessageReaction: {
+            name: "WhatsappMessageReaction",
+            fields: {
+                remoteJid: {
+                    name: "remoteJid",
+                    type: "String",
+                    id: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("remote_jid") }] }] as readonly AttributeApplication[]
+                },
+                messageId: {
+                    name: "messageId",
+                    type: "String",
+                    id: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("message_id") }] }] as readonly AttributeApplication[]
+                },
+                actorJid: {
+                    name: "actorJid",
+                    type: "String",
+                    id: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("actor_jid") }] }] as readonly AttributeApplication[]
+                },
+                emoji: {
+                    name: "emoji",
+                    type: "String",
+                    id: true
+                },
+                removed: {
+                    name: "removed",
+                    type: "Boolean",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }] as readonly AttributeApplication[],
+                    default: false as FieldDefault
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                }
+            },
+            attributes: [
+                { name: "@@id", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("remoteJid"), ExpressionUtils.field("messageId"), ExpressionUtils.field("actorJid"), ExpressionUtils.field("emoji")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("remoteJid"), ExpressionUtils.field("messageId"), ExpressionUtils.field("updatedAt")]) }] },
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "!=", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("whatsapp_message_reactions") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["remoteJid", "messageId", "actorJid", "emoji"],
+            uniqueFields: {
+                remoteJid_messageId_actorJid_emoji: { remoteJid: { type: "String" }, messageId: { type: "String" }, actorJid: { type: "String" }, emoji: { type: "String" } }
+            }
+        },
+        WhatsappMessageReceipt: {
+            name: "WhatsappMessageReceipt",
+            fields: {
+                remoteJid: {
+                    name: "remoteJid",
+                    type: "String",
+                    id: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("remote_jid") }] }] as readonly AttributeApplication[]
+                },
+                messageId: {
+                    name: "messageId",
+                    type: "String",
+                    id: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("message_id") }] }] as readonly AttributeApplication[]
+                },
+                recipientJid: {
+                    name: "recipientJid",
+                    type: "String",
+                    id: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("recipient_jid") }] }] as readonly AttributeApplication[]
+                },
+                receiptType: {
+                    name: "receiptType",
+                    type: "String",
+                    id: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("receipt_type") }] }] as readonly AttributeApplication[]
+                },
+                receiptAt: {
+                    name: "receiptAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("receipt_at") }] }] as readonly AttributeApplication[]
+                },
+                readAt: {
+                    name: "readAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("read_at") }] }] as readonly AttributeApplication[]
+                },
+                playedAt: {
+                    name: "playedAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("played_at") }] }] as readonly AttributeApplication[]
+                },
+                deliveredDevices: {
+                    name: "deliveredDevices",
+                    type: "Json",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("delivered_devices") }] }] as readonly AttributeApplication[]
+                },
+                pendingDevices: {
+                    name: "pendingDevices",
+                    type: "Json",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("pending_devices") }] }] as readonly AttributeApplication[]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                }
+            },
+            attributes: [
+                { name: "@@id", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("remoteJid"), ExpressionUtils.field("messageId"), ExpressionUtils.field("recipientJid"), ExpressionUtils.field("receiptType")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("remoteJid"), ExpressionUtils.field("messageId"), ExpressionUtils.field("updatedAt")]) }] },
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "!=", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("whatsapp_message_receipts") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["remoteJid", "messageId", "recipientJid", "receiptType"],
+            uniqueFields: {
+                remoteJid_messageId_recipientJid_receiptType: { remoteJid: { type: "String" }, messageId: { type: "String" }, recipientJid: { type: "String" }, receiptType: { type: "String" } }
+            }
+        },
+        WhatsappPresenceState: {
+            name: "WhatsappPresenceState",
+            fields: {
+                chatJid: {
+                    name: "chatJid",
+                    type: "String",
+                    id: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("chat_jid") }] }] as readonly AttributeApplication[]
+                },
+                participantJid: {
+                    name: "participantJid",
+                    type: "String",
+                    id: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("participant_jid") }] }] as readonly AttributeApplication[]
+                },
+                lastKnownPresence: {
+                    name: "lastKnownPresence",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("last_known_presence") }] }] as readonly AttributeApplication[]
+                },
+                lastSeen: {
+                    name: "lastSeen",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("last_seen") }] }] as readonly AttributeApplication[]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                }
+            },
+            attributes: [
+                { name: "@@id", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("chatJid"), ExpressionUtils.field("participantJid")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("chatJid"), ExpressionUtils.field("updatedAt")]) }] },
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "!=", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("whatsapp_presence_states") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["chatJid", "participantJid"],
+            uniqueFields: {
+                chatJid_participantJid: { chatJid: { type: "String" }, participantJid: { type: "String" } }
+            }
+        },
+        WhatsappGroup: {
+            name: "WhatsappGroup",
+            fields: {
+                jid: {
+                    name: "jid",
+                    type: "String",
+                    id: true,
+                    attributes: [{ name: "@id" }] as readonly AttributeApplication[]
+                },
+                subject: {
+                    name: "subject",
+                    type: "String"
+                },
+                owner: {
+                    name: "owner",
+                    type: "String",
+                    optional: true
+                },
+                desc: {
+                    name: "desc",
+                    type: "String",
+                    optional: true
+                },
+                creation: {
+                    name: "creation",
+                    type: "DateTime",
+                    optional: true
+                },
+                size: {
+                    name: "size",
+                    type: "Int",
+                    optional: true
+                },
+                ephemeralDuration: {
+                    name: "ephemeralDuration",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("ephemeral_duration") }] }] as readonly AttributeApplication[]
+                },
+                rawGroupJson: {
+                    name: "rawGroupJson",
+                    type: "Json",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("raw_group_json") }] }] as readonly AttributeApplication[]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                }
+            },
+            attributes: [
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("updatedAt")]) }] },
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "!=", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("whatsapp_groups") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["jid"],
+            uniqueFields: {
+                jid: { type: "String" }
+            }
+        },
+        WhatsappGroupParticipant: {
+            name: "WhatsappGroupParticipant",
+            fields: {
+                groupJid: {
+                    name: "groupJid",
+                    type: "String",
+                    id: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("group_jid") }] }] as readonly AttributeApplication[]
+                },
+                participantJid: {
+                    name: "participantJid",
+                    type: "String",
+                    id: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("participant_jid") }] }] as readonly AttributeApplication[]
+                },
+                admin: {
+                    name: "admin",
+                    type: "String",
+                    optional: true
+                },
+                isSuperAdmin: {
+                    name: "isSuperAdmin",
+                    type: "Boolean",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("is_super_admin") }] }] as readonly AttributeApplication[]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                }
+            },
+            attributes: [
+                { name: "@@id", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("groupJid"), ExpressionUtils.field("participantJid")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("groupJid"), ExpressionUtils.field("updatedAt")]) }] },
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "!=", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("whatsapp_group_participants") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["groupJid", "participantJid"],
+            uniqueFields: {
+                groupJid_participantJid: { groupJid: { type: "String" }, participantJid: { type: "String" } }
+            }
+        },
+        WhatsappBlockedJid: {
+            name: "WhatsappBlockedJid",
+            fields: {
+                jid: {
+                    name: "jid",
+                    type: "String",
+                    id: true,
+                    attributes: [{ name: "@id" }] as readonly AttributeApplication[]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                }
+            },
+            attributes: [
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("updatedAt")]) }] },
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "!=", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("whatsapp_blocked_jids") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["jid"],
+            uniqueFields: {
                 jid: { type: "String" }
             }
         },

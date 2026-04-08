@@ -5076,6 +5076,31 @@ export class SchemaType implements SchemaDef {
                     type: "DateTime",
                     optional: true
                 },
+                deletedForEveryone: {
+                    name: "deletedForEveryone",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                deletedForMe: {
+                    name: "deletedForMe",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                starred: {
+                    name: "starred",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                hasMedia: {
+                    name: "hasMedia",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                mediaMissing: {
+                    name: "mediaMissing",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
                 rawMessageJson: {
                     name: "rawMessageJson",
                     type: "Json",
@@ -5160,6 +5185,33 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true
                 },
+                lastMessagePreview: {
+                    name: "lastMessagePreview",
+                    type: "String",
+                    optional: true
+                },
+                profilePictureUrl: {
+                    name: "profilePictureUrl",
+                    type: "String",
+                    optional: true
+                },
+                ephemeralExpiration: {
+                    name: "ephemeralExpiration",
+                    type: "Int",
+                    optional: true
+                },
+                isBlocked: {
+                    name: "isBlocked",
+                    type: "Boolean",
+                    optional: true,
+                    default: false as FieldDefault
+                },
+                isGroup: {
+                    name: "isGroup",
+                    type: "Boolean",
+                    optional: true,
+                    default: false as FieldDefault
+                },
                 rawChatJson: {
                     name: "rawChatJson",
                     type: "Json",
@@ -5242,6 +5294,279 @@ export class SchemaType implements SchemaDef {
             idFields: ["id"],
             uniqueFields: {
                 id: { type: "String" },
+                jid: { type: "String" }
+            }
+        },
+        WhatsappMessageReaction: {
+            name: "WhatsappMessageReaction",
+            fields: {
+                remoteJid: {
+                    name: "remoteJid",
+                    type: "String",
+                    id: true
+                },
+                messageId: {
+                    name: "messageId",
+                    type: "String",
+                    id: true
+                },
+                actorJid: {
+                    name: "actorJid",
+                    type: "String",
+                    id: true
+                },
+                emoji: {
+                    name: "emoji",
+                    type: "String",
+                    id: true
+                },
+                removed: {
+                    name: "removed",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                }
+            },
+            idFields: ["remoteJid", "messageId", "actorJid", "emoji"],
+            uniqueFields: {
+                remoteJid_messageId_actorJid_emoji: { remoteJid: { type: "String" }, messageId: { type: "String" }, actorJid: { type: "String" }, emoji: { type: "String" } }
+            }
+        },
+        WhatsappMessageReceipt: {
+            name: "WhatsappMessageReceipt",
+            fields: {
+                remoteJid: {
+                    name: "remoteJid",
+                    type: "String",
+                    id: true
+                },
+                messageId: {
+                    name: "messageId",
+                    type: "String",
+                    id: true
+                },
+                recipientJid: {
+                    name: "recipientJid",
+                    type: "String",
+                    id: true
+                },
+                receiptType: {
+                    name: "receiptType",
+                    type: "String",
+                    id: true
+                },
+                receiptAt: {
+                    name: "receiptAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                readAt: {
+                    name: "readAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                playedAt: {
+                    name: "playedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                deliveredDevices: {
+                    name: "deliveredDevices",
+                    type: "Json",
+                    optional: true
+                },
+                pendingDevices: {
+                    name: "pendingDevices",
+                    type: "Json",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                }
+            },
+            idFields: ["remoteJid", "messageId", "recipientJid", "receiptType"],
+            uniqueFields: {
+                remoteJid_messageId_recipientJid_receiptType: { remoteJid: { type: "String" }, messageId: { type: "String" }, recipientJid: { type: "String" }, receiptType: { type: "String" } }
+            }
+        },
+        WhatsappPresenceState: {
+            name: "WhatsappPresenceState",
+            fields: {
+                chatJid: {
+                    name: "chatJid",
+                    type: "String",
+                    id: true
+                },
+                participantJid: {
+                    name: "participantJid",
+                    type: "String",
+                    id: true
+                },
+                lastKnownPresence: {
+                    name: "lastKnownPresence",
+                    type: "String"
+                },
+                lastSeen: {
+                    name: "lastSeen",
+                    type: "DateTime",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                }
+            },
+            idFields: ["chatJid", "participantJid"],
+            uniqueFields: {
+                chatJid_participantJid: { chatJid: { type: "String" }, participantJid: { type: "String" } }
+            }
+        },
+        WhatsappGroup: {
+            name: "WhatsappGroup",
+            fields: {
+                jid: {
+                    name: "jid",
+                    type: "String",
+                    id: true
+                },
+                subject: {
+                    name: "subject",
+                    type: "String"
+                },
+                owner: {
+                    name: "owner",
+                    type: "String",
+                    optional: true
+                },
+                desc: {
+                    name: "desc",
+                    type: "String",
+                    optional: true
+                },
+                creation: {
+                    name: "creation",
+                    type: "DateTime",
+                    optional: true
+                },
+                size: {
+                    name: "size",
+                    type: "Int",
+                    optional: true
+                },
+                ephemeralDuration: {
+                    name: "ephemeralDuration",
+                    type: "Int",
+                    optional: true
+                },
+                rawGroupJson: {
+                    name: "rawGroupJson",
+                    type: "Json",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                }
+            },
+            idFields: ["jid"],
+            uniqueFields: {
+                jid: { type: "String" }
+            }
+        },
+        WhatsappGroupParticipant: {
+            name: "WhatsappGroupParticipant",
+            fields: {
+                groupJid: {
+                    name: "groupJid",
+                    type: "String",
+                    id: true
+                },
+                participantJid: {
+                    name: "participantJid",
+                    type: "String",
+                    id: true
+                },
+                admin: {
+                    name: "admin",
+                    type: "String",
+                    optional: true
+                },
+                isSuperAdmin: {
+                    name: "isSuperAdmin",
+                    type: "Boolean",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                }
+            },
+            idFields: ["groupJid", "participantJid"],
+            uniqueFields: {
+                groupJid_participantJid: { groupJid: { type: "String" }, participantJid: { type: "String" } }
+            }
+        },
+        WhatsappBlockedJid: {
+            name: "WhatsappBlockedJid",
+            fields: {
+                jid: {
+                    name: "jid",
+                    type: "String",
+                    id: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                }
+            },
+            idFields: ["jid"],
+            uniqueFields: {
                 jid: { type: "String" }
             }
         },
