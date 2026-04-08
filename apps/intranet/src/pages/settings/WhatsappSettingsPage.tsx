@@ -84,6 +84,36 @@ function renderWhatsappPreview(text: string) {
   ));
 }
 
+function getChatDisplayName(name: string | null | undefined, jid: string) {
+  return name?.trim() || jid.replace(/@.+$/, "");
+}
+
+function getChatInitials(name: string | null | undefined, jid: string) {
+  const base = getChatDisplayName(name, jid)
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .trim();
+
+  if (!base) return "WA";
+
+  const parts = base.split(/\s+/).filter(Boolean);
+  if (parts.length === 1) {
+    return parts[0]!.slice(0, 2).toUpperCase();
+  }
+
+  return `${parts[0]![0] ?? ""}${parts[1]![0] ?? ""}`.toUpperCase();
+}
+
+function formatChatTimestamp(date: Date | string | null | undefined) {
+  if (!date) return "";
+
+  const value = dayjs(date);
+  if (!value.isValid()) return "";
+
+  if (value.isSame(dayjs(), "day")) return value.format("HH:mm");
+  if (value.isSame(dayjs().subtract(1, "day"), "day")) return "Ayer";
+  return value.format("DD MMM");
+}
+
 const WHATSAPP_TEMPLATE_PREVIEW_EXAMPLE: Record<string, string> = {
   appointmentDate: dayjs().add(2, "day").hour(10).minute(30).format("DD/MM/YYYY HH:mm"),
   appointmentDoctor: "Dr. José Manuel Martínez",
@@ -977,14 +1007,17 @@ export function WhatsappSettingsPage() {
               </Alert>
             ) : null}
 
-            <div className="grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)]">
-              <Card>
-                <Card.Header className="space-y-3">
-                  <div className="flex items-center justify-between gap-2">
+            <div className="grid gap-4 xl:grid-cols-[300px_minmax(0,1fr)]">
+              <Surface
+                className="flex min-h-[78vh] flex-col overflow-hidden rounded-[30px] border border-default-200/80 bg-content1/85 backdrop-blur"
+                variant="secondary"
+              >
+                <div className="border-default-200/80 border-b px-4 py-4">
+                  <div className="mb-4 flex items-center justify-between gap-2">
                     <div>
                       <h2 className="font-semibold text-base">Chats</h2>
                       <Description className="text-default-500 text-xs">
-                        Sidebar operativa para acercarse a WhatsApp Web.
+                        Conversaciones recientes y presencia.
                       </Description>
                     </div>
                     <Chip size="sm" variant="soft">
@@ -992,236 +1025,276 @@ export function WhatsappSettingsPage() {
                     </Chip>
                   </div>
 
-                  <TextField onChange={setChatSearch} value={chatSearch}>
-                    <Label>Buscar</Label>
-                    <Input placeholder="Nombre, JID o preview" />
-                  </TextField>
+                  <div className="space-y-3">
+                    <TextField onChange={setChatSearch} value={chatSearch}>
+                      <Label>Buscar</Label>
+                      <Input placeholder="Nombre, JID o preview" />
+                    </TextField>
 
-                  <Select
-                    onChange={(value) => setChatFilter(value as typeof chatFilter)}
-                    value={chatFilter}
-                  >
-                    <Label>Filtro</Label>
-                    <Select.Trigger>
-                      <Select.Value />
-                      <Select.Indicator />
-                    </Select.Trigger>
-                    <Select.Popover>
-                      <ListBox>
-                        <ListBox.Item id="all">Todos</ListBox.Item>
-                        <ListBox.Item id="unread">No leídos</ListBox.Item>
-                        <ListBox.Item id="archived">Archivados</ListBox.Item>
-                        <ListBox.Item id="blocked">Bloqueados</ListBox.Item>
-                        <ListBox.Item id="groups">Grupos</ListBox.Item>
-                      </ListBox>
-                    </Select.Popover>
-                  </Select>
-                </Card.Header>
-                <Card.Content className="space-y-2">
+                    <Select
+                      onChange={(value) => setChatFilter(value as typeof chatFilter)}
+                      value={chatFilter}
+                    >
+                      <Label>Filtro</Label>
+                      <Select.Trigger>
+                        <Select.Value />
+                        <Select.Indicator />
+                      </Select.Trigger>
+                      <Select.Popover>
+                        <ListBox>
+                          <ListBox.Item id="all">Todos</ListBox.Item>
+                          <ListBox.Item id="unread">No leídos</ListBox.Item>
+                          <ListBox.Item id="archived">Archivados</ListBox.Item>
+                          <ListBox.Item id="blocked">Bloqueados</ListBox.Item>
+                          <ListBox.Item id="groups">Grupos</ListBox.Item>
+                        </ListBox>
+                      </Select.Popover>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
                   {chatSidebarQuery.isPending ? (
                     <div className="space-y-2">
-                      {Array.from({ length: 6 }).map((_, index) => (
-                        <Skeleton className="h-16 rounded-2xl" key={index} />
+                      {Array.from({ length: 7 }).map((_, index) => (
+                        <Skeleton className="h-20 rounded-3xl" key={index} />
                       ))}
                     </div>
                   ) : (
-                    <div className="space-y-2">
-                      {chatSidebarQuery.data?.records.map((chat) => (
-                        <button
-                          className={`w-full rounded-2xl border px-4 py-3 text-left transition ${
-                            selectedChatJid === chat.jid
-                              ? "border-accent bg-accent/10"
-                              : "border-default-200 bg-content1 hover:border-default-300"
-                          }`}
-                          key={chat.jid}
-                          onClick={() => setSelectedChatJid(chat.jid)}
-                          type="button"
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <div className="truncate font-medium text-sm">
-                                {chat.name || chat.jid}
+                    <div className="space-y-1.5">
+                      {chatSidebarQuery.data?.records.map((chat) => {
+                        const isSelected = selectedChatJid === chat.jid;
+
+                        return (
+                          <button
+                            className={`w-full rounded-[24px] border px-3 py-3 text-left transition ${
+                              isSelected
+                                ? "border-accent/50 bg-accent/10 shadow-[0_0_0_1px_rgba(59,130,246,0.15)]"
+                                : "border-transparent bg-transparent hover:border-default-200/80 hover:bg-content2/70"
+                            }`}
+                            key={chat.jid}
+                            onClick={() => setSelectedChatJid(chat.jid)}
+                            type="button"
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-content2 text-sm font-semibold text-default-700">
+                                {getChatInitials(chat.name, chat.jid)}
                               </div>
-                              <div className="mt-1 truncate text-default-500 text-xs">
-                                {chat.lastMessagePreview || "Sin preview todavía"}
+
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <div className="truncate font-medium text-sm">
+                                    {getChatDisplayName(chat.name, chat.jid)}
+                                  </div>
+                                  {chat.isGroup ? (
+                                    <Chip size="sm" variant="soft">
+                                      Grupo
+                                    </Chip>
+                                  ) : null}
+                                </div>
+
+                                <div className="mt-1 truncate text-default-500 text-xs">
+                                  {chat.typing
+                                    ? "Escribiendo…"
+                                    : chat.lastMessagePreview || "Sin actividad visible"}
+                                </div>
+                              </div>
+
+                              <div className="flex shrink-0 flex-col items-end gap-1">
+                                <span className="text-[11px] text-default-400">
+                                  {formatChatTimestamp(chat.lastMessageAt)}
+                                </span>
+                                {chat.unreadCount > 0 ? (
+                                  <Chip color="accent" size="sm" variant="primary">
+                                    {chat.unreadCount}
+                                  </Chip>
+                                ) : chat.typing ? (
+                                  <Chip color="success" size="sm" variant="soft">
+                                    typing
+                                  </Chip>
+                                ) : chat.presence ? (
+                                  <Chip size="sm" variant="soft">
+                                    {chat.presence}
+                                  </Chip>
+                                ) : null}
                               </div>
                             </div>
-                            <div className="flex flex-col items-end gap-1">
-                              {chat.unreadCount > 0 ? (
-                                <Chip color="accent" size="sm" variant="soft">
-                                  {chat.unreadCount}
-                                </Chip>
-                              ) : null}
-                              {chat.typing ? (
-                                <Chip color="success" size="sm" variant="soft">
-                                  typing…
-                                </Chip>
-                              ) : chat.presence ? (
-                                <Chip size="sm" variant="soft">
-                                  {chat.presence}
-                                </Chip>
-                              ) : null}
-                            </div>
-                          </div>
-                        </button>
-                      ))}
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
-                </Card.Content>
-              </Card>
+                </div>
+              </Surface>
 
-              <Card>
-                <Card.Header className="space-y-3">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <h2 className="font-semibold text-base">
-                        {chatMetaQuery.data?.name ||
-                          activeSidebarChat?.name ||
-                          "Selecciona un chat"}
-                      </h2>
-                      <Description className="text-default-500 text-xs">
-                        {selectedChatJid ?? "Sin conversación activa"}
-                      </Description>
-                    </div>
-                    {selectedChatJid ? (
-                      <div className="flex flex-wrap gap-2">
-                        <Chip
-                          color={chatMetaQuery.data?.isBlocked ? "danger" : "default"}
-                          size="sm"
-                          variant="soft"
-                        >
-                          {chatMetaQuery.data?.isBlocked ? "Bloqueado" : "Activo"}
-                        </Chip>
+              <Surface
+                className="grid min-h-[78vh] grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden rounded-[34px] border border-default-200/80 bg-content1/90 backdrop-blur"
+                variant="secondary"
+              >
+                <div className="border-default-200/80 border-b px-5 py-4">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-content2 text-sm font-semibold text-default-700">
+                        {selectedChatJid
+                          ? getChatInitials(
+                              chatMetaQuery.data?.name ?? activeSidebarChat?.name,
+                              selectedChatJid
+                            )
+                          : "WA"}
+                      </div>
+
+                      <div className="space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h2 className="font-semibold text-base">
+                            {selectedChatJid
+                              ? getChatDisplayName(
+                                  chatMetaQuery.data?.name ?? activeSidebarChat?.name,
+                                  selectedChatJid
+                                )
+                              : "Selecciona un chat"}
+                          </h2>
+                          {selectedChatJid ? (
+                            <Chip
+                              color={chatMetaQuery.data?.isBlocked ? "danger" : "default"}
+                              size="sm"
+                              variant="soft"
+                            >
+                              {chatMetaQuery.data?.isBlocked ? "Bloqueado" : "Activo"}
+                            </Chip>
+                          ) : null}
+                          {activeSidebarChat?.typing ? (
+                            <Chip color="success" size="sm" variant="soft">
+                              typing…
+                            </Chip>
+                          ) : chatMetaQuery.data?.statusText ? (
+                            <Chip size="sm" variant="soft">
+                              {chatMetaQuery.data.statusText}
+                            </Chip>
+                          ) : null}
+                        </div>
+
+                        <Description className="text-default-500 text-xs">
+                          {selectedChatJid ?? "Sin conversación activa"}
+                        </Description>
+
                         {chatMetaQuery.data?.disappearingDuration ? (
                           <Chip color="warning" size="sm" variant="soft">
                             Temporales {chatMetaQuery.data.disappearingDuration}s
                           </Chip>
                         ) : null}
-                        {activeSidebarChat?.typing ? (
-                          <Chip color="success" size="sm" variant="soft">
-                            typing…
-                          </Chip>
-                        ) : chatMetaQuery.data?.statusText ? (
-                          <Chip size="sm" variant="soft">
-                            {chatMetaQuery.data.statusText}
-                          </Chip>
-                        ) : null}
+                      </div>
+                    </div>
+
+                    {selectedChatJid ? (
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          onPress={() =>
+                            archiveChatMutation.mutate({
+                              archive: !(activeSidebarChat?.isArchived ?? false),
+                              jid: selectedChatJid,
+                            })
+                          }
+                          size="sm"
+                          variant="ghost"
+                        >
+                          {activeSidebarChat?.isArchived ? "Desarchivar" : "Archivar"}
+                        </Button>
+                        <Button
+                          onPress={() =>
+                            muteChatMutation.mutate({
+                              jid: selectedChatJid,
+                              until: activeSidebarChat?.isMuted
+                                ? null
+                                : dayjs().add(8, "hour").toDate(),
+                            })
+                          }
+                          size="sm"
+                          variant="ghost"
+                        >
+                          {activeSidebarChat?.isMuted ? "Quitar mute" : "Silenciar 8h"}
+                        </Button>
+                        <Button
+                          onPress={() =>
+                            markChatReadMutation.mutate({
+                              jid: selectedChatJid,
+                              markRead: (activeSidebarChat?.unreadCount ?? 0) > 0,
+                            })
+                          }
+                          size="sm"
+                          variant="ghost"
+                        >
+                          {(activeSidebarChat?.unreadCount ?? 0) > 0
+                            ? "Marcar leído"
+                            : "Marcar no leído"}
+                        </Button>
+                        <Button
+                          onPress={() =>
+                            disappearingChatMutation.mutate({
+                              duration: chatMetaQuery.data?.disappearingDuration ? 0 : 86400,
+                              jid: selectedChatJid,
+                            })
+                          }
+                          size="sm"
+                          variant="ghost"
+                        >
+                          {chatMetaQuery.data?.disappearingDuration
+                            ? "Quitar temporales"
+                            : "Temporales 24h"}
+                        </Button>
+                        <Button
+                          onPress={() =>
+                            blockChatMutation.mutate({
+                              action: chatMetaQuery.data?.isBlocked ? "unblock" : "block",
+                              jid: selectedChatJid,
+                            })
+                          }
+                          size="sm"
+                          variant={chatMetaQuery.data?.isBlocked ? "secondary" : "danger-soft"}
+                        >
+                          {chatMetaQuery.data?.isBlocked ? "Desbloquear" : "Bloquear"}
+                        </Button>
                       </div>
                     ) : null}
                   </div>
+                </div>
 
-                  {selectedChatJid ? (
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        onPress={() =>
-                          archiveChatMutation.mutate({
-                            archive: !(activeSidebarChat?.isArchived ?? false),
-                            jid: selectedChatJid,
-                          })
-                        }
-                        size="sm"
-                        variant="ghost"
-                      >
-                        {activeSidebarChat?.isArchived ? "Desarchivar" : "Archivar"}
-                      </Button>
-                      <Button
-                        onPress={() =>
-                          muteChatMutation.mutate({
-                            jid: selectedChatJid,
-                            until: activeSidebarChat?.isMuted
-                              ? null
-                              : dayjs().add(8, "hour").toDate(),
-                          })
-                        }
-                        size="sm"
-                        variant="ghost"
-                      >
-                        {activeSidebarChat?.isMuted ? "Quitar mute" : "Silenciar 8h"}
-                      </Button>
-                      <Button
-                        onPress={() =>
-                          markChatReadMutation.mutate({
-                            jid: selectedChatJid,
-                            markRead: (activeSidebarChat?.unreadCount ?? 0) > 0,
-                          })
-                        }
-                        size="sm"
-                        variant="ghost"
-                      >
-                        {(activeSidebarChat?.unreadCount ?? 0) > 0
-                          ? "Marcar leído"
-                          : "Marcar no leído"}
-                      </Button>
-                      <Button
-                        onPress={() =>
-                          disappearingChatMutation.mutate({
-                            duration: chatMetaQuery.data?.disappearingDuration ? 0 : 86400,
-                            jid: selectedChatJid,
-                          })
-                        }
-                        size="sm"
-                        variant="ghost"
-                      >
-                        {chatMetaQuery.data?.disappearingDuration
-                          ? "Quitar temporales"
-                          : "Temporales 24h"}
-                      </Button>
-                      <Button
-                        onPress={() =>
-                          blockChatMutation.mutate({
-                            action: chatMetaQuery.data?.isBlocked ? "unblock" : "block",
-                            jid: selectedChatJid,
-                          })
-                        }
-                        size="sm"
-                        variant={chatMetaQuery.data?.isBlocked ? "secondary" : "danger-soft"}
-                      >
-                        {chatMetaQuery.data?.isBlocked ? "Desbloquear" : "Bloquear"}
-                      </Button>
+                <div className="min-h-0 overflow-hidden bg-content2/30">
+                  {chatThreadQuery.isPending ? (
+                    <div className="space-y-3 px-6 py-6">
+                      {Array.from({ length: 7 }).map((_, index) => (
+                        <Skeleton className="h-20 rounded-3xl" key={index} />
+                      ))}
                     </div>
-                  ) : null}
-                </Card.Header>
-
-                <Card.Content className="space-y-4">
-                  {selectedChatJid && oldestThreadMessage ? (
-                    <div className="flex justify-center">
-                      <Button
-                        isDisabled={loadOlderMutation.isPending}
-                        onPress={() =>
-                          loadOlderMutation.mutate({
-                            count: 40,
-                            jid: selectedChatJid,
-                            oldestMessageId: oldestThreadMessage.messageId,
-                            oldestTimestamp:
-                              oldestThreadMessage.createdAt ??
-                              oldestThreadMessage.messageTimestamp ??
-                              new Date(),
-                          })
-                        }
-                        size="sm"
-                        variant="ghost"
-                      >
-                        Cargar anteriores
-                      </Button>
+                  ) : !selectedChatJid ? (
+                    <div className="flex h-full items-center justify-center px-6 text-center text-default-500 text-sm">
+                      Elige una conversación para abrir la vista tipo chat.
                     </div>
-                  ) : null}
+                  ) : (
+                    <div className="h-full overflow-y-auto px-5 py-5">
+                      {oldestThreadMessage ? (
+                        <div className="sticky top-0 z-10 mb-4 flex justify-center bg-transparent pb-2">
+                          <Button
+                            isDisabled={loadOlderMutation.isPending}
+                            onPress={() =>
+                              loadOlderMutation.mutate({
+                                count: 40,
+                                jid: selectedChatJid,
+                                oldestMessageId: oldestThreadMessage.messageId,
+                                oldestTimestamp:
+                                  oldestThreadMessage.createdAt ??
+                                  oldestThreadMessage.messageTimestamp ??
+                                  new Date(),
+                              })
+                            }
+                            size="sm"
+                            variant="secondary"
+                          >
+                            Cargar anteriores
+                          </Button>
+                        </div>
+                      ) : null}
 
-                  <Surface
-                    className="min-h-[560px] rounded-3xl border border-default-200 p-4"
-                    variant="secondary"
-                  >
-                    {chatThreadQuery.isPending ? (
-                      <div className="space-y-3">
-                        {Array.from({ length: 7 }).map((_, index) => (
-                          <Skeleton className="h-24 rounded-2xl" key={index} />
-                        ))}
-                      </div>
-                    ) : !selectedChatJid ? (
-                      <div className="flex h-full items-center justify-center text-default-500 text-sm">
-                        Selecciona un chat en la barra lateral.
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
+                      <div className="space-y-4">
                         {activeThread.map((message, index) => {
                           const currentDay = dayjs(
                             message.createdAt ?? message.messageTimestamp ?? new Date()
@@ -1238,67 +1311,75 @@ export function WhatsappSettingsPage() {
                           return (
                             <Fragment key={message.messageId}>
                               {currentDay !== previousDay ? (
-                                <div className="py-2 text-center text-default-400 text-xs">
-                                  {currentDay}
+                                <div className="flex justify-center py-1">
+                                  <span className="rounded-full border border-default-200/80 bg-content1/90 px-3 py-1 text-[11px] text-default-500">
+                                    {currentDay}
+                                  </span>
                                 </div>
                               ) : null}
+
                               <div
                                 className={`flex ${message.fromMe ? "justify-end" : "justify-start"}`}
                               >
-                                <div
-                                  className={`max-w-[80%] rounded-3xl px-4 py-3 ${
-                                    message.fromMe
-                                      ? "bg-accent text-accent-foreground"
-                                      : "bg-content1 text-foreground"
-                                  }`}
-                                >
-                                  {message.quotedPreview ? (
-                                    <div className="mb-2 rounded-2xl bg-black/10 px-3 py-2 text-xs">
-                                      {message.quotedPreview}
-                                    </div>
-                                  ) : null}
-                                  <div className="space-y-2">
-                                    <div className="text-sm">
-                                      {message.deletedForEveryone || message.deletedForMe
-                                        ? "Mensaje eliminado"
-                                        : message.textPreview || message.messageType}
-                                    </div>
-                                    <div className="flex flex-wrap gap-2">
-                                      <Chip size="sm" variant="soft">
-                                        {message.messageType}
-                                      </Chip>
-                                      {message.starred ? (
-                                        <Chip color="warning" size="sm" variant="soft">
-                                          Destacado
-                                        </Chip>
+                                <div className="max-w-[min(68%,42rem)]">
+                                  <div
+                                    className={`rounded-[24px] px-4 py-3 shadow-sm ${
+                                      message.fromMe
+                                        ? "bg-accent text-accent-foreground"
+                                        : "border border-default-200/70 bg-content1 text-foreground"
+                                    }`}
+                                  >
+                                    {message.quotedPreview ? (
+                                      <div className="mb-3 rounded-2xl border border-black/10 bg-black/10 px-3 py-2 text-[11px] leading-relaxed">
+                                        {message.quotedPreview}
+                                      </div>
+                                    ) : null}
+
+                                    <div className="space-y-2">
+                                      <div className="text-[15px] leading-7">
+                                        {message.deletedForEveryone || message.deletedForMe
+                                          ? "Mensaje eliminado"
+                                          : message.textPreview || message.messageType}
+                                      </div>
+
+                                      {message.reactions.filter((reaction) => !reaction.removed)
+                                        .length > 0 ? (
+                                        <div className="flex flex-wrap gap-1.5">
+                                          {message.reactions
+                                            .filter((reaction) => !reaction.removed)
+                                            .map((reaction) => (
+                                              <Chip
+                                                key={`${reaction.messageId}-${reaction.actorJid}-${reaction.emoji}`}
+                                                size="sm"
+                                                variant="soft"
+                                              >
+                                                {reaction.emoji}
+                                              </Chip>
+                                            ))}
+                                        </div>
                                       ) : null}
-                                      {message.reactions
-                                        .filter((reaction) => !reaction.removed)
-                                        .map((reaction) => (
-                                          <Chip
-                                            key={`${reaction.messageId}-${reaction.actorJid}-${reaction.emoji}`}
-                                            size="sm"
-                                            variant="soft"
-                                          >
-                                            {reaction.emoji}
-                                          </Chip>
-                                        ))}
-                                    </div>
-                                    <div className="flex flex-wrap items-center gap-2 text-[11px] opacity-80">
-                                      <span>
-                                        {dayjs(
-                                          message.createdAt ??
-                                            message.messageTimestamp ??
-                                            new Date()
-                                        ).format("HH:mm:ss")}
-                                      </span>
-                                      <span>{message.status}</span>
-                                      {message.receipts.length > 0 ? (
-                                        <span>{message.receipts[0]?.receiptType}</span>
-                                      ) : null}
+
+                                      <div className="flex flex-wrap items-center gap-2 text-[11px] opacity-80">
+                                        <span>
+                                          {dayjs(
+                                            message.createdAt ??
+                                              message.messageTimestamp ??
+                                              new Date()
+                                          ).format("HH:mm")}
+                                        </span>
+                                        <span>{message.status}</span>
+                                        {message.receipts.length > 0 ? (
+                                          <span>{message.receipts[0]?.receiptType}</span>
+                                        ) : null}
+                                        <span className="rounded-full bg-black/10 px-2 py-0.5">
+                                          {message.messageType}
+                                        </span>
+                                        {message.starred ? <span>★</span> : null}
+                                      </div>
                                     </div>
                                   </div>
-                                  <div className="mt-3 flex flex-wrap gap-2">
+
+                                  <div className="flex items-center gap-2 px-2 pt-2 text-[12px] text-default-500">
                                     <Button
                                       onPress={() => {
                                         setComposerKind("contextual_text");
@@ -1345,103 +1426,196 @@ export function WhatsappSettingsPage() {
                           );
                         })}
                       </div>
-                    )}
-                  </Surface>
+                    </div>
+                  )}
+                </div>
 
+                <div className="border-default-200/80 border-t px-5 py-4">
                   {selectedChatJid ? (
-                    <Surface
-                      className="rounded-3xl border border-default-200 p-4"
-                      variant="secondary"
+                    <Form
+                      className="space-y-3"
+                      onSubmit={(event) => {
+                        event.preventDefault();
+                        if (composerValidationError) {
+                          showError(composerValidationError);
+                          return;
+                        }
+                        composerMutation.mutate(buildComposerPayload());
+                        setChatReplyMessageId("");
+                      }}
                     >
-                      <Form
-                        className="space-y-3"
-                        onSubmit={(event) => {
-                          event.preventDefault();
-                          if (composerValidationError) {
-                            showError(composerValidationError);
-                            return;
+                      <div className="flex flex-wrap items-center gap-3">
+                        <Select
+                          onChange={(value) =>
+                            setComposerKind(value as WhatsappCustomMessageInput["kind"])
                           }
-                          composerMutation.mutate(buildComposerPayload());
-                          setChatReplyMessageId("");
-                        }}
-                      >
-                        <div className="flex flex-wrap gap-3">
-                          <Select
-                            onChange={(value) =>
-                              setComposerKind(value as WhatsappCustomMessageInput["kind"])
-                            }
-                            value={composerKind}
-                          >
-                            <Label>Tipo</Label>
-                            <Select.Trigger>
-                              <Select.Value />
-                              <Select.Indicator />
-                            </Select.Trigger>
-                            <Select.Popover>
-                              <ListBox>
-                                {COMPOSER_KIND_OPTIONS.map((option) => (
-                                  <ListBox.Item id={option.value} key={option.value}>
-                                    {option.label}
-                                  </ListBox.Item>
-                                ))}
-                              </ListBox>
-                            </Select.Popover>
-                          </Select>
-                          <TextField
-                            className="min-w-[220px]"
-                            onChange={setComposerPhone}
-                            value={composerPhone}
-                          >
-                            <Label>Teléfono / target</Label>
+                          value={composerKind}
+                        >
+                          <Label>Tipo</Label>
+                          <Select.Trigger className="min-w-[170px]">
+                            <Select.Value />
+                            <Select.Indicator />
+                          </Select.Trigger>
+                          <Select.Popover>
+                            <ListBox>
+                              {COMPOSER_KIND_OPTIONS.map((option) => (
+                                <ListBox.Item id={option.value} key={option.value}>
+                                  {option.label}
+                                </ListBox.Item>
+                              ))}
+                            </ListBox>
+                          </Select.Popover>
+                        </Select>
+
+                        <div className="rounded-full border border-default-200/80 bg-content2/70 px-3 py-2 text-default-500 text-xs">
+                          Destino: {activeSidebarChat?.name || composerPhone || selectedChatJid}
+                        </div>
+
+                        {chatReplyMessageId ? (
+                          <Chip color="accent" size="sm" variant="soft">
+                            Reply listo: {chatReplyMessageId}
+                          </Chip>
+                        ) : null}
+                      </div>
+
+                      {activeSidebarChat?.isGroup ? (
+                        <Alert status="warning">
+                          La vista de grupos ya muestra historial y estado, pero el envío embebido
+                          sigue orientado a 1:1.
+                        </Alert>
+                      ) : null}
+
+                      {!selectedChatJid || activeSidebarChat?.isGroup ? null : (
+                        <TextField onChange={setComposerPhone} value={composerPhone}>
+                          <Label>Teléfono / target</Label>
+                          <Input />
+                        </TextField>
+                      )}
+
+                      {composerKind === "contextual_text" || composerKind === "edit" ? (
+                        <TextField onChange={setComposerBody} value={composerBody}>
+                          <Label>Mensaje</Label>
+                          <TextArea placeholder="Escribe una respuesta clara y breve…" />
+                        </TextField>
+                      ) : null}
+
+                      {["image", "audio", "document", "video", "sticker"].includes(composerKind) ? (
+                        <div className="grid gap-3 md:grid-cols-2">
+                          <TextField onChange={setComposerLink} value={composerLink}>
+                            <Label>URL pública</Label>
+                            <Input />
+                          </TextField>
+                          <TextField onChange={setComposerCaption} value={composerCaption}>
+                            <Label>Caption</Label>
+                            <Input />
+                          </TextField>
+                          {composerKind === "document" ? (
+                            <TextField onChange={setComposerFilename} value={composerFilename}>
+                              <Label>Nombre de archivo</Label>
+                              <Input />
+                            </TextField>
+                          ) : null}
+                        </div>
+                      ) : null}
+
+                      {["reaction", "mark_read", "forward", "delete"].includes(composerKind) ? (
+                        <div className="grid gap-3 md:grid-cols-2">
+                          <TextField onChange={setComposerMessageId} value={composerMessageId}>
+                            <Label>messageId</Label>
+                            <Input />
+                          </TextField>
+                          {composerKind === "reaction" ? (
+                            <TextField onChange={setComposerEmoji} value={composerEmoji}>
+                              <Label>Emoji</Label>
+                              <Input />
+                            </TextField>
+                          ) : null}
+                        </div>
+                      ) : null}
+
+                      {composerKind === "edit" ? (
+                        <TextField onChange={setComposerMessageId} value={composerMessageId}>
+                          <Label>messageId</Label>
+                          <Input />
+                        </TextField>
+                      ) : null}
+
+                      {composerKind === "location" ? (
+                        <div className="grid gap-3 md:grid-cols-2">
+                          <TextField onChange={setLocationLatitude} value={locationLatitude}>
+                            <Label>Latitud</Label>
+                            <Input />
+                          </TextField>
+                          <TextField onChange={setLocationLongitude} value={locationLongitude}>
+                            <Label>Longitud</Label>
+                            <Input />
+                          </TextField>
+                          <TextField onChange={setLocationName} value={locationName}>
+                            <Label>Nombre</Label>
+                            <Input />
+                          </TextField>
+                          <TextField onChange={setLocationAddress} value={locationAddress}>
+                            <Label>Dirección</Label>
                             <Input />
                           </TextField>
                         </div>
-                        {activeSidebarChat?.isGroup ? (
-                          <Alert status="warning">
-                            El composer embebido actual usa el backend URL-first orientado a 1:1.
-                            Para grupos ya tienes lectura y estado, pero el envío todavía no está
-                            resuelto en esta pantalla.
-                          </Alert>
-                        ) : null}
-                        {chatReplyMessageId ? (
-                          <Alert status="accent">
-                            Reply preparado sobre `{chatReplyMessageId}`.
-                          </Alert>
-                        ) : null}
-                        {composerKind === "contextual_text" || composerKind === "edit" ? (
-                          <TextField onChange={setComposerBody} value={composerBody}>
-                            <Label>Mensaje</Label>
-                            <TextArea />
+                      ) : null}
+
+                      {composerKind === "contacts" ? (
+                        <div className="grid gap-3 md:grid-cols-2">
+                          <TextField onChange={setContactCardName} value={contactCardName}>
+                            <Label>Display name</Label>
+                            <Input />
                           </TextField>
-                        ) : null}
-                        {["image", "audio", "document", "video", "sticker"].includes(
-                          composerKind
-                        ) ? (
-                          <div className="grid gap-3 md:grid-cols-2">
-                            <TextField onChange={setComposerLink} value={composerLink}>
-                              <Label>URL pública</Label>
-                              <Input />
-                            </TextField>
-                            <TextField onChange={setComposerCaption} value={composerCaption}>
-                              <Label>Caption</Label>
-                              <Input />
-                            </TextField>
-                          </div>
-                        ) : null}
-                        {["reaction", "mark_read", "forward", "delete"].includes(composerKind) ? (
-                          <div className="grid gap-3 md:grid-cols-2">
-                            <TextField onChange={setComposerMessageId} value={composerMessageId}>
-                              <Label>messageId</Label>
-                              <Input />
-                            </TextField>
-                            {composerKind === "reaction" ? (
-                              <TextField onChange={setComposerEmoji} value={composerEmoji}>
-                                <Label>Emoji</Label>
-                                <Input />
-                              </TextField>
-                            ) : null}
-                          </div>
-                        ) : null}
+                          <TextField onChange={setContactCardPhone} value={contactCardPhone}>
+                            <Label>Teléfono del contacto</Label>
+                            <Input />
+                          </TextField>
+                          <TextField
+                            onChange={setContactCardFirstName}
+                            value={contactCardFirstName}
+                          >
+                            <Label>Nombre</Label>
+                            <Input />
+                          </TextField>
+                          <TextField
+                            onChange={setContactCardOrganization}
+                            value={contactCardOrganization}
+                          >
+                            <Label>Organización</Label>
+                            <Input />
+                          </TextField>
+                        </div>
+                      ) : null}
+
+                      {composerKind === "disappearing_messages" ? (
+                        <Select
+                          onChange={(value) =>
+                            setDisappearingMode(value as "off" | "1d" | "7d" | "30d")
+                          }
+                          value={disappearingMode}
+                        >
+                          <Label>Duración</Label>
+                          <Select.Trigger className="min-w-[220px]">
+                            <Select.Value />
+                            <Select.Indicator />
+                          </Select.Trigger>
+                          <Select.Popover>
+                            <ListBox>
+                              <ListBox.Item id="off">Desactivar</ListBox.Item>
+                              <ListBox.Item id="1d">1 día</ListBox.Item>
+                              <ListBox.Item id="7d">7 días</ListBox.Item>
+                              <ListBox.Item id="30d">30 días</ListBox.Item>
+                            </ListBox>
+                          </Select.Popover>
+                        </Select>
+                      ) : null}
+
+                      {composerValidationError ? (
+                        <Alert status="warning">{composerValidationError}</Alert>
+                      ) : null}
+
+                      <div className="flex justify-end">
                         <Button
                           isDisabled={
                             !selectedChatJid ||
@@ -1454,11 +1628,15 @@ export function WhatsappSettingsPage() {
                           <Send className="h-4 w-4" />
                           Enviar
                         </Button>
-                      </Form>
-                    </Surface>
-                  ) : null}
-                </Card.Content>
-              </Card>
+                      </div>
+                    </Form>
+                  ) : (
+                    <div className="text-default-500 text-sm">
+                      Selecciona una conversación para habilitar el composer.
+                    </div>
+                  )}
+                </div>
+              </Surface>
             </div>
           </div>
         </Tabs.Panel>
