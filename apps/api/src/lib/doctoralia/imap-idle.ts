@@ -95,6 +95,7 @@ const RECONNECT_DELAY_MS = 10_000;
 const MAX_RECONNECT_DELAY_MS = 5 * 60_000;
 const IMAP_MAX_IDLE_TIME_MS = 4 * 60_000;
 const IMAP_SOCKET_TIMEOUT_MS = 10 * 60_000;
+const IMAP_HEARTBEAT_INGEST_MS = 60_000;
 
 let reconnectDelay = RECONNECT_DELAY_MS;
 let stopped = false;
@@ -351,13 +352,49 @@ async function connect(config: ImapConfig): Promise<void> {
     reconnectDelay = RECONNECT_DELAY_MS; // reset backoff on successful connect
 
     const lock = await client.getMailboxLock(config.mailbox);
+    let ingestInFlight = false;
+    let deferredReason: null | string = null;
+    let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+
+    const runIngest = async (reason: string) => {
+      if (stopped) return;
+
+      if (ingestInFlight) {
+        deferredReason ??= reason;
+        logEvent("doctoralia.imap.ingest_deferred", { reason });
+        return;
+      }
+
+      ingestInFlight = true;
+      try {
+        const result = await ingestMailbox(client, config);
+        logEvent("doctoralia.imap.ingest_complete", { phase: reason, result });
+      } finally {
+        ingestInFlight = false;
+
+        if (deferredReason) {
+          const nextReason = deferredReason;
+          deferredReason = null;
+          queueMicrotask(() => {
+            void runIngest(`deferred:${nextReason}`);
+          });
+        }
+      }
+    };
+
+    const existsHandler = (data: { count: number; path: string; prevCount: number }) => {
+      if (data.path !== config.mailbox || data.count <= data.prevCount) return;
+      void runIngest("exists_event");
+    };
+
+    client.on("exists", existsHandler);
 
     try {
-      const initialResult = await ingestMailbox(client, config);
-      logEvent("doctoralia.imap.ingest_complete", {
-        phase: "initial",
-        result: initialResult,
-      });
+      await runIngest("initial");
+
+      heartbeatTimer = setInterval(() => {
+        void runIngest("heartbeat");
+      }, IMAP_HEARTBEAT_INGEST_MS);
 
       // IDLE loop: idle() blocks until the server interrupts it (new mail or
       // ~30 min keepalive timeout). On interruption we check for new mail and
@@ -372,13 +409,11 @@ async function connect(config: ImapConfig): Promise<void> {
           idled,
           mailbox: config.mailbox,
         });
-        const loopResult = await ingestMailbox(client, config);
-        logEvent("doctoralia.imap.ingest_complete", {
-          phase: "idle_wakeup",
-          result: loopResult,
-        });
+        await runIngest("idle_wakeup");
       }
     } finally {
+      client.off("exists", existsHandler);
+      if (heartbeatTimer) clearInterval(heartbeatTimer);
       lock.release();
     }
   } catch (err) {
