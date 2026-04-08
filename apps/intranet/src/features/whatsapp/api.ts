@@ -90,6 +90,79 @@ export async function fetchWhatsappChats(params: { limit?: number; offset?: numb
   }
 }
 
+export async function fetchWhatsappChatSidebar(params?: {
+  filter?: "all" | "archived" | "blocked" | "groups" | "unread";
+  limit?: number;
+  search?: string;
+}) {
+  try {
+    return await whatsappORPCClient.listChatSidebar(params ?? {});
+  } catch (error) {
+    throw toWhatsappApiError(error);
+  }
+}
+
+export async function fetchWhatsappChatThread(params: {
+  before?: Date;
+  jid?: string;
+  limit?: number;
+  phone?: string;
+}) {
+  try {
+    return await whatsappORPCClient.getChatThread(params);
+  } catch (error) {
+    throw toWhatsappApiError(error);
+  }
+}
+
+export async function loadOlderWhatsappMessages(params: {
+  count?: number;
+  jid: string;
+  oldestMessageId: string;
+  oldestTimestamp: Date;
+}) {
+  try {
+    return await whatsappORPCClient.loadOlderMessages(params);
+  } catch (error) {
+    throw toWhatsappApiError(error);
+  }
+}
+
+export async function fetchWhatsappChatMeta(params: { jid: string }) {
+  try {
+    return await whatsappORPCClient.getChatMeta(params);
+  } catch (error) {
+    throw toWhatsappApiError(error);
+  }
+}
+
+export async function fetchWhatsappMessageReactions(params: {
+  jid: string;
+  messageIds?: string[];
+}) {
+  try {
+    return await whatsappORPCClient.listMessageReactions(params);
+  } catch (error) {
+    throw toWhatsappApiError(error);
+  }
+}
+
+export async function fetchWhatsappMessageReceipts(params: { jid: string; messageIds?: string[] }) {
+  try {
+    return await whatsappORPCClient.listMessageReceipts(params);
+  } catch (error) {
+    throw toWhatsappApiError(error);
+  }
+}
+
+export async function fetchWhatsappPresenceStates(params?: { jid?: string }) {
+  try {
+    return await whatsappORPCClient.listPresenceStates(params ?? {});
+  } catch (error) {
+    throw toWhatsappApiError(error);
+  }
+}
+
 export async function fetchWhatsappBusinessProfile() {
   try {
     return await whatsappORPCClient.getBusinessProfile({});
@@ -248,6 +321,58 @@ export async function setWhatsappContactConsent(args: {
 export async function sendWhatsappCustomMessage(payload: WhatsappCustomMessageInput) {
   try {
     return await whatsappORPCClient.sendCustomMessage(payload);
+  } catch (error) {
+    throw toWhatsappApiError(error);
+  }
+}
+
+export async function archiveWhatsappChat(jid: string, archive: boolean) {
+  try {
+    return await whatsappORPCClient.archiveChat({ archive, jid });
+  } catch (error) {
+    throw toWhatsappApiError(error);
+  }
+}
+
+export async function muteWhatsappChat(jid: string, until: Date | null) {
+  try {
+    return await whatsappORPCClient.muteChat({ jid, until });
+  } catch (error) {
+    throw toWhatsappApiError(error);
+  }
+}
+
+export async function markWhatsappChatReadState(jid: string, markRead: boolean) {
+  try {
+    return await whatsappORPCClient.markChatReadState({ jid, markRead });
+  } catch (error) {
+    throw toWhatsappApiError(error);
+  }
+}
+
+export async function setWhatsappChatDisappearingMode(jid: string, duration: number) {
+  try {
+    return await whatsappORPCClient.setChatDisappearingMode({ duration, jid });
+  } catch (error) {
+    throw toWhatsappApiError(error);
+  }
+}
+
+export async function starWhatsappMessages(args: {
+  jid: string;
+  messages: Array<{ fromMe?: boolean; id: string }>;
+  star: boolean;
+}) {
+  try {
+    return await whatsappORPCClient.starMessages(args);
+  } catch (error) {
+    throw toWhatsappApiError(error);
+  }
+}
+
+export async function blockWhatsappChat(jid: string, action: "block" | "unblock") {
+  try {
+    return await whatsappORPCClient.blockChat({ action, jid });
   } catch (error) {
     throw toWhatsappApiError(error);
   }

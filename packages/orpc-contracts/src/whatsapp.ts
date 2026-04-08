@@ -189,12 +189,17 @@ export const whatsappConversationThreadInputSchema = z
 export const whatsappChatSchema = z.object({
   archived: z.boolean().nullable().optional(),
   conversationTimestamp: z.coerce.date().nullable().optional(),
+  ephemeralExpiration: z.number().int().nullable().optional(),
+  isBlocked: z.boolean().nullable().optional(),
+  isGroup: z.boolean().nullable().optional(),
   jid: z.string(),
   lastMessageId: z.string().nullable().optional(),
+  lastMessagePreview: z.string().nullable().optional(),
   muteEndTime: z.coerce.date().nullable().optional(),
   name: z.string().nullable().optional(),
   notSpam: z.boolean().nullable().optional(),
   pinned: z.boolean().nullable().optional(),
+  profilePictureUrl: z.string().nullable().optional(),
   unreadCount: z.number().nullable().optional(),
   updatedAt: z.coerce.date(),
 });
@@ -207,6 +212,190 @@ export const listWhatsappChatsInputSchema = z.object({
 export const listWhatsappChatsResponseSchema = z.object({
   records: z.array(whatsappChatSchema),
   total: z.number(),
+});
+
+export const whatsappPresenceStateSchema = z.object({
+  chatJid: z.string(),
+  lastKnownPresence: z.string(),
+  lastSeen: z.coerce.date().nullable().optional(),
+  participantJid: z.string(),
+  updatedAt: z.coerce.date().nullable().optional(),
+});
+
+export const whatsappMessageReactionSchema = z.object({
+  actorJid: z.string(),
+  emoji: z.string(),
+  messageId: z.string(),
+  removed: z.boolean(),
+  updatedAt: z.coerce.date(),
+});
+
+export const whatsappMessageReceiptSchema = z.object({
+  deliveredDevices: z.array(z.string()),
+  messageId: z.string(),
+  playedAt: z.coerce.date().nullable().optional(),
+  readAt: z.coerce.date().nullable().optional(),
+  receiptAt: z.coerce.date().nullable().optional(),
+  receiptType: z.string(),
+  recipientJid: z.string(),
+  updatedAt: z.coerce.date(),
+});
+
+export const whatsappChatSidebarFilterSchema = z.enum([
+  "all",
+  "unread",
+  "archived",
+  "blocked",
+  "groups",
+]);
+
+export const whatsappChatSidebarItemSchema = z.object({
+  avatarUrl: z.string().nullable().optional(),
+  isArchived: z.boolean(),
+  isBlocked: z.boolean(),
+  isGroup: z.boolean(),
+  isMuted: z.boolean(),
+  jid: z.string(),
+  lastMessageAt: z.coerce.date().nullable().optional(),
+  lastMessagePreview: z.string().nullable().optional(),
+  name: z.string().nullable().optional(),
+  presence: z.string().nullable().optional(),
+  typing: z.boolean(),
+  unreadCount: z.number().int().min(0),
+});
+
+export const listWhatsappChatSidebarInputSchema = z.object({
+  filter: whatsappChatSidebarFilterSchema.optional(),
+  limit: z.number().int().min(1).max(200).optional(),
+  search: z.string().trim().min(1).optional(),
+});
+
+export const listWhatsappChatSidebarResponseSchema = z.object({
+  records: z.array(whatsappChatSidebarItemSchema),
+});
+
+export const whatsappChatThreadMessageSchema = z.object({
+  createdAt: z.coerce.date().nullable().optional(),
+  deletedForEveryone: z.boolean(),
+  deletedForMe: z.boolean(),
+  direction: whatsappMessageDirectionSchema,
+  fromMe: z.boolean(),
+  hasMedia: z.boolean(),
+  mediaMissing: z.boolean(),
+  messageId: z.string(),
+  messageType: z.string(),
+  messageTimestamp: z.coerce.date().nullable().optional(),
+  participantJid: z.string().nullable().optional(),
+  phone: z.string().nullable().optional(),
+  quotedMessageId: z.string().nullable().optional(),
+  quotedPreview: z.string().nullable().optional(),
+  reactions: z.array(whatsappMessageReactionSchema),
+  receipts: z.array(whatsappMessageReceiptSchema),
+  remoteJid: z.string(),
+  starred: z.boolean(),
+  status: z.string(),
+  textPreview: z.string().nullable().optional(),
+  updatedAt: z.coerce.date().nullable().optional(),
+  waId: z.string().nullable().optional(),
+});
+
+export const getWhatsappChatThreadInputSchema = z
+  .object({
+    before: z.coerce.date().optional(),
+    jid: z.string().trim().min(1).optional(),
+    limit: z.number().int().min(1).max(500).optional(),
+    phone: z.string().trim().min(5).optional(),
+  })
+  .refine((value) => Boolean(value.jid || value.phone), {
+    message: "Debes enviar phone o jid",
+    path: ["phone"],
+  });
+
+export const loadWhatsappOlderMessagesInputSchema = z.object({
+  count: z.number().int().min(1).max(200).optional(),
+  jid: z.string().trim().min(1),
+  oldestMessageId: z.string().trim().min(1),
+  oldestTimestamp: z.coerce.date(),
+});
+
+export const whatsappChatMetaSchema = z.object({
+  avatarUrl: z.string().nullable().optional(),
+  disappearingDuration: z.number().int().nullable().optional(),
+  groupMeta: z
+    .object({
+      desc: z.string().nullable().optional(),
+      owner: z.string().nullable().optional(),
+      participants: z.array(
+        z.object({
+          admin: z.string().nullable().optional(),
+          isSuperAdmin: z.boolean().nullable().optional(),
+          participantJid: z.string(),
+        }),
+      ),
+      size: z.number().int().nullable().optional(),
+      subject: z.string(),
+    })
+    .nullable(),
+  isBlocked: z.boolean(),
+  jid: z.string(),
+  name: z.string().nullable().optional(),
+  statusText: z.string().nullable().optional(),
+});
+
+export const getWhatsappChatMetaInputSchema = z.object({
+  jid: z.string().trim().min(1),
+});
+
+export const listWhatsappMessageReactionsInputSchema = z.object({
+  jid: z.string().trim().min(1),
+  messageIds: z.array(z.string().trim().min(1)).optional(),
+});
+
+export const listWhatsappMessageReceiptsInputSchema = z.object({
+  jid: z.string().trim().min(1),
+  messageIds: z.array(z.string().trim().min(1)).optional(),
+});
+
+export const listWhatsappPresenceStatesInputSchema = z.object({
+  jid: z.string().trim().min(1).optional(),
+});
+
+export const whatsappArchiveChatInputSchema = z.object({
+  archive: z.boolean(),
+  jid: z.string().trim().min(1),
+});
+
+export const whatsappMuteChatInputSchema = z.object({
+  jid: z.string().trim().min(1),
+  until: z.coerce.date().nullable().optional(),
+});
+
+export const whatsappMarkChatReadInputSchema = z.object({
+  jid: z.string().trim().min(1),
+  markRead: z.boolean(),
+});
+
+export const whatsappSetChatDisappearingModeInputSchema = z.object({
+  duration: z.number().int().min(0),
+  jid: z.string().trim().min(1),
+});
+
+export const whatsappStarMessagesInputSchema = z.object({
+  jid: z.string().trim().min(1),
+  messages: z
+    .array(
+      z.object({
+        fromMe: z.boolean().optional(),
+        id: z.string().trim().min(1),
+      }),
+    )
+    .min(1),
+  star: z.boolean(),
+});
+
+export const whatsappBlockChatInputSchema = z.object({
+  action: z.enum(["block", "unblock"]),
+  jid: z.string().trim().min(1),
 });
 
 const whatsappBusinessDaySchema = z.enum(["sun", "mon", "tue", "wed", "thu", "fri", "sat"]);
@@ -586,6 +775,136 @@ export const whatsappContract = {
     })
     .input(listWhatsappChatsInputSchema)
     .output(listWhatsappChatsResponseSchema),
+
+  listChatSidebar: oc
+    .route({
+      method: "GET",
+      path: "/chat/sidebar",
+      summary: "List WhatsApp chats for the chat sidebar",
+      tags: ["WhatsApp"],
+    })
+    .input(listWhatsappChatSidebarInputSchema)
+    .output(listWhatsappChatSidebarResponseSchema),
+
+  getChatThread: oc
+    .route({
+      method: "GET",
+      path: "/chat/thread",
+      summary: "Get WhatsApp chat thread with reactions and receipts",
+      tags: ["WhatsApp"],
+    })
+    .input(getWhatsappChatThreadInputSchema)
+    .output(z.array(whatsappChatThreadMessageSchema)),
+
+  loadOlderMessages: oc
+    .route({
+      method: "POST",
+      path: "/chat/thread/load-older",
+      summary: "Load older WhatsApp messages into the thread",
+      tags: ["WhatsApp"],
+    })
+    .input(loadWhatsappOlderMessagesInputSchema)
+    .output(z.array(whatsappChatThreadMessageSchema)),
+
+  getChatMeta: oc
+    .route({
+      method: "GET",
+      path: "/chat/meta",
+      summary: "Get enriched WhatsApp chat metadata",
+      tags: ["WhatsApp"],
+    })
+    .input(getWhatsappChatMetaInputSchema)
+    .output(whatsappChatMetaSchema),
+
+  listMessageReactions: oc
+    .route({
+      method: "GET",
+      path: "/chat/reactions",
+      summary: "List persisted WhatsApp reactions",
+      tags: ["WhatsApp"],
+    })
+    .input(listWhatsappMessageReactionsInputSchema)
+    .output(z.array(whatsappMessageReactionSchema)),
+
+  listMessageReceipts: oc
+    .route({
+      method: "GET",
+      path: "/chat/receipts",
+      summary: "List persisted WhatsApp receipts",
+      tags: ["WhatsApp"],
+    })
+    .input(listWhatsappMessageReceiptsInputSchema)
+    .output(z.array(whatsappMessageReceiptSchema)),
+
+  listPresenceStates: oc
+    .route({
+      method: "GET",
+      path: "/chat/presence",
+      summary: "List persisted WhatsApp presence snapshots",
+      tags: ["WhatsApp"],
+    })
+    .input(listWhatsappPresenceStatesInputSchema)
+    .output(z.array(whatsappPresenceStateSchema)),
+
+  archiveChat: oc
+    .route({
+      method: "POST",
+      path: "/chat/archive",
+      summary: "Archive or unarchive a WhatsApp chat",
+      tags: ["WhatsApp"],
+    })
+    .input(whatsappArchiveChatInputSchema)
+    .output(whatsappStatusResponseSchema),
+
+  muteChat: oc
+    .route({
+      method: "POST",
+      path: "/chat/mute",
+      summary: "Mute or unmute a WhatsApp chat",
+      tags: ["WhatsApp"],
+    })
+    .input(whatsappMuteChatInputSchema)
+    .output(whatsappStatusResponseSchema),
+
+  markChatReadState: oc
+    .route({
+      method: "POST",
+      path: "/chat/read-state",
+      summary: "Mark a WhatsApp chat as read or unread",
+      tags: ["WhatsApp"],
+    })
+    .input(whatsappMarkChatReadInputSchema)
+    .output(whatsappStatusResponseSchema),
+
+  setChatDisappearingMode: oc
+    .route({
+      method: "POST",
+      path: "/chat/disappearing-mode",
+      summary: "Set a WhatsApp chat disappearing mode",
+      tags: ["WhatsApp"],
+    })
+    .input(whatsappSetChatDisappearingModeInputSchema)
+    .output(whatsappStatusResponseSchema),
+
+  starMessages: oc
+    .route({
+      method: "POST",
+      path: "/chat/star",
+      summary: "Star or unstar WhatsApp messages",
+      tags: ["WhatsApp"],
+    })
+    .input(whatsappStarMessagesInputSchema)
+    .output(whatsappStatusResponseSchema),
+
+  blockChat: oc
+    .route({
+      method: "POST",
+      path: "/chat/block",
+      summary: "Block or unblock a WhatsApp chat",
+      tags: ["WhatsApp"],
+    })
+    .input(whatsappBlockChatInputSchema)
+    .output(whatsappStatusResponseSchema),
 
   getBusinessProfile: oc
     .route({

@@ -1,5 +1,9 @@
 import { db } from "@finanzas/db";
 import {
+  getWhatsappChatMetaInputSchema,
+  getWhatsappChatThreadInputSchema,
+  listWhatsappChatSidebarInputSchema,
+  listWhatsappChatSidebarResponseSchema,
   assignWhatsappBusinessChatLabelInputSchema,
   assignWhatsappBusinessMessageLabelInputSchema,
   deleteWhatsappBusinessQuickReplyInputSchema,
@@ -15,18 +19,27 @@ import {
   listWhatsappBusinessQuickRepliesResponseSchema,
   listWhatsappChatsInputSchema,
   listWhatsappChatsResponseSchema,
+  listWhatsappMessageReceiptsInputSchema,
+  listWhatsappMessageReactionsInputSchema,
   listWhatsappMessageHistoryInputSchema,
   listWhatsappMessageHistoryResponseSchema,
+  listWhatsappPresenceStatesInputSchema,
+  loadWhatsappOlderMessagesInputSchema,
   removeWhatsappBusinessCoverPhotoInputSchema,
   saveWhatsappBusinessLabelInputSchema,
   saveWhatsappBusinessQuickReplyInputSchema,
   updateWhatsappBusinessCoverPhotoInputSchema,
   updateWhatsappBusinessProfileInputSchema,
+  whatsappArchiveChatInputSchema,
+  whatsappBlockChatInputSchema,
   whatsappBusinessCoverPhotoResultSchema,
   whatsappBusinessLabelSchema,
   whatsappBusinessProfileSchema,
   whatsappBusinessProfileStateSchema,
   whatsappBusinessQuickReplySchema,
+  whatsappChatMetaSchema,
+  whatsappChatSidebarItemSchema,
+  whatsappChatThreadMessageSchema,
   listWhatsappNotificationsInputSchema as contractListInput,
   listWhatsappNotificationsResponseSchema as contractListResponse,
   whatsappChatSchema,
@@ -34,19 +47,27 @@ import {
   whatsappConversationThreadInputSchema,
   whatsappContactStateSchema,
   whatsappCustomMessageInputSchema,
+  whatsappMarkChatReadInputSchema,
   whatsappMessageSchema,
+  whatsappMessageReactionSchema,
+  whatsappMessageReceiptSchema,
   whatsappNotificationStatusSchema,
   whatsappOverviewSchema,
+  whatsappPresenceStateSchema,
   whatsappSetContactConsentInputSchema,
+  whatsappSetChatDisappearingModeInputSchema,
+  whatsappStarMessagesInputSchema,
   whatsappStatsSchema,
   whatsappStatusResponseSchema,
   whatsappTestSendInputSchema,
+  whatsappMuteChatInputSchema,
 } from "@finanzas/orpc-contracts/whatsapp";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
+import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
 import {
@@ -55,21 +76,30 @@ import {
   setWhatsappContactConsent,
 } from "../lib/whatsapp/conversation-state";
 import {
+  archiveChat,
   assignBusinessChatLabel,
   assignBusinessMessageLabel,
+  blockChat,
   createOrUpdateBusinessLabel,
   createOrUpdateBusinessQuickReply,
   deleteBusinessQuickReply,
   getBusinessProfile,
+  fetchOlderHistory,
   deleteMessage,
   disconnectBaileys,
   editMessage,
   getConnectionStatus,
   initBaileysSocket,
+  markChatReadState,
   removeBusinessChatLabel,
   removeBusinessCoverPhoto,
   removeBusinessMessageLabel,
   markAsRead,
+  muteChat,
+  resolveChatAvatar,
+  resolveChatStatus,
+  resolveDisappearingDuration,
+  resolveGroupMetadata,
   sendContacts,
   sendContextualText,
   sendForward,
@@ -78,10 +108,20 @@ import {
   sendReaction,
   sendText,
   setDisappearingMessages,
+  setChatDisappearingMode,
   sendTyping,
+  starMessages,
   updateBusinessCoverPhoto,
   updateBusinessProfile,
 } from "../lib/whatsapp/baileys-socket";
+import {
+  getChatMeta,
+  getChatThread,
+  listChatSidebar,
+  listMessageReactions,
+  listMessageReceipts,
+  listPresenceStates,
+} from "../lib/whatsapp/chat-state-store";
 import {
   listWhatsappBusinessChatLabels,
   listWhatsappBusinessLabels,
@@ -525,6 +565,241 @@ const whatsappORPCRouterBase = {
       };
     }),
 
+  listChatSidebar: integrationRead
+    .route({
+      method: "GET",
+      path: "/chat/sidebar",
+      summary: "List WhatsApp chats for the chat sidebar",
+      tags: ["WhatsApp"],
+    })
+    .input(listWhatsappChatSidebarInputSchema)
+    .output(listWhatsappChatSidebarResponseSchema)
+    .handler(async ({ input }) => {
+      const records = await listChatSidebar(input);
+      return {
+        records: records.map((record) => whatsappChatSidebarItemSchema.parse(record)),
+      };
+    }),
+
+  getChatThread: integrationRead
+    .route({
+      method: "GET",
+      path: "/chat/thread",
+      summary: "Get WhatsApp chat thread with reactions and receipts",
+      tags: ["WhatsApp"],
+    })
+    .input(getWhatsappChatThreadInputSchema)
+    .output(z.array(whatsappChatThreadMessageSchema))
+    .handler(async ({ input }) => {
+      const records = await getChatThread(input);
+      return records.map((record) => whatsappChatThreadMessageSchema.parse(record));
+    }),
+
+  loadOlderMessages: integrationRead
+    .route({
+      method: "POST",
+      path: "/chat/thread/load-older",
+      summary: "Load older WhatsApp messages into the thread",
+      tags: ["WhatsApp"],
+    })
+    .input(loadWhatsappOlderMessagesInputSchema)
+    .output(z.array(whatsappChatThreadMessageSchema))
+    .handler(async ({ input }) => {
+      await fetchOlderHistory({
+        count: input.count ?? 50,
+        oldestMessageId: input.oldestMessageId,
+        oldestTimestamp: input.oldestTimestamp,
+        remoteJid: input.jid,
+      });
+      const records = await getChatThread({
+        jid: input.jid,
+        limit: input.count ?? 50,
+      });
+      return records
+        .filter((record) => {
+          const createdAt = record.createdAt ?? record.messageTimestamp;
+          return createdAt ? createdAt < input.oldestTimestamp : false;
+        })
+        .map((record) => whatsappChatThreadMessageSchema.parse(record));
+    }),
+
+  getChatMeta: integrationRead
+    .route({
+      method: "GET",
+      path: "/chat/meta",
+      summary: "Get enriched WhatsApp chat metadata",
+      tags: ["WhatsApp"],
+    })
+    .input(getWhatsappChatMetaInputSchema)
+    .output(whatsappChatMetaSchema)
+    .handler(async ({ input }) => {
+      const [avatarUrl, statusText, disappearingDuration] = await Promise.all([
+        resolveChatAvatar(input.jid).catch(() => null),
+        resolveChatStatus(input.jid).catch(() => null),
+        resolveDisappearingDuration(input.jid).catch(() => null),
+      ]);
+
+      if (input.jid.endsWith("@g.us")) {
+        await resolveGroupMetadata(input.jid).catch(() => null);
+      }
+
+      const meta = await getChatMeta({ jid: input.jid });
+      return whatsappChatMetaSchema.parse({
+        ...meta,
+        avatarUrl: avatarUrl ?? meta.avatarUrl,
+        disappearingDuration: disappearingDuration ?? meta.disappearingDuration,
+        statusText: statusText ?? meta.statusText,
+      });
+    }),
+
+  listMessageReactions: integrationRead
+    .route({
+      method: "GET",
+      path: "/chat/reactions",
+      summary: "List persisted WhatsApp reactions",
+      tags: ["WhatsApp"],
+    })
+    .input(listWhatsappMessageReactionsInputSchema)
+    .output(z.array(whatsappMessageReactionSchema))
+    .handler(async ({ input }) => {
+      const records = await listMessageReactions(input);
+      return records.map((record) => whatsappMessageReactionSchema.parse(record));
+    }),
+
+  listMessageReceipts: integrationRead
+    .route({
+      method: "GET",
+      path: "/chat/receipts",
+      summary: "List persisted WhatsApp receipts",
+      tags: ["WhatsApp"],
+    })
+    .input(listWhatsappMessageReceiptsInputSchema)
+    .output(z.array(whatsappMessageReceiptSchema))
+    .handler(async ({ input }) => {
+      const records = await listMessageReceipts(input);
+      return records.map((record) => whatsappMessageReceiptSchema.parse(record));
+    }),
+
+  listPresenceStates: integrationRead
+    .route({
+      method: "GET",
+      path: "/chat/presence",
+      summary: "List persisted WhatsApp presence snapshots",
+      tags: ["WhatsApp"],
+    })
+    .input(listWhatsappPresenceStatesInputSchema)
+    .output(z.array(whatsappPresenceStateSchema))
+    .handler(async ({ input }) => {
+      const records = await listPresenceStates(input);
+      return records.map((record) => whatsappPresenceStateSchema.parse(record));
+    }),
+
+  archiveChat: integrationCreate
+    .route({
+      method: "POST",
+      path: "/chat/archive",
+      summary: "Archive or unarchive a WhatsApp chat",
+      tags: ["WhatsApp"],
+    })
+    .input(whatsappArchiveChatInputSchema)
+    .output(whatsappStatusResponseSchema)
+    .handler(async ({ input }) => {
+      await archiveChat(input.jid, input.archive);
+      return {
+        message: input.archive ? "Chat archivado." : "Chat desarchivado.",
+        status: "ok" as const,
+      };
+    }),
+
+  muteChat: integrationCreate
+    .route({
+      method: "POST",
+      path: "/chat/mute",
+      summary: "Mute or unmute a WhatsApp chat",
+      tags: ["WhatsApp"],
+    })
+    .input(whatsappMuteChatInputSchema)
+    .output(whatsappStatusResponseSchema)
+    .handler(async ({ input }) => {
+      await muteChat(input.jid, input.until ?? null);
+      return {
+        message: input.until ? "Chat silenciado." : "Chat reactivado.",
+        status: "ok" as const,
+      };
+    }),
+
+  markChatReadState: integrationCreate
+    .route({
+      method: "POST",
+      path: "/chat/read-state",
+      summary: "Mark a WhatsApp chat as read or unread",
+      tags: ["WhatsApp"],
+    })
+    .input(whatsappMarkChatReadInputSchema)
+    .output(whatsappStatusResponseSchema)
+    .handler(async ({ input }) => {
+      await markChatReadState(input.jid, input.markRead);
+      return {
+        message: input.markRead ? "Chat marcado como leído." : "Chat marcado como no leído.",
+        status: "ok" as const,
+      };
+    }),
+
+  setChatDisappearingMode: integrationCreate
+    .route({
+      method: "POST",
+      path: "/chat/disappearing-mode",
+      summary: "Set a WhatsApp chat disappearing mode",
+      tags: ["WhatsApp"],
+    })
+    .input(whatsappSetChatDisappearingModeInputSchema)
+    .output(whatsappStatusResponseSchema)
+    .handler(async ({ input }) => {
+      const result = await setChatDisappearingMode(input.jid, input.duration);
+      return {
+        message:
+          input.duration > 0
+            ? "Modo de mensajes temporales actualizado."
+            : "Mensajes temporales desactivados.",
+        messageId: result.messageId,
+        status: "ok" as const,
+      };
+    }),
+
+  starMessages: integrationCreate
+    .route({
+      method: "POST",
+      path: "/chat/star",
+      summary: "Star or unstar WhatsApp messages",
+      tags: ["WhatsApp"],
+    })
+    .input(whatsappStarMessagesInputSchema)
+    .output(whatsappStatusResponseSchema)
+    .handler(async ({ input }) => {
+      await starMessages(input);
+      return {
+        message: input.star ? "Mensajes destacados." : "Mensajes quitados de destacados.",
+        status: "ok" as const,
+      };
+    }),
+
+  blockChat: integrationCreate
+    .route({
+      method: "POST",
+      path: "/chat/block",
+      summary: "Block or unblock a WhatsApp chat",
+      tags: ["WhatsApp"],
+    })
+    .input(whatsappBlockChatInputSchema)
+    .output(whatsappStatusResponseSchema)
+    .handler(async ({ input }) => {
+      await blockChat(input.jid, input.action);
+      return {
+        message: input.action === "block" ? "Chat bloqueado." : "Chat desbloqueado.",
+        status: "ok" as const,
+      };
+    }),
+
   getBusinessProfile: integrationRead
     .route({
       method: "GET",
@@ -535,10 +810,10 @@ const whatsappORPCRouterBase = {
     .output(whatsappBusinessProfileStateSchema)
     .handler(async () => {
       const savedCoverPhotoId = await getSetting("whatsapp.businessCoverPhotoId");
-      return {
+      return whatsappBusinessProfileStateSchema.parse({
         profile: await getBusinessProfile(),
         savedCoverPhotoId: savedCoverPhotoId || null,
-      };
+      });
     }),
 
   updateBusinessProfile: integrationCreate

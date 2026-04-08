@@ -4,14 +4,20 @@ import {
   fetchWhatsappBusinessLabels,
   fetchWhatsappBusinessMessageLabels,
   fetchWhatsappBusinessProfile,
+  fetchWhatsappChatMeta,
+  fetchWhatsappChatSidebar,
+  fetchWhatsappChatThread,
   fetchWhatsappBusinessQuickReplies,
   fetchWhatsappChats,
   fetchWhatsappConnectionStatus,
   fetchWhatsappConversationThread,
   fetchWhatsappContacts,
+  fetchWhatsappMessageReceipts,
+  fetchWhatsappMessageReactions,
   fetchWhatsappMessageHistory,
   fetchWhatsappNotifications,
   fetchWhatsappOverview,
+  fetchWhatsappPresenceStates,
   fetchWhatsappStats,
 } from "./api";
 
@@ -58,6 +64,46 @@ export const whatsappKeys = {
     queryOptions({
       queryFn: () => fetchWhatsappChats(params),
       queryKey: ["whatsapp", "chats", params],
+    }),
+
+  chatSidebar: (params?: {
+    filter?: "all" | "archived" | "blocked" | "groups" | "unread";
+    limit?: number;
+    search?: string;
+  }) =>
+    queryOptions({
+      queryFn: () => fetchWhatsappChatSidebar(params),
+      queryKey: ["whatsapp", "chat-sidebar", params ?? {}],
+    }),
+
+  chatThread: (params: { before?: Date; jid?: string; limit?: number; phone?: string }) =>
+    queryOptions({
+      queryFn: () => fetchWhatsappChatThread(params),
+      queryKey: ["whatsapp", "chat-thread", params],
+    }),
+
+  chatMeta: (params: { jid: string }) =>
+    queryOptions({
+      queryFn: () => fetchWhatsappChatMeta(params),
+      queryKey: ["whatsapp", "chat-meta", params],
+    }),
+
+  messageReactions: (params: { jid: string; messageIds?: string[] }) =>
+    queryOptions({
+      queryFn: () => fetchWhatsappMessageReactions(params),
+      queryKey: ["whatsapp", "chat-reactions", params],
+    }),
+
+  messageReceipts: (params: { jid: string; messageIds?: string[] }) =>
+    queryOptions({
+      queryFn: () => fetchWhatsappMessageReceipts(params),
+      queryKey: ["whatsapp", "chat-receipts", params],
+    }),
+
+  presenceStates: (params?: { jid?: string }) =>
+    queryOptions({
+      queryFn: () => fetchWhatsappPresenceStates(params),
+      queryKey: ["whatsapp", "chat-presence", params ?? {}],
     }),
 
   businessProfile: () =>

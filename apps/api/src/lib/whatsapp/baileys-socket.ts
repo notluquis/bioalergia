@@ -12,6 +12,7 @@ import makeWASocket, {
   fetchLatestBaileysVersion,
   makeCacheableSignalKeyStore,
   type Contact,
+  type GroupMetadata,
   type WAMessage,
   type WAMessageKey,
   type WASocket,
@@ -19,6 +20,18 @@ import makeWASocket, {
 import qrcode from "qrcode";
 import { logError, logEvent, logWarn } from "../logger";
 import { clearAuthState, usePostgresAuthState } from "./baileys-auth-state";
+import {
+  applyWhatsappBlockedJidsUpdate,
+  applyWhatsappGroupParticipantsUpdate,
+  applyWhatsappMessagesDelete,
+  deleteWhatsappChatRows,
+  replaceWhatsappBlockedJids,
+  updateWhatsappChatDecorations,
+  upsertWhatsappGroups,
+  upsertWhatsappMessageReceiptUpdates,
+  upsertWhatsappMessageReactionEvents,
+  upsertWhatsappPresenceUpdate,
+} from "./chat-state-store";
 import {
   markWhatsappBusinessQuickReplyDeleted,
   removeWhatsappBusinessChatLabel,
@@ -34,6 +47,7 @@ import {
 } from "./conversation-state";
 import {
   applyWhatsappMessageUpdate,
+  getLatestWhatsappMinimalMessage,
   getWhatsappMessageContent,
   getWhatsappQuotedMessage,
   persistWhatsappHistorySet,
@@ -61,7 +75,7 @@ const MAX_BACKOFF_MS = 60_000;
 const BASE_BACKOFF_MS = 2_000;
 const MAX_AUTH_CLEAR_ATTEMPTS = 3;
 const BAILEYS_CLIENT_NAME = "Bioalergia";
-const BAILEYS_BROWSER = Browsers.appropriate(BAILEYS_CLIENT_NAME);
+const BAILEYS_BROWSER = Browsers.macOS(BAILEYS_CLIENT_NAME);
 
 async function loadBaileysVersion() {
   if (!activeVersion) {
@@ -86,6 +100,14 @@ function toSendResult(result: WAMessage) {
     messageId: result?.key.id ?? "",
     status: "sent" as const,
   };
+}
+
+function requireSendResult(result: WAMessage | undefined) {
+  if (!result) {
+    throw new Error("WhatsApp no devolvió confirmación del mensaje enviado.");
+  }
+
+  return result;
 }
 
 async function persistOutboundResult(result: WAMessage) {
@@ -159,7 +181,7 @@ export async function initBaileysSocket(): Promise<void> {
     getMessage: async (key) => await getWhatsappMessageContent(key),
     markOnlineOnConnect: false,
     printQRInTerminal: process.env.NODE_ENV !== "production",
-    syncFullHistory: false,
+    syncFullHistory: true,
     version,
   });
 
@@ -225,11 +247,11 @@ export async function sendText(
 ): Promise<SendResult> {
   const s = getReadySocket();
   const jid = phoneToJid(phone);
-  const result = await s.sendMessage(
+  const result = requireSendResult(await s.sendMessage(
     jid,
     { text: body },
     options?.quotedMessage ? { quoted: options.quotedMessage } : undefined,
-  );
+  ));
   await persistOutboundResult(result);
   return toSendResult(result);
 }
@@ -271,7 +293,7 @@ export async function sendMedia(
       break;
   }
 
-  const result = await s.sendMessage(jid, content);
+  const result = requireSendResult(await s.sendMessage(jid, content));
   await persistOutboundResult(result);
   return toSendResult(result);
 }
@@ -287,7 +309,7 @@ export async function sendReaction(
     id: targetMessageId,
     remoteJid: jid,
   };
-  const result = await s.sendMessage(jid, { react: { key, text: emoji } });
+  const result = requireSendResult(await s.sendMessage(jid, { react: { key, text: emoji } }));
   await persistOutboundResult(result);
   return toSendResult(result);
 }
@@ -303,7 +325,7 @@ export async function sendForward(
     throw new Error("No se encontró el mensaje a reenviar.");
   }
 
-  const result = await s.sendMessage(jid, { forward: original, force: true });
+  const result = requireSendResult(await s.sendMessage(jid, { forward: original, force: true }));
   await persistOutboundResult(result);
   return toSendResult(result);
 }
@@ -314,12 +336,12 @@ export async function deleteMessage(
 ): Promise<SendResult> {
   const s = getReadySocket();
   const jid = phoneToJid(phone);
-  const result = await s.sendMessage(jid, {
+  const result = requireSendResult(await s.sendMessage(jid, {
     delete: {
       id: targetMessageId,
       remoteJid: jid,
     },
-  });
+  }));
   await persistOutboundResult(result);
   return toSendResult(result);
 }
@@ -331,13 +353,13 @@ export async function editMessage(
 ): Promise<SendResult> {
   const s = getReadySocket();
   const jid = phoneToJid(phone);
-  const result = await s.sendMessage(jid, {
+  const result = requireSendResult(await s.sendMessage(jid, {
     edit: {
       id: targetMessageId,
       remoteJid: jid,
     },
     text: body,
-  });
+  }));
   await persistOutboundResult(result);
   return toSendResult(result);
 }
@@ -351,14 +373,14 @@ export async function sendLocation(args: {
 }): Promise<SendResult> {
   const s = getReadySocket();
   const jid = phoneToJid(args.phone);
-  const result = await s.sendMessage(jid, {
+  const result = requireSendResult(await s.sendMessage(jid, {
     location: {
       address: args.address,
       degreesLatitude: args.degreesLatitude,
       degreesLongitude: args.degreesLongitude,
       name: args.name,
     },
-  });
+  }));
   await persistOutboundResult(result);
   return toSendResult(result);
 }
@@ -378,7 +400,7 @@ export async function sendContacts(args: {
     throw new Error("Debes enviar al menos un contacto.");
   }
 
-  const result = await s.sendMessage(jid, {
+  const result = requireSendResult(await s.sendMessage(jid, {
     contacts: {
       contacts: args.contacts.map((contact) => ({
         displayName: contact.displayName,
@@ -386,7 +408,7 @@ export async function sendContacts(args: {
       })),
       displayName: args.contacts[0]?.displayName ?? "Contacto",
     },
-  });
+  }));
   await persistOutboundResult(result);
   return toSendResult(result);
 }
@@ -395,18 +417,142 @@ export async function setDisappearingMessages(args: {
   expiration: boolean | number;
   phone: string;
 }): Promise<SendResult> {
-  const s = getReadySocket();
   const jid = phoneToJid(args.phone);
-  const result = await s.sendMessage(jid, {
-    disappearingMessagesInChat: args.expiration,
-  });
-  await persistOutboundResult(result);
-  return toSendResult(result);
+  return await setChatDisappearingMode(jid, args.expiration === false ? 0 : Number(args.expiration));
 }
 
 export async function markAsRead(messageKeys: WAMessageKey[]): Promise<void> {
   const s = getReadySocket();
   await s.readMessages(messageKeys);
+}
+
+async function getLastMessageListForChat(jid: string) {
+  const latest = await getLatestWhatsappMinimalMessage({ jid });
+  if (!latest?.key.id || !latest.key.remoteJid) {
+    return [];
+  }
+
+  return [
+    {
+      key: latest.key,
+      messageTimestamp: latest.messageTimestamp,
+    },
+  ];
+}
+
+function extractStatusText(result: unknown) {
+  if (!Array.isArray(result) || result.length === 0) return null;
+  const status = (result[0] as { status?: { status?: string | null } }).status?.status;
+  return typeof status === "string" ? status : null;
+}
+
+function extractDisappearingDuration(result: unknown) {
+  if (!Array.isArray(result) || result.length === 0) return null;
+  const duration = (result[0] as { disappearing_mode?: { duration?: number } }).disappearing_mode
+    ?.duration;
+  return typeof duration === "number" && Number.isFinite(duration) ? duration : null;
+}
+
+export async function fetchOlderHistory(args: {
+  count: number;
+  oldestMessageId: string;
+  oldestTimestamp: Date | number | string;
+  remoteJid: string;
+}) {
+  const s = getReadySocket();
+  const oldestTimestampSeconds =
+    args.oldestTimestamp instanceof Date
+      ? Math.floor(args.oldestTimestamp.getTime() / 1000)
+      : typeof args.oldestTimestamp === "number"
+        ? args.oldestTimestamp
+        : Math.floor(new Date(args.oldestTimestamp).getTime() / 1000);
+
+  await s.fetchMessageHistory(
+    args.count,
+    {
+      id: args.oldestMessageId,
+      remoteJid: args.remoteJid,
+    },
+    oldestTimestampSeconds,
+  );
+
+  await new Promise((resolve) => setTimeout(resolve, 500));
+}
+
+export async function resolveChatAvatar(jid: string) {
+  const s = getReadySocket();
+  const avatarUrl = (await s.profilePictureUrl(jid, "image").catch(() => undefined)) ?? null;
+  await updateWhatsappChatDecorations({
+    jid,
+    profilePictureUrl: avatarUrl,
+  });
+  return avatarUrl;
+}
+
+export async function resolveChatStatus(jid: string) {
+  const s = getReadySocket();
+  return extractStatusText(await s.fetchStatus(jid).catch(() => undefined));
+}
+
+export async function resolveDisappearingDuration(jid: string) {
+  const s = getReadySocket();
+  const duration = extractDisappearingDuration(
+    await s.fetchDisappearingDuration(jid).catch(() => undefined),
+  );
+  await updateWhatsappChatDecorations({
+    ephemeralExpiration: duration,
+    jid,
+  });
+  return duration;
+}
+
+export async function resolveGroupMetadata(jid: string) {
+  const s = getReadySocket();
+  const group = await s.groupMetadata(jid);
+  await upsertWhatsappGroups([group]);
+  return group;
+}
+
+export async function archiveChat(jid: string, archive: boolean) {
+  const s = getReadySocket();
+  await s.chatModify({ archive, lastMessages: await getLastMessageListForChat(jid) }, jid);
+}
+
+export async function muteChat(jid: string, until: Date | null) {
+  const s = getReadySocket();
+  await s.chatModify({ mute: until ? Math.floor(until.getTime() / 1000) : null }, jid);
+}
+
+export async function markChatReadState(jid: string, markRead: boolean) {
+  const s = getReadySocket();
+  await s.chatModify({ lastMessages: await getLastMessageListForChat(jid), markRead }, jid);
+}
+
+export async function setChatDisappearingMode(jid: string, duration: number) {
+  const s = getReadySocket();
+  const result = requireSendResult(await s.sendMessage(jid, {
+    disappearingMessagesInChat: duration <= 0 ? false : duration,
+  }));
+  await persistOutboundResult(result);
+  await updateWhatsappChatDecorations({
+    ephemeralExpiration: duration <= 0 ? 0 : duration,
+    jid,
+  });
+  return toSendResult(result);
+}
+
+export async function starMessages(args: {
+  jid: string;
+  messages: Array<{ fromMe?: boolean; id: string }>;
+  star: boolean;
+}) {
+  const s = getReadySocket();
+  await s.star(args.jid, args.messages, args.star);
+}
+
+export async function blockChat(jid: string, action: "block" | "unblock") {
+  const s = getReadySocket();
+  await s.updateBlockStatus(jid, action);
 }
 
 export async function sendPresenceState(state: "available" | "composing" | "paused" | "recording" | "unavailable", phone?: string): Promise<void> {
@@ -622,6 +768,20 @@ function registerEventHandlers(socket: WASocket, saveCredsFn: () => Promise<void
       } catch (err) {
         logError("baileys.presence_unavailable_error", err, {});
       }
+
+      void socket
+        .fetchBlocklist()
+        .then((result) => replaceWhatsappBlockedJids(result.filter(Boolean) as string[]))
+        .catch((err) => {
+          logError("baileys.blocklist_fetch_error", err, {});
+        });
+
+      void socket
+        .groupFetchAllParticipating()
+        .then((groups) => upsertWhatsappGroups(Object.values(groups)))
+        .catch((err) => {
+          logError("baileys.groups_fetch_error", err, {});
+        });
     }
 
     if (pending) {
@@ -754,19 +914,28 @@ function registerEventHandlers(socket: WASocket, saveCredsFn: () => Promise<void
         .map(
           (chat) =>
             ({
-              archive: chat.archive,
+              archived: chat.archived,
               conversationTimestamp: chat.conversationTimestamp,
+              ephemeralExpiration: chat.ephemeralExpiration,
               id: chat.id,
               muteEndTime: chat.muteEndTime,
               name: chat.name,
               notSpam: chat.notSpam,
-              pin: chat.pin,
+              pinned: chat.pinned ? 1 : 0,
               unreadCount: chat.unreadCount,
             }) satisfies Parameters<typeof upsertWhatsappChats>[0][number],
         );
       await upsertWhatsappChats(upsertableChats);
     } catch (err) {
       logError("baileys.chats_update_error", err, { count: updates.length });
+    }
+  });
+
+  socket.ev.on("chats.delete", async (jids) => {
+    try {
+      await deleteWhatsappChatRows(jids);
+    } catch (err) {
+      logError("baileys.chats_delete_error", err, { count: jids.length });
     }
   });
 
@@ -851,7 +1020,7 @@ function registerEventHandlers(socket: WASocket, saveCredsFn: () => Promise<void
       if (!key.id) continue;
 
       try {
-        await applyWhatsappMessageUpdate(key, update);
+        await applyWhatsappMessageUpdate(key, { key, update });
       } catch (err) {
         logError("baileys.message_update_persist_error", err, {
           messageId: key.id,
@@ -863,7 +1032,11 @@ function registerEventHandlers(socket: WASocket, saveCredsFn: () => Promise<void
 
       const now = new Date();
       let dbStatus: "DELIVERED" | "PLAYED" | "READ" | "SENT" | null = null;
-      let extraFields: Record<string, unknown> = {};
+      let extraFields: {
+        deliveredAt?: Date;
+        playedAt?: Date;
+        readAt?: Date;
+      } = {};
 
       switch (update.status) {
         case 2:
@@ -894,6 +1067,113 @@ function registerEventHandlers(socket: WASocket, saveCredsFn: () => Promise<void
       } catch {
         // Notifications only track Doctoralia automation and some legacy sends.
       }
+    }
+  });
+
+  socket.ev.on("messages.reaction", async (events) => {
+    try {
+      await upsertWhatsappMessageReactionEvents(events);
+    } catch (err) {
+      logError("baileys.message_reaction_error", err, {
+        count: events.length,
+      });
+    }
+  });
+
+  socket.ev.on("messages.delete", async (event) => {
+    try {
+      await applyWhatsappMessagesDelete(event);
+    } catch (err) {
+      logError("baileys.message_delete_error", err, {});
+    }
+  });
+
+  socket.ev.on("message-receipt.update", async (updates) => {
+    try {
+      await upsertWhatsappMessageReceiptUpdates(updates);
+    } catch (err) {
+      logError("baileys.message_receipt_error", err, {
+        count: updates.length,
+      });
+    }
+  });
+
+  socket.ev.on("presence.update", async (update) => {
+    try {
+      await upsertWhatsappPresenceUpdate(update);
+    } catch (err) {
+      logError("baileys.presence_update_error", err, {
+        chatJid: update.id,
+      });
+    }
+  });
+
+  socket.ev.on("groups.upsert", async (groups) => {
+    try {
+      await upsertWhatsappGroups(groups);
+    } catch (err) {
+      logError("baileys.groups_upsert_error", err, {
+        count: groups.length,
+      });
+    }
+  });
+
+  socket.ev.on("groups.update", async (updates) => {
+    try {
+      const resolvedGroups = (
+        await Promise.all(
+          updates
+            .filter((group): group is Partial<GroupMetadata> & { id: string } => Boolean(group.id))
+            .map(async (group) => {
+              try {
+                return await socket.groupMetadata(group.id);
+              } catch {
+                return null;
+              }
+            }),
+        )
+      ).filter((group): group is GroupMetadata => Boolean(group));
+
+      if (resolvedGroups.length > 0) {
+        await upsertWhatsappGroups(resolvedGroups);
+      }
+    } catch (err) {
+      logError("baileys.groups_update_error", err, {
+        count: updates.length,
+      });
+    }
+  });
+
+  socket.ev.on("group-participants.update", async (update) => {
+    try {
+      await applyWhatsappGroupParticipantsUpdate(update);
+    } catch (err) {
+      logError("baileys.group_participants_update_error", err, {
+        action: update.action,
+        chatJid: update.id,
+        count: update.participants.length,
+      });
+    }
+  });
+
+  socket.ev.on("blocklist.set", async ({ blocklist }) => {
+    try {
+      await replaceWhatsappBlockedJids(blocklist);
+    } catch (err) {
+      logError("baileys.blocklist_set_error", err, {
+        count: blocklist.length,
+      });
+    }
+  });
+
+  socket.ev.on("blocklist.update", async (update) => {
+    try {
+      await applyWhatsappBlockedJidsUpdate(update);
+    } catch (err) {
+      logError("baileys.blocklist_update_error", err, {
+        count: update.blocklist.length,
+        type: update.type,
+      });
     }
   });
 
