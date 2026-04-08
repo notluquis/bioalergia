@@ -33,17 +33,24 @@ import { Fragment, type ReactNode, useEffect, useMemo, useState } from "react";
 import { useToast } from "@/context/ToastContext";
 import { useSettings } from "@/context/SettingsContext";
 import {
+  archiveWhatsappChat,
   assignWhatsappBusinessChatLabel,
   assignWhatsappBusinessMessageLabel,
+  blockWhatsappChat,
   deleteWhatsappBusinessQuickReply,
   fetchWhatsappBusinessProfile,
+  loadOlderWhatsappMessages,
+  markWhatsappChatReadState,
+  muteWhatsappChat,
   removeWhatsappBusinessChatLabel,
   removeWhatsappBusinessCoverPhoto,
   removeWhatsappBusinessMessageLabel,
   saveWhatsappBusinessLabel,
   saveWhatsappBusinessQuickReply,
   sendWhatsappCustomMessage,
+  setWhatsappChatDisappearingMode,
   setWhatsappContactConsent,
+  starWhatsappMessages,
   toggleWhatsappConnection,
   updateWhatsappBusinessCoverPhoto,
   updateWhatsappBusinessProfile,
@@ -263,7 +270,12 @@ export function WhatsappSettingsPage() {
     "all" | "DELIVERED" | "FAILED" | "PENDING" | "PLAYED" | "READ" | "RECEIVED" | "SENT"
   >("all");
   const [historyTypeFilter, setHistoryTypeFilter] = useState("");
+  const [chatFilter, setChatFilter] = useState<
+    "all" | "archived" | "blocked" | "groups" | "unread"
+  >("all");
+  const [chatSearch, setChatSearch] = useState("");
   const [selectedChatJid, setSelectedChatJid] = useState<string | null>(null);
+  const [chatReplyMessageId, setChatReplyMessageId] = useState("");
 
   const [businessDescription, setBusinessDescription] = useState("");
   const [businessEmail, setBusinessEmail] = useState("");
@@ -317,6 +329,30 @@ export function WhatsappSettingsPage() {
   const { data: chatsData, isPending: chatsPending } = useQuery({
     ...whatsappKeys.chats({ limit: 50, offset: 0 }),
     refetchInterval: 30_000,
+  });
+
+  const chatSidebarQuery = useQuery({
+    ...whatsappKeys.chatSidebar({
+      filter: chatFilter,
+      limit: 100,
+      search: chatSearch.trim() || undefined,
+    }),
+    refetchInterval: 12_000,
+  });
+
+  const chatMetaQuery = useQuery({
+    ...whatsappKeys.chatMeta({ jid: selectedChatJid ?? "" }),
+    enabled: Boolean(selectedChatJid),
+    refetchInterval: 15_000,
+  });
+
+  const chatThreadQuery = useQuery({
+    ...whatsappKeys.chatThread({
+      jid: selectedChatJid ?? undefined,
+      limit: 120,
+    }),
+    enabled: Boolean(selectedChatJid),
+    refetchInterval: 8_000,
   });
 
   const businessProfileQuery = useQuery({
@@ -425,10 +461,107 @@ export function WhatsappSettingsPage() {
       }
 
       void Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["whatsapp", "chat-thread"] }),
+        queryClient.invalidateQueries({ queryKey: ["whatsapp", "chat-sidebar"] }),
+        queryClient.invalidateQueries({ queryKey: ["whatsapp", "chat-meta"] }),
         queryClient.invalidateQueries({ queryKey: ["whatsapp", "message-history"] }),
         queryClient.invalidateQueries({ queryKey: ["whatsapp", "conversation-thread"] }),
         queryClient.invalidateQueries({ queryKey: ["whatsapp", "notifications"] }),
         queryClient.invalidateQueries({ queryKey: whatsappKeys.connectionStatus().queryKey }),
+      ]);
+    },
+  });
+
+  const loadOlderMutation = useMutation({
+    mutationFn: (args: {
+      count?: number;
+      jid: string;
+      oldestMessageId: string;
+      oldestTimestamp: Date;
+    }) => loadOlderWhatsappMessages(args),
+    onError: (err: Error) => showError(`Error al cargar mensajes antiguos: ${err.message}`),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["whatsapp", "chat-thread"] });
+    },
+  });
+
+  const archiveChatMutation = useMutation({
+    mutationFn: (args: { archive: boolean; jid: string }) =>
+      archiveWhatsappChat(args.jid, args.archive),
+    onError: (err: Error) => showError(`Error al archivar chat: ${err.message}`),
+    onSuccess: (result) => {
+      showSuccess(result.message);
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["whatsapp", "chat-sidebar"] }),
+        queryClient.invalidateQueries({ queryKey: ["whatsapp", "chats"] }),
+        queryClient.invalidateQueries({ queryKey: ["whatsapp", "chat-meta"] }),
+      ]);
+    },
+  });
+
+  const muteChatMutation = useMutation({
+    mutationFn: (args: { jid: string; until: Date | null }) =>
+      muteWhatsappChat(args.jid, args.until),
+    onError: (err: Error) => showError(`Error al silenciar chat: ${err.message}`),
+    onSuccess: (result) => {
+      showSuccess(result.message);
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["whatsapp", "chat-sidebar"] }),
+        queryClient.invalidateQueries({ queryKey: ["whatsapp", "chats"] }),
+      ]);
+    },
+  });
+
+  const markChatReadMutation = useMutation({
+    mutationFn: (args: { jid: string; markRead: boolean }) =>
+      markWhatsappChatReadState(args.jid, args.markRead),
+    onError: (err: Error) => showError(`Error al actualizar leído/no leído: ${err.message}`),
+    onSuccess: (result) => {
+      showSuccess(result.message);
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["whatsapp", "chat-sidebar"] }),
+        queryClient.invalidateQueries({ queryKey: ["whatsapp", "chats"] }),
+      ]);
+    },
+  });
+
+  const disappearingChatMutation = useMutation({
+    mutationFn: (args: { duration: number; jid: string }) =>
+      setWhatsappChatDisappearingMode(args.jid, args.duration),
+    onError: (err: Error) => showError(`Error al cambiar temporales: ${err.message}`),
+    onSuccess: (result) => {
+      showSuccess(result.message);
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["whatsapp", "chat-meta"] }),
+        queryClient.invalidateQueries({ queryKey: ["whatsapp", "chat-thread"] }),
+      ]);
+    },
+  });
+
+  const starMessageMutation = useMutation({
+    mutationFn: (args: { jid: string; id: string; fromMe: boolean; star: boolean }) =>
+      starWhatsappMessages({
+        jid: args.jid,
+        messages: [{ fromMe: args.fromMe, id: args.id }],
+        star: args.star,
+      }),
+    onError: (err: Error) => showError(`Error al destacar mensaje: ${err.message}`),
+    onSuccess: (result) => {
+      showSuccess(result.message);
+      void queryClient.invalidateQueries({ queryKey: ["whatsapp", "chat-thread"] });
+    },
+  });
+
+  const blockChatMutation = useMutation({
+    mutationFn: (args: { action: "block" | "unblock"; jid: string }) =>
+      blockWhatsappChat(args.jid, args.action),
+    onError: (err: Error) => showError(`Error al bloquear chat: ${err.message}`),
+    onSuccess: (result) => {
+      showSuccess(result.message);
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["whatsapp", "chat-sidebar"] }),
+        queryClient.invalidateQueries({ queryKey: ["whatsapp", "chat-meta"] }),
+        queryClient.invalidateQueries({ queryKey: ["whatsapp", "chats"] }),
       ]);
     },
   });
@@ -566,7 +699,18 @@ export function WhatsappSettingsPage() {
     if (!selectedChatJid) return;
     setChatLabelJid((current) => current || selectedChatJid);
     setMessageLabelJid((current) => current || selectedChatJid);
+    if (selectedChatJid.endsWith("@s.whatsapp.net")) {
+      setComposerPhone(selectedChatJid.replace(/@s\.whatsapp\.net$/, ""));
+    }
   }, [selectedChatJid]);
+
+  useEffect(() => {
+    if (selectedChatJid) return;
+    const firstChat = chatSidebarQuery.data?.records[0];
+    if (firstChat?.jid) {
+      setSelectedChatJid(firstChat.jid);
+    }
+  }, [chatSidebarQuery.data?.records, selectedChatJid]);
 
   const composerValidationError = useMemo(() => {
     if (!composerPhone.trim()) return "Debes ingresar un teléfono.";
@@ -787,11 +931,20 @@ export function WhatsappSettingsPage() {
     });
   }
 
+  const activeSidebarChat =
+    chatSidebarQuery.data?.records.find((record) => record.jid === selectedChatJid) ?? null;
+  const activeThread = chatThreadQuery.data ?? [];
+  const oldestThreadMessage = activeThread[0] ?? null;
+
   return (
     <div className={PAGE_CONTAINER}>
-      <Tabs defaultSelectedKey="channel">
+      <Tabs defaultSelectedKey="chat">
         <Tabs.ListContainer>
           <Tabs.List aria-label="Secciones de WhatsApp">
+            <Tabs.Tab id="chat">
+              Chat
+              <Tabs.Indicator />
+            </Tabs.Tab>
             <Tabs.Tab id="channel">
               Canal
               <Tabs.Indicator />
@@ -814,6 +967,501 @@ export function WhatsappSettingsPage() {
             </Tabs.Tab>
           </Tabs.List>
         </Tabs.ListContainer>
+
+        <Tabs.Panel id="chat">
+          <div className="mt-4 space-y-4">
+            {!socketReady ? (
+              <Alert status="warning">
+                El socket todavía no está listo. La ventana de chat usa el historial persistido de
+                Baileys y se vuelve realmente útil cuando el canal ya terminó de sincronizar.
+              </Alert>
+            ) : null}
+
+            <div className="grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)]">
+              <Card>
+                <Card.Header className="space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <h2 className="font-semibold text-base">Chats</h2>
+                      <Description className="text-default-500 text-xs">
+                        Sidebar operativa para acercarse a WhatsApp Web.
+                      </Description>
+                    </div>
+                    <Chip size="sm" variant="soft">
+                      {chatSidebarQuery.data?.records.length ?? 0}
+                    </Chip>
+                  </div>
+
+                  <TextField onChange={setChatSearch} value={chatSearch}>
+                    <Label>Buscar</Label>
+                    <Input placeholder="Nombre, JID o preview" />
+                  </TextField>
+
+                  <Select
+                    onChange={(value) => setChatFilter(value as typeof chatFilter)}
+                    value={chatFilter}
+                  >
+                    <Label>Filtro</Label>
+                    <Select.Trigger>
+                      <Select.Value />
+                      <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        <ListBox.Item id="all">Todos</ListBox.Item>
+                        <ListBox.Item id="unread">No leídos</ListBox.Item>
+                        <ListBox.Item id="archived">Archivados</ListBox.Item>
+                        <ListBox.Item id="blocked">Bloqueados</ListBox.Item>
+                        <ListBox.Item id="groups">Grupos</ListBox.Item>
+                      </ListBox>
+                    </Select.Popover>
+                  </Select>
+                </Card.Header>
+                <Card.Content className="space-y-2">
+                  {chatSidebarQuery.isPending ? (
+                    <div className="space-y-2">
+                      {Array.from({ length: 6 }).map((_, index) => (
+                        <Skeleton className="h-16 rounded-2xl" key={index} />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {chatSidebarQuery.data?.records.map((chat) => (
+                        <button
+                          className={`w-full rounded-2xl border px-4 py-3 text-left transition ${
+                            selectedChatJid === chat.jid
+                              ? "border-accent bg-accent/10"
+                              : "border-default-200 bg-content1 hover:border-default-300"
+                          }`}
+                          key={chat.jid}
+                          onClick={() => setSelectedChatJid(chat.jid)}
+                          type="button"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="truncate font-medium text-sm">
+                                {chat.name || chat.jid}
+                              </div>
+                              <div className="mt-1 truncate text-default-500 text-xs">
+                                {chat.lastMessagePreview || "Sin preview todavía"}
+                              </div>
+                            </div>
+                            <div className="flex flex-col items-end gap-1">
+                              {chat.unreadCount > 0 ? (
+                                <Chip color="accent" size="sm" variant="soft">
+                                  {chat.unreadCount}
+                                </Chip>
+                              ) : null}
+                              {chat.typing ? (
+                                <Chip color="success" size="sm" variant="soft">
+                                  typing…
+                                </Chip>
+                              ) : chat.presence ? (
+                                <Chip size="sm" variant="soft">
+                                  {chat.presence}
+                                </Chip>
+                              ) : null}
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </Card.Content>
+              </Card>
+
+              <Card>
+                <Card.Header className="space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <h2 className="font-semibold text-base">
+                        {chatMetaQuery.data?.name ||
+                          activeSidebarChat?.name ||
+                          "Selecciona un chat"}
+                      </h2>
+                      <Description className="text-default-500 text-xs">
+                        {selectedChatJid ?? "Sin conversación activa"}
+                      </Description>
+                    </div>
+                    {selectedChatJid ? (
+                      <div className="flex flex-wrap gap-2">
+                        <Chip
+                          color={chatMetaQuery.data?.isBlocked ? "danger" : "default"}
+                          size="sm"
+                          variant="soft"
+                        >
+                          {chatMetaQuery.data?.isBlocked ? "Bloqueado" : "Activo"}
+                        </Chip>
+                        {chatMetaQuery.data?.disappearingDuration ? (
+                          <Chip color="warning" size="sm" variant="soft">
+                            Temporales {chatMetaQuery.data.disappearingDuration}s
+                          </Chip>
+                        ) : null}
+                        {activeSidebarChat?.typing ? (
+                          <Chip color="success" size="sm" variant="soft">
+                            typing…
+                          </Chip>
+                        ) : chatMetaQuery.data?.statusText ? (
+                          <Chip size="sm" variant="soft">
+                            {chatMetaQuery.data.statusText}
+                          </Chip>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </div>
+
+                  {selectedChatJid ? (
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        onPress={() =>
+                          archiveChatMutation.mutate({
+                            archive: !(activeSidebarChat?.isArchived ?? false),
+                            jid: selectedChatJid,
+                          })
+                        }
+                        size="sm"
+                        variant="ghost"
+                      >
+                        {activeSidebarChat?.isArchived ? "Desarchivar" : "Archivar"}
+                      </Button>
+                      <Button
+                        onPress={() =>
+                          muteChatMutation.mutate({
+                            jid: selectedChatJid,
+                            until: activeSidebarChat?.isMuted
+                              ? null
+                              : dayjs().add(8, "hour").toDate(),
+                          })
+                        }
+                        size="sm"
+                        variant="ghost"
+                      >
+                        {activeSidebarChat?.isMuted ? "Quitar mute" : "Silenciar 8h"}
+                      </Button>
+                      <Button
+                        onPress={() =>
+                          markChatReadMutation.mutate({
+                            jid: selectedChatJid,
+                            markRead: (activeSidebarChat?.unreadCount ?? 0) > 0,
+                          })
+                        }
+                        size="sm"
+                        variant="ghost"
+                      >
+                        {(activeSidebarChat?.unreadCount ?? 0) > 0
+                          ? "Marcar leído"
+                          : "Marcar no leído"}
+                      </Button>
+                      <Button
+                        onPress={() =>
+                          disappearingChatMutation.mutate({
+                            duration: chatMetaQuery.data?.disappearingDuration ? 0 : 86400,
+                            jid: selectedChatJid,
+                          })
+                        }
+                        size="sm"
+                        variant="ghost"
+                      >
+                        {chatMetaQuery.data?.disappearingDuration
+                          ? "Quitar temporales"
+                          : "Temporales 24h"}
+                      </Button>
+                      <Button
+                        onPress={() =>
+                          blockChatMutation.mutate({
+                            action: chatMetaQuery.data?.isBlocked ? "unblock" : "block",
+                            jid: selectedChatJid,
+                          })
+                        }
+                        size="sm"
+                        variant={chatMetaQuery.data?.isBlocked ? "secondary" : "danger-soft"}
+                      >
+                        {chatMetaQuery.data?.isBlocked ? "Desbloquear" : "Bloquear"}
+                      </Button>
+                    </div>
+                  ) : null}
+                </Card.Header>
+
+                <Card.Content className="space-y-4">
+                  {selectedChatJid && oldestThreadMessage ? (
+                    <div className="flex justify-center">
+                      <Button
+                        isDisabled={loadOlderMutation.isPending}
+                        onPress={() =>
+                          loadOlderMutation.mutate({
+                            count: 40,
+                            jid: selectedChatJid,
+                            oldestMessageId: oldestThreadMessage.messageId,
+                            oldestTimestamp:
+                              oldestThreadMessage.createdAt ??
+                              oldestThreadMessage.messageTimestamp ??
+                              new Date(),
+                          })
+                        }
+                        size="sm"
+                        variant="ghost"
+                      >
+                        Cargar anteriores
+                      </Button>
+                    </div>
+                  ) : null}
+
+                  <Surface
+                    className="min-h-[560px] rounded-3xl border border-default-200 p-4"
+                    variant="secondary"
+                  >
+                    {chatThreadQuery.isPending ? (
+                      <div className="space-y-3">
+                        {Array.from({ length: 7 }).map((_, index) => (
+                          <Skeleton className="h-24 rounded-2xl" key={index} />
+                        ))}
+                      </div>
+                    ) : !selectedChatJid ? (
+                      <div className="flex h-full items-center justify-center text-default-500 text-sm">
+                        Selecciona un chat en la barra lateral.
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {activeThread.map((message, index) => {
+                          const currentDay = dayjs(
+                            message.createdAt ?? message.messageTimestamp ?? new Date()
+                          ).format("DD/MM/YYYY");
+                          const previousDay =
+                            index > 0
+                              ? dayjs(
+                                  activeThread[index - 1]?.createdAt ??
+                                    activeThread[index - 1]?.messageTimestamp ??
+                                    new Date()
+                                ).format("DD/MM/YYYY")
+                              : null;
+
+                          return (
+                            <Fragment key={message.messageId}>
+                              {currentDay !== previousDay ? (
+                                <div className="py-2 text-center text-default-400 text-xs">
+                                  {currentDay}
+                                </div>
+                              ) : null}
+                              <div
+                                className={`flex ${message.fromMe ? "justify-end" : "justify-start"}`}
+                              >
+                                <div
+                                  className={`max-w-[80%] rounded-3xl px-4 py-3 ${
+                                    message.fromMe
+                                      ? "bg-accent text-accent-foreground"
+                                      : "bg-content1 text-foreground"
+                                  }`}
+                                >
+                                  {message.quotedPreview ? (
+                                    <div className="mb-2 rounded-2xl bg-black/10 px-3 py-2 text-xs">
+                                      {message.quotedPreview}
+                                    </div>
+                                  ) : null}
+                                  <div className="space-y-2">
+                                    <div className="text-sm">
+                                      {message.deletedForEveryone || message.deletedForMe
+                                        ? "Mensaje eliminado"
+                                        : message.textPreview || message.messageType}
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                      <Chip size="sm" variant="soft">
+                                        {message.messageType}
+                                      </Chip>
+                                      {message.starred ? (
+                                        <Chip color="warning" size="sm" variant="soft">
+                                          Destacado
+                                        </Chip>
+                                      ) : null}
+                                      {message.reactions
+                                        .filter((reaction) => !reaction.removed)
+                                        .map((reaction) => (
+                                          <Chip
+                                            key={`${reaction.messageId}-${reaction.actorJid}-${reaction.emoji}`}
+                                            size="sm"
+                                            variant="soft"
+                                          >
+                                            {reaction.emoji}
+                                          </Chip>
+                                        ))}
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-2 text-[11px] opacity-80">
+                                      <span>
+                                        {dayjs(
+                                          message.createdAt ??
+                                            message.messageTimestamp ??
+                                            new Date()
+                                        ).format("HH:mm:ss")}
+                                      </span>
+                                      <span>{message.status}</span>
+                                      {message.receipts.length > 0 ? (
+                                        <span>{message.receipts[0]?.receiptType}</span>
+                                      ) : null}
+                                    </div>
+                                  </div>
+                                  <div className="mt-3 flex flex-wrap gap-2">
+                                    <Button
+                                      onPress={() => {
+                                        setComposerKind("contextual_text");
+                                        setComposerPhone(message.phone ?? composerPhone);
+                                        setComposerQuotedMessageId(message.messageId);
+                                        setChatReplyMessageId(message.messageId);
+                                      }}
+                                      size="sm"
+                                      variant="ghost"
+                                    >
+                                      Responder
+                                    </Button>
+                                    <Button
+                                      onPress={() => {
+                                        setComposerKind("reaction");
+                                        if (message.phone) {
+                                          setComposerPhone(message.phone);
+                                        }
+                                        setComposerMessageId(message.messageId);
+                                      }}
+                                      size="sm"
+                                      variant="ghost"
+                                    >
+                                      Reaccionar
+                                    </Button>
+                                    <Button
+                                      onPress={() =>
+                                        starMessageMutation.mutate({
+                                          fromMe: message.fromMe,
+                                          id: message.messageId,
+                                          jid: message.remoteJid,
+                                          star: !message.starred,
+                                        })
+                                      }
+                                      size="sm"
+                                      variant="ghost"
+                                    >
+                                      {message.starred ? "Quitar estrella" : "Destacar"}
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            </Fragment>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </Surface>
+
+                  {selectedChatJid ? (
+                    <Surface
+                      className="rounded-3xl border border-default-200 p-4"
+                      variant="secondary"
+                    >
+                      <Form
+                        className="space-y-3"
+                        onSubmit={(event) => {
+                          event.preventDefault();
+                          if (composerValidationError) {
+                            showError(composerValidationError);
+                            return;
+                          }
+                          composerMutation.mutate(buildComposerPayload());
+                          setChatReplyMessageId("");
+                        }}
+                      >
+                        <div className="flex flex-wrap gap-3">
+                          <Select
+                            onChange={(value) =>
+                              setComposerKind(value as WhatsappCustomMessageInput["kind"])
+                            }
+                            value={composerKind}
+                          >
+                            <Label>Tipo</Label>
+                            <Select.Trigger>
+                              <Select.Value />
+                              <Select.Indicator />
+                            </Select.Trigger>
+                            <Select.Popover>
+                              <ListBox>
+                                {COMPOSER_KIND_OPTIONS.map((option) => (
+                                  <ListBox.Item id={option.value} key={option.value}>
+                                    {option.label}
+                                  </ListBox.Item>
+                                ))}
+                              </ListBox>
+                            </Select.Popover>
+                          </Select>
+                          <TextField
+                            className="min-w-[220px]"
+                            onChange={setComposerPhone}
+                            value={composerPhone}
+                          >
+                            <Label>Teléfono / target</Label>
+                            <Input />
+                          </TextField>
+                        </div>
+                        {activeSidebarChat?.isGroup ? (
+                          <Alert status="warning">
+                            El composer embebido actual usa el backend URL-first orientado a 1:1.
+                            Para grupos ya tienes lectura y estado, pero el envío todavía no está
+                            resuelto en esta pantalla.
+                          </Alert>
+                        ) : null}
+                        {chatReplyMessageId ? (
+                          <Alert status="accent">
+                            Reply preparado sobre `{chatReplyMessageId}`.
+                          </Alert>
+                        ) : null}
+                        {composerKind === "contextual_text" || composerKind === "edit" ? (
+                          <TextField onChange={setComposerBody} value={composerBody}>
+                            <Label>Mensaje</Label>
+                            <TextArea />
+                          </TextField>
+                        ) : null}
+                        {["image", "audio", "document", "video", "sticker"].includes(
+                          composerKind
+                        ) ? (
+                          <div className="grid gap-3 md:grid-cols-2">
+                            <TextField onChange={setComposerLink} value={composerLink}>
+                              <Label>URL pública</Label>
+                              <Input />
+                            </TextField>
+                            <TextField onChange={setComposerCaption} value={composerCaption}>
+                              <Label>Caption</Label>
+                              <Input />
+                            </TextField>
+                          </div>
+                        ) : null}
+                        {["reaction", "mark_read", "forward", "delete"].includes(composerKind) ? (
+                          <div className="grid gap-3 md:grid-cols-2">
+                            <TextField onChange={setComposerMessageId} value={composerMessageId}>
+                              <Label>messageId</Label>
+                              <Input />
+                            </TextField>
+                            {composerKind === "reaction" ? (
+                              <TextField onChange={setComposerEmoji} value={composerEmoji}>
+                                <Label>Emoji</Label>
+                                <Input />
+                              </TextField>
+                            ) : null}
+                          </div>
+                        ) : null}
+                        <Button
+                          isDisabled={
+                            !selectedChatJid ||
+                            composerMutation.isPending ||
+                            Boolean(activeSidebarChat?.isGroup)
+                          }
+                          type="submit"
+                          variant="primary"
+                        >
+                          <Send className="h-4 w-4" />
+                          Enviar
+                        </Button>
+                      </Form>
+                    </Surface>
+                  ) : null}
+                </Card.Content>
+              </Card>
+            </div>
+          </div>
+        </Tabs.Panel>
 
         <Tabs.Panel id="channel">
           <div className="mt-4 space-y-4">
