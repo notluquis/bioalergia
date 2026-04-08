@@ -1,12 +1,40 @@
 import { db } from "@finanzas/db";
 import {
+  assignWhatsappBusinessChatLabelInputSchema,
+  assignWhatsappBusinessMessageLabelInputSchema,
+  deleteWhatsappBusinessQuickReplyInputSchema,
   listWhatsappContactStatesInputSchema,
   listWhatsappContactStatesResponseSchema,
+  listWhatsappBusinessChatLabelsInputSchema,
+  listWhatsappBusinessChatLabelsResponseSchema,
+  listWhatsappBusinessLabelsInputSchema,
+  listWhatsappBusinessLabelsResponseSchema,
+  listWhatsappBusinessMessageLabelsInputSchema,
+  listWhatsappBusinessMessageLabelsResponseSchema,
+  listWhatsappBusinessQuickRepliesInputSchema,
+  listWhatsappBusinessQuickRepliesResponseSchema,
+  listWhatsappChatsInputSchema,
+  listWhatsappChatsResponseSchema,
+  listWhatsappMessageHistoryInputSchema,
+  listWhatsappMessageHistoryResponseSchema,
+  removeWhatsappBusinessCoverPhotoInputSchema,
+  saveWhatsappBusinessLabelInputSchema,
+  saveWhatsappBusinessQuickReplyInputSchema,
+  updateWhatsappBusinessCoverPhotoInputSchema,
+  updateWhatsappBusinessProfileInputSchema,
+  whatsappBusinessCoverPhotoResultSchema,
+  whatsappBusinessLabelSchema,
+  whatsappBusinessProfileSchema,
+  whatsappBusinessProfileStateSchema,
+  whatsappBusinessQuickReplySchema,
   listWhatsappNotificationsInputSchema as contractListInput,
   listWhatsappNotificationsResponseSchema as contractListResponse,
+  whatsappChatSchema,
   whatsappConnectionStatusSchema,
+  whatsappConversationThreadInputSchema,
   whatsappContactStateSchema,
   whatsappCustomMessageInputSchema,
+  whatsappMessageSchema,
   whatsappNotificationStatusSchema,
   whatsappOverviewSchema,
   whatsappSetContactConsentInputSchema,
@@ -27,15 +55,44 @@ import {
   setWhatsappContactConsent,
 } from "../lib/whatsapp/conversation-state";
 import {
+  assignBusinessChatLabel,
+  assignBusinessMessageLabel,
+  createOrUpdateBusinessLabel,
+  createOrUpdateBusinessQuickReply,
+  deleteBusinessQuickReply,
+  getBusinessProfile,
+  deleteMessage,
   disconnectBaileys,
+  editMessage,
   getConnectionStatus,
   initBaileysSocket,
+  removeBusinessChatLabel,
+  removeBusinessCoverPhoto,
+  removeBusinessMessageLabel,
   markAsRead,
+  sendContacts,
+  sendContextualText,
+  sendForward,
+  sendLocation,
   sendMedia,
   sendReaction,
   sendText,
+  setDisappearingMessages,
   sendTyping,
+  updateBusinessCoverPhoto,
+  updateBusinessProfile,
 } from "../lib/whatsapp/baileys-socket";
+import {
+  listWhatsappBusinessChatLabels,
+  listWhatsappBusinessLabels,
+  listWhatsappBusinessMessageLabels,
+  listWhatsappBusinessQuickReplies,
+} from "../lib/whatsapp/business-store";
+import {
+  getWhatsappConversationThread,
+  listWhatsappChats,
+  listWhatsappMessageHistory,
+} from "../lib/whatsapp/history-store";
 import { normalizePhone, phoneToJid } from "../lib/whatsapp/jid";
 import { runWhatsappPoll } from "../lib/whatsapp/whatsapp-scheduler";
 import { getSetting, updateSetting } from "../services/settings";
@@ -305,7 +362,11 @@ const whatsappORPCRouterBase = {
       try {
         switch (input.kind) {
           case "contextual_text": {
-            const result = await sendText(input.phone, input.body);
+            const result = await sendContextualText({
+              body: input.body,
+              phone: input.phone,
+              quotedMessageId: input.quotedMessageId,
+            });
             return {
               message: "Respuesta contextual enviada.",
               messageId: result.messageId,
@@ -351,6 +412,57 @@ const whatsappORPCRouterBase = {
               status: "ok" as const,
             };
           }
+          case "forward": {
+            const result = await sendForward(input.phone, input.messageId);
+            return {
+              message: "Mensaje reenviado.",
+              messageId: result.messageId,
+              status: "ok" as const,
+            };
+          }
+          case "delete": {
+            const result = await deleteMessage(input.phone, input.messageId);
+            return {
+              message: "Mensaje eliminado para todos.",
+              messageId: result.messageId,
+              status: "ok" as const,
+            };
+          }
+          case "edit": {
+            const result = await editMessage(input.phone, input.messageId, input.body);
+            return {
+              message: "Mensaje editado.",
+              messageId: result.messageId,
+              status: "ok" as const,
+            };
+          }
+          case "location": {
+            const result = await sendLocation(input);
+            return {
+              message: "Ubicación enviada.",
+              messageId: result.messageId,
+              status: "ok" as const,
+            };
+          }
+          case "contacts": {
+            const result = await sendContacts(input);
+            return {
+              message: "Contacto enviado.",
+              messageId: result.messageId,
+              status: "ok" as const,
+            };
+          }
+          case "disappearing_messages": {
+            const result = await setDisappearingMessages({
+              expiration: input.expiration,
+              phone: input.phone,
+            });
+            return {
+              message: "Modo de mensajes temporales actualizado.",
+              messageId: result.messageId,
+              status: "ok" as const,
+            };
+          }
           default: {
             const neverInput: never = input;
             return {
@@ -363,6 +475,300 @@ const whatsappORPCRouterBase = {
         const message = err instanceof Error ? err.message : String(err);
         return { message, status: "error" as const };
       }
+    }),
+
+  listMessageHistory: integrationRead
+    .route({
+      method: "GET",
+      path: "/messages",
+      summary: "List persisted WhatsApp message history",
+      tags: ["WhatsApp"],
+    })
+    .input(listWhatsappMessageHistoryInputSchema)
+    .output(listWhatsappMessageHistoryResponseSchema)
+    .handler(async ({ input }) => {
+      const result = await listWhatsappMessageHistory(input);
+      return {
+        records: result.records.map((record) => whatsappMessageSchema.parse(record)),
+        total: result.total,
+      };
+    }),
+
+  getConversationThread: integrationRead
+    .route({
+      method: "GET",
+      path: "/messages/thread",
+      summary: "Get a WhatsApp conversation thread",
+      tags: ["WhatsApp"],
+    })
+    .input(whatsappConversationThreadInputSchema)
+    .output(listWhatsappMessageHistoryResponseSchema.shape.records)
+    .handler(async ({ input }) => {
+      const records = await getWhatsappConversationThread(input);
+      return records.map((record) => whatsappMessageSchema.parse(record));
+    }),
+
+  listChats: integrationRead
+    .route({
+      method: "GET",
+      path: "/chats",
+      summary: "List WhatsApp chats from history sync",
+      tags: ["WhatsApp"],
+    })
+    .input(listWhatsappChatsInputSchema)
+    .output(listWhatsappChatsResponseSchema)
+    .handler(async ({ input }) => {
+      const result = await listWhatsappChats(input);
+      return {
+        records: result.records.map((record) => whatsappChatSchema.parse(record)),
+        total: result.total,
+      };
+    }),
+
+  getBusinessProfile: integrationRead
+    .route({
+      method: "GET",
+      path: "/business/profile",
+      summary: "Get WhatsApp business profile state",
+      tags: ["WhatsApp"],
+    })
+    .output(whatsappBusinessProfileStateSchema)
+    .handler(async () => {
+      const savedCoverPhotoId = await getSetting("whatsapp.businessCoverPhotoId");
+      return {
+        profile: await getBusinessProfile(),
+        savedCoverPhotoId: savedCoverPhotoId || null,
+      };
+    }),
+
+  updateBusinessProfile: integrationCreate
+    .route({
+      method: "POST",
+      path: "/business/profile",
+      summary: "Update WhatsApp business profile",
+      tags: ["WhatsApp"],
+    })
+    .input(updateWhatsappBusinessProfileInputSchema)
+    .output(whatsappBusinessProfileSchema.nullable())
+    .handler(async ({ input }) => {
+      const result = await updateBusinessProfile({
+        address: input.address,
+        description: input.description,
+        email: input.email,
+        hours: input.hours,
+        websites: input.websites,
+      });
+      return result ? whatsappBusinessProfileSchema.parse(result) : null;
+    }),
+
+  updateBusinessCoverPhoto: integrationCreate
+    .route({
+      method: "POST",
+      path: "/business/cover-photo",
+      summary: "Update WhatsApp business cover photo",
+      tags: ["WhatsApp"],
+    })
+    .input(updateWhatsappBusinessCoverPhotoInputSchema)
+    .output(whatsappBusinessCoverPhotoResultSchema)
+    .handler(async ({ input }) => {
+      const result = await updateBusinessCoverPhoto(input.link);
+      await updateSetting("whatsapp.businessCoverPhotoId", result.coverPhotoId);
+      return result;
+    }),
+
+  removeBusinessCoverPhoto: integrationCreate
+    .route({
+      method: "POST",
+      path: "/business/cover-photo/remove",
+      summary: "Remove WhatsApp business cover photo",
+      tags: ["WhatsApp"],
+    })
+    .input(removeWhatsappBusinessCoverPhotoInputSchema)
+    .output(whatsappStatusResponseSchema)
+    .handler(async ({ input }) => {
+      await removeBusinessCoverPhoto(input.coverPhotoId);
+      await updateSetting("whatsapp.businessCoverPhotoId", "");
+      return {
+        message: "Cover photo eliminada.",
+        status: "ok" as const,
+      };
+    }),
+
+  listBusinessQuickReplies: integrationRead
+    .route({
+      method: "GET",
+      path: "/business/quick-replies",
+      summary: "List WhatsApp business quick replies",
+      tags: ["WhatsApp"],
+    })
+    .input(listWhatsappBusinessQuickRepliesInputSchema)
+    .output(listWhatsappBusinessQuickRepliesResponseSchema)
+    .handler(async ({ input }) => {
+      const records = await listWhatsappBusinessQuickReplies({
+        includeDeleted: input.includeDeleted,
+      });
+      return {
+        records: records.map((record) => whatsappBusinessQuickReplySchema.parse(record)),
+      };
+    }),
+
+  saveBusinessQuickReply: integrationCreate
+    .route({
+      method: "POST",
+      path: "/business/quick-replies",
+      summary: "Create or update a WhatsApp business quick reply",
+      tags: ["WhatsApp"],
+    })
+    .input(saveWhatsappBusinessQuickReplyInputSchema)
+    .output(whatsappBusinessQuickReplySchema)
+    .handler(async ({ input }) => {
+      return whatsappBusinessQuickReplySchema.parse(
+        await createOrUpdateBusinessQuickReply(input),
+      );
+    }),
+
+  deleteBusinessQuickReply: integrationCreate
+    .route({
+      method: "POST",
+      path: "/business/quick-replies/delete",
+      summary: "Delete a WhatsApp business quick reply",
+      tags: ["WhatsApp"],
+    })
+    .input(deleteWhatsappBusinessQuickReplyInputSchema)
+    .output(whatsappStatusResponseSchema)
+    .handler(async ({ input }) => {
+      await deleteBusinessQuickReply(input.timestamp);
+      return {
+        message: "Quick reply eliminada.",
+        status: "ok" as const,
+      };
+    }),
+
+  listBusinessLabels: integrationRead
+    .route({
+      method: "GET",
+      path: "/business/labels",
+      summary: "List WhatsApp business labels",
+      tags: ["WhatsApp"],
+    })
+    .input(listWhatsappBusinessLabelsInputSchema)
+    .output(listWhatsappBusinessLabelsResponseSchema)
+    .handler(async ({ input }) => {
+      const records = await listWhatsappBusinessLabels({
+        includeDeleted: input.includeDeleted,
+      });
+      return {
+        records: records.map((record) => whatsappBusinessLabelSchema.parse(record)),
+      };
+    }),
+
+  saveBusinessLabel: integrationCreate
+    .route({
+      method: "POST",
+      path: "/business/labels",
+      summary: "Create or update a WhatsApp business label",
+      tags: ["WhatsApp"],
+    })
+    .input(saveWhatsappBusinessLabelInputSchema)
+    .output(whatsappBusinessLabelSchema)
+    .handler(async ({ input }) => {
+      return whatsappBusinessLabelSchema.parse(await createOrUpdateBusinessLabel(input));
+    }),
+
+  listBusinessChatLabels: integrationRead
+    .route({
+      method: "GET",
+      path: "/business/labels/chat",
+      summary: "List chat label associations",
+      tags: ["WhatsApp"],
+    })
+    .input(listWhatsappBusinessChatLabelsInputSchema)
+    .output(listWhatsappBusinessChatLabelsResponseSchema)
+    .handler(async ({ input }) => {
+      const records = await listWhatsappBusinessChatLabels(input);
+      return { records };
+    }),
+
+  assignBusinessChatLabel: integrationCreate
+    .route({
+      method: "POST",
+      path: "/business/labels/chat",
+      summary: "Assign a business label to a chat",
+      tags: ["WhatsApp"],
+    })
+    .input(assignWhatsappBusinessChatLabelInputSchema)
+    .output(whatsappStatusResponseSchema)
+    .handler(async ({ input }) => {
+      await assignBusinessChatLabel(input);
+      return {
+        message: "Label asignado al chat.",
+        status: "ok" as const,
+      };
+    }),
+
+  removeBusinessChatLabel: integrationCreate
+    .route({
+      method: "POST",
+      path: "/business/labels/chat/remove",
+      summary: "Remove a business label from a chat",
+      tags: ["WhatsApp"],
+    })
+    .input(assignWhatsappBusinessChatLabelInputSchema)
+    .output(whatsappStatusResponseSchema)
+    .handler(async ({ input }) => {
+      await removeBusinessChatLabel(input);
+      return {
+        message: "Label removido del chat.",
+        status: "ok" as const,
+      };
+    }),
+
+  listBusinessMessageLabels: integrationRead
+    .route({
+      method: "GET",
+      path: "/business/labels/message",
+      summary: "List message label associations",
+      tags: ["WhatsApp"],
+    })
+    .input(listWhatsappBusinessMessageLabelsInputSchema)
+    .output(listWhatsappBusinessMessageLabelsResponseSchema)
+    .handler(async ({ input }) => {
+      const records = await listWhatsappBusinessMessageLabels(input);
+      return { records };
+    }),
+
+  assignBusinessMessageLabel: integrationCreate
+    .route({
+      method: "POST",
+      path: "/business/labels/message",
+      summary: "Assign a business label to a message",
+      tags: ["WhatsApp"],
+    })
+    .input(assignWhatsappBusinessMessageLabelInputSchema)
+    .output(whatsappStatusResponseSchema)
+    .handler(async ({ input }) => {
+      await assignBusinessMessageLabel(input);
+      return {
+        message: "Label asignado al mensaje.",
+        status: "ok" as const,
+      };
+    }),
+
+  removeBusinessMessageLabel: integrationCreate
+    .route({
+      method: "POST",
+      path: "/business/labels/message/remove",
+      summary: "Remove a business label from a message",
+      tags: ["WhatsApp"],
+    })
+    .input(assignWhatsappBusinessMessageLabelInputSchema)
+    .output(whatsappStatusResponseSchema)
+    .handler(async ({ input }) => {
+      await removeBusinessMessageLabel(input);
+      return {
+        message: "Label removido del mensaje.",
+        status: "ok" as const,
+      };
     }),
 
   getConnectionStatus: integrationRead

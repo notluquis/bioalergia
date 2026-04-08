@@ -103,13 +103,19 @@ export const whatsappOverviewSchema = z.object({
 });
 
 export const whatsappConnectionStatusSchema = z.object({
+  browser: z.string().nullable().optional(),
+  connectedAt: z.coerce.date().nullable().optional(),
   connectionState: whatsappConnectionStateSchema,
   enabled: z.boolean(),
   isReady: z.boolean(),
+  isReconnectLooping: z.boolean().optional(),
   lastDisconnectReason: z.number().nullable(),
+  lastReconnectDelayMs: z.number().nullable().optional(),
   qrDataUrl: z.string().nullable(),
   receivedPendingNotifications: z.boolean(),
+  reconnectAttempts: z.number().int().min(0).optional(),
   sessionReplaced: z.boolean(),
+  version: z.string().nullable().optional(),
 });
 
 export const whatsappTestSendInputSchema = z.object({
@@ -120,6 +126,259 @@ export const whatsappSetContactConsentInputSchema = z.object({
   phone: z.string().min(5),
   source: z.string().trim().min(1).optional(),
   status: whatsappOptInStatusSchema.exclude(["UNKNOWN"]),
+});
+
+export const whatsappMessageStatusSchema = z.enum([
+  "PENDING",
+  "SENT",
+  "DELIVERED",
+  "READ",
+  "PLAYED",
+  "FAILED",
+  "RECEIVED",
+]);
+
+export const whatsappMessageDirectionSchema = z.enum(["inbound", "outbound"]);
+
+export const whatsappMessageSchema = z.object({
+  createdAt: z.coerce.date(),
+  deliveredAt: z.coerce.date().nullable().optional(),
+  direction: whatsappMessageDirectionSchema,
+  fromMe: z.boolean(),
+  messageId: z.string(),
+  messageTimestamp: z.coerce.date().nullable().optional(),
+  messageType: z.string(),
+  participantJid: z.string().nullable().optional(),
+  phone: z.string().nullable().optional(),
+  playedAt: z.coerce.date().nullable().optional(),
+  readAt: z.coerce.date().nullable().optional(),
+  remoteJid: z.string(),
+  sentAt: z.coerce.date().nullable().optional(),
+  status: whatsappMessageStatusSchema,
+  textPreview: z.string().nullable().optional(),
+  updatedAt: z.coerce.date(),
+  waId: z.string().nullable().optional(),
+});
+
+export const listWhatsappMessageHistoryInputSchema = z.object({
+  direction: whatsappMessageDirectionSchema.optional(),
+  jid: z.string().trim().min(1).optional(),
+  limit: z.number().int().min(1).max(200).optional(),
+  offset: z.number().int().min(0).optional(),
+  phone: z.string().trim().min(5).optional(),
+  status: whatsappMessageStatusSchema.optional(),
+  type: z.string().trim().min(1).optional(),
+});
+
+export const listWhatsappMessageHistoryResponseSchema = z.object({
+  records: z.array(whatsappMessageSchema),
+  total: z.number(),
+});
+
+export const whatsappConversationThreadInputSchema = z
+  .object({
+    jid: z.string().trim().min(1).optional(),
+    limit: z.number().int().min(1).max(500).optional(),
+    phone: z.string().trim().min(5).optional(),
+  })
+  .refine((value) => Boolean(value.jid || value.phone), {
+    message: "Debes enviar phone o jid",
+    path: ["phone"],
+  });
+
+export const whatsappChatSchema = z.object({
+  archived: z.boolean().nullable().optional(),
+  conversationTimestamp: z.coerce.date().nullable().optional(),
+  jid: z.string(),
+  lastMessageId: z.string().nullable().optional(),
+  muteEndTime: z.coerce.date().nullable().optional(),
+  name: z.string().nullable().optional(),
+  notSpam: z.boolean().nullable().optional(),
+  pinned: z.boolean().nullable().optional(),
+  unreadCount: z.number().nullable().optional(),
+  updatedAt: z.coerce.date(),
+});
+
+export const listWhatsappChatsInputSchema = z.object({
+  limit: z.number().int().min(1).max(200).optional(),
+  offset: z.number().int().min(0).optional(),
+});
+
+export const listWhatsappChatsResponseSchema = z.object({
+  records: z.array(whatsappChatSchema),
+  total: z.number(),
+});
+
+const whatsappBusinessDaySchema = z.enum(["sun", "mon", "tue", "wed", "thu", "fri", "sat"]);
+
+export const whatsappBusinessHoursConfigSchema = z.discriminatedUnion("mode", [
+  z.object({
+    closeTime: z.number().int().min(0).max(1440).optional(),
+    dayOfWeek: z.string(),
+    mode: z.literal("specific_hours"),
+    openTime: z.number().int().min(0).max(1440).optional(),
+  }),
+  z.object({
+    dayOfWeek: z.string(),
+    mode: z.enum(["open_24h", "appointment_only"]),
+  }),
+]);
+
+export const whatsappBusinessProfileSchema = z.object({
+  address: z.string().optional(),
+  businessHours: z
+    .object({
+      config: z.array(whatsappBusinessHoursConfigSchema),
+      timezone: z.string().optional(),
+    })
+    .nullable(),
+  category: z.string().optional(),
+  description: z.string(),
+  email: z.string().optional(),
+  website: z.array(z.string()),
+  wid: z.string().optional(),
+});
+
+export const whatsappBusinessProfileStateSchema = z.object({
+  profile: whatsappBusinessProfileSchema.nullable(),
+  savedCoverPhotoId: z.string().nullable(),
+});
+
+export const updateWhatsappBusinessProfileInputSchema = z.object({
+  address: z.string().trim().min(1).optional(),
+  description: z.string().trim().min(1).optional(),
+  email: z.string().trim().email().optional(),
+  hours: z
+    .object({
+      days: z.array(
+        z.discriminatedUnion("mode", [
+          z.object({
+            closeTimeInMinutes: z.string().trim().min(1),
+            day: whatsappBusinessDaySchema,
+            mode: z.literal("specific_hours"),
+            openTimeInMinutes: z.string().trim().min(1),
+          }),
+          z.object({
+            day: whatsappBusinessDaySchema,
+            mode: z.enum(["open_24h", "appointment_only"]),
+          }),
+        ]),
+      ),
+      timezone: z.string().trim().min(1),
+    })
+    .optional(),
+  websites: z.array(z.string().trim().min(1)).optional(),
+});
+
+export const updateWhatsappBusinessCoverPhotoInputSchema = z.object({
+  link: z.url(),
+});
+
+export const removeWhatsappBusinessCoverPhotoInputSchema = z.object({
+  coverPhotoId: z.string().trim().min(1),
+});
+
+export const whatsappBusinessCoverPhotoResultSchema = z.object({
+  coverPhotoId: z.string(),
+});
+
+export const whatsappBusinessQuickReplySchema = z.object({
+  count: z.number().int().min(0),
+  deleted: z.boolean(),
+  keywords: z.array(z.string()),
+  message: z.string(),
+  shortcut: z.string(),
+  timestamp: z.string(),
+  updatedAt: z.coerce.date(),
+});
+
+export const listWhatsappBusinessQuickRepliesInputSchema = z.object({
+  includeDeleted: z.boolean().optional(),
+});
+
+export const listWhatsappBusinessQuickRepliesResponseSchema = z.object({
+  records: z.array(whatsappBusinessQuickReplySchema),
+});
+
+export const saveWhatsappBusinessQuickReplyInputSchema = z.object({
+  keywords: z.array(z.string().trim().min(1)).optional(),
+  message: z.string().trim().min(1),
+  shortcut: z.string().trim().min(1),
+  timestamp: z.string().trim().min(1).optional(),
+});
+
+export const deleteWhatsappBusinessQuickReplyInputSchema = z.object({
+  timestamp: z.string().trim().min(1),
+});
+
+export const whatsappBusinessLabelSchema = z.object({
+  color: z.number().int().min(0).max(19).nullable(),
+  deleted: z.boolean(),
+  id: z.string(),
+  name: z.string().nullable(),
+  predefinedId: z.string().nullable(),
+  updatedAt: z.coerce.date(),
+});
+
+export const listWhatsappBusinessLabelsInputSchema = z.object({
+  includeDeleted: z.boolean().optional(),
+});
+
+export const listWhatsappBusinessLabelsResponseSchema = z.object({
+  records: z.array(whatsappBusinessLabelSchema),
+});
+
+export const saveWhatsappBusinessLabelInputSchema = z.object({
+  color: z.number().int().min(0).max(19).nullable().optional(),
+  deleted: z.boolean().optional(),
+  id: z.string().trim().min(1).optional(),
+  name: z.string().trim().min(1).optional(),
+  predefinedId: z.string().trim().min(1).optional(),
+});
+
+export const whatsappBusinessChatLabelSchema = z.object({
+  chatJid: z.string(),
+  labelId: z.string(),
+  labelName: z.string().nullable(),
+  updatedAt: z.coerce.date(),
+});
+
+export const whatsappBusinessMessageLabelSchema = z.object({
+  chatJid: z.string(),
+  labelId: z.string(),
+  labelName: z.string().nullable(),
+  messageId: z.string(),
+  updatedAt: z.coerce.date(),
+});
+
+export const listWhatsappBusinessChatLabelsInputSchema = z.object({
+  chatJid: z.string().trim().min(1).optional(),
+  limit: z.number().int().min(1).max(200).optional(),
+});
+
+export const listWhatsappBusinessMessageLabelsInputSchema = z.object({
+  chatJid: z.string().trim().min(1).optional(),
+  limit: z.number().int().min(1).max(200).optional(),
+  messageId: z.string().trim().min(1).optional(),
+});
+
+export const listWhatsappBusinessChatLabelsResponseSchema = z.object({
+  records: z.array(whatsappBusinessChatLabelSchema),
+});
+
+export const listWhatsappBusinessMessageLabelsResponseSchema = z.object({
+  records: z.array(whatsappBusinessMessageLabelSchema),
+});
+
+export const assignWhatsappBusinessChatLabelInputSchema = z.object({
+  chatJid: z.string().trim().min(1),
+  labelId: z.string().trim().min(1),
+});
+
+export const assignWhatsappBusinessMessageLabelInputSchema = z.object({
+  chatJid: z.string().trim().min(1),
+  labelId: z.string().trim().min(1),
+  messageId: z.string().trim().min(1),
 });
 
 const whatsappMediaBaseSchema = z
@@ -141,7 +400,7 @@ export const whatsappCustomMessageInputSchema = z.discriminatedUnion("kind", [
     kind: z.literal("contextual_text"),
     phone: z.string().min(5),
     previewUrl: z.boolean().optional(),
-    quotedMessageId: z.string().min(1),
+    quotedMessageId: z.string().min(1).optional(),
   }),
   z.object({
     emoji: z.string().min(1).max(8),
@@ -171,6 +430,54 @@ export const whatsappCustomMessageInputSchema = z.discriminatedUnion("kind", [
   }),
   z.object({
     kind: z.literal("typing"),
+    phone: z.string().min(5),
+  }),
+  z.object({
+    kind: z.literal("forward"),
+    messageId: z.string().min(1),
+    phone: z.string().min(5),
+  }),
+  z.object({
+    kind: z.literal("delete"),
+    messageId: z.string().min(1),
+    phone: z.string().min(5),
+  }),
+  z.object({
+    body: z.string().min(1),
+    kind: z.literal("edit"),
+    messageId: z.string().min(1),
+    phone: z.string().min(5),
+  }),
+  z.object({
+    address: z.string().min(1).optional(),
+    degreesLatitude: z.number().min(-90).max(90),
+    degreesLongitude: z.number().min(-180).max(180),
+    kind: z.literal("location"),
+    name: z.string().min(1).optional(),
+    phone: z.string().min(5),
+  }),
+  z.object({
+    contacts: z
+      .array(
+        z.object({
+          displayName: z.string().min(1),
+          firstName: z.string().min(1).optional(),
+          organization: z.string().min(1).optional(),
+          phone: z.string().min(5),
+        }),
+      )
+      .min(1),
+    kind: z.literal("contacts"),
+    phone: z.string().min(5),
+  }),
+  z.object({
+    expiration: z.union([
+      z.boolean(),
+      z.literal(86400),
+      z.literal(604800),
+      z.literal(2592000),
+    ]),
+    kind: z.literal("disappearing_messages"),
     phone: z.string().min(5),
   }),
 ]);
@@ -248,6 +555,185 @@ export const whatsappContract = {
       tags: ["WhatsApp"],
     })
     .input(whatsappCustomMessageInputSchema)
+    .output(whatsappStatusResponseSchema),
+
+  listMessageHistory: oc
+    .route({
+      method: "GET",
+      path: "/messages",
+      summary: "List persisted WhatsApp message history",
+      tags: ["WhatsApp"],
+    })
+    .input(listWhatsappMessageHistoryInputSchema)
+    .output(listWhatsappMessageHistoryResponseSchema),
+
+  getConversationThread: oc
+    .route({
+      method: "GET",
+      path: "/messages/thread",
+      summary: "Get a WhatsApp conversation thread",
+      tags: ["WhatsApp"],
+    })
+    .input(whatsappConversationThreadInputSchema)
+    .output(z.array(whatsappMessageSchema)),
+
+  listChats: oc
+    .route({
+      method: "GET",
+      path: "/chats",
+      summary: "List WhatsApp chats from history sync",
+      tags: ["WhatsApp"],
+    })
+    .input(listWhatsappChatsInputSchema)
+    .output(listWhatsappChatsResponseSchema),
+
+  getBusinessProfile: oc
+    .route({
+      method: "GET",
+      path: "/business/profile",
+      summary: "Get WhatsApp business profile state",
+      tags: ["WhatsApp"],
+    })
+    .output(whatsappBusinessProfileStateSchema),
+
+  updateBusinessProfile: oc
+    .route({
+      method: "POST",
+      path: "/business/profile",
+      summary: "Update WhatsApp business profile",
+      tags: ["WhatsApp"],
+    })
+    .input(updateWhatsappBusinessProfileInputSchema)
+    .output(whatsappBusinessProfileSchema.nullable()),
+
+  updateBusinessCoverPhoto: oc
+    .route({
+      method: "POST",
+      path: "/business/cover-photo",
+      summary: "Update WhatsApp business cover photo",
+      tags: ["WhatsApp"],
+    })
+    .input(updateWhatsappBusinessCoverPhotoInputSchema)
+    .output(whatsappBusinessCoverPhotoResultSchema),
+
+  removeBusinessCoverPhoto: oc
+    .route({
+      method: "POST",
+      path: "/business/cover-photo/remove",
+      summary: "Remove WhatsApp business cover photo",
+      tags: ["WhatsApp"],
+    })
+    .input(removeWhatsappBusinessCoverPhotoInputSchema)
+    .output(whatsappStatusResponseSchema),
+
+  listBusinessQuickReplies: oc
+    .route({
+      method: "GET",
+      path: "/business/quick-replies",
+      summary: "List WhatsApp business quick replies",
+      tags: ["WhatsApp"],
+    })
+    .input(listWhatsappBusinessQuickRepliesInputSchema)
+    .output(listWhatsappBusinessQuickRepliesResponseSchema),
+
+  saveBusinessQuickReply: oc
+    .route({
+      method: "POST",
+      path: "/business/quick-replies",
+      summary: "Create or update a WhatsApp business quick reply",
+      tags: ["WhatsApp"],
+    })
+    .input(saveWhatsappBusinessQuickReplyInputSchema)
+    .output(whatsappBusinessQuickReplySchema),
+
+  deleteBusinessQuickReply: oc
+    .route({
+      method: "POST",
+      path: "/business/quick-replies/delete",
+      summary: "Delete a WhatsApp business quick reply",
+      tags: ["WhatsApp"],
+    })
+    .input(deleteWhatsappBusinessQuickReplyInputSchema)
+    .output(whatsappStatusResponseSchema),
+
+  listBusinessLabels: oc
+    .route({
+      method: "GET",
+      path: "/business/labels",
+      summary: "List WhatsApp business labels",
+      tags: ["WhatsApp"],
+    })
+    .input(listWhatsappBusinessLabelsInputSchema)
+    .output(listWhatsappBusinessLabelsResponseSchema),
+
+  saveBusinessLabel: oc
+    .route({
+      method: "POST",
+      path: "/business/labels",
+      summary: "Create or update a WhatsApp business label",
+      tags: ["WhatsApp"],
+    })
+    .input(saveWhatsappBusinessLabelInputSchema)
+    .output(whatsappBusinessLabelSchema),
+
+  listBusinessChatLabels: oc
+    .route({
+      method: "GET",
+      path: "/business/labels/chat",
+      summary: "List chat label associations",
+      tags: ["WhatsApp"],
+    })
+    .input(listWhatsappBusinessChatLabelsInputSchema)
+    .output(listWhatsappBusinessChatLabelsResponseSchema),
+
+  assignBusinessChatLabel: oc
+    .route({
+      method: "POST",
+      path: "/business/labels/chat",
+      summary: "Assign a business label to a chat",
+      tags: ["WhatsApp"],
+    })
+    .input(assignWhatsappBusinessChatLabelInputSchema)
+    .output(whatsappStatusResponseSchema),
+
+  removeBusinessChatLabel: oc
+    .route({
+      method: "POST",
+      path: "/business/labels/chat/remove",
+      summary: "Remove a business label from a chat",
+      tags: ["WhatsApp"],
+    })
+    .input(assignWhatsappBusinessChatLabelInputSchema)
+    .output(whatsappStatusResponseSchema),
+
+  listBusinessMessageLabels: oc
+    .route({
+      method: "GET",
+      path: "/business/labels/message",
+      summary: "List message label associations",
+      tags: ["WhatsApp"],
+    })
+    .input(listWhatsappBusinessMessageLabelsInputSchema)
+    .output(listWhatsappBusinessMessageLabelsResponseSchema),
+
+  assignBusinessMessageLabel: oc
+    .route({
+      method: "POST",
+      path: "/business/labels/message",
+      summary: "Assign a business label to a message",
+      tags: ["WhatsApp"],
+    })
+    .input(assignWhatsappBusinessMessageLabelInputSchema)
+    .output(whatsappStatusResponseSchema),
+
+  removeBusinessMessageLabel: oc
+    .route({
+      method: "POST",
+      path: "/business/labels/message/remove",
+      summary: "Remove a business label from a message",
+      tags: ["WhatsApp"],
+    })
+    .input(assignWhatsappBusinessMessageLabelInputSchema)
     .output(whatsappStatusResponseSchema),
 
   getConnectionStatus: oc
