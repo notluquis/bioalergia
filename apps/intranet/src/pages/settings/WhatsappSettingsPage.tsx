@@ -53,6 +53,24 @@ function renderWhatsappPreview(text: string) {
   ));
 }
 
+const WHATSAPP_TEMPLATE_PREVIEW_EXAMPLE: Record<string, string> = {
+  appointmentDate: dayjs().add(2, "day").hour(10).minute(30).format("DD/MM/YYYY HH:mm"),
+  appointmentDoctor: "Dr. José Manuel Martínez",
+  appointmentService: "Primera Consulta Inmunólogo Alergólogo (40 min)",
+  clinicAddress: "Av. Ejemplo 123, Providencia",
+  patientName: "Sandra Maldonado Guzmán",
+};
+
+function fillWhatsappTemplatePreview(text: string) {
+  return text.replace(
+    /\{\{\s*(\w+)\s*\}\}|\{\s*(\w+)\s*\}/g,
+    (_match, doubleKey: string, singleKey: string) => {
+      const key = doubleKey || singleKey;
+      return WHATSAPP_TEMPLATE_PREVIEW_EXAMPLE[key] ?? _match;
+    }
+  );
+}
+
 export function WhatsappSettingsPage() {
   const { error: showError, success: showSuccess } = useToast();
   const { settings, updateSettings } = useSettings();
@@ -311,8 +329,10 @@ export function WhatsappSettingsPage() {
                         <div className="mb-2 text-default-500 text-[11px]">WhatsApp</div>
                         <div className="space-y-1 whitespace-pre-wrap wrap-break-word text-foreground text-sm leading-6">
                           {renderWhatsappPreview(
-                            messageTemplate.trim() ||
-                              "Se usara el mensaje por defecto del sistema si este campo queda vacio."
+                            fillWhatsappTemplatePreview(
+                              messageTemplate.trim() ||
+                                "Se usara el mensaje por defecto del sistema si este campo queda vacio."
+                            )
                           )}
                         </div>
                       </Surface>
