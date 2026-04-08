@@ -1190,14 +1190,8 @@ export function ClinicalSeriesView() {
       <Surface className="rounded-xl p-4">
         <div className="flex flex-col gap-4">
           {isInsuranceTab ? (
-            <div
-              className={
-                showIsapreSpecificFilters
-                  ? "grid gap-3 md:grid-cols-2 xl:grid-cols-[12rem_12rem_12rem_14rem_minmax(18rem,1.25fr)_auto]"
-                  : "grid gap-3 md:grid-cols-2 xl:grid-cols-[12rem_12rem_12rem_minmax(18rem,1.25fr)_auto]"
-              }
-            >
-              <>
+            <div className="flex flex-col gap-3">
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                 <div className="flex flex-col gap-1">
                   <Select
                     onChange={handleHealthInsuranceChange}
@@ -1222,6 +1216,46 @@ export function ClinicalSeriesView() {
                     </Select.Popover>
                   </Select>
                 </div>
+
+                {showIsapreSpecificFilters && (
+                  <div className="flex flex-col gap-1">
+                    <Select
+                      isDisabled={isapreProviderOptions.length === 0 && !isapreOnlyUnidentified}
+                      onChange={handleIsapreProviderChange}
+                      value={selectedIsapreFilter ?? null}
+                      placeholder="Todas"
+                      variant="secondary"
+                    >
+                      <Label>Isapre</Label>
+                      <Select.Trigger>
+                        <Select.Value />
+                        <Select.Indicator />
+                      </Select.Trigger>
+                      <Select.Popover>
+                        <ListBox>
+                          <ListBox.Item
+                            id={ISAPRE_UNIDENTIFIED_OPTION}
+                            key={ISAPRE_UNIDENTIFIED_OPTION}
+                            textValue="Sin nombre identificado"
+                          >
+                            Sin nombre identificado
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                          {isapreProviderOptions.map((item) => (
+                            <ListBox.Item
+                              id={item.providerName}
+                              key={item.providerName}
+                              textValue={item.providerName}
+                            >
+                              {item.providerName}
+                              <ListBox.ItemIndicator />
+                            </ListBox.Item>
+                          ))}
+                        </ListBox>
+                      </Select.Popover>
+                    </Select>
+                  </div>
+                )}
 
                 <div className="flex flex-col gap-1">
                   <Select
@@ -1272,49 +1306,9 @@ export function ClinicalSeriesView() {
                     </Select.Popover>
                   </Select>
                 </div>
+              </div>
 
-                {showIsapreSpecificFilters && (
-                  <>
-                    <div className="flex flex-col gap-1">
-                      <Select
-                        isDisabled={isapreProviderOptions.length === 0 && !isapreOnlyUnidentified}
-                        onChange={handleIsapreProviderChange}
-                        value={selectedIsapreFilter ?? null}
-                        placeholder="Todas"
-                        variant="secondary"
-                      >
-                        <Label>Isapre</Label>
-                        <Select.Trigger>
-                          <Select.Value />
-                          <Select.Indicator />
-                        </Select.Trigger>
-                        <Select.Popover>
-                          <ListBox>
-                            <ListBox.Item
-                              id={ISAPRE_UNIDENTIFIED_OPTION}
-                              key={ISAPRE_UNIDENTIFIED_OPTION}
-                              textValue="Sin nombre identificado"
-                            >
-                              Sin nombre identificado
-                              <ListBox.ItemIndicator />
-                            </ListBox.Item>
-                            {isapreProviderOptions.map((item) => (
-                              <ListBox.Item
-                                id={item.providerName}
-                                key={item.providerName}
-                                textValue={item.providerName}
-                              >
-                                {item.providerName}
-                                <ListBox.ItemIndicator />
-                              </ListBox.Item>
-                            ))}
-                          </ListBox>
-                        </Select.Popover>
-                      </Select>
-                    </div>
-                  </>
-                )}
-
+              <div className="grid gap-3 xl:grid-cols-[minmax(18rem,1fr)_auto] xl:items-end">
                 <DateRangePicker
                   aria-label="Rango de última visita"
                   onChange={(value) => {
@@ -1373,35 +1367,26 @@ export function ClinicalSeriesView() {
                     </RangeCalendar>
                   </DateRangePicker.Popover>
                 </DateRangePicker>
-              </>
 
-              <div className="flex items-end justify-end">
-                {hasFilters ? (
-                  <Button onPress={clearFilters} size="sm" variant="ghost">
-                    Limpiar
-                  </Button>
-                ) : (
-                  <div />
-                )}
+                <div className="flex items-end justify-end">
+                  {hasFilters ? (
+                    <Button onPress={clearFilters} size="sm" variant="ghost">
+                      Limpiar
+                    </Button>
+                  ) : (
+                    <div />
+                  )}
+                </div>
               </div>
             </div>
           ) : (
             <>
-              <TextField className="w-full max-w-3xl" value={queryRaw} onChange={setQueryRaw}>
+              <TextField className="w-full" value={queryRaw} onChange={setQueryRaw}>
                 <Label>Búsqueda</Label>
                 <Input placeholder="Paciente, RUT paciente, RUT beneficiario o beneficiario..." />
               </TextField>
-              <div
-                className={
-                  isSeriesLikeTab
-                    ? showIsapreSpecificFilters
-                      ? "grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_12rem_14rem_12rem_12rem_12rem_minmax(18rem,1.25fr)_auto]"
-                      : "grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_12rem_12rem_12rem_minmax(18rem,1.25fr)_auto]"
-                    : showIsapreSpecificFilters
-                      ? "grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_12rem_14rem_auto]"
-                      : "grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_12rem_auto]"
-                }
-              >
+
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                 <TextField className="w-full" value={rutRaw} onChange={setRutRaw}>
                   <Label>RUT paciente</Label>
                   <Input placeholder="12345678-9" />
@@ -1420,7 +1405,19 @@ export function ClinicalSeriesView() {
                   <Label>Teléfono</Label>
                   <Input placeholder="+56912345678" />
                 </TextField>
+              </div>
 
+              <div
+                className={
+                  isSeriesLikeTab
+                    ? showIsapreSpecificFilters
+                      ? "grid gap-3 md:grid-cols-2 xl:grid-cols-[12rem_14rem_12rem_12rem_minmax(18rem,1fr)_auto]"
+                      : "grid gap-3 md:grid-cols-2 xl:grid-cols-[12rem_12rem_12rem_minmax(18rem,1fr)_auto]"
+                    : showIsapreSpecificFilters
+                      ? "grid gap-3 md:grid-cols-2 xl:grid-cols-[12rem_14rem_auto]"
+                      : "grid gap-3 md:grid-cols-2 xl:grid-cols-[12rem_auto]"
+                }
+              >
                 <div className="flex flex-col gap-1">
                   <Select
                     onChange={handleHealthInsuranceChange}
@@ -1447,45 +1444,43 @@ export function ClinicalSeriesView() {
                 </div>
 
                 {showIsapreSpecificFilters && (
-                  <>
-                    <div className="flex flex-col gap-1">
-                      <Select
-                        isDisabled={isapreProviderOptions.length === 0 && !isapreOnlyUnidentified}
-                        onChange={handleIsapreProviderChange}
-                        value={selectedIsapreFilter ?? null}
-                        placeholder="Todas"
-                        variant="secondary"
-                      >
-                        <Label>Isapre</Label>
-                        <Select.Trigger>
-                          <Select.Value />
-                          <Select.Indicator />
-                        </Select.Trigger>
-                        <Select.Popover>
-                          <ListBox>
+                  <div className="flex flex-col gap-1">
+                    <Select
+                      isDisabled={isapreProviderOptions.length === 0 && !isapreOnlyUnidentified}
+                      onChange={handleIsapreProviderChange}
+                      value={selectedIsapreFilter ?? null}
+                      placeholder="Todas"
+                      variant="secondary"
+                    >
+                      <Label>Isapre</Label>
+                      <Select.Trigger>
+                        <Select.Value />
+                        <Select.Indicator />
+                      </Select.Trigger>
+                      <Select.Popover>
+                        <ListBox>
+                          <ListBox.Item
+                            id={ISAPRE_UNIDENTIFIED_OPTION}
+                            key={ISAPRE_UNIDENTIFIED_OPTION}
+                            textValue="Sin nombre identificado"
+                          >
+                            Sin nombre identificado
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                          {isapreProviderOptions.map((item) => (
                             <ListBox.Item
-                              id={ISAPRE_UNIDENTIFIED_OPTION}
-                              key={ISAPRE_UNIDENTIFIED_OPTION}
-                              textValue="Sin nombre identificado"
+                              id={item.providerName}
+                              key={item.providerName}
+                              textValue={item.providerName}
                             >
-                              Sin nombre identificado
+                              {item.providerName}
                               <ListBox.ItemIndicator />
                             </ListBox.Item>
-                            {isapreProviderOptions.map((item) => (
-                              <ListBox.Item
-                                id={item.providerName}
-                                key={item.providerName}
-                                textValue={item.providerName}
-                              >
-                                {item.providerName}
-                                <ListBox.ItemIndicator />
-                              </ListBox.Item>
-                            ))}
-                          </ListBox>
-                        </Select.Popover>
-                      </Select>
-                    </div>
-                  </>
+                          ))}
+                        </ListBox>
+                      </Select.Popover>
+                    </Select>
+                  </div>
                 )}
 
                 {isSeriesLikeTab ? (
