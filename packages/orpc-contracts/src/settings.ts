@@ -21,6 +21,7 @@ export const settingsSchema = z.object({
   primaryCurrency: z.string(),
   secondaryColor: z.string(),
   supportEmail: z.string(),
+  whatsappFreeformMessage: z.string(),
   tagline: z.string(),
 });
 

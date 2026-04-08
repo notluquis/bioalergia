@@ -21,7 +21,6 @@
 
 import { db } from "@finanzas/db";
 import { createId } from "@paralleldrive/cuid2";
-import dayjs from "dayjs";
 import { ImapFlow } from "imapflow";
 import { logError, logEvent, logWarn } from "../logger";
 import { resolveDoctoraliaSenderSearchTerms } from "./imap-search";
@@ -30,6 +29,7 @@ import {
   getWhatsappConversationState,
   setWhatsappContactConsent,
 } from "../whatsapp/conversation-state";
+import { buildDoctoraliaMessage } from "../whatsapp/doctoralia-message";
 import {
   decodeEmailBody,
   htmlToText,
@@ -81,41 +81,6 @@ interface ProcessMessagesOptions {
   checked: number;
   matchedSenderTermsByUid?: Map<number, Set<string>>;
   uidValidity: bigint | null;
-}
-
-function buildDoctoraliaMessage(booking: NonNullable<ReturnType<typeof parseDoctoraliaEmail>>) {
-  const template = process.env.WHATSAPP_FREEFORM_MESSAGE?.trim();
-  const appointmentDate = booking.appointmentDate
-    ? dayjs(booking.appointmentDate).format("DD/MM/YYYY HH:mm")
-    : "";
-  const replacements: Record<string, string> = {
-    appointmentDate,
-    appointmentDoctor: booking.appointmentDoctor ?? "",
-    appointmentService: booking.appointmentService ?? "",
-    clinicAddress: booking.clinicAddress ?? "",
-    patientName: booking.patientName,
-  };
-
-  if (template) {
-    return template.replace(/\{\{\s*(\w+)\s*\}\}/g, (_match, key: string) => replacements[key] ?? "");
-  }
-
-  const details = [
-    booking.appointmentService ? `Servicio: ${booking.appointmentService}` : null,
-    booking.appointmentDoctor ? `Profesional: ${booking.appointmentDoctor}` : null,
-    appointmentDate ? `Fecha: ${appointmentDate}` : null,
-  ]
-    .filter(Boolean)
-    .join("\n");
-
-  return [
-    `Hola ${booking.patientName}, te escribimos de Bioalergia.`,
-    "Vimos tu reserva en Doctoralia.",
-    details,
-    "Si necesitas ajustar o confirmar algo, responde este mensaje.",
-  ]
-    .filter(Boolean)
-    .join("\n");
 }
 
 async function logWhatsappNotification(args: {
@@ -198,7 +163,7 @@ async function sendDoctoraliaWhatsapp(args: {
   }
 
   const normalizedPhone = normalizePhone(args.booking.patientPhone);
-  const message = buildDoctoraliaMessage(args.booking);
+  const message = await buildDoctoraliaMessage(args.booking);
 
   try {
     const sendResult = await sendText(normalizedPhone, message);

@@ -147,7 +147,6 @@ export interface WhatsappConfig {
   graphApiVersion: string;
   templateName: string | null;
   templateLanguage: null | string;
-  freeformMessage: string | null;
   requireOptIn: boolean;
   webhookVerifyToken: string | null;
   appSecret: string | null;
@@ -172,7 +171,6 @@ export const whatsappConfig: WhatsappConfig | null =
         accessToken: waAccessToken,
         appSecret: process.env.WHATSAPP_APP_SECRET ?? null,
         autoOptInOnInbound: process.env.WHATSAPP_AUTO_OPT_IN_ON_INBOUND !== "false",
-        freeformMessage: process.env.WHATSAPP_FREEFORM_MESSAGE ?? null,
         graphApiVersion: process.env.WHATSAPP_GRAPH_API_VERSION ?? "v25.0",
         imapHost: process.env.DOCTORALIA_IMAP_HOST ?? null,
         imapMailbox: process.env.DOCTORALIA_IMAP_MAILBOX ?? "INBOX",

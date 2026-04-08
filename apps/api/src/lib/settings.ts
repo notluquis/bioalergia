@@ -13,6 +13,7 @@ export type AppSettings = {
   orgPhone: string;
   primaryCurrency: string;
   supportEmail: string;
+  whatsappFreeformMessage: string;
   pageTitle: string;
   calendarTimeZone: string;
   calendarSyncStart: string;
@@ -36,6 +37,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   orgPhone: "",
   primaryCurrency: "CLP",
   supportEmail: "soporte@bioalergia.cl",
+  whatsappFreeformMessage: "",
   pageTitle: "Bioalergia · Finanzas",
   calendarTimeZone: "America/Santiago",
   calendarSyncStart: "2000-01-01",
@@ -59,6 +61,7 @@ const SETTINGS_KEY_MAP: Record<keyof AppSettings, string> = {
   orgPhone: "org.phone",
   primaryCurrency: "org.primaryCurrency",
   supportEmail: "org.supportEmail",
+  whatsappFreeformMessage: "whatsapp.freeformMessage",
   pageTitle: "page.title",
   calendarTimeZone: "calendar.timeZone",
   calendarSyncStart: "calendar.syncStart",

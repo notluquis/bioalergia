@@ -122,6 +122,7 @@ export const settingsSchema = z.object({
   orgPhone: z.string().max(60).optional().default(""),
   primaryCurrency: z.string().trim().min(2).max(8).optional().default("CLP"),
   supportEmail: z.email(),
+  whatsappFreeformMessage: z.string().optional().default(""),
   calendarTimeZone: z.string().trim().min(2).max(60).optional().default("America/Santiago"),
   calendarSyncStart: z.string().regex(dateRegex).optional().default("2000-01-01"),
   calendarSyncLookaheadDays: z.coerce

@@ -5,11 +5,11 @@
  */
 import { db } from "@finanzas/db";
 import { createId } from "@paralleldrive/cuid2";
-import dayjs from "dayjs";
 import { ImapFlow } from "imapflow";
 import { resolveDoctoraliaSenderSearchTerms } from "../doctoralia/imap-search";
 import { logError, logEvent, logWarn } from "../logger";
 import { sendText } from "./baileys-socket";
+import { buildDoctoraliaMessage } from "./doctoralia-message";
 import { decodeEmailBody, htmlToText, isLikelyDoctoraliaEmail, parseDoctoraliaEmail } from "./email-parser";
 import { normalizePhone } from "./jid";
 
@@ -41,41 +41,6 @@ function getImapConfig(): ImapConfig | null {
     senderFilter: process.env.DOCTORALIA_EMAIL_SENDER_FILTER ?? "doctoralia",
     user,
   };
-}
-
-function buildDoctoraliaMessage(booking: NonNullable<ReturnType<typeof parseDoctoraliaEmail>>) {
-  const template = process.env.WHATSAPP_FREEFORM_MESSAGE?.trim();
-  const appointmentDate = booking.appointmentDate
-    ? dayjs(booking.appointmentDate).format("DD/MM/YYYY HH:mm")
-    : "";
-  const replacements: Record<string, string> = {
-    appointmentDate,
-    appointmentDoctor: booking.appointmentDoctor ?? "",
-    appointmentService: booking.appointmentService ?? "",
-    clinicAddress: booking.clinicAddress ?? "",
-    patientName: booking.patientName,
-  };
-
-  if (template) {
-    return template.replace(/\{\{\s*(\w+)\s*\}\}/g, (_match, key: string) => replacements[key] ?? "");
-  }
-
-  const details = [
-    booking.appointmentService ? `Servicio: ${booking.appointmentService}` : null,
-    booking.appointmentDoctor ? `Profesional: ${booking.appointmentDoctor}` : null,
-    appointmentDate ? `Fecha: ${appointmentDate}` : null,
-  ]
-    .filter(Boolean)
-    .join("\n");
-
-  return [
-    `Hola ${booking.patientName}, te escribimos de Bioalergia.`,
-    "Vimos tu reserva en Doctoralia.",
-    details,
-    "Si necesitas ajustar o confirmar algo, responde este mensaje.",
-  ]
-    .filter(Boolean)
-    .join("\n");
 }
 
 export interface PollResult {
@@ -250,7 +215,7 @@ export async function runImapPoll(): Promise<PollResult> {
 
       // Send WhatsApp message via Baileys
       const normalizedPhone = normalizePhone(booking.patientPhone);
-      const message = buildDoctoraliaMessage(booking);
+      const message = await buildDoctoraliaMessage(booking);
       let waMessageId: string | null = null;
       let status: "SENT" | "FAILED" = "SENT";
       let errorMessage: string | null = null;
