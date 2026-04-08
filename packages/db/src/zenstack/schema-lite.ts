@@ -2903,6 +2903,11 @@ export class SchemaType implements SchemaDef {
                     type: "HealthInsuranceType",
                     optional: true
                 },
+                isapreName: {
+                    name: "isapreName",
+                    type: "String",
+                    optional: true
+                },
                 deliveryModality: {
                     name: "deliveryModality",
                     type: "DeliveryModality",

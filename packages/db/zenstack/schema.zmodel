@@ -910,6 +910,7 @@ model ClinicalSeries {
   allergenType     SubcutaneousAllergenType?  @map("allergen_type")
   vaccineProduct   SubcutaneousVaccineProduct? @map("vaccine_product")
   healthInsurance  HealthInsuranceType?        @map("health_insurance")
+  isapreName       String?                     @map("isapre_name")
   deliveryModality DeliveryModality?           @map("delivery_modality")
   expectedSessions Int?                        @map("expected_sessions")
   notes            String?

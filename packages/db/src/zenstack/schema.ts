@@ -3516,6 +3516,12 @@ export class SchemaType implements SchemaDef {
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("health_insurance") }] }] as readonly AttributeApplication[]
                 },
+                isapreName: {
+                    name: "isapreName",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("isapre_name") }] }] as readonly AttributeApplication[]
+                },
                 deliveryModality: {
                     name: "deliveryModality",
                     type: "DeliveryModality",
