@@ -9,12 +9,13 @@ import {
   Surface,
   Switch,
   Tabs,
+  TextArea,
   TextField,
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { Send, Wifi, WifiOff } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Fragment, type ReactNode, useEffect, useState } from "react";
 
 import { useToast } from "@/context/ToastContext";
 import { useSettings } from "@/context/SettingsContext";
@@ -25,6 +26,31 @@ import {
 } from "@/features/whatsapp/api";
 import { whatsappKeys } from "@/features/whatsapp/queries";
 import { PAGE_CONTAINER } from "@/lib/styles";
+
+function renderWhatsappInlineFormatting(text: string): ReactNode[] {
+  return text.split(/(\*[^*\n]+\*)/g).map((part, index) => {
+    const isBold = part.startsWith("*") && part.endsWith("*") && part.length >= 2;
+    if (!isBold) {
+      return <Fragment key={`${part}-${index}`}>{part}</Fragment>;
+    }
+
+    return <strong key={`${part}-${index}`}>{part.slice(1, -1)}</strong>;
+  });
+}
+
+function renderWhatsappPreview(text: string) {
+  const lines = text.split("\n");
+
+  return lines.map((line, index) => (
+    <Fragment key={`${line}-${index}`}>
+      {line.length === 0 ? (
+        <div className="h-4" />
+      ) : (
+        <div>{renderWhatsappInlineFormatting(line)}</div>
+      )}
+    </Fragment>
+  ));
+}
 
 export function WhatsappSettingsPage() {
   const { error: showError, success: showSuccess } = useToast();
@@ -255,14 +281,28 @@ export function WhatsappSettingsPage() {
                     </Description>
                   </Card.Header>
                   <Card.Content className="space-y-4">
-                    <textarea
-                      className="min-h-72 w-full rounded-xl border border-default-200 bg-background px-3 py-3 text-sm outline-none transition focus:border-primary"
-                      onChange={(event) => {
-                        setMessageTemplate(event.target.value);
-                      }}
-                      placeholder="Escribe el mensaje que se enviara por WhatsApp..."
-                      value={messageTemplate}
-                    />
+                    <TextField value={messageTemplate} onChange={setMessageTemplate}>
+                      <TextArea
+                        className="w-full"
+                        placeholder="Escribe el mensaje que se enviara por WhatsApp..."
+                        rows={14}
+                        variant="secondary"
+                      />
+                    </TextField>
+                    <div className="space-y-2 rounded-2xl border border-default-200 bg-default-50 p-4">
+                      <div className="font-semibold text-default-700 text-xs uppercase tracking-wide">
+                        Vista previa
+                      </div>
+                      <div className="rounded-2xl bg-[#e7ffdb] px-4 py-3 text-sm text-foreground shadow-sm">
+                        <div className="mb-2 text-[11px] text-default-500">WhatsApp</div>
+                        <div className="space-y-1 whitespace-pre-wrap break-words">
+                          {renderWhatsappPreview(
+                            messageTemplate.trim() ||
+                              "Se usara el mensaje por defecto del sistema si este campo queda vacio."
+                          )}
+                        </div>
+                      </div>
+                    </div>
                     <div className="flex justify-end">
                       <Button
                         isDisabled={messageTemplateMutation.isPending}
