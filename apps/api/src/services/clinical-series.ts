@@ -72,11 +72,31 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "pediatrico",
   "avisara",
   "aviso",
+  "aca",
+  "confirm",
+  "confirma",
+  "confirmada",
+  "confirmado",
+  "confirmara",
+  "confirmo",
+  "confirms",
+  "contesto",
   "cancela",
   "cuando",
+  "envio",
   "hasta",
+  "huevos",
+  "incluir",
+  "lec",
+  "licencia",
+  "nativos",
+  "ovo",
   "pueda",
+  "quiere",
   "realizara",
+  "standard",
+  "toca",
+  "ultima",
   "cuarta",
   "cuarto",
   "pagada",
@@ -706,6 +726,10 @@ function normalizeName(value: string): string {
 
 function stripNonNamePhrases(text: string): string {
   return text
+    .replace(
+      /(^|[\n,;]\s*)(?:(?:envio\s+de|toca|ultima|licencia|aca|incluir\s+huevos|ovo\s+y\s+nativos|quiere\s+de\s+standard|(?:lec|lectura)\s+de|contesto|quiso\s+realizar(?:\s+confirmado)?|confirm(?:ado|ada|o|a|s|ara|aq)?|feb|mayo)\s+)/gi,
+      "$1",
+    )
     .replace(
       /,\s*[^,;()]{3,80}\(\s*(?:pap[aá]|mam[aá]|tutor(?:a)?)\s*\)(?=(?:\s*,|\s*\(|$))/gi,
       " ",
