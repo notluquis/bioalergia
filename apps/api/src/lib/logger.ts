@@ -1,11 +1,17 @@
 import type { Context } from "hono";
 
+function toSerializable(value: unknown): string {
+  return JSON.stringify(value, (_key, nestedValue) =>
+    typeof nestedValue === "bigint" ? nestedValue.toString() : nestedValue,
+  );
+}
+
 export function logEvent(tag: string, details: Record<string, unknown> = {}) {
-  console.log(JSON.stringify({ level: "info", tag, ...details }));
+  console.log(toSerializable({ level: "info", tag, ...details }));
 }
 
 export function logWarn(tag: string, details: Record<string, unknown> = {}) {
-  console.warn(JSON.stringify({ level: "warn", tag, ...details }));
+  console.warn(toSerializable({ level: "warn", tag, ...details }));
 }
 
 export function logError(tag: string, error: unknown, details?: Record<string, unknown>): void;
@@ -22,14 +28,14 @@ export function logError(
       ? ((errorOrDetails as Record<string, unknown> | undefined) ?? {})
       : maybeDetails;
   const errMessage = error instanceof Error ? error.message : String(error);
-  console.error(JSON.stringify({ level: "error", tag, error: errMessage, ...details }));
+  console.error(toSerializable({ level: "error", tag, error: errMessage, ...details }));
 }
 
 export const logger = {
-  info: (obj: object, msg?: string) => console.log(JSON.stringify({ level: "info", msg, ...obj })),
-  warn: (obj: object, msg?: string) => console.warn(JSON.stringify({ level: "warn", msg, ...obj })),
+  info: (obj: object, msg?: string) => console.log(toSerializable({ level: "info", msg, ...obj })),
+  warn: (obj: object, msg?: string) => console.warn(toSerializable({ level: "warn", msg, ...obj })),
   error: (obj: object, msg?: string) =>
-    console.error(JSON.stringify({ level: "error", msg, ...obj })),
+    console.error(toSerializable({ level: "error", msg, ...obj })),
   child: () => logger, // Dummy child
 };
 
