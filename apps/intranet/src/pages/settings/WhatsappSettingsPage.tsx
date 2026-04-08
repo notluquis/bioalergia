@@ -276,9 +276,10 @@ export function WhatsappSettingsPage() {
                     <h2 className="font-semibold text-sm">Mensaje automatico</h2>
                     <Description className="text-default-500 text-xs">
                       Se usa para reservas de Doctoralia. Si queda vacio, el sistema usa el mensaje
-                      por defecto. Variables disponibles: {"{{patientName}}"},{" "}
-                      {"{{appointmentDate}}"}, {"{{appointmentDoctor}}"}, {"{{appointmentService}}"}{" "}
-                      y {"{{clinicAddress}}"}.
+                      por defecto. Variables disponibles: {"{{patientName}}"} o {"{patientName}"},{" "}
+                      {"{{appointmentDate}}"} o {"{appointmentDate}"}, {"{{appointmentDoctor}}"} o{" "}
+                      {"{appointmentDoctor}"}, {"{{appointmentService}}"} o {"{appointmentService}"}{" "}
+                      y {"{{clinicAddress}}"} o {"{clinicAddress}"}.
                     </Description>
                   </Card.Header>
                   <Card.Content className="space-y-4">
@@ -291,8 +292,9 @@ export function WhatsappSettingsPage() {
                         variant="secondary"
                       />
                       <Description>
-                        Usa formato de WhatsApp como *negrita* y saltos de linea. La vista previa de
-                        abajo simula el resultado.
+                        Usa formato de WhatsApp como *negrita* y saltos de linea. Puedes escribir
+                        variables con llaves simples o dobles; la vista previa de abajo simula el
+                        resultado.
                       </Description>
                     </TextField>
                     <Surface

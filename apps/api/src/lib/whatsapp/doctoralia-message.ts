@@ -51,7 +51,10 @@ export async function buildDoctoraliaMessage(
   };
 
   return template
-    .replace(/\{\{\s*(\w+)\s*\}\}/g, (_match, key: string) => replacements[key] ?? "")
+    .replace(/\{\{\s*(\w+)\s*\}\}|\{\s*(\w+)\s*\}/g, (_match, doubleKey: string, singleKey: string) => {
+      const key = doubleKey || singleKey;
+      return replacements[key] ?? "";
+    })
     .split("\n")
     .filter((line, index, allLines) => {
       if (line.trim() !== "") return true;
@@ -59,4 +62,3 @@ export async function buildDoctoraliaMessage(
     })
     .join("\n");
 }
-
