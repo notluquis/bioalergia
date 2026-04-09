@@ -1680,6 +1680,7 @@ interface SeriesEntry {
   maxDate: dayjs.Dayjs | null;
   minDate: dayjs.Dayjs | null;
   patientName: null | string;
+  patientPhones: string[];
   patientRut: null | string;
 }
 
@@ -1788,6 +1789,7 @@ class SeriesAssignmentContext {
   // rebuild can prefer the best canonical series rather than the oldest id.
   private readonly rutKindIndex = new Map<string, number>();  // `${rut}:${kind}` → id
   private readonly nameKindIndex = new Map<string, number[]>(); // `${name}:${kind}` → [id, …]
+  private readonly phoneKindIndex = new Map<string, number[]>(); // `${phone}:${kind}` → [id, …]
   // Token inverted index — insertion order matches id ASC load order.
   private readonly tokenIndex = new Map<string, number[]>(); // token → [id, …]
   readonly seriesById = new Map<number, SeriesEntry>();
@@ -1810,6 +1812,13 @@ class SeriesAssignmentContext {
         else this.tokenIndex.set(token, [entry.id]);
       }
     }
+
+    for (const phone of entry.patientPhones) {
+      const key = `${phone}:${entry.kind}`;
+      const ids = this.phoneKindIndex.get(key);
+      if (ids) ids.push(entry.id);
+      else this.phoneKindIndex.set(key, [entry.id]);
+    }
   }
 
   static async load(): Promise<SeriesAssignmentContext> {
@@ -1821,6 +1830,7 @@ class SeriesAssignmentContext {
         id: true,
         kind: true,
         patientName: true,
+        patientPhones: true,
         patientRut: true,
         events: { select: { endDate: true, endDateTime: true, startDate: true, startDateTime: true } },
       },
@@ -1841,6 +1851,7 @@ class SeriesAssignmentContext {
         maxDate: dates[dates.length - 1] ?? null,
         minDate: dates[0] ?? null,
         patientName: s.patientName,
+        patientPhones: normalizeStoredPhoneArray(s.patientPhones),
         patientRut: s.patientRut,
       });
     }
@@ -1890,6 +1901,34 @@ class SeriesAssignmentContext {
       .map((id) => this.seriesById.get(id))
       .filter((entry): entry is SeriesEntry => !!entry)
       .sort(compareSeriesCanonicalPriority)[0]?.id;
+  }
+
+  findByPhoneAndCompatibleName(
+    phones: string[],
+    name: string,
+    kind: ClinicalSeriesKind,
+    eventDate: dayjs.Dayjs,
+    thresholdDays: number,
+  ): number | undefined {
+    const candidateIds = new Set<number>();
+    for (const phone of phones) {
+      for (const id of this.phoneKindIndex.get(`${phone}:${kind}`) ?? []) {
+        candidateIds.add(id);
+      }
+    }
+
+    const candidates = [...candidateIds]
+      .map((id) => this.seriesById.get(id))
+      .filter(
+        (entry): entry is SeriesEntry =>
+          !!entry &&
+          !!entry.patientName &&
+          haveCompatiblePatientNames(entry.patientName, name) &&
+          this.dist(entry, eventDate) <= thresholdDays,
+      )
+      .sort(compareSeriesCanonicalPriority);
+
+    return candidates[0]?.id;
   }
 
   /**
@@ -1951,6 +1990,7 @@ export async function findMatchingSeries(
     eventDate: string;
     kind: ClinicalSeriesKind;
     patientName: null | string;
+    patientPhones?: string[];
     patientRut: null | string;
   },
   ctx?: SeriesAssignmentContext,
@@ -2001,6 +2041,16 @@ export async function findMatchingSeries(
       }
       const uniqueExact = ctx.findUniqueByExactName(params.patientName, params.kind);
       if (uniqueExact != null) return uniqueExact;
+      if (params.patientPhones?.length) {
+        const phoneMatch = ctx.findByPhoneAndCompatibleName(
+          params.patientPhones,
+          params.patientName,
+          params.kind,
+          eventDateDjs,
+          thresholdDays,
+        );
+        if (phoneMatch != null) return phoneMatch;
+      }
       const fuzzy = ctx.findByTokenOverlap(params.patientName, params.kind, eventDateDjs, thresholdDays);
       if (fuzzy != null) return fuzzy;
     }
@@ -2130,6 +2180,41 @@ export async function findMatchingSeries(
           },
         ),
       )[0]!.id;
+    }
+
+    if (params.patientPhones?.length) {
+      const phoneCandidates = await db.clinicalSeries.findMany({
+        where: { kind: params.kind },
+        include: { events: eventSelect },
+        orderBy: { id: "asc" },
+      });
+      const matchingPhoneCandidates = phoneCandidates
+        .filter((candidate) => {
+          const storedPhones = normalizeStoredPhoneArray(candidate.patientPhones);
+          return (
+            candidate.patientName &&
+            storedPhones.some((phone) => params.patientPhones?.includes(phone)) &&
+            haveCompatiblePatientNames(candidate.patientName, params.patientName)
+          );
+        })
+        .map((candidate) => ({
+          candidate,
+          score: scoreClinicalSeriesIdentityQuality({
+            beneficiaryName: candidate.beneficiaryName,
+            beneficiaryRut: candidate.beneficiaryRut,
+            eventCount: candidate.events.length,
+            patientName: candidate.patientName,
+            patientRut: candidate.patientRut,
+          }),
+        }))
+        .sort((left, right) => {
+          const scoreDelta = right.score - left.score;
+          if (scoreDelta !== 0) return scoreDelta;
+          return left.candidate.id - right.candidate.id;
+        });
+      if (matchingPhoneCandidates[0]) {
+        return matchingPhoneCandidates[0].candidate.id;
+      }
     }
 
     // Token-overlap fallback.
@@ -2600,6 +2685,8 @@ async function assignEventToSeries(event: EventSeriesCandidate, ctx?: SeriesAssi
     return event.clinicalSeriesId ?? null;
   }
 
+  const extractedPhones = extractSeriesPhones(event.summary, event.description);
+
   // Always call findMatchingSeries first — it returns the oldest canonical series
   // for this patient+kind by ordering candidates id ASC and preferring the one
   // with the smallest date distance. This ensures that during a rebuild an event
@@ -2610,6 +2697,7 @@ async function assignEventToSeries(event: EventSeriesCandidate, ctx?: SeriesAssi
       eventDate: event.eventDate,
       kind,
       patientName: identity.patientName,
+      patientPhones: extractedPhones.patientPhones,
       patientRut: identity.patientRut,
     },
     ctx,
