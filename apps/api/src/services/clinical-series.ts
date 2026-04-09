@@ -69,6 +69,7 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "mantencion",
   "mas",
   "mensual",
+  "mesual",
   "mil",
   "papa",
   "pediatrico",
@@ -750,15 +751,21 @@ function stripNonNamePhrases(text: string): string {
       /,\s*(?:pap[aá]|mam[aá]|tutor(?:a)?)\s+[^,;()]{3,80}(?=(?:\s*,|\s*\(|$))/gi,
       " ",
     )
+    .replace(/\([^)]*\b(?:emite\s+boleta|gestiona\s+pago)\b[^)]*\)/gi, " ")
+    .replace(/\balergia\s+(?:muy\s+)?(?:fuerte|severa|intensa)\s+a\s+[^.;\n]+/gi, " ")
+    .replace(/\bdesea\s+iniciar\s+tratamiento(?:\s+de\s+inmunoterapia)?[^.;\n]*/gi, " ")
     .replace(/\bsan\s+carlos\b/gi, " ")
     .replace(/\bsan\s+pedro\s+de\s+la\s+paz\b/gi, " ")
     .replace(/\bde\s+la\s+paz\b/gi, " ")
     .replace(/\bsan\s+pedro\b/gi, " ")
+    .replace(/\bcuranilahue\b/gi, " ")
     .replace(/\bhu[eé]pil\b/gi, " ")
     .replace(/\bmulchen\b/gi, " ")
     .replace(/\bcurico\b/gi, " ")
     .replace(/\barauco\b/gi, " ")
     .replace(/\branquil\b/gi, " ")
+    .replace(/\byerbas\s+buenas\b/gi, " ")
+    .replace(/\blinares\b/gi, " ")
     .replace(/\brespiratori[ao]s?\b/gi, " ");
 }
 

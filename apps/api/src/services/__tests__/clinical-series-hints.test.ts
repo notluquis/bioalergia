@@ -891,6 +891,16 @@ describe("extractIdentityHints", () => {
     expect(result.beneficiaryName).toBeNull();
     expect(result.beneficiaryRut).toBeNull();
   });
+
+  it("does not append clinical complaint adjectives to the patient name", () => {
+    const result = extractIdentityHints(
+      "LLEGO, Test cutáneo Aero ambiental 40 mil, Valeria Palma Onetto, 31 años, Alergia fuerte a pastos y polen. Desea iniciar tratamiento de inmunoterapia, Concepción, Fonasa, 937039005",
+      null,
+    );
+
+    expect(result.patientName).toBe("valeria palma onetto");
+    expect(result.patientRut).toBeNull();
+  });
 });
 
 describe("resolveClinicalIdentity", () => {
