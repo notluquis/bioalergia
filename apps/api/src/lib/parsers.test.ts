@@ -79,6 +79,20 @@ describe("parseCalendarMetadata - Classification Issues", () => {
     expect(result.treatmentStage).toBe("Mantención");
   });
 
+  it("should keep patch test events as tests even if the summary also mentions acaros and vacuna", () => {
+    const result = parseCalendarMetadata({
+      summary:
+        "16.10 1 lectura test de parche, test cutaneo panel 1, acaros, 4, 5 y Grupo los 8 (80 autorizado por el doctor) Pamela Andaur Arenas",
+      description:
+        "Pamela Andaur Arenas, 14.324.845-3, 45 años, Concepción, Nueva mas vida,995083273 , pamandaur@gmail.com\nDermatitis atópica en ambas manos",
+    });
+
+    expect(result.category).toBe("Test y exámenes");
+    expect(result.clinicalSeriesKind).toBe("PATCH_TEST");
+    expect(result.seriesStageKind).toBe("READING");
+    expect(result.seriesStageNumber).toBe(1);
+  });
+
   it("should classify roxair with default amount 150000", () => {
     const result = parseCalendarMetadata({
       summary: "RETIRA ROXAIR (pagado): Alondra Valenzuela",

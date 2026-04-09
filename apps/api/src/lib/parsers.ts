@@ -694,6 +694,7 @@ function classifyCategory(summary: string, description: string): string | null {
   const canonicalText = canonicalizeClassificationText(joinClinicalText(summary, description));
   const summaryOnly = normalizeClinicalText(summary).toLowerCase();
   const canonicalSummaryOnly = canonicalizeClassificationText(summary);
+  const summaryHasExplicitTestSignals = matchesAnyVariant(TEST_PATTERNS, summaryOnly, canonicalSummaryOnly);
 
   // Skip ignored events
   if (
@@ -710,7 +711,10 @@ function classifyCategory(summary: string, description: string): string | null {
 
   // Prefer explicit subcutaneous signals in the summary over noisy descriptions
   // that mention exams, test follow-ups, or historical notes.
-  if (matchesAnyVariant(SUBCUT_PATTERNS, summaryOnly, canonicalSummaryOnly)) {
+  if (
+    !summaryHasExplicitTestSignals &&
+    matchesAnyVariant(SUBCUT_PATTERNS, summaryOnly, canonicalSummaryOnly)
+  ) {
     return "Tratamiento subcutáneo";
   }
 
