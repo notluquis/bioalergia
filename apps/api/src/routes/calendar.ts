@@ -285,13 +285,30 @@ const parseMetadata = (event: { description: null | string; summary: null | stri
 
 type ParsedCalendarMetadata = ReturnType<typeof parseCalendarMetadata>;
 
+const CATEGORY_REPAIRABLE_CLINICAL_SET = new Set([
+  "Test y exámenes",
+  "Tratamiento subcutáneo",
+]);
+
 const applyPartialCategoryUpdate = (
   event: PartialReclassifyEvent,
   metadata: ParsedCalendarMetadata,
   updateData: PartialReclassifyUpdateData,
   fieldCounts: PartialFieldCounts,
 ) => {
-  if ((event.category === null || event.category === "") && metadata.category) {
+  const shouldRepairClinicalCategory =
+    metadata.category != null &&
+    event.category != null &&
+    event.category !== "" &&
+    event.category !== metadata.category &&
+    CATEGORY_REPAIRABLE_CLINICAL_SET.has(event.category) &&
+    CATEGORY_REPAIRABLE_CLINICAL_SET.has(metadata.category);
+
+  if (
+    (((event.category === null || event.category === "") && metadata.category != null) ||
+      shouldRepairClinicalCategory) &&
+    metadata.category != null
+  ) {
     updateData.category = metadata.category;
     fieldCounts.category++;
   }
