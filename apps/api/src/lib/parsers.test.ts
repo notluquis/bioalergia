@@ -67,6 +67,18 @@ describe("parseCalendarMetadata - Classification Issues", () => {
     expect(result.category).toBe("Tratamiento subcutáneo");
   });
 
+  it("should prefer subcutaneous vaccine signals in the summary over exam mentions in the description", () => {
+    const result = parseCalendarMetadata({
+      summary: "confirma Maite Gajardo Sepulveda, vacuna ácaros (50)",
+      description:
+        "dosis de mantencion acaros (50)\nEdad: 11 años\nRUT: 24170380-0\nComuna: concepcion\nPrevisión: consalud\nTeléfono: 972727212\n\ncontinuas alergias, asma, muchos resfríos, tiene examenes de sangre\nprefiere ver a doctor primero",
+    });
+
+    expect(result.category).toBe("Tratamiento subcutáneo");
+    expect(result.clinicalSeriesKind).toBe("SUBCUTANEOUS_TREATMENT");
+    expect(result.treatmentStage).toBe("Mantención");
+  });
+
   it("should classify roxair with default amount 150000", () => {
     const result = parseCalendarMetadata({
       summary: "RETIRA ROXAIR (pagado): Alondra Valenzuela",

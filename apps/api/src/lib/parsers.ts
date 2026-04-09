@@ -708,6 +708,12 @@ function classifyCategory(summary: string, description: string): string | null {
     return null;
   }
 
+  // Prefer explicit subcutaneous signals in the summary over noisy descriptions
+  // that mention exams, test follow-ups, or historical notes.
+  if (matchesAnyVariant(SUBCUT_PATTERNS, summaryOnly, canonicalSummaryOnly)) {
+    return "Tratamiento subcutáneo";
+  }
+
   // Priority order: Test → Injection Service (specific meds) → Subcutáneo (explicit) → Roxair → Licencia → Control → Consulta → Subcutáneo (implicit)
   if (matchesAnyVariant(TEST_PATTERNS, text, canonicalText)) {
     return "Test y exámenes";

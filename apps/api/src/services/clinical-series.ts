@@ -2551,11 +2551,11 @@ async function loadEventSeriesCandidatesByIds(
 // touched (for the caller to schedule a deduplicated metadata refresh), or
 // null if the event does not qualify for a clinical series.
 async function assignEventToSeries(event: EventSeriesCandidate, ctx?: SeriesAssignmentContext): Promise<null | number> {
-  const kind = inferSeriesKind(event);
   const inferredMetadata = parseCalendarMetadata({
     description: event.description,
     summary: event.summary,
   });
+  const kind = inferredMetadata.clinicalSeriesKind ?? inferSeriesKind(event);
   if (!kind) {
     if (event.clinicalSeriesId != null) {
       await db.event.update({
