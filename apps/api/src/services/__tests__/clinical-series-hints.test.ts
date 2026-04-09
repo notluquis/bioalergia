@@ -414,6 +414,15 @@ describe("extractPatientHints", () => {
       expect(patientName).not.toContain("s c");
     });
 
+    it("does not include 's/cacaros' prefix before the patient name", () => {
+      const { patientName } = extractPatientHints(
+        "15:42 CONTROL dosis de mantencion s/cacaros (50) Maite Gajardo Sepulveda, 11 años, 24170380-0, concepcion, consalud, 24170380-0, 972727212",
+        null,
+      );
+      expect(patientName).toBe("maite gajardo sepulveda");
+      expect(patientName).not.toContain("s cacaros");
+    });
+
     it("stops backwards walk at 'clustoid' and does not strip it to 'oid'", () => {
       // Bug fix: stripStopwordPrefix ran before stopword check. "clustoid" was
       // stripped to "oid" (clust=prefix stopword) instead of breaking the walk.

@@ -751,6 +751,7 @@ function stripNonNamePhrases(text: string): string {
       /,\s*(?:pap[aá]|mam[aá]|tutor(?:a)?)\s+[^,;()]{3,80}(?=(?:\s*,|\s*\(|$))/gi,
       " ",
     )
+    .replace(/\bs\s*\/\s*c[a-záéíóúñ]*/gi, " ")
     .replace(/\([^)]*\b(?:emite\s+boleta|gestiona\s+pago)\b[^)]*\)/gi, " ")
     .replace(/\balergia\s+(?:muy\s+)?(?:fuerte|severa|intensa)\s+a\s+[^.;\n]+/gi, " ")
     .replace(/\bdesea\s+iniciar\s+tratamiento(?:\s+de\s+inmunoterapia)?[^.;\n]*/gi, " ")
@@ -817,7 +818,9 @@ function stripStopwordPrefix(token: string): string {
 }
 
 function normalizeNameToken(token: string): string {
-  return stripStopwordPrefix(token).replace(/^-+|-+$/g, "");
+  return stripStopwordPrefix(token)
+    .replace(/^s\s+c\b\s*/i, "")
+    .replace(/^-+|-+$/g, "");
 }
 
 function resolveClinicalSeriesOrderBy(
