@@ -57,6 +57,14 @@ describe("clinical series patient-name cleaning", () => {
         "gladys diaz figueroa",
       ],
       [
+        "esta de viaje llamara para reagendar, Marizu Velásquez Flores (60) clustoid 0,5ml pago listo boleta realizada por esta vacuna 14.665.829-6 994432696 marizu.velasquez@gmail.com ccp fonasa",
+        "marizu velasquez flores",
+      ],
+      [
+        "dr. suspendio vacuna junio Cristobal Quiroz Mariñao (50) CUARTAdosis clustoid ac 9 años 25.320.867-8 fonasa hualpen 942698769",
+        "cristobal quiroz marinao",
+      ],
+      [
         "se le envia por pick up pagamos el envio nosotros dosis clustoid (50) Fernanda isidora Campos henriquez 23886375-9 12 años Los angeles Fonasa 974434688",
         "fernanda isidora campos henriquez",
       ],

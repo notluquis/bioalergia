@@ -98,6 +98,7 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "quiere",
   "realizara",
   "retira",
+  "suspendio",
   "standard",
   "toca",
   "ultima",
@@ -750,6 +751,8 @@ function stripNonNamePhrases(text: string): string {
       "$1",
     )
     .replace(/\bno\s+asistir[aá]\s+por\s+temas\s+econ[oó]micos\b/gi, " ")
+    .replace(/\best[aá]\s+de\s+viaje\s+llamar[aá]\s+para\s+reagendar\b/gi, " ")
+    .replace(/\bdr\.?\s+suspendi[oó]\s+vacuna\s+[a-záéíóúñ]+\b/gi, " ")
     .replace(/\bpagamos\s+el\s+env[ií]o\s+nosotros\b/gi, " ")
     .replace(
       /(^|[\n,;]\s*)(?:(?:prox|covid|(?:se\s+)?envi(?:a|ada|ado|ar))(?:\s+(?:de|y|vacuna|vacunas|dia|d[ií]a|lunes|martes|miercoles|miércoles|jueves|viernes|sabado|sábado|domingo|enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre))*\s+)/gi,
