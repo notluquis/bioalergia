@@ -428,6 +428,70 @@ describe("detectDuplicateSeries — same RUT, different name (subset)", () => {
     expect(match).toBe(345);
   });
 
+  it("prefers the stronger canonical series over the exact short-name series when phone matches", async () => {
+    mockFindFirst.mockResolvedValueOnce(null);
+    mockFindMany.mockResolvedValueOnce([
+      {
+        beneficiaryName: null,
+        beneficiaryRut: null,
+        events: [
+          { endDate: null, endDateTime: null, startDate: new Date("2022-09-12T00:00:00.000Z"), startDateTime: null },
+        ],
+        id: 6741,
+        patientName: "valeria palma onetto",
+        patientPhones: ["+56937039005"],
+        patientRut: null,
+      },
+    ]);
+    mockFindMany.mockResolvedValueOnce([
+      {
+        beneficiaryName: null,
+        beneficiaryRut: null,
+        events: [
+          { endDate: null, endDateTime: null, startDate: new Date("2022-09-12T00:00:00.000Z"), startDateTime: null },
+        ],
+        id: 6741,
+        patientName: "valeria palma onetto",
+        patientPhones: ["+56937039005"],
+        patientRut: null,
+      },
+    ]);
+    mockFindMany.mockResolvedValueOnce([
+      {
+        beneficiaryName: null,
+        beneficiaryRut: null,
+        events: [
+          { endDate: null, endDateTime: null, startDate: new Date("2022-09-12T00:00:00.000Z"), startDateTime: null },
+        ],
+        id: 6741,
+        patientName: "valeria palma onetto",
+        patientPhones: ["+56937039005"],
+        patientRut: null,
+      },
+      {
+        beneficiaryName: null,
+        beneficiaryRut: null,
+        events: [
+          { endDate: null, endDateTime: null, startDate: new Date("2025-09-13T00:00:00.000Z"), startDateTime: null },
+        ],
+        id: 345,
+        patientName: "valeria danae palma onetto",
+        patientPhones: ["+56937039005"],
+        patientRut: "17678131-9",
+      },
+    ]);
+
+    const match = await findMatchingSeries({
+      eventDate: "2022-09-12",
+      kind: "SKIN_TEST",
+      patientName: "valeria palma onetto",
+      patientPhones: ["+56937039005"],
+      patientRut: null,
+    });
+
+    expect(match).toBe(345);
+  });
+
   it("does not match a different patient just because a surname is repeated twice", async () => {
     mockFindFirst.mockResolvedValueOnce(null);
     mockFindMany.mockResolvedValueOnce([]);

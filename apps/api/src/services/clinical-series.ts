@@ -1745,6 +1745,21 @@ function compareSeriesCanonicalPriority<
   return a.id - b.id;
 }
 
+function chooseBetterSeriesCandidate<
+  T extends {
+    beneficiaryName?: null | string;
+    beneficiaryRut?: null | string;
+    eventCount?: number;
+    id: number;
+    patientName?: null | string;
+    patientRut?: null | string;
+  },
+>(...candidates: Array<null | T | undefined>): null | T {
+  return candidates
+    .filter((candidate): candidate is T => candidate != null)
+    .sort(compareSeriesCanonicalPriority)[0] ?? null;
+}
+
 function hasConflictingPrimaryIdentity<
   T extends {
     beneficiaryRut?: null | string;
@@ -2029,27 +2044,27 @@ export async function findMatchingSeries(
     }
     if (params.patientName) {
       const exact = ctx.findByName(params.patientName, params.kind, eventDateDjs, thresholdDays);
-      if (exact != null) {
-        // If the matched series has a RUT, prefer the oldest canonical series for that RUT.
-        // This prevents re-assigning events to a duplicate series when the canonical exists.
-        const entry = ctx.seriesById.get(exact);
-        if (entry?.patientRut) {
-          const canonical = ctx.findByRut(entry.patientRut, params.kind);
-          if (canonical != null && canonical !== exact) return canonical;
-        }
-        return exact;
-      }
       const uniqueExact = ctx.findUniqueByExactName(params.patientName, params.kind);
-      if (uniqueExact != null) return uniqueExact;
-      if (params.patientPhones?.length) {
-        const phoneMatch = ctx.findByPhoneAndCompatibleName(
-          params.patientPhones,
-          params.patientName,
-          params.kind,
-          eventDateDjs,
-          thresholdDays,
-        );
-        if (phoneMatch != null) return phoneMatch;
+      const phoneMatch = params.patientPhones?.length
+        ? ctx.findByPhoneAndCompatibleName(
+            params.patientPhones,
+            params.patientName,
+            params.kind,
+            eventDateDjs,
+            thresholdDays,
+          )
+        : undefined;
+      const chosen = chooseBetterSeriesCandidate(
+        exact != null ? { ...ctx.seriesById.get(exact)!, eventCount: ctx.seriesById.get(exact)!.eventCount } : null,
+        uniqueExact != null ? { ...ctx.seriesById.get(uniqueExact)!, eventCount: ctx.seriesById.get(uniqueExact)!.eventCount } : null,
+        phoneMatch != null ? { ...ctx.seriesById.get(phoneMatch)!, eventCount: ctx.seriesById.get(phoneMatch)!.eventCount } : null,
+      );
+      if (chosen) {
+        if (chosen.patientRut) {
+          const canonical = ctx.findByRut(chosen.patientRut, params.kind);
+          if (canonical != null) return canonical;
+        }
+        return chosen.id;
       }
       const fuzzy = ctx.findByTokenOverlap(params.patientName, params.kind, eventDateDjs, thresholdDays);
       if (fuzzy != null) return fuzzy;
@@ -2158,29 +2173,64 @@ export async function findMatchingSeries(
         best = { distance, id: c.id, score };
       }
     }
-    if (best) return best.id;
-    if (nameCandidates.length > 0) {
-      return [...nameCandidates].sort((a, b) =>
-        compareSeriesCanonicalPriority(
-          {
-            beneficiaryName: a.beneficiaryName,
-            beneficiaryRut: a.beneficiaryRut,
-            eventCount: a.events.length,
-            id: a.id,
-            patientName: a.patientName,
-            patientRut: a.patientRut,
-          },
-          {
-            beneficiaryName: b.beneficiaryName,
-            beneficiaryRut: b.beneficiaryRut,
-            eventCount: b.events.length,
-            id: b.id,
-            patientName: b.patientName,
-            patientRut: b.patientRut,
-          },
-        ),
-      )[0]!.id;
-    }
+
+    const exactCandidate =
+      best == null
+        ? null
+        : (() => {
+            const candidate = nameCandidates.find((item) => item.id === best.id);
+            return candidate
+              ? {
+                  beneficiaryName: candidate.beneficiaryName,
+                  beneficiaryRut: candidate.beneficiaryRut,
+                  eventCount: candidate.events.length,
+                  id: candidate.id,
+                  patientName: candidate.patientName,
+                  patientRut: candidate.patientRut,
+                }
+              : null;
+          })();
+    const uniqueExactCandidate =
+      nameCandidates.length === 0
+        ? null
+        : [...nameCandidates]
+            .sort((a, b) =>
+              compareSeriesCanonicalPriority(
+                {
+                  beneficiaryName: a.beneficiaryName,
+                  beneficiaryRut: a.beneficiaryRut,
+                  eventCount: a.events.length,
+                  id: a.id,
+                  patientName: a.patientName,
+                  patientRut: a.patientRut,
+                },
+                {
+                  beneficiaryName: b.beneficiaryName,
+                  beneficiaryRut: b.beneficiaryRut,
+                  eventCount: b.events.length,
+                  id: b.id,
+                  patientName: b.patientName,
+                  patientRut: b.patientRut,
+                },
+              ),
+            )
+            .map((candidate) => ({
+              beneficiaryName: candidate.beneficiaryName,
+              beneficiaryRut: candidate.beneficiaryRut,
+              eventCount: candidate.events.length,
+              id: candidate.id,
+              patientName: candidate.patientName,
+              patientRut: candidate.patientRut,
+            }))[0]!;
+
+    let phoneCandidate: null | {
+      beneficiaryName: null | string;
+      beneficiaryRut: null | string;
+      eventCount: number;
+      id: number;
+      patientName: null | string;
+      patientRut: null | string;
+    } = null;
 
     if (params.patientPhones?.length) {
       const phoneCandidates = await db.clinicalSeries.findMany({
@@ -2213,9 +2263,23 @@ export async function findMatchingSeries(
           return left.candidate.id - right.candidate.id;
         });
       if (matchingPhoneCandidates[0]) {
-        return matchingPhoneCandidates[0].candidate.id;
+        phoneCandidate = {
+          beneficiaryName: matchingPhoneCandidates[0].candidate.beneficiaryName,
+          beneficiaryRut: matchingPhoneCandidates[0].candidate.beneficiaryRut,
+          eventCount: matchingPhoneCandidates[0].candidate.events.length,
+          id: matchingPhoneCandidates[0].candidate.id,
+          patientName: matchingPhoneCandidates[0].candidate.patientName,
+          patientRut: matchingPhoneCandidates[0].candidate.patientRut,
+        };
       }
     }
+
+    const chosenCandidate = chooseBetterSeriesCandidate(
+      exactCandidate,
+      uniqueExactCandidate,
+      phoneCandidate,
+    );
+    if (chosenCandidate) return chosenCandidate.id;
 
     // Token-overlap fallback.
     const eventTokens = getSignificantNameTokens(params.patientName);
