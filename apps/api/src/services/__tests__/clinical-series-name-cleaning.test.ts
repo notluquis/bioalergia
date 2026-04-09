@@ -37,6 +37,41 @@ describe("clinical series patient-name cleaning", () => {
         "arantxa emilia magdalena ruiz etchepare",
       ],
       [
+        "llego,1 dosis mensual debe 10 total a pagar 60.000 dosis clustoid viviana gutierrez sanhueza 963104453 7925268-9",
+        "viviana gutierrez sanhueza",
+      ],
+      [
+        "1323 control prox mes confirma vacuna clustoid (50) Romulo Velasquez , 14727301-0, 65 años.spp, isapre, 993427879 / esposa: 983251614",
+        "romulo velasquez",
+      ],
+      [
+        "llego Karina Ortiz Osorio (60) dosis mantencion clust a-g 0,5ml 14603947-2 962388428 correo: kortiz2@hotmail.com",
+        "karina ortiz osorio",
+      ],
+      [
+        "llego Lucas Torres Diaz (60) 1 dosis clustoid A-P mensual 24.966.813-3 10 años colmena ccp 964959013 adiazfuentes.prev@gmail.com",
+        "lucas torres diaz",
+      ],
+      [
+        "no podra asistir Gladys Díaz Figueroa, dosis 8 mensual clustoid (50) 12737050-8 Edad: 49 años Contacto: 949479225 Barbara.aamunoz@gmail.com +56926421700",
+        "gladys diaz figueroa",
+      ],
+      [
+        "se le envia por pick up pagamos el envio nosotros dosis clustoid (50) Fernanda isidora Campos henriquez 23886375-9 12 años Los angeles Fonasa 974434688",
+        "fernanda isidora campos henriquez",
+      ],
+      [
+        "retira vacuna Roberto castillo rubilar clustoid 0.5 ML 8.700.053-2 956234225 los angeles",
+        "roberto castillo rubilar",
+      ],
+      {
+        summary:
+          "no asistira por temas economicosHiles Morales Salcedo, Vacuna mantención clustoid (50)",
+        description:
+          "Hiles Morales Salcedo\nEdad: 46 años\nRUT: 13142377-2\nComuna: Laja\nPrevisión: fonasa\nTeléfono: 962249362",
+        expectedName: "hiles morales salcedo",
+      },
+      [
         "11.10 vacuna de clustoid (50), Emilio Sabath Saez, 9 años, Concepcion, Fonasa 990135760 (papá Gonzalo Sabath Saldivia)",
         "emilio sabath saez",
       ],
@@ -47,9 +82,16 @@ describe("clinical series patient-name cleaning", () => {
       ["confirmocarlos joaquin varela chavez", "carlos joaquin varela chavez"],
     ] as const;
 
-    for (const [summary, expectedName] of cases) {
-      const result = extractPatientHints(summary, null);
-      expect(result.patientName).toBe(expectedName);
+    for (const testCase of cases) {
+      if (Array.isArray(testCase)) {
+        const [summary, expectedName] = testCase;
+        const result = extractPatientHints(summary, null);
+        expect(result.patientName).toBe(expectedName);
+        continue;
+      }
+
+      const result = extractPatientHints(testCase.summary, testCase.description);
+      expect(result.patientName).toBe(testCase.expectedName);
     }
   });
 });

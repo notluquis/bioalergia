@@ -97,6 +97,7 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "pueda",
   "quiere",
   "realizara",
+  "retira",
   "standard",
   "toca",
   "ultima",
@@ -104,6 +105,7 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "cuarto",
   "pagada",
   "pagado",
+  "pagar",
   "parche",
   "polen",
   "presento",
@@ -121,6 +123,7 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "segundo",
   "semanal",
   "semana",
+  "spp",
   "sexta",
   "sexto",
   "subcutaneo",
@@ -238,6 +241,7 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "celular",
   "confirmar",
   "descartar",
+  "economicos",
   "entregar",
   "enviar",
   "enviara",
@@ -247,8 +251,10 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "llamar",
   "llamara",
   "mostrar",
+  "preguntar",
   "porconfirmar",
   "postergar",
+  "podra",
   "quiero",
   "reagendar",
   "reagendara",
@@ -283,7 +289,9 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "nueva",
   "nuevamas",
   "nuevo",
+  "nosotros",
   "para",
+  "pagamos",
   "pero",
   "por",
   "porque",
@@ -295,14 +303,17 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "sera",
   "solo",
   "tiene",
+  "temas",
   "tomo",
   "trae",
   "traen",
   "venir",
   "vendra",
+  "vendran",
   "ver",
   "viene",
   "vino",
+  "asistira",
 ]);
 
 type ClinicalSeriesKind = "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT";
@@ -738,10 +749,14 @@ function stripNonNamePhrases(text: string): string {
       /(^|[\n,;]\s*)(?:(?:envio\s+de|toca|ultima|licencia|aca|incluir\s+huevos|ovo\s+y\s+nativos|quiere\s+de\s+standard|(?:lec|lectura)\s+de(?:\s+de)?|contesto|quiso\s+realizar(?:\s+confirmado)?|confirm(?:ado|ada|o|a|s|ara|aq)?|(?:no\s+)?vino(?:\s+confirma(?:do|da|o|a|s|ra)?)?|llego(?:p)?(?:\s+confirma(?:do|da|o|a|s|ra)?)?|se\s+llev(?:a|o)\s+vacuna\s+de\s+(?:enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)|feb|mayo)(?:\s+(?:de|y))?\s+)/gi,
       "$1",
     )
+    .replace(/\bno\s+asistir[aá]\s+por\s+temas\s+econ[oó]micos\b/gi, " ")
+    .replace(/\bpagamos\s+el\s+env[ií]o\s+nosotros\b/gi, " ")
     .replace(
       /(^|[\n,;]\s*)(?:(?:prox|covid|(?:se\s+)?envi(?:a|ada|ado|ar))(?:\s+(?:de|y|vacuna|vacunas|dia|d[ií]a|lunes|martes|miercoles|miércoles|jueves|viernes|sabado|sábado|domingo|enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre))*\s+)/gi,
       "$1",
     )
+    .replace(/\bprox(?:imo)?\s+mes\b/gi, " ")
+    .replace(/\ba\s*-\s*(?:g|p)\b/gi, " ")
     .replace(
       /,\s*[^,;()]{3,80}\(\s*(?:pap[aá]|mam[aá]|tutor(?:a)?)\s*\)(?=(?:\s*,|\s*\(|$))/gi,
       " ",
@@ -752,6 +767,7 @@ function stripNonNamePhrases(text: string): string {
       " ",
     )
     .replace(/\bs\s*\/\s*c[a-záéíóúñ]*/gi, " ")
+    .replace(/\b\/?\s*esposa\s*:\s*\d{5,}\b/gi, " ")
     .replace(/\([^)]*\b(?:emite\s+boleta|gestiona\s+pago)\b[^)]*\)/gi, " ")
     .replace(/\balergia\s+(?:muy\s+)?(?:fuerte|severa|intensa)\s+a\s+[^.;\n]+/gi, " ")
     .replace(/\bdesea\s+iniciar\s+tratamiento(?:\s+de\s+inmunoterapia)?[^.;\n]*/gi, " ")
@@ -765,6 +781,7 @@ function stripNonNamePhrases(text: string): string {
     .replace(/\bcurico\b/gi, " ")
     .replace(/\barauco\b/gi, " ")
     .replace(/\branquil\b/gi, " ")
+    .replace(/\bspp\b/gi, " ")
     .replace(/\byerbas\s+buenas\b/gi, " ")
     .replace(/\blinares\b/gi, " ")
     .replace(/\brespiratori[ao]s?\b/gi, " ");
