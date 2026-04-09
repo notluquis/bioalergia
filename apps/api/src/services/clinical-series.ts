@@ -1994,10 +1994,8 @@ export async function findMatchingSeries(
       }
       const uniqueExact = ctx.findUniqueByExactName(params.patientName, params.kind);
       if (uniqueExact != null) return uniqueExact;
-      if (!params.patientRut) {
-        const fuzzy = ctx.findByTokenOverlap(params.patientName, params.kind, eventDateDjs, thresholdDays);
-        if (fuzzy != null) return fuzzy;
-      }
+      const fuzzy = ctx.findByTokenOverlap(params.patientName, params.kind, eventDateDjs, thresholdDays);
+      if (fuzzy != null) return fuzzy;
     }
     return null;
   }
@@ -2129,7 +2127,7 @@ export async function findMatchingSeries(
 
     // Token-overlap fallback.
     const eventTokens = getSignificantNameTokens(params.patientName);
-    if (!params.patientRut && eventTokens.length >= 2) {
+    if (eventTokens.length >= 2) {
       const allSameKind = await db.clinicalSeries.findMany({
         where: { kind: params.kind },
         include: { events: eventSelect },

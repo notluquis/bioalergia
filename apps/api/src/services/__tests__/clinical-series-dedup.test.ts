@@ -349,6 +349,45 @@ describe("detectDuplicateSeries — same RUT, different name (subset)", () => {
     expect(match).toBe(5969);
   });
 
+  it("matches by compatible name even when the incoming event already has a patient RUT", async () => {
+    mockFindFirst.mockResolvedValueOnce(null);
+    mockFindMany.mockResolvedValueOnce([]);
+    mockFindMany.mockResolvedValueOnce([]);
+    mockFindMany.mockResolvedValueOnce([
+      {
+        beneficiaryName: null,
+        beneficiaryRut: null,
+        events: [
+          { endDate: null, endDateTime: null, startDate: new Date("2022-11-28T00:00:00.000Z"), startDateTime: null },
+          { endDate: null, endDateTime: null, startDate: new Date("2025-03-03T00:00:00.000Z"), startDateTime: null },
+        ],
+        id: 585,
+        patientName: "alyson gajardo arriagada",
+        patientRut: null,
+      },
+      {
+        beneficiaryName: null,
+        beneficiaryRut: null,
+        events: [
+          { endDate: null, endDateTime: null, startDate: new Date("2025-12-17T00:00:00.000Z"), startDateTime: null },
+          { endDate: null, endDateTime: null, startDate: new Date("2026-02-17T00:00:00.000Z"), startDateTime: null },
+        ],
+        id: 114,
+        patientName: "alyson tamara gajardo arriagada",
+        patientRut: "19108687-2",
+      },
+    ]);
+
+    const match = await findMatchingSeries({
+      eventDate: "2026-02-17",
+      kind: "SUBCUTANEOUS_TREATMENT",
+      patientName: "alyson tamara gajardo arriagada",
+      patientRut: "19108687-2",
+    });
+
+    expect(match).toBe(114);
+  });
+
   it("does not match a different patient just because a surname is repeated twice", async () => {
     mockFindFirst.mockResolvedValueOnce(null);
     mockFindMany.mockResolvedValueOnce([]);

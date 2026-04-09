@@ -1452,7 +1452,7 @@ export function WhatsappSettingsPage() {
                           value={composerKind}
                         >
                           <Label>Tipo</Label>
-                          <Select.Trigger className="min-w-[170px]">
+                          <Select.Trigger className="min-w-42.5">
                             <Select.Value />
                             <Select.Indicator />
                           </Select.Trigger>
@@ -1596,7 +1596,7 @@ export function WhatsappSettingsPage() {
                           value={disappearingMode}
                         >
                           <Label>Duración</Label>
-                          <Select.Trigger className="min-w-[220px]">
+                          <Select.Trigger className="min-w-55">
                             <Select.Value />
                             <Select.Indicator />
                           </Select.Trigger>
@@ -1917,7 +1917,7 @@ export function WhatsappSettingsPage() {
                 </Card.Header>
                 <Card.Content>
                   <Table variant="secondary">
-                    <Table.ScrollContainer className="max-h-[360px]">
+                    <Table.ScrollContainer className="max-h-90">
                       <Table.Content aria-label="Envíos recientes de WhatsApp">
                         <Table.Header>
                           <Table.Column isRowHeader>Paciente</Table.Column>
@@ -2203,7 +2203,7 @@ export function WhatsappSettingsPage() {
                   {threadQuery.isPending ? (
                     <Skeleton className="h-64 w-full rounded-2xl" />
                   ) : threadQuery.data?.length ? (
-                    <div className="max-h-[540px] space-y-3 overflow-y-auto pr-1">
+                    <div className="max-h-135 space-y-3 overflow-y-auto pr-1">
                       {threadQuery.data.map((record) => (
                         <Surface
                           key={`${record.remoteJid}-${record.messageId}-${record.createdAt.toISOString()}`}
@@ -2347,7 +2347,7 @@ export function WhatsappSettingsPage() {
                 </div>
 
                 <Table variant="secondary">
-                  <Table.ScrollContainer className="max-h-[420px]">
+                  <Table.ScrollContainer className="max-h-105">
                     <Table.Content aria-label="Historial real de WhatsApp">
                       <Table.Header>
                         <Table.Column isRowHeader>Mensaje</Table.Column>
