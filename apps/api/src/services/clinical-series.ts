@@ -33,6 +33,7 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "abonara",
   "aeroalergenos",
   "aeralergenos",
+  "aerlaergenos",
   "aereoambiental",
   "aeri",
   "aeroi",
@@ -101,9 +102,12 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "epivac",
   "esquema",
   "examen",
+  "examenes",
   "fase",
   "frasco",
   "graminas",
+  "gram",
+  "gramienas",
   "gramineas-acaros",
   "gramineas-ovolacteo",
   "grupo",
@@ -261,8 +265,12 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "ccp",
   "comuna",
   "colmena",
+  "cons",
   "consalud",
+  "consumo",
   "contacto",
+  "corticoide",
+  "corticoides",
   "dipreca",
   "domicilio",
   "dte",
@@ -316,6 +324,7 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "noviembre",
   "diciembre",
   // Relationship / family markers
+  "ambos",
   "mama",
   "mucho",
   // Scheduling / administrative action words
@@ -340,6 +349,8 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "llamar",
   "llamara",
   "mostrar",
+  "motivo",
+  "motivos",
   "preguntar",
   "porconfirmar",
   "postergar",
@@ -351,6 +362,9 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "resequedad",
   "respirar",
   "retirar",
+  "ruta",
+  "seguir",
+  "segund",
   "vacunara",
   "vacune",
   "vaca",
@@ -898,6 +912,8 @@ function buildFlexibleStopwordPrefixRegex(stopword: string) {
   return new RegExp(`^${[...stopword].map((char) => `${escapeRegex(char)}+`).join("")}`);
 }
 
+const NON_DEGLUE_STOPWORDS = new Set(["cons"]);
+
 function stripStopwordPrefix(token: string): string {
   let current = token;
 
@@ -906,6 +922,7 @@ function stripStopwordPrefix(token: string): string {
     let bestStopwordLength = 0;
 
     for (const sw of LOWERCASE_NAME_STOPWORDS) {
+      if (NON_DEGLUE_STOPWORDS.has(sw)) continue;
       if (sw.length < 4) continue;
 
       const match = current.match(buildFlexibleStopwordPrefixRegex(sw));
