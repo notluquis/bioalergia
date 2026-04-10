@@ -31,10 +31,12 @@ import {
   Table,
   Tabs,
   TextField,
+  Tooltip,
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Key, Selection } from "@heroui/react";
+import { ClipboardCopy, MessageCircle } from "lucide-react";
 import { Fragment, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { buildPaginationItems } from "@/components/pagination/pagination-items";
 import { EventDteLinkModal } from "@/features/calendar/components/EventDteLinkModal";
@@ -572,8 +574,34 @@ function IdentityDropdownCell({
   entries: IdentityListEntry[];
   title: string;
 }) {
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const copiedKeyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copiedKeyTimeoutRef.current) {
+        clearTimeout(copiedKeyTimeoutRef.current);
+      }
+    };
+  }, []);
+
   if (entries.length === 0) {
     return <span className="text-xs text-foreground-400">{emptyLabel}</span>;
+  }
+
+  async function handleCopy(copyKey: string, value: string) {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopiedKey(copyKey);
+      if (copiedKeyTimeoutRef.current) {
+        clearTimeout(copiedKeyTimeoutRef.current);
+      }
+      copiedKeyTimeoutRef.current = setTimeout(() => {
+        setCopiedKey((current) => (current === copyKey ? null : current));
+      }, 1600);
+    } catch {
+      setCopiedKey(null);
+    }
   }
 
   return (
@@ -593,43 +621,89 @@ function IdentityDropdownCell({
           </Chip>
         </Button>
       </Dropdown.Trigger>
-      <Dropdown.Popover className="w-80 p-0" placement="bottom start">
-        <div className="flex flex-col gap-2 p-2">
-          <div className="flex items-center justify-between px-1 pt-1">
-            <span className="text-sm font-medium text-foreground">{title}</span>
-            <Chip size="sm" variant="tertiary">
-              {entries.length}
-            </Chip>
-          </div>
-          <div className="flex flex-col gap-2">
-            {entries.map((entry) => (
-              <div
-                className="rounded-large border border-border/60 bg-content2 px-3 py-2"
-                key={`${title}-${entry.roleLabel}-${entry.value}`}
-              >
-                <div className="mb-1">
-                  <Chip size="sm" variant="tertiary">
+      <Dropdown.Popover className="w-80 p-2" placement="bottom start">
+        <div className="flex flex-col gap-2">
+          {entries.map((entry) => (
+            <Surface
+              className="rounded-large px-3 py-2"
+              key={`${title}-${entry.roleLabel}-${entry.value}`}
+              variant="secondary"
+            >
+              <div className="flex items-center gap-2">
+                <div className="min-w-0 flex-1">
+                  <p className="mb-1 text-[11px] font-medium uppercase tracking-[0.14em] text-default-500">
                     {entry.roleLabel}
-                  </Chip>
+                  </p>
+                  {entry.href ? (
+                    <Link
+                      className="truncate text-sm font-mono"
+                      href={entry.href}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                      }}
+                      rel="noreferrer"
+                      target="_blank"
+                    >
+                      {entry.value}
+                    </Link>
+                  ) : (
+                    <span className="block truncate text-sm text-foreground font-mono">
+                      {entry.value}
+                    </span>
+                  )}
                 </div>
-                {entry.href ? (
-                  <Link
-                    className="text-sm font-mono"
-                    href={entry.href}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                    }}
-                    rel="noreferrer"
-                    target="_blank"
-                  >
-                    {entry.value}
-                  </Link>
-                ) : (
-                  <span className="text-sm text-foreground font-mono">{entry.value}</span>
-                )}
+                <div className="flex items-center gap-1 self-end">
+                  {entry.href ? (
+                    <Tooltip delay={0}>
+                      <Tooltip.Trigger>
+                        <Button
+                          aria-label={`Abrir ${entry.value} en WhatsApp`}
+                          className="h-8 w-8 min-w-8 rounded-full"
+                          size="sm"
+                          variant="secondary"
+                          onPress={() => {
+                            window.open(entry.href, "_blank", "noopener,noreferrer");
+                          }}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                          }}
+                        >
+                          <MessageCircle className="h-4 w-4" />
+                        </Button>
+                      </Tooltip.Trigger>
+                      <Tooltip.Content>Ir a WhatsApp</Tooltip.Content>
+                    </Tooltip>
+                  ) : null}
+                  <Tooltip delay={0}>
+                    <Tooltip.Trigger>
+                      <Button
+                        aria-label={`Copiar ${entry.value}`}
+                        className="h-8 w-8 min-w-8 rounded-full"
+                        size="sm"
+                        variant="secondary"
+                        onPress={async () => {
+                          await handleCopy(
+                            `${title}-${entry.roleLabel}-${entry.value}`,
+                            entry.value
+                          );
+                        }}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                        }}
+                      >
+                        <ClipboardCopy className="h-4 w-4" />
+                      </Button>
+                    </Tooltip.Trigger>
+                    <Tooltip.Content>
+                      {copiedKey === `${title}-${entry.roleLabel}-${entry.value}`
+                        ? "Copiado"
+                        : "Copiar"}
+                    </Tooltip.Content>
+                  </Tooltip>
+                </div>
               </div>
-            ))}
-          </div>
+            </Surface>
+          ))}
         </div>
       </Dropdown.Popover>
     </Dropdown>
