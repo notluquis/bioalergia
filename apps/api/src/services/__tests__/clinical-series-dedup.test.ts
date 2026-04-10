@@ -211,6 +211,39 @@ describe("detectDuplicateSeries — same RUT, different name (subset)", () => {
     });
   });
 
+  it("detects duplicate by same phone derived from multiline event text", async () => {
+    mockFindMany.mockResolvedValueOnce([
+      makeSeries(64, "Marcelo Vallejos Mora", "20519220-4", "SUBCUTANEOUS_TREATMENT", 14, {
+        events: [
+          {
+            description: "996189131\n24 años\n20.519.220-4\nsebastianvallejosmora@gmail.com",
+            summary: "llego Marcelo Vallejos Mora, vacuna clustoid dosis mensual (50)",
+          },
+        ],
+        patientPhones: null,
+      }),
+      makeSeries(6401, "marcelo vallejos", null, "SUBCUTANEOUS_TREATMENT", 1, {
+        events: [
+          {
+            description: "996189131\n24 años\n20.519.220-4",
+            summary: "llego vacuna marcelo vallejos, vacuna clustoid dosis mensual (50)",
+          },
+        ],
+        patientPhones: null,
+      }),
+    ]);
+
+    const dupes = await detectDuplicateSeries();
+
+    expect(dupes).toHaveLength(1);
+    expect(dupes[0]).toMatchObject({
+      confidence: "medium",
+      kind: "SUBCUTANEOUS_TREATMENT",
+      sourceId: 6401,
+      targetId: 64,
+    });
+  });
+
   it("assigns exact-name rebuild matches to the better canonical series, not the oldest id", async () => {
     mockFindFirst.mockResolvedValueOnce(null);
     mockFindMany.mockResolvedValueOnce([

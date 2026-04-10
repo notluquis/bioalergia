@@ -647,7 +647,7 @@ function normalizePhoneSearch(value: null | string | undefined): null | string {
   return digits.length > 0 ? digits : null;
 }
 
-const PHONE_CANDIDATE_REGEX = /(?:\+?56[\s-]*)?(?:9[\s-]*)?(?:\d[\s-]*){8,9}/g;
+const PHONE_CANDIDATE_REGEX = /(?:\+?56[ \t-]*)?(?:9[ \t-]*)?(?:\d[ \t-]*){8,9}/g;
 
 function normalizeExtractedPhoneDigits(digits: string): null | string {
   if (!digits) return null;
