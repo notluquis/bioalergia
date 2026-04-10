@@ -119,6 +119,22 @@ describe("clinical series patient-name cleaning", () => {
     }
   });
 
+  it("drops extra noisy tokens found in persisted clinical-series patient names", () => {
+    const cases = [
+      ["picktest Aurora Gatica Cid", "aurora gatica cid"],
+      ["temporalmultitest Martin Bascunan Heredia", "martin bascunan heredia"],
+      ["confirmaq León Alfonso Saavedra Grob", "leon alfonso saavedra grob"],
+      ["mariscox Zurait Higuera Morales", "zurait higuera morales"],
+      ["nubleprevision Valeria Danae Palma Onetto", "valeria danae palma onetto"],
+      ["epivac Fernanda Isidora Campos Henriquez", "fernanda isidora campos henriquez"],
+    ] as const;
+
+    for (const [summary, expectedName] of cases) {
+      const result = extractPatientHints(summary, null);
+      expect(result.patientName).toBe(expectedName);
+    }
+  });
+
   it("keeps boleta-holder identity as beneficiary when patient data appears after the boleta block", () => {
     const summary = "llego 2dA DOSIS CLUSTOID, Fuentes Espinoza Favianna (pagado/30)";
     const description =
