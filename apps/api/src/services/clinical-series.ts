@@ -1957,6 +1957,8 @@ class SeriesAssignmentContext {
     eventDate: dayjs.Dayjs,
     thresholdDays: number,
   ): number | undefined {
+    void eventDate;
+    void thresholdDays;
     const candidateIds = new Set<number>();
     for (const phone of phones) {
       for (const id of this.phoneKindIndex.get(`${phone}:${kind}`) ?? []) {
@@ -1970,8 +1972,7 @@ class SeriesAssignmentContext {
         (entry): entry is SeriesEntry =>
           !!entry &&
           !!entry.patientName &&
-          haveCompatiblePatientNames(entry.patientName, name) &&
-          this.dist(entry, eventDate) <= thresholdDays,
+          haveCompatiblePatientNames(entry.patientName, name),
       )
       .sort(compareSeriesCanonicalPriority);
 
