@@ -1870,7 +1870,16 @@ class SeriesAssignmentContext {
         patientName: true,
         patientPhones: true,
         patientRut: true,
-        events: { select: { endDate: true, endDateTime: true, startDate: true, startDateTime: true } },
+        events: {
+          select: {
+            description: true,
+            endDate: true,
+            endDateTime: true,
+            startDate: true,
+            startDateTime: true,
+            summary: true,
+          },
+        },
       },
       orderBy: { id: "asc" },
     });
@@ -1889,7 +1898,7 @@ class SeriesAssignmentContext {
         maxDate: dates[dates.length - 1] ?? null,
         minDate: dates[0] ?? null,
         patientName: s.patientName,
-        patientPhones: normalizeStoredPhoneArray(s.patientPhones),
+        patientPhones: getSeriesPatientPhones(s),
         patientRut: s.patientRut,
       });
     }
@@ -2258,12 +2267,23 @@ export async function findMatchingSeries(
     if (params.patientPhones?.length) {
       const phoneCandidates = await db.clinicalSeries.findMany({
         where: { kind: params.kind },
-        include: { events: eventSelect },
+        include: {
+          events: {
+            select: {
+              description: true,
+              endDate: true,
+              endDateTime: true,
+              startDate: true,
+              startDateTime: true,
+              summary: true,
+            },
+          },
+        },
         orderBy: { id: "asc" },
       });
       const matchingPhoneCandidates = phoneCandidates
         .filter((candidate) => {
-          const storedPhones = normalizeStoredPhoneArray(candidate.patientPhones);
+          const storedPhones = getSeriesPatientPhones(candidate);
           return (
             candidate.patientName &&
             storedPhones.some((phone) => params.patientPhones?.includes(phone)) &&
@@ -2836,6 +2856,7 @@ async function assignEventToSeries(event: EventSeriesCandidate, ctx?: SeriesAssi
       maxDate: eventDateDjs,
       minDate: eventDateDjs,
       patientName: identity.patientName,
+      patientPhones: extractedPhones.patientPhones,
       patientRut: identity.patientRut,
     });
   }

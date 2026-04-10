@@ -492,6 +492,99 @@ describe("detectDuplicateSeries — same RUT, different name (subset)", () => {
     expect(match).toBe(345);
   });
 
+  it("derives phones from series events when stored patientPhones are missing", async () => {
+    mockFindFirst.mockResolvedValueOnce(null);
+    mockFindMany.mockResolvedValueOnce([
+      {
+        beneficiaryName: null,
+        beneficiaryRut: null,
+        events: [
+          {
+            description: "Valeria Palma Onetto\n937039005",
+            endDate: null,
+            endDateTime: null,
+            startDate: new Date("2022-09-12T00:00:00.000Z"),
+            startDateTime: null,
+            summary: "LLEGO, Test cutáneo Aero ambiental 40 mil, Valeria Palma Onetto",
+          },
+        ],
+        id: 6741,
+        patientName: "valeria palma onetto",
+        patientPhones: null,
+        patientRut: null,
+      },
+    ]);
+    mockFindMany.mockResolvedValueOnce([
+      {
+        beneficiaryName: null,
+        beneficiaryRut: null,
+        events: [
+          {
+            description: "Valeria Palma Onetto\n937039005",
+            endDate: null,
+            endDateTime: null,
+            startDate: new Date("2022-09-12T00:00:00.000Z"),
+            startDateTime: null,
+            summary: "LLEGO, Test cutáneo Aero ambiental 40 mil, Valeria Palma Onetto",
+          },
+        ],
+        id: 6741,
+        patientName: "valeria palma onetto",
+        patientPhones: null,
+        patientRut: null,
+      },
+    ]);
+    mockFindMany.mockResolvedValueOnce([
+      {
+        beneficiaryName: null,
+        beneficiaryRut: null,
+        events: [
+          {
+            description: "Valeria Palma Onetto\n937039005",
+            endDate: null,
+            endDateTime: null,
+            startDate: new Date("2022-09-12T00:00:00.000Z"),
+            startDateTime: null,
+            summary: "LLEGO, Test cutáneo Aero ambiental 40 mil, Valeria Palma Onetto",
+          },
+        ],
+        id: 6741,
+        patientName: "valeria palma onetto",
+        patientPhones: null,
+        patientRut: null,
+      },
+      {
+        beneficiaryName: null,
+        beneficiaryRut: null,
+        events: [
+          {
+            description:
+              "Valeria Danae Palma Onetto\n17678131-9\n937039005",
+            endDate: null,
+            endDateTime: null,
+            startDate: new Date("2025-09-13T00:00:00.000Z"),
+            startDateTime: null,
+            summary: "llegoValeria Danae Palma Onetto, test cutaneo ambiental (30)",
+          },
+        ],
+        id: 345,
+        patientName: "valeria danae palma onetto",
+        patientPhones: null,
+        patientRut: "17678131-9",
+      },
+    ]);
+
+    const match = await findMatchingSeries({
+      eventDate: "2022-09-12",
+      kind: "SKIN_TEST",
+      patientName: "valeria palma onetto",
+      patientPhones: ["+56937039005"],
+      patientRut: null,
+    });
+
+    expect(match).toBe(345);
+  });
+
   it("does not match a different patient just because a surname is repeated twice", async () => {
     mockFindFirst.mockResolvedValueOnce(null);
     mockFindMany.mockResolvedValueOnce([]);
