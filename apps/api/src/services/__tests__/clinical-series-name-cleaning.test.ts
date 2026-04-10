@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extractPatientHints } from "../clinical-series";
+import { extractPatientHints, resolveClinicalIdentity } from "../clinical-series";
 
 describe("clinical series patient-name cleaning", () => {
   it("strips administrative prefixes from the inferred patient name", () => {
@@ -65,6 +65,18 @@ describe("clinical series patient-name cleaning", () => {
         "cristobal quiroz marinao",
       ],
       [
+        "llego, multitest alimentos 4,5,6,8, y pescado marisco (35), Zurait Higuera Morales",
+        "zurait higuera morales",
+      ],
+      [
+        "LLEGO aurora gatica cid (30) multitest panel 5 ovolacteos Y G8",
+        "aurora gatica cid",
+      ],
+      [
+        "llego Paloma Olate quintana, multitest 1 2 3 acaros y alimentario debe incluir pescados (panel 9) (60)",
+        "paloma olate quintana",
+      ],
+      [
         "se le envia por pick up pagamos el envio nosotros dosis clustoid (50) Fernanda isidora Campos henriquez 23886375-9 12 años Los angeles Fonasa 974434688",
         "fernanda isidora campos henriquez",
       ],
@@ -101,5 +113,17 @@ describe("clinical series patient-name cleaning", () => {
       const result = extractPatientHints(testCase.summary, testCase.description);
       expect(result.patientName).toBe(testCase.expectedName);
     }
+  });
+
+  it("keeps boleta-holder identity as beneficiary when patient data appears after the boleta block", () => {
+    const summary = "llego 2dA DOSIS CLUSTOID, Fuentes Espinoza Favianna (pagado/30)";
+    const description =
+      "\nBOLETAS a nombre;\nSolange Espinoza Sepulveda\n13377899-3\n\n951984330\n21268081-8\n22 años\nchillan";
+
+    const result = resolveClinicalIdentity(summary, description);
+
+    expect(result.patientName).toBe("fuentes espinoza favianna");
+    expect(result.patientRut).toBe("21268081-8");
+    expect(result.beneficiaryRut).toBe("13377899-3");
   });
 });

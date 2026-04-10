@@ -86,14 +86,22 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "contesto",
   "cancela",
   "cuando",
+  "debe",
   "envio",
   "hasta",
   "huevos",
   "incluir",
   "lec",
   "licencia",
+  "marisco",
+  "mariscos",
   "nativos",
   "ovo",
+  "ovolacto",
+  "ovolacteo",
+  "ovolacteos",
+  "pescado",
+  "pescados",
   "pueda",
   "quiere",
   "realizara",
@@ -980,7 +988,7 @@ type StructuredClinicalDescription = {
 };
 
 const STRUCTURED_CLINICAL_LABEL_REGEX =
-  /(?:^|\n|\s)-?\s*(BOLETA|Rut del paciente|Edad|Comuna|Previsi[oó]n|N[uú]mero de contacto|Correo electr[oó]nico|Motivo de la consulta|Tiempo de evoluci[oó]n|Enfermedades base)\s*:/gi;
+  /(?:^|\n|\s)-?\s*(BOLETAS?\s+a\s+nombre|BOLETA|Rut del paciente|Edad|Comuna|Previsi[oó]n|N[uú]mero de contacto|Correo electr[oó]nico|Motivo de la consulta|Tiempo de evoluci[oó]n|Enfermedades base)\s*:?\s*/gi;
 const STRUCTURED_NOISE_LINE_REGEX =
   /(?:^|\n)\s*[-•]?\s*(?:correo(?:\s+electr[oó]nico)?|motivo(?:\s+de\s+la\s+consulta)?|tiempo(?:\s+de\s+evoluci[oó]n)?|tratamiento\s+usado|enfermedades\s+base|n[uú]mero\s+de\s+contacto|n[uú]mero|telefono|tel[eé]fono|edad|comuna|previsi[oó]n|rut\s+del\s+paciente)\s*:\s*[^\n]*/gi;
 const EMAIL_REGEX = /\b[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}\b/gi;
@@ -1014,7 +1022,7 @@ function trimBoletaBlock(value: string): string {
   if (!normalized) return normalized;
 
   const patientSectionIndex = normalized.search(
-    /\n{2,}(?=(?:\d{1,3}\s*a[ñn]os?\b|\d{1,2}\.?\d{3}\.?\d{3}-?[\dkK]\b))/i,
+    /\n{2,}(?=(?:\+?\d[\d \t-]{6,}\b|\d{1,3}\s*a[ñn]os?\b|\d{1,2}\.?\d{3}\.?\d{3}-?[\dkK]\b))/i,
   );
   if (patientSectionIndex >= 0) {
     return normalized.slice(0, patientSectionIndex).trim();
@@ -1046,7 +1054,7 @@ function extractStructuredClinicalDescription(text: string): StructuredClinicalD
   while ((match = STRUCTURED_CLINICAL_LABEL_REGEX.exec(text)) !== null) {
     const rawLabel = normalizeName(match[1] ?? "");
     const key =
-      rawLabel === "boleta"
+      rawLabel === "boleta" || rawLabel === "boletas a nombre"
         ? "boleta"
         : rawLabel === "rut del paciente"
           ? "patientRut"
@@ -1857,6 +1865,27 @@ function hasConflictingPrimaryIdentity<
     return false;
   }
   return true;
+}
+
+function hasHardPatientRutConflictForDuplicateDetection<
+  T extends {
+    beneficiaryRut?: null | string;
+    patientRut?: null | string;
+  },
+>(a: T, b: T): boolean {
+  if (!a.patientRut || !b.patientRut) return false;
+  if (a.patientRut === b.patientRut) return false;
+  if (isCloseNormalizedRut(a.patientRut, b.patientRut)) return false;
+
+  const swappedPair =
+    !!a.beneficiaryRut &&
+    !!b.beneficiaryRut &&
+    (a.patientRut === b.beneficiaryRut ||
+      isCloseNormalizedRut(a.patientRut, b.beneficiaryRut)) &&
+    (b.patientRut === a.beneficiaryRut ||
+      isCloseNormalizedRut(b.patientRut, a.beneficiaryRut));
+
+  return !swappedPair;
 }
 
 function isCloseNormalizedRut(a: null | string, b: null | string): boolean {
@@ -3971,6 +4000,7 @@ export async function detectDuplicateSeries(): Promise<ClinicalSeriesDuplicate[]
     const target = chooseCanonicalTarget(group);
     const src = group.find((series) => series.id !== target.id);
     if (!src) continue;
+    if (hasHardPatientRutConflictForDuplicateDetection(target, src)) continue;
     if (hasConflictingPrimaryIdentity(target, src)) continue;
     results.push({
       confidence: "high",
@@ -4010,6 +4040,7 @@ export async function detectDuplicateSeries(): Promise<ClinicalSeriesDuplicate[]
     const src = group.find((series) => series.id !== target.id);
     if (!src) continue;
     if (usedAsSources.has(src.id)) continue;
+    if (hasHardPatientRutConflictForDuplicateDetection(target, src)) continue;
     if (hasConflictingPrimaryIdentity(target, src)) continue;
     if (!haveCompatiblePatientNames(target.patientName, src.patientName)) continue;
     results.push({

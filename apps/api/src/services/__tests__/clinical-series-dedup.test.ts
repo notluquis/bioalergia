@@ -190,6 +190,25 @@ describe("detectDuplicateSeries — same RUT, different name (subset)", () => {
     expect(dupes).toHaveLength(0);
   });
 
+  it("does not flag family-member series as duplicates just because phone and beneficiary overlap", async () => {
+    mockFindMany.mockResolvedValueOnce([
+      makeSeries(6659, "paloma olate quintana", "23724084-7", "SKIN_TEST", 1, {
+        beneficiaryName: "Paloma Olate Quintana",
+        beneficiaryRut: "23724084-7",
+        patientPhones: ["+56971027317"],
+      }),
+      makeSeries(6660, "rayen olate quintana", "27717558-4", "SKIN_TEST", 1, {
+        beneficiaryName: "Paloma Olate Quintana",
+        beneficiaryRut: "23724084-7",
+        patientPhones: ["+56971027317"],
+      }),
+    ]);
+
+    const dupes = await detectDuplicateSeries();
+
+    expect(dupes).toHaveLength(0);
+  });
+
   it("detects duplicate by same phone + compatible name when one series lacks patient RUT", async () => {
     mockFindMany.mockResolvedValueOnce([
       makeSeries(1001, "pablo miguel reyes gacitua", "16612125-6", "SUBCUTANEOUS_TREATMENT", 3, {
