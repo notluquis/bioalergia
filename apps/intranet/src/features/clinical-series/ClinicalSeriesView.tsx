@@ -12,11 +12,11 @@ import {
   Chip,
   DateField,
   DateRangePicker,
+  Description,
   Dropdown,
   Drawer,
   Input,
   Label,
-  Link,
   ListBox,
   Modal,
   Pagination,
@@ -621,90 +621,60 @@ function IdentityDropdownCell({
           </Chip>
         </Button>
       </Dropdown.Trigger>
-      <Dropdown.Popover className="w-80 p-2" placement="bottom start">
-        <div className="flex flex-col gap-2">
-          {entries.map((entry) => (
-            <Surface
-              className="rounded-large px-3 py-2"
-              key={`${title}-${entry.roleLabel}-${entry.value}`}
-              variant="secondary"
-            >
-              <div className="flex items-center gap-2">
-                <div className="min-w-0 flex-1">
-                  <p className="mb-1 text-[11px] font-medium uppercase tracking-[0.14em] text-default-500">
+      <Dropdown.Popover className="min-w-[280px] p-1" placement="bottom start">
+        <Dropdown.Menu aria-label={title}>
+          {entries.map((entry) => {
+            const entryKey = `${title}-${entry.roleLabel}-${entry.value}`;
+            return (
+              <Dropdown.Item
+                id={entryKey}
+                key={entryKey}
+                textValue={`${entry.roleLabel} ${entry.value}`}
+                onAction={
+                  entry.href
+                    ? () => {
+                        window.open(entry.href, "_blank", "noopener,noreferrer");
+                      }
+                    : undefined
+                }
+              >
+                {entry.href ? (
+                  <MessageCircle className="size-4 shrink-0 text-default-500" />
+                ) : (
+                  <ClipboardCopy className="size-4 shrink-0 text-default-500" />
+                )}
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <Label className="truncate text-[11px] font-medium uppercase tracking-[0.14em] text-default-500">
                     {entry.roleLabel}
-                  </p>
-                  {entry.href ? (
-                    <Link
-                      className="truncate text-sm font-mono"
-                      href={entry.href}
+                  </Label>
+                  <Description className="truncate font-mono text-sm text-foreground">
+                    {entry.value}
+                  </Description>
+                </div>
+                <Tooltip delay={0}>
+                  <Tooltip.Trigger>
+                    <Button
+                      isIconOnly
+                      aria-label={`Copiar ${entry.value}`}
+                      size="sm"
+                      variant="tertiary"
+                      onPress={async () => {
+                        await handleCopy(entryKey, entry.value);
+                      }}
                       onClick={(event) => {
+                        event.preventDefault();
                         event.stopPropagation();
                       }}
-                      rel="noreferrer"
-                      target="_blank"
                     >
-                      {entry.value}
-                    </Link>
-                  ) : (
-                    <span className="block truncate text-sm text-foreground font-mono">
-                      {entry.value}
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-1 self-end">
-                  {entry.href ? (
-                    <Tooltip delay={0}>
-                      <Tooltip.Trigger>
-                        <Button
-                          aria-label={`Abrir ${entry.value} en WhatsApp`}
-                          className="h-8 w-8 min-w-8 rounded-full"
-                          size="sm"
-                          variant="secondary"
-                          onPress={() => {
-                            window.open(entry.href, "_blank", "noopener,noreferrer");
-                          }}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                          }}
-                        >
-                          <MessageCircle className="h-4 w-4" />
-                        </Button>
-                      </Tooltip.Trigger>
-                      <Tooltip.Content>Ir a WhatsApp</Tooltip.Content>
-                    </Tooltip>
-                  ) : null}
-                  <Tooltip delay={0}>
-                    <Tooltip.Trigger>
-                      <Button
-                        aria-label={`Copiar ${entry.value}`}
-                        className="h-8 w-8 min-w-8 rounded-full"
-                        size="sm"
-                        variant="secondary"
-                        onPress={async () => {
-                          await handleCopy(
-                            `${title}-${entry.roleLabel}-${entry.value}`,
-                            entry.value
-                          );
-                        }}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                        }}
-                      >
-                        <ClipboardCopy className="h-4 w-4" />
-                      </Button>
-                    </Tooltip.Trigger>
-                    <Tooltip.Content>
-                      {copiedKey === `${title}-${entry.roleLabel}-${entry.value}`
-                        ? "Copiado"
-                        : "Copiar"}
-                    </Tooltip.Content>
-                  </Tooltip>
-                </div>
-              </div>
-            </Surface>
-          ))}
-        </div>
+                      <ClipboardCopy className="h-4 w-4" />
+                    </Button>
+                  </Tooltip.Trigger>
+                  <Tooltip.Content>{copiedKey === entryKey ? "Copiado" : "Copiar"}</Tooltip.Content>
+                </Tooltip>
+              </Dropdown.Item>
+            );
+          })}
+        </Dropdown.Menu>
       </Dropdown.Popover>
     </Dropdown>
   );
