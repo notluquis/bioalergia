@@ -1783,6 +1783,31 @@ function chooseBetterSeriesCandidate<
     .sort(compareSeriesCanonicalPriority)[0] ?? null;
 }
 
+function shouldPreferCandidateOverRutMatch<
+  T extends {
+    beneficiaryRut?: null | string;
+    patientName?: null | string;
+    patientRut?: null | string;
+  },
+>(rutMatch: null | T | undefined, preferred: null | T | undefined): boolean {
+  if (!rutMatch || !preferred) return false;
+  if (rutMatch === preferred) return false;
+  if (compareSeriesCanonicalPriority(preferred, rutMatch) >= 0) return false;
+
+  const preferredCrossMatchesRut =
+    !!preferred.beneficiaryRut &&
+    !!rutMatch.patientRut &&
+    (preferred.beneficiaryRut === rutMatch.patientRut ||
+      isCloseNormalizedRut(preferred.beneficiaryRut, rutMatch.patientRut));
+
+  const rutMatchLooksWeaker =
+    !!rutMatch.patientName &&
+    !!preferred.patientName &&
+    haveCompatiblePatientNames(rutMatch.patientName, preferred.patientName);
+
+  return preferredCrossMatchesRut && rutMatchLooksWeaker;
+}
+
 function hasConflictingPrimaryIdentity<
   T extends {
     beneficiaryRut?: null | string;
@@ -2048,6 +2073,14 @@ export async function findMatchingSeries(
 
   // ── Fast path: all lookups in memory (O(1) / O(k)) ───────────────────────
   if (ctx) {
+    const rutMatchEntry =
+      params.patientRut != null
+        ? (() => {
+            const id = ctx.findByRut(params.patientRut, params.kind);
+            return id != null ? ctx.seriesById.get(id) ?? null : null;
+          })()
+        : null;
+
     if (params.patientName) {
       const duplicateCanonical = ctx.findDuplicateCanonicalByExactName(params.patientName, params.kind);
       if (duplicateCanonical != null) {
@@ -2071,10 +2104,6 @@ export async function findMatchingSeries(
       }
     }
 
-    if (params.patientRut) {
-      const id = ctx.findByRut(params.patientRut, params.kind);
-      if (id != null) return id;
-    }
     if (params.patientName) {
       const exact = ctx.findByName(params.patientName, params.kind, eventDateDjs, thresholdDays);
       const uniqueExact = ctx.findUniqueByExactName(params.patientName, params.kind);
@@ -2088,11 +2117,13 @@ export async function findMatchingSeries(
           )
         : undefined;
       const chosen = chooseBetterSeriesCandidate(
+        rutMatchEntry,
         exact != null ? { ...ctx.seriesById.get(exact)!, eventCount: ctx.seriesById.get(exact)!.eventCount } : null,
         uniqueExact != null ? { ...ctx.seriesById.get(uniqueExact)!, eventCount: ctx.seriesById.get(uniqueExact)!.eventCount } : null,
         phoneMatch != null ? { ...ctx.seriesById.get(phoneMatch)!, eventCount: ctx.seriesById.get(phoneMatch)!.eventCount } : null,
       );
       if (chosen) {
+        if (shouldPreferCandidateOverRutMatch(rutMatchEntry, chosen)) return chosen.id;
         if (chosen.patientRut) {
           const canonical = ctx.findByRut(chosen.patientRut, params.kind);
           if (canonical != null) return canonical;
@@ -2102,6 +2133,7 @@ export async function findMatchingSeries(
       const fuzzy = ctx.findByTokenOverlap(params.patientName, params.kind, eventDateDjs, thresholdDays);
       if (fuzzy != null) return fuzzy;
     }
+    if (rutMatchEntry) return rutMatchEntry.id;
     return null;
   }
 
@@ -2158,14 +2190,33 @@ export async function findMatchingSeries(
     }
   }
 
+  let rutMatchCandidate: null | {
+    beneficiaryName: null | string;
+    beneficiaryRut: null | string;
+    eventCount: number;
+    id: number;
+    patientName: null | string;
+    patientRut: null | string;
+  } = null;
+
   if (params.patientRut) {
     // RUT uniquely identifies the patient — return oldest series for this rut+kind.
     const rutMatch = await db.clinicalSeries.findFirst({
       where: { kind: params.kind, patientRut: params.patientRut },
       orderBy: { id: "asc" },
-      select: { id: true },
+      include: { events: eventSelect },
     });
-    if (rutMatch) return rutMatch.id;
+    if (rutMatch) {
+      rutMatchCandidate = {
+        beneficiaryName: rutMatch.beneficiaryName,
+        beneficiaryRut: rutMatch.beneficiaryRut,
+        eventCount: rutMatch.events.length,
+        id: rutMatch.id,
+        patientName: rutMatch.patientName,
+        patientRut: rutMatch.patientRut,
+      };
+      if (!params.patientName) return rutMatch.id;
+    }
   }
 
   if (params.patientName) {
@@ -2319,11 +2370,17 @@ export async function findMatchingSeries(
     }
 
     const chosenCandidate = chooseBetterSeriesCandidate(
+      rutMatchCandidate,
       exactCandidate,
       uniqueExactCandidate,
       phoneCandidate,
     );
-    if (chosenCandidate) return chosenCandidate.id;
+    if (chosenCandidate) {
+      if (shouldPreferCandidateOverRutMatch(rutMatchCandidate, chosenCandidate)) {
+        return chosenCandidate.id;
+      }
+      return chosenCandidate.id;
+    }
 
     // Token-overlap fallback.
     const eventTokens = getSignificantNameTokens(params.patientName);
@@ -2380,6 +2437,8 @@ export async function findMatchingSeries(
       if (bestFuzzy) return bestFuzzy.id;
     }
   }
+
+  if (rutMatchCandidate) return rutMatchCandidate.id;
 
   return null;
 }

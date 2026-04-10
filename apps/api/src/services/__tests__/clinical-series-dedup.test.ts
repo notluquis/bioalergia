@@ -585,6 +585,77 @@ describe("detectDuplicateSeries — same RUT, different name (subset)", () => {
     expect(match).toBe(345);
   });
 
+  it("prefers the stronger canonical series when the rut-only match is actually the beneficiary rut", async () => {
+    mockFindFirst.mockResolvedValueOnce({
+      beneficiaryName: null,
+      beneficiaryRut: null,
+      events: [
+        { endDate: null, endDateTime: null, startDate: new Date("2026-03-20T00:00:00.000Z"), startDateTime: null },
+      ],
+      id: 7001,
+      patientName: "sofia osses flores",
+      patientRut: "14057372-8",
+    });
+    mockFindMany.mockResolvedValueOnce([
+      {
+        _count: { events: 1 },
+        beneficiaryName: null,
+        beneficiaryRut: null,
+        id: 7001,
+        patientName: "sofia osses flores",
+        patientRut: "14057372-8",
+      },
+    ]);
+    mockFindMany.mockResolvedValueOnce([
+      {
+        beneficiaryName: null,
+        beneficiaryRut: null,
+        events: [
+          { endDate: null, endDateTime: null, startDate: new Date("2026-03-20T00:00:00.000Z"), startDateTime: null },
+        ],
+        id: 7001,
+        patientName: "sofia osses flores",
+        patientRut: "14057372-8",
+      },
+    ]);
+    mockFindMany.mockResolvedValueOnce([
+      {
+        beneficiaryName: "daniel antonio flores silva",
+        beneficiaryRut: "14057372-8",
+        events: [
+          { endDate: null, endDateTime: null, startDate: new Date("2023-01-12T00:00:00.000Z"), startDateTime: null },
+          { endDate: null, endDateTime: null, startDate: new Date("2026-02-23T00:00:00.000Z"), startDateTime: null },
+        ],
+        id: 789,
+        patientName: "sofia alejandra osses flores",
+        patientPhones: ["+56976156191"],
+        patientRut: "20363939-2",
+      },
+      {
+        beneficiaryName: null,
+        beneficiaryRut: null,
+        events: [
+          { endDate: null, endDateTime: null, startDate: new Date("2026-03-20T00:00:00.000Z"), startDateTime: null },
+        ],
+        id: 7001,
+        patientName: "sofia osses flores",
+        patientPhones: ["+56976156191"],
+        patientRut: "14057372-8",
+      },
+    ]);
+
+    const match = await findMatchingSeries({
+      beneficiaryRut: "14057372-8",
+      eventDate: "2026-03-20",
+      kind: "SUBCUTANEOUS_TREATMENT",
+      patientName: "sofia osses flores",
+      patientPhones: ["+56976156191"],
+      patientRut: "14057372-8",
+    });
+
+    expect(match).toBe(789);
+  });
+
   it("does not match a different patient just because a surname is repeated twice", async () => {
     mockFindFirst.mockResolvedValueOnce(null);
     mockFindMany.mockResolvedValueOnce([]);
