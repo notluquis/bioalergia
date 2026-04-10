@@ -1783,6 +1783,33 @@ function chooseBetterSeriesCandidate<
     .sort(compareSeriesCanonicalPriority)[0] ?? null;
 }
 
+function chooseCanonicalPhoneDuplicateCandidate<
+  T extends {
+    beneficiaryName?: null | string;
+    beneficiaryRut?: null | string;
+    eventCount?: number;
+    id: number;
+    kind: ClinicalSeriesKind;
+    patientName?: null | string;
+    patientPhones?: string[];
+    patientRut?: null | string;
+  },
+>(base: null | T | undefined, peers: Array<T>): null | T {
+  if (!base?.patientName || !base.patientPhones?.length) return base ?? null;
+
+  return chooseBetterSeriesCandidate(
+    base,
+    ...peers.filter(
+      (candidate) =>
+        candidate.id !== base.id &&
+        candidate.kind === base.kind &&
+        !!candidate.patientName &&
+        !!candidate.patientPhones?.some((phone) => base.patientPhones?.includes(phone)) &&
+        haveCompatiblePatientNames(candidate.patientName, base.patientName!),
+    ),
+  );
+}
+
 function shouldPreferCandidateOverRutMatch<
   T extends {
     beneficiaryRut?: null | string;
@@ -2004,6 +2031,30 @@ class SeriesAssignmentContext {
     return candidates[0]?.id;
   }
 
+  findCanonicalPhoneDuplicate(id: number): number | undefined {
+    const base = this.seriesById.get(id);
+    if (!base?.patientName || base.patientPhones.length === 0) return undefined;
+
+    const candidateIds = new Set<number>([id]);
+    for (const phone of base.patientPhones) {
+      for (const candidateId of this.phoneKindIndex.get(`${phone}:${base.kind}`) ?? []) {
+        candidateIds.add(candidateId);
+      }
+    }
+
+    const candidates = [...candidateIds]
+      .map((candidateId) => this.seriesById.get(candidateId))
+      .filter(
+        (entry): entry is SeriesEntry =>
+          !!entry &&
+          !!entry.patientName &&
+          haveCompatiblePatientNames(entry.patientName, base.patientName),
+      )
+      .sort(compareSeriesCanonicalPriority);
+
+    return candidates[0]?.id;
+  }
+
   /**
    * Token-overlap fallback: finds the oldest same-kind series that shares ≥2
    * significant tokens covering ≥2/3 of the shorter name. Used when exact
@@ -2123,6 +2174,8 @@ export async function findMatchingSeries(
         phoneMatch != null ? { ...ctx.seriesById.get(phoneMatch)!, eventCount: ctx.seriesById.get(phoneMatch)!.eventCount } : null,
       );
       if (chosen) {
+        const canonicalPhoneDuplicate = ctx.findCanonicalPhoneDuplicate(chosen.id);
+        if (canonicalPhoneDuplicate != null) return canonicalPhoneDuplicate;
         if (shouldPreferCandidateOverRutMatch(rutMatchEntry, chosen)) return chosen.id;
         if (chosen.patientRut) {
           const canonical = ctx.findByRut(chosen.patientRut, params.kind);
@@ -2133,7 +2186,11 @@ export async function findMatchingSeries(
       const fuzzy = ctx.findByTokenOverlap(params.patientName, params.kind, eventDateDjs, thresholdDays);
       if (fuzzy != null) return fuzzy;
     }
-    if (rutMatchEntry) return rutMatchEntry.id;
+    if (rutMatchEntry) {
+      const canonicalPhoneDuplicate = ctx.findCanonicalPhoneDuplicate(rutMatchEntry.id);
+      if (canonicalPhoneDuplicate != null) return canonicalPhoneDuplicate;
+      return rutMatchEntry.id;
+    }
     return null;
   }
 
@@ -2315,9 +2372,25 @@ export async function findMatchingSeries(
       patientName: null | string;
       patientRut: null | string;
     } = null;
+    let phoneCandidates: Array<{
+      beneficiaryName: null | string;
+      beneficiaryRut: null | string;
+      events: Array<{
+        description: null | string;
+        endDate: Date | null;
+        endDateTime: Date | null;
+        startDate: Date | null;
+        startDateTime: Date | null;
+        summary: null | string;
+      }>;
+      id: number;
+      patientName: null | string;
+      patientPhones: unknown;
+      patientRut: null | string;
+    }> = [];
 
     if (params.patientPhones?.length) {
-      const phoneCandidates = await db.clinicalSeries.findMany({
+      phoneCandidates = await db.clinicalSeries.findMany({
         where: { kind: params.kind },
         include: {
           events: {
@@ -2376,6 +2449,39 @@ export async function findMatchingSeries(
       phoneCandidate,
     );
     if (chosenCandidate) {
+      const canonicalPhoneDuplicate =
+        params.patientPhones?.length && params.patientName
+          ? chooseCanonicalPhoneDuplicateCandidate(
+              {
+                ...chosenCandidate,
+                kind: params.kind,
+                patientPhones: params.patientPhones,
+              },
+              [
+                ...(nameCandidates ?? []).map((candidate) => ({
+                  beneficiaryName: candidate.beneficiaryName,
+                  beneficiaryRut: candidate.beneficiaryRut,
+                  eventCount: candidate.events.length,
+                  id: candidate.id,
+                  kind: params.kind,
+                  patientName: candidate.patientName,
+                  patientPhones: getSeriesPatientPhones(candidate),
+                  patientRut: candidate.patientRut,
+                })),
+                ...((params.patientPhones?.length ? phoneCandidates : []) ?? []).map((candidate) => ({
+                  beneficiaryName: candidate.beneficiaryName,
+                  beneficiaryRut: candidate.beneficiaryRut,
+                  eventCount: candidate.events.length,
+                  id: candidate.id,
+                  kind: params.kind,
+                  patientName: candidate.patientName,
+                  patientPhones: getSeriesPatientPhones(candidate),
+                  patientRut: candidate.patientRut,
+                })),
+              ],
+            )
+          : null;
+      if (canonicalPhoneDuplicate) return canonicalPhoneDuplicate.id;
       if (shouldPreferCandidateOverRutMatch(rutMatchCandidate, chosenCandidate)) {
         return chosenCandidate.id;
       }
