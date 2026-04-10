@@ -127,6 +127,10 @@ describe("clinical series patient-name cleaning", () => {
       ["mariscox Zurait Higuera Morales", "zurait higuera morales"],
       ["nubleprevision Valeria Danae Palma Onetto", "valeria danae palma onetto"],
       ["epivac Fernanda Isidora Campos Henriquez", "fernanda isidora campos henriquez"],
+      ["cambio antes Aurora Gatica Cid", "aurora gatica cid"],
+      ["lecturs Paloma Olate Quintana", "paloma olate quintana"],
+      ["mantencio Karina Ortiz Osorio", "karina ortiz osorio"],
+      ["amoxicilina Fernanda Isidora Campos Henriquez", "fernanda isidora campos henriquez"],
     ] as const;
 
     for (const [summary, expectedName] of cases) {
