@@ -100,6 +100,10 @@ describe("clinical series patient-name cleaning", () => {
         "mingtsu leonardo chang liu",
       ],
       ["confirmocarlos joaquin varela chavez", "carlos joaquin varela chavez"],
+      [
+        "16.08 1ra dosis vacuna clustoid (abono $10.000/25)León Alfonso Saavedra Grob -Rut del paciente: 24510075-2 -Edad: 10 años -Comuna: Hualpen -Previsión: Fonasa -Número de contacto: 998791716",
+        "leon alfonso saavedra grob",
+      ],
     ] as const;
 
     for (const testCase of cases) {

@@ -25,6 +25,7 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "acaro",
   "acaros",
   "administracion",
+  "abono",
   "aeroalergenos",
   "alergia",
   "alergico",
