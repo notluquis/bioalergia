@@ -1,7 +1,5 @@
 import type React from "react";
 import { Chip, Description, Surface } from "@heroui/react";
-import type { ColumnDef } from "@tanstack/react-table";
-import dayjs from "dayjs";
 import type { LucideIcon } from "lucide-react";
 
 export type WaNotification = {
@@ -121,64 +119,3 @@ export function FlowStep({
     </Surface>
   );
 }
-
-export const whatsappNotificationColumns: ColumnDef<WaNotification>[] = [
-  {
-    accessorKey: "patientName",
-    cell: ({ row }) => <span className="font-medium">{row.original.patientName}</span>,
-    header: "Paciente",
-  },
-  {
-    accessorKey: "patientPhone",
-    header: "Teléfono",
-  },
-  {
-    accessorKey: "appointmentDate",
-    cell: ({ row }) =>
-      row.original.appointmentDate
-        ? dayjs(row.original.appointmentDate).format("DD/MM/YYYY HH:mm")
-        : "—",
-    header: "Fecha cita",
-  },
-  {
-    accessorKey: "appointmentService",
-    cell: ({ row }) => (
-      <span className="max-w-50 truncate text-sm">{row.original.appointmentService ?? "—"}</span>
-    ),
-    header: "Servicio",
-  },
-  {
-    accessorKey: "status",
-    cell: ({ row }) => <StatusBadge status={row.original.status} />,
-    header: "Estado",
-  },
-  {
-    accessorKey: "sentAt",
-    cell: ({ row }) =>
-      row.original.sentAt ? dayjs(row.original.sentAt).format("DD/MM HH:mm") : "—",
-    header: "Enviado",
-  },
-  {
-    accessorKey: "deliveredAt",
-    cell: ({ row }) =>
-      row.original.deliveredAt ? dayjs(row.original.deliveredAt).format("DD/MM HH:mm") : "—",
-    header: "Entregado",
-  },
-  {
-    accessorKey: "playedAt",
-    cell: ({ row }) =>
-      row.original.playedAt ? dayjs(row.original.playedAt).format("DD/MM HH:mm") : "—",
-    header: "Reproducido",
-  },
-  {
-    accessorKey: "readAt",
-    cell: ({ row }) =>
-      row.original.readAt ? dayjs(row.original.readAt).format("DD/MM HH:mm") : "—",
-    header: "Leído",
-  },
-  {
-    accessorKey: "createdAt",
-    cell: ({ row }) => dayjs(row.original.createdAt).format("DD/MM HH:mm"),
-    header: "Registrado",
-  },
-];

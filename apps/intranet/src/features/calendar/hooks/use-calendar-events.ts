@@ -269,7 +269,7 @@ function useCalendarSync(queryClient: ReturnType<typeof useQueryClient>) {
 export function useCalendarEvents(options?: { enabled?: boolean }) {
   const { settings } = useSettings();
   const queryClient = useQueryClient();
-  const rawSearch = useSearch({ strict: false });
+  const rawSearch: unknown = useSearch({ strict: false });
   const search = calendarSearchSchema.parse(rawSearch);
   const enabled = options?.enabled ?? true;
 

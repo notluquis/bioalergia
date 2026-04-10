@@ -5,8 +5,8 @@ import type { AppAbility } from "@/lib/authz/ability";
 import type { AuthSessionData } from "../types";
 import { AuthListener } from "./AuthListener";
 
-const updateAbilityMock = vi.hoisted(() => vi.fn());
-const setNotificationScopeMock = vi.hoisted(() => vi.fn());
+const updateAbilityMock = vi.hoisted(() => vi.fn<() => void>());
+const setNotificationScopeMock = vi.hoisted(() => vi.fn<(scope: string | null) => void>());
 const mockAuthState = vi.hoisted(() => ({
   impersonatedRole: null as null | {
     permissions: { permission: { action: string; subject: string } }[];
@@ -45,9 +45,7 @@ describe("AuthListener", () => {
     };
     render(<AuthListener />);
     await waitFor(() =>
-      expect(updateAbilityMock).toHaveBeenCalledWith([
-        { action: "read", subject: "TimesheetList" },
-      ]),
+      expect(updateAbilityMock).toHaveBeenCalledWith([{ action: "read", subject: "TimesheetList" }])
     );
   });
 

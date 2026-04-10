@@ -116,38 +116,47 @@ function useSyncSelectedDayForm(params: {
   weekData: ProductionBalanceApiItem[] | undefined;
   weekSuccess: boolean;
 }) {
-  const selectedDayItem = getSelectedDayItem(params.weekData, params.selectedDate);
+  const {
+    currentEntryId,
+    formData,
+    originalData,
+    resetForm,
+    selectedDate,
+    setOriginalData,
+    weekData,
+    weekSuccess,
+  } = params;
+  const selectedDayItem = getSelectedDayItem(weekData, selectedDate);
 
   useEffect(() => {
     if (selectedDayItem) {
       const nextFormData = mapApiToForm(selectedDayItem);
-      const sameEntry = params.currentEntryId === selectedDayItem.id;
+      const sameEntry = currentEntryId === selectedDayItem.id;
       const sameForm =
-        areFormDataEqual(params.formData, nextFormData) &&
-        areFormDataEqual(params.originalData, nextFormData);
+        areFormDataEqual(formData, nextFormData) && areFormDataEqual(originalData, nextFormData);
       if (!sameEntry || !sameForm) {
-        params.setOriginalData(nextFormData, selectedDayItem.id);
+        setOriginalData(nextFormData, selectedDayItem.id);
       }
       return;
     }
-    if (params.weekSuccess) {
+    if (weekSuccess) {
       const isAlreadyReset =
-        params.currentEntryId == null &&
-        areFormDataEqual(params.formData, EMPTY_FORM_DATA) &&
-        areFormDataEqual(params.originalData, EMPTY_FORM_DATA);
+        currentEntryId == null &&
+        areFormDataEqual(formData, EMPTY_FORM_DATA) &&
+        areFormDataEqual(originalData, EMPTY_FORM_DATA);
       if (!isAlreadyReset) {
-        params.resetForm();
+        resetForm();
       }
     }
   }, [
-    params.currentEntryId,
-    params.formData,
-    params.originalData,
-    params.resetForm,
-    params.selectedDate,
-    params.setOriginalData,
-    params.weekSuccess,
+    currentEntryId,
+    formData,
+    originalData,
+    resetForm,
+    selectedDate,
+    setOriginalData,
     selectedDayItem,
+    weekSuccess,
   ]);
 }
 
@@ -157,10 +166,12 @@ function useSyncWeekData(params: {
   setWeekData: (week: ReturnType<typeof generateWeekData>) => void;
   weekData: ProductionBalanceApiItem[] | undefined;
 }) {
+  const { selectedDate, setWeekData, storeWeekData, weekData } = params;
+
   useEffect(() => {
     const entries: Record<string, number> = {};
-    if (params.weekData) {
-      for (const item of params.weekData) {
+    if (weekData) {
+      for (const item of weekData) {
         const calculatedTotal =
           item.ingresoTarjetas +
           item.ingresoTransferencias +
@@ -172,11 +183,11 @@ function useSyncWeekData(params: {
         }
       }
     }
-    const week = generateWeekData(params.selectedDate, entries);
-    if (!areWeekDataEqual(params.storeWeekData, week)) {
-      params.setWeekData(week);
+    const week = generateWeekData(selectedDate, entries);
+    if (!areWeekDataEqual(storeWeekData, week)) {
+      setWeekData(week);
     }
-  }, [params.selectedDate, params.setWeekData, params.storeWeekData, params.weekData]);
+  }, [selectedDate, setWeekData, storeWeekData, weekData]);
 }
 
 function useAutosaveEffect(params: {
