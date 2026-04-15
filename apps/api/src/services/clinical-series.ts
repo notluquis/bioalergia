@@ -866,6 +866,7 @@ function normalizeName(value: string): string {
 
 function stripNonNamePhrases(text: string): string {
   return text
+    .replace(/\b[\p{L}]+-rut\b/giu, " ")
     .replace(
       /(^|[\n,;]\s*)(?:(?:envio\s+de|toca|ultima|licencia|aca|incluir\s+huevos|ovo\s+y\s+nativos|quiere\s+de\s+standard|(?:lec|lectura)\s+de(?:\s+de)?|contesto|quiso\s+realizar(?:\s+confirmado)?|confirm(?:ado|ada|o|a|s|ara|aq)?|(?:no\s+)?vino(?:\s+confirma(?:do|da|o|a|s|ra)?)?|llego(?:p)?(?:\s+confirma(?:do|da|o|a|s|ra)?)?|se\s+llev(?:a|o)\s+vacuna\s+de\s+(?:enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)|feb|mayo)(?:\s+(?:de|y))?\s+)/gi,
       "$1",
@@ -961,9 +962,20 @@ function stripStopwordPrefix(token: string): string {
 }
 
 function normalizeNameToken(token: string): string {
-  return stripStopwordPrefix(token)
+  const stripped = stripStopwordPrefix(token)
     .replace(/^s\s+c\b\s*/i, "")
     .replace(/^-+|-+$/g, "");
+
+  if (!stripped.includes("-")) {
+    return stripped;
+  }
+
+  const parts = stripped
+    .split("-")
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0 && !LOWERCASE_NAME_STOPWORDS.has(part));
+
+  return parts.join(" ");
 }
 
 function resolveClinicalSeriesOrderBy(

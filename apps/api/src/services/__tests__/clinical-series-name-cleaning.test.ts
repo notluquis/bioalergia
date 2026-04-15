@@ -131,6 +131,7 @@ describe("clinical series patient-name cleaning", () => {
       ["lecturs Paloma Olate Quintana", "paloma olate quintana"],
       ["mantencio Karina Ortiz Osorio", "karina ortiz osorio"],
       ["amoxicilina Fernanda Isidora Campos Henriquez", "fernanda isidora campos henriquez"],
+      ["riffo-rut Mauricio Riffo", "mauricio riffo"],
     ] as const;
 
     for (const [summary, expectedName] of cases) {
