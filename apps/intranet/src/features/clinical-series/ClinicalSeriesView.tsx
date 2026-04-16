@@ -924,16 +924,14 @@ function AbandonmentContactSection({ seriesId }: { seriesId: number }) {
       {showForm && (
         <Surface className="p-3 rounded-lg space-y-2">
           <div>
-            <Label className="text-xs text-foreground-500 mb-1 block">Resultado</Label>
             <Select
-              aria-label="Resultado del contacto"
               className="w-full"
               placeholder="Seleccionar resultado..."
               value={outcome}
               onChange={(val) => val && setOutcome(val as AbandonmentContactOutcome)}
               variant="secondary"
             >
-              <Label className="sr-only">Resultado</Label>
+              <Label className="text-xs text-foreground-500">Resultado</Label>
               <Select.Trigger>
                 <Select.Value />
                 <Select.Indicator />
@@ -950,7 +948,7 @@ function AbandonmentContactSection({ seriesId }: { seriesId: number }) {
               </Select.Popover>
             </Select>
           </div>
-          <TextField aria-label="Notas" value={notes} onChange={setNotes}>
+          <TextField value={notes} onChange={setNotes}>
             <Label className="text-xs text-foreground-500">Notas (opcional)</Label>
             <Input placeholder="Detalles del contacto..." />
           </TextField>
@@ -1916,6 +1914,7 @@ export function ClinicalSeriesView() {
             <Table className="flex-1 min-h-0 flex flex-col">
               <Table.ScrollContainer className="flex-1 min-h-0">
                 <Table.Content
+                  key={isAbandonmentTab ? "abandonment" : "series"}
                   aria-label="Series Clínicas"
                   selectionMode="single"
                   selectedKeys={selectedId !== null ? new Set([selectedId]) : new Set()}
@@ -1930,8 +1929,12 @@ export function ClinicalSeriesView() {
                         <Table.Column allowsSorting id="patient" isRowHeader className="w-[22%]">
                           Paciente
                         </Table.Column>
-                        <Table.Column className="w-[16%]">RUTs</Table.Column>
-                        <Table.Column className="w-[18%]">Teléfonos</Table.Column>
+                        <Table.Column id="ruts" className="w-[16%]">
+                          RUTs
+                        </Table.Column>
+                        <Table.Column id="phones" className="w-[18%]">
+                          Teléfonos
+                        </Table.Column>
                         <Table.Column allowsSorting id="lastEvent" className="w-[12%]">
                           Últ. sesión
                         </Table.Column>
@@ -1942,19 +1945,27 @@ export function ClinicalSeriesView() {
                         >
                           Días
                         </Table.Column>
-                        <Table.Column className="w-[11%]">Bucket</Table.Column>
+                        <Table.Column id="bucket" className="w-[11%]">
+                          Bucket
+                        </Table.Column>
                         <Table.Column allowsSorting id="status" className="w-[9%]">
                           Estado
                         </Table.Column>
-                        <Table.Column className="w-[12%]">Contacto</Table.Column>
+                        <Table.Column id="contact" className="w-[12%]">
+                          Contacto
+                        </Table.Column>
                       </>
                     ) : (
                       <>
                         <Table.Column allowsSorting id="patient" isRowHeader className="w-[18%]">
                           Paciente
                         </Table.Column>
-                        <Table.Column className="w-[16%]">RUTs</Table.Column>
-                        <Table.Column className="w-[18%]">Teléfonos</Table.Column>
+                        <Table.Column id="ruts" className="w-[16%]">
+                          RUTs
+                        </Table.Column>
+                        <Table.Column id="phones" className="w-[18%]">
+                          Teléfonos
+                        </Table.Column>
                         <Table.Column allowsSorting id="kind" className="w-[11%]">
                           Tipo
                         </Table.Column>
@@ -2054,8 +2065,10 @@ export function ClinicalSeriesView() {
                                         color={OUTCOME_COLORS[s.lastAbandonmentContact.outcome]}
                                         variant="soft"
                                       >
-                                        <Check size={10} className="mr-0.5" />
-                                        {OUTCOME_LABELS[s.lastAbandonmentContact.outcome]}
+                                        <Check size={10} />
+                                        <Chip.Label>
+                                          {OUTCOME_LABELS[s.lastAbandonmentContact.outcome]}
+                                        </Chip.Label>
                                       </Chip>
                                     </Tooltip.Trigger>
                                     <Tooltip.Content>
