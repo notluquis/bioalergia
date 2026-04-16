@@ -32,6 +32,10 @@ import { loansOpenAPIHandler, loansORPCHandler } from "./orpc/loans";
 import { mercadopagoOpenAPIHandler, mercadopagoORPCHandler } from "./orpc/mercadopago";
 import { notificationsOpenAPIHandler, notificationsORPCHandler } from "./orpc/notifications";
 import { patientsOpenAPIHandler, patientsORPCHandler } from "./orpc/patients";
+import {
+  patientCampaignsOpenAPIHandler,
+  patientCampaignsORPCHandler,
+} from "./orpc/patient-campaigns";
 import { peopleOpenAPIHandler, peopleORPCHandler } from "./orpc/people";
 import { personalFinanceOpenAPIHandler, personalFinanceORPCHandler } from "./orpc/personal-finance";
 import {
@@ -1086,6 +1090,22 @@ app.use("/api/orpc/patients/rpc/*", async (c, next) => {
   return next();
 });
 
+app.use("/api/orpc/patient-campaigns/rpc/*", async (c, next) => {
+  const { matched, response } = await patientCampaignsORPCHandler.handle(
+    createHonoORPCRequest(c),
+    {
+      prefix: "/api/orpc/patient-campaigns/rpc",
+      context: { hono: c },
+    }
+  );
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
 app.use("/api/orpc/doctoralia/rpc/*", async (c, next) => {
   const { matched, response } = await doctoraliaORPCHandler.handle(createHonoORPCRequest(c), {
     prefix: "/api/orpc/doctoralia/rpc",
@@ -1409,6 +1429,21 @@ app.use("/api/orpc/patients/*", async (c, next) => {
   const { matched, response } = await patientsOpenAPIHandler.handle(createHonoORPCRequest(c), {
     context: { hono: c },
   });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/patient-campaigns/*", async (c, next) => {
+  const { matched, response } = await patientCampaignsOpenAPIHandler.handle(
+    createHonoORPCRequest(c),
+    {
+      context: { hono: c },
+    }
+  );
 
   if (matched) {
     return c.newResponse(response.body, response);
