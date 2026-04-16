@@ -360,7 +360,6 @@ export function UserManagementPage() {
           {/* Custom Role Filter */}
           <div className="w-full sm:w-48">
             <Select
-              aria-label="Filtrar por rol"
               className="w-full"
               value={roleFilter}
               onChange={(key) => {
@@ -625,7 +624,6 @@ function EditRoleModalContent({
 
                 <div className="form-control">
                   <Select
-                    aria-label="Rol asignado"
                     className="w-full"
                     placeholder="Seleccionar rol"
                     value={selectedRole}

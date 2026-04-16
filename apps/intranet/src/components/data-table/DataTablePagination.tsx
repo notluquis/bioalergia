@@ -26,7 +26,7 @@ export function DataTablePagination<TData>({
   const canPrevious = currentPageIndex > 0;
   const canNext = !hasKnownTotalPages || currentPageIndex < totalPages - 1;
   const normalizedOptions = Array.from(new Set([...pageSizeOptions, currentPageSize])).sort(
-    (a, b) => a - b,
+    (a, b) => a - b
   );
   const currentPageNumber = currentPageIndex + 1;
 
@@ -44,7 +44,6 @@ export function DataTablePagination<TData>({
           <>
             <span className="font-medium text-xs uppercase tracking-wide">Filas</span>
             <Select
-              aria-label="Filas por página"
               className="w-24"
               value={String(currentPageSize)}
               onChange={(key) => {
@@ -109,7 +108,7 @@ export function DataTablePagination<TData>({
                       {pageItem.value}
                     </Pagination.Link>
                   </Pagination.Item>
-                ),
+                )
               )
             : null}
           <Pagination.Item>

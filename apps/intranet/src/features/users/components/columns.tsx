@@ -93,7 +93,7 @@ export const getColumns = (actions: {
           variant={status === "ACTIVE" ? "secondary" : "soft"}
         >
           {status === "ACTIVE" && <div className="size-1.5 rounded-full bg-current" />}
-          {status}
+          <Chip.Label>{status}</Chip.Label>
         </Chip>
       );
     },

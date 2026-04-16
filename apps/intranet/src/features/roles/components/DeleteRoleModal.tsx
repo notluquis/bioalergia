@@ -116,7 +116,7 @@ function DeleteRoleForm({
         const issues = errorWithDetails.details
           .map(
             (i: { message: string; path: (number | string)[] }) =>
-              `${i.path.join(".")}: ${i.message}`,
+              `${i.path.join(".")}: ${i.message}`
           )
           .join("\n");
         message = `Error:\n${issues}`;
@@ -163,7 +163,6 @@ function DeleteRoleForm({
                 Mover usuarios a:
               </span>
               <Select
-                aria-label="Seleccionar rol de destino"
                 className="w-full"
                 placeholder="Seleccionar rol..."
                 value={targetRoleId}

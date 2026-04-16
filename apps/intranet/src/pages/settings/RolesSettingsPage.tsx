@@ -183,7 +183,6 @@ export function RolesSettingsPage() {
             {/* Role Filter Selector */}
             <div className="hidden sm:block">
               <Select
-                aria-label="Filtrar roles"
                 className="w-full max-w-50"
                 value={viewModeRole}
                 onChange={(key) => setViewModeRole(key ? key.toString() : "")}

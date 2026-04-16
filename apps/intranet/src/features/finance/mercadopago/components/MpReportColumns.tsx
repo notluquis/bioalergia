@@ -87,12 +87,12 @@ export const getMpReportColumns = (
       isReportPending(row.original.status) ? (
         <Chip className="gap-1.5" color="warning" size="sm" variant="soft">
           <Spinner color="current" size="sm" />
-          Generando...
+          <Chip.Label>Generando...</Chip.Label>
         </Chip>
       ) : (
         <Chip className="gap-1.5" color="success" size="sm" variant="soft">
           <span className="h-1.5 w-1.5 rounded-full bg-success" />
-          Disponible
+          <Chip.Label>Disponible</Chip.Label>
         </Chip>
       ),
 

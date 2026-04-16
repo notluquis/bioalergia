@@ -217,7 +217,7 @@ export function DailyEventCard({ event, eventDteLink, onLinkClick }: DailyEventC
                   variant="soft"
                 >
                   <Icon className="h-3 w-3" />
-                  {badge.label}
+                  <Chip.Label>{badge.label}</Chip.Label>
                 </Chip>
               );
             })}

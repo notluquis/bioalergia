@@ -26,7 +26,7 @@ export function FinancialDashboardPage() {
       start: parseDate(dateRange.from),
       end: parseDate(dateRange.to),
     }),
-    [dateRange.from, dateRange.to],
+    [dateRange.from, dateRange.to]
   );
 
   return (
@@ -41,7 +41,6 @@ export function FinancialDashboardPage() {
         </div>
 
         <DateRangePicker
-          aria-label="Rango de fechas"
           className="w-full md:w-auto"
           onChange={(value) => {
             if (!value) {

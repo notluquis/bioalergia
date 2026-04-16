@@ -332,7 +332,6 @@ function PeriodSelectionPanel({
             <Disclosure.Body className="space-y-4 px-4 pt-0 pb-4">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                 <Select
-                  aria-label="Seleccionar mes"
                   className="max-w-xs flex-1"
                   placeholder="Seleccionar mes"
                   value={selectedMonth}

@@ -203,17 +203,20 @@ function RoutesAuditPage() {
                       variant="tertiary"
                       className="border-success-soft-hover bg-success/10 text-success"
                     >
-                      <CheckCircle className="mr-1 size-3" /> Valid
+                      <CheckCircle className="size-3" />
+                      <Chip.Label>Valid</Chip.Label>
                     </Chip>
                   )}
                   {route.status === "technical" && (
                     <Chip color="default" variant="secondary">
-                      <Settings className="mr-1 size-3" /> Technical
+                      <Settings className="size-3" />
+                      <Chip.Label>Technical</Chip.Label>
                     </Chip>
                   )}
                   {route.status === "error" && (
                     <Chip color="danger" variant="primary">
-                      <ShieldAlert className="mr-1 size-3" /> Error
+                      <ShieldAlert className="size-3" />
+                      <Chip.Label>Error</Chip.Label>
                     </Chip>
                   )}
                 </div>

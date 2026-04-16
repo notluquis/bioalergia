@@ -626,7 +626,7 @@ function IdentityDropdownCell({
           </Chip>
         </Button>
       </Dropdown.Trigger>
-      <Dropdown.Popover className="min-w-[280px] p-1" placement="bottom start">
+      <Dropdown.Popover className="min-w-70 p-1" placement="bottom start">
         <Dropdown.Menu aria-label={title}>
           {entries.map((entry) => {
             const entryKey = `${title}-${entry.roleLabel}-${entry.value}`;
@@ -1519,7 +1519,6 @@ export function ClinicalSeriesView() {
 
               <div className="grid gap-3 xl:grid-cols-[minmax(18rem,1fr)_auto] xl:items-end">
                 <DateRangePicker
-                  aria-label="Rango de última visita"
                   onChange={(value) => {
                     setLastVisitFrom(value?.start?.toString());
                     setLastVisitTo(value?.end?.toString());
@@ -1751,7 +1750,6 @@ export function ClinicalSeriesView() {
                     </div>
 
                     <DateRangePicker
-                      aria-label="Rango de próxima visita"
                       onChange={(value) => {
                         setNextVisitFrom(value?.start?.toString());
                         setNextVisitTo(value?.end?.toString());
@@ -2203,7 +2201,6 @@ export function ClinicalSeriesView() {
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-xs uppercase tracking-wide">Filas</span>
                       <Select
-                        aria-label="Filas por página"
                         className="w-24"
                         value={String(pageSize)}
                         onChange={(key) =>
