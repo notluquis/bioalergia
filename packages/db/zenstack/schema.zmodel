@@ -2762,3 +2762,61 @@ model FinancialTransactionAllocation {
   @@index([sourceAllocationId])
   @@map("financial_transaction_allocations")
 }
+
+enum PatientCampaignRecipientStatus {
+  PENDING
+  SENT
+  INFO_REQUESTED
+  IN_NEGOTIATION
+  ACCEPTED
+  DISMISSED
+  NO_RESPONSE
+}
+
+model PatientCampaign {
+  id              Int                         @id @default(autoincrement())
+  name            String
+  description     String?
+  messageTemplate String?                     @map("message_template")
+  imageUrl        String?                     @map("image_url")
+  isActive        Boolean                     @default(true) @map("is_active")
+  createdBy       Int?                        @map("created_by")
+  createdAt       DateTime                    @default(now()) @map("created_at")
+  updatedAt       DateTime                    @default(now()) @updatedAt @map("updated_at")
+
+  recipients      PatientCampaignRecipient[]
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([isActive])
+  @@map("patient_campaigns")
+}
+
+model PatientCampaignRecipient {
+  id            Int                            @id @default(autoincrement())
+  campaignId    Int                            @map("campaign_id")
+  patientRut    String                         @map("patient_rut") @db.VarChar(20)
+  patientName   String?                        @map("patient_name")
+  patientPhone  String?                        @map("patient_phone")
+  status        PatientCampaignRecipientStatus @default(PENDING)
+  notes         String?
+  sentAt        DateTime?                      @map("sent_at")
+  respondedAt   DateTime?                      @map("responded_at")
+  updatedBy     Int?                           @map("updated_by")
+  createdAt     DateTime                       @default(now()) @map("created_at")
+  updatedAt     DateTime                       @default(now()) @updatedAt @map("updated_at")
+
+  campaign      PatientCampaign                @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@unique([campaignId, patientRut])
+  @@index([patientRut])
+  @@index([status])
+  @@index([campaignId])
+  @@map("patient_campaign_recipients")
+}

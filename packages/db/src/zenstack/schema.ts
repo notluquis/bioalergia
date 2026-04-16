@@ -9394,6 +9394,181 @@ export class SchemaType implements SchemaDef {
             uniqueFields: {
                 id: { type: "Int" }
             }
+        },
+        PatientCampaign: {
+            name: "PatientCampaign",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                name: {
+                    name: "name",
+                    type: "String"
+                },
+                description: {
+                    name: "description",
+                    type: "String",
+                    optional: true
+                },
+                messageTemplate: {
+                    name: "messageTemplate",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("message_template") }] }] as readonly AttributeApplication[]
+                },
+                imageUrl: {
+                    name: "imageUrl",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("image_url") }] }] as readonly AttributeApplication[]
+                },
+                isActive: {
+                    name: "isActive",
+                    type: "Boolean",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(true) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("is_active") }] }] as readonly AttributeApplication[],
+                    default: true as FieldDefault
+                },
+                createdBy: {
+                    name: "createdBy",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_by") }] }] as readonly AttributeApplication[]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                recipients: {
+                    name: "recipients",
+                    type: "PatientCampaignRecipient",
+                    array: true,
+                    relation: { opposite: "campaign" }
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Boolean", [ExpressionUtils.field("isActive")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_campaigns") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        PatientCampaignRecipient: {
+            name: "PatientCampaignRecipient",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                campaignId: {
+                    name: "campaignId",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("campaign_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "campaign"
+                    ] as readonly string[]
+                },
+                patientRut: {
+                    name: "patientRut",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_rut") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] }] as readonly AttributeApplication[]
+                },
+                patientName: {
+                    name: "patientName",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_name") }] }] as readonly AttributeApplication[]
+                },
+                patientPhone: {
+                    name: "patientPhone",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_phone") }] }] as readonly AttributeApplication[]
+                },
+                status: {
+                    name: "status",
+                    type: "PatientCampaignRecipientStatus",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("PENDING") }] }] as readonly AttributeApplication[],
+                    default: "PENDING" as FieldDefault
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                sentAt: {
+                    name: "sentAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("sent_at") }] }] as readonly AttributeApplication[]
+                },
+                respondedAt: {
+                    name: "respondedAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("responded_at") }] }] as readonly AttributeApplication[]
+                },
+                updatedBy: {
+                    name: "updatedBy",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_by") }] }] as readonly AttributeApplication[]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                campaign: {
+                    name: "campaign",
+                    type: "PatientCampaign",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("campaignId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "recipients", fields: ["campaignId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@unique", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("campaignId"), ExpressionUtils.field("patientRut")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("patientRut")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("PatientCampaignRecipientStatus", [ExpressionUtils.field("status")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("campaignId")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_campaign_recipients") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                campaignId_patientRut: { campaignId: { type: "Int" }, patientRut: { type: "String" } }
+            }
         }
     } as const;
     enums = {
@@ -9731,6 +9906,18 @@ export class SchemaType implements SchemaDef {
                 ORIGINAL: "ORIGINAL",
                 ROLLOVER_IN: "ROLLOVER_IN",
                 ROLLOVER_OUT: "ROLLOVER_OUT"
+            }
+        },
+        PatientCampaignRecipientStatus: {
+            name: "PatientCampaignRecipientStatus",
+            values: {
+                PENDING: "PENDING",
+                SENT: "SENT",
+                INFO_REQUESTED: "INFO_REQUESTED",
+                IN_NEGOTIATION: "IN_NEGOTIATION",
+                ACCEPTED: "ACCEPTED",
+                DISMISSED: "DISMISSED",
+                NO_RESPONSE: "NO_RESPONSE"
             }
         }
     } as const;

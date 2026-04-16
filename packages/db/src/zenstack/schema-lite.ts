@@ -7616,6 +7616,145 @@ export class SchemaType implements SchemaDef {
             uniqueFields: {
                 id: { type: "Int" }
             }
+        },
+        PatientCampaign: {
+            name: "PatientCampaign",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                name: {
+                    name: "name",
+                    type: "String"
+                },
+                description: {
+                    name: "description",
+                    type: "String",
+                    optional: true
+                },
+                messageTemplate: {
+                    name: "messageTemplate",
+                    type: "String",
+                    optional: true
+                },
+                imageUrl: {
+                    name: "imageUrl",
+                    type: "String",
+                    optional: true
+                },
+                isActive: {
+                    name: "isActive",
+                    type: "Boolean",
+                    default: true as FieldDefault
+                },
+                createdBy: {
+                    name: "createdBy",
+                    type: "Int",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                recipients: {
+                    name: "recipients",
+                    type: "PatientCampaignRecipient",
+                    array: true,
+                    relation: { opposite: "campaign" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        PatientCampaignRecipient: {
+            name: "PatientCampaignRecipient",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                campaignId: {
+                    name: "campaignId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "campaign"
+                    ] as readonly string[]
+                },
+                patientRut: {
+                    name: "patientRut",
+                    type: "String"
+                },
+                patientName: {
+                    name: "patientName",
+                    type: "String",
+                    optional: true
+                },
+                patientPhone: {
+                    name: "patientPhone",
+                    type: "String",
+                    optional: true
+                },
+                status: {
+                    name: "status",
+                    type: "PatientCampaignRecipientStatus",
+                    default: "PENDING" as FieldDefault
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                sentAt: {
+                    name: "sentAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                respondedAt: {
+                    name: "respondedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                updatedBy: {
+                    name: "updatedBy",
+                    type: "Int",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                campaign: {
+                    name: "campaign",
+                    type: "PatientCampaign",
+                    relation: { opposite: "recipients", fields: ["campaignId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                campaignId_patientRut: { campaignId: { type: "Int" }, patientRut: { type: "String" } }
+            }
         }
     } as const;
     enums = {
@@ -7953,6 +8092,18 @@ export class SchemaType implements SchemaDef {
                 ORIGINAL: "ORIGINAL",
                 ROLLOVER_IN: "ROLLOVER_IN",
                 ROLLOVER_OUT: "ROLLOVER_OUT"
+            }
+        },
+        PatientCampaignRecipientStatus: {
+            name: "PatientCampaignRecipientStatus",
+            values: {
+                PENDING: "PENDING",
+                SENT: "SENT",
+                INFO_REQUESTED: "INFO_REQUESTED",
+                IN_NEGOTIATION: "IN_NEGOTIATION",
+                ACCEPTED: "ACCEPTED",
+                DISMISSED: "DISMISSED",
+                NO_RESPONSE: "NO_RESPONSE"
             }
         }
     } as const;
