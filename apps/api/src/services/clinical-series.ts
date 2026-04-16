@@ -1755,8 +1755,8 @@ async function loadEventSeriesCandidateByInternalId(
       e.patient_rut AS "patientRut",
       e.beneficiary_name AS "beneficiaryName",
       e.beneficiary_rut AS "beneficiaryRut",
-      COALESCE(to_char(e.start_date, 'YYYY-MM-DD'), to_char((e.start_date_time AT TIME ZONE ${TIMEZONE})::date, 'YYYY-MM-DD')) AS "eventDate",
-      to_char(e.start_date_time AT TIME ZONE ${TIMEZONE}, 'HH24:MI') AS "eventTime",
+      COALESCE(to_char(e.start_date, 'YYYY-MM-DD'), to_char((e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date, 'YYYY-MM-DD')) AS "eventDate",
+      to_char(e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE}, 'HH24:MI') AS "eventTime",
       e.summary AS "summary",
       e.description AS "description",
       e.category AS "category",
@@ -1790,8 +1790,8 @@ async function loadEventSeriesCandidateByExternalIds(
       e.patient_rut AS "patientRut",
       e.beneficiary_name AS "beneficiaryName",
       e.beneficiary_rut AS "beneficiaryRut",
-      COALESCE(to_char(e.start_date, 'YYYY-MM-DD'), to_char((e.start_date_time AT TIME ZONE ${TIMEZONE})::date, 'YYYY-MM-DD')) AS "eventDate",
-      to_char(e.start_date_time AT TIME ZONE ${TIMEZONE}, 'HH24:MI') AS "eventTime",
+      COALESCE(to_char(e.start_date, 'YYYY-MM-DD'), to_char((e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date, 'YYYY-MM-DD')) AS "eventDate",
+      to_char(e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE}, 'HH24:MI') AS "eventTime",
       e.summary AS "summary",
       e.description AS "description",
       e.category AS "category",
@@ -3048,8 +3048,8 @@ async function loadEventSeriesCandidatesByIds(
       e.patient_rut AS "patientRut",
       e.beneficiary_name AS "beneficiaryName",
       e.beneficiary_rut AS "beneficiaryRut",
-      COALESCE(to_char(e.start_date, 'YYYY-MM-DD'), to_char((e.start_date_time AT TIME ZONE ${TIMEZONE})::date, 'YYYY-MM-DD')) AS "eventDate",
-      to_char(e.start_date_time AT TIME ZONE ${TIMEZONE}, 'HH24:MI') AS "eventTime",
+      COALESCE(to_char(e.start_date, 'YYYY-MM-DD'), to_char((e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date, 'YYYY-MM-DD')) AS "eventDate",
+      to_char(e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE}, 'HH24:MI') AS "eventTime",
       e.summary AS "summary",
       e.description AS "description",
       e.category AS "category",
@@ -3284,19 +3284,19 @@ export async function updateAllSeriesStatuses(): Promise<{ updated: number }> {
             MAX(
               CASE
                 WHEN COALESCE(
-                  e.start_date_time AT TIME ZONE ${TIMEZONE},
+                  e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE},
                   e.start_date::timestamp AT TIME ZONE ${TIMEZONE}
                 ) <= ${now}::timestamptz
-                THEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date)
+                THEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date)
               END
             ) AS last_past,
             MIN(
               CASE
                 WHEN COALESCE(
-                  e.start_date_time AT TIME ZONE ${TIMEZONE},
+                  e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE},
                   e.start_date::timestamp AT TIME ZONE ${TIMEZONE}
                 ) > ${now}::timestamptz
-                THEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date)
+                THEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date)
               END
             ) AS next_future
           FROM events e
@@ -3339,13 +3339,13 @@ export async function rebuildClinicalSeries(
     )
       AND (
         ${params?.from ?? null}::date IS NULL
-        OR COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) >= ${params?.from ?? null}::date
+        OR COALESCE(e.start_date, (e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date) >= ${params?.from ?? null}::date
       )
       AND (
         ${params?.to ?? null}::date IS NULL
-        OR COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) <= ${params?.to ?? null}::date
+        OR COALESCE(e.start_date, (e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date) <= ${params?.to ?? null}::date
       )
-    ORDER BY COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) ASC, e.id ASC
+    ORDER BY COALESCE(e.start_date, (e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date) ASC, e.id ASC
   `;
 
   const total = rows.length;
@@ -3740,15 +3740,15 @@ export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilter
             e.clinical_series_id AS series_id,
             MAX(
               CASE
-                WHEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
-                THEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date)
+                WHEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
+                THEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date)
                 ELSE NULL
               END
             ) AS last_event_date,
             MIN(
               CASE
-                WHEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) > ${today}::date
-                THEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date)
+                WHEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date) > ${today}::date
+                THEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date)
                 ELSE NULL
               END
             ) AS next_event_date
@@ -3783,22 +3783,22 @@ export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilter
         e.clinical_series_id AS series_id,
         MAX(
           CASE
-            WHEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
-            THEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date)
+            WHEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
+            THEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date)
             ELSE NULL
           END
         ) AS last_event_date,
         MIN(
           CASE
-            WHEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) > ${today}::date
-            THEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date)
+            WHEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date) > ${today}::date
+            THEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date)
             ELSE NULL
           END
         ) AS next_event_date,
         COUNT(*)::int AS total_events,
         SUM(
           CASE
-            WHEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) > ${today}::date
+            WHEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date) > ${today}::date
             THEN 1
             ELSE 0
           END
@@ -3807,7 +3807,7 @@ export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilter
         COALESCE(
           SUM(
             CASE
-              WHEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
+              WHEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
               THEN e.amount_expected
               ELSE 0
             END
@@ -3903,15 +3903,15 @@ export async function getClinicalSeriesInsuranceStats(
         e.clinical_series_id AS series_id,
         MAX(
           CASE
-            WHEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
-            THEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date)
+            WHEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
+            THEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date)
             ELSE NULL
           END
         ) AS last_event_date,
         MIN(
           CASE
-            WHEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) > ${today}::date
-            THEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date)
+            WHEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date) > ${today}::date
+            THEN COALESCE(e.start_date, (e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date)
             ELSE NULL
           END
         ) AS next_event_date
