@@ -13,6 +13,7 @@ import {
   DateField,
   DateRangePicker,
   Description,
+  Disclosure,
   Dropdown,
   Drawer,
   Input,
@@ -36,7 +37,7 @@ import {
 import { parseDate } from "@internationalized/date";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Key, Selection } from "@heroui/react";
-import { ClipboardCopy, MessageCircle } from "lucide-react";
+import { ClipboardCopy, Megaphone, MessageCircle } from "lucide-react";
 import { Fragment, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { buildPaginationItems } from "@/components/pagination/pagination-items";
 import { EventDteLinkModal } from "@/features/calendar/components/EventDteLinkModal";
@@ -2135,13 +2136,13 @@ export function ClinicalSeriesView() {
                   })()}
               </Drawer.Header>
 
-              <Drawer.Body className="pt-4">
+              <Drawer.Body className="pt-3">
                 {isLoadingDetail ? (
                   <div className="flex justify-center pt-8">
                     <Spinner />
                   </div>
                 ) : detail ? (
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {/* Financial summary */}
                     {(() => {
                       const fs = seriesFinancialStatus(detail.events);
@@ -2152,48 +2153,48 @@ export function ClinicalSeriesView() {
                         <p className="text-sm text-success italic font-medium">Sin costo</p>
                       );
                       return (
-                        <div className="grid grid-cols-2 gap-2">
-                          <Surface className="p-3 rounded-xl">
-                            <p className="text-xs text-foreground-400 mb-1">Esperado</p>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          <Surface className="p-2 rounded-lg">
+                            <p className="text-[11px] text-foreground-400 mb-0.5">Esperado</p>
                             {fs === "unknown" ? (
                               unknownEl
                             ) : fs === "free" ? (
                               freeEl
                             ) : (
-                              <p className="font-semibold text-accent text-lg">
+                              <p className="font-semibold text-accent text-base">
                                 ${detail.totalExpected.toLocaleString("es-CL")}
                               </p>
                             )}
                           </Surface>
-                          <Surface className="p-3 rounded-xl">
-                            <p className="text-xs text-foreground-400 mb-1">Pagado</p>
+                          <Surface className="p-2 rounded-lg">
+                            <p className="text-[11px] text-foreground-400 mb-0.5">Pagado</p>
                             {fs === "unknown" ? (
                               unknownEl
                             ) : fs === "free" ? (
                               freeEl
                             ) : (
-                              <p className="font-semibold text-success text-lg">
+                              <p className="font-semibold text-success text-base">
                                 ${detail.totalPaid.toLocaleString("es-CL")}
                               </p>
                             )}
                           </Surface>
-                          <Surface className="p-3 rounded-xl">
-                            <p className="text-xs text-foreground-400 mb-1">Pendiente</p>
+                          <Surface className="p-2 rounded-lg">
+                            <p className="text-[11px] text-foreground-400 mb-0.5">Pendiente</p>
                             {fs === "unknown" ? (
                               unknownEl
                             ) : fs === "free" ? (
                               freeEl
                             ) : (
                               <p
-                                className={`font-semibold text-lg ${detail.remainingExpected > 0 ? "text-danger" : "text-foreground"}`}
+                                className={`font-semibold text-base ${detail.remainingExpected > 0 ? "text-danger" : "text-foreground"}`}
                               >
                                 ${detail.remainingExpected.toLocaleString("es-CL")}
                               </p>
                             )}
                           </Surface>
-                          <Surface className="p-3 rounded-xl">
-                            <p className="text-xs text-foreground-400 mb-1">Eventos</p>
-                            <p className="font-semibold text-lg">{detail.events.length}</p>
+                          <Surface className="p-2 rounded-lg">
+                            <p className="text-[11px] text-foreground-400 mb-0.5">Eventos</p>
+                            <p className="font-semibold text-base">{detail.events.length}</p>
                           </Surface>
                         </div>
                       );
@@ -2235,15 +2236,35 @@ export function ClinicalSeriesView() {
                       </Chip>
                     </div>
 
-                    {/* Patient Campaigns */}
+                    {/* Patient Campaigns — collapsed by default */}
                     {detail.patientRut && (
                       <>
                         <Separator />
-                        <PatientCampaignDrawerSection
-                          patientRut={detail.patientRut}
-                          patientName={detail.patientName}
-                          patientPhone={detail.patientPhones[0] ?? null}
-                        />
+                        <Disclosure defaultExpanded={false}>
+                          <Disclosure.Heading>
+                            <Button
+                              className="flex w-full items-center justify-between gap-2 px-2 py-1.5 text-sm font-semibold"
+                              slot="trigger"
+                              size="sm"
+                              variant="ghost"
+                            >
+                              <span className="flex items-center gap-2">
+                                <Megaphone size={14} className="text-foreground-400" />
+                                Campañas de marketing
+                              </span>
+                              <Disclosure.Indicator />
+                            </Button>
+                          </Disclosure.Heading>
+                          <Disclosure.Content>
+                            <Disclosure.Body className="p-0 pt-2">
+                              <PatientCampaignDrawerSection
+                                patientRut={detail.patientRut}
+                                patientName={detail.patientName}
+                                patientPhone={detail.patientPhones[0] ?? null}
+                              />
+                            </Disclosure.Body>
+                          </Disclosure.Content>
+                        </Disclosure>
                       </>
                     )}
 
@@ -2263,10 +2284,10 @@ export function ClinicalSeriesView() {
                         const years = Object.keys(byYear).sort((a, b) => b.localeCompare(a));
                         return (
                           <div>
-                            <h3 className="text-sm font-semibold mb-3">
+                            <h3 className="text-sm font-semibold mb-2">
                               Eventos ({detail.events.length})
                             </h3>
-                            <div className="space-y-4">
+                            <div className="space-y-3">
                               {years.map((year) => (
                                 <div key={year} className="space-y-1.5">
                                   <div className="flex items-center gap-2">
@@ -2293,7 +2314,7 @@ export function ClinicalSeriesView() {
                                         >
                                           <Accordion.Heading>
                                             <Accordion.Trigger
-                                              className={`w-full rounded-2xl px-3 py-3 text-left hover:bg-default-100/60 data-[hover=true]:bg-default-100/60${isFuture ? " ring-1 ring-accent/30" : ""}`}
+                                              className={`w-full rounded-xl px-2 py-2 text-left hover:bg-default-100/60 data-[hover=true]:bg-default-100/60${isFuture ? " ring-1 ring-accent/30" : ""}`}
                                             >
                                               <div className="flex min-w-0 flex-1 flex-col gap-2">
                                                 <div className="flex flex-wrap items-start justify-between gap-2">
@@ -2329,8 +2350,8 @@ export function ClinicalSeriesView() {
                                             </Accordion.Trigger>
                                           </Accordion.Heading>
                                           <Accordion.Panel className="pb-0">
-                                            <Accordion.Body className="px-3 pb-3 pt-0 text-xs">
-                                              <div className="space-y-2 border-border/50 border-t pt-3">
+                                            <Accordion.Body className="px-2 pb-2 pt-0 text-xs">
+                                              <div className="space-y-1.5 border-border/50 border-t pt-2">
                                                 {(() => {
                                                   const efs = eventFinancialStatus(event);
                                                   if (efs === "unknown") return null;

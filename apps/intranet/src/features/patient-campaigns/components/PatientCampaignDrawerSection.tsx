@@ -8,7 +8,7 @@ import {
   Skeleton,
   Surface,
 } from "@heroui/react";
-import { Check, Megaphone, Plus } from "lucide-react";
+import { Check, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useToast } from "@/context/ToastContext";
 import {
@@ -90,11 +90,6 @@ export function PatientCampaignDrawerSection({
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <Megaphone size={16} className="text-primary" />
-        <h3 className="text-sm font-semibold">Campañas de marketing</h3>
-      </div>
-
       {isLoading ? (
         <Skeleton className="h-16 w-full rounded-xl" />
       ) : (
@@ -106,7 +101,7 @@ export function PatientCampaignDrawerSection({
           ) : (
             <div className="space-y-2">
               {enrollments.map((recipient) => (
-                <Surface key={recipient.id} className="p-3 rounded-xl space-y-2">
+                <Surface key={recipient.id} className="p-2 rounded-lg space-y-1.5">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{recipient.campaign.name}</p>
