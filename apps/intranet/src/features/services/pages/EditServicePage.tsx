@@ -24,7 +24,7 @@ export function ServiceEditPage() {
   const [saveMessage, setSaveMessage] = useState<null | string>(null);
   const { editScheduleOpen, editScheduleTarget, skipScheduleOpen, skipScheduleTarget } = useStore(
     servicesStore,
-    (state) => state,
+    (state) => state
   );
 
   // Keep fetchServiceDetail as it provides aggregated data with schedules
@@ -50,7 +50,7 @@ export function ServiceEditPage() {
 
   const handleRegenerate = async (
     serviceId: string,
-    payload?: { months?: number; startDate?: Date },
+    payload?: { months?: number; startDate?: Date }
   ) => {
     try {
       const updated = await regenerateServiceSchedules(serviceId, payload ?? {});
@@ -144,8 +144,20 @@ export function ServiceEditPage() {
 
   return (
     <section className="space-y-6">
-      {displayError && <Alert status="danger">{displayError}</Alert>}
-      {saveMessage && <Alert status="success">{saveMessage}</Alert>}
+      {displayError && (
+        <Alert status="danger">
+          <Alert.Content>
+            <Alert.Description>{displayError}</Alert.Description>
+          </Alert.Content>
+        </Alert>
+      )}
+      {saveMessage && (
+        <Alert status="success">
+          <Alert.Content>
+            <Alert.Description>{saveMessage}</Alert.Description>
+          </Alert.Content>
+        </Alert>
+      )}
 
       <Surface className="space-y-6 rounded-[28px] p-6 shadow-inner">
         <div className="flex justify-end">
@@ -271,7 +283,7 @@ export function ServiceEditPage() {
 }
 
 function mapServiceToForm(
-  service: ServiceDetailResponse["service"],
+  service: ServiceDetailResponse["service"]
 ): Partial<CreateServicePayload> {
   return {
     accountReference: service.accountReference ?? undefined,

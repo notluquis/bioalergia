@@ -180,6 +180,7 @@ export const getColumns = (actions: {
           <Dropdown.Popover placement="bottom end">
             <Dropdown.Menu aria-label="Acciones de usuario" className="w-56">
               <Dropdown.Item
+                textValue="Editar datos"
                 onPress={() => {
                   actions.onEditDetails(user);
                 }}
@@ -188,6 +189,7 @@ export const getColumns = (actions: {
                 Editar datos
               </Dropdown.Item>
               <Dropdown.Item
+                textValue="Editar rol"
                 onPress={() => {
                   actions.onEditRole(user);
                 }}
@@ -196,6 +198,7 @@ export const getColumns = (actions: {
                 Editar rol
               </Dropdown.Item>
               <Dropdown.Item
+                textValue={`${user.mfaEnabled ? "Desactivar" : "Activar"} MFA`}
                 onPress={() => {
                   actions.onToggleMfa(user.id, user.mfaEnabled);
                 }}
@@ -204,6 +207,7 @@ export const getColumns = (actions: {
                 {user.mfaEnabled ? "Desactivar" : "Activar"} MFA
               </Dropdown.Item>
               <Dropdown.Item
+                textValue="Restablecer contraseña"
                 onPress={() => {
                   actions.onResetPassword(user.id);
                 }}
@@ -214,6 +218,7 @@ export const getColumns = (actions: {
               {user.hasPasskey && (
                 <Dropdown.Item
                   className="text-warning focus:text-warning"
+                  textValue="Eliminar passkey"
                   onPress={() => {
                     actions.onDeletePasskey(user.id);
                   }}
@@ -225,6 +230,7 @@ export const getColumns = (actions: {
               {user.status === "ACTIVE" && (
                 <Dropdown.Item
                   className="text-warning focus:text-warning"
+                  textValue="Enviar a onboarding"
                   onPress={() => {
                     actions.onSetStatus(user.id, "PENDING_SETUP");
                   }}
@@ -236,6 +242,7 @@ export const getColumns = (actions: {
               {user.status === "PENDING_SETUP" && (
                 <Dropdown.Item
                   className="text-success focus:text-success"
+                  textValue="Activar cuenta"
                   onPress={() => {
                     actions.onSetStatus(user.id, "ACTIVE");
                   }}
@@ -247,6 +254,7 @@ export const getColumns = (actions: {
               {user.status === "SUSPENDED" ? (
                 <Dropdown.Item
                   className="text-success focus:text-success"
+                  textValue="Reactivar acceso"
                   onPress={() => {
                     actions.onSetStatus(user.id, "ACTIVE");
                   }}
@@ -257,6 +265,7 @@ export const getColumns = (actions: {
               ) : (
                 <Dropdown.Item
                   className="text-warning focus:text-warning"
+                  textValue="Suspender acceso"
                   onPress={() => {
                     actions.onSetStatus(user.id, "SUSPENDED");
                   }}
@@ -268,6 +277,7 @@ export const getColumns = (actions: {
               <Separator />
               <Dropdown.Item
                 className="text-danger focus:text-danger"
+                textValue="Eliminar usuario"
                 onPress={() => {
                   actions.onDeleteUser(user.id);
                 }}

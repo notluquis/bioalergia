@@ -353,15 +353,21 @@ export function DoctoraliaSettingsPage() {
               <Card.Content className="space-y-3">
                 {!overviewPending && overview && missingBlocks.length > 0 ? (
                   <Alert status="warning">
-                    La ingesta aún no está completa. Falta: {missingBlocks.join(", ")}.
+                    <Alert.Content>
+                      <Alert.Description>
+                        La ingesta aún no está completa. Falta: {missingBlocks.join(", ")}.
+                      </Alert.Description>
+                    </Alert.Content>
                   </Alert>
                 ) : null}
 
                 {!overviewPending && overview?.listener.lastErrorMessage ? (
                   <Alert status="warning">
-                    <div className="flex items-start gap-2">
+                    <Alert.Indicator>
                       <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                      <div>
+                    </Alert.Indicator>
+                    <Alert.Content>
+                      <Alert.Description>
                         <p className="font-medium text-sm">Último error IMAP</p>
                         <Description className="text-xs">
                           {overview.listener.lastErrorMessage}
@@ -369,8 +375,8 @@ export function DoctoraliaSettingsPage() {
                         <Description className="text-default-500 text-xs">
                           {formatStatusDate(overview.listener.lastErrorAt)}
                         </Description>
-                      </div>
-                    </div>
+                      </Alert.Description>
+                    </Alert.Content>
                   </Alert>
                 ) : null}
 
@@ -457,7 +463,13 @@ export function DoctoraliaSettingsPage() {
                       </div>
                     </>
                   ) : (
-                    <Alert status="danger">No se pudo cargar la actividad del flujo.</Alert>
+                    <Alert status="danger">
+                      <Alert.Content>
+                        <Alert.Description>
+                          No se pudo cargar la actividad del flujo.
+                        </Alert.Description>
+                      </Alert.Content>
+                    </Alert>
                   )}
                 </Card.Content>
               </Card>
@@ -492,9 +504,13 @@ export function DoctoraliaSettingsPage() {
               <Skeleton className="h-64 w-full rounded-lg" />
             ) : notificationsError ? (
               <Alert status="danger">
-                {notificationsError instanceof Error
-                  ? notificationsError.message
-                  : "No se pudo cargar la tabla de eventos de Doctoralia."}
+                <Alert.Content>
+                  <Alert.Description>
+                    {notificationsError instanceof Error
+                      ? notificationsError.message
+                      : "No se pudo cargar la tabla de eventos de Doctoralia."}
+                  </Alert.Description>
+                </Alert.Content>
               </Alert>
             ) : (
               <DataTable

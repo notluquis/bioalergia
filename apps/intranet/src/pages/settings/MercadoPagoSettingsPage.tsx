@@ -343,7 +343,13 @@ export function MercadoPagoSettingsPage() {
                 </Card>
               </div>
 
-              {reportErrorMessage && <Alert status="danger">{reportErrorMessage}</Alert>}
+              {reportErrorMessage && (
+                <Alert status="danger">
+                  <Alert.Content>
+                    <Alert.Description>{reportErrorMessage}</Alert.Description>
+                  </Alert.Content>
+                </Alert>
+              )}
 
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-3 px-1">
@@ -429,7 +435,13 @@ export function MercadoPagoSettingsPage() {
                 </Card>
               </div>
 
-              {reportErrorMessage && <Alert status="danger">{reportErrorMessage}</Alert>}
+              {reportErrorMessage && (
+                <Alert status="danger">
+                  <Alert.Content>
+                    <Alert.Description>{reportErrorMessage}</Alert.Description>
+                  </Alert.Content>
+                </Alert>
+              )}
 
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-3 px-1">
@@ -471,7 +483,13 @@ export function MercadoPagoSettingsPage() {
         <Tabs.Panel className="space-y-5 pt-4" id="sync">
           {activeTab === "sync" ? (
             <>
-              {syncErrorMessage && <Alert status="danger">{syncErrorMessage}</Alert>}
+              {syncErrorMessage && (
+                <Alert status="danger">
+                  <Alert.Content>
+                    <Alert.Description>{syncErrorMessage}</Alert.Description>
+                  </Alert.Content>
+                </Alert>
+              )}
 
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-3 px-1">

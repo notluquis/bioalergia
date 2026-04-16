@@ -44,7 +44,9 @@ export const DailyBalancesPanel = function DailyBalancesPanel({
 
         {error && (
           <Alert className="text-xs" status="danger">
-            {error}
+            <Alert.Content>
+              <Alert.Description>{error}</Alert.Description>
+            </Alert.Content>
           </Alert>
         )}
 

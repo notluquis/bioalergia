@@ -55,7 +55,13 @@ function AllergyInventoryView() {
           {isFetching ? "Actualizando" : "Refrescar"}
         </Button>
       </div>
-      {errorMessage && <Alert status="danger">{errorMessage}</Alert>}
+      {errorMessage && (
+        <Alert status="danger">
+          <Alert.Content>
+            <Alert.Description>{errorMessage}</Alert.Description>
+          </Alert.Content>
+        </Alert>
+      )}
       {loading && data.length === 0 && (
         <div className="space-y-4">
           {["1", "2", "3"].map((skeletonKey) => (

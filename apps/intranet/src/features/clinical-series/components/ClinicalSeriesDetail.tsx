@@ -3,20 +3,7 @@
  * Shows detailed information about a clinical series
  */
 
-import {
-  Alert,
-  Badge,
-  Button,
-  Card,
-  Link,
-  Spinner,
-  Table,
-  TableBody,
-  TableCell,
-  TableColumn,
-  TableHeader,
-  TableRow,
-} from "@heroui/react";
+import { Alert, Button, Card, Chip, Link, Spinner, Table } from "@heroui/react";
 import { Calendar, Users } from "lucide-react";
 import { useClinicalSeriesDetail } from "../queries";
 import type { ClinicalSeriesKind, ClinicalSeriesStatus } from "../types";
@@ -54,13 +41,14 @@ export function ClinicalSeriesDetail({ id, onBack }: ClinicalSeriesDetailProps) 
   if (error) {
     return (
       <Card className="p-6">
-        <Alert status="default">
-          <div className="space-y-2">
-            <h3 className="font-semibold">Error</h3>
-            <p className="text-sm">
+        <Alert status="danger">
+          <Alert.Indicator />
+          <Alert.Content>
+            <Alert.Title>Error</Alert.Title>
+            <Alert.Description>
               {error instanceof Error ? error.message : "Error al cargar serie clínica"}
-            </p>
-          </div>
+            </Alert.Description>
+          </Alert.Content>
         </Alert>
         {onBack && (
           <Button onPress={onBack} className="mt-4">
@@ -91,7 +79,9 @@ export function ClinicalSeriesDetail({ id, onBack }: ClinicalSeriesDetailProps) 
       <div className="space-y-2">
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold">{series.displayName || "Serie clínica"}</h1>
-          <Badge color={STATUS_COLORS[series.status]}>{STATUS_LABELS[series.status]}</Badge>
+          <Chip color={STATUS_COLORS[series.status]} size="sm" variant="soft">
+            {STATUS_LABELS[series.status]}
+          </Chip>
         </div>
       </div>
 
@@ -160,29 +150,33 @@ export function ClinicalSeriesDetail({ id, onBack }: ClinicalSeriesDetailProps) 
           Eventos ({series.events.length})
         </h2>
         <Table>
-          <TableHeader>
-            <TableColumn>Fecha</TableColumn>
-            <TableColumn>Resumen</TableColumn>
-            <TableColumn>Etapa</TableColumn>
-            <TableColumn className="text-right">Dosis</TableColumn>
-          </TableHeader>
-          <TableBody>
-            {series.events.map((event) => (
-              <TableRow key={event.eventId}>
-                <TableCell className="text-sm">{event.eventDate}</TableCell>
-                <TableCell>
-                  <p className="font-medium truncate">{event.summary}</p>
-                  {event.calendarGoogleId && (
-                    <p className="text-sm text-foreground-500 truncate">{event.calendarGoogleId}</p>
-                  )}
-                </TableCell>
-                <TableCell>{event.seriesStageLabel || "-"}</TableCell>
-                <TableCell className="text-right text-sm">
-                  {event.dosageValue ? `${event.dosageValue} ${event.dosageUnit || ""}` : "-"}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
+          <Table.Content aria-label="Eventos de la serie clínica">
+            <Table.Header>
+              <Table.Column isRowHeader>Fecha</Table.Column>
+              <Table.Column>Resumen</Table.Column>
+              <Table.Column>Etapa</Table.Column>
+              <Table.Column className="text-right">Dosis</Table.Column>
+            </Table.Header>
+            <Table.Body>
+              {series.events.map((event) => (
+                <Table.Row key={event.eventId}>
+                  <Table.Cell className="text-sm">{event.eventDate}</Table.Cell>
+                  <Table.Cell>
+                    <p className="font-medium truncate">{event.summary}</p>
+                    {event.calendarGoogleId && (
+                      <p className="text-sm text-foreground-500 truncate">
+                        {event.calendarGoogleId}
+                      </p>
+                    )}
+                  </Table.Cell>
+                  <Table.Cell>{event.seriesStageLabel || "-"}</Table.Cell>
+                  <Table.Cell className="text-right text-sm">
+                    {event.dosageValue ? `${event.dosageValue} ${event.dosageUnit || ""}` : "-"}
+                  </Table.Cell>
+                </Table.Row>
+              ))}
+            </Table.Body>
+          </Table.Content>
         </Table>
       </Card>
 
@@ -191,41 +185,44 @@ export function ClinicalSeriesDetail({ id, onBack }: ClinicalSeriesDetailProps) 
         <Card>
           <h2 className="p-6 text-lg font-semibold border-b">Documentos Vinculados</h2>
           <Table>
-            <TableHeader>
-              <TableColumn>Tipo</TableColumn>
-              <TableColumn>Referencia</TableColumn>
-              <TableColumn>Fecha</TableColumn>
-              <TableColumn className="text-right">Monto</TableColumn>
-            </TableHeader>
-            <TableBody>
-              {series.linkedDocuments.map((doc) => (
-                <TableRow key={doc.dteSaleDetailId}>
-                  <TableCell className="font-medium">DTE</TableCell>
-                  <TableCell>
-                    <Link href="#" className="text-accent">
-                      Folio {doc.folio}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="text-sm">{doc.documentDate}</TableCell>
-                  <TableCell className="text-right font-medium">
-                    ${doc.totalAmount.toLocaleString()}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
+            <Table.Content aria-label="Documentos vinculados">
+              <Table.Header>
+                <Table.Column isRowHeader>Tipo</Table.Column>
+                <Table.Column>Referencia</Table.Column>
+                <Table.Column>Fecha</Table.Column>
+                <Table.Column className="text-right">Monto</Table.Column>
+              </Table.Header>
+              <Table.Body>
+                {series.linkedDocuments.map((doc) => (
+                  <Table.Row key={doc.dteSaleDetailId}>
+                    <Table.Cell className="font-medium">DTE</Table.Cell>
+                    <Table.Cell>
+                      <Link href="#" className="text-accent">
+                        Folio {doc.folio}
+                      </Link>
+                    </Table.Cell>
+                    <Table.Cell className="text-sm">{doc.documentDate}</Table.Cell>
+                    <Table.Cell className="text-right font-medium">
+                      ${doc.totalAmount.toLocaleString()}
+                    </Table.Cell>
+                  </Table.Row>
+                ))}
+              </Table.Body>
+            </Table.Content>
           </Table>
         </Card>
       )}
 
       {/* Eligible Date Range Info */}
       <Alert status="default">
-        <div className="space-y-1">
-          <h3 className="font-semibold text-sm">Rango elegible para vinculación</h3>
-          <p className="text-sm">
+        <Alert.Indicator />
+        <Alert.Content>
+          <Alert.Title>Rango elegible para vinculación</Alert.Title>
+          <Alert.Description>
             Documentos elegibles desde {series.eligibleDocumentDateFrom} hasta{" "}
             {series.eligibleDocumentDateTo}
-          </p>
-        </div>
+          </Alert.Description>
+        </Alert.Content>
       </Alert>
     </div>
   );

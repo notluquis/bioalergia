@@ -222,14 +222,22 @@ export function EmailPreviewModal({
                   <Card.Content className="bg-default-100 p-3 sm:p-4">
                     {previewQuery.isError ? (
                       <Alert status="danger">
-                        {previewQuery.error instanceof Error
-                          ? previewQuery.error.message
-                          : "No se pudo cargar la vista previa del correo."}
+                        <Alert.Content>
+                          <Alert.Description>
+                            {previewQuery.error instanceof Error
+                              ? previewQuery.error.message
+                              : "No se pudo cargar la vista previa del correo."}
+                          </Alert.Description>
+                        </Alert.Content>
                       </Alert>
                     ) : !employeeEmail ? (
                       <Alert status="warning">
-                        El colaborador no tiene un email registrado, así que no se puede generar la
-                        vista previa del envío.
+                        <Alert.Content>
+                          <Alert.Description>
+                            El colaborador no tiene un email registrado, así que no se puede generar
+                            la vista previa del envío.
+                          </Alert.Description>
+                        </Alert.Content>
                       </Alert>
                     ) : (
                       <Tabs
@@ -238,7 +246,10 @@ export function EmailPreviewModal({
                         defaultSelectedKey="html"
                       >
                         <Tabs.ListContainer className="pb-3">
-                          <Tabs.List className="rounded-xl bg-default-200/70 p-1">
+                          <Tabs.List
+                            aria-label="Formato de vista previa"
+                            className="rounded-xl bg-default-200/70 p-1"
+                          >
                             <Tabs.Tab id="html">
                               HTML
                               <Tabs.Indicator />

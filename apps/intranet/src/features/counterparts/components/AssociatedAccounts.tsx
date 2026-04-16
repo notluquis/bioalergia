@@ -59,7 +59,7 @@ const buildAccountGrouping = (accounts: CounterpartAccount[] = []) => {
   }
 
   const accountGroups = [...groups.values()].toSorted((a, b) =>
-    a.label.localeCompare(b.label, "es", { sensitivity: "base" }),
+    a.label.localeCompare(b.label, "es", { sensitivity: "base" })
   );
 
   return { accountGroups, identifierToKey };
@@ -149,7 +149,7 @@ const useQuickViewTransactions = (quickViewGroup: AccountGroup | null, activeRan
       const uniqueFilters = Object.values(normalized);
 
       const results = await Promise.all(
-        uniqueFilters.map((filter) => fetchTransactionsForFilter(filter, activeRange)),
+        uniqueFilters.map((filter) => fetchTransactionsForFilter(filter, activeRange))
       );
       const merged = results.flat();
 
@@ -161,7 +161,7 @@ const useQuickViewTransactions = (quickViewGroup: AccountGroup | null, activeRan
       }
 
       return [...dedup.values()].toSorted(
-        (a, b) => dayjs(b.transactionDate).valueOf() - dayjs(a.transactionDate).valueOf(),
+        (a, b) => dayjs(b.transactionDate).valueOf() - dayjs(a.transactionDate).valueOf()
       );
     },
     queryKey: [
@@ -190,7 +190,7 @@ const useSummaryByGroup = (accountGroups: AccountGroup[], activeRange: DateRange
           const filters = group.accounts.map((account) => buildAccountTransactionFilter(account));
           const uniqueFilters = [...new Map(filters.map((f) => [accountFilterKey(f), f])).values()];
           const results = await Promise.all(
-            uniqueFilters.map((filter) => fetchTransactionsForFilter(filter, activeRange)),
+            uniqueFilters.map((filter) => fetchTransactionsForFilter(filter, activeRange))
           );
           const merged = results.flat();
           const dedup = new Map<number, Transaction>();
@@ -207,7 +207,7 @@ const useSummaryByGroup = (accountGroups: AccountGroup[], activeRange: DateRange
               total: values.reduce((sum, row) => sum + (row.transactionAmount ?? 0), 0),
             },
           ] as const;
-        }),
+        })
       );
       return new Map(entries);
     },
@@ -383,7 +383,7 @@ const useAssociatedAccountsModel = ({
   const activeRange = ALL_HISTORY_RANGE;
   const { isLoading: isSummaryLoading, summary: summaryByGroup } = useSummaryByGroup(
     accountGroups,
-    activeRange,
+    activeRange
   );
   const {
     isLoading: isQuickViewLoading,
@@ -403,7 +403,7 @@ const useAssociatedAccountsModel = ({
   const accountGroupColumns = getAccountGroupColumns(
     summaryByGroup,
     handleGroupConceptChange,
-    setQuickViewGroup,
+    setQuickViewGroup
   );
 
   const quickViewColumns = getQuickViewColumns();
@@ -469,7 +469,13 @@ export function AssociatedAccounts(props: Readonly<AssociatedAccountsProps>) {
         />
         <Surface className="space-y-5 rounded-[28px] p-6" variant="secondary">
           <AssociatedAccountsHeader onAddAccount={() => setIsAddAccountModalOpen(true)} />
-          {error && <Alert status="danger">{error}</Alert>}
+          {error && (
+            <Alert status="danger">
+              <Alert.Content>
+                <Alert.Description>{error}</Alert.Description>
+              </Alert.Content>
+            </Alert>
+          )}
           <AccountGroupsTable
             accountGroups={accountGroups}
             columns={accountGroupColumns}
@@ -765,7 +771,7 @@ function AddAccountModal({
   onClose: () => void;
   renderSuggestions: React.ReactNode;
   updateAccountForm: <K extends keyof AccountForm>(
-    key: K,
+    key: K
   ) => (event: ChangeEvent<HTMLInputElement>) => void;
 }) {
   return (

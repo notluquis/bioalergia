@@ -184,7 +184,11 @@ export function DailyBalances() {
           />
         </>
       ) : (
-        <Alert status="danger">No tienes permisos para ver los saldos diarios.</Alert>
+        <Alert status="danger">
+          <Alert.Content>
+            <Alert.Description>No tienes permisos para ver los saldos diarios.</Alert.Description>
+          </Alert.Content>
+        </Alert>
       )}
     </section>
   );

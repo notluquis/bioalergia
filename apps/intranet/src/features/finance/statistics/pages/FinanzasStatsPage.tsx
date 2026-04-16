@@ -121,7 +121,13 @@ export function FinanzasStatsPage() {
   if (!canView) {
     return (
       <section className={PAGE_CONTAINER}>
-        <Alert status="danger">No tienes permisos para ver las estadísticas financieras.</Alert>
+        <Alert status="danger">
+          <Alert.Content>
+            <Alert.Description>
+              No tienes permisos para ver las estadísticas financieras.
+            </Alert.Description>
+          </Alert.Content>
+        </Alert>
       </section>
     );
   }
@@ -226,7 +232,13 @@ export function FinanzasStatsPage() {
       </form>
 
       {/* Error Alert */}
-      {error && <Alert status="danger">{error}</Alert>}
+      {error && (
+        <Alert status="danger">
+          <Alert.Content>
+            <Alert.Description>{error}</Alert.Description>
+          </Alert.Content>
+        </Alert>
+      )}
 
       {/* Main Content */}
       {data && (
@@ -342,7 +354,13 @@ export function FinanzasStatsPage() {
 
       {/* Empty State */}
       {!loading && !error && data?.monthly.length === 0 && (
-        <Alert status="warning">No se encontraron movimientos en el rango seleccionado.</Alert>
+        <Alert status="warning">
+          <Alert.Content>
+            <Alert.Description>
+              No se encontraron movimientos en el rango seleccionado.
+            </Alert.Description>
+          </Alert.Content>
+        </Alert>
       )}
     </section>
   );

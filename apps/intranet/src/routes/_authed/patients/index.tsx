@@ -213,7 +213,10 @@ function PatientsListPage() {
             }}
           >
             <Tabs.ListContainer className="muted-scrollbar overflow-x-auto pb-1">
-              <Tabs.List className="w-max min-w-full rounded-xl bg-default-100 p-1 whitespace-nowrap">
+              <Tabs.List
+                aria-label="Secciones de paciente"
+                className="w-max min-w-full rounded-xl bg-default-100 p-1 whitespace-nowrap"
+              >
                 <Tabs.Tab id="clinical">
                   Ficha clínica
                   <Tabs.Indicator />

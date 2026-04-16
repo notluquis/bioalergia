@@ -430,7 +430,11 @@ function SuggestionCandidateCard({
       </Card.Content>
       {candidateWarnings.length > 0 ? (
         <Card.Content className="pt-0">
-          <Alert status="warning">{candidateWarnings[0]}</Alert>
+          <Alert status="warning">
+            <Alert.Content>
+              <Alert.Description>{candidateWarnings[0]}</Alert.Description>
+            </Alert.Content>
+          </Alert>
         </Card.Content>
       ) : null}
       <Card.Footer className="flex flex-wrap gap-2 pt-0">
@@ -543,7 +547,11 @@ function HypothesisCard({
       </Card.Content>
       {hypothesisWarnings.length > 0 ? (
         <Card.Content className="pt-0">
-          <Alert status="warning">{hypothesisWarnings[0]}</Alert>
+          <Alert status="warning">
+            <Alert.Content>
+              <Alert.Description>{hypothesisWarnings[0]}</Alert.Description>
+            </Alert.Content>
+          </Alert>
         </Card.Content>
       ) : null}
       <Card.Footer className="flex flex-wrap gap-2 pt-0">
@@ -610,7 +618,11 @@ function SuggestionExplorer({
         <Disclosure.Body className="mt-2 space-y-3 rounded-2xl border border-default-200/70 bg-default-50/50 p-3">
           {item.linkStatus === "pending_issuance" ? (
             <Alert status="warning">
-              Evento futuro: los candidatos se revisan cuando llegue la fecha de emisión.
+              <Alert.Content>
+                <Alert.Description>
+                  Evento futuro: los candidatos se revisan cuando llegue la fecha de emisión.
+                </Alert.Description>
+              </Alert.Content>
             </Alert>
           ) : null}
 
@@ -622,7 +634,13 @@ function SuggestionExplorer({
           ) : null}
 
           {suggestionsQuery.isError ? (
-            <Alert status="danger">No se pudieron cargar los candidatos del evento.</Alert>
+            <Alert status="danger">
+              <Alert.Content>
+                <Alert.Description>
+                  No se pudieron cargar los candidatos del evento.
+                </Alert.Description>
+              </Alert.Content>
+            </Alert>
           ) : null}
 
           {!suggestionsQuery.isLoading &&
@@ -633,8 +651,12 @@ function SuggestionExplorer({
                 <>
                   {topHypotheses[0]?.kind === "bundle" ? (
                     <Alert status="warning">
-                      Test cutáneo con hipótesis compuesta. Todas las DTE del grupo comparten el
-                      mismo RUT y la suma calza con el monto del evento.
+                      <Alert.Content>
+                        <Alert.Description>
+                          Test cutáneo con hipótesis compuesta. Todas las DTE del grupo comparten el
+                          mismo RUT y la suma calza con el monto del evento.
+                        </Alert.Description>
+                      </Alert.Content>
                     </Alert>
                   ) : null}
                   {topHypotheses.map((hypothesis, index) => (
@@ -652,8 +674,12 @@ function SuggestionExplorer({
               ) : topFallbackCandidates.length > 0 ? (
                 <>
                   <Alert status="warning">
-                    No hubo coincidencias suficientes. Estas DTE del mismo día siguen sin eventos
-                    vinculados y pueden revisarse manualmente.
+                    <Alert.Content>
+                      <Alert.Description>
+                        No hubo coincidencias suficientes. Estas DTE del mismo día siguen sin
+                        eventos vinculados y pueden revisarse manualmente.
+                      </Alert.Description>
+                    </Alert.Content>
                   </Alert>
                   {topFallbackCandidates.map((candidate, index) => (
                     <SuggestionCandidateCard
@@ -668,7 +694,13 @@ function SuggestionExplorer({
                   ))}
                 </>
               ) : (
-                <Alert status="danger">No hay candidatos disponibles para este evento.</Alert>
+                <Alert status="danger">
+                  <Alert.Content>
+                    <Alert.Description>
+                      No hay candidatos disponibles para este evento.
+                    </Alert.Description>
+                  </Alert.Content>
+                </Alert>
               )}
             </div>
           ) : null}
@@ -1344,58 +1376,62 @@ export function CalendarDteLinksOverview({
                                     {!item.linked && item.lastAutoLinkSkip ? (
                                       <Card.Content className="pt-0">
                                         <Alert status={autoLinkSkipReason?.severity ?? "warning"}>
-                                          <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                                            <div className="space-y-1">
-                                              <p className="text-[11px] font-semibold uppercase tracking-wide">
-                                                Último intento automático omitido
-                                              </p>
-                                              <p className="text-sm font-medium">
-                                                {autoLinkSkipReason?.title ??
-                                                  item.lastAutoLinkSkip.reason}
-                                              </p>
-                                              <Description className="text-sm">
-                                                {autoLinkSkipReason?.detail ??
-                                                  item.lastAutoLinkSkip.reason}
-                                              </Description>
-                                              <Description className="text-xs">
-                                                Intentado{" "}
-                                                {formatAutoLinkAttempt(
-                                                  item.lastAutoLinkSkip.attemptedAt
-                                                )}
-                                              </Description>
+                                          <Alert.Content>
+                                            <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                              <div className="space-y-1">
+                                                <p className="text-[11px] font-semibold uppercase tracking-wide">
+                                                  Último intento automático omitido
+                                                </p>
+                                                <Alert.Description className="text-sm font-medium">
+                                                  {autoLinkSkipReason?.title ??
+                                                    item.lastAutoLinkSkip.reason}
+                                                </Alert.Description>
+                                                <Alert.Description className="text-sm">
+                                                  {autoLinkSkipReason?.detail ??
+                                                    item.lastAutoLinkSkip.reason}
+                                                </Alert.Description>
+                                                <Alert.Description className="text-xs">
+                                                  Intentado{" "}
+                                                  {formatAutoLinkAttempt(
+                                                    item.lastAutoLinkSkip.attemptedAt
+                                                  )}
+                                                </Alert.Description>
+                                              </div>
+                                              <Tooltip delay={0}>
+                                                <Tooltip.Trigger aria-label="Detalle del último intento de auto-vinculación">
+                                                  <Chip
+                                                    color={
+                                                      autoLinkSkipReason?.severity ?? "warning"
+                                                    }
+                                                    size="sm"
+                                                    variant="soft"
+                                                  >
+                                                    {autoLinkSkipReason?.tooltipLabel ??
+                                                      "Intento previo"}
+                                                  </Chip>
+                                                </Tooltip.Trigger>
+                                                <Tooltip.Content className="max-w-sm" showArrow>
+                                                  <Tooltip.Arrow />
+                                                  <div className="space-y-1">
+                                                    <p className="font-medium">
+                                                      {autoLinkSkipReason?.title ??
+                                                        item.lastAutoLinkSkip.reason}
+                                                    </p>
+                                                    <p>
+                                                      {autoLinkSkipReason?.detail ??
+                                                        item.lastAutoLinkSkip.reason}
+                                                    </p>
+                                                    <p>
+                                                      Último intento:{" "}
+                                                      {formatAutoLinkAttempt(
+                                                        item.lastAutoLinkSkip.attemptedAt
+                                                      )}
+                                                    </p>
+                                                  </div>
+                                                </Tooltip.Content>
+                                              </Tooltip>
                                             </div>
-                                            <Tooltip delay={0}>
-                                              <Tooltip.Trigger aria-label="Detalle del último intento de auto-vinculación">
-                                                <Chip
-                                                  color={autoLinkSkipReason?.severity ?? "warning"}
-                                                  size="sm"
-                                                  variant="soft"
-                                                >
-                                                  {autoLinkSkipReason?.tooltipLabel ??
-                                                    "Intento previo"}
-                                                </Chip>
-                                              </Tooltip.Trigger>
-                                              <Tooltip.Content className="max-w-sm" showArrow>
-                                                <Tooltip.Arrow />
-                                                <div className="space-y-1">
-                                                  <p className="font-medium">
-                                                    {autoLinkSkipReason?.title ??
-                                                      item.lastAutoLinkSkip.reason}
-                                                  </p>
-                                                  <p>
-                                                    {autoLinkSkipReason?.detail ??
-                                                      item.lastAutoLinkSkip.reason}
-                                                  </p>
-                                                  <p>
-                                                    Último intento:{" "}
-                                                    {formatAutoLinkAttempt(
-                                                      item.lastAutoLinkSkip.attemptedAt
-                                                    )}
-                                                  </p>
-                                                </div>
-                                              </Tooltip.Content>
-                                            </Tooltip>
-                                          </div>
+                                          </Alert.Content>
                                         </Alert>
                                       </Card.Content>
                                     ) : null}

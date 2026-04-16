@@ -215,7 +215,13 @@ export function ReportsPage() {
   };
 
   if (!canView) {
-    return <Alert status="danger">No tienes permisos para ver reportería.</Alert>;
+    return (
+      <Alert status="danger">
+        <Alert.Content>
+          <Alert.Description>No tienes permisos para ver reportería.</Alert.Description>
+        </Alert.Content>
+      </Alert>
+    );
   }
 
   return (
@@ -430,10 +436,14 @@ function ReportsFiltersPanel({
 
           {viewMode === "all" && (
             <Alert className="text-sm" status="accent">
-              <div className="flex items-center gap-2">
+              <Alert.Indicator>
                 <Calendar className="h-4 w-4" />
-                <span>Se analizará todo el historial disponible en la base de datos.</span>
-              </div>
+              </Alert.Indicator>
+              <Alert.Content>
+                <Alert.Description>
+                  Se analizará todo el historial disponible en la base de datos.
+                </Alert.Description>
+              </Alert.Content>
             </Alert>
           )}
 
@@ -551,7 +561,9 @@ function ReportsFiltersPanel({
 
         {errorMessage && (
           <Alert className="text-xs" status="danger">
-            {errorMessage}
+            <Alert.Content>
+              <Alert.Description>{errorMessage}</Alert.Description>
+            </Alert.Content>
           </Alert>
         )}
       </div>

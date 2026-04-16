@@ -576,7 +576,11 @@ function AuditEmptyState({
   if (entriesCount === 0) {
     return (
       <Alert status="warning">
-        No hay registros para el periodo seleccionado. Prueba con otro rango de fechas.
+        <Alert.Content>
+          <Alert.Description>
+            No hay registros para el periodo seleccionado. Prueba con otro rango de fechas.
+          </Alert.Description>
+        </Alert.Content>
       </Alert>
     );
   }

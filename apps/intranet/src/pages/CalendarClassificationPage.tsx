@@ -289,7 +289,13 @@ function CalendarClassificationPage() {
         />
       </div>
 
-      {error && <Alert status="danger">{error}</Alert>}
+      {error && (
+        <Alert status="danger">
+          <Alert.Content>
+            <Alert.Description>{error}</Alert.Description>
+          </Alert.Content>
+        </Alert>
+      )}
 
       <ClassificationEmptyState error={error} eventsCount={events.length} loading={loading} />
 

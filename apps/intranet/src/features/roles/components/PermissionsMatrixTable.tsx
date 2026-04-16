@@ -105,6 +105,7 @@ export function PermissionsMatrixTable({
                   <Dropdown.Popover placement="bottom end">
                     <Dropdown.Menu aria-label="Opciones de rol">
                       <Dropdown.Item
+                        textValue="Previsualizar"
                         onPress={() => {
                           onImpersonate(role);
                         }}
@@ -113,6 +114,7 @@ export function PermissionsMatrixTable({
                         Previsualizar
                       </Dropdown.Item>
                       <Dropdown.Item
+                        textValue="Editar"
                         onPress={() => {
                           onEditRole(role);
                         }}
@@ -123,6 +125,7 @@ export function PermissionsMatrixTable({
                       <Separator />
                       <Dropdown.Item
                         className="text-danger focus:text-danger"
+                        textValue="Eliminar"
                         onPress={() => {
                           onDeleteRole(role);
                         }}

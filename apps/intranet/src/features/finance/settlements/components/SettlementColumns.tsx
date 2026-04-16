@@ -1,4 +1,4 @@
-import { Badge, Button } from "@heroui/react";
+import { Button, Chip } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { ChevronDown, ChevronRight } from "lucide-react";
@@ -11,7 +11,7 @@ const moneyColumn = (
   accessorKey: keyof SettlementTransaction,
   header: string,
   align: "center" | "right" = "right",
-  isNegative = false,
+  isNegative = false
 ): ColumnDef<SettlementTransaction> => ({
   accessorKey,
   cell: ({ row }) => {
@@ -37,7 +37,7 @@ const moneyColumn = (
 
 const dateColumn = (
   accessorKey: keyof SettlementTransaction,
-  header: string,
+  header: string
 ): ColumnDef<SettlementTransaction> => ({
   accessorKey,
   cell: ({ row }) => {
@@ -94,9 +94,9 @@ export const columns: ColumnDef<SettlementTransaction, unknown>[] = [
   {
     accessorKey: "transactionType",
     cell: ({ row }) => (
-      <Badge className="whitespace-nowrap" size="sm" variant="secondary">
+      <Chip className="whitespace-nowrap" size="sm" variant="secondary">
         {row.original.transactionType}
-      </Badge>
+      </Chip>
     ),
 
     header: "Tipo",
@@ -151,13 +151,13 @@ export const columns: ColumnDef<SettlementTransaction, unknown>[] = [
     cell: ({ row }) => (
       <div className="text-center">
         {row.original.isReleased ? (
-          <Badge className="font-bold" color="success" size="sm" variant="soft">
+          <Chip className="font-bold" color="success" size="sm" variant="soft">
             SÍ
-          </Badge>
+          </Chip>
         ) : (
-          <Badge color="warning" size="sm" variant="soft">
+          <Chip color="warning" size="sm" variant="soft">
             NO
-          </Badge>
+          </Chip>
         )}
       </div>
     ),

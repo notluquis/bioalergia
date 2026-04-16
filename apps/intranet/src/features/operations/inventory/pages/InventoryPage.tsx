@@ -112,7 +112,13 @@ export function InventoryPage() {
 
   return (
     <section className="space-y-8">
-      {combinedError && <Alert status="danger">{combinedError}</Alert>}
+      {combinedError && (
+        <Alert status="danger">
+          <Alert.Content>
+            <Alert.Description>{combinedError}</Alert.Description>
+          </Alert.Content>
+        </Alert>
+      )}
 
       <Surface className="space-y-6 rounded-[28px] p-6 shadow-inner">
         <div className="mb-4 flex justify-end">

@@ -1002,8 +1002,12 @@ export function WhatsappSettingsPage() {
           <div className="mt-4 space-y-4">
             {!socketReady ? (
               <Alert status="warning">
-                El socket todavía no está listo. La ventana de chat usa el historial persistido de
-                Baileys y se vuelve realmente útil cuando el canal ya terminó de sincronizar.
+                <Alert.Content>
+                  <Alert.Description>
+                    El socket todavía no está listo. La ventana de chat usa el historial persistido
+                    de Baileys y se vuelve realmente útil cuando el canal ya terminó de sincronizar.
+                  </Alert.Description>
+                </Alert.Content>
               </Alert>
             ) : null}
 
@@ -1480,8 +1484,12 @@ export function WhatsappSettingsPage() {
 
                       {activeSidebarChat?.isGroup ? (
                         <Alert status="warning">
-                          La vista de grupos ya muestra historial y estado, pero el envío embebido
-                          sigue orientado a 1:1.
+                          <Alert.Content>
+                            <Alert.Description>
+                              La vista de grupos ya muestra historial y estado, pero el envío
+                              embebido sigue orientado a 1:1.
+                            </Alert.Description>
+                          </Alert.Content>
                         </Alert>
                       ) : null}
 
@@ -1612,7 +1620,11 @@ export function WhatsappSettingsPage() {
                       ) : null}
 
                       {composerValidationError ? (
-                        <Alert status="warning">{composerValidationError}</Alert>
+                        <Alert status="warning">
+                          <Alert.Content>
+                            <Alert.Description>{composerValidationError}</Alert.Description>
+                          </Alert.Content>
+                        </Alert>
                       ) : null}
 
                       <div className="flex justify-end">
@@ -1681,9 +1693,13 @@ export function WhatsappSettingsPage() {
             </Surface>
 
             <Alert status="accent">
-              Esta pantalla concentra sesión Baileys, composer manual, trazabilidad e historial
-              persistido. El flujo Doctoralia sigue usando `WhatsappNotification`, pero el historial
-              real ya sale desde el store canónico de mensajes.
+              <Alert.Content>
+                <Alert.Description>
+                  Esta pantalla concentra sesión Baileys, composer manual, trazabilidad e historial
+                  persistido. El flujo Doctoralia sigue usando `WhatsappNotification`, pero el
+                  historial real ya sale desde el store canónico de mensajes.
+                </Alert.Description>
+              </Alert.Content>
             </Alert>
 
             {enabled && !connected ? (
@@ -1756,13 +1772,22 @@ export function WhatsappSettingsPage() {
                 <Card.Content className="space-y-3">
                   {connectionStatus?.isReconnectLooping ? (
                     <Alert status="warning">
-                      El socket viene en loop de reconnect (`{connectionStatus.reconnectAttempts}`
-                      intentos).
+                      <Alert.Content>
+                        <Alert.Description>
+                          El socket viene en loop de reconnect (`
+                          {connectionStatus.reconnectAttempts}` intentos).
+                        </Alert.Description>
+                      </Alert.Content>
                     </Alert>
                   ) : null}
                   {connectionStatus?.sessionReplaced ? (
                     <Alert status="danger">
-                      La sesión fue reemplazada por otro dispositivo. Requiere reconexión manual.
+                      <Alert.Content>
+                        <Alert.Description>
+                          La sesión fue reemplazada por otro dispositivo. Requiere reconexión
+                          manual.
+                        </Alert.Description>
+                      </Alert.Content>
                     </Alert>
                   ) : null}
                   <div className="grid gap-3 sm:grid-cols-2">
@@ -2058,12 +2083,20 @@ export function WhatsappSettingsPage() {
                   })}
 
                   {composerValidationError ? (
-                    <Alert status="warning">{composerValidationError}</Alert>
+                    <Alert status="warning">
+                      <Alert.Content>
+                        <Alert.Description>{composerValidationError}</Alert.Description>
+                      </Alert.Content>
+                    </Alert>
                   ) : null}
                   {!socketReady ? (
                     <Alert status="danger">
-                      El socket no está listo. Debe estar `open` y haber recibido pending
-                      notifications.
+                      <Alert.Content>
+                        <Alert.Description>
+                          El socket no está listo. Debe estar `open` y haber recibido pending
+                          notifications.
+                        </Alert.Description>
+                      </Alert.Content>
                     </Alert>
                   ) : null}
 
@@ -2088,7 +2121,9 @@ export function WhatsappSettingsPage() {
 
                   {composerMutation.data ? (
                     <Alert status={composerMutation.data.status === "ok" ? "success" : "danger"}>
-                      {composerMutation.data.message}
+                      <Alert.Content>
+                        <Alert.Description>{composerMutation.data.message}</Alert.Description>
+                      </Alert.Content>
                     </Alert>
                   ) : null}
                 </Form>
@@ -2115,15 +2150,27 @@ export function WhatsappSettingsPage() {
                 </Surface>
 
                 <Alert status="default">
-                  `reaction`, `mark_read`, `forward`, `delete` y `edit` necesitan `messageId` de
-                  destino.
+                  <Alert.Content>
+                    <Alert.Description>
+                      `reaction`, `mark_read`, `forward`, `delete` y `edit` necesitan `messageId` de
+                      destino.
+                    </Alert.Description>
+                  </Alert.Content>
                 </Alert>
                 <Alert status="default">
-                  `contextual_text` puede citar un mensaje si cargas `quotedMessageId`.
+                  <Alert.Content>
+                    <Alert.Description>
+                      `contextual_text` puede citar un mensaje si cargas `quotedMessageId`.
+                    </Alert.Description>
+                  </Alert.Content>
                 </Alert>
                 <Alert status="default">
-                  `image`, `video`, `audio`, `document` y `sticker` requieren URL pública accesible
-                  por el servidor.
+                  <Alert.Content>
+                    <Alert.Description>
+                      `image`, `video`, `audio`, `document` y `sticker` requieren URL pública
+                      accesible por el servidor.
+                    </Alert.Description>
+                  </Alert.Content>
                 </Alert>
               </Card.Content>
             </Card>
@@ -2182,7 +2229,11 @@ export function WhatsappSettingsPage() {
                       </Button>
                     ))
                   ) : (
-                    <Alert status="default">Todavía no hay chats persistidos.</Alert>
+                    <Alert status="default">
+                      <Alert.Content>
+                        <Alert.Description>Todavía no hay chats persistidos.</Alert.Description>
+                      </Alert.Content>
+                    </Alert>
                   )}
                 </Card.Content>
               </Card>
@@ -2277,9 +2328,13 @@ export function WhatsappSettingsPage() {
                     </div>
                   ) : (
                     <Alert status="default">
-                      {selectedChatJid || historyPhoneFilter.trim()
-                        ? "No hay mensajes en ese thread."
-                        : "Selecciona un chat o ingresa un teléfono."}
+                      <Alert.Content>
+                        <Alert.Description>
+                          {selectedChatJid || historyPhoneFilter.trim()
+                            ? "No hay mensajes en ese thread."
+                            : "Selecciona un chat o ingresa un teléfono."}
+                        </Alert.Description>
+                      </Alert.Content>
                     </Alert>
                   )}
                 </Card.Content>
@@ -2452,7 +2507,11 @@ export function WhatsappSettingsPage() {
                 <Card.Content className="space-y-4">
                   {!socketReady ? (
                     <Alert status="warning">
-                      El socket debe estar listo para leer o actualizar el business profile.
+                      <Alert.Content>
+                        <Alert.Description>
+                          El socket debe estar listo para leer o actualizar el business profile.
+                        </Alert.Description>
+                      </Alert.Content>
                     </Alert>
                   ) : null}
 
@@ -2713,7 +2772,13 @@ export function WhatsappSettingsPage() {
                           </Surface>
                         ))
                       ) : (
-                        <Alert status="default">Todavía no hay quick replies registradas.</Alert>
+                        <Alert status="default">
+                          <Alert.Content>
+                            <Alert.Description>
+                              Todavía no hay quick replies registradas.
+                            </Alert.Description>
+                          </Alert.Content>
+                        </Alert>
                       )}
                     </div>
                   </Card.Content>
@@ -2795,7 +2860,11 @@ export function WhatsappSettingsPage() {
                         </Surface>
                       ))
                     ) : (
-                      <Alert status="default">Todavía no hay labels registradas.</Alert>
+                      <Alert status="default">
+                        <Alert.Content>
+                          <Alert.Description>Todavía no hay labels registradas.</Alert.Description>
+                        </Alert.Content>
+                      </Alert>
                     )}
                   </div>
                 </Card.Content>
@@ -3113,7 +3182,11 @@ export function WhatsappSettingsPage() {
                     ))}
                   </div>
                 ) : (
-                  <Alert status="default">No hay contactos registrados todavía.</Alert>
+                  <Alert status="default">
+                    <Alert.Content>
+                      <Alert.Description>No hay contactos registrados todavía.</Alert.Description>
+                    </Alert.Content>
+                  </Alert>
                 )}
               </Card.Content>
             </Card>
@@ -3241,7 +3314,11 @@ function renderComposerFields(args: {
     case "typing":
       return (
         <Alert status="default">
-          Esta acción sólo envía el estado `composing` al chat seleccionado.
+          <Alert.Content>
+            <Alert.Description>
+              Esta acción sólo envía el estado `composing` al chat seleccionado.
+            </Alert.Description>
+          </Alert.Content>
         </Alert>
       );
     case "location":

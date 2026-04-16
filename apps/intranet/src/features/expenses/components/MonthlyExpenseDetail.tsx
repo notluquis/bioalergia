@@ -33,7 +33,13 @@ export function MonthlyExpenseDetail({
   }
 
   if (!expense) {
-    return <Alert status="warning">Selecciona un gasto para ver el detalle.</Alert>;
+    return (
+      <Alert status="warning">
+        <Alert.Content>
+          <Alert.Description>Selecciona un gasto para ver el detalle.</Alert.Description>
+        </Alert.Content>
+      </Alert>
+    );
   }
 
   return (

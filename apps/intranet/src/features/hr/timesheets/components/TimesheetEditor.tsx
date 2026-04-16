@@ -248,7 +248,13 @@ function TimesheetEditorInner({
 
   return (
     <>
-      {errorLocal && <Alert status="danger">{errorLocal}</Alert>}
+      {errorLocal && (
+        <Alert status="danger">
+          <Alert.Content>
+            <Alert.Description>{errorLocal}</Alert.Description>
+          </Alert.Content>
+        </Alert>
+      )}
 
       <TimesheetEditorTable
         activeEmployees={activeEmployees}

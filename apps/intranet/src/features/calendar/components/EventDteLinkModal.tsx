@@ -373,7 +373,11 @@ export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDte
               ) : null}
 
               {suggestionsQuery.isError ? (
-                <Alert status="danger">No se pudieron cargar sugerencias.</Alert>
+                <Alert status="danger">
+                  <Alert.Content>
+                    <Alert.Description>No se pudieron cargar sugerencias.</Alert.Description>
+                  </Alert.Content>
+                </Alert>
               ) : null}
 
               {hasCurrentLink ? (
@@ -425,8 +429,12 @@ export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDte
 
               {isPendingEmission && !suggestionsQuery.data?.linked ? (
                 <Alert status="warning">
-                  Evento en fecha futura. El vínculo DTE se habilita cuando llegue la fecha de
-                  emisión.
+                  <Alert.Content>
+                    <Alert.Description>
+                      Evento en fecha futura. El vínculo DTE se habilita cuando llegue la fecha de
+                      emisión.
+                    </Alert.Description>
+                  </Alert.Content>
                 </Alert>
               ) : null}
 
@@ -471,7 +479,11 @@ export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDte
                           <Surface className="h-24 rounded-xl" variant="secondary" />
                         </div>
                       ) : candidates.length === 0 ? (
-                        <Alert status="warning">Sin candidatos para este día.</Alert>
+                        <Alert status="warning">
+                          <Alert.Content>
+                            <Alert.Description>Sin candidatos para este día.</Alert.Description>
+                          </Alert.Content>
+                        </Alert>
                       ) : (
                         <div className="space-y-3">
                           {candidates.map((candidate, index) => {
@@ -533,7 +545,11 @@ export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDte
                                 </div>
                                 {warnings.length > 0 ? (
                                   <div className="space-y-1.5">
-                                    <Alert status="warning">{warnings[0]}</Alert>
+                                    <Alert status="warning">
+                                      <Alert.Content>
+                                        <Alert.Description>{warnings[0]}</Alert.Description>
+                                      </Alert.Content>
+                                    </Alert>
                                     {candidate.crossSeriesConflicts.length > 0 ? (
                                       <Popover>
                                         <Button

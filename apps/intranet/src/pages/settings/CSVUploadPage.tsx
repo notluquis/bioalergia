@@ -552,11 +552,17 @@ const PERMISSION_MAP: Record<string, { action: string; subject: string }> = {
 function AccessDeniedAlert() {
   return (
     <Alert status="warning">
-      <Lock className="h-4 w-4" />
-      <div className="flex flex-col">
-        <span className="font-bold">Acceso restringido</span>
-        <span>No tienes permisos para importar datos en ninguna tabla disponible.</span>
-      </div>
+      <Alert.Indicator>
+        <Lock className="h-4 w-4" />
+      </Alert.Indicator>
+      <Alert.Content>
+        <Alert.Description>
+          <div className="flex flex-col">
+            <span className="font-bold">Acceso restringido</span>
+            <span>No tienes permisos para importar datos en ninguna tabla disponible.</span>
+          </div>
+        </Alert.Description>
+      </Alert.Content>
     </Alert>
   );
 }
@@ -843,22 +849,28 @@ function ImportSummaryCard({
 
         {(previewData.errors?.length ?? 0) > 0 && (
           <Alert className="mb-0" status="warning">
-            <div className="flex w-full flex-col gap-2">
-              <div className="flex items-center gap-2 font-medium">
-                <AlertCircle className="h-4 w-4" />
-                Errores de validación ({previewData.errors?.length ?? 0})
-              </div>
-              <ul className="max-h-32 list-inside list-disc overflow-y-auto rounded bg-background/50 p-2 text-xs opacity-90">
-                {validationErrors.map((err) => (
-                  <li key={err.key}>{err.message}</li>
-                ))}
-                {(previewData.errors?.length ?? 0) > 50 && (
-                  <li className="text-default-500">
-                    ...y {(previewData.errors?.length ?? 0) - 50} más
-                  </li>
-                )}
-              </ul>
-            </div>
+            <Alert.Indicator>
+              <AlertCircle className="h-4 w-4" />
+            </Alert.Indicator>
+            <Alert.Content>
+              <Alert.Description>
+                <div className="flex w-full flex-col gap-2">
+                  <div className="font-medium">
+                    Errores de validación ({previewData.errors?.length ?? 0})
+                  </div>
+                  <ul className="max-h-32 list-inside list-disc overflow-y-auto rounded bg-background/50 p-2 text-xs opacity-90">
+                    {validationErrors.map((err) => (
+                      <li key={err.key}>{err.message}</li>
+                    ))}
+                    {(previewData.errors?.length ?? 0) > 50 && (
+                      <li className="text-default-500">
+                        ...y {(previewData.errors?.length ?? 0) - 50} más
+                      </li>
+                    )}
+                  </ul>
+                </div>
+              </Alert.Description>
+            </Alert.Content>
           </Alert>
         )}
       </Card.Content>

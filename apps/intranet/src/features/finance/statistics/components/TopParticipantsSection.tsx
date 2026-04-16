@@ -10,7 +10,7 @@ import type { TopParticipantData } from "../types";
 
 // Lazy load pie chart
 const TopParticipantsPieChart = lazy(() =>
-  import("./TopParticipantsPieChart.js").then((m) => ({ default: m.TopParticipantsPieChart })),
+  import("./TopParticipantsPieChart.js").then((m) => ({ default: m.TopParticipantsPieChart }))
 );
 
 interface TopParticipantsSectionProps {
@@ -51,7 +51,13 @@ export function TopParticipantsSection({ data, error, loading }: TopParticipants
         </div>
       )}
 
-      {error && <Alert status="danger">{error}</Alert>}
+      {error && (
+        <Alert status="danger">
+          <Alert.Content>
+            <Alert.Description>{error}</Alert.Description>
+          </Alert.Content>
+        </Alert>
+      )}
 
       {!loading && !error && data.length === 0 && (
         <div className="py-8 text-center text-default-500 text-sm">

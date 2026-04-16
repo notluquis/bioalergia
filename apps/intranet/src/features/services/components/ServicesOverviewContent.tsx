@@ -34,7 +34,7 @@ export function ServicesOverviewContent() {
   const overview = useServicesOverview();
   const { editScheduleOpen, editScheduleTarget, skipScheduleOpen, skipScheduleTarget } = useStore(
     servicesStore,
-    (state) => state,
+    (state) => state
   );
 
   const {
@@ -107,9 +107,27 @@ export function ServicesOverviewContent() {
 
   return (
     <section className="space-y-4">
-      {globalError && <Alert status="danger">{globalError}</Alert>}
-      {syncError && <Alert status="danger">{syncError}</Alert>}
-      {syncMessage && <Alert status="success">{syncMessage}</Alert>}
+      {globalError && (
+        <Alert status="danger">
+          <Alert.Content>
+            <Alert.Description>{globalError}</Alert.Description>
+          </Alert.Content>
+        </Alert>
+      )}
+      {syncError && (
+        <Alert status="danger">
+          <Alert.Content>
+            <Alert.Description>{syncError}</Alert.Description>
+          </Alert.Content>
+        </Alert>
+      )}
+      {syncMessage && (
+        <Alert status="success">
+          <Alert.Content>
+            <Alert.Description>{syncMessage}</Alert.Description>
+          </Alert.Content>
+        </Alert>
+      )}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <span className={TITLE_MD}>Resumen de servicios</span>
@@ -123,7 +141,7 @@ export function ServicesOverviewContent() {
                 try {
                   const result = await handleSyncAllTransactions();
                   setSyncMessage(
-                    `Sync servicios: ${result.matchedSchedules} vinculadas de ${result.processedSchedules} cuotas.`,
+                    `Sync servicios: ${result.matchedSchedules} vinculadas de ${result.processedSchedules} cuotas.`
                   );
                 } catch (error_) {
                   const message =
@@ -212,7 +230,7 @@ export function ServicesOverviewContent() {
                       return;
                     }
                     setSyncMessage(
-                      `Sync ${selectedService.name}: ${result.matchedSchedules} vinculadas de ${result.processedSchedules} cuotas.`,
+                      `Sync ${selectedService.name}: ${result.matchedSchedules} vinculadas de ${result.processedSchedules} cuotas.`
                     );
                   } catch (error_) {
                     const message =

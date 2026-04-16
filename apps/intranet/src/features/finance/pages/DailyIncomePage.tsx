@@ -143,7 +143,11 @@ export function DailyIncomePage() {
         )}
 
         {!isLoading && sortedDates.length === 0 && (
-          <Alert status="warning">No se encontraron eventos para este periodo.</Alert>
+          <Alert status="warning">
+            <Alert.Content>
+              <Alert.Description>No se encontraron eventos para este periodo.</Alert.Description>
+            </Alert.Content>
+          </Alert>
         )}
 
         {sortedDates.map((date) => {

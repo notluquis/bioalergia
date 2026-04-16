@@ -409,7 +409,11 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
 
       {hasErrors && (
         <Alert status="danger">
-          Por favor corrige los errores en el formulario antes de continuar.
+          <Alert.Content>
+            <Alert.Description>
+              Por favor corrige los errores en el formulario antes de continuar.
+            </Alert.Description>
+          </Alert.Content>
         </Alert>
       )}
 
