@@ -523,6 +523,10 @@ export interface ClinicalSeriesSnapshot {
   events: ClinicalSeriesEventSnapshot[];
   id: number;
   kind: ClinicalSeriesKind;
+  lastAbandonmentContact: null | {
+    contactedAt: string;
+    outcome: "WILL_RETURN" | "DECLINED" | "UNREACHABLE" | "RESCHEDULED" | "OTHER";
+  };
   lastEventDate: null | string;
   linkedDocuments: ClinicalSeriesLinkedDocument[];
   nextEventDate: null | string;
@@ -3604,6 +3608,7 @@ export async function getClinicalSeriesSnapshotByExternalEvent(params: {
     events,
     id: series.id,
     kind: series.kind as ClinicalSeriesKind,
+    lastAbandonmentContact: null,
     lastEventDate: null,
     linkedDocuments,
     nextEventDate: null,
@@ -3629,6 +3634,11 @@ export async function getClinicalSeriesSnapshotById(id: number): Promise<Clinica
   const series = await db.clinicalSeries.findUnique({
     where: { id },
     include: {
+      abandonmentContacts: {
+        orderBy: { contactedAt: "desc" },
+        take: 1,
+        select: { contactedAt: true, outcome: true },
+      },
       events: {
         include: {
           calendar: {
@@ -3662,6 +3672,11 @@ export async function getClinicalSeriesSnapshotById(id: number): Promise<Clinica
   const resolvedHealthInsurance =
     (series.healthInsurance as HealthInsuranceType | null) ?? inferredInsurance.healthInsurance ?? null;
   const resolvedIsapreName = series.isapreName ?? inferredInsurance.isapreName ?? null;
+  const lastContact = series.abandonmentContacts[0] ?? null;
+  const lastAbandonmentContact = lastContact
+    ? { contactedAt: lastContact.contactedAt.toISOString(), outcome: lastContact.outcome }
+    : null;
+
   if (!syntheticEvent) {
     return {
       allergenType: (series.allergenType as SubcutaneousAllergenType | null) ?? null,
@@ -3679,6 +3694,7 @@ export async function getClinicalSeriesSnapshotById(id: number): Promise<Clinica
       id: series.id,
       isapreName: resolvedIsapreName,
       kind: series.kind as ClinicalSeriesKind,
+      lastAbandonmentContact,
       lastEventDate: null,
       linkedDocuments: [],
       nextEventDate: null,
@@ -3704,6 +3720,7 @@ export async function getClinicalSeriesSnapshotById(id: number): Promise<Clinica
   return {
     ...snapshot,
     ...computeSnapshotTiming(snapshot, today),
+    lastAbandonmentContact,
   };
 }
 
@@ -4230,4 +4247,65 @@ export async function mergeClinicalSeries(params: {
   await refreshClinicalSeriesMetadata(params.targetId);
 
   return { eventsMovedCount };
+}
+
+// ── Abandonment Contacts ────────────────────────────────────────────────────
+
+export async function createAbandonmentContact(params: {
+  seriesId: number;
+  outcome: string;
+  notes?: string;
+  contactedById: number;
+}) {
+  const contact = await db.abandonmentContact.create({
+    data: {
+      seriesId: params.seriesId,
+      outcome: params.outcome as never,
+      notes: params.notes ?? null,
+      contactedById: params.contactedById,
+    },
+    include: {
+      contactedBy: {
+        include: { person: { select: { names: true, fatherName: true } } },
+      },
+    },
+  });
+
+  const person = contact.contactedBy.person;
+  return {
+    id: Number(contact.id),
+    seriesId: contact.seriesId,
+    outcome: contact.outcome,
+    notes: contact.notes,
+    contactedById: contact.contactedById,
+    contactedByName: person ? `${person.names} ${person.fatherName ?? ""}`.trim() : null,
+    contactedAt: contact.contactedAt.toISOString(),
+  };
+}
+
+export async function listAbandonmentContacts(seriesId: number) {
+  const contacts = await db.abandonmentContact.findMany({
+    where: { seriesId },
+    orderBy: { contactedAt: "desc" },
+    include: {
+      contactedBy: {
+        include: { person: { select: { names: true, fatherName: true } } },
+      },
+    },
+  });
+
+  return {
+    contacts: contacts.map((c) => {
+      const person = c.contactedBy.person;
+      return {
+        id: Number(c.id),
+        seriesId: c.seriesId,
+        outcome: c.outcome,
+        notes: c.notes,
+        contactedById: c.contactedById,
+        contactedByName: person ? `${person.names} ${person.fatherName ?? ""}`.trim() : null,
+        contactedAt: c.contactedAt.toISOString(),
+      };
+    }),
+  };
 }

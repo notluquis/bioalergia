@@ -7,6 +7,12 @@ import { z } from "zod";
 
 export type ClinicalSeriesKind = "PATCH_TEST" | "SKIN_TEST" | "SUBCUTANEOUS_TREATMENT";
 export type ClinicalSeriesStatus = "PLANNED" | "ACTIVE" | "INACTIVE" | "COMPLETED" | "CANCELLED";
+export type AbandonmentContactOutcome =
+  | "WILL_RETURN"
+  | "DECLINED"
+  | "UNREACHABLE"
+  | "RESCHEDULED"
+  | "OTHER";
 export type ClinicalSeriesViewMode = "series" | "abandonment";
 export type ClinicalSeriesAbandonmentBucket = "month_1" | "month_2" | "month_3" | "month_4_plus";
 export type SubcutaneousAllergenType = "ACAROS" | "ACAROS_GRAMINEAS" | "GRAMINEAS";
@@ -63,6 +69,11 @@ export interface ClinicalSeriesLinkedDocument {
   totalAmount: number;
 }
 
+export interface LastAbandonmentContact {
+  contactedAt: string;
+  outcome: AbandonmentContactOutcome;
+}
+
 export interface ClinicalSeriesSnapshot {
   allergenType: SubcutaneousAllergenType | null;
   abandonmentBucket: ClinicalSeriesAbandonmentBucket | null;
@@ -76,6 +87,7 @@ export interface ClinicalSeriesSnapshot {
   beneficiaryRut: string | null;
   id: number;
   kind: ClinicalSeriesKind;
+  lastAbandonmentContact: LastAbandonmentContact | null;
   status: ClinicalSeriesStatus;
   displayName: string | null;
   patientName: string | null;
@@ -93,6 +105,16 @@ export interface ClinicalSeriesSnapshot {
   eligibleDocumentDateTo: string; // YYYY-MM-DD
   upcomingCount: number;
   patientPhones: string[];
+}
+
+export interface AbandonmentContact {
+  id: number;
+  seriesId: number;
+  outcome: AbandonmentContactOutcome;
+  notes: string | null;
+  contactedById: number;
+  contactedByName: string | null;
+  contactedAt: string;
 }
 
 export interface ClinicalSeriesListItem {
@@ -203,6 +225,24 @@ export const ClinicalSeriesLinkedDocumentSchema = z.object({
   totalAmount: z.number(),
 });
 
+export const LastAbandonmentContactSchema = z
+  .object({
+    contactedAt: z.string(),
+    outcome: z.enum(["WILL_RETURN", "DECLINED", "UNREACHABLE", "RESCHEDULED", "OTHER"]),
+  })
+  .nullable()
+  .catch(null);
+
+export const AbandonmentContactSchema = z.object({
+  id: z.number(),
+  seriesId: z.number(),
+  outcome: z.enum(["WILL_RETURN", "DECLINED", "UNREACHABLE", "RESCHEDULED", "OTHER"]),
+  notes: z.string().nullable(),
+  contactedById: z.number(),
+  contactedByName: z.string().nullable(),
+  contactedAt: z.string(),
+});
+
 export const ClinicalSeriesSnapshotSchema = z.object({
   allergenType: z.enum(["ACAROS", "ACAROS_GRAMINEAS", "GRAMINEAS"]).nullable().catch(null),
   abandonmentBucket: z
@@ -222,6 +262,7 @@ export const ClinicalSeriesSnapshotSchema = z.object({
   beneficiaryRut: z.string().nullable(),
   id: z.number(),
   kind: z.enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT"]),
+  lastAbandonmentContact: LastAbandonmentContactSchema,
   status: z.enum(["PLANNED", "ACTIVE", "INACTIVE", "COMPLETED", "CANCELLED"]),
   displayName: z.string().nullable(),
   patientName: z.string().nullable(),

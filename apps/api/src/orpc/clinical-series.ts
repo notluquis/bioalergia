@@ -11,6 +11,10 @@ import {
   clinicalSeriesRebuildInputSchema,
   clinicalSeriesRebuildResponseSchema,
   clinicalSeriesSnapshotSchema,
+  createAbandonmentContactInputSchema,
+  createAbandonmentContactOutputSchema,
+  listAbandonmentContactsInputSchema,
+  listAbandonmentContactsOutputSchema,
 } from "@finanzas/orpc-contracts/clinical-series";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
@@ -20,9 +24,11 @@ import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
 import {
+  createAbandonmentContact,
   detectDuplicateSeries,
   getClinicalSeriesInsuranceStats,
   getClinicalSeriesSnapshotById,
+  listAbandonmentContacts,
   listClinicalSeriesSnapshots,
   mergeClinicalSeries,
   startRebuildClinicalSeries,
@@ -121,6 +127,27 @@ const clinicalSeriesORPCRouterBase = {
         targetId: input.targetId,
       });
       return { eventsMovedCount: result.eventsMovedCount, targetId: input.targetId };
+    }),
+
+  createAbandonmentContact: updateClinicalSeries
+    .route({ method: "POST", path: "/abandonment-contacts" })
+    .input(createAbandonmentContactInputSchema)
+    .output(createAbandonmentContactOutputSchema)
+    .handler(async ({ input, context }: { input: z.input<typeof createAbandonmentContactInputSchema>; context: { user: { id: number } } }) => {
+      return await createAbandonmentContact({
+        seriesId: input.seriesId,
+        outcome: input.outcome,
+        notes: input.notes,
+        contactedById: context.user.id,
+      });
+    }),
+
+  listAbandonmentContacts: readClinicalSeries
+    .route({ method: "GET", path: "/abandonment-contacts" })
+    .input(listAbandonmentContactsInputSchema)
+    .output(listAbandonmentContactsOutputSchema)
+    .handler(async ({ input }: { input: z.input<typeof listAbandonmentContactsInputSchema> }) => {
+      return await listAbandonmentContacts(input.seriesId);
     }),
 };
 

@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { compactORPCInput } from "@/lib/orpc-input";
 import type {
+  AbandonmentContact,
   ClinicalSeriesDuplicate,
   ClinicalSeriesFilters,
   ClinicalSeriesInsuranceStats,
@@ -20,6 +21,7 @@ import type {
 } from "./types";
 import { clinicalSeriesORPCClient, toClinicalSeriesApiError } from "./orpc";
 import {
+  AbandonmentContactSchema,
   ClinicalSeriesInsuranceStatsSchema,
   ClinicalSeriesSnapshotSchema,
   DetectDuplicatesResultSchema,
@@ -166,6 +168,51 @@ export function useDetectDuplicates() {
     queryFn: fetchDetectDuplicates,
     queryKey: clinicalSeriesKeys.duplicates(),
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+// ── Abandonment Contacts ──────────────────────────────────────────────────────
+
+export const abandonmentContactKeys = {
+  all: ["abandonment-contacts"] as const,
+  list: (seriesId: number) => [...abandonmentContactKeys.all, seriesId] as const,
+};
+
+export async function fetchAbandonmentContacts(seriesId: number): Promise<AbandonmentContact[]> {
+  try {
+    const result = await clinicalSeriesORPCClient.listAbandonmentContacts({ seriesId });
+    return AbandonmentContactSchema.array().parse(result.contacts);
+  } catch (error) {
+    throw toClinicalSeriesApiError(error);
+  }
+}
+
+export function useAbandonmentContacts(seriesId: number | null) {
+  return useQuery({
+    enabled: seriesId != null,
+    queryFn: () => fetchAbandonmentContacts(seriesId!),
+    queryKey: abandonmentContactKeys.list(seriesId!),
+  });
+}
+
+export function useCreateAbandonmentContact() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: { seriesId: number; outcome: string; notes?: string }) => {
+      try {
+        return AbandonmentContactSchema.parse(
+          await clinicalSeriesORPCClient.createAbandonmentContact(params as never)
+        );
+      } catch (error) {
+        throw toClinicalSeriesApiError(error);
+      }
+    },
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({
+        queryKey: abandonmentContactKeys.list(variables.seriesId),
+      });
+      void queryClient.invalidateQueries({ queryKey: clinicalSeriesKeys.all });
+    },
   });
 }
 

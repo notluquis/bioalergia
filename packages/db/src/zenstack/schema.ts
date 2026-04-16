@@ -272,6 +272,12 @@ export class SchemaType implements SchemaDef {
                     array: true,
                     relation: { opposite: "createdByUser" }
                 },
+                abandonmentContacts: {
+                    name: "abandonmentContacts",
+                    type: "AbandonmentContact",
+                    array: true,
+                    relation: { opposite: "contactedBy" }
+                },
                 person: {
                     name: "person",
                     type: "Person",
@@ -3569,6 +3575,12 @@ export class SchemaType implements SchemaDef {
                     type: "ClinicalSeriesMergeLog",
                     array: true,
                     relation: { opposite: "target" }
+                },
+                abandonmentContacts: {
+                    name: "abandonmentContacts",
+                    type: "AbandonmentContact",
+                    array: true,
+                    relation: { opposite: "series" }
                 }
             },
             attributes: [
@@ -3652,6 +3664,72 @@ export class SchemaType implements SchemaDef {
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("targetId")]) }] },
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("sourceId")]) }] },
                 { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("clinical_series_merge_log") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "BigInt" }
+            }
+        },
+        AbandonmentContact: {
+            name: "AbandonmentContact",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "BigInt",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                seriesId: {
+                    name: "seriesId",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("series_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "series"
+                    ] as readonly string[]
+                },
+                outcome: {
+                    name: "outcome",
+                    type: "AbandonmentContactOutcome"
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                contactedById: {
+                    name: "contactedById",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("contacted_by_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "contactedBy"
+                    ] as readonly string[]
+                },
+                contactedAt: {
+                    name: "contactedAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("contacted_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                series: {
+                    name: "series",
+                    type: "ClinicalSeries",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("seriesId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "abandonmentContacts", fields: ["seriesId"], references: ["id"], onDelete: "Cascade" }
+                },
+                contactedBy: {
+                    name: "contactedBy",
+                    type: "User",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("contactedById")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "abandonmentContacts", fields: ["contactedById"], references: ["id"] }
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "!=", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("seriesId")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("abandonment_contacts") }] }
             ] as readonly AttributeApplication[],
             idFields: ["id"],
             uniqueFields: {
@@ -9864,6 +9942,16 @@ export class SchemaType implements SchemaDef {
                 READING: "READING",
                 DOSE: "DOSE",
                 MAINTENANCE: "MAINTENANCE"
+            }
+        },
+        AbandonmentContactOutcome: {
+            name: "AbandonmentContactOutcome",
+            values: {
+                WILL_RETURN: "WILL_RETURN",
+                DECLINED: "DECLINED",
+                UNREACHABLE: "UNREACHABLE",
+                RESCHEDULED: "RESCHEDULED",
+                OTHER: "OTHER"
             }
         },
         BudgetStatus: {

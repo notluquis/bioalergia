@@ -72,6 +72,13 @@ export const clinicalSeriesSnapshotSchema = z.object({
   id: z.number(),
   isapreName: z.string().nullable().catch(null),
   kind: clinicalSeriesKindSchema,
+  lastAbandonmentContact: z
+    .object({
+      contactedAt: z.string(),
+      outcome: z.enum(["WILL_RETURN", "DECLINED", "UNREACHABLE", "RESCHEDULED", "OTHER"]),
+    })
+    .nullable()
+    .catch(null),
   linkedDocuments: z.array(clinicalSeriesLinkedDocumentSchema),
   lastEventDate: z.string().nullable(),
   nextEventDate: z.string().nullable(),
@@ -179,6 +186,42 @@ export const clinicalSeriesMergeOutputSchema = z.object({
   targetId: z.number(),
 });
 
+// ── Abandonment Contacts ──────────────────────────────────────────────────────
+
+export const abandonmentContactOutcomeSchema = z.enum([
+  "WILL_RETURN",
+  "DECLINED",
+  "UNREACHABLE",
+  "RESCHEDULED",
+  "OTHER",
+]);
+
+export const abandonmentContactSchema = z.object({
+  id: z.number(),
+  seriesId: z.number(),
+  outcome: abandonmentContactOutcomeSchema,
+  notes: z.string().nullable(),
+  contactedById: z.number(),
+  contactedByName: z.string().nullable(),
+  contactedAt: z.string(),
+});
+
+export const createAbandonmentContactInputSchema = z.object({
+  seriesId: z.number().int().positive(),
+  outcome: abandonmentContactOutcomeSchema,
+  notes: z.string().max(500).optional(),
+});
+
+export const createAbandonmentContactOutputSchema = abandonmentContactSchema;
+
+export const listAbandonmentContactsInputSchema = z.object({
+  seriesId: z.number().int().positive(),
+});
+
+export const listAbandonmentContactsOutputSchema = z.object({
+  contacts: z.array(abandonmentContactSchema),
+});
+
 export const clinicalSeriesContract = {
   detail: oc
     .route({ method: "GET", path: "/{id}" })
@@ -204,6 +247,14 @@ export const clinicalSeriesContract = {
     .route({ method: "POST", path: "/merge" })
     .input(clinicalSeriesMergeInputSchema)
     .output(clinicalSeriesMergeOutputSchema),
+  createAbandonmentContact: oc
+    .route({ method: "POST", path: "/abandonment-contacts" })
+    .input(createAbandonmentContactInputSchema)
+    .output(createAbandonmentContactOutputSchema),
+  listAbandonmentContacts: oc
+    .route({ method: "GET", path: "/abandonment-contacts" })
+    .input(listAbandonmentContactsInputSchema)
+    .output(listAbandonmentContactsOutputSchema),
 };
 
 export type ClinicalSeriesContract = typeof clinicalSeriesContract;

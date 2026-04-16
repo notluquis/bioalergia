@@ -82,6 +82,7 @@ model User {
   eventDteMatchReviews    EventDteMatchReview[]
   eventDteSaleLinks       EventDteSaleLink[]
   attendanceMarkCorrections AttendanceMark[]
+  abandonmentContacts     AbandonmentContact[]
   person                  Person                   @relation(fields: [personId], references: [id], onDelete: Cascade)
 
   // This model represents the authenticated user
@@ -919,6 +920,7 @@ model ClinicalSeries {
   updatedAt        DateTime                  @default(now()) @updatedAt @map("updated_at")
   events     Event[]
   mergeLogs  ClinicalSeriesMergeLog[]
+  abandonmentContacts AbandonmentContact[]
 
   @@deny('all', auth() == null)
   @@allow('read', true)
@@ -948,6 +950,25 @@ model ClinicalSeriesMergeLog {
   @@index([targetId])
   @@index([sourceId])
   @@map("clinical_series_merge_log")
+}
+
+model AbandonmentContact {
+  id               BigInt                    @id @default(autoincrement())
+  seriesId         Int                       @map("series_id")
+  outcome          AbandonmentContactOutcome
+  notes            String?
+  contactedById    Int                       @map("contacted_by_id")
+  contactedAt      DateTime                  @default(now()) @map("contacted_at")
+
+  series           ClinicalSeries            @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  contactedBy      User                      @relation(fields: [contactedById], references: [id])
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth() != null)
+  @@allow('create', auth().status == 'ACTIVE')
+
+  @@index([seriesId])
+  @@map("abandonment_contacts")
 }
 
 model SyncLog {
@@ -2090,6 +2111,14 @@ enum ClinicalSeriesStageKind {
   READING
   DOSE
   MAINTENANCE
+}
+
+enum AbandonmentContactOutcome {
+  WILL_RETURN
+  DECLINED
+  UNREACHABLE
+  RESCHEDULED
+  OTHER
 }
 
 // ============================================================

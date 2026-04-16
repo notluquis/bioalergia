@@ -37,7 +37,7 @@ import {
 import { parseDate } from "@internationalized/date";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Key, Selection } from "@heroui/react";
-import { ClipboardCopy, Megaphone, MessageCircle } from "lucide-react";
+import { Check, ClipboardCopy, Megaphone, MessageCircle, Phone } from "lucide-react";
 import { Fragment, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { buildPaginationItems } from "@/components/pagination/pagination-items";
 import { EventDteLinkModal } from "@/features/calendar/components/EventDteLinkModal";
@@ -49,14 +49,17 @@ import {
   clinicalSeriesKeys,
   fetchClinicalSeriesDetail,
   fetchDetectDuplicates,
+  useAbandonmentContacts,
   useClinicalSeries,
   useClinicalSeriesDetail,
   useClinicalSeriesInsuranceStats,
   useClinicalSeriesRebuildProgress,
+  useCreateAbandonmentContact,
   useRebuildClinicalSeries,
   useMergeClinicalSeries,
 } from "./queries";
 import type {
+  AbandonmentContactOutcome,
   ClinicalSeriesDuplicate,
   ClinicalSeriesAbandonmentBucket,
   ClinicalSeriesEvent,
@@ -715,6 +718,33 @@ const ABANDONMENT_BUCKET_COLORS: Record<ClinicalSeriesAbandonmentBucket, "warnin
   month_4_plus: "danger",
 };
 
+const OUTCOME_LABELS: Record<AbandonmentContactOutcome, string> = {
+  WILL_RETURN: "Volverá",
+  DECLINED: "Rechazó",
+  UNREACHABLE: "No contesta",
+  RESCHEDULED: "Reagendó",
+  OTHER: "Otro",
+};
+
+const OUTCOME_COLORS: Record<
+  AbandonmentContactOutcome,
+  "success" | "danger" | "warning" | "default"
+> = {
+  WILL_RETURN: "success",
+  DECLINED: "danger",
+  UNREACHABLE: "warning",
+  RESCHEDULED: "success",
+  OTHER: "default",
+};
+
+const OUTCOME_OPTIONS: Array<{ label: string; value: AbandonmentContactOutcome }> = [
+  { label: "Volverá", value: "WILL_RETURN" },
+  { label: "Reagendó", value: "RESCHEDULED" },
+  { label: "No contesta", value: "UNREACHABLE" },
+  { label: "Rechazó tratamiento", value: "DECLINED" },
+  { label: "Otro", value: "OTHER" },
+];
+
 // ─── Debounce Hook ────────────────────────────────────────────────────────────
 
 function useDebounce<T>(value: T, delay = 350): T {
@@ -852,6 +882,128 @@ function toCalendarEventDetail(event: ClinicalSeriesEvent): CalendarEventDetail 
     treatmentStage: null,
     visibility: null,
   };
+}
+
+// ─── Abandonment Contact Section ─────────────────────────────────────────────
+
+function AbandonmentContactSection({ seriesId }: { seriesId: number }) {
+  const { data: contacts, isLoading } = useAbandonmentContacts(seriesId);
+  const createContact = useCreateAbandonmentContact();
+  const [showForm, setShowForm] = useState(false);
+  const [outcome, setOutcome] = useState<AbandonmentContactOutcome | "">("");
+  const [notes, setNotes] = useState("");
+
+  const handleSubmit = () => {
+    if (!outcome) return;
+    createContact.mutate(
+      { seriesId, outcome, notes: notes.trim() || undefined },
+      {
+        onSuccess: () => {
+          setShowForm(false);
+          setOutcome("");
+          setNotes("");
+        },
+      }
+    );
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold flex items-center gap-1.5">
+          <Phone size={14} className="text-foreground-400" />
+          Registro de contacto
+        </h3>
+        {!showForm && (
+          <Button size="sm" variant="secondary" onPress={() => setShowForm(true)}>
+            Registrar contacto
+          </Button>
+        )}
+      </div>
+
+      {showForm && (
+        <Surface className="p-3 rounded-lg space-y-2">
+          <div>
+            <Label className="text-xs text-foreground-500 mb-1 block">Resultado</Label>
+            <Select
+              aria-label="Resultado del contacto"
+              className="w-full"
+              placeholder="Seleccionar resultado..."
+              value={outcome}
+              onChange={(val) => val && setOutcome(val as AbandonmentContactOutcome)}
+              variant="secondary"
+            >
+              <Label className="sr-only">Resultado</Label>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  {OUTCOME_OPTIONS.map((opt) => (
+                    <ListBox.Item key={opt.value} id={opt.value} textValue={opt.label}>
+                      {opt.label}
+                      <ListBox.ItemIndicator />
+                    </ListBox.Item>
+                  ))}
+                </ListBox>
+              </Select.Popover>
+            </Select>
+          </div>
+          <TextField aria-label="Notas" value={notes} onChange={setNotes}>
+            <Label className="text-xs text-foreground-500">Notas (opcional)</Label>
+            <Input placeholder="Detalles del contacto..." />
+          </TextField>
+          <div className="flex gap-2 justify-end">
+            <Button
+              size="sm"
+              variant="ghost"
+              onPress={() => {
+                setShowForm(false);
+                setOutcome("");
+                setNotes("");
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              size="sm"
+              variant="primary"
+              isDisabled={!outcome || createContact.isPending}
+              onPress={handleSubmit}
+            >
+              {createContact.isPending ? "Guardando..." : "Guardar"}
+            </Button>
+          </div>
+        </Surface>
+      )}
+
+      {isLoading ? (
+        <Spinner size="sm" />
+      ) : contacts && contacts.length > 0 ? (
+        <div className="space-y-1.5">
+          {contacts.map((c) => (
+            <Surface key={c.id} className="p-2 rounded-lg">
+              <div className="flex items-center justify-between gap-2">
+                <Chip size="sm" color={OUTCOME_COLORS[c.outcome]} variant="soft">
+                  {OUTCOME_LABELS[c.outcome]}
+                </Chip>
+                <span className="text-[10px] text-foreground-400">
+                  {formatEventDate(c.contactedAt.slice(0, 10), true)}
+                </span>
+              </div>
+              {c.notes && <p className="text-xs text-foreground-500 mt-1">{c.notes}</p>}
+              {c.contactedByName && (
+                <p className="text-[10px] text-foreground-300 mt-0.5">por {c.contactedByName}</p>
+              )}
+            </Surface>
+          ))}
+        </div>
+      ) : !showForm ? (
+        <p className="text-xs text-foreground-300 italic">Sin registros de contacto</p>
+      ) : null}
+    </div>
+  );
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -1791,9 +1943,10 @@ export function ClinicalSeriesView() {
                           Días
                         </Table.Column>
                         <Table.Column className="w-[11%]">Bucket</Table.Column>
-                        <Table.Column allowsSorting id="status" className="w-[11%]">
+                        <Table.Column allowsSorting id="status" className="w-[9%]">
                           Estado
                         </Table.Column>
+                        <Table.Column className="w-[12%]">Contacto</Table.Column>
                       </>
                     ) : (
                       <>
@@ -1891,6 +2044,32 @@ export function ClinicalSeriesView() {
                                 <Chip size="sm" color={STATUS_COLORS[s.status]} variant="soft">
                                   {STATUS_LABELS[s.status]}
                                 </Chip>
+                              </Table.Cell>
+                              <Table.Cell>
+                                {s.lastAbandonmentContact ? (
+                                  <Tooltip>
+                                    <Tooltip.Trigger>
+                                      <Chip
+                                        size="sm"
+                                        color={OUTCOME_COLORS[s.lastAbandonmentContact.outcome]}
+                                        variant="soft"
+                                      >
+                                        <Check size={10} className="mr-0.5" />
+                                        {OUTCOME_LABELS[s.lastAbandonmentContact.outcome]}
+                                      </Chip>
+                                    </Tooltip.Trigger>
+                                    <Tooltip.Content>
+                                      {formatEventDate(
+                                        s.lastAbandonmentContact.contactedAt.slice(0, 10),
+                                        true
+                                      )}
+                                    </Tooltip.Content>
+                                  </Tooltip>
+                                ) : (
+                                  <span className="text-xs text-foreground-300 italic">
+                                    Sin contacto
+                                  </span>
+                                )}
                               </Table.Cell>
                             </>
                           ) : (
@@ -2235,6 +2414,14 @@ export function ClinicalSeriesView() {
                         {STATUS_LABELS[detail.status]}
                       </Chip>
                     </div>
+
+                    {/* Abandonment Contact Log */}
+                    {isAbandonmentTab && (
+                      <>
+                        <Separator />
+                        <AbandonmentContactSection seriesId={detail.id} />
+                      </>
+                    )}
 
                     {/* Patient Campaigns — collapsed by default */}
                     {detail.patientRut && (
