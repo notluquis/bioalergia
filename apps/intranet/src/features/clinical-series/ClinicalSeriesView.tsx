@@ -43,6 +43,7 @@ import { EventDteLinkModal } from "@/features/calendar/components/EventDteLinkMo
 import { FormattedEventDescription } from "@/features/calendar/components/FormattedEventDescription";
 import type { CalendarEventDetail } from "@/features/calendar/types";
 import { formatEventDescriptionToPlainText } from "@/features/calendar/utils/format-event-description";
+import { PatientCampaignDrawerSection } from "@/features/patient-campaigns/components/PatientCampaignDrawerSection";
 import {
   clinicalSeriesKeys,
   fetchClinicalSeriesDetail,
@@ -2233,6 +2234,18 @@ export function ClinicalSeriesView() {
                         {STATUS_LABELS[detail.status]}
                       </Chip>
                     </div>
+
+                    {/* Patient Campaigns */}
+                    {detail.patientRut && (
+                      <>
+                        <Separator />
+                        <PatientCampaignDrawerSection
+                          patientRut={detail.patientRut}
+                          patientName={detail.patientName}
+                          patientPhone={detail.patientPhones[0] ?? null}
+                        />
+                      </>
+                    )}
 
                     {/* Events grouped by year */}
                     {detail.events.length > 0 &&

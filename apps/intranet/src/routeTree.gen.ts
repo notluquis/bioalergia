@@ -39,6 +39,7 @@ import { Route as AuthedSettingsCsvUploadRouteImport } from "./routes/_authed/se
 import { Route as AuthedSettingsBackupsRouteImport } from "./routes/_authed/settings/backups";
 import { Route as AuthedServicesAgendaRouteImport } from "./routes/_authed/services/agenda";
 import { Route as AuthedPatientsNewRouteImport } from "./routes/_authed/patients/new";
+import { Route as AuthedPatientsCampaignsRouteImport } from "./routes/_authed/patients/campaigns";
 import { Route as AuthedOperationsSuppliesRouteImport } from "./routes/_authed/operations/supplies";
 import { Route as AuthedOperationsInventoryRouteImport } from "./routes/_authed/operations/inventory";
 import { Route as AuthedHrTimesheetsRouteImport } from "./routes/_authed/hr/timesheets";
@@ -49,7 +50,6 @@ import { Route as AuthedHrAttendanceRouteImport } from "./routes/_authed/hr/atte
 import { Route as AuthedFinanzasStatisticsRouteImport } from "./routes/_authed/finanzas/statistics";
 import { Route as AuthedFinanzasProductionBalancesRouteImport } from "./routes/_authed/finanzas/production-balances";
 import { Route as AuthedFinanzasPersonalCreditsRouteImport } from "./routes/_authed/finanzas/personal-credits";
-import { Route as AuthedFinanzasPayoutsRouteImport } from "./routes/_authed/finanzas/payouts";
 import { Route as AuthedFinanzasLoansRouteImport } from "./routes/_authed/finanzas/loans";
 import { Route as AuthedFinanzasDteAnalyticsRouteImport } from "./routes/_authed/finanzas/dte-analytics";
 import { Route as AuthedFinanzasDashboardRouteImport } from "./routes/_authed/finanzas/dashboard";
@@ -224,6 +224,11 @@ const AuthedPatientsNewRoute = AuthedPatientsNewRouteImport.update({
   path: "/patients/new",
   getParentRoute: () => AuthedRoute,
 } as any);
+const AuthedPatientsCampaignsRoute = AuthedPatientsCampaignsRouteImport.update({
+  id: "/patients/campaigns",
+  path: "/patients/campaigns",
+  getParentRoute: () => AuthedRoute,
+} as any);
 const AuthedOperationsSuppliesRoute = AuthedOperationsSuppliesRouteImport.update({
   id: "/supplies",
   path: "/supplies",
@@ -272,11 +277,6 @@ const AuthedFinanzasProductionBalancesRoute = AuthedFinanzasProductionBalancesRo
 const AuthedFinanzasPersonalCreditsRoute = AuthedFinanzasPersonalCreditsRouteImport.update({
   id: "/personal-credits",
   path: "/personal-credits",
-  getParentRoute: () => AuthedFinanzasRoute,
-} as any);
-const AuthedFinanzasPayoutsRoute = AuthedFinanzasPayoutsRouteImport.update({
-  id: "/payouts",
-  path: "/payouts",
   getParentRoute: () => AuthedFinanzasRoute,
 } as any);
 const AuthedFinanzasLoansRoute = AuthedFinanzasLoansRouteImport.update({
@@ -432,7 +432,6 @@ export interface FileRoutesByFullPath {
   "/finanzas/dashboard": typeof AuthedFinanzasDashboardRoute;
   "/finanzas/dte-analytics": typeof AuthedFinanzasDteAnalyticsRoute;
   "/finanzas/loans": typeof AuthedFinanzasLoansRoute;
-  "/finanzas/payouts": typeof AuthedFinanzasPayoutsRoute;
   "/finanzas/personal-credits": typeof AuthedFinanzasPersonalCreditsRouteWithChildren;
   "/finanzas/production-balances": typeof AuthedFinanzasProductionBalancesRoute;
   "/finanzas/statistics": typeof AuthedFinanzasStatisticsRoute;
@@ -443,6 +442,7 @@ export interface FileRoutesByFullPath {
   "/hr/timesheets": typeof AuthedHrTimesheetsRoute;
   "/operations/inventory": typeof AuthedOperationsInventoryRoute;
   "/operations/supplies": typeof AuthedOperationsSuppliesRoute;
+  "/patients/campaigns": typeof AuthedPatientsCampaignsRoute;
   "/patients/new": typeof AuthedPatientsNewRoute;
   "/services/agenda": typeof AuthedServicesAgendaRoute;
   "/settings/backups": typeof AuthedSettingsBackupsRoute;
@@ -494,7 +494,6 @@ export interface FileRoutesByTo {
   "/finanzas/dashboard": typeof AuthedFinanzasDashboardRoute;
   "/finanzas/dte-analytics": typeof AuthedFinanzasDteAnalyticsRoute;
   "/finanzas/loans": typeof AuthedFinanzasLoansRoute;
-  "/finanzas/payouts": typeof AuthedFinanzasPayoutsRoute;
   "/finanzas/personal-credits": typeof AuthedFinanzasPersonalCreditsRouteWithChildren;
   "/finanzas/production-balances": typeof AuthedFinanzasProductionBalancesRoute;
   "/finanzas/statistics": typeof AuthedFinanzasStatisticsRoute;
@@ -505,6 +504,7 @@ export interface FileRoutesByTo {
   "/hr/timesheets": typeof AuthedHrTimesheetsRoute;
   "/operations/inventory": typeof AuthedOperationsInventoryRoute;
   "/operations/supplies": typeof AuthedOperationsSuppliesRoute;
+  "/patients/campaigns": typeof AuthedPatientsCampaignsRoute;
   "/patients/new": typeof AuthedPatientsNewRoute;
   "/services/agenda": typeof AuthedServicesAgendaRoute;
   "/settings/backups": typeof AuthedSettingsBackupsRoute;
@@ -562,7 +562,6 @@ export interface FileRoutesById {
   "/_authed/finanzas/dashboard": typeof AuthedFinanzasDashboardRoute;
   "/_authed/finanzas/dte-analytics": typeof AuthedFinanzasDteAnalyticsRoute;
   "/_authed/finanzas/loans": typeof AuthedFinanzasLoansRoute;
-  "/_authed/finanzas/payouts": typeof AuthedFinanzasPayoutsRoute;
   "/_authed/finanzas/personal-credits": typeof AuthedFinanzasPersonalCreditsRouteWithChildren;
   "/_authed/finanzas/production-balances": typeof AuthedFinanzasProductionBalancesRoute;
   "/_authed/finanzas/statistics": typeof AuthedFinanzasStatisticsRoute;
@@ -573,6 +572,7 @@ export interface FileRoutesById {
   "/_authed/hr/timesheets": typeof AuthedHrTimesheetsRoute;
   "/_authed/operations/inventory": typeof AuthedOperationsInventoryRoute;
   "/_authed/operations/supplies": typeof AuthedOperationsSuppliesRoute;
+  "/_authed/patients/campaigns": typeof AuthedPatientsCampaignsRoute;
   "/_authed/patients/new": typeof AuthedPatientsNewRoute;
   "/_authed/services/agenda": typeof AuthedServicesAgendaRoute;
   "/_authed/settings/backups": typeof AuthedSettingsBackupsRoute;
@@ -630,7 +630,6 @@ export interface FileRouteTypes {
     | "/finanzas/dashboard"
     | "/finanzas/dte-analytics"
     | "/finanzas/loans"
-    | "/finanzas/payouts"
     | "/finanzas/personal-credits"
     | "/finanzas/production-balances"
     | "/finanzas/statistics"
@@ -641,6 +640,7 @@ export interface FileRouteTypes {
     | "/hr/timesheets"
     | "/operations/inventory"
     | "/operations/supplies"
+    | "/patients/campaigns"
     | "/patients/new"
     | "/services/agenda"
     | "/settings/backups"
@@ -692,7 +692,6 @@ export interface FileRouteTypes {
     | "/finanzas/dashboard"
     | "/finanzas/dte-analytics"
     | "/finanzas/loans"
-    | "/finanzas/payouts"
     | "/finanzas/personal-credits"
     | "/finanzas/production-balances"
     | "/finanzas/statistics"
@@ -703,6 +702,7 @@ export interface FileRouteTypes {
     | "/hr/timesheets"
     | "/operations/inventory"
     | "/operations/supplies"
+    | "/patients/campaigns"
     | "/patients/new"
     | "/services/agenda"
     | "/settings/backups"
@@ -759,7 +759,6 @@ export interface FileRouteTypes {
     | "/_authed/finanzas/dashboard"
     | "/_authed/finanzas/dte-analytics"
     | "/_authed/finanzas/loans"
-    | "/_authed/finanzas/payouts"
     | "/_authed/finanzas/personal-credits"
     | "/_authed/finanzas/production-balances"
     | "/_authed/finanzas/statistics"
@@ -770,6 +769,7 @@ export interface FileRouteTypes {
     | "/_authed/hr/timesheets"
     | "/_authed/operations/inventory"
     | "/_authed/operations/supplies"
+    | "/_authed/patients/campaigns"
     | "/_authed/patients/new"
     | "/_authed/services/agenda"
     | "/_authed/settings/backups"
@@ -1014,6 +1014,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedPatientsNewRouteImport;
       parentRoute: typeof AuthedRoute;
     };
+    "/_authed/patients/campaigns": {
+      id: "/_authed/patients/campaigns";
+      path: "/patients/campaigns";
+      fullPath: "/patients/campaigns";
+      preLoaderRoute: typeof AuthedPatientsCampaignsRouteImport;
+      parentRoute: typeof AuthedRoute;
+    };
     "/_authed/operations/supplies": {
       id: "/_authed/operations/supplies";
       path: "/supplies";
@@ -1082,13 +1089,6 @@ declare module "@tanstack/react-router" {
       path: "/personal-credits";
       fullPath: "/finanzas/personal-credits";
       preLoaderRoute: typeof AuthedFinanzasPersonalCreditsRouteImport;
-      parentRoute: typeof AuthedFinanzasRoute;
-    };
-    "/_authed/finanzas/payouts": {
-      id: "/_authed/finanzas/payouts";
-      path: "/payouts";
-      fullPath: "/finanzas/payouts";
-      preLoaderRoute: typeof AuthedFinanzasPayoutsRouteImport;
       parentRoute: typeof AuthedFinanzasRoute;
     };
     "/_authed/finanzas/loans": {
@@ -1330,7 +1330,6 @@ interface AuthedFinanzasRouteChildren {
   AuthedFinanzasDashboardRoute: typeof AuthedFinanzasDashboardRoute;
   AuthedFinanzasDteAnalyticsRoute: typeof AuthedFinanzasDteAnalyticsRoute;
   AuthedFinanzasLoansRoute: typeof AuthedFinanzasLoansRoute;
-  AuthedFinanzasPayoutsRoute: typeof AuthedFinanzasPayoutsRoute;
   AuthedFinanzasPersonalCreditsRoute: typeof AuthedFinanzasPersonalCreditsRouteWithChildren;
   AuthedFinanzasProductionBalancesRoute: typeof AuthedFinanzasProductionBalancesRoute;
   AuthedFinanzasStatisticsRoute: typeof AuthedFinanzasStatisticsRoute;
@@ -1343,7 +1342,6 @@ const AuthedFinanzasRouteChildren: AuthedFinanzasRouteChildren = {
   AuthedFinanzasDashboardRoute: AuthedFinanzasDashboardRoute,
   AuthedFinanzasDteAnalyticsRoute: AuthedFinanzasDteAnalyticsRoute,
   AuthedFinanzasLoansRoute: AuthedFinanzasLoansRoute,
-  AuthedFinanzasPayoutsRoute: AuthedFinanzasPayoutsRoute,
   AuthedFinanzasPersonalCreditsRoute: AuthedFinanzasPersonalCreditsRouteWithChildren,
   AuthedFinanzasProductionBalancesRoute: AuthedFinanzasProductionBalancesRoute,
   AuthedFinanzasStatisticsRoute: AuthedFinanzasStatisticsRoute,
@@ -1448,6 +1446,7 @@ interface AuthedRouteChildren {
   AuthedSettingsRoute: typeof AuthedSettingsRouteWithChildren;
   AuthedIndexRoute: typeof AuthedIndexRoute;
   AuthedDevRoutesAuditRoute: typeof AuthedDevRoutesAuditRoute;
+  AuthedPatientsCampaignsRoute: typeof AuthedPatientsCampaignsRoute;
   AuthedPatientsNewRoute: typeof AuthedPatientsNewRoute;
   AuthedPatientsIndexRoute: typeof AuthedPatientsIndexRoute;
   AuthedPatientsIdNewBudgetRoute: typeof AuthedPatientsIdNewBudgetRoute;
@@ -1469,6 +1468,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedSettingsRoute: AuthedSettingsRouteWithChildren,
   AuthedIndexRoute: AuthedIndexRoute,
   AuthedDevRoutesAuditRoute: AuthedDevRoutesAuditRoute,
+  AuthedPatientsCampaignsRoute: AuthedPatientsCampaignsRoute,
   AuthedPatientsNewRoute: AuthedPatientsNewRoute,
   AuthedPatientsIndexRoute: AuthedPatientsIndexRoute,
   AuthedPatientsIdNewBudgetRoute: AuthedPatientsIdNewBudgetRoute,
