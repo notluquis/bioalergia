@@ -14,7 +14,7 @@ const DATE_ONLY_FORMAT = "YYYY-MM-DD";
 const EVENT_DATE_SQL = sql<string>`
   COALESCE(
     e.start_date,
-    (e.start_date_time AT TIME ZONE ${TIMEZONE})::date
+    (e.start_date_time AT TIME ZONE ${sql.lit(TIMEZONE)})::date
   )
 `;
 const HAS_LINKED_DTE_SQL = sql<boolean>`
@@ -161,7 +161,7 @@ export type CalendarAggregateResult = {
 
 // Local-time expression: converts start_date_time (timestamptz) to local date.
 // AT TIME ZONE on timestamptz correctly converts UTC → local timezone.
-const EVENT_DATE_EXPR = sql`coalesce(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE}))`;
+const EVENT_DATE_EXPR = sql`coalesce(e.start_date, (e.start_date_time AT TIME ZONE ${sql.lit(TIMEZONE)}))`;
 const EVENT_DATE_ONLY = sql<string>`DATE(${EVENT_DATE_EXPR})`;
 const EVENT_YEAR = sql<number>`extract(year from ${EVENT_DATE_EXPR})`;
 const EVENT_MONTH = sql<number>`extract(month from ${EVENT_DATE_EXPR})`;
