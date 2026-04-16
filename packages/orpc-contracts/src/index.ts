@@ -42,6 +42,7 @@ export {
 } from "./mercadopago";
 export * from "./notifications";
 export { patientsContract, type PatientsContract } from "./patients";
+export * from "./patient-campaigns";
 export * from "./people";
 export * from "./personal-finance";
 export * from "./production-balances";

@@ -128,6 +128,11 @@
       "import": "./dist/patients.js",
       "default": "./dist/patients.js"
     },
+    "./patient-campaigns": {
+      "types": "./dist/patient-campaigns.d.ts",
+      "import": "./dist/patient-campaigns.js",
+      "default": "./dist/patient-campaigns.js"
+    },
     "./people": {
       "types": "./dist/people.d.ts",
       "import": "./dist/people.js",
