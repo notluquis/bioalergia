@@ -381,6 +381,9 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
           {(field) => (
             <div>
               <Checkbox isSelected={field.state.value} onChange={field.handleChange}>
+                <Checkbox.Control>
+                  <Checkbox.Indicator />
+                </Checkbox.Control>
                 Generar cronograma automáticamente
               </Checkbox>
 

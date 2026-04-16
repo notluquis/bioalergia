@@ -105,7 +105,7 @@ export const getColumns = (actions: {
       <div className="flex justify-center">
         {row.original.mfaEnabled ? (
           <Tooltip>
-            <Tooltip.Trigger>
+            <Tooltip.Trigger aria-label="MFA activado">
               <div>
                 <ShieldCheck className="size-5 text-success" />
               </div>
@@ -114,7 +114,7 @@ export const getColumns = (actions: {
           </Tooltip>
         ) : (
           <Tooltip>
-            <Tooltip.Trigger>
+            <Tooltip.Trigger aria-label="MFA inactivo">
               <div>
                 <ShieldCheck className="size-5 text-default-100" />
               </div>
@@ -134,7 +134,7 @@ export const getColumns = (actions: {
       <div className="flex justify-center">
         {row.original.hasPasskey ? (
           <Tooltip>
-            <Tooltip.Trigger>
+            <Tooltip.Trigger aria-label="Passkey configurado">
               <div>
                 <Fingerprint className="size-5 text-success" />
               </div>
@@ -143,7 +143,7 @@ export const getColumns = (actions: {
           </Tooltip>
         ) : (
           <Tooltip>
-            <Tooltip.Trigger>
+            <Tooltip.Trigger aria-label="Sin passkey">
               <div>
                 <Fingerprint className="size-5 text-default-100" />
               </div>

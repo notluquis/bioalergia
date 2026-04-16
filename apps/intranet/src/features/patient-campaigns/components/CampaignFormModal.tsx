@@ -163,13 +163,15 @@ export function CampaignFormModal({ isOpen, onClose, campaign }: Readonly<Campai
 
                 <form.Field name="isActive">
                   {(field) => (
-                    <div className="flex items-center gap-3">
-                      <Switch
-                        isSelected={field.state.value}
-                        onChange={(selected) => field.handleChange(selected)}
-                      />
-                      <span className="text-sm">Campaña activa</span>
-                    </div>
+                    <Switch
+                      isSelected={field.state.value}
+                      onChange={(selected) => field.handleChange(selected)}
+                    >
+                      <Switch.Control>
+                        <Switch.Thumb />
+                      </Switch.Control>
+                      <Switch.Content>Campaña activa</Switch.Content>
+                    </Switch>
                   )}
                 </form.Field>
 

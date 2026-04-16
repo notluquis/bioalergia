@@ -21,7 +21,7 @@ export function SidebarItem({ isMobile, item, onNavigate }: SidebarItemProps) {
     >
       {({ isActive }) => (
         <Tooltip delay={0} isDisabled={isMobile}>
-          <Tooltip.Trigger>
+          <Tooltip.Trigger aria-label={item.label}>
             <div
               className={cn(
                 "relative flex items-center rounded-xl ",

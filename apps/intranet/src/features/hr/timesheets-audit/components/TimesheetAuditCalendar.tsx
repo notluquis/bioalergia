@@ -56,7 +56,7 @@ function clampSeconds(value: number) {
  */
 function convertToCalendarEvents(
   entries: TimesheetEntryWithEmployee[],
-  overlappingEmployeesByDate: Map<string, Set<number>>,
+  overlappingEmployeesByDate: Map<string, Set<number>>
 ): CalendarEventData[] {
   return entries
     .filter((entry) => entry.start_time && entry.end_time)
@@ -148,7 +148,7 @@ function toFullCalendarEvents(calendarEvents: CalendarEventData[]): {
         backgroundColor: event.has_overlap ? "var(--color-danger)" : "var(--color-success)",
         borderColor: event.has_overlap ? "var(--color-danger)" : "var(--color-success)",
         classNames: ["timesheet-audit-event", event.has_overlap ? "has-overlap" : ""].filter(
-          Boolean,
+          Boolean
         ),
         end: endIso,
         extendedProps: {
@@ -226,7 +226,7 @@ export function TimesheetAuditCalendar({
         const startKey = dayjs(range.start).format("YYYY-MM-DD");
         const endKey = dayjs(range.end).format("YYYY-MM-DD");
         return entry.work_date >= startKey && entry.work_date <= endKey;
-      }),
+      })
     );
   })();
 
@@ -267,7 +267,7 @@ export function TimesheetAuditCalendar({
       if (normalizedStart) {
         minSeconds = Math.min(
           minSeconds,
-          timeStringToSeconds(normalizedStart) - SLOT_BUFFER_SECONDS,
+          timeStringToSeconds(normalizedStart) - SLOT_BUFFER_SECONDS
         );
       }
       if (normalizedEnd) {
@@ -313,7 +313,7 @@ export function TimesheetAuditCalendar({
             };
             return (
               <Tooltip delay={0} trigger={tooltipTrigger}>
-                <Tooltip.Trigger>
+                <Tooltip.Trigger aria-label={info.event.title}>
                   <div className="timesheet-audit-event-inner">
                     {info.timeText && (
                       <span className="timesheet-audit-event-time">{info.timeText}</span>

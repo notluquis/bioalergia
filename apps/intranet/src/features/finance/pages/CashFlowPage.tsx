@@ -3420,7 +3420,11 @@ export function CashFlowPage() {
                     <Select.Popover>
                       <ListBox>
                         {reallocationProfileOptions.map((profile) => (
-                          <ListBox.Item id={String(profile.id)} key={profile.id}>
+                          <ListBox.Item
+                            id={String(profile.id)}
+                            key={profile.id}
+                            textValue={`${profile.name} · ${profile.category.name}`}
+                          >
                             {profile.name} · {profile.category.name}
                           </ListBox.Item>
                         ))}

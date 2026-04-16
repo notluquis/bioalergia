@@ -124,7 +124,7 @@ export function MarkButton({ currentStatus, onSuccess }: MarkButtonProps) {
             </div>
           </div>
 
-          <div className="hidden rounded-2xl bg-primary/[0.08] px-3 py-2 text-right text-xs text-foreground-500 sm:block">
+          <div className="hidden rounded-2xl bg-primary/8 px-3 py-2 text-right text-xs text-foreground-500 sm:block">
             <p className="font-medium text-foreground">Marcaje</p>
             <p>{markType === "CLOCK_IN" ? "Primer paso del dia" : "Ultimo paso del dia"}</p>
           </div>

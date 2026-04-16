@@ -189,7 +189,11 @@ export function CampaignRecipientsPanel({ campaign }: Readonly<CampaignRecipient
                           }
                         >
                           {PATIENT_CAMPAIGN_STATUSES.map((status) => (
-                            <ListBox.Item id={status} key={status}>
+                            <ListBox.Item
+                              id={status}
+                              key={status}
+                              textValue={PATIENT_CAMPAIGN_STATUS_LABELS[status]}
+                            >
                               <div className="flex items-center gap-2">
                                 {recipient.status === status && <Check size={12} />}
                                 {PATIENT_CAMPAIGN_STATUS_LABELS[status]}

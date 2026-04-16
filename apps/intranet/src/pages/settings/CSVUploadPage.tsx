@@ -1192,7 +1192,7 @@ function buildMappingColumns({
           {row.original.name}
           {row.original.required && (
             <Tooltip>
-              <Tooltip.Trigger>
+              <Tooltip.Trigger aria-label="Campo requerido">
                 <span className="text-danger text-xs">*</span>
               </Tooltip.Trigger>
               <Tooltip.Content>Requerido</Tooltip.Content>

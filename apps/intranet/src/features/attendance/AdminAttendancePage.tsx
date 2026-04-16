@@ -280,7 +280,7 @@ function MarksTable({ isDeletingId, marks, onDelete, summary }: MarksTableProps)
                     <Table.Cell>
                       {mark.isMobile !== null || mark.screenResolution ? (
                         <Tooltip>
-                          <Tooltip.Trigger>
+                          <Tooltip.Trigger aria-label="Dispositivo de marca">
                             <div className="flex items-center gap-1.5">
                               <Chip size="sm" variant="secondary">
                                 {mark.isMobile ? "Móvil" : "Desktop"}

@@ -188,7 +188,7 @@ export function AttendanceStatusCard({
 
               return (
                 <Tooltip key={day.date}>
-                  <Tooltip.Trigger>
+                  <Tooltip.Trigger aria-label={tooltipContent}>
                     <Surface
                       className="flex min-h-24 flex-col justify-between rounded-2xl px-3 py-3"
                       variant="secondary"

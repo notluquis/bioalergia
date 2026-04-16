@@ -101,6 +101,9 @@ export function EmployeesPage() {
               setIncludeInactive(value);
             }}
           >
+            <Switch.Control>
+              <Switch.Thumb />
+            </Switch.Control>
             <Switch.Content>
               Ver inactivos
               <Description className="text-default-500 text-xs">

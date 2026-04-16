@@ -136,7 +136,7 @@ export function DtePurchasesDetailsPanel() {
           <Select.Popover>
             <ListBox>
               {periods.map((period) => (
-                <ListBox.Item id={period} key={period}>
+                <ListBox.Item id={period} key={period} textValue={period}>
                   {period}
                   <ListBox.ItemIndicator>
                     {({ isSelected }) =>

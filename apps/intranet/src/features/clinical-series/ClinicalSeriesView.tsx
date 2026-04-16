@@ -2057,7 +2057,9 @@ export function ClinicalSeriesView() {
                               <Table.Cell>
                                 {s.lastAbandonmentContact ? (
                                   <Tooltip>
-                                    <Tooltip.Trigger>
+                                    <Tooltip.Trigger
+                                      aria-label={OUTCOME_LABELS[s.lastAbandonmentContact.outcome]}
+                                    >
                                       <Chip
                                         size="sm"
                                         color={OUTCOME_COLORS[s.lastAbandonmentContact.outcome]}

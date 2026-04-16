@@ -737,7 +737,7 @@ function buildSyncColumns(): ColumnDef<MpSyncLog>[] {
                       {label}
                     </span>
                     <Tooltip delay={0}>
-                      <Tooltip.Trigger>
+                      <Tooltip.Trigger aria-label="Total filas">
                         <span className="rounded bg-default-100 px-1.5 py-0.5 text-default-600">
                           T{stats.totalRows}
                         </span>
@@ -747,7 +747,7 @@ function buildSyncColumns(): ColumnDef<MpSyncLog>[] {
                       </Tooltip.Content>
                     </Tooltip>
                     <Tooltip delay={0}>
-                      <Tooltip.Trigger>
+                      <Tooltip.Trigger aria-label="Filas válidas">
                         <span className="rounded bg-primary/10 px-1.5 py-0.5 text-primary">
                           V{stats.validRows}
                         </span>
@@ -757,7 +757,7 @@ function buildSyncColumns(): ColumnDef<MpSyncLog>[] {
                       </Tooltip.Content>
                     </Tooltip>
                     <Tooltip delay={0}>
-                      <Tooltip.Trigger>
+                      <Tooltip.Trigger aria-label="Filas insertadas">
                         <span className="rounded bg-success/10 px-1.5 py-0.5 text-success">
                           +{stats.insertedRows}
                         </span>
@@ -767,7 +767,7 @@ function buildSyncColumns(): ColumnDef<MpSyncLog>[] {
                       </Tooltip.Content>
                     </Tooltip>
                     <Tooltip delay={0}>
-                      <Tooltip.Trigger>
+                      <Tooltip.Trigger aria-label="Filas duplicadas">
                         <span className="rounded bg-warning/10 px-1.5 py-0.5 text-warning">
                           D{stats.duplicateRows}
                         </span>
@@ -777,7 +777,7 @@ function buildSyncColumns(): ColumnDef<MpSyncLog>[] {
                       </Tooltip.Content>
                     </Tooltip>
                     <Tooltip delay={0}>
-                      <Tooltip.Trigger>
+                      <Tooltip.Trigger aria-label="Filas omitidas">
                         <span className="rounded bg-default-100 px-1.5 py-0.5 text-default-500">
                           S{stats.skippedRows}
                         </span>
@@ -788,7 +788,7 @@ function buildSyncColumns(): ColumnDef<MpSyncLog>[] {
                     </Tooltip>
                     {stats.errorCount > 0 && (
                       <Tooltip delay={0}>
-                        <Tooltip.Trigger>
+                        <Tooltip.Trigger aria-label="Errores">
                           <span className="rounded bg-danger/10 px-1.5 py-0.5 text-danger">
                             E{stats.errorCount}
                           </span>

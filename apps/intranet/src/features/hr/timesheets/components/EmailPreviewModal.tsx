@@ -120,13 +120,13 @@ export function EmailPreviewModal({
       >
         <Modal.Container placement="center">
           <Modal.Dialog className="relative w-full max-w-6xl overflow-hidden rounded-3xl bg-background p-0 shadow-2xl">
-            <div className="border-default-200 border-b bg-content1 px-6 py-5">
-              <span className="block font-semibold text-2xl">Enviar correo</span>
+            <Modal.Header className="border-default-200 border-b bg-content1 px-6 py-5">
+              <Modal.Heading className="block font-semibold text-2xl">Enviar correo</Modal.Heading>
               <Description className="mt-1 max-w-3xl text-default-600 text-sm">
                 Esta vista usa el HTML real generado por la API. Lo que ves aquí es la misma base
                 que enviará el agente local, no un mock alterno.
               </Description>
-            </div>
+            </Modal.Header>
 
             <Modal.Body className="block max-h-[78vh] overflow-y-auto bg-default-50/40 p-5">
               <div className="grid gap-5 xl:grid-cols-[320px_minmax(0,1fr)]">
@@ -275,7 +275,7 @@ export function EmailPreviewModal({
                                 </span>
                               </div>
                               <iframe
-                                className="h-[920px] w-full bg-white"
+                                className="h-230 w-full bg-white"
                                 srcDoc={previewQuery.data?.html}
                                 title="Vista previa HTML del correo"
                               />
@@ -288,7 +288,7 @@ export function EmailPreviewModal({
                             <PreviewSkeleton />
                           ) : (
                             <div className="rounded-2xl border border-default-300 bg-content1 p-4 shadow-sm">
-                              <pre className="whitespace-pre-wrap break-words font-mono text-sm leading-6 text-foreground">
+                              <pre className="whitespace-pre-wrap wrap-break-word font-mono text-sm leading-6 text-foreground">
                                 {previewQuery.data?.text}
                               </pre>
                             </div>
