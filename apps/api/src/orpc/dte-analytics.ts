@@ -411,8 +411,8 @@ const dteAnalyticsORPCRouterBase = {
           c.google_id AS "calendarId",
           e.external_event_id AS "eventId",
           e.summary AS "summary",
-          COALESCE(to_char(e.start_date, 'YYYY-MM-DD'), to_char((e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE 'America/Santiago')::date, 'YYYY-MM-DD')) AS "eventDate",
-          to_char(e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE 'America/Santiago', 'HH24:MI') AS "eventTime",
+          COALESCE(to_char(e.start_date, 'YYYY-MM-DD'), to_char((e.start_date_time AT TIME ZONE 'America/Santiago')::date, 'YYYY-MM-DD')) AS "eventDate",
+          to_char(e.start_date_time AT TIME ZONE 'America/Santiago', 'HH24:MI') AS "eventTime",
           e.amount_expected AS "amountExpected",
           e.amount_paid AS "amountPaid",
           l.matched_by AS "matchedBy",
@@ -424,7 +424,7 @@ const dteAnalyticsORPCRouterBase = {
         JOIN calendars c ON c.id = e.calendar_id
         LEFT JOIN clinical_series cs ON cs.id = e.clinical_series_id
         WHERE l.dte_sale_detail_id = ${input.dteSaleDetailId}
-        ORDER BY COALESCE(e.start_date, (e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE 'America/Santiago')::date) DESC, e.start_date_time DESC NULLS LAST, e.id DESC
+        ORDER BY COALESCE(e.start_date, (e.start_date_time AT TIME ZONE 'America/Santiago')::date) DESC, e.start_date_time DESC NULLS LAST, e.id DESC
       `;
 
       return {

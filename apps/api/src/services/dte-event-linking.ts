@@ -1179,7 +1179,7 @@ async function getEventByExternalIds(
       e.id AS "eventId",
       c.google_id AS "googleCalendarId",
       e.external_event_id AS "externalEventId",
-      COALESCE(to_char(e.start_date, 'YYYY-MM-DD'), to_char((e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date, 'YYYY-MM-DD')) AS "eventDate",
+      COALESCE(to_char(e.start_date, 'YYYY-MM-DD'), to_char((e.start_date_time AT TIME ZONE ${TIMEZONE})::date, 'YYYY-MM-DD')) AS "eventDate",
       e.summary AS "summary",
       e.description AS "description",
       e.clinical_series_id AS "clinicalSeriesId",
@@ -1209,7 +1209,7 @@ async function getEventsByDate(date: string): Promise<EventRow[]> {
       e.id AS "eventId",
       c.google_id AS "googleCalendarId",
       e.external_event_id AS "externalEventId",
-      COALESCE(to_char(e.start_date, 'YYYY-MM-DD'), to_char((e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date, 'YYYY-MM-DD')) AS "eventDate",
+      COALESCE(to_char(e.start_date, 'YYYY-MM-DD'), to_char((e.start_date_time AT TIME ZONE ${TIMEZONE})::date, 'YYYY-MM-DD')) AS "eventDate",
       e.summary AS "summary",
       e.description AS "description",
       e.clinical_series_id AS "clinicalSeriesId",
@@ -1226,7 +1226,7 @@ async function getEventsByDate(date: string): Promise<EventRow[]> {
       FROM event_dte_sale_links l
       WHERE l.event_id = e.id
     ) link_stats ON TRUE
-    WHERE COALESCE(e.start_date, (e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date) = ${date}::date
+    WHERE COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) = ${date}::date
     ORDER BY e.start_date_time ASC NULLS LAST, e.id ASC
   `;
 }
@@ -1571,7 +1571,7 @@ export async function listEventDteLinksByDate(date: string) {
     JOIN events e ON e.id = l.event_id
     JOIN calendars c ON c.id = e.calendar_id
     JOIN dte_sale_details s ON s.id = l.dte_sale_detail_id
-    WHERE COALESCE(e.start_date, (e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date) = ${date}::date
+    WHERE COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) = ${date}::date
     ORDER BY e.start_date_time ASC NULLS LAST, e.id ASC, s.folio ASC
   `;
 
@@ -1616,19 +1616,19 @@ export async function listEventDteLinkOverview(params: {
       COUNT(*)::int AS "totalEvents",
       COUNT(*) FILTER (WHERE link_stats."linkedCount" > 0)::int AS "linkedEvents",
       COUNT(*) FILTER (
-        WHERE COALESCE(e.start_date, (e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
+        WHERE COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
       )::int AS "dueEvents",
       COUNT(*) FILTER (
         WHERE link_stats."linkedCount" > 0
-          AND COALESCE(e.start_date, (e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
+          AND COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
       )::int AS "linkedDueEvents",
       COUNT(*) FILTER (
         WHERE link_stats."linkedCount" = 0
-          AND COALESCE(e.start_date, (e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
+          AND COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
       )::int AS "unlinkedEvents",
       COUNT(*) FILTER (
         WHERE link_stats."linkedCount" = 0
-          AND COALESCE(e.start_date, (e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date) > ${today}::date
+          AND COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) > ${today}::date
       )::int AS "pendingIssuanceEvents",
       COUNT(*) FILTER (WHERE link_stats."maxConfidenceScore" = 100)::int AS "withPerfectScore",
       AVG(link_stats."avgConfidenceScore") FILTER (WHERE link_stats."linkedCount" > 0) AS "avgLinkedScore"
@@ -1641,7 +1641,7 @@ export async function listEventDteLinkOverview(params: {
       FROM event_dte_sale_links l
       WHERE l.event_id = e.id
     ) link_stats ON TRUE
-    WHERE COALESCE(e.start_date, (e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date)
+    WHERE COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date)
       BETWEEN ${periodStart}::date AND ${periodEnd}::date
   `;
 
@@ -1653,26 +1653,26 @@ export async function listEventDteLinkOverview(params: {
       FROM event_dte_sale_links l
       WHERE l.event_id = e.id
     ) link_stats ON TRUE
-    WHERE COALESCE(e.start_date, (e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date)
+    WHERE COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date)
       BETWEEN ${periodStart}::date AND ${periodEnd}::date
       AND (
         (
           ${status} = 'all'
           AND (
             link_stats."linkedCount" > 0
-            OR COALESCE(e.start_date, (e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
+            OR COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
           )
         )
         OR (${status} = 'linked' AND link_stats."linkedCount" > 0)
         OR (
           ${status} = 'unlinked'
           AND link_stats."linkedCount" = 0
-          AND COALESCE(e.start_date, (e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
+          AND COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
         )
         OR (
           ${status} = 'pending_issuance'
           AND link_stats."linkedCount" = 0
-          AND COALESCE(e.start_date, (e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date) > ${today}::date
+          AND COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) > ${today}::date
         )
       )
       AND (
@@ -1688,8 +1688,8 @@ export async function listEventDteLinkOverview(params: {
       c.google_id AS "calendarId",
       e.external_event_id AS "eventId",
       e.summary AS "summary",
-      COALESCE(to_char(e.start_date, 'YYYY-MM-DD'), to_char((e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date, 'YYYY-MM-DD')) AS "eventDate",
-      to_char(e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE}, 'HH24:MI') AS "eventTime",
+      COALESCE(to_char(e.start_date, 'YYYY-MM-DD'), to_char((e.start_date_time AT TIME ZONE ${TIMEZONE})::date, 'YYYY-MM-DD')) AS "eventDate",
+      to_char(e.start_date_time AT TIME ZONE ${TIMEZONE}, 'HH24:MI') AS "eventTime",
       e.amount_expected AS "amountExpected",
       e.amount_paid AS "amountPaid",
       e.clinical_series_id AS "clinicalSeriesId",
@@ -1749,26 +1749,26 @@ export async function listEventDteLinkOverview(params: {
       ORDER BY a.created_at DESC, a.id DESC
       LIMIT 1
     ) auto_skip ON TRUE
-    WHERE COALESCE(e.start_date, (e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date)
+    WHERE COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date)
       BETWEEN ${periodStart}::date AND ${periodEnd}::date
       AND (
         (
           ${status} = 'all'
           AND (
             link_stats."linkedCount" > 0
-            OR COALESCE(e.start_date, (e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
+            OR COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
           )
         )
         OR (${status} = 'linked' AND link_stats."linkedCount" > 0)
         OR (
           ${status} = 'unlinked'
           AND link_stats."linkedCount" = 0
-          AND COALESCE(e.start_date, (e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
+          AND COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
         )
         OR (
           ${status} = 'pending_issuance'
           AND link_stats."linkedCount" = 0
-          AND COALESCE(e.start_date, (e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date) > ${today}::date
+          AND COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) > ${today}::date
         )
       )
       AND (
@@ -1776,7 +1776,7 @@ export async function listEventDteLinkOverview(params: {
         OR COALESCE(e.summary, '') ILIKE ${searchLike}
         OR COALESCE(e.description, '') ILIKE ${searchLike}
       )
-    ORDER BY COALESCE(e.start_date, (e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date) DESC, e.id DESC
+    ORDER BY COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) DESC, e.id DESC
     LIMIT ${pageSize} OFFSET ${offset}
   `;
 
@@ -2298,10 +2298,10 @@ export async function autoLinkEventPeriod(params: {
     SELECT DISTINCT
       COALESCE(
         to_char(e.start_date, 'YYYY-MM-DD'),
-        to_char((e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date, 'YYYY-MM-DD')
+        to_char((e.start_date_time AT TIME ZONE ${TIMEZONE})::date, 'YYYY-MM-DD')
       ) AS "eventDate"
     FROM events e
-    WHERE COALESCE(e.start_date, (e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date)
+    WHERE COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date)
       BETWEEN ${periodStart}::date AND ${maxDate}::date
     ORDER BY "eventDate" ASC
   `;
@@ -2405,9 +2405,9 @@ export async function listAutoLinkEligiblePeriods() {
   const today = dayjs().tz(TIMEZONE).format("YYYY-MM-DD");
   return db.$queryRaw<Array<{ period: string }>>`
     SELECT DISTINCT
-      to_char(COALESCE(e.start_date, (e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date), 'YYYY-MM') AS "period"
+      to_char(COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date), 'YYYY-MM') AS "period"
     FROM events e
-    WHERE COALESCE(e.start_date, (e.start_date_time AT TIME ZONE 'UTC' AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
+    WHERE COALESCE(e.start_date, (e.start_date_time AT TIME ZONE ${TIMEZONE})::date) <= ${today}::date
     ORDER BY "period" DESC
   `;
 }

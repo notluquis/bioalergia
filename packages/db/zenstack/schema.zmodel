@@ -844,13 +844,13 @@ model Event {
   summary           String?
   description       String?
   startDate         DateTime?                @map("start_date") @db.Date
-  startDateTime     DateTime?                @map("start_date_time")
+  startDateTime     DateTime?                @map("start_date_time") @db.Timestamptz(3)
   startTimeZone     String?                  @map("start_time_zone")
   endDate           DateTime?                @map("end_date") @db.Date
-  endDateTime       DateTime?                @map("end_date_time")
+  endDateTime       DateTime?                @map("end_date_time") @db.Timestamptz(3)
   endTimeZone       String?                  @map("end_time_zone")
-  eventCreatedAt    DateTime?                @map("event_created_at")
-  eventUpdatedAt    DateTime?                @map("event_updated_at")
+  eventCreatedAt    DateTime?                @map("event_created_at") @db.Timestamptz(3)
+  eventUpdatedAt    DateTime?                @map("event_updated_at") @db.Timestamptz(3)
   colorId           String?                  @map("color_id")
   location          String?
   transparency      String?
