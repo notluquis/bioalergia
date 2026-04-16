@@ -161,7 +161,10 @@ function PatientDetailsPage() {
             }}
           >
             <Tabs.ListContainer className="no-scrollbar overflow-x-auto border-divider border-b pb-1">
-              <Tabs.List className="flex w-max min-w-full gap-4 whitespace-nowrap">
+              <Tabs.List
+                aria-label="Detalle del paciente"
+                className="flex w-max min-w-full gap-4 whitespace-nowrap"
+              >
                 <Tabs.Tab id="history" className="min-w-max gap-2 font-semibold">
                   <Calendar size={18} />
                   <span>Consultas</span>
