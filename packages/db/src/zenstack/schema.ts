@@ -3215,7 +3215,7 @@ export class SchemaType implements SchemaDef {
                     name: "startDateTime",
                     type: "DateTime",
                     optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("start_date_time") }] }] as readonly AttributeApplication[]
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("start_date_time") }] }, { name: "@db.Timestamptz", args: [{ name: "x", value: ExpressionUtils.literal(3) }] }] as readonly AttributeApplication[]
                 },
                 startTimeZone: {
                     name: "startTimeZone",
@@ -3233,7 +3233,7 @@ export class SchemaType implements SchemaDef {
                     name: "endDateTime",
                     type: "DateTime",
                     optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("end_date_time") }] }] as readonly AttributeApplication[]
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("end_date_time") }] }, { name: "@db.Timestamptz", args: [{ name: "x", value: ExpressionUtils.literal(3) }] }] as readonly AttributeApplication[]
                 },
                 endTimeZone: {
                     name: "endTimeZone",
@@ -3245,13 +3245,13 @@ export class SchemaType implements SchemaDef {
                     name: "eventCreatedAt",
                     type: "DateTime",
                     optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("event_created_at") }] }] as readonly AttributeApplication[]
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("event_created_at") }] }, { name: "@db.Timestamptz", args: [{ name: "x", value: ExpressionUtils.literal(3) }] }] as readonly AttributeApplication[]
                 },
                 eventUpdatedAt: {
                     name: "eventUpdatedAt",
                     type: "DateTime",
                     optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("event_updated_at") }] }] as readonly AttributeApplication[]
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("event_updated_at") }] }, { name: "@db.Timestamptz", args: [{ name: "x", value: ExpressionUtils.literal(3) }] }] as readonly AttributeApplication[]
                 },
                 colorId: {
                     name: "colorId",
