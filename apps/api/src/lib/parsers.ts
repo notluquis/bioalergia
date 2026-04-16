@@ -915,15 +915,17 @@ function detectTestMetadata(
 }
 
 function detectOrdinalNumber(text: string, nounPattern: RegExp): number | null {
-  const normalizedOrdinalText = text
-    .replace(
-      new RegExp(String.raw`([\p{L}])(\d{1,2})(?=\s*${nounPattern.source}\b)`, "giu"),
-      "$1 $2",
-    )
-    .replace(
-      new RegExp(String.raw`(\d{1,2})([\p{L}]+)(?=\s*${nounPattern.source}\b)`, "giu"),
-      "$1 $2",
-    );
+  // Single normalization: insert space between a letter and a digit+ordinal+noun sequence.
+  // e.g. "llego3ra dosis" → "llego 3ra dosis" (creates word boundary before the digit).
+  // The previous two-step normalization would split "3ra" → "3 ra", breaking the directMatch
+  // and causing the fallback to pick up unrelated digits (e.g. RUT check digit "-2").
+  const normalizedOrdinalText = text.replace(
+    new RegExp(
+      String.raw`([\p{L}])(\d{1,2}[º°]?(?:era|ra|da|ta|va|ma|na|a)?\s*${nounPattern.source}\b)`,
+      "giu",
+    ),
+    "$1 $2",
+  );
 
   const directMatch = normalizedOrdinalText.match(
     new RegExp(
