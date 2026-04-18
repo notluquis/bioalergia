@@ -5,7 +5,7 @@
 # STAGE 1: Prune - Generate a minimal lockfile from the monorepo
 # Using a pinned turbo version for deterministic Docker prune stages
 # ============================================================================
-FROM node:25-slim AS pruner
+FROM node:slim AS pruner
 WORKDIR /app
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
@@ -18,7 +18,7 @@ RUN TURBO_TELEMETRY_DISABLED=1 pnpm dlx turbo@2.9.1 prune @finanzas/api --docker
 # ============================================================================
 # STAGE 2: Base - Install dependencies for pruned workspace
 # ============================================================================
-FROM node:25-slim AS base
+FROM node:slim AS base
 WORKDIR /app
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
@@ -62,7 +62,7 @@ RUN --mount=type=cache,id=s/fbf6a604-cc46-46af-8d95-9e7503753301-/pnpm/store,tar
 # ============================================================================
 # STAGE 4: Runner - Production image
 # ============================================================================
-FROM node:25-slim AS runner
+FROM node:slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000

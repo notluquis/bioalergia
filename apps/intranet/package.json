@@ -41,6 +41,7 @@
     "@orpc/client": "^1.13.14",
     "@orpc/contract": "^1.13.14",
     "@orpc/tanstack-query": "^1.13.14",
+    "@react-spectrum/provider": "^3.11.0",
     "@simplewebauthn/browser": "^13.3.0",
     "@tanstack/react-form": "^1.29.0",
     "@tanstack/react-pacer": "^0.22.0",
