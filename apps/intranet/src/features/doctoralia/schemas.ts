@@ -278,3 +278,25 @@ export const DoctoraliaCalendarAuthStatusResponseSchema = z.strictObject({
   }),
   status: z.literal("ok"),
 });
+
+export const DoctoraliaScraperCookiesStatusResponseSchema = z.strictObject({
+  data: z.strictObject({
+    exists: z.boolean(),
+    label: z.string().nullable(),
+    count: z.number().int(),
+    updatedAt: z.coerce.date().nullable(),
+    lastUsedAt: z.coerce.date().nullable(),
+    updatedByUserId: z.number().int().nullable(),
+    updatedByEmail: z.string().nullable(),
+  }),
+  status: z.literal("ok"),
+});
+
+export const DoctoraliaUpdateScraperCookiesResponseSchema = z.strictObject({
+  data: z.strictObject({
+    label: z.string(),
+    count: z.number().int(),
+    updatedAt: z.coerce.date(),
+  }),
+  status: z.literal("ok"),
+});

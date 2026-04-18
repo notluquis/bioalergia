@@ -21,10 +21,12 @@ import {
   DoctoraliaEmailStatsResponseSchema,
   DoctoraliaEmailIngestResponseSchema,
   DoctoraliaFacilitiesResponseSchema,
+  DoctoraliaScraperCookiesStatusResponseSchema,
   DoctoraliaSlotsResponseSchema,
   DoctoraliaStatusResponseSchema,
   DoctoraliaSyncLogsResponseSchema,
   DoctoraliaSyncResponseSchema,
+  DoctoraliaUpdateScraperCookiesResponseSchema,
   StatusOkSchema,
 } from "./schemas";
 import type {
@@ -415,4 +417,42 @@ export async function fetchDoctoraliaEmailPatientHistory(query: {
   }
 
   return response.data.notifications;
+}
+
+export type DoctoraliaScraperCookiesStatus = {
+  exists: boolean;
+  label: string | null;
+  count: number;
+  updatedAt: Date | null;
+  lastUsedAt: Date | null;
+  updatedByUserId: number | null;
+  updatedByEmail: string | null;
+};
+
+export async function fetchDoctoraliaScraperCookiesStatus(): Promise<DoctoraliaScraperCookiesStatus> {
+  try {
+    const response = DoctoraliaScraperCookiesStatusResponseSchema.parse(
+      await doctoraliaORPCClient.scraperCookiesStatus()
+    );
+    return response.data;
+  } catch (error) {
+    throw toDoctoraliaApiError(error);
+  }
+}
+
+export async function updateDoctoraliaScraperCookies(input: {
+  cookieHeader: string;
+  label?: string;
+}): Promise<{ label: string; count: number; updatedAt: Date }> {
+  try {
+    const response = DoctoraliaUpdateScraperCookiesResponseSchema.parse(
+      await doctoraliaORPCClient.updateScraperCookies({
+        cookieHeader: input.cookieHeader,
+        label: input.label,
+      })
+    );
+    return response.data;
+  } catch (error) {
+    throw toDoctoraliaApiError(error);
+  }
 }
