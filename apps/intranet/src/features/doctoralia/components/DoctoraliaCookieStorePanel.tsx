@@ -3,7 +3,6 @@ import {
   Button,
   Card,
   Chip,
-  Description,
   Kbd,
   Label,
   Spinner,
@@ -79,9 +78,15 @@ export function DoctoraliaCookieStorePanel() {
           <div className="space-y-1">
             <Card.Title className="text-sm">Cookies del bot scraper</Card.Title>
             <Card.Description className="text-default-500 text-xs">
-              Pega aquí el header <Kbd>Cookie</Kbd> del panel de Doctoralia (DevTools → Network →
-              copia como cURL → extrae la línea <Kbd>Cookie: …</Kbd>). El bot las usará en su
-              próxima corrida.
+              Pega aquí el header{" "}
+              <Kbd>
+                <Kbd.Content>Cookie</Kbd.Content>
+              </Kbd>{" "}
+              del panel de Doctoralia (DevTools → Network → copia como cURL → extrae la línea{" "}
+              <Kbd>
+                <Kbd.Content>Cookie: …</Kbd.Content>
+              </Kbd>
+              ). El bot las usará en su próxima corrida.
             </Card.Description>
           </div>
         </div>
@@ -105,21 +110,21 @@ export function DoctoraliaCookieStorePanel() {
         ) : status?.exists ? (
           <div className="grid grid-cols-2 gap-3">
             <Surface className="rounded-2xl border border-default-200 px-4 py-3">
-              <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
+              <p className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
                 Actualizado
-              </Description>
+              </p>
               <p className="mt-1 font-medium text-sm">{formatDate(status.updatedAt)}</p>
             </Surface>
             <Surface className="rounded-2xl border border-default-200 px-4 py-3">
-              <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
+              <p className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
                 Último uso del bot
-              </Description>
+              </p>
               <p className="mt-1 font-medium text-sm">{formatRelative(status.lastUsedAt)}</p>
             </Surface>
             <Surface className="col-span-2 rounded-2xl border border-default-200 px-4 py-3">
-              <Description className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
+              <p className="font-semibold text-[11px] text-default-400 uppercase tracking-wide">
                 Actualizado por
-              </Description>
+              </p>
               <p className="mt-1 font-medium text-sm">{status.updatedByEmail ?? "—"}</p>
             </Surface>
           </div>
@@ -127,8 +132,9 @@ export function DoctoraliaCookieStorePanel() {
           <Alert status="warning">
             <Alert.Indicator />
             <Alert.Content>
+              <Alert.Title>Sin cookies guardadas</Alert.Title>
               <Alert.Description>
-                Aún no hay cookies guardadas. Pega el header para que el bot pueda autenticarse.
+                Pega el header para que el bot pueda autenticarse en su próxima corrida.
               </Alert.Description>
             </Alert.Content>
           </Alert>
@@ -147,11 +153,11 @@ export function DoctoraliaCookieStorePanel() {
       </Card.Content>
 
       <Card.Footer className="flex items-center justify-between">
-        <Description className="text-default-400 text-xs">
+        <p className="text-default-400 text-xs">
           {previewCount > 0
             ? `${previewCount} cookie${previewCount === 1 ? "" : "s"} detectadas`
             : "Aún no se detectan cookies"}
-        </Description>
+        </p>
         <Button
           variant="primary"
           size="sm"
