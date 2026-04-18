@@ -1,28 +1,80 @@
-import fs from "node:fs";
+type StoredCookie = {
+  name: string;
+  value: string;
+  domain?: string;
+  path?: string;
+  expires?: number;
+};
 
-type StoredCookie = { name: string; value: string; domain?: string; path?: string; expires?: number };
+type CookieJarOptions = {
+  endpoint: string;
+  apiToken: string;
+  label: string;
+};
 
 export class CookieJar {
   private cookies = new Map<string, StoredCookie>();
+  private lastFetchedSnapshot: string | null = null;
 
-  constructor(private readonly filePath: string) {}
+  constructor(private readonly options: CookieJarOptions) {}
 
-  load(): void {
-    if (!fs.existsSync(this.filePath)) return;
+  async load(): Promise<void> {
+    const url = new URL(this.options.endpoint);
+    url.searchParams.set("label", this.options.label);
+
+    let res: Response;
     try {
-      const raw = JSON.parse(fs.readFileSync(this.filePath, "utf8")) as StoredCookie[];
-      const now = Date.now();
-      for (const c of raw) {
-        if (c.expires && c.expires < now) continue;
-        this.cookies.set(c.name, c);
-      }
+      res = await fetch(url.toString(), {
+        headers: { Authorization: `Bearer ${this.options.apiToken}` },
+      });
     } catch (err) {
-      console.warn("[cookies] failed to load jar:", (err as Error).message);
+      throw new Error(`[cookies] failed to reach ${url}: ${(err as Error).message}`);
     }
+
+    if (res.status === 404) {
+      console.warn(`[cookies] no stored cookies for label="${this.options.label}" — paste them from the intranet panel first`);
+      return;
+    }
+
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      throw new Error(`[cookies] GET ${url} → ${res.status}: ${body.slice(0, 200)}`);
+    }
+
+    const payload = (await res.json()) as { cookies?: StoredCookie[] };
+    const list = Array.isArray(payload.cookies) ? payload.cookies : [];
+    const now = Date.now();
+    for (const c of list) {
+      if (c.expires && c.expires < now) continue;
+      this.cookies.set(c.name, c);
+    }
+    this.lastFetchedSnapshot = this.snapshot();
   }
 
-  save(): void {
-    fs.writeFileSync(this.filePath, JSON.stringify([...this.cookies.values()], null, 2), "utf8");
+  async save(): Promise<void> {
+    const current = this.snapshot();
+    if (current === this.lastFetchedSnapshot) return;
+
+    const body = JSON.stringify({
+      label: this.options.label,
+      cookies: [...this.cookies.values()],
+    });
+
+    const res = await fetch(this.options.endpoint, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${this.options.apiToken}`,
+        "Content-Type": "application/json",
+      },
+      body,
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(`[cookies] POST ${this.options.endpoint} → ${res.status}: ${text.slice(0, 200)}`);
+    }
+
+    this.lastFetchedSnapshot = current;
   }
 
   ingestSetCookie(headerValues: string[]): void {
@@ -56,5 +108,9 @@ export class CookieJar {
 
   size(): number {
     return this.cookies.size;
+  }
+
+  private snapshot(): string {
+    return JSON.stringify([...this.cookies.values()].sort((a, b) => a.name.localeCompare(b.name)));
   }
 }

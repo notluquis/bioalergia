@@ -67,31 +67,54 @@ async function askStdin(prompt: string): Promise<string> {
   return answer.trim();
 }
 
+const LOGIN_URL = "https://l.doctoralia.cl/";
+const SPA_SHELL_MARKER = /<div id="vuesaas">/i;
+
 async function ensureLoggedIn(session: ImpitSession, config: ScraperConfig): Promise<void> {
   log("GET", config.baseUrl);
   const initial = await session.request(config.baseUrl);
   log(`  → ${initial.status} ${initial.url}`);
 
-  const landedOnLogin = /l\.doctoralia\.cl/i.test(initial.url) || /login/i.test(initial.url);
-  if (!landedOnLogin) {
+  // The panel is a Vue SPA that renders client-side. Without JS, the server
+  // always returns the shell. Detect "logged in" by poking an authenticated
+  // endpoint: if the panel cookies are valid, the API accepts them.
+  const isSpaShell = SPA_SHELL_MARKER.test(initial.text);
+  const hasSessionCookie = session.jar.size() > 0;
+
+  if (!isSpaShell && !/l\.doctoralia\.cl/i.test(initial.url)) {
     log("session reused — already inside panel");
     return;
   }
 
-  log("not logged in — starting login flow at", initial.url);
+  if (hasSessionCookie && isSpaShell) {
+    log("got SPA shell with cookies — assuming session still valid (calendar fetch will verify)");
+    return;
+  }
+
+  log("not logged in — fetching login page at", LOGIN_URL);
+  const loginPage = await session.request(LOGIN_URL);
+  log(`  → ${loginPage.status} ${loginPage.url}`);
 
   if (discoverMode) {
     const snapshot = path.join(config.capturesDir, "login-page.html");
     fs.mkdirSync(config.capturesDir, { recursive: true });
-    fs.writeFileSync(snapshot, initial.text, "utf8");
-    log(`--discover: wrote raw login HTML to ${snapshot}`);
-    log("inspect it to find the form action, hidden inputs (CSRF), and field names, then wire them here.");
+    fs.writeFileSync(snapshot, loginPage.text, "utf8");
+    log(`--discover: wrote login HTML (${loginPage.text.length} bytes) from ${loginPage.url} to ${snapshot}`);
     process.exit(0);
   }
 
-  // Best-effort extraction of the form action + hidden fields from the HTML
-  const form = extractLoginForm(initial.text, initial.url);
-  log("detected form:", { action: form.action, hiddenKeys: Object.keys(form.hidden) });
+  if (/data-form-field-captcha=/i.test(loginPage.text)) {
+    log("⚠️ login form uses Friendly Captcha / reCAPTCHA — JS-less POST will likely be rejected.");
+    log("   proceeding anyway to see what the server returns.");
+  }
+
+  const form = extractLoginForm(loginPage.text, loginPage.url);
+  log("detected form:", {
+    action: form.action,
+    emailField: form.emailField,
+    passwordField: form.passwordField,
+    hiddenKeys: Object.keys(form.hidden),
+  });
 
   const body = new URLSearchParams({
     ...form.hidden,
@@ -104,14 +127,31 @@ async function ensureLoggedIn(session: ImpitSession, config: ScraperConfig): Pro
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
-      Referer: initial.url,
-      Origin: new URL(initial.url).origin,
+      Referer: loginPage.url,
+      Origin: new URL(loginPage.url).origin,
     },
     body: body.toString(),
   });
   log(`  → ${loginRes.status} ${loginRes.url}`);
 
-  if (/otp|código|verification|verificación/i.test(loginRes.text) && /input/i.test(loginRes.text)) {
+  // Dump the login response for inspection whenever we bounce back to a login URL.
+  const bouncedToLogin = /l\.doctoralia\.cl/i.test(loginRes.url);
+  if (bouncedToLogin) {
+    const dumpPath = path.join(config.capturesDir, "login-response.html");
+    fs.mkdirSync(config.capturesDir, { recursive: true });
+    fs.writeFileSync(dumpPath, loginRes.text, "utf8");
+    log(`  bounced back to ${loginRes.url} — login failed or captcha blocked. Response dumped to ${dumpPath}`);
+
+    const errorMatch = loginRes.text.match(/<div[^>]*(?:alert|error|flash)[^>]*>([\s\S]*?)<\/div>/i);
+    if (errorMatch) {
+      const msg = errorMatch[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 300);
+      log(`  server message: ${msg}`);
+    }
+    throw new Error("login POST bounced back — inspect captures/login-response.html");
+  }
+
+  // Only treat as OTP if we're no longer on the login form URL.
+  if (/otp|verification_code/i.test(loginRes.text) && /input/i.test(loginRes.text)) {
     const code = await askStdin("OTP code sent to email? Enter it here: ");
     const otpForm = extractLoginForm(loginRes.text, loginRes.url);
     const otpField = Object.keys(otpForm.hidden).find((k) => /code|otp/i.test(k)) ?? "code";
@@ -192,17 +232,21 @@ async function fetchCalendarEvents(session: ImpitSession, config: ScraperConfig)
 
 async function run(): Promise<void> {
   const config = loadConfig();
-  const jar = new CookieJar(config.cookieJarPath);
-  jar.load();
-  log(`loaded ${jar.size()} cookies from ${config.cookieJarPath}`);
+  const jar = new CookieJar({
+    endpoint: config.cookiesEndpoint,
+    apiToken: config.cookiesApiToken,
+    label: config.cookiesLabel,
+  });
+  await jar.load();
+  log(`loaded ${jar.size()} cookies from ${config.cookiesEndpoint} (label=${config.cookiesLabel})`);
 
   const session = new ImpitSession(jar);
 
   await ensureLoggedIn(session, config);
-  jar.save();
+  await jar.save();
 
   const captured = await fetchCalendarEvents(session, config);
-  jar.save();
+  await jar.save();
 
   if (captured.length === 0) {
     log("no calendarevents captured. Try `pnpm --filter @finanzas/doctoralia-scraper discover` first to inspect the login page and find the real endpoint.");

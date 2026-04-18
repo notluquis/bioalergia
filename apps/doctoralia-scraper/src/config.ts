@@ -14,6 +14,9 @@ const configSchema = z.object({
   password: z.string().min(1, "DOCTORALIA_SCRAPER_PASSWORD is required"),
   importEndpoint: z.string().url().optional(),
   importToken: z.string().optional(),
+  cookiesEndpoint: z.string().url(),
+  cookiesApiToken: z.string().min(1, "DOCTORALIA_SCRAPER_API_TOKEN is required"),
+  cookiesLabel: z.string().min(1),
   cookieJarPath: z.string(),
   capturesDir: z.string(),
 });
@@ -27,6 +30,11 @@ export function loadConfig(): ScraperConfig {
     password: process.env.DOCTORALIA_SCRAPER_PASSWORD ?? "",
     importEndpoint: process.env.DOCTORALIA_SCRAPER_IMPORT_ENDPOINT || undefined,
     importToken: process.env.DOCTORALIA_SCRAPER_IMPORT_TOKEN || undefined,
+    cookiesEndpoint:
+      process.env.DOCTORALIA_SCRAPER_COOKIES_ENDPOINT ??
+      "http://localhost:4000/api/scraper/doctoralia/cookies",
+    cookiesApiToken: process.env.DOCTORALIA_SCRAPER_API_TOKEN ?? "",
+    cookiesLabel: process.env.DOCTORALIA_SCRAPER_COOKIES_LABEL ?? "default",
     cookieJarPath: path.join(__dirname, "..", ".cookies.json"),
     capturesDir: path.join(__dirname, "..", "captures"),
   });
