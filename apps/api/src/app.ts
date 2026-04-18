@@ -64,6 +64,7 @@ import {
 } from "./orpc/transactions-insights";
 import { usersOpenAPIHandler, usersORPCHandler } from "./orpc/users";
 import { whatsappOpenAPIHandler, whatsappORPCHandler } from "./orpc/whatsapp";
+import { doctoraliaScraperRoutes } from "./routes/doctoralia-scraper";
 import { googleCalendarWebhookRoutes } from "./routes/google-calendar-webhook";
 import { errorReply } from "./utils/error-reply";
 import { normalizeErrorResponse } from "./utils/normalize-error-response";
@@ -1613,6 +1614,9 @@ app.use("/api/orpc/whatsapp/*", async (c, next) => {
 
 // Dedicated external webhook ingress (Golden Standard 2026)
 app.route("/api/webhooks/google", googleCalendarWebhookRoutes);
+
+// Bearer-auth ingress for the Doctoralia scraper bot (reads/writes manual cookies).
+app.route("/api/scraper/doctoralia", doctoraliaScraperRoutes);
 
 // ============================================================================
 // ROOT ENDPOINT

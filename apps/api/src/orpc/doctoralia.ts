@@ -292,6 +292,33 @@ const calendarImportResponseSchema = z.object({
   status: z.literal("ok"),
 });
 
+const scraperCookiesStatusSchema = z.object({
+  data: z.object({
+    exists: z.boolean(),
+    label: z.string().nullable(),
+    count: z.number().int(),
+    updatedAt: z.coerce.date().nullable(),
+    lastUsedAt: z.coerce.date().nullable(),
+    updatedByUserId: z.number().int().nullable(),
+    updatedByEmail: z.string().nullable(),
+  }),
+  status: z.literal("ok"),
+});
+
+const updateScraperCookiesInputSchema = z.object({
+  label: z.string().trim().min(1).max(64).optional(),
+  cookieHeader: z.string().trim().min(1),
+});
+
+const updateScraperCookiesResponseSchema = z.object({
+  data: z.object({
+    label: z.string(),
+    count: z.number().int(),
+    updatedAt: z.coerce.date(),
+  }),
+  status: z.literal("ok"),
+});
+
 const authed = base.use(async ({ context, next }) => {
   const user = await getSessionUser(context.hono);
 
@@ -842,7 +869,121 @@ const doctoraliaORPCRouterBase = {
         };
       }
     }),
+
+  scraperCookiesStatus: canManageFacility
+    .route({ method: "GET", path: "/scraper/cookies/status" })
+    .output(scraperCookiesStatusSchema)
+    .handler(async () => {
+      const store = await db.doctoraliaCookieStore.findUnique({
+        where: { label: "default" },
+        select: {
+          id: true,
+          label: true,
+          cookiesJson: true,
+          updatedAt: true,
+          lastUsedAt: true,
+          updatedByUserId: true,
+          updatedBy: { select: { loginEmail: true, person: { select: { email: true } } } },
+        },
+      });
+
+      if (!store) {
+        return {
+          data: {
+            exists: false,
+            label: null,
+            count: 0,
+            updatedAt: null,
+            lastUsedAt: null,
+            updatedByUserId: null,
+            updatedByEmail: null,
+          },
+          status: "ok" as const,
+        };
+      }
+
+      const cookies = Array.isArray(store.cookiesJson)
+        ? (store.cookiesJson as unknown[])
+        : [];
+
+      return {
+        data: {
+          exists: true,
+          label: store.label,
+          count: cookies.length,
+          updatedAt: store.updatedAt,
+          lastUsedAt: store.lastUsedAt,
+          updatedByUserId: store.updatedByUserId,
+          updatedByEmail:
+            store.updatedBy?.loginEmail ?? store.updatedBy?.person?.email ?? null,
+        },
+        status: "ok" as const,
+      };
+    }),
+
+  updateScraperCookies: canManageFacility
+    .route({ method: "POST", path: "/scraper/cookies" })
+    .input(updateScraperCookiesInputSchema)
+    .output(updateScraperCookiesResponseSchema)
+    .handler(async ({ context, input }) => {
+      const cookies = parseCookieHeader(input.cookieHeader);
+      if (cookies.length === 0) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: "No se pudo parsear ninguna cookie válida del header recibido.",
+        });
+      }
+
+      const label = input.label ?? "default";
+      const now = new Date();
+
+      const store = await db.doctoraliaCookieStore.upsert({
+        where: { label },
+        create: {
+          label,
+          cookiesJson: cookies,
+          updatedByUserId: context.user.id,
+        },
+        update: {
+          cookiesJson: cookies,
+          updatedByUserId: context.user.id,
+          updatedAt: now,
+        },
+      });
+
+      logEvent("doctoralia.scraper.cookies.update", {
+        userId: context.user.id,
+        source: "panel",
+        label: store.label,
+        count: cookies.length,
+      });
+
+      return {
+        data: {
+          label: store.label,
+          count: cookies.length,
+          updatedAt: store.updatedAt,
+        },
+        status: "ok" as const,
+      };
+    }),
 };
+
+function parseCookieHeader(header: string): Array<{ name: string; value: string }> {
+  const raw = header.trim();
+  if (!raw) return [];
+  const parts = raw.split(/;\s*/);
+  const cookies: Array<{ name: string; value: string }> = [];
+  for (const part of parts) {
+    if (!part) continue;
+    const eq = part.indexOf("=");
+    if (eq < 0) continue;
+    const name = part.slice(0, eq).trim();
+    const value = part.slice(eq + 1).trim();
+    if (!name) continue;
+    cookies.push({ name, value });
+  }
+  return cookies;
+}
 
 export const doctoraliaORPCRouter = base
   .prefix("/api/orpc/doctoralia")

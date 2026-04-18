@@ -192,3 +192,13 @@ if (whatsappMissing.length > 0) {
     `[config] WhatsApp deshabilitado. Variables faltantes: ${whatsappMissing.join(", ")}`,
   );
 }
+
+// Doctoralia Scraper Config (bearer token compartido con el bot)
+export const doctoraliaScraperApiToken: string | null =
+  process.env.DOCTORALIA_SCRAPER_API_TOKEN?.trim() || null;
+
+if (!doctoraliaScraperApiToken) {
+  console.warn(
+    "[config] Doctoralia scraper API deshabilitado. Variable faltante: DOCTORALIA_SCRAPER_API_TOKEN",
+  );
+}
