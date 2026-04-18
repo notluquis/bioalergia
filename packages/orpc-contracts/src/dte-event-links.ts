@@ -116,7 +116,7 @@ export const dteEventLinksCrossSeriesConflictSchema = z.object({
   patientName: z.string().nullable(),
   patientRut: z.string().nullable(),
   seriesId: z.number(),
-  status: z.enum(["ACTIVE", "CANCELLED", "COMPLETED"]),
+  status: z.enum(["ACTIVE", "CANCELLED", "COMPLETED", "INACTIVE", "PLANNED"]),
 });
 
 export const dteEventLinksHypothesisSchema = z.object({
@@ -207,7 +207,7 @@ export const dteEventLinksSuggestionsResponseSchema = z.object({
       patientRut: z.string().nullable(),
       remainingExpected: z.number(),
       remainingPaid: z.number(),
-      status: z.enum(["ACTIVE", "CANCELLED", "COMPLETED"]),
+      status: z.enum(["ACTIVE", "CANCELLED", "COMPLETED", "INACTIVE", "PLANNED"]),
       totalExpected: z.number(),
       totalLinkedAmount: z.number(),
       totalPaid: z.number(),

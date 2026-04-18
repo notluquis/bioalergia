@@ -23,8 +23,6 @@ type ReleaseTransactionsORPCContext = {
   hono: HonoContext;
 };
 
-type AuthDbUser = Parameters<typeof authDb.$setAuth>[0];
-
 const base = os.$context<ReleaseTransactionsORPCContext>();
 const NUMERIC_PATTERN = /^\d+$/;
 
@@ -112,8 +110,8 @@ const releaseTransactionsORPCRouterBase = {
     .route({ method: "GET", path: "/{id}", tags: ["Release Transactions"] })
     .input(releaseTransactionIdSchema)
     .output(releaseTransactionsDetailResponseSchema)
-    .handler(async ({ context, input }: { context: { user: unknown }; input: z.output<typeof releaseTransactionIdSchema> }) => {
-      const userDb = authDb.$setAuth(context.user as AuthDbUser);
+    .handler(async ({ context, input }) => {
+      const userDb = authDb.$setAuth(context.user);
       const transaction = await userDb.releaseTransaction.findUnique({
         where: { id: input.id },
       });
@@ -132,10 +130,10 @@ const releaseTransactionsORPCRouterBase = {
     .route({ method: "GET", path: "/", tags: ["Release Transactions"] })
     .input(releaseTransactionsQuerySchema)
     .output(releaseTransactionsListResponseSchema)
-    .handler(async ({ context, input }: { context: { user: unknown }; input: z.output<typeof releaseTransactionsQuerySchema> }) => {
+    .handler(async ({ context, input }) => {
       const offset = (input.page - 1) * input.pageSize;
       const where = buildReleaseWhere(input);
-      const userDb = authDb.$setAuth(context.user as AuthDbUser);
+      const userDb = authDb.$setAuth(context.user);
 
       const [total, data] = await Promise.all([
         userDb.releaseTransaction.count({ where }),

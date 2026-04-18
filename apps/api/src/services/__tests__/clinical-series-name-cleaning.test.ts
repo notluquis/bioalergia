@@ -1,9 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { extractPatientHints, resolveClinicalIdentity } from "../clinical-series";
 
+type NameCase =
+  | readonly [summary: string, expectedName: string]
+  | {
+      readonly summary: string;
+      readonly description: string;
+      readonly expectedName: string;
+    };
+
 describe("clinical series patient-name cleaning", () => {
   it("strips administrative prefixes from the inferred patient name", () => {
-    const cases = [
+    const cases: readonly NameCase[] = [
       ["envio de alyson gajardo arriagada", "alyson gajardo arriagada"],
       ["toca arantxa emilia magdalena ruiz etchepare", "arantxa emilia magdalena ruiz etchepare"],
       ["confirm emilio sabath saez", "emilio sabath saez"],
@@ -104,18 +112,18 @@ describe("clinical series patient-name cleaning", () => {
         "16.08 1ra dosis vacuna clustoid (abono $10.000/25)León Alfonso Saavedra Grob -Rut del paciente: 24510075-2 -Edad: 10 años -Comuna: Hualpen -Previsión: Fonasa -Número de contacto: 998791716",
         "leon alfonso saavedra grob",
       ],
-    ] as const;
+    ];
 
     for (const testCase of cases) {
-      if (Array.isArray(testCase)) {
-        const [summary, expectedName] = testCase;
-        const result = extractPatientHints(summary, null);
-        expect(result.patientName).toBe(expectedName);
+      if ("expectedName" in testCase) {
+        const result = extractPatientHints(testCase.summary, testCase.description);
+        expect(result.patientName).toBe(testCase.expectedName);
         continue;
       }
 
-      const result = extractPatientHints(testCase.summary, testCase.description);
-      expect(result.patientName).toBe(testCase.expectedName);
+      const [summary, expectedName] = testCase;
+      const result = extractPatientHints(summary, null);
+      expect(result.patientName).toBe(expectedName);
     }
   });
 

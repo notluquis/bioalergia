@@ -1039,12 +1039,12 @@ function registerEventHandlers(socket: WASocket, saveCredsFn: () => Promise<void
 
       if (update.status == null) continue;
 
-      const now = new Date();
+      const nowIso = new Date().toISOString();
       let dbStatus: "DELIVERED" | "PLAYED" | "READ" | "SENT" | null = null;
       let extraFields: {
-        deliveredAt?: Date;
-        playedAt?: Date;
-        readAt?: Date;
+        deliveredAt?: string;
+        playedAt?: string;
+        readAt?: string;
       } = {};
 
       switch (update.status) {
@@ -1053,15 +1053,15 @@ function registerEventHandlers(socket: WASocket, saveCredsFn: () => Promise<void
           break;
         case 3:
           dbStatus = "DELIVERED";
-          extraFields = { deliveredAt: now };
+          extraFields = { deliveredAt: nowIso };
           break;
         case 4:
           dbStatus = "READ";
-          extraFields = { readAt: now };
+          extraFields = { readAt: nowIso };
           break;
         case 5:
           dbStatus = "PLAYED";
-          extraFields = { playedAt: now };
+          extraFields = { playedAt: nowIso };
           break;
         default:
           continue;
@@ -1070,7 +1070,7 @@ function registerEventHandlers(socket: WASocket, saveCredsFn: () => Promise<void
       try {
         await db.$qb
           .updateTable("WhatsappNotification")
-          .set({ ...extraFields, status: dbStatus, updatedAt: now })
+          .set({ ...extraFields, status: dbStatus, updatedAt: nowIso })
           .where("waMessageId", "=", key.id)
           .execute();
       } catch {

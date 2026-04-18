@@ -348,7 +348,7 @@ export async function upsertWhatsappChats(chats: Chat[]) {
   const now = new Date();
   await Promise.all(
     chats
-      .filter((chat) => Boolean(chat.id))
+      .filter((chat): chat is Chat & { id: string } => typeof chat.id === "string" && chat.id.length > 0)
       .map(async (chat) => {
         await historyDb
           .insertInto("whatsapp_chats")
@@ -361,7 +361,7 @@ export async function upsertWhatsappChats(chats: Chat[]) {
             ephemeral_expiration: chat.ephemeralExpiration ?? null,
             id: createId(),
             is_blocked: false,
-            is_group: chat.id!.endsWith("@g.us"),
+            is_group: chat.id.endsWith("@g.us"),
             jid: chat.id,
             last_message_id: null,
             last_message_preview: null,

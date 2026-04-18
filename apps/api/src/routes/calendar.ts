@@ -695,7 +695,7 @@ const requireAuth = async (c: Context, next: Next) => {
     return reply(c, { status: "error", message: "No autorizado" }, 401);
   }
   c.set("user", user);
-  await next();
+  return next();
 };
 
 // ============================================================

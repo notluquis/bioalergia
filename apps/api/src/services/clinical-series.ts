@@ -1389,7 +1389,7 @@ export function extractIdentityHints(summary: null | string, description: null |
   const descriptionNames = extractNamesFromText(stripStructuredNoiseForNames(descriptionWithoutBoleta));
   const beneficiaryNames = structured.beneficiaryCandidates
     .map((candidate) => candidate.name)
-    .filter((value): value is string => Boolean(value) && isLikelyPersonName(value));
+    .filter((value): value is string => value !== null && isLikelyPersonName(value));
 
   const uniquePatientNames = [...new Set([...summaryNames, ...descriptionNames])]
     .filter((value) => isLikelyPersonName(value));
@@ -1951,7 +1951,10 @@ function chooseCanonicalPhoneDuplicateCandidate<
 
 function shouldPreferCandidateOverRutMatch<
   T extends {
+    beneficiaryName?: null | string;
     beneficiaryRut?: null | string;
+    eventCount?: number;
+    id: number;
     patientName?: null | string;
     patientRut?: null | string;
   },
@@ -2023,6 +2026,7 @@ function isCloseNormalizedRut(a: null | string, b: null | string): boolean {
   if (!a || !b) return false;
   const left = normalizeRut(a);
   const right = normalizeRut(b);
+  if (!left || !right) return false;
   if (left === right) return true;
   if (left.length !== right.length) return false;
 
@@ -2240,13 +2244,17 @@ class SeriesAssignmentContext {
       const shorterLen = Math.min(eventTokens.length, getSignificantNameTokens(entry.patientName).length);
       if (overlap / shorterLen < 2 / 3) continue;
       if (this.dist(entry, eventDate) > thresholdDays) continue;
+      if (!best) {
+        best = entry;
+        continue;
+      }
+      const currentBest = best;
+      const bestOverlap = eventTokens.filter((t) =>
+        getSignificantNameTokens(currentBest.patientName ?? "").includes(t),
+      ).length;
       if (
-        !best ||
-        overlap > eventTokens.filter((t) => getSignificantNameTokens(best.patientName ?? "").includes(t)).length ||
-        (
-          overlap === eventTokens.filter((t) => getSignificantNameTokens(best.patientName ?? "").includes(t)).length &&
-          compareSeriesCanonicalPriority(entry, best) < 0
-        )
+        overlap > bestOverlap ||
+        (overlap === bestOverlap && compareSeriesCanonicalPriority(entry, currentBest) < 0)
       ) {
         best = entry;
       }
@@ -2355,7 +2363,16 @@ export async function findMatchingSeries(
   }
 
   // ── Slow path: DB queries (single-event incremental sync) ─────────────────
-  const eventSelect = { select: { endDate: true, endDateTime: true, startDate: true, startDateTime: true } } as const;
+  const eventSelect = {
+    select: {
+      description: true,
+      endDate: true,
+      endDateTime: true,
+      startDate: true,
+      startDateTime: true,
+      summary: true,
+    },
+  } as const;
 
   if (params.patientName) {
     const duplicateCandidates = await db.clinicalSeries.findMany({

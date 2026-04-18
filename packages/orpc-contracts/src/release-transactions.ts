@@ -15,8 +15,12 @@ export const releaseTransactionIdSchema = z.object({
   id: z.number().int().positive(),
 });
 
-const decimalValueSchema = z.union([z.number(), z.string(), z.null()]);
-const jsonIdSchema = z.union([z.number(), z.string()]).nullable();
+// Accepts Prisma Decimal (opaque object), BigInt, number, string, or null.
+// SuperJSON transparently serializes Decimal/BigInt across the wire; the
+// contract treats non-primitive numeric carriers as unknown to avoid leaking
+// ORM-specific types into the shared package.
+const decimalValueSchema = z.union([z.number(), z.string(), z.null(), z.unknown()]);
+const jsonIdSchema = z.union([z.number(), z.string(), z.bigint(), z.null()]);
 
 export const releaseTransactionSchema = z.object({
   balanceAmount: decimalValueSchema,

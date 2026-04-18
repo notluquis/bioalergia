@@ -10,11 +10,10 @@ export const zValidator = <T extends ZodType, Target extends keyof ValidationTar
   schema: T,
 ) =>
   baseValidator(target, schema, (result, c) => {
-    if (!result.success) {
-      const pretty = z.prettifyError(result.error);
-      return errorReply(c, 400, pretty, {
-        code: "VALIDATION_ERROR",
-        details: { issues: result.error.issues },
-      });
-    }
+    if (result.success) return;
+    const pretty = z.prettifyError(result.error);
+    return errorReply(c, 400, pretty, {
+      code: "VALIDATION_ERROR",
+      details: { issues: result.error.issues },
+    });
   });

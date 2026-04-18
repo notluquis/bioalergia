@@ -23,8 +23,6 @@ type SettlementTransactionsORPCContext = {
   hono: HonoContext;
 };
 
-type AuthDbUser = Parameters<typeof authDb.$setAuth>[0];
-
 const base = os.$context<SettlementTransactionsORPCContext>();
 const NUMERIC_PATTERN = /^\d+$/;
 
@@ -110,8 +108,8 @@ const settlementTransactionsORPCRouterBase = {
     .route({ method: "GET", path: "/{id}", tags: ["Settlement Transactions"] })
     .input(settlementTransactionIdSchema)
     .output(settlementTransactionsDetailResponseSchema)
-    .handler(async ({ context, input }: { context: { user: unknown }; input: z.output<typeof settlementTransactionIdSchema> }) => {
-      const userDb = authDb.$setAuth(context.user as AuthDbUser);
+    .handler(async ({ context, input }) => {
+      const userDb = authDb.$setAuth(context.user);
       const transaction = await userDb.settlementTransaction.findUnique({
         where: { id: input.id },
       });
@@ -130,10 +128,10 @@ const settlementTransactionsORPCRouterBase = {
     .route({ method: "GET", path: "/", tags: ["Settlement Transactions"] })
     .input(settlementTransactionsQuerySchema)
     .output(settlementTransactionsListResponseSchema)
-    .handler(async ({ context, input }: { context: { user: unknown }; input: z.output<typeof settlementTransactionsQuerySchema> }) => {
+    .handler(async ({ context, input }) => {
       const offset = (input.page - 1) * input.pageSize;
       const where = buildSettlementWhere(input);
-      const userDb = authDb.$setAuth(context.user as AuthDbUser);
+      const userDb = authDb.$setAuth(context.user);
 
       const [total, data] = await Promise.all([
         userDb.settlementTransaction.count({ where }),
