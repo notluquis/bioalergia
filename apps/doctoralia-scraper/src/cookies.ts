@@ -106,6 +106,10 @@ export class CookieJar {
     return [...this.cookies.values()].map((c) => `${c.name}=${c.value}`).join("; ");
   }
 
+  get(name: string): string | undefined {
+    return this.cookies.get(name)?.value;
+  }
+
   size(): number {
     return this.cookies.size;
   }

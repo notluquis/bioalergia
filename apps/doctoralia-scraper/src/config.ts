@@ -19,6 +19,12 @@ const configSchema = z.object({
   cookiesLabel: z.string().min(1),
   cookieJarPath: z.string(),
   capturesDir: z.string(),
+  oneUserId: z.string().min(1, "DOCTORALIA_SCRAPER_ONE_USER_ID is required"),
+  userType: z.string().min(1),
+  countryId: z.string().min(1),
+  frontVersionFallback: z.string().optional(),
+  windowDays: z.number().int().positive(),
+  windowsPerRun: z.number().int().positive(),
 });
 
 export type ScraperConfig = z.infer<typeof configSchema>;
@@ -37,5 +43,11 @@ export function loadConfig(): ScraperConfig {
     cookiesLabel: process.env.DOCTORALIA_SCRAPER_COOKIES_LABEL ?? "default",
     cookieJarPath: path.join(__dirname, "..", ".cookies.json"),
     capturesDir: path.join(__dirname, "..", "captures"),
+    oneUserId: process.env.DOCTORALIA_SCRAPER_ONE_USER_ID ?? "",
+    userType: process.env.DOCTORALIA_SCRAPER_USER_TYPE ?? "secretary",
+    countryId: process.env.DOCTORALIA_SCRAPER_COUNTRY_ID ?? "CL",
+    frontVersionFallback: process.env.DOCTORALIA_SCRAPER_FRONT_VERSION || undefined,
+    windowDays: Number(process.env.DOCTORALIA_SCRAPER_WINDOW_DAYS ?? 7),
+    windowsPerRun: Number(process.env.DOCTORALIA_SCRAPER_WINDOWS_PER_RUN ?? 8),
   });
 }

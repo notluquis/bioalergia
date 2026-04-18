@@ -13,11 +13,52 @@ function log(...args: unknown[]): void {
   console.log("[doctoralia-scraper]", ...args);
 }
 
-function monthRange(today = new Date()): { from: string; to: string } {
-  const from = new Date(today.getFullYear(), today.getMonth(), 1);
-  const to = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-  const fmt = (d: Date) => d.toISOString().slice(0, 10);
-  return { from: fmt(from), to: fmt(to) };
+function startOfWeek(date: Date): Date {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  return d;
+}
+
+function fmtDate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function buildWindows(anchor: Date, windowDays: number, count: number): { from: string; to: string }[] {
+  const base = startOfWeek(anchor);
+  const windows: { from: string; to: string }[] = [];
+  for (let i = 0; i < count; i++) {
+    const from = new Date(base);
+    from.setDate(from.getDate() + i * windowDays);
+    const to = new Date(from);
+    to.setDate(to.getDate() + windowDays - 1);
+    windows.push({ from: fmtDate(from), to: `${fmtDate(to)}T23:59:59` });
+  }
+  return windows;
+}
+
+function extractBearerFromJar(jar: CookieJar): string | null {
+  const raw = jar.get("mkplAuth");
+  if (!raw) return null;
+  const decoded = decodeURIComponent(raw);
+  const match = decoded.match(/^bearer\s+(.+)$/i);
+  return match ? match[1].trim() : decoded.trim();
+}
+
+const FRONT_VERSION_RE = /(?:one-front-version|fmaster_)[^"'\s]*\d+\.\d+/i;
+
+function extractFrontVersion(html: string): string | null {
+  const fmaster = html.match(/fmaster_\d+\.\d+/);
+  if (fmaster) return fmaster[0];
+  const attr = html.match(/data-front-version=["']([^"']+)["']/);
+  if (attr) return attr[1];
+  const generic = html.match(FRONT_VERSION_RE);
+  return generic?.[0] ?? null;
 }
 
 class ImpitSession {
@@ -199,30 +240,82 @@ function extractLoginForm(html: string, pageUrl: string): {
   return { action, hidden, emailField, passwordField };
 }
 
-async function fetchCalendarEvents(session: ImpitSession, config: ScraperConfig): Promise<CapturedEntry[]> {
-  const { from, to } = monthRange();
-  const candidates = [
-    `${config.baseUrl}/api/calendarevents?from=${from}&to=${to}`,
-    `${config.baseUrl}/calendarevents?from=${from}&to=${to}`,
-    `${config.baseUrl}/calendar/events?from=${from}&to=${to}`,
-  ];
+async function resolveFrontVersion(
+  session: ImpitSession,
+  config: ScraperConfig,
+): Promise<string | null> {
+  try {
+    const shell = await session.request(config.baseUrl);
+    const scraped = extractFrontVersion(shell.text);
+    if (scraped) {
+      log(`detected x-one-front-version from shell: ${scraped}`);
+      return scraped;
+    }
+  } catch (err) {
+    log("failed to load SPA shell for front-version detection:", (err as Error).message);
+  }
+  if (config.frontVersionFallback) {
+    log(`using DOCTORALIA_SCRAPER_FRONT_VERSION fallback: ${config.frontVersionFallback}`);
+    return config.frontVersionFallback;
+  }
+  return null;
+}
 
+async function fetchCalendarEvents(
+  session: ImpitSession,
+  config: ScraperConfig,
+): Promise<CapturedEntry[]> {
+  const bearer = extractBearerFromJar(session.jar);
+  if (!bearer) {
+    throw new Error(
+      "no mkplAuth cookie found — paste the Cookie header from Doctoralia DevTools in the intranet panel first",
+    );
+  }
+  const frontVersion = await resolveFrontVersion(session, config);
+  if (!frontVersion) {
+    throw new Error(
+      "could not detect x-one-front-version from SPA shell and no DOCTORALIA_SCRAPER_FRONT_VERSION fallback set",
+    );
+  }
+
+  const endpoint = `${config.baseUrl}/api/calendarevents`;
+  const headers: Record<string, string> = {
+    Accept: "application/json, text/plain, */*",
+    "Content-Type": "application/json",
+    Authorization: `bearer ${bearer}`,
+    Origin: config.baseUrl,
+    Referer: `${config.baseUrl}/`,
+    "x-one-front-version": frontVersion,
+    "one-user-id": config.oneUserId,
+    "x-user-type": config.userType,
+    "x-country-id": config.countryId,
+  };
+
+  const windows = buildWindows(new Date(), config.windowDays, config.windowsPerRun);
   const results: CapturedEntry[] = [];
-  for (const url of candidates) {
-    log("GET", url);
-    const res = await session.request(url, {
-      headers: {
-        Accept: "application/json, text/plain, */*",
-        "X-Requested-With": "XMLHttpRequest",
-      },
-    });
+  for (const { from, to } of windows) {
+    const body = JSON.stringify({ from, to, schedules: [] });
+    log("POST", endpoint, `from=${from} to=${to}`);
+    const res = await session.request(endpoint, { method: "POST", headers, body });
     log(`  → ${res.status}`);
-    if (res.status !== 200) continue;
+    if (res.status !== 200) {
+      if (res.status === 401 || res.status === 403) {
+        throw new Error(
+          `calendarevents ${res.status} — cookies expired or bearer invalid. Re-paste the Cookie header.`,
+        );
+      }
+      log(`  unexpected status, body preview: ${res.text.slice(0, 200)}`);
+      continue;
+    }
     try {
       const json = JSON.parse(res.text);
-      results.push({ ts: new Date().toISOString(), src: url, data: json });
-      log(`  captured JSON, keys=${Object.keys(json).slice(0, 6).join(",")}`);
-      break;
+      results.push({ ts: new Date().toISOString(), src: `${endpoint}?from=${from}&to=${to}`, data: json });
+      const count = Array.isArray(json)
+        ? json.length
+        : Array.isArray((json as { data?: unknown[] }).data)
+          ? (json as { data: unknown[] }).data.length
+          : Object.keys(json as object).length;
+      log(`  captured ${count} entries`);
     } catch {
       log("  response not JSON, skipping");
     }
