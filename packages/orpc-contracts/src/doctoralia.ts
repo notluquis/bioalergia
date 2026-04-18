@@ -359,6 +359,33 @@ export const calendarImportResponseSchema = z.object({
   status: z.literal("ok"),
 });
 
+export const scraperCookiesStatusSchema = z.object({
+  data: z.object({
+    exists: z.boolean(),
+    label: z.string().nullable(),
+    count: z.number().int(),
+    updatedAt: z.coerce.date().nullable(),
+    lastUsedAt: z.coerce.date().nullable(),
+    updatedByUserId: z.number().int().nullable(),
+    updatedByEmail: z.string().nullable(),
+  }),
+  status: z.literal("ok"),
+});
+
+export const updateScraperCookiesInputSchema = z.object({
+  label: z.string().trim().min(1).max(64).optional(),
+  cookieHeader: z.string().trim().min(1),
+});
+
+export const updateScraperCookiesResponseSchema = z.object({
+  data: z.object({
+    label: z.string(),
+    count: z.number().int(),
+    updatedAt: z.coerce.date(),
+  }),
+  status: z.literal("ok"),
+});
+
 export const calendarAppointmentsSchema = z.object({
   data: z.object({
     appointments: z.array(
@@ -439,6 +466,13 @@ export const doctoraliaContract = {
   status: oc.route({ method: "GET", path: "/status" }).output(statusResponseSchema),
   sync: oc.route({ method: "POST", path: "/sync" }).input(syncInputSchema).output(syncResponseSchema),
   syncLogs: oc.route({ method: "GET", path: "/sync/logs" }).output(syncLogsResponseSchema),
+  scraperCookiesStatus: oc
+    .route({ method: "GET", path: "/scraper/cookies/status" })
+    .output(scraperCookiesStatusSchema),
+  updateScraperCookies: oc
+    .route({ method: "POST", path: "/scraper/cookies" })
+    .input(updateScraperCookiesInputSchema)
+    .output(updateScraperCookiesResponseSchema),
 };
 
 export type DoctoraliaContract = typeof doctoraliaContract;
