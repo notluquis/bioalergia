@@ -1,7 +1,9 @@
 import { db } from "@finanzas/db";
 import { Hono } from "hono";
 import { doctoraliaScraperApiToken } from "../config";
+import type { DoctoraliaCalendarResponse } from "../lib/doctoralia/doctoralia-calendar-types";
 import { logError, logEvent } from "../lib/logger";
+import { doctoraliaCalendarSyncService } from "../services/doctoralia-calendar";
 
 export const doctoraliaScraperRoutes = new Hono();
 
@@ -100,6 +102,65 @@ doctoraliaScraperRoutes.post("/cookies", async (c) => {
     return c.json({ error: "update_failed" }, 500);
   }
 });
+
+doctoraliaScraperRoutes.post("/calendar/import", async (c) => {
+  let body: unknown;
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: "invalid_json" }, 400);
+  }
+
+  const entries = parseImportEntries(body);
+  if (!entries) {
+    return c.json({ error: "invalid_payload" }, 400);
+  }
+
+  try {
+    const result = await doctoraliaCalendarSyncService.importFromJsonEntries(
+      entries,
+      "scraper-cron",
+    );
+
+    logEvent("doctoralia.scraper.calendar.import", {
+      syncLogId: result.syncLogId,
+      entriesProcessed: result.entriesProcessed,
+      schedulesInserted: result.summary.schedules.inserted,
+      schedulesUpdated: result.summary.schedules.updated,
+      appointmentsInserted: result.summary.appointments.inserted,
+      appointmentsUpdated: result.summary.appointments.updated,
+      workPeriodsInserted: result.summary.workPeriods.inserted,
+      workPeriodsUpdated: result.summary.workPeriods.updated,
+      errorCount: result.errors.length,
+    });
+
+    return c.json({ status: "ok", ...result });
+  } catch (err) {
+    logError("doctoralia.scraper.calendar.import_failed", err);
+    return c.json({ error: "import_failed", message: (err as Error).message }, 500);
+  }
+});
+
+function parseImportEntries(
+  body: unknown,
+): Array<{ ts?: string; src?: string; data: DoctoraliaCalendarResponse }> | null {
+  if (!body || typeof body !== "object") return null;
+  const raw = (body as { entries?: unknown }).entries;
+  if (!Array.isArray(raw)) return null;
+  const out: Array<{ ts?: string; src?: string; data: DoctoraliaCalendarResponse }> = [];
+  for (const entry of raw) {
+    if (!entry || typeof entry !== "object") continue;
+    const obj = entry as Record<string, unknown>;
+    if (!obj.data || typeof obj.data !== "object") continue;
+    out.push({
+      ts: typeof obj.ts === "string" ? obj.ts : undefined,
+      src: typeof obj.src === "string" ? obj.src : undefined,
+      data: obj.data as DoctoraliaCalendarResponse,
+    });
+  }
+  if (out.length === 0) return null;
+  return out;
+}
 
 function parseCookiesBody(body: unknown): { label: string; cookies: StoredCookie[] } | null {
   if (!body || typeof body !== "object") return null;

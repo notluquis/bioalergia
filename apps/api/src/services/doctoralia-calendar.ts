@@ -320,11 +320,20 @@ export class DoctoraliaCalendarSyncService {
    */
   async importFromJsonEntries(
     entries: Array<{ data: DoctoraliaCalendarResponse; ts?: string }>,
+    triggerSource = "scraper-import-json",
+    triggerUserId?: number,
   ): Promise<{
     entriesProcessed: number;
     summary: UpsertSummary;
     errors: string[];
+    syncLogId: number;
   }> {
+    const syncLog = await createDoctoraliaSyncLog({
+      triggerSource,
+      triggerUserId,
+      status: "RUNNING",
+    });
+
     const summary: UpsertSummary = {
       schedules: { inserted: 0, updated: 0, skipped: 0 },
       appointments: { inserted: 0, updated: 0, skipped: 0 },
@@ -351,7 +360,15 @@ export class DoctoraliaCalendarSyncService {
       }
     }
 
-    return { entriesProcessed: entries.length, summary, errors };
+    await updateDoctoraliaSyncLog(syncLog.id, {
+      status: errors.length > 0 && errors.length === entries.length ? "FAILED" : "SUCCESS",
+      schedulesSynced: summary.schedules.inserted + summary.schedules.updated,
+      appointmentsSynced: summary.appointments.inserted + summary.appointments.updated,
+      workPeriodsSynced: summary.workPeriods.inserted + summary.workPeriods.updated,
+      errorMessage: errors.length > 0 ? errors.join("\n").slice(0, 1000) : undefined,
+    });
+
+    return { entriesProcessed: entries.length, summary, errors, syncLogId: syncLog.id };
   }
 
   /**

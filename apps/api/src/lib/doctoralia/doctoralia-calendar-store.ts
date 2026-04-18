@@ -116,10 +116,16 @@ async function upsertAppointment(
       },
       data,
     });
+    console.log(
+      `[DoctoraliaSync] appointment ${appointment.id} updated (${appointment.title} @ ${appointment.start})`,
+    );
     return "updated";
   }
 
   await db.doctoraliaCalendarAppointment.create({ data });
+  console.log(
+    `[DoctoraliaSync] appointment ${appointment.id} inserted (${appointment.title} @ ${appointment.start})`,
+  );
   return "inserted";
 }
 
