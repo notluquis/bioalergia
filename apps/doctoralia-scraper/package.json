@@ -6,17 +6,19 @@
   "scripts": {
     "scrape": "tsx src/index.ts",
     "discover": "tsx src/index.ts --discover",
+    "start": "node --import tsx src/index.ts",
+    "build": "node -e \"console.log('@finanzas/doctoralia-scraper uses the tsx runtime in production; no JS bundle is emitted during build.')\"",
     "lint": "oxlint",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "dotenv": "^17.4.2",
     "impit": "^0.13.0",
+    "tsx": "^4.21.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",
-    "tsx": "^4.21.0",
     "typescript": "^6.0.3"
   },
   "engines": {
