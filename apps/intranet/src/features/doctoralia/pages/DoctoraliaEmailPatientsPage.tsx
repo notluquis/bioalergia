@@ -5,7 +5,6 @@ import dayjs from "dayjs";
 import { Search, X } from "lucide-react";
 import React, { useCallback, useDeferredValue, useState } from "react";
 import { fetchDoctoraliaEmailPatientHistory, fetchDoctoraliaEmailPatients } from "../api";
-import { DoctoraliaCookieStorePanel } from "../components/DoctoraliaCookieStorePanel";
 import type { DoctoraliaEmailNotification, DoctoraliaEmailPatient } from "../types";
 
 const EVENT_TYPE_LABEL: Record<DoctoraliaEmailNotification["eventType"], string> = {
@@ -119,8 +118,6 @@ export function DoctoraliaEmailPatientsPage() {
 
   return (
     <section className="space-y-4">
-      <DoctoraliaCookieStorePanel />
-
       <div className="max-w-xs">
         <Input
           placeholder="Buscar paciente…"

@@ -15,12 +15,15 @@ import dayjs from "dayjs";
 import {
   Activity,
   AlertCircle,
+  Cookie,
   Mail,
   MessageCircleReply,
   RefreshCw,
   Send,
   Workflow,
 } from "lucide-react";
+
+import { DoctoraliaCookieStorePanel } from "@/features/doctoralia/components/DoctoraliaCookieStorePanel";
 import type React from "react";
 import { useMemo, useState } from "react";
 
@@ -152,6 +155,10 @@ export function DoctoraliaSettingsPage() {
             </Tabs.Tab>
             <Tabs.Tab id="activity">
               Actividad
+              <Tabs.Indicator />
+            </Tabs.Tab>
+            <Tabs.Tab id="scraper">
+              Bot scraper
               <Tabs.Indicator />
             </Tabs.Tab>
           </Tabs.List>
@@ -524,6 +531,32 @@ export function DoctoraliaSettingsPage() {
                 scrollMaxHeight="min(65dvh, 700px)"
               />
             )}
+          </div>
+        </Tabs.Panel>
+
+        <Tabs.Panel id="scraper">
+          <div className="mt-4 grid gap-4 xl:grid-cols-[1fr_1fr]">
+            <DoctoraliaCookieStorePanel />
+            <Card>
+              <Card.Header className="flex flex-col items-start gap-1">
+                <h2 className="flex items-center gap-2 font-semibold text-base">
+                  <Cookie className="h-4 w-4" /> Bot de calendario
+                </h2>
+                <Description className="text-default-500 text-xs">
+                  Cómo funcionan las cookies pegadas aquí.
+                </Description>
+              </Card.Header>
+              <Card.Content className="space-y-3 text-default-600 text-sm">
+                <p>
+                  El scraper corre en Railway cada 30 minutos, se autentica a Doctoralia con las
+                  cookies pegadas y extrae el calendario directo a nuestra base de datos.
+                </p>
+                <p>
+                  Cuando las cookies expiran (≈2–4 semanas), vuelve a DevTools → Network → copia el
+                  header Cookie y pégalo a la izquierda.
+                </p>
+              </Card.Content>
+            </Card>
           </div>
         </Tabs.Panel>
       </Tabs>
