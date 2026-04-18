@@ -54,7 +54,7 @@ const sinceArg = sinceIndex >= 0 ? args[sinceIndex + 1] : undefined;
 const accountsArg = accountsIndex >= 0 ? args[accountsIndex + 1] : undefined;
 
 const since: Date | null = sinceArg ? new Date(sinceArg) : null;
-if (sinceArg && Number.isNaN(since.getTime())) {
+if (sinceArg && since && Number.isNaN(since.getTime())) {
   console.error(`Error: invalid --since value "${sinceArg}". Expected YYYY-MM-DD.`);
   process.exit(1);
 }
@@ -403,7 +403,7 @@ async function fetchFromAccount(account: AccountConfig): Promise<RawEmail[]> {
         searchCriteria.since = since;
       }
 
-      const uids = await client.search(searchCriteria);
+      const uids: number[] = (await client.search(searchCriteria)) || [];
       console.log(`  Found ${uids.length} emails from ${senderFilter}`);
 
       if (uids.length === 0) return emails;

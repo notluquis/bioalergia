@@ -255,7 +255,9 @@ async function getLastRecordedDoctoraliaEmailDate(): Promise<Date | null> {
 
   if (!latest?.createdAt) return null;
 
-  const parsed = latest.createdAt instanceof Date ? latest.createdAt : new Date(latest.createdAt);
+  const raw: unknown = latest.createdAt;
+  const parsed =
+    raw instanceof Date ? raw : new Date(raw as string | number);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
@@ -539,13 +541,13 @@ async function ingestMailbox(client: ImapFlow, config: ImapConfig): Promise<Doct
   const senderTerms = resolveDoctoraliaSenderSearchTerms(config.senderFilter);
   const matchedSenderTermsByUid = new Map<number, Set<string>>();
 
-  const uids = searchStart
-    ? await client.search({ since: searchStart }, { uid: true })
+  const uids: number[] = searchStart
+    ? (await client.search({ since: searchStart }, { uid: true })) || []
     : [];
 
   if (!uids.length && !searchStart) {
     for (const senderTerm of senderTerms) {
-      const matchingUids = await client.search({ from: senderTerm }, { uid: true });
+      const matchingUids = (await client.search({ from: senderTerm }, { uid: true })) || [];
       for (const uid of matchingUids) {
         const matchedTerms = matchedSenderTermsByUid.get(uid) ?? new Set<string>();
         matchedTerms.add(senderTerm);
@@ -554,11 +556,11 @@ async function ingestMailbox(client: ImapFlow, config: ImapConfig): Promise<Doct
     }
   }
 
-  const candidateUids = (
+  const candidateUids: number[] = (
     searchStart
       ? uids
       : [...matchedSenderTermsByUid.keys()]
-  ).sort((a, b) => a - b);
+  ).sort((a: number, b: number) => a - b);
 
   if (!candidateUids.length) return createEmptyIngestResult(0);
 
@@ -578,10 +580,11 @@ async function ingestMailbox(client: ImapFlow, config: ImapConfig): Promise<Doct
     uid: true,
   });
 
+  const mailbox = client.mailbox && typeof client.mailbox === "object" ? client.mailbox : null;
   return processFetchedMessages(messages, {
     checked: candidateUids.length,
     matchedSenderTermsByUid,
-    uidValidity: client.mailbox?.uidValidity ?? null,
+    uidValidity: mailbox?.uidValidity ?? null,
   });
 }
 
@@ -589,7 +592,8 @@ async function ingestNewMessagesSinceCount(
   client: ImapFlow,
   previousCount: number,
 ): Promise<DoctoraliaImapIngestResult> {
-  const currentCount = client.mailbox?.exists ?? 0;
+  const mailbox = client.mailbox && typeof client.mailbox === "object" ? client.mailbox : null;
+  const currentCount = mailbox?.exists ?? 0;
   if (currentCount <= previousCount) return createEmptyIngestResult(0);
 
   const range = `${previousCount + 1}:*`;
@@ -601,7 +605,7 @@ async function ingestNewMessagesSinceCount(
 
   return processFetchedMessages(messages, {
     checked: currentCount - previousCount,
-    uidValidity: client.mailbox?.uidValidity ?? null,
+    uidValidity: mailbox?.uidValidity ?? null,
   });
 }
 

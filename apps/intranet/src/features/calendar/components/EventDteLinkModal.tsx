@@ -475,8 +475,12 @@ export function EventDteLinkModal({ event, isOpen, onClose, onLinked }: EventDte
                     <Disclosure.Body className="px-0 pt-3">
                       {suggestionsQuery.isLoading ? (
                         <div className="space-y-2">
-                          <Surface className="h-24 rounded-xl" variant="secondary" />
-                          <Surface className="h-24 rounded-xl" variant="secondary" />
+                          <Surface className="h-24 rounded-xl" variant="secondary">
+                            {null}
+                          </Surface>
+                          <Surface className="h-24 rounded-xl" variant="secondary">
+                            {null}
+                          </Surface>
                         </div>
                       ) : candidates.length === 0 ? (
                         <Alert status="warning">
