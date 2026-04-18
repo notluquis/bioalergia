@@ -5,7 +5,7 @@ import { stdin, stdout } from "node:process";
 import { Impit, type HttpMethod } from "impit";
 import { loadConfig, type ScraperConfig } from "./config.js";
 import { CookieJar } from "./cookies.js";
-import { type CapturedEntry, postToImportEndpoint, saveCaptureToDisk } from "./submit.js";
+import { type CapturedEntry, postToImportEndpoint } from "./submit.js";
 
 const discoverMode = process.argv.includes("--discover");
 
@@ -308,14 +308,10 @@ async function fetchCalendarEvents(
       continue;
     }
     try {
-      const json = JSON.parse(res.text);
+      const json = JSON.parse(res.text) as { appointments?: unknown[] };
       results.push({ ts: new Date().toISOString(), src: `${endpoint}?from=${from}&to=${to}`, data: json });
-      const count = Array.isArray(json)
-        ? json.length
-        : Array.isArray((json as { data?: unknown[] }).data)
-          ? (json as { data: unknown[] }).data.length
-          : Object.keys(json as object).length;
-      log(`  captured ${count} entries`);
+      const appts = Array.isArray(json.appointments) ? json.appointments.length : 0;
+      log(`  captured ${appts} appointments`);
     } catch {
       log("  response not JSON, skipping");
     }
@@ -346,11 +342,8 @@ async function run(): Promise<void> {
     return;
   }
 
-  const file = saveCaptureToDisk(config.capturesDir, captured);
-  log(`saved ${captured.length} entries to ${file}`);
-
   if (config.importEndpoint) {
-    log(`POST ${config.importEndpoint}`);
+    log(`POST ${config.importEndpoint} (${captured.length} entries)`);
     const result = await postToImportEndpoint(config.importEndpoint, config.importToken, captured);
     log("import →", result.status, result.ok ? "OK" : "FAIL", result.body.slice(0, 400));
   } else {
