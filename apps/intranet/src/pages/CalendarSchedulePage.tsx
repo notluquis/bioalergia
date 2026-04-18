@@ -28,7 +28,7 @@ dayjs.locale("es");
 
 const DATE_FORMAT = "YYYY-MM-DD";
 type CalendarSource = "doctoralia" | "doctoralia-email" | "google";
-const DOCTORALIA_STANDBY = true;
+const DOCTORALIA_STANDBY = false;
 
 function toCalendarEventDetail(
   appointments: Awaited<ReturnType<typeof fetchDoctoraliaCalendarAppointments>>
