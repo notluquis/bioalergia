@@ -256,6 +256,42 @@ const calendarAppointmentsSchema = z.object({
   status: z.literal("ok"),
 });
 
+const calendarImportCountsSchema = z.object({
+  inserted: z.number().int(),
+  updated: z.number().int(),
+  skipped: z.number().int(),
+});
+
+const calendarImportInputSchema = z.object({
+  entries: z
+    .array(
+      z.object({
+        ts: z.string().optional(),
+        src: z.string().optional(),
+        data: z.object({
+          schedules: z.record(z.string(), z.any()),
+          appointments: z.array(z.any()),
+          workperiods: z.array(z.any()),
+        }),
+      }),
+    )
+    .min(1)
+    .max(50),
+});
+
+const calendarImportResponseSchema = z.object({
+  data: z.object({
+    entriesProcessed: z.number().int(),
+    summary: z.object({
+      schedules: calendarImportCountsSchema,
+      appointments: calendarImportCountsSchema,
+      workPeriods: calendarImportCountsSchema,
+    }),
+    errors: z.array(z.string()),
+  }),
+  status: z.literal("ok"),
+});
+
 const authed = base.use(async ({ context, next }) => {
   const user = await getSessionUser(context.hono);
 
@@ -431,6 +467,41 @@ const doctoraliaORPCRouterBase = {
           expiresAt: null,
         },
         status: "ok",
+      };
+    }),
+
+  importCalendarJson: canManageFacility
+    .route({ method: "POST", path: "/calendar/import-json" })
+    .input(calendarImportInputSchema)
+    .output(calendarImportResponseSchema)
+    .handler(async ({ context, input }) => {
+      const { doctoraliaCalendarSyncService } = await import(
+        "../services/doctoralia-calendar.js"
+      );
+
+      const entries = input.entries as Array<{
+        ts?: string;
+        src?: string;
+        data: import("../lib/doctoralia/doctoralia-calendar-types.js").DoctoraliaCalendarResponse;
+      }>;
+
+      const result = await doctoraliaCalendarSyncService.importFromJsonEntries(entries);
+
+      logEvent("doctoralia.calendar.import.json", {
+        userId: context.user.id,
+        entriesProcessed: result.entriesProcessed,
+        schedulesInserted: result.summary.schedules.inserted,
+        schedulesUpdated: result.summary.schedules.updated,
+        appointmentsInserted: result.summary.appointments.inserted,
+        appointmentsUpdated: result.summary.appointments.updated,
+        workPeriodsInserted: result.summary.workPeriods.inserted,
+        workPeriodsUpdated: result.summary.workPeriods.updated,
+        errorCount: result.errors.length,
+      });
+
+      return {
+        data: result,
+        status: "ok" as const,
       };
     }),
 

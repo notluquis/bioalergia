@@ -314,6 +314,47 @@ export class DoctoraliaCalendarSyncService {
   }
 
   /**
+   * Import pre-downloaded calendar responses (e.g. scraped JSON files).
+   * Each entry is the raw DoctoraliaCalendarResponse body from one weekly request.
+   * Upsert + dedup is handled by the store layer via scheduleId_externalId.
+   */
+  async importFromJsonEntries(
+    entries: Array<{ data: DoctoraliaCalendarResponse; ts?: string }>,
+  ): Promise<{
+    entriesProcessed: number;
+    summary: UpsertSummary;
+    errors: string[];
+  }> {
+    const summary: UpsertSummary = {
+      schedules: { inserted: 0, updated: 0, skipped: 0 },
+      appointments: { inserted: 0, updated: 0, skipped: 0 },
+      workPeriods: { inserted: 0, updated: 0, skipped: 0 },
+    };
+    const errors: string[] = [];
+
+    for (const [index, entry] of entries.entries()) {
+      try {
+        const result = await this.upsertCalendarResponse(entry.data);
+        summary.schedules.inserted += result.schedules.inserted;
+        summary.schedules.updated += result.schedules.updated;
+        summary.schedules.skipped += result.schedules.skipped;
+        summary.appointments.inserted += result.appointments.inserted;
+        summary.appointments.updated += result.appointments.updated;
+        summary.appointments.skipped += result.appointments.skipped;
+        summary.workPeriods.inserted += result.workPeriods.inserted;
+        summary.workPeriods.updated += result.workPeriods.updated;
+        summary.workPeriods.skipped += result.workPeriods.skipped;
+      } catch (error) {
+        const label = entry.ts ? `entry #${index + 1} (ts=${entry.ts})` : `entry #${index + 1}`;
+        const message = error instanceof Error ? error.message : String(error);
+        errors.push(`${label}: ${message}`);
+      }
+    }
+
+    return { entriesProcessed: entries.length, summary, errors };
+  }
+
+  /**
    * Sync events for a specific date (convenience method)
    */
   async syncDate(date: string, scheduleIds?: number[]) {

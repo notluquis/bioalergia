@@ -19,6 +19,7 @@ import { useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
+import { DoctoraliaCalendarJsonPanel } from "@/features/doctoralia/components/DoctoraliaCalendarJsonPanel";
 import type { AuthContextType } from "@/features/auth/hooks/use-auth";
 import {
   type CsvImportPayload,
@@ -515,12 +516,18 @@ const TABLE_OPTIONS: TableOption[] = [
     label: "DTE Ventas (Tipos 41/61)",
     value: "dte_sales",
   },
+  {
+    fields: [],
+    label: "Calendario Doctoralia (JSON)",
+    value: "doctoralia_calendar",
+  },
 ];
 
 const SUPPORTED_TABLES = new Set([
   "counterparts",
   "daily_balances",
   "daily_production_balances",
+  "doctoralia_calendar",
   "dte_purchases",
   "dte_sales",
   "employee_timesheets",
@@ -536,6 +543,7 @@ const PERMISSION_MAP: Record<string, { action: string; subject: string }> = {
   counterparts: { action: "create", subject: "Counterpart" },
   daily_balances: { action: "create", subject: "DailyBalance" },
   daily_production_balances: { action: "create", subject: "ProductionBalance" },
+  doctoralia_calendar: { action: "update", subject: "DoctoraliaFacility" },
   dte_purchases: { action: "create", subject: "DTEPurchaseDetail" },
   dte_sales: { action: "create", subject: "DTESaleDetail" },
   employee_timesheets: { action: "create", subject: "Timesheet" },
@@ -1706,6 +1714,8 @@ export function CSVUploadPage() {
     );
   }
 
+  const isDoctoraliaCalendar = selectedTable === "doctoralia_calendar";
+
   return (
     <div className="space-y-3">
       <TableSelectionCard
@@ -1715,27 +1725,36 @@ export function CSVUploadPage() {
         selectedTable={selectedTable}
       />
 
-      <FileUploadSection
-        disabled={isProcessing}
-        onFileChange={handleFileChange}
-        selectedTable={selectedTable}
-      />
+      {isDoctoraliaCalendar && <DoctoraliaCalendarJsonPanel />}
 
-      <FilesListSection onRemove={handleRemoveFile} uploadedFiles={uploadedFiles} />
+      {!isDoctoraliaCalendar && (
+        <FileUploadSection
+          disabled={isProcessing}
+          onFileChange={handleFileChange}
+          selectedTable={selectedTable}
+        />
+      )}
+
+      {!isDoctoraliaCalendar && (
+        <FilesListSection onRemove={handleRemoveFile} uploadedFiles={uploadedFiles} />
+      )}
 
       {/* 4. Map Columns (showing first file's mapping) */}
-      {firstFile && currentTable && (
+      {!isDoctoraliaCalendar && firstFile && currentTable && (
         <ColumnMappingCard columns={columns} fields={currentTable.fields} totalRows={totalRows} />
       )}
 
       {/* 5. Preview Summary */}
-      <ImportSummaryCard
-        droppedDuplicates={batchDroppedDuplicates}
-        importMode={importMode}
-        previewData={batchPreviewData}
-      />
+      {!isDoctoraliaCalendar && (
+        <ImportSummaryCard
+          droppedDuplicates={batchDroppedDuplicates}
+          importMode={importMode}
+          previewData={batchPreviewData}
+        />
+      )}
 
-      {hasPreviewData &&
+      {!isDoctoraliaCalendar &&
+        hasPreviewData &&
         importMode === "insert-or-update" &&
         (batchPreviewData?.toUpdate ?? 0) > 0 &&
         !hasLoadedUpdateDetails && (
@@ -1746,23 +1765,26 @@ export function CSVUploadPage() {
           />
         )}
 
-      {hasPreviewData && importMode === "insert-or-update" && updateCandidateRows.length > 0 && (
-        <UpdateSelectionCard
-          isLoadingDetails={isLoadingUpdateDetails}
-          onLoadDetails={handleLoadUpdateDetails}
-          onSelectionChange={setUpdateRowSelection}
-          rowSelection={updateRowSelection}
-          rows={updateCandidateRows}
-        />
-      )}
+      {!isDoctoraliaCalendar &&
+        hasPreviewData &&
+        importMode === "insert-or-update" &&
+        updateCandidateRows.length > 0 && (
+          <UpdateSelectionCard
+            isLoadingDetails={isLoadingUpdateDetails}
+            onLoadDetails={handleLoadUpdateDetails}
+            onSelectionChange={setUpdateRowSelection}
+            rowSelection={updateRowSelection}
+            rows={updateCandidateRows}
+          />
+        )}
 
       {/* 6. Import Mode Selection */}
-      {hasPreviewData && (
+      {!isDoctoraliaCalendar && hasPreviewData && (
         <ImportModeCard importMode={importMode} onModeChange={handleImportModeChange} />
       )}
 
       {/* 7. Actions */}
-      {uploadedFiles.length > 0 && (
+      {!isDoctoraliaCalendar && uploadedFiles.length > 0 && (
         <ImportActionsBar
           batchPreviewData={batchPreviewData}
           hasPreviewData={hasPreviewData}

@@ -323,6 +323,42 @@ export const calendarAuthStatusSchema = z.object({
   status: z.literal("ok"),
 });
 
+const calendarImportCountsSchema = z.object({
+  inserted: z.number().int(),
+  updated: z.number().int(),
+  skipped: z.number().int(),
+});
+
+export const calendarImportInputSchema = z.object({
+  entries: z
+    .array(
+      z.object({
+        ts: z.string().optional(),
+        src: z.string().optional(),
+        data: z.object({
+          schedules: z.record(z.string(), z.any()),
+          appointments: z.array(z.any()),
+          workperiods: z.array(z.any()),
+        }),
+      }),
+    )
+    .min(1)
+    .max(50),
+});
+
+export const calendarImportResponseSchema = z.object({
+  data: z.object({
+    entriesProcessed: z.number().int(),
+    summary: z.object({
+      schedules: calendarImportCountsSchema,
+      appointments: calendarImportCountsSchema,
+      workPeriods: calendarImportCountsSchema,
+    }),
+    errors: z.array(z.string()),
+  }),
+  status: z.literal("ok"),
+});
+
 export const calendarAppointmentsSchema = z.object({
   data: z.object({
     appointments: z.array(
@@ -359,6 +395,10 @@ export const doctoraliaContract = {
     .input(calendarAppointmentsQuerySchema)
     .output(calendarAppointmentsSchema),
   calendarAuthStatus: oc.route({ method: "GET", path: "/calendar/auth/status" }).output(calendarAuthStatusSchema),
+  importCalendarJson: oc
+    .route({ method: "POST", path: "/calendar/import-json" })
+    .input(calendarImportInputSchema)
+    .output(calendarImportResponseSchema),
   cancelBooking: oc
     .route({ method: "DELETE", path: "/bookings/{bookingId}" })
     .input(cancelBookingInputSchema)
