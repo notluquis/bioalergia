@@ -17,7 +17,7 @@
     "chromatic": "chromatic --project-token=$CHROMATIC_PROJECT_TOKEN --exit-once-uploaded",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
-    "type-check": "tsgo --noEmit && oxlint --type-check-only src shared",
+    "type-check": "tsc --noEmit && oxlint --type-check-only src shared",
     "lint:heroui-composition": "node ./scripts/check-heroui-composition.mjs",
     "audit:validations": "node ./scripts/audit-validations.mjs",
     "format": "oxfmt",

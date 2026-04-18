@@ -245,6 +245,12 @@ export class SchemaType implements SchemaDef {
                     array: true,
                     relation: { opposite: "createdByUser" }
                 },
+                abandonmentContacts: {
+                    name: "abandonmentContacts",
+                    type: "AbandonmentContact",
+                    array: true,
+                    relation: { opposite: "contactedBy" }
+                },
                 person: {
                     name: "person",
                     type: "Person",
@@ -2950,6 +2956,12 @@ export class SchemaType implements SchemaDef {
                     type: "ClinicalSeriesMergeLog",
                     array: true,
                     relation: { opposite: "target" }
+                },
+                abandonmentContacts: {
+                    name: "abandonmentContacts",
+                    type: "AbandonmentContact",
+                    array: true,
+                    relation: { opposite: "series" }
                 }
             },
             idFields: ["id"],
@@ -3006,6 +3018,59 @@ export class SchemaType implements SchemaDef {
                     name: "target",
                     type: "ClinicalSeries",
                     relation: { opposite: "mergeLogs", fields: ["targetId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "BigInt" }
+            }
+        },
+        AbandonmentContact: {
+            name: "AbandonmentContact",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "BigInt",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                seriesId: {
+                    name: "seriesId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "series"
+                    ] as readonly string[]
+                },
+                outcome: {
+                    name: "outcome",
+                    type: "AbandonmentContactOutcome"
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                contactedById: {
+                    name: "contactedById",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "contactedBy"
+                    ] as readonly string[]
+                },
+                contactedAt: {
+                    name: "contactedAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                series: {
+                    name: "series",
+                    type: "ClinicalSeries",
+                    relation: { opposite: "abandonmentContacts", fields: ["seriesId"], references: ["id"], onDelete: "Cascade" }
+                },
+                contactedBy: {
+                    name: "contactedBy",
+                    type: "User",
+                    relation: { opposite: "abandonmentContacts", fields: ["contactedById"], references: ["id"] }
                 }
             },
             idFields: ["id"],
@@ -8050,6 +8115,16 @@ export class SchemaType implements SchemaDef {
                 READING: "READING",
                 DOSE: "DOSE",
                 MAINTENANCE: "MAINTENANCE"
+            }
+        },
+        AbandonmentContactOutcome: {
+            name: "AbandonmentContactOutcome",
+            values: {
+                WILL_RETURN: "WILL_RETURN",
+                DECLINED: "DECLINED",
+                UNREACHABLE: "UNREACHABLE",
+                RESCHEDULED: "RESCHEDULED",
+                OTHER: "OTHER"
             }
         },
         BudgetStatus: {
