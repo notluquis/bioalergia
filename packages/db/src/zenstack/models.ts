@@ -63,6 +63,7 @@ export type DoctoraliaWorkPeriod = $ModelResult<$Schema, "DoctoraliaWorkPeriod">
 export type DoctoraliaCalendarSyncLog = $ModelResult<$Schema, "DoctoraliaCalendarSyncLog">;
 export type HaulmerSyncLog = $ModelResult<$Schema, "HaulmerSyncLog">;
 export type DoctoraliaEmailNotification = $ModelResult<$Schema, "DoctoraliaEmailNotification">;
+export type DoctoraliaCookieStore = $ModelResult<$Schema, "DoctoraliaCookieStore">;
 export type WhatsappNotification = $ModelResult<$Schema, "WhatsappNotification">;
 export type WhatsappConversationState = $ModelResult<$Schema, "WhatsappConversationState">;
 export type WhatsappMessage = $ModelResult<$Schema, "WhatsappMessage">;

@@ -83,6 +83,7 @@ model User {
   eventDteSaleLinks       EventDteSaleLink[]
   attendanceMarkCorrections AttendanceMark[]
   abandonmentContacts     AbandonmentContact[]
+  doctoraliaCookieStoreUpdates DoctoraliaCookieStore[]
   person                  Person                   @relation(fields: [personId], references: [id], onDelete: Cascade)
 
   // This model represents the authenticated user
@@ -1565,6 +1566,26 @@ enum DoctoraliaEmailEventType {
   BOOKING
   MODIFICATION
   CANCELLATION
+}
+
+// Singleton (one row, label="default") storing the raw Doctoralia panel session
+// cookies pasted from the user's browser. The scraper reads from here via a
+// bearer-token API so we never check credentials into disk/git. Schema-level
+// policies only permit authenticated reads — raw cookies never leave the API
+// to the browser (the oRPC layer exposes metadata only).
+model DoctoraliaCookieStore {
+  id              Int       @id @default(autoincrement())
+  label           String    @unique @default("default")
+  cookiesJson     Json      @map("cookies_json")
+  lastUsedAt      DateTime? @map("last_used_at")
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at")
+  updatedByUserId Int?      @map("updated_by_user_id")
+  updatedBy       User?     @relation(fields: [updatedByUserId], references: [id], onDelete: SetNull)
+
+  @@deny('all', auth() == null)
+  @@allow('read,create,update', auth().status == 'ACTIVE')
+
+  @@map("doctoralia_cookie_store")
 }
 
 // ============================================================

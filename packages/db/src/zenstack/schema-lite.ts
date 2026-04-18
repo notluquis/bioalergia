@@ -251,6 +251,12 @@ export class SchemaType implements SchemaDef {
                     array: true,
                     relation: { opposite: "contactedBy" }
                 },
+                doctoraliaCookieStoreUpdates: {
+                    name: "doctoraliaCookieStoreUpdates",
+                    type: "DoctoraliaCookieStore",
+                    array: true,
+                    relation: { opposite: "updatedBy" }
+                },
                 person: {
                     name: "person",
                     type: "Person",
@@ -4854,6 +4860,57 @@ export class SchemaType implements SchemaDef {
             uniqueFields: {
                 id: { type: "String" },
                 emailMessageId: { type: "String" }
+            }
+        },
+        DoctoraliaCookieStore: {
+            name: "DoctoraliaCookieStore",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                label: {
+                    name: "label",
+                    type: "String",
+                    unique: true,
+                    default: "default" as FieldDefault
+                },
+                cookiesJson: {
+                    name: "cookiesJson",
+                    type: "Json"
+                },
+                lastUsedAt: {
+                    name: "lastUsedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedByUserId: {
+                    name: "updatedByUserId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "updatedBy"
+                    ] as readonly string[]
+                },
+                updatedBy: {
+                    name: "updatedBy",
+                    type: "User",
+                    optional: true,
+                    relation: { opposite: "doctoraliaCookieStoreUpdates", fields: ["updatedByUserId"], references: ["id"], onDelete: "SetNull" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                label: { type: "String" }
             }
         },
         WhatsappNotification: {

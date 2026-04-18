@@ -278,6 +278,12 @@ export class SchemaType implements SchemaDef {
                     array: true,
                     relation: { opposite: "contactedBy" }
                 },
+                doctoraliaCookieStoreUpdates: {
+                    name: "doctoraliaCookieStoreUpdates",
+                    type: "DoctoraliaCookieStore",
+                    array: true,
+                    relation: { opposite: "updatedBy" }
+                },
                 person: {
                     name: "person",
                     type: "Person",
@@ -5951,6 +5957,69 @@ export class SchemaType implements SchemaDef {
             uniqueFields: {
                 id: { type: "String" },
                 emailMessageId: { type: "String" }
+            }
+        },
+        DoctoraliaCookieStore: {
+            name: "DoctoraliaCookieStore",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                label: {
+                    name: "label",
+                    type: "String",
+                    unique: true,
+                    attributes: [{ name: "@unique" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("default") }] }] as readonly AttributeApplication[],
+                    default: "default" as FieldDefault
+                },
+                cookiesJson: {
+                    name: "cookiesJson",
+                    type: "Json",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("cookies_json") }] }] as readonly AttributeApplication[]
+                },
+                lastUsedAt: {
+                    name: "lastUsedAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("last_used_at") }] }] as readonly AttributeApplication[]
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedByUserId: {
+                    name: "updatedByUserId",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_by_user_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "updatedBy"
+                    ] as readonly string[]
+                },
+                updatedBy: {
+                    name: "updatedBy",
+                    type: "User",
+                    optional: true,
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("updatedByUserId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("SetNull") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "doctoraliaCookieStoreUpdates", fields: ["updatedByUserId"], references: ["id"], onDelete: "SetNull" }
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read,create,update") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("doctoralia_cookie_store") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                label: { type: "String" }
             }
         },
         WhatsappNotification: {
