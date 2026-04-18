@@ -61,5 +61,5 @@ script detecta el redirect a `l.doctoralia.cl` y relogea automáticamente.
 
 ## Deploy a Railway (pendiente)
 
-Imagen `node:25-slim` (base existente), sin Chromium. Dockerfile ~15 líneas.
+Imagen `node:slim` (base existente), sin Chromium. Dockerfile ~15 líneas.
 Railway cron service → ~$0.01/mes.

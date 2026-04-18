@@ -3,7 +3,7 @@
 # ==========================================================================
 # Stage 1: Prune monorepo for intranet
 # ==========================================================================
-FROM node:25-slim AS pruner
+FROM node:slim AS pruner
 WORKDIR /app
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
@@ -15,7 +15,7 @@ RUN TURBO_TELEMETRY_DISABLED=1 pnpm dlx turbo@2.9.1 prune @finanzas/intranet --d
 # ==========================================================================
 # Stage 2: Base deps
 # ==========================================================================
-FROM node:25-slim AS base
+FROM node:slim AS base
 WORKDIR /app
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
