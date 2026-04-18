@@ -109,6 +109,7 @@ export const DoctoraliaCalendarAppointmentSchema = z.strictObject({
     displayName: z.string(),
     externalId: z.number(),
   }),
+  serviceColorSchemaId: z.number().nullable(),
   serviceName: z.string(),
   startAt: z.coerce.date(),
   status: z.number(),

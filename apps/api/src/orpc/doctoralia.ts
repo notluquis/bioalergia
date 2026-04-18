@@ -454,6 +454,7 @@ const doctoraliaORPCRouterBase = {
               externalId: true,
             },
           },
+          serviceColorSchemaId: true,
           serviceName: true,
           startAt: true,
           status: true,

@@ -36,7 +36,8 @@ function toCalendarEventDetail(
   return appointments.map((appointment) => ({
     calendarId: `doctoralia:${appointment.schedule.externalId}`,
     category: null,
-    colorId: null,
+    colorId:
+      appointment.serviceColorSchemaId != null ? String(appointment.serviceColorSchemaId) : null,
     controlIncluded: null,
     description: appointment.comments,
     endDate: appointment.endAt.toISOString().split("T")[0] ?? null,

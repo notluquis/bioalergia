@@ -116,6 +116,7 @@ export interface DoctoraliaCalendarAppointment {
     displayName: string;
     externalId: number;
   };
+  serviceColorSchemaId: null | number;
   serviceName: string;
   startAt: Date;
   status: number;

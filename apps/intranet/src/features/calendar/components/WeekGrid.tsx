@@ -1,6 +1,7 @@
 import { Button, Tooltip } from "@heroui/react";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
+import type { CSSProperties } from "react";
 import { useEffect, useState } from "react";
 import { currencyFormatter } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -118,7 +119,7 @@ function isTodayInVisibleWeek(monday: dayjs.Dayjs, weekEnd: dayjs.Dayjs) {
 function getWeekEventsInRange(
   events: CalendarEventDetail[],
   monday: dayjs.Dayjs,
-  weekEnd: dayjs.Dayjs,
+  weekEnd: dayjs.Dayjs
 ) {
   return events.filter((event) => {
     if (!event.startDateTime) {
@@ -218,7 +219,7 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
     <div
       className={cn(
         "flex h-[min(100svh-220px,800px)] min-h-130 flex-col overflow-hidden rounded-2xl border border-default-200 bg-content1 shadow-sm",
-        loading && "pointer-events-none opacity-50 grayscale-[0.3]",
+        loading && "pointer-events-none opacity-50 grayscale-[0.3]"
       )}
       role="none"
     >
@@ -259,7 +260,7 @@ function WeekGridHeader({ days }: { days: DayInfo[] }) {
           aria-current={day.isToday ? "date" : undefined}
           className={cn(
             "flex flex-col items-center justify-center gap-1 border-default-200 border-r px-1 py-3 text-center last:border-r-0 sm:py-4",
-            day.isToday && "relative border-primary border-t-4 bg-primary/20",
+            day.isToday && "relative border-primary border-t-4 bg-primary/20"
           )}
           key={day.key}
         >
@@ -273,7 +274,7 @@ function WeekGridHeader({ days }: { days: DayInfo[] }) {
             className={cn(
               "font-extrabold text-foreground text-xl leading-none sm:text-2xl",
               day.isToday &&
-                "grid size-10 place-items-center rounded-full bg-primary font-black text-primary-foreground text-xl shadow-lg shadow-primary/40",
+                "grid size-10 place-items-center rounded-full bg-primary font-black text-primary-foreground text-xl shadow-lg shadow-primary/40"
             )}
             dateTime={day.isoDate}
           >
@@ -325,7 +326,7 @@ function DayColumn({
     <div
       className={cn(
         "relative min-h-full overflow-hidden border-default-100 border-r last:border-r-0",
-        day.isToday && "bg-primary/5",
+        day.isToday && "bg-primary/5"
       )}
     >
       {/* Hour grid lines */}
@@ -390,15 +391,66 @@ function getEventDisplayTimes(event: CalendarEventDetail) {
   };
 }
 
-function getEventButtonClasses(displayMode: DisplayMode, category: string | null) {
+function getEventButtonClasses(
+  displayMode: DisplayMode,
+  category: string | null,
+  hasPaletteColor: boolean
+) {
   return cn(
     "absolute z-1 flex min-h-5 flex-col justify-start gap-px overflow-hidden text-wrap rounded-md border-l-[3px] px-1.5 py-1 text-start shadow-sm hover:z-10 hover:shadow-md",
-    getCategoryClass(category),
+    hasPaletteColor ? "border-l-[3px]" : getCategoryClass(category),
     displayMode === "minimal" && "items-center justify-center px-[0.3rem] py-[0.1rem]",
     displayMode === "compact" && "px-[0.35rem] py-[0.15rem]",
     displayMode === "normal" && "px-[0.4rem] py-[0.2rem]",
-    displayMode === "detailed" && "px-[0.45rem] py-1",
+    displayMode === "detailed" && "px-[0.45rem] py-1"
   );
+}
+
+// Doctoralia serviceColorSchemaId → hex palette (mirrors the colorSchemas block
+// in GET /api/calendarevents). Each event card uses eventColor as background,
+// textColor for text, baseColor for the left border accent.
+const DOCTORALIA_COLOR_SCHEMAS: Record<string, { base: string; event: string; text: string }> = {
+  "1": { base: "#78CE70", event: "#D6F0D4", text: "#487C43" },
+  "2": { base: "#F9A83E", event: "#FDE4C5", text: "#7C541F" },
+  "3": { base: "#6DCAF1", event: "#D3EFFA", text: "#366578" },
+  "4": { base: "#FE9DAF", event: "#FEE1E7", text: "#7F4E57" },
+  "5": { base: "#9F9CDE", event: "#E2E1F5", text: "#5F5D85" },
+  "6": { base: "#B9D143", event: "#EAF1C6", text: "#5C6821" },
+  "7": { base: "#66CFC3", event: "#D1F0ED", text: "#336761" },
+  "8": { base: "#FECD1E", event: "#FEF0BB", text: "#7F660F" },
+  "9": { base: "#63A5ED", event: "#D0E4F9", text: "#3B638E" },
+  "10": { base: "#F76C6C", event: "#FDE1E1", text: "#944040" },
+  "11": { base: "#D85F99", event: "#F3CFE0", text: "#6C304D" },
+  "12": { base: "#D44138", event: "#F2C6C3", text: "#6A211C" },
+  "13": { base: "#3883C8", event: "#C3DAEF", text: "#1C4264" },
+  "14": { base: "#C675EC", event: "#EED6F9", text: "#633B76" },
+  "15": { base: "#12A985", event: "#B8E5DA", text: "#095543" },
+  "16": { base: "#C8803E", event: "#EFD9C5", text: "#64401F" },
+  "17": { base: "#E8D3B4", event: "#F8F2E9", text: "#746A5A" },
+  "18": { base: "#20538A", event: "#BCCBDC", text: "#102A45" },
+  "19": { base: "#B72C23", event: "#E9C0BD", text: "#5C1612" },
+  "20": { base: "#58D8E1", event: "#CDF3F6", text: "#2C6C71" },
+  "21": { base: "#B71C54", event: "#E9BBCC", text: "#5C0E2A" },
+  "22": { base: "#1E931C", event: "#BCDFBB", text: "#0F4A0E" },
+  "23": { base: "#5A5FDD", event: "#CECFF5", text: "#2D306F" },
+  "24": { base: "#723EC8", event: "#D5C5EF", text: "#391F64" },
+  "25": { base: "#A058A6", event: "#E3CDE4", text: "#502C53" },
+  "26": { base: "#880E75", event: "#DBB7D6", text: "#44073B" },
+  "27": { base: "#DD7617", event: "#F7D5B6", text: "#733B07" },
+  "28": { base: "#8E6F52", event: "#DDD4CB", text: "#473829" },
+  "29": { base: "#966A15", event: "#E0D2B9", text: "#4B350B" },
+  "30": { base: "#75400F", event: "#D6C6B7", text: "#3B2008" },
+};
+
+function getDoctoraliaColorStyle(colorId: null | string | undefined): CSSProperties | null {
+  if (!colorId) return null;
+  const schema = DOCTORALIA_COLOR_SCHEMAS[colorId];
+  if (!schema) return null;
+  return {
+    backgroundColor: schema.event,
+    borderLeftColor: schema.base,
+    color: schema.text,
+  };
 }
 
 function buildEventTooltipContent({
@@ -463,7 +515,7 @@ function EventButtonContent({
             "shrink-0 font-bold tabular-nums opacity-75",
             displayMode === "minimal" && "hidden",
             (displayMode === "compact" || displayMode === "normal") && "text-[0.6rem]",
-            displayMode === "detailed" && "text-[0.65rem]",
+            displayMode === "detailed" && "text-[0.65rem]"
           )}
         >
           {timeStr}
@@ -474,7 +526,7 @@ function EventButtonContent({
             displayMode === "minimal" && "line-clamp-1 text-[0.55rem]",
             displayMode === "compact" && "text-[0.55rem]",
             displayMode === "normal" && "line-clamp-2 text-[0.6rem]",
-            displayMode === "detailed" && "line-clamp-2 text-[0.65rem]",
+            displayMode === "detailed" && "line-clamp-2 text-[0.65rem]"
           )}
         >
           {title}
@@ -517,9 +569,10 @@ function EventItem({ endHour, event, onEventClick, startHour, tooltipTrigger }: 
   const columnWidth = 100 / event.totalColumns;
   const leftPos = event.column * columnWidth;
 
+  const paletteStyle = getDoctoraliaColorStyle(event.colorId);
   const eventButton = (
     <Button
-      className={getEventButtonClasses(displayMode, event.category ?? null)}
+      className={getEventButtonClasses(displayMode, event.category ?? null, paletteStyle !== null)}
       onPress={() => onEventClick?.(event)}
       size="sm"
       style={{
@@ -527,6 +580,7 @@ function EventItem({ endHour, event, onEventClick, startHour, tooltipTrigger }: 
         left: `calc(${leftPos}% + ${padding}px)`,
         top: position.top,
         width: `calc(${columnWidth}% - ${padding * 2}px)`,
+        ...paletteStyle,
       }}
       variant="ghost"
     >
@@ -671,28 +725,28 @@ function getCategoryClass(category: null | string | undefined): string {
   if (cat.includes("subcutáneo") || cat.includes("subcutaneo")) {
     return cn(
       baseClasses,
-      "bg-sky-100 text-sky-900 border-sky-500 dark:bg-sky-900/30 dark:text-sky-100",
+      "bg-sky-100 text-sky-900 border-sky-500 dark:bg-sky-900/30 dark:text-sky-100"
     );
   }
 
   if (cat.includes("test") || cat.includes("examen") || cat.includes("exámenes")) {
     return cn(
       baseClasses,
-      "bg-emerald-100 text-emerald-900 border-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-100",
+      "bg-emerald-100 text-emerald-900 border-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-100"
     );
   }
 
   if (cat.includes("inyección") || cat.includes("inyeccion")) {
     return cn(
       baseClasses,
-      "bg-amber-100 text-amber-900 border-amber-500 dark:bg-amber-900/30 dark:text-amber-100",
+      "bg-amber-100 text-amber-900 border-amber-500 dark:bg-amber-900/30 dark:text-amber-100"
     );
   }
 
   if (cat.includes("mantención") || cat.includes("mantencion")) {
     return cn(
       baseClasses,
-      "bg-sky-100 text-sky-900 border-sky-500 dark:bg-sky-900/30 dark:text-sky-100",
+      "bg-sky-100 text-sky-900 border-sky-500 dark:bg-sky-900/30 dark:text-sky-100"
     );
   }
 
