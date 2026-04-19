@@ -1,7 +1,3 @@
-import crypto from "node:crypto";
-import fs from "node:fs";
-import os from "node:os";
-import path from "node:path";
 import type { AttachmentType } from "@finanzas/db";
 import { db } from "@finanzas/db";
 import type { PatientWhereInput } from "@finanzas/db/input";
@@ -15,6 +11,7 @@ import type { AuthSession } from "../../auth.js";
 import { AppError } from "../../lib/app-error";
 import { requirePermission, requireSession } from "../../lib/legacy-route";
 import { normalizeRut } from "../../lib/rut.js";
+import { writeTempUpload } from "../../lib/temp-file.js";
 import { zValidator } from "../../lib/zod-validator";
 import { uploadPatientAttachmentToDrive } from "../../services/patient-attachments-drive.js";
 import { replyRaw } from "../../utils/reply";
@@ -787,21 +784,17 @@ patientsRoutes.post(
       });
     }
 
-    // Save temp file
-    const tempPath = path.join(os.tmpdir(), `${crypto.randomUUID()}_${file.name}`);
     const arrayBuffer = await file.arrayBuffer();
-    fs.writeFileSync(tempPath, Buffer.from(arrayBuffer));
+    const { filepath, cleanup } = await writeTempUpload(Buffer.from(arrayBuffer), file.name);
 
     try {
-      // Upload to Drive
       const { fileId, webViewLink } = await uploadPatientAttachmentToDrive(
-        tempPath,
+        filepath,
         name,
         file.type,
         id,
       );
 
-      // Save to DB
       const attachmentType: AttachmentType =
         type === "CONSENT" || type === "EXAM" || type === "RECIPE" || type === "OTHER"
           ? type
@@ -819,10 +812,7 @@ patientsRoutes.post(
 
       return replyRaw(c, { ...attachment, webViewLink });
     } finally {
-      // Clean up
-      if (fs.existsSync(tempPath)) {
-        fs.unlinkSync(tempPath);
-      }
+      await cleanup();
     }
   } catch (error) {
     if (error instanceof AppError) {

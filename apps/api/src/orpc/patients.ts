@@ -1,8 +1,4 @@
 import { db } from "@finanzas/db";
-import crypto from "node:crypto";
-import fs from "node:fs";
-import nodeOs from "node:os";
-import path from "node:path";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError, os } from "@orpc/server";
@@ -22,6 +18,7 @@ import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
+import { writeTempUpload } from "../lib/temp-file";
 import { uploadPatientAttachmentToDrive } from "../services/patient-attachments-drive.js";
 import {
   syncPatientDteSaleSources,
@@ -426,14 +423,16 @@ const patientsORPCRouterBase = {
     .input(createAttachmentInputSchema)
     .output(attachmentResponseSchema)
     .handler(async ({ context, input }) => {
-      const tempPath = path.join(nodeOs.tmpdir(), `${crypto.randomUUID()}-${input.file.name}`);
       const arrayBuffer = await input.file.arrayBuffer();
-      fs.writeFileSync(tempPath, Buffer.from(arrayBuffer));
+      const { filepath, cleanup } = await writeTempUpload(
+        Buffer.from(arrayBuffer),
+        input.file.name,
+      );
 
       try {
         const attachmentName = input.name?.trim() || input.file.name;
         const { fileId, webViewLink } = await uploadPatientAttachmentToDrive(
-          tempPath,
+          filepath,
           attachmentName,
           input.file.type || "application/octet-stream",
           String(input.patientId),
@@ -458,9 +457,7 @@ const patientsORPCRouterBase = {
           status: "ok" as const,
         };
       } finally {
-        if (fs.existsSync(tempPath)) {
-          fs.unlinkSync(tempPath);
-        }
+        await cleanup();
       }
     }),
 
