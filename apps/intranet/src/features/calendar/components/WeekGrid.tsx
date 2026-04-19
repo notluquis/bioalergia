@@ -408,8 +408,18 @@ function getEventButtonClasses(
 
 // Doctoralia serviceColorSchemaId → hex palette (mirrors the colorSchemas block
 // in GET /api/calendarevents). Each event card uses eventColor as background,
-// textColor for text, baseColor for the left border accent.
-const DOCTORALIA_COLOR_SCHEMAS: Record<string, { base: string; event: string; text: string }> = {
+// textColor for text, baseColor for the left border accent. `bg`, `icon` and
+// `hover` mirror backgroundColor/iconColor/hoverEventColor from the API; fill
+// from the live payload when needed.
+type DoctoraliaColorSchema = {
+  base: string;
+  bg?: string;
+  event: string;
+  hover?: string;
+  icon?: string;
+  text: string;
+};
+const DOCTORALIA_COLOR_SCHEMAS: Record<string, DoctoraliaColorSchema> = {
   "1": { base: "#78CE70", event: "#D6F0D4", text: "#487C43" },
   "2": { base: "#F9A83E", event: "#FDE4C5", text: "#7C541F" },
   "3": { base: "#6DCAF1", event: "#D3EFFA", text: "#366578" },

@@ -106,16 +106,36 @@ export interface DoctoraliaStatusResponse {
   status: "ok";
 }
 
+export interface DoctoraliaEventService {
+  duration: number;
+  isDefault?: boolean;
+  price: number;
+  quantity: number;
+  serviceId: number;
+  serviceName: string;
+  voucherUsed?: boolean;
+}
+
 export interface DoctoraliaCalendarAppointment {
+  colorSchemaId: null | number;
   comments: null | string;
+  duration: number;
   endAt: Date;
+  eventServices: { items: DoctoraliaEventService[] } | null;
+  eventType: number;
   externalId: number;
+  hasPatient: boolean;
   id: number;
+  isPatientFirstAdminBooking: boolean;
+  isPatientFirstTime: boolean;
+  patientBirthDate: Date | null;
   patientExternalId: number;
+  patientReferenceId: string;
   schedule: {
     displayName: string;
     externalId: number;
   };
+  scheduledBy: number;
   serviceColorSchemaId: null | number;
   serviceName: string;
   startAt: Date;

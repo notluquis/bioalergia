@@ -1433,6 +1433,7 @@ model DoctoraliaCalendarAppointment {
   serviceName                String             @map("service_name")
   eventServices              Json?              @map("event_services")
   serviceColorSchemaId       Int                @map("service_color_schema_id")
+  colorSchemaId              Int?               @map("color_schema_id")
   serviceIsDeleted           Boolean            @default(false) @map("service_is_deleted")
   attendance                 Int                @default(0)
   patientExternalId          Int                @map("patient_external_id")

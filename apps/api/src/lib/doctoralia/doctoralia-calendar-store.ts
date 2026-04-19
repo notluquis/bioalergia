@@ -61,6 +61,7 @@ function mapAppointmentData(scheduleId: number, appointment: DoctoraliaAppointme
       ? { eventServices: { items: toJsonValue(appointment.eventServices) } }
       : {}),
     serviceColorSchemaId: appointment.serviceColorSchemaId,
+    colorSchemaId: appointment.colorSchemaId ?? null,
     serviceIsDeleted: appointment.serviceIsDeleted,
     attendance: appointment.attendance,
     patientExternalId: appointment.patientId,

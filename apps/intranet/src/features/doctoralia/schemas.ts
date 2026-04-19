@@ -99,16 +99,36 @@ export const DoctoraliaStatusResponseSchema = z.strictObject({
   status: z.literal("ok"),
 });
 
+export const DoctoraliaEventServiceSchema = z.strictObject({
+  duration: z.number(),
+  isDefault: z.boolean().optional(),
+  price: z.number(),
+  quantity: z.number(),
+  serviceId: z.number(),
+  serviceName: z.string(),
+  voucherUsed: z.boolean().optional(),
+});
+
 export const DoctoraliaCalendarAppointmentSchema = z.strictObject({
+  colorSchemaId: z.number().nullable(),
   comments: z.string().nullable(),
+  duration: z.number(),
   endAt: z.coerce.date(),
+  eventServices: z.object({ items: z.array(DoctoraliaEventServiceSchema) }).nullable(),
+  eventType: z.number(),
   externalId: z.number(),
+  hasPatient: z.boolean(),
   id: z.number(),
+  isPatientFirstAdminBooking: z.boolean(),
+  isPatientFirstTime: z.boolean(),
+  patientBirthDate: z.coerce.date().nullable(),
   patientExternalId: z.number(),
+  patientReferenceId: z.string(),
   schedule: z.strictObject({
     displayName: z.string(),
     externalId: z.number(),
   }),
+  scheduledBy: z.number(),
   serviceColorSchemaId: z.number().nullable(),
   serviceName: z.string(),
   startAt: z.coerce.date(),
