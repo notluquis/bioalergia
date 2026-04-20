@@ -4,6 +4,7 @@ import {
   type SortDescriptor,
   Table,
   TableLayout,
+  type Selection,
   Virtualizer,
 } from "@heroui/react";
 import {
@@ -160,7 +161,9 @@ interface DataTableContentProps<TData> {
   readonly noDataMessage: string;
   readonly onRowClick?: (row: TData) => void;
   readonly onSortingChange: (sorting: SortingState) => void;
+  readonly onSelectionChange: (keys: Selection) => void;
   readonly renderSubComponent?: (props: { row: Row<TData> }) => ReactNode;
+  readonly selectedKeys: Set<string>;
   readonly sorting: SortingState;
   readonly table: TanStackTable<TData>;
   readonly scrollMaxHeight?: number | string;
@@ -191,9 +194,11 @@ function DataTableContent<TData>({
   noDataMessage,
   onRowClick,
   onSortingChange,
+  onSelectionChange,
   renderSubComponent,
   scrollMaxHeight,
   scrollMode,
+  selectedKeys,
   sorting,
   table,
   virtualizationMaxHeight,
@@ -318,6 +323,9 @@ function DataTableContent<TData>({
           autoFitColumns ? "min-w-full" : "min-w-max",
           enableVirtualization && "overflow-auto"
         )}
+        selectedKeys={selectedKeys}
+        selectionBehavior="toggle"
+        selectionMode="multiple"
         sortDescriptor={sortDescriptor}
         style={
           enableVirtualization
@@ -339,6 +347,7 @@ function DataTableContent<TData>({
             },
           ]);
         }}
+        onSelectionChange={onSelectionChange}
       >
         <Table.Header className={enableVirtualization ? "h-full w-full" : undefined}>
           {activeHeaderGroup.headers.map((header) => {
@@ -504,6 +513,38 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
       sorting,
     },
   });
+  const selectedKeys = useMemo(
+    () =>
+      new Set(
+        Object.entries(rowSelection)
+          .filter(([, isSelected]) => Boolean(isSelected))
+          .map(([rowId]) => rowId)
+      ),
+    [rowSelection]
+  );
+  const handleSelectionChange = (keys: Selection) => {
+    const visibleRowIds = table.getRowModel().rows.map((row) => row.id);
+
+    onRowSelectionChange((prev) => {
+      const next = { ...prev };
+      for (const rowId of visibleRowIds) {
+        delete next[rowId];
+      }
+
+      if (keys === "all") {
+        for (const rowId of visibleRowIds) {
+          next[rowId] = true;
+        }
+        return next;
+      }
+
+      for (const key of keys) {
+        next[String(key)] = true;
+      }
+
+      return next;
+    });
+  };
 
   return (
     <div className="space-y-1">
@@ -525,10 +566,12 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
         isLoading={isLoading}
         noDataMessage={noDataMessage}
         onRowClick={onRowClick}
+        onSelectionChange={handleSelectionChange}
         onSortingChange={setSorting}
         renderSubComponent={renderSubComponent}
         scrollMaxHeight={scrollMaxHeight}
         scrollMode={effectiveScrollMode}
+        selectedKeys={selectedKeys}
         sorting={sorting}
         table={table}
         virtualizationMaxHeight={virtualizationMaxHeight}
