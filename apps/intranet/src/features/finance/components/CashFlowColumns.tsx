@@ -160,9 +160,23 @@ export const columns: ColumnDef<CashFlowTransaction>[] = [
     enableResizing: false,
     enableSorting: false,
     header: () => (
-      <Checkbox aria-label="Seleccionar movimientos de la página actual" slot="selection" />
+      <Checkbox aria-label="Seleccionar movimientos de la página actual" slot="selection">
+        <Checkbox.Control>
+          <Checkbox.Indicator />
+        </Checkbox.Control>
+      </Checkbox>
     ),
-    cell: () => <Checkbox slot="selection" />,
+    cell: ({ row }) => (
+      <Checkbox
+        aria-label={`Seleccionar movimiento ${row.original.id}`}
+        slot="selection"
+        variant="secondary"
+      >
+        <Checkbox.Control>
+          <Checkbox.Indicator />
+        </Checkbox.Control>
+      </Checkbox>
+    ),
     maxSize: 44,
     minSize: 44,
     size: 44,
