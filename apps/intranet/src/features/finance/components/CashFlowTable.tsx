@@ -1,4 +1,4 @@
-import type { VisibilityState } from "@tanstack/react-table";
+import type { RowSelectionState, VisibilityState } from "@tanstack/react-table";
 import { useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { type CashFlowTransaction, columns } from "./CashFlowColumns";
@@ -20,6 +20,10 @@ interface Props {
   onEdit: (tx: CashFlowTransaction) => void;
   onReallocate: (tx: CashFlowTransaction) => void;
   onCategoryChange: (tx: CashFlowTransaction, categoryId: null | number) => void;
+  onRowSelectionChange: (
+    updater: RowSelectionState | ((old: RowSelectionState) => RowSelectionState)
+  ) => void;
+  rowSelection: RowSelectionState;
   updatingCategoryIds: Set<number>;
 }
 
@@ -34,6 +38,8 @@ export function CashFlowTable({
   onEdit,
   onReallocate,
   onCategoryChange,
+  onRowSelectionChange,
+  rowSelection,
   updatingCategoryIds,
 }: Props) {
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
@@ -73,6 +79,8 @@ export function CashFlowTable({
         transactionCategories: categories,
         updatingCategoryIds,
       }}
+      onRowSelectionChange={onRowSelectionChange}
+      rowSelection={rowSelection}
       enableGlobalFilter={false} // Handled by parent
       scrollMaxHeight="min(68dvh, 760px)"
     />

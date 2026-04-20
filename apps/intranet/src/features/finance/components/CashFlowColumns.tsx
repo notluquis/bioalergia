@@ -1,4 +1,4 @@
-import { Button, Chip, ListBox, Select } from "@heroui/react";
+import { Button, Checkbox, Chip, ListBox, Select } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { ArrowRightLeft, ArrowUpDown, Pencil } from "lucide-react";
@@ -155,6 +155,46 @@ const dedupeDetails = (values: string[]) => {
 };
 
 export const columns: ColumnDef<CashFlowTransaction>[] = [
+  {
+    id: "select",
+    enableResizing: false,
+    enableSorting: false,
+    header: ({ table }) => {
+      const allSelected = table.getIsAllPageRowsSelected();
+      const someSelected = table.getIsSomePageRowsSelected();
+
+      return (
+        <Checkbox
+          aria-label="Seleccionar movimientos de la página actual"
+          isIndeterminate={!allSelected && someSelected}
+          isSelected={allSelected}
+          slot="selection"
+          variant="secondary"
+          onChange={() => table.toggleAllPageRowsSelected(!allSelected)}
+        >
+          <Checkbox.Control>
+            <Checkbox.Indicator />
+          </Checkbox.Control>
+        </Checkbox>
+      );
+    },
+    cell: ({ row }) => (
+      <Checkbox
+        aria-label={`Seleccionar movimiento ${row.original.id}`}
+        isSelected={row.getIsSelected()}
+        slot="selection"
+        variant="secondary"
+        onChange={() => row.toggleSelected(!row.getIsSelected())}
+      >
+        <Checkbox.Control>
+          <Checkbox.Indicator />
+        </Checkbox.Control>
+      </Checkbox>
+    ),
+    maxSize: 44,
+    minSize: 44,
+    size: 44,
+  },
   {
     accessorKey: "date",
     header: ({ column }) => {

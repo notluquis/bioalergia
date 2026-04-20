@@ -23,6 +23,7 @@ import {
   TextField,
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { RowSelectionState } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { X } from "lucide-react";
 import { lazy, startTransition, Suspense, useEffect, useMemo, useState } from "react";
@@ -449,6 +450,7 @@ const PIE_COLORS = [
   "#64748B",
 ] as const;
 const PIE_MAX_SEGMENTS = 8;
+const BULK_CATEGORY_PLACEHOLDER = "__select__";
 
 type CashFlowTypeFilter = "ALL" | "EXPENSE" | "INCOME";
 
@@ -653,6 +655,8 @@ export function CashFlowPage() {
   const [columnFilters, setColumnFilters] = useState<CashFlowColumnFilters>(DEFAULT_COLUMN_FILTERS);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTx, setEditingTx] = useState<CashFlowTransaction | null>(null);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [bulkCategoryValue, setBulkCategoryValue] = useState(BULK_CATEGORY_PLACEHOLDER);
   const [updatingCategoryIds, setUpdatingCategoryIds] = useState<Set<number>>(new Set());
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryType, setNewCategoryType] = useState<"EXPENSE" | "INCOME">("EXPENSE");
@@ -1020,6 +1024,115 @@ export function CashFlowPage() {
     return filteredTransactions.slice(start, start + TABLE_PAGE_SIZE);
   }, [filteredTransactions, safePage]);
 
+  const selectedTransactionIds = useMemo(
+    () =>
+      Object.entries(rowSelection)
+        .filter(([, isSelected]) => Boolean(isSelected))
+        .map(([id]) => Number(id))
+        .filter((id) => Number.isFinite(id)),
+    [rowSelection]
+  );
+  const selectedTransactionIdSet = useMemo(
+    () => new Set(selectedTransactionIds),
+    [selectedTransactionIds]
+  );
+  const selectedTransactions = useMemo(
+    () => monthTransactions.filter((tx) => selectedTransactionIdSet.has(tx.id)),
+    [monthTransactions, selectedTransactionIdSet]
+  );
+  const selectedTransactionTypes = useMemo(
+    () => new Set(selectedTransactions.map((tx) => tx.type)),
+    [selectedTransactions]
+  );
+  const selectedBulkType =
+    selectedTransactionTypes.size === 1 ? selectedTransactions[0]?.type : null;
+  const bulkCategoryOptions = useMemo(() => {
+    if (!selectedBulkType) return [];
+    return orderedCategories.filter((category) => category.type === selectedBulkType);
+  }, [orderedCategories, selectedBulkType]);
+  const hasMixedSelectedTypes = selectedTransactionTypes.size > 1;
+  const hasSelectedTransactions = selectedTransactions.length > 0;
+  const hasUpdatingSelectedTransactions = selectedTransactions.some((tx) =>
+    updatingCategoryIds.has(tx.id)
+  );
+
+  useEffect(() => {
+    setRowSelection({});
+    setBulkCategoryValue(BULK_CATEGORY_PLACEHOLDER);
+  }, [selectedMonth]);
+
+  useEffect(() => {
+    if (!hasSelectedTransactions || hasMixedSelectedTypes) {
+      setBulkCategoryValue(BULK_CATEGORY_PLACEHOLDER);
+      return;
+    }
+
+    if (bulkCategoryValue === BULK_CATEGORY_PLACEHOLDER || bulkCategoryValue === "__none__") {
+      return;
+    }
+
+    const isAvailable = bulkCategoryOptions.some(
+      (category) => String(category.id) === bulkCategoryValue
+    );
+    if (!isAvailable) {
+      setBulkCategoryValue(BULK_CATEGORY_PLACEHOLDER);
+    }
+  }, [bulkCategoryOptions, bulkCategoryValue, hasMixedSelectedTypes, hasSelectedTransactions]);
+
+  const getFinancialTransactionsSnapshot = () =>
+    queryClient.getQueriesData<FinancialTransactionsResponse>({
+      queryKey: ["FinancialTransaction"],
+    });
+  const applyCategoryToTransactionCache = (transactionIds: number[], categoryId: null | number) => {
+    const targetIds = new Set(transactionIds);
+    const nextCategory =
+      categoryId == null
+        ? null
+        : (categories.find((category) => category.id === categoryId) ?? null);
+
+    queryClient.setQueriesData<FinancialTransactionsResponse>(
+      { queryKey: ["FinancialTransaction"] },
+      (current) => {
+        if (!isFinancialTransactionsPayload(current)) {
+          return current;
+        }
+        return {
+          ...current,
+          data: current.data.map((transaction) =>
+            targetIds.has(transaction.id)
+              ? {
+                  ...transaction,
+                  category: nextCategory,
+                  categoryId,
+                }
+              : transaction
+          ),
+        };
+      }
+    );
+  };
+  const restoreFinancialTransactionsSnapshot = (
+    snapshots: ReturnType<typeof getFinancialTransactionsSnapshot> | undefined
+  ) => {
+    snapshots?.forEach(([queryKey, snapshot]) => {
+      queryClient.setQueryData(queryKey, snapshot);
+    });
+  };
+  const markTransactionCategoryUpdates = (transactionIds: number[]) => {
+    setUpdatingCategoryIds((prev) => {
+      const next = new Set(prev);
+      transactionIds.forEach((id) => next.add(id));
+      return next;
+    });
+  };
+  const unmarkTransactionCategoryUpdates = (transactionIds: number[]) => {
+    setUpdatingCategoryIds((prev) => {
+      const next = new Set(prev);
+      transactionIds.forEach((id) => next.delete(id));
+      return next;
+    });
+  };
+
   const updateTransactionCategoryMutation = useMutation({
     mutationFn: async ({
       categoryId,
@@ -1041,41 +1154,9 @@ export function CashFlowPage() {
     },
     onMutate: async ({ categoryId, transactionId }) => {
       await queryClient.cancelQueries({ queryKey: ["FinancialTransaction"] });
-      const previousFinancialTransactions =
-        queryClient.getQueriesData<FinancialTransactionsResponse>({
-          queryKey: ["FinancialTransaction"],
-        });
-      const nextCategory =
-        categoryId == null
-          ? null
-          : (categories.find((category) => category.id === categoryId) ?? null);
-
-      queryClient.setQueriesData<FinancialTransactionsResponse>(
-        { queryKey: ["FinancialTransaction"] },
-        (current) => {
-          if (!isFinancialTransactionsPayload(current)) {
-            return current;
-          }
-          return {
-            ...current,
-            data: current.data.map((transaction) =>
-              transaction.id === transactionId
-                ? {
-                    ...transaction,
-                    category: nextCategory,
-                    categoryId,
-                  }
-                : transaction
-            ),
-          };
-        }
-      );
-
-      setUpdatingCategoryIds((prev) => {
-        const next = new Set(prev);
-        next.add(transactionId);
-        return next;
-      });
+      const previousFinancialTransactions = getFinancialTransactionsSnapshot();
+      applyCategoryToTransactionCache([transactionId], categoryId);
+      markTransactionCategoryUpdates([transactionId]);
       return { previousFinancialTransactions };
     },
     onSuccess: async () => {
@@ -1085,16 +1166,70 @@ export function CashFlowPage() {
       });
     },
     onError: (_error, _variables, context) => {
-      context?.previousFinancialTransactions.forEach(([queryKey, snapshot]) => {
-        queryClient.setQueryData(queryKey, snapshot);
-      });
+      restoreFinancialTransactionsSnapshot(context?.previousFinancialTransactions);
       toast.error("No se pudo actualizar la categoría");
     },
     onSettled: (_data, _error, variables) => {
-      setUpdatingCategoryIds((prev) => {
-        const next = new Set(prev);
-        next.delete(variables.transactionId);
-        return next;
+      unmarkTransactionCategoryUpdates([variables.transactionId]);
+    },
+  });
+
+  const bulkUpdateTransactionCategoryMutation = useMutation({
+    mutationFn: async ({
+      categoryId,
+      transactionIds,
+    }: {
+      categoryId: null | number;
+      transactionIds: number[];
+    }) => {
+      const results = await Promise.allSettled(
+        transactionIds.map(async (transactionId) => {
+          try {
+            return UpdateTransactionResponseSchema.parse(
+              await financeORPCClient.transactionsUpdate({
+                id: transactionId,
+                payload: { categoryId },
+              })
+            );
+          } catch (error) {
+            throw toFinanceApiError(error);
+          }
+        })
+      );
+
+      const failedCount = results.filter((result) => result.status === "rejected").length;
+      if (failedCount > 0) {
+        throw new Error(
+          failedCount === transactionIds.length
+            ? "No se pudo actualizar ninguna categoría"
+            : `Solo se actualizaron ${transactionIds.length - failedCount} de ${transactionIds.length} movimientos`
+        );
+      }
+
+      return { updatedCount: transactionIds.length };
+    },
+    onMutate: async ({ transactionIds }) => {
+      markTransactionCategoryUpdates(transactionIds);
+    },
+    onSuccess: async ({ updatedCount }) => {
+      setRowSelection({});
+      setBulkCategoryValue(BULK_CATEGORY_PLACEHOLDER);
+      toast.success(
+        updatedCount === 1
+          ? "Categoría actualizada"
+          : `Categoría actualizada en ${updatedCount} movimientos`
+      );
+    },
+    onError: (error) => {
+      const message =
+        error instanceof ApiError ? error.message : "No se pudieron actualizar las categorías";
+      toast.error(message);
+    },
+    onSettled: async (_data, _error, variables) => {
+      unmarkTransactionCategoryUpdates(variables.transactionIds);
+      await queryClient.invalidateQueries({
+        queryKey: ["FinancialTransaction"],
+        refetchType: "active",
       });
     },
   });
@@ -1503,6 +1638,35 @@ export function CashFlowPage() {
     updateTransactionCategoryMutation.mutate({
       categoryId,
       transactionId: tx.id,
+    });
+  };
+
+  const handleApplyBulkCategory = () => {
+    if (!hasSelectedTransactions) {
+      toast.error("Selecciona al menos un movimiento");
+      return;
+    }
+
+    if (hasMixedSelectedTypes) {
+      toast.error("La selección debe ser del mismo tipo para aplicar una categoría");
+      return;
+    }
+
+    const parsedValue = bulkCategoryValue;
+    if (parsedValue === BULK_CATEGORY_PLACEHOLDER) {
+      toast.error("Selecciona una categoría a aplicar");
+      return;
+    }
+
+    const categoryId = parsedValue === "__none__" ? null : Number(parsedValue);
+    if (categoryId !== null && Number.isNaN(categoryId)) {
+      toast.error("La categoría seleccionada no es válida");
+      return;
+    }
+
+    bulkUpdateTransactionCategoryMutation.mutate({
+      categoryId,
+      transactionIds: selectedTransactions.map((transaction) => transaction.id),
     });
   };
 
@@ -2528,6 +2692,102 @@ export function CashFlowPage() {
                 )}
               </div>
               <div className="p-2">
+                {hasSelectedTransactions ? (
+                  <div className="mb-3 flex flex-col gap-3 rounded-xl border border-default-200/80 bg-default-100/35 p-3 lg:flex-row lg:items-end lg:justify-between">
+                    <div className="space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Chip color="accent" size="sm" variant="soft">
+                          {selectedTransactions.length} seleccionados
+                        </Chip>
+                        {selectedBulkType ? (
+                          <Chip size="sm" variant="soft">
+                            {selectedBulkType === "INCOME" ? "Ingresos" : "Egresos"}
+                          </Chip>
+                        ) : null}
+                      </div>
+                      <p className="text-sm text-default-600">
+                        {hasMixedSelectedTypes
+                          ? "La selección incluye ingresos y egresos. Para aplicar una categoría masiva, selecciona un solo tipo."
+                          : "Aplica una categoría a todos los movimientos seleccionados."}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                      <Select
+                        className="min-w-72"
+                        isDisabled={
+                          hasMixedSelectedTypes ||
+                          hasUpdatingSelectedTransactions ||
+                          bulkUpdateTransactionCategoryMutation.isPending
+                        }
+                        value={bulkCategoryValue}
+                        onChange={(key) =>
+                          setBulkCategoryValue(String(key ?? BULK_CATEGORY_PLACEHOLDER))
+                        }
+                      >
+                        <Label>Categoría masiva</Label>
+                        <Select.Trigger>
+                          <Select.Value />
+                          <Select.Indicator />
+                        </Select.Trigger>
+                        <Select.Popover>
+                          <ListBox>
+                            <ListBox.Item
+                              id={BULK_CATEGORY_PLACEHOLDER}
+                              textValue="Selecciona una categoría"
+                            >
+                              Selecciona una categoría
+                              <ListBox.ItemIndicator />
+                            </ListBox.Item>
+                            <ListBox.Item id="__none__" textValue="Sin categoría">
+                              Sin categoría
+                              <ListBox.ItemIndicator />
+                            </ListBox.Item>
+                            {bulkCategoryOptions.map((category) => (
+                              <ListBox.Item
+                                id={String(category.id)}
+                                key={category.id}
+                                textValue={category.name}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <span
+                                    className="h-2.5 w-2.5 shrink-0 rounded-full"
+                                    style={{ backgroundColor: category.color ?? "#ccc" }}
+                                  />
+                                  <span>{category.name}</span>
+                                </div>
+                                <ListBox.ItemIndicator />
+                              </ListBox.Item>
+                            ))}
+                          </ListBox>
+                        </Select.Popover>
+                      </Select>
+
+                      <Button
+                        isDisabled={
+                          hasMixedSelectedTypes ||
+                          hasUpdatingSelectedTransactions ||
+                          bulkCategoryValue === BULK_CATEGORY_PLACEHOLDER ||
+                          bulkUpdateTransactionCategoryMutation.isPending
+                        }
+                        isPending={bulkUpdateTransactionCategoryMutation.isPending}
+                        onPress={handleApplyBulkCategory}
+                      >
+                        Aplicar categoría
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        onPress={() => {
+                          setRowSelection({});
+                          setBulkCategoryValue(BULK_CATEGORY_PLACEHOLDER);
+                        }}
+                      >
+                        Limpiar selección
+                      </Button>
+                    </div>
+                  </div>
+                ) : null}
                 <Suspense
                   fallback={<div className="p-3 text-default-500 text-sm">Cargando...</div>}
                 >
@@ -2542,6 +2802,8 @@ export function CashFlowPage() {
                     onEdit={handleEdit}
                     onReallocate={handleOpenReallocate}
                     onCategoryChange={handleCategoryChange}
+                    onRowSelectionChange={setRowSelection}
+                    rowSelection={rowSelection}
                     updatingCategoryIds={updatingCategoryIds}
                   />
                 </Suspense>
