@@ -3,13 +3,23 @@ import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import type { CSSProperties } from "react";
 import { useEffect, useState } from "react";
-import { currencyFormatter } from "@/lib/format";
+import { useTheme } from "@/hooks/use-theme";
+import { toTitleCase } from "@/lib/person";
 import { cn } from "@/lib/utils";
 
 import type { CalendarEventDetail } from "../types";
-import { getCalendarEventStates } from "../utils/event-state";
 
 dayjs.extend(isoWeek);
+
+const DISPLAY_TZ = "America/Santiago";
+
+// All event times arrive as UTC ISO strings. Render them in Chile local time so
+// the grid is consistent regardless of the viewer's browser timezone.
+function toLocal(input: null | string | undefined) {
+  if (!input) return null;
+  const d = dayjs.tz(input, DISPLAY_TZ);
+  return d.isValid() ? d : null;
+}
 
 // Event with layout info for overlapping display
 interface EventWithLayout extends CalendarEventDetail {
@@ -44,8 +54,8 @@ function generateHours(startHour: number, endHour: number): number[] {
 
 // Get position and height for an event based on time
 function getEventPosition(event: CalendarEventDetail, startHour: number, endHour: number) {
-  const start = event.startDateTime ? dayjs(event.startDateTime) : null;
-  const end = event.endDateTime ? dayjs(event.endDateTime) : null;
+  const start = toLocal(event.startDateTime);
+  const end = toLocal(event.endDateTime);
 
   if (!start) {
     return null;
@@ -89,7 +99,7 @@ function groupEventsByDay(events: CalendarEventDetail[], weekStart: dayjs.Dayjs)
 
   for (const event of events) {
     const eventDate = event.startDateTime
-      ? dayjs(event.startDateTime).format("YYYY-MM-DD")
+      ? (toLocal(event.startDateTime)?.format("YYYY-MM-DD") ?? null)
       : event.startDate
         ? dayjs(event.startDate).format("YYYY-MM-DD")
         : null;
@@ -125,15 +135,17 @@ function getWeekEventsInRange(
     if (!event.startDateTime) {
       return false;
     }
-    const eventDate = dayjs(event.startDateTime);
+    const eventDate = toLocal(event.startDateTime);
+    if (!eventDate) return false;
     return eventDate.isSameOrAfter(monday.startOf("day")) && eventDate.isBefore(weekEnd);
   });
 }
 
 function computeEventMaxHour(event: CalendarEventDetail) {
   if (event.endDateTime) {
-    const endTime = dayjs(event.endDateTime);
-    const startTime = event.startDateTime ? dayjs(event.startDateTime) : null;
+    const endTime = toLocal(event.endDateTime);
+    const startTime = toLocal(event.startDateTime);
+    if (!endTime) return 0;
     const crossesMidnight = startTime && endTime.isBefore(startTime);
     const isMidnight = endTime.hour() === 0 && endTime.minute() === 0;
 
@@ -145,7 +157,8 @@ function computeEventMaxHour(event: CalendarEventDetail) {
   }
 
   if (event.startDateTime) {
-    return Math.min(24, dayjs(event.startDateTime).hour() + 1);
+    const s = toLocal(event.startDateTime);
+    return s ? Math.min(24, s.hour() + 1) : 0;
   }
 
   return 0;
@@ -168,8 +181,9 @@ function computeGridHourBounds(events: CalendarEventDetail[], monday: dayjs.Dayj
   let max = includeCurrentTime ? now.hour() + 1 : 0;
 
   for (const event of weekEvents) {
-    if (event.startDateTime) {
-      min = Math.min(min, dayjs(event.startDateTime).hour());
+    const s = toLocal(event.startDateTime);
+    if (s) {
+      min = Math.min(min, s.hour());
     }
     max = Math.max(max, computeEventMaxHour(event));
   }
@@ -259,22 +273,24 @@ function WeekGridHeader({ days }: { days: DayInfo[] }) {
         <div
           aria-current={day.isToday ? "date" : undefined}
           className={cn(
-            "flex flex-col items-center justify-center gap-1 border-default-200 border-r px-1 py-3 text-center last:border-r-0 sm:py-4",
-            day.isToday && "relative border-primary border-t-4 bg-primary/20"
+            "flex items-baseline justify-center gap-1.5 border-default-200 border-r px-2 py-2.5 text-center last:border-r-0",
+            day.isToday && "border-primary border-b-2 bg-primary/10"
           )}
           key={day.key}
         >
           <abbr
-            className="font-bold text-[0.65rem] text-foreground-400 uppercase tracking-wider"
+            className={cn(
+              "font-semibold text-[0.65rem] uppercase tracking-wider",
+              day.isToday ? "text-primary" : "text-foreground-400"
+            )}
             title={day.fullDayName}
           >
             {day.dayName}
           </abbr>
           <time
             className={cn(
-              "font-extrabold text-foreground text-xl leading-none sm:text-2xl",
-              day.isToday &&
-                "grid size-10 place-items-center rounded-full bg-primary font-black text-primary-foreground text-xl shadow-lg shadow-primary/40"
+              "font-bold text-base tabular-nums leading-none",
+              day.isToday ? "text-primary" : "text-foreground"
             )}
             dateTime={day.isoDate}
           >
@@ -378,9 +394,9 @@ function getDisplayMode(durationMinutes: number): DisplayMode {
 }
 
 function getEventDisplayTimes(event: CalendarEventDetail) {
-  const start = event.startDateTime ? dayjs(event.startDateTime) : null;
-  const end = event.endDateTime ? dayjs(event.endDateTime) : null;
-  const durationMinutes = start && end ? end.diff(start, "minute") : 30;
+  const start = toLocal(event.startDateTime);
+  const end = toLocal(event.endDateTime);
+  const durationMinutes = start && end ? Math.max(1, end.diff(start, "minute")) : 30;
 
   return {
     durationMinutes,
@@ -397,12 +413,12 @@ function getEventButtonClasses(
   hasPaletteColor: boolean
 ) {
   return cn(
-    "absolute z-1 flex min-h-5 flex-col justify-start gap-px overflow-hidden text-wrap rounded-md border-l-[3px] px-1.5 py-1 text-start shadow-sm hover:z-10 hover:shadow-md",
+    "absolute z-1 flex min-h-5 flex-col justify-start gap-0.5 overflow-hidden rounded-md border-l-[3px] text-start shadow-sm transition-shadow hover:z-10 hover:shadow-md",
     hasPaletteColor ? "border-l-[3px]" : getCategoryClass(category),
-    displayMode === "minimal" && "items-center justify-center px-[0.3rem] py-[0.1rem]",
-    displayMode === "compact" && "px-[0.35rem] py-[0.15rem]",
-    displayMode === "normal" && "px-[0.4rem] py-[0.2rem]",
-    displayMode === "detailed" && "px-[0.45rem] py-1"
+    displayMode === "minimal" && "flex-row items-center gap-1 px-1 py-0",
+    displayMode === "compact" && "px-1.5 py-0.5",
+    displayMode === "normal" && "px-1.5 py-1",
+    displayMode === "detailed" && "px-2 py-1.5"
   );
 }
 
@@ -452,10 +468,23 @@ const DOCTORALIA_COLOR_SCHEMAS: Record<string, DoctoraliaColorSchema> = {
   "30": { base: "#75400F", event: "#D6C6B7", text: "#3B2008" },
 };
 
-function getDoctoraliaColorStyle(colorId: null | string | undefined): CSSProperties | null {
+function getDoctoraliaColorStyle(
+  colorId: null | string | undefined,
+  isDark: boolean
+): CSSProperties | null {
   if (!colorId) return null;
   const schema = DOCTORALIA_COLOR_SCHEMAS[colorId];
   if (!schema) return null;
+  if (isDark) {
+    // Dark mode: keep the saturated base as the left-border accent, use a very
+    // translucent base tint as the background so it reads against dark content,
+    // and fall back to the default foreground so text contrast is WCAG-safe.
+    return {
+      backgroundColor: hexWithAlpha(schema.base, 0.18),
+      borderLeftColor: schema.base,
+      color: "hsl(var(--heroui-foreground))",
+    };
+  }
   return {
     backgroundColor: schema.event,
     borderLeftColor: schema.base,
@@ -463,105 +492,91 @@ function getDoctoraliaColorStyle(colorId: null | string | undefined): CSSPropert
   };
 }
 
+function hexWithAlpha(hex: string, alpha: number) {
+  const a = Math.max(0, Math.min(1, alpha));
+  const n = hex.replace("#", "");
+  const r = parseInt(n.slice(0, 2), 16);
+  const g = parseInt(n.slice(2, 4), 16);
+  const b = parseInt(n.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
+
 function buildEventTooltipContent({
-  amountStr,
-  controlFlag,
   endTimeStr,
-  states,
   timeStr,
   title,
 }: {
-  amountStr: string;
-  controlFlag: boolean;
   endTimeStr: string;
-  states: ReturnType<typeof getCalendarEventStates>;
   timeStr: string;
   title: string;
 }) {
-  const stateToneClass = (tone: "danger" | "default" | "success" | "warning") => {
-    if (tone === "success") return "text-success";
-    if (tone === "danger") return "text-danger";
-    if (tone === "warning") return "text-warning";
-    return "text-default-600";
-  };
-
   return (
-    <div className="space-y-1 text-xs">
+    <div className="space-y-0.5 text-xs">
       <p className="font-semibold text-foreground">{title}</p>
-      <p className="text-default-600">
-        {timeStr} - {endTimeStr}
+      <p className="text-default-500 tabular-nums">
+        {timeStr}
+        {endTimeStr ? ` – ${endTimeStr}` : ""}
       </p>
-      {amountStr && <p className="text-default-600">{amountStr}</p>}
-      {controlFlag && <p className="text-default-600">Control</p>}
-      {states.map((state) => (
-        <p className={stateToneClass(state.tone)} key={`${state.key}-${state.label}`}>
-          {state.label}
-        </p>
-      ))}
     </div>
   );
 }
 
 function EventButtonContent({
-  amountExpected,
-  controlFlag,
   displayMode,
-  primaryStateLabel,
+  endTimeStr,
   timeStr,
   title,
 }: {
-  amountExpected: number | null | undefined;
-  controlFlag: boolean;
   displayMode: DisplayMode;
-  primaryStateLabel: null | string;
+  endTimeStr: string;
   timeStr: string;
   title: string;
 }) {
-  return (
-    <>
-      <span className="flex min-w-0 items-center gap-[0.3rem] overflow-hidden">
-        <span
-          className={cn(
-            "shrink-0 font-bold tabular-nums opacity-75",
-            displayMode === "minimal" && "hidden",
-            (displayMode === "compact" || displayMode === "normal") && "text-[0.6rem]",
-            displayMode === "detailed" && "text-[0.65rem]"
-          )}
-        >
+  const rangeLabel = endTimeStr ? `${timeStr} – ${endTimeStr}` : timeStr;
+
+  if (displayMode === "minimal") {
+    // On very short slots we only have room for one line. Put the time first
+    // (tabular-nums so columns align) and collapse the title to the remainder.
+    return (
+      <span className="flex min-w-0 items-center gap-1 overflow-hidden">
+        <span className="shrink-0 font-semibold text-[0.55rem] tabular-nums opacity-80">
           {timeStr}
         </span>
-        <span
-          className={cn(
-            "min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap font-semibold leading-tight",
-            displayMode === "minimal" && "line-clamp-1 text-[0.55rem]",
-            displayMode === "compact" && "text-[0.55rem]",
-            displayMode === "normal" && "line-clamp-2 text-[0.6rem]",
-            displayMode === "detailed" && "line-clamp-2 text-[0.65rem]"
-          )}
-        >
+        <span className="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap font-semibold text-[0.55rem] leading-tight">
           {title}
         </span>
-        {controlFlag && displayMode !== "minimal" && (
-          <span className="shrink-0 rounded-full bg-warning-500/20 px-1 font-bold text-[0.5rem] text-warning-700 uppercase">
-            Ctrl
-          </span>
-        )}
       </span>
-      {displayMode === "detailed" && amountExpected != null && (
-        <span className="mt-auto overflow-hidden text-ellipsis whitespace-nowrap font-bold text-[0.6rem] text-success-600">
-          {currencyFormatter.format(amountExpected)}
-        </span>
-      )}
-      {displayMode === "detailed" && primaryStateLabel && (
-        <span className="overflow-hidden text-ellipsis whitespace-nowrap font-medium text-[0.55rem] text-default-600">
-          {primaryStateLabel}
-        </span>
-      )}
+    );
+  }
+
+  return (
+    <>
+      <span
+        className={cn(
+          "shrink-0 font-semibold tabular-nums opacity-80",
+          displayMode === "compact" && "text-[0.6rem]",
+          displayMode === "normal" && "text-[0.65rem]",
+          displayMode === "detailed" && "text-[0.7rem]"
+        )}
+      >
+        {rangeLabel}
+      </span>
+      <span
+        className={cn(
+          "min-w-0 overflow-hidden text-ellipsis whitespace-nowrap font-bold leading-tight",
+          displayMode === "compact" && "text-[0.6rem]",
+          displayMode === "normal" && "line-clamp-2 text-[0.7rem]",
+          displayMode === "detailed" && "line-clamp-2 text-[0.75rem]"
+        )}
+      >
+        {title}
+      </span>
     </>
   );
 }
 
 function EventItem({ endHour, event, onEventClick, startHour, tooltipTrigger }: EventItemProps) {
+  const { isDark } = useTheme();
   const position = getEventPosition(event, startHour, endHour);
   if (!position) {
     return null;
@@ -569,17 +584,13 @@ function EventItem({ endHour, event, onEventClick, startHour, tooltipTrigger }: 
 
   const { durationMinutes, endTimeStr, timeStr } = getEventDisplayTimes(event);
   const displayMode = getDisplayMode(durationMinutes);
-  const amountStr =
-    event.amountExpected == null ? "" : currencyFormatter.format(event.amountExpected);
-  const controlFlag = event.controlIncluded === true;
-  const states = getCalendarEventStates(event);
-  const title = event.summary?.trim() ?? "(Sin título)";
+  const title = toTitleCase(event.summary?.trim()) || "(Sin título)";
 
   const padding = event.totalColumns > 1 ? 2 : 3;
   const columnWidth = 100 / event.totalColumns;
   const leftPos = event.column * columnWidth;
 
-  const paletteStyle = getDoctoraliaColorStyle(event.colorId);
+  const paletteStyle = getDoctoraliaColorStyle(event.colorId, isDark);
   const eventButton = (
     <Button
       className={getEventButtonClasses(displayMode, event.category ?? null, paletteStyle !== null)}
@@ -595,10 +606,8 @@ function EventItem({ endHour, event, onEventClick, startHour, tooltipTrigger }: 
       variant="ghost"
     >
       <EventButtonContent
-        amountExpected={event.amountExpected}
-        controlFlag={controlFlag}
         displayMode={displayMode}
-        primaryStateLabel={states[0]?.label ?? null}
+        endTimeStr={endTimeStr}
         timeStr={timeStr}
         title={title}
       />
@@ -614,10 +623,7 @@ function EventItem({ endHour, event, onEventClick, startHour, tooltipTrigger }: 
         showArrow
       >
         {buildEventTooltipContent({
-          amountStr,
-          controlFlag,
           endTimeStr,
-          states,
           timeStr,
           title,
         })}
@@ -688,14 +694,15 @@ function assignColumnsForCluster(cluster: CalendarEventDetail[]): EventWithLayou
 }
 
 function getEventTimes(event: CalendarEventDetail) {
-  const start = dayjs(event.startDateTime).valueOf();
+  // UTC epoch millis — operator-independent of browser TZ. We only care about
+  // relative ordering/overlap here, so we don't need zone conversion.
+  const startDt = event.startDateTime ? dayjs(event.startDateTime) : null;
+  const start = startDt ? startDt.valueOf() : 0;
   let end: number;
 
   if (event.endDateTime) {
     const endDt = dayjs(event.endDateTime);
-    const startDt = dayjs(event.startDateTime);
-    // Handle midnight crossing
-    if (endDt.isBefore(startDt) || endDt.isSame(startDt)) {
+    if (startDt && (endDt.isBefore(startDt) || endDt.isSame(startDt))) {
       end = startDt.add(1, "day").startOf("day").valueOf();
     } else {
       end = endDt.valueOf();
@@ -765,14 +772,12 @@ function getCategoryClass(category: null | string | undefined): string {
 
 // Current time indicator - Live Updating
 function NowIndicator({ endHour, startHour }: Readonly<{ endHour: number; startHour: number }>) {
-  const [now, setNow] = useState(dayjs());
+  const [now, setNow] = useState(() => dayjs().tz(DISPLAY_TZ));
 
   useEffect(() => {
-    // Initial update to sync
-    setNow(dayjs());
-    // Update every minute
+    setNow(dayjs().tz(DISPLAY_TZ));
     const timer = setInterval(() => {
-      setNow(dayjs());
+      setNow(dayjs().tz(DISPLAY_TZ));
     }, 60_000);
     return () => {
       clearInterval(timer);

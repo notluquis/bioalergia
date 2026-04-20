@@ -427,6 +427,7 @@ const doctoraliaORPCRouterBase = {
 
       const appointments = await db.doctoraliaCalendarAppointment.findMany({
         where: {
+          isBlock: false,
           ...(input.scheduleIds && input.scheduleIds.length > 0
             ? {
                 schedule: {

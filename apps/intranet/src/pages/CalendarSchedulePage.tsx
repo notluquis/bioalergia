@@ -19,6 +19,7 @@ import type { DoctoraliaEmailNotification } from "@/features/doctoralia/types";
 import { useCan } from "@/hooks/use-can";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { numberFormatter } from "@/lib/format";
+import { toTitleCase } from "@/lib/person";
 
 const routeApi = getRouteApi("/_authed/clinical/agenda");
 import "dayjs/locale/es";
@@ -56,7 +57,7 @@ function toCalendarEventDetail(
     startDateTime: appointment.startAt.toISOString(),
     startTimeZone: null,
     status: String(appointment.status),
-    summary: appointment.title,
+    summary: toTitleCase(appointment.title) || appointment.title,
     transparency: null,
     visibility: null,
   }));
@@ -94,7 +95,7 @@ function toEmailCalendarEventDetail(
       startDateTime: dateIso,
       startTimeZone: null,
       status: n.eventType,
-      summary: `${n.patientName}${n.appointmentService ? ` — ${n.appointmentService}` : ""}`,
+      summary: `${toTitleCase(n.patientName) || n.patientName}${n.appointmentService ? ` — ${n.appointmentService}` : ""}`,
       transparency: null,
       visibility: null,
     };

@@ -1,5 +1,6 @@
 import { db, type JsonValue } from "@finanzas/db";
 
+import { parseDoctoraliaDateTime } from "./doctoralia-date-parser";
 import type {
   DoctoraliaAppointment,
   DoctoraliaCalendarAlert,
@@ -44,8 +45,8 @@ function mapAppointmentData(scheduleId: number, appointment: DoctoraliaAppointme
     scheduleId,
     externalId: appointment.id,
     title: appointment.title,
-    startAt: new Date(appointment.start),
-    endAt: new Date(appointment.end),
+    startAt: parseDoctoraliaDateTime(appointment.start),
+    endAt: parseDoctoraliaDateTime(appointment.end),
     isBlock: appointment.isBlock,
     eventType: appointment.eventType,
     scheduledBy: appointment.scheduledBy,
@@ -68,10 +69,8 @@ function mapAppointmentData(scheduleId: number, appointment: DoctoraliaAppointme
     patientReferenceId: appointment.patientReferenceId,
     patientPhone: appointment.patientPhone || null,
     patientEmail: appointment.patientEmail || null,
-    patientBirthDate: appointment.patientBirthDate ? new Date(appointment.patientBirthDate) : null,
-    patientArrivalTime: appointment.patientArrivalTime
-      ? new Date(appointment.patientArrivalTime)
-      : null,
+    patientBirthDate: parseDoctoraliaDateTime(appointment.patientBirthDate),
+    patientArrivalTime: parseDoctoraliaDateTime(appointment.patientArrivalTime),
     isPatientFirstTime: appointment.isPatientFirstTime,
     isPatientFirstAdminBooking: appointment.isPatientFirstAdminBooking,
     isBookedViaSecretaryAi: appointment.isBookedViaSecretaryAi,
@@ -91,6 +90,15 @@ async function upsertAppointment(
   scheduleId: number,
   appointment: DoctoraliaAppointment,
 ): Promise<"inserted" | "skipped" | "updated"> {
+  const data = mapAppointmentData(scheduleId, appointment);
+
+  if (!data.startAt || !data.endAt) {
+    console.warn(
+      `[DoctoraliaSync] appointment ${appointment.id} skipped: unparseable start/end (${appointment.start} / ${appointment.end})`,
+    );
+    return "skipped";
+  }
+
   const existing = await db.doctoraliaCalendarAppointment.findUnique({
     where: {
       scheduleId_externalId: {
@@ -99,8 +107,6 @@ async function upsertAppointment(
       },
     },
   });
-
-  const data = mapAppointmentData(scheduleId, appointment);
 
   if (existing) {
     const hasChanges = JSON.stringify(existing) !== JSON.stringify({ ...existing, ...data });
@@ -158,8 +164,8 @@ function buildAlertPatch(alert: DoctoraliaCalendarAlert): {
   }
 
   if (alert.params.eventStartDateTime) {
-    const startAt = new Date(alert.params.eventStartDateTime);
-    if (!Number.isNaN(startAt.getTime())) {
+    const startAt = parseDoctoraliaDateTime(alert.params.eventStartDateTime);
+    if (startAt) {
       data.startAt = startAt;
     }
   }
@@ -297,18 +303,26 @@ export async function upsertDoctoraliaWorkPeriods(
   for (const period of workPeriods) {
     try {
       // Work periods don't have unique external IDs, so we use start/end time uniqueness
+      const startAt = parseDoctoraliaDateTime(period.start);
+      const endAt = parseDoctoraliaDateTime(period.end);
+
+      if (!startAt || !endAt) {
+        skipped++;
+        continue;
+      }
+
       const existing = await db.doctoraliaWorkPeriod.findFirst({
         where: {
           scheduleId: schedule.id,
-          startAt: new Date(period.start),
-          endAt: new Date(period.end),
+          startAt,
+          endAt,
         },
       });
 
       const data = {
         scheduleId: schedule.id,
-        startAt: new Date(period.start),
-        endAt: new Date(period.end),
+        startAt,
+        endAt,
         isPrivate: period.isPrivate,
       };
 

@@ -6,6 +6,7 @@
  */
 
 import { db } from "@finanzas/db";
+import { parseDoctoraliaDateTime } from "./doctoralia-date-parser.js";
 import type {
   DoctoraliaAddress,
   DoctoraliaBooking,
@@ -206,6 +207,15 @@ export async function upsertInsuranceProvider(
 // ============================================================
 
 export async function upsertBooking(addressId: number, booking: DoctoraliaBooking) {
+  const startAt = parseDoctoraliaDateTime(booking.start_at);
+  const endAt = parseDoctoraliaDateTime(booking.end_at);
+  if (!startAt || !endAt) {
+    throw new Error(
+      `Doctoralia booking ${booking.id} has unparseable start/end: ${booking.start_at} / ${booking.end_at}`,
+    );
+  }
+  const bookedAt = parseDoctoraliaDateTime(booking.booked_at);
+  const canceledAt = parseDoctoraliaDateTime(booking.canceled_at);
   return db.doctoraliaBooking.upsert({
     where: {
       addressId_externalId: {
@@ -217,13 +227,13 @@ export async function upsertBooking(addressId: number, booking: DoctoraliaBookin
       addressId,
       externalId: booking.id,
       status: booking.status,
-      startAt: new Date(booking.start_at),
-      endAt: new Date(booking.end_at),
+      startAt,
+      endAt,
       duration: booking.duration,
       bookedBy: booking.booked_by,
-      bookedAt: booking.booked_at ? new Date(booking.booked_at) : null,
+      bookedAt,
       canceledBy: booking.canceled_by,
-      canceledAt: booking.canceled_at ? new Date(booking.canceled_at) : null,
+      canceledAt,
       patientName: booking.patient?.name,
       patientSurname: booking.patient?.surname,
       patientEmail: booking.patient?.email,
@@ -232,11 +242,11 @@ export async function upsertBooking(addressId: number, booking: DoctoraliaBookin
     },
     update: {
       status: booking.status,
-      startAt: new Date(booking.start_at),
-      endAt: new Date(booking.end_at),
+      startAt,
+      endAt,
       duration: booking.duration,
       canceledBy: booking.canceled_by,
-      canceledAt: booking.canceled_at ? new Date(booking.canceled_at) : null,
+      canceledAt,
       patientName: booking.patient?.name,
       patientSurname: booking.patient?.surname,
       patientEmail: booking.patient?.email,
@@ -264,6 +274,13 @@ export async function listBookingsByAddress(addressId: number, startAt: Date, en
 // ============================================================
 
 export async function upsertBreak(addressId: number, breakData: DoctoraliaCalendarBreak) {
+  const since = parseDoctoraliaDateTime(breakData.since);
+  const till = parseDoctoraliaDateTime(breakData.till);
+  if (!since || !till) {
+    throw new Error(
+      `Doctoralia break ${breakData.id} has unparseable since/till: ${breakData.since} / ${breakData.till}`,
+    );
+  }
   return db.doctoraliaCalendarBreak.upsert({
     where: {
       addressId_externalId: {
@@ -274,13 +291,13 @@ export async function upsertBreak(addressId: number, breakData: DoctoraliaCalend
     create: {
       addressId,
       externalId: breakData.id,
-      since: new Date(breakData.since),
-      till: new Date(breakData.till),
+      since,
+      till,
       description: breakData.description,
     },
     update: {
-      since: new Date(breakData.since),
-      till: new Date(breakData.till),
+      since,
+      till,
       description: breakData.description,
     },
   });
