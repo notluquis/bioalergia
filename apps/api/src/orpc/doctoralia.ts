@@ -88,6 +88,24 @@ const emailNotificationsCalendarQuerySchema = z.object({
   to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
 });
 
+const calendarMergedQuerySchema = z.object({
+  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+});
+
+const calendarMergedResponseSchema = z.object({
+  data: z.object({
+    entries: z.array(z.unknown()),
+    orphanEmails: z.array(z.unknown()),
+    counts: z.object({
+      appointments: z.number(),
+      matchedEmails: z.number(),
+      orphanEmails: z.number(),
+    }),
+  }),
+  status: z.literal("ok"),
+});
+
 const emailNotificationsListQuerySchema = z.object({
   limit: z.number().int().min(1).max(200).optional(),
   offset: z.number().int().min(0).optional(),
@@ -693,6 +711,118 @@ const doctoraliaORPCRouterBase = {
       };
     }),
 
+  calendarMerged: canReadFacility
+    .route({ method: "GET", path: "/calendar/merged" })
+    .input(calendarMergedQuerySchema)
+    .output(calendarMergedResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof calendarMergedQuerySchema> }) => {
+      const fromDate = new Date(`${input.from}T00:00:00.000Z`);
+      const toDate = new Date(`${input.to}T23:59:59.999Z`);
+
+      const [appointments, emails] = await Promise.all([
+        db.doctoraliaCalendarAppointment.findMany({
+          where: {
+            isBlock: false,
+            startAt: { gte: fromDate, lte: toDate },
+          },
+          orderBy: [{ startAt: "asc" }],
+          select: {
+            colorSchemaId: true,
+            comments: true,
+            duration: true,
+            endAt: true,
+            eventServices: true,
+            eventType: true,
+            externalId: true,
+            hasPatient: true,
+            id: true,
+            isPatientFirstAdminBooking: true,
+            isPatientFirstTime: true,
+            patientBirthDate: true,
+            patientExternalId: true,
+            patientReferenceId: true,
+            schedule: { select: { displayName: true, externalId: true } },
+            scheduledBy: true,
+            serviceColorSchemaId: true,
+            serviceName: true,
+            startAt: true,
+            status: true,
+            title: true,
+          },
+        }),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (db.$qb as any)
+          .selectFrom("DoctoraliaEmailNotification")
+          .selectAll()
+          .where("appointmentDate", ">=", fromDate)
+          .where("appointmentDate", "<=", toDate)
+          .orderBy("appointmentDate", "asc")
+          .execute() as Promise<
+          Array<{
+            id: string;
+            appointmentDate: Date | null;
+            appointmentDoctor: string | null;
+            appointmentService: string | null;
+            clinicAddress: string | null;
+            createdAt: Date;
+            emailMessageId: string;
+            eventType: "BOOKING" | "MODIFICATION" | "CANCELLATION";
+            patientEmail: string | null;
+            patientName: string;
+            patientPhone: string | null;
+            previousAppointmentDate: Date | null;
+            updatedAt: Date;
+          }>
+        >,
+      ]);
+
+      const emailBuckets = new Map<string, typeof emails>();
+      for (const email of emails) {
+        if (!email.appointmentDate) continue;
+        const key = mergeKey(email.patientName, email.appointmentDate);
+        const bucket = emailBuckets.get(key) ?? [];
+        bucket.push(email);
+        emailBuckets.set(key, bucket);
+      }
+
+      const usedEmailIds = new Set<string>();
+      const entries = appointments.map((appointment) => {
+        const key = mergeKey(appointment.title, appointment.startAt);
+        const matched = emailBuckets.get(key) ?? [];
+        for (const email of matched) {
+          usedEmailIds.add(email.id);
+        }
+        const booking = matched.find((e) => e.eventType === "BOOKING") ?? null;
+        const cancellation = matched.find((e) => e.eventType === "CANCELLATION") ?? null;
+        const modifications = matched.filter((e) => e.eventType === "MODIFICATION");
+        return {
+          appointment,
+          emails: {
+            all: matched,
+            booking,
+            cancellation,
+            modifications,
+          },
+        };
+      });
+
+      const orphanEmails = emails.filter((email) => !usedEmailIds.has(email.id));
+      const matchedEmailCount = emails.length - orphanEmails.length;
+
+      return {
+        data: {
+          counts: {
+            appointments: appointments.length,
+            matchedEmails: matchedEmailCount,
+            orphanEmails: orphanEmails.length,
+          },
+          entries,
+          orphanEmails,
+        },
+        status: "ok" as const,
+      };
+    }),
+
   emailNotificationsOverview: authed
     .route({ method: "GET", path: "/email-notifications/overview" })
     .output(emailNotificationsOverviewResponseSchema)
@@ -979,6 +1109,21 @@ const doctoraliaORPCRouterBase = {
       };
     }),
 };
+
+function normalizePatientName(name: string): string {
+  return name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\b(dra?\.?|dr\.?|sra?\.?|sr\.?|srta\.?)\s+/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function mergeKey(name: string, when: Date): string {
+  const minute = Math.floor(when.getTime() / 60_000);
+  return `${normalizePatientName(name)}|${minute}`;
+}
 
 function parseCookieHeader(header: string): Array<{ name: string; value: string }> {
   const raw = header.trim();

@@ -11,11 +11,14 @@ import { ScheduleCalendar } from "@/features/calendar/components/ScheduleCalenda
 import { useCalendarEvents } from "@/features/calendar/hooks/use-calendar-events";
 import type { CalendarEventDetail, CalendarSearchParams } from "@/features/calendar/types";
 import {
-  fetchDoctoraliaCalendarAppointments,
   fetchDoctoraliaCalendarAuthStatus,
-  fetchDoctoraliaEmailCalendar,
+  fetchDoctoraliaCalendarMerged,
 } from "@/features/doctoralia/api";
-import type { DoctoraliaEmailNotification } from "@/features/doctoralia/types";
+import type {
+  DoctoraliaCalendarMerged,
+  DoctoraliaEmailNotification,
+  DoctoraliaMergedCalendarEntry,
+} from "@/features/doctoralia/types";
 import { useCan } from "@/hooks/use-can";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { numberFormatter } from "@/lib/format";
@@ -28,19 +31,33 @@ dayjs.extend(isoWeek);
 dayjs.locale("es");
 
 const DATE_FORMAT = "YYYY-MM-DD";
-type CalendarSource = "doctoralia" | "doctoralia-email" | "google";
+type CalendarSource = "doctoralia" | "google";
 const DOCTORALIA_STANDBY = false;
 
-function toCalendarEventDetail(
-  appointments: Awaited<ReturnType<typeof fetchDoctoraliaCalendarAppointments>>
-): CalendarEventDetail[] {
-  return appointments.map((appointment) => ({
+function mergedEntryToCalendarEventDetail(
+  entry: DoctoraliaMergedCalendarEntry
+): CalendarEventDetail {
+  const { appointment, emails } = entry;
+  const descParts = [
+    appointment.comments,
+    emails.cancellation ? "⚠ Cancelado por email" : null,
+    emails.modifications.length > 0
+      ? `✎ Modificado (${emails.modifications.length}) por email`
+      : null,
+  ].filter(Boolean);
+  const colorId = emails.cancellation
+    ? "11"
+    : emails.modifications.length > 0
+      ? "5"
+      : appointment.serviceColorSchemaId != null
+        ? String(appointment.serviceColorSchemaId)
+        : null;
+  return {
     calendarId: `doctoralia:${appointment.schedule.externalId}`,
     category: null,
-    colorId:
-      appointment.serviceColorSchemaId != null ? String(appointment.serviceColorSchemaId) : null,
+    colorId,
     controlIncluded: null,
-    description: appointment.comments,
+    description: descParts.length ? descParts.join(" · ") : null,
     endDate: appointment.endAt.toISOString().split("T")[0] ?? null,
     endDateTime: appointment.endAt.toISOString(),
     endTimeZone: null,
@@ -52,7 +69,7 @@ function toCalendarEventDetail(
     eventUpdatedAt: null,
     hangoutLink: null,
     location: appointment.schedule.displayName,
-    rawEvent: appointment,
+    rawEvent: { appointment, emails },
     startDate: appointment.startAt.toISOString().split("T")[0] ?? null,
     startDateTime: appointment.startAt.toISOString(),
     startTimeZone: null,
@@ -60,46 +77,53 @@ function toCalendarEventDetail(
     summary: toTitleCase(appointment.title) || appointment.title,
     transparency: null,
     visibility: null,
-  }));
+  };
 }
 
-function toEmailCalendarEventDetail(
-  notifications: DoctoraliaEmailNotification[]
-): CalendarEventDetail[] {
-  return notifications.map((n) => {
-    const dateStr = n.appointmentDate
-      ? (n.appointmentDate.toISOString().split("T")[0] ?? null)
-      : null;
-    const dateIso = n.appointmentDate ? n.appointmentDate.toISOString() : null;
-    const descParts = [n.appointmentService, n.appointmentDoctor].filter(Boolean);
-    return {
-      calendarId: "doctoralia-email",
-      category: null,
-      colorId: n.eventType === "CANCELLATION" ? "11" : n.eventType === "MODIFICATION" ? "5" : null,
-      controlIncluded: null,
-      description: descParts.length ? descParts.join(" · ") : null,
-      endDate: null,
-      endDateTime: null,
-      endTimeZone: null,
-      eventCreatedAt: null,
-      eventDate: dateStr ?? "",
-      eventDateTime: dateIso,
-      eventId: n.id,
-      eventType: "doctoralia-email",
-      eventUpdatedAt: null,
-      hangoutLink: null,
-      location: n.clinicAddress,
-      patientName: n.patientName,
-      rawEvent: n,
-      startDate: dateStr,
-      startDateTime: dateIso,
-      startTimeZone: null,
-      status: n.eventType,
-      summary: `${toTitleCase(n.patientName) || n.patientName}${n.appointmentService ? ` — ${n.appointmentService}` : ""}`,
-      transparency: null,
-      visibility: null,
-    };
-  });
+function orphanEmailToCalendarEventDetail(n: DoctoraliaEmailNotification): CalendarEventDetail {
+  const dateStr = n.appointmentDate
+    ? (n.appointmentDate.toISOString().split("T")[0] ?? null)
+    : null;
+  const dateIso = n.appointmentDate ? n.appointmentDate.toISOString() : null;
+  const descParts = [
+    n.appointmentService,
+    n.appointmentDoctor,
+    "📧 Sólo email (sin match en calendario)",
+  ].filter(Boolean);
+  return {
+    calendarId: "doctoralia-email",
+    category: null,
+    colorId: n.eventType === "CANCELLATION" ? "11" : n.eventType === "MODIFICATION" ? "5" : "8",
+    controlIncluded: null,
+    description: descParts.length ? descParts.join(" · ") : null,
+    endDate: null,
+    endDateTime: null,
+    endTimeZone: null,
+    eventCreatedAt: null,
+    eventDate: dateStr ?? "",
+    eventDateTime: dateIso,
+    eventId: n.id,
+    eventType: "doctoralia-email",
+    eventUpdatedAt: null,
+    hangoutLink: null,
+    location: n.clinicAddress,
+    patientName: n.patientName,
+    rawEvent: n,
+    startDate: dateStr,
+    startDateTime: dateIso,
+    startTimeZone: null,
+    status: n.eventType,
+    summary: `${toTitleCase(n.patientName) || n.patientName}${n.appointmentService ? ` — ${n.appointmentService}` : ""}`,
+    transparency: null,
+    visibility: null,
+  };
+}
+
+function mergedToCalendarEventDetails(merged: DoctoraliaCalendarMerged): CalendarEventDetail[] {
+  return [
+    ...merged.entries.map(mergedEntryToCalendarEventDetail),
+    ...merged.orphanEmails.map(orphanEmailToCalendarEventDetail),
+  ];
 }
 
 async function waitForDoctoraliaOAuthPopup(popup: Window, origin: string): Promise<void> {
@@ -279,11 +303,8 @@ function CalendarSourceSelector({
           <ListBox.Item id="google" textValue="Google Calendar">
             Google Calendar
           </ListBox.Item>
-          <ListBox.Item id="doctoralia" textValue="Doctoralia Calendar">
-            Doctoralia Calendar
-          </ListBox.Item>
-          <ListBox.Item id="doctoralia-email" textValue="Doctoralia Email">
-            Doctoralia Email
+          <ListBox.Item id="doctoralia" textValue="Doctoralia">
+            Doctoralia
           </ListBox.Item>
         </ListBox>
       </Select.Popover>
@@ -365,7 +386,6 @@ function CalendarSchedulePage() {
   const source: CalendarSource = (search.source as CalendarSource) ?? "google";
   const isGoogleSource = source === "google";
   const isDoctoraliaSource = source === "doctoralia";
-  const isEmailSource = source === "doctoralia-email";
   const canConnectDoctoralia = can("update", "DoctoraliaFacility");
 
   const { isOpen: filtersOpen, set: setFiltersOpen } = useDisclosure(false);
@@ -379,26 +399,13 @@ function CalendarSchedulePage() {
       if (!search.from || !search.to) {
         return [];
       }
-      const appointments = await fetchDoctoraliaCalendarAppointments({
+      const merged = await fetchDoctoraliaCalendarMerged({
         from: search.from,
         to: search.to,
       });
-      return toCalendarEventDetail(appointments);
+      return mergedToCalendarEventDetails(merged);
     },
-    queryKey: ["doctoralia", "calendar", "appointments", search.from, search.to],
-  });
-
-  const { data: emailEvents = [], isLoading: emailLoading } = useQuery({
-    enabled: isEmailSource && Boolean(search.from) && Boolean(search.to),
-    queryFn: async () => {
-      if (!search.from || !search.to) return [];
-      const notifications = await fetchDoctoraliaEmailCalendar({
-        from: search.from,
-        to: search.to,
-      });
-      return toEmailCalendarEventDetail(notifications);
-    },
-    queryKey: ["doctoralia", "email-calendar", search.from, search.to],
+    queryKey: ["doctoralia", "calendar", "merged", search.from, search.to],
   });
 
   useDoctoraliaCalendarAuth({
@@ -436,9 +443,7 @@ function CalendarSchedulePage() {
   // No need to re-filter on the client.
   const displayedWeekEvents = isGoogleSource
     ? (daily?.days.flatMap((day) => day.events) ?? [])
-    : isEmailSource
-      ? emailEvents
-      : doctoraliaEvents;
+    : doctoraliaEvents;
 
   const onSourceChange = useCallback(
     (nextSourceKey: string) => {
@@ -486,11 +491,7 @@ function CalendarSchedulePage() {
   }, [defaults, navigate]);
 
   const totalEvents = isGoogleSource ? (summary?.totals.events ?? 0) : displayedWeekEvents.length;
-  const calendarLoading = isGoogleSource
-    ? loading
-    : isEmailSource
-      ? emailLoading
-      : doctoraliaLoading;
+  const calendarLoading = isGoogleSource ? loading : doctoraliaLoading;
   const onFilterChange = useCallback((key: string, value: unknown) => {
     setDraftFilters((prev) => ({ ...prev, [key]: value }));
   }, []);

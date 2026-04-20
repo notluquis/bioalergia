@@ -10,6 +10,7 @@ import {
   BookingResponseSchema,
   DoctoraliaBookingsResponseSchema,
   DoctoraliaCalendarAppointmentsResponseSchema,
+  DoctoraliaCalendarMergedResponseSchema,
   DoctoraliaCalendarAuthStartResponseSchema,
   DoctoraliaCalendarAuthStatusResponseSchema,
   DoctoraliaDoctorsResponseSchema,
@@ -37,6 +38,7 @@ import type {
   DoctoraliaCalendarAppointment,
   DoctoraliaCalendarAppointmentsQuery,
   DoctoraliaCalendarAppointmentsResponse,
+  DoctoraliaCalendarMerged,
   DoctoraliaCalendarAuthStartResponse,
   DoctoraliaCalendarAuthStatusResponse,
   DoctoraliaDoctor,
@@ -236,6 +238,26 @@ export async function fetchDoctoraliaCalendarAppointments(
   }
 
   return response.data.appointments;
+}
+
+export async function fetchDoctoraliaCalendarMerged(query: {
+  from: string;
+  to: string;
+}): Promise<DoctoraliaCalendarMerged> {
+  let response;
+  try {
+    response = DoctoraliaCalendarMergedResponseSchema.parse(
+      await doctoraliaORPCClient.calendarMerged({ from: query.from, to: query.to })
+    );
+  } catch (error) {
+    throw toDoctoraliaApiError(error);
+  }
+
+  if (response.status !== "ok") {
+    throw new Error("No se pudo obtener el calendario unificado de Doctoralia");
+  }
+
+  return response.data;
 }
 
 export async function fetchDoctoraliaSyncLogs(): Promise<DoctoraliaSyncLog[]> {

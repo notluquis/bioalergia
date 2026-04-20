@@ -188,6 +188,11 @@ export const emailNotificationsCalendarQuerySchema = z.object({
   to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
 });
 
+export const calendarMergedQuerySchema = z.object({
+  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+});
+
 export const emailNotificationsListQuerySchema = z.object({
   limit: z.number().int().min(1).max(200).optional(),
   offset: z.number().int().min(0).optional(),
@@ -415,12 +420,66 @@ export const calendarAppointmentsSchema = z.object({
   status: z.literal("ok"),
 });
 
+export const mergedCalendarAppointmentSchema = z.strictObject({
+  colorSchemaId: z.number().nullable(),
+  comments: z.string().nullable(),
+  duration: z.number(),
+  endAt: z.coerce.date(),
+  eventServices: z.object({ items: z.array(z.any()) }).nullable(),
+  eventType: z.number(),
+  externalId: z.number(),
+  hasPatient: z.boolean(),
+  id: z.number(),
+  isPatientFirstAdminBooking: z.boolean(),
+  isPatientFirstTime: z.boolean(),
+  patientBirthDate: z.coerce.date().nullable(),
+  patientExternalId: z.number(),
+  patientReferenceId: z.string(),
+  schedule: z.strictObject({
+    displayName: z.string(),
+    externalId: z.number(),
+  }),
+  scheduledBy: z.number(),
+  serviceColorSchemaId: z.number().nullable(),
+  serviceName: z.string(),
+  startAt: z.coerce.date(),
+  status: z.number(),
+  title: z.string(),
+});
+
+export const mergedCalendarEntrySchema = z.strictObject({
+  appointment: mergedCalendarAppointmentSchema,
+  emails: z.strictObject({
+    all: z.array(emailNotificationSchema),
+    booking: emailNotificationSchema.nullable(),
+    cancellation: emailNotificationSchema.nullable(),
+    modifications: z.array(emailNotificationSchema),
+  }),
+});
+
+export const calendarMergedResponseSchema = z.object({
+  data: z.object({
+    counts: z.object({
+      appointments: z.number(),
+      matchedEmails: z.number(),
+      orphanEmails: z.number(),
+    }),
+    entries: z.array(mergedCalendarEntrySchema),
+    orphanEmails: z.array(emailNotificationSchema),
+  }),
+  status: z.literal("ok"),
+});
+
 export const doctoraliaContract = {
   bookSlot: oc.route({ method: "POST", path: "/bookings" }).input(bookSlotInputSchema).output(bookingResponseSchema),
   calendarAppointments: oc
     .route({ method: "GET", path: "/calendar/appointments" })
     .input(calendarAppointmentsQuerySchema)
     .output(calendarAppointmentsSchema),
+  calendarMerged: oc
+    .route({ method: "GET", path: "/calendar/merged" })
+    .input(calendarMergedQuerySchema)
+    .output(calendarMergedResponseSchema),
   calendarAuthStatus: oc.route({ method: "GET", path: "/calendar/auth/status" }).output(calendarAuthStatusSchema),
   importCalendarJson: oc
     .route({ method: "POST", path: "/calendar/import-json" })

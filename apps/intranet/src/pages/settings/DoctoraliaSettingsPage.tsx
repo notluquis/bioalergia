@@ -2,15 +2,13 @@ import {
   Alert,
   Button,
   Card,
-  Chip,
   Description,
   ProgressBar,
   Skeleton,
   Surface,
   Tabs,
 } from "@heroui/react";
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { ColumnDef, PaginationState } from "@tanstack/react-table";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import {
   Activity,
@@ -24,42 +22,25 @@ import {
 } from "lucide-react";
 
 import { DoctoraliaCookieStorePanel } from "@/features/doctoralia/components/DoctoraliaCookieStorePanel";
-import type React from "react";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
-import { DataTable } from "@/components/data-table/DataTable";
 import { useToast } from "@/context/ToastContext";
 import { triggerDoctoraliaEmailIngest } from "@/features/doctoralia/settings-api";
 import { doctoraliaSettingsKeys } from "@/features/doctoralia/settings-queries";
 import { PAGE_CONTAINER } from "@/lib/styles";
 import { ChecklistRow, FlowStep } from "./messaging-settings-shared";
-import type { DoctoraliaEmailNotification } from "@/features/doctoralia/types";
 
 export function DoctoraliaSettingsPage() {
   const { error: showError, success: showSuccess } = useToast();
   const queryClient = useQueryClient();
-  const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 20 });
-
-  const limit = pagination.pageSize;
-  const offset = pagination.pageIndex * pagination.pageSize;
 
   const { data: overview, isPending: overviewPending } = useQuery({
     ...doctoraliaSettingsKeys.overview(),
     refetchInterval: 30_000,
   });
 
-  const { data: stats, isPending: statsPending } = useQuery({
+  const { data: stats } = useQuery({
     ...doctoraliaSettingsKeys.stats(),
-    refetchInterval: 30_000,
-  });
-
-  const {
-    data: notificationsData,
-    error: notificationsError,
-    isPending: notificationsPending,
-  } = useQuery({
-    ...doctoraliaSettingsKeys.notifications({ limit, offset }),
-    placeholderData: keepPreviousData,
     refetchInterval: 30_000,
   });
 
@@ -76,9 +57,6 @@ export function DoctoraliaSettingsPage() {
       void queryClient.invalidateQueries({ queryKey: doctoraliaSettingsKeys.all });
     },
   });
-
-  const notifications = notificationsData?.notifications ?? [];
-  const pageCount = Math.ceil((notificationsData?.total ?? 0) / limit);
 
   const readiness = useMemo(() => {
     if (!overview) return 0;
@@ -151,10 +129,6 @@ export function DoctoraliaSettingsPage() {
             </Tabs.Tab>
             <Tabs.Tab id="flow">
               Flujo
-              <Tabs.Indicator />
-            </Tabs.Tab>
-            <Tabs.Tab id="activity">
-              Actividad
               <Tabs.Indicator />
             </Tabs.Tab>
             <Tabs.Tab id="scraper">
@@ -421,119 +395,6 @@ export function DoctoraliaSettingsPage() {
           </div>
         </Tabs.Panel>
 
-        <Tabs.Panel id="activity">
-          <div className="mt-4 space-y-4">
-            <div className="grid gap-4 xl:grid-cols-[1.35fr_0.65fr]">
-              <Card>
-                <Card.Header className="flex flex-col items-start gap-1">
-                  <h2 className="font-semibold text-base">Actividad del flujo</h2>
-                  <Description className="text-default-500 text-xs">
-                    Eventos de correo Doctoralia ya parseados y guardados en la base de datos.
-                  </Description>
-                </Card.Header>
-                <Card.Content className="space-y-4">
-                  {statsPending ? (
-                    <Skeleton className="h-44 w-full rounded-2xl" />
-                  ) : stats ? (
-                    <>
-                      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-                        <MetricPill
-                          title="Total"
-                          subtitle="eventos"
-                          tone="primary"
-                          value={stats.total}
-                        />
-                        <MetricPill
-                          title="Reservas"
-                          subtitle="bookings"
-                          tone="success"
-                          value={stats.bookings}
-                        />
-                        <MetricPill
-                          title="Modificaciones"
-                          subtitle="changes"
-                          tone="accent"
-                          value={stats.modifications}
-                        />
-                        <MetricPill
-                          title="Cancelaciones"
-                          subtitle="cancellations"
-                          tone="warning"
-                          value={stats.cancellations}
-                        />
-                        <MetricPill
-                          title="Con teléfono"
-                          subtitle="contactables"
-                          tone="success"
-                          value={stats.withPhone}
-                        />
-                      </div>
-                    </>
-                  ) : (
-                    <Alert status="danger">
-                      <Alert.Content>
-                        <Alert.Description>
-                          No se pudo cargar la actividad del flujo.
-                        </Alert.Description>
-                      </Alert.Content>
-                    </Alert>
-                  )}
-                </Card.Content>
-              </Card>
-
-              <Card>
-                <Card.Header className="flex flex-col items-start gap-1">
-                  <h2 className="font-semibold text-base">Intervención manual</h2>
-                  <Description className="text-default-500 text-xs">
-                    Ejecuta una lectura puntual del buzón además del listener IMAP continuo.
-                  </Description>
-                </Card.Header>
-                <Card.Content className="space-y-3">
-                  <Button
-                    isDisabled={ingestMutation.isPending}
-                    isPending={ingestMutation.isPending}
-                    onPress={() => ingestMutation.mutate()}
-                    variant="primary"
-                  >
-                    <RefreshCw className="h-4 w-4" />
-                    Ejecutar ingesta ahora
-                  </Button>
-
-                  <Description className="text-default-500 text-xs">
-                    Relee el buzón, valida correos Doctoralia y guarda eventos en la base de datos,
-                    sin depender de WhatsApp.
-                  </Description>
-                </Card.Content>
-              </Card>
-            </div>
-
-            {notificationsPending ? (
-              <Skeleton className="h-64 w-full rounded-lg" />
-            ) : notificationsError ? (
-              <Alert status="danger">
-                <Alert.Content>
-                  <Alert.Description>
-                    {notificationsError instanceof Error
-                      ? notificationsError.message
-                      : "No se pudo cargar la tabla de eventos de Doctoralia."}
-                  </Alert.Description>
-                </Alert.Content>
-              </Alert>
-            ) : (
-              <DataTable
-                columns={doctoraliaNotificationColumns}
-                data={notifications as DoctoraliaEmailNotification[]}
-                enableExport={false}
-                enableGlobalFilter={false}
-                onPaginationChange={setPagination}
-                pageCount={pageCount}
-                pagination={pagination}
-                scrollMaxHeight="min(65dvh, 700px)"
-              />
-            )}
-          </div>
-        </Tabs.Panel>
-
         <Tabs.Panel id="scraper">
           <div className="mt-4 grid gap-4 xl:grid-cols-[1fr_1fr]">
             <DoctoraliaCookieStorePanel />
@@ -564,91 +425,6 @@ export function DoctoraliaSettingsPage() {
   );
 }
 
-function MetricPill({
-  subtitle,
-  title,
-  tone,
-  value,
-}: {
-  subtitle: string;
-  title: string;
-  tone: "accent" | "default" | "primary" | "success" | "warning";
-  value: number | string;
-}) {
-  const toneClasses: Record<typeof tone, string> = {
-    accent: "border-accent/20 bg-accent/8 text-accent",
-    default: "border-default-200 bg-default-100/70 text-default-700",
-    primary: "border-primary/20 bg-primary/8 text-primary",
-    success: "border-success/20 bg-success/8 text-success",
-    warning: "border-warning/20 bg-warning/8 text-warning",
-  };
-
-  return (
-    <div className={`rounded-2xl border px-4 py-3 ${toneClasses[tone]}`}>
-      <Description className="text-[11px] uppercase tracking-wide opacity-75">{title}</Description>
-      <div className="mt-1 truncate font-semibold text-base">{value}</div>
-      <Description className="text-[11px] opacity-75">{subtitle}</Description>
-    </div>
-  );
-}
-
 function formatStatusDate(value: Date | null | undefined) {
   return value ? dayjs(value).tz().format("DD/MM/YYYY HH:mm") : "Sin registro";
 }
-
-const EVENT_TYPE_LABELS: Record<DoctoraliaEmailNotification["eventType"], string> = {
-  BOOKING: "Reserva",
-  CANCELLATION: "Cancelación",
-  MODIFICATION: "Modificación",
-};
-
-const EVENT_TYPE_COLORS: Record<
-  DoctoraliaEmailNotification["eventType"],
-  React.ComponentProps<typeof Chip>["color"]
-> = {
-  BOOKING: "success",
-  CANCELLATION: "warning",
-  MODIFICATION: "accent",
-};
-
-const doctoraliaNotificationColumns: ColumnDef<DoctoraliaEmailNotification>[] = [
-  {
-    accessorKey: "patientName",
-    cell: ({ row }) => <span className="font-medium">{row.original.patientName}</span>,
-    header: "Paciente",
-  },
-  {
-    accessorKey: "patientPhone",
-    cell: ({ row }) => row.original.patientPhone ?? "—",
-    header: "Teléfono",
-  },
-  {
-    accessorKey: "appointmentDate",
-    cell: ({ row }) =>
-      row.original.appointmentDate
-        ? dayjs(row.original.appointmentDate).tz().format("DD/MM/YYYY HH:mm")
-        : "—",
-    header: "Fecha cita",
-  },
-  {
-    accessorKey: "appointmentService",
-    cell: ({ row }) => (
-      <span className="max-w-56 truncate text-sm">{row.original.appointmentService ?? "—"}</span>
-    ),
-    header: "Servicio",
-  },
-  {
-    accessorKey: "eventType",
-    cell: ({ row }) => (
-      <Chip color={EVENT_TYPE_COLORS[row.original.eventType]} size="sm" variant="soft">
-        {EVENT_TYPE_LABELS[row.original.eventType]}
-      </Chip>
-    ),
-    header: "Evento",
-  },
-  {
-    accessorKey: "appointmentDoctor",
-    cell: ({ row }) => row.original.appointmentDoctor ?? "—",
-    header: "Profesional",
-  },
-];

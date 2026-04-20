@@ -205,6 +205,29 @@ export const DoctoraliaEmailNotificationsCalendarResponseSchema = z.strictObject
   status: z.literal("ok"),
 });
 
+export const DoctoraliaMergedCalendarEntrySchema = z.strictObject({
+  appointment: DoctoraliaCalendarAppointmentSchema,
+  emails: z.strictObject({
+    all: z.array(DoctoraliaEmailNotificationSchema),
+    booking: DoctoraliaEmailNotificationSchema.nullable(),
+    cancellation: DoctoraliaEmailNotificationSchema.nullable(),
+    modifications: z.array(DoctoraliaEmailNotificationSchema),
+  }),
+});
+
+export const DoctoraliaCalendarMergedResponseSchema = z.strictObject({
+  data: z.strictObject({
+    counts: z.strictObject({
+      appointments: z.number(),
+      matchedEmails: z.number(),
+      orphanEmails: z.number(),
+    }),
+    entries: z.array(DoctoraliaMergedCalendarEntrySchema),
+    orphanEmails: z.array(DoctoraliaEmailNotificationSchema),
+  }),
+  status: z.literal("ok"),
+});
+
 export const DoctoraliaEmailOverviewResponseSchema = z.strictObject({
   data: z.strictObject({
     imapHostConfigured: z.boolean(),

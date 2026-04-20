@@ -156,6 +156,26 @@ export interface DoctoraliaCalendarAppointmentsResponse {
   status: "ok";
 }
 
+export interface DoctoraliaMergedCalendarEntry {
+  appointment: DoctoraliaCalendarAppointment;
+  emails: {
+    all: DoctoraliaEmailNotification[];
+    booking: DoctoraliaEmailNotification | null;
+    cancellation: DoctoraliaEmailNotification | null;
+    modifications: DoctoraliaEmailNotification[];
+  };
+}
+
+export interface DoctoraliaCalendarMerged {
+  counts: {
+    appointments: number;
+    matchedEmails: number;
+    orphanEmails: number;
+  };
+  entries: DoctoraliaMergedCalendarEntry[];
+  orphanEmails: DoctoraliaEmailNotification[];
+}
+
 export interface DoctoraliaSyncLog {
   bookingsSynced: number;
   doctorsSynced: number;

@@ -8,7 +8,7 @@ export const calendarSearchSchema = z.object({
   date: z.string().optional().catch(undefined),
   patientName: z.string().optional().catch(undefined),
   patientRut: z.string().optional().catch(undefined),
-  source: z.enum(["doctoralia", "doctoralia-email", "google"]).optional().catch(undefined),
+  source: z.enum(["doctoralia", "google"]).optional().catch(undefined),
   search: z.string().optional().catch(undefined),
   seriesKind: z
     .enum(["PATCH_TEST", "SKIN_TEST", "SUBCUTANEOUS_TREATMENT"])
