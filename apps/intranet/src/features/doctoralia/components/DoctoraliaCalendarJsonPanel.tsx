@@ -77,7 +77,7 @@ function parseCalendarJsonFile(file: File): Promise<CalendarJsonFile> {
     reader.onload = () => {
       try {
         const text = typeof reader.result === "string" ? reader.result : "";
-        const parsed = JSON.parse(text);
+        const parsed: unknown = JSON.parse(text);
         const rawEntries: unknown = Array.isArray(parsed)
           ? parsed
           : Array.isArray((parsed as { entries?: unknown }).entries)
