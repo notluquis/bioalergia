@@ -1,4 +1,4 @@
-import { Button, ButtonGroup, Chip, Label, ListBox, Select, Surface, Toolbar } from "@heroui/react";
+import { Button, ButtonGroup, Chip, ListBox, Select, Separator, Surface } from "@heroui/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
 import dayjs from "dayjs";
@@ -260,7 +260,8 @@ function CalendarSourceSelector({
 }>) {
   return (
     <Select
-      className="min-w-44"
+      aria-label="Fuente del calendario"
+      className="min-w-48"
       isDisabled={isDisabled}
       value={source}
       onChange={(key) => {
@@ -269,8 +270,7 @@ function CalendarSourceSelector({
         }
       }}
     >
-      <Label className="font-medium text-default-500 text-xs">Fuente</Label>
-      <Select.Trigger>
+      <Select.Trigger className="h-9">
         <Select.Value />
         <Select.Indicator />
       </Select.Trigger>
@@ -323,38 +323,38 @@ function ScheduleHeaderControls({
   totalEvents: number;
 }>) {
   return (
-    <Toolbar
-      aria-label="Filtros del calendario"
-      className="w-full grid-flow-row items-start gap-2 sm:grid-flow-col sm:items-center"
-    >
+    <div className="flex flex-wrap items-center gap-2">
       <CalendarSourceSelector
         isDisabled={sourceSelectorDisabled}
         onSourceChange={onSourceChange}
         source={source}
       />
 
-      <span className="text-default-400 text-xs">
+      <Chip size="sm" variant="soft" color="default" className="tabular-nums">
         {numberFormatter.format(totalEvents)} eventos
-      </span>
+      </Chip>
 
       {isGoogleSource && (
-        <CalendarFiltersPopover
-          applyCount={totalEvents}
-          availableCategories={availableCategories}
-          className="shadow-lg"
-          filters={draftFilters}
-          isDirty={JSON.stringify(draftFilters) !== JSON.stringify(appliedFilters)}
-          isOpen={filtersOpen}
-          layout="dropdown"
-          loading={loading}
-          onApply={onApplyGoogleFilters}
-          onFilterChange={onFilterChange}
-          onOpenChange={setFiltersOpen}
-          onReset={onResetGoogleFilters}
-          showSearch
-        />
+        <>
+          <Separator orientation="vertical" className="mx-1 h-5" />
+          <CalendarFiltersPopover
+            applyCount={totalEvents}
+            availableCategories={availableCategories}
+            className="shadow-lg"
+            filters={draftFilters}
+            isDirty={JSON.stringify(draftFilters) !== JSON.stringify(appliedFilters)}
+            isOpen={filtersOpen}
+            layout="dropdown"
+            loading={loading}
+            onApply={onApplyGoogleFilters}
+            onFilterChange={onFilterChange}
+            onOpenChange={setFiltersOpen}
+            onReset={onResetGoogleFilters}
+            showSearch
+          />
+        </>
       )}
-    </Toolbar>
+    </div>
   );
 }
 
@@ -401,7 +401,7 @@ function CalendarSchedulePage() {
     queryKey: ["doctoralia", "email-calendar", search.from, search.to],
   });
 
-  const { onConnectDoctoralia } = useDoctoraliaCalendarAuth({
+  useDoctoraliaCalendarAuth({
     canConnectDoctoralia,
     isDoctoraliaSource,
   });
@@ -499,13 +499,9 @@ function CalendarSchedulePage() {
     <section className="space-y-4">
       {/* Compact Header */}
       <header className="space-y-3">
-        {/* Navigation Row */}
-        <Toolbar
-          aria-label="Controles del calendario semanal"
-          className="w-full grid-flow-row items-stretch gap-3 lg:grid-flow-col lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center"
-        >
+        <div className="flex w-full flex-wrap items-center justify-between gap-3">
           {/* Left: Week Navigation */}
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex min-w-0 flex-wrap items-center gap-3">
             <ButtonGroup size="sm" variant="tertiary">
               <Button
                 aria-label="Semana anterior"
@@ -536,15 +532,15 @@ function CalendarSchedulePage() {
             <div className="hidden items-center gap-2 text-sm sm:flex">
               <span className="font-medium text-default-600">{rangeLabel}</span>
               {isNextWeek && (
-                <Chip size="sm" variant="secondary" color="default" className="text-[11px]">
+                <Chip size="sm" variant="soft" color="default">
                   Próxima semana
                 </Chip>
               )}
             </div>
           </div>
 
-          {/* Right: Event count + Filter toggle */}
-          <div className="flex flex-wrap items-center gap-3 lg:justify-end">
+          {/* Right: Source + count + filters */}
+          <div className="flex flex-wrap items-center gap-2">
             <ScheduleHeaderControls
               appliedFilters={appliedFilters}
               availableCategories={availableCategories}
@@ -562,22 +558,17 @@ function CalendarSchedulePage() {
               totalEvents={totalEvents}
             />
             {isDoctoraliaSource && canConnectDoctoralia && (
-              <Button
-                isDisabled={true}
-                onPress={() => void onConnectDoctoralia()}
-                size="sm"
-                variant="secondary"
-              >
-                Doctoralia en standby
-              </Button>
+              <Chip size="sm" variant="soft" color="warning">
+                En standby
+              </Chip>
             )}
           </div>
-        </Toolbar>
+        </div>
 
         <div className="flex flex-wrap items-center gap-2 text-xs sm:hidden">
           <span className="font-medium text-default-500">{rangeLabel}</span>
           {isNextWeek && (
-            <Chip size="sm" variant="secondary" color="default" className="text-[11px]">
+            <Chip size="sm" variant="soft" color="default">
               Próxima semana
             </Chip>
           )}
