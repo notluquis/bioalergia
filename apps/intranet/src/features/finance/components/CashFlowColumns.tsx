@@ -1,7 +1,7 @@
-import { Button, Checkbox, Chip, Label, ListBox, Select } from "@heroui/react";
+import { Button, Checkbox, Chip, ListBox, Select } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
-import { ArrowRightLeft, ArrowUpDown, Check, Minus, Pencil } from "lucide-react";
+import { ArrowRightLeft, ArrowUpDown, Pencil } from "lucide-react";
 import type { ReactNode } from "react";
 import { isNonAccountableCategory } from "../utils/non-accountable-category";
 
@@ -154,65 +154,15 @@ const dedupeDetails = (values: string[]) => {
   return result;
 };
 
-function SelectionCheckbox(props: {
-  ariaLabel: string;
-  isIndeterminate?: boolean;
-  isSelected: boolean;
-  onChange: () => void;
-}) {
-  return (
-    <Checkbox
-      aria-label={props.ariaLabel}
-      className="justify-center"
-      isIndeterminate={props.isIndeterminate}
-      isSelected={props.isSelected}
-      slot="selection"
-      variant="secondary"
-      onChange={props.onChange}
-    >
-      <Checkbox.Control className="border border-default-300/70 bg-default-200/50 shadow-none transition-colors data-[selected=true]:border-transparent data-[selected=true]:bg-accent data-[indeterminate=true]:border-transparent data-[indeterminate=true]:bg-accent">
-        <Checkbox.Indicator>
-          {({ isIndeterminate, isSelected }) => {
-            if (isIndeterminate) {
-              return <Minus className="h-3.5 w-3.5 text-white" strokeWidth={3} />;
-            }
-
-            return isSelected ? <Check className="h-3.5 w-3.5 text-white" strokeWidth={3} /> : null;
-          }}
-        </Checkbox.Indicator>
-      </Checkbox.Control>
-      <Checkbox.Content className="sr-only">
-        <Label>{props.ariaLabel}</Label>
-      </Checkbox.Content>
-    </Checkbox>
-  );
-}
-
 export const columns: ColumnDef<CashFlowTransaction>[] = [
   {
     id: "select",
     enableResizing: false,
     enableSorting: false,
-    header: ({ table }) => {
-      const allSelected = table.getIsAllPageRowsSelected();
-      const someSelected = table.getIsSomePageRowsSelected();
-
-      return (
-        <SelectionCheckbox
-          ariaLabel="Seleccionar movimientos de la página actual"
-          isIndeterminate={!allSelected && someSelected}
-          isSelected={allSelected}
-          onChange={() => table.toggleAllPageRowsSelected(!allSelected)}
-        />
-      );
-    },
-    cell: ({ row }) => (
-      <SelectionCheckbox
-        ariaLabel={`Seleccionar movimiento ${row.original.id}`}
-        isSelected={row.getIsSelected()}
-        onChange={() => row.toggleSelected(!row.getIsSelected())}
-      />
+    header: () => (
+      <Checkbox aria-label="Seleccionar movimientos de la página actual" slot="selection" />
     ),
+    cell: () => <Checkbox slot="selection" />,
     maxSize: 44,
     minSize: 44,
     size: 44,
