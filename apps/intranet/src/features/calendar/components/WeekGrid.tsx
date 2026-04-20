@@ -13,11 +13,13 @@ dayjs.extend(isoWeek);
 
 const DISPLAY_TZ = "America/Santiago";
 
-// All event times arrive as UTC ISO strings. Render them in Chile local time so
-// the grid is consistent regardless of the viewer's browser timezone.
+// All event times arrive as UTC ISO strings (e.g. "2026-04-21T15:00:00.000Z").
+// Parse as UTC first, THEN convert to Chile local — `dayjs.tz(str, zone)`
+// silently reinterprets the wall-clock of a Z-suffixed string as that zone,
+// which drops the offset and shifts displayed times by +4h.
 function toLocal(input: null | string | undefined) {
   if (!input) return null;
-  const d = dayjs.tz(input, DISPLAY_TZ);
+  const d = dayjs.utc(input).tz(DISPLAY_TZ);
   return d.isValid() ? d : null;
 }
 
