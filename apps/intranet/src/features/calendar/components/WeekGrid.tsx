@@ -191,8 +191,8 @@ function computeGridHourBounds(events: CalendarEventDetail[], monday: dayjs.Dayj
   const paddedStart = Math.max(0, min - 1);
   const paddedEnd = Math.min(24, max + 1);
   return {
-    endHour: Math.max(paddedEnd, businessEnd),
-    startHour: Math.min(paddedStart, businessStart),
+    endHour: paddedEnd,
+    startHour: paddedStart,
   };
 }
 
@@ -307,7 +307,7 @@ function TimeAxis({ hours }: { hours: number[] }) {
     <div className="border-default-200 border-r bg-content2/40">
       {hours.map((hour) => (
         <div
-          className="flex h-13 items-start justify-end border-default-100 border-b pr-2"
+          className="flex h-16 items-start justify-end border-default-100 border-b pr-2"
           key={hour}
         >
           <span className="-translate-y-1/2 font-medium text-[0.7rem] text-foreground-500 tabular-nums">
@@ -342,12 +342,12 @@ function DayColumn({
     <div
       className={cn(
         "relative min-h-full overflow-hidden border-default-100 border-r last:border-r-0",
-        day.isToday && "bg-primary/5"
+        day.isToday && "bg-primary/5 dark:bg-primary/10"
       )}
     >
       {/* Hour grid lines */}
       {hours.map((hour) => (
-        <div className="h-13 border-default-200/50 border-b" key={hour} />
+        <div className="h-16 border-default-200/50 border-b" key={hour} />
       ))}
 
       {/* Events */}
@@ -413,7 +413,7 @@ function getEventButtonClasses(
   hasPaletteColor: boolean
 ) {
   return cn(
-    "absolute z-1 flex min-h-5 flex-col justify-start gap-0.5 overflow-hidden rounded-md border-l-[3px] text-start shadow-sm transition-shadow hover:z-10 hover:shadow-md",
+    "absolute z-1 flex min-h-5 flex-col justify-start gap-0.5 overflow-hidden rounded-md border-l-[3px] text-start shadow-sm transition-shadow hover:z-10 hover:shadow-md dark:shadow-none dark:ring-1 dark:ring-white/5",
     hasPaletteColor ? "border-l-[3px]" : getCategoryClass(category),
     displayMode === "minimal" && "flex-row items-center gap-1 px-1 py-0",
     displayMode === "compact" && "px-1.5 py-0.5",
@@ -476,13 +476,14 @@ function getDoctoraliaColorStyle(
   const schema = DOCTORALIA_COLOR_SCHEMAS[colorId];
   if (!schema) return null;
   if (isDark) {
-    // Dark mode: keep the saturated base as the left-border accent, use a very
-    // translucent base tint as the background so it reads against dark content,
-    // and fall back to the default foreground so text contrast is WCAG-safe.
+    // Dark mode: keep the saturated base as the left-border accent, paint a
+    // stronger tinted background so each chip reads as an actual colored object
+    // (not a washed-out grey), and use a lightened mix of the base as the text
+    // color so it sits on top of the tint without losing hue.
     return {
-      backgroundColor: hexWithAlpha(schema.base, 0.18),
+      backgroundColor: hexWithAlpha(schema.base, 0.38),
       borderLeftColor: schema.base,
-      color: "hsl(var(--heroui-foreground))",
+      color: hexMixWithWhite(schema.base, 0.75),
     };
   }
   return {
@@ -499,6 +500,19 @@ function hexWithAlpha(hex: string, alpha: number) {
   const g = parseInt(n.slice(2, 4), 16);
   const b = parseInt(n.slice(4, 6), 16);
   return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
+
+// Lerp the hex toward white by `t` (0 = base hex, 1 = pure white). Used for dark
+// mode text: mixing ~75% white keeps the hue but raises luminance enough to sit
+// on a translucent tinted background at WCAG-passing contrast.
+function hexMixWithWhite(hex: string, t: number) {
+  const ratio = Math.max(0, Math.min(1, t));
+  const n = hex.replace("#", "");
+  const r = parseInt(n.slice(0, 2), 16);
+  const g = parseInt(n.slice(2, 4), 16);
+  const b = parseInt(n.slice(4, 6), 16);
+  const mix = (channel: number) => Math.round(channel + (255 - channel) * ratio);
+  return `rgb(${mix(r)}, ${mix(g)}, ${mix(b)})`;
 }
 
 function buildEventTooltipContent({
