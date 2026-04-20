@@ -179,18 +179,24 @@ function computeGridHourBounds(events: CalendarEventDetail[], monday: dayjs.Dayj
     return { endHour: businessEnd, startHour: businessStart };
   }
 
-  let min = includeCurrentTime ? now.hour() : 23;
+  let minTotalMinutes = includeCurrentTime ? now.hour() * 60 : 24 * 60;
   let max = includeCurrentTime ? now.hour() + 1 : 0;
 
   for (const event of weekEvents) {
     const s = toLocal(event.startDateTime);
     if (s) {
-      min = Math.min(min, s.hour());
+      const m = s.hour() * 60 + s.minute();
+      if (m < minTotalMinutes) minTotalMinutes = m;
     }
     max = Math.max(max, computeEventMaxHour(event));
   }
 
-  const paddedStart = Math.max(0, min - 1);
+  // If the earliest event starts at :30 or later, keep it in its own hour row
+  // so we don't render a full empty hour above it. Otherwise, back off 1h for
+  // visual breathing room between the header and the first chip.
+  const minHour = Math.floor(minTotalMinutes / 60);
+  const minMinute = minTotalMinutes % 60;
+  const paddedStart = Math.max(0, minMinute >= 30 ? minHour : minHour - 1);
   const paddedEnd = Math.min(24, max + 1);
   return {
     endHour: paddedEnd,
@@ -560,15 +566,17 @@ function EventButtonContent({
   if (displayMode === "minimal") {
     // On very short slots we only have room for one line. Put the time first
     // (tabular-nums so columns align) and collapse the title to the remainder.
+    // No wrapper span: the Button is already flex-row in minimal mode, and an
+    // intermediate span without a width constraint breaks flex-1's ellipsis.
     return (
-      <span className="flex min-w-0 items-center gap-1 overflow-hidden">
+      <>
         <span className="shrink-0 font-semibold text-[0.55rem] tabular-nums opacity-80">
           {timeStr}
         </span>
         <span className="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap font-semibold text-[0.55rem] leading-tight">
           {title}
         </span>
-      </span>
+      </>
     );
   }
 
@@ -757,7 +765,14 @@ function calculateEventLayout(events: CalendarEventDetail[]): EventWithLayout[] 
 function getCategoryClass(category: null | string | undefined): string {
   const baseClasses = "border-l-3";
   if (!category) {
-    return cn(baseClasses, "bg-content2 border-divider text-foreground");
+    // Neutral fallback: visible against both content1 (light) and dark bg.
+    // bg-content2 alone disappears in dark mode, making color-less events
+    // read as empty space.
+    return cn(
+      baseClasses,
+      "bg-default-200/60 text-default-800 border-default-400",
+      "dark:bg-default-100/60 dark:text-default-200 dark:border-default-500"
+    );
   }
 
   const cat = category.toLowerCase();
