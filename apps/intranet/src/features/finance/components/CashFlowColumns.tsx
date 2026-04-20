@@ -199,7 +199,7 @@ export const columns: ColumnDef<CashFlowTransaction>[] = [
 
       return (
         <SelectionCheckbox
-          aria-label="Seleccionar movimientos de la página actual"
+          ariaLabel="Seleccionar movimientos de la página actual"
           isIndeterminate={!allSelected && someSelected}
           isSelected={allSelected}
           onChange={() => table.toggleAllPageRowsSelected(!allSelected)}
@@ -208,7 +208,7 @@ export const columns: ColumnDef<CashFlowTransaction>[] = [
     },
     cell: ({ row }) => (
       <SelectionCheckbox
-        aria-label={`Seleccionar movimiento ${row.original.id}`}
+        ariaLabel={`Seleccionar movimiento ${row.original.id}`}
         isSelected={row.getIsSelected()}
         onChange={() => row.toggleSelected(!row.getIsSelected())}
       />
