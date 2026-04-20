@@ -349,7 +349,10 @@ function DayColumn({
     >
       {/* Hour grid lines */}
       {hours.map((hour) => (
-        <div className="h-16 border-default-200/50 border-b" key={hour} />
+        <div
+          className="h-16 border-default-200/50 border-b dark:border-default-200/80"
+          key={hour}
+        />
       ))}
 
       {/* Events */}
@@ -383,7 +386,9 @@ interface EventItemProps {
 type DisplayMode = "compact" | "detailed" | "minimal" | "normal";
 
 function getDisplayMode(durationMinutes: number): DisplayMode {
-  if (durationMinutes < 20) {
+  // At 64px/h, anything under ~30min is too short for stacked time + title
+  // (two lines of text-[0.6rem] + py-0.5 don't fit). Keep those inline.
+  if (durationMinutes < 30) {
     return "minimal";
   }
   if (durationMinutes < 45) {
@@ -481,11 +486,13 @@ function getDoctoraliaColorStyle(
     // Dark mode: keep the saturated base as the left-border accent, paint a
     // stronger tinted background so each chip reads as an actual colored object
     // (not a washed-out grey), and use a lightened mix of the base as the text
-    // color so it sits on top of the tint without losing hue.
+    // color so it sits on top of the tint without losing hue. 0.65 keeps hue
+    // identifiable (0.75 washed dark-base palettes like #1E931C to near-white
+    // failing WCAG AA against the translucent background).
     return {
       backgroundColor: hexWithAlpha(schema.base, 0.38),
       borderLeftColor: schema.base,
-      color: hexMixWithWhite(schema.base, 0.75),
+      color: hexMixWithWhite(schema.base, 0.65),
     };
   }
   return {
