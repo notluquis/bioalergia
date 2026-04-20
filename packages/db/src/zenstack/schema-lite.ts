@@ -4492,6 +4492,11 @@ export class SchemaType implements SchemaDef {
                     name: "serviceColorSchemaId",
                     type: "Int"
                 },
+                colorSchemaId: {
+                    name: "colorSchemaId",
+                    type: "Int",
+                    optional: true
+                },
                 serviceIsDeleted: {
                     name: "serviceIsDeleted",
                     type: "Boolean",
@@ -7287,10 +7292,6 @@ export class SchemaType implements SchemaDef {
                 name: {
                     name: "name",
                     type: "String"
-                },
-                type: {
-                    name: "type",
-                    type: "TransactionType"
                 },
                 color: {
                     name: "color",

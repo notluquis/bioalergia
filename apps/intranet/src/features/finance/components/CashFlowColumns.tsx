@@ -10,7 +10,6 @@ export type TransactionCategoryOption = {
   icon?: null | string;
   id: number;
   name: string;
-  type: "INCOME" | "EXPENSE";
 };
 
 export type CounterpartOption = {
@@ -366,11 +365,7 @@ export const columns: ColumnDef<CashFlowTransaction>[] = [
     cell: ({ row, table }) => {
       const meta = table.options.meta;
       const cat = row.original.category;
-      const allCategories = meta?.transactionCategories ?? [];
-      const typeFilteredCategories = allCategories.filter(
-        (category) => category.type == null || category.type === row.original.type
-      );
-      const categories = typeFilteredCategories.length > 0 ? typeFilteredCategories : allCategories;
+      const categories = meta?.transactionCategories ?? [];
       const isUpdating = meta?.updatingCategoryIds?.has(row.original.id) ?? false;
       const selectedValue =
         row.original.categoryId == null ? "__none__" : String(row.original.categoryId);

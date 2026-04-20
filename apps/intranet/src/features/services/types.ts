@@ -159,7 +159,6 @@ export interface ServiceSummary {
     color: null | string;
     id: number;
     name: string;
-    type: "EXPENSE" | "INCOME";
   };
   transactionCategoryId: null | number;
   updatedAt: Date;

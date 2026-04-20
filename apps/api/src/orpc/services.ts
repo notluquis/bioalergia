@@ -43,7 +43,6 @@ const serviceCategorySchema = z
     color: z.string().nullable(),
     id: z.number().int(),
     name: z.string(),
-    type: z.enum(["EXPENSE", "INCOME"]),
   })
   .passthrough();
 const serviceTransactionSchema = z
@@ -317,7 +316,6 @@ function mapServiceSummary(
       color: null | string;
       id: number;
       name: string;
-      type: "EXPENSE" | "INCOME";
     };
     transactionCategoryId: null | number;
     type: ServiceSummaryDto["serviceType"];

@@ -478,7 +478,6 @@ async function ensurePatientsAutoCategoryRule() {
     (await db.transactionCategory.findFirst({
       where: {
         name: PATIENTS_CATEGORY_NAME,
-        type: "INCOME",
       },
       select: { id: true },
     })) ??
@@ -486,7 +485,6 @@ async function ensurePatientsAutoCategoryRule() {
       data: {
         color: "#22C55E",
         name: PATIENTS_CATEGORY_NAME,
-        type: "INCOME",
       },
       select: { id: true },
     }));
@@ -1389,7 +1387,6 @@ export async function listTransactionCategories() {
 
 export async function createTransactionCategory(data: {
   name: string;
-  type: TransactionType;
   color?: string;
   isNonAccountable?: boolean;
 }) {
@@ -1410,7 +1407,6 @@ export async function createTransactionCategory(data: {
       color: data.color,
       icon: data.isNonAccountable ? NON_ACCOUNTABLE_CATEGORY_ICON : null,
       name: cleanName,
-      type: data.type,
     },
   });
   return db.transactionCategory.create(createArgs);
@@ -1422,7 +1418,6 @@ export async function updateTransactionCategory(
     color?: null | string;
     isNonAccountable?: boolean;
     name?: string;
-    type?: TransactionType;
   },
 ) {
   await mergeDuplicateTransactionCategoriesByName();
@@ -1445,7 +1440,6 @@ export async function updateTransactionCategory(
     where: { id },
     data: {
       ...(data.name !== undefined && { name: data.name }),
-      ...(data.type !== undefined && { type: data.type }),
       ...(data.color !== undefined && { color: data.color }),
       ...(data.isNonAccountable !== undefined && {
         icon: data.isNonAccountable ? NON_ACCOUNTABLE_CATEGORY_ICON : null,
@@ -1482,16 +1476,13 @@ type FinancialAutoCategoryRuleInput = {
   type: TransactionType;
 };
 
-async function ensureCategoryMatchesRuleType(categoryId: number, type: TransactionType) {
+async function ensureCategoryExists(categoryId: number) {
   const category = await db.transactionCategory.findUnique({
     where: { id: categoryId },
-    select: { id: true, type: true },
+    select: { id: true },
   });
   if (!category) {
     throw new Error("Categoría no encontrada");
-  }
-  if (category.type !== type) {
-    throw new Error("El tipo de la categoría no coincide con el tipo de la regla");
   }
 }
 
@@ -1546,7 +1537,6 @@ async function ensureMercadoPagoCardAutoCategoryRule() {
     (await db.transactionCategory.findFirst({
       where: {
         name: MP_CARD_CATEGORY_NAME,
-        type: "EXPENSE",
       },
       select: { id: true },
     })) ??
@@ -1554,7 +1544,6 @@ async function ensureMercadoPagoCardAutoCategoryRule() {
       data: {
         color: "#3B82F6",
         name: MP_CARD_CATEGORY_NAME,
-        type: "EXPENSE",
       },
       select: { id: true },
     }));
@@ -1605,7 +1594,6 @@ async function ensurePersonalDrAutoCategoryRules() {
     (await db.transactionCategory.findFirst({
       where: {
         name: PERSONAL_DR_CATEGORY_NAME,
-        type: "EXPENSE",
       },
       select: { id: true },
     })) ??
@@ -1613,7 +1601,6 @@ async function ensurePersonalDrAutoCategoryRules() {
       data: {
         color: "#64748B",
         name: PERSONAL_DR_CATEGORY_NAME,
-        type: "EXPENSE",
       },
       select: { id: true },
     }));
@@ -1677,7 +1664,7 @@ export async function listFinancialAutoCategoryRules() {
 }
 
 export async function createFinancialAutoCategoryRule(data: FinancialAutoCategoryRuleInput) {
-  await ensureCategoryMatchesRuleType(data.categoryId, data.type);
+  await ensureCategoryExists(data.categoryId);
 
   const created = await db.financialAutoCategoryRule.create({
     data: {
@@ -1726,9 +1713,8 @@ export async function updateFinancialAutoCategoryRule(
     throw new Error("Regla no encontrada");
   }
 
-  const nextType = data.type ?? existing.type;
   const nextCategoryId = data.categoryId ?? existing.categoryId;
-  await ensureCategoryMatchesRuleType(nextCategoryId, nextType);
+  await ensureCategoryExists(nextCategoryId);
 
   const updated = await db.financialAutoCategoryRule.update({
     where: { id },
@@ -1774,7 +1760,6 @@ type FinancialAutoCategoryRuleRecord = Awaited<
     icon: null | string;
     id: number;
     name: string;
-    type: TransactionType;
   };
   counterpart: null | {
     bankAccountHolder: null | string;
@@ -1790,7 +1775,6 @@ function mapFinancialAutoCategoryRule(rule: FinancialAutoCategoryRuleRecord) {
       icon: rule.category.icon,
       id: rule.category.id,
       name: rule.category.name,
-      type: rule.category.type,
     },
     categoryId: rule.categoryId,
     commentContains: rule.commentContains,
@@ -1859,7 +1843,6 @@ function signedAllocationAmount(allocationType: string, amount: number) {
 type CompensationProfileRow = {
   categoryId: number;
   categoryName: string;
-  categoryType: TransactionType;
   counterpartBankAccountHolder: null | string;
   counterpartId: null | number;
   counterpartIdentificationNumber: null | string;
@@ -1874,7 +1857,6 @@ function mapCompensationProfileRow(row: CompensationProfileRow) {
     category: {
       id: row.categoryId,
       name: row.categoryName,
-      type: row.categoryType,
     },
     categoryId: row.categoryId,
     counterpart:
@@ -1902,7 +1884,6 @@ async function getCompensationProfileById(id: number) {
       cp.timezone AS timezone,
       cp.category_id AS "categoryId",
       tc.name AS "categoryName",
-      tc.type AS "categoryType",
       cp.counterpart_id AS "counterpartId",
       c.bank_account_holder AS "counterpartBankAccountHolder",
       c.identification_number AS "counterpartIdentificationNumber"
@@ -1925,7 +1906,6 @@ export async function listCompensationProfiles() {
       cp.timezone AS timezone,
       cp.category_id AS "categoryId",
       tc.name AS "categoryName",
-      tc.type AS "categoryType",
       cp.counterpart_id AS "counterpartId",
       c.bank_account_holder AS "counterpartBankAccountHolder",
       c.identification_number AS "counterpartIdentificationNumber"
@@ -1940,13 +1920,10 @@ export async function listCompensationProfiles() {
 export async function createCompensationProfile(data: CompensationProfileInput) {
   const category = await db.transactionCategory.findUnique({
     where: { id: data.categoryId },
-    select: { id: true, type: true },
+    select: { id: true },
   });
   if (!category) {
     throw new Error("Categoría no encontrada");
-  }
-  if (category.type !== "EXPENSE") {
-    throw new Error("Solo se permiten perfiles de compensación para categorías de egreso.");
   }
 
   if (data.counterpartId != null) {
@@ -1997,13 +1974,10 @@ export async function updateCompensationProfile(
   if (data.categoryId != null) {
     const category = await db.transactionCategory.findUnique({
       where: { id: data.categoryId },
-      select: { id: true, type: true },
+      select: { id: true },
     });
     if (!category) {
       throw new Error("Categoría no encontrada");
-    }
-    if (category.type !== "EXPENSE") {
-      throw new Error("Solo se permiten perfiles de compensación para categorías de egreso.");
     }
   }
 

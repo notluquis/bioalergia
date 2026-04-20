@@ -34,14 +34,12 @@ export const financeCreateCategorySchema = z.object({
   color: z.string().optional(),
   isNonAccountable: z.boolean().optional(),
   name: z.string().min(1),
-  type: financeTransactionTypeSchema,
 });
 
 export const financeUpdateCategorySchema = z.object({
   color: z.string().nullable().optional(),
   isNonAccountable: z.boolean().optional(),
   name: z.string().min(1).optional(),
-  type: financeTransactionTypeSchema.optional(),
 });
 
 export const financeCreateAutoCategoryRuleSchema = z.object({
@@ -65,7 +63,6 @@ export const financeTransactionCategorySchema = z.object({
   icon: z.string().nullable().optional(),
   id: z.number().int(),
   name: z.string(),
-  type: financeTransactionTypeSchema,
   updatedAt: z.date().optional(),
 });
 
@@ -166,7 +163,6 @@ export const financeAutoCategoryRuleOutputSchema = z.object({
     icon: z.string().nullable().optional(),
     id: z.number(),
     name: z.string(),
-    type: financeTransactionTypeSchema,
   }),
   categoryId: z.number(),
   commentContains: z.string().nullable().optional(),

@@ -91,7 +91,6 @@ export const serviceCategorySchema = z.strictObject({
   color: z.string().nullable(),
   id: z.number().int(),
   name: z.string(),
-  type: z.enum(["EXPENSE", "INCOME"]),
 });
 
 export const serviceTransactionSchema = z.strictObject({

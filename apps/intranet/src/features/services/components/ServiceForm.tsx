@@ -116,7 +116,7 @@ const applySpecificDateMode = (prev: ServiceFormState) => {
 
 const applyEmissionMode = (
   prev: ServiceFormState,
-  emissionMode: ServiceFormState["emissionMode"],
+  emissionMode: ServiceFormState["emissionMode"]
 ) => {
   if (emissionMode === "FIXED_DAY") {
     return applyFixedDayMode(prev);
@@ -134,7 +134,7 @@ const normalizeOptional = (value?: string | null) => (value?.trim() ? value.trim
 
 const getEmissionFields = (
   form: ServiceFormState,
-  emissionMode: ServiceFormState["emissionMode"],
+  emissionMode: ServiceFormState["emissionMode"]
 ) => ({
   emissionDay: emissionMode === "FIXED_DAY" ? (form.emissionDay ?? null) : null,
   emissionEndDay: emissionMode === "DATE_RANGE" ? (form.emissionEndDay ?? null) : null,
@@ -160,7 +160,7 @@ const getMonthsToGenerate = (form: ServiceFormState) =>
 const buildServicePayload = (
   form: ServiceFormState,
   emissionMode: ServiceFormState["emissionMode"],
-  lateFeeMode: ServiceFormState["lateFeeMode"],
+  lateFeeMode: ServiceFormState["lateFeeMode"]
 ): CreateServicePayload => ({
   accountReference: normalizeOptional(form.accountReference),
   amountIndexation: form.amountIndexation,
@@ -193,7 +193,6 @@ const FinanceCategorySchema = z.object({
   id: z.number(),
   icon: z.string().nullable().optional(),
   name: z.string(),
-  type: z.enum(["EXPENSE", "INCOME"]),
 });
 
 export function ServiceForm({ initialValues, onCancel, onSubmit, submitLabel }: ServiceFormProps) {
@@ -274,11 +273,9 @@ export function ServiceForm({ initialValues, onCancel, onSubmit, submitLabel }: 
           status: z.literal("ok"),
         })
         .parse(await financeORPCClient.categoriesList());
-      return payload.data.filter(
-        (category) => category.type === "EXPENSE" && !isNonAccountableCategory(category),
-      );
+      return payload.data.filter((category) => !isNonAccountableCategory(category));
     },
-    queryKey: ["TransactionCategory", "expense"],
+    queryKey: ["TransactionCategory", "service-form"],
   });
 
   const { data: accounts = [] } = useQuery<CounterpartAccount[]>({
@@ -316,7 +313,7 @@ export function ServiceForm({ initialValues, onCancel, onSubmit, submitLabel }: 
   const handleCreateCategory = (newCategory: string) => {
     const newOption = { id: newCategory, label: newCategory };
     setCategoryOptions((prev) =>
-      prev.some((opt) => opt.id === newCategory) ? prev : [...prev, newOption],
+      prev.some((opt) => opt.id === newCategory) ? prev : [...prev, newOption]
     );
     handleChange("category", newCategory);
   };
@@ -324,7 +321,7 @@ export function ServiceForm({ initialValues, onCancel, onSubmit, submitLabel }: 
   const handleCreateServiceType = (newType: string) => {
     const newOption = { id: newType, label: newType };
     setServiceTypeOptions((prev) =>
-      prev.some((opt) => opt.id === newType) ? prev : [...prev, newOption],
+      prev.some((opt) => opt.id === newType) ? prev : [...prev, newOption]
     );
     handleChange("serviceType", newType as ServiceType);
   };
@@ -332,7 +329,7 @@ export function ServiceForm({ initialValues, onCancel, onSubmit, submitLabel }: 
   const handleCreateOwnership = (newOwnership: string) => {
     const newOption = { id: newOwnership, label: newOwnership };
     setOwnershipOptions((prev) =>
-      prev.some((opt) => opt.id === newOwnership) ? prev : [...prev, newOption],
+      prev.some((opt) => opt.id === newOwnership) ? prev : [...prev, newOption]
     );
     handleChange("ownership", newOwnership as ServiceOwnership);
   };
@@ -340,7 +337,7 @@ export function ServiceForm({ initialValues, onCancel, onSubmit, submitLabel }: 
   const handleCreateObligationType = (newObligation: string) => {
     const newOption = { id: newObligation, label: newObligation };
     setObligationTypeOptions((prev) =>
-      prev.some((opt) => opt.id === newObligation) ? prev : [...prev, newOption],
+      prev.some((opt) => opt.id === newObligation) ? prev : [...prev, newOption]
     );
     handleChange("obligationType", newObligation as ServiceObligationType);
   };

@@ -110,7 +110,7 @@ export function TransactionForm({ categories, isOpen, onClose, initialData }: Pr
   });
 
   const isSubmitting = mutation.isPending;
-  const availableCategories = categories.filter((category) => category.type === formData.type);
+  const availableCategories = categories;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

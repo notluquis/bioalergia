@@ -5483,6 +5483,12 @@ export class SchemaType implements SchemaDef {
                     type: "Int",
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("service_color_schema_id") }] }] as readonly AttributeApplication[]
                 },
+                colorSchemaId: {
+                    name: "colorSchemaId",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("color_schema_id") }] }] as readonly AttributeApplication[]
+                },
                 serviceIsDeleted: {
                     name: "serviceIsDeleted",
                     type: "Boolean",
@@ -8994,10 +9000,6 @@ export class SchemaType implements SchemaDef {
                 name: {
                     name: "name",
                     type: "String"
-                },
-                type: {
-                    name: "type",
-                    type: "TransactionType"
                 },
                 color: {
                     name: "color",

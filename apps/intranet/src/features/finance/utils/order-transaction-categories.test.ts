@@ -7,10 +7,10 @@ import {
 describe("orderTransactionCategoriesByFrequency", () => {
   it("sorts categories by descending frequency with stable tie-breakers", () => {
     const categories = [
-      { id: 4, name: "Ventas", type: "INCOME" as const },
-      { id: 3, name: "Arriendo", type: "EXPENSE" as const },
-      { id: 2, name: "Comidas", type: "EXPENSE" as const },
-      { id: 1, name: "Bencina", type: "EXPENSE" as const },
+      { id: 4, name: "Ventas" },
+      { id: 3, name: "Arriendo" },
+      { id: 2, name: "Comidas" },
+      { id: 1, name: "Bencina" },
     ];
     const frequencies = buildCategoryFrequencyMap([
       { categoryId: 1 },

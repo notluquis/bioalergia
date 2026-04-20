@@ -10,7 +10,6 @@ interface Props {
     icon?: null | string;
     id: number;
     name: string;
-    type: "INCOME" | "EXPENSE";
   }>;
   isLoading: boolean;
   total: number;

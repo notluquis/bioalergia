@@ -118,7 +118,6 @@ const TransactionCategorySchema: z.ZodType<TransactionCategoryOption> = z
     id: z.number(),
     icon: z.string().nullable().optional(),
     name: z.string(),
-    type: z.enum(["INCOME", "EXPENSE"]),
   })
   .passthrough();
 
@@ -659,7 +658,6 @@ export function CashFlowPage() {
   const [bulkCategoryValue, setBulkCategoryValue] = useState(BULK_CATEGORY_PLACEHOLDER);
   const [updatingCategoryIds, setUpdatingCategoryIds] = useState<Set<number>>(new Set());
   const [newCategoryName, setNewCategoryName] = useState("");
-  const [newCategoryType, setNewCategoryType] = useState<"EXPENSE" | "INCOME">("EXPENSE");
   const [newCategoryColor, setNewCategoryColor] = useState("#64748b");
   const [newCategoryIsNonAccountable, setNewCategoryIsNonAccountable] = useState(false);
   const [activeCategorySection, setActiveCategorySection] = useState<
@@ -667,7 +665,6 @@ export function CashFlowPage() {
   >("catalog");
   const [editingCategoryId, setEditingCategoryId] = useState<null | number>(null);
   const [editingCategoryName, setEditingCategoryName] = useState("");
-  const [editingCategoryType, setEditingCategoryType] = useState<"EXPENSE" | "INCOME">("EXPENSE");
   const [editingCategoryColor, setEditingCategoryColor] = useState("#64748b");
   const [editingCategoryIsNonAccountable, setEditingCategoryIsNonAccountable] = useState(false);
   const [newRuleName, setNewRuleName] = useState("");
@@ -817,13 +814,6 @@ export function CashFlowPage() {
     [counterparts]
   );
 
-  const categoryOptionsByType = useMemo(
-    () => ({
-      EXPENSE: orderedCategories.filter((category) => category.type === "EXPENSE"),
-      INCOME: orderedCategories.filter((category) => category.type === "INCOME"),
-    }),
-    [orderedCategories]
-  );
   const activeCompensationProfiles = useMemo(
     () => compensationProfiles.filter((profile) => profile.isActive),
     [compensationProfiles]
@@ -1040,17 +1030,7 @@ export function CashFlowPage() {
     () => monthTransactions.filter((tx) => selectedTransactionIdSet.has(tx.id)),
     [monthTransactions, selectedTransactionIdSet]
   );
-  const selectedTransactionTypes = useMemo(
-    () => new Set(selectedTransactions.map((tx) => tx.type)),
-    [selectedTransactions]
-  );
-  const selectedBulkType =
-    selectedTransactionTypes.size === 1 ? selectedTransactions[0]?.type : null;
-  const bulkCategoryOptions = useMemo(() => {
-    if (!selectedBulkType) return [];
-    return orderedCategories.filter((category) => category.type === selectedBulkType);
-  }, [orderedCategories, selectedBulkType]);
-  const hasMixedSelectedTypes = selectedTransactionTypes.size > 1;
+  const bulkCategoryOptions = orderedCategories;
   const hasSelectedTransactions = selectedTransactions.length > 0;
   const hasUpdatingSelectedTransactions = selectedTransactions.some((tx) =>
     updatingCategoryIds.has(tx.id)
@@ -1062,7 +1042,7 @@ export function CashFlowPage() {
   }, [selectedMonth]);
 
   useEffect(() => {
-    if (!hasSelectedTransactions || hasMixedSelectedTypes) {
+    if (!hasSelectedTransactions) {
       setBulkCategoryValue(BULK_CATEGORY_PLACEHOLDER);
       return;
     }
@@ -1077,7 +1057,7 @@ export function CashFlowPage() {
     if (!isAvailable) {
       setBulkCategoryValue(BULK_CATEGORY_PLACEHOLDER);
     }
-  }, [bulkCategoryOptions, bulkCategoryValue, hasMixedSelectedTypes, hasSelectedTransactions]);
+  }, [bulkCategoryOptions, bulkCategoryValue, hasSelectedTransactions]);
 
   const getFinancialTransactionsSnapshot = () =>
     queryClient.getQueriesData<FinancialTransactionsResponse>({
@@ -1235,12 +1215,7 @@ export function CashFlowPage() {
   });
 
   const createCategoryMutation = useMutation({
-    mutationFn: async (payload: {
-      color?: string;
-      isNonAccountable?: boolean;
-      name: string;
-      type: "EXPENSE" | "INCOME";
-    }) => {
+    mutationFn: async (payload: { color?: string; isNonAccountable?: boolean; name: string }) => {
       try {
         return CreateTransactionCategoryResponseSchema.parse(
           await financeORPCClient.categoriesCreate(payload)
@@ -1252,7 +1227,6 @@ export function CashFlowPage() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["TransactionCategory"] });
       setNewCategoryName("");
-      setNewCategoryType("EXPENSE");
       setNewCategoryColor("#64748b");
       setNewCategoryIsNonAccountable(false);
       toast.success("Categoría creada");
@@ -1270,7 +1244,6 @@ export function CashFlowPage() {
       id: number;
       isNonAccountable?: boolean;
       name: string;
-      type: "EXPENSE" | "INCOME";
     }) => {
       try {
         return UpdateTransactionCategoryResponseSchema.parse(
@@ -1280,7 +1253,6 @@ export function CashFlowPage() {
               color: payload.color,
               isNonAccountable: payload.isNonAccountable,
               name: payload.name,
-              type: payload.type,
             },
           })
         );
@@ -1315,7 +1287,6 @@ export function CashFlowPage() {
                   ...category,
                   color: payload.color ?? null,
                   name: payload.name,
-                  type: payload.type,
                 }
               : category
           );
@@ -1339,7 +1310,6 @@ export function CashFlowPage() {
                           ...transaction.category,
                           color: payload.color ?? null,
                           name: payload.name,
-                          type: payload.type,
                         }
                       : transaction.category,
                   }
@@ -1647,11 +1617,6 @@ export function CashFlowPage() {
       return;
     }
 
-    if (hasMixedSelectedTypes) {
-      toast.error("La selección debe ser del mismo tipo para aplicar una categoría");
-      return;
-    }
-
     const parsedValue = bulkCategoryValue;
     if (parsedValue === BULK_CATEGORY_PLACEHOLDER) {
       toast.error("Selecciona una categoría a aplicar");
@@ -1681,14 +1646,12 @@ export function CashFlowPage() {
       color: newCategoryColor || undefined,
       isNonAccountable: newCategoryIsNonAccountable,
       name,
-      type: newCategoryType,
     });
   };
 
   const handleStartEditCategory = (category: TransactionCategoryOption) => {
     setEditingCategoryId(category.id);
     setEditingCategoryName(category.name);
-    setEditingCategoryType(category.type === "INCOME" ? "INCOME" : "EXPENSE");
     setEditingCategoryColor(category.color ?? "#64748b");
     setEditingCategoryIsNonAccountable(isNonAccountableCategory(category));
   };
@@ -1696,7 +1659,6 @@ export function CashFlowPage() {
   const handleCancelEditCategory = () => {
     setEditingCategoryId(null);
     setEditingCategoryName("");
-    setEditingCategoryType("EXPENSE");
     setEditingCategoryColor("#64748b");
     setEditingCategoryIsNonAccountable(false);
   };
@@ -1712,7 +1674,6 @@ export function CashFlowPage() {
       id: categoryId,
       isNonAccountable: editingCategoryIsNonAccountable,
       name,
-      type: editingCategoryType,
     });
   };
 
@@ -1730,7 +1691,7 @@ export function CashFlowPage() {
       return;
     }
     if (newCompensationCategoryId == null) {
-      toast.error("Selecciona una categoría de egreso");
+      toast.error("Selecciona una categoría");
       return;
     }
     createCompensationProfileMutation.mutate({
@@ -2699,16 +2660,9 @@ export function CashFlowPage() {
                         <Chip color="accent" size="sm" variant="soft">
                           {selectedTransactions.length} seleccionados
                         </Chip>
-                        {selectedBulkType ? (
-                          <Chip size="sm" variant="soft">
-                            {selectedBulkType === "INCOME" ? "Ingresos" : "Egresos"}
-                          </Chip>
-                        ) : null}
                       </div>
                       <p className="text-sm text-default-600">
-                        {hasMixedSelectedTypes
-                          ? "La selección incluye ingresos y egresos. Para aplicar una categoría masiva, selecciona un solo tipo."
-                          : "Aplica una categoría a todos los movimientos seleccionados."}
+                        Aplica una categoría a todos los movimientos seleccionados.
                       </p>
                     </div>
 
@@ -2716,7 +2670,6 @@ export function CashFlowPage() {
                       <Select
                         className="min-w-72"
                         isDisabled={
-                          hasMixedSelectedTypes ||
                           hasUpdatingSelectedTransactions ||
                           bulkUpdateTransactionCategoryMutation.isPending
                         }
@@ -2765,7 +2718,6 @@ export function CashFlowPage() {
 
                       <Button
                         isDisabled={
-                          hasMixedSelectedTypes ||
                           hasUpdatingSelectedTransactions ||
                           bulkCategoryValue === BULK_CATEGORY_PLACEHOLDER ||
                           bulkUpdateTransactionCategoryMutation.isPending
@@ -2846,7 +2798,7 @@ export function CashFlowPage() {
                   <Surface className="border border-default-200/70 bg-linear-to-b from-default-100/40 to-default-50/10 shadow-sm">
                     <div className="p-3">
                       <form
-                        className="grid grid-cols-1 gap-4 md:grid-cols-5 md:items-end"
+                        className="grid grid-cols-1 gap-4 md:grid-cols-4 md:items-end"
                         onSubmit={handleCreateCategory}
                       >
                         <TextField
@@ -2857,32 +2809,6 @@ export function CashFlowPage() {
                           <Label>Nombre</Label>
                           <Input placeholder="Ej: Honorarios médicos" />
                         </TextField>
-
-                        <Select
-                          value={newCategoryType}
-                          onChange={(key) =>
-                            setNewCategoryType(String(key ?? "EXPENSE") as "EXPENSE" | "INCOME")
-                          }
-                          placeholder="Tipo"
-                        >
-                          <Label>Tipo</Label>
-                          <Select.Trigger>
-                            <Select.Value />
-                            <Select.Indicator />
-                          </Select.Trigger>
-                          <Select.Popover>
-                            <ListBox>
-                              <ListBox.Item id="INCOME" textValue="Ingreso">
-                                Ingreso
-                                <ListBox.ItemIndicator />
-                              </ListBox.Item>
-                              <ListBox.Item id="EXPENSE" textValue="Egreso">
-                                Egreso
-                                <ListBox.ItemIndicator />
-                              </ListBox.Item>
-                            </ListBox>
-                          </Select.Popover>
-                        </Select>
 
                         <CategoryColorPicker
                           className="md:self-end"
@@ -2904,7 +2830,7 @@ export function CashFlowPage() {
                           </Switch>
                         </div>
 
-                        <div className="md:col-span-5">
+                        <div className="md:col-span-4">
                           <Button type="submit" isPending={createCategoryMutation.isPending}>
                             {({ isPending }) => (isPending ? "Creando..." : "Crear categoría")}
                           </Button>
@@ -2925,7 +2851,7 @@ export function CashFlowPage() {
                               className="flex items-center justify-between rounded-md border border-default-200 px-3 py-2"
                             >
                               {editingCategoryId === category.id ? (
-                                <div className="grid w-full grid-cols-1 gap-3 md:grid-cols-[1fr_160px_130px_90px_auto] md:items-end">
+                                <div className="grid w-full grid-cols-1 gap-3 md:grid-cols-[1fr_130px_90px_auto] md:items-end">
                                   <TextField
                                     value={editingCategoryName}
                                     onChange={(v) => setEditingCategoryName(v)}
@@ -2933,32 +2859,6 @@ export function CashFlowPage() {
                                     <Label>Nombre</Label>
                                     <Input />
                                   </TextField>
-                                  <Select
-                                    value={editingCategoryType}
-                                    onChange={(key) =>
-                                      setEditingCategoryType(
-                                        String(key ?? "EXPENSE") as "EXPENSE" | "INCOME"
-                                      )
-                                    }
-                                  >
-                                    <Label>Tipo</Label>
-                                    <Select.Trigger>
-                                      <Select.Value />
-                                      <Select.Indicator />
-                                    </Select.Trigger>
-                                    <Select.Popover>
-                                      <ListBox>
-                                        <ListBox.Item id="INCOME" textValue="Ingreso">
-                                          Ingreso
-                                          <ListBox.ItemIndicator />
-                                        </ListBox.Item>
-                                        <ListBox.Item id="EXPENSE" textValue="Egreso">
-                                          Egreso
-                                          <ListBox.ItemIndicator />
-                                        </ListBox.Item>
-                                      </ListBox>
-                                    </Select.Popover>
-                                  </Select>
                                   <CategoryColorPicker
                                     className="md:self-end"
                                     label="Color"
@@ -3012,9 +2912,6 @@ export function CashFlowPage() {
                                     ) : null}
                                   </div>
                                   <div className="flex items-center gap-3">
-                                    <span className="text-default-500 text-sm">
-                                      {category.type === "INCOME" ? "Ingreso" : "Egreso"}
-                                    </span>
                                     <Button
                                       size="sm"
                                       variant="ghost"
@@ -3071,14 +2968,14 @@ export function CashFlowPage() {
                           setNewCompensationCategoryId(value);
                         }}
                       >
-                        <Label>Categoría (egreso)</Label>
+                        <Label>Categoría</Label>
                         <Select.Trigger>
                           <Select.Value />
                           <Select.Indicator />
                         </Select.Trigger>
                         <Select.Popover>
                           <ListBox>
-                            {categoryOptionsByType.EXPENSE.map((category) => (
+                            {orderedCategories.map((category) => (
                               <ListBox.Item id={String(category.id)} key={category.id}>
                                 {category.name}
                               </ListBox.Item>
@@ -3316,7 +3213,7 @@ export function CashFlowPage() {
                         </Select.Trigger>
                         <Select.Popover>
                           <ListBox>
-                            {categoryOptionsByType[newRuleType].map((category) => (
+                            {orderedCategories.map((category) => (
                               <ListBox.Item
                                 id={String(category.id)}
                                 key={category.id}
@@ -3476,7 +3373,7 @@ export function CashFlowPage() {
                                   </Select.Trigger>
                                   <Select.Popover>
                                     <ListBox>
-                                      {categoryOptionsByType[editingRuleType].map((category) => (
+                                      {orderedCategories.map((category) => (
                                         <ListBox.Item
                                           id={String(category.id)}
                                           key={category.id}
