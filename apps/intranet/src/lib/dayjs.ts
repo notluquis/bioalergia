@@ -11,6 +11,8 @@ import utc from "dayjs/plugin/utc";
 
 import "dayjs/locale/es";
 
+export const TIMEZONE = "America/Santiago";
+
 // Extend dayjs with plugins
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -21,6 +23,9 @@ dayjs.extend(relativeTime);
 dayjs.extend(isYesterday);
 dayjs.extend(customParseFormat);
 dayjs.extend(localeData);
+
+// Default timezone for all .tz() calls without explicit zone.
+dayjs.tz.setDefault(TIMEZONE);
 
 // Set default locale
 dayjs.locale("es");

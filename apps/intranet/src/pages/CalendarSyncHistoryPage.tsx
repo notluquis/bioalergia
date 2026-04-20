@@ -202,10 +202,10 @@ function SyncHistoryItem({
           <StatusBadge status={log.status} />
           <div className="min-w-24">
             <div className="font-medium text-sm">
-              {startedAt?.isValid() ? startedAt.format("DD/MM/YYYY") : "-"}
+              {startedAt?.isValid() ? startedAt.tz().format("DD/MM/YYYY") : "-"}
             </div>
             <div className="text-default-400 text-xs">
-              {startedAt?.isValid() ? startedAt.format("HH:mm:ss") : "-"}
+              {startedAt?.isValid() ? startedAt.tz().format("HH:mm:ss") : "-"}
             </div>
           </div>
           <div className="flex min-w-40 flex-1 flex-wrap items-center gap-2">

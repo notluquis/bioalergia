@@ -13,7 +13,7 @@ const accountGroupHelper = createColumnHelper<AccountGroup>();
 export const getAccountGroupColumns = (
   summaryByGroup: Map<string, { count: number; total: number }>,
   _onConceptChange: (group: AccountGroup) => void,
-  onQuickView: (group: AccountGroup) => void,
+  onQuickView: (group: AccountGroup) => void
 ) => [
   accountGroupHelper.accessor("label", {
     cell: ({ row }) => {
@@ -77,7 +77,7 @@ const quickViewHelper = createColumnHelper<Transaction>();
 export const getQuickViewColumns = () =>
   [
     quickViewHelper.accessor("transactionDate", {
-      cell: ({ getValue }) => dayjs(getValue()).format("DD MMM YYYY HH:mm"),
+      cell: ({ getValue }) => dayjs(getValue()).tz().format("DD MMM YYYY HH:mm"),
       header: "Fecha",
     }),
     quickViewHelper.accessor("description", {

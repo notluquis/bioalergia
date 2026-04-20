@@ -69,7 +69,7 @@ export const columns: ColumnDef<ReleaseTransaction>[] = [
   },
   {
     accessorKey: "date",
-    cell: ({ row }) => dayjs(row.getValue("date")).format("DD/MM/YY HH:mm"),
+    cell: ({ row }) => dayjs(row.getValue("date")).tz().format("DD/MM/YY HH:mm"),
     header: "Fecha",
     minSize: 120,
   },
@@ -174,7 +174,7 @@ export const columns: ColumnDef<ReleaseTransaction>[] = [
     accessorKey: "transactionApprovalDate",
     cell: ({ row }) =>
       row.original.transactionApprovalDate
-        ? dayjs(row.original.transactionApprovalDate).format("DD/MM/YY HH:mm")
+        ? dayjs(row.original.transactionApprovalDate).tz().format("DD/MM/YY HH:mm")
         : "-",
     header: "Fecha Aprob.",
     minSize: 120,

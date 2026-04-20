@@ -119,7 +119,7 @@ function NotificationItem({ notification, onRead, onRemove }: Readonly<Notificat
       <article
         className={cn(
           "group relative flex cursor-default gap-3 px-4 py-3",
-          !notification.read && "bg-primary-50/10",
+          !notification.read && "bg-primary-50/10"
         )}
         onMouseEnter={() => !notification.read && onRead(notification.id)}
       >
@@ -132,7 +132,7 @@ function NotificationItem({ notification, onRead, onRemove }: Readonly<Notificat
                 ? "bg-success"
                 : notification.type === "warning"
                   ? "bg-warning"
-                  : "bg-primary",
+                  : "bg-primary"
           )}
         />
 
@@ -142,20 +142,20 @@ function NotificationItem({ notification, onRead, onRemove }: Readonly<Notificat
               <span
                 className={cn(
                   "block font-semibold text-xs",
-                  !notification.read ? "text-foreground" : "text-default-600",
+                  !notification.read ? "text-foreground" : "text-default-600"
                 )}
               >
                 {notification.title}
               </span>
             )}
             <span className="shrink-0 whitespace-nowrap text-[10px] text-default-400">
-              {dayjs(notification.timestamp).format("DD/MM HH:mm")}
+              {dayjs(notification.timestamp).tz().format("DD/MM HH:mm")}
             </span>
           </div>
           <Description
             className={cn(
               "mt-0.5 text-xs leading-relaxed",
-              !notification.read ? "text-foreground-800" : "text-default-500",
+              !notification.read ? "text-foreground-800" : "text-default-500"
             )}
           >
             {notification.message}

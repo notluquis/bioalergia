@@ -593,7 +593,7 @@ function MetricPill({
 }
 
 function formatStatusDate(value: Date | null | undefined) {
-  return value ? dayjs(value).format("DD/MM/YYYY HH:mm") : "Sin registro";
+  return value ? dayjs(value).tz().format("DD/MM/YYYY HH:mm") : "Sin registro";
 }
 
 const EVENT_TYPE_LABELS: Record<DoctoraliaEmailNotification["eventType"], string> = {
@@ -626,7 +626,7 @@ const doctoraliaNotificationColumns: ColumnDef<DoctoraliaEmailNotification>[] = 
     accessorKey: "appointmentDate",
     cell: ({ row }) =>
       row.original.appointmentDate
-        ? dayjs(row.original.appointmentDate).format("DD/MM/YYYY HH:mm")
+        ? dayjs(row.original.appointmentDate).tz().format("DD/MM/YYYY HH:mm")
         : "—",
     header: "Fecha cita",
   },

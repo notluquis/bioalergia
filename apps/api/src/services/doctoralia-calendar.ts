@@ -1,4 +1,6 @@
+import dayjs from "dayjs";
 import { getCalendarAlerts, getCalendarEvents } from "../lib/doctoralia/doctoralia-calendar-client";
+import { TIMEZONE } from "../lib/time";
 import {
   applyDoctoraliaAlertUpdates,
   createDoctoraliaSyncLog,
@@ -382,14 +384,12 @@ export class DoctoraliaCalendarSyncService {
    * Sync events for the current week
    */
   async syncCurrentWeek(scheduleIds?: number[]) {
-    const now = new Date();
-    const startOfWeek = new Date(now);
-    startOfWeek.setDate(now.getDate() - now.getDay());
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    const today = dayjs().tz(TIMEZONE);
+    const startOfWeek = today.subtract(today.day(), "day");
+    const endOfWeek = startOfWeek.add(6, "day");
 
-    const from = startOfWeek.toISOString().split("T")[0];
-    const to = endOfWeek.toISOString().split("T")[0];
+    const from = startOfWeek.format("YYYY-MM-DD");
+    const to = endOfWeek.format("YYYY-MM-DD");
 
     return this.syncCalendar(from, to, scheduleIds);
   }
@@ -398,12 +398,9 @@ export class DoctoraliaCalendarSyncService {
    * Sync events for the current month
    */
   async syncCurrentMonth(scheduleIds?: number[]) {
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-
-    const from = startOfMonth.toISOString().split("T")[0];
-    const to = endOfMonth.toISOString().split("T")[0];
+    const today = dayjs().tz(TIMEZONE);
+    const from = today.startOf("month").format("YYYY-MM-DD");
+    const to = today.endOf("month").format("YYYY-MM-DD");
 
     return this.syncCalendar(from, to, scheduleIds);
   }

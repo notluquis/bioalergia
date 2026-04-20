@@ -185,7 +185,7 @@ function linkStatusLabel(status: EventDteOverviewItem["linkStatus"]): string {
 }
 
 function formatAutoLinkAttempt(attemptedAt: string): string {
-  return dayjs(attemptedAt).format("DD-MM-YYYY HH:mm");
+  return dayjs(attemptedAt).tz().format("DD-MM-YYYY HH:mm");
 }
 
 function seriesKindLabel(kind: EventDteOverviewItem["seriesKind"]): string | null {

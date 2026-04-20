@@ -552,8 +552,11 @@ export function normalizeTimesheetPayload(data: {
  * Compute pay date based on employee role and period start
  */
 export function computePayDate(role: string, periodStart: string): string {
-  const startDate = new Date(periodStart);
-  const nextMonthFirstDay = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 1);
+  const nextMonthFirstDay = dayjs
+    .tz(periodStart, TIMEZONE)
+    .add(1, "month")
+    .startOf("month")
+    .toDate();
 
   const roleUpper = role
     .normalize("NFD")
@@ -568,9 +571,7 @@ export function computePayDate(role: string, periodStart: string): string {
 
   // TENS: día 5 calendario del mes siguiente
   if (isTens) {
-    return formatDateOnly(
-      new Date(nextMonthFirstDay.getFullYear(), nextMonthFirstDay.getMonth(), 5),
-    );
+    return dayjs(nextMonthFirstDay).tz(TIMEZONE).date(5).format(DATE_ONLY_FORMAT);
   }
 
   // Enfermero Universitario: 5to día hábil del mes siguiente
@@ -584,7 +585,7 @@ export function computePayDate(role: string, periodStart: string): string {
   }
 
   // Otros: día 5 calendario del mes siguiente
-  return formatDateOnly(new Date(nextMonthFirstDay.getFullYear(), nextMonthFirstDay.getMonth(), 5));
+  return dayjs(nextMonthFirstDay).tz(TIMEZONE).date(5).format(DATE_ONLY_FORMAT);
 }
 
 /**

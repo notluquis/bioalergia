@@ -451,9 +451,9 @@ export function ClassificationRow({
 // Helper to format date
 function formatEventDate(event: CalendarUnclassifiedEvent) {
   if (event.startDateTime) {
-    const start = dayjs(event.startDateTime);
+    const start = dayjs(event.startDateTime).tz();
     if (event.endDateTime) {
-      const end = dayjs(event.endDateTime);
+      const end = dayjs(event.endDateTime).tz();
       return `${start.format("DD MMM YYYY HH:mm")} – ${end.format("HH:mm")}`;
     }
     return start.format("DD MMM YYYY HH:mm");

@@ -80,7 +80,7 @@ function PatientHistoryDrawer({
                   </span>
                   {n.appointmentDate && (
                     <span className="text-default-500 text-xs">
-                      {dayjs(n.appointmentDate).format("D MMM YYYY, HH:mm")}
+                      {dayjs(n.appointmentDate).tz().format("D MMM YYYY, HH:mm")}
                     </span>
                   )}
                 </div>

@@ -194,7 +194,7 @@ export const columns: ColumnDef<CashFlowTransaction>[] = [
         </Button>
       );
     },
-    cell: ({ row }) => dayjs(row.getValue("date")).format("DD-MM-YY HH:mm"),
+    cell: ({ row }) => dayjs(row.getValue("date")).tz().format("DD-MM-YY HH:mm"),
   },
   {
     accessorKey: "sourceId",

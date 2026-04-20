@@ -106,7 +106,7 @@ function getChatInitials(name: string | null | undefined, jid: string) {
 function formatChatTimestamp(date: Date | string | null | undefined) {
   if (!date) return "";
 
-  const value = dayjs(date);
+  const value = dayjs(date).tz();
   if (!value.isValid()) return "";
 
   if (value.isSame(dayjs(), "day")) return value.format("HH:mm");
@@ -1369,7 +1369,9 @@ export function WhatsappSettingsPage() {
                                             message.createdAt ??
                                               message.messageTimestamp ??
                                               new Date()
-                                          ).format("HH:mm")}
+                                          )
+                                            .tz()
+                                            .format("HH:mm")}
                                         </span>
                                         <span>{message.status}</span>
                                         {message.receipts.length > 0 ? (
@@ -1797,7 +1799,7 @@ export function WhatsappSettingsPage() {
                       tone="success"
                       value={
                         connectionStatus?.connectedAt
-                          ? dayjs(connectionStatus.connectedAt).format("DD/MM HH:mm:ss")
+                          ? dayjs(connectionStatus.connectedAt).tz().format("DD/MM HH:mm:ss")
                           : "—"
                       }
                     />
@@ -1978,7 +1980,7 @@ export function WhatsappSettingsPage() {
                               <Table.Cell>{notification.waMessageId ?? "—"}</Table.Cell>
                               <Table.Cell>
                                 {notification.sentAt
-                                  ? dayjs(notification.sentAt).format("DD/MM HH:mm")
+                                  ? dayjs(notification.sentAt).tz().format("DD/MM HH:mm")
                                   : "—"}
                               </Table.Cell>
                             </Table.Row>
@@ -2211,7 +2213,7 @@ export function WhatsappSettingsPage() {
                             <Description className="text-default-500 text-xs">
                               Última conversación:{" "}
                               {chat.conversationTimestamp
-                                ? dayjs(chat.conversationTimestamp).format("DD/MM/YYYY HH:mm")
+                                ? dayjs(chat.conversationTimestamp).tz().format("DD/MM/YYYY HH:mm")
                                 : "—"}
                             </Description>
                           </div>
@@ -2268,7 +2270,7 @@ export function WhatsappSettingsPage() {
                               {record.messageType}
                             </Chip>
                             <span className="text-default-500 text-xs">
-                              {dayjs(record.createdAt).format("DD/MM HH:mm:ss")}
+                              {dayjs(record.createdAt).tz().format("DD/MM HH:mm:ss")}
                             </span>
                           </div>
                           <div className="mt-2 whitespace-pre-wrap text-sm">
@@ -2443,7 +2445,9 @@ export function WhatsappSettingsPage() {
                             </Table.Cell>
                             <Table.Cell>{renderHistoryStatus(record.status)}</Table.Cell>
                             <Table.Cell>{record.phone ?? "—"}</Table.Cell>
-                            <Table.Cell>{dayjs(record.createdAt).format("DD/MM HH:mm")}</Table.Cell>
+                            <Table.Cell>
+                              {dayjs(record.createdAt).tz().format("DD/MM HH:mm")}
+                            </Table.Cell>
                             <Table.Cell>
                               <div className="flex flex-wrap gap-2">
                                 <Button
@@ -3140,11 +3144,11 @@ export function WhatsappSettingsPage() {
                             <Description className="text-default-500 text-xs">
                               Último inbound:{" "}
                               {contact.lastInboundAt
-                                ? dayjs(contact.lastInboundAt).format("DD/MM/YYYY HH:mm")
+                                ? dayjs(contact.lastInboundAt).tz().format("DD/MM/YYYY HH:mm")
                                 : "—"}
                               {" · "}Última llamada:{" "}
                               {contact.lastInboundCallAt
-                                ? dayjs(contact.lastInboundCallAt).format("DD/MM/YYYY HH:mm")
+                                ? dayjs(contact.lastInboundCallAt).tz().format("DD/MM/YYYY HH:mm")
                                 : "—"}
                             </Description>
                           </div>

@@ -53,7 +53,7 @@ export function RecentMovementsWidget({ rows }: { rows: Transaction[] }) {
                     {row.description ?? row.sourceId ?? "(sin descripción)"}
                   </p>
                   <p className="text-default-500 text-xs uppercase tracking-wide">
-                    {dayjs(row.transactionDate).format("DD MMM YYYY HH:mm")}
+                    {dayjs(row.transactionDate).tz().format("DD MMM YYYY HH:mm")}
                   </p>
                 </div>
                 <span

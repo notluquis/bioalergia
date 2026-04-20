@@ -1,5 +1,6 @@
 import type { db, JsonValue } from "@finanzas/db";
 import { Decimal } from "decimal.js";
+import { parseChileDateTime } from "../../lib/time";
 
 // Infer Input types from the db client
 type SettlementManyArgs = Parameters<typeof db.settlementTransaction.createMany>[0];
@@ -45,8 +46,7 @@ export function parseDateRequired(value: RawValue): Date {
   if (!str) {
     return new Date();
   }
-  const parsed = new Date(str);
-  return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+  return parseChileDateTime(str) ?? new Date();
 }
 
 export function parseDateOptional(value: RawValue): Date | null {
@@ -54,8 +54,7 @@ export function parseDateOptional(value: RawValue): Date | null {
   if (!str) {
     return null;
   }
-  const parsed = new Date(str);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
+  return parseChileDateTime(str);
 }
 
 export function parseDecimal(value: RawValue, fallback: string | number | Decimal): Decimal;

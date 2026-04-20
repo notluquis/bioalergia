@@ -60,7 +60,7 @@ const resolveLastReportLabel = (reports: MPReport[]) => {
   }
 
   const date = lastReport.date_created ?? lastReport.begin_date;
-  return date ? dayjs(date).format("D MMM, HH:mm") : "N/A";
+  return date ? dayjs(date).tz().format("D MMM, HH:mm") : "N/A";
 };
 
 const resolveReportTypeFromTab = (tab: MpTab): MpReportType => (tab === "sync" ? "release" : tab);
@@ -687,7 +687,7 @@ function buildSyncColumns(): ColumnDef<MpSyncLog>[] {
     {
       accessorKey: "startedAt",
       header: "Fecha",
-      cell: ({ row }) => dayjs(row.original.startedAt).format("DD/MM/YYYY HH:mm"),
+      cell: ({ row }) => dayjs(row.original.startedAt).tz().format("DD/MM/YYYY HH:mm"),
     },
     {
       accessorKey: "triggerSource",

@@ -139,8 +139,8 @@ function buildRightSideBadges(event: CalendarEventDetail) {
 }
 
 export function DailyEventCard({ event, eventDteLink, onLinkClick }: DailyEventCardProps) {
-  const start = event.startDateTime ? dayjs(event.startDateTime) : null;
-  const end = event.endDateTime ? dayjs(event.endDateTime) : null;
+  const start = event.startDateTime ? dayjs(event.startDateTime).tz() : null;
+  const end = event.endDateTime ? dayjs(event.endDateTime).tz() : null;
   const durationMinutes = start && end ? end.diff(start, "minute") : null;
   const today = dayjs().format("YYYY-MM-DD");
   const isPendingEmission = event.eventDate > today && !eventDteLink;

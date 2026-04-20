@@ -45,7 +45,7 @@ const dateColumn = (
     if (!val) {
       return "-";
     }
-    return dayjs(val).format("DD/MM/YY HH:mm");
+    return dayjs(val).tz().format("DD/MM/YY HH:mm");
   },
   header,
   minSize: 120,

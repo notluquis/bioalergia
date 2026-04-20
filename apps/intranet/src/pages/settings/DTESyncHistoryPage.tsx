@@ -201,14 +201,14 @@ export function DTESyncHistoryPage() {
                         <div>
                           <span className="mb-1 block text-default-500 text-xs">Iniciado</span>
                           <span className="block font-mono text-sm">
-                            {dayjs(log.startedAt).format("DD/MM/YYYY HH:mm:ss")}
+                            {dayjs(log.startedAt).tz().format("DD/MM/YYYY HH:mm:ss")}
                           </span>
                         </div>
                         {log.completedAt && (
                           <div>
                             <span className="mb-1 block text-default-500 text-xs">Finalizado</span>
                             <span className="block font-mono text-sm">
-                              {dayjs(log.completedAt).format("DD/MM/YYYY HH:mm:ss")}
+                              {dayjs(log.completedAt).tz().format("DD/MM/YYYY HH:mm:ss")}
                               <span className="ml-2 text-default-500">
                                 ({getDuration(log.startedAt, log.completedAt)})
                               </span>

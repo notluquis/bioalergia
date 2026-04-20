@@ -453,7 +453,7 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
                 <span className="truncate font-medium">{backup.name}</span>
               </div>
               <Description className="leading-5 text-default-500 text-xs">
-                {dayjs(backup.createdTime).format("DD MMM YYYY, HH:mm")} •{" "}
+                {dayjs(backup.createdTime).tz().format("DD MMM YYYY, HH:mm")} •{" "}
                 {formatFileSize(Number(backup.size))}
               </Description>
             </div>

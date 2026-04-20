@@ -27,7 +27,7 @@ function formatRelative(date: Date | null): string {
 
 function formatDate(date: Date | null): string {
   if (!date) return "—";
-  return dayjs(date).format("D MMM YYYY, HH:mm");
+  return dayjs(date).tz().format("D MMM YYYY, HH:mm");
 }
 
 export function DoctoraliaCookieStorePanel() {

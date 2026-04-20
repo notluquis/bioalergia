@@ -20,7 +20,13 @@ import type { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
+import { TIMEZONE } from "../lib/time";
 import { SuperJSONRPCHandler } from "./superjson";
+
+const parsePeriodStart = (period: string) =>
+  dayjs.tz(`${period}-01`, "YYYY-MM-DD", TIMEZONE).startOf("month");
+const parsePeriodEnd = (period: string) =>
+  dayjs.tz(`${period}-01`, "YYYY-MM-DD", TIMEZONE).endOf("month");
 
 configureSuperjson();
 
@@ -108,8 +114,8 @@ const dteAnalyticsORPCRouterBase = {
         .where(excludeAnnulledByNCE("p", "DTEPurchaseDetail"));
 
       if (input.period) {
-        const startDate = dayjs(input.period).startOf("month").toISOString();
-        const endDate = dayjs(input.period).endOf("month").toISOString();
+        const startDate = parsePeriodStart(input.period).toISOString();
+        const endDate = parsePeriodEnd(input.period).toISOString();
         countQuery = countQuery
           .where(sql<boolean>`p.document_date >= ${startDate}`)
           .where(sql<boolean>`p.document_date <= ${endDate}`);
@@ -194,21 +200,21 @@ const dteAnalyticsORPCRouterBase = {
 
       if (input.startPeriod) {
         query = query.where(
-          sql<boolean>`p.document_date >= ${dayjs(input.startPeriod).startOf("month").toISOString()}`,
+          sql<boolean>`p.document_date >= ${parsePeriodStart(input.startPeriod).toISOString()}`,
         );
       }
       if (input.endPeriod) {
         query = query.where(
-          sql<boolean>`p.document_date <= ${dayjs(input.endPeriod).endOf("month").toISOString()}`,
+          sql<boolean>`p.document_date <= ${parsePeriodEnd(input.endPeriod).toISOString()}`,
         );
       }
       if (input.year) {
         query = query
           .where(
-            sql<boolean>`p.document_date >= ${dayjs().year(input.year).startOf("year").toISOString()}`,
+            sql<boolean>`p.document_date >= ${dayjs.tz(`${input.year}-01-01`, "YYYY-MM-DD", TIMEZONE).startOf("year").toISOString()}`,
           )
           .where(
-            sql<boolean>`p.document_date <= ${dayjs().year(input.year).endOf("year").toISOString()}`,
+            sql<boolean>`p.document_date <= ${dayjs.tz(`${input.year}-01-01`, "YYYY-MM-DD", TIMEZONE).endOf("year").toISOString()}`,
           );
       }
 
@@ -265,8 +271,8 @@ const dteAnalyticsORPCRouterBase = {
         .where(excludeAnnulledByNCE("s", "DTESaleDetail"));
 
       if (input.period) {
-        const startDate = dayjs(input.period).startOf("month").toISOString();
-        const endDate = dayjs(input.period).endOf("month").toISOString();
+        const startDate = parsePeriodStart(input.period).toISOString();
+        const endDate = parsePeriodEnd(input.period).toISOString();
         countQuery = countQuery
           .where(sql<boolean>`s.document_date >= ${startDate}`)
           .where(sql<boolean>`s.document_date <= ${endDate}`);
@@ -475,21 +481,21 @@ const dteAnalyticsORPCRouterBase = {
 
       if (input.startPeriod) {
         query = query.where(
-          sql<boolean>`s.document_date >= ${dayjs(input.startPeriod).startOf("month").toISOString()}`,
+          sql<boolean>`s.document_date >= ${parsePeriodStart(input.startPeriod).toISOString()}`,
         );
       }
       if (input.endPeriod) {
         query = query.where(
-          sql<boolean>`s.document_date <= ${dayjs(input.endPeriod).endOf("month").toISOString()}`,
+          sql<boolean>`s.document_date <= ${parsePeriodEnd(input.endPeriod).toISOString()}`,
         );
       }
       if (input.year) {
         query = query
           .where(
-            sql<boolean>`s.document_date >= ${dayjs().year(input.year).startOf("year").toISOString()}`,
+            sql<boolean>`s.document_date >= ${dayjs.tz(`${input.year}-01-01`, "YYYY-MM-DD", TIMEZONE).startOf("year").toISOString()}`,
           )
           .where(
-            sql<boolean>`s.document_date <= ${dayjs().year(input.year).endOf("year").toISOString()}`,
+            sql<boolean>`s.document_date <= ${dayjs.tz(`${input.year}-01-01`, "YYYY-MM-DD", TIMEZONE).endOf("year").toISOString()}`,
           );
       }
 

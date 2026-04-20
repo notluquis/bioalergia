@@ -17,6 +17,7 @@ import type { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
+import { parseChileDateTime } from "../lib/time";
 import { SuperJSONRPCHandler } from "./superjson";
 
 configureSuperjson();
@@ -142,8 +143,7 @@ function normalizeDate(value: unknown): Date | null {
     return null;
   }
 
-  const parsed = new Date(stringValue);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
+  return parseChileDateTime(stringValue);
 }
 
 function summarizeWithdrawalRow(row: WithdrawImportRow): string {

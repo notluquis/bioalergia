@@ -115,7 +115,7 @@ export function MonthlyExpenseDetail({
                 </span>
               </div>
               <div className="mt-1 text-default-400 text-xs">
-                {dayjs(tx.timestamp).format("DD MMM YYYY HH:mm")} · {tx.direction}
+                {dayjs(tx.timestamp).tz().format("DD MMM YYYY HH:mm")} · {tx.direction}
               </div>
               {canManage && (
                 <div className="mt-2 flex justify-end">

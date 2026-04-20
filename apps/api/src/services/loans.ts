@@ -3,6 +3,7 @@ import dayjs from "dayjs";
 import { randomUUID } from "node:crypto";
 import { Decimal } from "decimal.js";
 import { AppError } from "../lib/app-error";
+import "../lib/time";
 
 type LoanStatus = "ACTIVE" | "COMPLETED" | "DEFAULTED";
 type LoanBorrowerType = "COMPANY" | "PERSON";
@@ -47,8 +48,9 @@ const PERIODS_PER_YEAR: Record<LoanFrequency, number> = {
   WEEKLY: 52,
 };
 
-const toDateOnly = (value: string) => dayjs(value).startOf("day").toDate();
-const formatDateOnly = (value: Date) => dayjs(value).format("YYYY-MM-DD");
+const toDateOnly = (value: string) =>
+  dayjs.utc(value, "YYYY-MM-DD").startOf("day").toDate();
+const formatDateOnly = (value: Date) => dayjs.utc(value).format("YYYY-MM-DD");
 const toDecimal = (value: Decimal.Value) => new Decimal(value);
 const toMoney = (value: Decimal.Value) => toDecimal(value).toDecimalPlaces(2, MONEY_ROUNDING);
 const optionalNote = (value?: null | string) => {
@@ -63,7 +65,7 @@ const getDueDateForInstallment = (
   frequency: LoanFrequency,
   installmentNumber: number
 ) => {
-  const date = dayjs(startDate);
+  const date = dayjs.utc(startDate);
   if (frequency === "MONTHLY") {
     return date.add(installmentNumber, "month").startOf("day").toDate();
   }

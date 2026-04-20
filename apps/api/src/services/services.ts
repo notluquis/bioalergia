@@ -11,7 +11,9 @@ import {
   type ServiceType,
 } from "@finanzas/db";
 import type { ServiceInclude } from "@finanzas/db/input";
+import dayjs from "dayjs";
 import { Decimal } from "decimal.js";
+import "../lib/time";
 
 type ServicePayload = {
   name: string;
@@ -245,6 +247,7 @@ export async function generateSchedules(options: GenerateSchedulesOptions) {
   }
 
   const startFrom = fromDate ?? new Date(service.startDate);
+  const startFromUtc = dayjs.utc(startFrom);
   const schedules: Array<{
     serviceId: number;
     periodStart: Date;
@@ -257,18 +260,21 @@ export async function generateSchedules(options: GenerateSchedulesOptions) {
   }> = [];
 
   for (let i = 0; i < months; i++) {
-    const periodStart = new Date(startFrom.getFullYear(), startFrom.getMonth() + i, 1);
-    const periodEnd = new Date(startFrom.getFullYear(), startFrom.getMonth() + i + 1, 0);
+    const periodStartUtc = startFromUtc.add(i, "month").startOf("month");
+    const periodEndUtc = periodStartUtc.endOf("month").startOf("day");
+    const periodStart = periodStartUtc.toDate();
+    const periodEnd = periodEndUtc.toDate();
 
     if (service.endDate && periodStart > new Date(service.endDate)) {
       break;
     }
 
     const dueDay = service.dueDay ?? 1;
-    const dueDate = new Date(periodStart.getFullYear(), periodStart.getMonth(), dueDay);
-    if (dueDate < periodStart) {
-      dueDate.setMonth(dueDate.getMonth() + 1);
+    let dueDateUtc = periodStartUtc.date(dueDay);
+    if (dueDateUtc.isBefore(periodStartUtc)) {
+      dueDateUtc = dueDateUtc.add(1, "month");
     }
+    const dueDate = dueDateUtc.toDate();
 
     const existing = await db.serviceSchedule.findUnique({
       where: {

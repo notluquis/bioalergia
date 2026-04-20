@@ -133,7 +133,7 @@ export function DeploymentStatusChip({ compact = false }: Readonly<DeploymentSta
     );
   }
 
-  const checkedAt = data?.checkedAt ? dayjs(data.checkedAt).format("DD-MM-YYYY HH:mm") : null;
+  const checkedAt = data?.checkedAt ? dayjs(data.checkedAt).tz().format("DD-MM-YYYY HH:mm") : null;
   const activeTargets = targets.filter((target) => isActiveStatus(target.status));
   const problemTargets = targets.filter((target) => isProblemStatus(target.status));
   const stableTargets = targets.filter(

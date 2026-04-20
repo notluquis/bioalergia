@@ -2,6 +2,7 @@ import type { TransactionType } from "@finanzas/db";
 import { db } from "@finanzas/db";
 import Decimal from "decimal.js";
 import { AppError } from "../lib/app-error";
+import { getPeriodRange, toChilePeriod } from "../lib/time";
 import {
   fetchMergedTransactions,
   fetchMergedTransactionsBySourceIds,
@@ -90,16 +91,6 @@ function normalizePeriodOrThrow(period: string) {
   return normalized;
 }
 
-function getPeriodRange(period: string) {
-  assertPeriodOrThrow(period);
-  const [yearRaw, monthRaw] = period.split("-");
-  const year = Number(yearRaw);
-  const monthIndex = Number(monthRaw) - 1;
-  const from = new Date(Date.UTC(year, monthIndex, 1, 0, 0, 0));
-  const to = new Date(Date.UTC(year, monthIndex + 1, 0, 23, 59, 59, 999));
-  return { from, to };
-}
-
 const toPeriod = (value: Date) => {
   if (!(value instanceof Date) || Number.isNaN(value.getTime())) {
     throw new AppError(422, {
@@ -107,7 +98,7 @@ const toPeriod = (value: Date) => {
       message: "La transacción tiene una fecha inválida para reasignación",
     });
   }
-  const period = value.toISOString().slice(0, 7);
+  const period = toChilePeriod(value);
   assertPeriodOrThrow(period);
   return period;
 };
@@ -922,6 +913,7 @@ export async function listFinancialTransactions(params: {
   }
 
   if (params.effectivePeriod) {
+    assertPeriodOrThrow(params.effectivePeriod);
     const { from, to } = getPeriodRange(params.effectivePeriod);
     const [periodAllocations, periodTransactionsWithoutAllocations] = await Promise.all([
       db.$queryRaw<Array<{ netAmount: number; transactionId: number }>>`

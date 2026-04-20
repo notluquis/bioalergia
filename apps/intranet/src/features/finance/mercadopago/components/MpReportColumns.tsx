@@ -27,7 +27,7 @@ export const getMpReportColumns = (
       const date = row.original.date_created ?? row.original.begin_date;
       return (
         <span className="whitespace-nowrap text-sm">
-          {date ? dayjs(date).format("DD/MM/YY HH:mm") : "-"}
+          {date ? dayjs(date).tz().format("DD/MM/YY HH:mm") : "-"}
         </span>
       );
     },

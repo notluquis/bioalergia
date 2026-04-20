@@ -107,7 +107,7 @@ export function ServiceEditPage() {
       {
         helper: "Registro en base de datos",
         label: "Última actualización",
-        value: dayjs(service.updatedAt).format("DD MMM YYYY HH:mm"),
+        value: dayjs(service.updatedAt).tz().format("DD MMM YYYY HH:mm"),
       },
     ];
   }, [detail]);
@@ -116,12 +116,12 @@ export function ServiceEditPage() {
     const { service } = detail;
     const items: { date: string; description?: string; title: string }[] = [
       {
-        date: dayjs(service.createdAt).format("DD MMM YYYY HH:mm"),
+        date: dayjs(service.createdAt).tz().format("DD MMM YYYY HH:mm"),
         description: "Servicio registrado en la plataforma",
         title: "Creación",
       },
       {
-        date: dayjs(service.updatedAt).format("DD MMM YYYY HH:mm"),
+        date: dayjs(service.updatedAt).tz().format("DD MMM YYYY HH:mm"),
         description: "Datos del servicio actualizados",
         title: "Última modificación",
       },

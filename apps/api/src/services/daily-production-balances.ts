@@ -1,5 +1,6 @@
 import { db } from "@finanzas/db";
 import dayjs from "dayjs";
+import "../lib/time";
 
 export type ProductionBalancePayload = {
   balanceDate: string;
@@ -21,11 +22,12 @@ export type ProductionBalancePayload = {
 
 export type ProductionBalanceUpdatePayload = Partial<ProductionBalancePayload>;
 
-const toDateOnly = (value: string) => dayjs(value).startOf("day").toDate();
+const toDateOnly = (value: string) =>
+  dayjs.utc(value, "YYYY-MM-DD").startOf("day").toDate();
 
 export async function listProductionBalances(from: string, to: string) {
-  const fromDate = dayjs(from).startOf("day").toDate();
-  const toDate = dayjs(to).endOf("day").toDate();
+  const fromDate = dayjs.utc(from, "YYYY-MM-DD").startOf("day").toDate();
+  const toDate = dayjs.utc(to, "YYYY-MM-DD").endOf("day").toDate();
 
   return await db.dailyProductionBalance.findMany({
     where: {
