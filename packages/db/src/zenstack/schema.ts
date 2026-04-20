@@ -9106,6 +9106,26 @@ export class SchemaType implements SchemaDef {
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("max_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(19) }, { name: "s", value: ExpressionUtils.literal(4) }] }] as readonly AttributeApplication[]
                 },
+                amountsExact: {
+                    name: "amountsExact",
+                    type: "Decimal",
+                    array: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.array("Any", []) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("amounts_exact") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(19) }, { name: "s", value: ExpressionUtils.literal(4) }] }] as readonly AttributeApplication[],
+                    default: [] as FieldDefault
+                },
+                paymentMethods: {
+                    name: "paymentMethods",
+                    type: "String",
+                    array: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.array("Any", []) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("payment_methods") }] }] as readonly AttributeApplication[],
+                    default: [] as FieldDefault
+                },
+                matchAmountOn: {
+                    name: "matchAmountOn",
+                    type: "String",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("net") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("match_amount_on") }] }] as readonly AttributeApplication[],
+                    default: "net" as FieldDefault
+                },
                 commentContains: {
                     name: "commentContains",
                     type: "String",

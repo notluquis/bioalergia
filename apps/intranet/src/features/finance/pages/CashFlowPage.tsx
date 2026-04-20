@@ -181,6 +181,7 @@ const ReallocationResponseSchema = z.object({
 });
 
 const FinancialAutoCategoryRuleSchema = z.object({
+  amountsExact: z.array(z.number()).default([]),
   category: TransactionCategorySchema,
   categoryId: z.number(),
   commentContains: z.string().nullable().optional(),
@@ -189,9 +190,11 @@ const FinancialAutoCategoryRuleSchema = z.object({
   descriptionContains: z.string().nullable().optional(),
   id: z.number(),
   isActive: z.boolean(),
+  matchAmountOn: z.enum(["net", "gross"]).default("net"),
   maxAmount: z.number().nullable().optional(),
   minAmount: z.number().nullable().optional(),
   name: z.string(),
+  paymentMethods: z.array(z.string()).default([]),
   priority: z.number(),
   type: z.enum(["INCOME", "EXPENSE"]),
 });
@@ -412,6 +415,30 @@ type CashFlowTab = "cash-flow" | "categories" | "movements";
 
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat("es-CL", { currency: "CLP", style: "currency" }).format(amount);
+
+const PAYMENT_METHOD_TYPE_OPTIONS = [
+  { label: "Transferencia bancaria", value: "bank_transfer" },
+  { label: "Tarjeta de débito", value: "debit_card" },
+  { label: "Tarjeta de crédito", value: "credit_card" },
+  { label: "Cuenta Mercado Pago", value: "account_money" },
+  { label: "Cupón de pago", value: "ticket" },
+  { label: "Giftcard", value: "gift_card" },
+  { label: "Prepago", value: "prepaid_card" },
+] as const;
+
+const parseAmountsExactInput = (value: string): number[] => {
+  if (!value.trim()) return [];
+  return Array.from(
+    new Set(
+      value
+        .split(/[\s,;]+/)
+        .map((part) => part.replace(/[^0-9.-]/g, ""))
+        .filter(Boolean)
+        .map((part) => Number.parseFloat(part))
+        .filter((n) => Number.isFinite(n))
+    )
+  );
+};
 
 const FALLBACK_CATEGORY_COLOR = "#64748b";
 
@@ -676,6 +703,9 @@ export function CashFlowPage() {
   const [newRuleMaxAmount, setNewRuleMaxAmount] = useState("");
   const [newRuleCommentContains, setNewRuleCommentContains] = useState("");
   const [newRuleDescriptionContains, setNewRuleDescriptionContains] = useState("");
+  const [newRuleAmountsExact, setNewRuleAmountsExact] = useState("");
+  const [newRulePaymentMethods, setNewRulePaymentMethods] = useState<string[]>([]);
+  const [newRuleMatchAmountOn, setNewRuleMatchAmountOn] = useState<"gross" | "net">("net");
   const [editingRuleId, setEditingRuleId] = useState<null | number>(null);
   const [editingRuleName, setEditingRuleName] = useState("");
   const [editingRuleCounterpartId, setEditingRuleCounterpartId] = useState<null | number>(null);
@@ -687,6 +717,9 @@ export function CashFlowPage() {
   const [editingRuleMaxAmount, setEditingRuleMaxAmount] = useState("");
   const [editingRuleCommentContains, setEditingRuleCommentContains] = useState("");
   const [editingRuleDescriptionContains, setEditingRuleDescriptionContains] = useState("");
+  const [editingRuleAmountsExact, setEditingRuleAmountsExact] = useState("");
+  const [editingRulePaymentMethods, setEditingRulePaymentMethods] = useState<string[]>([]);
+  const [editingRuleMatchAmountOn, setEditingRuleMatchAmountOn] = useState<"gross" | "net">("net");
   const [newCompensationName, setNewCompensationName] = useState("");
   const [newCompensationCategoryId, setNewCompensationCategoryId] = useState<null | number>(null);
   const [newCompensationCounterpartId, setNewCompensationCounterpartId] = useState<null | number>(
@@ -1473,14 +1506,17 @@ export function CashFlowPage() {
 
   const createAutoCategoryRuleMutation = useMutation({
     mutationFn: async (payload: {
+      amountsExact?: number[];
       categoryId: number;
       commentContains?: null | string;
       counterpartId?: null | number;
       descriptionContains?: null | string;
       isActive: boolean;
+      matchAmountOn?: "gross" | "net";
       maxAmount?: null | number;
       minAmount?: null | number;
       name: string;
+      paymentMethods?: string[];
       priority: number;
       type: "EXPENSE" | "INCOME";
     }) => {
@@ -1506,6 +1542,9 @@ export function CashFlowPage() {
       setNewRuleMaxAmount("");
       setNewRuleCommentContains("");
       setNewRuleDescriptionContains("");
+      setNewRuleAmountsExact("");
+      setNewRulePaymentMethods([]);
+      setNewRuleMatchAmountOn("net");
       toast.success("Regla automática creada");
     },
     onError: (error) => {
@@ -1521,14 +1560,17 @@ export function CashFlowPage() {
     }: {
       id: number;
       payload: Partial<{
+        amountsExact: number[];
         categoryId: number;
         commentContains?: null | string;
         counterpartId?: null | number;
         descriptionContains?: null | string;
         isActive: boolean;
+        matchAmountOn: "gross" | "net";
         maxAmount?: null | number;
         minAmount?: null | number;
         name: string;
+        paymentMethods: string[];
         priority: number;
         type: "EXPENSE" | "INCOME";
       }>;
@@ -1792,15 +1834,19 @@ export function CashFlowPage() {
     const parsedPriority = Number.parseInt(newRulePriority, 10);
     const parsedMinAmount = Number.parseFloat(newRuleMinAmount);
     const parsedMaxAmount = Number.parseFloat(newRuleMaxAmount);
+    const parsedAmountsExact = parseAmountsExactInput(newRuleAmountsExact);
     createAutoCategoryRuleMutation.mutate({
+      amountsExact: parsedAmountsExact,
       categoryId: newRuleCategoryId,
       commentContains: newRuleCommentContains.trim() || null,
       counterpartId: newRuleCounterpartId,
       descriptionContains: newRuleDescriptionContains.trim() || null,
       isActive: true,
+      matchAmountOn: newRuleMatchAmountOn,
       maxAmount: Number.isNaN(parsedMaxAmount) ? null : parsedMaxAmount,
       minAmount: Number.isNaN(parsedMinAmount) ? null : parsedMinAmount,
       name,
+      paymentMethods: newRulePaymentMethods,
       priority: Number.isNaN(parsedPriority) ? 0 : parsedPriority,
       type: newRuleType,
     });
@@ -1818,6 +1864,9 @@ export function CashFlowPage() {
     setEditingRuleMaxAmount(rule.maxAmount == null ? "" : String(rule.maxAmount));
     setEditingRuleCommentContains(rule.commentContains ?? "");
     setEditingRuleDescriptionContains(rule.descriptionContains ?? "");
+    setEditingRuleAmountsExact((rule.amountsExact ?? []).join(", "));
+    setEditingRulePaymentMethods(rule.paymentMethods ?? []);
+    setEditingRuleMatchAmountOn(rule.matchAmountOn ?? "net");
   };
 
   const handleCancelEditRule = () => {
@@ -1832,6 +1881,9 @@ export function CashFlowPage() {
     setEditingRuleMaxAmount("");
     setEditingRuleCommentContains("");
     setEditingRuleDescriptionContains("");
+    setEditingRuleAmountsExact("");
+    setEditingRulePaymentMethods([]);
+    setEditingRuleMatchAmountOn("net");
   };
 
   const handleSaveEditRule = (ruleId: number) => {
@@ -1847,17 +1899,21 @@ export function CashFlowPage() {
     const parsedPriority = Number.parseInt(editingRulePriority, 10);
     const parsedMinAmount = Number.parseFloat(editingRuleMinAmount);
     const parsedMaxAmount = Number.parseFloat(editingRuleMaxAmount);
+    const parsedAmountsExact = parseAmountsExactInput(editingRuleAmountsExact);
     updateAutoCategoryRuleMutation.mutate({
       id: ruleId,
       payload: {
+        amountsExact: parsedAmountsExact,
         categoryId: editingRuleCategoryId,
         commentContains: editingRuleCommentContains.trim() || null,
         counterpartId: editingRuleCounterpartId,
         descriptionContains: editingRuleDescriptionContains.trim() || null,
         isActive: editingRuleIsActive,
+        matchAmountOn: editingRuleMatchAmountOn,
         maxAmount: Number.isNaN(parsedMaxAmount) ? null : parsedMaxAmount,
         minAmount: Number.isNaN(parsedMinAmount) ? null : parsedMinAmount,
         name,
+        paymentMethods: editingRulePaymentMethods,
         priority: Number.isNaN(parsedPriority) ? 0 : parsedPriority,
         type: editingRuleType,
       },
@@ -3263,6 +3319,66 @@ export function CashFlowPage() {
                         <Label>Descripción contiene</Label>
                         <Input placeholder="Opcional" />
                       </TextField>
+                      <TextField
+                        className="md:col-span-4"
+                        value={newRuleAmountsExact}
+                        onChange={(v) => setNewRuleAmountsExact(v)}
+                      >
+                        <Label>Montos exactos</Label>
+                        <Input placeholder="Ej: 25000, 30000, 40000, 50000" />
+                      </TextField>
+                      <Select
+                        className="md:col-span-2"
+                        value={newRuleMatchAmountOn}
+                        onChange={(key) =>
+                          setNewRuleMatchAmountOn(String(key ?? "net") as "gross" | "net")
+                        }
+                      >
+                        <Label>Comparar monto por</Label>
+                        <Select.Trigger>
+                          <Select.Value />
+                          <Select.Indicator />
+                        </Select.Trigger>
+                        <Select.Popover>
+                          <ListBox>
+                            <ListBox.Item id="net" textValue="Neto acreditado">
+                              Neto acreditado
+                              <ListBox.ItemIndicator />
+                            </ListBox.Item>
+                            <ListBox.Item id="gross" textValue="Bruto pre-comisión">
+                              Bruto pre-comisión
+                              <ListBox.ItemIndicator />
+                            </ListBox.Item>
+                          </ListBox>
+                        </Select.Popover>
+                      </Select>
+                      <div className="md:col-span-2">
+                        <Label>Medios de pago</Label>
+                        <ListBox
+                          aria-label="Medios de pago"
+                          className="max-h-40 overflow-auto rounded-md border border-default-200"
+                          selectedKeys={new Set(newRulePaymentMethods)}
+                          selectionMode="multiple"
+                          onSelectionChange={(keys) => {
+                            const values =
+                              keys === "all"
+                                ? PAYMENT_METHOD_TYPE_OPTIONS.map((opt) => opt.value)
+                                : Array.from(keys).map((key) => String(key));
+                            setNewRulePaymentMethods(values);
+                          }}
+                        >
+                          {PAYMENT_METHOD_TYPE_OPTIONS.map((option) => (
+                            <ListBox.Item
+                              id={option.value}
+                              key={option.value}
+                              textValue={option.label}
+                            >
+                              {option.label}
+                              <ListBox.ItemIndicator />
+                            </ListBox.Item>
+                          ))}
+                        </ListBox>
+                      </div>
                       <div className="flex items-end md:col-span-8">
                         <Button type="submit" isPending={createAutoCategoryRuleMutation.isPending}>
                           Crear regla
@@ -3427,6 +3543,68 @@ export function CashFlowPage() {
                                   <Label>Descripción contiene</Label>
                                   <Input />
                                 </TextField>
+                                <TextField
+                                  className="md:col-span-4"
+                                  value={editingRuleAmountsExact}
+                                  onChange={(v) => setEditingRuleAmountsExact(v)}
+                                >
+                                  <Label>Montos exactos</Label>
+                                  <Input placeholder="Ej: 25000, 30000, 40000" />
+                                </TextField>
+                                <Select
+                                  className="md:col-span-2"
+                                  value={editingRuleMatchAmountOn}
+                                  onChange={(key) =>
+                                    setEditingRuleMatchAmountOn(
+                                      String(key ?? "net") as "gross" | "net"
+                                    )
+                                  }
+                                >
+                                  <Label>Comparar monto por</Label>
+                                  <Select.Trigger>
+                                    <Select.Value />
+                                    <Select.Indicator />
+                                  </Select.Trigger>
+                                  <Select.Popover>
+                                    <ListBox>
+                                      <ListBox.Item id="net" textValue="Neto acreditado">
+                                        Neto acreditado
+                                        <ListBox.ItemIndicator />
+                                      </ListBox.Item>
+                                      <ListBox.Item id="gross" textValue="Bruto pre-comisión">
+                                        Bruto pre-comisión
+                                        <ListBox.ItemIndicator />
+                                      </ListBox.Item>
+                                    </ListBox>
+                                  </Select.Popover>
+                                </Select>
+                                <div className="md:col-span-2">
+                                  <Label>Medios de pago</Label>
+                                  <ListBox
+                                    aria-label="Medios de pago"
+                                    className="max-h-40 overflow-auto rounded-md border border-default-200"
+                                    selectedKeys={new Set(editingRulePaymentMethods)}
+                                    selectionMode="multiple"
+                                    onSelectionChange={(keys) => {
+                                      const values =
+                                        keys === "all"
+                                          ? PAYMENT_METHOD_TYPE_OPTIONS.map((opt) => opt.value)
+                                          : Array.from(keys).map((key) => String(key));
+                                      setEditingRulePaymentMethods(values);
+                                    }}
+                                  >
+                                    {PAYMENT_METHOD_TYPE_OPTIONS.map((option) => (
+                                      <ListBox.Item
+                                        id={option.value}
+                                        key={option.value}
+                                        textValue={option.label}
+                                      >
+                                        {option.label}
+                                        <ListBox.ItemIndicator />
+                                      </ListBox.Item>
+                                    ))}
+                                  </ListBox>
+                                </div>
                                 <Select
                                   value={editingRuleIsActive ? "ACTIVE" : "INACTIVE"}
                                   onChange={(key) =>
@@ -3488,6 +3666,19 @@ export function CashFlowPage() {
                                     comentario: {rule.commentContains || "-"} | descripción:{" "}
                                     {rule.descriptionContains || "-"}
                                   </p>
+                                  {((rule.amountsExact?.length ?? 0) > 0 ||
+                                    (rule.paymentMethods?.length ?? 0) > 0 ||
+                                    rule.matchAmountOn === "gross") && (
+                                    <p className="text-tiny text-default-500">
+                                      {(rule.amountsExact?.length ?? 0) > 0
+                                        ? `montos exactos: ${rule.amountsExact?.join(", ")}`
+                                        : null}
+                                      {(rule.paymentMethods?.length ?? 0) > 0
+                                        ? ` | medios: ${rule.paymentMethods?.join(", ")}`
+                                        : null}
+                                      {` | comparar: ${rule.matchAmountOn === "gross" ? "bruto" : "neto"}`}
+                                    </p>
+                                  )}
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <Button

@@ -42,15 +42,20 @@ export const financeUpdateCategorySchema = z.object({
   name: z.string().min(1).optional(),
 });
 
+export const financeMatchAmountOnSchema = z.enum(["net", "gross"]);
+
 export const financeCreateAutoCategoryRuleSchema = z.object({
+  amountsExact: z.array(z.number()).optional(),
   categoryId: z.number().int().positive(),
   commentContains: z.string().nullable().optional(),
   counterpartId: z.number().int().positive().nullable().optional(),
   descriptionContains: z.string().nullable().optional(),
   isActive: z.boolean().optional(),
+  matchAmountOn: financeMatchAmountOnSchema.optional(),
   maxAmount: z.number().nullable().optional(),
   minAmount: z.number().nullable().optional(),
   name: z.string().min(1),
+  paymentMethods: z.array(z.string()).optional(),
   priority: z.number().int().optional(),
   type: financeTransactionTypeSchema.default("EXPENSE"),
 });
@@ -158,6 +163,7 @@ export const financeFinancialSummarySchema = z.object({
 });
 
 export const financeAutoCategoryRuleOutputSchema = z.object({
+  amountsExact: z.array(z.number()).default([]),
   category: z.object({
     color: z.string().nullable().optional(),
     icon: z.string().nullable().optional(),
@@ -171,9 +177,11 @@ export const financeAutoCategoryRuleOutputSchema = z.object({
   descriptionContains: z.string().nullable().optional(),
   id: z.number(),
   isActive: z.boolean(),
+  matchAmountOn: financeMatchAmountOnSchema.default("net"),
   maxAmount: z.number().nullable().optional(),
   minAmount: z.number().nullable().optional(),
   name: z.string(),
+  paymentMethods: z.array(z.string()).default([]),
   priority: z.number(),
   type: financeTransactionTypeSchema,
 });

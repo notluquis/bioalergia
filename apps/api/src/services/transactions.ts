@@ -26,6 +26,7 @@ type SettlementRow = {
   identificationNumber: null | string;
   metadata: unknown;
   paymentMethod: null | string;
+  paymentMethodType: null | string;
   settlementNetAmount: NumericInput;
   sourceId: string;
   transactionAmount: NumericInput;
@@ -44,6 +45,7 @@ type ReleaseRow = {
   netCreditAmount: NumericInput;
   netDebitAmount: NumericInput;
   paymentMethod: null | string;
+  paymentMethodType: null | string;
   payoutBankAccountNumber: null | string;
   recordType: null | string;
   sourceId: string;
@@ -69,10 +71,12 @@ export type UnifiedTransaction = {
   description: null | string;
   transactionType: string;
   transactionAmount: number;
+  grossAmount: null | number;
   status: null | string;
   externalReference: null | string;
   sourceId: null | string;
   paymentMethod: null | string;
+  paymentMethodType: null | string;
   settlementNetAmount: null | number;
   identificationNumber: null | string;
   bankAccountHolder: null | string;
@@ -136,10 +140,12 @@ function mapSettlementRow(row: SettlementRow): UnifiedTransaction {
     description: row.description ?? null,
     transactionType: row.transactionType,
     transactionAmount: asNumber(row.transactionAmount),
+    grossAmount: row.transactionAmount != null ? asNumber(row.transactionAmount) : null,
     status: null,
     externalReference: row.externalReference ?? null,
     sourceId: row.sourceId ?? null,
     paymentMethod: row.paymentMethod ?? null,
+    paymentMethodType: row.paymentMethodType ?? null,
     settlementNetAmount: row.settlementNetAmount != null ? asNumber(row.settlementNetAmount) : null,
     identificationNumber:
       row.identificationNumber ??
@@ -166,10 +172,12 @@ function mapReleaseRow(row: ReleaseRow): UnifiedTransaction {
     description: row.description ?? null,
     transactionType: row.recordType ?? "release",
     transactionAmount: amount,
+    grossAmount: row.grossAmount != null ? asNumber(row.grossAmount) : null,
     status: null,
     externalReference: row.externalReference ?? null,
     sourceId: row.sourceId ?? null,
     paymentMethod: row.paymentMethod ?? null,
+    paymentMethodType: row.paymentMethodType ?? null,
     settlementNetAmount: row.netCreditAmount != null ? asNumber(row.netCreditAmount) : null,
     identificationNumber:
       row.identificationNumber ??
@@ -198,10 +206,12 @@ function mapWithdrawRow(row: WithdrawRow): UnifiedTransaction {
     description: row.withdrawId ? `withdraw ${row.withdrawId}` : "withdraw",
     transactionType: "withdraw",
     transactionAmount: -Math.abs(asNumber(row.amount)),
+    grossAmount: null,
     status: row.status ?? null,
     externalReference: row.withdrawId ?? null,
     sourceId: row.withdrawId ?? null,
     paymentMethod: null,
+    paymentMethodType: null,
     settlementNetAmount: null,
     identificationNumber: row.identificationNumber ?? null,
     bankAccountHolder: row.bankAccountHolder ?? null,
@@ -255,10 +265,12 @@ function mergeReleaseWithdraw(
     description: release.description ?? withdraw.description,
     transactionType: release.transactionType,
     transactionAmount: release.transactionAmount,
+    grossAmount: release.grossAmount ?? withdraw.grossAmount,
     status: withdraw.status ?? release.status,
     externalReference: release.externalReference ?? withdraw.externalReference,
     sourceId: release.sourceId ?? withdraw.sourceId,
     paymentMethod: release.paymentMethod ?? withdraw.paymentMethod,
+    paymentMethodType: release.paymentMethodType ?? withdraw.paymentMethodType,
     settlementNetAmount: release.settlementNetAmount ?? withdraw.settlementNetAmount,
     identificationNumber: withdraw.identificationNumber ?? release.identificationNumber,
     bankAccountHolder: withdraw.bankAccountHolder ?? release.bankAccountHolder,
@@ -412,6 +424,7 @@ export async function fetchMergedTransactions(
         externalReference: true,
         identificationNumber: true,
         paymentMethod: true,
+        paymentMethodType: true,
         settlementNetAmount: true,
         sourceId: true,
         transactionAmount: true,
@@ -432,6 +445,7 @@ export async function fetchMergedTransactions(
         netCreditAmount: true,
         netDebitAmount: true,
         paymentMethod: true,
+        paymentMethodType: true,
         payoutBankAccountNumber: true,
         recordType: true,
         sourceId: true,
@@ -494,6 +508,7 @@ export async function fetchMergedTransactionsBySourceIds(
         externalReference: true,
         identificationNumber: true,
         paymentMethod: true,
+        paymentMethodType: true,
         settlementNetAmount: true,
         sourceId: true,
         transactionAmount: true,
@@ -514,6 +529,7 @@ export async function fetchMergedTransactionsBySourceIds(
         netCreditAmount: true,
         netDebitAmount: true,
         paymentMethod: true,
+        paymentMethodType: true,
         payoutBankAccountNumber: true,
         recordType: true,
         sourceId: true,

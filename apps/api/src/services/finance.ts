@@ -211,13 +211,18 @@ function resolveCounterpartIdForTransaction(
   return counterpartIdByRut ?? counterpartIdByAccount ?? null;
 }
 
+type MatchAmountOn = "gross" | "net";
+
 type AutoCategoryRule = {
+  amountsExact: number[];
   categoryId: number;
   commentContains: null | string;
   counterpartId: null | number;
   descriptionContains: null | string;
+  matchAmountOn: MatchAmountOn;
   maxAmount: null | number;
   minAmount: null | number;
+  paymentMethods: string[];
   priority: number;
   type: TransactionType;
 };
@@ -226,19 +231,51 @@ type AutoCategoryRuleLookup = {
   rules: AutoCategoryRule[];
 };
 
+type AutoCategoryMatchContext = {
+  amount: number;
+  comment: null | string | undefined;
+  counterpartId: null | number;
+  description: null | string | undefined;
+  grossAmount?: null | number;
+  paymentMethodType?: null | string;
+  type: TransactionType;
+};
+
+const AMOUNT_MATCH_EPSILON = 0.5;
+
 const normalizeRuleText = (value: null | string | undefined) => (value ?? "").toLowerCase().trim();
+
+const normalizeMatchAmountOn = (value: null | string | undefined): MatchAmountOn =>
+  value === "gross" ? "gross" : "net";
+
+const asAmountArray = (value: unknown): number[] => {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((entry) => (entry == null ? Number.NaN : Number(entry.toString())))
+    .filter((num) => Number.isFinite(num));
+};
+
+const asStringArray = (value: unknown): string[] => {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
+    .filter((entry) => entry.length > 0);
+};
 
 async function buildAutoCategoryRuleLookup(): Promise<AutoCategoryRuleLookup> {
   const rules = await db.financialAutoCategoryRule.findMany({
     where: { isActive: true },
     orderBy: [{ priority: "desc" }, { id: "asc" }],
     select: {
+      amountsExact: true,
       categoryId: true,
       commentContains: true,
       counterpartId: true,
       descriptionContains: true,
+      matchAmountOn: true,
       maxAmount: true,
       minAmount: true,
+      paymentMethods: true,
       priority: true,
       type: true,
     },
@@ -246,42 +283,69 @@ async function buildAutoCategoryRuleLookup(): Promise<AutoCategoryRuleLookup> {
 
   return {
     rules: rules.map((rule) => ({
+      amountsExact: asAmountArray(rule.amountsExact),
       categoryId: rule.categoryId,
       commentContains: rule.commentContains ?? null,
       counterpartId: rule.counterpartId ?? null,
       descriptionContains: rule.descriptionContains ?? null,
+      matchAmountOn: normalizeMatchAmountOn(rule.matchAmountOn),
       maxAmount: rule.maxAmount != null ? Number(rule.maxAmount) : null,
       minAmount: rule.minAmount != null ? Number(rule.minAmount) : null,
+      paymentMethods: asStringArray(rule.paymentMethods),
       priority: rule.priority,
       type: rule.type,
     })),
   };
 }
 
-function resolveAutoCategoryId(
-  type: TransactionType,
-  amount: number,
-  comment: null | string | undefined,
-  counterpartId: null | number,
-  description: null | string | undefined,
-  rules: AutoCategoryRuleLookup,
-) {
-  const normalizedComment = normalizeRuleText(comment);
-  const normalizedDescription = normalizeRuleText(description);
+function pickRuleAmount(rule: AutoCategoryRule, ctx: AutoCategoryMatchContext) {
+  if (rule.matchAmountOn === "gross") {
+    const gross = ctx.grossAmount;
+    if (gross != null && Number.isFinite(gross)) {
+      return ctx.amount < 0 ? -Math.abs(gross) : Math.abs(gross);
+    }
+  }
+  return ctx.amount;
+}
+
+function resolveAutoCategoryId(ctx: AutoCategoryMatchContext, rules: AutoCategoryRuleLookup) {
+  const normalizedComment = normalizeRuleText(ctx.comment);
+  const normalizedDescription = normalizeRuleText(ctx.description);
+  const normalizedPaymentMethodType = normalizeRuleText(ctx.paymentMethodType);
 
   for (const rule of rules.rules) {
-    if (rule.type !== type) {
+    if (rule.type !== ctx.type) {
       continue;
     }
-    if (rule.counterpartId != null && counterpartId !== rule.counterpartId) {
+    if (rule.counterpartId != null && ctx.counterpartId !== rule.counterpartId) {
       continue;
     }
-    if (rule.minAmount != null && amount < rule.minAmount) {
-      continue;
+
+    if (rule.paymentMethods.length > 0) {
+      if (!normalizedPaymentMethodType) continue;
+      const matches = rule.paymentMethods.some(
+        (method) => normalizeRuleText(method) === normalizedPaymentMethodType,
+      );
+      if (!matches) continue;
     }
-    if (rule.maxAmount != null && amount > rule.maxAmount) {
-      continue;
+
+    const ruleAmount = pickRuleAmount(rule, ctx);
+    const absoluteAmount = Math.abs(ruleAmount);
+
+    if (rule.amountsExact.length > 0) {
+      const matchesExact = rule.amountsExact.some(
+        (value) => Math.abs(Math.abs(value) - absoluteAmount) <= AMOUNT_MATCH_EPSILON,
+      );
+      if (!matchesExact) continue;
+    } else {
+      if (rule.minAmount != null && ruleAmount < rule.minAmount) {
+        continue;
+      }
+      if (rule.maxAmount != null && ruleAmount > rule.maxAmount) {
+        continue;
+      }
     }
+
     if (
       rule.commentContains != null &&
       !normalizedComment.includes(normalizeRuleText(rule.commentContains))
@@ -429,39 +493,120 @@ async function applyAutoCategoryRulesToExistingTransactions(
     return 0;
   }
 
-  const result = await db.$transaction(
-    rules.rules.map((rule) =>
-      db.financialTransaction.updateMany({
-        where: {
-          ...(options?.onlyUncategorized
-            ? { categoryId: null }
-            : { categoryId: { not: rule.categoryId } }),
-          ...(rule.counterpartId != null && { counterpartId: rule.counterpartId }),
-          ...(rule.minAmount != null && {
-            amount: { gte: Number(rule.minAmount) },
-          }),
-          ...(rule.maxAmount != null && {
-            amount: {
-              ...(rule.minAmount != null ? { gte: Number(rule.minAmount) } : {}),
-              lte: Number(rule.maxAmount),
-            },
-          }),
-          ...(rule.commentContains != null && {
-            comment: { contains: rule.commentContains, mode: "insensitive" },
-          }),
-          ...(rule.descriptionContains != null && {
-            description: { contains: rule.descriptionContains, mode: "insensitive" },
-          }),
-          type: rule.type,
-        },
-        data: {
-          categoryId: rule.categoryId,
-        },
-      }),
-    ),
-  );
+  let total = 0;
+  for (const rule of rules.rules) {
+    total += await applyAutoCategoryRuleRow(rule, options);
+  }
+  return total;
+}
 
-  return result.reduce((acc, item) => acc + item.count, 0);
+async function applyAutoCategoryRuleRow(
+  rule: AutoCategoryRule,
+  options?: { onlyUncategorized?: boolean },
+) {
+  const needsReleaseJoin =
+    rule.matchAmountOn === "gross" ||
+    rule.paymentMethods.length > 0 ||
+    rule.amountsExact.length > 0;
+
+  if (!needsReleaseJoin) {
+    const { count } = await db.financialTransaction.updateMany({
+      where: {
+        ...(options?.onlyUncategorized
+          ? { categoryId: null }
+          : { categoryId: { not: rule.categoryId } }),
+        ...(rule.counterpartId != null && { counterpartId: rule.counterpartId }),
+        ...(rule.minAmount != null && {
+          amount: { gte: Number(rule.minAmount) },
+        }),
+        ...(rule.maxAmount != null && {
+          amount: {
+            ...(rule.minAmount != null ? { gte: Number(rule.minAmount) } : {}),
+            lte: Number(rule.maxAmount),
+          },
+        }),
+        ...(rule.commentContains != null && {
+          comment: { contains: rule.commentContains, mode: "insensitive" },
+        }),
+        ...(rule.descriptionContains != null && {
+          description: { contains: rule.descriptionContains, mode: "insensitive" },
+        }),
+        type: rule.type,
+      },
+      data: {
+        categoryId: rule.categoryId,
+      },
+    });
+    return count;
+  }
+
+  const amountSourceExpr =
+    rule.matchAmountOn === "gross"
+      ? "COALESCE(rt.gross_amount, st.transaction_amount, ABS(ft.amount))"
+      : "ABS(ft.amount)";
+
+  const paymentMethodExpr = "COALESCE(rt.payment_method_type, st.payment_method_type)";
+
+  const whereClauses: string[] = [`ft.type = '${rule.type}'`];
+  if (options?.onlyUncategorized) {
+    whereClauses.push("ft.category_id IS NULL");
+  } else {
+    whereClauses.push(`ft.category_id IS DISTINCT FROM ${rule.categoryId}`);
+  }
+  if (rule.counterpartId != null) {
+    whereClauses.push(`ft.counterpart_id = ${rule.counterpartId}`);
+  }
+  if (rule.commentContains != null) {
+    whereClauses.push(
+      `ft.comment ILIKE ${sqlLiteral(`%${rule.commentContains.replace(/[%_]/g, "\\$&")}%`)}`,
+    );
+  }
+  if (rule.descriptionContains != null) {
+    whereClauses.push(
+      `ft.description ILIKE ${sqlLiteral(`%${rule.descriptionContains.replace(/[%_]/g, "\\$&")}%`)}`,
+    );
+  }
+  if (rule.paymentMethods.length > 0) {
+    const values = rule.paymentMethods.map((method) => sqlLiteral(method)).join(", ");
+    whereClauses.push(`${paymentMethodExpr} IN (${values})`);
+  }
+  if (rule.amountsExact.length > 0) {
+    const values = rule.amountsExact
+      .map((value) => Number(value).toFixed(4))
+      .join(", ");
+    whereClauses.push(
+      `EXISTS (SELECT 1 FROM (VALUES (${values})) AS amounts_exact(v) WHERE ABS(${amountSourceExpr} - amounts_exact.v) <= ${AMOUNT_MATCH_EPSILON})`,
+    );
+  } else {
+    if (rule.minAmount != null) {
+      whereClauses.push(`${amountSourceExpr} >= ${Number(rule.minAmount)}`);
+    }
+    if (rule.maxAmount != null) {
+      whereClauses.push(`${amountSourceExpr} <= ${Number(rule.maxAmount)}`);
+    }
+  }
+
+  const sql = `
+    WITH matches AS (
+      SELECT DISTINCT ft.id
+      FROM financial_transactions ft
+      LEFT JOIN release_transactions rt ON rt.source_id = ft.source_id
+      LEFT JOIN settlement_transactions st ON st.source_id = ft.source_id
+      WHERE ${whereClauses.join("\n        AND ")}
+    )
+    UPDATE financial_transactions ft
+    SET category_id = ${rule.categoryId},
+        updated_at = NOW()
+    FROM matches
+    WHERE ft.id = matches.id
+  `;
+
+  const updated = await db.$executeRawUnsafe(sql);
+  return Number(updated);
+}
+
+function sqlLiteral(value: string) {
+  return `'${value.replace(/'/g, "''")}'`;
 }
 
 async function ensurePatientsAutoCategoryRule() {
@@ -558,12 +703,14 @@ async function syncUnifiedTransactions(
   const sourceIds = Array.from(
     new Set(nonCashbackTransactions.map((tx) => tx.sourceId?.trim() ?? "").filter(Boolean)),
   );
-  const [releaseSaleDetails, settlementSaleDetails] =
+  const [releaseRefs, settlementRefs] =
     sourceIds.length > 0
       ? await Promise.all([
           db.releaseTransaction.findMany({
             where: { sourceId: { in: sourceIds } },
             select: {
+              grossAmount: true,
+              paymentMethodType: true,
               saleDetail: true,
               sourceId: true,
             },
@@ -571,19 +718,46 @@ async function syncUnifiedTransactions(
           db.settlementTransaction.findMany({
             where: { sourceId: { in: sourceIds } },
             select: {
+              paymentMethodType: true,
               saleDetail: true,
               sourceId: true,
+              transactionAmount: true,
             },
           }),
         ])
       : [[], []];
   const saleDetailsBySourceId = new Map<string, string[]>();
-  for (const row of [...releaseSaleDetails, ...settlementSaleDetails]) {
+  const grossBySourceId = new Map<string, number>();
+  const paymentMethodTypeBySourceId = new Map<string, string>();
+  for (const row of releaseRefs) {
     const sourceId = row.sourceId.trim();
-    if (!sourceId || !row.saleDetail?.trim()) continue;
-    const bucket = saleDetailsBySourceId.get(sourceId) ?? [];
-    bucket.push(row.saleDetail);
-    saleDetailsBySourceId.set(sourceId, bucket);
+    if (!sourceId) continue;
+    if (row.saleDetail?.trim()) {
+      const bucket = saleDetailsBySourceId.get(sourceId) ?? [];
+      bucket.push(row.saleDetail);
+      saleDetailsBySourceId.set(sourceId, bucket);
+    }
+    if (row.grossAmount != null && !grossBySourceId.has(sourceId)) {
+      grossBySourceId.set(sourceId, Number(row.grossAmount.toString()));
+    }
+    if (row.paymentMethodType?.trim() && !paymentMethodTypeBySourceId.has(sourceId)) {
+      paymentMethodTypeBySourceId.set(sourceId, row.paymentMethodType.trim());
+    }
+  }
+  for (const row of settlementRefs) {
+    const sourceId = row.sourceId.trim();
+    if (!sourceId) continue;
+    if (row.saleDetail?.trim()) {
+      const bucket = saleDetailsBySourceId.get(sourceId) ?? [];
+      bucket.push(row.saleDetail);
+      saleDetailsBySourceId.set(sourceId, bucket);
+    }
+    if (row.transactionAmount != null && !grossBySourceId.has(sourceId)) {
+      grossBySourceId.set(sourceId, Number(row.transactionAmount.toString()));
+    }
+    if (row.paymentMethodType?.trim() && !paymentMethodTypeBySourceId.has(sourceId)) {
+      paymentMethodTypeBySourceId.set(sourceId, row.paymentMethodType.trim());
+    }
   }
   const existingBySourceId =
     sourceIds.length > 0
@@ -636,15 +810,26 @@ async function syncUnifiedTransactions(
         const existing = existingBySourceId.get(tour.sourceId.trim());
         if (existing) {
           const nextCounterpartId = counterpartId ?? existing.counterpartId ?? null;
-          const sourceSaleDetails = existing.sourceId
-            ? (saleDetailsBySourceId.get(existing.sourceId.trim()) ?? [])
+          const existingSourceIdKey = existing.sourceId ? existing.sourceId.trim() : "";
+          const sourceSaleDetails = existingSourceIdKey
+            ? (saleDetailsBySourceId.get(existingSourceIdKey) ?? [])
             : [];
           const nextCategoryId = resolveAutoCategoryId(
-            existing.type,
-            Number(existing.amount),
-            existing.comment,
-            nextCounterpartId,
-            mergeDescriptionWithSaleDetails(existing.description, sourceSaleDetails),
+            {
+              amount: Number(existing.amount),
+              comment: existing.comment,
+              counterpartId: nextCounterpartId,
+              description: mergeDescriptionWithSaleDetails(existing.description, sourceSaleDetails),
+              grossAmount: existingSourceIdKey
+                ? (grossBySourceId.get(existingSourceIdKey) ?? tour.grossAmount ?? null)
+                : (tour.grossAmount ?? null),
+              paymentMethodType: existingSourceIdKey
+                ? (paymentMethodTypeBySourceId.get(existingSourceIdKey) ??
+                  tour.paymentMethodType ??
+                  null)
+                : (tour.paymentMethodType ?? null),
+              type: existing.type,
+            },
             autoCategoryRules,
           );
           const matchesPatients =
@@ -702,11 +887,15 @@ async function syncUnifiedTransactions(
         if (existing) {
           const nextCounterpartId = counterpartId ?? existing.counterpartId ?? null;
           const nextCategoryId = resolveAutoCategoryId(
-            existing.type,
-            Number(existing.amount),
-            existing.comment,
-            nextCounterpartId,
-            existing.description,
+            {
+              amount: Number(existing.amount),
+              comment: existing.comment,
+              counterpartId: nextCounterpartId,
+              description: existing.description,
+              grossAmount: tour.grossAmount ?? null,
+              paymentMethodType: tour.paymentMethodType ?? null,
+              type: existing.type,
+            },
             autoCategoryRules,
           );
           const matchesPatients =
@@ -748,11 +937,15 @@ async function syncUnifiedTransactions(
         ? (saleDetailsBySourceId.get(tour.sourceId.trim()) ?? [])
         : [];
       const categoryId = resolveAutoCategoryId(
-        type,
-        tour.transactionAmount,
-        comment,
-        counterpartId,
-        mergeDescriptionWithSaleDetails(tour.description, sourceSaleDetails),
+        {
+          amount: tour.transactionAmount,
+          comment,
+          counterpartId,
+          description: mergeDescriptionWithSaleDetails(tour.description, sourceSaleDetails),
+          grossAmount: tour.grossAmount ?? null,
+          paymentMethodType: tour.paymentMethodType ?? null,
+          type,
+        },
         autoCategoryRules,
       );
       const isPatientsIncome =
@@ -1456,14 +1649,17 @@ export async function deleteTransactionCategory(id: number) {
 }
 
 type FinancialAutoCategoryRuleInput = {
+  amountsExact?: number[];
   categoryId: number;
   commentContains?: null | string;
   counterpartId?: null | number;
   descriptionContains?: null | string;
   isActive?: boolean;
+  matchAmountOn?: MatchAmountOn;
   maxAmount?: null | number;
   minAmount?: null | number;
   name: string;
+  paymentMethods?: string[];
   priority?: number;
   type: TransactionType;
 };
@@ -1482,13 +1678,17 @@ async function applySingleAutoCategoryRule(ruleId: number) {
   const rule = await db.financialAutoCategoryRule.findUnique({
     where: { id: ruleId },
     select: {
+      amountsExact: true,
       categoryId: true,
       commentContains: true,
       counterpartId: true,
       descriptionContains: true,
       isActive: true,
+      matchAmountOn: true,
       maxAmount: true,
       minAmount: true,
+      paymentMethods: true,
+      priority: true,
       type: true,
     },
   });
@@ -1497,30 +1697,18 @@ async function applySingleAutoCategoryRule(ruleId: number) {
     return;
   }
 
-  await db.financialTransaction.updateMany({
-    where: {
-      categoryId: { not: rule.categoryId },
-      ...(rule.counterpartId != null && { counterpartId: rule.counterpartId }),
-      ...(rule.minAmount != null && {
-        amount: { gte: Number(rule.minAmount) },
-      }),
-      ...(rule.maxAmount != null && {
-        amount: {
-          ...(rule.minAmount != null ? { gte: Number(rule.minAmount) } : {}),
-          lte: Number(rule.maxAmount),
-        },
-      }),
-      ...(rule.commentContains != null && {
-        comment: { contains: rule.commentContains, mode: "insensitive" },
-      }),
-      ...(rule.descriptionContains != null && {
-        description: { contains: rule.descriptionContains, mode: "insensitive" },
-      }),
-      type: rule.type,
-    },
-    data: {
-      categoryId: rule.categoryId,
-    },
+  await applyAutoCategoryRuleRow({
+    amountsExact: asAmountArray(rule.amountsExact),
+    categoryId: rule.categoryId,
+    commentContains: rule.commentContains ?? null,
+    counterpartId: rule.counterpartId ?? null,
+    descriptionContains: rule.descriptionContains ?? null,
+    matchAmountOn: normalizeMatchAmountOn(rule.matchAmountOn),
+    maxAmount: rule.maxAmount != null ? Number(rule.maxAmount) : null,
+    minAmount: rule.minAmount != null ? Number(rule.minAmount) : null,
+    paymentMethods: asStringArray(rule.paymentMethods),
+    priority: rule.priority,
+    type: rule.type,
   });
 }
 
@@ -1660,14 +1848,17 @@ export async function createFinancialAutoCategoryRule(data: FinancialAutoCategor
 
   const created = await db.financialAutoCategoryRule.create({
     data: {
+      amountsExact: (data.amountsExact ?? []).map((value) => new Decimal(value)),
       categoryId: data.categoryId,
       commentContains: data.commentContains ?? null,
       counterpartId: data.counterpartId ?? null,
       descriptionContains: data.descriptionContains ?? null,
       isActive: data.isActive ?? true,
+      matchAmountOn: normalizeMatchAmountOn(data.matchAmountOn),
       maxAmount: data.maxAmount != null ? new Decimal(data.maxAmount) : null,
       minAmount: data.minAmount != null ? new Decimal(data.minAmount) : null,
       name: data.name,
+      paymentMethods: data.paymentMethods ?? [],
       priority: data.priority ?? 0,
       type: data.type,
     },
@@ -1688,15 +1879,18 @@ export async function updateFinancialAutoCategoryRule(
   const existing = await db.financialAutoCategoryRule.findUnique({
     where: { id },
     select: {
+      amountsExact: true,
       categoryId: true,
       commentContains: true,
       counterpartId: true,
       descriptionContains: true,
       id: true,
       isActive: true,
+      matchAmountOn: true,
       maxAmount: true,
       minAmount: true,
       name: true,
+      paymentMethods: true,
       priority: true,
       type: true,
     },
@@ -1711,6 +1905,9 @@ export async function updateFinancialAutoCategoryRule(
   const updated = await db.financialAutoCategoryRule.update({
     where: { id },
     data: {
+      ...(data.amountsExact !== undefined && {
+        amountsExact: data.amountsExact.map((value) => new Decimal(value)),
+      }),
       ...(data.categoryId !== undefined && { categoryId: data.categoryId }),
       ...(data.counterpartId !== undefined && { counterpartId: data.counterpartId }),
       ...(data.commentContains !== undefined && { commentContains: data.commentContains }),
@@ -1718,6 +1915,9 @@ export async function updateFinancialAutoCategoryRule(
         descriptionContains: data.descriptionContains,
       }),
       ...(data.isActive !== undefined && { isActive: data.isActive }),
+      ...(data.matchAmountOn !== undefined && {
+        matchAmountOn: normalizeMatchAmountOn(data.matchAmountOn),
+      }),
       ...(data.maxAmount !== undefined && {
         maxAmount: data.maxAmount != null ? new Decimal(data.maxAmount) : null,
       }),
@@ -1725,6 +1925,7 @@ export async function updateFinancialAutoCategoryRule(
         minAmount: data.minAmount != null ? new Decimal(data.minAmount) : null,
       }),
       ...(data.name !== undefined && { name: data.name }),
+      ...(data.paymentMethods !== undefined && { paymentMethods: data.paymentMethods }),
       ...(data.priority !== undefined && { priority: data.priority }),
       ...(data.type !== undefined && { type: data.type }),
     },
@@ -1762,6 +1963,7 @@ type FinancialAutoCategoryRuleRecord = Awaited<
 
 function mapFinancialAutoCategoryRule(rule: FinancialAutoCategoryRuleRecord) {
   return {
+    amountsExact: asAmountArray(rule.amountsExact),
     category: {
       color: rule.category.color,
       icon: rule.category.icon,
@@ -1782,9 +1984,11 @@ function mapFinancialAutoCategoryRule(rule: FinancialAutoCategoryRuleRecord) {
     descriptionContains: rule.descriptionContains,
     id: rule.id,
     isActive: rule.isActive,
+    matchAmountOn: normalizeMatchAmountOn(rule.matchAmountOn),
     maxAmount: rule.maxAmount != null ? Number(rule.maxAmount) : null,
     minAmount: rule.minAmount != null ? Number(rule.minAmount) : null,
     name: rule.name,
+    paymentMethods: asStringArray(rule.paymentMethods),
     priority: rule.priority,
     type: rule.type,
   };

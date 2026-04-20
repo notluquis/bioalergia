@@ -7386,6 +7386,23 @@ export class SchemaType implements SchemaDef {
                     type: "Decimal",
                     optional: true
                 },
+                amountsExact: {
+                    name: "amountsExact",
+                    type: "Decimal",
+                    array: true,
+                    default: [] as FieldDefault
+                },
+                paymentMethods: {
+                    name: "paymentMethods",
+                    type: "String",
+                    array: true,
+                    default: [] as FieldDefault
+                },
+                matchAmountOn: {
+                    name: "matchAmountOn",
+                    type: "String",
+                    default: "net" as FieldDefault
+                },
                 commentContains: {
                     name: "commentContains",
                     type: "String",
