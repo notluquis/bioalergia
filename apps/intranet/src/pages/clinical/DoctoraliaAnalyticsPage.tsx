@@ -36,7 +36,6 @@ import {
   fetchDoctoraliaEmailStats,
   fetchDoctoraliaSyncLogs,
   triggerDoctoraliaEmailIngest,
-  triggerDoctoraliaSync,
 } from "@/features/doctoralia/api";
 import type {
   DoctoraliaCalendarMerged,
@@ -425,11 +424,31 @@ function MetricPill({
   );
 }
 
+const SYNC_TYPE_LABELS: Record<DoctoraliaSyncLog["syncType"], string> = {
+  CALENDAR: "Calendario",
+  EMAIL: "Email",
+};
+
+function formatCounts(counts: Record<string, number>): string {
+  const entries = Object.entries(counts).filter(([, v]) => typeof v === "number");
+  if (entries.length === 0) return "—";
+  return entries.map(([k, v]) => `${k}: ${numberFormatter.format(v)}`).join(" · ");
+}
+
 const syncLogColumns: ColumnDef<DoctoraliaSyncLog>[] = [
   {
     accessorKey: "startedAt",
     cell: ({ row }) => dayjs(row.original.startedAt).tz().format("DD/MM/YYYY HH:mm"),
     header: "Inicio",
+  },
+  {
+    accessorKey: "syncType",
+    cell: ({ row }) => (
+      <Chip color="default" size="sm" variant="soft">
+        {SYNC_TYPE_LABELS[row.original.syncType]}
+      </Chip>
+    ),
+    header: "Tipo",
   },
   {
     accessorKey: "status",
@@ -456,19 +475,11 @@ const syncLogColumns: ColumnDef<DoctoraliaSyncLog>[] = [
     header: "Origen",
   },
   {
-    accessorKey: "facilitiesSynced",
-    cell: ({ row }) => row.original.facilitiesSynced,
-    header: "Centros",
-  },
-  {
-    accessorKey: "doctorsSynced",
-    cell: ({ row }) => row.original.doctorsSynced,
-    header: "Doctores",
-  },
-  {
-    accessorKey: "bookingsSynced",
-    cell: ({ row }) => row.original.bookingsSynced,
-    header: "Reservas",
+    accessorKey: "counts",
+    cell: ({ row }) => (
+      <span className="text-xs text-default-600">{formatCounts(row.original.counts)}</span>
+    ),
+    header: "Contadores",
   },
   {
     accessorKey: "errorMessage",
@@ -507,15 +518,6 @@ function SyncTabPanel() {
       }
       showSuccess(result.message, "Ingesta completada");
       void queryClient.invalidateQueries({ queryKey: ["doctoralia"] });
-    },
-  });
-
-  const syncMutation = useMutation({
-    mutationFn: triggerDoctoraliaSync,
-    onError: (err: Error) => showError(`Error al sincronizar: ${err.message}`),
-    onSuccess: () => {
-      showSuccess("Sincronización iniciada");
-      void queryClient.invalidateQueries({ queryKey: ["doctoralia", "sync-logs"] });
     },
   });
 
@@ -572,7 +574,7 @@ function SyncTabPanel() {
           <Card.Header className="flex flex-col items-start gap-1">
             <h2 className="font-semibold text-base">Ejecución manual</h2>
             <Description className="text-default-500 text-xs">
-              Fuerza una ingesta IMAP o una sincronización del calendario.
+              Fuerza una ingesta IMAP de emails de Doctoralia.
             </Description>
           </Card.Header>
           <Card.Content className="space-y-2">
@@ -585,16 +587,6 @@ function SyncTabPanel() {
             >
               <RefreshCw className="h-4 w-4" />
               Ingesta de emails
-            </Button>
-            <Button
-              className="w-full"
-              isDisabled={syncMutation.isPending}
-              isPending={syncMutation.isPending}
-              onPress={() => syncMutation.mutate()}
-              variant="secondary"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Sync de calendario
             </Button>
           </Card.Content>
         </Card>

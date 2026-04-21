@@ -7,25 +7,12 @@ import type { Context as HonoContext } from "hono";
 import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import {
-  bookSlot,
-  cancelBooking,
-  getBookings,
-  getSlots,
-} from "../lib/doctoralia/doctoralia-client";
-import { isDoctoraliaConfigured } from "../lib/doctoralia/doctoralia-core";
-import {
   getDoctoraliaImapListenerStatus,
   runDoctoraliaImapIngestOnce,
 } from "../lib/doctoralia/imap-idle";
 import { logError, logEvent } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
-import {
-  createDoctoraliaSyncLogEntry,
-  finalizeDoctoraliaSyncLogEntry,
-  getDoctoraliaDoctorsWithAddresses,
-  getDoctoraliaFacilitiesWithCounts,
-  listDoctoraliaSyncLogs,
-} from "../services/doctoralia";
+import { listDoctoraliaSyncLogs } from "../services/doctoralia";
 import { SuperJSONRPCHandler } from "./superjson";
 
 configureSuperjson();
@@ -35,47 +22,6 @@ type DoctoraliaORPCContext = {
 };
 
 const base = os.$context<DoctoraliaORPCContext>();
-
-const facilityIdSchema = z.object({
-  facilityId: z.number().int().positive(),
-});
-
-const slotsAndBookingsQuerySchema = z.object({
-  addressId: z.string(),
-  doctorId: z.string(),
-  end: z.string(),
-  facilityId: z.string(),
-  start: z.string(),
-});
-
-const bookSlotInputSchema = z.object({
-  addressId: z.string(),
-  body: z.object({
-    comment: z.string().optional(),
-    duration: z.number().min(5).max(480),
-    patient: z.object({
-      birthDate: z.string().optional(),
-      email: z.email(),
-      gender: z.enum(["f", "m"]).optional(),
-      name: z.string().min(1),
-      nin: z.string().optional(),
-      phone: z.string().min(8),
-      surname: z.string().min(1),
-    }),
-    serviceId: z.string().optional(),
-  }),
-  doctorId: z.string(),
-  facilityId: z.string(),
-  slotStart: z.string(),
-});
-
-const cancelBookingInputSchema = z.object({
-  addressId: z.string(),
-  bookingId: z.string(),
-  doctorId: z.string(),
-  facilityId: z.string(),
-  reason: z.string().optional(),
-});
 
 const calendarAppointmentsQuerySchema = z.object({
   from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -199,58 +145,21 @@ const emailNotificationsPatientHistoryResponseSchema = z.object({
   status: z.literal("ok"),
 });
 
-const syncInputSchema = z.object({});
-
-const statusResponseSchema = z.object({
-  configured: z.boolean(),
-  domain: z.string(),
-  status: z.literal("ok"),
-});
-
-const facilitiesResponseSchema = z.object({
-  facilities: z.array(z.unknown()),
-  status: z.literal("ok"),
-});
-
-const doctorsResponseSchema = z.object({
-  doctors: z.array(z.unknown()),
-  status: z.literal("ok"),
-});
-
-const slotsResponseSchema = z.object({
-  slots: z.array(z.unknown()),
-  status: z.literal("ok"),
-});
-
-const bookingsResponseSchema = z.object({
-  bookings: z.array(z.unknown()),
-  pagination: z.object({
-    limit: z.number(),
-    page: z.number(),
-    pages: z.number(),
-    total: z.number(),
-  }),
-  status: z.literal("ok"),
-});
-
-const bookingResponseSchema = z.object({
-  booking: z.unknown(),
-  status: z.literal("ok"),
-});
-
-const okStatusSchema = z.object({
-  status: z.literal("ok"),
-});
-
 const syncLogsResponseSchema = z.object({
-  logs: z.array(z.unknown()),
+  logs: z.array(
+    z.object({
+      id: z.number().int(),
+      syncType: z.enum(["CALENDAR", "EMAIL"]),
+      triggerSource: z.string().nullable(),
+      triggerUserId: z.number().int().nullable(),
+      status: z.string(),
+      startedAt: z.coerce.date(),
+      endedAt: z.coerce.date().nullable(),
+      counts: z.record(z.string(), z.number()),
+      errorMessage: z.string().nullable(),
+    }),
+  ),
   status: z.literal("ok"),
-});
-
-const syncResponseSchema = z.object({
-  logId: z.number().int(),
-  message: z.string(),
-  status: z.literal("accepted"),
 });
 
 const calendarAuthStatusSchema = z.object({
@@ -352,67 +261,24 @@ const authed = base.use(async ({ context, next }) => {
   });
 });
 
-const canReadFacility = authed.use(async ({ context, next }) => {
-  const canRead = await hasPermission(context.user, "read", "DoctoraliaFacility");
+const canReadDoctoraliaCalendar = authed.use(async ({ context, next }) => {
+  const canRead = await hasPermission(context.user, "read", "DoctoraliaCalendarAppointment");
   if (!canRead) {
     throw new ORPCError("FORBIDDEN", { message: "Sin permisos" });
   }
   return next();
 });
 
-const canReadDoctor = authed.use(async ({ context, next }) => {
-  const canRead = await hasPermission(context.user, "read", "DoctoraliaDoctor");
-  if (!canRead) {
-    throw new ORPCError("FORBIDDEN", { message: "Sin permisos" });
-  }
-  return next();
-});
-
-const canManageFacility = authed.use(async ({ context, next }) => {
-  const canUpdate = await hasPermission(context.user, "update", "DoctoraliaFacility");
+const canManageDoctoraliaCalendar = authed.use(async ({ context, next }) => {
+  const canUpdate = await hasPermission(context.user, "update", "DoctoraliaCalendarAppointment");
   if (!canUpdate) {
     throw new ORPCError("FORBIDDEN", { message: "Sin permisos" });
   }
   return next();
 });
 
-const canCreateBooking = authed.use(async ({ context, next }) => {
-  const canCreate = await hasPermission(context.user, "create", "DoctoraliaBooking");
-  if (!canCreate) {
-    throw new ORPCError("FORBIDDEN", { message: "Sin permisos" });
-  }
-  return next();
-});
-
-const canDeleteBooking = authed.use(async ({ context, next }) => {
-  const canDelete = await hasPermission(context.user, "delete", "DoctoraliaBooking");
-  if (!canDelete) {
-    throw new ORPCError("FORBIDDEN", { message: "Sin permisos" });
-  }
-  return next();
-});
-
 const doctoraliaORPCRouterBase = {
-  bookSlot: canCreateBooking
-    .route({ method: "POST", path: "/bookings" })
-    .input(bookSlotInputSchema)
-    .output(bookingResponseSchema)
-    .handler(async ({ input }: { input: z.input<typeof bookSlotInputSchema> }) => {
-      const booking = await bookSlot(
-        input.facilityId,
-        input.doctorId,
-        input.addressId,
-        input.slotStart,
-        input.body,
-      );
-
-      return {
-        booking,
-        status: "ok",
-      };
-    }),
-
-  calendarAppointments: canReadFacility
+  calendarAppointments: canReadDoctoraliaCalendar
     .route({ method: "GET", path: "/calendar/appointments" })
     .input(calendarAppointmentsQuerySchema)
     .output(calendarAppointmentsSchema)
@@ -505,7 +371,7 @@ const doctoraliaORPCRouterBase = {
       };
     }),
 
-  calendarAuthStatus: canManageFacility
+  calendarAuthStatus: canManageDoctoraliaCalendar
     .route({ method: "GET", path: "/calendar/auth/status" })
     .output(calendarAuthStatusSchema)
     .handler(async ({ context }) => {
@@ -527,7 +393,7 @@ const doctoraliaORPCRouterBase = {
       };
     }),
 
-  importCalendarJson: canManageFacility
+  importCalendarJson: canManageDoctoraliaCalendar
     .route({ method: "POST", path: "/calendar/import-json" })
     .input(calendarImportInputSchema)
     .output(calendarImportResponseSchema)
@@ -562,127 +428,21 @@ const doctoraliaORPCRouterBase = {
       };
     }),
 
-  cancelBooking: canDeleteBooking
-    .route({ method: "DELETE", path: "/bookings/{bookingId}" })
-    .input(cancelBookingInputSchema)
-    .output(okStatusSchema)
-    .handler(async ({ input }: { input: z.input<typeof cancelBookingInputSchema> }) => {
-      await cancelBooking(
-        input.facilityId,
-        input.doctorId,
-        input.addressId,
-        input.bookingId,
-        input.reason,
-      );
-
-      return { status: "ok" };
-    }),
-
-  doctors: canReadDoctor
-    .route({ method: "GET", path: "/facilities/{facilityId}/doctors" })
-    .input(facilityIdSchema)
-    .output(doctorsResponseSchema)
-    .handler(async ({ input }: { input: z.input<typeof facilityIdSchema> }) => ({
-      doctors: await getDoctoraliaDoctorsWithAddresses(input.facilityId),
-      status: "ok",
-    })),
-
-  facilities: canReadFacility
-    .route({ method: "GET", path: "/facilities" })
-    .output(facilitiesResponseSchema)
-    .handler(async () => ({
-      facilities: await getDoctoraliaFacilitiesWithCounts(),
-      status: "ok",
-    })),
-
-  bookings: canReadFacility
-    .route({ method: "GET", path: "/bookings" })
-    .input(slotsAndBookingsQuerySchema)
-    .output(bookingsResponseSchema)
-    .handler(async ({ input }: { input: z.input<typeof slotsAndBookingsQuerySchema> }) => {
-      const data = await getBookings(
-        input.facilityId,
-        input.doctorId,
-        input.addressId,
-        input.start,
-        input.end,
-        {
-          withPatient: true,
-        },
-      );
-
-      return {
-        bookings: data._items,
-        pagination: {
-          limit: data.limit,
-          page: data.page,
-          pages: data.pages,
-          total: data.total,
-        },
-        status: "ok",
-      };
-    }),
-
-  slots: canReadFacility
-    .route({ method: "GET", path: "/slots" })
-    .input(slotsAndBookingsQuerySchema)
-    .output(slotsResponseSchema)
-    .handler(async ({ input }: { input: z.input<typeof slotsAndBookingsQuerySchema> }) => ({
-      slots: (
-        await getSlots(input.facilityId, input.doctorId, input.addressId, input.start, input.end)
-      )._items,
-      status: "ok",
-    })),
-
-  status: authed
-    .route({ method: "GET", path: "/status" })
-    .output(statusResponseSchema)
-    .handler(async () => ({
-      configured: isDoctoraliaConfigured(),
-      domain: "doctoralia.cl",
-      status: "ok",
-    })),
-
-  sync: canManageFacility
-    .route({ method: "POST", path: "/sync" })
-    .input(syncInputSchema)
-    .output(syncResponseSchema)
-    .handler(async ({ context }) => {
-      const logId = await createDoctoraliaSyncLogEntry({
-        triggerSource: "manual",
-        triggerUserId: context.user.id,
-      });
-
-      await finalizeDoctoraliaSyncLogEntry(logId, {
-        status: "SUCCESS",
-        facilitiesSynced: 0,
-        doctorsSynced: 0,
-        slotsSynced: 0,
-        bookingsSynced: 0,
-      });
-
-      return {
-        logId,
-        message: "Sincronización iniciada",
-        status: "accepted",
-      };
-    }),
-
   syncLogs: authed
     .route({ method: "GET", path: "/sync/logs" })
     .output(syncLogsResponseSchema)
     .handler(async () => ({
       logs: (await listDoctoraliaSyncLogs(50)).map((log) => ({
         id: log.id,
+        syncType: log.syncType,
         triggerSource: log.triggerSource,
         triggerUserId: log.triggerUserId,
         status: log.status,
         startedAt: log.startedAt,
         endedAt: log.endedAt,
-        facilitiesSynced: log.facilitiesSynced,
-        doctorsSynced: log.doctorsSynced,
-        slotsSynced: log.slotsSynced,
-        bookingsSynced: log.bookingsSynced,
+        counts: (log.counts && typeof log.counts === "object"
+          ? (log.counts as Record<string, number>)
+          : {}),
         errorMessage: log.errorMessage,
       })),
       status: "ok",
@@ -711,7 +471,7 @@ const doctoraliaORPCRouterBase = {
       };
     }),
 
-  calendarMerged: canReadFacility
+  calendarMerged: canReadDoctoraliaCalendar
     .route({ method: "GET", path: "/calendar/merged" })
     .input(calendarMergedQuerySchema)
     .output(calendarMergedResponseSchema)
@@ -763,6 +523,7 @@ const doctoraliaORPCRouterBase = {
             appointmentDate: Date | null;
             appointmentDoctor: string | null;
             appointmentService: string | null;
+            calendarAppointmentId: number | null;
             clinicAddress: string | null;
             createdAt: Date;
             emailMessageId: string;
@@ -776,19 +537,27 @@ const doctoraliaORPCRouterBase = {
         >,
       ]);
 
-      const emailBuckets = new Map<string, typeof emails>();
+      const emailsByAppointmentId = new Map<number, typeof emails>();
+      const fuzzyBuckets = new Map<string, typeof emails>();
       for (const email of emails) {
+        if (email.calendarAppointmentId != null) {
+          const bucket = emailsByAppointmentId.get(email.calendarAppointmentId) ?? [];
+          bucket.push(email);
+          emailsByAppointmentId.set(email.calendarAppointmentId, bucket);
+          continue;
+        }
         if (!email.appointmentDate) continue;
         const key = mergeKey(email.patientName, email.appointmentDate);
-        const bucket = emailBuckets.get(key) ?? [];
+        const bucket = fuzzyBuckets.get(key) ?? [];
         bucket.push(email);
-        emailBuckets.set(key, bucket);
+        fuzzyBuckets.set(key, bucket);
       }
 
       const usedEmailIds = new Set<string>();
       const entries = appointments.map((appointment) => {
-        const key = mergeKey(appointment.title, appointment.startAt);
-        const matched = emailBuckets.get(key) ?? [];
+        const direct = emailsByAppointmentId.get(appointment.id) ?? [];
+        const fuzzy = fuzzyBuckets.get(mergeKey(appointment.title, appointment.startAt)) ?? [];
+        const matched = [...direct, ...fuzzy];
         for (const email of matched) {
           usedEmailIds.add(email.id);
         }
@@ -985,7 +754,7 @@ const doctoraliaORPCRouterBase = {
       };
     }),
 
-  emailNotificationsIngest: canManageFacility
+  emailNotificationsIngest: canManageDoctoraliaCalendar
     .route({ method: "POST", path: "/email-notifications/ingest" })
     .input(z.object({}))
     .output(emailNotificationsIngestResponseSchema)
@@ -1012,7 +781,7 @@ const doctoraliaORPCRouterBase = {
       }
     }),
 
-  scraperCookiesStatus: canManageFacility
+  scraperCookiesStatus: canManageDoctoraliaCalendar
     .route({ method: "GET", path: "/scraper/cookies/status" })
     .output(scraperCookiesStatusSchema)
     .handler(async () => {
@@ -1063,7 +832,7 @@ const doctoraliaORPCRouterBase = {
       };
     }),
 
-  updateScraperCookies: canManageFacility
+  updateScraperCookies: canManageDoctoraliaCalendar
     .route({ method: "POST", path: "/scraper/cookies" })
     .input(updateScraperCookiesInputSchema)
     .output(updateScraperCookiesResponseSchema)

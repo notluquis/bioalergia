@@ -543,7 +543,7 @@ const PERMISSION_MAP: Record<string, { action: string; subject: string }> = {
   counterparts: { action: "create", subject: "Counterpart" },
   daily_balances: { action: "create", subject: "DailyBalance" },
   daily_production_balances: { action: "create", subject: "ProductionBalance" },
-  doctoralia_calendar: { action: "update", subject: "DoctoraliaFacility" },
+  doctoralia_calendar: { action: "update", subject: "DoctoraliaCalendarAppointment" },
   dte_purchases: { action: "create", subject: "DTEPurchaseDetail" },
   dte_sales: { action: "create", subject: "DTESaleDetail" },
   employee_timesheets: { action: "create", subject: "Timesheet" },

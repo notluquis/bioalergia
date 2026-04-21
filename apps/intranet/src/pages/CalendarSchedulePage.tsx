@@ -386,7 +386,7 @@ function CalendarSchedulePage() {
   const source: CalendarSource = (search.source as CalendarSource) ?? "google";
   const isGoogleSource = source === "google";
   const isDoctoraliaSource = source === "doctoralia";
-  const canConnectDoctoralia = can("update", "DoctoraliaFacility");
+  const canConnectDoctoralia = can("update", "DoctoraliaCalendarAppointment");
 
   const { isOpen: filtersOpen, set: setFiltersOpen } = useDisclosure(false);
 

@@ -77,6 +77,40 @@ export interface DoctoraliaImapIngestResult {
   skipped: number;
 }
 
+function normalizePatientNameForMatch(name: string): string {
+  return name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\b(dra?\.?|dr\.?|sra?\.?|sr\.?|srta\.?)\s+/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+async function findMatchingCalendarAppointmentId(
+  patientName: string,
+  appointmentDate: Date,
+): Promise<number | null> {
+  const minute = Math.floor(appointmentDate.getTime() / 60_000);
+  const windowStart = new Date(minute * 60_000 - 60_000);
+  const windowEnd = new Date(minute * 60_000 + 60_000);
+  const target = normalizePatientNameForMatch(patientName);
+
+  const candidates = await db.doctoraliaCalendarAppointment.findMany({
+    where: {
+      startAt: { gte: windowStart, lte: windowEnd },
+    },
+    select: { id: true, startAt: true, title: true },
+  });
+
+  for (const candidate of candidates) {
+    if (normalizePatientNameForMatch(candidate.title) === target) {
+      return candidate.id;
+    }
+  }
+  return null;
+}
+
 interface ProcessMessagesOptions {
   checked: number;
   matchedSenderTermsByUid?: Map<number, Set<string>>;
@@ -481,12 +515,17 @@ async function processFetchedMessages(
 
     const now = new Date().toISOString();
     try {
+      const matchedAppointmentId = booking.appointmentDate
+        ? await findMatchingCalendarAppointmentId(booking.patientName, booking.appointmentDate)
+        : null;
+
       await db.$qb
         .insertInto("DoctoraliaEmailNotification")
         .values({
           appointmentDate: booking.appointmentDate?.toISOString() ?? null,
           appointmentDoctor: booking.appointmentDoctor ?? null,
           appointmentService: booking.appointmentService ?? null,
+          calendarAppointmentId: matchedAppointmentId,
           clinicAddress: booking.clinicAddress ?? null,
           createdAt: now,
           emailMessageId: messageId,

@@ -18,17 +18,10 @@ export * from "./inventory";
 export * from "./integrations";
 export * from "./loans";
 export {
-  bookingResponseSchema as doctoraliaBookingResponseSchema,
-  bookingsResponseSchema as doctoraliaBookingsResponseSchema,
   calendarAppointmentsSchema as doctoraliaCalendarAppointmentsSchema,
   calendarAuthStatusSchema as doctoraliaCalendarAuthStatusSchema,
   doctoraliaContract,
-  doctoraliaDoctorSchema,
-  doctoraliaFacilitySchema,
-  doctorsResponseSchema as doctoraliaDoctorsResponseSchema,
-  facilitiesResponseSchema as doctoraliaFacilitiesResponseSchema,
   syncLogsResponseSchema as doctoraliaSyncLogsResponseSchema,
-  syncResponseSchema as doctoraliaSyncResponseSchema,
   type DoctoraliaContract,
 } from "./doctoralia";
 export {

@@ -389,9 +389,6 @@ export async function applyDoctoraliaAlertUpdates(alerts: DoctoraliaCalendarAler
   return { updated, skipped };
 }
 
-/**
- * Create a sync log entry
- */
 export async function createDoctoraliaSyncLog(data: {
   triggerSource?: string;
   triggerUserId?: number;
@@ -401,24 +398,24 @@ export async function createDoctoraliaSyncLog(data: {
   workPeriodsSynced?: number;
   errorMessage?: string;
 }) {
-  return db.doctoraliaCalendarSyncLog.create({
+  return db.doctoraliaSyncLog.create({
     data: {
+      syncType: "CALENDAR",
       triggerSource: data.triggerSource || null,
       triggerUserId: data.triggerUserId || null,
       status: data.status,
       startedAt: new Date(),
       endedAt: data.status !== "PENDING" ? new Date() : null,
-      schedulesSynced: data.schedulesSynced || 0,
-      appointmentsSynced: data.appointmentsSynced || 0,
-      workPeriodsSynced: data.workPeriodsSynced || 0,
+      counts: {
+        schedulesSynced: data.schedulesSynced || 0,
+        appointmentsSynced: data.appointmentsSynced || 0,
+        workPeriodsSynced: data.workPeriodsSynced || 0,
+      },
       errorMessage: data.errorMessage || null,
     },
   });
 }
 
-/**
- * Update a sync log entry
- */
 export async function updateDoctoraliaSyncLog(
   id: number,
   data: {
@@ -429,14 +426,16 @@ export async function updateDoctoraliaSyncLog(
     errorMessage?: string;
   },
 ) {
-  return db.doctoraliaCalendarSyncLog.update({
+  return db.doctoraliaSyncLog.update({
     where: { id },
     data: {
       status: data.status,
       endedAt: new Date(),
-      schedulesSynced: data.schedulesSynced,
-      appointmentsSynced: data.appointmentsSynced,
-      workPeriodsSynced: data.workPeriodsSynced,
+      counts: {
+        schedulesSynced: data.schedulesSynced || 0,
+        appointmentsSynced: data.appointmentsSynced || 0,
+        workPeriodsSynced: data.workPeriodsSynced || 0,
+      },
       errorMessage: data.errorMessage || null,
     },
   });

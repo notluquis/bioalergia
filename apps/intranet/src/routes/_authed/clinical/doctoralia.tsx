@@ -42,11 +42,11 @@ export const Route = createFileRoute("/_authed/clinical/doctoralia")({
       order: 2,
       section: "Prestaciones",
     },
-    permission: { action: "read", subject: "DoctoraliaFacility" },
+    permission: { action: "read", subject: "DoctoraliaCalendarAppointment" },
     title: "Doctoralia",
   },
   beforeLoad: ({ context }) => {
-    if (!context.can("read", "DoctoraliaFacility")) {
+    if (!context.can("read", "DoctoraliaCalendarAppointment")) {
       // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw routeApi.redirect({ to: "/" });
     }

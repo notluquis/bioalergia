@@ -3709,531 +3709,6 @@ export class SchemaType implements SchemaDef {
                 id: { type: "Int" }
             }
         },
-        DoctoraliaFacility: {
-            name: "DoctoraliaFacility",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    default: ExpressionUtils.call("autoincrement") as FieldDefault
-                },
-                externalId: {
-                    name: "externalId",
-                    type: "String",
-                    unique: true
-                },
-                name: {
-                    name: "name",
-                    type: "String"
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    default: ExpressionUtils.call("now") as FieldDefault
-                },
-                updatedAt: {
-                    name: "updatedAt",
-                    type: "DateTime",
-                    updatedAt: true,
-                    default: ExpressionUtils.call("now") as FieldDefault
-                },
-                doctors: {
-                    name: "doctors",
-                    type: "DoctoraliaDoctor",
-                    array: true,
-                    relation: { opposite: "facility" }
-                }
-            },
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" },
-                externalId: { type: "String" }
-            }
-        },
-        DoctoraliaDoctor: {
-            name: "DoctoraliaDoctor",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    default: ExpressionUtils.call("autoincrement") as FieldDefault
-                },
-                facilityId: {
-                    name: "facilityId",
-                    type: "Int",
-                    foreignKeyFor: [
-                        "facility"
-                    ] as readonly string[]
-                },
-                externalId: {
-                    name: "externalId",
-                    type: "String"
-                },
-                name: {
-                    name: "name",
-                    type: "String"
-                },
-                surname: {
-                    name: "surname",
-                    type: "String"
-                },
-                profileUrl: {
-                    name: "profileUrl",
-                    type: "String",
-                    optional: true
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    default: ExpressionUtils.call("now") as FieldDefault
-                },
-                updatedAt: {
-                    name: "updatedAt",
-                    type: "DateTime",
-                    updatedAt: true,
-                    default: ExpressionUtils.call("now") as FieldDefault
-                },
-                facility: {
-                    name: "facility",
-                    type: "DoctoraliaFacility",
-                    relation: { opposite: "doctors", fields: ["facilityId"], references: ["id"], onDelete: "Cascade" }
-                },
-                addresses: {
-                    name: "addresses",
-                    type: "DoctoraliaAddress",
-                    array: true,
-                    relation: { opposite: "doctor" }
-                }
-            },
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" },
-                facilityId_externalId: { facilityId: { type: "Int" }, externalId: { type: "String" } }
-            }
-        },
-        DoctoraliaAddress: {
-            name: "DoctoraliaAddress",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    default: ExpressionUtils.call("autoincrement") as FieldDefault
-                },
-                doctorId: {
-                    name: "doctorId",
-                    type: "Int",
-                    foreignKeyFor: [
-                        "doctor"
-                    ] as readonly string[]
-                },
-                externalId: {
-                    name: "externalId",
-                    type: "String"
-                },
-                name: {
-                    name: "name",
-                    type: "String",
-                    optional: true
-                },
-                cityName: {
-                    name: "cityName",
-                    type: "String",
-                    optional: true
-                },
-                postCode: {
-                    name: "postCode",
-                    type: "String",
-                    optional: true
-                },
-                street: {
-                    name: "street",
-                    type: "String",
-                    optional: true
-                },
-                onlineOnly: {
-                    name: "onlineOnly",
-                    type: "Boolean",
-                    default: false as FieldDefault
-                },
-                calendarEnabled: {
-                    name: "calendarEnabled",
-                    type: "Boolean",
-                    default: true as FieldDefault
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    default: ExpressionUtils.call("now") as FieldDefault
-                },
-                updatedAt: {
-                    name: "updatedAt",
-                    type: "DateTime",
-                    updatedAt: true,
-                    default: ExpressionUtils.call("now") as FieldDefault
-                },
-                doctor: {
-                    name: "doctor",
-                    type: "DoctoraliaDoctor",
-                    relation: { opposite: "addresses", fields: ["doctorId"], references: ["id"], onDelete: "Cascade" }
-                },
-                services: {
-                    name: "services",
-                    type: "DoctoraliaService",
-                    array: true,
-                    relation: { opposite: "address" }
-                },
-                insuranceProviders: {
-                    name: "insuranceProviders",
-                    type: "DoctoraliaInsuranceProvider",
-                    array: true,
-                    relation: { opposite: "address" }
-                },
-                slots: {
-                    name: "slots",
-                    type: "DoctoraliaSlot",
-                    array: true,
-                    relation: { opposite: "address" }
-                },
-                bookings: {
-                    name: "bookings",
-                    type: "DoctoraliaBooking",
-                    array: true,
-                    relation: { opposite: "address" }
-                },
-                breaks: {
-                    name: "breaks",
-                    type: "DoctoraliaCalendarBreak",
-                    array: true,
-                    relation: { opposite: "address" }
-                }
-            },
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" },
-                doctorId_externalId: { doctorId: { type: "Int" }, externalId: { type: "String" } }
-            }
-        },
-        DoctoraliaService: {
-            name: "DoctoraliaService",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    default: ExpressionUtils.call("autoincrement") as FieldDefault
-                },
-                addressId: {
-                    name: "addressId",
-                    type: "Int",
-                    foreignKeyFor: [
-                        "address"
-                    ] as readonly string[]
-                },
-                externalId: {
-                    name: "externalId",
-                    type: "String"
-                },
-                serviceId: {
-                    name: "serviceId",
-                    type: "String",
-                    optional: true
-                },
-                name: {
-                    name: "name",
-                    type: "String"
-                },
-                price: {
-                    name: "price",
-                    type: "Int",
-                    optional: true
-                },
-                isPriceFrom: {
-                    name: "isPriceFrom",
-                    type: "Boolean",
-                    default: false as FieldDefault
-                },
-                isDefault: {
-                    name: "isDefault",
-                    type: "Boolean",
-                    default: false as FieldDefault
-                },
-                isVisible: {
-                    name: "isVisible",
-                    type: "Boolean",
-                    default: true as FieldDefault
-                },
-                description: {
-                    name: "description",
-                    type: "String",
-                    optional: true
-                },
-                defaultDuration: {
-                    name: "defaultDuration",
-                    type: "Int",
-                    optional: true
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    default: ExpressionUtils.call("now") as FieldDefault
-                },
-                updatedAt: {
-                    name: "updatedAt",
-                    type: "DateTime",
-                    updatedAt: true,
-                    default: ExpressionUtils.call("now") as FieldDefault
-                },
-                address: {
-                    name: "address",
-                    type: "DoctoraliaAddress",
-                    relation: { opposite: "services", fields: ["addressId"], references: ["id"], onDelete: "Cascade" }
-                }
-            },
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" },
-                addressId_externalId: { addressId: { type: "Int" }, externalId: { type: "String" } }
-            }
-        },
-        DoctoraliaInsuranceProvider: {
-            name: "DoctoraliaInsuranceProvider",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    default: ExpressionUtils.call("autoincrement") as FieldDefault
-                },
-                addressId: {
-                    name: "addressId",
-                    type: "Int",
-                    foreignKeyFor: [
-                        "address"
-                    ] as readonly string[]
-                },
-                insuranceProviderId: {
-                    name: "insuranceProviderId",
-                    type: "String"
-                },
-                name: {
-                    name: "name",
-                    type: "String"
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    default: ExpressionUtils.call("now") as FieldDefault
-                },
-                address: {
-                    name: "address",
-                    type: "DoctoraliaAddress",
-                    relation: { opposite: "insuranceProviders", fields: ["addressId"], references: ["id"], onDelete: "Cascade" }
-                }
-            },
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" },
-                addressId_insuranceProviderId: { addressId: { type: "Int" }, insuranceProviderId: { type: "String" } }
-            }
-        },
-        DoctoraliaSlot: {
-            name: "DoctoraliaSlot",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    default: ExpressionUtils.call("autoincrement") as FieldDefault
-                },
-                addressId: {
-                    name: "addressId",
-                    type: "Int",
-                    foreignKeyFor: [
-                        "address"
-                    ] as readonly string[]
-                },
-                startAt: {
-                    name: "startAt",
-                    type: "DateTime"
-                },
-                endAt: {
-                    name: "endAt",
-                    type: "DateTime"
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    default: ExpressionUtils.call("now") as FieldDefault
-                },
-                address: {
-                    name: "address",
-                    type: "DoctoraliaAddress",
-                    relation: { opposite: "slots", fields: ["addressId"], references: ["id"], onDelete: "Cascade" }
-                }
-            },
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" }
-            }
-        },
-        DoctoraliaBooking: {
-            name: "DoctoraliaBooking",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    default: ExpressionUtils.call("autoincrement") as FieldDefault
-                },
-                addressId: {
-                    name: "addressId",
-                    type: "Int",
-                    foreignKeyFor: [
-                        "address"
-                    ] as readonly string[]
-                },
-                externalId: {
-                    name: "externalId",
-                    type: "String"
-                },
-                status: {
-                    name: "status",
-                    type: "String",
-                    default: "booked" as FieldDefault
-                },
-                startAt: {
-                    name: "startAt",
-                    type: "DateTime"
-                },
-                endAt: {
-                    name: "endAt",
-                    type: "DateTime"
-                },
-                duration: {
-                    name: "duration",
-                    type: "Int"
-                },
-                bookedBy: {
-                    name: "bookedBy",
-                    type: "String",
-                    optional: true
-                },
-                bookedAt: {
-                    name: "bookedAt",
-                    type: "DateTime",
-                    optional: true
-                },
-                canceledBy: {
-                    name: "canceledBy",
-                    type: "String",
-                    optional: true
-                },
-                canceledAt: {
-                    name: "canceledAt",
-                    type: "DateTime",
-                    optional: true
-                },
-                patientName: {
-                    name: "patientName",
-                    type: "String",
-                    optional: true
-                },
-                patientSurname: {
-                    name: "patientSurname",
-                    type: "String",
-                    optional: true
-                },
-                patientEmail: {
-                    name: "patientEmail",
-                    type: "String",
-                    optional: true
-                },
-                patientPhone: {
-                    name: "patientPhone",
-                    type: "String",
-                    optional: true
-                },
-                comment: {
-                    name: "comment",
-                    type: "String",
-                    optional: true
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    default: ExpressionUtils.call("now") as FieldDefault
-                },
-                updatedAt: {
-                    name: "updatedAt",
-                    type: "DateTime",
-                    updatedAt: true,
-                    default: ExpressionUtils.call("now") as FieldDefault
-                },
-                address: {
-                    name: "address",
-                    type: "DoctoraliaAddress",
-                    relation: { opposite: "bookings", fields: ["addressId"], references: ["id"], onDelete: "Cascade" }
-                }
-            },
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" },
-                addressId_externalId: { addressId: { type: "Int" }, externalId: { type: "String" } }
-            }
-        },
-        DoctoraliaCalendarBreak: {
-            name: "DoctoraliaCalendarBreak",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    default: ExpressionUtils.call("autoincrement") as FieldDefault
-                },
-                addressId: {
-                    name: "addressId",
-                    type: "Int",
-                    foreignKeyFor: [
-                        "address"
-                    ] as readonly string[]
-                },
-                externalId: {
-                    name: "externalId",
-                    type: "String"
-                },
-                since: {
-                    name: "since",
-                    type: "DateTime"
-                },
-                till: {
-                    name: "till",
-                    type: "DateTime"
-                },
-                description: {
-                    name: "description",
-                    type: "String",
-                    optional: true
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    default: ExpressionUtils.call("now") as FieldDefault
-                },
-                address: {
-                    name: "address",
-                    type: "DoctoraliaAddress",
-                    relation: { opposite: "breaks", fields: ["addressId"], references: ["id"], onDelete: "Cascade" }
-                }
-            },
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" },
-                addressId_externalId: { addressId: { type: "Int" }, externalId: { type: "String" } }
-            }
-        },
         DoctoraliaSyncLog: {
             name: "DoctoraliaSyncLog",
             fields: {
@@ -4242,6 +3717,11 @@ export class SchemaType implements SchemaDef {
                     type: "Int",
                     id: true,
                     default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                syncType: {
+                    name: "syncType",
+                    type: "DoctoraliaSyncType",
+                    default: "CALENDAR" as FieldDefault
                 },
                 triggerSource: {
                     name: "triggerSource",
@@ -4268,25 +3748,10 @@ export class SchemaType implements SchemaDef {
                     type: "DateTime",
                     optional: true
                 },
-                facilitiesSynced: {
-                    name: "facilitiesSynced",
-                    type: "Int",
-                    default: 0 as FieldDefault
-                },
-                doctorsSynced: {
-                    name: "doctorsSynced",
-                    type: "Int",
-                    default: 0 as FieldDefault
-                },
-                slotsSynced: {
-                    name: "slotsSynced",
-                    type: "Int",
-                    default: 0 as FieldDefault
-                },
-                bookingsSynced: {
-                    name: "bookingsSynced",
-                    type: "Int",
-                    default: 0 as FieldDefault
+                counts: {
+                    name: "counts",
+                    type: "Json",
+                    default: "{}" as FieldDefault
                 },
                 errorMessage: {
                     name: "errorMessage",
@@ -4608,6 +4073,12 @@ export class SchemaType implements SchemaDef {
                     name: "schedule",
                     type: "DoctoraliaSchedule",
                     relation: { opposite: "appointments", fields: ["scheduleId"], references: ["id"], onDelete: "Cascade" }
+                },
+                emailNotifications: {
+                    name: "emailNotifications",
+                    type: "DoctoraliaEmailNotification",
+                    array: true,
+                    relation: { opposite: "calendarAppointment" }
                 }
             },
             idFields: ["id"],
@@ -4655,66 +4126,6 @@ export class SchemaType implements SchemaDef {
                     name: "schedule",
                     type: "DoctoraliaSchedule",
                     relation: { opposite: "workPeriods", fields: ["scheduleId"], references: ["id"], onDelete: "Cascade" }
-                }
-            },
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" }
-            }
-        },
-        DoctoraliaCalendarSyncLog: {
-            name: "DoctoraliaCalendarSyncLog",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    default: ExpressionUtils.call("autoincrement") as FieldDefault
-                },
-                triggerSource: {
-                    name: "triggerSource",
-                    type: "String",
-                    optional: true
-                },
-                triggerUserId: {
-                    name: "triggerUserId",
-                    type: "Int",
-                    optional: true
-                },
-                status: {
-                    name: "status",
-                    type: "String",
-                    default: "PENDING" as FieldDefault
-                },
-                startedAt: {
-                    name: "startedAt",
-                    type: "DateTime",
-                    default: ExpressionUtils.call("now") as FieldDefault
-                },
-                endedAt: {
-                    name: "endedAt",
-                    type: "DateTime",
-                    optional: true
-                },
-                schedulesSynced: {
-                    name: "schedulesSynced",
-                    type: "Int",
-                    default: 0 as FieldDefault
-                },
-                appointmentsSynced: {
-                    name: "appointmentsSynced",
-                    type: "Int",
-                    default: 0 as FieldDefault
-                },
-                workPeriodsSynced: {
-                    name: "workPeriodsSynced",
-                    type: "Int",
-                    default: 0 as FieldDefault
-                },
-                errorMessage: {
-                    name: "errorMessage",
-                    type: "String",
-                    optional: true
                 }
             },
             idFields: ["id"],
@@ -4849,6 +4260,14 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true
                 },
+                calendarAppointmentId: {
+                    name: "calendarAppointmentId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "calendarAppointment"
+                    ] as readonly string[]
+                },
                 createdAt: {
                     name: "createdAt",
                     type: "DateTime",
@@ -4859,6 +4278,12 @@ export class SchemaType implements SchemaDef {
                     type: "DateTime",
                     updatedAt: true,
                     default: ExpressionUtils.call("now") as FieldDefault
+                },
+                calendarAppointment: {
+                    name: "calendarAppointment",
+                    type: "DoctoraliaCalendarAppointment",
+                    optional: true,
+                    relation: { opposite: "emailNotifications", fields: ["calendarAppointmentId"], references: ["id"], onDelete: "SetNull" }
                 }
             },
             idFields: ["id"],
@@ -7898,6 +7323,13 @@ export class SchemaType implements SchemaDef {
         }
     } as const;
     enums = {
+        DoctoraliaSyncType: {
+            name: "DoctoraliaSyncType",
+            values: {
+                CALENDAR: "CALENDAR",
+                EMAIL: "EMAIL"
+            }
+        },
         DoctoraliaEmailEventType: {
             name: "DoctoraliaEmailEventType",
             values: {
