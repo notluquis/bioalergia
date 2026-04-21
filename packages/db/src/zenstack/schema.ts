@@ -4554,14 +4554,14 @@ export class SchemaType implements SchemaDef {
                 startedAt: {
                     name: "startedAt",
                     type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("started_at") }] }] as readonly AttributeApplication[],
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("started_at") }] }, { name: "@db.Timestamptz", args: [{ name: "x", value: ExpressionUtils.literal(3) }] }] as readonly AttributeApplication[],
                     default: ExpressionUtils.call("now") as FieldDefault
                 },
                 endedAt: {
                     name: "endedAt",
                     type: "DateTime",
                     optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("ended_at") }] }] as readonly AttributeApplication[]
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("ended_at") }] }, { name: "@db.Timestamptz", args: [{ name: "x", value: ExpressionUtils.literal(3) }] }] as readonly AttributeApplication[]
                 },
                 counts: {
                     name: "counts",
@@ -4676,14 +4676,14 @@ export class SchemaType implements SchemaDef {
                 createdAt: {
                     name: "createdAt",
                     type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }, { name: "@db.Timestamptz", args: [{ name: "x", value: ExpressionUtils.literal(3) }] }] as readonly AttributeApplication[],
                     default: ExpressionUtils.call("now") as FieldDefault
                 },
                 updatedAt: {
                     name: "updatedAt",
                     type: "DateTime",
                     updatedAt: true,
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[],
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }, { name: "@db.Timestamptz", args: [{ name: "x", value: ExpressionUtils.literal(3) }] }] as readonly AttributeApplication[],
                     default: ExpressionUtils.call("now") as FieldDefault
                 },
                 appointments: {
@@ -4743,12 +4743,12 @@ export class SchemaType implements SchemaDef {
                 startAt: {
                     name: "startAt",
                     type: "DateTime",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("start_at") }] }] as readonly AttributeApplication[]
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("start_at") }] }, { name: "@db.Timestamptz", args: [{ name: "x", value: ExpressionUtils.literal(3) }] }] as readonly AttributeApplication[]
                 },
                 endAt: {
                     name: "endAt",
                     type: "DateTime",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("end_at") }] }] as readonly AttributeApplication[]
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("end_at") }] }, { name: "@db.Timestamptz", args: [{ name: "x", value: ExpressionUtils.literal(3) }] }] as readonly AttributeApplication[]
                 },
                 isBlock: {
                     name: "isBlock",
@@ -4869,7 +4869,7 @@ export class SchemaType implements SchemaDef {
                     name: "patientArrivalTime",
                     type: "DateTime",
                     optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_arrival_time") }] }] as readonly AttributeApplication[]
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_arrival_time") }] }, { name: "@db.Timestamptz", args: [{ name: "x", value: ExpressionUtils.literal(3) }] }] as readonly AttributeApplication[]
                 },
                 isPatientFirstTime: {
                     name: "isPatientFirstTime",
@@ -4943,14 +4943,14 @@ export class SchemaType implements SchemaDef {
                 createdAt: {
                     name: "createdAt",
                     type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }, { name: "@db.Timestamptz", args: [{ name: "x", value: ExpressionUtils.literal(3) }] }] as readonly AttributeApplication[],
                     default: ExpressionUtils.call("now") as FieldDefault
                 },
                 updatedAt: {
                     name: "updatedAt",
                     type: "DateTime",
                     updatedAt: true,
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[],
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }, { name: "@db.Timestamptz", args: [{ name: "x", value: ExpressionUtils.literal(3) }] }] as readonly AttributeApplication[],
                     default: ExpressionUtils.call("now") as FieldDefault
                 },
                 schedule: {
@@ -5004,12 +5004,12 @@ export class SchemaType implements SchemaDef {
                 startAt: {
                     name: "startAt",
                     type: "DateTime",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("start_at") }] }] as readonly AttributeApplication[]
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("start_at") }] }, { name: "@db.Timestamptz", args: [{ name: "x", value: ExpressionUtils.literal(3) }] }] as readonly AttributeApplication[]
                 },
                 endAt: {
                     name: "endAt",
                     type: "DateTime",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("end_at") }] }] as readonly AttributeApplication[]
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("end_at") }] }, { name: "@db.Timestamptz", args: [{ name: "x", value: ExpressionUtils.literal(3) }] }] as readonly AttributeApplication[]
                 },
                 isPrivate: {
                     name: "isPrivate",
@@ -5020,7 +5020,7 @@ export class SchemaType implements SchemaDef {
                 createdAt: {
                     name: "createdAt",
                     type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }, { name: "@db.Timestamptz", args: [{ name: "x", value: ExpressionUtils.literal(3) }] }] as readonly AttributeApplication[],
                     default: ExpressionUtils.call("now") as FieldDefault
                 },
                 schedule: {
@@ -5177,13 +5177,13 @@ export class SchemaType implements SchemaDef {
                     name: "appointmentDate",
                     type: "DateTime",
                     optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("appointment_date") }] }] as readonly AttributeApplication[]
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("appointment_date") }] }, { name: "@db.Timestamptz", args: [{ name: "x", value: ExpressionUtils.literal(3) }] }] as readonly AttributeApplication[]
                 },
                 previousAppointmentDate: {
                     name: "previousAppointmentDate",
                     type: "DateTime",
                     optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("previous_appointment_date") }] }] as readonly AttributeApplication[]
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("previous_appointment_date") }] }, { name: "@db.Timestamptz", args: [{ name: "x", value: ExpressionUtils.literal(3) }] }] as readonly AttributeApplication[]
                 },
                 appointmentService: {
                     name: "appointmentService",
@@ -5215,14 +5215,14 @@ export class SchemaType implements SchemaDef {
                 createdAt: {
                     name: "createdAt",
                     type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }, { name: "@db.Timestamptz", args: [{ name: "x", value: ExpressionUtils.literal(3) }] }] as readonly AttributeApplication[],
                     default: ExpressionUtils.call("now") as FieldDefault
                 },
                 updatedAt: {
                     name: "updatedAt",
                     type: "DateTime",
                     updatedAt: true,
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[],
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }, { name: "@db.Timestamptz", args: [{ name: "x", value: ExpressionUtils.literal(3) }] }] as readonly AttributeApplication[],
                     default: ExpressionUtils.call("now") as FieldDefault
                 },
                 calendarAppointment: {

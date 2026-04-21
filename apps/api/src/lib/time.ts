@@ -55,6 +55,28 @@ export function parseChileDateOnly(value: string): Date | null {
 }
 
 /**
+ * Build a Date from Chile wall-clock components. Use this whenever you have
+ * year/month/day/hour/minute values that represent a moment in America/Santiago
+ * local time — never `new Date(y, m, d, h, min)`, which interprets the
+ * components in the Node runtime's timezone (UTC on Railway) and silently
+ * shifts the result by the Chile↔runtime offset.
+ *
+ * `month` is 0-indexed (matches the JS `Date` convention).
+ */
+export function buildChileDate(
+  year: number,
+  month: number,
+  day: number,
+  hour: number,
+  minute: number,
+  second = 0,
+): Date {
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  const iso = `${year}-${pad(month + 1)}-${pad(day)}T${pad(hour)}:${pad(minute)}:${pad(second)}`;
+  return dayjs.tz(iso, TIMEZONE).toDate();
+}
+
+/**
  * Parse an arbitrary date string as Chile local time when no timezone designator is present.
  * If the string already carries a `Z`/offset, honor that offset.
  */

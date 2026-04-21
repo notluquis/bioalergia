@@ -14,6 +14,16 @@ import { schema } from "./zenstack/schema.js";
 types.setTypeParser(1700, (val) => Number.parseFloat(val)); // NUMERIC → number
 types.setTypeParser(20, (val) => Number.parseInt(val, 10)); // BIGINT → number
 
+// Force `timestamp without time zone` (OID 1114) to be interpreted as UTC
+// instead of the Node runtime's local timezone. Default pg behaviour shifts
+// the value by the runtime offset, which produces different Date instants for
+// the same column depending on where the process runs (Railway = UTC, dev
+// machines = local). Pinning to UTC makes reads deterministic across
+// environments. Columns that should represent a true moment in time should
+// still be migrated to TIMESTAMPTZ (OID 1184) — this is the safety net for
+// legacy columns that remain as plain timestamps.
+types.setTypeParser(1114, (val) => new Date(val + "Z"));
+
 // Helper for safe environment access (Deno compatibility)
 const getEnv = (key: string): string | undefined => {
   try {

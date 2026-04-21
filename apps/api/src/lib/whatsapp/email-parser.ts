@@ -10,6 +10,7 @@
  *  - Old (2025):  charset=iso-8859-1, sender @doctoralia.com, 24h time or range
  */
 
+import { buildChileDate } from "../time";
 import { normalizePhone } from "./jid";
 
 export type DoctoraliaEmailEventType = "BOOKING" | "MODIFICATION" | "CANCELLATION";
@@ -160,7 +161,7 @@ function parseDateLine(line: string): Date | null {
   let h = hours;
   if (ampm === "pm" && h < 12) h += 12;
   if (ampm === "am" && h === 12) h = 0;
-  return new Date(year, month, day, h, minutes);
+  return buildChileDate(year, month, day, h, minutes);
 }
 
 /**

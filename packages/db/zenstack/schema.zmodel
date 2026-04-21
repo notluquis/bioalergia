@@ -1194,8 +1194,8 @@ model DoctoraliaSyncLog {
   triggerSource  String?               @map("trigger_source")
   triggerUserId  Int?                  @map("trigger_user_id")
   status         String                @default("PENDING")
-  startedAt      DateTime              @default(now()) @map("started_at")
-  endedAt        DateTime?             @map("ended_at")
+  startedAt      DateTime              @default(now()) @map("started_at") @db.Timestamptz(3)
+  endedAt        DateTime?             @map("ended_at") @db.Timestamptz(3)
   counts         Json                  @default("{}")
   errorMessage   String?               @map("error_message")
 
@@ -1231,8 +1231,8 @@ model DoctoraliaSchedule {
   colorSchemaId            Int?                            @map("color_schema_id")
   isVirtual                Boolean                         @default(false) @map("is_virtual")
   patientsNotificationType Int                             @default(1) @map("patients_notification_type")
-  createdAt                DateTime                        @default(now()) @map("created_at")
-  updatedAt                DateTime                        @default(now()) @updatedAt @map("updated_at")
+  createdAt                DateTime                        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                DateTime                        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
   appointments             DoctoraliaCalendarAppointment[]
   workPeriods              DoctoraliaWorkPeriod[]
 
@@ -1249,8 +1249,8 @@ model DoctoraliaCalendarAppointment {
   scheduleId                 Int                @map("schedule_id")
   externalId                 Int                @unique @map("external_id")
   title                      String
-  startAt                    DateTime           @map("start_at")
-  endAt                      DateTime           @map("end_at")
+  startAt                    DateTime           @map("start_at") @db.Timestamptz(3)
+  endAt                      DateTime           @map("end_at") @db.Timestamptz(3)
   isBlock                    Boolean            @default(false) @map("is_block")
   eventType                  Int                @map("event_type")
   scheduledBy                Int                @map("scheduled_by")
@@ -1272,7 +1272,7 @@ model DoctoraliaCalendarAppointment {
   patientPhone               String?            @map("patient_phone")
   patientEmail               String?            @map("patient_email")
   patientBirthDate           DateTime?          @map("patient_birth_date")
-  patientArrivalTime         DateTime?          @map("patient_arrival_time")
+  patientArrivalTime         DateTime?          @map("patient_arrival_time") @db.Timestamptz(3)
   isPatientFirstTime         Boolean            @default(false) @map("is_patient_first_time")
   isPatientFirstAdminBooking Boolean            @default(false) @map("is_patient_first_admin_booking")
   isBookedViaSecretaryAi     Boolean            @default(false) @map("is_booked_via_secretary_ai")
@@ -1285,8 +1285,8 @@ model DoctoraliaCalendarAppointment {
   duration                   Int
   canNotifyPatient           Boolean            @map("can_notify_patient")
   noShowProtection           Boolean            @default(false) @map("no_show_protection")
-  createdAt                  DateTime                     @default(now()) @map("created_at")
-  updatedAt                  DateTime                     @default(now()) @updatedAt @map("updated_at")
+  createdAt                  DateTime                     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                  DateTime                     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
   schedule                   DoctoraliaSchedule           @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
   emailNotifications         DoctoraliaEmailNotification[]
 
@@ -1304,10 +1304,10 @@ model DoctoraliaCalendarAppointment {
 model DoctoraliaWorkPeriod {
   id         Int                @id @default(autoincrement())
   scheduleId Int                @map("schedule_id")
-  startAt    DateTime           @map("start_at")
-  endAt      DateTime           @map("end_at")
+  startAt    DateTime           @map("start_at") @db.Timestamptz(3)
+  endAt      DateTime           @map("end_at") @db.Timestamptz(3)
   isPrivate  Boolean            @default(false) @map("is_private")
-  createdAt  DateTime           @default(now()) @map("created_at")
+  createdAt  DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
   schedule   DoctoraliaSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
 
   @@index([scheduleId])
@@ -1359,14 +1359,14 @@ model DoctoraliaEmailNotification {
   patientName             String                         @map("patient_name")
   patientPhone            String?                        @map("patient_phone")
   patientEmail            String?                        @map("patient_email")
-  appointmentDate         DateTime?                      @map("appointment_date")
-  previousAppointmentDate DateTime?                      @map("previous_appointment_date")
+  appointmentDate         DateTime?                      @map("appointment_date") @db.Timestamptz(3)
+  previousAppointmentDate DateTime?                      @map("previous_appointment_date") @db.Timestamptz(3)
   appointmentService      String?                        @map("appointment_service")
   appointmentDoctor       String?                        @map("appointment_doctor")
   clinicAddress           String?                        @map("clinic_address")
   calendarAppointmentId   Int?                           @map("calendar_appointment_id")
-  createdAt               DateTime                       @default(now()) @map("created_at")
-  updatedAt               DateTime                       @default(now()) @updatedAt @map("updated_at")
+  createdAt               DateTime                       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt               DateTime                       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
   calendarAppointment     DoctoraliaCalendarAppointment? @relation(fields: [calendarAppointmentId], references: [id], onDelete: SetNull)
 
   @@index([createdAt(sort: Desc)])

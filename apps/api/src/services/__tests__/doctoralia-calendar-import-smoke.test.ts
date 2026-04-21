@@ -9,7 +9,7 @@ const mockUpsertWorkPeriods = vi.fn();
 
 vi.mock("../../lib/doctoralia/doctoralia-calendar-store", () => ({
   applyDoctoraliaAlertUpdates: vi.fn(),
-  createDoctoraliaSyncLog: vi.fn(),
+  createDoctoraliaSyncLog: vi.fn(async () => ({ id: 1 })),
   updateDoctoraliaSyncLog: vi.fn(),
   upsertDoctoraliaAppointments: (...args: unknown[]) => mockUpsertAppointments(...args),
   upsertDoctoraliaSchedules: (...args: unknown[]) => mockUpsertSchedules(...args),
