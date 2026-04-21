@@ -10,7 +10,6 @@ export function ContactSection() {
 
   const handleEmailClick = (email: string) => {
     posthog?.capture("email_click", { email, location: "contact_section" });
-    window.location.href = `mailto:${email}`;
   };
 
   const handleDoctoraliaClick = () => {
@@ -40,13 +39,13 @@ export function ContactSection() {
             <div className="text-(--ink-muted) text-xs uppercase tracking-[0.28em]">
               Contacto directo
             </div>
-            <button
-              type="button"
+            <Link
               className="cursor-pointer break-all text-left font-semibold text-xl no-underline hover:underline sm:text-2xl"
+              href={`mailto:${contactInfo.email}`}
               onClick={() => handleEmailClick(contactInfo.email)}
             >
               {contactInfo.email}
-            </button>
+            </Link>
             <div className="flex flex-wrap gap-3 text-(--ink-muted) text-sm sm:text-base">
               {contactInfo.phones.map((phone) => (
                 <Link

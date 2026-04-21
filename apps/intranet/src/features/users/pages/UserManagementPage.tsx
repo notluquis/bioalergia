@@ -17,6 +17,7 @@ import { Copy, Key, Shield, UserCog, UserPlus } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { useAuth } from "@/context/AuthContext";
+import { useConfirmDialog } from "@/context/ConfirmDialogContext";
 import { useToast } from "@/context/ToastContext";
 import { fetchRoles } from "@/features/roles/api";
 import {
@@ -68,6 +69,7 @@ function filterUsersByRole(users: User[], roleFilter: string) {
 }
 
 function useUserManagementActions(params: {
+  confirmAction: ReturnType<typeof useConfirmDialog>;
   deleteUser: (id: number) => Promise<unknown>;
   editingUser: null | User;
   errorToast: (message: string) => void;
@@ -94,7 +96,17 @@ function useUserManagementActions(params: {
 
   const handleDeletePasskey = useCallback(
     async (id: number) => {
-      if (!confirm("¿Eliminar Passkey?")) {
+      const confirmed = await params.confirmAction({
+        confirmLabel: "Eliminar passkey",
+        confirmVariant: "danger",
+        description:
+          "La passkey del usuario se eliminará y dejará de estar disponible para acceso.",
+        isDismissable: true,
+        isKeyboardDismissDisabled: false,
+        status: "danger",
+        title: "Eliminar passkey",
+      });
+      if (!confirmed) {
         return;
       }
       try {
@@ -110,7 +122,16 @@ function useUserManagementActions(params: {
 
   const handleDeleteUser = useCallback(
     async (id: number) => {
-      if (!confirm("¿Eliminar usuario permanentemente?")) {
+      const confirmed = await params.confirmAction({
+        confirmLabel: "Eliminar usuario",
+        confirmVariant: "danger",
+        description: "El usuario se eliminará permanentemente. Esta acción no se puede deshacer.",
+        isDismissable: true,
+        isKeyboardDismissDisabled: false,
+        status: "danger",
+        title: "Eliminar usuario",
+      });
+      if (!confirmed) {
         return;
       }
       try {
@@ -133,7 +154,14 @@ function useUserManagementActions(params: {
 
   const handleResetPassword = useCallback(
     async (id: number) => {
-      if (!confirm("¿Restablecer contraseña? Esto generará una clave temporal.")) {
+      const confirmed = await params.confirmAction({
+        confirmLabel: "Restablecer contraseña",
+        description: "Esto generará una clave temporal para el usuario seleccionado.",
+        isDismissable: true,
+        isKeyboardDismissDisabled: false,
+        title: "Restablecer contraseña",
+      });
+      if (!confirmed) {
         return;
       }
       try {
@@ -154,7 +182,14 @@ function useUserManagementActions(params: {
   const handleToggleMfa = useCallback(
     async (id: number, current: boolean) => {
       const action = current ? "desactivar" : "activar";
-      if (!confirm(`¿Estás seguro de ${action} MFA para este usuario?`)) {
+      const confirmed = await params.confirmAction({
+        confirmLabel: current ? "Desactivar MFA" : "Activar MFA",
+        description: `¿Estás seguro de ${action} MFA para este usuario?`,
+        isDismissable: true,
+        isKeyboardDismissDisabled: false,
+        title: `${current ? "Desactivar" : "Activar"} MFA`,
+      });
+      if (!confirmed) {
         return;
       }
       try {
@@ -177,7 +212,19 @@ function useUserManagementActions(params: {
         SUSPENDED: "¿Suspender acceso?",
       };
 
-      if (!confirm(prompts[nextStatus])) {
+      const confirmed = await params.confirmAction({
+        confirmLabel:
+          nextStatus === "ACTIVE"
+            ? "Activar"
+            : nextStatus === "PENDING_SETUP"
+              ? "Enviar a onboarding"
+              : "Suspender",
+        description: prompts[nextStatus],
+        isDismissable: true,
+        isKeyboardDismissDisabled: false,
+        title: "Confirmar cambio de estado",
+      });
+      if (!confirmed) {
         return;
       }
 
@@ -244,6 +291,7 @@ function useUserManagementActions(params: {
 export function UserManagementPage() {
   const { can } = useAuth(); // Keep context mounted
   const { error, success } = useToast();
+  const confirm = useConfirmDialog();
   const queryClient = useQueryClient();
   const [roleFilter, setRoleFilter] = useState<string>("ALL");
 
@@ -317,6 +365,7 @@ export function UserManagementPage() {
   );
 
   const { actions, handleSaveRole } = useUserManagementActions({
+    confirmAction: confirm,
     deleteUser: deleteUserAction,
     editingUser,
     errorToast: error,

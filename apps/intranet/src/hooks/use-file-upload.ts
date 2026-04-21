@@ -1,6 +1,7 @@
 import { type QueryKey, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
+import { useConfirmDialog } from "@/context/ConfirmDialogContext";
 import { type UploadResult, uploadFiles } from "@/lib/api-client";
 import { logger } from "@/lib/logger";
 
@@ -29,6 +30,7 @@ export function useFileUpload({
   const [error, setError] = useState<null | string>(null);
   const [results, setResults] = useState<UploadResult[]>([]);
   const queryClient = useQueryClient();
+  const confirm = useConfirmDialog();
 
   const uploadMutation = useMutation<UploadResult[], Error, File[]>({
     mutationFn: async (selectedFiles) => {
@@ -105,9 +107,14 @@ export function useFileUpload({
         )
         .join("\n");
 
-      return globalThis.confirm(
-        `Advertencia: algunos archivos no contienen todas las columnas esperadas.\n\n${message}\n\n¿Deseas continuar igualmente?`
-      );
+      return confirm({
+        confirmLabel: "Continuar",
+        confirmVariant: "primary",
+        description: `Algunos archivos no contienen todas las columnas esperadas.\n\n${message}\n\n¿Deseas continuar igualmente?`,
+        isDismissable: true,
+        isKeyboardDismissDisabled: false,
+        title: "Advertencia de validación",
+      });
     };
 
     const canContinue = await validateSelectedFiles();

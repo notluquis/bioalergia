@@ -2,15 +2,15 @@ import {
   Button,
   Chip,
   Dropdown,
-  InputGroup,
   ListBox,
+  SearchField,
   Select,
   Skeleton,
   Surface,
-  TextField,
 } from "@heroui/react";
-import { Check, Phone, Search, Trash2, UserPlus } from "lucide-react";
+import { Check, Phone, Trash2, UserPlus } from "lucide-react";
 import { useState } from "react";
+import { useConfirmDialog } from "@/context/ConfirmDialogContext";
 import { useToast } from "@/context/ToastContext";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { formatRut } from "@/lib/rut";
@@ -34,6 +34,7 @@ interface CampaignRecipientsPanelProps {
 
 export function CampaignRecipientsPanel({ campaign }: Readonly<CampaignRecipientsPanelProps>) {
   const toast = useToast();
+  const confirm = useConfirmDialog();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"" | PatientCampaignRecipientStatus>("");
   const { isOpen: addOpen, open: openAdd, close: closeAdd } = useDisclosure();
@@ -59,7 +60,16 @@ export function CampaignRecipientsPanel({ campaign }: Readonly<CampaignRecipient
   };
 
   const handleDelete = async (recipientId: number, name: null | string) => {
-    if (!window.confirm(`¿Eliminar destinatario${name ? ` "${name}"` : ""}?`)) return;
+    const confirmed = await confirm({
+      confirmLabel: "Eliminar destinatario",
+      confirmVariant: "danger",
+      description: `Se eliminará el destinatario${name ? ` "${name}"` : ""} de esta campaña.`,
+      isDismissable: true,
+      isKeyboardDismissDisabled: false,
+      status: "danger",
+      title: "Eliminar destinatario",
+    });
+    if (!confirmed) return;
     try {
       await deleteMutation.mutateAsync(recipientId);
       toast.success("Destinatario eliminado");
@@ -91,14 +101,13 @@ export function CampaignRecipientsPanel({ campaign }: Readonly<CampaignRecipient
       )}
 
       <div className="flex flex-col gap-2 sm:flex-row">
-        <TextField className="flex-1" value={search} onChange={setSearch}>
-          <InputGroup>
-            <InputGroup.Input placeholder="Buscar por RUT, nombre o teléfono..." />
-            <InputGroup.Suffix>
-              <Search className="text-default-300" size={16} />
-            </InputGroup.Suffix>
-          </InputGroup>
-        </TextField>
+        <SearchField className="flex-1" value={search} onChange={setSearch} variant="secondary">
+          <SearchField.Group>
+            <SearchField.SearchIcon />
+            <SearchField.Input placeholder="Buscar por RUT, nombre o teléfono..." />
+            <SearchField.ClearButton />
+          </SearchField.Group>
+        </SearchField>
         <Select
           className="sm:w-56"
           value={statusFilter || "__all__"}

@@ -1,6 +1,7 @@
 import { Button, Card, Chip, Skeleton, Surface } from "@heroui/react";
 import { Megaphone, Pencil, Plus, Trash2, Users } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useConfirmDialog } from "@/context/ConfirmDialogContext";
 import { useToast } from "@/context/ToastContext";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { PAGE_CONTAINER_RELAXED } from "@/lib/styles";
@@ -16,6 +17,7 @@ import {
 
 export function PatientCampaignsPage() {
   const toast = useToast();
+  const confirm = useConfirmDialog();
   const { data: campaigns = [], isLoading } = usePatientCampaigns({ includeInactive: true });
   const deleteMutation = useDeletePatientCampaign();
   const { isOpen: formOpen, open: openForm, close: closeForm } = useDisclosure();
@@ -38,9 +40,16 @@ export function PatientCampaignsPage() {
   };
 
   const handleDelete = async (campaign: PatientCampaignWithCounts) => {
-    if (
-      !window.confirm(`¿Eliminar la campaña "${campaign.name}"? Esta acción no se puede deshacer.`)
-    ) {
+    const confirmed = await confirm({
+      confirmLabel: "Eliminar campaña",
+      confirmVariant: "danger",
+      description: `La campaña "${campaign.name}" se eliminará permanentemente. Esta acción no se puede deshacer.`,
+      isDismissable: true,
+      isKeyboardDismissDisabled: false,
+      status: "danger",
+      title: "Eliminar campaña",
+    });
+    if (!confirmed) {
       return;
     }
     try {

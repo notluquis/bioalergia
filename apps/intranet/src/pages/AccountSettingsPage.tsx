@@ -4,6 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Check, Fingerprint, Loader2, Smartphone } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useConfirmDialog } from "@/context/ConfirmDialogContext";
 import { useToast } from "@/context/ToastContext";
 import {
   disableMfa,
@@ -16,6 +17,7 @@ import {
 export function AccountSettingsPage() {
   const { refreshSession, user } = useAuth();
   const { error, success } = useToast();
+  const confirm = useConfirmDialog();
 
   // MFA State
   const [mfaSecret, setMfaSecret] = useState<null | string>(null);
@@ -86,12 +88,18 @@ export function AccountSettingsPage() {
     },
   });
 
-  const handleDisableMfa = () => {
-    if (
-      !confirm(
-        "¿Estás seguro de desactivar la autenticación de dos factores? Tu cuenta será menos segura."
-      )
-    ) {
+  const handleDisableMfa = async () => {
+    const confirmed = await confirm({
+      confirmLabel: "Desactivar MFA",
+      confirmVariant: "danger",
+      description:
+        "¿Estás seguro de desactivar la autenticación de dos factores? Tu cuenta será menos segura.",
+      isDismissable: true,
+      isKeyboardDismissDisabled: false,
+      status: "danger",
+      title: "Desactivar autenticación MFA",
+    });
+    if (!confirmed) {
       return;
     }
     disableMfaMutation.mutate();
@@ -151,12 +159,18 @@ export function AccountSettingsPage() {
     },
   });
 
-  const handleDeletePasskey = () => {
-    if (
-      !confirm(
-        "¿Estás seguro de eliminar tu passkey? Tendrás que usar tu contraseña para iniciar sesión."
-      )
-    ) {
+  const handleDeletePasskey = async () => {
+    const confirmed = await confirm({
+      confirmLabel: "Eliminar passkey",
+      confirmVariant: "danger",
+      description:
+        "¿Estás seguro de eliminar tu passkey? Tendrás que usar tu contraseña para iniciar sesión.",
+      isDismissable: true,
+      isKeyboardDismissDisabled: false,
+      status: "danger",
+      title: "Eliminar passkey",
+    });
+    if (!confirmed) {
       return;
     }
     deletePasskeyMutation.mutate();

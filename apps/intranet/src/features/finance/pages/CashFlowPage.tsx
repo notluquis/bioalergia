@@ -29,6 +29,7 @@ import { X } from "lucide-react";
 import { lazy, startTransition, Suspense, useEffect, useMemo, useState } from "react";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { z } from "zod";
+import { useConfirmDialog } from "@/context/ConfirmDialogContext";
 import { fetchCounterparts } from "@/features/counterparts/api";
 import { useLazyTabs } from "@/hooks/use-lazy-tabs";
 import { ApiError } from "@/lib/api-client";
@@ -672,6 +673,7 @@ function CategoryColorPicker({
 }
 
 export function CashFlowPage() {
+  const confirm = useConfirmDialog();
   const [page, setPage] = useState(1);
   const [selectedMonth, setSelectedMonth] = useState(dayjs().format("YYYY-MM"));
   const [activeTab, setActiveTab] = useState<CashFlowTab>("cash-flow");
@@ -1719,8 +1721,16 @@ export function CashFlowPage() {
     });
   };
 
-  const handleDeleteCategory = (category: TransactionCategoryOption) => {
-    const confirmed = window.confirm(`¿Eliminar la categoría "${category.name}"?`);
+  const handleDeleteCategory = async (category: TransactionCategoryOption) => {
+    const confirmed = await confirm({
+      confirmLabel: "Eliminar categoría",
+      confirmVariant: "danger",
+      description: `¿Eliminar la categoría "${category.name}"?`,
+      isDismissable: true,
+      isKeyboardDismissDisabled: false,
+      status: "danger",
+      title: "Eliminar categoría",
+    });
     if (!confirmed) return;
     deleteCategoryMutation.mutate(category.id);
   };
@@ -1920,8 +1930,16 @@ export function CashFlowPage() {
     });
   };
 
-  const handleDeleteRule = (rule: FinancialAutoCategoryRule) => {
-    const confirmed = window.confirm(`¿Eliminar la regla "${rule.name}"?`);
+  const handleDeleteRule = async (rule: FinancialAutoCategoryRule) => {
+    const confirmed = await confirm({
+      confirmLabel: "Eliminar regla",
+      confirmVariant: "danger",
+      description: `¿Eliminar la regla "${rule.name}"?`,
+      isDismissable: true,
+      isKeyboardDismissDisabled: false,
+      status: "danger",
+      title: "Eliminar regla",
+    });
     if (!confirmed) return;
     deleteAutoCategoryRuleMutation.mutate(rule.id);
   };

@@ -149,7 +149,6 @@ export function App() {
 
   const handleEmailClick = (email: string) => {
     posthog?.capture("email_click", { email, location: "app_header" });
-    window.location.href = `mailto:${email}`;
   };
 
   useEffect(() => {
@@ -182,13 +181,13 @@ export function App() {
                     {phone}
                   </Link>
                 ))}
-                <button
-                  type="button"
+                <Link
                   className="cursor-pointer text-inherit no-underline hover:underline"
+                  href={`mailto:${contactInfo.email}`}
                   onClick={() => handleEmailClick(contactInfo.email)}
                 >
                   {contactInfo.email}
-                </button>
+                </Link>
               </div>
             </div>
             <div className="flex flex-col gap-3 px-4 py-3 sm:px-5 md:flex-row md:items-center md:gap-6 lg:py-4">

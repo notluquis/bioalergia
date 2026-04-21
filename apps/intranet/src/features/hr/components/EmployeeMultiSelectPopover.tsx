@@ -1,4 +1,12 @@
-import { Button, InputGroup, ListBox, Popover, type Selection, TextField } from "@heroui/react";
+import {
+  Button,
+  ListBox,
+  Popover,
+  SearchField,
+  Tag,
+  TagGroup,
+  type Selection,
+} from "@heroui/react";
 import { useDebouncedValue } from "@tanstack/react-pacer";
 import { Check, Search } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -44,6 +52,11 @@ export function EmployeeMultiSelectPopover({
     return options.filter((opt) => opt.label.toLowerCase().includes(query));
   }, [debouncedSearch, options]);
 
+  const selectedOptions = useMemo(
+    () => options.filter((opt) => selectedIds.includes(opt.id)),
+    [options, selectedIds]
+  );
+
   const disabledKeys = useMemo(() => {
     if (!maxSelected || selectedIds.length < maxSelected) {
       return undefined;
@@ -79,14 +92,30 @@ export function EmployeeMultiSelectPopover({
         placement="bottom"
       >
         <Popover.Dialog className="space-y-2 p-3">
-          <TextField className="w-full" value={search} onChange={(v) => setSearch(v)}>
-            <InputGroup>
-              <InputGroup.Prefix className="text-default-400">
-                <Search className="h-4 w-4" />
-              </InputGroup.Prefix>
-              <InputGroup.Input placeholder={placeholder} />
-            </InputGroup>
-          </TextField>
+          {selectedOptions.length > 0 ? (
+            <TagGroup
+              aria-label="Empleados seleccionados"
+              className="gap-1"
+              size="sm"
+              variant="surface"
+            >
+              <TagGroup.List className="gap-2">
+                {selectedOptions.map((opt) => (
+                  <Tag id={String(opt.id)} key={opt.id}>
+                    {opt.label}
+                  </Tag>
+                ))}
+              </TagGroup.List>
+            </TagGroup>
+          ) : null}
+
+          <SearchField className="w-full" value={search} onChange={setSearch} variant="secondary">
+            <SearchField.Group>
+              <SearchField.SearchIcon />
+              <SearchField.Input placeholder={placeholder} />
+              <SearchField.ClearButton />
+            </SearchField.Group>
+          </SearchField>
 
           <div className="max-h-72 overflow-y-auto">
             {filteredOptions.length === 0 ? (

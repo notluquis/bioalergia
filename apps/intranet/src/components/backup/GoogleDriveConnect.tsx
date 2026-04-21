@@ -2,6 +2,7 @@ import { Button } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Key, Loader2, LogOut, ShieldCheck } from "lucide-react";
 import { Suspense, useEffect } from "react";
+import { useConfirmDialog } from "@/context/ConfirmDialogContext";
 import { useToast } from "@/context/ToastContext";
 import {
   disconnectGoogleDrive,
@@ -36,6 +37,7 @@ export { GoogleDriveConnectWrapper as GoogleDriveConnect };
 
 function GoogleDriveConnect() {
   const { error: showError, success } = useToast();
+  const confirm = useConfirmDialog();
   const queryClient = useQueryClient();
 
   // Handle callback results from URL params
@@ -163,14 +165,19 @@ function GoogleDriveConnect() {
               <Button
                 className="gap-2 hover:border-danger hover:bg-danger/10 hover:text-danger"
                 isDisabled={isEnv || disconnectMutation.isPending}
-                onPress={() => {
-                  if (
-                    confirm(
+                onPress={async () => {
+                  const confirmed = await confirm({
+                    confirmLabel: "Desconectar",
+                    confirmVariant: "danger",
+                    description:
                       "¿Estás seguro de desconectar Google Drive? Los backups automáticos dejarán de funcionar.",
-                    )
-                  ) {
-                    disconnectMutation.mutate();
-                  }
+                    isDismissable: true,
+                    isKeyboardDismissDisabled: false,
+                    status: "danger",
+                    title: "Desconectar Google Drive",
+                  });
+                  if (!confirmed) return;
+                  disconnectMutation.mutate();
                 }}
                 variant="outline"
               >

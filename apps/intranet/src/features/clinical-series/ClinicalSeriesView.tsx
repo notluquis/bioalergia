@@ -2679,15 +2679,16 @@ function SourceEventsList({ sourceId }: { sourceId: number }) {
 
   return (
     <div className="mt-1">
-      <button
-        className="text-[11px] text-foreground-400 hover:text-foreground-600 transition-colors"
-        onClick={(e) => {
+      <Button
+        className="h-auto min-h-0 p-0 text-[11px] text-foreground-400 hover:text-foreground-600"
+        onPress={(e) => {
           e.stopPropagation();
           setOpen((v) => !v);
         }}
+        variant="ghost"
       >
         {open ? "▲ Ocultar eventos" : "▾ Ver eventos"}
-      </button>
+      </Button>
       {open && (
         <div className="mt-1 space-y-0.5">
           {isLoading ? (
@@ -2806,9 +2807,10 @@ function DuplicatesModal({
                 return (
                   <Surface key={group.targetId} className="rounded-xl overflow-hidden">
                     {/* ── Card header ─── */}
-                    <button
-                      className="w-full p-3 flex items-start gap-3 text-left hover:bg-surface-200 transition-colors"
-                      onClick={() => setExpandedTarget(isExpanded ? null : group.targetId)}
+                    <Button
+                      className="h-auto w-full justify-between rounded-none p-3 text-left hover:bg-surface-200"
+                      onPress={() => setExpandedTarget(isExpanded ? null : group.targetId)}
+                      variant="ghost"
                     >
                       <div className="flex-1 min-w-0 space-y-1">
                         <p className="text-sm font-medium truncate">
@@ -2831,7 +2833,7 @@ function DuplicatesModal({
                       <span className="text-foreground-300 text-xs mt-0.5 shrink-0">
                         {isExpanded ? "▲" : "▼"}
                       </span>
-                    </button>
+                    </Button>
 
                     {/* ── Expanded sources ─── */}
                     {isExpanded && (
@@ -2898,9 +2900,9 @@ function DuplicatesModal({
                         {/* Footer */}
                         <div className="px-3 py-2 flex items-center justify-between gap-2">
                           {group.dups.length > 1 ? (
-                            <button
-                              className="text-xs text-foreground-400 hover:text-foreground-600 transition-colors"
-                              onClick={() => {
+                            <Button
+                              className="h-auto min-h-0 p-0 text-xs text-foreground-400 hover:text-foreground-600"
+                              onPress={() => {
                                 setSelected(
                                   group.targetId,
                                   allSelected
@@ -2908,9 +2910,10 @@ function DuplicatesModal({
                                     : new Set(group.dups.map((d) => d.sourceId))
                                 );
                               }}
+                              variant="ghost"
                             >
                               {allSelected ? "Deseleccionar todos" : "Seleccionar todos"}
-                            </button>
+                            </Button>
                           ) : (
                             <span />
                           )}

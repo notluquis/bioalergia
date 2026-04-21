@@ -1,9 +1,8 @@
-import { Input } from "@heroui/react";
+import { SearchField } from "@heroui/react";
 import { useDebouncedValue } from "@tanstack/react-pacer";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import type { PaginationState, Updater } from "@tanstack/react-table";
-import { Search } from "lucide-react";
-import { type ChangeEvent, useState } from "react";
+import { useState } from "react";
 
 import { DataTable } from "@/components/data-table/DataTable";
 import { TableRegion } from "@/components/data-table/TableRegion";
@@ -21,17 +20,21 @@ export function ReleasesPage() {
   return (
     <div className="flex h-full flex-col space-y-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <div className="relative w-full max-w-sm">
-          <Search className="absolute top-2.5 left-2.5 h-4 w-4 text-gray-500" />
-          <Input
-            className="pl-9"
-            onChange={(e: ChangeEvent<HTMLInputElement>) => {
-              setSearchInput(e.target.value);
+        <div className="w-full max-w-sm">
+          <SearchField
+            onChange={(value) => {
+              setSearchInput(value);
               setPage(0);
             }}
-            placeholder="Buscar por ID, referencia..."
             value={searchInput}
-          />
+            variant="secondary"
+          >
+            <SearchField.Group>
+              <SearchField.SearchIcon />
+              <SearchField.Input placeholder="Buscar por ID, referencia..." />
+              <SearchField.ClearButton />
+            </SearchField.Group>
+          </SearchField>
         </div>
       </div>
 

@@ -17,6 +17,7 @@ import { AppFallback } from "./components/features/AppFallback";
 import { ChunkErrorBoundary } from "./components/ui/ChunkErrorBoundary";
 import { GlobalError } from "./components/ui/GlobalError";
 import { useAuth } from "./context/AuthContext";
+import { ConfirmDialogProvider } from "./context/ConfirmDialogContext";
 import { SettingsProvider } from "./context/SettingsContext";
 import { ToastProvider } from "./context/ToastContext";
 import type { AuthContextType } from "./features/auth/hooks/use-auth";
@@ -198,14 +199,16 @@ ReactDOM.createRoot(rootElement).render(
         <QueryClientProvider client={queryClient}>
           <AuthListener />
           <SettingsProvider>
-            <ToastProvider>
-              <AbilityProvider>
-                <InnerApp />
-                <Suspense fallback={null}>
-                  <ReactQueryDevtools initialIsOpen={false} />
-                </Suspense>
-              </AbilityProvider>
-            </ToastProvider>
+            <ConfirmDialogProvider>
+              <ToastProvider>
+                <AbilityProvider>
+                  <InnerApp />
+                  <Suspense fallback={null}>
+                    <ReactQueryDevtools initialIsOpen={false} />
+                  </Suspense>
+                </AbilityProvider>
+              </ToastProvider>
+            </ConfirmDialogProvider>
           </SettingsProvider>
         </QueryClientProvider>
       </ChunkErrorBoundary>

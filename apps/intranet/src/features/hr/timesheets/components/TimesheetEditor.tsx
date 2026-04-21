@@ -2,6 +2,7 @@ import { Alert, Button } from "@heroui/react";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useConfirmDialog } from "@/context/ConfirmDialogContext";
 import { useToast } from "@/context/ToastContext";
 import {
   bulkUpsertTimesheets,
@@ -103,6 +104,7 @@ function TimesheetEditorInner({
 }: TimesheetEditorProps & { initialRows: BulkRow[] }) {
   const queryClient = useQueryClient();
   const { success: toastSuccess } = useToast();
+  const confirm = useConfirmDialog();
   const detailQueryKey = timesheetKeys.detail(employeeId, month);
   const summaryQueryKey = timesheetKeys.summary(month);
 
@@ -218,7 +220,7 @@ function TimesheetEditorInner({
   const handleTimeBlur = createHandleTimeBlur(saveRowImmediately);
 
   const { mutate: deleteMutate } = deleteMutation;
-  const handleRemoveEntry = createHandleRemoveEntry(deleteMutate);
+  const handleRemoveEntry = createHandleRemoveEntry(confirm, deleteMutate);
 
   const handleBulkSave = createHandleBulkSave({
     bulkRows,
@@ -856,12 +858,24 @@ function createHandleTimeBlur(saveRowImmediately: (index: number) => Promise<voi
   };
 }
 
-function createHandleRemoveEntry(deleteMutate: (entryId: number) => void) {
-  return (row: BulkRow) => {
+function createHandleRemoveEntry(
+  confirmAction: ReturnType<typeof useConfirmDialog>,
+  deleteMutate: (entryId: number) => void
+) {
+  return async (row: BulkRow) => {
     if (!row.entryId) {
       return;
     }
-    if (!confirm("¿Eliminar el registro de este día?")) {
+    const confirmed = await confirmAction({
+      confirmLabel: "Eliminar registro",
+      confirmVariant: "danger",
+      description: "¿Eliminar el registro de este día?",
+      isDismissable: true,
+      isKeyboardDismissDisabled: false,
+      status: "danger",
+      title: "Eliminar registro",
+    });
+    if (!confirmed) {
       return;
     }
     deleteMutate(row.entryId);

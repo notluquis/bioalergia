@@ -19,6 +19,7 @@ import { Check, Download, RefreshCw, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { z } from "zod";
 
+import { useConfirmDialog } from "@/context/ConfirmDialogContext";
 import { useToast } from "@/context/ToastContext";
 import { autoLinkEventDteByPeriod } from "@/features/calendar/api";
 import {
@@ -382,6 +383,7 @@ function PeriodCard({
 
 export function HaulmerSyncPage() {
   const { error: showError, success: showSuccess } = useToast();
+  const confirm = useConfirmDialog();
   const [lastSyncs, setLastSyncs] = useState<LastSyncState>({});
   const [isSyncingAll, setIsSyncingAll] = useState(false);
   const [isSyncingIncremental, setIsSyncingIncremental] = useState(false);
@@ -512,12 +514,18 @@ export function HaulmerSyncPage() {
     },
   });
 
-  const handleSync = (period: string, docType: "sales" | "purchases") => {
+  const handleSync = async (period: string, docType: "sales" | "purchases") => {
     const docLabel = docType === "sales" ? "ventas" : "compras";
     const message = `¿Sincronizar ${docLabel} de ${period}? Esto puede insertar o actualizar registros.`;
-    if (confirm(message)) {
-      syncMutation.mutate({ period, docType });
-    }
+    const confirmed = await confirm({
+      confirmLabel: "Sincronizar",
+      description: message,
+      isDismissable: true,
+      isKeyboardDismissDisabled: false,
+      title: "Confirmar sincronización",
+    });
+    if (!confirmed) return;
+    syncMutation.mutate({ period, docType });
   };
 
   const handleSyncAll = async (docTypes: Array<"sales" | "purchases">) => {
@@ -658,7 +666,14 @@ export function HaulmerSyncPage() {
   const handleSyncIncremental = async () => {
     const message =
       "¿Sincronizar incremental? Se traerán solo períodos nuevos y el más reciente para refresco.";
-    if (!confirm(message)) {
+    const confirmed = await confirm({
+      confirmLabel: "Sincronizar incremental",
+      description: message,
+      isDismissable: true,
+      isKeyboardDismissDisabled: false,
+      title: "Confirmar sincronización incremental",
+    });
+    if (!confirmed) {
       return;
     }
 

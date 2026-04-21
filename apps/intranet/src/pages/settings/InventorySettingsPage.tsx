@@ -11,6 +11,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useState } from "react";
+import { useConfirmDialog } from "@/context/ConfirmDialogContext";
 import { useToast } from "@/context/ToastContext";
 import { createInventoryCategory, deleteInventoryCategory } from "@/features/inventory/api";
 import { inventoryKeys } from "@/features/inventory/queries";
@@ -40,6 +41,7 @@ export function InventorySettingsPage() {
   const [newCategoryName, setNewCategoryName] = useState("");
   const [expandedCategories, setExpandedCategories] = useState<Set<number>>(new Set());
   const { error: toastError, success } = useToast();
+  const confirm = useConfirmDialog();
   const queryClient = useQueryClient();
 
   // Fetch Categories
@@ -174,9 +176,18 @@ export function InventorySettingsPage() {
             isLoading={isLoading}
             itemsByCategory={itemsByCategory}
             onDeleteCategory={(id) => {
-              if (confirm("¿Estás seguro de eliminar esta categoría?")) {
+              void confirm({
+                confirmLabel: "Eliminar categoría",
+                confirmVariant: "danger",
+                description: "¿Estás seguro de eliminar esta categoría?",
+                isDismissable: true,
+                isKeyboardDismissDisabled: false,
+                status: "danger",
+                title: "Eliminar categoría",
+              }).then((confirmed) => {
+                if (!confirmed) return;
                 deleteMutation.mutate(id);
-              }
+              });
             }}
             toggleCategory={toggleCategory}
             uncategorizedItems={uncategorizedItems}

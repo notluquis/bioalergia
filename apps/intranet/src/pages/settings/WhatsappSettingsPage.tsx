@@ -8,6 +8,7 @@ import {
   Input,
   Label,
   ListBox,
+  SearchField,
   Select,
   Skeleton,
   Surface,
@@ -1065,20 +1066,32 @@ export function WhatsappSettingsPage() {
                       ))}
                     </div>
                   ) : (
-                    <div className="space-y-1.5">
+                    <ListBox
+                      aria-label="Chats de WhatsApp"
+                      className="space-y-1.5"
+                      selectedKeys={selectedChatJid ? new Set([selectedChatJid]) : new Set()}
+                      selectionMode="single"
+                      onSelectionChange={(keys) => {
+                        if (keys === "all") return;
+                        const selected = Array.from(keys)[0];
+                        if (selected) {
+                          setSelectedChatJid(String(selected));
+                        }
+                      }}
+                    >
                       {chatSidebarQuery.data?.records.map((chat) => {
                         const isSelected = selectedChatJid === chat.jid;
 
                         return (
-                          <button
-                            className={`w-full rounded-[24px] border px-3 py-3 text-left transition ${
+                          <ListBox.Item
+                            className={`rounded-[24px] border px-3 py-3 text-left transition ${
                               isSelected
                                 ? "border-accent/50 bg-accent/10 shadow-[0_0_0_1px_rgba(59,130,246,0.15)]"
                                 : "border-transparent bg-transparent hover:border-default-200/80 hover:bg-content2/70"
                             }`}
+                            id={chat.jid}
                             key={chat.jid}
-                            onClick={() => setSelectedChatJid(chat.jid)}
-                            type="button"
+                            textValue={getChatDisplayName(chat.name, chat.jid)}
                           >
                             <div className="flex items-start gap-3">
                               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-content2 text-sm font-semibold text-default-700">
@@ -1123,10 +1136,10 @@ export function WhatsappSettingsPage() {
                                 ) : null}
                               </div>
                             </div>
-                          </button>
+                          </ListBox.Item>
                         );
                       })}
-                    </div>
+                    </ListBox>
                   )}
                 </div>
               </Surface>
@@ -3107,9 +3120,18 @@ export function WhatsappSettingsPage() {
                 </Description>
               </Card.Header>
               <Card.Content className="space-y-4">
-                <TextField className="w-full" onChange={setContactSearch} value={contactSearch}>
-                  <Input placeholder="Buscar por teléfono o wa_id" type="search" />
-                </TextField>
+                <SearchField
+                  className="w-full"
+                  onChange={setContactSearch}
+                  value={contactSearch}
+                  variant="secondary"
+                >
+                  <SearchField.Group>
+                    <SearchField.SearchIcon />
+                    <SearchField.Input placeholder="Buscar por teléfono o wa_id" />
+                    <SearchField.ClearButton />
+                  </SearchField.Group>
+                </SearchField>
 
                 {contactsPending ? (
                   <Skeleton className="h-64 w-full rounded-2xl" />

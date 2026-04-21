@@ -1,15 +1,7 @@
-import {
-  Card,
-  Chip,
-  InputGroup,
-  TextField,
-  ToggleButton,
-  ToggleButtonGroup,
-  Toolbar,
-} from "@heroui/react";
+import { Card, Chip, SearchField, ToggleButton, ToggleButtonGroup, Toolbar } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { AlertCircle, CheckCircle, Search, Settings, ShieldAlert } from "lucide-react";
+import { AlertCircle, CheckCircle, Settings, ShieldAlert } from "lucide-react";
 import { useMemo, useState } from "react";
 // Import dynamically to avoid bundling in prod if not tree-shaken correctly by router
 // But for this dev page we can import directly for simplicity as the route itself should be dev-only
@@ -148,14 +140,18 @@ function RoutesAuditPage() {
           aria-label="Filtros de auditoría de rutas"
           className="w-full grid-flow-row items-stretch gap-3 sm:grid-flow-col sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
         >
-          <TextField className="w-full" value={searchTerm} onChange={(v) => setSearchTerm(v)}>
-            <InputGroup>
-              <InputGroup.Prefix className="text-muted-foreground">
-                <Search className="size-4" />
-              </InputGroup.Prefix>
-              <InputGroup.Input placeholder="Search routes..." />
-            </InputGroup>
-          </TextField>
+          <SearchField
+            className="w-full"
+            value={searchTerm}
+            onChange={(v) => setSearchTerm(v)}
+            variant="secondary"
+          >
+            <SearchField.Group>
+              <SearchField.SearchIcon />
+              <SearchField.Input placeholder="Search routes..." />
+              <SearchField.ClearButton />
+            </SearchField.Group>
+          </SearchField>
           <ToggleButtonGroup
             disallowEmptySelection
             selectedKeys={selectedFilterKeys}
