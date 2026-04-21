@@ -13,6 +13,12 @@ import {
 import { logError, logEvent } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
 import { listDoctoraliaSyncLogs } from "../services/doctoralia";
+import {
+  DOCTORALIA_BACKFILL_MIN_DATE,
+  getDoctoraliaBackfillStatus,
+  isDoctoraliaBackfillRunning,
+  startDoctoraliaBackfill,
+} from "../services/doctoralia-backfill";
 import { SuperJSONRPCHandler } from "./superjson";
 
 configureSuperjson();
@@ -120,6 +126,25 @@ const emailNotificationsMonthlySummaryResponseSchema = z.object({
       bookings: z.number().int(),
       modifications: z.number().int(),
       cancellations: z.number().int(),
+      total: z.number().int(),
+      cancellationRate: z.number(),
+    }),
+  ),
+  status: z.literal("ok"),
+});
+
+const calendarAppointmentsMonthlySummaryQuerySchema = z.object({
+  year: z.number().int().min(2020).max(2100).optional(),
+});
+
+const calendarAppointmentsMonthlySummaryResponseSchema = z.object({
+  data: z.array(
+    z.strictObject({
+      period: z.string().regex(/^\d{4}-\d{2}$/),
+      programmed: z.number().int(),
+      cancelled: z.number().int(),
+      attended: z.number().int(),
+      noShow: z.number().int(),
       total: z.number().int(),
       cancellationRate: z.number(),
     }),
@@ -235,6 +260,36 @@ const calendarImportResponseSchema = z.object({
     errors: z.array(z.string()),
   }),
   status: z.literal("ok"),
+});
+
+const calendarBackfillStatusDataSchema = z.object({
+  running: z.boolean(),
+  startedAt: z.string().nullable(),
+  endedAt: z.string().nullable(),
+  targetEndDate: z.string().nullable(),
+  triggeredByUserId: z.number().int().nullable(),
+  weeksTotal: z.number().int(),
+  weeksProcessed: z.number().int(),
+  weeksFailed: z.number().int(),
+  appointmentsInserted: z.number().int(),
+  appointmentsUpdated: z.number().int(),
+  currentWindow: z
+    .object({
+      from: z.string(),
+      to: z.string(),
+    })
+    .nullable(),
+  lastError: z.string().nullable(),
+  minEndDate: z.string(),
+});
+
+const calendarBackfillStatusResponseSchema = z.object({
+  data: calendarBackfillStatusDataSchema,
+  status: z.literal("ok"),
+});
+
+const calendarBackfillStartInputSchema = z.object({
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
 });
 
 const scraperCookiesStatusSchema = z.object({
@@ -442,6 +497,53 @@ const doctoraliaORPCRouterBase = {
 
       return {
         data: result,
+        status: "ok" as const,
+      };
+    }),
+
+  calendarBackfillStatus: canManageDoctoraliaCalendar
+    .route({ method: "GET", path: "/calendar/backfill/status" })
+    .output(calendarBackfillStatusResponseSchema)
+    .handler(async () => ({
+      data: {
+        ...getDoctoraliaBackfillStatus(),
+        minEndDate: DOCTORALIA_BACKFILL_MIN_DATE,
+      },
+      status: "ok" as const,
+    })),
+
+  calendarBackfillStart: canManageDoctoraliaCalendar
+    .route({ method: "POST", path: "/calendar/backfill/start" })
+    .input(calendarBackfillStartInputSchema)
+    .output(calendarBackfillStatusResponseSchema)
+    .handler(async ({ context, input }) => {
+      if (isDoctoraliaBackfillRunning()) {
+        throw new ORPCError("CONFLICT", {
+          message: "Ya hay un backfill de Doctoralia en curso.",
+        });
+      }
+
+      try {
+        startDoctoraliaBackfill({
+          endDate: input.endDate,
+          triggeredByUserId: context.user.id,
+        });
+      } catch (error) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: error instanceof Error ? error.message : "No se pudo iniciar el backfill",
+        });
+      }
+
+      logEvent("doctoralia.backfill.request", {
+        userId: context.user.id,
+        endDate: input.endDate,
+      });
+
+      return {
+        data: {
+          ...getDoctoraliaBackfillStatus(),
+          minEndDate: DOCTORALIA_BACKFILL_MIN_DATE,
+        },
         status: "ok" as const,
       };
     }),
@@ -818,6 +920,65 @@ const doctoraliaORPCRouterBase = {
             bookings: counts.bookings,
             modifications: counts.modifications,
             cancellations: counts.cancellations,
+            total,
+            cancellationRate,
+          };
+        });
+
+      return { data, status: "ok" as const };
+    }),
+
+  calendarAppointmentsMonthlySummary: authed
+    .route({ method: "GET", path: "/calendar-appointments/monthly-summary" })
+    .input(calendarAppointmentsMonthlySummaryQuerySchema)
+    .output(calendarAppointmentsMonthlySummaryResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof calendarAppointmentsMonthlySummaryQuerySchema> }) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let query = (db.$qb as any)
+        .selectFrom("DoctoraliaCalendarAppointment")
+        .select(["status", "startAt"]);
+
+      if (input.year !== undefined) {
+        const yearStart = new Date(Date.UTC(input.year, 0, 1));
+        const nextYearStart = new Date(Date.UTC(input.year + 1, 0, 1));
+        query = query.where("startAt", ">=", yearStart).where("startAt", "<", nextYearStart);
+      }
+
+      const rows = (await query.execute()) as Array<{
+        status: number;
+        startAt: Date | string;
+      }>;
+
+      const buckets = new Map<
+        string,
+        { programmed: number; cancelled: number; attended: number; noShow: number }
+      >();
+      for (const row of rows) {
+        const date = row.startAt instanceof Date ? row.startAt : new Date(row.startAt);
+        if (Number.isNaN(date.getTime())) continue;
+        const period = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+        let bucket = buckets.get(period);
+        if (!bucket) {
+          bucket = { programmed: 0, cancelled: 0, attended: 0, noShow: 0 };
+          buckets.set(period, bucket);
+        }
+        if (row.status === 0) bucket.programmed++;
+        else if (row.status === 2 || row.status === 3) bucket.cancelled++;
+        else if (row.status === 4) bucket.attended++;
+        else if (row.status === 6) bucket.noShow++;
+      }
+
+      const data = Array.from(buckets.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([period, counts]) => {
+          const total = counts.programmed + counts.cancelled + counts.attended + counts.noShow;
+          const cancellationRate = total > 0 ? counts.cancelled / total : 0;
+          return {
+            period,
+            programmed: counts.programmed,
+            cancelled: counts.cancelled,
+            attended: counts.attended,
+            noShow: counts.noShow,
             total,
             cancellationRate,
           };
