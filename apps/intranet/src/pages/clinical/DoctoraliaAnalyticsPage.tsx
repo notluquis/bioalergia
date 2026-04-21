@@ -1,63 +1,42 @@
-import {
-  Button,
-  ButtonGroup,
-  Card,
-  Chip,
-  Description,
-  Skeleton,
-  Surface,
-  Tabs,
-} from "@heroui/react";
+import { Button, Card, Chip, Description, Skeleton, Tabs } from "@heroui/react";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import type { ColumnDef, PaginationState } from "@tanstack/react-table";
 import { getRouteApi } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
-import {
-  Activity,
-  CalendarDays,
-  ChevronLeft,
-  ChevronRight,
-  Mail,
-  RefreshCw,
-  Users,
-} from "lucide-react";
+import { Activity, BarChart3, Mail, RefreshCw, TrendingUp, Users } from "lucide-react";
 import { lazy, startTransition, Suspense, useEffect, useMemo } from "react";
 import type React from "react";
 
 import { DataTable } from "@/components/data-table/DataTable";
 import { useToast } from "@/context/ToastContext";
-import { CalendarSkeleton } from "@/features/calendar/components/CalendarSkeleton";
-import { ScheduleCalendar } from "@/features/calendar/components/ScheduleCalendar";
-import type { CalendarEventDetail } from "@/features/calendar/types";
+import { doctoraliaAnalyticsKeys } from "@/features/doctoralia/analytics/queries";
+import type { DoctoraliaMetricKey } from "@/features/doctoralia/analytics/types";
 import {
-  fetchDoctoraliaCalendarMerged,
+  extractDoctoraliaYearsFromSummary,
+  safeDoctoraliaYearSelection,
+} from "@/features/doctoralia/analytics/utils";
+import {
   fetchDoctoraliaEmailNotifications,
   fetchDoctoraliaEmailStats,
   fetchDoctoraliaSyncLogs,
   triggerDoctoraliaEmailIngest,
 } from "@/features/doctoralia/api";
-import type {
-  DoctoraliaCalendarMerged,
-  DoctoraliaEmailNotification,
-  DoctoraliaMergedCalendarEntry,
-  DoctoraliaSyncLog,
-} from "@/features/doctoralia/types";
+import type { DoctoraliaEmailNotification, DoctoraliaSyncLog } from "@/features/doctoralia/types";
 import { useLazyTabs } from "@/hooks/use-lazy-tabs";
 import { numberFormatter } from "@/lib/format";
-import { toTitleCase } from "@/lib/person";
 
 import "dayjs/locale/es";
 
 dayjs.extend(isoWeek);
 dayjs.locale("es");
 
-const DATE_FORMAT = "YYYY-MM-DD";
-
-type DoctoraliaTabId = "calendario" | "pacientes" | "eventos" | "sincronizacion";
+type DoctoraliaTabId = "mensual" | "comparativa" | "pacientes" | "eventos" | "sincronizacion";
 
 const DOCTORALIA_TAB_IDS = new Set<DoctoraliaTabId>([
-  "calendario",
+  "mensual",
+  "comparativa",
   "pacientes",
   "eventos",
   "sincronizacion",
@@ -73,216 +52,19 @@ const LazyDoctoraliaPatientsPanel = lazy(() =>
   }))
 );
 
+const LazyDoctoraliaMonthlyPanel = lazy(() =>
+  import("@/features/doctoralia/analytics/components/DoctoraliaMonthlyPanel").then((module) => ({
+    default: module.DoctoraliaMonthlyPanel,
+  }))
+);
+
+const LazyDoctoraliaComparisonPanel = lazy(() =>
+  import("@/features/doctoralia/analytics/components/DoctoraliaComparisonPanel").then((module) => ({
+    default: module.DoctoraliaComparisonPanel,
+  }))
+);
+
 const routeApi = getRouteApi("/_authed/clinical/doctoralia");
-
-function mergedEntryToCalendarEventDetail(
-  entry: DoctoraliaMergedCalendarEntry
-): CalendarEventDetail {
-  const { appointment, emails } = entry;
-  const descParts = [
-    appointment.comments,
-    emails.cancellation ? "⚠ Cancelado por email" : null,
-    emails.modifications.length > 0
-      ? `✎ Modificado (${emails.modifications.length}) por email`
-      : null,
-  ].filter(Boolean);
-  const colorId = emails.cancellation
-    ? "11"
-    : emails.modifications.length > 0
-      ? "5"
-      : appointment.serviceColorSchemaId != null
-        ? String(appointment.serviceColorSchemaId)
-        : null;
-  return {
-    calendarId: `doctoralia:${appointment.schedule.externalId}`,
-    category: null,
-    colorId,
-    controlIncluded: null,
-    description: descParts.length ? descParts.join(" · ") : null,
-    endDate: appointment.endAt.toISOString().split("T")[0] ?? null,
-    endDateTime: appointment.endAt.toISOString(),
-    endTimeZone: null,
-    eventCreatedAt: null,
-    eventDate: appointment.startAt.toISOString().split("T")[0] ?? appointment.startAt.toISOString(),
-    eventDateTime: appointment.startAt.toISOString(),
-    eventId: String(appointment.externalId),
-    eventType: "doctoralia",
-    eventUpdatedAt: null,
-    hangoutLink: null,
-    location: appointment.schedule.displayName,
-    rawEvent: { appointment, emails },
-    startDate: appointment.startAt.toISOString().split("T")[0] ?? null,
-    startDateTime: appointment.startAt.toISOString(),
-    startTimeZone: null,
-    status: String(appointment.status),
-    summary: toTitleCase(appointment.title) || appointment.title,
-    transparency: null,
-    visibility: null,
-  };
-}
-
-function orphanEmailToCalendarEventDetail(n: DoctoraliaEmailNotification): CalendarEventDetail {
-  const dateStr = n.appointmentDate
-    ? (n.appointmentDate.toISOString().split("T")[0] ?? null)
-    : null;
-  const dateIso = n.appointmentDate ? n.appointmentDate.toISOString() : null;
-  const descParts = [
-    n.appointmentService,
-    n.appointmentDoctor,
-    "📧 Sólo email (sin match en calendario)",
-  ].filter(Boolean);
-  return {
-    calendarId: "doctoralia-email",
-    category: null,
-    colorId: n.eventType === "CANCELLATION" ? "11" : n.eventType === "MODIFICATION" ? "5" : "8",
-    controlIncluded: null,
-    description: descParts.length ? descParts.join(" · ") : null,
-    endDate: null,
-    endDateTime: null,
-    endTimeZone: null,
-    eventCreatedAt: null,
-    eventDate: dateStr ?? "",
-    eventDateTime: dateIso,
-    eventId: n.id,
-    eventType: "doctoralia-email",
-    eventUpdatedAt: null,
-    hangoutLink: null,
-    location: n.clinicAddress,
-    patientName: n.patientName,
-    rawEvent: n,
-    startDate: dateStr,
-    startDateTime: dateIso,
-    startTimeZone: null,
-    status: n.eventType,
-    summary: `${toTitleCase(n.patientName) || n.patientName}${n.appointmentService ? ` — ${n.appointmentService}` : ""}`,
-    transparency: null,
-    visibility: null,
-  };
-}
-
-function mergedToCalendarEventDetails(merged: DoctoraliaCalendarMerged): CalendarEventDetail[] {
-  return [
-    ...merged.entries.map(mergedEntryToCalendarEventDetail),
-    ...merged.orphanEmails.map(orphanEmailToCalendarEventDetail),
-  ];
-}
-
-function getActualWeekStart() {
-  const today = dayjs();
-  const base = today.day() === 0 ? today.add(1, "day") : today;
-  return base.isoWeekday(1);
-}
-
-function CalendarTabPanel() {
-  const navigate = routeApi.useNavigate();
-  const search = routeApi.useSearch();
-
-  const actualWeekStart = getActualWeekStart();
-  const weekStartStr =
-    typeof search.from === "string" ? search.from : actualWeekStart.format(DATE_FORMAT);
-  const weekStart = dayjs(weekStartStr, DATE_FORMAT);
-  const weekEnd = weekStart.add(6, "day");
-  const rangeLabel = weekStart.isValid()
-    ? `${weekStart.format("D MMM")} - ${weekEnd.format("D MMM YYYY")}`
-    : "Seleccionar rango";
-  const isCurrentWeek = weekStart.isSame(actualWeekStart, "day");
-
-  const updateWeek = (newStart: string) => {
-    const start = dayjs(newStart, DATE_FORMAT);
-    const end = start.add(6, "day");
-    void navigate({
-      search: (prev) => ({
-        ...prev,
-        from: start.format(DATE_FORMAT),
-        to: end.format(DATE_FORMAT),
-      }),
-    });
-  };
-
-  const { data: mergedData, isLoading } = useQuery({
-    enabled: Boolean(search.from) && Boolean(search.to),
-    queryFn: async () => {
-      if (!search.from || !search.to) return null;
-      return fetchDoctoraliaCalendarMerged({ from: search.from, to: search.to });
-    },
-    queryKey: ["doctoralia", "calendar", "merged", search.from, search.to],
-  });
-
-  const events = useMemo(
-    () => (mergedData ? mergedToCalendarEventDetails(mergedData) : []),
-    [mergedData]
-  );
-
-  return (
-    <section className="space-y-4">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex min-w-0 flex-wrap items-center gap-3">
-          <ButtonGroup size="sm" variant="tertiary">
-            <Button
-              aria-label="Semana anterior"
-              isIconOnly
-              onPress={() => updateWeek(weekStart.subtract(1, "week").format(DATE_FORMAT))}
-              variant="ghost"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              className="font-medium text-[11px] uppercase tracking-wide"
-              isDisabled={isCurrentWeek}
-              onPress={() => updateWeek(actualWeekStart.format(DATE_FORMAT))}
-              variant="tertiary"
-            >
-              Semana actual
-            </Button>
-            <Button
-              aria-label="Semana siguiente"
-              isIconOnly
-              onPress={() => updateWeek(weekStart.add(1, "week").format(DATE_FORMAT))}
-              variant="ghost"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </ButtonGroup>
-          <span className="font-medium text-default-600 text-sm">{rangeLabel}</span>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {mergedData ? (
-            <>
-              <Chip color="default" size="sm" variant="soft">
-                {numberFormatter.format(mergedData.counts.appointments)} citas
-              </Chip>
-              <Chip color="success" size="sm" variant="soft">
-                {numberFormatter.format(mergedData.counts.matchedEmails)} emails matcheados
-              </Chip>
-              {mergedData.counts.orphanEmails > 0 ? (
-                <Chip color="warning" size="sm" variant="soft">
-                  {numberFormatter.format(mergedData.counts.orphanEmails)} emails sin match
-                </Chip>
-              ) : null}
-            </>
-          ) : null}
-        </div>
-      </header>
-
-      <Surface
-        className="overflow-hidden rounded-3xl border border-default-100 shadow-sm"
-        variant="default"
-      >
-        {isLoading && events.length === 0 ? (
-          <div className="p-6">
-            <CalendarSkeleton days={6} />
-          </div>
-        ) : (
-          <ScheduleCalendar
-            events={events}
-            loading={isLoading}
-            weekStart={weekStart.format(DATE_FORMAT)}
-          />
-        )}
-      </Surface>
-    </section>
-  );
-}
 
 const EVENT_TYPE_LABELS: Record<DoctoraliaEmailNotification["eventType"], string> = {
   BOOKING: "Reserva",
@@ -610,12 +392,46 @@ function SyncTabPanel() {
 export function DoctoraliaAnalyticsPage() {
   const navigate = routeApi.useNavigate();
   const search = routeApi.useSearch();
-  const selectedTab = (search.tab ?? "calendario") as DoctoraliaTabId;
+  const selectedTab = (search.tab ?? "mensual") as DoctoraliaTabId;
   const { isTabMounted, markTabAsMounted } = useLazyTabs<DoctoraliaTabId>(selectedTab);
 
   useEffect(() => {
     markTabAsMounted(selectedTab);
   }, [markTabAsMounted, selectedTab]);
+
+  // Load all-year summary to drive the year selector and comparison chart.
+  const { data: allSummary } = useSuspenseQuery(doctoraliaAnalyticsKeys.monthlySummary());
+
+  const currentYear = new Date().getFullYear().toString();
+  const yearOptions = useMemo(() => {
+    const extracted = extractDoctoraliaYearsFromSummary(allSummary);
+    if (extracted.length > 0) return extracted;
+    return [currentYear];
+  }, [allSummary, currentYear]);
+
+  const selectedYear = useMemo(() => {
+    const requested = search.year ? String(search.year) : currentYear;
+    return safeDoctoraliaYearSelection(requested, yearOptions);
+  }, [search.year, yearOptions, currentYear]);
+
+  const setSelectedYear = (year: string) => {
+    const parsed = Number(year);
+    void navigate({
+      search: (prev) => ({
+        ...prev,
+        year: Number.isFinite(parsed) ? parsed : undefined,
+      }),
+    });
+  };
+
+  const setCompareMetric = (metric: DoctoraliaMetricKey) => {
+    void navigate({
+      search: (prev) => ({
+        ...prev,
+        compareMetric: metric,
+      }),
+    });
+  };
 
   const tabLoadingFallback = (
     <Card className="max-w-3xl" variant="secondary">
@@ -637,7 +453,7 @@ export function DoctoraliaAnalyticsPage() {
         selectedKey={selectedTab}
         onSelectionChange={(key) => {
           const next = String(key);
-          const nextTab: DoctoraliaTabId = isDoctoraliaTabId(next) ? next : "calendario";
+          const nextTab: DoctoraliaTabId = isDoctoraliaTabId(next) ? next : "mensual";
           startTransition(() => {
             void navigate({
               search: (prev) => ({
@@ -653,9 +469,14 @@ export function DoctoraliaAnalyticsPage() {
             aria-label="Tabs de Doctoralia"
             className="w-max min-w-full rounded-lg bg-default-50/50 p-1 whitespace-nowrap"
           >
-            <Tabs.Tab id="calendario" className="gap-2">
-              <CalendarDays className="size-4" />
-              Calendario
+            <Tabs.Tab id="mensual" className="gap-2">
+              <BarChart3 className="size-4" />
+              Mensual
+              <Tabs.Indicator />
+            </Tabs.Tab>
+            <Tabs.Tab id="comparativa" className="gap-2">
+              <TrendingUp className="size-4" />
+              Comparativa
               <Tabs.Indicator />
             </Tabs.Tab>
             <Tabs.Tab id="pacientes" className="gap-2">
@@ -676,8 +497,27 @@ export function DoctoraliaAnalyticsPage() {
           </Tabs.List>
         </Tabs.ListContainer>
 
-        <Tabs.Panel className="min-h-0 flex-1 pt-2 sm:pt-4" id="calendario">
-          {isTabMounted("calendario") ? <CalendarTabPanel /> : null}
+        <Tabs.Panel className="min-h-0 flex-1 pt-2 sm:pt-4" id="mensual">
+          {isTabMounted("mensual") ? (
+            <Suspense fallback={tabLoadingFallback}>
+              <LazyDoctoraliaMonthlyPanel
+                selectedYear={selectedYear}
+                setSelectedYear={setSelectedYear}
+                yearOptions={yearOptions}
+              />
+            </Suspense>
+          ) : null}
+        </Tabs.Panel>
+
+        <Tabs.Panel className="min-h-0 flex-1 pt-2 sm:pt-4" id="comparativa">
+          {isTabMounted("comparativa") ? (
+            <Suspense fallback={tabLoadingFallback}>
+              <LazyDoctoraliaComparisonPanel
+                metric={search.compareMetric ?? "total"}
+                setMetric={setCompareMetric}
+              />
+            </Suspense>
+          ) : null}
         </Tabs.Panel>
 
         <Tabs.Panel className="min-h-0 flex-1 pt-2 sm:pt-4" id="pacientes">

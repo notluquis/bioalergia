@@ -159,6 +159,20 @@ export const DoctoraliaEmailStatsResponseSchema = z.strictObject({
   status: z.literal("ok"),
 });
 
+export const DoctoraliaEmailMonthlySummaryPeriodSchema = z.strictObject({
+  period: z.string().regex(/^\d{4}-\d{2}$/),
+  bookings: z.number().int(),
+  modifications: z.number().int(),
+  cancellations: z.number().int(),
+  total: z.number().int(),
+  cancellationRate: z.number(),
+});
+
+export const DoctoraliaEmailMonthlySummaryResponseSchema = z.strictObject({
+  data: z.array(DoctoraliaEmailMonthlySummaryPeriodSchema),
+  status: z.literal("ok"),
+});
+
 export const DoctoraliaEmailIngestResponseSchema = z.strictObject({
   data: z.strictObject({
     alreadyProcessed: z.number(),

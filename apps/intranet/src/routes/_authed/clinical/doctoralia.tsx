@@ -1,35 +1,23 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
-import dayjs from "dayjs";
 import { z } from "zod";
 
 import { DoctoraliaAnalyticsPage } from "@/pages/clinical/DoctoraliaAnalyticsPage";
 
 const doctoraliaSearchSchema = z
   .object({
-    from: z
-      .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/)
-      .optional(),
-    to: z
-      .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/)
-      .optional(),
     page: z.coerce.number().int().min(0).optional().catch(0),
     pageSize: z.coerce.number().int().min(10).max(100).optional().catch(25),
-    tab: z.enum(["calendario", "pacientes", "eventos", "sincronizacion"]).optional(),
+    tab: z.enum(["mensual", "comparativa", "pacientes", "eventos", "sincronizacion"]).optional(),
+    year: z.coerce.number().int().min(2020).max(2100).optional(),
+    compareMetric: z.enum(["total", "bookings", "modifications", "cancellations"]).optional(),
   })
-  .transform((search) => {
-    const today = dayjs();
-    const base = today.day() === 0 ? today.add(1, "day") : today;
-    const weekStart = base.isoWeekday(1);
-    return {
-      from: search.from ?? weekStart.format("YYYY-MM-DD"),
-      to: search.to ?? weekStart.add(6, "day").format("YYYY-MM-DD"),
-      page: search.page ?? 0,
-      pageSize: search.pageSize ?? 25,
-      tab: search.tab ?? "calendario",
-    };
-  });
+  .transform((search) => ({
+    page: search.page ?? 0,
+    pageSize: search.pageSize ?? 25,
+    tab: search.tab ?? "mensual",
+    year: search.year,
+    compareMetric: search.compareMetric ?? "total",
+  }));
 
 const routeApi = getRouteApi("/_authed/clinical/doctoralia");
 

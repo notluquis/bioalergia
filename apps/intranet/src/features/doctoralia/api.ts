@@ -11,6 +11,7 @@ import {
   DoctoraliaCalendarMergedResponseSchema,
   DoctoraliaCalendarAuthStartResponseSchema,
   DoctoraliaCalendarAuthStatusResponseSchema,
+  DoctoraliaEmailMonthlySummaryResponseSchema,
   DoctoraliaEmailNotificationsCalendarResponseSchema,
   DoctoraliaEmailNotificationsListResponseSchema,
   DoctoraliaEmailOverviewResponseSchema,
@@ -29,6 +30,7 @@ import type {
   DoctoraliaCalendarMerged,
   DoctoraliaCalendarAuthStartResponse,
   DoctoraliaCalendarAuthStatusResponse,
+  DoctoraliaEmailMonthlySummaryPeriod,
   DoctoraliaEmailNotification,
   DoctoraliaEmailListResponse,
   DoctoraliaEmailOverview,
@@ -190,6 +192,27 @@ export async function fetchDoctoraliaEmailStats(): Promise<DoctoraliaEmailStats>
     );
   } catch (error) {
     throw toDoctoraliaApiError(error);
+  }
+
+  return response.data;
+}
+
+export async function fetchDoctoraliaEmailMonthlySummary(
+  year?: number
+): Promise<DoctoraliaEmailMonthlySummaryPeriod[]> {
+  let response;
+  try {
+    response = DoctoraliaEmailMonthlySummaryResponseSchema.parse(
+      await doctoraliaORPCClient.emailNotificationsMonthlySummary(
+        year !== undefined ? { year } : {}
+      )
+    );
+  } catch (error) {
+    throw toDoctoraliaApiError(error);
+  }
+
+  if (response.status !== "ok") {
+    throw new Error("No se pudo obtener el resumen mensual de Doctoralia");
   }
 
   return response.data;

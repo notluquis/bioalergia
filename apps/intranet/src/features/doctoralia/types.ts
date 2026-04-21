@@ -170,6 +170,15 @@ export interface DoctoraliaEmailStats {
   withPhone: number;
 }
 
+export interface DoctoraliaEmailMonthlySummaryPeriod {
+  period: string;
+  bookings: number;
+  modifications: number;
+  cancellations: number;
+  total: number;
+  cancellationRate: number;
+}
+
 export interface DoctoraliaEmailListResponse {
   notifications: DoctoraliaEmailNotification[];
   total: number;
