@@ -104,7 +104,7 @@ const DOCTORALIA_SIGNATURE_PATTERNS = [
   /doctoralia\.(cl|com|es|mx|ar|co|pe)/i,
   /tiene\s+un\s+nuevo\s+paciente\s+que\s+ha\s+reservado\s+una\s+cita/i,
   /ha\s+modificado\s+la\s+cita/i,
-  /cancel\w*\s+la\s+cita/i,
+  /cancel\S*\s+(la|su)\s+cita/i,
   /^fecha\s+y\s+hora$/im,
   /^servicio$/im,
   /^profesional$/im,
@@ -206,7 +206,8 @@ export function parseDoctoraliaEmail(text: string): DoctoraliaBookingInfo | null
 
   // --- Email type ---
   const isModification = lines.some((l) => /ha modificado la cita/i.test(l));
-  const isCancellation = !isModification && lines.some((l) => /cancel\w*\s+la\s+cita/i.test(l));
+  const isCancellation =
+    !isModification && lines.some((l) => /cancel\S*\s+(la|su)\s+cita/i.test(l));
   const eventType: DoctoraliaEmailEventType = isModification
     ? "MODIFICATION"
     : isCancellation
@@ -412,7 +413,7 @@ export function isLikelyDoctoraliaEmail(
     /^nueva cita:/im.test(normalizedText) ||
     /ha reservado desde doctoralia/im.test(normalizedText) ||
     /modifico su cita/im.test(normalizedText) ||
-    /cancelo su cita/im.test(normalizedText)
+    /cancel\S*\s+(la|su)\s+cita/im.test(normalizedText)
   ) {
     return true;
   }

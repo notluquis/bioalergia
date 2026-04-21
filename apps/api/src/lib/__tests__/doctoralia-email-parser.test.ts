@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { decodeEmailBody, htmlToText, parseDoctoraliaEmail } from "../whatsapp/email-parser";
+import {
+  decodeEmailBody,
+  htmlToText,
+  isLikelyDoctoraliaEmail,
+  parseDoctoraliaEmail,
+} from "../whatsapp/email-parser";
 
 const realDoctoraliaHtmlQuotedPrintable = `<!DOCTYPE html><html><body>
 <h1>Tiene una nueva reserva de cita desde Doctoralia</h1>
@@ -94,5 +99,40 @@ describe("doctoralia email parser", () => {
     );
     // 16:00 Chile (abril, UTC-4) = 20:00 UTC
     expect(parse(html)?.appointmentDate?.toISOString()).toBe("2026-04-09T20:00:00.000Z");
+  });
+
+  it("parses cancellation emails where the body says 'canceló su cita'", () => {
+    // The cancellation template uses "canceló su cita" in body (matching subject ❌ Name canceló su cita),
+    // not "la cita" like the old modification/booking templates. The ingest path saw these emails arrive
+    // in the monitored mailbox but parseDoctoraliaEmail returned eventType=BOOKING (wrong) before the fix,
+    // because /cancel\w*\s+la\s+cita/ did not match "canceló su cita" (both word and particle differ).
+    const html = `<!DOCTYPE html><html><body>
+<h1>=E2=9D=8C Mar=C3=ADa Paz cancel=C3=B3 su cita</h1>
+<table>
+  <tr><td>Mar=C3=ADa Paz Soto (+56 9 1234 5678 mpsoto@gmail.com)</td></tr>
+  <tr><td>Martes, 21 de abril de 2026 a las 16:45</td></tr>
+  <tr><td>Consulta Inmun=C3=B3logo (30 min)</td></tr>
+  <tr><td>Jos=C3=A9 Manuel Mart=C3=ADnez Mart=C3=ADnez</td></tr>
+  <tr><td>Bioalergia</td></tr>
+</table>
+</body></html>`;
+
+    const parsed = parse(html);
+
+    expect(parsed).not.toBeNull();
+    expect(parsed?.eventType).toBe("CANCELLATION");
+    expect(parsed?.patientName).toBe("María Paz Soto");
+    expect(parsed?.patientPhone).toBe("+56912345678");
+    expect(parsed?.patientEmail).toBe("mpsoto@gmail.com");
+    expect(parsed?.appointmentDate?.toISOString()).toBe("2026-04-21T20:45:00.000Z");
+    expect(parsed?.appointmentService).toBe("Consulta Inmunólogo (30 min)");
+    expect(parsed?.appointmentDoctor).toBe("José Manuel Martínez Martínez");
+    expect(parsed?.clinicAddress).toBe("Bioalergia");
+  });
+
+  it("recognises cancellation emails as Doctoralia via subject and body", () => {
+    const body = "❌ María Paz canceló su cita\nMaría Paz Soto (+56912345678 mp@gmail.com)";
+    expect(isLikelyDoctoraliaEmail(body, { subject: "❌ María Paz canceló su cita" })).toBe(true);
+    expect(isLikelyDoctoraliaEmail(body)).toBe(true);
   });
 });
