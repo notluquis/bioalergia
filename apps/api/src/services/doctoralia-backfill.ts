@@ -15,6 +15,12 @@ export const DOCTORALIA_BACKFILL_MIN_DATE = "2017-08-21";
 
 const WEEK_DELAY_MS = Number(process.env.DOCTORALIA_BACKFILL_WEEK_DELAY_MS ?? "1500");
 
+export type BackfillBucketCounts = {
+  inserted: number;
+  updated: number;
+  skipped: number;
+};
+
 export type DoctoraliaBackfillStatus = {
   running: boolean;
   startedAt: string | null;
@@ -24,11 +30,16 @@ export type DoctoraliaBackfillStatus = {
   weeksTotal: number;
   weeksProcessed: number;
   weeksFailed: number;
-  appointmentsInserted: number;
-  appointmentsUpdated: number;
+  schedules: BackfillBucketCounts;
+  appointments: BackfillBucketCounts;
+  workPeriods: BackfillBucketCounts;
   currentWindow: { from: string; to: string } | null;
   lastError: string | null;
 };
+
+function emptyBucket(): BackfillBucketCounts {
+  return { inserted: 0, updated: 0, skipped: 0 };
+}
 
 const state: DoctoraliaBackfillStatus = {
   running: false,
@@ -39,14 +50,21 @@ const state: DoctoraliaBackfillStatus = {
   weeksTotal: 0,
   weeksProcessed: 0,
   weeksFailed: 0,
-  appointmentsInserted: 0,
-  appointmentsUpdated: 0,
+  schedules: emptyBucket(),
+  appointments: emptyBucket(),
+  workPeriods: emptyBucket(),
   currentWindow: null,
   lastError: null,
 };
 
 export function getDoctoraliaBackfillStatus(): DoctoraliaBackfillStatus {
-  return { ...state, currentWindow: state.currentWindow ? { ...state.currentWindow } : null };
+  return {
+    ...state,
+    schedules: { ...state.schedules },
+    appointments: { ...state.appointments },
+    workPeriods: { ...state.workPeriods },
+    currentWindow: state.currentWindow ? { ...state.currentWindow } : null,
+  };
 }
 
 export function isDoctoraliaBackfillRunning(): boolean {
@@ -62,14 +80,55 @@ function resetState() {
   state.weeksTotal = 0;
   state.weeksProcessed = 0;
   state.weeksFailed = 0;
-  state.appointmentsInserted = 0;
-  state.appointmentsUpdated = 0;
+  state.schedules = emptyBucket();
+  state.appointments = emptyBucket();
+  state.workPeriods = emptyBucket();
   state.currentWindow = null;
   state.lastError = null;
 }
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export type PlannedBackfill = {
+  startMonday: dayjs.Dayjs;
+  stopMonday: dayjs.Dayjs;
+  effectiveEndDate: string;
+  weeksTotal: number;
+};
+
+export function planDoctoraliaBackfill(
+  endDate: string,
+  now: Date = new Date(),
+): PlannedBackfill {
+  const endDateNormalized = dayjs.tz(endDate, TIMEZONE).startOf("day");
+  if (!endDateNormalized.isValid()) {
+    throw new Error("Fecha objetivo inválida");
+  }
+
+  const minDate = dayjs.tz(DOCTORALIA_BACKFILL_MIN_DATE, TIMEZONE).startOf("day");
+  const effectiveEnd = endDateNormalized.isBefore(minDate) ? minDate : endDateNormalized;
+
+  const todayLocal = dayjs(now).tz(TIMEZONE).startOf("day");
+  const currentMonday = todayLocal.startOf("isoWeek");
+
+  if (!effectiveEnd.isBefore(currentMonday, "day")) {
+    throw new Error(
+      "La fecha objetivo debe ser anterior a la semana actual (el scraper ya cubre esa ventana).",
+    );
+  }
+
+  const targetMonday = effectiveEnd.startOf("isoWeek");
+  const startMonday = currentMonday.subtract(1, "week");
+  const weeksTotal = Math.max(1, startMonday.diff(targetMonday, "week") + 1);
+
+  return {
+    startMonday,
+    stopMonday: targetMonday,
+    effectiveEndDate: effectiveEnd.format("YYYY-MM-DD"),
+    weeksTotal,
+  };
 }
 
 export function startDoctoraliaBackfill(params: {
@@ -80,32 +139,18 @@ export function startDoctoraliaBackfill(params: {
     throw new Error("Ya hay un backfill en curso");
   }
 
-  const endDateNormalized = dayjs.tz(params.endDate, TIMEZONE).startOf("day");
-  const minDate = dayjs.tz(DOCTORALIA_BACKFILL_MIN_DATE, TIMEZONE).startOf("day");
-  const effectiveEnd = endDateNormalized.isBefore(minDate) ? minDate : endDateNormalized;
-
-  const todayLocal = dayjs().tz(TIMEZONE).startOf("day");
-  const currentMonday = todayLocal.startOf("isoWeek");
-
-  if (effectiveEnd.isAfter(currentMonday.subtract(1, "day"))) {
-    throw new Error(
-      "La fecha objetivo debe ser anterior a la semana actual (el scraper ya cubre esa ventana).",
-    );
-  }
-
-  const targetMonday = effectiveEnd.startOf("isoWeek");
-  const totalWeeks = Math.max(1, currentMonday.diff(targetMonday, "week"));
+  const plan = planDoctoraliaBackfill(params.endDate);
 
   resetState();
   state.running = true;
   state.startedAt = new Date().toISOString();
-  state.targetEndDate = effectiveEnd.format("YYYY-MM-DD");
+  state.targetEndDate = plan.effectiveEndDate;
   state.triggeredByUserId = params.triggeredByUserId;
-  state.weeksTotal = totalWeeks;
+  state.weeksTotal = plan.weeksTotal;
 
   void runBackfillLoop({
-    startMonday: currentMonday.subtract(1, "week"),
-    stopMonday: targetMonday,
+    startMonday: plan.startMonday,
+    stopMonday: plan.stopMonday,
     triggerUserId: params.triggeredByUserId,
   }).catch((error) => {
     const message = error instanceof Error ? error.message : String(error);
@@ -120,6 +165,12 @@ export function startDoctoraliaBackfill(params: {
   });
 
   return getDoctoraliaBackfillStatus();
+}
+
+function addCounts(target: BackfillBucketCounts, delta: BackfillBucketCounts) {
+  target.inserted += delta.inserted;
+  target.updated += delta.updated;
+  target.skipped += delta.skipped;
 }
 
 async function runBackfillLoop(params: {
@@ -142,10 +193,9 @@ async function runBackfillLoop(params: {
           "manual-backfill",
           params.triggerUserId,
         );
-        if ("appointments" in result) {
-          state.appointmentsInserted += result.appointments.inserted;
-          state.appointmentsUpdated += result.appointments.updated;
-        }
+        if ("schedules" in result) addCounts(state.schedules, result.schedules);
+        if ("appointments" in result) addCounts(state.appointments, result.appointments);
+        if ("workPeriods" in result) addCounts(state.workPeriods, result.workPeriods);
         state.weeksProcessed += 1;
         logEvent("doctoralia.backfill.week.success", {
           from,
@@ -176,4 +226,9 @@ async function runBackfillLoop(params: {
       weeksTotal: state.weeksTotal,
     });
   }
+}
+
+// Exported for tests only — resets the module-level mutex between test cases.
+export function __resetDoctoraliaBackfillStateForTests() {
+  resetState();
 }

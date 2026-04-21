@@ -262,6 +262,12 @@ const calendarImportResponseSchema = z.object({
   status: z.literal("ok"),
 });
 
+const backfillBucketCountsSchema = z.object({
+  inserted: z.number().int(),
+  updated: z.number().int(),
+  skipped: z.number().int(),
+});
+
 const calendarBackfillStatusDataSchema = z.object({
   running: z.boolean(),
   startedAt: z.string().nullable(),
@@ -271,8 +277,9 @@ const calendarBackfillStatusDataSchema = z.object({
   weeksTotal: z.number().int(),
   weeksProcessed: z.number().int(),
   weeksFailed: z.number().int(),
-  appointmentsInserted: z.number().int(),
-  appointmentsUpdated: z.number().int(),
+  schedules: backfillBucketCountsSchema,
+  appointments: backfillBucketCountsSchema,
+  workPeriods: backfillBucketCountsSchema,
   currentWindow: z
     .object({
       from: z.string(),
