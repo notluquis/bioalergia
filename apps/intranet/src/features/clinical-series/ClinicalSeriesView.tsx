@@ -2681,8 +2681,7 @@ function SourceEventsList({ sourceId }: { sourceId: number }) {
     <div className="mt-1">
       <Button
         className="h-auto min-h-0 p-0 text-[11px] text-foreground-400 hover:text-foreground-600"
-        onPress={(e) => {
-          e.stopPropagation();
+        onPress={() => {
           setOpen((v) => !v);
         }}
         variant="ghost"
