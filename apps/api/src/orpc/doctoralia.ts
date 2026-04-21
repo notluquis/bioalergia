@@ -109,6 +109,24 @@ const emailNotificationsStatsResponseSchema = z.object({
   status: z.literal("ok"),
 });
 
+const emailNotificationsMonthlySummaryQuerySchema = z.object({
+  year: z.number().int().min(2020).max(2100).optional(),
+});
+
+const emailNotificationsMonthlySummaryResponseSchema = z.object({
+  data: z.array(
+    z.strictObject({
+      period: z.string().regex(/^\d{4}-\d{2}$/),
+      bookings: z.number().int(),
+      modifications: z.number().int(),
+      cancellations: z.number().int(),
+      total: z.number().int(),
+      cancellationRate: z.number(),
+    }),
+  ),
+  status: z.literal("ok"),
+});
+
 const emailNotificationsIngestResponseSchema = z.object({
   data: z.object({
     alreadyProcessed: z.number(),
@@ -751,6 +769,61 @@ const doctoraliaORPCRouterBase = {
         data: { notifications },
         status: "ok",
       };
+    }),
+
+  emailNotificationsMonthlySummary: authed
+    .route({ method: "GET", path: "/email-notifications/monthly-summary" })
+    .input(emailNotificationsMonthlySummaryQuerySchema)
+    .output(emailNotificationsMonthlySummaryResponseSchema)
+    .handler(async ({ input }: { input: z.input<typeof emailNotificationsMonthlySummaryQuerySchema> }) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let query = (db.$qb as any)
+        .selectFrom("DoctoraliaEmailNotification")
+        .select(["eventType", "appointmentDate"])
+        .where("appointmentDate", "is not", null);
+
+      if (input.year !== undefined) {
+        const yearStart = new Date(Date.UTC(input.year, 0, 1));
+        const nextYearStart = new Date(Date.UTC(input.year + 1, 0, 1));
+        query = query.where("appointmentDate", ">=", yearStart).where("appointmentDate", "<", nextYearStart);
+      }
+
+      const rows = (await query.execute()) as Array<{
+        eventType: "BOOKING" | "CANCELLATION" | "MODIFICATION";
+        appointmentDate: Date | string;
+      }>;
+
+      const buckets = new Map<string, { bookings: number; modifications: number; cancellations: number }>();
+      for (const row of rows) {
+        const date = row.appointmentDate instanceof Date ? row.appointmentDate : new Date(row.appointmentDate);
+        if (Number.isNaN(date.getTime())) continue;
+        const period = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+        let bucket = buckets.get(period);
+        if (!bucket) {
+          bucket = { bookings: 0, modifications: 0, cancellations: 0 };
+          buckets.set(period, bucket);
+        }
+        if (row.eventType === "BOOKING") bucket.bookings++;
+        else if (row.eventType === "MODIFICATION") bucket.modifications++;
+        else if (row.eventType === "CANCELLATION") bucket.cancellations++;
+      }
+
+      const data = Array.from(buckets.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([period, counts]) => {
+          const total = counts.bookings + counts.modifications + counts.cancellations;
+          const cancellationRate = counts.bookings > 0 ? counts.cancellations / counts.bookings : 0;
+          return {
+            period,
+            bookings: counts.bookings,
+            modifications: counts.modifications,
+            cancellations: counts.cancellations,
+            total,
+            cancellationRate,
+          };
+        });
+
+      return { data, status: "ok" as const };
     }),
 
   emailNotificationsIngest: canManageDoctoraliaCalendar
