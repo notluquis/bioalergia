@@ -191,7 +191,10 @@ export function MercadoPagoSettingsPage() {
     refetchIntervalInBackground: false,
     refetchOnReconnect: true,
     refetchOnWindowFocus: true,
-    placeholderData: keepPreviousData,
+    placeholderData: (previousData, previousQuery) => {
+      const previousType = previousQuery?.queryKey[1];
+      return previousType === reportType ? previousData : undefined;
+    },
   });
   const reports = reportResponse?.reports ?? [];
   const reportTotal = reportResponse?.total ?? reports.length;
@@ -252,6 +255,9 @@ export function MercadoPagoSettingsPage() {
     const next = String(key);
     if (next === "release" || next === "settlement" || next === "sync") {
       setActiveTab(next);
+      if (next === "release" || next === "settlement") {
+        setReportPagination((prev) => ({ ...prev, pageIndex: 0 }));
+      }
     }
   };
   const closeImportStatsModal = () => setLastImportStats(null);
