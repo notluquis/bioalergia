@@ -349,6 +349,43 @@ export const calendarMergedResponseSchema = z.object({
   status: z.literal("ok"),
 });
 
+export const calendarBackfillBucketCountsSchema = z.object({
+  inserted: z.number().int(),
+  updated: z.number().int(),
+  skipped: z.number().int(),
+});
+
+export const calendarBackfillStatusDataSchema = z.object({
+  running: z.boolean(),
+  startedAt: z.string().nullable(),
+  endedAt: z.string().nullable(),
+  targetEndDate: z.string().nullable(),
+  triggeredByUserId: z.number().int().nullable(),
+  weeksTotal: z.number().int(),
+  weeksProcessed: z.number().int(),
+  weeksFailed: z.number().int(),
+  schedules: calendarBackfillBucketCountsSchema,
+  appointments: calendarBackfillBucketCountsSchema,
+  workPeriods: calendarBackfillBucketCountsSchema,
+  currentWindow: z
+    .object({
+      from: z.string(),
+      to: z.string(),
+    })
+    .nullable(),
+  lastError: z.string().nullable(),
+  minEndDate: z.string(),
+});
+
+export const calendarBackfillStatusResponseSchema = z.object({
+  data: calendarBackfillStatusDataSchema,
+  status: z.literal("ok"),
+});
+
+export const calendarBackfillStartInputSchema = z.object({
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+});
+
 export const doctoraliaContract = {
   calendarAppointments: oc
     .route({ method: "GET", path: "/calendar/appointments" })
@@ -397,6 +434,13 @@ export const doctoraliaContract = {
     .route({ method: "GET", path: "/calendar-appointments/monthly-summary" })
     .input(calendarAppointmentsMonthlySummaryQuerySchema)
     .output(calendarAppointmentsMonthlySummaryResponseSchema),
+  calendarBackfillStatus: oc
+    .route({ method: "GET", path: "/calendar/backfill/status" })
+    .output(calendarBackfillStatusResponseSchema),
+  calendarBackfillStart: oc
+    .route({ method: "POST", path: "/calendar/backfill/start" })
+    .input(calendarBackfillStartInputSchema)
+    .output(calendarBackfillStatusResponseSchema),
   syncLogs: oc.route({ method: "GET", path: "/sync/logs" }).output(syncLogsResponseSchema),
   scraperCookiesStatus: oc
     .route({ method: "GET", path: "/scraper/cookies/status" })
