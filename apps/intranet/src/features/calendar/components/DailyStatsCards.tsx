@@ -18,12 +18,11 @@ export function DailyStatsCards({
   events,
   eventsCount,
 }: Readonly<DailyStatsCardsProps>) {
-  const confirmedCount = events.filter((event) => event.attended === true).length;
-  const noShowCount = events.filter((event) => event.attended === false).length;
+  const confirmedCount = events.filter((event) => event.attended != null).length;
   const inductionCount = events.filter((event) => event.treatmentStage === "Inducción").length;
   const maintenanceCount = events.filter((event) => event.treatmentStage === "Mantención").length;
   const withoutStageCount = events.filter(
-    (event) => !event.treatmentStage || event.treatmentStage.trim() === "",
+    (event) => !event.treatmentStage || event.treatmentStage.trim() === ""
   ).length;
   const totalDosageMl = events.reduce((sum, event) => sum + (event.dosageValue ?? 0), 0);
   const collectionRate = amountExpected > 0 ? (amountPaid / amountExpected) * 100 : 0;
@@ -33,17 +32,9 @@ export function DailyStatsCards({
       <MetricCard title="Eventos" tone="primary" value={numberFormatter.format(eventsCount)} />
 
       <MetricCard
-        subtitle={`No show: ${numberFormatter.format(noShowCount)}`}
         title="Confirmados"
         tone="success"
         value={numberFormatter.format(confirmedCount)}
-      />
-
-      <MetricCard
-        subtitle={`${eventsCount > 0 ? ((noShowCount / eventsCount) * 100).toFixed(1) : "0.0"}% del día`}
-        title="No Show"
-        tone={noShowCount > 0 ? "warning" : "default"}
-        value={numberFormatter.format(noShowCount)}
       />
 
       <MetricCard
