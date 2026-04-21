@@ -1,11 +1,10 @@
-export type DoctoraliaMetricKey = "total" | "programmed" | "cancelled" | "attended" | "noShow";
+export type DoctoraliaMetricKey = "total" | "programmed" | "cancelled" | "attended";
 
 export interface DoctoraliaMonthlyChartDatum {
   readonly month: string;
   readonly programmed: number;
   readonly cancelled: number;
   readonly attended: number;
-  readonly noShow: number;
   readonly total: number;
   readonly cancellationRate: number;
 }
@@ -14,7 +13,6 @@ export interface DoctoraliaYearlyTotals {
   readonly programmed: number;
   readonly cancelled: number;
   readonly attended: number;
-  readonly noShow: number;
   readonly total: number;
   readonly cancellationRate: number;
 }
@@ -28,14 +26,12 @@ export const DOCTORALIA_METRIC_LABELS: Record<DoctoraliaMetricKey, string> = {
   programmed: "Programadas",
   cancelled: "Canceladas",
   attended: "Atendidas",
-  noShow: "No-show",
 };
 
 export const DOCTORALIA_CHART_COLORS = {
   programmed: "#3b82f6",
   cancelled: "#ef4444",
   attended: "#10b981",
-  noShow: "#f59e0b",
   total: "#8b5cf6",
   cancellationRate: "#f97316",
 } as const;

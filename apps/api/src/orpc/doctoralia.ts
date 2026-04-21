@@ -144,7 +144,6 @@ const calendarAppointmentsMonthlySummaryResponseSchema = z.object({
       programmed: z.number().int(),
       cancelled: z.number().int(),
       attended: z.number().int(),
-      noShow: z.number().int(),
       total: z.number().int(),
       cancellationRate: z.number(),
     }),
@@ -958,7 +957,7 @@ const doctoraliaORPCRouterBase = {
 
       const buckets = new Map<
         string,
-        { programmed: number; cancelled: number; attended: number; noShow: number }
+        { programmed: number; cancelled: number; attended: number }
       >();
       for (const row of rows) {
         const date = row.startAt instanceof Date ? row.startAt : new Date(row.startAt);
@@ -966,7 +965,7 @@ const doctoraliaORPCRouterBase = {
         const period = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
         let bucket = buckets.get(period);
         if (!bucket) {
-          bucket = { programmed: 0, cancelled: 0, attended: 0, noShow: 0 };
+          bucket = { programmed: 0, cancelled: 0, attended: 0 };
           buckets.set(period, bucket);
         }
         if (row.status === 0) bucket.programmed++;
@@ -977,14 +976,13 @@ const doctoraliaORPCRouterBase = {
       const data = Array.from(buckets.entries())
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([period, counts]) => {
-          const total = counts.programmed + counts.cancelled + counts.attended + counts.noShow;
+          const total = counts.programmed + counts.cancelled + counts.attended;
           const cancellationRate = total > 0 ? counts.cancelled / total : 0;
           return {
             period,
             programmed: counts.programmed,
             cancelled: counts.cancelled,
             attended: counts.attended,
-            noShow: counts.noShow,
             total,
             cancellationRate,
           };

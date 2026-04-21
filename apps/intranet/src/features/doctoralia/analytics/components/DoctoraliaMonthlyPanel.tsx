@@ -86,7 +86,7 @@ export function DoctoraliaMonthlyPanel({
         </Select>
       </Surface>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
         <Card variant="secondary">
           <Card.Header>
             <Card.Title className="text-sm">Total</Card.Title>
@@ -119,19 +119,11 @@ export function DoctoraliaMonthlyPanel({
             <span className="font-bold text-2xl">{formatDoctoraliaNumber(totals.cancelled)}</span>
           </Card.Content>
         </Card>
-        <Card variant="secondary">
-          <Card.Header>
-            <Card.Title className="text-sm">No-show</Card.Title>
-          </Card.Header>
-          <Card.Content>
-            <span className="font-bold text-2xl">{formatDoctoraliaNumber(totals.noShow)}</span>
-          </Card.Content>
-        </Card>
       </div>
 
       <Card variant="secondary">
         <Card.Header>
-          <Card.Title>{`Citas Mensuales ${selectedYear} (Programadas + Atendidas + Canceladas + No-show)`}</Card.Title>
+          <Card.Title>{`Citas Mensuales ${selectedYear} (Programadas + Atendidas + Canceladas)`}</Card.Title>
           <Card.Description>
             Serie apilada por estado de la cita con línea de tasa de cancelación en eje secundario.
             Basado en <strong>calendar appointments</strong> agrupados por fecha de la cita
@@ -209,14 +201,6 @@ export function DoctoraliaMonthlyPanel({
                 stackId="total"
                 fill={DOCTORALIA_CHART_COLORS.cancelled}
                 name="Canceladas"
-                radius={[0, 0, 0, 0]}
-              />
-              <Bar
-                yAxisId="counts"
-                dataKey="noShow"
-                stackId="total"
-                fill={DOCTORALIA_CHART_COLORS.noShow}
-                name="No-show"
                 radius={[6, 6, 0, 0]}
               />
               <Line

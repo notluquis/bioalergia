@@ -35,7 +35,6 @@ const METRIC_OPTIONS: readonly DoctoraliaMetricKey[] = [
   "programmed",
   "cancelled",
   "attended",
-  "noShow",
 ] as const;
 
 function isDoctoraliaMetricKey(value: string): value is DoctoraliaMetricKey {

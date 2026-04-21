@@ -211,7 +211,6 @@ export const DoctoraliaCalendarMonthlySummaryPeriodSchema = z.strictObject({
   programmed: z.number().int(),
   cancelled: z.number().int(),
   attended: z.number().int(),
-  noShow: z.number().int(),
   total: z.number().int(),
   cancellationRate: z.number(),
 });

@@ -62,7 +62,6 @@ export function buildDoctoraliaMonthlyChartData(
       programmed: item?.programmed ?? 0,
       cancelled: item?.cancelled ?? 0,
       attended: item?.attended ?? 0,
-      noShow: item?.noShow ?? 0,
       total: item?.total ?? 0,
       cancellationRate: item?.cancellationRate ?? 0,
     };
@@ -75,10 +74,9 @@ export function calculateDoctoraliaYearlyTotals(
   const programmed = data.reduce((sum, d) => sum + d.programmed, 0);
   const cancelled = data.reduce((sum, d) => sum + d.cancelled, 0);
   const attended = data.reduce((sum, d) => sum + d.attended, 0);
-  const noShow = data.reduce((sum, d) => sum + d.noShow, 0);
-  const total = programmed + cancelled + attended + noShow;
+  const total = programmed + cancelled + attended;
   const cancellationRate = total > 0 ? cancelled / total : 0;
-  return { programmed, cancelled, attended, noShow, total, cancellationRate };
+  return { programmed, cancelled, attended, total, cancellationRate };
 }
 
 export function buildDoctoraliaComparisonChartData(

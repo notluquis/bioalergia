@@ -207,7 +207,6 @@ export interface DoctoraliaCalendarMonthlySummaryPeriod {
   programmed: number;
   cancelled: number;
   attended: number;
-  noShow: number;
   total: number;
   cancellationRate: number;
 }
