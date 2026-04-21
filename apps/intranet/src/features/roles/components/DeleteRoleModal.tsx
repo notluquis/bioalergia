@@ -157,7 +157,7 @@ function DeleteRoleForm({
               ))}
             </ul>
 
-            <div className="form-control w-full">
+            <div className="w-full space-y-1">
               <span className="mb-1 flex items-center gap-2 font-medium text-sm">
                 <ArrowRight className="h-4 w-4" />
                 Mover usuarios a:

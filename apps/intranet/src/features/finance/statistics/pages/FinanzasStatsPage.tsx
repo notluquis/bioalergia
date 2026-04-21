@@ -139,7 +139,7 @@ export function FinanzasStatsPage() {
         className="grid gap-4 rounded-2xl border border-default-100 bg-background p-6 shadow-sm sm:grid-cols-5"
         onSubmit={handleSubmit}
       >
-        <div className="form-control sm:col-span-2">
+        <div className="sm:col-span-2">
           <DateRangePicker
             className="w-full"
             onChange={(value) => {
@@ -189,7 +189,7 @@ export function FinanzasStatsPage() {
           </DateRangePicker>
         </div>
 
-        <div className="form-control">
+        <div>
           <Select
             className="w-full"
             value={quickRange}

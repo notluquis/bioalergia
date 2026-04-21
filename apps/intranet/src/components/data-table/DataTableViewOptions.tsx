@@ -1,5 +1,5 @@
 import type { Selection } from "@heroui/react";
-import { Button, Dropdown, Input, Label, TextField } from "@heroui/react";
+import { Button, Dropdown, SearchField } from "@heroui/react";
 import type { Table } from "@tanstack/react-table";
 import { Check, Settings2 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -46,15 +46,18 @@ export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps
       </Dropdown.Trigger>
       <Dropdown.Popover className="min-w-55" placement="bottom end">
         <div className="border-default-200/60 border-b p-2">
-          <TextField value={search} onChange={(v) => setSearch(v)}>
-            <Input
-              className="h-8"
-              onKeyDown={(e) => {
-                e.stopPropagation();
-              }}
-              placeholder="Buscar..."
-            />
-          </TextField>
+          <SearchField value={search} onChange={setSearch} variant="secondary">
+            <SearchField.Group>
+              <SearchField.SearchIcon />
+              <SearchField.Input
+                onKeyDown={(event) => {
+                  event.stopPropagation();
+                }}
+                placeholder="Buscar..."
+              />
+              <SearchField.ClearButton />
+            </SearchField.Group>
+          </SearchField>
         </div>
         <Dropdown.Menu
           aria-label="Toggle columns"

@@ -2,6 +2,7 @@ import {
   Alert,
   Button,
   Calendar,
+  Card,
   Chip,
   DateField,
   DatePicker,
@@ -27,7 +28,7 @@ import { SkipScheduleModal } from "@/features/services/components/SkipScheduleMo
 import { useServicesOverview } from "@/features/services/hooks/use-services-overview";
 import { servicesActions, servicesStore } from "@/features/services/store";
 import { currencyFormatter, numberFormatter } from "@/lib/format";
-import { CARD_COMPACT, TITLE_MD } from "@/lib/styles";
+import { TITLE_MD } from "@/lib/styles";
 export function ServicesOverviewContent() {
   const [syncError, setSyncError] = useState<null | string>(null);
   const [syncMessage, setSyncMessage] = useState<null | string>(null);
@@ -163,8 +164,8 @@ export function ServicesOverviewContent() {
         </div>
       </div>
 
-      <div className={CARD_COMPACT}>
-        <div className="card-body">
+      <Card className="shadow-sm">
+        <Card.Content className="p-4">
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {stats.map((stat) => (
               <div className="space-y-1" key={stat.title}>
@@ -178,11 +179,11 @@ export function ServicesOverviewContent() {
               </div>
             ))}
           </div>
-        </div>
-      </div>
+        </Card.Content>
+      </Card>
 
-      <div className={CARD_COMPACT}>
-        <div className="card-body">
+      <Card className="shadow-sm">
+        <Card.Content className="p-4">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <span className="font-semibold text-foreground text-sm">Filtros</span>
             {activeFiltersCount > 0 && (
@@ -196,8 +197,8 @@ export function ServicesOverviewContent() {
             onChange={handleFilterChange}
             services={services}
           />
-        </div>
-      </div>
+        </Card.Content>
+      </Card>
 
       <div className="space-y-3">
         <div className="flex items-center justify-between">

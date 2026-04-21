@@ -1,8 +1,6 @@
-import { Dropdown, Label, Separator } from "@heroui/react";
+import { Button, Dropdown, Label, Separator } from "@heroui/react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
-
-import { Button } from "./Button";
 
 const meta: Meta = {
   title: "UI/DropdownMenu",

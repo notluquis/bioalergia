@@ -1,6 +1,5 @@
+import { Button } from "@heroui/react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-
-import { Button } from "./Button";
 
 const meta: Meta<typeof Button> = {
   title: "UI/Button",
@@ -40,6 +39,6 @@ export const Ghost: Story = {
 
 export const Loading: Story = {
   args: {
-    isLoading: true,
+    isPending: true,
   },
 };

@@ -1,4 +1,4 @@
-import { Alert, Chip, Skeleton } from "@heroui/react";
+import { Alert, Card, Chip, Skeleton } from "@heroui/react";
 import dayjs from "dayjs";
 
 import { DataTable } from "@/components/data-table/DataTable";
@@ -28,10 +28,10 @@ export const DailyBalancesPanel = function DailyBalancesPanel({
   saving,
 }: Props) {
   return (
-    <section className="card bg-background shadow-sm">
-      <div className="card-body">
+    <Card className="shadow-sm">
+      <Card.Content className="space-y-4 p-6">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="card-title text-lg text-primary">Registro de saldos</h2>
+          <h2 className="text-lg font-semibold text-primary">Registro de saldos</h2>
           {report?.previous && (
             <Chip className="gap-2" size="lg" variant="tertiary">
               <span className="text-xs">
@@ -51,8 +51,8 @@ export const DailyBalancesPanel = function DailyBalancesPanel({
         )}
 
         {renderContent()}
-      </div>
-    </section>
+      </Card.Content>
+    </Card>
   );
 
   function renderContent() {

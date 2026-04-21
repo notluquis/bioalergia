@@ -6,6 +6,7 @@ import { useSettings } from "@/context/SettingsContext";
 import type { Employee } from "@/features/hr/employees/types";
 import { apiClient } from "@/lib/api-client";
 import { fmtCLP } from "@/lib/format";
+import { toast } from "@/lib/toast-interceptor";
 import { formatRetentionPercent } from "~/shared/retention";
 
 import type { BulkRow, TimesheetSummaryRow } from "../types";
@@ -86,7 +87,7 @@ function openPdfPreviewOrAlert(dataUri: string) {
     previewWindow.location.href = dataUri;
     return;
   }
-  alert(
+  toast.warning(
     "No se pudo abrir la vista previa. Revisa si el navegador bloqueó las ventanas emergentes."
   );
 }
@@ -182,7 +183,7 @@ export function TimesheetExportPDF({
       finalizePdfExport({ doc, employee, monthLabel, preview });
     } catch (error: unknown) {
       console.error("Export PDF error:", error);
-      alert("No se pudo generar el PDF. Revisa la consola para más detalles.");
+      toast.error("No se pudo generar el PDF. Revisa la consola para más detalles.");
     }
   }
 

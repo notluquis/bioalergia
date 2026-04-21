@@ -1,4 +1,4 @@
-import { Button, Dropdown, Input, Label, type Selection, TextField } from "@heroui/react";
+import { Button, Chip, Dropdown, Label, SearchField, type Selection } from "@heroui/react";
 import type { Column } from "@tanstack/react-table";
 import { Check, PlusCircle } from "lucide-react";
 import { type ComponentType, useMemo, useState } from "react";
@@ -48,27 +48,27 @@ export function DataTableFacetedFilter<TData, TValue>({
           {selectedKeys.size > 0 && (
             <>
               <div className="mx-2 h-4 w-px bg-default-100" />
-              <div className="badge badge-sm badge-secondary hidden lg:flex">
+              <Chip size="sm" variant="soft">
                 {selectedKeys.size}
-              </div>
-              <div className="badge badge-sm badge-secondary flex lg:hidden">
-                {selectedKeys.size}
-              </div>
+              </Chip>
             </>
           )}
         </Button>
       </Dropdown.Trigger>
       <Dropdown.Popover className="w-50 p-0" placement="bottom start">
         <div className="border-default-200/60 border-b p-2">
-          <TextField value={search} onChange={(v) => setSearch(v)}>
-            <Input
-              className="h-8"
-              onKeyDown={(e) => {
-                e.stopPropagation();
-              }}
-              placeholder={title}
-            />
-          </TextField>
+          <SearchField value={search} onChange={setSearch} variant="secondary">
+            <SearchField.Group>
+              <SearchField.SearchIcon />
+              <SearchField.Input
+                onKeyDown={(event) => {
+                  event.stopPropagation();
+                }}
+                placeholder={title}
+              />
+              <SearchField.ClearButton />
+            </SearchField.Group>
+          </SearchField>
         </div>
         <Dropdown.Menu
           aria-label={title}

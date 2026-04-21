@@ -1,11 +1,9 @@
-import { Card, Description } from "@heroui/react";
+import { Button, Card, Description } from "@heroui/react";
 import { type ErrorInfo, type ReactNode } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 
 import { signalAppFallback } from "@/lib/app-recovery";
 import { logger } from "@/lib/logger";
-
-import { Button } from "./Button";
 
 // Errores que indican un nuevo deploy (cache stale)
 const DEPLOY_ERROR_PATTERNS = [

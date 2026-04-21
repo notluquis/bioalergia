@@ -1,5 +1,6 @@
 import {
   Button,
+  Card,
   Description,
   Input,
   Label,
@@ -533,8 +534,8 @@ function createDetailsFormState(user: User): UserDetailsFormState {
 function UserSecurityOverview({ users }: { users: User[] }) {
   return (
     <div className="grid gap-4 md:grid-cols-3">
-      <div className="card bg-background shadow-sm">
-        <div className="card-body">
+      <Card className="shadow-sm">
+        <Card.Content className="p-5">
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
               <UserCog size={24} />
@@ -544,11 +545,11 @@ function UserSecurityOverview({ users }: { users: User[] }) {
               <Description className="text-default-500 text-sm">Usuarios totales</Description>
             </div>
           </div>
-        </div>
-      </div>
+        </Card.Content>
+      </Card>
 
-      <div className="card bg-background shadow-sm">
-        <div className="card-body">
+      <Card className="shadow-sm">
+        <Card.Content className="p-5">
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-success/10 text-success">
               <Shield size={24} />
@@ -560,11 +561,11 @@ function UserSecurityOverview({ users }: { users: User[] }) {
               <Description className="text-default-500 text-sm">Con MFA activo</Description>
             </div>
           </div>
-        </div>
-      </div>
+        </Card.Content>
+      </Card>
 
-      <div className="card bg-background shadow-sm">
-        <div className="card-body">
+      <Card className="shadow-sm">
+        <Card.Content className="p-5">
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-info/10 text-info">
               <Key size={24} />
@@ -576,8 +577,8 @@ function UserSecurityOverview({ users }: { users: User[] }) {
               <Description className="text-default-500 text-sm">Con passkey</Description>
             </div>
           </div>
-        </div>
-      </div>
+        </Card.Content>
+      </Card>
     </div>
   );
 }
@@ -622,7 +623,7 @@ function EditRoleModalContent({
                   inmediatamente.
                 </Description>
 
-                <div className="form-control">
+                <div className="w-full">
                   <Select
                     className="w-full"
                     placeholder="Seleccionar rol"
@@ -650,7 +651,7 @@ function EditRoleModalContent({
                   </Select>
                 </div>
 
-                <div className="modal-action mt-6">
+                <div className="mt-6 flex justify-end gap-2">
                   <Button onPress={onCancel} variant="ghost">
                     Cancelar
                   </Button>

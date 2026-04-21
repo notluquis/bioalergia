@@ -1,4 +1,4 @@
-import { Button, Input, TextField } from "@heroui/react";
+import { Button, Label, SearchField } from "@heroui/react";
 import type { Table } from "@tanstack/react-table";
 import { Download, X } from "lucide-react";
 import Papa from "papaparse";
@@ -80,15 +80,19 @@ export function DataTableToolbar<TData>({
     <div className="flex flex-col items-start justify-between gap-4 py-1 sm:flex-row sm:items-center">
       <div className="flex w-full flex-1 flex-col items-start space-y-2 sm:flex-row sm:items-center sm:space-x-2 sm:space-y-0">
         {enableGlobalFilter && (
-          <TextField
+          <SearchField
             className="w-full sm:w-62.5 lg:w-87.5"
-            onChange={(value) => {
-              table.setGlobalFilter(value);
-            }}
+            onChange={table.setGlobalFilter}
             value={globalFilter ?? ""}
+            variant="secondary"
           >
-            <Input className="h-9" placeholder="Filtrar..." />
-          </TextField>
+            <Label className="sr-only">Filtrar tabla</Label>
+            <SearchField.Group>
+              <SearchField.SearchIcon />
+              <SearchField.Input placeholder="Filtrar..." />
+              <SearchField.ClearButton />
+            </SearchField.Group>
+          </SearchField>
         )}
         {filters.map((filter) => {
           const column = table.getColumn(filter.columnId);

@@ -5,7 +5,7 @@
  * The old React Router v7 routes have been migrated to file-based routing in src/routes/.
  */
 
-import { Spinner } from "@heroui/react";
+import { Button, Spinner } from "@heroui/react";
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { lazy, StrictMode, Suspense, useEffect } from "react";
@@ -14,7 +14,6 @@ import { ZodError } from "zod";
 import { AuthListener } from "@/features/auth/components/AuthListener";
 import { ApiError } from "@/lib/api-client";
 import { AppFallback } from "./components/features/AppFallback";
-import { Button } from "./components/ui/Button";
 import { ChunkErrorBoundary } from "./components/ui/ChunkErrorBoundary";
 import { GlobalError } from "./components/ui/GlobalError";
 import { useAuth } from "./context/AuthContext";

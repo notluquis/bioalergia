@@ -1,12 +1,12 @@
 import type { ReactNode } from "react";
-import { Toaster } from "sonner";
+import { Toast } from "@heroui/react";
 import { toast } from "@/lib/toast-interceptor";
 
 export function ToastProvider({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <>
       {children}
-      <Toaster closeButton position="bottom-right" richColors />
+      <Toast.Container placement="bottom end" />
     </>
   );
 }

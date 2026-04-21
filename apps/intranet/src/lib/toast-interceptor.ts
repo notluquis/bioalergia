@@ -1,14 +1,14 @@
 /**
  * Global toast interceptor that automatically persists all toasts to notification history.
- * Use this instead of importing toast directly from 'sonner'.
+ * Use this instead of importing toast directly from '@heroui/react'.
  */
 
-import { toast as sonnerToast } from "sonner";
+import { toast as heroToast } from "@heroui/react";
 import { addNotification } from "@/features/notifications/store/use-notification-store";
 
-type ToastOptions = Parameters<typeof sonnerToast.success>[1];
-type PromiseOptions = Parameters<typeof sonnerToast.promise>[1];
-type ToastPromise = Parameters<typeof sonnerToast.promise>[0];
+type ToastOptions = Parameters<typeof heroToast.success>[1];
+type PromiseOptions = Parameters<typeof heroToast.promise>[1];
+type ToastPromise = Parameters<typeof heroToast.promise>[0];
 
 function asMessage(value: unknown, fallback: string, input?: unknown): string {
   let resolved = value;
@@ -33,12 +33,15 @@ function asMessage(value: unknown, fallback: string, input?: unknown): string {
 }
 
 function getTitle(description: unknown, fallback: string): string {
-  return description ? JSON.stringify(description) : fallback;
+  if (typeof description === "string" && description.trim().length > 0) {
+    return description;
+  }
+  return description ? String(description) : fallback;
 }
 
 /**
- * Wrapper around Sonner's toast that automatically saves to notification history.
- * Maps Sonner toast types to notification types.
+ * Wrapper around HeroUI toast that automatically saves to notification history.
+ * Maps toast variants to notification types.
  */
 export const toast = {
   success: (message: string, options?: ToastOptions) => {
@@ -47,7 +50,7 @@ export const toast = {
       message,
       title: getTitle(options?.description, "Éxito"),
     });
-    return sonnerToast.success(message, options);
+    return heroToast.success(message, options);
   },
 
   error: (message: string, options?: ToastOptions) => {
@@ -56,7 +59,7 @@ export const toast = {
       message,
       title: getTitle(options?.description, "Error"),
     });
-    return sonnerToast.error(message, options);
+    return heroToast.error(message, options);
   },
 
   info: (message: string, options?: ToastOptions) => {
@@ -65,7 +68,7 @@ export const toast = {
       message,
       title: getTitle(options?.description, "Información"),
     });
-    return sonnerToast.info(message, options);
+    return heroToast.info(message, options);
   },
 
   warning: (message: string, options?: ToastOptions) => {
@@ -74,7 +77,7 @@ export const toast = {
       message,
       title: getTitle(options?.description, "Advertencia"),
     });
-    return sonnerToast.warning(message, options);
+    return heroToast.warning(message, options);
   },
 
   loading: (message: string, options?: ToastOptions) => {
@@ -83,7 +86,7 @@ export const toast = {
       message,
       title: getTitle(options?.description, "En progreso"),
     });
-    return sonnerToast.loading(message, options);
+    return heroToast.loading(message, options);
   },
 
   promise: (promise: ToastPromise, options?: PromiseOptions) => {
@@ -112,13 +115,13 @@ export const toast = {
           message: asMessage(
             options?.error,
             error instanceof Error ? error.message : "Error en la operación",
-            error,
+            error
           ),
           title: "Error",
         });
       });
 
-    return sonnerToast.promise(operation, options);
+    return heroToast.promise(operation, options);
   },
 
   message: (message: string, options?: ToastOptions) => {
@@ -127,8 +130,8 @@ export const toast = {
       message,
       title: getTitle(options?.description, "Información"),
     });
-    return sonnerToast.message(message, options);
+    return heroToast(message, options);
   },
 
-  dismiss: sonnerToast.dismiss,
+  dismiss: heroToast.clear,
 };

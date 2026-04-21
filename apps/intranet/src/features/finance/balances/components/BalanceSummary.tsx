@@ -1,4 +1,4 @@
-import { Description, Skeleton } from "@heroui/react";
+import { Card, Description, Skeleton } from "@heroui/react";
 import dayjs from "dayjs";
 
 import { fmtCLP } from "@/lib/format";
@@ -19,9 +19,9 @@ export function BalanceSummary({ error, loading, report }: Readonly<BalanceSumma
 
   if (loading) {
     return (
-      <section className="card bg-background shadow-sm">
-        <div className="card-body">
-          <span className="card-title text-lg text-primary">Conciliación</span>
+      <Card className="shadow-sm">
+        <Card.Content className="space-y-3 p-6">
+          <h2 className="text-lg font-semibold text-primary">Conciliación</h2>
           {error && (
             <Description className="border-rose-300/80 border-l-4 bg-background px-4 py-2 text-rose-700 text-xs">
               {error}
@@ -37,16 +37,16 @@ export function BalanceSummary({ error, loading, report }: Readonly<BalanceSumma
               <Skeleton className="h-4 w-2/3 rounded-md" />
             </div>
           </div>
-        </div>
-      </section>
+        </Card.Content>
+      </Card>
     );
   }
 
   if (!report) {
     return (
-      <section className="card bg-background shadow-sm">
-        <div className="card-body">
-          <span className="card-title text-lg text-primary">Conciliación</span>
+      <Card className="shadow-sm">
+        <Card.Content className="space-y-3 p-6">
+          <h2 className="text-lg font-semibold text-primary">Conciliación</h2>
           {error && (
             <Description className="border-rose-300/80 border-l-4 bg-background px-4 py-2 text-rose-700 text-xs">
               {error}
@@ -55,16 +55,16 @@ export function BalanceSummary({ error, loading, report }: Readonly<BalanceSumma
           <Description className="text-foreground text-sm">
             Selecciona un rango para revisar los saldos de cierre registrados.
           </Description>
-        </div>
-      </section>
+        </Card.Content>
+      </Card>
     );
   }
 
   if (!hasRecordedBalances) {
     return (
-      <section className="card bg-background shadow-sm">
-        <div className="card-body">
-          <span className="card-title text-lg text-primary">Conciliación</span>
+      <Card className="shadow-sm">
+        <Card.Content className="space-y-3 p-6">
+          <h2 className="text-lg font-semibold text-primary">Conciliación</h2>
           {error && (
             <Description className="border-rose-300/80 border-l-4 bg-background px-4 py-2 text-rose-700 text-xs">
               {error}
@@ -74,15 +74,15 @@ export function BalanceSummary({ error, loading, report }: Readonly<BalanceSumma
             Aún no registras saldos de cierre para este rango. Actualiza la sección de Saldos
             diarios en la página de movimientos para comenzar la conciliación.
           </Description>
-        </div>
-      </section>
+        </Card.Content>
+      </Card>
     );
   }
 
   return (
-    <section className="card bg-background shadow-sm">
-      <div className="card-body">
-        <span className="card-title text-lg text-primary">Conciliación</span>
+    <Card className="shadow-sm">
+      <Card.Content className="space-y-3 p-6">
+        <h2 className="text-lg font-semibold text-primary">Conciliación</h2>
         {error && (
           <Description className="border-rose-300/80 border-l-4 bg-background px-4 py-2 text-rose-700 text-xs">
             {error}
@@ -133,8 +133,8 @@ export function BalanceSummary({ error, loading, report }: Readonly<BalanceSumma
             </Description>
           )}
         </div>
-      </div>
-    </section>
+      </Card.Content>
+    </Card>
   );
 }
 
@@ -189,7 +189,7 @@ function useBalanceReportSummary(report: BalancesApiResponse | null | undefined)
   }
 
   const mismatchDays = report.days.filter(
-    (day) => day.difference != null && Math.abs(day.difference) > 1,
+    (day) => day.difference != null && Math.abs(day.difference) > 1
   );
   const hasRecordedBalances = report.days.some((day) => day.recordedBalance != null);
   const lastRecorded =
