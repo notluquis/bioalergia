@@ -7,6 +7,11 @@ import type {
   DoctoraliaCalendarSchedule,
   DoctoraliaWorkPeriod,
 } from "./doctoralia-calendar-types";
+import {
+  DOCTORALIA_STATUS_CANCELLED,
+  buildDoctoraliaMatchWindow,
+  normalizePatientNameForMatch,
+} from "./name-match";
 
 function toJsonValue(value: unknown): JsonValue {
   return JSON.parse(JSON.stringify(value)) as JsonValue;
@@ -86,6 +91,49 @@ function mapAppointmentData(scheduleId: number, appointment: DoctoraliaAppointme
   };
 }
 
+/**
+ * Re-links orphan DoctoraliaEmailNotification rows (calendarAppointmentId=null)
+ * to the given appointment when name+time match. If any matched email is a
+ * CANCELLATION, also flips the appointment's status to cancelled — this is how
+ * we derive cancellations that disappear silently from the alerts feed.
+ */
+async function backfillOrphanEmailsForAppointment(
+  appointmentId: number,
+  startAt: Date,
+  title: string,
+): Promise<{ matched: number; cancellationApplied: boolean }> {
+  const { windowStart, windowEnd } = buildDoctoraliaMatchWindow(startAt);
+  const target = normalizePatientNameForMatch(title);
+
+  const orphans = await db.doctoraliaEmailNotification.findMany({
+    where: {
+      calendarAppointmentId: null,
+      appointmentDate: { gte: windowStart, lte: windowEnd },
+    },
+    select: { id: true, patientName: true, eventType: true },
+  });
+
+  const matches = orphans.filter(
+    (o) => normalizePatientNameForMatch(o.patientName) === target,
+  );
+  if (matches.length === 0) return { matched: 0, cancellationApplied: false };
+
+  await db.doctoraliaEmailNotification.updateMany({
+    where: { id: { in: matches.map((m) => m.id) } },
+    data: { calendarAppointmentId: appointmentId },
+  });
+
+  const hasCancellation = matches.some((m) => m.eventType === "CANCELLATION");
+  if (hasCancellation) {
+    await db.doctoraliaCalendarAppointment.update({
+      where: { id: appointmentId },
+      data: { status: DOCTORALIA_STATUS_CANCELLED },
+    });
+  }
+
+  return { matched: matches.length, cancellationApplied: hasCancellation };
+}
+
 async function upsertAppointment(
   scheduleId: number,
   appointment: DoctoraliaAppointment,
@@ -126,13 +174,47 @@ async function upsertAppointment(
     console.log(
       `[DoctoraliaSync] appointment ${appointment.id} updated (${appointment.title} @ ${appointment.start})`,
     );
+    try {
+      const backfill = await backfillOrphanEmailsForAppointment(
+        existing.id,
+        data.startAt,
+        data.title,
+      );
+      if (backfill.matched > 0) {
+        console.log(
+          `[DoctoraliaSync] appointment ${appointment.id} linked ${backfill.matched} orphan email(s)${backfill.cancellationApplied ? " (status→CANCELLED)" : ""}`,
+        );
+      }
+    } catch (err) {
+      console.error(
+        `[DoctoraliaSync] orphan backfill failed for appointment ${appointment.id}:`,
+        err,
+      );
+    }
     return "updated";
   }
 
-  await db.doctoraliaCalendarAppointment.create({ data });
+  const created = await db.doctoraliaCalendarAppointment.create({ data });
   console.log(
     `[DoctoraliaSync] appointment ${appointment.id} inserted (${appointment.title} @ ${appointment.start})`,
   );
+  try {
+    const backfill = await backfillOrphanEmailsForAppointment(
+      created.id,
+      data.startAt,
+      data.title,
+    );
+    if (backfill.matched > 0) {
+      console.log(
+        `[DoctoraliaSync] appointment ${appointment.id} linked ${backfill.matched} orphan email(s)${backfill.cancellationApplied ? " (status→CANCELLED)" : ""}`,
+      );
+    }
+  } catch (err) {
+    console.error(
+      `[DoctoraliaSync] orphan backfill failed for appointment ${appointment.id}:`,
+      err,
+    );
+  }
   return "inserted";
 }
 

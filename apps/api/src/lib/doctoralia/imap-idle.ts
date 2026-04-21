@@ -24,6 +24,11 @@ import { createId } from "@paralleldrive/cuid2";
 import { type FetchMessageObject, ImapFlow } from "imapflow";
 import { logError, logEvent, logWarn } from "../logger";
 import { resolveDoctoraliaSenderSearchTerms } from "./imap-search";
+import {
+  DOCTORALIA_STATUS_CANCELLED,
+  buildDoctoraliaMatchWindow,
+  normalizePatientNameForMatch,
+} from "./name-match";
 import { sendText } from "../whatsapp/baileys-socket";
 import {
   getWhatsappConversationState,
@@ -77,23 +82,11 @@ export interface DoctoraliaImapIngestResult {
   skipped: number;
 }
 
-function normalizePatientNameForMatch(name: string): string {
-  return name
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/\b(dra?\.?|dr\.?|sra?\.?|sr\.?|srta\.?)\s+/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
 async function findMatchingCalendarAppointmentId(
   patientName: string,
   appointmentDate: Date,
 ): Promise<number | null> {
-  const minute = Math.floor(appointmentDate.getTime() / 60_000);
-  const windowStart = new Date(minute * 60_000 - 60_000);
-  const windowEnd = new Date(minute * 60_000 + 60_000);
+  const { windowStart, windowEnd } = buildDoctoraliaMatchWindow(appointmentDate);
   const target = normalizePatientNameForMatch(patientName);
 
   const candidates = await db.doctoraliaCalendarAppointment.findMany({
@@ -518,6 +511,25 @@ async function processFetchedMessages(
       const matchedAppointmentId = booking.appointmentDate
         ? await findMatchingCalendarAppointmentId(booking.patientName, booking.appointmentDate)
         : null;
+
+      if (matchedAppointmentId !== null && booking.eventType === "CANCELLATION") {
+        try {
+          await db.doctoraliaCalendarAppointment.update({
+            where: { id: matchedAppointmentId },
+            data: { status: DOCTORALIA_STATUS_CANCELLED },
+          });
+          logEvent("doctoralia.imap.appointment_cancelled_from_email", {
+            ...messageContext,
+            appointmentId: matchedAppointmentId,
+            patientName: booking.patientName,
+          });
+        } catch (statusErr) {
+          logError("doctoralia.imap.appointment_status_update_failed", statusErr, {
+            ...messageContext,
+            appointmentId: matchedAppointmentId,
+          });
+        }
+      }
 
       await db.$qb
         .insertInto("DoctoraliaEmailNotification")
