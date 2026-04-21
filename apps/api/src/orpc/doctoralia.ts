@@ -971,8 +971,7 @@ const doctoraliaORPCRouterBase = {
         }
         if (row.status === 0) bucket.programmed++;
         else if (row.status === 2 || row.status === 3) bucket.cancelled++;
-        else if (row.status === 4) bucket.attended++;
-        else if (row.status === 6) bucket.noShow++;
+        else if (row.status === 4 || row.status === 6) bucket.attended++;
       }
 
       const data = Array.from(buckets.entries())
