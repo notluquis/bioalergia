@@ -126,7 +126,7 @@ export function PatientCampaignDrawerSection({
                       </Button>
                     </Dropdown.Trigger>
                     <Dropdown.Popover>
-                      <ListBox
+                      <Dropdown.Menu
                         onAction={(key) =>
                           void handleStatusChange(
                             recipient.id,
@@ -135,7 +135,7 @@ export function PatientCampaignDrawerSection({
                         }
                       >
                         {PATIENT_CAMPAIGN_STATUSES.map((status) => (
-                          <ListBox.Item
+                          <Dropdown.Item
                             id={status}
                             key={status}
                             textValue={PATIENT_CAMPAIGN_STATUS_LABELS[status]}
@@ -144,9 +144,9 @@ export function PatientCampaignDrawerSection({
                               {recipient.status === status && <Check size={14} />}
                               {PATIENT_CAMPAIGN_STATUS_LABELS[status]}
                             </div>
-                          </ListBox.Item>
+                          </Dropdown.Item>
                         ))}
-                      </ListBox>
+                      </Dropdown.Menu>
                     </Dropdown.Popover>
                   </Dropdown>
                 </Surface>

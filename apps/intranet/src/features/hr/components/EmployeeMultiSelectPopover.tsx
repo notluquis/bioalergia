@@ -78,14 +78,12 @@ export function EmployeeMultiSelectPopover({
 
   return (
     <Popover isOpen={isOpen} onOpenChange={setIsOpen}>
-      <div className={cn("w-full", className)}>
-        <Popover.Trigger>
-          <Button className="w-full justify-between" size="sm" variant="outline">
-            <span>{buttonLabel}</span>
-            <Search className="h-4 w-4 opacity-60" />
-          </Button>
-        </Popover.Trigger>
-      </div>
+      <Popover.Trigger className={cn("w-full", className)}>
+        <Button className="w-full justify-between" fullWidth size="sm" variant="outline">
+          <span>{buttonLabel}</span>
+          <Search className="h-4 w-4 opacity-60" />
+        </Button>
+      </Popover.Trigger>
       <Popover.Content
         className="max-h-[70svh] w-[min(92vw,420px)] overflow-hidden rounded-xl border border-default-200 bg-background p-0 shadow-xl"
         offset={8}

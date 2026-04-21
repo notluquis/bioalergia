@@ -189,7 +189,7 @@ export function CampaignRecipientsPanel({ campaign }: Readonly<CampaignRecipient
                         </Button>
                       </Dropdown.Trigger>
                       <Dropdown.Popover>
-                        <ListBox
+                        <Dropdown.Menu
                           onAction={(key) =>
                             void handleStatusChange(
                               recipient.id,
@@ -198,7 +198,7 @@ export function CampaignRecipientsPanel({ campaign }: Readonly<CampaignRecipient
                           }
                         >
                           {PATIENT_CAMPAIGN_STATUSES.map((status) => (
-                            <ListBox.Item
+                            <Dropdown.Item
                               id={status}
                               key={status}
                               textValue={PATIENT_CAMPAIGN_STATUS_LABELS[status]}
@@ -207,9 +207,9 @@ export function CampaignRecipientsPanel({ campaign }: Readonly<CampaignRecipient
                                 {recipient.status === status && <Check size={12} />}
                                 {PATIENT_CAMPAIGN_STATUS_LABELS[status]}
                               </div>
-                            </ListBox.Item>
+                            </Dropdown.Item>
                           ))}
-                        </ListBox>
+                        </Dropdown.Menu>
                       </Dropdown.Popover>
                     </Dropdown>
                     <Button
