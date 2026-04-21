@@ -6,20 +6,12 @@ import { Impit, type HttpMethod } from "impit";
 import { loadConfig, type ScraperConfig } from "./config.js";
 import { CookieJar } from "./cookies.js";
 import { type CapturedEntry, postToImportEndpoint } from "./submit.js";
+import { selectWindowsForTick, type WindowRequest } from "./window-selector.js";
 
 const discoverMode = process.argv.includes("--discover");
 
 function log(...args: unknown[]): void {
   console.log("[doctoralia-scraper]", ...args);
-}
-
-function startOfWeek(date: Date): Date {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  const day = d.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  d.setDate(d.getDate() + diff);
-  return d;
 }
 
 function fmtDate(d: Date): string {
@@ -29,15 +21,27 @@ function fmtDate(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-function buildWindows(anchor: Date, windowDays: number, count: number): { from: string; to: string }[] {
-  const base = startOfWeek(anchor);
-  const windows: { from: string; to: string }[] = [];
+function buildLegacyWindows(
+  anchor: Date,
+  windowDays: number,
+  count: number,
+): WindowRequest[] {
+  const base = new Date(anchor);
+  base.setHours(0, 0, 0, 0);
+  const day = base.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  base.setDate(base.getDate() + diff);
+  const windows: WindowRequest[] = [];
   for (let i = 0; i < count; i++) {
     const from = new Date(base);
     from.setDate(from.getDate() + i * windowDays);
     const to = new Date(from);
     to.setDate(to.getDate() + windowDays - 1);
-    windows.push({ from: fmtDate(from), to: `${fmtDate(to)}T23:59:59` });
+    windows.push({
+      from: fmtDate(from),
+      to: `${fmtDate(to)}T23:59:59`,
+      tier: "W0",
+    });
   }
   return windows;
 }
@@ -291,11 +295,25 @@ async function fetchCalendarEvents(
     "x-country-id": config.countryId,
   };
 
-  const windows = buildWindows(new Date(), config.windowDays, config.windowsPerRun);
+  const useLegacy = process.env.DOCTORALIA_SCRAPER_FORCE_LEGACY_WINDOWS === "true";
+  const windows = useLegacy
+    ? buildLegacyWindows(new Date(), config.windowDays, config.windowsPerRun)
+    : selectWindowsForTick(new Date());
+
+  if (windows.length === 0) {
+    log("no windows scheduled for this tick (outside 9:00–19:00 America/Santiago)");
+    return [];
+  }
+
+  log(
+    `scheduled ${windows.length} window(s):`,
+    windows.map((w) => `${w.tier}:${w.from}→${w.to.slice(0, 10)}`).join(" "),
+  );
+
   const results: CapturedEntry[] = [];
-  for (const { from, to } of windows) {
+  for (const { from, to, tier } of windows) {
     const body = JSON.stringify({ from, to, schedules: [] });
-    log("POST", endpoint, `from=${from} to=${to}`);
+    log("POST", endpoint, `tier=${tier} from=${from} to=${to}`);
     const res = await session.request(endpoint, { method: "POST", headers, body });
     log(`  → ${res.status}`);
     if (res.status !== 200) {
@@ -309,9 +327,13 @@ async function fetchCalendarEvents(
     }
     try {
       const json = JSON.parse(res.text) as { appointments?: unknown[] };
-      results.push({ ts: new Date().toISOString(), src: `${endpoint}?from=${from}&to=${to}`, data: json });
+      results.push({
+        ts: new Date().toISOString(),
+        src: `${endpoint}?from=${from}&to=${to}&tier=${tier}`,
+        data: json,
+      });
       const appts = Array.isArray(json.appointments) ? json.appointments.length : 0;
-      log(`  captured ${appts} appointments`);
+      log(`  captured ${appts} appointments (tier=${tier})`);
     } catch {
       log("  response not JSON, skipping");
     }
