@@ -82,6 +82,7 @@ export interface DoctoraliaCalendarBackfillBucketCounts {
 
 export interface DoctoraliaCalendarBackfillStatus {
   running: boolean;
+  cancelRequested: boolean;
   startedAt: string | null;
   endedAt: string | null;
   targetEndDate: string | null;
@@ -118,22 +119,6 @@ export interface DoctoraliaCalendarAppointmentsQuery {
   from: string;
   scheduleIds?: number[];
   to: string;
-}
-
-export interface DoctoraliaCalendarAuthStartResponse {
-  data: {
-    authUrl: string;
-    redirectUri: string;
-  };
-  status: "ok";
-}
-
-export interface DoctoraliaCalendarAuthStatusResponse {
-  data: {
-    connected: boolean;
-    expiresAt: Date | null;
-  };
-  status: "ok";
 }
 
 export interface DoctoraliaEmailNotification {

@@ -15,11 +15,14 @@ import {
 import { parseDate } from "@internationalized/date";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { History, Play } from "lucide-react";
+import { History, Play, StopCircle } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { useToast } from "@/context/ToastContext";
-import { startDoctoraliaCalendarBackfill } from "@/features/doctoralia/api";
+import {
+  cancelDoctoraliaCalendarBackfill,
+  startDoctoraliaCalendarBackfill,
+} from "@/features/doctoralia/api";
 import { toDoctoraliaApiError } from "@/features/doctoralia/orpc";
 import { doctoraliaSettingsKeys } from "@/features/doctoralia/settings-queries";
 import type { DoctoraliaCalendarBackfillBucketCounts } from "@/features/doctoralia/types";
@@ -60,6 +63,20 @@ export function DoctoraliaCalendarBackfillPanel() {
       );
     },
   });
+
+  const cancelMutation = useMutation({
+    mutationFn: () => cancelDoctoraliaCalendarBackfill(),
+    onError: (error) => {
+      const apiError = toDoctoraliaApiError(error);
+      toast.error(apiError.message, "No se pudo cancelar el backfill");
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(doctoraliaSettingsKeys.backfillStatus().queryKey, data);
+      toast.success("Se detendrá al terminar la semana actual.", "Cancelación solicitada");
+    },
+  });
+
+  const cancelRequested = Boolean(status?.cancelRequested);
 
   const minEndDate = status?.minEndDate ?? "2017-08-21";
 
@@ -135,7 +152,18 @@ export function DoctoraliaCalendarBackfillPanel() {
             como “sin cambios” (skipped).
           </Description>
 
-          <div className="flex justify-end">
+          <div className="flex flex-wrap justify-end gap-2">
+            {running ? (
+              <Button
+                variant="danger"
+                isDisabled={cancelRequested || cancelMutation.isPending}
+                isPending={cancelMutation.isPending}
+                onPress={() => cancelMutation.mutate()}
+              >
+                <StopCircle className="mr-2 h-4 w-4" />
+                {cancelRequested ? "Cancelando…" : "Cancelar backfill"}
+              </Button>
+            ) : null}
             <Button
               isDisabled={running || startMutation.isPending || !endDate}
               isPending={startMutation.isPending}
@@ -164,7 +192,9 @@ export function DoctoraliaCalendarBackfillPanel() {
                 <Chip
                   color={
                     running
-                      ? "accent"
+                      ? cancelRequested
+                        ? "warning"
+                        : "accent"
                       : status.lastError
                         ? "danger"
                         : status.endedAt
@@ -175,7 +205,9 @@ export function DoctoraliaCalendarBackfillPanel() {
                   variant="soft"
                 >
                   {running
-                    ? "En curso"
+                    ? cancelRequested
+                      ? "Cancelando…"
+                      : "En curso"
                     : status.lastError
                       ? "Con error"
                       : status.endedAt

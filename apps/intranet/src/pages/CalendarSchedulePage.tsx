@@ -1,5 +1,5 @@
 import { Button, ButtonGroup, Chip, ListBox, Select, Separator, Surface } from "@heroui/react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
@@ -10,10 +10,7 @@ import { CalendarSkeleton } from "@/features/calendar/components/CalendarSkeleto
 import { ScheduleCalendar } from "@/features/calendar/components/ScheduleCalendar";
 import { useCalendarEvents } from "@/features/calendar/hooks/use-calendar-events";
 import type { CalendarEventDetail, CalendarSearchParams } from "@/features/calendar/types";
-import {
-  fetchDoctoraliaCalendarAuthStatus,
-  fetchDoctoraliaCalendarMerged,
-} from "@/features/doctoralia/api";
+import { fetchDoctoraliaCalendarMerged } from "@/features/doctoralia/api";
 import type {
   DoctoraliaCalendarMerged,
   DoctoraliaEmailNotification,
@@ -168,94 +165,6 @@ function mergedToCalendarEventDetails(merged: DoctoraliaCalendarMerged): Calenda
     ...Array.from(orphanGroups.values()).map(orphanGroupToCalendarEventDetail),
     ...ungrouped.map((e) => orphanGroupToCalendarEventDetail([e])),
   ];
-}
-
-async function waitForDoctoraliaOAuthPopup(popup: Window, origin: string): Promise<void> {
-  await new Promise<void>((resolve, reject) => {
-    const timeout = window.setTimeout(() => {
-      cleanup();
-      reject(new Error("Tiempo de espera agotado para OAuth de Doctoralia."));
-    }, 180_000);
-
-    const interval = window.setInterval(() => {
-      if (popup.closed) {
-        cleanup();
-        reject(new Error("Ventana OAuth cerrada antes de completar la conexión."));
-      }
-    }, 500);
-
-    const onMessage = (event: MessageEvent) => {
-      if (event.origin !== origin) {
-        return;
-      }
-
-      const data = event.data as { message?: string; source?: string; status?: string };
-      if (data?.source !== "doctoralia-calendar-oauth") {
-        return;
-      }
-
-      cleanup();
-      if (data.status === "success") {
-        resolve();
-        return;
-      }
-
-      reject(new Error(data.message || "No se pudo conectar Doctoralia."));
-    };
-
-    const cleanup = () => {
-      window.clearTimeout(timeout);
-      window.clearInterval(interval);
-      window.removeEventListener("message", onMessage);
-    };
-
-    window.addEventListener("message", onMessage);
-  });
-}
-
-function useDoctoraliaCalendarAuth(params: {
-  canConnectDoctoralia: boolean;
-  isDoctoraliaSource: boolean;
-}) {
-  const { canConnectDoctoralia, isDoctoraliaSource } = params;
-  const queryClient = useQueryClient();
-  const [isConnectingDoctoralia, setIsConnectingDoctoralia] = React.useState(false);
-
-  const { data: doctoraliaAuthStatus, isLoading: doctoraliaAuthLoading } = useQuery({
-    enabled: isDoctoraliaSource && canConnectDoctoralia,
-    queryFn: fetchDoctoraliaCalendarAuthStatus,
-    queryKey: ["doctoralia", "calendar", "auth-status"],
-    staleTime: 30_000,
-  });
-
-  const onConnectDoctoralia = useCallback(async () => {
-    setIsConnectingDoctoralia(true);
-    try {
-      const popup = window.open(
-        "/api/doctoralia/calendar/auth/redirect",
-        "doctoralia-oauth",
-        "popup,width=640,height=840"
-      );
-      if (!popup) {
-        throw new Error("No se pudo abrir la ventana OAuth (bloqueada por el navegador).");
-      }
-
-      await waitForDoctoraliaOAuthPopup(popup, window.location.origin);
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["doctoralia", "calendar", "auth-status"] }),
-        queryClient.invalidateQueries({ queryKey: ["doctoralia", "calendar", "appointments"] }),
-      ]);
-    } finally {
-      setIsConnectingDoctoralia(false);
-    }
-  }, [queryClient]);
-
-  return {
-    doctoraliaAuthLoading,
-    doctoraliaAuthStatus,
-    isConnectingDoctoralia,
-    onConnectDoctoralia,
-  };
 }
 
 function useScheduleRange(params: {
@@ -450,11 +359,6 @@ function CalendarSchedulePage() {
       return mergedToCalendarEventDetails(merged);
     },
     queryKey: ["doctoralia", "calendar", "merged", search.from, search.to],
-  });
-
-  useDoctoraliaCalendarAuth({
-    canConnectDoctoralia,
-    isDoctoraliaSource,
   });
 
   // Local state for filter draft (not applicable until the user clicks Apply)

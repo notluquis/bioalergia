@@ -19,7 +19,6 @@ export * from "./integrations";
 export * from "./loans";
 export {
   calendarAppointmentsSchema as doctoraliaCalendarAppointmentsSchema,
-  calendarAuthStatusSchema as doctoraliaCalendarAuthStatusSchema,
   doctoraliaContract,
   syncLogsResponseSchema as doctoraliaSyncLogsResponseSchema,
   type DoctoraliaContract,

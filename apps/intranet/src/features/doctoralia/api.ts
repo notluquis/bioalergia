@@ -4,15 +4,12 @@
  * Frontend API functions for Doctoralia integration.
  */
 
-import { apiClient } from "@/lib/api-client";
 import { doctoraliaORPCClient, toDoctoraliaApiError } from "./orpc";
 import {
   DoctoraliaCalendarAppointmentsResponseSchema,
   DoctoraliaCalendarBackfillStatusResponseSchema,
   DoctoraliaCalendarMergedResponseSchema,
   DoctoraliaCalendarMonthlySummaryResponseSchema,
-  DoctoraliaCalendarAuthStartResponseSchema,
-  DoctoraliaCalendarAuthStatusResponseSchema,
   DoctoraliaEmailMonthlySummaryResponseSchema,
   DoctoraliaEmailNotificationsCalendarResponseSchema,
   DoctoraliaEmailNotificationsListResponseSchema,
@@ -32,8 +29,6 @@ import type {
   DoctoraliaCalendarBackfillStatus,
   DoctoraliaCalendarMerged,
   DoctoraliaCalendarMonthlySummaryPeriod,
-  DoctoraliaCalendarAuthStartResponse,
-  DoctoraliaCalendarAuthStatusResponse,
   DoctoraliaEmailMonthlySummaryPeriod,
   DoctoraliaEmailNotification,
   DoctoraliaEmailListResponse,
@@ -112,6 +107,17 @@ export async function startDoctoraliaCalendarBackfill(input: {
   }
 }
 
+export async function cancelDoctoraliaCalendarBackfill(): Promise<DoctoraliaCalendarBackfillStatus> {
+  try {
+    const response = DoctoraliaCalendarBackfillStatusResponseSchema.parse(
+      await doctoraliaORPCClient.calendarBackfillCancel()
+    );
+    return response.data;
+  } catch (error) {
+    throw toDoctoraliaApiError(error);
+  }
+}
+
 export async function fetchDoctoraliaSyncLogs(): Promise<DoctoraliaSyncLog[]> {
   let response: DoctoraliaSyncLogsResponse;
   try {
@@ -125,42 +131,6 @@ export async function fetchDoctoraliaSyncLogs(): Promise<DoctoraliaSyncLog[]> {
   }
 
   return response.logs;
-}
-
-export async function fetchDoctoraliaCalendarAuthStatus(): Promise<{
-  connected: boolean;
-  expiresAt: Date | null;
-}> {
-  let response: DoctoraliaCalendarAuthStatusResponse;
-  try {
-    response = DoctoraliaCalendarAuthStatusResponseSchema.parse(
-      await doctoraliaORPCClient.calendarAuthStatus()
-    );
-  } catch (error) {
-    throw toDoctoraliaApiError(error);
-  }
-
-  if (response.status !== "ok") {
-    throw new Error("No se pudo obtener el estado de conexión de Doctoralia");
-  }
-
-  return response.data;
-}
-
-export async function startDoctoraliaCalendarOAuth(): Promise<{
-  authUrl: string;
-  redirectUri: string;
-}> {
-  const response = await apiClient.get<DoctoraliaCalendarAuthStartResponse>(
-    "/api/doctoralia/calendar/auth/start",
-    { responseSchema: DoctoraliaCalendarAuthStartResponseSchema }
-  );
-
-  if (response.status !== "ok") {
-    throw new Error("No se pudo iniciar OAuth de Doctoralia");
-  }
-
-  return response.data;
 }
 
 export async function fetchDoctoraliaEmailCalendar(query: {

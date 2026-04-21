@@ -2,7 +2,7 @@ import cron from "node-cron";
 import { doctoraliaCalendarSyncService } from "../../services/doctoralia-calendar";
 import { getSetting, updateSetting } from "../../services/settings";
 import { logEvent, logWarn } from "../logger";
-import { isCalendarAuthConfigured } from "./doctoralia-calendar-auth";
+import { hasCalendarApiToken } from "./doctoralia-calendar-client";
 
 const DEFAULT_CRON = "*/10 * * * *";
 const DEFAULT_TIMEZONE = "America/Santiago";
@@ -18,13 +18,6 @@ export function startDoctoraliaCalendarScheduler() {
   if (process.env.ENABLE_DOCTORALIA_CALENDAR_SYNC !== "true") {
     logWarn("doctoralia.calendar.scheduler.disabled", {
       reason: "standby_mode",
-    });
-    return;
-  }
-
-  if (!isCalendarAuthConfigured()) {
-    logWarn("doctoralia.calendar.scheduler.disabled", {
-      reason: "missing_credentials",
     });
     return;
   }
@@ -62,6 +55,15 @@ export async function runDoctoraliaCalendarAutoSync({ trigger }: { trigger: stri
   if (process.env.ENABLE_DOCTORALIA_CALENDAR_SYNC !== "true") {
     logWarn("doctoralia.calendar.sync.skip", {
       reason: "standby_mode",
+      trigger,
+    });
+    return;
+  }
+
+  const hasToken = await hasCalendarApiToken();
+  if (!hasToken) {
+    logWarn("doctoralia.calendar.sync.skip", {
+      reason: "missing_scraper_token",
       trigger,
     });
     return;

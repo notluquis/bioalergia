@@ -23,6 +23,7 @@ export type BackfillBucketCounts = {
 
 export type DoctoraliaBackfillStatus = {
   running: boolean;
+  cancelRequested: boolean;
   startedAt: string | null;
   endedAt: string | null;
   targetEndDate: string | null;
@@ -43,6 +44,7 @@ function emptyBucket(): BackfillBucketCounts {
 
 const state: DoctoraliaBackfillStatus = {
   running: false,
+  cancelRequested: false,
   startedAt: null,
   endedAt: null,
   targetEndDate: null,
@@ -73,6 +75,7 @@ export function isDoctoraliaBackfillRunning(): boolean {
 
 function resetState() {
   state.running = false;
+  state.cancelRequested = false;
   state.startedAt = null;
   state.endedAt = null;
   state.targetEndDate = null;
@@ -85,6 +88,23 @@ function resetState() {
   state.workPeriods = emptyBucket();
   state.currentWindow = null;
   state.lastError = null;
+}
+
+export function requestDoctoraliaBackfillCancel(params: {
+  requestedByUserId: number;
+}): DoctoraliaBackfillStatus {
+  if (!state.running) {
+    throw new Error("No hay un backfill en curso");
+  }
+  if (!state.cancelRequested) {
+    state.cancelRequested = true;
+    logEvent("doctoralia.backfill.cancel_requested", {
+      requestedByUserId: params.requestedByUserId,
+      weeksProcessed: state.weeksProcessed,
+      weeksTotal: state.weeksTotal,
+    });
+  }
+  return getDoctoraliaBackfillStatus();
 }
 
 function sleep(ms: number): Promise<void> {
@@ -181,6 +201,8 @@ async function runBackfillLoop(params: {
   try {
     let cursor = params.startMonday;
     while (!cursor.isBefore(params.stopMonday, "day")) {
+      if (state.cancelRequested) break;
+
       const from = cursor.format("YYYY-MM-DD");
       const to = cursor.add(6, "day").format("YYYY-MM-DD");
       state.currentWindow = { from, to };
@@ -210,6 +232,8 @@ async function runBackfillLoop(params: {
         logWarn("doctoralia.backfill.week.error", { from, to, error: message });
       }
 
+      if (state.cancelRequested) break;
+
       if (WEEK_DELAY_MS > 0) {
         await sleep(WEEK_DELAY_MS);
       }
@@ -217,6 +241,7 @@ async function runBackfillLoop(params: {
       cursor = cursor.subtract(1, "week");
     }
   } finally {
+    const wasCancelled = state.cancelRequested;
     state.running = false;
     state.endedAt = new Date().toISOString();
     state.currentWindow = null;
@@ -224,6 +249,7 @@ async function runBackfillLoop(params: {
       weeksProcessed: state.weeksProcessed,
       weeksFailed: state.weeksFailed,
       weeksTotal: state.weeksTotal,
+      cancelled: wasCancelled,
     });
   }
 }

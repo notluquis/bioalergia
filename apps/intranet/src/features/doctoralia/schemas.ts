@@ -58,6 +58,7 @@ export const DoctoraliaCalendarBackfillBucketCountsSchema = z.strictObject({
 
 export const DoctoraliaCalendarBackfillStatusDataSchema = z.strictObject({
   running: z.boolean(),
+  cancelRequested: z.boolean(),
   startedAt: z.string().nullable(),
   endedAt: z.string().nullable(),
   targetEndDate: z.string().nullable(),
@@ -251,22 +252,6 @@ export const DoctoraliaEmailPatientsResponseSchema = z.strictObject({
 export const DoctoraliaEmailPatientHistoryResponseSchema = z.strictObject({
   data: z.strictObject({
     notifications: z.array(DoctoraliaEmailNotificationSchema),
-  }),
-  status: z.literal("ok"),
-});
-
-export const DoctoraliaCalendarAuthStartResponseSchema = z.strictObject({
-  data: z.strictObject({
-    authUrl: z.url(),
-    redirectUri: z.url(),
-  }),
-  status: z.literal("ok"),
-});
-
-export const DoctoraliaCalendarAuthStatusResponseSchema = z.strictObject({
-  data: z.strictObject({
-    connected: z.boolean(),
-    expiresAt: z.coerce.date().nullable(),
   }),
   status: z.literal("ok"),
 });

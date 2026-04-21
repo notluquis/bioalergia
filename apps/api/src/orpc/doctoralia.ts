@@ -17,6 +17,7 @@ import {
   DOCTORALIA_BACKFILL_MIN_DATE,
   getDoctoraliaBackfillStatus,
   isDoctoraliaBackfillRunning,
+  requestDoctoraliaBackfillCancel,
   startDoctoraliaBackfill,
 } from "../services/doctoralia-backfill";
 import { SuperJSONRPCHandler } from "./superjson";
@@ -204,14 +205,6 @@ const syncLogsResponseSchema = z.object({
   status: z.literal("ok"),
 });
 
-const calendarAuthStatusSchema = z.object({
-  data: z.object({
-    connected: z.boolean(),
-    expiresAt: z.date().nullable(),
-  }),
-  status: z.literal("ok"),
-});
-
 const calendarAppointmentsSchema = z.object({
   data: z.object({
     appointments: z.array(z.unknown()),
@@ -269,6 +262,7 @@ const backfillBucketCountsSchema = z.object({
 
 const calendarBackfillStatusDataSchema = z.object({
   running: z.boolean(),
+  cancelRequested: z.boolean(),
   startedAt: z.string().nullable(),
   endedAt: z.string().nullable(),
   targetEndDate: z.string().nullable(),
@@ -450,28 +444,6 @@ const doctoraliaORPCRouterBase = {
       };
     }),
 
-  calendarAuthStatus: canManageDoctoraliaCalendar
-    .route({ method: "GET", path: "/calendar/auth/status" })
-    .output(calendarAuthStatusSchema)
-    .handler(async ({ context }) => {
-      const { getCachedToken } = await import("../lib/doctoralia/doctoralia-calendar-auth.js");
-      const cached = await getCachedToken();
-
-      logEvent("doctoralia.calendar.oauth.status", {
-        userId: context.user.id,
-        connected: Boolean(cached),
-        expiresAt: null,
-      });
-
-      return {
-        data: {
-          connected: Boolean(cached),
-          expiresAt: null,
-        },
-        status: "ok",
-      };
-    }),
-
   importCalendarJson: canManageDoctoraliaCalendar
     .route({ method: "POST", path: "/calendar/import-json" })
     .input(calendarImportInputSchema)
@@ -544,6 +516,27 @@ const doctoraliaORPCRouterBase = {
         userId: context.user.id,
         endDate: input.endDate,
       });
+
+      return {
+        data: {
+          ...getDoctoraliaBackfillStatus(),
+          minEndDate: DOCTORALIA_BACKFILL_MIN_DATE,
+        },
+        status: "ok" as const,
+      };
+    }),
+
+  calendarBackfillCancel: canManageDoctoraliaCalendar
+    .route({ method: "POST", path: "/calendar/backfill/cancel" })
+    .output(calendarBackfillStatusResponseSchema)
+    .handler(async ({ context }) => {
+      try {
+        requestDoctoraliaBackfillCancel({ requestedByUserId: context.user.id });
+      } catch (error) {
+        throw new ORPCError("CONFLICT", {
+          message: error instanceof Error ? error.message : "No se pudo cancelar el backfill",
+        });
+      }
 
       return {
         data: {

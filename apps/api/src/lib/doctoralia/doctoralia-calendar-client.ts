@@ -2,11 +2,11 @@
  * Doctoralia Calendar API Client
  *
  * HTTP client for Docplanner Calendar API (docplanner.doctoralia.cl).
- * Uses bearer token authentication from login flow.
+ * Uses bearer token authentication from Doctoralia scraper cookie store (mkplAuth).
  */
 
+import { db } from "@finanzas/db";
 import { request } from "gaxios";
-import { getCalendarToken } from "./doctoralia-calendar-auth.js";
 import type {
   DoctoraliaCalendarAlert,
   DoctoraliaCalendarRequest,
@@ -14,6 +14,90 @@ import type {
 } from "./doctoralia-calendar-types.js";
 
 const CALENDAR_API_BASE = "https://docplanner.doctoralia.cl/api";
+const DEFAULT_COOKIES_LABEL = process.env.DOCTORALIA_SCRAPER_COOKIES_LABEL || "default";
+
+type StoredCookie = {
+  name: string;
+  value: string;
+};
+
+let cachedBearer: null | { loadedAt: number; token: string } = null;
+const TOKEN_CACHE_TTL_MS = 30_000;
+
+function clearCachedCalendarToken() {
+  cachedBearer = null;
+}
+
+function readStoredCookies(value: unknown): StoredCookie[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((item) => {
+    if (!item || typeof item !== "object") {
+      return [];
+    }
+
+    const candidate = item as Record<string, unknown>;
+    const name = candidate.name;
+    const cookieValue = candidate.value;
+
+    if (typeof name !== "string" || typeof cookieValue !== "string") {
+      return [];
+    }
+
+    return [{ name, value: cookieValue }];
+  });
+}
+
+function decodeCookieValue(raw: string): string {
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
+}
+
+function extractBearerTokenFromMkplAuth(raw: string): null | string {
+  const decoded = decodeCookieValue(raw).trim();
+  const match = decoded.match(/^bearer\s+(.+)$/i);
+  const token = (match ? match[1] : decoded).trim();
+  return token.length > 0 ? token : null;
+}
+
+async function getCalendarToken(): Promise<string> {
+  const now = Date.now();
+  if (cachedBearer && now - cachedBearer.loadedAt < TOKEN_CACHE_TTL_MS) {
+    return cachedBearer.token;
+  }
+
+  const store = await db.doctoraliaCookieStore.findUnique({
+    where: { label: DEFAULT_COOKIES_LABEL },
+    select: { cookiesJson: true },
+  });
+
+  const cookies = readStoredCookies(store?.cookiesJson);
+  const mkplAuthCookie = cookies.find((cookie) => cookie.name === "mkplAuth");
+  const token = mkplAuthCookie ? extractBearerTokenFromMkplAuth(mkplAuthCookie.value) : null;
+
+  if (!token) {
+    throw new Error(
+      `Doctoralia scraper token not available (label=${DEFAULT_COOKIES_LABEL}). Update cookies in Doctoralia settings first.`,
+    );
+  }
+
+  cachedBearer = { loadedAt: now, token };
+  return token;
+}
+
+export async function hasCalendarApiToken(): Promise<boolean> {
+  try {
+    await getCalendarToken();
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Make authenticated API request to calendar
@@ -22,9 +106,8 @@ async function calendarApiRequest<T>(
   method: "GET" | "POST" | "PUT" | "DELETE",
   path: string,
   data?: unknown,
-  twoFactorCode?: string,
 ): Promise<T> {
-  const token = await getCalendarToken(twoFactorCode);
+  const token = await getCalendarToken();
 
   try {
     const response = await request<T>({
@@ -44,8 +127,7 @@ async function calendarApiRequest<T>(
     if (error && typeof error === "object" && "response" in error) {
       const gaxError = error as { response?: { status?: number } };
       if (gaxError.response?.status === 401) {
-        const { clearCalendarTokenCache } = await import("./doctoralia-calendar-auth.js");
-        clearCalendarTokenCache();
+        clearCachedCalendarToken();
       }
     }
     throw error;
@@ -58,13 +140,11 @@ async function calendarApiRequest<T>(
  * @param from Start date (YYYY-MM-DD)
  * @param to End date (YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD)
  * @param schedules Array of schedule IDs (empty = all schedules)
- * @param twoFactorCode Optional 2FA code if required
  */
 export async function getCalendarEvents(
   from: string,
   to: string,
   schedules: number[] = [],
-  twoFactorCode?: string,
 ): Promise<DoctoraliaCalendarResponse> {
   const payload: DoctoraliaCalendarRequest = {
     from,
@@ -76,7 +156,6 @@ export async function getCalendarEvents(
     "POST",
     "/calendarevents",
     payload,
-    twoFactorCode,
   );
 }
 
@@ -87,14 +166,12 @@ export async function getCalendarEvents(
  */
 export async function getCalendarAlerts(
   alertType = 3,
-  twoFactorCode?: string,
 ): Promise<DoctoraliaCalendarAlert[]> {
   const query = new URLSearchParams({ alertType: String(alertType) });
   return calendarApiRequest<DoctoraliaCalendarAlert[]>(
     "GET",
     `/alerts?${query.toString()}`,
     undefined,
-    twoFactorCode,
   );
 }
 
@@ -103,7 +180,6 @@ export async function getCalendarAlerts(
  */
 export async function getThisWeekEvents(
   schedules: number[] = [],
-  twoFactorCode?: string,
 ): Promise<DoctoraliaCalendarResponse> {
   // Get current week start (Monday) and end (Sunday)
   const now = new Date();
@@ -121,7 +197,7 @@ export async function getThisWeekEvents(
   const from = monday.toISOString().split("T")[0];
   const to = sunday.toISOString();
 
-  return getCalendarEvents(from, to, schedules, twoFactorCode);
+  return getCalendarEvents(from, to, schedules);
 }
 
 /**
@@ -131,7 +207,6 @@ export async function getEventsForDays(
   startDate: Date,
   days: number,
   schedules: number[] = [],
-  twoFactorCode?: string,
 ): Promise<DoctoraliaCalendarResponse> {
   const from = startDate.toISOString().split("T")[0];
 
@@ -140,5 +215,5 @@ export async function getEventsForDays(
   endDate.setHours(23, 59, 59, 999);
   const to = endDate.toISOString();
 
-  return getCalendarEvents(from, to, schedules, twoFactorCode);
+  return getCalendarEvents(from, to, schedules);
 }

@@ -198,14 +198,6 @@ export const emailNotificationsPatientHistoryResponseSchema = z.object({
   status: z.literal("ok"),
 });
 
-export const calendarAuthStatusSchema = z.object({
-  data: z.object({
-    connected: z.boolean(),
-    expiresAt: z.coerce.date().nullable(),
-  }),
-  status: z.literal("ok"),
-});
-
 const calendarImportCountsSchema = z.object({
   inserted: z.number().int(),
   updated: z.number().int(),
@@ -356,6 +348,7 @@ export const calendarBackfillBucketCountsSchema = z.object({
 
 export const calendarBackfillStatusDataSchema = z.object({
   running: z.boolean(),
+  cancelRequested: z.boolean(),
   startedAt: z.string().nullable(),
   endedAt: z.string().nullable(),
   targetEndDate: z.string().nullable(),
@@ -394,7 +387,6 @@ export const doctoraliaContract = {
     .route({ method: "GET", path: "/calendar/merged" })
     .input(calendarMergedQuerySchema)
     .output(calendarMergedResponseSchema),
-  calendarAuthStatus: oc.route({ method: "GET", path: "/calendar/auth/status" }).output(calendarAuthStatusSchema),
   importCalendarJson: oc
     .route({ method: "POST", path: "/calendar/import-json" })
     .input(calendarImportInputSchema)
@@ -439,6 +431,9 @@ export const doctoraliaContract = {
   calendarBackfillStart: oc
     .route({ method: "POST", path: "/calendar/backfill/start" })
     .input(calendarBackfillStartInputSchema)
+    .output(calendarBackfillStatusResponseSchema),
+  calendarBackfillCancel: oc
+    .route({ method: "POST", path: "/calendar/backfill/cancel" })
     .output(calendarBackfillStatusResponseSchema),
   syncLogs: oc.route({ method: "GET", path: "/sync/logs" }).output(syncLogsResponseSchema),
   scraperCookiesStatus: oc
