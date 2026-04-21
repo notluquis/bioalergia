@@ -9,7 +9,8 @@
     "start": "node --import tsx src/index.ts",
     "build": "node -e \"console.log('@finanzas/doctoralia-scraper uses the tsx runtime in production; no JS bundle is emitted during build.')\"",
     "lint": "oxlint",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "dayjs": "^1.11.13",
@@ -20,7 +21,8 @@
   },
   "devDependencies": {
     "@types/node": "^25.6.0",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.4"
   },
   "engines": {
     "node": ">=25"
