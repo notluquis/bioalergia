@@ -626,17 +626,16 @@ const doctoraliaORPCRouterBase = {
       const limit = input.limit ?? 50;
       const offset = input.offset ?? 0;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const baseQuery = (db.$qb as any).selectFrom("DoctoraliaEmailNotification");
+      const baseQuery = db.$qb.selectFrom("DoctoraliaEmailNotification");
       const [notifications, countRow] = await Promise.all([
         baseQuery.selectAll().orderBy("createdAt", "desc").limit(limit).offset(offset).execute(),
-        baseQuery.select((eb: any) => eb.fn.count("id").as("count")).executeTakeFirst(),
+        baseQuery.select((eb) => eb.fn.count("id").as("count")).executeTakeFirst(),
       ]);
 
       return {
         data: {
           notifications,
-          total: parseInt(countRow?.count ?? "0", 10),
+          total: Number(countRow?.count ?? 0),
         },
         status: "ok",
       };

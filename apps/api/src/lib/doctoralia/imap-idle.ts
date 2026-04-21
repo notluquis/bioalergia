@@ -21,7 +21,7 @@
 
 import { db } from "@finanzas/db";
 import { createId } from "@paralleldrive/cuid2";
-import { ImapFlow } from "imapflow";
+import { type FetchMessageObject, ImapFlow } from "imapflow";
 import { logError, logEvent, logWarn } from "../logger";
 import { resolveDoctoraliaSenderSearchTerms } from "./imap-search";
 import { sendText } from "../whatsapp/baileys-socket";
@@ -427,7 +427,7 @@ function createEmptyIngestResult(checked: number): DoctoraliaImapIngestResult {
 }
 
 async function processFetchedMessages(
-  messages: Array<any>,
+  messages: FetchMessageObject[],
   options: ProcessMessagesOptions,
 ): Promise<DoctoraliaImapIngestResult> {
   const result: DoctoraliaImapIngestResult = {
