@@ -12,7 +12,7 @@ interface SidebarItemProps {
 export function SidebarItem({ isMobile, item, onNavigate }: SidebarItemProps) {
   return (
     <Link
-      activeOptions={{ exact: true }}
+      activeOptions={{ exact: true, includeSearch: false }}
       className="group select-none outline-none"
       onClick={() => {
         onNavigate();
