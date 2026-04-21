@@ -97,50 +97,45 @@ export function DoctoraliaMonthlyPanel({
         </Card>
         <Card variant="secondary">
           <Card.Header>
-            <Card.Title className="text-sm">Reservas</Card.Title>
+            <Card.Title className="text-sm">Programadas</Card.Title>
           </Card.Header>
           <Card.Content>
-            <span className="font-bold text-2xl">{formatDoctoraliaNumber(totals.bookings)}</span>
+            <span className="font-bold text-2xl">{formatDoctoraliaNumber(totals.programmed)}</span>
           </Card.Content>
         </Card>
         <Card variant="secondary">
           <Card.Header>
-            <Card.Title className="text-sm">Modificaciones</Card.Title>
+            <Card.Title className="text-sm">Atendidas</Card.Title>
           </Card.Header>
           <Card.Content>
-            <span className="font-bold text-2xl">
-              {formatDoctoraliaNumber(totals.modifications)}
-            </span>
+            <span className="font-bold text-2xl">{formatDoctoraliaNumber(totals.attended)}</span>
           </Card.Content>
         </Card>
         <Card variant="secondary">
           <Card.Header>
-            <Card.Title className="text-sm">Cancelaciones</Card.Title>
+            <Card.Title className="text-sm">Canceladas</Card.Title>
           </Card.Header>
           <Card.Content>
-            <span className="font-bold text-2xl">
-              {formatDoctoraliaNumber(totals.cancellations)}
-            </span>
+            <span className="font-bold text-2xl">{formatDoctoraliaNumber(totals.cancelled)}</span>
           </Card.Content>
         </Card>
         <Card variant="secondary">
           <Card.Header>
-            <Card.Title className="text-sm">Tasa de cancelación</Card.Title>
+            <Card.Title className="text-sm">No-show</Card.Title>
           </Card.Header>
           <Card.Content>
-            <span className="font-bold text-2xl">
-              {formatDoctoraliaPercent(totals.cancellationRate)}
-            </span>
+            <span className="font-bold text-2xl">{formatDoctoraliaNumber(totals.noShow)}</span>
           </Card.Content>
         </Card>
       </div>
 
       <Card variant="secondary">
         <Card.Header>
-          <Card.Title>{`Eventos Mensuales ${selectedYear} (Reservas + Modificaciones + Cancelaciones)`}</Card.Title>
+          <Card.Title>{`Citas Mensuales ${selectedYear} (Programadas + Atendidas + Canceladas + No-show)`}</Card.Title>
           <Card.Description>
-            Serie apilada por tipo de evento con línea de tasa de cancelación en eje secundario.
-            Agrupado por <strong>fecha de la cita</strong> (appointmentDate).
+            Serie apilada por estado de la cita con línea de tasa de cancelación en eje secundario.
+            Basado en <strong>calendar appointments</strong> agrupados por fecha de la cita
+            (startAt).
           </Card.Description>
         </Card.Header>
         <Card.Content>
@@ -194,26 +189,34 @@ export function DoctoraliaMonthlyPanel({
               <Legend wrapperStyle={{ color: DOCTORALIA_CHART_THEME.legend, paddingTop: 12 }} />
               <Bar
                 yAxisId="counts"
-                dataKey="bookings"
+                dataKey="programmed"
                 stackId="total"
-                fill={DOCTORALIA_CHART_COLORS.bookings}
-                name="Reservas"
+                fill={DOCTORALIA_CHART_COLORS.programmed}
+                name="Programadas"
                 radius={[0, 0, 0, 0]}
               />
               <Bar
                 yAxisId="counts"
-                dataKey="modifications"
+                dataKey="attended"
                 stackId="total"
-                fill={DOCTORALIA_CHART_COLORS.modifications}
-                name="Modificaciones"
+                fill={DOCTORALIA_CHART_COLORS.attended}
+                name="Atendidas"
                 radius={[0, 0, 0, 0]}
               />
               <Bar
                 yAxisId="counts"
-                dataKey="cancellations"
+                dataKey="cancelled"
                 stackId="total"
-                fill={DOCTORALIA_CHART_COLORS.cancellations}
-                name="Cancelaciones"
+                fill={DOCTORALIA_CHART_COLORS.cancelled}
+                name="Canceladas"
+                radius={[0, 0, 0, 0]}
+              />
+              <Bar
+                yAxisId="counts"
+                dataKey="noShow"
+                stackId="total"
+                fill={DOCTORALIA_CHART_COLORS.noShow}
+                name="No-show"
                 radius={[6, 6, 0, 0]}
               />
               <Line
@@ -229,7 +232,7 @@ export function DoctoraliaMonthlyPanel({
             </ComposedChart>
           </ResponsiveContainer>
           <Description className="mt-3 text-xs">
-            Tasa de cancelación = cancelaciones / reservas en el mes. La línea usa el eje derecho.
+            Tasa de cancelación = canceladas / total del mes. La línea usa el eje derecho.
           </Description>
         </Card.Content>
       </Card>

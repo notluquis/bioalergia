@@ -9,7 +9,7 @@ const doctoraliaSearchSchema = z
     pageSize: z.coerce.number().int().min(10).max(100).optional().catch(25),
     tab: z.enum(["mensual", "comparativa", "pacientes", "eventos", "sincronizacion"]).optional(),
     year: z.coerce.number().int().min(2020).max(2100).optional(),
-    compareMetric: z.enum(["total", "bookings", "modifications", "cancellations"]).optional(),
+    compareMetric: z.enum(["total", "programmed", "cancelled", "attended", "noShow"]).optional(),
   })
   .transform((search) => ({
     page: search.page ?? 0,

@@ -1,4 +1,4 @@
-import type { DoctoraliaEmailMonthlySummaryPeriod } from "@/features/doctoralia/types";
+import type { DoctoraliaCalendarMonthlySummaryPeriod } from "@/features/doctoralia/types";
 
 import type {
   DoctoraliaComparisonChartDatum,
@@ -44,10 +44,10 @@ export function formatDoctoraliaPercent(value: number): string {
 }
 
 export function buildDoctoraliaMonthlyChartData(
-  summary: DoctoraliaEmailMonthlySummaryPeriod[],
+  summary: DoctoraliaCalendarMonthlySummaryPeriod[],
   year: string
 ): DoctoraliaMonthlyChartDatum[] {
-  const monthMap = new Map<string, DoctoraliaEmailMonthlySummaryPeriod>();
+  const monthMap = new Map<string, DoctoraliaCalendarMonthlySummaryPeriod>();
   for (const item of summary) {
     monthMap.set(item.period, item);
   }
@@ -59,9 +59,10 @@ export function buildDoctoraliaMonthlyChartData(
 
     return {
       month: getDoctoraliaMonthName(i),
-      bookings: item?.bookings ?? 0,
-      modifications: item?.modifications ?? 0,
-      cancellations: item?.cancellations ?? 0,
+      programmed: item?.programmed ?? 0,
+      cancelled: item?.cancelled ?? 0,
+      attended: item?.attended ?? 0,
+      noShow: item?.noShow ?? 0,
       total: item?.total ?? 0,
       cancellationRate: item?.cancellationRate ?? 0,
     };
@@ -71,16 +72,17 @@ export function buildDoctoraliaMonthlyChartData(
 export function calculateDoctoraliaYearlyTotals(
   data: DoctoraliaMonthlyChartDatum[]
 ): DoctoraliaYearlyTotals {
-  const bookings = data.reduce((sum, d) => sum + d.bookings, 0);
-  const modifications = data.reduce((sum, d) => sum + d.modifications, 0);
-  const cancellations = data.reduce((sum, d) => sum + d.cancellations, 0);
-  const total = bookings + modifications + cancellations;
-  const cancellationRate = bookings > 0 ? cancellations / bookings : 0;
-  return { bookings, modifications, cancellations, total, cancellationRate };
+  const programmed = data.reduce((sum, d) => sum + d.programmed, 0);
+  const cancelled = data.reduce((sum, d) => sum + d.cancelled, 0);
+  const attended = data.reduce((sum, d) => sum + d.attended, 0);
+  const noShow = data.reduce((sum, d) => sum + d.noShow, 0);
+  const total = programmed + cancelled + attended + noShow;
+  const cancellationRate = total > 0 ? cancelled / total : 0;
+  return { programmed, cancelled, attended, noShow, total, cancellationRate };
 }
 
 export function buildDoctoraliaComparisonChartData(
-  summary: DoctoraliaEmailMonthlySummaryPeriod[],
+  summary: DoctoraliaCalendarMonthlySummaryPeriod[],
   metric: DoctoraliaMetricKey
 ): DoctoraliaComparisonChartDatum[] {
   const monthYearMap = new Map<string, Map<string, number>>();
@@ -112,7 +114,7 @@ export function buildDoctoraliaComparisonChartData(
 }
 
 export function extractDoctoraliaYearsFromSummary(
-  summary: DoctoraliaEmailMonthlySummaryPeriod[]
+  summary: DoctoraliaCalendarMonthlySummaryPeriod[]
 ): string[] {
   const yearSet = new Set<string>();
   for (const item of summary) {

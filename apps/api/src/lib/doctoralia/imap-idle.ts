@@ -25,7 +25,7 @@ import { type FetchMessageObject, ImapFlow } from "imapflow";
 import { logError, logEvent, logWarn } from "../logger";
 import { resolveDoctoraliaSenderSearchTerms } from "./imap-search";
 import {
-  DOCTORALIA_STATUS_CANCELLED,
+  DOCTORALIA_STATUS_CANCELLED_BY_PATIENT,
   buildDoctoraliaMatchWindow,
   normalizePatientNameForMatch,
 } from "./name-match";
@@ -516,7 +516,7 @@ async function processFetchedMessages(
         try {
           await db.doctoraliaCalendarAppointment.update({
             where: { id: matchedAppointmentId },
-            data: { status: DOCTORALIA_STATUS_CANCELLED },
+            data: { status: DOCTORALIA_STATUS_CANCELLED_BY_PATIENT },
           });
           logEvent("doctoralia.imap.appointment_cancelled_from_email", {
             ...messageContext,

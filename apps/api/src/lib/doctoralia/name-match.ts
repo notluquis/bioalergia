@@ -19,4 +19,9 @@ export function buildDoctoraliaMatchWindow(appointmentDate: Date): {
   };
 }
 
-export const DOCTORALIA_STATUS_CANCELLED = 3;
+export const DOCTORALIA_STATUS_CANCELLED_BY_PATIENT = 2;
+export const DOCTORALIA_STATUS_CANCELLED_BY_DOCTOR = 3;
+export const DOCTORALIA_CANCELLED_STATUSES = [
+  DOCTORALIA_STATUS_CANCELLED_BY_PATIENT,
+  DOCTORALIA_STATUS_CANCELLED_BY_DOCTOR,
+] as const;

@@ -9,6 +9,7 @@ import { doctoraliaORPCClient, toDoctoraliaApiError } from "./orpc";
 import {
   DoctoraliaCalendarAppointmentsResponseSchema,
   DoctoraliaCalendarMergedResponseSchema,
+  DoctoraliaCalendarMonthlySummaryResponseSchema,
   DoctoraliaCalendarAuthStartResponseSchema,
   DoctoraliaCalendarAuthStatusResponseSchema,
   DoctoraliaEmailMonthlySummaryResponseSchema,
@@ -28,6 +29,7 @@ import type {
   DoctoraliaCalendarAppointmentsQuery,
   DoctoraliaCalendarAppointmentsResponse,
   DoctoraliaCalendarMerged,
+  DoctoraliaCalendarMonthlySummaryPeriod,
   DoctoraliaCalendarAuthStartResponse,
   DoctoraliaCalendarAuthStatusResponse,
   DoctoraliaEmailMonthlySummaryPeriod,
@@ -213,6 +215,27 @@ export async function fetchDoctoraliaEmailMonthlySummary(
 
   if (response.status !== "ok") {
     throw new Error("No se pudo obtener el resumen mensual de Doctoralia");
+  }
+
+  return response.data;
+}
+
+export async function fetchDoctoraliaCalendarMonthlySummary(
+  year?: number
+): Promise<DoctoraliaCalendarMonthlySummaryPeriod[]> {
+  let response;
+  try {
+    response = DoctoraliaCalendarMonthlySummaryResponseSchema.parse(
+      await doctoraliaORPCClient.calendarAppointmentsMonthlySummary(
+        year !== undefined ? { year } : {}
+      )
+    );
+  } catch (error) {
+    throw toDoctoraliaApiError(error);
+  }
+
+  if (response.status !== "ok") {
+    throw new Error("No se pudo obtener el resumen mensual de calendario de Doctoralia");
   }
 
   return response.data;

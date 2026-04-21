@@ -32,9 +32,10 @@ type DoctoraliaComparisonPanelProps = {
 
 const METRIC_OPTIONS: readonly DoctoraliaMetricKey[] = [
   "total",
-  "bookings",
-  "modifications",
-  "cancellations",
+  "programmed",
+  "cancelled",
+  "attended",
+  "noShow",
 ] as const;
 
 function isDoctoraliaMetricKey(value: string): value is DoctoraliaMetricKey {
@@ -84,7 +85,8 @@ export function DoctoraliaComparisonPanel({ metric, setMetric }: DoctoraliaCompa
         <Card.Header>
           <Card.Title>{`Comparativa multi-año — ${DOCTORALIA_METRIC_LABELS[metric]}`}</Card.Title>
           <Card.Description>
-            Cada línea es un año. Agrupado por fecha de la cita (appointmentDate).
+            Cada línea es un año. Basado en calendar appointments agrupados por fecha de la cita
+            (startAt).
           </Card.Description>
         </Card.Header>
         <Card.Content>

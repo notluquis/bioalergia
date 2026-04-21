@@ -179,6 +179,16 @@ export interface DoctoraliaEmailMonthlySummaryPeriod {
   cancellationRate: number;
 }
 
+export interface DoctoraliaCalendarMonthlySummaryPeriod {
+  period: string;
+  programmed: number;
+  cancelled: number;
+  attended: number;
+  noShow: number;
+  total: number;
+  cancellationRate: number;
+}
+
 export interface DoctoraliaEmailListResponse {
   notifications: DoctoraliaEmailNotification[];
   total: number;

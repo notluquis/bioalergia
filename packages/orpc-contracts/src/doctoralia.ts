@@ -136,6 +136,25 @@ export const emailNotificationsMonthlySummaryResponseSchema = z.object({
   status: z.literal("ok"),
 });
 
+export const calendarAppointmentsMonthlySummaryQuerySchema = z.object({
+  year: z.number().int().min(2020).max(2100).optional(),
+});
+
+export const calendarAppointmentsMonthlySummaryPeriodSchema = z.strictObject({
+  period: z.string().regex(/^\d{4}-\d{2}$/),
+  programmed: z.number().int(),
+  cancelled: z.number().int(),
+  attended: z.number().int(),
+  noShow: z.number().int(),
+  total: z.number().int(),
+  cancellationRate: z.number(),
+});
+
+export const calendarAppointmentsMonthlySummaryResponseSchema = z.object({
+  data: z.array(calendarAppointmentsMonthlySummaryPeriodSchema),
+  status: z.literal("ok"),
+});
+
 export const emailNotificationsIngestResponseSchema = z.object({
   data: z.object({
     alreadyProcessed: z.number(),
@@ -374,6 +393,10 @@ export const doctoraliaContract = {
     .route({ method: "GET", path: "/email-notifications/monthly-summary" })
     .input(emailNotificationsMonthlySummaryQuerySchema)
     .output(emailNotificationsMonthlySummaryResponseSchema),
+  calendarAppointmentsMonthlySummary: oc
+    .route({ method: "GET", path: "/calendar-appointments/monthly-summary" })
+    .input(calendarAppointmentsMonthlySummaryQuerySchema)
+    .output(calendarAppointmentsMonthlySummaryResponseSchema),
   syncLogs: oc.route({ method: "GET", path: "/sync/logs" }).output(syncLogsResponseSchema),
   scraperCookiesStatus: oc
     .route({ method: "GET", path: "/scraper/cookies/status" })
