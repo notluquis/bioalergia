@@ -7,7 +7,7 @@ import { toast as heroToast } from "@heroui/react";
 import { addNotification } from "@/features/notifications/store/use-notification-store";
 
 type ToastOptions = Parameters<typeof heroToast.success>[1];
-type PromiseOptions = Parameters<typeof heroToast.promise>[1];
+type PromiseOptions = NonNullable<Parameters<typeof heroToast.promise>[1]>;
 type ToastPromise = Parameters<typeof heroToast.promise>[0];
 
 function asMessage(value: unknown, fallback: string, input?: unknown): string {
@@ -59,7 +59,7 @@ export const toast = {
       message,
       title: getTitle(options?.description, "Error"),
     });
-    return heroToast.error(message, options);
+    return heroToast.danger(message, options);
   },
 
   info: (message: string, options?: ToastOptions) => {
@@ -86,14 +86,14 @@ export const toast = {
       message,
       title: getTitle(options?.description, "En progreso"),
     });
-    return heroToast.loading(message, options);
+    return heroToast(message, { ...options, isLoading: true, timeout: 0 });
   },
 
-  promise: (promise: ToastPromise, options?: PromiseOptions) => {
+  promise: (promise: ToastPromise, options: PromiseOptions) => {
     const operation =
       typeof promise === "function" ? (promise as () => Promise<unknown>)() : promise;
 
-    if (options?.loading) {
+    if (options.loading) {
       addNotification({
         type: "info",
         message: asMessage(options.loading, "Procesando..."),
@@ -105,7 +105,7 @@ export const toast = {
       .then((result) => {
         addNotification({
           type: "success",
-          message: asMessage(options?.success, "Operación completada", result),
+          message: asMessage(options.success, "Operación completada", result),
           title: "Éxito",
         });
       })
@@ -113,7 +113,7 @@ export const toast = {
         addNotification({
           type: "error",
           message: asMessage(
-            options?.error,
+            options.error,
             error instanceof Error ? error.message : "Error en la operación",
             error
           ),

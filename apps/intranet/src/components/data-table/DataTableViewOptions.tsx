@@ -1,5 +1,5 @@
 import type { Selection } from "@heroui/react";
-import { Button, Dropdown, SearchField } from "@heroui/react";
+import { Button, Dropdown, Label, SearchField } from "@heroui/react";
 import type { Table } from "@tanstack/react-table";
 import { Check, Settings2 } from "lucide-react";
 import { useMemo, useState } from "react";

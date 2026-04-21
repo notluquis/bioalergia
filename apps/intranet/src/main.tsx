@@ -140,12 +140,7 @@ const router = createRouter({
           <p className="whitespace-pre-wrap text-sm opacity-90">
             {error instanceof Error ? error.message : "Un error inesperado ha ocurrido."}
           </p>
-          <Button
-            className="mt-6"
-            color="danger"
-            variant="ghost"
-            onPress={() => window.location.reload()}
-          >
+          <Button className="mt-6" variant="danger" onPress={() => window.location.reload()}>
             Recargar Página
           </Button>
         </div>

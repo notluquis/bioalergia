@@ -6,7 +6,7 @@ export function ToastProvider({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <>
       {children}
-      <Toast.Container placement="bottom end" />
+      <Toast.Provider placement="bottom end" />
     </>
   );
 }

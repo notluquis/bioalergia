@@ -171,7 +171,6 @@ export function ParticipantInsightsPage() {
                   const value = Number(val);
                   setLeaderboardLimit(Number.isFinite(value) ? value : 10);
                 }}
-                size="sm"
                 value={String(leaderboardLimit)}
               >
                 <Label>Mostrar top</Label>
@@ -195,7 +194,6 @@ export function ParticipantInsightsPage() {
                 onChange={(val) => {
                   setLeaderboardGrouping(val as "account" | "rut");
                 }}
-                size="sm"
                 value={leaderboardGrouping}
               >
                 <Label>Agrupar por</Label>
