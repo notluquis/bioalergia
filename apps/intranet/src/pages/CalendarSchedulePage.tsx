@@ -80,20 +80,50 @@ function mergedEntryToCalendarEventDetail(
   };
 }
 
-function orphanEmailToCalendarEventDetail(n: DoctoraliaEmailNotification): CalendarEventDetail {
-  const dateStr = n.appointmentDate
-    ? (n.appointmentDate.toISOString().split("T")[0] ?? null)
+function normalizePatientName(name: string): string {
+  return name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\b(dra?\.?|dr\.?|sra?\.?|sr\.?|srta\.?)\s+/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+const EVENT_PRIORITY: Record<DoctoraliaEmailNotification["eventType"], number> = {
+  CANCELLATION: 3,
+  MODIFICATION: 2,
+  BOOKING: 1,
+};
+
+function orphanGroupToCalendarEventDetail(
+  group: DoctoraliaEmailNotification[]
+): CalendarEventDetail {
+  const primary = [...group].sort(
+    (a, b) => EVENT_PRIORITY[b.eventType] - EVENT_PRIORITY[a.eventType]
+  )[0] as DoctoraliaEmailNotification;
+  const hasCancellation = group.some((e) => e.eventType === "CANCELLATION");
+  const hasModification = group.some((e) => e.eventType === "MODIFICATION");
+  const hasBooking = group.some((e) => e.eventType === "BOOKING");
+  const dateStr = primary.appointmentDate
+    ? (primary.appointmentDate.toISOString().split("T")[0] ?? null)
     : null;
-  const dateIso = n.appointmentDate ? n.appointmentDate.toISOString() : null;
-  const descParts = [
-    n.appointmentService,
-    n.appointmentDoctor,
-    "📧 Sólo email (sin match en calendario)",
+  const dateIso = primary.appointmentDate ? primary.appointmentDate.toISOString() : null;
+  const statusBits = [
+    hasCancellation ? "Cancelado" : null,
+    hasModification ? "Modificado" : null,
+    hasBooking && !hasCancellation && !hasModification ? "Reservado" : null,
   ].filter(Boolean);
+  const descParts = [
+    primary.appointmentService,
+    primary.appointmentDoctor,
+    `📧 ${statusBits.join(" + ")} por email (sin match en calendario)`,
+  ].filter(Boolean);
+  const colorId = hasCancellation ? "11" : hasModification ? "5" : "8";
   return {
     calendarId: "doctoralia-email",
     category: null,
-    colorId: n.eventType === "CANCELLATION" ? "11" : n.eventType === "MODIFICATION" ? "5" : "8",
+    colorId,
     controlIncluded: null,
     description: descParts.length ? descParts.join(" · ") : null,
     endDate: null,
@@ -102,27 +132,41 @@ function orphanEmailToCalendarEventDetail(n: DoctoraliaEmailNotification): Calen
     eventCreatedAt: null,
     eventDate: dateStr ?? "",
     eventDateTime: dateIso,
-    eventId: n.id,
+    eventId: group.map((e) => e.id).join("+"),
     eventType: "doctoralia-email",
     eventUpdatedAt: null,
     hangoutLink: null,
-    location: n.clinicAddress,
-    patientName: n.patientName,
-    rawEvent: n,
+    location: primary.clinicAddress,
+    patientName: primary.patientName,
+    rawEvent: { group, primary },
     startDate: dateStr,
     startDateTime: dateIso,
     startTimeZone: null,
-    status: n.eventType,
-    summary: `${toTitleCase(n.patientName) || n.patientName}${n.appointmentService ? ` — ${n.appointmentService}` : ""}`,
+    status: primary.eventType,
+    summary: `${toTitleCase(primary.patientName) || primary.patientName}${primary.appointmentService ? ` — ${primary.appointmentService}` : ""}`,
     transparency: null,
     visibility: null,
   };
 }
 
 function mergedToCalendarEventDetails(merged: DoctoraliaCalendarMerged): CalendarEventDetail[] {
+  const orphanGroups = new Map<string, DoctoraliaEmailNotification[]>();
+  const ungrouped: DoctoraliaEmailNotification[] = [];
+  for (const email of merged.orphanEmails) {
+    if (!email.appointmentDate) {
+      ungrouped.push(email);
+      continue;
+    }
+    const minute = Math.floor(email.appointmentDate.getTime() / 60_000);
+    const key = `${normalizePatientName(email.patientName)}|${minute}`;
+    const bucket = orphanGroups.get(key) ?? [];
+    bucket.push(email);
+    orphanGroups.set(key, bucket);
+  }
   return [
     ...merged.entries.map(mergedEntryToCalendarEventDetail),
-    ...merged.orphanEmails.map(orphanEmailToCalendarEventDetail),
+    ...Array.from(orphanGroups.values()).map(orphanGroupToCalendarEventDetail),
+    ...ungrouped.map((e) => orphanGroupToCalendarEventDetail([e])),
   ];
 }
 
