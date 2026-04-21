@@ -50,6 +50,39 @@ export const DoctoraliaCalendarAppointmentsResponseSchema = z.strictObject({
   status: z.literal("ok"),
 });
 
+export const DoctoraliaCalendarBackfillBucketCountsSchema = z.strictObject({
+  inserted: z.number().int(),
+  updated: z.number().int(),
+  skipped: z.number().int(),
+});
+
+export const DoctoraliaCalendarBackfillStatusDataSchema = z.strictObject({
+  running: z.boolean(),
+  startedAt: z.string().nullable(),
+  endedAt: z.string().nullable(),
+  targetEndDate: z.string().nullable(),
+  triggeredByUserId: z.number().int().nullable(),
+  weeksTotal: z.number().int(),
+  weeksProcessed: z.number().int(),
+  weeksFailed: z.number().int(),
+  schedules: DoctoraliaCalendarBackfillBucketCountsSchema,
+  appointments: DoctoraliaCalendarBackfillBucketCountsSchema,
+  workPeriods: DoctoraliaCalendarBackfillBucketCountsSchema,
+  currentWindow: z
+    .strictObject({
+      from: z.string(),
+      to: z.string(),
+    })
+    .nullable(),
+  lastError: z.string().nullable(),
+  minEndDate: z.string(),
+});
+
+export const DoctoraliaCalendarBackfillStatusResponseSchema = z.strictObject({
+  data: DoctoraliaCalendarBackfillStatusDataSchema,
+  status: z.literal("ok"),
+});
+
 export const DoctoraliaSyncLogSchema = z.strictObject({
   counts: z.record(z.string(), z.number()),
   endedAt: z.coerce.date().nullable(),

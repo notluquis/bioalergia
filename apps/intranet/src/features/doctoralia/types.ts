@@ -74,6 +74,29 @@ export interface DoctoraliaCalendarMerged {
   orphanEmails: DoctoraliaEmailNotification[];
 }
 
+export interface DoctoraliaCalendarBackfillBucketCounts {
+  inserted: number;
+  updated: number;
+  skipped: number;
+}
+
+export interface DoctoraliaCalendarBackfillStatus {
+  running: boolean;
+  startedAt: string | null;
+  endedAt: string | null;
+  targetEndDate: string | null;
+  triggeredByUserId: number | null;
+  weeksTotal: number;
+  weeksProcessed: number;
+  weeksFailed: number;
+  schedules: DoctoraliaCalendarBackfillBucketCounts;
+  appointments: DoctoraliaCalendarBackfillBucketCounts;
+  workPeriods: DoctoraliaCalendarBackfillBucketCounts;
+  currentWindow: { from: string; to: string } | null;
+  lastError: string | null;
+  minEndDate: string;
+}
+
 export interface DoctoraliaSyncLog {
   counts: Record<string, number>;
   endedAt: null | Date;

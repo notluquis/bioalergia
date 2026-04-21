@@ -8,6 +8,7 @@ import { apiClient } from "@/lib/api-client";
 import { doctoraliaORPCClient, toDoctoraliaApiError } from "./orpc";
 import {
   DoctoraliaCalendarAppointmentsResponseSchema,
+  DoctoraliaCalendarBackfillStatusResponseSchema,
   DoctoraliaCalendarMergedResponseSchema,
   DoctoraliaCalendarMonthlySummaryResponseSchema,
   DoctoraliaCalendarAuthStartResponseSchema,
@@ -28,6 +29,7 @@ import type {
   DoctoraliaCalendarAppointment,
   DoctoraliaCalendarAppointmentsQuery,
   DoctoraliaCalendarAppointmentsResponse,
+  DoctoraliaCalendarBackfillStatus,
   DoctoraliaCalendarMerged,
   DoctoraliaCalendarMonthlySummaryPeriod,
   DoctoraliaCalendarAuthStartResponse,
@@ -84,6 +86,30 @@ export async function fetchDoctoraliaCalendarMerged(query: {
   }
 
   return response.data;
+}
+
+export async function fetchDoctoraliaBackfillStatus(): Promise<DoctoraliaCalendarBackfillStatus> {
+  try {
+    const response = DoctoraliaCalendarBackfillStatusResponseSchema.parse(
+      await doctoraliaORPCClient.calendarBackfillStatus()
+    );
+    return response.data;
+  } catch (error) {
+    throw toDoctoraliaApiError(error);
+  }
+}
+
+export async function startDoctoraliaCalendarBackfill(input: {
+  endDate: string;
+}): Promise<DoctoraliaCalendarBackfillStatus> {
+  try {
+    const response = DoctoraliaCalendarBackfillStatusResponseSchema.parse(
+      await doctoraliaORPCClient.calendarBackfillStart({ endDate: input.endDate })
+    );
+    return response.data;
+  } catch (error) {
+    throw toDoctoraliaApiError(error);
+  }
 }
 
 export async function fetchDoctoraliaSyncLogs(): Promise<DoctoraliaSyncLog[]> {

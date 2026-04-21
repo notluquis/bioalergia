@@ -1,4 +1,5 @@
 import { queryOptions } from "@tanstack/react-query";
+import { fetchDoctoraliaBackfillStatus, fetchDoctoraliaSyncLogs } from "./api";
 import {
   fetchDoctoraliaEmailNotifications,
   fetchDoctoraliaEmailOverview,
@@ -24,5 +25,17 @@ export const doctoraliaSettingsKeys = {
     queryOptions({
       queryFn: () => fetchDoctoraliaEmailOverview(),
       queryKey: ["doctoralia", "settings", "overview"],
+    }),
+
+  backfillStatus: () =>
+    queryOptions({
+      queryFn: () => fetchDoctoraliaBackfillStatus(),
+      queryKey: ["doctoralia", "settings", "backfillStatus"],
+    }),
+
+  syncLogs: () =>
+    queryOptions({
+      queryFn: () => fetchDoctoraliaSyncLogs(),
+      queryKey: ["doctoralia", "settings", "syncLogs"],
     }),
 };

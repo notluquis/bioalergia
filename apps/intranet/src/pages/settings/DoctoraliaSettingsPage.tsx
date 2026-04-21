@@ -21,7 +21,9 @@ import {
   Workflow,
 } from "lucide-react";
 
+import { DoctoraliaCalendarBackfillPanel } from "@/features/doctoralia/components/DoctoraliaCalendarBackfillPanel";
 import { DoctoraliaCookieStorePanel } from "@/features/doctoralia/components/DoctoraliaCookieStorePanel";
+import { DoctoraliaSyncLogsPanel } from "@/features/doctoralia/components/DoctoraliaSyncLogsPanel";
 import { useMemo } from "react";
 
 import { useToast } from "@/context/ToastContext";
@@ -133,6 +135,14 @@ export function DoctoraliaSettingsPage() {
             </Tabs.Tab>
             <Tabs.Tab id="scraper">
               Bot scraper
+              <Tabs.Indicator />
+            </Tabs.Tab>
+            <Tabs.Tab id="historico">
+              Histórico
+              <Tabs.Indicator />
+            </Tabs.Tab>
+            <Tabs.Tab id="sincronizacion">
+              Sincronización
               <Tabs.Indicator />
             </Tabs.Tab>
           </Tabs.List>
@@ -419,6 +429,14 @@ export function DoctoraliaSettingsPage() {
               </Card.Content>
             </Card>
           </div>
+        </Tabs.Panel>
+
+        <Tabs.Panel id="historico">
+          <DoctoraliaCalendarBackfillPanel />
+        </Tabs.Panel>
+
+        <Tabs.Panel id="sincronizacion">
+          <DoctoraliaSyncLogsPanel />
         </Tabs.Panel>
       </Tabs>
     </div>
