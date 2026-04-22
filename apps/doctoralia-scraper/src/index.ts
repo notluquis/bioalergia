@@ -6,7 +6,7 @@ import { Impit, type HttpMethod } from "impit";
 import { loadConfig, type ScraperConfig } from "./config.js";
 import { CookieJar } from "./cookies.js";
 import { type CapturedEntry, postToImportEndpoint } from "./submit.js";
-import { selectWindowsForTick, type WindowRequest } from "./window-selector.js";
+import { getTickDebugInfo, selectWindowsForTick, type WindowRequest } from "./window-selector.js";
 
 const discoverMode = process.argv.includes("--discover");
 
@@ -310,12 +310,13 @@ async function fetchCalendarEvents(
   };
 
   const useLegacy = process.env.DOCTORALIA_SCRAPER_FORCE_LEGACY_WINDOWS === "true";
+  const tickDebug = getTickDebugInfo(new Date());
   const windows = useLegacy
     ? buildLegacyWindows(new Date(), config.windowDays, config.windowsPerRun)
     : selectWindowsForTick(new Date());
 
   if (windows.length === 0) {
-    log("no windows scheduled for this tick (outside 9:00–19:00 America/Santiago)");
+    log("no windows scheduled for this tick", tickDebug);
     return [];
   }
 

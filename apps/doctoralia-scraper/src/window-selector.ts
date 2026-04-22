@@ -19,6 +19,16 @@ export type WindowRequest = {
   tier: TierKey;
 };
 
+export type TickDebugInfo = {
+  hour: number;
+  isoNow: string;
+  localIso: string;
+  minute: number;
+  tickInDay: number | null;
+  timezone: string;
+  withinBusinessHours: boolean;
+};
+
 type Dayjs = ReturnType<typeof dayjs>;
 
 const BUSINESS_HOUR_START = 9;
@@ -65,7 +75,7 @@ export function selectWindowsForTick(
   now: Date,
   timezone: string = SCRAPER_TIMEZONE,
 ): WindowRequest[] {
-  const local = dayjs(now).tz(timezone);
+  const local = dayjs.utc(now).tz(timezone);
   const hour = local.hour();
   if (hour < BUSINESS_HOUR_START || hour >= BUSINESS_HOUR_END) return [];
 
@@ -107,4 +117,26 @@ export function selectWindowsForTick(
     seen.add(key);
     return true;
   });
+}
+
+export function getTickDebugInfo(
+  now: Date,
+  timezone: string = SCRAPER_TIMEZONE,
+): TickDebugInfo {
+  const local = dayjs.utc(now).tz(timezone);
+  const hour = local.hour();
+  const minute = local.minute();
+  const withinBusinessHours = hour >= BUSINESS_HOUR_START && hour < BUSINESS_HOUR_END;
+
+  return {
+    hour,
+    isoNow: now.toISOString(),
+    localIso: local.format(),
+    minute,
+    tickInDay: withinBusinessHours
+      ? (hour - BUSINESS_HOUR_START) * 2 + (minute >= 30 ? 1 : 0)
+      : null,
+    timezone,
+    withinBusinessHours,
+  };
 }

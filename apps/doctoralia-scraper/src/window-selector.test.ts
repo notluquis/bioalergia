@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { SCRAPER_TIMEZONE, selectWindowsForTick, type TierKey } from "./window-selector";
+import {
+  getTickDebugInfo,
+  SCRAPER_TIMEZONE,
+  selectWindowsForTick,
+  type TierKey,
+} from "./window-selector";
 
 // Build a Date that corresponds to the given wall-clock in America/Santiago.
 // We assume the Chile offset because the scraper runs against that locale.
@@ -34,6 +39,14 @@ describe("selectWindowsForTick — business-hours gate", () => {
   it("fires at 18:30 Chile time (last tick of day)", () => {
     const result = selectWindowsForTick(chileTime("2026-04-21T18:30:00"));
     expect(result.length).toBeGreaterThan(0);
+  });
+
+  it("treats 2026-04-22T22:32:00Z as 18:32 in America/Santiago", () => {
+    const now = new Date("2026-04-22T22:32:00Z");
+    const debug = getTickDebugInfo(now, SCRAPER_TIMEZONE);
+    expect(debug.localIso).toContain("2026-04-22T18:32:00");
+    expect(debug.withinBusinessHours).toBe(true);
+    expect(selectWindowsForTick(now, SCRAPER_TIMEZONE).map((w) => w.tier)).toContain("W0");
   });
 });
 
