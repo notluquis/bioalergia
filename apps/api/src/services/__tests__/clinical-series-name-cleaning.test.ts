@@ -140,6 +140,60 @@ describe("clinical series patient-name cleaning", () => {
       ["mantencio Karina Ortiz Osorio", "karina ortiz osorio"],
       ["amoxicilina Fernanda Isidora Campos Henriquez", "fernanda isidora campos henriquez"],
       ["riffo-rut Mauricio Riffo", "mauricio riffo"],
+      [
+        "se llevo el mes de marzo Josefa Pérez Altamirano , clusitoid  (50) mensual",
+        "josefa perez altamirano",
+      ],
+      ["LLEOG Romulo Velasquez, vacuna clustoid (50)", "romulo velasquez"],
+      ["lleog Xavier VIDAUX,vacuna clustoid 50 ", "xavier vidaux"],
+      ["llego Alba Soto Sepúlveda (30) aeroalergenos multites panel acaros", "alba soto sepulveda"],
+      ["llego+Juan Pablo Basualto Urra, multitest 1 2 3 (menores de 4 años) (30)", "juan pablo basualto urra"],
+      [
+        "se lleva vacuna confirma control Vacuna Clustoid 0,5ml, correspondiente a mes de Febrero, sin costo, Sara Muñoz Muñoz, 43 años, San Carlos, Fonasa, 984137627",
+        "sara munoz munoz",
+      ],
+      [
+        "REAGENDAR Mateo Toloza Guerrero (50 total) multites aeroalergenos 1,2,3,acaros/insecta + latex",
+        "mateo toloza guerrero",
+      ],
+      [
+        "SE LLEVO VACUNA MES DE OCTUBRE vacuna CLUSTOID (50), Pia González Galdames, mamá Ehaston Galdames, 10 años, Puerto Varas, Cruz Blanca, 999560893",
+        "pia gonzalez galdames",
+      ],
+      [
+        "  YA FUE ENVIADA,Jaime bustamante valenzuela Vacuna(50) Clustoid 0,5ml ",
+        "jaime bustamante valenzuela",
+      ],
+      [
+        " no se vacuno x indicacion Natalia Mardones Mardones, vacuna clustoid 0.3 (30) AUTORIZADO POR DOCTOR",
+        "natalia mardones mardones",
+      ],
+      [
+        "retito PAGADO RETIRA ABRIL Y MAYO Claudia Andrea Farias Alvarez  CLUSTOID MANTENCION (50) ",
+        "claudia andrea farias alvarez",
+      ],
+      [
+        "avisara que dia puede retirar confirma, Benjamin Quijada Uribe (50) clustoid (acaros + gramineas) 0,5 ml ",
+        "benjamin quijada uribe",
+      ],
+      ["lleg ovacuna mantencion clustoid  (50) Fabio Jordan Diaz ", "fabio jordan diaz"],
+      ["llegue vacuna acaros 0.50 (50) Cristian  Araneda Ulloa", "cristian araneda ulloa"],
+      [
+        "confirma, 1 dosis cluistoid  (25) Sandra Bravo Lepin, 40 años, 15.224.505-k san pedro de la paz, fonasa, 987473393 / hermana: 998366276",
+        "sandra bravo lepin",
+      ],
+      [
+        "llego (SACAR EL REFRI 45 min antes) vacuna martin concha sepulveda dupixent (20) administracion ",
+        "martin concha sepulveda",
+      ],
+      [
+        "llego,Amelia Morales Venegas (50) examen multitest panel menor de 4 años ",
+        "amelia morales venegas",
+      ],
+      [
+        "llego (vacuna febrero /atraso x un mes) clustoid (50)  Mario Lopez Gonzalez",
+        "mario lopez gonzalez",
+      ],
     ] as const;
 
     for (const [summary, expectedName] of cases) {

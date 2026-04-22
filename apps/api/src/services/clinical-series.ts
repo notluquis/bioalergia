@@ -96,8 +96,10 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "detest",
   "diagnostico",
   "dosis",
+  "dupixent",
   "entrega",
   "enfermedad",
+  "enviada",
   "enviarla",
   "epivac",
   "esquema",
@@ -129,6 +131,8 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "mantencion",
   "mantencio",
   "mas",
+  "mes",
+  "mayo",
   "mariscox",
   "mensual",
   "mesual",
@@ -217,12 +221,16 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "alxoid",
   "clust",
   "clusitoid",
+  "cluistoid",
   "clustois",
   "cluxin",
   "clustek",
   "forte",
+  "insecta",
+  "latex",
   "oid",
   "multitest",
+  "multites",
   "oral",
   "parchel",
   "parches",
@@ -285,6 +293,7 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "dte",
   "edad",
   "evento",
+  "fue",
   "florida",
   "fonasa",
   "gmail",
@@ -293,6 +302,7 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "hrs",
   "hualpen",
   "hualqui",
+  "indicacion",
   "isapre",
   "manana",
   "mailto",
@@ -308,6 +318,9 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "telemedicina",
   "target",
   "telefono",
+  "lleg",
+  "llegue",
+  "lleog",
   "vincular",
   // Communes / cities that appear as patient origin but are not names
   "angeles",
@@ -338,6 +351,8 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   // Relationship / family markers
   "ambos",
   "mama",
+  "menor",
+  "menores",
   "mucho",
   // Scheduling / administrative action words
   "agendar",
@@ -372,17 +387,20 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "reagendar",
   "reagendara",
   "resequedad",
+  "retito",
   "respirar",
   "retirar",
   "ruta",
   "seguir",
   "segund",
+  "sin",
   "vacunara",
   "vacune",
   "vaca",
   "whatsapp",
   // Common Spanish words that appear in clinical notes but are not names
   "autorizado",
+  "dia",
   "beneficiario",
   "carnet",
   "com",
@@ -416,6 +434,7 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "pero",
   "por",
   "porque",
+  "puede",
   "prox",
   "proxima",
   "retiran",
@@ -879,6 +898,7 @@ function stripNonNamePhrases(text: string): string {
     .replace(/\best[aá]\s+de\s+viaje\s+llamar[aá]\s+para\s+reagendar\b/gi, " ")
     .replace(/\bdr\.?\s+suspendi[oó]\s+vacuna\s+[a-záéíóúñ]+\b/gi, " ")
     .replace(/\bpagamos\s+el\s+env[ií]o\s+nosotros\b/gi, " ")
+    .replace(/\bsacar\s+el\s+refri\s+\d+\s*min\s+antes\b/gi, " ")
     .replace(
       /(^|[\n,;]\s*)(?:(?:prox|covid|(?:se\s+)?envi(?:a|ada|ado|ar))(?:\s+(?:de|y|vacuna|vacunas|dia|d[ií]a|lunes|martes|miercoles|miércoles|jueves|viernes|sabado|sábado|domingo|enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre))*\s+)/gi,
       "$1",
@@ -910,6 +930,8 @@ function stripNonNamePhrases(text: string): string {
     .replace(/\barauco\b/gi, " ")
     .replace(/\branquil\b/gi, " ")
     .replace(/\bspp\b/gi, " ")
+    .replace(/\bpuerto\s+varas\b/gi, " ")
+    .replace(/\bcruz\s+blanca\b/gi, " ")
     .replace(/\byerbas\s+buenas\b/gi, " ")
     .replace(/\blinares\b/gi, " ")
     .replace(/\brespiratori[ao]s?\b/gi, " ");
