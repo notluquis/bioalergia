@@ -1,5 +1,9 @@
 import { queryOptions } from "@tanstack/react-query";
-import { fetchDoctoraliaBackfillStatus, fetchDoctoraliaSyncLogs } from "./api";
+import {
+  fetchDoctoraliaBackfillStatus,
+  fetchDoctoraliaScraperRunOverrideStatus,
+  fetchDoctoraliaSyncLogs,
+} from "./api";
 import {
   fetchDoctoraliaEmailNotifications,
   fetchDoctoraliaEmailOverview,
@@ -37,5 +41,11 @@ export const doctoraliaSettingsKeys = {
     queryOptions({
       queryFn: () => fetchDoctoraliaSyncLogs(),
       queryKey: ["doctoralia", "settings", "syncLogs"],
+    }),
+
+  scraperRunOverride: () =>
+    queryOptions({
+      queryFn: () => fetchDoctoraliaScraperRunOverrideStatus(),
+      queryKey: ["doctoralia", "settings", "scraperRunOverride"],
     }),
 };

@@ -4,6 +4,7 @@ import { doctoraliaScraperApiToken } from "../config";
 import type { DoctoraliaCalendarResponse } from "../lib/doctoralia/doctoralia-calendar-types";
 import { logError, logEvent } from "../lib/logger";
 import { doctoraliaCalendarSyncService } from "../services/doctoralia-calendar";
+import { consumeDoctoraliaScraperForceRun } from "../services/doctoralia-scraper-run-control";
 
 export const doctoraliaScraperRoutes = new Hono();
 
@@ -101,6 +102,24 @@ doctoraliaScraperRoutes.post("/cookies", async (c) => {
     logError("doctoralia.scraper.cookies.update_failed", err);
     return c.json({ error: "update_failed" }, 500);
   }
+});
+
+doctoraliaScraperRoutes.post("/run-control/consume", async (c) => {
+  const result = await consumeDoctoraliaScraperForceRun();
+
+  logEvent("doctoralia.scraper.run_control.consume", {
+    active: result.active,
+    expiresAt: result.expiresAt,
+    requestedAt: result.requestedAt,
+    source: result.source,
+  });
+
+  return c.json({
+    active: result.active,
+    expiresAt: result.expiresAt,
+    requestedAt: result.requestedAt,
+    source: result.source,
+  });
 });
 
 doctoraliaScraperRoutes.post("/calendar/import", async (c) => {

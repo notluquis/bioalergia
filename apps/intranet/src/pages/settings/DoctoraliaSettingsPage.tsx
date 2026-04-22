@@ -23,6 +23,7 @@ import {
 
 import { DoctoraliaCalendarBackfillPanel } from "@/features/doctoralia/components/DoctoraliaCalendarBackfillPanel";
 import { DoctoraliaCookieStorePanel } from "@/features/doctoralia/components/DoctoraliaCookieStorePanel";
+import { DoctoraliaScraperRunControlPanel } from "@/features/doctoralia/components/DoctoraliaScraperRunControlPanel";
 import { DoctoraliaSyncLogsPanel } from "@/features/doctoralia/components/DoctoraliaSyncLogsPanel";
 import { useMemo } from "react";
 
@@ -408,7 +409,8 @@ export function DoctoraliaSettingsPage() {
         <Tabs.Panel id="scraper">
           <div className="mt-4 grid gap-4 xl:grid-cols-[1fr_1fr]">
             <DoctoraliaCookieStorePanel />
-            <Card>
+            <DoctoraliaScraperRunControlPanel />
+            <Card className="xl:col-span-2">
               <Card.Header className="flex flex-col items-start gap-1">
                 <h2 className="flex items-center gap-2 font-semibold text-base">
                   <Cookie className="h-4 w-4" /> Bot de calendario

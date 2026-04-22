@@ -212,3 +212,11 @@ export interface DoctoraliaEmailIngestResponse {
   message: string;
   status: "ok" | "error";
 }
+
+export interface DoctoraliaScraperRunOverrideStatus {
+  active: boolean;
+  expiresAt: Date | null;
+  requestedAt: Date | null;
+  requestedByEmail: string | null;
+  requestedByUserId: number | null;
+}

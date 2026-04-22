@@ -12,11 +12,13 @@ const configSchema = z.object({
   baseUrl: z.string().url(),
   email: z.string().min(1, "DOCTORALIA_SCRAPER_EMAIL is required"),
   password: z.string().min(1, "DOCTORALIA_SCRAPER_PASSWORD is required"),
+  forceRun: z.boolean(),
   importEndpoint: z.string().url().optional(),
   importToken: z.string().optional(),
   cookiesEndpoint: z.string().url(),
   cookiesApiToken: z.string().min(1, "DOCTORALIA_SCRAPER_API_TOKEN is required"),
   cookiesLabel: z.string().min(1),
+  runControlEndpoint: z.string().url(),
   cookieJarPath: z.string(),
   capturesDir: z.string(),
   oneUserId: z.string().min(1, "DOCTORALIA_SCRAPER_ONE_USER_ID is required"),
@@ -30,20 +32,27 @@ const configSchema = z.object({
 export type ScraperConfig = z.infer<typeof configSchema>;
 
 export function loadConfig(): ScraperConfig {
+  const cookiesEndpoint =
+    process.env.DOCTORALIA_SCRAPER_COOKIES_ENDPOINT ??
+    "http://localhost:4000/api/scraper/doctoralia/cookies";
+  const runControlEndpoint =
+    process.env.DOCTORALIA_SCRAPER_RUN_CONTROL_ENDPOINT ||
+    cookiesEndpoint.replace(/\/cookies(?:\?.*)?$/, "/run-control/consume");
+
   return configSchema.parse({
     baseUrl: process.env.DOCTORALIA_SCRAPER_BASE_URL ?? "https://docplanner.doctoralia.cl",
     email: process.env.DOCTORALIA_SCRAPER_EMAIL ?? "",
     password: process.env.DOCTORALIA_SCRAPER_PASSWORD ?? "",
+    forceRun: process.env.DOCTORALIA_SCRAPER_FORCE_RUN === "true",
     importEndpoint: process.env.DOCTORALIA_SCRAPER_IMPORT_ENDPOINT || undefined,
     importToken:
       process.env.DOCTORALIA_SCRAPER_IMPORT_TOKEN ||
       process.env.DOCTORALIA_SCRAPER_API_TOKEN ||
       undefined,
-    cookiesEndpoint:
-      process.env.DOCTORALIA_SCRAPER_COOKIES_ENDPOINT ??
-      "http://localhost:4000/api/scraper/doctoralia/cookies",
+    cookiesEndpoint,
     cookiesApiToken: process.env.DOCTORALIA_SCRAPER_API_TOKEN ?? "",
     cookiesLabel: process.env.DOCTORALIA_SCRAPER_COOKIES_LABEL ?? "default",
+    runControlEndpoint,
     cookieJarPath: path.join(__dirname, "..", ".cookies.json"),
     capturesDir: path.join(__dirname, "..", "captures"),
     oneUserId: process.env.DOCTORALIA_SCRAPER_ONE_USER_ID ?? "",

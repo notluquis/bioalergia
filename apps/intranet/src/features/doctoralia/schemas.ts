@@ -269,6 +269,17 @@ export const DoctoraliaScraperCookiesStatusResponseSchema = z.strictObject({
   status: z.literal("ok"),
 });
 
+export const DoctoraliaScraperRunOverrideStatusResponseSchema = z.strictObject({
+  data: z.strictObject({
+    active: z.boolean(),
+    expiresAt: z.coerce.date().nullable(),
+    requestedAt: z.coerce.date().nullable(),
+    requestedByEmail: z.string().nullable(),
+    requestedByUserId: z.number().int().nullable(),
+  }),
+  status: z.literal("ok"),
+});
+
 export const DoctoraliaUpdateScraperCookiesResponseSchema = z.strictObject({
   data: z.strictObject({
     label: z.string(),

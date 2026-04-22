@@ -19,6 +19,7 @@ import {
   DoctoraliaEmailStatsResponseSchema,
   DoctoraliaEmailIngestResponseSchema,
   DoctoraliaScraperCookiesStatusResponseSchema,
+  DoctoraliaScraperRunOverrideStatusResponseSchema,
   DoctoraliaSyncLogsResponseSchema,
   DoctoraliaUpdateScraperCookiesResponseSchema,
 } from "./schemas";
@@ -36,6 +37,7 @@ import type {
   DoctoraliaEmailPatient,
   DoctoraliaEmailIngestResponse,
   DoctoraliaEmailStats,
+  DoctoraliaScraperRunOverrideStatus,
   DoctoraliaSyncLog,
   DoctoraliaSyncLogsResponse,
 } from "./types";
@@ -317,6 +319,39 @@ export async function updateDoctoraliaScraperCookies(input: {
         cookieHeader: input.cookieHeader,
         label: input.label,
       })
+    );
+    return response.data;
+  } catch (error) {
+    throw toDoctoraliaApiError(error);
+  }
+}
+
+export async function fetchDoctoraliaScraperRunOverrideStatus(): Promise<DoctoraliaScraperRunOverrideStatus> {
+  try {
+    const response = DoctoraliaScraperRunOverrideStatusResponseSchema.parse(
+      await doctoraliaORPCClient.scraperRunOverrideStatus()
+    );
+    return response.data;
+  } catch (error) {
+    throw toDoctoraliaApiError(error);
+  }
+}
+
+export async function activateDoctoraliaScraperRunOverride(): Promise<DoctoraliaScraperRunOverrideStatus> {
+  try {
+    const response = DoctoraliaScraperRunOverrideStatusResponseSchema.parse(
+      await doctoraliaORPCClient.activateScraperRunOverride({})
+    );
+    return response.data;
+  } catch (error) {
+    throw toDoctoraliaApiError(error);
+  }
+}
+
+export async function clearDoctoraliaScraperRunOverride(): Promise<DoctoraliaScraperRunOverrideStatus> {
+  try {
+    const response = DoctoraliaScraperRunOverrideStatusResponseSchema.parse(
+      await doctoraliaORPCClient.clearScraperRunOverride({})
     );
     return response.data;
   } catch (error) {

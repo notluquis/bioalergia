@@ -43,6 +43,14 @@ function weekWindow(monday: Dayjs, tier: TierKey): WindowRequest {
   };
 }
 
+export function forcedCurrentWeekWindow(
+  now: Date,
+  timezone: string = SCRAPER_TIMEZONE,
+): WindowRequest {
+  const local = dayjs.utc(now).tz(timezone);
+  return weekWindow(local.startOf("isoWeek"), "W0");
+}
+
 function monthAsWeekWindows(local: Dayjs, monthOffset: number, tier: TierKey): WindowRequest[] {
   const monthStart = local.startOf("month").add(monthOffset, "month");
   const monthEnd = monthStart.endOf("month");

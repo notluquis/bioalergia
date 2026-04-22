@@ -6,7 +6,12 @@ import { Impit, type HttpMethod } from "impit";
 import { loadConfig, type ScraperConfig } from "./config.js";
 import { CookieJar } from "./cookies.js";
 import { type CapturedEntry, postToImportEndpoint } from "./submit.js";
-import { getTickDebugInfo, selectWindowsForTick, type WindowRequest } from "./window-selector.js";
+import {
+  forcedCurrentWeekWindow,
+  getTickDebugInfo,
+  selectWindowsForTick,
+  type WindowRequest,
+} from "./window-selector.js";
 
 const discoverMode = process.argv.includes("--discover");
 
@@ -64,6 +69,11 @@ function extractFrontVersion(html: string): string | null {
   const generic = html.match(FRONT_VERSION_RE);
   return generic?.[0] ?? null;
 }
+
+type RunOverrideResult = {
+  active: boolean;
+  source: "db" | "env" | "none";
+};
 
 class ImpitSession {
   readonly impit: Impit;
@@ -278,6 +288,32 @@ async function resolveFrontVersion(
   return null;
 }
 
+async function consumeRunOverride(config: ScraperConfig): Promise<RunOverrideResult> {
+  if (config.forceRun) {
+    return { active: true, source: "env" };
+  }
+
+  const res = await fetch(config.runControlEndpoint, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${config.cookiesApiToken}`,
+    },
+  });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(
+      `[run-control] POST ${config.runControlEndpoint} → ${res.status}: ${body.slice(0, 200)}`,
+    );
+  }
+
+  const payload = (await res.json()) as { active?: boolean; source?: "db" | "none" };
+  return {
+    active: payload.active === true,
+    source: payload.source === "db" ? "db" : "none",
+  };
+}
+
 async function fetchCalendarEvents(
   session: ImpitSession,
   config: ScraperConfig,
@@ -311,9 +347,18 @@ async function fetchCalendarEvents(
 
   const useLegacy = process.env.DOCTORALIA_SCRAPER_FORCE_LEGACY_WINDOWS === "true";
   const tickDebug = getTickDebugInfo(new Date());
-  const windows = useLegacy
+  const runOverride = await consumeRunOverride(config);
+  let windows = useLegacy
     ? buildLegacyWindows(new Date(), config.windowDays, config.windowsPerRun)
     : selectWindowsForTick(new Date());
+
+  if (!useLegacy && windows.length === 0 && runOverride.active) {
+    windows = [forcedCurrentWeekWindow(new Date())];
+    log("forcing scraper run outside business hours", {
+      source: runOverride.source,
+      windows: windows.map((w) => `${w.tier}:${w.from}→${w.to.slice(0, 10)}`),
+    });
+  }
 
   if (windows.length === 0) {
     log("no windows scheduled for this tick", tickDebug);

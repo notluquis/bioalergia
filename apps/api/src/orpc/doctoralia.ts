@@ -20,6 +20,11 @@ import {
   requestDoctoraliaBackfillCancel,
   startDoctoraliaBackfill,
 } from "../services/doctoralia-backfill";
+import {
+  clearDoctoraliaScraperForceRun,
+  getDoctoraliaScraperForceRunStatus,
+  requestDoctoraliaScraperForceRun,
+} from "../services/doctoralia-scraper-run-control";
 import { SuperJSONRPCHandler } from "./superjson";
 
 configureSuperjson();
@@ -315,6 +320,17 @@ const updateScraperCookiesResponseSchema = z.object({
     label: z.string(),
     count: z.number().int(),
     updatedAt: z.coerce.date(),
+  }),
+  status: z.literal("ok"),
+});
+
+const scraperRunOverrideStatusSchema = z.object({
+  data: z.object({
+    active: z.boolean(),
+    expiresAt: z.coerce.date().nullable(),
+    requestedAt: z.coerce.date().nullable(),
+    requestedByEmail: z.string().nullable(),
+    requestedByUserId: z.number().int().nullable(),
   }),
   status: z.literal("ok"),
 });
@@ -1104,6 +1120,52 @@ const doctoraliaORPCRouterBase = {
           count: cookies.length,
           updatedAt: store.updatedAt,
         },
+        status: "ok" as const,
+      };
+    }),
+
+  scraperRunOverrideStatus: canManageDoctoraliaCalendar
+    .route({ method: "GET", path: "/scraper/run-override/status" })
+    .output(scraperRunOverrideStatusSchema)
+    .handler(async () => ({
+      data: await getDoctoraliaScraperForceRunStatus(),
+      status: "ok" as const,
+    })),
+
+  activateScraperRunOverride: canManageDoctoraliaCalendar
+    .route({ method: "POST", path: "/scraper/run-override/activate" })
+    .input(z.object({}))
+    .output(scraperRunOverrideStatusSchema)
+    .handler(async ({ context }) => {
+      const data = await requestDoctoraliaScraperForceRun({
+        requestedByUserId: context.user.id,
+      });
+
+      logEvent("doctoralia.scraper.run_override.activate", {
+        active: data.active,
+        expiresAt: data.expiresAt,
+        requestedByUserId: context.user.id,
+      });
+
+      return {
+        data,
+        status: "ok" as const,
+      };
+    }),
+
+  clearScraperRunOverride: canManageDoctoraliaCalendar
+    .route({ method: "POST", path: "/scraper/run-override/clear" })
+    .input(z.object({}))
+    .output(scraperRunOverrideStatusSchema)
+    .handler(async ({ context }) => {
+      const data = await clearDoctoraliaScraperForceRun();
+
+      logEvent("doctoralia.scraper.run_override.clear", {
+        clearedByUserId: context.user.id,
+      });
+
+      return {
+        data,
         status: "ok" as const,
       };
     }),

@@ -261,6 +261,17 @@ export const updateScraperCookiesResponseSchema = z.object({
   status: z.literal("ok"),
 });
 
+export const scraperRunOverrideStatusSchema = z.object({
+  data: z.object({
+    active: z.boolean(),
+    expiresAt: z.coerce.date().nullable(),
+    requestedAt: z.coerce.date().nullable(),
+    requestedByEmail: z.string().nullable(),
+    requestedByUserId: z.number().int().nullable(),
+  }),
+  status: z.literal("ok"),
+});
+
 export const calendarAppointmentsSchema = z.object({
   data: z.object({
     appointments: z.array(
@@ -443,6 +454,17 @@ export const doctoraliaContract = {
     .route({ method: "POST", path: "/scraper/cookies" })
     .input(updateScraperCookiesInputSchema)
     .output(updateScraperCookiesResponseSchema),
+  scraperRunOverrideStatus: oc
+    .route({ method: "GET", path: "/scraper/run-override/status" })
+    .output(scraperRunOverrideStatusSchema),
+  activateScraperRunOverride: oc
+    .route({ method: "POST", path: "/scraper/run-override/activate" })
+    .input(z.object({}))
+    .output(scraperRunOverrideStatusSchema),
+  clearScraperRunOverride: oc
+    .route({ method: "POST", path: "/scraper/run-override/clear" })
+    .input(z.object({}))
+    .output(scraperRunOverrideStatusSchema),
 };
 
 export type DoctoraliaContract = typeof doctoraliaContract;
