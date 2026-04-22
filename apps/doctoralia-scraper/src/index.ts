@@ -115,27 +115,7 @@ async function askStdin(prompt: string): Promise<string> {
 const LOGIN_URL = "https://l.doctoralia.cl/";
 const SPA_SHELL_MARKER = /<div id="vuesaas">/i;
 
-async function ensureLoggedIn(session: ImpitSession, config: ScraperConfig): Promise<void> {
-  log("GET", config.baseUrl);
-  const initial = await session.request(config.baseUrl);
-  log(`  → ${initial.status} ${initial.url}`);
-
-  // The panel is a Vue SPA that renders client-side. Without JS, the server
-  // always returns the shell. Detect "logged in" by poking an authenticated
-  // endpoint: if the panel cookies are valid, the API accepts them.
-  const isSpaShell = SPA_SHELL_MARKER.test(initial.text);
-  const hasSessionCookie = session.jar.size() > 0;
-
-  if (!isSpaShell && !/l\.doctoralia\.cl/i.test(initial.url)) {
-    log("session reused — already inside panel");
-    return;
-  }
-
-  if (hasSessionCookie && isSpaShell) {
-    log("got SPA shell with cookies — assuming session still valid (calendar fetch will verify)");
-    return;
-  }
-
+async function performLogin(session: ImpitSession, config: ScraperConfig): Promise<void> {
   log("not logged in — fetching login page at", LOGIN_URL);
   const loginPage = await session.request(LOGIN_URL);
   log(`  → ${loginPage.status} ${loginPage.url}`);
@@ -179,7 +159,6 @@ async function ensureLoggedIn(session: ImpitSession, config: ScraperConfig): Pro
   });
   log(`  → ${loginRes.status} ${loginRes.url}`);
 
-  // Dump the login response for inspection whenever we bounce back to a login URL.
   const bouncedToLogin = /l\.doctoralia\.cl/i.test(loginRes.url);
   if (bouncedToLogin) {
     const dumpPath = path.join(config.capturesDir, "login-response.html");
@@ -195,7 +174,6 @@ async function ensureLoggedIn(session: ImpitSession, config: ScraperConfig): Pro
     throw new Error("login POST bounced back — inspect captures/login-response.html");
   }
 
-  // Only treat as OTP if we're no longer on the login form URL.
   if (/otp|verification_code/i.test(loginRes.text) && /input/i.test(loginRes.text)) {
     const code = await askStdin("OTP code sent to email? Enter it here: ");
     const otpForm = extractLoginForm(loginRes.text, loginRes.url);
@@ -211,6 +189,41 @@ async function ensureLoggedIn(session: ImpitSession, config: ScraperConfig): Pro
   }
 
   log(`cookies persisted: ${session.jar.size()}`);
+}
+
+async function ensureLoggedIn(
+  session: ImpitSession,
+  config: ScraperConfig,
+  options?: { force?: boolean },
+): Promise<void> {
+  if (options?.force) {
+    log("forcing Doctoralia relogin after auth failure");
+    session.jar.clear();
+    await performLogin(session, config);
+    return;
+  }
+
+  log("GET", config.baseUrl);
+  const initial = await session.request(config.baseUrl);
+  log(`  → ${initial.status} ${initial.url}`);
+
+  // The panel is a Vue SPA that renders client-side. Without JS, the server
+  // always returns the shell. Detect "logged in" by poking an authenticated
+  // endpoint: if the panel cookies are valid, the API accepts them.
+  const isSpaShell = SPA_SHELL_MARKER.test(initial.text);
+  const hasSessionCookie = session.jar.size() > 0;
+
+  if (!isSpaShell && !/l\.doctoralia\.cl/i.test(initial.url)) {
+    log("session reused — already inside panel");
+    return;
+  }
+
+  if (hasSessionCookie && isSpaShell) {
+    log("got SPA shell with cookies — assuming session still valid (calendar fetch will verify)");
+    return;
+  }
+
+  await performLogin(session, config);
 }
 
 function extractLoginForm(html: string, pageUrl: string): {
@@ -268,6 +281,7 @@ async function resolveFrontVersion(
 async function fetchCalendarEvents(
   session: ImpitSession,
   config: ScraperConfig,
+  options?: { allowReloginRetry?: boolean },
 ): Promise<CapturedEntry[]> {
   const bearer = extractBearerFromJar(session.jar);
   if (!bearer) {
@@ -318,8 +332,14 @@ async function fetchCalendarEvents(
     log(`  → ${res.status}`);
     if (res.status !== 200) {
       if (res.status === 401 || res.status === 403) {
+        if (options?.allowReloginRetry !== false) {
+          log(`  auth failed with ${res.status} — attempting relogin and one retry`);
+          await ensureLoggedIn(session, config, { force: true });
+          await session.jar.save();
+          return fetchCalendarEvents(session, config, { allowReloginRetry: false });
+        }
         throw new Error(
-          `calendarevents ${res.status} — cookies expired or bearer invalid. Re-paste the Cookie header.`,
+          `calendarevents ${res.status} after relogin — cookies expired, login blocked, or bearer invalid. Re-paste the Cookie header.`,
         );
       }
       log(`  unexpected status, body preview: ${res.text.slice(0, 200)}`);

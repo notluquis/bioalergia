@@ -110,6 +110,10 @@ export class CookieJar {
     return this.cookies.get(name)?.value;
   }
 
+  clear(): void {
+    this.cookies.clear();
+  }
+
   size(): number {
     return this.cookies.size;
   }
