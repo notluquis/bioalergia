@@ -51,6 +51,7 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "alimentrio",
   "alimentos",
   "alergenods",
+  "arboles",
   "ambiente",
   "ambi",
   "ambiado",
@@ -360,6 +361,7 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "aparecer",
   "asistir",
   "asistio",
+  "buscar",
   "cambio",
   "avisar",
   "avisaron",
@@ -367,6 +369,7 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "confirmar",
   "descartar",
   "economicos",
+  "entregada",
   "entregar",
   "enviar",
   "enviara",
@@ -383,11 +386,14 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "postergar",
   "podra",
   "quiero",
+  "realiza",
   "reagenda",
   "reagendar",
   "reagendara",
   "resequedad",
+  "retirada",
   "retito",
+  "retomo",
   "respirar",
   "retirar",
   "ruta",
@@ -438,6 +444,7 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "prox",
   "proxima",
   "retiran",
+  "retiraro",
   "humana",
   "sale",
   "sera",
@@ -1054,6 +1061,26 @@ function stripNoiseFromText(text: string): string {
     .trim();
 }
 
+function collapseRepeatedNameEdges(tokens: string[]): string[] {
+  for (let size = Math.min(3, Math.floor(tokens.length / 2)); size >= 1; size -= 1) {
+    const prefix = tokens.slice(0, size);
+    const repeatedPrefix = tokens.slice(size, size * 2);
+    if (prefix.length === repeatedPrefix.length && prefix.every((token, index) => token === repeatedPrefix[index])) {
+      return [...prefix, ...tokens.slice(size * 2)];
+    }
+  }
+
+  for (let size = Math.min(3, Math.floor(tokens.length / 2)); size >= 1; size -= 1) {
+    const prefix = tokens.slice(0, size);
+    const suffix = tokens.slice(tokens.length - size);
+    if (prefix.every((token, index) => token === suffix[index])) {
+      return tokens.slice(0, tokens.length - size);
+    }
+  }
+
+  return tokens;
+}
+
 /**
  * Extract name sequences from already-stripped text. Allows particles
  * ("de", "la", "del", …) between name tokens so compound surnames like
@@ -1100,7 +1127,8 @@ function extractNamesFromCleanedText(text: string): string[] {
 
     // Names must not start or end with a particle.
     while (seq.length > 0 && isParticle(seq[seq.length - 1]!)) seq.pop();
-    if (seq.length >= 2) results.push(seq.join(" "));
+    const collapsedSeq = collapseRepeatedNameEdges(seq);
+    if (collapsedSeq.length >= 2) results.push(collapsedSeq.join(" "));
     i = j;
   }
 
@@ -1342,7 +1370,8 @@ function extractRutAdjacentNames(text: string): string[] {
     // Drop leading/trailing particles — a name must start and end with a real token.
     while (nameTokens.length > 0 && PARTICLES.has(nameTokens[0]!)) nameTokens.shift();
     while (nameTokens.length > 0 && PARTICLES.has(nameTokens[nameTokens.length - 1]!)) nameTokens.pop();
-    if (nameTokens.length >= 2) results.push(nameTokens.join(" "));
+    const collapsedTokens = collapseRepeatedNameEdges(nameTokens);
+    if (collapsedTokens.length >= 2) results.push(collapsedTokens.join(" "));
   }
 
   return [...new Set(results)];

@@ -194,6 +194,26 @@ describe("clinical series patient-name cleaning", () => {
         "llego (vacuna febrero /atraso x un mes) clustoid (50)  Mario Lopez Gonzalez",
         "mario lopez gonzalez",
       ],
+      [
+        "se lleva, entregada Benjamin Quijada Uribe (50) clustoid 0,5 ml ",
+        "benjamin quijada uribe",
+      ],
+      [
+        "vendra ha buscarClaudia Andrea Farias Alvarez  CLUSTOID MANTENCION (50) ",
+        "claudia andrea farias alvarez",
+      ],
+      [
+        "confirma realiza carnet Natalia Mardones Mardones, vacuna clustoid (35)",
+        "natalia mardones mardones",
+      ],
+      [
+        "RETOMO INMUNOTERAPIA Sandra Bravo Lepin, vacuna clustoid (30) 0,3 ml ",
+        "sandra bravo lepin",
+      ],
+      [
+        "retiraro, LLEGO, maria teresa hernandez pavez mantencion alxoid arboles 0.50(50) María Teresa Hernández Pavez,",
+        "maria teresa hernandez pavez",
+      ],
     ] as const;
 
     for (const [summary, expectedName] of cases) {
