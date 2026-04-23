@@ -29,7 +29,11 @@ DOCTORALIA_SCRAPER_IMPORT_ENDPOINT=http://localhost:4000/rpc/doctoralia.importCa
 DOCTORALIA_SCRAPER_IMPORT_TOKEN=
 ```
 
-## Primera corrida — modo discover
+La ejecución forzada fuera de horario ya no usa variable de entorno. Se activa
+solo desde la página de intranet y el scraper consume ese flag one-shot desde
+API.
+
+## Modo discover local
 
 Antes de intentar login a ciegas, dumpeamos la página de login para ver el form
 real (action, campos ocultos, CSRF, nombres de inputs):
@@ -39,6 +43,8 @@ pnpm --filter @finanzas/doctoralia-scraper discover
 ```
 
 Esto genera `captures/login-page.html`. Se comparte conmigo y adapto el código.
+Ese dump es solo para debugging local; el deploy normal no depende de escribir
+archivos de captura.
 
 ## Scrape normal
 
@@ -47,17 +53,16 @@ pnpm --filter @finanzas/doctoralia-scraper scrape
 ```
 
 Flujo:
-1. Carga cookies de `.cookies.json` (si existe).
-2. GET al panel. Si hay sesión → directo a paso 4.
+1. Carga cookies desde el API interno.
+2. GET al panel. Si hay sesión → directo al calendario.
 3. Si pide login: parsea el form, POSTea credenciales. Si pide OTP, lee el código por stdin.
-4. GET a `/api/calendarevents?from=...&to=...` (probamos 3 paths).
-5. Guarda en `captures/calendarevents_<ts>.json`.
-6. Si `DOCTORALIA_SCRAPER_IMPORT_ENDPOINT` está seteado, POSTea al API.
+4. POST a `/api/calendarevents`.
+5. Si `DOCTORALIA_SCRAPER_IMPORT_ENDPOINT` está seteado, POSTea las entradas capturadas al API.
 
 ## Cookies persistidas
 
-`.cookies.json` se actualiza después de cada corrida. Si expira la sesión, el
-script detecta el redirect a `l.doctoralia.cl` y relogea automáticamente.
+Las cookies se cargan/guardan vía API. Si expira la sesión, el script detecta
+el `401/403`, intenta relogin una vez y vuelve a probar el calendario.
 
 ## Deploy a Railway (pendiente)
 

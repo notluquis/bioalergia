@@ -72,7 +72,7 @@ function extractFrontVersion(html: string): string | null {
 
 type RunOverrideResult = {
   active: boolean;
-  source: "db" | "env" | "none";
+  source: "db" | "none";
 };
 
 class ImpitSession {
@@ -171,17 +171,26 @@ async function performLogin(session: ImpitSession, config: ScraperConfig): Promi
 
   const bouncedToLogin = /l\.doctoralia\.cl/i.test(loginRes.url);
   if (bouncedToLogin) {
-    const dumpPath = path.join(config.capturesDir, "login-response.html");
-    fs.mkdirSync(config.capturesDir, { recursive: true });
-    fs.writeFileSync(dumpPath, loginRes.text, "utf8");
-    log(`  bounced back to ${loginRes.url} — login failed or captcha blocked. Response dumped to ${dumpPath}`);
-
     const errorMatch = loginRes.text.match(/<div[^>]*(?:alert|error|flash)[^>]*>([\s\S]*?)<\/div>/i);
     if (errorMatch) {
       const msg = errorMatch[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 300);
       log(`  server message: ${msg}`);
     }
-    throw new Error("login POST bounced back — inspect captures/login-response.html");
+
+    const responsePreview = loginRes.text
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 500);
+
+    log(`  bounced back to ${loginRes.url} — login failed or captcha blocked.`);
+    if (responsePreview) {
+      log(`  response preview: ${responsePreview}`);
+    }
+
+    throw new Error("login POST bounced back — Doctoralia rejected relogin or captcha blocked it");
   }
 
   if (/otp|verification_code/i.test(loginRes.text) && /input/i.test(loginRes.text)) {
@@ -289,10 +298,6 @@ async function resolveFrontVersion(
 }
 
 async function consumeRunOverride(config: ScraperConfig): Promise<RunOverrideResult> {
-  if (config.forceRun) {
-    return { active: true, source: "env" };
-  }
-
   const res = await fetch(config.runControlEndpoint, {
     method: "POST",
     headers: {

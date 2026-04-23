@@ -12,14 +12,12 @@ const configSchema = z.object({
   baseUrl: z.string().url(),
   email: z.string().min(1, "DOCTORALIA_SCRAPER_EMAIL is required"),
   password: z.string().min(1, "DOCTORALIA_SCRAPER_PASSWORD is required"),
-  forceRun: z.boolean(),
   importEndpoint: z.string().url().optional(),
   importToken: z.string().optional(),
   cookiesEndpoint: z.string().url(),
   cookiesApiToken: z.string().min(1, "DOCTORALIA_SCRAPER_API_TOKEN is required"),
   cookiesLabel: z.string().min(1),
   runControlEndpoint: z.string().url(),
-  cookieJarPath: z.string(),
   capturesDir: z.string(),
   oneUserId: z.string().min(1, "DOCTORALIA_SCRAPER_ONE_USER_ID is required"),
   userType: z.string().min(1),
@@ -32,7 +30,6 @@ const configSchema = z.object({
 export type ScraperConfig = z.infer<typeof configSchema>;
 
 export function loadConfig(): ScraperConfig {
-  const writableRuntimeDir = process.env.DOCTORALIA_SCRAPER_RUNTIME_DIR || path.join("/tmp", "doctoralia-scraper");
   const cookiesEndpoint =
     process.env.DOCTORALIA_SCRAPER_COOKIES_ENDPOINT ??
     "http://localhost:4000/api/scraper/doctoralia/cookies";
@@ -44,7 +41,6 @@ export function loadConfig(): ScraperConfig {
     baseUrl: process.env.DOCTORALIA_SCRAPER_BASE_URL ?? "https://docplanner.doctoralia.cl",
     email: process.env.DOCTORALIA_SCRAPER_EMAIL ?? "",
     password: process.env.DOCTORALIA_SCRAPER_PASSWORD ?? "",
-    forceRun: process.env.DOCTORALIA_SCRAPER_FORCE_RUN === "true",
     importEndpoint: process.env.DOCTORALIA_SCRAPER_IMPORT_ENDPOINT || undefined,
     importToken:
       process.env.DOCTORALIA_SCRAPER_IMPORT_TOKEN ||
@@ -54,8 +50,7 @@ export function loadConfig(): ScraperConfig {
     cookiesApiToken: process.env.DOCTORALIA_SCRAPER_API_TOKEN ?? "",
     cookiesLabel: process.env.DOCTORALIA_SCRAPER_COOKIES_LABEL ?? "default",
     runControlEndpoint,
-    cookieJarPath: path.join(writableRuntimeDir, ".cookies.json"),
-    capturesDir: process.env.DOCTORALIA_SCRAPER_CAPTURES_DIR || path.join(writableRuntimeDir, "captures"),
+    capturesDir: path.join(repoRoot, "apps/doctoralia-scraper/captures"),
     oneUserId: process.env.DOCTORALIA_SCRAPER_ONE_USER_ID ?? "",
     userType: process.env.DOCTORALIA_SCRAPER_USER_TYPE ?? "secretary",
     countryId: process.env.DOCTORALIA_SCRAPER_COUNTRY_ID ?? "CL",
