@@ -26,7 +26,7 @@
     "prepare": "husky || true"
   },
   "dependencies": {
-    "isomorphic-dompurify": "^3.9.0",
+    "isomorphic-dompurify": "^3.10.0",
     "papaparse": "^5.5.3",
     "superjson": "^2.2.6"
   },
@@ -34,9 +34,9 @@
     "@emnapi/core": "^1.10.0",
     "@emnapi/runtime": "^1.10.0",
     "@types/node": "^25.6.0",
-    "@typescript/native-preview": "7.0.0-dev.20260420.1",
-    "@zenstackhq/cli": "^3.6.0",
-    "@zenstackhq/sdk": "^3.6.0",
+    "@typescript/native-preview": "7.0.0-dev.20260422.1",
+    "@zenstackhq/cli": "^3.6.2",
+    "@zenstackhq/sdk": "^3.6.2",
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
     "oxfmt": "^0.46.0",
@@ -49,13 +49,13 @@
     "npm": ">=10.0.0",
     "pnpm": ">=10.28.0"
   },
-  "packageManager": "pnpm@10.32.1",
+  "packageManager": "pnpm@10.33.1+sha512.05ba3c1d5d1c18f68df06470d74055e62d41fc110a0c660db1b2dfb2785327f04cf0f68345d4609bc52089e7fa0343c31593b2f9594e2c5d5da426230acc9820",
   "pnpm": {
     "onlyBuiltDependencies": [
       "argon2",
       "esbuild",
-      "msw",
-      "protobufjs"
+      "impit",
+      "msw"
     ]
   }
 }

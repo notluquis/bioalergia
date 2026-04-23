@@ -249,6 +249,13 @@ export function formatDateOnly(date: Date) {
   return dayjs(date).tz(TIMEZONE).format("YYYY-MM-DD");
 }
 
+export function formatChileDateTime(
+  date: Date | string,
+  pattern = "DD/MM/YYYY HH:mm",
+) {
+  return dayjs(date).tz(TIMEZONE).format(pattern);
+}
+
 export function coerceDateOnly(value: string) {
   const parsed = parseDateOnly(value);
   return parsed ? formatDateOnly(parsed) : null;

@@ -1,5 +1,5 @@
-import dayjs from "dayjs";
 import { getSetting } from "../../services/settings";
+import { formatChileDateTime } from "../time";
 import { parseDoctoraliaEmail } from "./email-parser";
 
 const WHATSAPP_FREEFORM_MESSAGE_SETTING_KEY = "whatsapp.freeformMessage";
@@ -40,7 +40,7 @@ export async function buildDoctoraliaMessage(
 ) {
   const template = await getDoctoraliaMessageTemplate();
   const appointmentDate = booking.appointmentDate
-    ? dayjs(booking.appointmentDate).format("DD/MM/YYYY HH:mm")
+    ? formatChileDateTime(booking.appointmentDate)
     : "";
   const replacements: Record<string, string> = {
     appointmentDate,
