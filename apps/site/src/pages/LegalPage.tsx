@@ -55,9 +55,9 @@ export function LegalPage({ document }: { document: LegalDocument }) {
             <Card className="border border-border bg-(--surface)/88 backdrop-blur">
               <Card.Header className="flex flex-col items-start gap-1">
                 <h2 className="font-semibold text-base">Contenido</h2>
-                <Description className="text-(--ink-muted) text-xs">
+                <Card.Description className="text-(--ink-muted) text-xs">
                   Navega por cada sección del documento.
-                </Description>
+                </Card.Description>
               </Card.Header>
               <Card.Content className="flex flex-col gap-2">
                 {document.sections.map((section) => (
@@ -75,9 +75,9 @@ export function LegalPage({ document }: { document: LegalDocument }) {
             <Card className="border border-border bg-(--surface)/88 backdrop-blur">
               <Card.Header className="flex flex-col items-start gap-1">
                 <h2 className="font-semibold text-base">Acción rápida</h2>
-                <Description className="text-(--ink-muted) text-xs">
+                <Card.Description className="text-(--ink-muted) text-xs">
                   Si necesitas un requerimiento formal, usa el correo de contacto publicado.
-                </Description>
+                </Card.Description>
               </Card.Header>
               <Card.Content>
                 <Link
@@ -128,9 +128,9 @@ export function LegalPage({ document }: { document: LegalDocument }) {
           <Card className="h-fit border border-border bg-(--surface)/88 backdrop-blur xl:sticky xl:top-28">
             <Card.Header className="flex flex-col items-start gap-1">
               <h2 className="font-semibold text-base">Referencias oficiales</h2>
-              <Description className="text-(--ink-muted) text-xs">
+              <Card.Description className="text-(--ink-muted) text-xs">
                 Marco legal y regulatorio considerado en la redacción.
-              </Description>
+              </Card.Description>
             </Card.Header>
             <Card.Content className="space-y-3">
               {document.references.map((reference) => (

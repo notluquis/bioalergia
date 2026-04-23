@@ -52,10 +52,10 @@ export function DoctoraliaScraperRunControlPanel() {
         <h2 className="flex items-center gap-2 font-semibold text-base">
           <Bug className="h-4 w-4" /> Override de horario
         </h2>
-        <Description className="text-default-500 text-xs">
+        <Card.Description className="text-default-500 text-xs">
           Úsalo para un Run manual en Railway o para la próxima corrida automática cuando quieras
           saltarte la restricción horaria. Se consume una sola vez.
-        </Description>
+        </Card.Description>
       </Card.Header>
 
       <Card.Content className="space-y-4">

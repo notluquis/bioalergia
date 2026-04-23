@@ -154,10 +154,10 @@ export function DoctoraliaSettingsPage() {
             <Card>
               <Card.Header className="flex flex-col items-start gap-1">
                 <h2 className="font-semibold text-base">Estado de la ingesta</h2>
-                <Description className="text-default-500 text-xs">
+                <Card.Description className="text-default-500 text-xs">
                   Esto cubre configuración IMAP, estado del listener y registro de eventos de
                   correo.
-                </Description>
+                </Card.Description>
               </Card.Header>
               <Card.Content className="space-y-4">
                 {overviewPending ? (
@@ -212,9 +212,9 @@ export function DoctoraliaSettingsPage() {
             <Card>
               <Card.Header className="flex flex-col items-start gap-1">
                 <h2 className="font-semibold text-base">Parámetros del flujo</h2>
-                <Description className="text-default-500 text-xs">
+                <Card.Description className="text-default-500 text-xs">
                   Valores activos que afectan cómo entra el correo y cómo se registra la ingesta.
-                </Description>
+                </Card.Description>
               </Card.Header>
               <Card.Content className="space-y-3">
                 <Surface className="rounded-2xl border border-default-200 px-4 py-3">
@@ -291,10 +291,10 @@ export function DoctoraliaSettingsPage() {
               <Card.Header className="flex items-center justify-between gap-3">
                 <div>
                   <h2 className="font-semibold text-base">Flujo Doctoralia → WhatsApp</h2>
-                  <Description className="text-default-500 text-xs">
+                  <Card.Description className="text-default-500 text-xs">
                     El flujo correcto es correo Doctoralia → parseo → base de datos →
                     automatizaciones posteriores.
-                  </Description>
+                  </Card.Description>
                 </div>
                 <Button
                   isDisabled={ingestMutation.isPending}
@@ -338,9 +338,9 @@ export function DoctoraliaSettingsPage() {
             <Card>
               <Card.Header className="flex flex-col items-start gap-1">
                 <h2 className="font-semibold text-base">Observaciones</h2>
-                <Description className="text-default-500 text-xs">
+                <Card.Description className="text-default-500 text-xs">
                   Lo que le corresponde a Doctoralia dentro del flujo.
-                </Description>
+                </Card.Description>
               </Card.Header>
               <Card.Content className="space-y-3">
                 {!overviewPending && overview && missingBlocks.length > 0 ? (
@@ -359,14 +359,12 @@ export function DoctoraliaSettingsPage() {
                       <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                     </Alert.Indicator>
                     <Alert.Content>
+                      <Alert.Title>Último error IMAP</Alert.Title>
                       <Alert.Description>
-                        <p className="font-medium text-sm">Último error IMAP</p>
-                        <Description className="text-xs">
-                          {overview.listener.lastErrorMessage}
-                        </Description>
-                        <Description className="text-default-500 text-xs">
+                        <span className="block text-xs">{overview.listener.lastErrorMessage}</span>
+                        <span className="block text-default-500 text-xs">
                           {formatStatusDate(overview.listener.lastErrorAt)}
-                        </Description>
+                        </span>
                       </Alert.Description>
                     </Alert.Content>
                   </Alert>
@@ -415,9 +413,9 @@ export function DoctoraliaSettingsPage() {
                 <h2 className="flex items-center gap-2 font-semibold text-base">
                   <Cookie className="h-4 w-4" /> Bot de calendario
                 </h2>
-                <Description className="text-default-500 text-xs">
+                <Card.Description className="text-default-500 text-xs">
                   Cómo funcionan las cookies pegadas aquí.
-                </Description>
+                </Card.Description>
               </Card.Header>
               <Card.Content className="space-y-3 text-default-600 text-sm">
                 <p>

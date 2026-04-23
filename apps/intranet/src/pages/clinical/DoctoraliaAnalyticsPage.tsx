@@ -309,9 +309,9 @@ function SyncTabPanel() {
         <Card>
           <Card.Header className="flex flex-col items-start gap-1">
             <h2 className="font-semibold text-base">Actividad de eventos</h2>
-            <Description className="text-default-500 text-xs">
+            <Card.Description className="text-default-500 text-xs">
               Totales acumulados desde que arrancó el listener IMAP.
-            </Description>
+            </Card.Description>
           </Card.Header>
           <Card.Content>
             {statsPending ? (
@@ -355,9 +355,9 @@ function SyncTabPanel() {
         <Card>
           <Card.Header className="flex flex-col items-start gap-1">
             <h2 className="font-semibold text-base">Ejecución manual</h2>
-            <Description className="text-default-500 text-xs">
+            <Card.Description className="text-default-500 text-xs">
               Fuerza una ingesta IMAP de emails de Doctoralia.
-            </Description>
+            </Card.Description>
           </Card.Header>
           <Card.Content className="space-y-2">
             <Button
