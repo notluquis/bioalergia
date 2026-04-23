@@ -32,6 +32,7 @@ const configSchema = z.object({
 export type ScraperConfig = z.infer<typeof configSchema>;
 
 export function loadConfig(): ScraperConfig {
+  const writableRuntimeDir = process.env.DOCTORALIA_SCRAPER_RUNTIME_DIR || path.join("/tmp", "doctoralia-scraper");
   const cookiesEndpoint =
     process.env.DOCTORALIA_SCRAPER_COOKIES_ENDPOINT ??
     "http://localhost:4000/api/scraper/doctoralia/cookies";
@@ -53,8 +54,8 @@ export function loadConfig(): ScraperConfig {
     cookiesApiToken: process.env.DOCTORALIA_SCRAPER_API_TOKEN ?? "",
     cookiesLabel: process.env.DOCTORALIA_SCRAPER_COOKIES_LABEL ?? "default",
     runControlEndpoint,
-    cookieJarPath: path.join(__dirname, "..", ".cookies.json"),
-    capturesDir: path.join(__dirname, "..", "captures"),
+    cookieJarPath: path.join(writableRuntimeDir, ".cookies.json"),
+    capturesDir: process.env.DOCTORALIA_SCRAPER_CAPTURES_DIR || path.join(writableRuntimeDir, "captures"),
     oneUserId: process.env.DOCTORALIA_SCRAPER_ONE_USER_ID ?? "",
     userType: process.env.DOCTORALIA_SCRAPER_USER_TYPE ?? "secretary",
     countryId: process.env.DOCTORALIA_SCRAPER_COUNTRY_ID ?? "CL",
