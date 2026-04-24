@@ -330,7 +330,11 @@ export async function confirmEventDteLink(payload: {
   matchedBy?: "manual" | "mixed" | "name_exact" | "name_fuzzy" | "rut";
   matchedName?: null | string;
   matchedRUT?: null | string;
-  policyKey?: "default_same_day" | "same_day_unlinked_fallback" | "skin_test_bundle";
+  policyKey?:
+    | "default_same_day"
+    | "same_day_unlinked_fallback"
+    | "skin_test_bundle"
+    | "reembolso_bundle";
 }): Promise<void> {
   try {
     const data = await dteEventLinksORPCClient.confirmLink({

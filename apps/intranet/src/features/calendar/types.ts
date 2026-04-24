@@ -258,7 +258,11 @@ export interface EventDteMatchHypothesis {
   hypothesisId: string;
   kind: "bundle" | "single";
   method: "mixed" | "name_exact" | "name_fuzzy" | "rut";
-  policyKey: "default_same_day" | "same_day_unlinked_fallback" | "skin_test_bundle";
+  policyKey:
+    | "default_same_day"
+    | "same_day_unlinked_fallback"
+    | "skin_test_bundle"
+    | "reembolso_bundle";
   reasons: string[];
   score: number;
   signals: EventDteMatchSignal[];

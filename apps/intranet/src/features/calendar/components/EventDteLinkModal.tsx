@@ -41,7 +41,11 @@ interface EventDteLinkRow {
   totalAmount: number;
   hypothesis?: EventDteMatchHypothesis;
   hypothesisKind?: "bundle" | "single";
-  policyKey?: "default_same_day" | "same_day_unlinked_fallback" | "skin_test_bundle";
+  policyKey?:
+    | "default_same_day"
+    | "same_day_unlinked_fallback"
+    | "skin_test_bundle"
+    | "reembolso_bundle";
 }
 
 interface LinkedEventDocumentRow {

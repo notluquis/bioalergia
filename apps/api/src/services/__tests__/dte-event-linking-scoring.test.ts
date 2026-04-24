@@ -4,11 +4,54 @@ vi.mock("@finanzas/db", () => ({ db: {} }));
 
 const {
   findSkinTestBundleSuggestions,
+  isReembolsoBundleEvent,
   resolveMatchAmountHint,
   scoreCandidate,
   selectGlobalAutoLinkHypotheses,
 } =
   await import("../dte-event-linking");
+
+describe("isReembolsoBundleEvent", () => {
+  it("returns true for retiro/retira events when Roxair is present", () => {
+    expect(
+      isReembolsoBundleEvent({
+        category: null,
+        description: "Retira Roxair pagado",
+        summary: "retiro roxair Marion Aguilar",
+      }),
+    ).toBe(true);
+  });
+
+  it("returns true for Bactek events when category is reembolso", () => {
+    expect(
+      isReembolsoBundleEvent({
+        category: "Reembolso",
+        description: "Bactek-R abril",
+        summary: "reembolso bactek",
+      }),
+    ).toBe(true);
+  });
+
+  it("returns false for retiro without Roxair/Bactek vendor", () => {
+    expect(
+      isReembolsoBundleEvent({
+        category: null,
+        description: "retira vacuna mensual",
+        summary: "retiro vacuna paciente",
+      }),
+    ).toBe(false);
+  });
+
+  it("returns false when category is reembolso but vendor is missing", () => {
+    expect(
+      isReembolsoBundleEvent({
+        category: "Reembolso",
+        description: "pendiente",
+        summary: "retiro de documentos",
+      }),
+    ).toBe(false);
+  });
+});
 
 describe("scoreCandidate", () => {
   it("surfaces a same-day same-amount guardian/patient surname match as a review candidate", () => {
@@ -347,6 +390,7 @@ describe("selectGlobalAutoLinkHypotheses", () => {
         event: {
           amountExpected: 30000,
           amountPaid: 30000,
+          category: null,
           clinicalSeriesId: 1,
           description: null,
           eventDate: "2026-03-16",
@@ -383,6 +427,7 @@ describe("selectGlobalAutoLinkHypotheses", () => {
         event: {
           amountExpected: 30000,
           amountPaid: 30000,
+          category: null,
           clinicalSeriesId: 2,
           description: null,
           eventDate: "2026-03-16",

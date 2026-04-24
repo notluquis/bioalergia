@@ -19,6 +19,9 @@ dayjs.extend(timezone);
 const TIMEZONE = "America/Santiago";
 const RUT_REGEX = /\b\d{1,2}\.?\d{3}\.?\d{3}-?[\dkK]\b/g;
 const CAPITALIZED_NAME_REGEX = /([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+){1,4})/g;
+const REEMBOLSO_VENDOR_REGEX = /\b(?:roxair|bactek(?:-r)?)\b/;
+const REEMBOLSO_ACTION_REGEX = /\b(?:retiro|retira)\b/;
+const REEMBOLSO_CATEGORY_TOKEN = "reembolso";
 
 const EVENT_NOISE_TOKENS = new Set([
   "acaros",
@@ -57,7 +60,11 @@ const MIN_REVIEW_SCORE = 35;
 type MatchMethod = "mixed" | "name_exact" | "name_fuzzy" | "rut";
 type AutoLinkStrategy = "missing_only" | "relink_all";
 type HypothesisKind = "bundle" | "single";
-type PolicyKey = "default_same_day" | "same_day_unlinked_fallback" | "skin_test_bundle";
+type PolicyKey =
+  | "default_same_day"
+  | "same_day_unlinked_fallback"
+  | "skin_test_bundle"
+  | "reembolso_bundle";
 type FeedbackAction = "confirmed" | "manual_override" | "rejected" | "unlinked";
 const CROSS_SERIES_WARNING_PREFIX = "Advertencia:";
 
@@ -217,6 +224,7 @@ type CrossSeriesConflictInfo = { conflicts: CrossSeriesConflict[]; message: stri
 interface EventRow {
   amountExpected: null | number;
   amountPaid: null | number;
+  category: null | string;
   clinicalSeriesId: null | number;
   description: null | string;
   eventDate: string;
@@ -659,6 +667,20 @@ function extractIdentityClaims(params: {
   };
 }
 
+export function isReembolsoBundleEvent(event: Pick<EventRow, "category" | "description" | "summary">) {
+  const category = normalizeText(event.category ?? "");
+  const text = normalizeText(joinClinicalText(event.summary, event.description));
+
+  const hasVendor = REEMBOLSO_VENDOR_REGEX.test(category) || REEMBOLSO_VENDOR_REGEX.test(text);
+  if (!hasVendor) return false;
+
+  const hasReembolsoCategory = category.includes(REEMBOLSO_CATEGORY_TOKEN);
+  const hasRetiroAction = REEMBOLSO_ACTION_REGEX.test(text);
+  const isRoxairCategory = category === "roxair";
+
+  return hasReembolsoCategory || hasRetiroAction || isRoxairCategory;
+}
+
 function currencyFormatterForReason(value: number): string {
   return new Intl.NumberFormat("es-CL", {
     currency: "CLP",
@@ -1060,6 +1082,7 @@ export function findSkinTestBundleSuggestions(params: {
     analyses,
     enabled: true,
     limit: params.limit ?? 5,
+    policyKey: "skin_test_bundle",
   }).map((hypothesis) => ({
     clientName: hypothesis.clientName,
     clientRUT: hypothesis.clientRUT,
@@ -1080,6 +1103,7 @@ function buildBundleHypotheses(params: {
   analyses: CandidateAnalysis[];
   enabled: boolean;
   limit: number;
+  policyKey: "reembolso_bundle" | "skin_test_bundle";
 }): MatchHypothesis[] {
   if (!params.enabled || params.amountHint == null) return [];
   const amountHint = params.amountHint;
@@ -1099,8 +1123,11 @@ function buildBundleHypotheses(params: {
           a.document.dteSaleDetailId.localeCompare(b.document.dteSaleDetailId),
         );
         const dteSaleDetailIds = sorted.map((analysis) => analysis.document.dteSaleDetailId);
+        const bundleHeader = params.policyKey === "reembolso_bundle"
+          ? `Bundle de ${sorted.length} DTE de reembolso (Roxair/Bactek) y mismo RUT`
+          : `Bundle de ${sorted.length} DTE del mismo día y mismo RUT`;
         const reasons = [
-          `Bundle de ${sorted.length} DTE del mismo día y mismo RUT`,
+          bundleHeader,
           `Suma total ${currencyFormatterForReason(totalAmount)} frente a evento ${currencyFormatterForReason(amountHint)}`,
         ];
         if (amountDiff <= 500) {
@@ -1128,7 +1155,7 @@ function buildBundleHypotheses(params: {
           hypothesisId: `bundle:${dteSaleDetailIds.join("|")}`,
           kind: "bundle",
           method: combineMethod(sorted.map((analysis) => analysis.method)),
-          policyKey: "skin_test_bundle",
+          policyKey: params.policyKey,
           reasons,
           score,
           signals: [
@@ -1180,6 +1207,7 @@ async function getEventByExternalIds(
       c.google_id AS "googleCalendarId",
       e.external_event_id AS "externalEventId",
       COALESCE(to_char(e.start_date, 'YYYY-MM-DD'), to_char((e.start_date_time AT TIME ZONE ${TIMEZONE})::date, 'YYYY-MM-DD')) AS "eventDate",
+      e.category AS "category",
       e.summary AS "summary",
       e.description AS "description",
       e.clinical_series_id AS "clinicalSeriesId",
@@ -1210,6 +1238,7 @@ async function getEventsByDate(date: string): Promise<EventRow[]> {
       c.google_id AS "googleCalendarId",
       e.external_event_id AS "externalEventId",
       COALESCE(to_char(e.start_date, 'YYYY-MM-DD'), to_char((e.start_date_time AT TIME ZONE ${TIMEZONE})::date, 'YYYY-MM-DD')) AS "eventDate",
+      e.category AS "category",
       e.summary AS "summary",
       e.description AS "description",
       e.clinical_series_id AS "clinicalSeriesId",
@@ -1357,6 +1386,7 @@ function buildHypotheses(params: {
   claims: EventIdentityClaims;
   candidates: DteSaleRow[];
   crossSeriesWarningByRut?: Map<string, CrossSeriesConflictInfo>;
+  event: Pick<EventRow, "category" | "description" | "summary">;
   fallbackLimit: number;
   limit: number;
 }): {
@@ -1379,12 +1409,22 @@ function buildHypotheses(params: {
     .map((analysis) => buildSingleHypothesis(analysis, params.claims))
     .filter((hypothesis) => hypothesis.score >= MIN_REVIEW_SCORE);
 
-  const bundleHypotheses = buildBundleHypotheses({
-    amountHint: params.claims.amountHint,
-    analyses,
-    enabled: params.claims.seriesKind === "SKIN_TEST",
-    limit: params.limit,
-  });
+  const bundlePolicyKey: null | "reembolso_bundle" | "skin_test_bundle" =
+    params.claims.seriesKind === "SKIN_TEST"
+      ? "skin_test_bundle"
+      : isReembolsoBundleEvent(params.event)
+        ? "reembolso_bundle"
+        : null;
+
+  const bundleHypotheses = bundlePolicyKey == null
+    ? []
+    : buildBundleHypotheses({
+        amountHint: params.claims.amountHint,
+        analyses,
+        enabled: true,
+        limit: params.limit,
+        policyKey: bundlePolicyKey,
+      });
 
   const hypotheses = [...bundleHypotheses, ...singleHypotheses]
     .sort((a, b) => {
@@ -1505,6 +1545,7 @@ export async function getEventDteSuggestions(params: {
     claims,
     candidates,
     crossSeriesWarningByRut,
+    event,
     fallbackLimit: params.limit ?? 5,
     limit: params.limit ?? 15,
   });

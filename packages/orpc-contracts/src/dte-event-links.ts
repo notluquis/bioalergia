@@ -6,6 +6,7 @@ export const dteEventLinksHypothesisKindSchema = z.enum(["single", "bundle"]);
 export const dteEventLinksPolicyKeySchema = z.enum([
   "default_same_day",
   "skin_test_bundle",
+  "reembolso_bundle",
   "same_day_unlinked_fallback",
 ]);
 

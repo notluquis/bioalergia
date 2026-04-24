@@ -424,7 +424,12 @@ export const EventDteHypothesisSchema = z.object({
   hypothesisId: z.string(),
   kind: z.enum(["bundle", "single"]),
   method: z.enum(["mixed", "name_exact", "name_fuzzy", "rut"]),
-  policyKey: z.enum(["default_same_day", "same_day_unlinked_fallback", "skin_test_bundle"]),
+  policyKey: z.enum([
+    "default_same_day",
+    "same_day_unlinked_fallback",
+    "skin_test_bundle",
+    "reembolso_bundle",
+  ]),
   reasons: z.array(z.string()),
   score: z.number(),
   signals: z.array(EventDteMatchSignalSchema),
