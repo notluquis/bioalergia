@@ -66,7 +66,7 @@
     "@zenstackhq/server": "^3.6.2",
     "@zenstackhq/tanstack-query": "^3.6.2",
     "@zenstackhq/zod": "^3.6.2",
-    "hono": "^4.12.14",
+    "hono": "^4.12.15",
     "kysely": "^0.28.16",
     "pg": "8.20.0",
     "pg-types": "^4.1.0",

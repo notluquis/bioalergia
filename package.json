@@ -34,7 +34,7 @@
     "@emnapi/core": "^1.10.0",
     "@emnapi/runtime": "^1.10.0",
     "@types/node": "^25.6.0",
-    "@typescript/native-preview": "7.0.0-dev.20260423.1",
+    "@typescript/native-preview": "7.0.0-dev.20260424.2",
     "@zenstackhq/cli": "^3.6.2",
     "@zenstackhq/sdk": "^3.6.2",
     "husky": "^9.1.7",
