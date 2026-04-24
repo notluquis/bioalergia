@@ -81,6 +81,16 @@ export const OneDriveFolderItemSchema = z.object({
 
 export type OneDriveFolderItem = z.infer<typeof OneDriveFolderItemSchema>;
 
+export const OneDriveFolderFileSchema = z.object({
+  id: z.string(),
+  lastModifiedDateTime: z.string().nullable(),
+  name: z.string(),
+  size: z.number().nullable(),
+  webUrl: z.string().nullable(),
+});
+
+export type OneDriveFolderFile = z.infer<typeof OneDriveFolderFileSchema>;
+
 export const SkinTestDetailSchema = z.object({
   ageLabel: z.string().nullable(),
   clinicalSeriesId: z.number(),

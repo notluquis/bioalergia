@@ -429,10 +429,18 @@ export interface OneDriveFolderPreview {
   xlsxTotalBytes: number;
 }
 
+export interface OneDriveFolderFile {
+  id: string;
+  name: string;
+  size: number | null;
+  webUrl: string | null;
+  lastModifiedDateTime: string | null;
+}
+
 export async function listOneDriveFolderChildren(
   accountId: string,
   selection?: { driveId?: null | string; itemId?: null | string },
-): Promise<{ folders: OneDriveFolderItem[]; xlsxCount: number }> {
+): Promise<{ folders: OneDriveFolderItem[]; xlsxCount: number; files: OneDriveFolderFile[] }> {
   const accessToken = await getOneDriveAccessToken(accountId);
   const url = selection?.driveId && selection.itemId
     ? `${GRAPH_BASE_URL}/drives/${encodeURIComponent(selection.driveId)}/items/${encodeURIComponent(selection.itemId)}/children`
@@ -442,9 +450,20 @@ export async function listOneDriveFolderChildren(
     .filter((item) => item.folder || item.remoteItem?.folder)
     .map(toFolderItem)
     .sort((a, b) => a.name.localeCompare(b.name, "es"));
+  const xlsxItems = items.filter(isXlsxItem);
+  const files: OneDriveFolderFile[] = xlsxItems
+    .map((item) => ({
+      id: item.id,
+      lastModifiedDateTime: item.lastModifiedDateTime ?? null,
+      name: item.name,
+      size: item.size ?? null,
+      webUrl: item.webUrl ?? null,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name, "es"));
   return {
+    files,
     folders,
-    xlsxCount: items.filter(isXlsxItem).length,
+    xlsxCount: xlsxItems.length,
   };
 }
 

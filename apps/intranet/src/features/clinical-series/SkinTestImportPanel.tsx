@@ -714,7 +714,7 @@ function OneDriveFolderPickerModal({
                 ) : children.data?.folders.length ? (
                   <ListBox
                     aria-label="Carpetas OneDrive"
-                    className="max-h-105 overflow-y-auto"
+                    className="max-h-72 overflow-y-auto"
                     selectionMode="none"
                     onAction={(key) => {
                       const folder = children.data?.folders.find(
@@ -741,9 +741,49 @@ function OneDriveFolderPickerModal({
                     ))}
                   </ListBox>
                 ) : (
-                  <p className="rounded-lg bg-content2 px-3 py-8 text-center text-sm text-foreground-500">
+                  <p className="rounded-lg bg-content2 px-3 py-4 text-center text-sm text-foreground-500">
                     No hay subcarpetas en esta ubicación.
                   </p>
+                )}
+
+                {/* Archivos xlsx/spreadsheet en esta carpeta */}
+                {children.data && (children.data.files?.length ?? 0) > 0 && (
+                  <div className="mt-3">
+                    <Description className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase text-foreground-400">
+                      <FileSpreadsheet size={12} />
+                      Archivos en esta carpeta ({children.data.files!.length})
+                    </Description>
+                    <div className="flex max-h-48 flex-col gap-1 overflow-y-auto">
+                      {children.data.files!.map((file) => (
+                        <div
+                          key={file.id}
+                          className="flex items-center gap-2 rounded-md bg-content2 px-3 py-2 text-sm"
+                        >
+                          <FileSpreadsheet size={14} className="shrink-0 text-success" />
+                          <span className="min-w-0 flex-1 truncate text-foreground-700">
+                            {file.name}
+                          </span>
+                          {file.size != null && (
+                            <span className="shrink-0 text-xs text-foreground-400">
+                              {file.size < 1024 * 1024
+                                ? `${(file.size / 1024).toFixed(0)} KB`
+                                : `${(file.size / (1024 * 1024)).toFixed(1)} MB`}
+                            </span>
+                          )}
+                          {file.webUrl && (
+                            <button
+                              type="button"
+                              className="shrink-0 text-foreground-400 transition-colors hover:text-foreground"
+                              onClick={() => window.open(file.webUrl!, "_blank")}
+                              title="Abrir en OneDrive"
+                            >
+                              <ExternalLink size={13} />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </Modal.Body>
               <Modal.Footer>

@@ -235,7 +235,16 @@ export const oneDriveFolderItemSchema = z.object({
   xlsxCount: z.number().int(),
 });
 
+export const oneDriveFolderFileSchema = z.object({
+  id: z.string(),
+  lastModifiedDateTime: z.string().nullable(),
+  name: z.string(),
+  size: z.number().nullable(),
+  webUrl: z.string().nullable(),
+});
+
 export const oneDriveFolderChildrenOutputSchema = z.object({
+  files: z.array(oneDriveFolderFileSchema),
   folders: z.array(oneDriveFolderItemSchema),
   xlsxCount: z.number().int(),
 });

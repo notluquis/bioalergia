@@ -3,6 +3,7 @@ import { compactORPCInput } from "@/lib/orpc-input";
 import { clinicalSeriesKeys } from "./queries";
 import { clinicalSkinTestsORPCClient, toClinicalSkinTestsApiError } from "./skin-tests-orpc";
 import {
+  OneDriveFolderFileSchema,
   OneDriveFolderItemSchema,
   SkinTestDetailSchema,
   SkinTestImportSchema,
@@ -164,8 +165,10 @@ export function useOneDriveFolderChildren(params: {
         driveId: params.driveId,
         itemId: params.itemId,
       });
+      const raw = result as unknown as typeof result & { files?: unknown[] };
       return {
         ...result,
+        files: OneDriveFolderFileSchema.array().parse(raw.files ?? []),
         folders: OneDriveFolderItemSchema.array().parse(result.folders),
       };
     },
