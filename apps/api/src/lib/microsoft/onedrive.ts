@@ -405,28 +405,46 @@ function buildDeltaUrl(selection: { driveId?: null | string; folderPath?: string
   return `${GRAPH_BASE_URL}/me/drive/root:/${encodeURIComponent(cleanPath).replace(/%2F/g, "/")}:/delta`;
 }
 
-export async function listOneDriveFolderChildren(
+export interface OneDriveFolderPreview {
+  totalFiles: number;
+  xlsxCount: number;
+  xlsxTotalBytes: number;
+}
+
+export async function getOneDriveFolderPreview(
   accountId: string,
   selection?: { driveId?: null | string; itemId?: null | string },
-): Promise<{ folders: OneDriveFolderItem[]; xlsxCount: number }> {
+): Promise<OneDriveFolderPreview> {
   const accessToken = await getOneDriveAccessToken(accountId);
-  const url = selection?.driveId && selection.itemId
-    ? `${GRAPH_BASE_URL}/drives/${encodeURIComponent(selection.driveId)}/items/${encodeURIComponent(selection.itemId)}/children`
-    : `${GRAPH_BASE_URL}/me/drive/root/children`;
-  const items = await listAllChildren(url, accessToken);
-  const folders = items
-    .filter((item) => item.folder || item.remoteItem?.folder)
-    .map(toFolderItem)
-    .sort((a, b) => a.name.localeCompare(b.name, "es"));
-  return {
-    folders,
-    xlsxCount: items.filter(isXlsxItem).length,
-  };
+  // Use the delta API for a recursive scan — same as the sync worker
+  // but we intentionally skip saving @odata.deltaLink (read-only preview).
+  const baseUrl = buildDeltaUrl({ driveId: selection?.driveId, itemId: selection?.itemId });
+  let url = `${baseUrl}?$select=id,name,file,folder,size`;
+
+  let totalFiles = 0;
+  let xlsxCount = 0;
+  let xlsxTotalBytes = 0;
+
+  while (url) {
+    const response = await graphFetch<DeltaResponse>(url, accessToken);
+    for (const item of response.value ?? []) {
+      if (!item.file) continue; // skip folders and deleted items
+      totalFiles += 1;
+      if (isXlsxItem(item)) {
+        xlsxCount += 1;
+        xlsxTotalBytes += item.size ?? 0;
+      }
+    }
+    // Use nextLink to paginate; stop when we reach deltaLink (end of snapshot)
+    url = response["@odata.nextLink"] ?? "";
+  }
+
+  return { totalFiles, xlsxCount, xlsxTotalBytes };
 }
 
 async function listAllChildren(url: string, accessToken: string): Promise<OneDriveItem[]> {
   const items: OneDriveItem[] = [];
-  let nextUrl = `${url}?$select=id,name,folder,file,remoteItem,parentReference,webUrl&$top=200`;
+  let nextUrl = `${url}?$select=id,name,folder,file,remoteItem,parentReference,webUrl,size,lastModifiedDateTime&$top=200`;
   while (nextUrl) {
     const response = await graphFetch<ChildrenResponse>(nextUrl, accessToken);
     items.push(...(response.value ?? []));

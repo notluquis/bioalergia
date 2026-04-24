@@ -240,6 +240,19 @@ export const oneDriveFolderChildrenOutputSchema = z.object({
   xlsxCount: z.number().int(),
 });
 
+export const oneDriveFolderPreviewInputSchema = z.object({
+  accountId: z.string(),
+  driveId: z.string().nullable().optional(),
+  itemId: z.string().nullable().optional(),
+});
+
+export const oneDriveFolderPreviewOutputSchema = z.object({
+  folders: z.array(oneDriveFolderItemSchema),
+  totalItems: z.number().int(),
+  xlsxCount: z.number().int(),
+  xlsxTotalBytes: z.number().int(),
+});
+
 export const oneDriveDisconnectInputSchema = z.object({
   accountId: z.string(),
 });
@@ -322,6 +335,10 @@ export const clinicalSkinTestsContract = {
     .input(skinTestImportActionInputSchema)
     .output(skinTestImportSchema),
   sync: oc.route({ method: "POST", path: "/sync" }).input(skinTestSyncInputSchema).output(skinTestSyncOutputSchema),
+  folderPreview: oc
+    .route({ method: "GET", path: "/onedrive/folder-preview" })
+    .input(oneDriveFolderPreviewInputSchema)
+    .output(oneDriveFolderPreviewOutputSchema),
 };
 
 export type ClinicalSkinTestsContract = typeof clinicalSkinTestsContract;
