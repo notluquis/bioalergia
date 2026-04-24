@@ -4,9 +4,11 @@ import {
   syncClinicalSkinTestImports,
 } from "../../services/clinical-skin-test-imports";
 import {
+  cancelJob,
   completeJob,
   failJob,
   getActiveJobsByType,
+  isJobCancelled,
   startJob,
   updateJobProgress,
 } from "../jobQueue";
@@ -75,6 +77,7 @@ export async function startClinicalSkinTestImportJob(options?: {
         folderItemId: options?.folderItemId,
         folderPath: options?.folderPath,
         force: options?.force,
+        shouldCancel: () => isJobCancelled(jobId),
         onProgress: (processed, total, message) => {
           updateJobProgress(jobId, processed, message);
           const job = getActiveJobsByType(jobType).find((item) => item.id === jobId);
@@ -89,7 +92,16 @@ export async function startClinicalSkinTestImportJob(options?: {
         trigger: options?.trigger ?? "manual",
       });
     } catch (error) {
-      failJob(jobId, error instanceof Error ? error.message : String(error));
+      const message = error instanceof Error ? error.message : String(error);
+      if (message === "SYNC_CANCELLED") {
+        cancelJob(jobId, "Sincronización cancelada por usuario");
+        logEvent("clinicalSkinTests.sync.cancelled", {
+          trigger: options?.trigger ?? "manual",
+        });
+        return;
+      }
+
+      failJob(jobId, message);
       logError("clinicalSkinTests.sync.failed", error, {
         trigger: options?.trigger ?? "manual",
       });

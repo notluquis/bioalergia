@@ -3,7 +3,7 @@
  * Jobs auto-expire after 10 minutes to prevent memory leaks.
  */
 
-export type JobStatus = "pending" | "running" | "completed" | "failed";
+export type JobStatus = "pending" | "running" | "completed" | "failed" | "cancelled";
 
 export interface JobState {
   id: string;
@@ -19,6 +19,7 @@ export interface JobState {
 }
 
 const jobs = new Map<string, JobState>();
+const cancelledJobs = new Set<string>();
 
 // Auto-cleanup interval (every 2 minutes, remove jobs older than 10 minutes)
 const CLEANUP_INTERVAL_MS = 2 * 60 * 1000;
@@ -29,6 +30,7 @@ setInterval(() => {
   for (const [id, job] of jobs) {
     if (now - job.updatedAt.getTime() > JOB_TTL_MS) {
       jobs.delete(id);
+      cancelledJobs.delete(id);
     }
   }
 }, CLEANUP_INTERVAL_MS);
@@ -60,6 +62,8 @@ export function startJob(type: string, total: number): string {
     updatedAt: now,
   });
 
+  cancelledJobs.delete(id);
+
   return id;
 }
 
@@ -69,6 +73,9 @@ export function startJob(type: string, total: number): string {
 export function updateJobProgress(jobId: string, progress: number, message?: string): void {
   const job = jobs.get(jobId);
   if (!job) {
+    return;
+  }
+  if (job.status === "cancelled") {
     return;
   }
 
@@ -87,6 +94,9 @@ export function completeJob(jobId: string, result: unknown): void {
   if (!job) {
     return;
   }
+  if (job.status === "cancelled") {
+    return;
+  }
 
   job.status = "completed";
   job.progress = job.total;
@@ -103,6 +113,9 @@ export function failJob(jobId: string, error: string): void {
   if (!job) {
     return;
   }
+  if (job.status === "cancelled") {
+    return;
+  }
 
   job.status = "failed";
   job.error = error;
@@ -115,6 +128,31 @@ export function failJob(jobId: string, error: string): void {
  */
 export function getJobStatus(jobId: string): JobState | null {
   return jobs.get(jobId) ?? null;
+}
+
+/**
+ * Cancel a running/pending job.
+ */
+export function cancelJob(jobId: string, message = "Cancelado por usuario"): boolean {
+  const job = jobs.get(jobId);
+  if (!job) return false;
+  if (job.status === "completed" || job.status === "failed" || job.status === "cancelled") {
+    return false;
+  }
+
+  job.status = "cancelled";
+  job.message = message;
+  job.error = null;
+  job.updatedAt = new Date();
+  cancelledJobs.add(jobId);
+  return true;
+}
+
+/**
+ * Read cancellation token for long-running workers.
+ */
+export function isJobCancelled(jobId: string): boolean {
+  return cancelledJobs.has(jobId);
 }
 
 /**

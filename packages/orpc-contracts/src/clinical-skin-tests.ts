@@ -122,7 +122,7 @@ export const skinTestJobStatusOutputSchema = z.object({
   job: z.object({
     id: z.string(),
     type: z.string(),
-    status: z.enum(["pending", "running", "completed", "failed"]),
+    status: z.enum(["pending", "running", "completed", "failed", "cancelled"]),
     progress: z.number(),
     total: z.number(),
     message: z.string(),
@@ -131,6 +131,47 @@ export const skinTestJobStatusOutputSchema = z.object({
     createdAt: z.date(),
     updatedAt: z.date(),
   }),
+});
+
+export const skinTestJobCancelInputSchema = z.object({
+  jobId: z.string(),
+});
+
+export const skinTestJobCancelOutputSchema = z.object({
+  cancelled: z.boolean(),
+  job: z
+    .object({
+      id: z.string(),
+      type: z.string(),
+      status: z.enum(["pending", "running", "completed", "failed", "cancelled"]),
+      progress: z.number(),
+      total: z.number(),
+      message: z.string(),
+      result: z.unknown(),
+      error: z.string().nullable(),
+      createdAt: z.date(),
+      updatedAt: z.date(),
+    })
+    .nullable(),
+});
+
+export const skinTestActiveJobInputSchema = z.object({});
+
+export const skinTestActiveJobOutputSchema = z.object({
+  job: z
+    .object({
+      id: z.string(),
+      type: z.string(),
+      status: z.enum(["pending", "running", "completed", "failed", "cancelled"]),
+      progress: z.number(),
+      total: z.number(),
+      message: z.string(),
+      result: z.unknown(),
+      error: z.string().nullable(),
+      createdAt: z.date(),
+      updatedAt: z.date(),
+    })
+    .nullable(),
 });
 
 export const oneDriveAccountStatusSchema = z.object({
@@ -256,6 +297,14 @@ export const clinicalSkinTestsContract = {
     .route({ method: "GET", path: "/jobs/{jobId}" })
     .input(skinTestJobStatusInputSchema)
     .output(skinTestJobStatusOutputSchema),
+  cancelJob: oc
+    .route({ method: "POST", path: "/jobs/{jobId}/cancel" })
+    .input(skinTestJobCancelInputSchema)
+    .output(skinTestJobCancelOutputSchema),
+  activeJob: oc
+    .route({ method: "GET", path: "/jobs/active" })
+    .input(skinTestActiveJobInputSchema)
+    .output(skinTestActiveJobOutputSchema),
   listImports: oc
     .route({ method: "GET", path: "/imports" })
     .input(skinTestImportListInputSchema)

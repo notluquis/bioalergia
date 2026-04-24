@@ -34,6 +34,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useToast } from "@/context/ToastContext";
 import {
+  useActiveClinicalSkinTestJob,
   useApproveSkinTestImport,
   useConfigureOneDriveFolder,
   useOneDriveSkinTestStatus,
@@ -45,6 +46,7 @@ import {
   useSyncSkinTestImports,
   useGetOneDriveAuthUrl,
   useConnectOneDrive,
+  useCancelClinicalSkinTestJob,
   useDisconnectOneDrive,
   useClinicalSkinTestJobStatus,
   type SkinTestImportFilters,
@@ -96,11 +98,27 @@ export function SkinTestImportPanel() {
   const oneDrive = useOneDriveSkinTestStatus();
   const imports = useSkinTestImports(filters);
   const syncMutation = useSyncSkinTestImports();
+  const cancelJobMutation = useCancelClinicalSkinTestJob();
   const connectOneDrive = useConnectOneDrive();
   const authUrlQuery = useGetOneDriveAuthUrl(window.location.origin + window.location.pathname);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const handledOAuthCodeRef = useRef<string | null>(null);
+  const activeJobQuery = useActiveClinicalSkinTestJob();
   const jobStatusQuery = useClinicalSkinTestJobStatus(activeJobId);
+  const runningJobId = activeJobId ?? activeJobQuery.data?.job?.id ?? null;
+  const activeJobStatus = jobStatusQuery.data?.job?.status;
+  const knownActiveJobStatus = activeJobStatus ?? activeJobQuery.data?.job?.status;
+  const isSyncInProgress =
+    syncMutation.isPending ||
+    knownActiveJobStatus === "pending" ||
+    knownActiveJobStatus === "running";
+
+  useEffect(() => {
+    const initialJobId = activeJobQuery.data?.job?.id;
+    if (initialJobId && !activeJobId) {
+      setActiveJobId(initialJobId);
+    }
+  }, [activeJobId, activeJobQuery.data?.job?.id]);
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -159,6 +177,20 @@ export function SkinTestImportPanel() {
     }
   }
 
+  async function handleCancelSync() {
+    if (!runningJobId) return;
+    try {
+      const result = await cancelJobMutation.mutateAsync(runningJobId);
+      if (result.cancelled) {
+        toast.success("Sincronización detenida");
+      } else {
+        toast.info("El job ya no estaba en ejecución");
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo detener sync");
+    }
+  }
+
   return (
     <div className="space-y-4">
       <Surface className="rounded-xl p-4">
@@ -174,7 +206,7 @@ export function SkinTestImportPanel() {
               size="sm"
               variant="secondary"
               onPress={() => void handleSync(false)}
-              isDisabled={!oneDrive.data?.connected || syncMutation.isPending}
+              isDisabled={!oneDrive.data?.connected || isSyncInProgress}
             >
               <RefreshCw size={14} />
               Sincronizar
@@ -183,9 +215,22 @@ export function SkinTestImportPanel() {
               size="sm"
               variant="ghost"
               onPress={() => void handleSync(true)}
-              isDisabled={!oneDrive.data?.connected || syncMutation.isPending}
+              isDisabled={!oneDrive.data?.connected || isSyncInProgress}
             >
               Releer todo
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-danger"
+              onPress={() => void handleCancelSync()}
+              isDisabled={
+                !runningJobId || !["pending", "running"].includes(knownActiveJobStatus ?? "")
+              }
+              isPending={cancelJobMutation.isPending}
+            >
+              <X size={14} />
+              Parar sincronización
             </Button>
           </div>
         </div>
@@ -198,9 +243,11 @@ export function SkinTestImportPanel() {
               color={
                 jobStatusQuery.data.job.status === "failed"
                   ? "danger"
-                  : jobStatusQuery.data.job.status === "completed"
-                    ? "success"
-                    : "accent"
+                  : jobStatusQuery.data.job.status === "cancelled"
+                    ? "warning"
+                    : jobStatusQuery.data.job.status === "completed"
+                      ? "success"
+                      : "accent"
               }
               value={jobStatusQuery.data.job.progress}
               maxValue={jobStatusQuery.data.job.total || 100}
@@ -217,7 +264,7 @@ export function SkinTestImportPanel() {
                 <ProgressBar.Fill />
               </ProgressBar.Track>
             </ProgressBar>
-            {["completed", "failed"].includes(jobStatusQuery.data.job.status) && (
+            {["completed", "failed", "cancelled"].includes(jobStatusQuery.data.job.status) && (
               <div className="mt-2 flex justify-end">
                 <Button size="sm" variant="ghost" onPress={() => setActiveJobId(null)}>
                   Ocultar
@@ -595,7 +642,7 @@ function OneDriveFolderPickerModal({
                 ) : children.data?.folders.length ? (
                   <ListBox
                     aria-label="Carpetas OneDrive"
-                    className="max-h-[420px] overflow-y-auto"
+                    className="max-h-105 overflow-y-auto"
                     selectionMode="none"
                     onAction={(key) => {
                       const folder = children.data?.folders.find(

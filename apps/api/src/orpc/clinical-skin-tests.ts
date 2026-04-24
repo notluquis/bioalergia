@@ -10,9 +10,13 @@ import {
   oneDriveFolderInputSchema,
   oneDriveStatusOutputSchema,
   skinTestImportActionInputSchema,
+  skinTestActiveJobInputSchema,
+  skinTestActiveJobOutputSchema,
   skinTestImportListInputSchema,
   skinTestImportListOutputSchema,
   skinTestImportSchema,
+  skinTestJobCancelInputSchema,
+  skinTestJobCancelOutputSchema,
   skinTestJobStatusInputSchema,
   skinTestJobStatusOutputSchema,
   skinTestsBySeriesInputSchema,
@@ -26,7 +30,7 @@ import type { Context as HonoContext } from "hono";
 import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { startClinicalSkinTestImportJob } from "../lib/clinical-skin-tests/clinical-skin-test-scheduler";
-import { getJobStatus } from "../lib/jobQueue";
+import { cancelJob, getActiveJobsByType, getJobStatus } from "../lib/jobQueue";
 import {
   connectOneDriveWithCode,
   disconnectOneDrive,
@@ -40,6 +44,7 @@ import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
 import {
   approveSkinTestImport,
+  getSkinTestImportJobType,
   getSkinTestImport,
   listSkinTestImports,
   listSkinTestsBySeries,
@@ -169,6 +174,27 @@ const routerBase = {
       const job = getJobStatus(input.jobId);
       if (!job) throw new ORPCError("NOT_FOUND", { message: "Job not found or expired" });
       return { job };
+    }),
+
+  cancelJob: updateClinicalSkinTests
+    .route({ method: "POST", path: "/jobs/{jobId}/cancel" })
+    .input(skinTestJobCancelInputSchema)
+    .output(skinTestJobCancelOutputSchema)
+    .handler(({ input }: { input: z.input<typeof skinTestJobCancelInputSchema> }) => {
+      const cancelled = cancelJob(input.jobId, "Sincronización cancelada por usuario");
+      return {
+        cancelled,
+        job: getJobStatus(input.jobId),
+      };
+    }),
+
+  activeJob: readClinicalSkinTests
+    .route({ method: "GET", path: "/jobs/active" })
+    .input(skinTestActiveJobInputSchema)
+    .output(skinTestActiveJobOutputSchema)
+    .handler(() => {
+      const [job] = getActiveJobsByType(getSkinTestImportJobType());
+      return { job: job ?? null };
     }),
 
   listImports: readClinicalSkinTests

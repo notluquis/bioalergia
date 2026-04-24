@@ -110,6 +110,7 @@ export async function syncClinicalSkinTestImports(options?: {
   folderPath?: string;
   force?: boolean;
   onProgress?: (processed: number, total: number, message: string) => void;
+  shouldCancel?: () => boolean;
 }) {
   const status = await getOneDriveStatus();
   if (!status.connected) {
@@ -124,6 +125,10 @@ export async function syncClinicalSkinTestImports(options?: {
   let xlsx = 0;
 
   for (const account of status.accounts.filter((item) => !options?.accountId || item.accountId === options.accountId)) {
+    if (options?.shouldCancel?.()) {
+      throw new Error("SYNC_CANCELLED");
+    }
+
     const { items } = await listOneDriveDeltaItems(account.accountId, {
       folderDriveId: options?.folderDriveId,
       folderItemId: options?.folderItemId,
@@ -135,6 +140,10 @@ export async function syncClinicalSkinTestImports(options?: {
     xlsx += xlsxItems.length;
 
     for (const [index, item] of xlsxItems.entries()) {
+      if (options?.shouldCancel?.()) {
+        throw new Error("SYNC_CANCELLED");
+      }
+
       options?.onProgress?.(
         index + 1, 
         Math.max(xlsxItems.length, 1), 

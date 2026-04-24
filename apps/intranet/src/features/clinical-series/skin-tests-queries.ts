@@ -22,6 +22,7 @@ export interface SkinTestImportFilters {
 
 export const skinTestImportKeys = {
   all: ["clinical-skin-tests"] as const,
+  activeJob: () => [...skinTestImportKeys.all, "active-job"] as const,
   imports: (filters?: SkinTestImportFilters) =>
     [...skinTestImportKeys.all, "imports", filters] as const,
   oneDriveFolders: (accountId: string, driveId?: null | string, itemId?: null | string) =>
@@ -40,6 +41,18 @@ export function useOneDriveSkinTestStatus() {
   return useQuery({
     queryFn: async () => clinicalSkinTestsORPCClient.getOneDriveStatus({}),
     queryKey: skinTestImportKeys.oneDriveStatus(),
+  });
+}
+
+export function useActiveClinicalSkinTestJob() {
+  return useQuery({
+    queryFn: async () => await clinicalSkinTestsORPCClient.activeJob({}),
+    queryKey: skinTestImportKeys.activeJob(),
+    refetchInterval: (query) => {
+      const status = query.state.data?.job?.status;
+      if (!status) return false;
+      return ["completed", "failed", "cancelled"].includes(status) ? false : 2000;
+    },
   });
 }
 
@@ -211,7 +224,22 @@ export function useClinicalSkinTestJobStatus(jobId: string | null) {
     refetchInterval: (query) => {
       const status = query.state.data?.job?.status;
       if (!status) return 2000;
-      return ["completed", "failed"].includes(status) ? false : 2000;
+      return ["completed", "failed", "cancelled"].includes(status) ? false : 2000;
+    },
+  });
+}
+
+export function useCancelClinicalSkinTestJob() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (jobId: string) => await clinicalSkinTestsORPCClient.cancelJob({ jobId }),
+    onSuccess: async (_result, jobId) => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: [...skinTestImportKeys.all, "job-status", jobId],
+        }),
+        queryClient.invalidateQueries({ queryKey: skinTestImportKeys.imports() }),
+      ]);
     },
   });
 }
