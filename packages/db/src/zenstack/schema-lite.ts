@@ -2434,6 +2434,141 @@ export class SchemaType implements SchemaDef {
                 key: { type: "String" }
             }
         },
+        OneDriveAccount: {
+            name: "OneDriveAccount",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                accountId: {
+                    name: "accountId",
+                    type: "String",
+                    unique: true
+                },
+                email: {
+                    name: "email",
+                    type: "String"
+                },
+                name: {
+                    name: "name",
+                    type: "String",
+                    optional: true
+                },
+                accessToken: {
+                    name: "accessToken",
+                    type: "String"
+                },
+                refreshToken: {
+                    name: "refreshToken",
+                    type: "String"
+                },
+                expiresAt: {
+                    name: "expiresAt",
+                    type: "String"
+                },
+                folderPath: {
+                    name: "folderPath",
+                    type: "String",
+                    optional: true
+                },
+                deltaLink: {
+                    name: "deltaLink",
+                    type: "String",
+                    optional: true
+                },
+                lastDeltaSyncAt: {
+                    name: "lastDeltaSyncAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                lastSyncAt: {
+                    name: "lastSyncAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                watchChannels: {
+                    name: "watchChannels",
+                    type: "OneDriveWatchChannel",
+                    array: true,
+                    relation: { opposite: "account" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" },
+                accountId: { type: "String" }
+            }
+        },
+        OneDriveWatchChannel: {
+            name: "OneDriveWatchChannel",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                accountId: {
+                    name: "accountId",
+                    type: "String",
+                    foreignKeyFor: [
+                        "account"
+                    ] as readonly string[]
+                },
+                subscriptionId: {
+                    name: "subscriptionId",
+                    type: "String",
+                    unique: true
+                },
+                resource: {
+                    name: "resource",
+                    type: "String"
+                },
+                expiration: {
+                    name: "expiration",
+                    type: "DateTime"
+                },
+                webhookUrl: {
+                    name: "webhookUrl",
+                    type: "String"
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                account: {
+                    name: "account",
+                    type: "OneDriveAccount",
+                    relation: { opposite: "watchChannels", fields: ["accountId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" },
+                subscriptionId: { type: "String" }
+            }
+        },
         PushSubscription: {
             name: "PushSubscription",
             fields: {
@@ -2989,6 +3124,11 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     id: true,
                     default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                oneDriveAccountId: {
+                    name: "oneDriveAccountId",
+                    type: "String",
+                    optional: true
                 },
                 oneDriveItemId: {
                     name: "oneDriveItemId",

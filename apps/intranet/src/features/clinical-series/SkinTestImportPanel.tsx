@@ -27,6 +27,7 @@ import {
   useSyncSkinTestImports,
   useGetOneDriveAuthUrl,
   useConnectOneDrive,
+  useDisconnectOneDrive,
   useClinicalSkinTestJobStatus,
   type SkinTestImportFilters,
 } from "./skin-tests-queries";
@@ -60,7 +61,6 @@ export function SkinTestImportPanel() {
   const toast = useToast();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<SkinTestImportStatus | undefined>("PENDING_REVIEW");
-  const [folderPath, setFolderPath] = useState("");
   const filters: SkinTestImportFilters = useMemo(
     () => ({
       page: 1,
@@ -73,7 +73,6 @@ export function SkinTestImportPanel() {
   const oneDrive = useOneDriveSkinTestStatus();
   const imports = useSkinTestImports(filters);
   const syncMutation = useSyncSkinTestImports();
-  const configureFolder = useConfigureOneDriveFolder();
   const connectOneDrive = useConnectOneDrive();
   const authUrlQuery = useGetOneDriveAuthUrl(window.location.origin + window.location.pathname);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
@@ -119,16 +118,6 @@ export function SkinTestImportPanel() {
     }
   }
 
-  async function handleSaveFolder() {
-    if (!folderPath.trim()) return;
-    try {
-      await configureFolder.mutateAsync(folderPath.trim());
-      toast.success("Carpeta OneDrive actualizada");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "No se pudo guardar carpeta");
-    }
-  }
-
   return (
     <div className="space-y-4">
       <Surface className="rounded-xl p-4">
@@ -136,8 +125,7 @@ export function SkinTestImportPanel() {
           <div className="space-y-1">
             <h2 className="text-base font-semibold">Importación tests cutáneos</h2>
             <p className="text-sm text-foreground-500">
-              OneDrive {oneDrive.data?.connected ? "conectado" : "sin conectar"} · Carpeta{" "}
-              {oneDrive.data?.folderPath || "raíz"}
+              {oneDrive.data?.accounts.length ?? 0} cuenta(s) conectada(s)
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -219,20 +207,24 @@ export function SkinTestImportPanel() {
           </Alert>
         )}
 
-        <div className="mt-4 grid gap-3 md:grid-cols-[1fr_auto]">
-          <TextField value={folderPath} onChange={setFolderPath}>
-            <Label>Carpeta OneDrive</Label>
-            <Input placeholder="Tests cutáneos" />
-          </TextField>
-          <Button
-            className="self-end"
-            variant="secondary"
-            onPress={() => void handleSaveFolder()}
-            isDisabled={configureFolder.isPending || !folderPath.trim()}
-          >
-            Guardar carpeta
-          </Button>
-        </div>
+        {oneDrive.data?.connected && (
+          <div className="mt-4 flex flex-col gap-4 border-t border-border pt-4">
+            {oneDrive.data.accounts.map((account) => (
+              <OneDriveAccountRow key={account.accountId} account={account} />
+            ))}
+            <div className="flex justify-end">
+              <Button
+                size="sm"
+                variant="ghost"
+                onPress={() => void handleConnect()}
+                isPending={authUrlQuery.isFetching || connectOneDrive.isPending}
+              >
+                <LinkIcon size={14} />
+                Agregar otra cuenta
+              </Button>
+            </div>
+          </div>
+        )}
       </Surface>
 
       <Surface className="rounded-xl p-4">
@@ -279,6 +271,80 @@ export function SkinTestImportPanel() {
           )}
         </div>
       </Surface>
+    </div>
+  );
+}
+
+function OneDriveAccountRow({
+  account,
+}: {
+  account: {
+    accountId: string;
+    email: string;
+    name: string | null;
+    folderPath: string | null;
+    lastSyncAt: string | null;
+  };
+}) {
+  const toast = useToast();
+  const [folderPath, setFolderPath] = useState(account.folderPath || "");
+  const configureFolder = useConfigureOneDriveFolder();
+  const disconnect = useDisconnectOneDrive();
+
+  async function handleSaveFolder() {
+    if (!folderPath.trim()) return;
+    try {
+      await configureFolder.mutateAsync({
+        accountId: account.accountId,
+        folderPath: folderPath.trim(),
+      });
+      toast.success("Carpeta OneDrive actualizada");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo guardar carpeta");
+    }
+  }
+
+  async function handleDisconnect() {
+    try {
+      await disconnect.mutateAsync(account.accountId);
+      toast.success("Cuenta desconectada");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo desconectar");
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-3 rounded-lg bg-content2 p-3 lg:flex-row lg:items-end lg:justify-between">
+      <div className="space-y-1 flex-1">
+        <p className="font-medium text-sm">{account.email}</p>
+        <p className="text-xs text-foreground-500">
+          Última sync:{" "}
+          {account.lastSyncAt ? new Date(account.lastSyncAt).toLocaleString() : "Nunca"}
+        </p>
+      </div>
+      <div className="flex items-end gap-2 flex-1 max-w-sm">
+        <TextField value={folderPath} onChange={setFolderPath} className="flex-1">
+          <Label>Carpeta</Label>
+          <Input placeholder="raíz" />
+        </TextField>
+        <Button
+          size="sm"
+          variant="secondary"
+          onPress={() => void handleSaveFolder()}
+          isDisabled={configureFolder.isPending || folderPath.trim() === (account.folderPath || "")}
+        >
+          Guardar
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="text-danger"
+          onPress={() => void handleDisconnect()}
+          isPending={disconnect.isPending}
+        >
+          Desconectar
+        </Button>
+      </div>
     </div>
   );
 }
@@ -338,9 +404,7 @@ function SkinTestImportRow({ item }: { item: SkinTestImport }) {
         <div className="flex flex-wrap gap-2">
           {item.matchedSeriesId && (
             <Button
-              as="a"
-              href={`/clinical/series/${item.matchedSeriesId}`}
-              target="_blank"
+              onPress={() => window.open(`/clinical/series/${item.matchedSeriesId}`, "_blank")}
               size="sm"
               variant="secondary"
             >

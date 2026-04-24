@@ -763,7 +763,6 @@ model LoanSchedule {
 }
 
 
-
 model Setting {
   key       String   @id
   value     String?
@@ -775,6 +774,49 @@ model Setting {
   @@allow('update', auth().status == 'ACTIVE')
 
   @@map("settings")
+}
+
+model OneDriveAccount {
+  id              String    @id @default(cuid())
+  accountId       String    @unique @map("account_id") // Microsoft Account ID
+  email           String
+  name            String?
+  accessToken     String    @map("access_token")
+  refreshToken    String    @map("refresh_token")
+  expiresAt       String    @map("expires_at")
+  folderPath      String?   @map("folder_path")
+  deltaLink       String?   @map("delta_link")
+  lastDeltaSyncAt DateTime? @map("last_delta_sync_at")
+  lastSyncAt      DateTime? @map("last_sync_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  watchChannels   OneDriveWatchChannel[]
+
+  @@allow('read', true)
+  @@allow('all', auth().status == 'ACTIVE')
+  @@map("onedrive_accounts")
+}
+
+model OneDriveWatchChannel {
+  id              String   @id @default(cuid())
+  accountId       String   @map("account_id")
+  subscriptionId  String   @unique @map("subscription_id")
+  resource        String
+  expiration      DateTime
+  webhookUrl      String   @map("webhook_url")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at")
+
+  account         OneDriveAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([accountId])
+  @@map("onedrive_watch_channels")
 }
 
 model PushSubscription {
@@ -936,6 +978,7 @@ model ClinicalSeries {
 
 model ClinicalSkinTestImport {
   id                    String                    @id @default(cuid())
+  oneDriveAccountId     String?                   @map("onedrive_account_id")
   oneDriveItemId        String                    @unique @map("onedrive_item_id")
   oneDriveDriveId       String?                   @map("onedrive_drive_id")
   oneDriveETag          String?                   @map("onedrive_etag")

@@ -127,11 +127,18 @@ export const skinTestJobStatusOutputSchema = z.object({
   }),
 });
 
-export const oneDriveStatusOutputSchema = z.object({
-  connected: z.boolean(),
+export const oneDriveAccountStatusSchema = z.object({
+  accountId: z.string(),
+  email: z.string(),
+  name: z.string().nullable(),
   folderPath: z.string().nullable(),
   lastDeltaSyncAt: z.string().nullable(),
   lastSyncAt: z.string().nullable(),
+});
+
+export const oneDriveStatusOutputSchema = z.object({
+  connected: z.boolean(),
+  accounts: z.array(oneDriveAccountStatusSchema),
 });
 
 export const oneDriveAuthUrlInputSchema = z.object({
@@ -148,7 +155,12 @@ export const oneDriveCallbackInputSchema = z.object({
 });
 
 export const oneDriveFolderInputSchema = z.object({
+  accountId: z.string(),
   folderPath: z.string().min(1),
+});
+
+export const oneDriveDisconnectInputSchema = z.object({
+  accountId: z.string(),
 });
 
 export const oneDriveDisconnectOutputSchema = z.object({
@@ -178,7 +190,7 @@ export const clinicalSkinTestsContract = {
     .output(oneDriveStatusOutputSchema),
   disconnectOneDrive: oc
     .route({ method: "POST", path: "/onedrive/disconnect" })
-    .input(z.object({}))
+    .input(oneDriveDisconnectInputSchema)
     .output(oneDriveDisconnectOutputSchema),
   getOneDriveAuthUrl: oc
     .route({ method: "GET", path: "/onedrive/auth-url" })

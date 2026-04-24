@@ -99,8 +99,19 @@ export function useSyncSkinTestImports() {
 export function useConfigureOneDriveFolder() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (folderPath: string) =>
-      await clinicalSkinTestsORPCClient.configureOneDriveFolder({ folderPath }),
+    mutationFn: async (params: { accountId: string; folderPath: string }) =>
+      await clinicalSkinTestsORPCClient.configureOneDriveFolder(params),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: skinTestImportKeys.oneDriveStatus() });
+    },
+  });
+}
+
+export function useDisconnectOneDrive() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (accountId: string) =>
+      await clinicalSkinTestsORPCClient.disconnectOneDrive({ accountId }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: skinTestImportKeys.oneDriveStatus() });
     },

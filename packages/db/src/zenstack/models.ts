@@ -5,7 +5,7 @@
 
 /* eslint-disable */
 
-import { schema as $schema, type SchemaType as $Schema } from "./schema-lite";
+import { schema as $schema, type SchemaType as $Schema } from "./schema-lite.js";
 import type { ModelResult as $ModelResult } from "@zenstackhq/orm";
 export type Person = $ModelResult<$Schema, "Person">;
 export type User = $ModelResult<$Schema, "User">;
@@ -31,6 +31,8 @@ export type ServiceSchedule = $ModelResult<$Schema, "ServiceSchedule">;
 export type Loan = $ModelResult<$Schema, "Loan">;
 export type LoanSchedule = $ModelResult<$Schema, "LoanSchedule">;
 export type Setting = $ModelResult<$Schema, "Setting">;
+export type OneDriveAccount = $ModelResult<$Schema, "OneDriveAccount">;
+export type OneDriveWatchChannel = $ModelResult<$Schema, "OneDriveWatchChannel">;
 export type PushSubscription = $ModelResult<$Schema, "PushSubscription">;
 export type Calendar = $ModelResult<$Schema, "Calendar">;
 export type CalendarWatchChannel = $ModelResult<$Schema, "CalendarWatchChannel">;
