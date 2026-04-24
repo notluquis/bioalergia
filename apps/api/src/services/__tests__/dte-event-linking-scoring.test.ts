@@ -5,6 +5,7 @@ vi.mock("@finanzas/db", () => ({ db: {} }));
 const {
   findSkinTestBundleSuggestions,
   isReembolsoBundleEvent,
+  resolveSuggestionDateWindow,
   resolveMatchAmountHint,
   scoreCandidate,
   selectGlobalAutoLinkHypotheses,
@@ -50,6 +51,66 @@ describe("isReembolsoBundleEvent", () => {
         summary: "retiro de documentos",
       }),
     ).toBe(false);
+  });
+});
+
+describe("resolveSuggestionDateWindow", () => {
+  it("uses multi-date window for Roxair/Bactek reimbursement events when flag is enabled", () => {
+    const result = resolveSuggestionDateWindow({
+      event: {
+        category: "Roxair",
+        description: "retira roxair pagado",
+        eventDate: "2026-04-23",
+        summary: "retiro roxair Marion Aguilar",
+      },
+      reembolsoMultiDateBundleEnabled: true,
+      reembolsoMultiDateWindowDays: 30,
+      sameDayOnly: true,
+      series: null,
+    });
+
+    expect(result.mode).toBe("reembolso_multi_date");
+    expect(result.from).toBe("2026-03-24");
+    expect(result.to).toBe("2026-05-23");
+  });
+
+  it("keeps same-day window for non Roxair/Bactek events even if flag is enabled", () => {
+    const result = resolveSuggestionDateWindow({
+      event: {
+        category: "Tratamiento subcutáneo",
+        description: "retira vacuna mensual",
+        eventDate: "2026-04-23",
+        summary: "retiro vacuna paciente",
+      },
+      reembolsoMultiDateBundleEnabled: true,
+      reembolsoMultiDateWindowDays: 30,
+      sameDayOnly: true,
+      series: null,
+    });
+
+    expect(result.mode).toBe("same_day");
+    expect(result.from).toBe("2026-04-23");
+    expect(result.to).toBe("2026-04-23");
+  });
+
+  it("uses series window when sameDayOnly is false", () => {
+    const result = resolveSuggestionDateWindow({
+      event: {
+        category: "Roxair",
+        description: "retira roxair",
+        eventDate: "2026-04-23",
+        summary: "retiro roxair",
+      },
+      sameDayOnly: false,
+      series: {
+        eligibleDocumentDateFrom: "2026-01-01",
+        eligibleDocumentDateTo: "2026-03-31",
+      } as unknown as Parameters<typeof resolveSuggestionDateWindow>[0]["series"],
+    });
+
+    expect(result.mode).toBe("series_window");
+    expect(result.from).toBe("2026-01-01");
+    expect(result.to).toBe("2026-03-31");
   });
 });
 

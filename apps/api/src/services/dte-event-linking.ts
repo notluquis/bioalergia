@@ -19,9 +19,31 @@ dayjs.extend(timezone);
 const TIMEZONE = "America/Santiago";
 const RUT_REGEX = /\b\d{1,2}\.?\d{3}\.?\d{3}-?[\dkK]\b/g;
 const CAPITALIZED_NAME_REGEX = /([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+){1,4})/g;
+const DEFAULT_REEMBOLSO_MULTI_DATE_WINDOW_DAYS = 120;
+const MAX_REEMBOLSO_MULTI_DATE_WINDOW_DAYS = 365;
 const REEMBOLSO_VENDOR_REGEX = /\b(?:roxair|bactek(?:-r)?)\b/;
 const REEMBOLSO_ACTION_REGEX = /\b(?:retiro|retira)\b/;
 const REEMBOLSO_CATEGORY_TOKEN = "reembolso";
+
+function parseBooleanEnv(value: undefined | string): boolean {
+  if (!value) return false;
+  const normalized = value.trim().toLowerCase();
+  return ["1", "true", "yes", "on", "si", "sí"].includes(normalized);
+}
+
+function parsePositiveIntegerEnv(value: undefined | string, fallback: number): number {
+  const parsed = Number.parseInt(value ?? "", 10);
+  if (!Number.isFinite(parsed) || parsed < 1) return fallback;
+  return Math.min(parsed, MAX_REEMBOLSO_MULTI_DATE_WINDOW_DAYS);
+}
+
+const REEMBOLSO_MULTI_DATE_BUNDLE_ENABLED = parseBooleanEnv(
+  process.env.DTE_REEMBOLSO_MULTI_DATE_BUNDLE_ENABLED,
+);
+const REEMBOLSO_MULTI_DATE_WINDOW_DAYS = parsePositiveIntegerEnv(
+  process.env.DTE_REEMBOLSO_MULTI_DATE_WINDOW_DAYS,
+  DEFAULT_REEMBOLSO_MULTI_DATE_WINDOW_DAYS,
+);
 
 const EVENT_NOISE_TOKENS = new Set([
   "acaros",
@@ -679,6 +701,52 @@ export function isReembolsoBundleEvent(event: Pick<EventRow, "category" | "descr
   const isRoxairCategory = category === "roxair";
 
   return hasReembolsoCategory || hasRetiroAction || isRoxairCategory;
+}
+
+export function resolveSuggestionDateWindow(params: {
+  event: Pick<EventRow, "category" | "description" | "eventDate" | "summary">;
+  sameDayOnly: boolean;
+  series: ClinicalSeriesSnapshot | null;
+  reembolsoMultiDateBundleEnabled?: boolean;
+  reembolsoMultiDateWindowDays?: number;
+}): { from: string; mode: "reembolso_multi_date" | "same_day" | "series_window"; to: string } {
+  const reembolsoMultiDateBundleEnabled =
+    params.reembolsoMultiDateBundleEnabled ?? REEMBOLSO_MULTI_DATE_BUNDLE_ENABLED;
+  const requestedWindowDays =
+    params.reembolsoMultiDateWindowDays ?? REEMBOLSO_MULTI_DATE_WINDOW_DAYS;
+  const reembolsoMultiDateWindowDays = Math.max(
+    1,
+    Math.min(requestedWindowDays, MAX_REEMBOLSO_MULTI_DATE_WINDOW_DAYS),
+  );
+
+  const enableReembolsoMultiDate =
+    params.sameDayOnly &&
+    reembolsoMultiDateBundleEnabled &&
+    isReembolsoBundleEvent(params.event);
+
+  if (enableReembolsoMultiDate) {
+    const parsedDate = dayjs(params.event.eventDate, "YYYY-MM-DD", true);
+    const eventDate = parsedDate.isValid() ? parsedDate : dayjs(params.event.eventDate);
+    return {
+      from: eventDate.subtract(reembolsoMultiDateWindowDays, "day").format("YYYY-MM-DD"),
+      mode: "reembolso_multi_date",
+      to: eventDate.add(reembolsoMultiDateWindowDays, "day").format("YYYY-MM-DD"),
+    };
+  }
+
+  if (params.sameDayOnly) {
+    return {
+      from: params.event.eventDate,
+      mode: "same_day",
+      to: params.event.eventDate,
+    };
+  }
+
+  return {
+    from: params.series?.eligibleDocumentDateFrom ?? params.event.eventDate,
+    mode: "series_window",
+    to: params.series?.eligibleDocumentDateTo ?? params.event.eventDate,
+  };
 }
 
 function currencyFormatterForReason(value: number): string {
@@ -1513,8 +1581,13 @@ export async function getEventDteSuggestions(params: {
 
   const sameDayOnly = params.sameDayOnly ?? false;
   const claims = extractIdentityClaims({ event, sameDayOnly, series });
-  const from = sameDayOnly ? event.eventDate : (series?.eligibleDocumentDateFrom ?? event.eventDate);
-  const to = sameDayOnly ? event.eventDate : (series?.eligibleDocumentDateTo ?? event.eventDate);
+  const suggestionDateWindow = resolveSuggestionDateWindow({
+    event,
+    sameDayOnly,
+    series,
+  });
+  const from = suggestionDateWindow.from;
+  const to = suggestionDateWindow.to;
   const excludeIds = series?.linkedDocuments.map((item) => item.dteSaleDetailId) ?? [];
   const surnameClaims = [...new Set(claims.nameClaims.flatMap((claim) => surnameTokens(claim)))];
 
