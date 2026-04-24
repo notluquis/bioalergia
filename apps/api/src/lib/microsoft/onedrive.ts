@@ -1,25 +1,22 @@
-import { deleteSetting, getSetting, updateSetting } from "../../services/settings";
+import { db } from "@finanzas/db";
 
 const MICROSOFT_TOKEN_URL = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token";
 const MICROSOFT_AUTH_URL = "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize";
 const GRAPH_BASE_URL = "https://graph.microsoft.com/v1.0";
-const DEFAULT_SCOPES = ["offline_access", "Files.Read"];
+const DEFAULT_SCOPES = ["offline_access", "Files.Read", "User.Read"];
 
-const SETTINGS = {
-  accessToken: "microsoft:onedrive:accessToken",
-  deltaLink: "microsoft:onedrive:skinTests:deltaLink",
-  expiresAt: "microsoft:onedrive:expiresAt",
-  folderPath: "microsoft:onedrive:skinTests:folderPath",
-  lastDeltaSyncAt: "microsoft:onedrive:skinTests:lastDeltaSyncAt",
-  lastSyncAt: "microsoft:onedrive:skinTests:lastSyncAt",
-  refreshToken: "microsoft:onedrive:refreshToken",
-};
+export interface OneDriveAccountStatus {
+  accountId: string;
+  email: string;
+  name: string | null;
+  folderPath: string | null;
+  lastDeltaSyncAt: string | null;
+  lastSyncAt: string | null;
+}
 
 export interface OneDriveStatus {
   connected: boolean;
-  folderPath: null | string;
-  lastDeltaSyncAt: null | string;
-  lastSyncAt: null | string;
+  accounts: OneDriveAccountStatus[];
 }
 
 export interface OneDriveItem {
@@ -42,6 +39,13 @@ interface TokenResponse {
   access_token: string;
   expires_in?: number;
   refresh_token?: string;
+}
+
+interface GraphMeResponse {
+  id: string;
+  displayName: string;
+  userPrincipalName: string;
+  mail?: string;
 }
 
 interface DeltaResponse {
@@ -81,46 +85,105 @@ export async function connectOneDriveWithCode(code: string, redirectUri: string)
     redirect_uri: redirectUri,
     scope: DEFAULT_SCOPES.join(" "),
   });
+  
   const tokens = await requestToken(body);
-  await persistTokens(tokens);
+  
+  // Get user info to store account
+  const me = await graphFetch<GraphMeResponse>(`${GRAPH_BASE_URL}/me`, tokens.access_token);
+  const accountId = me.id;
+  const email = me.mail || me.userPrincipalName;
+  const name = me.displayName;
+
+  const expiresAt = String(Date.now() + Math.max(60, tokens.expires_in ?? 3600) * 1000);
+
+  await db.oneDriveAccount.upsert({
+    where: { accountId },
+    create: {
+      id: accountId,
+      accountId,
+      email,
+      name,
+      accessToken: tokens.access_token,
+      refreshToken: tokens.refresh_token ?? "",
+      expiresAt,
+    },
+    update: {
+      email,
+      name,
+      accessToken: tokens.access_token,
+      refreshToken: tokens.refresh_token,
+      expiresAt,
+    }
+  });
+
+  await setupOneDriveSubscription(accountId, null);
 }
 
-export async function disconnectOneDrive(): Promise<void> {
-  await Promise.all([
-    deleteSetting(SETTINGS.accessToken).catch(() => null),
-    deleteSetting(SETTINGS.expiresAt).catch(() => null),
-    deleteSetting(SETTINGS.refreshToken).catch(() => null),
-    deleteSetting(SETTINGS.deltaLink).catch(() => null),
-  ]);
+export async function disconnectOneDrive(accountId: string): Promise<void> {
+  const existing = await db.oneDriveWatchChannel.findFirst({
+    where: { accountId },
+    select: { subscriptionId: true }
+  });
+
+  if (existing) {
+    try {
+      const accessToken = await getOneDriveAccessToken(accountId);
+      await graphRequest(`${GRAPH_BASE_URL}/subscriptions/${existing.subscriptionId}`, accessToken, { method: "DELETE" });
+    } catch {
+      // Ignore
+    }
+  }
+
+  await db.oneDriveAccount.delete({
+    where: { accountId }
+  }).catch(() => null);
 }
 
 export async function getOneDriveStatus(): Promise<OneDriveStatus> {
-  const [refreshToken, folderPath, lastDeltaSyncAt, lastSyncAt] = await Promise.all([
-    getSetting(SETTINGS.refreshToken),
-    getSetting(SETTINGS.folderPath),
-    getSetting(SETTINGS.lastDeltaSyncAt),
-    getSetting(SETTINGS.lastSyncAt),
-  ]);
+  const accounts = await db.oneDriveAccount.findMany({
+    select: { accountId: true, email: true, name: true, folderPath: true, lastDeltaSyncAt: true, lastSyncAt: true }
+  });
+
   return {
-    connected: Boolean(refreshToken),
-    folderPath,
-    lastDeltaSyncAt,
-    lastSyncAt,
+    connected: accounts.length > 0,
+    accounts: accounts.map((acc) => ({
+      accountId: acc.accountId,
+      email: acc.email,
+      name: acc.name,
+      folderPath: acc.folderPath,
+      lastDeltaSyncAt: acc.lastDeltaSyncAt ? acc.lastDeltaSyncAt.toISOString() : null,
+      lastSyncAt: acc.lastSyncAt ? acc.lastSyncAt.toISOString() : null,
+    })),
   };
 }
 
-export async function setOneDriveFolderPath(folderPath: string): Promise<void> {
-  await updateSetting(SETTINGS.folderPath, folderPath.replace(/^\/+|\/+$/g, ""));
-  await deleteSetting(SETTINGS.deltaLink).catch(() => null);
+export async function setOneDriveFolderPath(accountId: string, folderPath: string): Promise<void> {
+  const cleanPath = folderPath.replace(/^\/+|\/+$/g, "");
+  await db.oneDriveAccount.update({
+    where: { accountId },
+    data: {
+      folderPath: cleanPath,
+      deltaLink: null,
+    }
+  });
+
+  await setupOneDriveSubscription(accountId, cleanPath);
 }
 
-export async function listOneDriveDeltaItems(options?: {
+export async function listOneDriveDeltaItems(accountId: string, options?: {
   force?: boolean;
-  folderPath?: string;
 }): Promise<{ items: OneDriveItem[]; totalPages: number }> {
-  const accessToken = await getOneDriveAccessToken();
-  const configuredFolder = options?.folderPath ?? (await getSetting(SETTINGS.folderPath)) ?? "";
-  const existingDelta = options?.force ? null : await getSetting(SETTINGS.deltaLink);
+  const account = await db.oneDriveAccount.findFirst({
+    where: { accountId },
+    select: { folderPath: true, deltaLink: true }
+  });
+    
+  if (!account) throw new Error("Account not found");
+
+  const accessToken = await getOneDriveAccessToken(accountId);
+  const configuredFolder = account.folderPath ?? "";
+  const existingDelta = options?.force ? null : account.deltaLink;
+  
   let url = existingDelta || buildDeltaUrl(configuredFolder);
   const items: OneDriveItem[] = [];
   let totalPages = 0;
@@ -131,17 +194,28 @@ export async function listOneDriveDeltaItems(options?: {
     items.push(...(response.value ?? []));
     url = response["@odata.nextLink"] ?? "";
     if (response["@odata.deltaLink"]) {
-      await updateSetting(SETTINGS.deltaLink, response["@odata.deltaLink"]);
-      await updateSetting(SETTINGS.lastDeltaSyncAt, new Date().toISOString());
+      await db.oneDriveAccount.update({
+        where: { accountId },
+        data: {
+          deltaLink: response["@odata.deltaLink"],
+          lastDeltaSyncAt: new Date(),
+        }
+      });
     }
   }
 
-  await updateSetting(SETTINGS.lastSyncAt, new Date().toISOString());
+  await db.oneDriveAccount.update({
+    where: { accountId },
+    data: {
+      lastSyncAt: new Date(),
+    }
+  });
+    
   return { items, totalPages };
 }
 
-export async function downloadOneDriveItem(itemId: string): Promise<Buffer> {
-  const accessToken = await getOneDriveAccessToken();
+export async function downloadOneDriveItem(accountId: string, itemId: string): Promise<Buffer> {
+  const accessToken = await getOneDriveAccessToken(accountId);
   const response = await fetch(`${GRAPH_BASE_URL}/me/drive/items/${encodeURIComponent(itemId)}/content`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
@@ -151,16 +225,21 @@ export async function downloadOneDriveItem(itemId: string): Promise<Buffer> {
   return Buffer.from(await response.arrayBuffer());
 }
 
-async function getOneDriveAccessToken(): Promise<string> {
-  const expiresAt = Number(await getSetting(SETTINGS.expiresAt));
-  const cachedAccessToken = await getSetting(SETTINGS.accessToken);
-  if (cachedAccessToken && Number.isFinite(expiresAt) && Date.now() < expiresAt - 60_000) {
-    return cachedAccessToken;
+async function getOneDriveAccessToken(accountId: string): Promise<string> {
+  const account = await db.oneDriveAccount.findFirst({
+    where: { accountId },
+    select: { accessToken: true, refreshToken: true, expiresAt: true }
+  });
+    
+  if (!account) throw new Error("OneDrive no conectado.");
+
+  const expiresAt = Number(account.expiresAt);
+  if (account.accessToken && Number.isFinite(expiresAt) && Date.now() < expiresAt - 60_000) {
+    return account.accessToken;
   }
 
-  const refreshToken = await getSetting(SETTINGS.refreshToken);
-  if (!refreshToken) {
-    throw new Error("OneDrive no conectado.");
+  if (!account.refreshToken) {
+    throw new Error("No refresh token available.");
   }
 
   const { clientId, clientSecret } = getClientConfig();
@@ -169,11 +248,22 @@ async function getOneDriveAccessToken(): Promise<string> {
       client_id: clientId,
       client_secret: clientSecret,
       grant_type: "refresh_token",
-      refresh_token: refreshToken,
+      refresh_token: account.refreshToken,
       scope: DEFAULT_SCOPES.join(" "),
     }),
   );
-  await persistTokens(tokens);
+  
+  const newExpiresAt = String(Date.now() + Math.max(60, tokens.expires_in ?? 3600) * 1000);
+  
+  await db.oneDriveAccount.update({
+    where: { accountId },
+    data: {
+      accessToken: tokens.access_token,
+      refreshToken: tokens.refresh_token ?? account.refreshToken,
+      expiresAt: newExpiresAt,
+    }
+  });
+    
   return tokens.access_token;
 }
 
@@ -190,17 +280,6 @@ async function requestToken(body: URLSearchParams): Promise<TokenResponse> {
   return payload as TokenResponse;
 }
 
-async function persistTokens(tokens: TokenResponse): Promise<void> {
-  await updateSetting(SETTINGS.accessToken, tokens.access_token);
-  await updateSetting(
-    SETTINGS.expiresAt,
-    String(Date.now() + Math.max(60, tokens.expires_in ?? 3600) * 1000),
-  );
-  if (tokens.refresh_token) {
-    await updateSetting(SETTINGS.refreshToken, tokens.refresh_token);
-  }
-}
-
 function buildDeltaUrl(folderPath: string): string {
   const cleanPath = folderPath.replace(/^\/+|\/+$/g, "");
   if (!cleanPath) {
@@ -210,11 +289,113 @@ function buildDeltaUrl(folderPath: string): string {
 }
 
 async function graphFetch<T>(url: string, accessToken: string): Promise<T> {
+  return await graphRequest<T>(url, accessToken);
+}
+
+async function graphRequest<T>(url: string, accessToken: string, options?: RequestInit): Promise<T> {
   const response = await fetch(url, {
-    headers: { Authorization: `Bearer ${accessToken}` },
+    ...options,
+    headers: { 
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+      ...options?.headers 
+    },
   });
   if (!response.ok) {
     throw new Error(`Microsoft Graph failed ${response.status}: ${await response.text()}`);
   }
+  if (response.status === 204) return {} as T;
   return await response.json() as T;
+}
+
+export async function setupOneDriveSubscription(accountId: string, folderPath: string | null) {
+  const accessToken = await getOneDriveAccessToken(accountId);
+  const cleanPath = folderPath?.replace(/^\/+|\/+$/g, "");
+  const resource = cleanPath ? `me/drive/root:/${encodeURIComponent(cleanPath)}` : "me/drive/root";
+  
+  const expirationDateTime = new Date(Date.now() + 28 * 24 * 60 * 60 * 1000).toISOString();
+  const webhookUrl = `${process.env.PUBLIC_URL || "https://intranet.bioalergia.cl"}/api/webhooks/onedrive`;
+
+  const existing = await db.oneDriveWatchChannel.findFirst({
+    where: { accountId },
+    select: { id: true, subscriptionId: true }
+  });
+
+  if (existing) {
+    try {
+      await graphRequest(`${GRAPH_BASE_URL}/subscriptions/${existing.subscriptionId}`, accessToken, { method: "DELETE" });
+    } catch {
+      // Ignore
+    }
+    await db.oneDriveWatchChannel.delete({ where: { id: existing.id } });
+  }
+
+  const payload = {
+    changeType: "created,updated,deleted",
+    notificationUrl: webhookUrl,
+    resource: resource,
+    expirationDateTime,
+    clientState: "bioalergia-onedrive-sync"
+  };
+
+  const sub = await graphRequest<{ id: string }>(`${GRAPH_BASE_URL}/subscriptions`, accessToken, {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+
+  await db.oneDriveWatchChannel.create({
+    data: {
+      id: sub.id,
+      accountId,
+      subscriptionId: sub.id,
+      resource,
+      expiration: new Date(expirationDateTime),
+      webhookUrl,
+    }
+  });
+}
+
+export async function renewOneDriveSubscription(accountId: string) {
+  const channel = await db.oneDriveWatchChannel.findFirst({
+    where: { accountId },
+    select: { id: true, subscriptionId: true, expiration: true }
+  });
+
+  if (!channel) return;
+
+  const expirationDate = new Date(channel.expiration);
+  const daysUntilExpiration = (expirationDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+
+  if (daysUntilExpiration < 3) {
+    const accessToken = await getOneDriveAccessToken(accountId);
+    const newExpiration = new Date(Date.now() + 28 * 24 * 60 * 60 * 1000).toISOString();
+
+    try {
+      await graphRequest(`${GRAPH_BASE_URL}/subscriptions/${channel.subscriptionId}`, accessToken, {
+        method: "PATCH",
+        body: JSON.stringify({ expirationDateTime: newExpiration })
+      });
+
+      await db.oneDriveWatchChannel.update({
+        where: { id: channel.id },
+        data: { expiration: new Date(newExpiration) }
+      });
+    } catch (error) {
+      console.error(`Failed to renew OneDrive subscription for ${accountId}:`, error);
+      const account = await db.oneDriveAccount.findFirst({
+        where: { accountId },
+        select: { folderPath: true }
+      });
+      if (account) {
+        await setupOneDriveSubscription(accountId, account.folderPath);
+      }
+    }
+  }
+}
+
+export async function renewAllOneDriveSubscriptions() {
+  const accounts = await db.oneDriveAccount.findMany({ select: { accountId: true } });
+  for (const acc of accounts) {
+    await renewOneDriveSubscription(acc.accountId);
+  }
 }

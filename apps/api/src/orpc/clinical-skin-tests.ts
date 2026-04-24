@@ -3,6 +3,7 @@ import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import {
   oneDriveAuthUrlInputSchema,
   oneDriveCallbackInputSchema,
+  oneDriveDisconnectInputSchema,
   oneDriveDisconnectOutputSchema,
   oneDriveFolderInputSchema,
   oneDriveStatusOutputSchema,
@@ -89,7 +90,7 @@ const routerBase = {
     .input(oneDriveFolderInputSchema)
     .output(oneDriveStatusOutputSchema)
     .handler(async ({ input }: { input: z.input<typeof oneDriveFolderInputSchema> }) => {
-      await setOneDriveFolderPath(input.folderPath);
+      await setOneDriveFolderPath(input.accountId, input.folderPath);
       return await getOneDriveStatus();
     }),
 
@@ -104,10 +105,10 @@ const routerBase = {
 
   disconnectOneDrive: updateClinicalSkinTests
     .route({ method: "POST", path: "/onedrive/disconnect" })
-    .input(z.object({}))
+    .input(oneDriveDisconnectInputSchema)
     .output(oneDriveDisconnectOutputSchema)
-    .handler(async () => {
-      await disconnectOneDrive();
+    .handler(async ({ input }: { input: z.input<typeof oneDriveDisconnectInputSchema> }) => {
+      await disconnectOneDrive(input.accountId);
       return { connected: false };
     }),
 

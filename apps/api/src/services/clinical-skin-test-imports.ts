@@ -45,6 +45,7 @@ export interface SkinTestImportOutput {
   reviewedAt: null | string;
   reviewNotes: null | string;
   skinTestId?: null | string;
+  matchedSeriesId?: null | number;
   status: SkinTestImportStatus;
   updatedAt: string;
 }
@@ -106,36 +107,40 @@ export async function syncClinicalSkinTestImports(options?: {
     throw new Error("OneDrive no conectado.");
   }
 
-  const { items } = await listOneDriveDeltaItems({
-    folderPath: options?.folderPath,
-    force: options?.force,
-  });
-  const xlsxItems = items.filter(isImportableXlsx);
   let imported = 0;
   let pending = 0;
   let skipped = 0;
   let errors = 0;
+  let scanned = 0;
+  let xlsx = 0;
 
-  for (const [index, item] of xlsxItems.entries()) {
-    options?.onProgress?.(index + 1, Math.max(xlsxItems.length, 1), `Procesando ${item.name}`);
-    const result = await processOneDriveSkinTestItem(item, { force: options?.force });
-    if (result.status === "IMPORTED") imported += 1;
-    else if (result.status === "PENDING_REVIEW") pending += 1;
-    else if (result.status === "ERROR") errors += 1;
-    else skipped += 1;
+  for (const account of status.accounts) {
+    const { items } = await listOneDriveDeltaItems(account.accountId, {
+      force: options?.force,
+    });
+    const xlsxItems = items.filter(isImportableXlsx);
+    scanned += items.length;
+    xlsx += xlsxItems.length;
+
+    for (const [index, item] of xlsxItems.entries()) {
+      options?.onProgress?.(
+        index + 1, 
+        Math.max(xlsxItems.length, 1), 
+        `[${account.email}] Procesando ${item.name}`
+      );
+      const result = await processOneDriveSkinTestItem(account.accountId, item, { force: options?.force });
+      if (result.status === "IMPORTED") imported += 1;
+      else if (result.status === "PENDING_REVIEW") pending += 1;
+      else if (result.status === "ERROR") errors += 1;
+      else skipped += 1;
+    }
   }
 
-  return {
-    errors,
-    imported,
-    pending,
-    scanned: items.length,
-    skipped,
-    xlsx: xlsxItems.length,
-  };
+  return { errors, imported, pending, scanned, skipped, xlsx };
 }
 
 export async function processOneDriveSkinTestItem(
+  accountId: string,
   item: OneDriveItem,
   options?: { force?: boolean },
 ): Promise<SkinTestImportOutput> {
@@ -166,7 +171,7 @@ export async function processOneDriveSkinTestItem(
   };
 
   try {
-    const buffer = await downloadOneDriveItem(item.id);
+    const buffer = await downloadOneDriveItem(accountId, item.id);
     const parsed = await parseSkinTestWorkbookBuffer(
       buffer as unknown as Parameters<typeof parseSkinTestWorkbookBuffer>[0],
     );
@@ -177,6 +182,7 @@ export async function processOneDriveSkinTestItem(
       : "PENDING_REVIEW";
 
     await upsertImport({
+      accountId,
       confidence: computeConfidence(parsed.confidence, allIssues),
       error: null,
       id: importId,
@@ -194,6 +200,7 @@ export async function processOneDriveSkinTestItem(
     return await getSkinTestImport(importId);
   } catch (error) {
     await upsertImport({
+      accountId,
       confidence: 0,
       error: error instanceof Error ? error.message : String(error),
       id: importId,
@@ -313,14 +320,26 @@ export async function rejectSkinTestImport(id: string, userId: number, notes?: s
 }
 
 export async function reprocessSkinTestImport(id: string) {
-  const result = await sql<{ oneDriveItemId: string }>`
-    SELECT onedrive_item_id AS "oneDriveItemId"
+  const result = await sql<{ oneDriveItemId: string; oneDriveAccountId: string | null }>`
+    SELECT onedrive_item_id AS "oneDriveItemId", onedrive_account_id AS "oneDriveAccountId"
     FROM clinical_skin_test_imports
     WHERE id = ${id}
   `.execute(kysely);
   const itemId = result.rows[0]?.oneDriveItemId;
+  let accountId = result.rows[0]?.oneDriveAccountId;
+  
   if (!itemId) throw new Error("Import no encontrado.");
-  const buffer = await downloadOneDriveItem(itemId);
+  
+  // Fallback for old records without accountId
+  if (!accountId) {
+    const status = await getOneDriveStatus();
+    if (status.accounts.length === 0) throw new Error("OneDrive no conectado.");
+    accountId = status.accounts[0]?.accountId;
+  }
+  
+  if (!accountId) throw new Error("No hay cuenta de OneDrive para re-procesar.");
+
+  const buffer = await downloadOneDriveItem(accountId, itemId);
   const parsed = await parseSkinTestWorkbookBuffer(
     buffer as unknown as Parameters<typeof parseSkinTestWorkbookBuffer>[0],
   );
@@ -629,6 +648,7 @@ async function getImportByOneDriveItemId(itemId: string) {
 }
 
 async function upsertImport(params: {
+  accountId: string;
   confidence: number;
   error: null | string;
   id: string;
@@ -651,6 +671,7 @@ async function upsertImport(params: {
   await sql`
     INSERT INTO clinical_skin_test_imports (
       id,
+      onedrive_account_id,
       onedrive_item_id,
       onedrive_drive_id,
       onedrive_etag,
@@ -672,6 +693,7 @@ async function upsertImport(params: {
     )
     VALUES (
       ${params.id},
+      ${params.accountId},
       ${params.metadata.id},
       ${params.metadata.driveId},
       ${params.metadata.eTag},
@@ -693,6 +715,7 @@ async function upsertImport(params: {
     )
     ON CONFLICT (onedrive_item_id)
     DO UPDATE SET
+      onedrive_account_id = EXCLUDED.onedrive_account_id,
       onedrive_drive_id = EXCLUDED.onedrive_drive_id,
       onedrive_etag = EXCLUDED.onedrive_etag,
       onedrive_ctag = EXCLUDED.onedrive_ctag,
