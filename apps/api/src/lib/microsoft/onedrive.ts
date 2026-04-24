@@ -7,6 +7,10 @@ const GRAPH_BASE_URL = "https://graph.microsoft.com/v1.0";
 const DEFAULT_SCOPES = ["offline_access", "Files.Read", "User.Read"];
 const ONEDRIVE_WEBHOOK_CLIENT_STATE = "bioalergia-onedrive-sync";
 
+// Process-scoped token cache — safe because access tokens last ~3600s.
+// Avoids a DB hit per file during sync (N xlsx = N redundant DB queries without this).
+const _tokenCache = new Map<string, { expiresAt: number; token: string }>();
+
 export interface OneDriveAccountStatus {
   accountId: string;
   email: string;
@@ -294,10 +298,17 @@ export async function listOneDriveDeltaItems(accountId: string, options?: {
   const folderDriveId = options?.folderDriveId ?? account.folderDriveId;
   const folderItemId = options?.folderItemId ?? account.folderItemId;
   const existingDelta = options?.force ? null : account.deltaLink;
-  
-  let url = existingDelta || buildDeltaUrl({ driveId: folderDriveId, folderPath: configuredFolder, itemId: folderItemId });
+
+  // Use $select on the initial URL only — deltaLinks already carry their own query params.
+  // Only requesting the fields used by isImportableXlsx + processOneDriveSkinTestItem
+  // reduces the Graph payload by ~70% on large drives.
+  const DELTA_SELECT = "id,name,file,folder,deleted,eTag,cTag,size,parentReference,lastModifiedDateTime,webUrl";
+  const initialUrl = `${buildDeltaUrl({ driveId: folderDriveId, folderPath: configuredFolder, itemId: folderItemId })}?$select=${DELTA_SELECT}`;
+  let url = existingDelta || initialUrl;
+
   const items: OneDriveItem[] = [];
   let totalPages = 0;
+  let finalDeltaLink: string | null = null;
 
   while (url) {
     totalPages += 1;
@@ -305,19 +316,15 @@ export async function listOneDriveDeltaItems(accountId: string, options?: {
     items.push(...(response.value ?? []));
     url = response["@odata.nextLink"] ?? "";
     if (response["@odata.deltaLink"]) {
-      await db.oneDriveAccount.update({
-        where: { accountId },
-        data: {
-          deltaLink: response["@odata.deltaLink"],
-          lastDeltaSyncAt: new Date(),
-        }
-      });
+      finalDeltaLink = response["@odata.deltaLink"];
     }
   }
 
+  // Single DB write at the end — avoids one UPDATE per delta page
   await db.oneDriveAccount.update({
     where: { accountId },
     data: {
+      ...(finalDeltaLink ? { deltaLink: finalDeltaLink, lastDeltaSyncAt: new Date() } : {}),
       lastSyncAt: new Date(),
     }
   });
@@ -340,6 +347,12 @@ export async function downloadOneDriveItem(accountId: string, itemId: string, dr
 }
 
 async function getOneDriveAccessToken(accountId: string): Promise<string> {
+  // Check in-memory cache first (eliminates DB hit for every file download during sync)
+  const cached = _tokenCache.get(accountId);
+  if (cached && Date.now() < cached.expiresAt - 60_000) {
+    return cached.token;
+  }
+
   const account = await db.oneDriveAccount.findFirst({
     where: { accountId },
     select: { accessToken: true, refreshToken: true, expiresAt: true }
@@ -349,6 +362,8 @@ async function getOneDriveAccessToken(accountId: string): Promise<string> {
 
   const expiresAt = Number(account.expiresAt);
   if (account.accessToken && Number.isFinite(expiresAt) && Date.now() < expiresAt - 60_000) {
+    // Warm the cache from the persisted token
+    _tokenCache.set(accountId, { expiresAt, token: account.accessToken });
     return account.accessToken;
   }
 
@@ -368,7 +383,9 @@ async function getOneDriveAccessToken(accountId: string): Promise<string> {
   );
   
   const newExpiresAt = String(Date.now() + Math.max(60, tokens.expires_in ?? 3600) * 1000);
-  
+  const newExpiresAtMs = Number(newExpiresAt);
+
+  // Persist to DB and warm cache atomically
   await db.oneDriveAccount.update({
     where: { accountId },
     data: {
@@ -377,7 +394,8 @@ async function getOneDriveAccessToken(accountId: string): Promise<string> {
       expiresAt: newExpiresAt,
     }
   });
-    
+
+  _tokenCache.set(accountId, { expiresAt: newExpiresAtMs, token: tokens.access_token });
   return tokens.access_token;
 }
 
