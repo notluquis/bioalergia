@@ -32,6 +32,8 @@ export interface SkinTestImportListInput {
 export type SkinTestImportStatus = "ERROR" | "IMPORTED" | "PENDING_REVIEW" | "REJECTED" | "SKIPPED";
 
 export interface SkinTestImportOutput {
+  accountEmail: null | string;
+  accountName: null | string;
   confidence: number;
   error: null | string;
   filename: string;
@@ -39,6 +41,7 @@ export interface SkinTestImportOutput {
   importedAt: null | string;
   issues: SkinTestIssue[];
   modifiedAt: null | string;
+  oneDriveAccountId: null | string;
   oneDriveWebUrl: null | string;
   parsedPayload: null | ParsedPayload;
   path: null | string;
@@ -70,6 +73,8 @@ export interface SkinTestDetailOutput {
 }
 
 interface ImportRow {
+  accountEmail?: null | string;
+  accountName?: null | string;
   confidence: number;
   error: null | string;
   filename: string;
@@ -77,6 +82,7 @@ interface ImportRow {
   importedAt: Date | null;
   issues: unknown;
   modifiedAt: Date | null;
+  oneDriveAccountId?: null | string;
   oneDriveWebUrl: null | string;
   parsedPayload: unknown;
   path: null | string;
@@ -98,6 +104,9 @@ export function getSkinTestImportJobType() {
 }
 
 export async function syncClinicalSkinTestImports(options?: {
+  accountId?: string;
+  folderDriveId?: null | string;
+  folderItemId?: null | string;
   folderPath?: string;
   force?: boolean;
   onProgress?: (processed: number, total: number, message: string) => void;
@@ -114,8 +123,11 @@ export async function syncClinicalSkinTestImports(options?: {
   let scanned = 0;
   let xlsx = 0;
 
-  for (const account of status.accounts) {
+  for (const account of status.accounts.filter((item) => !options?.accountId || item.accountId === options.accountId)) {
     const { items } = await listOneDriveDeltaItems(account.accountId, {
+      folderDriveId: options?.folderDriveId,
+      folderItemId: options?.folderItemId,
+      folderPath: options?.folderPath,
       force: options?.force,
     });
     const xlsxItems = items.filter(isImportableXlsx);
@@ -144,7 +156,8 @@ export async function processOneDriveSkinTestItem(
   item: OneDriveItem,
   options?: { force?: boolean },
 ): Promise<SkinTestImportOutput> {
-  const existing = await getImportByOneDriveItemId(accountId, item.id);
+  const driveId = item.parentReference?.driveId ?? "unknown";
+  const existing = await getImportByOneDriveItemId(accountId, driveId, item.id);
   if (
     existing &&
     !options?.force &&
@@ -159,7 +172,7 @@ export async function processOneDriveSkinTestItem(
   const importId = existing?.id ?? createId();
   const metadata = {
     cTag: item.cTag ?? null,
-    driveId: item.parentReference?.driveId ?? null,
+    driveId,
     eTag: item.eTag ?? null,
     filename: item.name,
     id: item.id,
@@ -171,7 +184,7 @@ export async function processOneDriveSkinTestItem(
   };
 
   try {
-    const buffer = await downloadOneDriveItem(accountId, item.id);
+    const buffer = await downloadOneDriveItem(accountId, item.id, driveId);
     const parsed = await parseSkinTestWorkbookBuffer(
       buffer as unknown as Parameters<typeof parseSkinTestWorkbookBuffer>[0],
     );
@@ -222,6 +235,9 @@ export async function listSkinTestImports(input: SkinTestImportListInput = {}) {
     sql<ImportRow>`
       SELECT
         i.id,
+        i.onedrive_account_id AS "oneDriveAccountId",
+        a.email AS "accountEmail",
+        a.name AS "accountName",
         i.filename,
         i.path,
         i.status,
@@ -238,6 +254,7 @@ export async function listSkinTestImports(input: SkinTestImportListInput = {}) {
         t.id AS "skinTestId",
         t.clinical_series_id AS "matchedSeriesId"
       FROM clinical_skin_test_imports i
+      LEFT JOIN onedrive_accounts a ON a.account_id = i.onedrive_account_id
       LEFT JOIN clinical_skin_tests t ON t.source_import_id = i.id
       WHERE ${whereSql}
       ORDER BY i.updated_at DESC
@@ -262,6 +279,9 @@ export async function getSkinTestImport(id: string): Promise<SkinTestImportOutpu
   const result = await sql<ImportRow>`
     SELECT
       i.id,
+      i.onedrive_account_id AS "oneDriveAccountId",
+      a.email AS "accountEmail",
+      a.name AS "accountName",
       i.filename,
       i.path,
       i.status,
@@ -278,6 +298,7 @@ export async function getSkinTestImport(id: string): Promise<SkinTestImportOutpu
       t.id AS "skinTestId",
       t.clinical_series_id AS "matchedSeriesId"
     FROM clinical_skin_test_imports i
+    LEFT JOIN onedrive_accounts a ON a.account_id = i.onedrive_account_id
     LEFT JOIN clinical_skin_tests t ON t.source_import_id = i.id
     WHERE i.id = ${id}
   `.execute(kysely);
@@ -320,11 +341,15 @@ export async function rejectSkinTestImport(id: string, userId: number, notes?: s
 }
 
 export async function reprocessSkinTestImport(id: string) {
-  const result = await sql<{ oneDriveItemId: string; oneDriveAccountId: string | null }>`
-    SELECT onedrive_item_id AS "oneDriveItemId", onedrive_account_id AS "oneDriveAccountId"
+  const result = await sql<{ oneDriveDriveId: string | null; oneDriveItemId: string; oneDriveAccountId: string | null }>`
+    SELECT
+      onedrive_drive_id AS "oneDriveDriveId",
+      onedrive_item_id AS "oneDriveItemId",
+      onedrive_account_id AS "oneDriveAccountId"
     FROM clinical_skin_test_imports
     WHERE id = ${id}
   `.execute(kysely);
+  const driveId = result.rows[0]?.oneDriveDriveId;
   const itemId = result.rows[0]?.oneDriveItemId;
   let accountId = result.rows[0]?.oneDriveAccountId;
   
@@ -339,7 +364,7 @@ export async function reprocessSkinTestImport(id: string) {
   
   if (!accountId) throw new Error("No hay cuenta de OneDrive para re-procesar.");
 
-  const buffer = await downloadOneDriveItem(accountId, itemId);
+  const buffer = await downloadOneDriveItem(accountId, itemId, driveId);
   const parsed = await parseSkinTestWorkbookBuffer(
     buffer as unknown as Parameters<typeof parseSkinTestWorkbookBuffer>[0],
   );
@@ -628,10 +653,13 @@ async function getStoredParsedPayload(id: string): Promise<ParsedPayload> {
   return parsedPayload as ParsedPayload;
 }
 
-async function getImportByOneDriveItemId(accountId: string, itemId: string) {
+async function getImportByOneDriveItemId(accountId: string, driveId: string, itemId: string) {
   const result = await sql<(ImportRow & { oneDriveCTag: null | string; oneDriveETag: null | string })>`
     SELECT
       i.*,
+      i.onedrive_account_id AS "oneDriveAccountId",
+      a.email AS "accountEmail",
+      a.name AS "accountName",
       i.onedrive_etag AS "oneDriveETag",
       i.onedrive_ctag AS "oneDriveCTag",
       i.parsed_payload AS "parsedPayload",
@@ -642,7 +670,9 @@ async function getImportByOneDriveItemId(accountId: string, itemId: string) {
       i.imported_at AS "importedAt",
       i.updated_at AS "updatedAt"
     FROM clinical_skin_test_imports i
+    LEFT JOIN onedrive_accounts a ON a.account_id = i.onedrive_account_id
     WHERE i.onedrive_account_id = ${accountId}
+      AND i.onedrive_drive_id = ${driveId}
       AND i.onedrive_item_id = ${itemId}
   `.execute(kysely);
   return result.rows[0] ?? null;
@@ -714,7 +744,7 @@ async function upsertImport(params: {
       now(),
       now()
     )
-    ON CONFLICT (onedrive_account_id, onedrive_item_id)
+    ON CONFLICT (onedrive_account_id, onedrive_drive_id, onedrive_item_id)
     DO UPDATE SET
       onedrive_account_id = EXCLUDED.onedrive_account_id,
       onedrive_drive_id = EXCLUDED.onedrive_drive_id,
@@ -787,6 +817,8 @@ function computeConfidence(baseConfidence: number, issues: SkinTestIssue[]): num
 
 function toImportOutput(row: ImportRow): SkinTestImportOutput {
   return {
+    accountEmail: row.accountEmail ?? null,
+    accountName: row.accountName ?? null,
     confidence: row.confidence,
     error: row.error,
     filename: row.filename,
@@ -794,6 +826,7 @@ function toImportOutput(row: ImportRow): SkinTestImportOutput {
     importedAt: row.importedAt?.toISOString() ?? null,
     issues: Array.isArray(row.issues) ? row.issues as SkinTestIssue[] : [],
     modifiedAt: row.modifiedAt?.toISOString() ?? null,
+    oneDriveAccountId: row.oneDriveAccountId ?? null,
     oneDriveWebUrl: row.oneDriveWebUrl,
     parsedPayload: row.parsedPayload && typeof row.parsedPayload === "object" ? row.parsedPayload as ParsedPayload : null,
     path: row.path,

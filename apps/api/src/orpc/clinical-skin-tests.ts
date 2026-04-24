@@ -5,6 +5,8 @@ import {
   oneDriveCallbackInputSchema,
   oneDriveDisconnectInputSchema,
   oneDriveDisconnectOutputSchema,
+  oneDriveFolderChildrenInputSchema,
+  oneDriveFolderChildrenOutputSchema,
   oneDriveFolderInputSchema,
   oneDriveStatusOutputSchema,
   skinTestImportActionInputSchema,
@@ -30,6 +32,8 @@ import {
   disconnectOneDrive,
   getOneDriveAuthUrl,
   getOneDriveStatus,
+  listOneDriveFolderChildren,
+  renewOneDriveSubscriptionNow,
   setOneDriveFolderPath,
 } from "../lib/microsoft/onedrive";
 import { logError } from "../lib/logger";
@@ -90,7 +94,32 @@ const routerBase = {
     .input(oneDriveFolderInputSchema)
     .output(oneDriveStatusOutputSchema)
     .handler(async ({ input }: { input: z.input<typeof oneDriveFolderInputSchema> }) => {
-      await setOneDriveFolderPath(input.accountId, input.folderPath);
+      await setOneDriveFolderPath(input.accountId, {
+        driveId: input.driveId,
+        folderPath: input.folderPath,
+        itemId: input.itemId,
+        name: input.name,
+      });
+      return await getOneDriveStatus();
+    }),
+
+  listOneDriveFolderChildren: readClinicalSkinTests
+    .route({ method: "GET", path: "/onedrive/folders" })
+    .input(oneDriveFolderChildrenInputSchema)
+    .output(oneDriveFolderChildrenOutputSchema)
+    .handler(async ({ input }: { input: z.input<typeof oneDriveFolderChildrenInputSchema> }) => {
+      return await listOneDriveFolderChildren(input.accountId, {
+        driveId: input.driveId,
+        itemId: input.itemId,
+      });
+    }),
+
+  renewOneDriveSubscription: updateClinicalSkinTests
+    .route({ method: "POST", path: "/onedrive/subscription/renew" })
+    .input(oneDriveDisconnectInputSchema)
+    .output(oneDriveStatusOutputSchema)
+    .handler(async ({ input }: { input: z.input<typeof oneDriveDisconnectInputSchema> }) => {
+      await renewOneDriveSubscriptionNow(input.accountId);
       return await getOneDriveStatus();
     }),
 
@@ -181,6 +210,9 @@ const routerBase = {
     .handler(async ({ input }: { input: z.input<typeof skinTestSyncInputSchema> }) => {
       return {
         jobId: await startClinicalSkinTestImportJob({
+          accountId: input.accountId,
+          folderDriveId: input.folderDriveId,
+          folderItemId: input.folderItemId,
           folderPath: input.folderPath,
           force: input.force,
           trigger: "manual",

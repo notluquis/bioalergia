@@ -2474,6 +2474,21 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true
                 },
+                folderDriveId: {
+                    name: "folderDriveId",
+                    type: "String",
+                    optional: true
+                },
+                folderItemId: {
+                    name: "folderItemId",
+                    type: "String",
+                    optional: true
+                },
+                folderName: {
+                    name: "folderName",
+                    type: "String",
+                    optional: true
+                },
                 deltaLink: {
                     name: "deltaLink",
                     type: "String",
@@ -3269,7 +3284,7 @@ export class SchemaType implements SchemaDef {
             idFields: ["id"],
             uniqueFields: {
                 id: { type: "String" },
-                oneDriveAccountId_oneDriveItemId: { oneDriveAccountId: { type: "String" }, oneDriveItemId: { type: "String" } }
+                oneDriveAccountId_oneDriveDriveId_oneDriveItemId: { oneDriveAccountId: { type: "String" }, oneDriveDriveId: { type: "String" }, oneDriveItemId: { type: "String" } }
             }
         },
         ClinicalSkinTest: {

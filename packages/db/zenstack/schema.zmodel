@@ -785,6 +785,9 @@ model OneDriveAccount {
   refreshToken    String    @map("refresh_token")
   expiresAt       String    @map("expires_at")
   folderPath      String?   @map("folder_path")
+  folderDriveId   String?   @map("folder_drive_id")
+  folderItemId    String?   @map("folder_item_id")
+  folderName      String?   @map("folder_name")
   deltaLink       String?   @map("delta_link")
   lastDeltaSyncAt DateTime? @map("last_delta_sync_at")
   lastSyncAt      DateTime? @map("last_sync_at")
@@ -1014,7 +1017,7 @@ model ClinicalSkinTestImport {
   @@index([status])
   @@index([modifiedAt])
   @@index([oneDriveAccountId])
-  @@unique([oneDriveAccountId, oneDriveItemId])
+  @@unique([oneDriveAccountId, oneDriveDriveId, oneDriveItemId])
   @@map("clinical_skin_test_imports")
 }
 

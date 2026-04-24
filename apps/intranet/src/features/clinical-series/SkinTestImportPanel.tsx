@@ -1,27 +1,45 @@
 import {
   Alert,
+  Breadcrumbs,
   Button,
   Chip,
   Description,
   Input,
   Label,
   ListBox,
+  Modal,
   Select,
   Separator,
   Spinner,
   Surface,
+  Tooltip,
   TextField,
   ProgressBar,
 } from "@heroui/react";
 import type { Key } from "@heroui/react";
-import { Check, ExternalLink, FileSpreadsheet, RefreshCw, X, Link as LinkIcon } from "lucide-react";
+import {
+  Check,
+  ChevronRight,
+  Cloud,
+  ExternalLink,
+  FileSpreadsheet,
+  Folder,
+  FolderOpen,
+  Home,
+  RefreshCw,
+  RotateCw,
+  X,
+  Link as LinkIcon,
+} from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useToast } from "@/context/ToastContext";
 import {
   useApproveSkinTestImport,
   useConfigureOneDriveFolder,
   useOneDriveSkinTestStatus,
+  useOneDriveFolderChildren,
   useRejectSkinTestImport,
+  useRenewOneDriveSubscription,
   useReprocessSkinTestImport,
   useSkinTestImports,
   useSyncSkinTestImports,
@@ -31,7 +49,12 @@ import {
   useClinicalSkinTestJobStatus,
   type SkinTestImportFilters,
 } from "./skin-tests-queries";
-import type { SkinTestImport, SkinTestImportStatus, SkinTestResult } from "./skin-tests-types";
+import type {
+  OneDriveFolderItem,
+  SkinTestImport,
+  SkinTestImportStatus,
+  SkinTestResult,
+} from "./skin-tests-types";
 
 const STATUS_OPTIONS: Array<{ label: string; value: SkinTestImportStatus }> = [
   { label: "Pendientes", value: "PENDING_REVIEW" },
@@ -118,9 +141,17 @@ export function SkinTestImportPanel() {
     }
   }
 
-  async function handleSync(force = false) {
+  async function handleSync(
+    force = false,
+    params?: {
+      accountId?: string;
+      folderDriveId?: null | string;
+      folderItemId?: null | string;
+      folderPath?: string;
+    }
+  ) {
     try {
-      const result = await syncMutation.mutateAsync({ force });
+      const result = await syncMutation.mutateAsync({ ...params, force });
       setActiveJobId(result.jobId);
       toast.success(`Sincronización iniciada`, "Sincronización");
     } catch (error) {
@@ -220,7 +251,12 @@ export function SkinTestImportPanel() {
         {oneDrive.data?.connected && (
           <div className="mt-4 flex flex-col gap-4 border-t border-border pt-4">
             {oneDrive.data.accounts.map((account) => (
-              <OneDriveAccountRow key={account.accountId} account={account} />
+              <OneDriveAccountRow
+                key={account.accountId}
+                account={account}
+                isSyncing={syncMutation.isPending}
+                onSync={(force, params) => void handleSync(force, params)}
+              />
             ))}
             <div className="flex justify-end">
               <Button
@@ -287,32 +323,42 @@ export function SkinTestImportPanel() {
 
 function OneDriveAccountRow({
   account,
+  isSyncing,
+  onSync,
 }: {
   account: {
     accountId: string;
     email: string;
+    folderDriveId: string | null;
+    folderItemId: string | null;
+    folderName: string | null;
     name: string | null;
     folderPath: string | null;
+    lastDeltaSyncAt: string | null;
     lastSyncAt: string | null;
+    subscription: {
+      expiresAt: string | null;
+      resource: string | null;
+      status: "ACTIVE" | "EXPIRED" | "MISSING";
+      subscriptionId: string | null;
+    };
   };
+  isSyncing: boolean;
+  onSync: (
+    force: boolean,
+    params?: {
+      accountId?: string;
+      folderDriveId?: null | string;
+      folderItemId?: null | string;
+      folderPath?: string;
+    }
+  ) => void;
 }) {
   const toast = useToast();
-  const [folderPath, setFolderPath] = useState(account.folderPath || "");
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
   const configureFolder = useConfigureOneDriveFolder();
   const disconnect = useDisconnectOneDrive();
-
-  async function handleSaveFolder() {
-    if (!folderPath.trim()) return;
-    try {
-      await configureFolder.mutateAsync({
-        accountId: account.accountId,
-        folderPath: folderPath.trim(),
-      });
-      toast.success("Carpeta OneDrive actualizada");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "No se pudo guardar carpeta");
-    }
-  }
+  const renewSubscription = useRenewOneDriveSubscription();
 
   async function handleDisconnect() {
     try {
@@ -323,39 +369,286 @@ function OneDriveAccountRow({
     }
   }
 
+  async function handleUseRoot() {
+    try {
+      await configureFolder.mutateAsync({
+        accountId: account.accountId,
+        driveId: null,
+        folderPath: "",
+        itemId: null,
+        name: "Raíz",
+      });
+      toast.success("Carpeta OneDrive actualizada");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo guardar carpeta");
+    }
+  }
+
+  async function handleRenew() {
+    try {
+      await renewSubscription.mutateAsync(account.accountId);
+      toast.success("Webhook renovado");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo renovar webhook");
+    }
+  }
+
+  const folderLabel = account.folderName || account.folderPath || "Raíz";
+  const subscriptionColor =
+    account.subscription.status === "ACTIVE"
+      ? "success"
+      : account.subscription.status === "EXPIRED"
+        ? "warning"
+        : "danger";
+
   return (
-    <div className="flex flex-col gap-3 rounded-lg bg-content2 p-3 lg:flex-row lg:items-end lg:justify-between">
-      <div className="space-y-1 flex-1">
-        <p className="font-medium text-sm">{account.email}</p>
-        <p className="text-xs text-foreground-500">
-          Última sync:{" "}
-          {account.lastSyncAt ? new Date(account.lastSyncAt).toLocaleString() : "Nunca"}
-        </p>
+    <div className="flex flex-col gap-3 rounded-lg bg-content2 p-3">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0 flex-1 space-y-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <Cloud size={16} className="text-foreground-400" />
+            <p className="truncate text-sm font-medium">{account.email}</p>
+            <Chip size="sm" color={subscriptionColor} variant="soft">
+              {account.subscription.status === "ACTIVE"
+                ? "Webhook activo"
+                : account.subscription.status === "EXPIRED"
+                  ? "Webhook vencido"
+                  : "Sin webhook"}
+            </Chip>
+          </div>
+          <p className="text-xs text-foreground-500">
+            Carpeta: <span className="font-medium text-foreground-700">{folderLabel}</span>
+          </p>
+          <p className="text-xs text-foreground-500">
+            Última sync:{" "}
+            {account.lastSyncAt ? new Date(account.lastSyncAt).toLocaleString() : "Nunca"}
+            {account.subscription.expiresAt && (
+              <span>
+                {" "}
+                · Webhook vence: {new Date(account.subscription.expiresAt).toLocaleString()}
+              </span>
+            )}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Tooltip>
+            <Tooltip.Trigger>
+              <Button size="sm" variant="secondary" onPress={() => setIsPickerOpen(true)}>
+                <FolderOpen size={14} />
+                Elegir carpeta
+              </Button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>Explorar carpetas de OneDrive</Tooltip.Content>
+          </Tooltip>
+          <Button
+            size="sm"
+            variant="ghost"
+            onPress={() => void handleUseRoot()}
+            isPending={configureFolder.isPending}
+          >
+            <Home size={14} />
+            Usar raíz
+          </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            onPress={() => onSync(false, { accountId: account.accountId })}
+            isDisabled={isSyncing}
+          >
+            <RefreshCw size={14} />
+            Sync cuenta
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onPress={() =>
+              onSync(false, {
+                accountId: account.accountId,
+                folderDriveId: account.folderDriveId,
+                folderItemId: account.folderItemId,
+                folderPath: account.folderPath ?? "",
+              })
+            }
+            isDisabled={isSyncing}
+          >
+            <Folder size={14} />
+            Sync carpeta
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onPress={() => void handleRenew()}
+            isPending={renewSubscription.isPending}
+          >
+            <RotateCw size={14} />
+            Renovar webhook
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-danger"
+            onPress={() => void handleDisconnect()}
+            isPending={disconnect.isPending}
+          >
+            Desconectar
+          </Button>
+        </div>
       </div>
-      <div className="flex items-end gap-2 flex-1 max-w-sm">
-        <TextField value={folderPath} onChange={setFolderPath} className="flex-1">
-          <Label>Carpeta</Label>
-          <Input placeholder="raíz" />
-        </TextField>
-        <Button
-          size="sm"
-          variant="secondary"
-          onPress={() => void handleSaveFolder()}
-          isDisabled={configureFolder.isPending || folderPath.trim() === (account.folderPath || "")}
-        >
-          Guardar
-        </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          className="text-danger"
-          onPress={() => void handleDisconnect()}
-          isPending={disconnect.isPending}
-        >
-          Desconectar
-        </Button>
-      </div>
+      <OneDriveFolderPickerModal
+        accountId={account.accountId}
+        isOpen={isPickerOpen}
+        onOpenChange={setIsPickerOpen}
+      />
     </div>
+  );
+}
+
+function OneDriveFolderPickerModal({
+  accountId,
+  isOpen,
+  onOpenChange,
+}: {
+  accountId: string;
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const toast = useToast();
+  const [stack, setStack] = useState<OneDriveFolderItem[]>([]);
+  const current = stack.at(-1) ?? null;
+  const children = useOneDriveFolderChildren({
+    accountId,
+    driveId: current?.driveId ?? null,
+    enabled: isOpen,
+    itemId: current?.id ?? null,
+  });
+  const configureFolder = useConfigureOneDriveFolder();
+  const folderPath = stack.map((item) => item.name).join("/");
+  const selectedLabel = current?.name ?? "Raíz";
+
+  async function handleSave(close: () => void) {
+    try {
+      await configureFolder.mutateAsync({
+        accountId,
+        driveId: current?.driveId ?? null,
+        folderPath,
+        itemId: current?.id ?? null,
+        name: selectedLabel,
+      });
+      toast.success("Carpeta OneDrive actualizada");
+      close();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo guardar carpeta");
+    }
+  }
+
+  return (
+    <Modal.Backdrop isOpen={isOpen} onOpenChange={onOpenChange} variant="blur">
+      <Modal.Container placement="center" scroll="inside" size="lg">
+        <Modal.Dialog className="w-full max-w-3xl">
+          {(renderProps) => (
+            <>
+              <Modal.CloseTrigger />
+              <Modal.Header>
+                <Modal.Heading>Elegir carpeta OneDrive</Modal.Heading>
+              </Modal.Header>
+              <Modal.Body className="space-y-3">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <Breadcrumbs className="text-xs">
+                    <Breadcrumbs.Item>
+                      <Button size="sm" variant="ghost" onPress={() => setStack([])}>
+                        <Home size={14} />
+                        Raíz
+                      </Button>
+                    </Breadcrumbs.Item>
+                    {stack.map((item, index) => (
+                      <Breadcrumbs.Item key={`${item.driveId ?? "me"}-${item.id}`}>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onPress={() => setStack((items) => items.slice(0, index + 1))}
+                        >
+                          {item.name}
+                        </Button>
+                      </Breadcrumbs.Item>
+                    ))}
+                  </Breadcrumbs>
+                  <Chip
+                    size="sm"
+                    color={(children.data?.xlsxCount ?? 0) > 0 ? "success" : "warning"}
+                    variant="soft"
+                  >
+                    {(children.data?.xlsxCount ?? 0) > 0
+                      ? `${children.data?.xlsxCount ?? 0} xlsx aquí`
+                      : "Sin xlsx aquí"}
+                  </Chip>
+                </div>
+
+                {children.isLoading ? (
+                  <div className="flex justify-center py-10">
+                    <Spinner />
+                  </div>
+                ) : children.data?.folders.length ? (
+                  <ListBox
+                    aria-label="Carpetas OneDrive"
+                    className="max-h-[420px] overflow-y-auto"
+                    selectionMode="none"
+                    onAction={(key) => {
+                      const folder = children.data?.folders.find(
+                        (item) => `${item.driveId ?? "me"}:${item.id}` === key
+                      );
+                      if (folder) setStack((items) => [...items, folder]);
+                    }}
+                  >
+                    {children.data.folders.map((folder) => (
+                      <ListBox.Item
+                        id={`${folder.driveId ?? "me"}:${folder.id}`}
+                        key={`${folder.driveId ?? "me"}-${folder.id}`}
+                        textValue={folder.name}
+                      >
+                        <Folder size={16} className="shrink-0 text-foreground-400" />
+                        <Label className="min-w-0 flex-1 truncate">{folder.name}</Label>
+                        {folder.isRemote && (
+                          <Chip size="sm" color="accent" variant="soft">
+                            Compartida
+                          </Chip>
+                        )}
+                        <ChevronRight size={16} className="ml-auto shrink-0 text-foreground-400" />
+                      </ListBox.Item>
+                    ))}
+                  </ListBox>
+                ) : (
+                  <p className="rounded-lg bg-content2 px-3 py-8 text-center text-sm text-foreground-500">
+                    No hay subcarpetas en esta ubicación.
+                  </p>
+                )}
+
+                {(children.data?.xlsxCount ?? 0) === 0 && (
+                  <Alert color="warning">
+                    <Alert.Indicator />
+                    <Alert.Content>
+                      <Alert.Description>
+                        La carpeta seleccionada no tiene archivos .xlsx en este nivel.
+                      </Alert.Description>
+                    </Alert.Content>
+                  </Alert>
+                )}
+              </Modal.Body>
+              <Modal.Footer>
+                <Button variant="secondary" onPress={() => renderProps.close()}>
+                  Cancelar
+                </Button>
+                <Button
+                  onPress={() => void handleSave(renderProps.close)}
+                  isPending={configureFolder.isPending}
+                >
+                  Guardar {selectedLabel}
+                </Button>
+              </Modal.Footer>
+            </>
+          )}
+        </Modal.Dialog>
+      </Modal.Container>
+    </Modal.Backdrop>
   );
 }
 
@@ -392,6 +685,11 @@ function SkinTestImportRow({ item }: { item: SkinTestImport }) {
             <Chip size="sm" color={item.confidence >= 80 ? "success" : "warning"} variant="soft">
               {item.confidence}%
             </Chip>
+            {item.accountEmail && (
+              <Chip size="sm" color="default" variant="soft">
+                {item.accountEmail}
+              </Chip>
+            )}
           </div>
           <div className="text-xs text-foreground-500 flex items-center gap-1.5 flex-wrap mt-1">
             {header?.panelTitle && (

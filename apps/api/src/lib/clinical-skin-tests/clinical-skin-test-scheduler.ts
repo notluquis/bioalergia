@@ -51,6 +51,9 @@ export function startClinicalSkinTestImportScheduler() {
 }
 
 export async function startClinicalSkinTestImportJob(options?: {
+  accountId?: string;
+  folderDriveId?: null | string;
+  folderItemId?: null | string;
   folderPath?: string;
   force?: boolean;
   trigger?: string;
@@ -67,6 +70,9 @@ export async function startClinicalSkinTestImportJob(options?: {
   void (async () => {
     try {
       const result = await syncClinicalSkinTestImports({
+        accountId: options?.accountId,
+        folderDriveId: options?.folderDriveId,
+        folderItemId: options?.folderItemId,
         folderPath: options?.folderPath,
         force: options?.force,
         onProgress: (processed, total, message) => {

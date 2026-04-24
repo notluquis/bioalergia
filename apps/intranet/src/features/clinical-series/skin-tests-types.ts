@@ -45,6 +45,8 @@ export const SkinTestParsedPayloadSchema = z.object({
 });
 
 export const SkinTestImportSchema = z.object({
+  accountEmail: z.string().nullable(),
+  accountName: z.string().nullable(),
   confidence: z.number(),
   error: z.string().nullable(),
   filename: z.string(),
@@ -52,6 +54,7 @@ export const SkinTestImportSchema = z.object({
   importedAt: z.string().nullable(),
   issues: z.array(SkinTestIssueSchema).catch([]),
   modifiedAt: z.string().nullable(),
+  oneDriveAccountId: z.string().nullable(),
   oneDriveWebUrl: z.string().nullable(),
   parsedPayload: SkinTestParsedPayloadSchema.nullable(),
   path: z.string().nullable(),
@@ -64,6 +67,19 @@ export const SkinTestImportSchema = z.object({
 });
 
 export type SkinTestImport = z.infer<typeof SkinTestImportSchema>;
+
+export const OneDriveFolderItemSchema = z.object({
+  driveId: z.string().nullable(),
+  hasChildren: z.boolean(),
+  id: z.string(),
+  isRemote: z.boolean(),
+  name: z.string(),
+  path: z.string().nullable(),
+  webUrl: z.string().nullable(),
+  xlsxCount: z.number(),
+});
+
+export type OneDriveFolderItem = z.infer<typeof OneDriveFolderItemSchema>;
 
 export const SkinTestDetailSchema = z.object({
   ageLabel: z.string().nullable(),

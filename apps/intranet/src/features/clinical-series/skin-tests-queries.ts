@@ -3,6 +3,7 @@ import { compactORPCInput } from "@/lib/orpc-input";
 import { clinicalSeriesKeys } from "./queries";
 import { clinicalSkinTestsORPCClient, toClinicalSkinTestsApiError } from "./skin-tests-orpc";
 import {
+  OneDriveFolderItemSchema,
   SkinTestDetailSchema,
   SkinTestImportSchema,
   type SkinTestImportStatus,
@@ -23,6 +24,14 @@ export const skinTestImportKeys = {
   all: ["clinical-skin-tests"] as const,
   imports: (filters?: SkinTestImportFilters) =>
     [...skinTestImportKeys.all, "imports", filters] as const,
+  oneDriveFolders: (accountId: string, driveId?: null | string, itemId?: null | string) =>
+    [
+      ...skinTestImportKeys.all,
+      "onedrive-folders",
+      accountId,
+      driveId ?? "root",
+      itemId ?? "root",
+    ] as const,
   oneDriveStatus: () => [...skinTestImportKeys.all, "onedrive-status"] as const,
   seriesTests: (seriesId: number) => [...skinTestImportKeys.all, "series", seriesId] as const,
 };
@@ -88,8 +97,13 @@ export function useSkinTestsBySeries(seriesId: number | null) {
 export function useSyncSkinTestImports() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (params?: { force?: boolean; folderPath?: string }) =>
-      await clinicalSkinTestsORPCClient.sync(compactORPCInput(params) ?? {}),
+    mutationFn: async (params?: {
+      accountId?: string;
+      folderDriveId?: null | string;
+      folderItemId?: null | string;
+      folderPath?: string;
+      force?: boolean;
+    }) => await clinicalSkinTestsORPCClient.sync(compactORPCInput(params) ?? {}),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: skinTestImportKeys.all });
     },
@@ -99,8 +113,47 @@ export function useSyncSkinTestImports() {
 export function useConfigureOneDriveFolder() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (params: { accountId: string; folderPath: string }) =>
-      await clinicalSkinTestsORPCClient.configureOneDriveFolder(params),
+    mutationFn: async (params: {
+      accountId: string;
+      driveId?: null | string;
+      folderPath?: string;
+      itemId?: null | string;
+      name?: null | string;
+    }) => await clinicalSkinTestsORPCClient.configureOneDriveFolder(params),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: skinTestImportKeys.oneDriveStatus() });
+    },
+  });
+}
+
+export function useOneDriveFolderChildren(params: {
+  accountId: string;
+  driveId?: null | string;
+  enabled?: boolean;
+  itemId?: null | string;
+}) {
+  return useQuery({
+    enabled: params.enabled ?? true,
+    queryFn: async () => {
+      const result = await clinicalSkinTestsORPCClient.listOneDriveFolderChildren({
+        accountId: params.accountId,
+        driveId: params.driveId,
+        itemId: params.itemId,
+      });
+      return {
+        ...result,
+        folders: OneDriveFolderItemSchema.array().parse(result.folders),
+      };
+    },
+    queryKey: skinTestImportKeys.oneDriveFolders(params.accountId, params.driveId, params.itemId),
+  });
+}
+
+export function useRenewOneDriveSubscription() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (accountId: string) =>
+      await clinicalSkinTestsORPCClient.renewOneDriveSubscription({ accountId }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: skinTestImportKeys.oneDriveStatus() });
     },

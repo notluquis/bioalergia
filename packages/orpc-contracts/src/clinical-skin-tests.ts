@@ -45,6 +45,9 @@ export const skinTestParsedPayloadSchema = z.object({
 
 export const skinTestImportSchema = z.object({
   id: z.string(),
+  accountEmail: z.string().nullable(),
+  accountName: z.string().nullable(),
+  oneDriveAccountId: z.string().nullable(),
   confidence: z.number().int(),
   error: z.string().nullable(),
   filename: z.string(),
@@ -100,6 +103,9 @@ export const skinTestImportActionInputSchema = z.object({
 });
 
 export const skinTestSyncInputSchema = z.object({
+  accountId: z.string().optional(),
+  folderDriveId: z.string().nullable().optional(),
+  folderItemId: z.string().nullable().optional(),
   folderPath: z.string().optional(),
   force: z.boolean().optional(),
 });
@@ -131,9 +137,18 @@ export const oneDriveAccountStatusSchema = z.object({
   accountId: z.string(),
   email: z.string(),
   name: z.string().nullable(),
+  folderDriveId: z.string().nullable(),
+  folderItemId: z.string().nullable(),
+  folderName: z.string().nullable(),
   folderPath: z.string().nullable(),
   lastDeltaSyncAt: z.string().nullable(),
   lastSyncAt: z.string().nullable(),
+  subscription: z.object({
+    expiresAt: z.string().nullable(),
+    resource: z.string().nullable(),
+    status: z.enum(["ACTIVE", "EXPIRED", "MISSING"]),
+    subscriptionId: z.string().nullable(),
+  }),
 });
 
 export const oneDriveStatusOutputSchema = z.object({
@@ -156,7 +171,32 @@ export const oneDriveCallbackInputSchema = z.object({
 
 export const oneDriveFolderInputSchema = z.object({
   accountId: z.string(),
-  folderPath: z.string().min(1),
+  driveId: z.string().nullable().optional(),
+  folderPath: z.string().optional(),
+  itemId: z.string().nullable().optional(),
+  name: z.string().nullable().optional(),
+});
+
+export const oneDriveFolderChildrenInputSchema = z.object({
+  accountId: z.string(),
+  driveId: z.string().nullable().optional(),
+  itemId: z.string().nullable().optional(),
+});
+
+export const oneDriveFolderItemSchema = z.object({
+  driveId: z.string().nullable(),
+  hasChildren: z.boolean(),
+  id: z.string(),
+  isRemote: z.boolean(),
+  name: z.string(),
+  path: z.string().nullable(),
+  webUrl: z.string().nullable(),
+  xlsxCount: z.number().int(),
+});
+
+export const oneDriveFolderChildrenOutputSchema = z.object({
+  folders: z.array(oneDriveFolderItemSchema),
+  xlsxCount: z.number().int(),
 });
 
 export const oneDriveDisconnectInputSchema = z.object({
@@ -183,6 +223,14 @@ export const clinicalSkinTestsContract = {
   configureOneDriveFolder: oc
     .route({ method: "POST", path: "/onedrive/folder" })
     .input(oneDriveFolderInputSchema)
+    .output(oneDriveStatusOutputSchema),
+  listOneDriveFolderChildren: oc
+    .route({ method: "GET", path: "/onedrive/folders" })
+    .input(oneDriveFolderChildrenInputSchema)
+    .output(oneDriveFolderChildrenOutputSchema),
+  renewOneDriveSubscription: oc
+    .route({ method: "POST", path: "/onedrive/subscription/renew" })
+    .input(oneDriveDisconnectInputSchema)
     .output(oneDriveStatusOutputSchema),
   connectOneDrive: oc
     .route({ method: "POST", path: "/onedrive/callback" })
