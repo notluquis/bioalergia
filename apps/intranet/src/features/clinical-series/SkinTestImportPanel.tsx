@@ -317,11 +317,17 @@ function SkinTestImportRow({ item }: { item: SkinTestImport }) {
               {item.confidence}%
             </Chip>
           </div>
-          <p className="mt-1 text-xs text-foreground-500">
-            {header?.patientName ?? "Paciente sin identificar"} ·{" "}
-            {header?.patientRut ?? "RUT pendiente"} · {header?.testDate ?? "Fecha pendiente"} ·{" "}
-            {resultCount} resultados
-          </p>
+          <div className="text-xs text-foreground-500 flex items-center gap-1.5 flex-wrap mt-1">
+            {header?.panelTitle && (
+              <Chip size="sm" color="primary" variant="flat" className="mr-1">
+                {header.panelTitle}
+              </Chip>
+            )}
+            {header?.patientName && <span className="font-medium">{header.patientName}</span>}
+            {header?.patientRut && <span>{header.patientRut}</span>}
+            {header?.testDate && <span>· {header.testDate}</span>}
+            <span>· {resultCount} resultados</span>
+          </div>
           {item.issues.length > 0 && (
             <p className="mt-1 text-xs text-warning">
               {item.issues.map((issue) => issue.message).join(" · ")}

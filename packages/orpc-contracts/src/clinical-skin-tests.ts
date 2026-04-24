@@ -57,6 +57,7 @@ export const skinTestImportSchema = z.object({
   reviewedAt: z.string().nullable(),
   reviewNotes: z.string().nullable(),
   skinTestId: z.string().nullable().optional(),
+  matchedSeriesId: z.number().nullable().optional(),
   status: skinTestImportStatusSchema,
   updatedAt: z.string(),
 });
