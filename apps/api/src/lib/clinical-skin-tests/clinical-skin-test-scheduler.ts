@@ -44,8 +44,9 @@ export async function startClinicalSkinTestImportJob(options?: {
   trigger?: string;
 }): Promise<string> {
   const jobType = getSkinTestImportJobType();
-  if (getActiveJobsByType(jobType).length > 0) {
-    throw new Error("Ya hay una sincronización de tests cutáneos en ejecución.");
+  const activeJobs = getActiveJobsByType(jobType);
+  if (activeJobs.length > 0) {
+    return activeJobs[0].id;
   }
 
   const jobId = startJob(jobType, 1);
