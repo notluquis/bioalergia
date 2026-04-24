@@ -96,8 +96,10 @@ export function SkinTestImportPanel() {
 
   async function handleConnect() {
     try {
-      const { url } = await authUrlQuery.refetch().then((res) => res.data!);
-      window.location.href = url;
+      const res = await authUrlQuery.refetch();
+      if (res.error) throw res.error;
+      if (!res.data) throw new Error("No se obtuvo la URL de autenticación");
+      window.location.href = res.data.url;
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Error al obtener URL de auth");
     }
