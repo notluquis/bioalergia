@@ -44,6 +44,20 @@ function TotalPaidCell({ credit }: { credit: PersonalCredit }) {
 const paid = (credit: PersonalCredit) =>
   credit.installments?.filter((installment) => installment.status === "PAID").length || 0;
 const total = (credit: PersonalCredit) => credit.totalInstallments || 1;
+const overdueSummary = (credit: PersonalCredit) => {
+  const today = dayjs().startOf("day");
+  const overdueInstallments =
+    credit.installments?.filter(
+      (installment) =>
+        installment.status === "PENDING" &&
+        dayjs(installment.dueDate).startOf("day").isBefore(today)
+    ) ?? [];
+
+  return {
+    amount: overdueInstallments.reduce((sum, installment) => sum + (installment.amount || 0), 0),
+    count: overdueInstallments.length,
+  };
+};
 const nextDueDate = (credit: PersonalCredit) => {
   const pending = credit.installments
     ?.filter((installment) => installment.status === "PENDING")
@@ -99,6 +113,27 @@ function getColumns(onSelectCredit: (id: number) => void): ColumnDef<PersonalCre
         const paidCount = paid(row.original);
         const totalCount = total(row.original);
         return <span className="font-medium text-warning">{totalCount - paidCount}</span>;
+      },
+    },
+    {
+      id: "overdueInstallments",
+      header: "Atrasadas",
+      cell: ({ row }) => {
+        const summary = overdueSummary(row.original);
+        if (summary.count === 0) {
+          return <span className="text-muted">-</span>;
+        }
+
+        return (
+          <div className="space-y-0.5">
+            <div className="font-medium text-danger">
+              {summary.count} {summary.count === 1 ? "cuota" : "cuotas"}
+            </div>
+            <div className="text-xs text-muted">
+              {formatCurrency(summary.amount, row.original.currency || "CLP")}
+            </div>
+          </div>
+        );
       },
     },
     {
