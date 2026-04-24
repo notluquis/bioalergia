@@ -1,6 +1,6 @@
 import ExcelJS from "exceljs";
 
-export const SKIN_TEST_PARSER_VERSION = "2026-04-24.1";
+export const SKIN_TEST_PARSER_VERSION = "2026-04-24.2";
 
 export interface SkinTestIssue {
   code: string;
@@ -77,7 +77,7 @@ export async function parseSkinTestWorkbookBuffer(buffer: ExcelWorkbookBuffer): 
 export function parseSkinTestWorksheet(worksheet: ExcelJS.Worksheet): ParsedSkinTestWorkbook {
   const cells = collectCells(worksheet);
   const issues: SkinTestIssue[] = [];
-  const title = findCell(cells, /multitest\s+cutaneo|multitest\s+cut[aá]neo/i);
+  const title = findCell(cells, /(?:multi|prick)\s*test\s+cut[aá]neo/i);
   const panelTitle = findPanelTitle(cells, title);
   const header = extractHeader(cells);
   header.panelTitle = panelTitle;

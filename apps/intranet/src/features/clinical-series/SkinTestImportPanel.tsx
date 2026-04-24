@@ -846,6 +846,7 @@ function SkinTestImportRow({ item }: { item: SkinTestImport }) {
               onPress={() => window.open(item.oneDriveWebUrl!, "_blank")}
             >
               <ExternalLink size={14} />
+              Abrir archivo
             </Button>
           )}
           <Button size="sm" variant="ghost" onPress={() => setExpanded((value) => !value)}>
