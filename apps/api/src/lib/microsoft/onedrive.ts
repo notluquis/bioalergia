@@ -4,7 +4,7 @@ import { logError, logEvent, logWarn } from "../logger";
 const MICROSOFT_TOKEN_URL = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token";
 const MICROSOFT_AUTH_URL = "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize";
 const GRAPH_BASE_URL = "https://graph.microsoft.com/v1.0";
-const DEFAULT_SCOPES = ["offline_access", "Files.Read", "User.Read"];
+const DEFAULT_SCOPES = ["offline_access", "Files.Read", "Files.ReadWrite", "User.Read"];
 const ONEDRIVE_WEBHOOK_CLIENT_STATE = "bioalergia-onedrive-sync";
 
 // Process-scoped token cache — safe because access tokens last ~3600s.
