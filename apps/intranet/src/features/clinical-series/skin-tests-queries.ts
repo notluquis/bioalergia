@@ -34,6 +34,14 @@ export const skinTestImportKeys = {
       driveId ?? "root",
       itemId ?? "root",
     ] as const,
+  oneDriveFolderPreview: (accountId: string, driveId?: null | string, itemId?: null | string) =>
+    [
+      ...skinTestImportKeys.all,
+      "onedrive-folder-preview",
+      accountId,
+      driveId ?? "root",
+      itemId ?? "root",
+    ] as const,
   oneDriveStatus: () => [...skinTestImportKeys.all, "onedrive-status"] as const,
   seriesTests: (seriesId: number) => [...skinTestImportKeys.all, "series", seriesId] as const,
 };
@@ -245,5 +253,30 @@ export function useCancelClinicalSkinTestJob() {
         queryClient.invalidateQueries({ queryKey: skinTestImportKeys.importsBase() }),
       ]);
     },
+  });
+}
+
+export function useOneDriveFolderPreview(params: {
+  accountId: string;
+  driveId?: null | string;
+  enabled?: boolean;
+  itemId?: null | string;
+}) {
+  return useQuery({
+    // Only fetch when a specific folder is selected (not root — too expensive without a target)
+    enabled: (params.enabled ?? true) && !!(params.driveId && params.itemId),
+    queryFn: async () =>
+      await clinicalSkinTestsORPCClient.folderPreview({
+        accountId: params.accountId,
+        driveId: params.driveId,
+        itemId: params.itemId,
+      }),
+    queryKey: skinTestImportKeys.oneDriveFolderPreview(
+      params.accountId,
+      params.driveId,
+      params.itemId
+    ),
+    // Recursive delta scan is expensive — cache for 30s to avoid re-scanning on each breadcrumb click
+    staleTime: 30_000,
   });
 }

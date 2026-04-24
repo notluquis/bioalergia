@@ -8,6 +8,8 @@ import {
   oneDriveFolderChildrenInputSchema,
   oneDriveFolderChildrenOutputSchema,
   oneDriveFolderInputSchema,
+  oneDriveFolderPreviewInputSchema,
+  oneDriveFolderPreviewOutputSchema,
   oneDriveStatusOutputSchema,
   skinTestImportActionInputSchema,
   skinTestActiveJobInputSchema,
@@ -35,6 +37,7 @@ import {
   connectOneDriveWithCode,
   disconnectOneDrive,
   getOneDriveAuthUrl,
+  getOneDriveFolderPreview,
   getOneDriveStatus,
   listOneDriveFolderChildren,
   renewOneDriveSubscriptionNow,
@@ -114,6 +117,17 @@ const routerBase = {
     .output(oneDriveFolderChildrenOutputSchema)
     .handler(async ({ input }: { input: z.input<typeof oneDriveFolderChildrenInputSchema> }) => {
       return await listOneDriveFolderChildren(input.accountId, {
+        driveId: input.driveId,
+        itemId: input.itemId,
+      });
+    }),
+
+  folderPreview: readClinicalSkinTests
+    .route({ method: "GET", path: "/onedrive/folder-preview" })
+    .input(oneDriveFolderPreviewInputSchema)
+    .output(oneDriveFolderPreviewOutputSchema)
+    .handler(async ({ input }: { input: z.input<typeof oneDriveFolderPreviewInputSchema> }) => {
+      return await getOneDriveFolderPreview(input.accountId, {
         driveId: input.driveId,
         itemId: input.itemId,
       });

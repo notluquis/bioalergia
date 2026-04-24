@@ -28,6 +28,7 @@ import {
   Home,
   RefreshCw,
   RotateCw,
+  ScanLine,
   X,
   Link as LinkIcon,
 } from "lucide-react";
@@ -39,6 +40,7 @@ import {
   useConfigureOneDriveFolder,
   useOneDriveSkinTestStatus,
   useOneDriveFolderChildren,
+  useOneDriveFolderPreview,
   useRejectSkinTestImport,
   useRenewOneDriveSubscription,
   useReprocessSkinTestImport,
@@ -550,19 +552,36 @@ function OneDriveAccountRow({
         accountId={account.accountId}
         isOpen={isPickerOpen}
         onOpenChange={setIsPickerOpen}
+        onSync={onSync}
       />
     </div>
   );
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function OneDriveFolderPickerModal({
   accountId,
   isOpen,
   onOpenChange,
+  onSync,
 }: {
   accountId: string;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
+  onSync: (
+    force: boolean,
+    params?: {
+      accountId?: string;
+      folderDriveId?: null | string;
+      folderItemId?: null | string;
+      folderPath?: string;
+    }
+  ) => void;
 }) {
   const toast = useToast();
   const [stack, setStack] = useState<OneDriveFolderItem[]>([]);
@@ -571,6 +590,12 @@ function OneDriveFolderPickerModal({
     accountId,
     driveId: current?.driveId ?? null,
     enabled: isOpen,
+    itemId: current?.id ?? null,
+  });
+  const preview = useOneDriveFolderPreview({
+    accountId,
+    driveId: current?.driveId ?? null,
+    enabled: isOpen && !!current,
     itemId: current?.id ?? null,
   });
   const configureFolder = useConfigureOneDriveFolder();
@@ -591,6 +616,17 @@ function OneDriveFolderPickerModal({
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "No se pudo guardar carpeta");
     }
+  }
+
+  function handleSyncFolder(close: () => void) {
+    if (!current) return;
+    onSync(false, {
+      accountId,
+      folderDriveId: current.driveId,
+      folderItemId: current.id,
+    });
+    toast.success(`Sync iniciado para "${selectedLabel}"`);
+    close();
   }
 
   return (
@@ -635,6 +671,42 @@ function OneDriveFolderPickerModal({
                   </Chip>
                 </div>
 
+                {/* Recursive stats panel — only shows when a subfolder is selected */}
+                {current && (
+                  <div className="flex flex-wrap items-center gap-3 rounded-lg bg-content2 px-3 py-2 text-xs text-foreground-500">
+                    <ScanLine size={13} className="shrink-0 text-foreground-400" />
+                    <span className="font-medium text-foreground-600">Recursivo:</span>
+                    {preview.isFetching ? (
+                      <span className="flex items-center gap-1.5">
+                        <Spinner size="sm" />
+                        Calculando...
+                      </span>
+                    ) : preview.data ? (
+                      <>
+                        <span>
+                          <span className="font-semibold text-foreground-700">
+                            {preview.data.totalFiles}
+                          </span>{" "}
+                          archivos
+                        </span>
+                        <span className="text-foreground-300">·</span>
+                        <span>
+                          <span className="font-semibold text-success">
+                            {preview.data.xlsxCount}
+                          </span>{" "}
+                          xlsx
+                        </span>
+                        {preview.data.xlsxTotalBytes > 0 && (
+                          <>
+                            <span className="text-foreground-300">·</span>
+                            <span>{formatBytes(preview.data.xlsxTotalBytes)}</span>
+                          </>
+                        )}
+                      </>
+                    ) : null}
+                  </div>
+                )}
+
                 {children.isLoading ? (
                   <div className="flex justify-center py-10">
                     <Spinner />
@@ -673,22 +745,17 @@ function OneDriveFolderPickerModal({
                     No hay subcarpetas en esta ubicación.
                   </p>
                 )}
-
-                {(children.data?.xlsxCount ?? 0) === 0 && (
-                  <Alert color="warning">
-                    <Alert.Indicator />
-                    <Alert.Content>
-                      <Alert.Description>
-                        La carpeta seleccionada no tiene archivos .xlsx en este nivel.
-                      </Alert.Description>
-                    </Alert.Content>
-                  </Alert>
-                )}
               </Modal.Body>
               <Modal.Footer>
                 <Button variant="secondary" onPress={() => renderProps.close()}>
                   Cancelar
                 </Button>
+                {current && (
+                  <Button variant="secondary" onPress={() => handleSyncFolder(renderProps.close)}>
+                    <RefreshCw size={14} />
+                    Sync "{selectedLabel}"
+                  </Button>
+                )}
                 <Button
                   onPress={() => void handleSave(renderProps.close)}
                   isPending={configureFolder.isPending}

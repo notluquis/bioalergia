@@ -247,8 +247,7 @@ export const oneDriveFolderPreviewInputSchema = z.object({
 });
 
 export const oneDriveFolderPreviewOutputSchema = z.object({
-  folders: z.array(oneDriveFolderItemSchema),
-  totalItems: z.number().int(),
+  totalFiles: z.number().int(),
   xlsxCount: z.number().int(),
   xlsxTotalBytes: z.number().int(),
 });

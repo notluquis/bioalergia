@@ -411,6 +411,25 @@ export interface OneDriveFolderPreview {
   xlsxTotalBytes: number;
 }
 
+export async function listOneDriveFolderChildren(
+  accountId: string,
+  selection?: { driveId?: null | string; itemId?: null | string },
+): Promise<{ folders: OneDriveFolderItem[]; xlsxCount: number }> {
+  const accessToken = await getOneDriveAccessToken(accountId);
+  const url = selection?.driveId && selection.itemId
+    ? `${GRAPH_BASE_URL}/drives/${encodeURIComponent(selection.driveId)}/items/${encodeURIComponent(selection.itemId)}/children`
+    : `${GRAPH_BASE_URL}/me/drive/root/children`;
+  const items = await listAllChildren(url, accessToken);
+  const folders = items
+    .filter((item) => item.folder || item.remoteItem?.folder)
+    .map(toFolderItem)
+    .sort((a, b) => a.name.localeCompare(b.name, "es"));
+  return {
+    folders,
+    xlsxCount: items.filter(isXlsxItem).length,
+  };
+}
+
 export async function getOneDriveFolderPreview(
   accountId: string,
   selection?: { driveId?: null | string; itemId?: null | string },
