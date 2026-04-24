@@ -1909,19 +1909,25 @@ export function ClinicalSeriesView() {
                           <Label className="text-xs font-medium text-foreground-500 uppercase tracking-[0.12em]">
                             Test cutáneo
                           </Label>
-                          <div className="flex items-center gap-2 h-9">
-                            <Switch
-                              id="filter-has-skin-test"
-                              isSelected={hasSkinTest === true}
-                              onChange={(e) => setHasSkinTest(e.target.checked ? true : undefined)}
-                              size="sm"
-                            >
-                              <Switch.Indicator />
-                            </Switch>
-                            <span className="text-sm text-foreground-600">
-                              {hasSkinTest === true ? "Solo con test" : "Todos"}
-                            </span>
-                          </div>
+                          <Switch
+                            id="filter-has-skin-test"
+                            isSelected={hasSkinTest === true}
+                            onChange={(selected) => setHasSkinTest(selected ? true : undefined)}
+                            size="sm"
+                          >
+                            {({ isSelected }: { isSelected: boolean }) => (
+                              <>
+                                <Switch.Control>
+                                  <Switch.Thumb />
+                                </Switch.Control>
+                                <Switch.Content>
+                                  <Label className="text-sm text-foreground-600 cursor-pointer">
+                                    {isSelected ? "Solo con test" : "Todos"}
+                                  </Label>
+                                </Switch.Content>
+                              </>
+                            )}
+                          </Switch>
                         </div>
                       </>
                     ) : null}
