@@ -29,6 +29,7 @@ import {
   type SortDescriptor,
   Spinner,
   Surface,
+  Switch,
   Table,
   Tabs,
   TextField,
@@ -1109,6 +1110,7 @@ export function ClinicalSeriesView() {
   const [lastVisitTo, setLastVisitTo] = useState<string | undefined>(undefined);
   const [nextVisitFrom, setNextVisitFrom] = useState<string | undefined>(undefined);
   const [nextVisitTo, setNextVisitTo] = useState<string | undefined>(undefined);
+  const [hasSkinTest, setHasSkinTest] = useState<boolean | undefined>(undefined);
 
   const deferredQuery = useDeferredValue(queryRaw);
   const debouncedQuery = useDebounce(deferredQuery);
@@ -1145,6 +1147,7 @@ export function ClinicalSeriesView() {
     debouncedPhone,
     debouncedQuery,
     debouncedRut,
+    hasSkinTest,
     healthInsurance,
     isapreOnlyUnidentified,
     isapreProvider,
@@ -1170,6 +1173,7 @@ export function ClinicalSeriesView() {
     ...(debouncedBeneficiaryRut && { beneficiaryRut: debouncedBeneficiaryRut }),
     ...(debouncedPhone && { patientPhone: debouncedPhone }),
     ...(debouncedRut && { patientRut: debouncedRut }),
+    ...(hasSkinTest !== undefined && { hasSkinTest }),
     ...(healthInsurance && { healthInsurance }),
     ...(isapreOnlyUnidentified && { isapreOnlyUnidentified: true }),
     ...(isapreProvider && { isapreProvider }),
@@ -1296,6 +1300,7 @@ export function ClinicalSeriesView() {
       !!debouncedPhone ||
       !!debouncedQuery ||
       !!debouncedRut ||
+      hasSkinTest !== undefined ||
       (isSeriesLikeTab && !!kind) ||
       !!nextVisitFrom ||
       !!nextVisitTo ||
@@ -1307,6 +1312,7 @@ export function ClinicalSeriesView() {
     setIsapreProvider(undefined);
     setKind(undefined);
     setStatus(undefined);
+    setHasSkinTest(undefined);
     if (isInsuranceTab) {
       setLastVisitFrom(undefined);
       setLastVisitTo(undefined);
@@ -1897,6 +1903,26 @@ export function ClinicalSeriesView() {
                             </RangeCalendar>
                           </DateRangePicker.Popover>
                         </DateRangePicker>
+
+                        {/* ── Test cutáneo vinculado ───────────────────────────── */}
+                        <div className="flex flex-col justify-end gap-1">
+                          <Label className="text-xs font-medium text-foreground-500 uppercase tracking-[0.12em]">
+                            Test cutáneo
+                          </Label>
+                          <div className="flex items-center gap-2 h-9">
+                            <Switch
+                              id="filter-has-skin-test"
+                              isSelected={hasSkinTest === true}
+                              onChange={(e) => setHasSkinTest(e.target.checked ? true : undefined)}
+                              size="sm"
+                            >
+                              <Switch.Indicator />
+                            </Switch>
+                            <span className="text-sm text-foreground-600">
+                              {hasSkinTest === true ? "Solo con test" : "Todos"}
+                            </span>
+                          </div>
+                        </div>
                       </>
                     ) : null}
 

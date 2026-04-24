@@ -136,6 +136,7 @@ export interface ClinicalSeriesListItem {
 export interface ClinicalSeriesFilters {
   abandonmentBucket?: ClinicalSeriesAbandonmentBucket;
   beneficiaryRut?: string;
+  hasSkinTest?: boolean;
   healthInsurance?: HealthInsuranceType;
   isapreOnlyUnidentified?: boolean;
   isapreProvider?: string;

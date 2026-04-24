@@ -110,6 +110,7 @@ export const clinicalSeriesSnapshotSchema = z.object({
 export const clinicalSeriesListInputSchema = z.object({
   abandonmentBucket: clinicalSeriesAbandonmentBucketSchema.optional(),
   beneficiaryRut: z.string().optional(),
+  hasSkinTest: z.boolean().optional(),
   healthInsurance: z.enum(["FONASA", "ISAPRE", "PARTICULAR"]).optional(),
   isapreOnlyUnidentified: z.boolean().optional(),
   isapreProvider: z.string().optional(),

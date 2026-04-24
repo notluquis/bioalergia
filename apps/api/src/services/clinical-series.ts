@@ -611,6 +611,7 @@ function computeSnapshotTiming(snapshot: Pick<ClinicalSeriesSnapshot, "events">,
 type ClinicalSeriesFilters = {
   abandonmentBucket?: "month_1" | "month_2" | "month_3" | "month_4_plus";
   beneficiaryRut?: string;
+  hasSkinTest?: boolean;
   healthInsurance?: HealthInsuranceType;
   isapreOnlyUnidentified?: boolean;
   isapreProvider?: string;
@@ -677,6 +678,7 @@ type PreparedClinicalSeriesFilters = {
   pageSize: number;
   phoneFilterSql: (phonePattern: null | string) => ReturnType<typeof sql>;
   queryFilterSql: ReturnType<typeof sql>;
+  skinTestFilterSql: ReturnType<typeof sql>;
   today: string;
   view: "abandonment" | "series";
 };
@@ -779,6 +781,15 @@ function prepareClinicalSeriesFilters(filters?: ClinicalSeriesFilters): Prepared
     today,
   );
 
+  // skinTest filter: EXISTS / NOT EXISTS correlated subquery on clinical_skin_tests.
+  // Uses the indexed clinical_series_id FK — no sequential scan.
+  const skinTestFilterSql =
+    filters?.hasSkinTest === true
+      ? sql`EXISTS (SELECT 1 FROM clinical_skin_tests cst WHERE cst.clinical_series_id = cs.id)`
+      : filters?.hasSkinTest === false
+        ? sql`NOT EXISTS (SELECT 1 FROM clinical_skin_tests cst WHERE cst.clinical_series_id = cs.id)`
+        : sql`TRUE`;
+
   return {
     abandonmentFilterSql,
     effectiveKind,
@@ -798,6 +809,7 @@ function prepareClinicalSeriesFilters(filters?: ClinicalSeriesFilters): Prepared
     pageSize,
     phoneFilterSql,
     queryFilterSql,
+    skinTestFilterSql,
     today,
     view,
   };
@@ -3914,6 +3926,7 @@ export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilter
     pageSize,
     phoneFilterSql,
     queryFilterSql,
+    skinTestFilterSql,
     today,
     view,
   } = prepareClinicalSeriesFilters(filters);
@@ -3960,6 +3973,7 @@ export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilter
           AND (${nextVisitTo}::date IS NULL OR es.next_event_date <= ${nextVisitTo}::date)
           AND ${queryFilterSql}
           AND ${abandonmentFilterSql}
+          AND ${skinTestFilterSql}
       `.execute(kysely)
     ).rows[0]?.count ?? 0,
   );
@@ -4039,6 +4053,7 @@ export async function listClinicalSeriesSnapshots(filters?: ClinicalSeriesFilter
       AND (${nextVisitTo}::date IS NULL OR es.next_event_date <= ${nextVisitTo}::date)
       AND ${queryFilterSql}
       AND ${abandonmentFilterSql}
+      AND ${skinTestFilterSql}
     ORDER BY ${orderBy}
     LIMIT ${pageSize}
     OFFSET ${(page - 1) * pageSize}
@@ -4072,6 +4087,7 @@ export async function getClinicalSeriesInsuranceStats(
     normalizedPatientRut,
     phoneFilterSql,
     queryFilterSql,
+    skinTestFilterSql,
     today,
   } = prepareClinicalSeriesFilters({
     ...filters,
@@ -4126,6 +4142,7 @@ export async function getClinicalSeriesInsuranceStats(
       AND (${nextVisitTo}::date IS NULL OR es.next_event_date <= ${nextVisitTo}::date)
       AND ${queryFilterSql}
       AND ${abandonmentFilterSql}
+      AND ${skinTestFilterSql}
   `.execute(kysely);
 
   const isapreProviders = new Map<string, number>();
