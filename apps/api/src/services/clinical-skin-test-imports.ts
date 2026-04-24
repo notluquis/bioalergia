@@ -144,7 +144,7 @@ export async function processOneDriveSkinTestItem(
   item: OneDriveItem,
   options?: { force?: boolean },
 ): Promise<SkinTestImportOutput> {
-  const existing = await getImportByOneDriveItemId(item.id);
+  const existing = await getImportByOneDriveItemId(accountId, item.id);
   if (
     existing &&
     !options?.force &&
@@ -628,7 +628,7 @@ async function getStoredParsedPayload(id: string): Promise<ParsedPayload> {
   return parsedPayload as ParsedPayload;
 }
 
-async function getImportByOneDriveItemId(itemId: string) {
+async function getImportByOneDriveItemId(accountId: string, itemId: string) {
   const result = await sql<(ImportRow & { oneDriveCTag: null | string; oneDriveETag: null | string })>`
     SELECT
       i.*,
@@ -642,7 +642,8 @@ async function getImportByOneDriveItemId(itemId: string) {
       i.imported_at AS "importedAt",
       i.updated_at AS "updatedAt"
     FROM clinical_skin_test_imports i
-    WHERE i.onedrive_item_id = ${itemId}
+    WHERE i.onedrive_account_id = ${accountId}
+      AND i.onedrive_item_id = ${itemId}
   `.execute(kysely);
   return result.rows[0] ?? null;
 }
@@ -713,7 +714,7 @@ async function upsertImport(params: {
       now(),
       now()
     )
-    ON CONFLICT (onedrive_item_id)
+    ON CONFLICT (onedrive_account_id, onedrive_item_id)
     DO UPDATE SET
       onedrive_account_id = EXCLUDED.onedrive_account_id,
       onedrive_drive_id = EXCLUDED.onedrive_drive_id,

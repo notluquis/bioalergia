@@ -2505,6 +2505,12 @@ export class SchemaType implements SchemaDef {
                     type: "OneDriveWatchChannel",
                     array: true,
                     relation: { opposite: "account" }
+                },
+                skinTestImports: {
+                    name: "skinTestImports",
+                    type: "ClinicalSkinTestImport",
+                    array: true,
+                    relation: { opposite: "oneDriveAccount" }
                 }
             },
             idFields: ["id"],
@@ -2560,7 +2566,7 @@ export class SchemaType implements SchemaDef {
                 account: {
                     name: "account",
                     type: "OneDriveAccount",
-                    relation: { opposite: "watchChannels", fields: ["accountId"], references: ["id"], onDelete: "Cascade" }
+                    relation: { opposite: "watchChannels", fields: ["accountId"], references: ["accountId"], onDelete: "Cascade" }
                 }
             },
             idFields: ["id"],
@@ -3128,12 +3134,14 @@ export class SchemaType implements SchemaDef {
                 oneDriveAccountId: {
                     name: "oneDriveAccountId",
                     type: "String",
-                    optional: true
+                    optional: true,
+                    foreignKeyFor: [
+                        "oneDriveAccount"
+                    ] as readonly string[]
                 },
                 oneDriveItemId: {
                     name: "oneDriveItemId",
-                    type: "String",
-                    unique: true
+                    type: "String"
                 },
                 oneDriveDriveId: {
                     name: "oneDriveDriveId",
@@ -3250,12 +3258,18 @@ export class SchemaType implements SchemaDef {
                     type: "ClinicalSkinTestResult",
                     array: true,
                     relation: { opposite: "sourceImport" }
+                },
+                oneDriveAccount: {
+                    name: "oneDriveAccount",
+                    type: "OneDriveAccount",
+                    optional: true,
+                    relation: { opposite: "skinTestImports", fields: ["oneDriveAccountId"], references: ["accountId"], onDelete: "SetNull" }
                 }
             },
             idFields: ["id"],
             uniqueFields: {
                 id: { type: "String" },
-                oneDriveItemId: { type: "String" }
+                oneDriveAccountId_oneDriveItemId: { oneDriveAccountId: { type: "String" }, oneDriveItemId: { type: "String" } }
             }
         },
         ClinicalSkinTest: {

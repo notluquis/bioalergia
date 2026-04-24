@@ -4,6 +4,7 @@ const MICROSOFT_TOKEN_URL = "https://login.microsoftonline.com/consumers/oauth2/
 const MICROSOFT_AUTH_URL = "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize";
 const GRAPH_BASE_URL = "https://graph.microsoft.com/v1.0";
 const DEFAULT_SCOPES = ["offline_access", "Files.Read", "User.Read"];
+const ONEDRIVE_WEBHOOK_CLIENT_STATE = "bioalergia-onedrive-sync";
 
 export interface OneDriveAccountStatus {
   accountId: string;
@@ -67,7 +68,7 @@ export function getOneDriveAuthUrl(redirectUri: string): string {
   const { clientId } = getClientConfig();
   const params = new URLSearchParams({
     client_id: clientId,
-    prompt: "consent",
+    prompt: "select_account",
     redirect_uri: redirectUri,
     response_type: "code",
     scope: DEFAULT_SCOPES.join(" "),
@@ -111,7 +112,7 @@ export async function connectOneDriveWithCode(code: string, redirectUri: string)
       email,
       name,
       accessToken: tokens.access_token,
-      refreshToken: tokens.refresh_token,
+      ...(tokens.refresh_token ? { refreshToken: tokens.refresh_token } : {}),
       expiresAt,
     }
   });
@@ -331,11 +332,11 @@ export async function setupOneDriveSubscription(accountId: string, folderPath: s
   }
 
   const payload = {
-    changeType: "created,updated,deleted",
+    changeType: "updated",
     notificationUrl: webhookUrl,
     resource: resource,
     expirationDateTime,
-    clientState: "bioalergia-onedrive-sync"
+    clientState: ONEDRIVE_WEBHOOK_CLIENT_STATE
   };
 
   const sub = await graphRequest<{ id: string }>(`${GRAPH_BASE_URL}/subscriptions`, accessToken, {

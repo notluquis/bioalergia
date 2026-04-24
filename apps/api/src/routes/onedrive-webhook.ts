@@ -3,6 +3,7 @@ import { db } from "@finanzas/db";
 import { startClinicalSkinTestImportJob } from "../lib/clinical-skin-tests/clinical-skin-test-scheduler";
 
 export const onedriveWebhookRoutes = new Hono();
+const ONEDRIVE_WEBHOOK_CLIENT_STATE = "bioalergia-onedrive-sync";
 
 onedriveWebhookRoutes.post("/", async (c) => {
   // 1. Validation request
@@ -15,12 +16,12 @@ onedriveWebhookRoutes.post("/", async (c) => {
 
   // 2. Notification request
   try {
-    const payload = await c.req.json<{ value?: Array<{ subscriptionId?: string }> }>();
+    const payload = await c.req.json<{ value?: Array<{ clientState?: string; subscriptionId?: string }> }>();
     if (payload && Array.isArray(payload.value)) {
       let triggered = false;
       
       for (const notification of payload.value) {
-        if (notification.subscriptionId) {
+        if (notification.subscriptionId && notification.clientState === ONEDRIVE_WEBHOOK_CLIENT_STATE) {
           const channel = await db.oneDriveWatchChannel.findFirst({
             where: { subscriptionId: notification.subscriptionId },
             select: { accountId: true }

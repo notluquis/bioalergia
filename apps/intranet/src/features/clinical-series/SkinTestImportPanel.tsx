@@ -15,7 +15,7 @@ import {
 } from "@heroui/react";
 import type { Key } from "@heroui/react";
 import { Check, ExternalLink, FileSpreadsheet, RefreshCw, X, Link as LinkIcon } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useToast } from "@/context/ToastContext";
 import {
   useApproveSkinTestImport,
@@ -76,12 +76,23 @@ export function SkinTestImportPanel() {
   const connectOneDrive = useConnectOneDrive();
   const authUrlQuery = useGetOneDriveAuthUrl(window.location.origin + window.location.pathname);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
+  const handledOAuthCodeRef = useRef<string | null>(null);
   const jobStatusQuery = useClinicalSkinTestJobStatus(activeJobId);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get("code");
-    if (code && !oneDrive.isLoading && !connectOneDrive.isPending) {
+    const url = new URL(window.location.href);
+    const code = url.searchParams.get("code");
+    if (
+      code &&
+      handledOAuthCodeRef.current !== code &&
+      !oneDrive.isLoading &&
+      !connectOneDrive.isPending
+    ) {
+      handledOAuthCodeRef.current = code;
+      url.searchParams.delete("code");
+      url.searchParams.delete("session_state");
+      window.history.replaceState({}, document.title, `${url.pathname}${url.search}${url.hash}`);
+
       void connectOneDrive
         .mutateAsync({
           code,
@@ -89,7 +100,6 @@ export function SkinTestImportPanel() {
         })
         .then(() => {
           toast.success("OneDrive conectado exitosamente");
-          window.history.replaceState({}, document.title, window.location.pathname);
         })
         .catch((error) => {
           toast.error(error instanceof Error ? error.message : "Error al conectar OneDrive");

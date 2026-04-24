@@ -792,9 +792,10 @@ model OneDriveAccount {
   updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at")
 
   watchChannels   OneDriveWatchChannel[]
+  skinTestImports ClinicalSkinTestImport[]
 
-  @@allow('read', true)
-  @@allow('all', auth().status == 'ACTIVE')
+  @@deny('all', auth() == null)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
   @@map("onedrive_accounts")
 }
 
@@ -808,7 +809,7 @@ model OneDriveWatchChannel {
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @default(now()) @updatedAt @map("updated_at")
 
-  account         OneDriveAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  account         OneDriveAccount @relation(fields: [accountId], references: [accountId], onDelete: Cascade)
 
   // Access policies
   @@deny('all', auth() == null)
@@ -979,7 +980,7 @@ model ClinicalSeries {
 model ClinicalSkinTestImport {
   id                    String                    @id @default(cuid())
   oneDriveAccountId     String?                   @map("onedrive_account_id")
-  oneDriveItemId        String                    @unique @map("onedrive_item_id")
+  oneDriveItemId        String                    @map("onedrive_item_id")
   oneDriveDriveId       String?                   @map("onedrive_drive_id")
   oneDriveETag          String?                   @map("onedrive_etag")
   oneDriveCTag          String?                   @map("onedrive_ctag")
@@ -1004,6 +1005,7 @@ model ClinicalSkinTestImport {
 
   skinTest              ClinicalSkinTest?
   results               ClinicalSkinTestResult[]
+  oneDriveAccount       OneDriveAccount?          @relation(fields: [oneDriveAccountId], references: [accountId], onDelete: SetNull)
 
   @@deny('all', auth() == null)
   @@allow('read', true)
@@ -1011,6 +1013,8 @@ model ClinicalSkinTestImport {
 
   @@index([status])
   @@index([modifiedAt])
+  @@index([oneDriveAccountId])
+  @@unique([oneDriveAccountId, oneDriveItemId])
   @@map("clinical_skin_test_imports")
 }
 

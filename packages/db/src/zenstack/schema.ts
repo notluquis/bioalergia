@@ -3031,11 +3031,17 @@ export class SchemaType implements SchemaDef {
                     type: "OneDriveWatchChannel",
                     array: true,
                     relation: { opposite: "account" }
+                },
+                skinTestImports: {
+                    name: "skinTestImports",
+                    type: "ClinicalSkinTestImport",
+                    array: true,
+                    relation: { opposite: "oneDriveAccount" }
                 }
             },
             attributes: [
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
                 { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("onedrive_accounts") }] }
             ] as readonly AttributeApplication[],
             idFields: ["id"],
@@ -3097,8 +3103,8 @@ export class SchemaType implements SchemaDef {
                 account: {
                     name: "account",
                     type: "OneDriveAccount",
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("accountId")]) }, { name: "references", value: ExpressionUtils.array("String", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }] as readonly AttributeApplication[],
-                    relation: { opposite: "watchChannels", fields: ["accountId"], references: ["id"], onDelete: "Cascade" }
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("accountId")]) }, { name: "references", value: ExpressionUtils.array("String", [ExpressionUtils.field("accountId")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "watchChannels", fields: ["accountId"], references: ["accountId"], onDelete: "Cascade" }
                 }
             },
             attributes: [
@@ -3788,13 +3794,15 @@ export class SchemaType implements SchemaDef {
                     name: "oneDriveAccountId",
                     type: "String",
                     optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("onedrive_account_id") }] }] as readonly AttributeApplication[]
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("onedrive_account_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "oneDriveAccount"
+                    ] as readonly string[]
                 },
                 oneDriveItemId: {
                     name: "oneDriveItemId",
                     type: "String",
-                    unique: true,
-                    attributes: [{ name: "@unique" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("onedrive_item_id") }] }] as readonly AttributeApplication[]
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("onedrive_item_id") }] }] as readonly AttributeApplication[]
                 },
                 oneDriveDriveId: {
                     name: "oneDriveDriveId",
@@ -3927,6 +3935,13 @@ export class SchemaType implements SchemaDef {
                     type: "ClinicalSkinTestResult",
                     array: true,
                     relation: { opposite: "sourceImport" }
+                },
+                oneDriveAccount: {
+                    name: "oneDriveAccount",
+                    type: "OneDriveAccount",
+                    optional: true,
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("oneDriveAccountId")]) }, { name: "references", value: ExpressionUtils.array("String", [ExpressionUtils.field("accountId")]) }, { name: "onDelete", value: ExpressionUtils.literal("SetNull") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "skinTestImports", fields: ["oneDriveAccountId"], references: ["accountId"], onDelete: "SetNull" }
                 }
             },
             attributes: [
@@ -3935,12 +3950,14 @@ export class SchemaType implements SchemaDef {
                 { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("ClinicalSkinTestImportStatus", [ExpressionUtils.field("status")]) }] },
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("modifiedAt")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("oneDriveAccountId")]) }] },
+                { name: "@@unique", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("oneDriveAccountId"), ExpressionUtils.field("oneDriveItemId")]) }] },
                 { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("clinical_skin_test_imports") }] }
             ] as readonly AttributeApplication[],
             idFields: ["id"],
             uniqueFields: {
                 id: { type: "String" },
-                oneDriveItemId: { type: "String" }
+                oneDriveAccountId_oneDriveItemId: { oneDriveAccountId: { type: "String" }, oneDriveItemId: { type: "String" } }
             }
         },
         ClinicalSkinTest: {
