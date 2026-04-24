@@ -11,6 +11,7 @@ import {
   updateJobProgress,
 } from "../jobQueue";
 import { logError, logEvent, logWarn } from "../logger";
+import { renewAllOneDriveSubscriptions } from "../microsoft/onedrive";
 
 const DEFAULT_CRON = "*/30 * * * *";
 const DEFAULT_TIMEZONE = "America/Santiago";
@@ -33,6 +34,17 @@ export function startClinicalSkinTestImportScheduler() {
       void startClinicalSkinTestImportJob({ trigger: `cron:${cronExpression}` });
     },
     { timezone },
+  );
+
+  // Daily cron to renew Microsoft OneDrive subscriptions (runs at 4:00 AM)
+  cron.schedule(
+    "0 4 * * *",
+    () => {
+      void renewAllOneDriveSubscriptions().catch(error => {
+        logError("onedrive.subscriptions.renew.failed", error);
+      });
+    },
+    { timezone }
   );
 
   logEvent("clinicalSkinTests.scheduler.started", { cronExpression, timezone });
