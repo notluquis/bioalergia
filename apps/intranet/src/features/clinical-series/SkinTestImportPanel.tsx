@@ -11,6 +11,7 @@ import {
   Spinner,
   Surface,
   TextField,
+  ProgressBar,
 } from "@heroui/react";
 import type { Key } from "@heroui/react";
 import { Check, ExternalLink, FileSpreadsheet, RefreshCw, X, Link as LinkIcon } from "lucide-react";
@@ -26,6 +27,7 @@ import {
   useSyncSkinTestImports,
   useGetOneDriveAuthUrl,
   useConnectOneDrive,
+  useClinicalSkinTestJobStatus,
   type SkinTestImportFilters,
 } from "./skin-tests-queries";
 import type { SkinTestImport, SkinTestImportStatus, SkinTestResult } from "./skin-tests-types";
@@ -74,6 +76,8 @@ export function SkinTestImportPanel() {
   const configureFolder = useConfigureOneDriveFolder();
   const connectOneDrive = useConnectOneDrive();
   const authUrlQuery = useGetOneDriveAuthUrl(window.location.origin + window.location.pathname);
+  const [activeJobId, setActiveJobId] = useState<string | null>(null);
+  const jobStatusQuery = useClinicalSkinTestJobStatus(activeJobId);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -108,7 +112,8 @@ export function SkinTestImportPanel() {
   async function handleSync(force = false) {
     try {
       const result = await syncMutation.mutateAsync({ force });
-      toast.success(`Job iniciado: ${result.jobId}`, "Sincronización");
+      setActiveJobId(result.jobId);
+      toast.success(`Sincronización iniciada`, "Sincronización");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "No se pudo iniciar sync");
     }
@@ -155,6 +160,43 @@ export function SkinTestImportPanel() {
             </Button>
           </div>
         </div>
+
+        {activeJobId && jobStatusQuery.data?.job && (
+          <div className="mt-4">
+            <ProgressBar
+              aria-label="Progreso de sincronización"
+              className="w-full"
+              color={
+                jobStatusQuery.data.job.status === "failed"
+                  ? "danger"
+                  : jobStatusQuery.data.job.status === "completed"
+                    ? "success"
+                    : "accent"
+              }
+              value={jobStatusQuery.data.job.progress}
+              maxValue={jobStatusQuery.data.job.total || 100}
+            >
+              <div className="flex justify-between">
+                <Label>{jobStatusQuery.data.job.message || "Sincronizando..."}</Label>
+                {jobStatusQuery.data.job.total > 0 && (
+                  <span className="text-xs text-foreground-500">
+                    {jobStatusQuery.data.job.progress} / {jobStatusQuery.data.job.total}
+                  </span>
+                )}
+              </div>
+              <ProgressBar.Track>
+                <ProgressBar.Fill />
+              </ProgressBar.Track>
+            </ProgressBar>
+            {["completed", "failed"].includes(jobStatusQuery.data.job.status) && (
+              <div className="mt-2 flex justify-end">
+                <Button size="sm" variant="ghost" onPress={() => setActiveJobId(null)}>
+                  Ocultar
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
 
         {!oneDrive.data?.connected && (
           <Alert color="warning" className="mt-3">
