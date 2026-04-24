@@ -12,6 +12,8 @@ import {
   oneDriveFolderPreviewOutputSchema,
   oneDriveStatusOutputSchema,
   skinTestImportActionInputSchema,
+  skinTestBulkImportActionInputSchema,
+  skinTestBulkImportActionOutputSchema,
   skinTestActiveJobInputSchema,
   skinTestActiveJobOutputSchema,
   skinTestImportListInputSchema,
@@ -51,6 +53,7 @@ import {
   getSkinTestImport,
   listSkinTestImports,
   listSkinTestsBySeries,
+  processSkinTestImports,
   rejectSkinTestImport,
   reprocessSkinTestImport,
 } from "../services/clinical-skin-test-imports";
@@ -93,9 +96,17 @@ const routerBase = {
     .route({ method: "POST", path: "/imports/{id}/approve" })
     .input(skinTestImportActionInputSchema)
     .output(skinTestImportSchema)
-    .handler(async ({ input, context }: { input: z.input<typeof skinTestImportActionInputSchema>; context: { user: { id: number } } }) => {
-      return await approveSkinTestImport(input.id, context.user.id, input.notes);
-    }),
+    .handler(
+      async ({
+        input,
+        context,
+      }: {
+        input: z.input<typeof skinTestImportActionInputSchema>;
+        context: { user: { id: number } };
+      }) => {
+        return await approveSkinTestImport(input.id, context.user.id, input.notes);
+      }
+    ),
 
   configureOneDriveFolder: updateClinicalSkinTests
     .route({ method: "POST", path: "/onedrive/folder" })
@@ -231,9 +242,17 @@ const routerBase = {
     .route({ method: "POST", path: "/imports/{id}/reject" })
     .input(skinTestImportActionInputSchema)
     .output(skinTestImportSchema)
-    .handler(async ({ input, context }: { input: z.input<typeof skinTestImportActionInputSchema>; context: { user: { id: number } } }) => {
-      return await rejectSkinTestImport(input.id, context.user.id, input.notes);
-    }),
+    .handler(
+      async ({
+        input,
+        context,
+      }: {
+        input: z.input<typeof skinTestImportActionInputSchema>;
+        context: { user: { id: number } };
+      }) => {
+        return await rejectSkinTestImport(input.id, context.user.id, input.notes);
+      }
+    ),
 
   reprocessImport: updateClinicalSkinTests
     .route({ method: "POST", path: "/imports/{id}/reprocess" })
@@ -241,6 +260,14 @@ const routerBase = {
     .output(skinTestImportSchema)
     .handler(async ({ input }: { input: z.input<typeof skinTestImportActionInputSchema> }) => {
       return await reprocessSkinTestImport(input.id);
+    }),
+
+  processImports: updateClinicalSkinTests
+    .route({ method: "POST", path: "/imports/process" })
+    .input(skinTestBulkImportActionInputSchema)
+    .output(skinTestBulkImportActionOutputSchema)
+    .handler(async ({ input }: { input: z.input<typeof skinTestBulkImportActionInputSchema> }) => {
+      return await processSkinTestImports(input.ids);
     }),
 
   sync: updateClinicalSkinTests
@@ -262,8 +289,10 @@ const routerBase = {
 };
 
 function defaultRedirectUri() {
-  return process.env.MICROSOFT_OAUTH_REDIRECT_URI ||
-    `${process.env.PUBLIC_URL || "http://localhost:3000"}/api/orpc/clinical-skin-tests/oauth/callback`;
+  return (
+    process.env.MICROSOFT_OAUTH_REDIRECT_URI ||
+    `${process.env.PUBLIC_URL || "http://localhost:3000"}/api/orpc/clinical-skin-tests/oauth/callback`
+  );
 }
 
 export const clinicalSkinTestsORPCRouter = base

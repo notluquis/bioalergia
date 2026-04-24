@@ -2,6 +2,7 @@ import { oc } from "@orpc/contract";
 import { z } from "zod";
 
 export const skinTestImportStatusSchema = z.enum([
+  "DISCOVERED",
   "PENDING_REVIEW",
   "IMPORTED",
   "REJECTED",
@@ -40,6 +41,17 @@ export const skinTestParsedPayloadSchema = z.object({
     panelTitle: z.string().nullable(),
     testDate: z.string().nullable(),
   }),
+  interpretation: z
+    .object({
+      address: z.string().nullable(),
+      clinicalNote: z.string().nullable(),
+      nonConclusiveDueToHyperreactivity: z.boolean(),
+      physicianName: z.string().nullable(),
+      physicianSpecialty: z.string().nullable(),
+      suggestedEvaluation: z.string().nullable(),
+      website: z.string().nullable(),
+    })
+    .optional(),
   results: z.array(skinTestResultSchema),
 });
 
@@ -67,17 +79,24 @@ export const skinTestImportSchema = z.object({
 
 export const skinTestDetailSchema = z.object({
   ageLabel: z.string().nullable(),
+  address: z.string().nullable(),
+  clinicalNote: z.string().nullable(),
   clinicalSeriesId: z.number().int(),
   id: z.string(),
+  nonConclusiveDueToHyperreactivity: z.boolean(),
   oneDriveWebUrl: z.string().nullable(),
   panelTitle: z.string().nullable(),
   patientEmail: z.string().nullable(),
   patientName: z.string().nullable(),
   patientPhone: z.string().nullable(),
   patientRut: z.string().nullable(),
+  physicianName: z.string().nullable(),
+  physicianSpecialty: z.string().nullable(),
+  resultHash: z.string().nullable(),
   results: z.array(skinTestResultSchema),
   sourceImportId: z.string(),
   testDate: z.string(),
+  website: z.string().nullable(),
 });
 
 export const skinTestImportListInputSchema = z.object({
@@ -101,6 +120,15 @@ export const skinTestImportListOutputSchema = z.object({
 export const skinTestImportActionInputSchema = z.object({
   id: z.string(),
   notes: z.string().max(500).optional(),
+});
+
+export const skinTestBulkImportActionInputSchema = z.object({
+  ids: z.array(z.string()).min(1).max(100),
+});
+
+export const skinTestBulkImportActionOutputSchema = z.object({
+  errors: z.array(z.object({ id: z.string(), message: z.string() })),
+  items: z.array(skinTestImportSchema),
 });
 
 export const skinTestSyncInputSchema = z.object({
@@ -320,6 +348,10 @@ export const clinicalSkinTestsContract = {
     .route({ method: "POST", path: "/imports/{id}/reprocess" })
     .input(skinTestImportActionInputSchema)
     .output(skinTestImportSchema),
+  processImports: oc
+    .route({ method: "POST", path: "/imports/process" })
+    .input(skinTestBulkImportActionInputSchema)
+    .output(skinTestBulkImportActionOutputSchema),
   sync: oc
     .route({ method: "POST", path: "/sync" })
     .input(skinTestSyncInputSchema)

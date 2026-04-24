@@ -3905,6 +3905,18 @@ export class SchemaType implements SchemaDef {
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("parsed_payload") }] }] as readonly AttributeApplication[]
                 },
+                resultHash: {
+                    name: "resultHash",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("result_hash") }] }] as readonly AttributeApplication[]
+                },
+                duplicateOfImportId: {
+                    name: "duplicateOfImportId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("duplicate_of_import_id") }] }] as readonly AttributeApplication[]
+                },
                 reviewedBy: {
                     name: "reviewedBy",
                     type: "Int",
@@ -4046,6 +4058,46 @@ export class SchemaType implements SchemaDef {
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("panel_title") }] }] as readonly AttributeApplication[]
                 },
+                clinicalNote: {
+                    name: "clinicalNote",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("clinical_note") }] }] as readonly AttributeApplication[]
+                },
+                physicianName: {
+                    name: "physicianName",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("physician_name") }] }] as readonly AttributeApplication[]
+                },
+                physicianSpecialty: {
+                    name: "physicianSpecialty",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("physician_specialty") }] }] as readonly AttributeApplication[]
+                },
+                website: {
+                    name: "website",
+                    type: "String",
+                    optional: true
+                },
+                address: {
+                    name: "address",
+                    type: "String",
+                    optional: true
+                },
+                nonConclusiveDueToHyperreactivity: {
+                    name: "nonConclusiveDueToHyperreactivity",
+                    type: "Boolean",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("non_conclusive_due_to_hyperreactivity") }] }] as readonly AttributeApplication[],
+                    default: false as FieldDefault
+                },
+                resultHash: {
+                    name: "resultHash",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("result_hash") }] }] as readonly AttributeApplication[]
+                },
                 rawHeader: {
                     name: "rawHeader",
                     type: "Json",
@@ -4091,6 +4143,7 @@ export class SchemaType implements SchemaDef {
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("clinicalSeriesId")]) }] },
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("patientRut")]) }] },
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("testDate")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("resultHash")]) }] },
                 { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("clinical_skin_tests") }] }
             ] as readonly AttributeApplication[],
             idFields: ["id"],
@@ -9923,6 +9976,7 @@ export class SchemaType implements SchemaDef {
         ClinicalSkinTestImportStatus: {
             name: "ClinicalSkinTestImportStatus",
             values: {
+                DISCOVERED: "DISCOVERED",
                 PENDING_REVIEW: "PENDING_REVIEW",
                 IMPORTED: "IMPORTED",
                 REJECTED: "REJECTED",

@@ -43,6 +43,11 @@ export function SeriesSkinTestsSection({ seriesId }: { seriesId: number }) {
                   <Chip size="sm" variant="soft" color="accent">
                     {test.testDate}
                   </Chip>
+                  {test.nonConclusiveDueToHyperreactivity && (
+                    <Chip size="sm" variant="soft" color="warning">
+                      No concluyente
+                    </Chip>
+                  )}
                   {test.panelTitle && (
                     <span className="text-xs text-foreground-500">{test.panelTitle}</span>
                   )}
@@ -61,6 +66,21 @@ export function SeriesSkinTestsSection({ seriesId }: { seriesId: number }) {
                     </Button>
                   )}
                 </div>
+                {(test.clinicalNote || test.physicianName || test.website || test.address) && (
+                  <div className="mb-2 rounded-md bg-warning/10 px-2 py-1.5 text-[11px] text-foreground-600">
+                    {test.clinicalNote && (
+                      <p className="whitespace-pre-line font-medium text-warning-700">
+                        {test.clinicalNote}
+                      </p>
+                    )}
+                    <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-foreground-500">
+                      {test.physicianName && <span>{test.physicianName}</span>}
+                      {test.physicianSpecialty && <span>{test.physicianSpecialty}</span>}
+                      {test.website && <span>{test.website}</span>}
+                      {test.address && <span>{test.address}</span>}
+                    </div>
+                  </div>
+                )}
                 <div className="grid gap-1">
                   {test.results.slice(0, 10).map((result) => (
                     <div

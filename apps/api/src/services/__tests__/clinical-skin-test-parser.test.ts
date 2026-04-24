@@ -57,7 +57,7 @@ describe("clinical skin test parser", () => {
           erythemaMm: 10,
           papuleMm: 5,
         }),
-      ]),
+      ])
     );
   });
 
@@ -98,7 +98,41 @@ describe("clinical skin test parser", () => {
           rawPapule: "<3",
           section: "ACAROS",
         }),
-      ]),
+      ])
     );
+  });
+
+  it("extracts interpretation notes and non-conclusive hyperreactivity flags", async () => {
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("Test");
+    sheet.getCell("B2").value = "PRICKTEST CUTANEO";
+    sheet.getCell("B4").value = "NOMBRE: AURALY CISTERNA";
+    sheet.getCell("E4").value = "EDAD: 27 AÑOS";
+    sheet.getCell("B5").value = "RUT: 17.710.040-4";
+    sheet.getCell("E5").value = "FECHA: 11/09/19";
+    sheet.getCell("B8").value = "ALIMENTOS";
+    sheet.getCell("A9").value = "1";
+    sheet.getCell("B9").value = "LECHE FRESCA";
+    sheet.getCell("C8").value = "P";
+    sheet.getCell("D8").value = "E";
+    sheet.getCell("C9").value = 4;
+    sheet.getCell("D9").value = 15;
+    sheet.getCell("B20").value = "CEX. PIEL HIPERREACTIVA";
+    sheet.getCell("B21").value = "BAJO ESTAS CONDICIONES EL PRICKTEST NO ES CONCLUYENTE";
+    sheet.getCell("B22").value = "EVALUAR IGE TOTAL Y ESPECIFICAS, DESCARTAR AUTOINMUNIDAD";
+    sheet.getCell("H25").value = "DR JOSE MANUEL MARTINEZ M.";
+    sheet.getCell("H26").value = "ALERGOLOGO-INMUNOLOGO";
+    sheet.getCell("B27").value = "www.jmmmartinez-alergia-inmunologia.com";
+    sheet.getCell("B28").value = "SAN MARTÍN 870, OF 509-B, CONCEPCIÓN";
+
+    const parsed = await parseSkinTestWorkbookBuffer(await workbook.xlsx.writeBuffer());
+
+    expect(parsed.interpretation.nonConclusiveDueToHyperreactivity).toBe(true);
+    expect(parsed.interpretation.clinicalNote).toContain("PIEL HIPERREACTIVA");
+    expect(parsed.interpretation.suggestedEvaluation).toContain("IGE TOTAL");
+    expect(parsed.interpretation.physicianName).toBe("DR JOSE MANUEL MARTINEZ M.");
+    expect(parsed.interpretation.physicianSpecialty).toBe("ALERGOLOGO-INMUNOLOGO");
+    expect(parsed.interpretation.website).toBe("www.jmmmartinez-alergia-inmunologia.com");
+    expect(parsed.interpretation.address).toBe("SAN MARTÍN 870, OF 509-B, CONCEPCIÓN");
   });
 });

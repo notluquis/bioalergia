@@ -230,6 +230,17 @@ export function useReprocessSkinTestImport() {
   });
 }
 
+export function useProcessSkinTestImports() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (ids: string[]) => await clinicalSkinTestsORPCClient.processImports({ ids }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: skinTestImportKeys.importsBase() });
+      void queryClient.invalidateQueries({ queryKey: clinicalSeriesKeys.all });
+    },
+  });
+}
+
 export function useClinicalSkinTestJobStatus(jobId: string | null) {
   return useQuery({
     enabled: !!jobId,

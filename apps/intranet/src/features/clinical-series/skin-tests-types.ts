@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const SkinTestImportStatusSchema = z.enum([
+  "DISCOVERED",
   "PENDING_REVIEW",
   "IMPORTED",
   "REJECTED",
@@ -41,6 +42,17 @@ export const SkinTestParsedPayloadSchema = z.object({
     panelTitle: z.string().nullable(),
     testDate: z.string().nullable(),
   }),
+  interpretation: z
+    .object({
+      address: z.string().nullable(),
+      clinicalNote: z.string().nullable(),
+      nonConclusiveDueToHyperreactivity: z.boolean(),
+      physicianName: z.string().nullable(),
+      physicianSpecialty: z.string().nullable(),
+      suggestedEvaluation: z.string().nullable(),
+      website: z.string().nullable(),
+    })
+    .optional(),
   results: z.array(SkinTestResultSchema),
 });
 
@@ -93,17 +105,24 @@ export type OneDriveFolderFile = z.infer<typeof OneDriveFolderFileSchema>;
 
 export const SkinTestDetailSchema = z.object({
   ageLabel: z.string().nullable(),
+  address: z.string().nullable(),
+  clinicalNote: z.string().nullable(),
   clinicalSeriesId: z.number(),
   id: z.string(),
+  nonConclusiveDueToHyperreactivity: z.boolean(),
   oneDriveWebUrl: z.string().nullable(),
   panelTitle: z.string().nullable(),
   patientEmail: z.string().nullable(),
   patientName: z.string().nullable(),
   patientPhone: z.string().nullable(),
   patientRut: z.string().nullable(),
+  physicianName: z.string().nullable(),
+  physicianSpecialty: z.string().nullable(),
+  resultHash: z.string().nullable(),
   results: z.array(SkinTestResultSchema),
   sourceImportId: z.string(),
   testDate: z.string(),
+  website: z.string().nullable(),
 });
 
 export type SkinTestDetail = z.infer<typeof SkinTestDetailSchema>;

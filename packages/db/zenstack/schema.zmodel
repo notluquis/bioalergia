@@ -999,6 +999,8 @@ model ClinicalSkinTestImport {
   error                 String?
   issues                Json?
   parsedPayload         Json?                     @map("parsed_payload")
+  resultHash            String?                   @map("result_hash")
+  duplicateOfImportId   String?                   @map("duplicate_of_import_id")
   reviewedBy            Int?                      @map("reviewed_by")
   reviewedAt            DateTime?                 @map("reviewed_at") @db.Timestamptz(3)
   reviewNotes           String?                   @map("review_notes")
@@ -1032,6 +1034,13 @@ model ClinicalSkinTest {
   patientPhone     String?                @map("patient_phone")
   ageLabel         String?                @map("age_label")
   panelTitle       String?                @map("panel_title")
+  clinicalNote     String?                @map("clinical_note")
+  physicianName    String?                @map("physician_name")
+  physicianSpecialty String?              @map("physician_specialty")
+  website          String?
+  address          String?
+  nonConclusiveDueToHyperreactivity Boolean @default(false) @map("non_conclusive_due_to_hyperreactivity")
+  resultHash       String?                @map("result_hash")
   rawHeader        Json?                  @map("raw_header")
   createdAt        DateTime               @default(now()) @map("created_at")
   updatedAt        DateTime               @default(now()) @updatedAt @map("updated_at")
@@ -1047,6 +1056,7 @@ model ClinicalSkinTest {
   @@index([clinicalSeriesId])
   @@index([patientRut])
   @@index([testDate])
+  @@index([resultHash])
   @@map("clinical_skin_tests")
 }
 
@@ -2089,6 +2099,7 @@ enum ClinicalSeriesStatus {
 }
 
 enum ClinicalSkinTestImportStatus {
+  DISCOVERED
   PENDING_REVIEW
   IMPORTED
   REJECTED

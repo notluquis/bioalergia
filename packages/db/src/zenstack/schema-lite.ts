@@ -3231,6 +3231,16 @@ export class SchemaType implements SchemaDef {
                     type: "Json",
                     optional: true
                 },
+                resultHash: {
+                    name: "resultHash",
+                    type: "String",
+                    optional: true
+                },
+                duplicateOfImportId: {
+                    name: "duplicateOfImportId",
+                    type: "String",
+                    optional: true
+                },
                 reviewedBy: {
                     name: "reviewedBy",
                     type: "Int",
@@ -3342,6 +3352,41 @@ export class SchemaType implements SchemaDef {
                 },
                 panelTitle: {
                     name: "panelTitle",
+                    type: "String",
+                    optional: true
+                },
+                clinicalNote: {
+                    name: "clinicalNote",
+                    type: "String",
+                    optional: true
+                },
+                physicianName: {
+                    name: "physicianName",
+                    type: "String",
+                    optional: true
+                },
+                physicianSpecialty: {
+                    name: "physicianSpecialty",
+                    type: "String",
+                    optional: true
+                },
+                website: {
+                    name: "website",
+                    type: "String",
+                    optional: true
+                },
+                address: {
+                    name: "address",
+                    type: "String",
+                    optional: true
+                },
+                nonConclusiveDueToHyperreactivity: {
+                    name: "nonConclusiveDueToHyperreactivity",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                resultHash: {
+                    name: "resultHash",
                     type: "String",
                     optional: true
                 },
@@ -8114,6 +8159,7 @@ export class SchemaType implements SchemaDef {
         ClinicalSkinTestImportStatus: {
             name: "ClinicalSkinTestImportStatus",
             values: {
+                DISCOVERED: "DISCOVERED",
                 PENDING_REVIEW: "PENDING_REVIEW",
                 IMPORTED: "IMPORTED",
                 REJECTED: "REJECTED",

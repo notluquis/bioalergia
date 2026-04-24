@@ -1,6 +1,6 @@
 import ExcelJS from "exceljs";
 
-export const SKIN_TEST_PARSER_VERSION = "2026-04-24.2";
+export const SKIN_TEST_PARSER_VERSION = "2026-04-24.3";
 
 export interface SkinTestIssue {
   code: string;
@@ -31,9 +31,20 @@ export interface ParsedSkinTestResult {
   rawCells: Record<string, unknown>;
 }
 
+export interface ParsedSkinTestInterpretation {
+  address: null | string;
+  clinicalNote: null | string;
+  nonConclusiveDueToHyperreactivity: boolean;
+  physicianName: null | string;
+  physicianSpecialty: null | string;
+  suggestedEvaluation: null | string;
+  website: null | string;
+}
+
 export interface ParsedSkinTestWorkbook {
   confidence: number;
   header: ParsedSkinTestHeader;
+  interpretation: ParsedSkinTestInterpretation;
   issues: SkinTestIssue[];
   results: ParsedSkinTestResult[];
 }
@@ -64,12 +75,16 @@ const MONTHS: Record<string, number> = {
 
 const SECTION_STOPWORDS = new Set(["mm", "p", "e"]);
 
-export async function parseSkinTestWorkbookBuffer(buffer: ExcelWorkbookBuffer): Promise<ParsedSkinTestWorkbook> {
+export async function parseSkinTestWorkbookBuffer(
+  buffer: ExcelWorkbookBuffer
+): Promise<ParsedSkinTestWorkbook> {
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(buffer);
   const worksheet = workbook.worksheets[0];
   if (!worksheet) {
-    return emptyParsedWorkbook([{ code: "empty_workbook", message: "El archivo no tiene hojas.", severity: "error" }]);
+    return emptyParsedWorkbook([
+      { code: "empty_workbook", message: "El archivo no tiene hojas.", severity: "error" },
+    ]);
   }
   return parseSkinTestWorksheet(worksheet);
 }
@@ -93,10 +108,15 @@ export function parseSkinTestWorksheet(worksheet: ExcelJS.Worksheet): ParsedSkin
     issues.push({ code: "missing_rut", message: "No se encontró RUT válido.", severity: "error" });
   }
   if (!header.testDate) {
-    issues.push({ code: "missing_date", message: "No se encontró fecha válida.", severity: "error" });
+    issues.push({
+      code: "missing_date",
+      message: "No se encontró fecha válida.",
+      severity: "error",
+    });
   }
 
   const results = extractResults(worksheet, cells, title?.row ?? 1, issues);
+  const interpretation = extractInterpretation(cells);
   if (results.length === 0) {
     issues.push({
       code: "missing_results",
@@ -109,7 +129,7 @@ export function parseSkinTestWorksheet(worksheet: ExcelJS.Worksheet): ParsedSkin
   const warningCount = issues.filter((issue) => issue.severity === "warning").length;
   const confidence = Math.max(0, Math.min(100, 100 - errorCount * 35 - warningCount * 10));
 
-  return { confidence, header, issues, results };
+  return { confidence, header, interpretation, issues, results };
 }
 
 function emptyParsedWorkbook(issues: SkinTestIssue[]): ParsedSkinTestWorkbook {
@@ -124,8 +144,21 @@ function emptyParsedWorkbook(issues: SkinTestIssue[]): ParsedSkinTestWorkbook {
       panelTitle: null,
       testDate: null,
     },
+    interpretation: emptyInterpretation(),
     issues,
     results: [],
+  };
+}
+
+function emptyInterpretation(): ParsedSkinTestInterpretation {
+  return {
+    address: null,
+    clinicalNote: null,
+    nonConclusiveDueToHyperreactivity: false,
+    physicianName: null,
+    physicianSpecialty: null,
+    suggestedEvaluation: null,
+    website: null,
   };
 }
 
@@ -157,7 +190,11 @@ function cellToText(cell: ExcelJS.Cell): string {
 }
 
 function normalizeText(value: string): string {
-  return value.normalize("NFD").replace(/\p{M}+/gu, "").replace(/\s+/g, " ").trim();
+  return value
+    .normalize("NFD")
+    .replace(/\p{M}+/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function findCell(cells: CellPoint[], pattern: RegExp): CellPoint | null {
@@ -193,6 +230,45 @@ function extractHeader(cells: CellPoint[]): ParsedSkinTestHeader {
   };
 }
 
+function extractInterpretation(cells: CellPoint[]): ParsedSkinTestInterpretation {
+  const lines = cells.map((cell) => cell.text.trim()).filter(Boolean);
+  const noteLines = lines.filter((line) =>
+    /cex|piel\s+hiperreactiva|urticaria|pricktest|concluyente|evaluaci[oó]n|especialidad|ige|autoinmunidad/i.test(
+      line
+    )
+  );
+  const clinicalNote = compactLines(noteLines);
+  const suggestedEvaluation = compactLines(
+    noteLines.filter((line) => /evaluaci[oó]n|especialidad|ige|autoinmunidad/i.test(line))
+  );
+  const physicianName = lines.find((line) => /\bdr\.?\s+/i.test(line)) ?? null;
+  const physicianSpecialty =
+    lines.find((line) => /alerg[oó]logo|inmun[oó]logo/i.test(line)) ?? null;
+  const website =
+    lines.find((line) => /(?:https?:\/\/)?(?:www\.)?[a-z0-9.-]+\.[a-z]{2,}/i.test(line)) ?? null;
+  const address =
+    lines.find((line) => /\b(?:san\s+mart[ií]n|o'?higgins|concepci[oó]n|of\s*\d+)/i.test(line)) ??
+    null;
+  const normalizedNote = normalizeText(clinicalNote ?? "");
+
+  return {
+    address,
+    clinicalNote,
+    nonConclusiveDueToHyperreactivity:
+      /piel hiperreactiva/i.test(normalizedNote) ||
+      (/pricktest/i.test(normalizedNote) && /no es concluyente/i.test(normalizedNote)),
+    physicianName,
+    physicianSpecialty,
+    suggestedEvaluation,
+    website,
+  };
+}
+
+function compactLines(lines: string[]): null | string {
+  const cleaned = lines.map((line) => line.replace(/\s+/g, " ").trim()).filter(Boolean);
+  return cleaned.length > 0 ? cleaned.join("\n") : null;
+}
+
 function extractLabelValue(text: string, pattern: RegExp): null | string {
   const match = text.match(pattern);
   if (!match?.[1]) return null;
@@ -220,7 +296,9 @@ export function normalizeRut(value: null | string): null | string {
 
 export function parseDateToISO(value: null | string): null | string {
   if (!value) return null;
-  const text = normalizeText(value).toLowerCase().replace(/\s+de\s+/g, " ");
+  const text = normalizeText(value)
+    .toLowerCase()
+    .replace(/\s+de\s+/g, " ");
   const numeric = text.match(/\b(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})\b/);
   if (numeric) {
     const day = Number(numeric[1]);
@@ -253,7 +331,7 @@ function extractResults(
   worksheet: ExcelJS.Worksheet,
   cells: CellPoint[],
   minRow: number,
-  issues: SkinTestIssue[],
+  issues: SkinTestIssue[]
 ): ParsedSkinTestResult[] {
   const results: ParsedSkinTestResult[] = [];
   let currentSectionByBlock = new Map<number, string>();
@@ -265,7 +343,9 @@ function extractResults(
     const nonEmpty = rowTexts.filter((cell) => cell.text);
     if (nonEmpty.length === 0) continue;
 
-    const hasResultCandidate = nonEmpty.some((cell) => normalizeCode(cell.text) || /control\s+(positivo|negativo)/i.test(cell.text));
+    const hasResultCandidate = nonEmpty.some(
+      (cell) => normalizeCode(cell.text) || /control\s+(positivo|negativo)/i.test(cell.text)
+    );
     const sectionCells = nonEmpty.filter((cell) => isSectionLabel(cell.text));
     if (!hasResultCandidate && sectionCells.length > 0) {
       currentSectionByBlock = new Map(currentSectionByBlock);
@@ -280,7 +360,7 @@ function extractResults(
       rowNumber,
       nonEmpty,
       currentSectionByBlock,
-      sortOrder,
+      sortOrder
     );
     for (const result of rowResults) {
       sortOrder += 1;
@@ -292,7 +372,7 @@ function extractResults(
     (cell) =>
       cell.row > minRow &&
       /\b(control|positivo|negativo|[A-Z]\d{1,2}|MA|MC)\b/i.test(cell.text) &&
-      !results.some((result) => result.rawCells.row === cell.row),
+      !results.some((result) => result.rawCells.row === cell.row)
   );
   if (suspiciousRows.length > 0 && results.length === 0) {
     issues.push({
@@ -333,7 +413,7 @@ function extractResultRowsFromRow(
   rowNumber: number,
   cells: Array<{ col: number; text: string }>,
   sectionByBlock: Map<number, string>,
-  sortOrderBase: number,
+  sortOrderBase: number
 ): ParsedSkinTestResult[] {
   const results: ParsedSkinTestResult[] = [];
   for (let index = 0; index < cells.length; index += 1) {
@@ -354,16 +434,14 @@ function extractResultRowsFromRow(
     const byMetric = assignResultMetrics(worksheet, rowNumber, numericCells);
     const papule = byMetric.sawHeader ? byMetric.papule : (numericCells[0]?.text ?? null);
     const erythema = byMetric.sawHeader ? byMetric.erythema : (numericCells[1]?.text ?? null);
-    const section = isControl ? "Controles" : (sectionByBlock.get(blockForColumn(cell.col)) ?? "Sin sección");
+    const section = isControl
+      ? "Controles"
+      : (sectionByBlock.get(blockForColumn(cell.col)) ?? "Sin sección");
 
     results.push({
       allergenName,
       code,
-      controlType: isControl
-        ? /negativo/i.test(cell.text)
-          ? "NEGATIVE"
-          : "POSITIVE"
-        : null,
+      controlType: isControl ? (/negativo/i.test(cell.text) ? "NEGATIVE" : "POSITIVE") : null,
       erythemaMm: parseMm(erythema),
       papuleMm: parseMm(papule),
       rawCells: {
@@ -383,7 +461,7 @@ function extractResultRowsFromRow(
 function assignResultMetrics(
   worksheet: ExcelJS.Worksheet,
   rowNumber: number,
-  numericCells: Array<{ col: number; text: string }>,
+  numericCells: Array<{ col: number; text: string }>
 ): { erythema: null | string; papule: null | string; sawHeader: boolean } {
   let papule: null | string = null;
   let erythema: null | string = null;
@@ -404,7 +482,7 @@ function assignResultMetrics(
 function findMetricHeader(
   worksheet: ExcelJS.Worksheet,
   rowNumber: number,
-  col: number,
+  col: number
 ): "E" | "P" | null {
   for (let row = rowNumber - 1; row >= Math.max(1, rowNumber - 6); row -= 1) {
     const value = normalizeText(cellToText(worksheet.getRow(row).getCell(col))).toUpperCase();

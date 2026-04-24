@@ -1,5 +1,6 @@
 import { kysely } from "@finanzas/db";
 import { createId } from "@paralleldrive/cuid2";
+import { createHash } from "node:crypto";
 import { sql } from "kysely";
 import {
   downloadOneDriveItem,
@@ -10,6 +11,7 @@ import {
 import {
   parseSkinTestWorkbookBuffer,
   SKIN_TEST_PARSER_VERSION,
+  type ParsedSkinTestInterpretation,
   type ParsedSkinTestResult,
   type ParsedSkinTestWorkbook,
   type SkinTestIssue,
@@ -32,6 +34,7 @@ export interface SkinTestSyncProgress {
   accountId?: string;
   accountIndex?: number;
   accountsTotal?: number;
+  discovered?: number;
   elapsedSeconds?: number;
   errors?: number;
   etaSeconds?: number | null;
@@ -44,6 +47,7 @@ export interface SkinTestSyncProgress {
   scanned?: number;
   skipped?: number;
   total: number;
+  unchanged?: number;
   xlsx?: number;
 }
 
@@ -58,7 +62,13 @@ export interface SkinTestImportListInput {
   status?: SkinTestImportStatus;
 }
 
-export type SkinTestImportStatus = "ERROR" | "IMPORTED" | "PENDING_REVIEW" | "REJECTED" | "SKIPPED";
+export type SkinTestImportStatus =
+  | "DISCOVERED"
+  | "ERROR"
+  | "IMPORTED"
+  | "PENDING_REVIEW"
+  | "REJECTED"
+  | "SKIPPED";
 
 export interface SkinTestImportOutput {
   accountEmail: null | string;
@@ -85,22 +95,30 @@ export interface SkinTestImportOutput {
 
 export interface ParsedPayload {
   header: ParsedSkinTestWorkbook["header"];
+  interpretation?: ParsedSkinTestWorkbook["interpretation"];
   results: ParsedSkinTestResult[];
 }
 
 export interface SkinTestDetailOutput {
   ageLabel: null | string;
+  address: null | string;
+  clinicalNote: null | string;
   clinicalSeriesId: number;
   id: string;
+  nonConclusiveDueToHyperreactivity: boolean;
   oneDriveWebUrl: null | string;
   panelTitle: null | string;
   patientEmail: null | string;
   patientName: null | string;
   patientPhone: null | string;
   patientRut: null | string;
+  physicianName: null | string;
+  physicianSpecialty: null | string;
+  resultHash: null | string;
   results: ParsedSkinTestResult[];
   sourceImportId: string;
   testDate: string;
+  website: null | string;
 }
 
 interface ImportRow {
@@ -161,7 +179,9 @@ export async function syncClinicalSkinTestImports(options?: {
   let pending = 0;
   let processed = 0;
   let skipped = 0;
+  let unchanged = 0;
   let errors = 0;
+  let discovered = 0;
   let scanned = 0;
   let xlsx = 0;
   const workItems: Array<{ account: (typeof accounts)[number]; item: OneDriveItem }> = [];
@@ -238,6 +258,7 @@ export async function syncClinicalSkinTestImports(options?: {
     emit(`Sync terminado: ${scanned} item(s) revisado(s), sin .xlsx para procesar`, {
       accountsTotal: accounts.length,
       errors,
+      discovered,
       imported,
       pending,
       phase: "completed",
@@ -245,15 +266,16 @@ export async function syncClinicalSkinTestImports(options?: {
       scanned,
       skipped,
       total: accounts.length,
+      unchanged,
       xlsx,
     });
-    return { errors, imported, pending, scanned, skipped, xlsx };
+    return { discovered, errors, imported, pending, scanned, skipped, unchanged, xlsx };
   }
 
   let cursor = 0;
   const workerCount = Math.min(concurrency, workItems.length);
 
-  emit(`Procesando ${workItems.length} archivo(s) .xlsx`, {
+  emit(`Registrando metadata de ${workItems.length} archivo(s) .xlsx`, {
     accountsTotal: accounts.length,
     phase: "processing",
     processed,
@@ -275,7 +297,7 @@ export async function syncClinicalSkinTestImports(options?: {
       cursor += 1;
 
       const { account, item } = workItems[index];
-      emit(`[${account.email}] Procesando ${item.name}`, {
+      emit(`[${account.email}] Registrando ${item.name}`, {
         accountEmail: account.email,
         accountId: account.accountId,
         accountsTotal: accounts.length,
@@ -288,14 +310,16 @@ export async function syncClinicalSkinTestImports(options?: {
         scanned,
         skipped,
         total: workItems.length,
+        unchanged,
         xlsx,
       });
 
-      const result = await processOneDriveSkinTestItem(account.accountId, item, {
+      const result = await discoverOneDriveSkinTestItem(account.accountId, item, {
         force: options?.force,
       });
 
-      if (result.syncAction === "SKIPPED_UNCHANGED") skipped += 1;
+      if (result.syncAction === "SKIPPED_UNCHANGED") unchanged += 1;
+      else if (result.status === "DISCOVERED") discovered += 1;
       else if (result.status === "IMPORTED") imported += 1;
       else if (result.status === "PENDING_REVIEW") pending += 1;
       else if (result.status === "ERROR") errors += 1;
@@ -309,6 +333,7 @@ export async function syncClinicalSkinTestImports(options?: {
           accountId: account.accountId,
           accountsTotal: accounts.length,
           errors,
+          discovered,
           filename: item.name,
           imported,
           pending,
@@ -317,6 +342,7 @@ export async function syncClinicalSkinTestImports(options?: {
           scanned,
           skipped,
           total: workItems.length,
+          unchanged,
           xlsx,
         }
       );
@@ -325,20 +351,25 @@ export async function syncClinicalSkinTestImports(options?: {
 
   await Promise.all(workers);
 
-  emit(`Sync terminado: ${imported} importado(s), ${pending} pendiente(s), ${errors} error(es)`, {
-    accountsTotal: accounts.length,
-    errors,
-    imported,
-    pending,
-    phase: "completed",
-    processed,
-    scanned,
-    skipped,
-    total: workItems.length,
-    xlsx,
-  });
+  emit(
+    `Sync terminado: ${discovered} descubierto(s), ${unchanged} sin cambios, ${errors} error(es)`,
+    {
+      accountsTotal: accounts.length,
+      errors,
+      discovered,
+      imported,
+      pending,
+      phase: "completed",
+      processed,
+      scanned,
+      skipped,
+      total: workItems.length,
+      unchanged,
+      xlsx,
+    }
+  );
 
-  return { errors, imported, pending, scanned, skipped, xlsx };
+  return { discovered, errors, imported, pending, scanned, skipped, unchanged, xlsx };
 }
 
 function resolveSyncConcurrency(): number {
@@ -371,37 +402,60 @@ export async function processOneDriveSkinTestItem(
   }
 
   const importId = existing?.id ?? createId();
-  const metadata = {
-    cTag: item.cTag ?? null,
-    driveId,
-    eTag: item.eTag ?? null,
-    filename: item.name,
-    id: item.id,
-    mimeType: item.file?.mimeType ?? null,
-    modifiedAt: item.lastModifiedDateTime ?? null,
-    path: item.parentReference?.path ?? null,
-    size: item.size ?? null,
-    webUrl: item.webUrl ?? null,
-  };
+  const metadata = buildOneDriveItemMetadata(item, driveId);
 
   try {
     const buffer = await downloadOneDriveItem(accountId, item.id, driveId);
     const parsed = await parseSkinTestWorkbookBuffer(
       buffer as unknown as Parameters<typeof parseSkinTestWorkbookBuffer>[0]
     );
+    const resultHash = computeResultHash(parsed.results);
+    const duplicate = await findDuplicateSkinTest(importId, parsed, resultHash);
+
+    if (duplicate.kind === "exact") {
+      const allIssues = [...parsed.issues, duplicate.issue];
+      await upsertImport({
+        accountId,
+        confidence: computeConfidence(parsed.confidence, allIssues),
+        duplicateOfImportId: duplicate.sourceImportId,
+        error: null,
+        id: importId,
+        issues: allIssues,
+        metadata,
+        parsedPayload: {
+          header: parsed.header,
+          interpretation: parsed.interpretation,
+          results: parsed.results,
+        },
+        resultHash,
+        status: "SKIPPED",
+      });
+      return await getSkinTestImport(importId);
+    }
+
     const materialization = await maybeMaterializeImport(importId, parsed);
-    const allIssues = [...parsed.issues, ...materialization.issues];
+    const allIssues = [
+      ...parsed.issues,
+      ...materialization.issues,
+      ...(duplicate.kind === "probable" ? [duplicate.issue] : []),
+    ];
     const status =
       materialization.seriesId && canAutoImport(parsed, allIssues) ? "IMPORTED" : "PENDING_REVIEW";
 
     await upsertImport({
       accountId,
       confidence: computeConfidence(parsed.confidence, allIssues),
+      duplicateOfImportId: duplicate.kind === "probable" ? duplicate.sourceImportId : null,
       error: null,
       id: importId,
       issues: allIssues,
       metadata,
-      parsedPayload: { header: parsed.header, results: parsed.results },
+      parsedPayload: {
+        header: parsed.header,
+        interpretation: parsed.interpretation,
+        results: parsed.results,
+      },
+      resultHash,
       status,
     });
 
@@ -426,10 +480,61 @@ export async function processOneDriveSkinTestItem(
       ],
       metadata,
       parsedPayload: null,
+      resultHash: null,
       status: "ERROR",
     });
     return await getSkinTestImport(importId);
   }
+}
+
+async function discoverOneDriveSkinTestItem(
+  accountId: string,
+  item: OneDriveItem,
+  options?: { force?: boolean }
+): Promise<SkinTestImportOutput> {
+  const driveId = item.parentReference?.driveId ?? "unknown";
+  const existing = await getImportByOneDriveItemId(accountId, driveId, item.id);
+  if (
+    existing &&
+    !options?.force &&
+    existing.oneDriveETag === item.eTag &&
+    existing.oneDriveCTag === item.cTag
+  ) {
+    return {
+      ...toImportOutput(existing),
+      syncAction: "SKIPPED_UNCHANGED",
+    };
+  }
+
+  const importId = existing?.id ?? createId();
+  await upsertImport({
+    accountId,
+    confidence: existing?.confidence ?? 0,
+    duplicateOfImportId: null,
+    error: null,
+    id: importId,
+    issues: [],
+    metadata: buildOneDriveItemMetadata(item, driveId),
+    parsedPayload: null,
+    resultHash: null,
+    status: "DISCOVERED",
+  });
+  return await getSkinTestImport(importId);
+}
+
+function buildOneDriveItemMetadata(item: OneDriveItem, driveId: string) {
+  return {
+    cTag: item.cTag ?? null,
+    driveId,
+    eTag: item.eTag ?? null,
+    filename: item.name,
+    id: item.id,
+    mimeType: item.file?.mimeType ?? null,
+    modifiedAt: item.lastModifiedDateTime ?? null,
+    path: item.parentReference?.path ?? null,
+    size: item.size ?? null,
+    webUrl: item.webUrl ?? null,
+  };
 }
 
 export async function listSkinTestImports(input: SkinTestImportListInput = {}) {
@@ -519,7 +624,11 @@ export async function approveSkinTestImport(id: string, userId: number, notes?: 
   if (!match.seriesId) {
     throw new Error(match.issues[0]?.message ?? "No se pudo resolver la serie clínica.");
   }
-  await writeSkinTest(id, match.seriesId, { header: parsed.header, results: parsed.results });
+  await writeSkinTest(id, match.seriesId, {
+    header: parsed.header,
+    interpretation: parsed.interpretation ?? emptyInterpretation(),
+    results: parsed.results,
+  });
   await sql`
     UPDATE clinical_skin_test_imports
     SET status = 'IMPORTED',
@@ -578,8 +687,31 @@ export async function reprocessSkinTestImport(id: string) {
   const parsed = await parseSkinTestWorkbookBuffer(
     buffer as unknown as Parameters<typeof parseSkinTestWorkbookBuffer>[0]
   );
+  const resultHash = computeResultHash(parsed.results);
+  const duplicate = await findDuplicateSkinTest(id, parsed, resultHash);
+  if (duplicate.kind === "exact") {
+    const allIssues = [...parsed.issues, duplicate.issue];
+    await sql`
+      UPDATE clinical_skin_test_imports
+      SET parser_version = ${SKIN_TEST_PARSER_VERSION},
+          status = 'SKIPPED',
+          confidence = ${computeConfidence(parsed.confidence, allIssues)},
+          error = null,
+          issues = ${JSON.stringify(allIssues)}::jsonb,
+          parsed_payload = ${JSON.stringify({ header: parsed.header, interpretation: parsed.interpretation, results: parsed.results })}::jsonb,
+          result_hash = ${resultHash},
+          duplicate_of_import_id = ${duplicate.sourceImportId},
+          updated_at = now()
+      WHERE id = ${id}
+    `.execute(kysely);
+    return await getSkinTestImport(id);
+  }
   const materialization = await maybeMaterializeImport(id, parsed);
-  const allIssues = [...parsed.issues, ...materialization.issues];
+  const allIssues = [
+    ...parsed.issues,
+    ...materialization.issues,
+    ...(duplicate.kind === "probable" ? [duplicate.issue] : []),
+  ];
   await sql`
     UPDATE clinical_skin_test_imports
     SET parser_version = ${SKIN_TEST_PARSER_VERSION},
@@ -587,7 +719,9 @@ export async function reprocessSkinTestImport(id: string) {
         confidence = ${computeConfidence(parsed.confidence, allIssues)},
         error = null,
         issues = ${JSON.stringify(allIssues)}::jsonb,
-        parsed_payload = ${JSON.stringify({ header: parsed.header, results: parsed.results })}::jsonb,
+        parsed_payload = ${JSON.stringify({ header: parsed.header, interpretation: parsed.interpretation, results: parsed.results })}::jsonb,
+        result_hash = ${resultHash},
+        duplicate_of_import_id = ${duplicate.kind === "probable" ? duplicate.sourceImportId : null},
         updated_at = now()
     WHERE id = ${id}
   `.execute(kysely);
@@ -598,19 +732,39 @@ export async function reprocessSkinTestImport(id: string) {
   return await getSkinTestImport(id);
 }
 
+export async function processSkinTestImports(ids: string[]) {
+  const items: SkinTestImportOutput[] = [];
+  const errors: Array<{ id: string; message: string }> = [];
+  for (const id of ids) {
+    try {
+      items.push(await reprocessSkinTestImport(id));
+    } catch (error) {
+      errors.push({ id, message: error instanceof Error ? error.message : String(error) });
+    }
+  }
+  return { errors, items };
+}
+
 export async function listSkinTestsBySeries(clinicalSeriesId: number) {
   const testsResult = await sql<{
     ageLabel: null | string;
+    address: null | string;
+    clinicalNote: null | string;
     clinicalSeriesId: number;
     id: string;
+    nonConclusiveDueToHyperreactivity: boolean;
     oneDriveWebUrl: null | string;
     panelTitle: null | string;
     patientEmail: null | string;
     patientName: null | string;
     patientPhone: null | string;
     patientRut: null | string;
+    physicianName: null | string;
+    physicianSpecialty: null | string;
+    resultHash: null | string;
     sourceImportId: string;
     testDate: Date | string;
+    website: null | string;
   }>`
     SELECT
       t.id,
@@ -623,10 +777,18 @@ export async function listSkinTestsBySeries(clinicalSeriesId: number) {
       t.patient_phone AS "patientPhone",
       t.age_label AS "ageLabel",
       t.panel_title AS "panelTitle",
+      t.clinical_note AS "clinicalNote",
+      t.physician_name AS "physicianName",
+      t.physician_specialty AS "physicianSpecialty",
+      t.website,
+      t.address,
+      t.non_conclusive_due_to_hyperreactivity AS "nonConclusiveDueToHyperreactivity",
+      t.result_hash AS "resultHash",
       i.onedrive_web_url AS "oneDriveWebUrl"
     FROM clinical_skin_tests t
     LEFT JOIN clinical_skin_test_imports i ON i.id = t.source_import_id
     WHERE t.clinical_series_id = ${clinicalSeriesId}
+      AND i.status = 'IMPORTED'
     ORDER BY t.test_date DESC, t.created_at DESC
   `.execute(kysely);
 
@@ -787,9 +949,11 @@ const RESULTS_BATCH_SIZE = 500;
 async function writeSkinTest(
   importId: string,
   seriesId: number,
-  parsed: Pick<ParsedSkinTestWorkbook, "header" | "results">
+  parsed: Pick<ParsedSkinTestWorkbook, "header" | "interpretation" | "results">
 ) {
   const { header } = parsed;
+  const interpretation = parsed.interpretation ?? emptyInterpretation();
+  const resultHash = computeResultHash(parsed.results);
   if (!header.testDate) throw new Error("No se puede importar un test sin fecha.");
   await sql`DELETE FROM clinical_skin_tests WHERE source_import_id = ${importId}`.execute(kysely);
   const skinTestId = createId();
@@ -805,6 +969,13 @@ async function writeSkinTest(
       patient_phone,
       age_label,
       panel_title,
+      clinical_note,
+      physician_name,
+      physician_specialty,
+      website,
+      address,
+      non_conclusive_due_to_hyperreactivity,
+      result_hash,
       raw_header,
       created_at,
       updated_at
@@ -820,7 +991,14 @@ async function writeSkinTest(
       ${header.patientPhone},
       ${header.ageLabel},
       ${header.panelTitle},
-      ${JSON.stringify(header)}::jsonb,
+      ${interpretation.clinicalNote},
+      ${interpretation.physicianName},
+      ${interpretation.physicianSpecialty},
+      ${interpretation.website},
+      ${interpretation.address},
+      ${interpretation.nonConclusiveDueToHyperreactivity},
+      ${resultHash},
+      ${JSON.stringify({ ...header, interpretation })}::jsonb,
       now(),
       now()
     )
@@ -953,6 +1131,7 @@ async function getImportByOneDriveItemId(accountId: string, driveId: string, ite
 async function upsertImport(params: {
   accountId: string;
   confidence: number;
+  duplicateOfImportId?: null | string;
   error: null | string;
   id: string;
   issues: SkinTestIssue[];
@@ -969,6 +1148,7 @@ async function upsertImport(params: {
     webUrl: null | string;
   };
   parsedPayload: null | ParsedPayload;
+  resultHash: null | string;
   status: SkinTestImportStatus;
 }) {
   await sql`
@@ -991,6 +1171,8 @@ async function upsertImport(params: {
       error,
       issues,
       parsed_payload,
+      result_hash,
+      duplicate_of_import_id,
       created_at,
       updated_at
     )
@@ -1013,6 +1195,8 @@ async function upsertImport(params: {
       ${params.error},
       ${JSON.stringify(params.issues)}::jsonb,
       ${params.parsedPayload ? JSON.stringify(params.parsedPayload) : null}::jsonb,
+      ${params.resultHash},
+      ${params.duplicateOfImportId ?? null},
       now(),
       now()
     )
@@ -1034,6 +1218,8 @@ async function upsertImport(params: {
       error = EXCLUDED.error,
       issues = EXCLUDED.issues,
       parsed_payload = EXCLUDED.parsed_payload,
+      result_hash = EXCLUDED.result_hash,
+      duplicate_of_import_id = EXCLUDED.duplicate_of_import_id,
       updated_at = now()
   `.execute(kysely);
 }
@@ -1071,7 +1257,119 @@ function isImportableXlsx(item: OneDriveItem): boolean {
   if (!item.file) return false;
   if (!/\.xlsx$/i.test(item.name)) return false;
   if (/^~\$/.test(item.name)) return false;
+  if (isBlockedDownloadPath(item.parentReference?.path)) return false;
+  if (isBlockedDownloadPath(item.remoteItem?.parentReference?.path)) return false;
   return true;
+}
+
+function isBlockedDownloadPath(path: null | string | undefined): boolean {
+  if (!path) return false;
+  return path
+    .split(/[/:\\]+/)
+    .map((segment) => segment.trim().toLowerCase())
+    .some((segment) => ["descarga", "descargas", "download", "downloads"].includes(segment));
+}
+
+function computeResultHash(results: ParsedSkinTestResult[]): string {
+  const normalized = results
+    .map((result) => ({
+      allergenName: normalizeHashText(result.allergenName),
+      code: result.code ?? "",
+      controlType: result.controlType ?? "",
+      erythema: result.rawErythema ?? result.erythemaMm ?? "",
+      papule: result.rawPapule ?? result.papuleMm ?? "",
+      section: normalizeHashText(result.section),
+    }))
+    .sort((a, b) =>
+      `${a.section}|${a.code}|${a.allergenName}`.localeCompare(
+        `${b.section}|${b.code}|${b.allergenName}`,
+        "es"
+      )
+    );
+  return createHash("sha256").update(JSON.stringify(normalized)).digest("hex");
+}
+
+function normalizeHashText(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/\p{M}+/gu, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toUpperCase();
+}
+
+type DuplicateCheckResult =
+  | { kind: "none" }
+  | { issue: SkinTestIssue; kind: "exact" | "probable"; sourceImportId: string };
+
+async function findDuplicateSkinTest(
+  importId: string,
+  parsed: ParsedSkinTestWorkbook,
+  resultHash: string
+): Promise<DuplicateCheckResult> {
+  const { patientRut, testDate } = parsed.header;
+  if (!patientRut || !testDate || parsed.results.length === 0) return { kind: "none" };
+
+  const exact = await sql<{ sourceImportId: string; testDate: Date | string }>`
+    SELECT source_import_id AS "sourceImportId", test_date AS "testDate"
+    FROM clinical_skin_tests
+    WHERE patient_rut = ${patientRut}
+      AND test_date = ${testDate}::date
+      AND result_hash = ${resultHash}
+      AND source_import_id <> ${importId}
+    ORDER BY created_at ASC
+    LIMIT 1
+  `.execute(kysely);
+  const exactMatch = exact.rows[0];
+  if (exactMatch) {
+    return {
+      issue: {
+        code: "duplicate_exact_skin_test",
+        message:
+          "Este archivo tiene el mismo RUT, fecha y resultados que un test cutáneo ya importado; se omite como duplicado exacto.",
+        severity: "info",
+      },
+      kind: "exact",
+      sourceImportId: exactMatch.sourceImportId,
+    };
+  }
+
+  const probable = await sql<{ sourceImportId: string; testDate: Date | string }>`
+    SELECT source_import_id AS "sourceImportId", test_date AS "testDate"
+    FROM clinical_skin_tests
+    WHERE patient_rut = ${patientRut}
+      AND result_hash = ${resultHash}
+      AND test_date <> ${testDate}::date
+      AND source_import_id <> ${importId}
+    ORDER BY abs(test_date - ${testDate}::date) ASC, created_at ASC
+    LIMIT 1
+  `.execute(kysely);
+  const probableMatch = probable.rows[0];
+  if (probableMatch) {
+    return {
+      issue: {
+        code: "probable_duplicate_different_date",
+        message: `Mismo RUT y mismos resultados que otro test importado, pero con fecha distinta (${toDateString(probableMatch.testDate)}). Requiere revisión antes de importar.`,
+        severity: "error",
+      },
+      kind: "probable",
+      sourceImportId: probableMatch.sourceImportId,
+    };
+  }
+
+  return { kind: "none" };
+}
+
+function emptyInterpretation(): ParsedSkinTestInterpretation {
+  return {
+    address: null,
+    clinicalNote: null,
+    nonConclusiveDueToHyperreactivity: false,
+    physicianName: null,
+    physicianSpecialty: null,
+    suggestedEvaluation: null,
+    website: null,
+  };
 }
 
 function canAutoImport(parsed: ParsedSkinTestWorkbook, issues: SkinTestIssue[]): boolean {

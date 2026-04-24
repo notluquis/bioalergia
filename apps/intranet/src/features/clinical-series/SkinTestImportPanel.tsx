@@ -2,6 +2,7 @@ import {
   Alert,
   Breadcrumbs,
   Button,
+  Checkbox,
   Chip,
   Description,
   Input,
@@ -40,6 +41,7 @@ import {
   useConfigureOneDriveFolder,
   useOneDriveSkinTestStatus,
   useOneDriveFolderChildren,
+  useProcessSkinTestImports,
   useOneDriveFolderPreview,
   useRejectSkinTestImport,
   useRenewOneDriveSubscription,
@@ -61,6 +63,7 @@ import type {
 } from "./skin-tests-types";
 
 const STATUS_OPTIONS: Array<{ label: string; value: SkinTestImportStatus }> = [
+  { label: "Descubiertos", value: "DISCOVERED" },
   { label: "Pendientes", value: "PENDING_REVIEW" },
   { label: "Importados", value: "IMPORTED" },
   { label: "Con error", value: "ERROR" },
@@ -69,6 +72,7 @@ const STATUS_OPTIONS: Array<{ label: string; value: SkinTestImportStatus }> = [
 ];
 
 const STATUS_LABELS: Record<SkinTestImportStatus, string> = {
+  DISCOVERED: "Descubierto",
   ERROR: "Error",
   IMPORTED: "Importado",
   PENDING_REVIEW: "Pendiente",
@@ -77,6 +81,7 @@ const STATUS_LABELS: Record<SkinTestImportStatus, string> = {
 };
 
 const STATUS_COLORS: Record<SkinTestImportStatus, "danger" | "default" | "success" | "warning"> = {
+  DISCOVERED: "default",
   ERROR: "danger",
   IMPORTED: "success",
   PENDING_REVIEW: "warning",
@@ -88,6 +93,7 @@ interface SkinTestSyncJobMeta {
   accountEmail?: string;
   accountIndex?: number;
   accountsTotal?: number;
+  discovered?: number;
   elapsedSeconds?: number;
   errors?: number;
   etaSeconds?: number | null;
@@ -98,6 +104,7 @@ interface SkinTestSyncJobMeta {
   phase?: "completed" | "delta" | "processing" | "scanned" | "starting";
   scanned?: number;
   skipped?: number;
+  unchanged?: number;
   xlsx?: number;
 }
 
@@ -116,6 +123,7 @@ function getSyncJobMeta(meta: unknown): SkinTestSyncJobMeta {
     accountEmail: typeof value.accountEmail === "string" ? value.accountEmail : undefined,
     accountIndex: typeof value.accountIndex === "number" ? value.accountIndex : undefined,
     accountsTotal: typeof value.accountsTotal === "number" ? value.accountsTotal : undefined,
+    discovered: typeof value.discovered === "number" ? value.discovered : undefined,
     elapsedSeconds: typeof value.elapsedSeconds === "number" ? value.elapsedSeconds : undefined,
     errors: typeof value.errors === "number" ? value.errors : undefined,
     etaSeconds:
@@ -131,6 +139,7 @@ function getSyncJobMeta(meta: unknown): SkinTestSyncJobMeta {
     phase: isSyncPhase(value.phase) ? value.phase : undefined,
     scanned: typeof value.scanned === "number" ? value.scanned : undefined,
     skipped: typeof value.skipped === "number" ? value.skipped : undefined,
+    unchanged: typeof value.unchanged === "number" ? value.unchanged : undefined,
     xlsx: typeof value.xlsx === "number" ? value.xlsx : undefined,
   };
 }
@@ -158,7 +167,8 @@ function formatDuration(seconds: number): string {
 export function SkinTestImportPanel() {
   const toast = useToast();
   const [query, setQuery] = useState("");
-  const [status, setStatus] = useState<SkinTestImportStatus | undefined>("PENDING_REVIEW");
+  const [status, setStatus] = useState<SkinTestImportStatus | undefined>("DISCOVERED");
+  const [selectedImportIds, setSelectedImportIds] = useState<Record<string, boolean>>({});
   const filters: SkinTestImportFilters = useMemo(
     () => ({
       page: 1,
@@ -172,6 +182,7 @@ export function SkinTestImportPanel() {
   const imports = useSkinTestImports(filters);
   const syncMutation = useSyncSkinTestImports();
   const cancelJobMutation = useCancelClinicalSkinTestJob();
+  const processSelectedMutation = useProcessSkinTestImports();
   const connectOneDrive = useConnectOneDrive();
   const authUrlQuery = useGetOneDriveAuthUrl(window.location.origin + window.location.pathname);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
@@ -188,6 +199,13 @@ export function SkinTestImportPanel() {
     knownActiveJobStatus === "running";
   const currentJob = jobStatusQuery.data?.job ?? null;
   const syncMeta = getSyncJobMeta(currentJob?.meta);
+  const selectedIds = useMemo(
+    () =>
+      Object.entries(selectedImportIds)
+        .filter(([, selected]) => selected)
+        .map(([id]) => id),
+    [selectedImportIds]
+  );
 
   useEffect(() => {
     const initialJobId = activeJobQuery.data?.job?.id;
@@ -205,6 +223,10 @@ export function SkinTestImportPanel() {
     void imports.refetch();
     void oneDrive.refetch();
   }, [activeJobId, currentJob, imports, oneDrive]);
+
+  useEffect(() => {
+    setSelectedImportIds({});
+  }, [query, status]);
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -274,6 +296,24 @@ export function SkinTestImportPanel() {
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "No se pudo detener sync");
+    }
+  }
+
+  async function handleProcessSelected() {
+    if (selectedIds.length === 0) return;
+    try {
+      const result = await processSelectedMutation.mutateAsync(selectedIds);
+      setSelectedImportIds({});
+      if (result.errors.length > 0) {
+        toast.info(
+          `${result.items.length} procesado(s), ${result.errors.length} con error`,
+          "Procesamiento parcial"
+        );
+      } else {
+        toast.success(`${result.items.length} archivo(s) procesado(s)`);
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudieron procesar archivos");
     }
   }
 
@@ -381,10 +421,12 @@ export function SkinTestImportPanel() {
               {(syncMeta.imported != null ||
                 syncMeta.pending != null ||
                 syncMeta.errors != null ||
-                syncMeta.skipped != null) && (
+                syncMeta.skipped != null ||
+                syncMeta.unchanged != null) && (
                 <span>
-                  Importados {syncMeta.imported ?? 0} · Pendientes {syncMeta.pending ?? 0} · Errores{" "}
-                  {syncMeta.errors ?? 0} · Omitidos {syncMeta.skipped ?? 0}
+                  Descubiertos {syncMeta.discovered ?? 0} · Importados {syncMeta.imported ?? 0} ·
+                  Pendientes {syncMeta.pending ?? 0} · Errores {syncMeta.errors ?? 0} · Omitidos{" "}
+                  {syncMeta.skipped ?? 0} · Sin cambios {syncMeta.unchanged ?? 0}
                 </span>
               )}
             </div>
@@ -474,13 +516,63 @@ export function SkinTestImportPanel() {
           </Select>
         </div>
 
+        {imports.data?.items.some((item) => item.status === "DISCOVERED") && (
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-content2 px-3 py-2">
+            <div className="flex items-center gap-2 text-sm text-foreground-600">
+              <Checkbox
+                aria-label="Seleccionar descubiertos visibles"
+                isSelected={
+                  imports.data.items.filter((item) => item.status === "DISCOVERED").length > 0 &&
+                  imports.data.items
+                    .filter((item) => item.status === "DISCOVERED")
+                    .every((item) => selectedImportIds[item.id])
+                }
+                onChange={(selected) => {
+                  const discovereds =
+                    imports.data?.items.filter((item) => item.status === "DISCOVERED") ?? [];
+                  setSelectedImportIds((prev) => {
+                    const next = { ...prev };
+                    for (const item of discovereds) next[item.id] = selected;
+                    return next;
+                  });
+                }}
+                variant="secondary"
+              >
+                <Checkbox.Control>
+                  <Checkbox.Indicator />
+                </Checkbox.Control>
+              </Checkbox>
+              <span>{selectedIds.length} seleccionado(s)</span>
+            </div>
+            <Button
+              size="sm"
+              variant="secondary"
+              onPress={() => void handleProcessSelected()}
+              isDisabled={selectedIds.length === 0}
+              isPending={processSelectedMutation.isPending}
+            >
+              <FileSpreadsheet size={14} />
+              Descargar y procesar seleccionados
+            </Button>
+          </div>
+        )}
+
         <div className="mt-4 space-y-3">
           {imports.isLoading ? (
             <div className="flex justify-center py-8">
               <Spinner />
             </div>
           ) : imports.data?.items.length ? (
-            imports.data.items.map((item) => <SkinTestImportRow key={item.id} item={item} />)
+            imports.data.items.map((item) => (
+              <SkinTestImportRow
+                key={item.id}
+                item={item}
+                isSelected={Boolean(selectedImportIds[item.id])}
+                onSelectionChange={(selected) =>
+                  setSelectedImportIds((prev) => ({ ...prev, [item.id]: selected }))
+                }
+              />
+            ))
           ) : (
             <p className="py-8 text-center text-sm text-foreground-400">
               No hay importaciones para estos filtros.
@@ -933,7 +1025,15 @@ function OneDriveFolderPickerModal({
   );
 }
 
-function SkinTestImportRow({ item }: { item: SkinTestImport }) {
+function SkinTestImportRow({
+  isSelected,
+  item,
+  onSelectionChange,
+}: {
+  isSelected: boolean;
+  item: SkinTestImport;
+  onSelectionChange: (selected: boolean) => void;
+}) {
   const toast = useToast();
   const [expanded, setExpanded] = useState(false);
   const approve = useApproveSkinTestImport();
@@ -958,14 +1058,28 @@ function SkinTestImportRow({ item }: { item: SkinTestImport }) {
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
+            {item.status === "DISCOVERED" && (
+              <Checkbox
+                aria-label={`Seleccionar ${item.filename}`}
+                isSelected={isSelected}
+                onChange={onSelectionChange}
+                variant="secondary"
+              >
+                <Checkbox.Control>
+                  <Checkbox.Indicator />
+                </Checkbox.Control>
+              </Checkbox>
+            )}
             <FileSpreadsheet size={16} className="text-foreground-400" />
             <p className="truncate text-sm font-semibold">{item.filename}</p>
             <Chip size="sm" color={STATUS_COLORS[item.status]} variant="soft">
               {STATUS_LABELS[item.status]}
             </Chip>
-            <Chip size="sm" color={item.confidence >= 80 ? "success" : "warning"} variant="soft">
-              {item.confidence}%
-            </Chip>
+            {item.status !== "DISCOVERED" && (
+              <Chip size="sm" color={item.confidence >= 80 ? "success" : "warning"} variant="soft">
+                {item.confidence}%
+              </Chip>
+            )}
             {item.accountEmail && (
               <Chip size="sm" color="default" variant="soft">
                 {item.accountEmail}
@@ -981,7 +1095,16 @@ function SkinTestImportRow({ item }: { item: SkinTestImport }) {
             {header?.patientName && <span className="font-medium">{header.patientName}</span>}
             {header?.patientRut && <span>{header.patientRut}</span>}
             {header?.testDate && <span>· {header.testDate}</span>}
-            <span>· {resultCount} resultados</span>
+            {item.status === "DISCOVERED" ? (
+              <>
+                {item.path && <span>· {item.path}</span>}
+                {item.modifiedAt && (
+                  <span>· modificado {new Date(item.modifiedAt).toLocaleString()}</span>
+                )}
+              </>
+            ) : (
+              <span>· {resultCount} resultados</span>
+            )}
           </div>
           {item.issues.length > 0 && (
             <p className="mt-1 text-xs text-warning">
@@ -1026,8 +1149,13 @@ function SkinTestImportRow({ item }: { item: SkinTestImport }) {
               </Button>
             </>
           )}
-          <Button size="sm" variant="ghost" onPress={() => void runAction("reprocess")}>
+          <Button
+            size="sm"
+            variant={item.status === "DISCOVERED" ? "secondary" : "ghost"}
+            onPress={() => void runAction("reprocess")}
+          >
             <RefreshCw size={14} />
+            {item.status === "DISCOVERED" ? "Procesar" : null}
           </Button>
         </div>
       </div>
