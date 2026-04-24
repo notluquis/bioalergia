@@ -95,6 +95,7 @@ export const SkinTestDetailSchema = z.object({
   ageLabel: z.string().nullable(),
   clinicalSeriesId: z.number(),
   id: z.string(),
+  oneDriveWebUrl: z.string().nullable(),
   panelTitle: z.string().nullable(),
   patientEmail: z.string().nullable(),
   patientName: z.string().nullable(),

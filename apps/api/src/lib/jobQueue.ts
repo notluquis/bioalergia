@@ -12,6 +12,7 @@ export interface JobState {
   progress: number;
   total: number;
   message: string;
+  meta: Record<string, unknown> | null;
   result: unknown;
   error: string | null;
   createdAt: Date;
@@ -56,6 +57,7 @@ export function startJob(type: string, total: number): string {
     progress: 0,
     total,
     message: `Starting ${type}...`,
+    meta: null,
     result: null,
     error: null,
     createdAt: now,
@@ -70,7 +72,13 @@ export function startJob(type: string, total: number): string {
 /**
  * Update job progress
  */
-export function updateJobProgress(jobId: string, progress: number, message?: string): void {
+export function updateJobProgress(
+  jobId: string,
+  progress: number,
+  message?: string,
+  meta?: Record<string, unknown> | null,
+  total?: number
+): void {
   const job = jobs.get(jobId);
   if (!job) {
     return;
@@ -80,6 +88,12 @@ export function updateJobProgress(jobId: string, progress: number, message?: str
   }
 
   job.progress = progress;
+  if (typeof total === "number" && Number.isFinite(total)) {
+    job.total = Math.max(0, total);
+  }
+  if (meta !== undefined) {
+    job.meta = meta;
+  }
   job.updatedAt = new Date();
   if (message) {
     job.message = message;
@@ -89,7 +103,13 @@ export function updateJobProgress(jobId: string, progress: number, message?: str
 /**
  * Mark job as completed with result
  */
-export function completeJob(jobId: string, result: unknown): void {
+export function completeJob(
+  jobId: string,
+  result: unknown,
+  message = "Completed",
+  meta?: Record<string, unknown> | null,
+  total?: number
+): void {
   const job = jobs.get(jobId);
   if (!job) {
     return;
@@ -99,9 +119,15 @@ export function completeJob(jobId: string, result: unknown): void {
   }
 
   job.status = "completed";
+  if (typeof total === "number" && Number.isFinite(total)) {
+    job.total = Math.max(0, total);
+  }
   job.progress = job.total;
   job.result = result;
-  job.message = "Completed";
+  job.message = message;
+  if (meta !== undefined) {
+    job.meta = meta;
+  }
   job.updatedAt = new Date();
 }
 

@@ -35,7 +35,7 @@ export function startClinicalSkinTestImportScheduler() {
     () => {
       void startClinicalSkinTestImportJob({ trigger: `cron:${cronExpression}` });
     },
-    { timezone },
+    { timezone }
   );
 
   // Renew Microsoft OneDrive subscriptions every 6h.
@@ -44,7 +44,7 @@ export function startClinicalSkinTestImportScheduler() {
   cron.schedule(
     "0 */6 * * *",
     () => {
-      void renewAllOneDriveSubscriptions().catch(error => {
+      void renewAllOneDriveSubscriptions().catch((error) => {
         logError("onedrive.subscriptions.renew.failed", error);
       });
     },
@@ -69,7 +69,13 @@ export async function startClinicalSkinTestImportJob(options?: {
   }
 
   const jobId = startJob(jobType, 1);
-  updateJobProgress(jobId, 0, "Iniciando sincronización de tests cutáneos");
+  updateJobProgress(jobId, 0, "Preparando sincronización de tests cutáneos", {
+    phase: "starting",
+  });
+  let progressPhase: string | null = "starting";
+  let progressTotal = 1;
+  let phaseStartedAt = Date.now();
+  let phaseStartedAtProgress = 0;
 
   void (async () => {
     try {
@@ -80,15 +86,44 @@ export async function startClinicalSkinTestImportJob(options?: {
         folderPath: options?.folderPath,
         force: options?.force,
         shouldCancel: () => isJobCancelled(jobId),
-        onProgress: (processed, total, message) => {
-          updateJobProgress(jobId, processed, message);
-          const job = getActiveJobsByType(jobType).find((item) => item.id === jobId);
-          if (job) {
-            job.total = total;
+        onProgress: ({ message, processed, total, ...meta }) => {
+          const phase = typeof meta.phase === "string" ? meta.phase : null;
+          if (
+            phase !== progressPhase ||
+            total !== progressTotal ||
+            processed < phaseStartedAtProgress
+          ) {
+            progressPhase = phase;
+            progressTotal = total;
+            phaseStartedAt = Date.now();
+            phaseStartedAtProgress = processed;
           }
+
+          const elapsedSeconds = Math.max(0, (Date.now() - phaseStartedAt) / 1000);
+          const completedInPhase = processed - phaseStartedAtProgress;
+          const remainingInPhase = total - processed;
+          const etaSeconds =
+            completedInPhase > 0 && remainingInPhase > 0 && elapsedSeconds >= 2
+              ? Math.round((elapsedSeconds / completedInPhase) * remainingInPhase)
+              : null;
+
+          updateJobProgress(
+            jobId,
+            processed,
+            message,
+            {
+              ...meta,
+              elapsedSeconds: Math.round(elapsedSeconds),
+              etaSeconds,
+            },
+            total
+          );
         },
       });
-      completeJob(jobId, result);
+      completeJob(jobId, result, "Sincronización de tests cutáneos completada", {
+        ...result,
+        phase: "completed",
+      });
       logEvent("clinicalSkinTests.sync.completed", {
         result,
         trigger: options?.trigger ?? "manual",

@@ -84,6 +84,77 @@ const STATUS_COLORS: Record<SkinTestImportStatus, "danger" | "default" | "succes
   SKIPPED: "default",
 };
 
+interface SkinTestSyncJobMeta {
+  accountEmail?: string;
+  accountIndex?: number;
+  accountsTotal?: number;
+  elapsedSeconds?: number;
+  errors?: number;
+  etaSeconds?: number | null;
+  filename?: string;
+  imported?: number;
+  page?: number;
+  pending?: number;
+  phase?: "completed" | "delta" | "processing" | "scanned" | "starting";
+  scanned?: number;
+  skipped?: number;
+  xlsx?: number;
+}
+
+const SYNC_PHASE_LABELS: Record<NonNullable<SkinTestSyncJobMeta["phase"]>, string> = {
+  completed: "Completado",
+  delta: "Leyendo OneDrive",
+  processing: "Procesando xlsx",
+  scanned: "Cambios leídos",
+  starting: "Preparando",
+};
+
+function getSyncJobMeta(meta: unknown): SkinTestSyncJobMeta {
+  if (!meta || typeof meta !== "object") return {};
+  const value = meta as Record<string, unknown>;
+  return {
+    accountEmail: typeof value.accountEmail === "string" ? value.accountEmail : undefined,
+    accountIndex: typeof value.accountIndex === "number" ? value.accountIndex : undefined,
+    accountsTotal: typeof value.accountsTotal === "number" ? value.accountsTotal : undefined,
+    elapsedSeconds: typeof value.elapsedSeconds === "number" ? value.elapsedSeconds : undefined,
+    errors: typeof value.errors === "number" ? value.errors : undefined,
+    etaSeconds:
+      typeof value.etaSeconds === "number"
+        ? value.etaSeconds
+        : value.etaSeconds === null
+          ? null
+          : undefined,
+    filename: typeof value.filename === "string" ? value.filename : undefined,
+    imported: typeof value.imported === "number" ? value.imported : undefined,
+    page: typeof value.page === "number" ? value.page : undefined,
+    pending: typeof value.pending === "number" ? value.pending : undefined,
+    phase: isSyncPhase(value.phase) ? value.phase : undefined,
+    scanned: typeof value.scanned === "number" ? value.scanned : undefined,
+    skipped: typeof value.skipped === "number" ? value.skipped : undefined,
+    xlsx: typeof value.xlsx === "number" ? value.xlsx : undefined,
+  };
+}
+
+function isSyncPhase(value: unknown): value is NonNullable<SkinTestSyncJobMeta["phase"]> {
+  return (
+    value === "completed" ||
+    value === "delta" ||
+    value === "processing" ||
+    value === "scanned" ||
+    value === "starting"
+  );
+}
+
+function formatDuration(seconds: number): string {
+  if (!Number.isFinite(seconds) || seconds < 0) return "calculando";
+  if (seconds < 60) return `${Math.max(1, Math.round(seconds))} s`;
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  return remainingMinutes > 0 ? `${hours} h ${remainingMinutes} min` : `${hours} h`;
+}
+
 export function SkinTestImportPanel() {
   const toast = useToast();
   const [query, setQuery] = useState("");
@@ -105,6 +176,7 @@ export function SkinTestImportPanel() {
   const authUrlQuery = useGetOneDriveAuthUrl(window.location.origin + window.location.pathname);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const handledOAuthCodeRef = useRef<string | null>(null);
+  const handledTerminalJobRef = useRef<string | null>(null);
   const activeJobQuery = useActiveClinicalSkinTestJob({ enabled: !activeJobId });
   const jobStatusQuery = useClinicalSkinTestJobStatus(activeJobId);
   const runningJobId = activeJobId ?? activeJobQuery.data?.job?.id ?? null;
@@ -114,6 +186,8 @@ export function SkinTestImportPanel() {
     syncMutation.isPending ||
     knownActiveJobStatus === "pending" ||
     knownActiveJobStatus === "running";
+  const currentJob = jobStatusQuery.data?.job ?? null;
+  const syncMeta = getSyncJobMeta(currentJob?.meta);
 
   useEffect(() => {
     const initialJobId = activeJobQuery.data?.job?.id;
@@ -121,6 +195,16 @@ export function SkinTestImportPanel() {
       setActiveJobId(initialJobId);
     }
   }, [activeJobId, activeJobQuery.data?.job?.id]);
+
+  useEffect(() => {
+    if (!activeJobId || !currentJob) return;
+    if (!["completed", "failed", "cancelled"].includes(currentJob.status)) return;
+    if (handledTerminalJobRef.current === activeJobId) return;
+
+    handledTerminalJobRef.current = activeJobId;
+    void imports.refetch();
+    void oneDrive.refetch();
+  }, [activeJobId, currentJob, imports, oneDrive]);
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -237,28 +321,28 @@ export function SkinTestImportPanel() {
           </div>
         </div>
 
-        {activeJobId && jobStatusQuery.data?.job && (
+        {activeJobId && currentJob && (
           <div className="mt-4">
             <ProgressBar
               aria-label="Progreso de sincronización"
               className="w-full"
               color={
-                jobStatusQuery.data.job.status === "failed"
+                currentJob.status === "failed"
                   ? "danger"
-                  : jobStatusQuery.data.job.status === "cancelled"
+                  : currentJob.status === "cancelled"
                     ? "warning"
-                    : jobStatusQuery.data.job.status === "completed"
+                    : currentJob.status === "completed"
                       ? "success"
                       : "accent"
               }
-              value={jobStatusQuery.data.job.progress}
-              maxValue={jobStatusQuery.data.job.total || 100}
+              value={currentJob.progress}
+              maxValue={currentJob.total || 1}
             >
               <div className="flex justify-between">
-                <Label>{jobStatusQuery.data.job.message || "Sincronizando..."}</Label>
-                {jobStatusQuery.data.job.total > 0 && (
+                <Label>{currentJob.message || "Sincronizando..."}</Label>
+                {currentJob.total > 0 && (
                   <span className="text-xs text-foreground-500">
-                    {jobStatusQuery.data.job.progress} / {jobStatusQuery.data.job.total}
+                    {currentJob.progress} / {currentJob.total}
                   </span>
                 )}
               </div>
@@ -266,7 +350,45 @@ export function SkinTestImportPanel() {
                 <ProgressBar.Fill />
               </ProgressBar.Track>
             </ProgressBar>
-            {["completed", "failed", "cancelled"].includes(jobStatusQuery.data.job.status) && (
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-foreground-500">
+              {syncMeta.phase && (
+                <Chip size="sm" variant="soft" color="accent">
+                  {SYNC_PHASE_LABELS[syncMeta.phase]}
+                </Chip>
+              )}
+              {syncMeta.accountEmail && <span>Cuenta: {syncMeta.accountEmail}</span>}
+              {syncMeta.accountsTotal != null && (
+                <span>
+                  Cuentas: {syncMeta.accountIndex ?? currentJob.progress}/{syncMeta.accountsTotal}
+                </span>
+              )}
+              {syncMeta.page != null && <span>Página delta: {syncMeta.page}</span>}
+              {syncMeta.scanned != null && <span>Items leídos: {syncMeta.scanned}</span>}
+              {syncMeta.xlsx != null && <span>XLSX: {syncMeta.xlsx}</span>}
+              {currentJob.status === "running" &&
+                syncMeta.phase &&
+                syncMeta.phase !== "completed" && (
+                  <span>
+                    ETA est.:{" "}
+                    {typeof syncMeta.etaSeconds === "number"
+                      ? formatDuration(syncMeta.etaSeconds)
+                      : "calculando"}
+                  </span>
+                )}
+              {syncMeta.filename && (
+                <span className="min-w-0 truncate">Archivo: {syncMeta.filename}</span>
+              )}
+              {(syncMeta.imported != null ||
+                syncMeta.pending != null ||
+                syncMeta.errors != null ||
+                syncMeta.skipped != null) && (
+                <span>
+                  Importados {syncMeta.imported ?? 0} · Pendientes {syncMeta.pending ?? 0} · Errores{" "}
+                  {syncMeta.errors ?? 0} · Omitidos {syncMeta.skipped ?? 0}
+                </span>
+              )}
+            </div>
+            {["completed", "failed", "cancelled"].includes(currentJob.status) && (
               <div className="mt-2 flex justify-end">
                 <Button size="sm" variant="ghost" onPress={() => setActiveJobId(null)}>
                   Ocultar

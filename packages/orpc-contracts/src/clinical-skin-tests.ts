@@ -69,6 +69,7 @@ export const skinTestDetailSchema = z.object({
   ageLabel: z.string().nullable(),
   clinicalSeriesId: z.number().int(),
   id: z.string(),
+  oneDriveWebUrl: z.string().nullable(),
   panelTitle: z.string().nullable(),
   patientEmail: z.string().nullable(),
   patientName: z.string().nullable(),
@@ -118,19 +119,22 @@ export const skinTestJobStatusInputSchema = z.object({
   jobId: z.string(),
 });
 
+const skinTestJobSchema = z.object({
+  id: z.string(),
+  type: z.string(),
+  status: z.enum(["pending", "running", "completed", "failed", "cancelled"]),
+  progress: z.number(),
+  total: z.number(),
+  message: z.string(),
+  meta: z.record(z.string(), z.unknown()).nullable(),
+  result: z.unknown(),
+  error: z.string().nullable(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+});
+
 export const skinTestJobStatusOutputSchema = z.object({
-  job: z.object({
-    id: z.string(),
-    type: z.string(),
-    status: z.enum(["pending", "running", "completed", "failed", "cancelled"]),
-    progress: z.number(),
-    total: z.number(),
-    message: z.string(),
-    result: z.unknown(),
-    error: z.string().nullable(),
-    createdAt: z.date(),
-    updatedAt: z.date(),
-  }),
+  job: skinTestJobSchema,
 });
 
 export const skinTestJobCancelInputSchema = z.object({
@@ -139,39 +143,13 @@ export const skinTestJobCancelInputSchema = z.object({
 
 export const skinTestJobCancelOutputSchema = z.object({
   cancelled: z.boolean(),
-  job: z
-    .object({
-      id: z.string(),
-      type: z.string(),
-      status: z.enum(["pending", "running", "completed", "failed", "cancelled"]),
-      progress: z.number(),
-      total: z.number(),
-      message: z.string(),
-      result: z.unknown(),
-      error: z.string().nullable(),
-      createdAt: z.date(),
-      updatedAt: z.date(),
-    })
-    .nullable(),
+  job: skinTestJobSchema.nullable(),
 });
 
 export const skinTestActiveJobInputSchema = z.object({});
 
 export const skinTestActiveJobOutputSchema = z.object({
-  job: z
-    .object({
-      id: z.string(),
-      type: z.string(),
-      status: z.enum(["pending", "running", "completed", "failed", "cancelled"]),
-      progress: z.number(),
-      total: z.number(),
-      message: z.string(),
-      result: z.unknown(),
-      error: z.string().nullable(),
-      createdAt: z.date(),
-      updatedAt: z.date(),
-    })
-    .nullable(),
+  job: skinTestJobSchema.nullable(),
 });
 
 export const oneDriveAccountStatusSchema = z.object({
@@ -342,7 +320,10 @@ export const clinicalSkinTestsContract = {
     .route({ method: "POST", path: "/imports/{id}/reprocess" })
     .input(skinTestImportActionInputSchema)
     .output(skinTestImportSchema),
-  sync: oc.route({ method: "POST", path: "/sync" }).input(skinTestSyncInputSchema).output(skinTestSyncOutputSchema),
+  sync: oc
+    .route({ method: "POST", path: "/sync" })
+    .input(skinTestSyncInputSchema)
+    .output(skinTestSyncOutputSchema),
   folderPreview: oc
     .route({ method: "GET", path: "/onedrive/folder-preview" })
     .input(oneDriveFolderPreviewInputSchema)

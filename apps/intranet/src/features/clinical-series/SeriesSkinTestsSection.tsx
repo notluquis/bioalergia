@@ -1,5 +1,5 @@
 import { Button, Chip, Disclosure, Separator, Spinner, Surface } from "@heroui/react";
-import { FileSpreadsheet } from "lucide-react";
+import { ExternalLink, FileSpreadsheet } from "lucide-react";
 import { useSkinTestsBySeries } from "./skin-tests-queries";
 
 export function SeriesSkinTestsSection({ seriesId }: { seriesId: number }) {
@@ -49,6 +49,17 @@ export function SeriesSkinTestsSection({ seriesId }: { seriesId: number }) {
                   <span className="text-xs text-foreground-400">
                     {test.results.length} resultados
                   </span>
+                  {test.oneDriveWebUrl && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="ml-auto"
+                      onPress={() => window.open(test.oneDriveWebUrl!, "_blank")}
+                    >
+                      <ExternalLink size={13} />
+                      Ver archivo
+                    </Button>
+                  )}
                 </div>
                 <div className="grid gap-1">
                   {test.results.slice(0, 10).map((result) => (
