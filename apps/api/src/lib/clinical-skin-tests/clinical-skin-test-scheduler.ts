@@ -38,9 +38,11 @@ export function startClinicalSkinTestImportScheduler() {
     { timezone },
   );
 
-  // Daily cron to renew Microsoft OneDrive subscriptions (runs at 4:00 AM)
+  // Renew Microsoft OneDrive subscriptions every 6h.
+  // OneDrive personal subscriptions expire in max 3 days — daily renewal risks
+  // a 24h outage if the nightly cron fails once. 4x/day gives ample safety margin.
   cron.schedule(
-    "0 4 * * *",
+    "0 */6 * * *",
     () => {
       void renewAllOneDriveSubscriptions().catch(error => {
         logError("onedrive.subscriptions.renew.failed", error);
