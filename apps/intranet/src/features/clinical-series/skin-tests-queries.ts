@@ -138,3 +138,16 @@ export function useReprocessSkinTestImport() {
     },
   });
 }
+
+export function useClinicalSkinTestJobStatus(jobId: string | null) {
+  return useQuery({
+    enabled: !!jobId,
+    queryFn: async () => await clinicalSkinTestsORPCClient.jobStatus({ jobId: jobId! }),
+    queryKey: [...skinTestImportKeys.all, "job-status", jobId],
+    refetchInterval: (query) => {
+      const status = query.state.data?.job?.status;
+      if (!status) return 2000;
+      return ["completed", "failed"].includes(status) ? false : 2000;
+    },
+  });
+}
