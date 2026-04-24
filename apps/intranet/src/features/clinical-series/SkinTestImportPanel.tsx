@@ -13,8 +13,8 @@ import {
   TextField,
 } from "@heroui/react";
 import type { Key } from "@heroui/react";
-import { Check, ExternalLink, FileSpreadsheet, RefreshCw, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Check, ExternalLink, FileSpreadsheet, RefreshCw, X, Link as LinkIcon } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { useToast } from "@/context/ToastContext";
 import {
   useApproveSkinTestImport,
@@ -24,6 +24,8 @@ import {
   useReprocessSkinTestImport,
   useSkinTestImports,
   useSyncSkinTestImports,
+  useGetOneDriveAuthUrl,
+  useConnectOneDrive,
   type SkinTestImportFilters,
 } from "./skin-tests-queries";
 import type { SkinTestImport, SkinTestImportStatus, SkinTestResult } from "./skin-tests-types";
@@ -70,6 +72,36 @@ export function SkinTestImportPanel() {
   const imports = useSkinTestImports(filters);
   const syncMutation = useSyncSkinTestImports();
   const configureFolder = useConfigureOneDriveFolder();
+  const connectOneDrive = useConnectOneDrive();
+  const authUrlQuery = useGetOneDriveAuthUrl(window.location.origin + window.location.pathname);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    if (code && !oneDrive.isLoading && !connectOneDrive.isPending) {
+      void connectOneDrive
+        .mutateAsync({
+          code,
+          redirectUri: window.location.origin + window.location.pathname,
+        })
+        .then(() => {
+          toast.success("OneDrive conectado exitosamente");
+          window.history.replaceState({}, document.title, window.location.pathname);
+        })
+        .catch((error) => {
+          toast.error(error instanceof Error ? error.message : "Error al conectar OneDrive");
+        });
+    }
+  }, [oneDrive.isLoading, connectOneDrive, toast]);
+
+  async function handleConnect() {
+    try {
+      const { url } = await authUrlQuery.refetch().then((res) => res.data!);
+      window.location.href = url;
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Error al obtener URL de auth");
+    }
+  }
 
   async function handleSync(force = false) {
     try {
@@ -130,6 +162,16 @@ export function SkinTestImportPanel() {
                 Falta conectar OneDrive desde OAuth Microsoft antes de sincronizar archivos.
               </Alert.Description>
             </Alert.Content>
+            <Button
+              size="sm"
+              variant="secondary"
+              className="ml-auto"
+              onPress={() => void handleConnect()}
+              isPending={authUrlQuery.isFetching || connectOneDrive.isPending}
+            >
+              <LinkIcon size={14} />
+              Conectar OneDrive
+            </Button>
           </Alert>
         )}
 

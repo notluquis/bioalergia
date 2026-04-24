@@ -34,6 +34,25 @@ export function useOneDriveSkinTestStatus() {
   });
 }
 
+export function useGetOneDriveAuthUrl(redirectUri: string) {
+  return useQuery({
+    enabled: false, // only run on demand
+    queryFn: async () => clinicalSkinTestsORPCClient.getOneDriveAuthUrl({ redirectUri }),
+    queryKey: ["onedrive-auth-url", redirectUri],
+  });
+}
+
+export function useConnectOneDrive() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: { code: string; redirectUri: string }) =>
+      clinicalSkinTestsORPCClient.connectOneDrive(params),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: skinTestImportKeys.oneDriveStatus() });
+    },
+  });
+}
+
 export function useSkinTestImports(filters?: SkinTestImportFilters) {
   return useQuery({
     queryFn: async () => {
