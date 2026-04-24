@@ -214,6 +214,16 @@ describe("clinical series patient-name cleaning", () => {
         "retiraro, LLEGO, maria teresa hernandez pavez mantencion alxoid arboles 0.50(50) María Teresa Hernández Pavez,",
         "maria teresa hernandez pavez",
       ],
+      ["listo, Joaquin Garcia Torres, 1era dosis clustoid (20)", "joaquin garcia torres"],
+      ["listo matteo moreno gonzalez", "matteo moreno gonzalez"],
+      ["listo,enviara foto de boleta Leticia Saez Vega", "leticia saez vega"],
+      [
+        "listo, 2 lectura enviara las fotos test cutaneo ambiental y test de parche 100 Patricia Fernandez Godoy, 61 años, Lebu, Fonasa",
+        "patricia fernandez godoy",
+      ],
+      ["manda foto Eveline Paris Araneda", "eveline paris araneda"],
+      ["fotos recordar de Graciela Ruiz Tapia", "graciela ruiz tapia"],
+      ["fotos de repetido Gisela Garces Osses", "gisela garces osses"],
     ] as const;
 
     for (const [summary, expectedName] of cases) {

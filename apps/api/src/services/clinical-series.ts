@@ -107,6 +107,8 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "examen",
   "examenes",
   "fase",
+  "foto",
+  "fotos",
   "frasco",
   "fruta",
   "graminas",
@@ -128,9 +130,11 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "lectura",
   "lecturas",
   "lecturs",
+  "listo",
   "listoenviara",
   "mantencion",
   "mantencio",
+  "manda",
   "mas",
   "mes",
   "mayo",
@@ -313,6 +317,8 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "pago",
   "prevision",
   "reprogramar",
+  "recordar",
+  "repetido",
   "rinitis",
   "rut",
   "tambien",
@@ -330,6 +336,7 @@ const LOWERCASE_NAME_STOPWORDS = new Set([
   "chillan",
   "concepcion",
   "coronel",
+  "lebu",
   "linares",
   "lota",
   "alamos",
@@ -910,6 +917,11 @@ function stripNonNamePhrases(text: string): string {
       /(^|[\n,;]\s*)(?:(?:prox|covid|(?:se\s+)?envi(?:a|ada|ado|ar))(?:\s+(?:de|y|vacuna|vacunas|dia|d[ií]a|lunes|martes|miercoles|miércoles|jueves|viernes|sabado|sábado|domingo|enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre))*\s+)/gi,
       "$1",
     )
+    .replace(
+      /(^|[\n,;]\s*)(?:(?:manda\s+)?(?:la?s\s+)?fotos?(?:\s+(?:de\s+boleta|de\s+repetido|recordar\s+de|y\s+de|de))?\s+)/gi,
+      "$1",
+    )
+    .replace(/\blas\s+y\s+de\s+/gi, " ")
     .replace(/\bprox(?:imo)?\s+mes\b/gi, " ")
     .replace(/\ba\s*-\s*(?:g|p)\b/gi, " ")
     .replace(
@@ -1094,9 +1106,9 @@ function extractNamesFromCleanedText(text: string): string[] {
     .map((t) => normalizeNameToken(t))
     .filter(Boolean);
 
-  const isNameToken = (t: string) =>
-    t.length >= 3 && !/\d/.test(t) && !LOWERCASE_NAME_STOPWORDS.has(t);
   const isParticle = (t: string) => PARTICLES.has(t);
+  const isNameToken = (t: string) =>
+    t.length >= 3 && !/\d/.test(t) && !LOWERCASE_NAME_STOPWORDS.has(t) && !isParticle(t);
 
   const results: string[] = [];
   let i = 0;
