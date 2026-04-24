@@ -82,6 +82,7 @@ interface ImportRow {
   reviewedAt: Date | null;
   reviewNotes: null | string;
   skinTestId?: null | string;
+  matchedSeriesId?: null | number;
   status: SkinTestImportStatus;
   updatedAt: Date;
 }
@@ -227,7 +228,8 @@ export async function listSkinTestImports(input: SkinTestImportListInput = {}) {
         i.review_notes AS "reviewNotes",
         i.imported_at AS "importedAt",
         i.updated_at AS "updatedAt",
-        t.id AS "skinTestId"
+        t.id AS "skinTestId",
+        t.clinical_series_id AS "matchedSeriesId"
       FROM clinical_skin_test_imports i
       LEFT JOIN clinical_skin_tests t ON t.source_import_id = i.id
       WHERE ${whereSql}
@@ -266,7 +268,8 @@ export async function getSkinTestImport(id: string): Promise<SkinTestImportOutpu
       i.review_notes AS "reviewNotes",
       i.imported_at AS "importedAt",
       i.updated_at AS "updatedAt",
-      t.id AS "skinTestId"
+      t.id AS "skinTestId",
+      t.clinical_series_id AS "matchedSeriesId"
     FROM clinical_skin_test_imports i
     LEFT JOIN clinical_skin_tests t ON t.source_import_id = i.id
     WHERE i.id = ${id}
@@ -773,6 +776,7 @@ function toImportOutput(row: ImportRow): SkinTestImportOutput {
     reviewedAt: row.reviewedAt?.toISOString() ?? null,
     reviewNotes: row.reviewNotes,
     skinTestId: row.skinTestId ?? null,
+    matchedSeriesId: row.matchedSeriesId ?? null,
     status: row.status,
     updatedAt: row.updatedAt.toISOString(),
   };

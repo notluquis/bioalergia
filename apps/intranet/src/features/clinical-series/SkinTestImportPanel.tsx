@@ -319,7 +319,7 @@ function SkinTestImportRow({ item }: { item: SkinTestImport }) {
           </div>
           <div className="text-xs text-foreground-500 flex items-center gap-1.5 flex-wrap mt-1">
             {header?.panelTitle && (
-              <Chip size="sm" color="primary" variant="flat" className="mr-1">
+              <Chip size="sm" color="accent" variant="soft" className="mr-1">
                 {header.panelTitle}
               </Chip>
             )}
@@ -336,6 +336,18 @@ function SkinTestImportRow({ item }: { item: SkinTestImport }) {
           {item.error && <p className="mt-1 text-xs text-danger">{item.error}</p>}
         </div>
         <div className="flex flex-wrap gap-2">
+          {item.matchedSeriesId && (
+            <Button
+              as="a"
+              href={`/clinical/series/${item.matchedSeriesId}`}
+              target="_blank"
+              size="sm"
+              variant="secondary"
+            >
+              <LinkIcon size={14} />
+              Ver Serie
+            </Button>
+          )}
           {item.oneDriveWebUrl && (
             <Button
               size="sm"
