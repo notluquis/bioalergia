@@ -1,4 +1,5 @@
 import { db } from "@finanzas/db";
+import { logError, logEvent, logWarn } from "../logger";
 
 const MICROSOFT_TOKEN_URL = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token";
 const MICROSOFT_AUTH_URL = "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize";
@@ -75,9 +76,41 @@ export interface OneDriveFolderItem {
 }
 
 export class OneDriveSubscriptionError extends Error {
-  constructor(message: string, public readonly causeText?: string) {
+  constructor(
+    message: string,
+    public readonly details: {
+      body?: string;
+      clientRequestId?: string | null;
+      code?: string | null;
+      requestId?: string | null;
+      status?: number;
+      webhookUrl?: string;
+    } = {},
+  ) {
     super(message);
     this.name = "OneDriveSubscriptionError";
+  }
+}
+
+class MicrosoftGraphError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+    public readonly body: string,
+    public readonly parsed?: {
+      error?: {
+        code?: string;
+        innerError?: {
+          "client-request-id"?: string;
+          "request-id"?: string;
+          date?: string;
+        };
+        message?: string;
+      };
+    },
+  ) {
+    super(message);
+    this.name = "MicrosoftGraphError";
   }
 }
 
@@ -441,7 +474,14 @@ async function graphRequest<T>(url: string, accessToken: string, options?: Reque
     },
   });
   if (!response.ok) {
-    throw new Error(`Microsoft Graph failed ${response.status}: ${await response.text()}`);
+    const body = await response.text();
+    let parsed: MicrosoftGraphError["parsed"];
+    try {
+      parsed = JSON.parse(body) as MicrosoftGraphError["parsed"];
+    } catch {
+      parsed = undefined;
+    }
+    throw new MicrosoftGraphError(`Microsoft Graph failed ${response.status}`, response.status, body, parsed);
   }
   if (response.status === 204) return {} as T;
   return await response.json() as T;
@@ -476,6 +516,14 @@ export async function setupOneDriveSubscription(accountId: string) {
     clientState: ONEDRIVE_WEBHOOK_CLIENT_STATE
   };
 
+  logEvent("onedrive.subscription.create.request", {
+    accountId,
+    hasExistingSubscription: Boolean(existing),
+    resource,
+    webhookHost: safeUrlHost(webhookUrl),
+    webhookUrl,
+  });
+
   let sub: { id: string };
   try {
     sub = await graphRequest<{ id: string }>(`${GRAPH_BASE_URL}/subscriptions`, accessToken, {
@@ -483,18 +531,37 @@ export async function setupOneDriveSubscription(accountId: string) {
       body: JSON.stringify(payload)
     });
   } catch (error) {
-    const causeText = error instanceof Error ? error.message : String(error);
+    const details = error instanceof MicrosoftGraphError ? graphErrorDetails(error, webhookUrl) : {
+      body: error instanceof Error ? error.message : String(error),
+      webhookUrl,
+    };
+    logError("onedrive.subscription.create.failed", error, {
+      accountId,
+      resource,
+      ...details,
+    });
     throw new OneDriveSubscriptionError(
       "Microsoft Graph no pudo validar el webhook OneDrive. El sync manual/delta sigue disponible.",
-      causeText,
+      details,
     );
   }
+
+  logEvent("onedrive.subscription.create.success", {
+    accountId,
+    resource,
+    subscriptionId: sub.id,
+    webhookHost: safeUrlHost(webhookUrl),
+  });
 
   if (existing) {
     try {
       await graphRequest(`${GRAPH_BASE_URL}/subscriptions/${existing.subscriptionId}`, accessToken, { method: "DELETE" });
     } catch {
       // Keep going: the new subscription is already active and stored below.
+      logWarn("onedrive.subscription.delete_previous.failed", {
+        accountId,
+        subscriptionId: existing.subscriptionId,
+      });
     }
     await db.oneDriveWatchChannel.delete({ where: { id: existing.id } });
   }
@@ -557,7 +624,40 @@ export async function renewOneDriveSubscription(accountId: string) {
 }
 
 export async function renewOneDriveSubscriptionNow(accountId: string) {
-  await setupOneDriveSubscription(accountId);
+  try {
+    await setupOneDriveSubscription(accountId);
+    return true;
+  } catch (error) {
+    if (error instanceof OneDriveSubscriptionError) {
+      console.warn(error.message, {
+        accountId,
+        ...error.details,
+      });
+      return false;
+    }
+    throw error;
+  }
+}
+
+function graphErrorDetails(error: MicrosoftGraphError, webhookUrl: string) {
+  return {
+    body: error.body,
+    clientRequestId: error.parsed?.error?.innerError?.["client-request-id"] ?? null,
+    code: error.parsed?.error?.code ?? null,
+    graphMessage: error.parsed?.error?.message ?? null,
+    requestId: error.parsed?.error?.innerError?.["request-id"] ?? null,
+    status: error.status,
+    webhookHost: safeUrlHost(webhookUrl),
+    webhookUrl,
+  };
+}
+
+function safeUrlHost(url: string) {
+  try {
+    return new URL(url).host;
+  } catch {
+    return null;
+  }
 }
 
 export async function renewAllOneDriveSubscriptions() {

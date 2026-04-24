@@ -386,8 +386,13 @@ function OneDriveAccountRow({
 
   async function handleRenew() {
     try {
-      await renewSubscription.mutateAsync(account.accountId);
-      toast.success("Webhook renovado");
+      const status = await renewSubscription.mutateAsync(account.accountId);
+      const updatedAccount = status.accounts.find((item) => item.accountId === account.accountId);
+      if (updatedAccount?.subscription.status === "ACTIVE") {
+        toast.success("Webhook renovado");
+      } else {
+        toast.info("Microsoft no pudo validar el webhook. El sync manual sigue disponible.");
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "No se pudo renovar webhook");
     }
