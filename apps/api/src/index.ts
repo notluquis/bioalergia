@@ -4,6 +4,7 @@ import { app } from "./app";
 import { startDoctoraliaCalendarScheduler } from "./lib/doctoralia/doctoralia-calendar-scheduler";
 import { startDoctoraliaImapListener } from "./lib/doctoralia/imap-idle";
 import { startDTESyncScheduler } from "./lib/dte/dte-sync-cron";
+import { startClinicalSkinTestImportScheduler } from "./lib/clinical-skin-tests/clinical-skin-test-scheduler";
 import { startGoogleCalendarScheduler } from "./lib/google/google-calendar-scheduler";
 import { scheduleWatchChannelSetup } from "./lib/google/google-calendar-watch";
 import { startMercadoPagoScheduler } from "./lib/mercadopago/mercadopago-scheduler";
@@ -47,6 +48,10 @@ if (process.env.ENABLE_WHATSAPP_NOTIFICATIONS === "true") {
 
 if (process.env.ENABLE_DOCTORALIA_IMAP === "true") {
   startDoctoraliaImapListener();
+}
+
+if (process.env.ENABLE_SKIN_TEST_IMPORT_SYNC === "true") {
+  startClinicalSkinTestImportScheduler();
 }
 
 serve({ fetch: app.fetch, port });

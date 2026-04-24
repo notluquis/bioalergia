@@ -3587,6 +3587,12 @@ export class SchemaType implements SchemaDef {
                     type: "AbandonmentContact",
                     array: true,
                     relation: { opposite: "series" }
+                },
+                skinTests: {
+                    name: "skinTests",
+                    type: "ClinicalSkinTest",
+                    array: true,
+                    relation: { opposite: "clinicalSeries" }
                 }
             },
             attributes: [
@@ -3601,6 +3607,398 @@ export class SchemaType implements SchemaDef {
             idFields: ["id"],
             uniqueFields: {
                 id: { type: "Int" }
+            }
+        },
+        ClinicalSkinTestImport: {
+            name: "ClinicalSkinTestImport",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("cuid") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                oneDriveItemId: {
+                    name: "oneDriveItemId",
+                    type: "String",
+                    unique: true,
+                    attributes: [{ name: "@unique" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("onedrive_item_id") }] }] as readonly AttributeApplication[]
+                },
+                oneDriveDriveId: {
+                    name: "oneDriveDriveId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("onedrive_drive_id") }] }] as readonly AttributeApplication[]
+                },
+                oneDriveETag: {
+                    name: "oneDriveETag",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("onedrive_etag") }] }] as readonly AttributeApplication[]
+                },
+                oneDriveCTag: {
+                    name: "oneDriveCTag",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("onedrive_ctag") }] }] as readonly AttributeApplication[]
+                },
+                oneDriveWebUrl: {
+                    name: "oneDriveWebUrl",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("onedrive_web_url") }] }] as readonly AttributeApplication[]
+                },
+                path: {
+                    name: "path",
+                    type: "String",
+                    optional: true
+                },
+                filename: {
+                    name: "filename",
+                    type: "String"
+                },
+                mimeType: {
+                    name: "mimeType",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("mime_type") }] }] as readonly AttributeApplication[]
+                },
+                size: {
+                    name: "size",
+                    type: "Int",
+                    optional: true
+                },
+                modifiedAt: {
+                    name: "modifiedAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("modified_at") }] }, { name: "@db.Timestamptz", args: [{ name: "x", value: ExpressionUtils.literal(3) }] }] as readonly AttributeApplication[]
+                },
+                parserVersion: {
+                    name: "parserVersion",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("parser_version") }] }] as readonly AttributeApplication[]
+                },
+                status: {
+                    name: "status",
+                    type: "ClinicalSkinTestImportStatus",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("PENDING_REVIEW") }] }] as readonly AttributeApplication[],
+                    default: "PENDING_REVIEW" as FieldDefault
+                },
+                confidence: {
+                    name: "confidence",
+                    type: "Int",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }] as readonly AttributeApplication[],
+                    default: 0 as FieldDefault
+                },
+                error: {
+                    name: "error",
+                    type: "String",
+                    optional: true
+                },
+                issues: {
+                    name: "issues",
+                    type: "Json",
+                    optional: true
+                },
+                parsedPayload: {
+                    name: "parsedPayload",
+                    type: "Json",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("parsed_payload") }] }] as readonly AttributeApplication[]
+                },
+                reviewedBy: {
+                    name: "reviewedBy",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("reviewed_by") }] }] as readonly AttributeApplication[]
+                },
+                reviewedAt: {
+                    name: "reviewedAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("reviewed_at") }] }, { name: "@db.Timestamptz", args: [{ name: "x", value: ExpressionUtils.literal(3) }] }] as readonly AttributeApplication[]
+                },
+                reviewNotes: {
+                    name: "reviewNotes",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("review_notes") }] }] as readonly AttributeApplication[]
+                },
+                importedAt: {
+                    name: "importedAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("imported_at") }] }, { name: "@db.Timestamptz", args: [{ name: "x", value: ExpressionUtils.literal(3) }] }] as readonly AttributeApplication[]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                skinTest: {
+                    name: "skinTest",
+                    type: "ClinicalSkinTest",
+                    optional: true,
+                    relation: { opposite: "sourceImport" }
+                },
+                results: {
+                    name: "results",
+                    type: "ClinicalSkinTestResult",
+                    array: true,
+                    relation: { opposite: "sourceImport" }
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("ClinicalSkinTestImportStatus", [ExpressionUtils.field("status")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("modifiedAt")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("clinical_skin_test_imports") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" },
+                oneDriveItemId: { type: "String" }
+            }
+        },
+        ClinicalSkinTest: {
+            name: "ClinicalSkinTest",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("cuid") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                clinicalSeriesId: {
+                    name: "clinicalSeriesId",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("clinical_series_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "clinicalSeries"
+                    ] as readonly string[]
+                },
+                sourceImportId: {
+                    name: "sourceImportId",
+                    type: "String",
+                    unique: true,
+                    attributes: [{ name: "@unique" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("source_import_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "sourceImport"
+                    ] as readonly string[]
+                },
+                testDate: {
+                    name: "testDate",
+                    type: "DateTime",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("test_date") }] }, { name: "@db.Date" }] as readonly AttributeApplication[]
+                },
+                patientName: {
+                    name: "patientName",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_name") }] }] as readonly AttributeApplication[]
+                },
+                patientRut: {
+                    name: "patientRut",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_rut") }] }] as readonly AttributeApplication[]
+                },
+                patientEmail: {
+                    name: "patientEmail",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_email") }] }] as readonly AttributeApplication[]
+                },
+                patientPhone: {
+                    name: "patientPhone",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_phone") }] }] as readonly AttributeApplication[]
+                },
+                ageLabel: {
+                    name: "ageLabel",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("age_label") }] }] as readonly AttributeApplication[]
+                },
+                panelTitle: {
+                    name: "panelTitle",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("panel_title") }] }] as readonly AttributeApplication[]
+                },
+                rawHeader: {
+                    name: "rawHeader",
+                    type: "Json",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("raw_header") }] }] as readonly AttributeApplication[]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                clinicalSeries: {
+                    name: "clinicalSeries",
+                    type: "ClinicalSeries",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("clinicalSeriesId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "skinTests", fields: ["clinicalSeriesId"], references: ["id"], onDelete: "Cascade" }
+                },
+                sourceImport: {
+                    name: "sourceImport",
+                    type: "ClinicalSkinTestImport",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("sourceImportId")]) }, { name: "references", value: ExpressionUtils.array("String", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "skinTest", fields: ["sourceImportId"], references: ["id"], onDelete: "Cascade" }
+                },
+                results: {
+                    name: "results",
+                    type: "ClinicalSkinTestResult",
+                    array: true,
+                    relation: { opposite: "skinTest" }
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("clinicalSeriesId")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("patientRut")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("testDate")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("clinical_skin_tests") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" },
+                sourceImportId: { type: "String" }
+            }
+        },
+        ClinicalSkinTestResult: {
+            name: "ClinicalSkinTestResult",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("cuid") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                skinTestId: {
+                    name: "skinTestId",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("skin_test_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "skinTest"
+                    ] as readonly string[]
+                },
+                sourceImportId: {
+                    name: "sourceImportId",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("source_import_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "sourceImport"
+                    ] as readonly string[]
+                },
+                section: {
+                    name: "section",
+                    type: "String"
+                },
+                code: {
+                    name: "code",
+                    type: "String",
+                    optional: true
+                },
+                allergenName: {
+                    name: "allergenName",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("allergen_name") }] }] as readonly AttributeApplication[]
+                },
+                papuleMm: {
+                    name: "papuleMm",
+                    type: "Float",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("papule_mm") }] }] as readonly AttributeApplication[]
+                },
+                erythemaMm: {
+                    name: "erythemaMm",
+                    type: "Float",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("erythema_mm") }] }] as readonly AttributeApplication[]
+                },
+                rawPapule: {
+                    name: "rawPapule",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("raw_papule") }] }] as readonly AttributeApplication[]
+                },
+                rawErythema: {
+                    name: "rawErythema",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("raw_erythema") }] }] as readonly AttributeApplication[]
+                },
+                controlType: {
+                    name: "controlType",
+                    type: "ClinicalSkinTestControlType",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("control_type") }] }] as readonly AttributeApplication[]
+                },
+                sortOrder: {
+                    name: "sortOrder",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("sort_order") }] }] as readonly AttributeApplication[]
+                },
+                rawCells: {
+                    name: "rawCells",
+                    type: "Json",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("raw_cells") }] }] as readonly AttributeApplication[]
+                },
+                skinTest: {
+                    name: "skinTest",
+                    type: "ClinicalSkinTest",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("skinTestId")]) }, { name: "references", value: ExpressionUtils.array("String", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "results", fields: ["skinTestId"], references: ["id"], onDelete: "Cascade" }
+                },
+                sourceImport: {
+                    name: "sourceImport",
+                    type: "ClinicalSkinTestImport",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("sourceImportId")]) }, { name: "references", value: ExpressionUtils.array("String", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "results", fields: ["sourceImportId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@unique", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("sourceImportId"), ExpressionUtils.field("section"), ExpressionUtils.field("code"), ExpressionUtils.field("allergenName")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("skinTestId")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("clinical_skin_test_results") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" },
+                sourceImportId_section_code_allergenName: { sourceImportId: { type: "String" }, section: { type: "String" }, code: { type: "String" }, allergenName: { type: "String" } }
             }
         },
         ClinicalSeriesMergeLog: {
@@ -9314,6 +9712,23 @@ export class SchemaType implements SchemaDef {
                 INACTIVE: "INACTIVE",
                 COMPLETED: "COMPLETED",
                 CANCELLED: "CANCELLED"
+            }
+        },
+        ClinicalSkinTestImportStatus: {
+            name: "ClinicalSkinTestImportStatus",
+            values: {
+                PENDING_REVIEW: "PENDING_REVIEW",
+                IMPORTED: "IMPORTED",
+                REJECTED: "REJECTED",
+                ERROR: "ERROR",
+                SKIPPED: "SKIPPED"
+            }
+        },
+        ClinicalSkinTestControlType: {
+            name: "ClinicalSkinTestControlType",
+            values: {
+                POSITIVE: "POSITIVE",
+                NEGATIVE: "NEGATIVE"
             }
         },
         ClinicalSeriesStageKind: {

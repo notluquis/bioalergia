@@ -5,7 +5,7 @@
 
 /* eslint-disable */
 
-import { schema as $schema, type SchemaType as $Schema } from "./schema-lite.js";
+import { schema as $schema, type SchemaType as $Schema } from "./schema-lite";
 import type { ModelResult as $ModelResult } from "@zenstackhq/orm";
 export type Person = $ModelResult<$Schema, "Person">;
 export type User = $ModelResult<$Schema, "User">;
@@ -36,6 +36,9 @@ export type Calendar = $ModelResult<$Schema, "Calendar">;
 export type CalendarWatchChannel = $ModelResult<$Schema, "CalendarWatchChannel">;
 export type Event = $ModelResult<$Schema, "Event">;
 export type ClinicalSeries = $ModelResult<$Schema, "ClinicalSeries">;
+export type ClinicalSkinTestImport = $ModelResult<$Schema, "ClinicalSkinTestImport">;
+export type ClinicalSkinTest = $ModelResult<$Schema, "ClinicalSkinTest">;
+export type ClinicalSkinTestResult = $ModelResult<$Schema, "ClinicalSkinTestResult">;
 export type ClinicalSeriesMergeLog = $ModelResult<$Schema, "ClinicalSeriesMergeLog">;
 export type AbandonmentContact = $ModelResult<$Schema, "AbandonmentContact">;
 export type SyncLog = $ModelResult<$Schema, "SyncLog">;
@@ -161,6 +164,10 @@ export const DeliveryModality = $schema.enums.DeliveryModality.values;
 export type DeliveryModality = (typeof DeliveryModality)[keyof typeof DeliveryModality];
 export const ClinicalSeriesStatus = $schema.enums.ClinicalSeriesStatus.values;
 export type ClinicalSeriesStatus = (typeof ClinicalSeriesStatus)[keyof typeof ClinicalSeriesStatus];
+export const ClinicalSkinTestImportStatus = $schema.enums.ClinicalSkinTestImportStatus.values;
+export type ClinicalSkinTestImportStatus = (typeof ClinicalSkinTestImportStatus)[keyof typeof ClinicalSkinTestImportStatus];
+export const ClinicalSkinTestControlType = $schema.enums.ClinicalSkinTestControlType.values;
+export type ClinicalSkinTestControlType = (typeof ClinicalSkinTestControlType)[keyof typeof ClinicalSkinTestControlType];
 export const ClinicalSeriesStageKind = $schema.enums.ClinicalSeriesStageKind.values;
 export type ClinicalSeriesStageKind = (typeof ClinicalSeriesStageKind)[keyof typeof ClinicalSeriesStageKind];
 export const AbandonmentContactOutcome = $schema.enums.AbandonmentContactOutcome.values;

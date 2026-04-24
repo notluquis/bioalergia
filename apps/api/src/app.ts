@@ -15,6 +15,10 @@ import { balancesOpenAPIHandler, balancesORPCHandler } from "./orpc/balances";
 import { calendarOpenAPIHandler, calendarORPCHandler } from "./orpc/calendar";
 import { certificatesOpenAPIHandler, certificatesORPCHandler } from "./orpc/certificates";
 import { clinicalSeriesOpenAPIHandler, clinicalSeriesORPCHandler } from "./orpc/clinical-series";
+import {
+  clinicalSkinTestsOpenAPIHandler,
+  clinicalSkinTestsORPCHandler,
+} from "./orpc/clinical-skin-tests";
 import { getCurrentRebuildJob } from "./services/clinical-series";
 import { counterpartsOpenAPIHandler, counterpartsORPCHandler } from "./orpc/counterparts";
 import { csvUploadOpenAPIHandler, csvUploadORPCHandler } from "./orpc/csv-upload";
@@ -660,6 +664,17 @@ app.use("/api/orpc/clinical-series/rpc/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
+  return next();
+});
+
+app.use("/api/orpc/clinical-skin-tests/rpc/*", async (c, next) => {
+  const { matched, response } = await clinicalSkinTestsORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/clinical-skin-tests/rpc",
+    context: { hono: c },
+  });
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
   return next();
 });
 
@@ -1501,6 +1516,16 @@ app.use("/api/orpc/clinical-series/*", async (c, next) => {
     return c.newResponse(response.body, response);
   }
 
+  return next();
+});
+
+app.use("/api/orpc/clinical-skin-tests/*", async (c, next) => {
+  const { matched, response } = await clinicalSkinTestsOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
   return next();
 });
 

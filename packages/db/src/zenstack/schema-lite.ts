@@ -2968,11 +2968,338 @@ export class SchemaType implements SchemaDef {
                     type: "AbandonmentContact",
                     array: true,
                     relation: { opposite: "series" }
+                },
+                skinTests: {
+                    name: "skinTests",
+                    type: "ClinicalSkinTest",
+                    array: true,
+                    relation: { opposite: "clinicalSeries" }
                 }
             },
             idFields: ["id"],
             uniqueFields: {
                 id: { type: "Int" }
+            }
+        },
+        ClinicalSkinTestImport: {
+            name: "ClinicalSkinTestImport",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                oneDriveItemId: {
+                    name: "oneDriveItemId",
+                    type: "String",
+                    unique: true
+                },
+                oneDriveDriveId: {
+                    name: "oneDriveDriveId",
+                    type: "String",
+                    optional: true
+                },
+                oneDriveETag: {
+                    name: "oneDriveETag",
+                    type: "String",
+                    optional: true
+                },
+                oneDriveCTag: {
+                    name: "oneDriveCTag",
+                    type: "String",
+                    optional: true
+                },
+                oneDriveWebUrl: {
+                    name: "oneDriveWebUrl",
+                    type: "String",
+                    optional: true
+                },
+                path: {
+                    name: "path",
+                    type: "String",
+                    optional: true
+                },
+                filename: {
+                    name: "filename",
+                    type: "String"
+                },
+                mimeType: {
+                    name: "mimeType",
+                    type: "String",
+                    optional: true
+                },
+                size: {
+                    name: "size",
+                    type: "Int",
+                    optional: true
+                },
+                modifiedAt: {
+                    name: "modifiedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                parserVersion: {
+                    name: "parserVersion",
+                    type: "String"
+                },
+                status: {
+                    name: "status",
+                    type: "ClinicalSkinTestImportStatus",
+                    default: "PENDING_REVIEW" as FieldDefault
+                },
+                confidence: {
+                    name: "confidence",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                error: {
+                    name: "error",
+                    type: "String",
+                    optional: true
+                },
+                issues: {
+                    name: "issues",
+                    type: "Json",
+                    optional: true
+                },
+                parsedPayload: {
+                    name: "parsedPayload",
+                    type: "Json",
+                    optional: true
+                },
+                reviewedBy: {
+                    name: "reviewedBy",
+                    type: "Int",
+                    optional: true
+                },
+                reviewedAt: {
+                    name: "reviewedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                reviewNotes: {
+                    name: "reviewNotes",
+                    type: "String",
+                    optional: true
+                },
+                importedAt: {
+                    name: "importedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                skinTest: {
+                    name: "skinTest",
+                    type: "ClinicalSkinTest",
+                    optional: true,
+                    relation: { opposite: "sourceImport" }
+                },
+                results: {
+                    name: "results",
+                    type: "ClinicalSkinTestResult",
+                    array: true,
+                    relation: { opposite: "sourceImport" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" },
+                oneDriveItemId: { type: "String" }
+            }
+        },
+        ClinicalSkinTest: {
+            name: "ClinicalSkinTest",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                clinicalSeriesId: {
+                    name: "clinicalSeriesId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "clinicalSeries"
+                    ] as readonly string[]
+                },
+                sourceImportId: {
+                    name: "sourceImportId",
+                    type: "String",
+                    unique: true,
+                    foreignKeyFor: [
+                        "sourceImport"
+                    ] as readonly string[]
+                },
+                testDate: {
+                    name: "testDate",
+                    type: "DateTime"
+                },
+                patientName: {
+                    name: "patientName",
+                    type: "String",
+                    optional: true
+                },
+                patientRut: {
+                    name: "patientRut",
+                    type: "String",
+                    optional: true
+                },
+                patientEmail: {
+                    name: "patientEmail",
+                    type: "String",
+                    optional: true
+                },
+                patientPhone: {
+                    name: "patientPhone",
+                    type: "String",
+                    optional: true
+                },
+                ageLabel: {
+                    name: "ageLabel",
+                    type: "String",
+                    optional: true
+                },
+                panelTitle: {
+                    name: "panelTitle",
+                    type: "String",
+                    optional: true
+                },
+                rawHeader: {
+                    name: "rawHeader",
+                    type: "Json",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                clinicalSeries: {
+                    name: "clinicalSeries",
+                    type: "ClinicalSeries",
+                    relation: { opposite: "skinTests", fields: ["clinicalSeriesId"], references: ["id"], onDelete: "Cascade" }
+                },
+                sourceImport: {
+                    name: "sourceImport",
+                    type: "ClinicalSkinTestImport",
+                    relation: { opposite: "skinTest", fields: ["sourceImportId"], references: ["id"], onDelete: "Cascade" }
+                },
+                results: {
+                    name: "results",
+                    type: "ClinicalSkinTestResult",
+                    array: true,
+                    relation: { opposite: "skinTest" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" },
+                sourceImportId: { type: "String" }
+            }
+        },
+        ClinicalSkinTestResult: {
+            name: "ClinicalSkinTestResult",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                skinTestId: {
+                    name: "skinTestId",
+                    type: "String",
+                    foreignKeyFor: [
+                        "skinTest"
+                    ] as readonly string[]
+                },
+                sourceImportId: {
+                    name: "sourceImportId",
+                    type: "String",
+                    foreignKeyFor: [
+                        "sourceImport"
+                    ] as readonly string[]
+                },
+                section: {
+                    name: "section",
+                    type: "String"
+                },
+                code: {
+                    name: "code",
+                    type: "String",
+                    optional: true
+                },
+                allergenName: {
+                    name: "allergenName",
+                    type: "String"
+                },
+                papuleMm: {
+                    name: "papuleMm",
+                    type: "Float",
+                    optional: true
+                },
+                erythemaMm: {
+                    name: "erythemaMm",
+                    type: "Float",
+                    optional: true
+                },
+                rawPapule: {
+                    name: "rawPapule",
+                    type: "String",
+                    optional: true
+                },
+                rawErythema: {
+                    name: "rawErythema",
+                    type: "String",
+                    optional: true
+                },
+                controlType: {
+                    name: "controlType",
+                    type: "ClinicalSkinTestControlType",
+                    optional: true
+                },
+                sortOrder: {
+                    name: "sortOrder",
+                    type: "Int"
+                },
+                rawCells: {
+                    name: "rawCells",
+                    type: "Json",
+                    optional: true
+                },
+                skinTest: {
+                    name: "skinTest",
+                    type: "ClinicalSkinTest",
+                    relation: { opposite: "results", fields: ["skinTestId"], references: ["id"], onDelete: "Cascade" }
+                },
+                sourceImport: {
+                    name: "sourceImport",
+                    type: "ClinicalSkinTestImport",
+                    relation: { opposite: "results", fields: ["sourceImportId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" },
+                sourceImportId_section_code_allergenName: { sourceImportId: { type: "String" }, section: { type: "String" }, code: { type: "String" }, allergenName: { type: "String" } }
             }
         },
         ClinicalSeriesMergeLog: {
@@ -7613,6 +7940,23 @@ export class SchemaType implements SchemaDef {
                 INACTIVE: "INACTIVE",
                 COMPLETED: "COMPLETED",
                 CANCELLED: "CANCELLED"
+            }
+        },
+        ClinicalSkinTestImportStatus: {
+            name: "ClinicalSkinTestImportStatus",
+            values: {
+                PENDING_REVIEW: "PENDING_REVIEW",
+                IMPORTED: "IMPORTED",
+                REJECTED: "REJECTED",
+                ERROR: "ERROR",
+                SKIPPED: "SKIPPED"
+            }
+        },
+        ClinicalSkinTestControlType: {
+            name: "ClinicalSkinTestControlType",
+            values: {
+                POSITIVE: "POSITIVE",
+                NEGATIVE: "NEGATIVE"
             }
         },
         ClinicalSeriesStageKind: {

@@ -5,6 +5,7 @@ export * from "./backups";
 export * from "./calendar";
 export * from "./certificates";
 export * from "./clinical-series";
+export * from "./clinical-skin-tests";
 export * from "./counterparts";
 export * from "./csv-upload";
 export * from "./dte";

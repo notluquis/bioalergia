@@ -47,6 +47,11 @@ export interface ClinicalSeriesEvent {
   eventTime: string | null;
   eventId: number;
   externalEventId: string;
+  linkedDocuments: Array<{
+    dteSaleDetailId: string;
+    folio: string;
+    totalAmount: number;
+  }>;
   linkedFolios: string[];
   patientName: string | null;
   patientRut: string | null;
@@ -203,6 +208,15 @@ export const ClinicalSeriesEventSchema = z.object({
   eventTime: z.string().nullable().catch(null),
   eventId: z.number(),
   externalEventId: z.string(),
+  linkedDocuments: z
+    .array(
+      z.object({
+        dteSaleDetailId: z.string(),
+        folio: z.string(),
+        totalAmount: z.number(),
+      })
+    )
+    .catch([]),
   linkedFolios: z.array(z.string()).catch([]),
   patientName: z.string().nullable(),
   patientRut: z.string().nullable(),

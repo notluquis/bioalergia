@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { extractPatientHints, resolveClinicalIdentity } from "../clinical-series";
+import {
+  extractPatientHints,
+  resolveClinicalIdentity,
+  selectRepresentativeClinicalIdentity,
+} from "../clinical-series";
 
 type NameCase =
   | readonly [summary: string, expectedName: string]
@@ -230,6 +234,21 @@ describe("clinical series patient-name cleaning", () => {
       const result = extractPatientHints(summary, null);
       expect(result.patientName).toBe(expectedName);
     }
+  });
+
+  it("prefers repeated clean patient names over one-off single-letter typo variants in the same RUT group", () => {
+    const description = "21770139-2, 51 años, isapre, concepcion, 961552808";
+    const result = selectRepresentativeClinicalIdentity([
+      {
+        description,
+        summary: "llego confirma vXavier VIDAUX,vacuna clustoid 50 0.25ML POLIPLUS GRAM+ACAROS",
+      },
+      { description, summary: "llego Xavier VIDAUX,vacuna clustoid 50" },
+      { description, summary: "Xavier VIDAUX,vacuna clustoid 50" },
+    ]);
+
+    expect(result.patientName).toBe("xavier vidaux");
+    expect(result.patientRut).toBe("21770139-2");
   });
 
   it("keeps boleta-holder identity as beneficiary when patient data appears after the boleta block", () => {

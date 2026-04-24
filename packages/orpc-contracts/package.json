@@ -48,6 +48,11 @@
       "import": "./dist/clinical-series.js",
       "default": "./dist/clinical-series.js"
     },
+    "./clinical-skin-tests": {
+      "types": "./dist/clinical-skin-tests.d.ts",
+      "import": "./dist/clinical-skin-tests.js",
+      "default": "./dist/clinical-skin-tests.js"
+    },
     "./counterparts": {
       "types": "./dist/counterparts.d.ts",
       "import": "./dist/counterparts.js",

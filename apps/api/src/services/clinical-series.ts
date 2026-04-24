@@ -519,6 +519,11 @@ type ClinicalSeriesEventSnapshot = {
   eventTime: null | string;
   eventId: number;
   externalEventId: string;
+  linkedDocuments: Array<{
+    dteSaleDetailId: string;
+    folio: string;
+    totalAmount: number;
+  }>;
   linkedFolios: string[];
   patientName: null | string;
   patientRut: null | string;
@@ -2818,6 +2823,53 @@ export function shouldPromoteBeneficiaryToPatientIdentity(params: {
   return dteClientNames.some((clientName) => haveCompatiblePatientNames(patientName, clientName));
 }
 
+type IdentityNameCounts = Map<string, { count: number; name: string }>;
+
+function incrementIdentityNameCount(counts: IdentityNameCounts, name: null | string) {
+  if (!name || !isLikelyPersonName(name)) return;
+  const key = normalizeName(name);
+  const current = counts.get(key);
+  counts.set(key, {
+    count: (current?.count ?? 0) + 1,
+    name: choosePreferredIdentityName(current?.name ?? null, name) ?? name,
+  });
+}
+
+function isSingleLetterPrefixedVariant(contaminated: string, canonical: string): boolean {
+  const contaminatedTokens = normalizeName(contaminated).split(" ").filter(Boolean);
+  const canonicalTokens = normalizeName(canonical).split(" ").filter(Boolean);
+  if (contaminatedTokens.length !== canonicalTokens.length) return false;
+
+  let changedTokens = 0;
+  for (let i = 0; i < contaminatedTokens.length; i += 1) {
+    const contaminatedToken = contaminatedTokens[i]!;
+    const canonicalToken = canonicalTokens[i]!;
+    if (contaminatedToken === canonicalToken) continue;
+    if (contaminatedToken.length !== canonicalToken.length + 1) return false;
+    if (!contaminatedToken.endsWith(canonicalToken)) return false;
+    changedTokens += 1;
+  }
+
+  return changedTokens === 1;
+}
+
+function chooseDominantIdentityName(fallback: null | string, counts: IdentityNameCounts): null | string {
+  const candidates = [...counts.values()].sort((a, b) => {
+    const countDelta = b.count - a.count;
+    if (countDelta !== 0) return countDelta;
+    const tokenDelta = getSignificantNameTokens(b.name).length - getSignificantNameTokens(a.name).length;
+    if (tokenDelta !== 0) return tokenDelta;
+    if (isSingleLetterPrefixedVariant(a.name, b.name)) return 1;
+    if (isSingleLetterPrefixedVariant(b.name, a.name)) return -1;
+    return b.name.length - a.name.length;
+  });
+
+  const dominant = candidates[0];
+  if (!dominant) return fallback;
+
+  return choosePreferredIdentityName(null, dominant.name);
+}
+
 export function selectRepresentativeClinicalIdentity(
   events: Array<{
     description: null | string;
@@ -2825,8 +2877,8 @@ export function selectRepresentativeClinicalIdentity(
   }>,
   stored?: StoredClinicalIdentity,
 ): ClinicalIdentity {
-  const patientGroups = new Map<string, ClinicalIdentity & { eventCount: number }>();
-  const beneficiaryGroups = new Map<string, ClinicalIdentity & { eventCount: number }>();
+  const patientGroups = new Map<string, ClinicalIdentity & { eventCount: number; patientNameCounts: IdentityNameCounts }>();
+  const beneficiaryGroups = new Map<string, ClinicalIdentity & { beneficiaryNameCounts: IdentityNameCounts; eventCount: number }>();
   let hasText = false;
 
   for (const event of events) {
@@ -2837,11 +2889,17 @@ export function selectRepresentativeClinicalIdentity(
     const patientKey = buildIdentityGroupKey(hints.patientName, hints.patientRut);
     if (patientKey) {
       const current = patientGroups.get(patientKey);
+      const patientNameCounts = current?.patientNameCounts ?? new Map();
+      incrementIdentityNameCount(patientNameCounts, hints.patientName);
       patientGroups.set(patientKey, {
         beneficiaryName: null,
         beneficiaryRut: null,
         eventCount: (current?.eventCount ?? 0) + 1,
-        patientName: choosePreferredIdentityName(current?.patientName ?? null, hints.patientName),
+        patientName: chooseDominantIdentityName(
+          choosePreferredIdentityName(current?.patientName ?? null, hints.patientName),
+          patientNameCounts,
+        ),
+        patientNameCounts,
         patientRut: hints.patientRut ?? current?.patientRut ?? null,
       });
     }
@@ -2853,11 +2911,14 @@ export function selectRepresentativeClinicalIdentity(
       beneficiaryKey === patientKey;
     if (beneficiaryKey && !sameAsPatient) {
       const current = beneficiaryGroups.get(beneficiaryKey);
+      const beneficiaryNameCounts = current?.beneficiaryNameCounts ?? new Map();
+      incrementIdentityNameCount(beneficiaryNameCounts, hints.beneficiaryName);
       beneficiaryGroups.set(beneficiaryKey, {
-        beneficiaryName: choosePreferredIdentityName(
-          current?.beneficiaryName ?? null,
-          hints.beneficiaryName,
+        beneficiaryName: chooseDominantIdentityName(
+          choosePreferredIdentityName(current?.beneficiaryName ?? null, hints.beneficiaryName),
+          beneficiaryNameCounts,
         ),
+        beneficiaryNameCounts,
         beneficiaryRut: hints.beneficiaryRut ?? current?.beneficiaryRut ?? null,
         eventCount: (current?.eventCount ?? 0) + 1,
         patientName: null,
@@ -3591,6 +3652,34 @@ export async function getClinicalSeriesSnapshotByExternalEvent(params: {
     GROUP BY l.event_id
   `;
   const foliosByEventId = new Map(eventFolioRows.map((r) => [r.eventId, r.folios]));
+  const eventDocumentRows = await db.$queryRaw<
+    Array<{ dteSaleDetailId: string; eventId: number; folio: string; totalAmount: number }>
+  >`
+    SELECT DISTINCT ON (l.event_id, s.id)
+      l.event_id AS "eventId",
+      s.id AS "dteSaleDetailId",
+      s.folio AS "folio",
+      COALESCE(s.total_amount, 0)::float AS "totalAmount"
+    FROM event_dte_sale_links l
+    JOIN events e ON e.id = l.event_id
+    JOIN dte_sale_details s ON s.id = l.dte_sale_detail_id
+    WHERE e.clinical_series_id = ${series.id}
+      AND l.status != 'REJECTED'
+    ORDER BY l.event_id, s.id, l.updated_at DESC
+  `;
+  const documentsByEventId = new Map<
+    number,
+    Array<{ dteSaleDetailId: string; folio: string; totalAmount: number }>
+  >();
+  for (const row of eventDocumentRows) {
+    const documents = documentsByEventId.get(row.eventId) ?? [];
+    documents.push({
+      dteSaleDetailId: row.dteSaleDetailId,
+      folio: row.folio,
+      totalAmount: row.totalAmount,
+    });
+    documentsByEventId.set(row.eventId, documents);
+  }
   const storedPatientPhones = normalizeStoredPhoneArray(series.patientPhones);
   const storedBeneficiaryPhones = normalizeStoredPhoneArray(series.beneficiaryPhones);
   const seriesPhones =
@@ -3629,6 +3718,7 @@ export async function getClinicalSeriesSnapshotByExternalEvent(params: {
           : null,
     eventId: item.id,
     externalEventId: item.externalEventId,
+    linkedDocuments: documentsByEventId.get(item.id) ?? [],
     linkedFolios: foliosByEventId.get(item.id) ?? [],
     patientName: item.patientName ?? null,
     patientRut: item.patientRut ?? null,

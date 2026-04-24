@@ -36,6 +36,15 @@ export const clinicalSeriesEventSchema = z.object({
   eventTime: z.string().nullable(),
   eventId: z.number(),
   externalEventId: z.string(),
+  linkedDocuments: z
+    .array(
+      z.object({
+        dteSaleDetailId: z.string(),
+        folio: z.string(),
+        totalAmount: z.number(),
+      }),
+    )
+    .catch([]),
   linkedFolios: z.array(z.string()).catch([]),
   patientName: z.string().nullable(),
   patientRut: z.string().nullable(),

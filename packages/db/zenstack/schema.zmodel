@@ -922,6 +922,7 @@ model ClinicalSeries {
   events     Event[]
   mergeLogs  ClinicalSeriesMergeLog[]
   abandonmentContacts AbandonmentContact[]
+  skinTests  ClinicalSkinTest[]
 
   @@deny('all', auth() == null)
   @@allow('read', true)
@@ -931,6 +932,99 @@ model ClinicalSeries {
   @@index([patientRut])
   @@index([beneficiaryRut])
   @@map("clinical_series")
+}
+
+model ClinicalSkinTestImport {
+  id                    String                    @id @default(cuid())
+  oneDriveItemId        String                    @unique @map("onedrive_item_id")
+  oneDriveDriveId       String?                   @map("onedrive_drive_id")
+  oneDriveETag          String?                   @map("onedrive_etag")
+  oneDriveCTag          String?                   @map("onedrive_ctag")
+  oneDriveWebUrl        String?                   @map("onedrive_web_url")
+  path                  String?
+  filename              String
+  mimeType              String?                   @map("mime_type")
+  size                  Int?
+  modifiedAt            DateTime?                 @map("modified_at") @db.Timestamptz(3)
+  parserVersion         String                    @map("parser_version")
+  status                ClinicalSkinTestImportStatus @default(PENDING_REVIEW)
+  confidence            Int                       @default(0)
+  error                 String?
+  issues                Json?
+  parsedPayload         Json?                     @map("parsed_payload")
+  reviewedBy            Int?                      @map("reviewed_by")
+  reviewedAt            DateTime?                 @map("reviewed_at") @db.Timestamptz(3)
+  reviewNotes           String?                   @map("review_notes")
+  importedAt            DateTime?                 @map("imported_at") @db.Timestamptz(3)
+  createdAt             DateTime                  @default(now()) @map("created_at")
+  updatedAt             DateTime                  @default(now()) @updatedAt @map("updated_at")
+
+  skinTest              ClinicalSkinTest?
+  results               ClinicalSkinTestResult[]
+
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([status])
+  @@index([modifiedAt])
+  @@map("clinical_skin_test_imports")
+}
+
+model ClinicalSkinTest {
+  id               String                 @id @default(cuid())
+  clinicalSeriesId Int                    @map("clinical_series_id")
+  sourceImportId   String                 @unique @map("source_import_id")
+  testDate         DateTime               @map("test_date") @db.Date
+  patientName      String?                @map("patient_name")
+  patientRut       String?                @map("patient_rut")
+  patientEmail     String?                @map("patient_email")
+  patientPhone     String?                @map("patient_phone")
+  ageLabel         String?                @map("age_label")
+  panelTitle       String?                @map("panel_title")
+  rawHeader        Json?                  @map("raw_header")
+  createdAt        DateTime               @default(now()) @map("created_at")
+  updatedAt        DateTime               @default(now()) @updatedAt @map("updated_at")
+
+  clinicalSeries   ClinicalSeries         @relation(fields: [clinicalSeriesId], references: [id], onDelete: Cascade)
+  sourceImport     ClinicalSkinTestImport @relation(fields: [sourceImportId], references: [id], onDelete: Cascade)
+  results          ClinicalSkinTestResult[]
+
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([clinicalSeriesId])
+  @@index([patientRut])
+  @@index([testDate])
+  @@map("clinical_skin_tests")
+}
+
+model ClinicalSkinTestResult {
+  id             String                       @id @default(cuid())
+  skinTestId     String                       @map("skin_test_id")
+  sourceImportId String                       @map("source_import_id")
+  section        String
+  code           String?
+  allergenName   String                       @map("allergen_name")
+  papuleMm       Float?                       @map("papule_mm")
+  erythemaMm     Float?                       @map("erythema_mm")
+  rawPapule      String?                      @map("raw_papule")
+  rawErythema    String?                      @map("raw_erythema")
+  controlType    ClinicalSkinTestControlType? @map("control_type")
+  sortOrder      Int                          @map("sort_order")
+  rawCells       Json?                        @map("raw_cells")
+
+  skinTest       ClinicalSkinTest             @relation(fields: [skinTestId], references: [id], onDelete: Cascade)
+  sourceImport   ClinicalSkinTestImport       @relation(fields: [sourceImportId], references: [id], onDelete: Cascade)
+
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@unique([sourceImportId, section, code, allergenName])
+  @@index([skinTestId])
+  @@map("clinical_skin_test_results")
 }
 
 model ClinicalSeriesMergeLog {
@@ -1942,6 +2036,19 @@ enum ClinicalSeriesStatus {
   INACTIVE
   COMPLETED
   CANCELLED
+}
+
+enum ClinicalSkinTestImportStatus {
+  PENDING_REVIEW
+  IMPORTED
+  REJECTED
+  ERROR
+  SKIPPED
+}
+
+enum ClinicalSkinTestControlType {
+  POSITIVE
+  NEGATIVE
 }
 
 enum ClinicalSeriesStageKind {

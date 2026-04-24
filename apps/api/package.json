@@ -57,6 +57,7 @@
     "bcryptjs": "^3.0.3",
     "dayjs": "^1.11.20",
     "decimal.js": "^10.6.0",
+    "exceljs": "^4.4.0",
     "gaxios": "^7.1.4",
     "google-auth-library": "^10.6.2",
     "hono": "^4.12.14",
