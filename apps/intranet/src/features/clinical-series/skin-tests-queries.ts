@@ -23,6 +23,7 @@ export interface SkinTestImportFilters {
 export const skinTestImportKeys = {
   all: ["clinical-skin-tests"] as const,
   activeJob: () => [...skinTestImportKeys.all, "active-job"] as const,
+  importsBase: () => [...skinTestImportKeys.all, "imports"] as const,
   imports: (filters?: SkinTestImportFilters) =>
     [...skinTestImportKeys.all, "imports", filters] as const,
   oneDriveFolders: (accountId: string, driveId?: null | string, itemId?: null | string) =>
@@ -44,14 +45,16 @@ export function useOneDriveSkinTestStatus() {
   });
 }
 
-export function useActiveClinicalSkinTestJob() {
+export function useActiveClinicalSkinTestJob(options?: { enabled?: boolean }) {
   return useQuery({
+    enabled: options?.enabled ?? true,
     queryFn: async () => await clinicalSkinTestsORPCClient.activeJob({}),
     queryKey: skinTestImportKeys.activeJob(),
+    staleTime: 1000,
     refetchInterval: (query) => {
       const status = query.state.data?.job?.status;
       if (!status) return false;
-      return ["completed", "failed", "cancelled"].includes(status) ? false : 2000;
+      return ["completed", "failed", "cancelled"].includes(status) ? false : 5000;
     },
   });
 }
@@ -118,7 +121,7 @@ export function useSyncSkinTestImports() {
       force?: boolean;
     }) => await clinicalSkinTestsORPCClient.sync(compactORPCInput(params) ?? {}),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: skinTestImportKeys.all });
+      void queryClient.invalidateQueries({ queryKey: skinTestImportKeys.activeJob() });
     },
   });
 }
@@ -189,7 +192,7 @@ export function useApproveSkinTestImport() {
   return useMutation({
     mutationFn: async (id: string) => await clinicalSkinTestsORPCClient.approveImport({ id }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: skinTestImportKeys.all });
+      void queryClient.invalidateQueries({ queryKey: skinTestImportKeys.importsBase() });
       void queryClient.invalidateQueries({ queryKey: clinicalSeriesKeys.all });
     },
   });
@@ -200,7 +203,7 @@ export function useRejectSkinTestImport() {
   return useMutation({
     mutationFn: async (id: string) => await clinicalSkinTestsORPCClient.rejectImport({ id }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: skinTestImportKeys.all });
+      void queryClient.invalidateQueries({ queryKey: skinTestImportKeys.importsBase() });
     },
   });
 }
@@ -210,7 +213,7 @@ export function useReprocessSkinTestImport() {
   return useMutation({
     mutationFn: async (id: string) => await clinicalSkinTestsORPCClient.reprocessImport({ id }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: skinTestImportKeys.all });
+      void queryClient.invalidateQueries({ queryKey: skinTestImportKeys.importsBase() });
       void queryClient.invalidateQueries({ queryKey: clinicalSeriesKeys.all });
     },
   });
@@ -238,7 +241,8 @@ export function useCancelClinicalSkinTestJob() {
         queryClient.invalidateQueries({
           queryKey: [...skinTestImportKeys.all, "job-status", jobId],
         }),
-        queryClient.invalidateQueries({ queryKey: skinTestImportKeys.imports() }),
+        queryClient.invalidateQueries({ queryKey: skinTestImportKeys.activeJob() }),
+        queryClient.invalidateQueries({ queryKey: skinTestImportKeys.importsBase() }),
       ]);
     },
   });

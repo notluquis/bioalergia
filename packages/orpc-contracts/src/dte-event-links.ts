@@ -271,7 +271,7 @@ export const dteEventLinksJobStatusResponseSchema = z.object({
   message: z.string(),
   progress: z.number(),
   result: z.unknown(),
-  status: z.enum(["completed", "failed", "pending", "running"]),
+  status: z.enum(["cancelled", "completed", "failed", "pending", "running"]),
   total: z.number(),
   type: z.string(),
 });

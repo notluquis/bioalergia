@@ -103,7 +103,7 @@ export function SkinTestImportPanel() {
   const authUrlQuery = useGetOneDriveAuthUrl(window.location.origin + window.location.pathname);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const handledOAuthCodeRef = useRef<string | null>(null);
-  const activeJobQuery = useActiveClinicalSkinTestJob();
+  const activeJobQuery = useActiveClinicalSkinTestJob({ enabled: !activeJobId });
   const jobStatusQuery = useClinicalSkinTestJobStatus(activeJobId);
   const runningJobId = activeJobId ?? activeJobQuery.data?.job?.id ?? null;
   const activeJobStatus = jobStatusQuery.data?.job?.status;
@@ -301,7 +301,7 @@ export function SkinTestImportPanel() {
               <OneDriveAccountRow
                 key={account.accountId}
                 account={account}
-                isSyncing={syncMutation.isPending}
+                isSyncing={isSyncInProgress}
                 onSync={(force, params) => void handleSync(force, params)}
               />
             ))}

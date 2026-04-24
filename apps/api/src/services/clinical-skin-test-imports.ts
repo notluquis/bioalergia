@@ -17,6 +17,8 @@ import {
 
 const AUTO_IMPORT_MIN_CONFIDENCE = 80;
 const JOB_TYPE = "clinical-skin-test-import-sync";
+const DEFAULT_SYNC_CONCURRENCY = 3;
+const MAX_SYNC_CONCURRENCY = 8;
 
 export interface SkinTestImportListInput {
   confidenceMax?: number;
@@ -117,8 +119,11 @@ export async function syncClinicalSkinTestImports(options?: {
     throw new Error("OneDrive no conectado.");
   }
 
+  const concurrency = resolveSyncConcurrency();
+
   let imported = 0;
   let pending = 0;
+  let processed = 0;
   let skipped = 0;
   let errors = 0;
   let scanned = 0;
@@ -139,25 +144,62 @@ export async function syncClinicalSkinTestImports(options?: {
     scanned += items.length;
     xlsx += xlsxItems.length;
 
-    for (const [index, item] of xlsxItems.entries()) {
-      if (options?.shouldCancel?.()) {
-        throw new Error("SYNC_CANCELLED");
-      }
-
-      options?.onProgress?.(
-        index + 1, 
-        Math.max(xlsxItems.length, 1), 
-        `[${account.email}] Procesando ${item.name}`
-      );
-      const result = await processOneDriveSkinTestItem(account.accountId, item, { force: options?.force });
-      if (result.status === "IMPORTED") imported += 1;
-      else if (result.status === "PENDING_REVIEW") pending += 1;
-      else if (result.status === "ERROR") errors += 1;
-      else skipped += 1;
+    if (xlsxItems.length === 0) {
+      continue;
     }
+
+    let cursor = 0;
+    const workerCount = Math.min(concurrency, xlsxItems.length);
+
+    const workers = Array.from({ length: workerCount }, async () => {
+      while (true) {
+        if (options?.shouldCancel?.()) {
+          throw new Error("SYNC_CANCELLED");
+        }
+
+        const index = cursor;
+        if (index >= xlsxItems.length) {
+          return;
+        }
+        cursor += 1;
+
+        const item = xlsxItems[index];
+        options?.onProgress?.(
+          processed,
+          Math.max(xlsx, 1),
+          `[${account.email}] Procesando ${item.name}`,
+        );
+
+        const result = await processOneDriveSkinTestItem(account.accountId, item, {
+          force: options?.force,
+        });
+
+        if (result.status === "IMPORTED") imported += 1;
+        else if (result.status === "PENDING_REVIEW") pending += 1;
+        else if (result.status === "ERROR") errors += 1;
+        else skipped += 1;
+
+        processed += 1;
+        options?.onProgress?.(
+          processed,
+          Math.max(xlsx, 1),
+          `[${account.email}] Completado ${processed}/${Math.max(xlsx, 1)}`,
+        );
+      }
+    });
+
+    await Promise.all(workers);
   }
 
   return { errors, imported, pending, scanned, skipped, xlsx };
+}
+
+function resolveSyncConcurrency(): number {
+  const raw = Number.parseInt(process.env.SKIN_TEST_IMPORT_SYNC_CONCURRENCY ?? "", 10);
+  if (!Number.isFinite(raw) || raw <= 0) {
+    return DEFAULT_SYNC_CONCURRENCY;
+  }
+  return Math.min(Math.max(raw, 1), MAX_SYNC_CONCURRENCY);
 }
 
 export async function processOneDriveSkinTestItem(
@@ -426,15 +468,60 @@ export async function listSkinTestsBySeries(clinicalSeriesId: number) {
     ORDER BY test_date DESC, created_at DESC
   `.execute(kysely);
 
-  const tests: SkinTestDetailOutput[] = [];
-  for (const test of testsResult.rows) {
-    const results = await getResultsForTest(test.id);
-    tests.push({
-      ...test,
-      results,
-      testDate: toDateString(test.testDate),
-    });
+  if (testsResult.rows.length === 0) {
+    return { tests: [] };
   }
+
+  // Single query to fetch all results for all tests (eliminates N+1).
+  const testIds = testsResult.rows.map((t) => t.id);
+  const allResultsRows = await sql<{
+    allergenName: string;
+    code: null | string;
+    controlType: "NEGATIVE" | "POSITIVE" | null;
+    erythemaMm: null | number;
+    papuleMm: null | number;
+    rawCells: unknown;
+    rawErythema: null | string;
+    rawPapule: null | string;
+    section: string;
+    skinTestId: string;
+    sortOrder: number;
+  }>`
+    SELECT
+      skin_test_id AS "skinTestId",
+      section,
+      code,
+      allergen_name AS "allergenName",
+      papule_mm AS "papuleMm",
+      erythema_mm AS "erythemaMm",
+      raw_papule AS "rawPapule",
+      raw_erythema AS "rawErythema",
+      control_type AS "controlType",
+      sort_order AS "sortOrder",
+      raw_cells AS "rawCells"
+    FROM clinical_skin_test_results
+    WHERE skin_test_id = ANY(ARRAY[${sql.join(testIds)}]::text[])
+    ORDER BY skin_test_id, sort_order ASC
+  `.execute(kysely);
+
+  // Group results by test id in-memory.
+  const resultsByTestId = new Map<string, ParsedSkinTestResult[]>();
+  for (const row of allResultsRows.rows) {
+    const { skinTestId, ...rest } = row;
+    let group = resultsByTestId.get(skinTestId);
+    if (!group) {
+      group = [];
+      resultsByTestId.set(skinTestId, group);
+    }
+    group.push({ ...rest, rawCells: asRecord(rest.rawCells) });
+  }
+
+  const tests: SkinTestDetailOutput[] = testsResult.rows.map((test) => ({
+    ...test,
+    results: resultsByTestId.get(test.id) ?? [],
+    testDate: toDateString(test.testDate),
+  }));
+
   return { tests };
 }
 
@@ -531,6 +618,10 @@ async function matchOrCreateClinicalSeries(
   return { issues, seriesId: created.rows[0]?.id ?? null };
 }
 
+// Max rows per INSERT batch. Each row has 13 bind params;
+// PostgreSQL supports up to 65535 params → safe cap at 500 rows.
+const RESULTS_BATCH_SIZE = 500;
+
 async function writeSkinTest(
   importId: string,
   seriesId: number,
@@ -573,7 +664,29 @@ async function writeSkinTest(
     )
   `.execute(kysely);
 
-  for (const result of parsed.results) {
+  // Batch insert results — one query per chunk instead of one per row.
+  for (let i = 0; i < parsed.results.length; i += RESULTS_BATCH_SIZE) {
+    const chunk = parsed.results.slice(i, i + RESULTS_BATCH_SIZE);
+    const valueRows = sql.join(
+      chunk.map(
+        (result) =>
+          sql`(
+            ${createId()},
+            ${skinTestId},
+            ${importId},
+            ${result.section},
+            ${result.code},
+            ${result.allergenName},
+            ${result.papuleMm},
+            ${result.erythemaMm},
+            ${result.rawPapule},
+            ${result.rawErythema},
+            ${result.controlType === null ? sql`NULL::"ClinicalSkinTestControlType"` : sql`${result.controlType}::"ClinicalSkinTestControlType"`},
+            ${result.sortOrder},
+            ${JSON.stringify(result.rawCells)}::jsonb
+          )`,
+      ),
+    );
     await sql`
       INSERT INTO clinical_skin_test_results (
         id,
@@ -590,21 +703,7 @@ async function writeSkinTest(
         sort_order,
         raw_cells
       )
-      VALUES (
-        ${createId()},
-        ${skinTestId},
-        ${importId},
-        ${result.section},
-        ${result.code},
-        ${result.allergenName},
-        ${result.papuleMm},
-        ${result.erythemaMm},
-        ${result.rawPapule},
-        ${result.rawErythema},
-        ${result.controlType}::"ClinicalSkinTestControlType",
-        ${result.sortOrder},
-        ${JSON.stringify(result.rawCells)}::jsonb
-      )
+      VALUES ${valueRows}
       ON CONFLICT (source_import_id, section, code, allergen_name)
       DO UPDATE SET
         papule_mm = EXCLUDED.papule_mm,
