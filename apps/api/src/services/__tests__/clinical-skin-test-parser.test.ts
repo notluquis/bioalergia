@@ -11,6 +11,7 @@ describe("clinical skin test parser", () => {
     expect(normalizeRut("26.813.410-7")).toBe("26.813.410-7");
     expect(normalizeRut("268134107")).toBe("26.813.410-7");
     expect(parseDateToISO("06-01-2025")).toBe("2025-01-06");
+    expect(parseDateToISO("23 - 05-2022")).toBe("2022-05-23");
     expect(parseDateToISO("10 DE OCTUBRE DE 2017")).toBe("2017-10-10");
   });
 

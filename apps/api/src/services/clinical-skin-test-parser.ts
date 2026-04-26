@@ -1,6 +1,6 @@
 import ExcelJS from "exceljs";
 
-export const SKIN_TEST_PARSER_VERSION = "2026-04-26.1";
+export const SKIN_TEST_PARSER_VERSION = "2026-04-26.2";
 
 export interface SkinTestIssue {
   code: string;
@@ -335,7 +335,7 @@ export function parseDateToISO(value: null | string): null | string {
   const text = normalizeText(value)
     .toLowerCase()
     .replace(/\s+de\s+/g, " ");
-  const numeric = text.match(/\b(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})\b/);
+  const numeric = text.match(/\b(\d{1,2})\s*[-/]\s*(\d{1,2})\s*[-/]\s*(\d{2,4})\b/);
   if (numeric) {
     const day = Number(numeric[1]);
     const month = Number(numeric[2]);
