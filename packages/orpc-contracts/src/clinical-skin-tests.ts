@@ -339,7 +339,9 @@ export const skinTestAnalyticsOutputSchema = z.object({
   ),
   dateFrom: z.string().nullable(),
   dateTo: z.string().nullable(),
+  patientsWithPositiveAllergen: z.number().int(),
   positiveAllergenResults: z.number().int(),
+  positiveTests: z.number().int(),
   recentTests: z.array(
     z.object({
       clinicalSeriesId: z.number().int(),
@@ -359,6 +361,18 @@ export const skinTestAnalyticsOutputSchema = z.object({
       patientName: z.string().nullable(),
       patientRut: z.string().nullable(),
       totalTests: z.number().int(),
+    })
+  ),
+  topAllergens: z.array(
+    z.object({
+      allergenName: z.string(),
+      avgPapuleMm: z.number().nullable(),
+      code: z.string().nullable(),
+      maxPapuleMm: z.number().nullable(),
+      positiveResults: z.number().int(),
+      section: z.string(),
+      testCount: z.number().int(),
+      uniquePatients: z.number().int(),
     })
   ),
   totalPatients: z.number().int(),

@@ -64,6 +64,9 @@ export function SkinTestAnalyticsPanel() {
   const { data: stats, error, isLoading } = useSkinTestAnalytics(filters);
   const maxMonth = Math.max(...(stats?.byMonth.map((row) => row.total) ?? [0]));
   const maxPatientTests = Math.max(...(stats?.topPatients.map((row) => row.totalTests) ?? [0]));
+  const maxAllergenPatients = Math.max(
+    ...(stats?.topAllergens.map((row) => row.uniquePatients) ?? [0])
+  );
 
   if (isLoading) {
     return (
@@ -146,7 +149,17 @@ export function SkinTestAnalyticsPanel() {
             <MetricCard label="Tests" value={stats.totalTests} />
             <MetricCard label="Pacientes" value={stats.totalPatients} />
             <MetricCard label="Resultados" value={stats.totalResults} />
-            <MetricCard label="Pápula positiva" value={stats.positiveAllergenResults} />
+            <MetricCard
+              label="Pacientes positivos"
+              value={stats.patientsWithPositiveAllergen}
+              suffix={`${pct(stats.patientsWithPositiveAllergen, stats.totalPatients).toFixed(1)}%`}
+            />
+            <MetricCard
+              label="Tests positivos"
+              value={stats.positiveTests}
+              suffix={`${pct(stats.positiveTests, stats.totalTests).toFixed(1)}%`}
+            />
+            <MetricCard label="Pápulas positivas" value={stats.positiveAllergenResults} />
             <MetricCard
               label="Con RUT"
               value={stats.withRut}
@@ -199,6 +212,61 @@ export function SkinTestAnalyticsPanel() {
               </Card.Content>
             </Card>
           </div>
+
+          <Card className="border-default-200 shadow-sm">
+            <Card.Header className="pb-2">
+              <div className="flex flex-col gap-1">
+                <h3 className="text-base font-semibold text-foreground">
+                  Alérgenos más positivos por pacientes únicos
+                </h3>
+                <p className="text-sm text-foreground-500">
+                  Cuenta cada paciente una sola vez por alérgeno; positivo = P mayor o igual a 3 mm.
+                </p>
+              </div>
+            </Card.Header>
+            <Card.Content className="space-y-3 p-4 pt-0">
+              {stats.topAllergens.map((allergen) => (
+                <div
+                  key={`${allergen.section}-${allergen.code ?? ""}-${allergen.allergenName}`}
+                  className="space-y-1.5"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {allergen.code ? (
+                          <Chip color="danger" size="sm" variant="soft">
+                            {allergen.code}
+                          </Chip>
+                        ) : null}
+                        <span className="truncate text-sm font-medium text-foreground">
+                          {allergen.allergenName}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-xs text-foreground-500">
+                        {allergen.section} · {formatNumber(allergen.positiveResults)} positivos · P
+                        prom. {allergen.avgPapuleMm?.toFixed(1) ?? "-"} · P máx.{" "}
+                        {allergen.maxPapuleMm?.toFixed(1) ?? "-"}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-semibold tabular-nums text-foreground">
+                        {formatNumber(allergen.uniquePatients)}
+                      </p>
+                      <p className="text-xs text-foreground-500">pacientes</p>
+                    </div>
+                  </div>
+                  <ProgressBar
+                    aria-label={`Pacientes positivos a ${allergen.allergenName}`}
+                    value={pct(allergen.uniquePatients, maxAllergenPatients)}
+                  >
+                    <ProgressBar.Track>
+                      <ProgressBar.Fill />
+                    </ProgressBar.Track>
+                  </ProgressBar>
+                </div>
+              ))}
+            </Card.Content>
+          </Card>
 
           <div className="grid gap-4 xl:grid-cols-[minmax(20rem,0.8fr)_minmax(0,1fr)]">
             <Card className="border-default-200 shadow-sm">

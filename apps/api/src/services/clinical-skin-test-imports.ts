@@ -140,7 +140,9 @@ export interface SkinTestAnalyticsOutput {
   byMonth: Array<{ month: string; total: number }>;
   dateFrom: null | string;
   dateTo: null | string;
+  patientsWithPositiveAllergen: number;
   positiveAllergenResults: number;
+  positiveTests: number;
   recentTests: Array<{
     clinicalSeriesId: number;
     examType: string;
@@ -157,6 +159,16 @@ export interface SkinTestAnalyticsOutput {
     patientName: null | string;
     patientRut: null | string;
     totalTests: number;
+  }>;
+  topAllergens: Array<{
+    allergenName: string;
+    avgPapuleMm: null | number;
+    code: null | string;
+    maxPapuleMm: null | number;
+    positiveResults: number;
+    section: string;
+    testCount: number;
+    uniquePatients: number;
   }>;
   totalPatients: number;
   totalResults: number;
@@ -938,12 +950,20 @@ export async function getSkinTestAnalytics(
   const whereSql = buildSkinTestAnalyticsWhereSql(input);
   const examTypeSql = skinTestExamTypeSql();
 
-  const [summaryResult, byExamTypeResult, byMonthResult, topPatientsResult, recentTestsResult] =
-    await Promise.all([
+  const [
+    summaryResult,
+    byExamTypeResult,
+    byMonthResult,
+    topPatientsResult,
+    topAllergensResult,
+    recentTestsResult,
+  ] = await Promise.all([
       sql<{
         dateFrom: Date | string | null;
         dateTo: Date | string | null;
+        patientsWithPositiveAllergen: number;
         positiveAllergenResults: number;
+        positiveTests: number;
         totalPatients: number;
         totalResults: number;
         totalTests: number;
@@ -970,7 +990,21 @@ export async function getSkinTestAnalytics(
             WHERE r.skin_test_id IN (SELECT id FROM filtered)
               AND r.control_type IS NULL
               AND coalesce(r.papule_mm, 0) >= 3
-          ), 0) AS "positiveAllergenResults"
+          ), 0) AS "positiveAllergenResults",
+          coalesce((
+            SELECT count(DISTINCT r.skin_test_id)::int
+            FROM clinical_skin_test_results r
+            WHERE r.skin_test_id IN (SELECT id FROM filtered)
+              AND r.control_type IS NULL
+              AND coalesce(r.papule_mm, 0) >= 3
+          ), 0) AS "positiveTests",
+          coalesce((
+            SELECT count(DISTINCT coalesce(nullif(f.patient_rut, ''), nullif(f.patient_name, ''), f.clinical_series_id::text, f.id))::int
+            FROM filtered f
+            JOIN clinical_skin_test_results r ON r.skin_test_id = f.id
+            WHERE r.control_type IS NULL
+              AND coalesce(r.papule_mm, 0) >= 3
+          ), 0) AS "patientsWithPositiveAllergen"
         FROM filtered
       `.execute(kysely),
       sql<{ examType: string; total: number }>`
@@ -1009,6 +1043,35 @@ export async function getSkinTestAnalytics(
         LIMIT 12
       `.execute(kysely),
       sql<{
+        allergenName: string;
+        avgPapuleMm: number | null;
+        code: string | null;
+        maxPapuleMm: number | null;
+        positiveResults: number;
+        section: string;
+        testCount: number;
+        uniquePatients: number;
+      }>`
+        SELECT
+          r.section,
+          r.code,
+          r.allergen_name AS "allergenName",
+          count(*)::int AS "positiveResults",
+          count(DISTINCT t.id)::int AS "testCount",
+          count(DISTINCT coalesce(nullif(t.patient_rut, ''), nullif(t.patient_name, ''), t.clinical_series_id::text, t.id))::int AS "uniquePatients",
+          max(r.papule_mm)::float AS "maxPapuleMm",
+          round(avg(r.papule_mm)::numeric, 1)::float AS "avgPapuleMm"
+        FROM clinical_skin_test_results r
+        JOIN clinical_skin_tests t ON t.id = r.skin_test_id
+        LEFT JOIN clinical_skin_test_imports i ON i.id = t.source_import_id
+        WHERE ${whereSql}
+          AND r.control_type IS NULL
+          AND coalesce(r.papule_mm, 0) >= 3
+        GROUP BY r.section, r.code, r.allergen_name
+        ORDER BY "uniquePatients" DESC, "positiveResults" DESC, "maxPapuleMm" DESC NULLS LAST, r.allergen_name ASC
+        LIMIT 20
+      `.execute(kysely),
+      sql<{
         clinicalSeriesId: number;
         examType: string;
         id: string;
@@ -1045,7 +1108,9 @@ export async function getSkinTestAnalytics(
     byMonth: byMonthResult.rows.reverse(),
     dateFrom: summary?.dateFrom ? toDateString(summary.dateFrom) : null,
     dateTo: summary?.dateTo ? toDateString(summary.dateTo) : null,
+    patientsWithPositiveAllergen: summary?.patientsWithPositiveAllergen ?? 0,
     positiveAllergenResults: summary?.positiveAllergenResults ?? 0,
+    positiveTests: summary?.positiveTests ?? 0,
     recentTests: recentTestsResult.rows.map((row) => ({
       ...row,
       testDate: toDateString(row.testDate),
@@ -1054,6 +1119,7 @@ export async function getSkinTestAnalytics(
       ...row,
       lastTestDate: row.lastTestDate ? toDateString(row.lastTestDate) : null,
     })),
+    topAllergens: topAllergensResult.rows,
     totalPatients: summary?.totalPatients ?? 0,
     totalResults: summary?.totalResults ?? 0,
     totalTests: summary?.totalTests ?? 0,
