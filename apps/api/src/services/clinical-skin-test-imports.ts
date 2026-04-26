@@ -2,6 +2,7 @@ import { kysely } from "@finanzas/db";
 import { createId } from "@paralleldrive/cuid2";
 import { createHash } from "node:crypto";
 import { sql } from "kysely";
+import { isSkinTestCandidateFilename } from "../lib/skin-test-file-filter";
 import {
   downloadOneDriveItem,
   getOneDriveStatus,
@@ -241,7 +242,7 @@ export async function syncClinicalSkinTestImports(options?: {
     xlsx += xlsxItems.length;
     workItems.push(...xlsxItems.map((item) => ({ account, item })));
 
-    emit(`[${account.email}] ${items.length} cambio(s), ${xlsxItems.length} archivo(s) .xlsx`, {
+    emit(`[${account.email}] ${items.length} cambio(s), ${xlsxItems.length} .xlsx candidato(s)`, {
       accountEmail: account.email,
       accountId: account.accountId,
       accountIndex: accountIndex + 1,
@@ -255,7 +256,7 @@ export async function syncClinicalSkinTestImports(options?: {
   }
 
   if (workItems.length === 0) {
-    emit(`Sync terminado: ${scanned} item(s) revisado(s), sin .xlsx para procesar`, {
+    emit(`Sync terminado: ${scanned} item(s) revisado(s), sin .xlsx candidato(s)`, {
       accountsTotal: accounts.length,
       errors,
       discovered,
@@ -275,7 +276,7 @@ export async function syncClinicalSkinTestImports(options?: {
   let cursor = 0;
   const workerCount = Math.min(concurrency, workItems.length);
 
-  emit(`Registrando metadata de ${workItems.length} archivo(s) .xlsx`, {
+  emit(`Registrando metadata de ${workItems.length} .xlsx candidato(s)`, {
     accountsTotal: accounts.length,
     phase: "processing",
     processed,
@@ -1275,6 +1276,7 @@ function isImportableXlsx(item: OneDriveItem): boolean {
   if (!item.file) return false;
   if (!/\.xlsx$/i.test(item.name)) return false;
   if (/^~\$/.test(item.name)) return false;
+  if (!isSkinTestCandidateFilename(item.name)) return false;
   if (isBlockedDownloadPath(item.parentReference?.path)) return false;
   if (isBlockedDownloadPath(item.remoteItem?.parentReference?.path)) return false;
   return true;

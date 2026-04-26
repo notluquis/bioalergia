@@ -1,4 +1,5 @@
 import { db } from "@finanzas/db";
+import { isSkinTestCandidateFilename } from "../skin-test-file-filter";
 import { logError, logEvent, logWarn } from "../logger";
 
 const MICROSOFT_TOKEN_URL = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token";
@@ -556,7 +557,12 @@ function toFolderItem(item: OneDriveItem): OneDriveFolderItem {
 }
 
 function isXlsxItem(item: OneDriveItem): boolean {
-  return Boolean(item.file) && /\.xlsx$/i.test(item.name) && !/^~\$/.test(item.name);
+  return (
+    Boolean(item.file) &&
+    /\.xlsx$/i.test(item.name) &&
+    !/^~\$/.test(item.name) &&
+    isSkinTestCandidateFilename(item.name)
+  );
 }
 
 function normalizeGraphPath(path: null | string | undefined): null | string {
