@@ -11,6 +11,9 @@ describe("skin test file filter", () => {
     expect(isSkinTestCandidateFilename("test cutáneo completo.xlsx")).toBe(true);
     expect(isSkinTestCandidateFilename("tests cutaneos pendientes.xlsx")).toBe(true);
     expect(isSkinTestCandidateFilename("testcutaneo paciente.xlsx")).toBe(true);
+    expect(isSkinTestCandidateFilename("MAIR HASSON GOLUBOFF - TEST CUTANEO AINES.xlsx")).toBe(
+      true
+    );
   });
 
   it("rejects generic clinical and patient spreadsheets", () => {

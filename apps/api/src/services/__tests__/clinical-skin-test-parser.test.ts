@@ -266,4 +266,67 @@ describe("clinical skin test parser", () => {
     expect(parsed.interpretation.website).toBe("www.jmmmartinez-alergia-inmunologia.com");
     expect(parsed.interpretation.address).toBe("SAN MARTÍN 870, OF 509-B, CONCEPCIÓN");
   });
+
+  it("parses AINES prick test format with metrics before allergen names", async () => {
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("Test");
+    sheet.getCell("E7").value = "NOMBRE:  MAIR HASSON GULOBOFF";
+    sheet.getCell("E8").value = "EDAD:       46 AÑOS";
+    sheet.getCell("E9").value = "FECHA:      13.05.2022";
+    sheet.getCell("B12").value = "PRICKTEST AINES";
+    sheet.getCell("C13").value = "P";
+    sheet.getCell("D13").value = "E";
+    sheet.getCell("D14").value = 4;
+    sheet.getCell("E14").value = "1 IBUPROFENO";
+    sheet.getCell("C20").value = 3;
+    sheet.getCell("D20").value = 6;
+    sheet.getCell("E20").value = "4 PARACETAMOL";
+    sheet.getCell("C46").value = 8;
+    sheet.getCell("D46").value = 25;
+    sheet.getCell("E46").value = "CONTROL POSITIVO (HISTAMINA)";
+    sheet.getCell("D47").value = 5;
+    sheet.getCell("E47").value = "CONTROL NEGATIVO (GLICEROL SALINO)";
+
+    const parsed = await parseSkinTestWorkbookBuffer(await workbook.xlsx.writeBuffer());
+
+    expect(parsed.header).toEqual(
+      expect.objectContaining({
+        ageLabel: "46 AÑOS",
+        patientName: "MAIR HASSON GULOBOFF",
+        panelTitle: "PRICKTEST AINES",
+        testDate: "2022-05-13",
+      })
+    );
+    expect(parsed.results).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          allergenName: "IBUPROFENO",
+          code: "1",
+          erythemaMm: 4,
+          papuleMm: null,
+          section: "AINES",
+        }),
+        expect.objectContaining({
+          allergenName: "PARACETAMOL",
+          code: "4",
+          erythemaMm: 6,
+          papuleMm: 3,
+          section: "AINES",
+        }),
+        expect.objectContaining({
+          allergenName: "CONTROL POSITIVO (HISTAMINA)",
+          controlType: "POSITIVE",
+          erythemaMm: 25,
+          papuleMm: 8,
+        }),
+        expect.objectContaining({
+          allergenName: "CONTROL NEGATIVO (GLICEROL SALINO)",
+          controlType: "NEGATIVE",
+          erythemaMm: 5,
+          papuleMm: null,
+        }),
+      ])
+    );
+    expect(parsed.results).toHaveLength(4);
+  });
 });

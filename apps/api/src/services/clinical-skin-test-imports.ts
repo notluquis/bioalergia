@@ -1185,40 +1185,45 @@ async function matchOrCreateClinicalSeries(
 ): Promise<MatchResult> {
   const issues: SkinTestIssue[] = [];
   const { patientRut, patientName, testDate } = payload.header;
-  if (!patientRut || !testDate) {
+  if (!testDate) {
     return { issues, seriesId: null };
   }
 
-  const matches = await sql<{ id: number }>`
-    SELECT cs.id
-    FROM clinical_series cs
-    LEFT JOIN events e ON e.clinical_series_id = cs.id
-    WHERE cs.kind = 'SKIN_TEST'
-      AND cs.patient_rut = ${patientRut}
-      AND (
-        e.id IS NULL
-        OR e.start_date = ${testDate}::date
-        OR e.start_date BETWEEN (${testDate}::date - interval '14 days') AND (${testDate}::date + interval '14 days')
-      )
-    GROUP BY cs.id
-    ORDER BY min(abs(coalesce(e.start_date, ${testDate}::date) - ${testDate}::date)) NULLS LAST, cs.id DESC
-    LIMIT 3
-  `.execute(kysely);
+  if (patientRut) {
+    const matches = await sql<{ id: number }>`
+      SELECT cs.id
+      FROM clinical_series cs
+      LEFT JOIN events e ON e.clinical_series_id = cs.id
+      WHERE cs.kind = 'SKIN_TEST'
+        AND cs.patient_rut = ${patientRut}
+        AND (
+          e.id IS NULL
+          OR e.start_date = ${testDate}::date
+          OR e.start_date BETWEEN (${testDate}::date - interval '14 days') AND (${testDate}::date + interval '14 days')
+        )
+      GROUP BY cs.id
+      ORDER BY min(abs(coalesce(e.start_date, ${testDate}::date) - ${testDate}::date)) NULLS LAST, cs.id DESC
+      LIMIT 3
+    `.execute(kysely);
 
-  if (matches.rows.length === 1) {
-    return { issues, seriesId: matches.rows[0]?.id ?? null };
-  }
-  if (matches.rows.length > 1) {
-    return {
-      issues: [
-        {
-          code: "multiple_series_candidates",
-          message: "Hay más de una serie clínica candidata para este RUT y fecha.",
-          severity: "error",
-        },
-      ],
-      seriesId: null,
-    };
+    if (matches.rows.length === 1) {
+      return { issues, seriesId: matches.rows[0]?.id ?? null };
+    }
+    if (matches.rows.length > 1) {
+      return {
+        issues: [
+          {
+            code: "multiple_series_candidates",
+            message: "Hay más de una serie clínica candidata para este RUT y fecha.",
+            severity: "error",
+          },
+        ],
+        seriesId: null,
+      };
+    }
+  } else if (patientName) {
+    const nameMatch = await matchClinicalSeriesByNameAndDate(patientName, testDate);
+    if (nameMatch.seriesId || nameMatch.issues.length > 0) return nameMatch;
   }
 
   if (!options.allowCreate) {
@@ -1226,7 +1231,9 @@ async function matchOrCreateClinicalSeries(
       issues: [
         {
           code: "series_pending_review",
-          message: "No hay serie clínica existente; se creará al aprobar la importación.",
+          message: patientRut
+            ? "No hay serie clínica existente; se creará al aprobar la importación."
+            : "No hay RUT en el archivo; se resolverá por nombre al aprobar la importación.",
           severity: "warning",
         },
       ],
@@ -1248,7 +1255,7 @@ async function matchOrCreateClinicalSeries(
     VALUES (
       'SKIN_TEST',
       'ACTIVE',
-      ${patientName ?? `Test cutáneo ${patientRut}`},
+      ${patientName ?? `Test cutáneo ${patientRut ?? testDate}`},
       ${patientName},
       ${patientRut},
       ${`Creada automáticamente desde importación de test cutáneo ${testDate}.`},
@@ -1258,6 +1265,48 @@ async function matchOrCreateClinicalSeries(
     RETURNING id
   `.execute(kysely);
   return { issues, seriesId: created.rows[0]?.id ?? null };
+}
+
+async function matchClinicalSeriesByNameAndDate(
+  patientName: string,
+  testDate: string
+): Promise<MatchResult> {
+  const normalizedPatientName = normalizeDocumentName(patientName);
+  if (!normalizedPatientName) return { issues: [], seriesId: null };
+
+  const result = await sql<{ id: number; patientName: null | string }>`
+    SELECT cs.id, cs.patient_name AS "patientName"
+    FROM clinical_series cs
+    LEFT JOIN events e ON e.clinical_series_id = cs.id
+    WHERE cs.kind = 'SKIN_TEST'
+      AND cs.patient_name IS NOT NULL
+      AND (
+        e.id IS NULL
+        OR e.start_date = ${testDate}::date
+        OR e.start_date BETWEEN (${testDate}::date - interval '14 days') AND (${testDate}::date + interval '14 days')
+      )
+    GROUP BY cs.id, cs.patient_name
+    ORDER BY min(abs(coalesce(e.start_date, ${testDate}::date) - ${testDate}::date)) NULLS LAST, cs.id DESC
+    LIMIT 100
+  `.execute(kysely);
+
+  const matches = result.rows.filter(
+    (row) => normalizeDocumentName(row.patientName ?? "") === normalizedPatientName
+  );
+  if (matches.length === 1) return { issues: [], seriesId: matches[0]?.id ?? null };
+  if (matches.length > 1) {
+    return {
+      issues: [
+        {
+          code: "multiple_series_candidates",
+          message: "Hay más de una serie clínica candidata para este nombre y fecha.",
+          severity: "error",
+        },
+      ],
+      seriesId: null,
+    };
+  }
+  return { issues: [], seriesId: null };
 }
 
 // Max rows per INSERT batch. Each row has 13 bind params;

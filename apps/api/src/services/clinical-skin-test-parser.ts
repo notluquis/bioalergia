@@ -1,6 +1,6 @@
 import ExcelJS from "exceljs";
 
-export const SKIN_TEST_PARSER_VERSION = "2026-04-26.2";
+export const SKIN_TEST_PARSER_VERSION = "2026-04-26.3";
 
 export interface SkinTestIssue {
   code: string;
@@ -92,7 +92,7 @@ export async function parseSkinTestWorkbookBuffer(
 export function parseSkinTestWorksheet(worksheet: ExcelJS.Worksheet): ParsedSkinTestWorkbook {
   const cells = collectCells(worksheet);
   const issues: SkinTestIssue[] = [];
-  const title = findCell(cells, /(?:multi|prick)\s*test\s+cut[aá]neo/i);
+  const title = findCell(cells, /(?:(?:multi|prick)\s*test\s+cut[aá]neo|prick\s*test\s+aines)/i);
   const panelTitle = findPanelTitle(cells, title);
   const header = extractHeader(cells);
   header.panelTitle = panelTitle;
@@ -203,6 +203,9 @@ function findCell(cells: CellPoint[], pattern: RegExp): CellPoint | null {
 
 function findPanelTitle(cells: CellPoint[], title: CellPoint | null): null | string {
   if (!title) return null;
+  if (/prick\s*test\s+aines/i.test(normalizeText(title.text))) {
+    return normalizeText(title.text);
+  }
   const sameOrNextRows = cells
     .filter((cell) => cell.row > title.row && cell.row <= title.row + 2)
     .map((cell) => cell.text.trim())
@@ -335,7 +338,7 @@ export function parseDateToISO(value: null | string): null | string {
   const text = normalizeText(value)
     .toLowerCase()
     .replace(/\s+de\s+/g, " ");
-  const numeric = text.match(/\b(\d{1,2})\s*[-/]\s*(\d{1,2})\s*[-/]\s*(\d{2,4})\b/);
+  const numeric = text.match(/\b(\d{1,2})\s*[-/.]\s*(\d{1,2})\s*[-/.]\s*(\d{2,4})\b/);
   if (numeric) {
     const day = Number(numeric[1]);
     const month = Number(numeric[2]);
@@ -457,6 +460,12 @@ function extractResultRowsFromRow(
   sortOrderBase: number
 ): ParsedSkinTestResult[] {
   const results: ParsedSkinTestResult[] = [];
+  const ainesResult = extractAinesResultFromRow(worksheet, rowNumber, cells, sortOrderBase);
+  if (ainesResult) {
+    results.push(ainesResult);
+    return results;
+  }
+
   for (let index = 0; index < cells.length; index += 1) {
     const cell = cells[index];
     if (!cell?.text) continue;
@@ -498,6 +507,61 @@ function extractResultRowsFromRow(
     });
   }
   return results;
+}
+
+function extractAinesResultFromRow(
+  worksheet: ExcelJS.Worksheet,
+  rowNumber: number,
+  cells: Array<{ col: number; text: string }>,
+  sortOrderBase: number
+): null | ParsedSkinTestResult {
+  const nameCell = cells.find((cell) => {
+    const text = normalizeText(cell.text);
+    return /^\d{1,2}\s+[A-ZÁÉÍÓÚÑ]/i.test(text) || /^control\s+(positivo|negativo)\b/i.test(text);
+  });
+  if (!nameCell) return null;
+
+  const normalizedName = normalizeText(nameCell.text);
+  const numbered = normalizedName.match(/^(\d{1,2})\s+(.+)$/);
+  const isControl = /^control\s+(positivo|negativo)\b/i.test(normalizedName);
+  const code = numbered?.[1] ?? null;
+  const allergenName = numbered?.[2] ?? normalizedName;
+  if (!isControl && !code) return null;
+
+  const numericCells = cells
+    .filter((cell) => cell.col < nameCell.col && isResultValue(cell.text))
+    .sort((left, right) => left.col - right.col)
+    .slice(-2);
+  if (numericCells.length === 0) return null;
+
+  const byMetric = assignResultMetrics(worksheet, rowNumber, numericCells);
+  const papule = byMetric.sawHeader
+    ? byMetric.papule
+    : numericCells.length > 1
+      ? (numericCells[0]?.text ?? null)
+      : null;
+  const erythema = byMetric.sawHeader
+    ? byMetric.erythema
+    : numericCells.length > 1
+      ? (numericCells[1]?.text ?? null)
+      : (numericCells[0]?.text ?? null);
+
+  return {
+    allergenName,
+    code,
+    controlType: isControl ? (/negativo/i.test(normalizedName) ? "NEGATIVE" : "POSITIVE") : null,
+    erythemaMm: parseMm(erythema),
+    papuleMm: parseMm(papule),
+    rawCells: {
+      codeColumn: nameCell.col,
+      row: sortOrderBase + 1,
+      sourceRow: nameCell.text,
+    },
+    rawErythema: erythema,
+    rawPapule: papule,
+    section: isControl ? "Controles" : "AINES",
+    sortOrder: sortOrderBase + 1,
+  };
 }
 
 function isAllergenNameCell(
