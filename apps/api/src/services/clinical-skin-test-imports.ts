@@ -507,14 +507,32 @@ async function discoverOneDriveSkinTestItem(
   }
 
   const importId = existing?.id ?? createId();
+  const metadata = buildOneDriveItemMetadata(item, driveId);
+  if (existing) {
+    await sql`
+      UPDATE clinical_skin_test_imports
+      SET onedrive_etag = ${metadata.eTag},
+          onedrive_ctag = ${metadata.cTag},
+          onedrive_web_url = ${metadata.webUrl},
+          path = ${metadata.path},
+          filename = ${metadata.filename},
+          mime_type = ${metadata.mimeType},
+          size = ${metadata.size},
+          modified_at = ${metadata.modifiedAt}::timestamptz,
+          updated_at = now()
+      WHERE id = ${importId}
+    `.execute(kysely);
+    return await getSkinTestImport(importId);
+  }
+
   await upsertImport({
     accountId,
-    confidence: existing?.confidence ?? 0,
+    confidence: 0,
     duplicateOfImportId: null,
     error: null,
     id: importId,
     issues: [],
-    metadata: buildOneDriveItemMetadata(item, driveId),
+    metadata,
     parsedPayload: null,
     resultHash: null,
     status: "DISCOVERED",

@@ -9,6 +9,7 @@ import {
   Label,
   ListBox,
   Modal,
+  Pagination,
   Select,
   Separator,
   Spinner,
@@ -34,6 +35,7 @@ import {
   Link as LinkIcon,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { buildPaginationItems } from "@/components/pagination/pagination-items";
 import { useToast } from "@/context/ToastContext";
 import {
   useActiveClinicalSkinTestJob,
@@ -88,6 +90,8 @@ const STATUS_COLORS: Record<SkinTestImportStatus, "danger" | "default" | "succes
   REJECTED: "danger",
   SKIPPED: "default",
 };
+
+const IMPORTS_PAGE_SIZE = 20;
 
 interface SkinTestSyncJobMeta {
   accountEmail?: string;
@@ -168,15 +172,16 @@ export function SkinTestImportPanel() {
   const toast = useToast();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<SkinTestImportStatus | undefined>("DISCOVERED");
+  const [importsPage, setImportsPage] = useState(1);
   const [selectedImportIds, setSelectedImportIds] = useState<Record<string, boolean>>({});
   const filters: SkinTestImportFilters = useMemo(
     () => ({
-      page: 1,
-      pageSize: 20,
+      page: importsPage,
+      pageSize: IMPORTS_PAGE_SIZE,
       query: query.trim() || undefined,
       status,
     }),
-    [query, status]
+    [importsPage, query, status]
   );
   const oneDrive = useOneDriveSkinTestStatus();
   const imports = useSkinTestImports(filters);
@@ -206,6 +211,14 @@ export function SkinTestImportPanel() {
         .map(([id]) => id),
     [selectedImportIds]
   );
+  const importsTotal = imports.data?.total ?? 0;
+  const importsTotalPages = Math.max(1, Math.ceil(importsTotal / IMPORTS_PAGE_SIZE));
+  const importsPageItems = buildPaginationItems({
+    currentPage: importsPage,
+    totalPages: importsTotalPages,
+  });
+  const visibleStart = importsTotal === 0 ? 0 : (importsPage - 1) * IMPORTS_PAGE_SIZE + 1;
+  const visibleEnd = Math.min(importsTotal, importsPage * IMPORTS_PAGE_SIZE);
 
   useEffect(() => {
     const initialJobId = activeJobQuery.data?.job?.id;
@@ -226,7 +239,14 @@ export function SkinTestImportPanel() {
 
   useEffect(() => {
     setSelectedImportIds({});
+    setImportsPage(1);
   }, [query, status]);
+
+  useEffect(() => {
+    if (importsTotal > 0 && importsPage > importsTotalPages) {
+      setImportsPage(importsTotalPages);
+    }
+  }, [importsPage, importsTotal, importsTotalPages]);
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -516,6 +536,15 @@ export function SkinTestImportPanel() {
           </Select>
         </div>
 
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm text-foreground-500">
+          <span>
+            {importsTotal > 0
+              ? `Mostrando ${visibleStart}-${visibleEnd} de ${importsTotal}`
+              : "Sin resultados"}
+          </span>
+          <span>Ordenado por última actualización</span>
+        </div>
+
         {imports.data?.items.some((item) => item.status === "DISCOVERED") && (
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-content2 px-3 py-2">
             <div className="flex items-center gap-2 text-sm text-foreground-600">
@@ -579,6 +608,49 @@ export function SkinTestImportPanel() {
             </p>
           )}
         </div>
+
+        {importsTotal > IMPORTS_PAGE_SIZE && (
+          <Pagination className="justify-center pt-4" size="sm">
+            <Pagination.Summary>{`Página ${importsPage} de ${importsTotalPages}`}</Pagination.Summary>
+            <Pagination.Content>
+              <Pagination.Item>
+                <Pagination.Previous
+                  isDisabled={importsPage <= 1 || imports.isFetching}
+                  onPress={() => setImportsPage((page) => Math.max(1, page - 1))}
+                >
+                  <Pagination.PreviousIcon />
+                  <span>Anterior</span>
+                </Pagination.Previous>
+              </Pagination.Item>
+              {importsPageItems.map((item) =>
+                item.type === "ellipsis" ? (
+                  <Pagination.Item key={item.key}>
+                    <Pagination.Ellipsis />
+                  </Pagination.Item>
+                ) : (
+                  <Pagination.Item key={item.key}>
+                    <Pagination.Link
+                      isActive={item.value === importsPage}
+                      isDisabled={imports.isFetching}
+                      onPress={() => setImportsPage(item.value ?? 1)}
+                    >
+                      {item.value}
+                    </Pagination.Link>
+                  </Pagination.Item>
+                )
+              )}
+              <Pagination.Item>
+                <Pagination.Next
+                  isDisabled={importsPage >= importsTotalPages || imports.isFetching}
+                  onPress={() => setImportsPage((page) => Math.min(importsTotalPages, page + 1))}
+                >
+                  <span>Siguiente</span>
+                  <Pagination.NextIcon />
+                </Pagination.Next>
+              </Pagination.Item>
+            </Pagination.Content>
+          </Pagination>
+        )}
       </Surface>
     </div>
   );
