@@ -619,7 +619,6 @@ function OneDriveAccountRow({
 }) {
   const toast = useToast();
   const [isPickerOpen, setIsPickerOpen] = useState(false);
-  const configureFolder = useConfigureOneDriveFolder();
   const disconnect = useDisconnectOneDrive();
   const renewSubscription = useRenewOneDriveSubscription();
 
@@ -629,21 +628,6 @@ function OneDriveAccountRow({
       toast.success("Cuenta desconectada");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "No se pudo desconectar");
-    }
-  }
-
-  async function handleUseRoot() {
-    try {
-      await configureFolder.mutateAsync({
-        accountId: account.accountId,
-        driveId: null,
-        folderPath: "",
-        itemId: null,
-        name: "Raíz",
-      });
-      toast.success("Carpeta OneDrive actualizada");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "No se pudo guardar carpeta");
     }
   }
 
@@ -698,7 +682,7 @@ function OneDriveAccountRow({
             )}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center justify-start gap-2 lg:justify-end">
           <Tooltip>
             <Tooltip.Trigger>
               <Button size="sm" variant="secondary" onPress={() => setIsPickerOpen(true)}>
@@ -710,21 +694,21 @@ function OneDriveAccountRow({
           </Tooltip>
           <Button
             size="sm"
-            variant="ghost"
-            onPress={() => void handleUseRoot()}
-            isPending={configureFolder.isPending}
-          >
-            <Home size={14} />
-            Usar raíz
-          </Button>
-          <Button
-            size="sm"
             variant="secondary"
             onPress={() => onSync(false, { accountId: account.accountId })}
             isDisabled={isSyncing}
           >
             <RefreshCw size={14} />
             Sync cuenta
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onPress={() => onSync(true, { accountId: account.accountId })}
+            isDisabled={isSyncing}
+          >
+            <RotateCw size={14} />
+            Releer cuenta
           </Button>
           <Button
             size="sm"
@@ -742,24 +726,37 @@ function OneDriveAccountRow({
             <Folder size={14} />
             Sync carpeta
           </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onPress={() => void handleRenew()}
-            isPending={renewSubscription.isPending}
-          >
-            <RotateCw size={14} />
-            Renovar webhook
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="text-danger"
-            onPress={() => void handleDisconnect()}
-            isPending={disconnect.isPending}
-          >
-            Desconectar
-          </Button>
+          <Tooltip>
+            <Tooltip.Trigger>
+              <Button
+                isIconOnly
+                aria-label="Renovar webhook"
+                size="sm"
+                variant="ghost"
+                onPress={() => void handleRenew()}
+                isPending={renewSubscription.isPending}
+              >
+                <RotateCw size={14} />
+              </Button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>Renovar webhook</Tooltip.Content>
+          </Tooltip>
+          <Tooltip>
+            <Tooltip.Trigger>
+              <Button
+                isIconOnly
+                aria-label="Desconectar cuenta"
+                size="sm"
+                variant="ghost"
+                className="text-danger"
+                onPress={() => void handleDisconnect()}
+                isPending={disconnect.isPending}
+              >
+                <X size={14} />
+              </Button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>Desconectar cuenta</Tooltip.Content>
+          </Tooltip>
         </div>
       </div>
       <OneDriveFolderPickerModal
@@ -985,14 +982,21 @@ function OneDriveFolderPickerModal({
                             </span>
                           )}
                           {file.webUrl && (
-                            <button
-                              type="button"
-                              className="shrink-0 text-foreground-400 transition-colors hover:text-foreground"
-                              onClick={() => window.open(file.webUrl!, "_blank")}
-                              title="Abrir en OneDrive"
-                            >
-                              <ExternalLink size={13} />
-                            </button>
+                            <Tooltip>
+                              <Tooltip.Trigger>
+                                <Button
+                                  isIconOnly
+                                  aria-label="Abrir en OneDrive"
+                                  size="sm"
+                                  variant="ghost"
+                                  className="shrink-0 text-foreground-400 hover:text-foreground"
+                                  onPress={() => window.open(file.webUrl!, "_blank")}
+                                >
+                                  <ExternalLink size={13} />
+                                </Button>
+                              </Tooltip.Trigger>
+                              <Tooltip.Content>Abrir en OneDrive</Tooltip.Content>
+                            </Tooltip>
                           )}
                         </div>
                       ))}
