@@ -1,6 +1,7 @@
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import {
+  clinicalDocumentsBySeriesOutputSchema,
   oneDriveAuthUrlInputSchema,
   oneDriveCallbackInputSchema,
   oneDriveDisconnectInputSchema,
@@ -51,6 +52,7 @@ import {
   approveSkinTestImport,
   getSkinTestImportJobType,
   getSkinTestImport,
+  listClinicalDocumentsBySeries,
   listSkinTestImports,
   listSkinTestsBySeries,
   processSkinTestImports,
@@ -236,6 +238,14 @@ const routerBase = {
     .output(skinTestsBySeriesOutputSchema)
     .handler(async ({ input }: { input: z.input<typeof skinTestsBySeriesInputSchema> }) => {
       return await listSkinTestsBySeries(input.clinicalSeriesId);
+    }),
+
+  listDocumentsBySeries: readClinicalSkinTests
+    .route({ method: "GET", path: "/series/{clinicalSeriesId}/documents" })
+    .input(skinTestsBySeriesInputSchema)
+    .output(clinicalDocumentsBySeriesOutputSchema)
+    .handler(async ({ input }: { input: z.input<typeof skinTestsBySeriesInputSchema> }) => {
+      return await listClinicalDocumentsBySeries(input.clinicalSeriesId);
     }),
 
   rejectImport: updateClinicalSkinTests

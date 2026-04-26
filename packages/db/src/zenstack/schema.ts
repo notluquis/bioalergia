@@ -3055,6 +3055,12 @@ export class SchemaType implements SchemaDef {
                     type: "ClinicalSkinTestImport",
                     array: true,
                     relation: { opposite: "oneDriveAccount" }
+                },
+                clinicalDocumentImports: {
+                    name: "clinicalDocumentImports",
+                    type: "ClinicalDocumentImport",
+                    array: true,
+                    relation: { opposite: "oneDriveAccount" }
                 }
             },
             attributes: [
@@ -3782,6 +3788,12 @@ export class SchemaType implements SchemaDef {
                     type: "ClinicalSkinTest",
                     array: true,
                     relation: { opposite: "clinicalSeries" }
+                },
+                documentImports: {
+                    name: "documentImports",
+                    type: "ClinicalDocumentImport",
+                    array: true,
+                    relation: { opposite: "clinicalSeries" }
                 }
             },
             attributes: [
@@ -3983,6 +3995,187 @@ export class SchemaType implements SchemaDef {
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("oneDriveAccountId")]) }] },
                 { name: "@@unique", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("oneDriveAccountId"), ExpressionUtils.field("oneDriveDriveId"), ExpressionUtils.field("oneDriveItemId")]) }] },
                 { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("clinical_skin_test_imports") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" },
+                oneDriveAccountId_oneDriveDriveId_oneDriveItemId: { oneDriveAccountId: { type: "String" }, oneDriveDriveId: { type: "String" }, oneDriveItemId: { type: "String" } }
+            }
+        },
+        ClinicalDocumentImport: {
+            name: "ClinicalDocumentImport",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("cuid") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                oneDriveAccountId: {
+                    name: "oneDriveAccountId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("onedrive_account_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "oneDriveAccount"
+                    ] as readonly string[]
+                },
+                oneDriveItemId: {
+                    name: "oneDriveItemId",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("onedrive_item_id") }] }] as readonly AttributeApplication[]
+                },
+                oneDriveDriveId: {
+                    name: "oneDriveDriveId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("onedrive_drive_id") }] }] as readonly AttributeApplication[]
+                },
+                oneDriveETag: {
+                    name: "oneDriveETag",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("onedrive_etag") }] }] as readonly AttributeApplication[]
+                },
+                oneDriveCTag: {
+                    name: "oneDriveCTag",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("onedrive_ctag") }] }] as readonly AttributeApplication[]
+                },
+                oneDriveWebUrl: {
+                    name: "oneDriveWebUrl",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("onedrive_web_url") }] }] as readonly AttributeApplication[]
+                },
+                path: {
+                    name: "path",
+                    type: "String",
+                    optional: true
+                },
+                filename: {
+                    name: "filename",
+                    type: "String"
+                },
+                mimeType: {
+                    name: "mimeType",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("mime_type") }] }] as readonly AttributeApplication[]
+                },
+                size: {
+                    name: "size",
+                    type: "Int",
+                    optional: true
+                },
+                modifiedAt: {
+                    name: "modifiedAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("modified_at") }] }, { name: "@db.Timestamptz", args: [{ name: "x", value: ExpressionUtils.literal(3) }] }] as readonly AttributeApplication[]
+                },
+                documentKind: {
+                    name: "documentKind",
+                    type: "ClinicalDocumentImportKind",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("OTHER") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("document_kind") }] }] as readonly AttributeApplication[],
+                    default: "OTHER" as FieldDefault
+                },
+                status: {
+                    name: "status",
+                    type: "ClinicalDocumentImportStatus",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("DISCOVERED") }] }] as readonly AttributeApplication[],
+                    default: "DISCOVERED" as FieldDefault
+                },
+                extractedPatientName: {
+                    name: "extractedPatientName",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("extracted_patient_name") }] }] as readonly AttributeApplication[]
+                },
+                clinicalSeriesId: {
+                    name: "clinicalSeriesId",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("clinical_series_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "clinicalSeries"
+                    ] as readonly string[]
+                },
+                error: {
+                    name: "error",
+                    type: "String",
+                    optional: true
+                },
+                issues: {
+                    name: "issues",
+                    type: "Json",
+                    optional: true
+                },
+                reviewedBy: {
+                    name: "reviewedBy",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("reviewed_by") }] }] as readonly AttributeApplication[]
+                },
+                reviewedAt: {
+                    name: "reviewedAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("reviewed_at") }] }, { name: "@db.Timestamptz", args: [{ name: "x", value: ExpressionUtils.literal(3) }] }] as readonly AttributeApplication[]
+                },
+                reviewNotes: {
+                    name: "reviewNotes",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("review_notes") }] }] as readonly AttributeApplication[]
+                },
+                importedAt: {
+                    name: "importedAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("imported_at") }] }, { name: "@db.Timestamptz", args: [{ name: "x", value: ExpressionUtils.literal(3) }] }] as readonly AttributeApplication[]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                oneDriveAccount: {
+                    name: "oneDriveAccount",
+                    type: "OneDriveAccount",
+                    optional: true,
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("oneDriveAccountId")]) }, { name: "references", value: ExpressionUtils.array("String", [ExpressionUtils.field("accountId")]) }, { name: "onDelete", value: ExpressionUtils.literal("SetNull") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "clinicalDocumentImports", fields: ["oneDriveAccountId"], references: ["accountId"], onDelete: "SetNull" }
+                },
+                clinicalSeries: {
+                    name: "clinicalSeries",
+                    type: "ClinicalSeries",
+                    optional: true,
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("clinicalSeriesId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("SetNull") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "documentImports", fields: ["clinicalSeriesId"], references: ["id"], onDelete: "SetNull" }
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("ClinicalDocumentImportStatus", [ExpressionUtils.field("status")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("ClinicalDocumentImportKind", [ExpressionUtils.field("documentKind")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("modifiedAt")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("oneDriveAccountId")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("clinicalSeriesId")]) }] },
+                { name: "@@unique", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("oneDriveAccountId"), ExpressionUtils.field("oneDriveDriveId"), ExpressionUtils.field("oneDriveItemId")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("clinical_document_imports") }] }
             ] as readonly AttributeApplication[],
             idFields: ["id"],
             uniqueFields: {
@@ -9981,6 +10174,24 @@ export class SchemaType implements SchemaDef {
                 IMPORTED: "IMPORTED",
                 REJECTED: "REJECTED",
                 ERROR: "ERROR",
+                SKIPPED: "SKIPPED"
+            }
+        },
+        ClinicalDocumentImportKind: {
+            name: "ClinicalDocumentImportKind",
+            values: {
+                CLINICAL_RECORD: "CLINICAL_RECORD",
+                VISIT_SHEET: "VISIT_SHEET",
+                OTHER: "OTHER"
+            }
+        },
+        ClinicalDocumentImportStatus: {
+            name: "ClinicalDocumentImportStatus",
+            values: {
+                DISCOVERED: "DISCOVERED",
+                MATCHED: "MATCHED",
+                UNMATCHED: "UNMATCHED",
+                REJECTED: "REJECTED",
                 SKIPPED: "SKIPPED"
             }
         },

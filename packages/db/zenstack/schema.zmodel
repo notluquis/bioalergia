@@ -796,6 +796,7 @@ model OneDriveAccount {
 
   watchChannels   OneDriveWatchChannel[]
   skinTestImports ClinicalSkinTestImport[]
+  clinicalDocumentImports ClinicalDocumentImport[]
 
   @@deny('all', auth() == null)
   @@allow('create,update,delete', auth().status == 'ACTIVE')
@@ -969,6 +970,7 @@ model ClinicalSeries {
   mergeLogs  ClinicalSeriesMergeLog[]
   abandonmentContacts AbandonmentContact[]
   skinTests  ClinicalSkinTest[]
+  documentImports ClinicalDocumentImport[]
 
   @@deny('all', auth() == null)
   @@allow('read', true)
@@ -1021,6 +1023,48 @@ model ClinicalSkinTestImport {
   @@index([oneDriveAccountId])
   @@unique([oneDriveAccountId, oneDriveDriveId, oneDriveItemId])
   @@map("clinical_skin_test_imports")
+}
+
+model ClinicalDocumentImport {
+  id                    String                       @id @default(cuid())
+  oneDriveAccountId     String?                      @map("onedrive_account_id")
+  oneDriveItemId        String                       @map("onedrive_item_id")
+  oneDriveDriveId       String?                      @map("onedrive_drive_id")
+  oneDriveETag          String?                      @map("onedrive_etag")
+  oneDriveCTag          String?                      @map("onedrive_ctag")
+  oneDriveWebUrl        String?                      @map("onedrive_web_url")
+  path                  String?
+  filename              String
+  mimeType              String?                      @map("mime_type")
+  size                  Int?
+  modifiedAt            DateTime?                    @map("modified_at") @db.Timestamptz(3)
+  documentKind          ClinicalDocumentImportKind   @default(OTHER) @map("document_kind")
+  status                ClinicalDocumentImportStatus @default(DISCOVERED)
+  extractedPatientName  String?                      @map("extracted_patient_name")
+  clinicalSeriesId      Int?                         @map("clinical_series_id")
+  error                 String?
+  issues                Json?
+  reviewedBy            Int?                         @map("reviewed_by")
+  reviewedAt            DateTime?                    @map("reviewed_at") @db.Timestamptz(3)
+  reviewNotes           String?                      @map("review_notes")
+  importedAt            DateTime?                    @map("imported_at") @db.Timestamptz(3)
+  createdAt             DateTime                     @default(now()) @map("created_at")
+  updatedAt             DateTime                     @default(now()) @updatedAt @map("updated_at")
+
+  oneDriveAccount       OneDriveAccount?             @relation(fields: [oneDriveAccountId], references: [accountId], onDelete: SetNull)
+  clinicalSeries        ClinicalSeries?              @relation(fields: [clinicalSeriesId], references: [id], onDelete: SetNull)
+
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([status])
+  @@index([documentKind])
+  @@index([modifiedAt])
+  @@index([oneDriveAccountId])
+  @@index([clinicalSeriesId])
+  @@unique([oneDriveAccountId, oneDriveDriveId, oneDriveItemId])
+  @@map("clinical_document_imports")
 }
 
 model ClinicalSkinTest {
@@ -2104,6 +2148,20 @@ enum ClinicalSkinTestImportStatus {
   IMPORTED
   REJECTED
   ERROR
+  SKIPPED
+}
+
+enum ClinicalDocumentImportKind {
+  CLINICAL_RECORD
+  VISIT_SHEET
+  OTHER
+}
+
+enum ClinicalDocumentImportStatus {
+  DISCOVERED
+  MATCHED
+  UNMATCHED
+  REJECTED
   SKIPPED
 }
 

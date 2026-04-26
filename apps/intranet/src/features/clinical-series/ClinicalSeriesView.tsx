@@ -619,9 +619,6 @@ function IdentityDropdownCell({
           className="h-8 w-full justify-between rounded-full px-3 text-xs"
           size="sm"
           variant="outline"
-          onClick={(event) => {
-            event.stopPropagation();
-          }}
         >
           <span className="truncate">{title}</span>
           <Chip size="sm" variant="soft">
@@ -643,7 +640,9 @@ function IdentityDropdownCell({
                     ? () => {
                         window.open(entry.href, "_blank", "noopener,noreferrer");
                       }
-                    : undefined
+                    : () => {
+                        void handleCopy(entryKey, entry.value);
+                      }
                 }
               >
                 {entry.href ? (
@@ -659,26 +658,11 @@ function IdentityDropdownCell({
                     {entry.value}
                   </Description>
                 </div>
-                <Tooltip delay={0}>
-                  <Tooltip.Trigger>
-                    <Button
-                      isIconOnly
-                      aria-label={`Copiar ${entry.value}`}
-                      size="sm"
-                      variant="tertiary"
-                      onPress={async () => {
-                        await handleCopy(entryKey, entry.value);
-                      }}
-                      onClick={(event) => {
-                        event.preventDefault();
-                        event.stopPropagation();
-                      }}
-                    >
-                      <ClipboardCopy className="h-4 w-4" />
-                    </Button>
-                  </Tooltip.Trigger>
-                  <Tooltip.Content>{copiedKey === entryKey ? "Copiado" : "Copiar"}</Tooltip.Content>
-                </Tooltip>
+                {copiedKey === entryKey && (
+                  <Chip size="sm" variant="soft" color="success">
+                    Copiado
+                  </Chip>
+                )}
               </Dropdown.Item>
             );
           })}

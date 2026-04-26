@@ -98,6 +98,9 @@ interface SkinTestSyncJobMeta {
   accountIndex?: number;
   accountsTotal?: number;
   discovered?: number;
+  documents?: number;
+  documentsMatched?: number;
+  documentsUnmatched?: number;
   elapsedSeconds?: number;
   errors?: number;
   etaSeconds?: number | null;
@@ -128,6 +131,11 @@ function getSyncJobMeta(meta: unknown): SkinTestSyncJobMeta {
     accountIndex: typeof value.accountIndex === "number" ? value.accountIndex : undefined,
     accountsTotal: typeof value.accountsTotal === "number" ? value.accountsTotal : undefined,
     discovered: typeof value.discovered === "number" ? value.discovered : undefined,
+    documents: typeof value.documents === "number" ? value.documents : undefined,
+    documentsMatched:
+      typeof value.documentsMatched === "number" ? value.documentsMatched : undefined,
+    documentsUnmatched:
+      typeof value.documentsUnmatched === "number" ? value.documentsUnmatched : undefined,
     elapsedSeconds: typeof value.elapsedSeconds === "number" ? value.elapsedSeconds : undefined,
     errors: typeof value.errors === "number" ? value.errors : undefined,
     etaSeconds:
@@ -425,6 +433,12 @@ export function SkinTestImportPanel() {
               {syncMeta.page != null && <span>Página delta: {syncMeta.page}</span>}
               {syncMeta.scanned != null && <span>Items leídos: {syncMeta.scanned}</span>}
               {syncMeta.xlsx != null && <span>XLSX: {syncMeta.xlsx}</span>}
+              {syncMeta.documents != null && (
+                <span>
+                  Docs {syncMeta.documents} · Vinculados {syncMeta.documentsMatched ?? 0} · Sin
+                  match {syncMeta.documentsUnmatched ?? 0}
+                </span>
+              )}
               {currentJob.status === "running" &&
                 syncMeta.phase &&
                 syncMeta.phase !== "completed" && (
@@ -1236,14 +1250,75 @@ function SkinTestImportRow({
         </div>
       </div>
 
-      {expanded && item.parsedPayload && (
+      {expanded && (
         <>
           <Separator className="my-3" />
-          <SkinTestResultsPreview results={item.parsedPayload.results} />
+          <SkinTestImportExpandedDetails item={item} />
         </>
       )}
     </Surface>
   );
+}
+
+function SkinTestImportExpandedDetails({ item }: { item: SkinTestImport }) {
+  const header = item.parsedPayload?.header;
+  const results = item.parsedPayload?.results ?? [];
+
+  return (
+    <div className="space-y-3">
+      <div className="grid gap-2 text-xs sm:grid-cols-2">
+        <SkinTestDetailField label="Archivo" value={item.filename} />
+        <SkinTestDetailField label="Estado" value={STATUS_LABELS[item.status]} />
+        <SkinTestDetailField label="Cuenta" value={item.accountEmail} />
+        <SkinTestDetailField label="Ruta" value={item.path} />
+        <SkinTestDetailField label="Modificado" value={formatOptionalDateTime(item.modifiedAt)} />
+        <SkinTestDetailField label="Actualizado" value={formatOptionalDateTime(item.updatedAt)} />
+        <SkinTestDetailField label="Paciente" value={header?.patientName} />
+        <SkinTestDetailField label="RUT" value={header?.patientRut} />
+        <SkinTestDetailField label="Fecha test" value={header?.testDate} />
+        <SkinTestDetailField label="Panel" value={header?.panelTitle} />
+      </div>
+
+      {item.issues.length > 0 && (
+        <div className="rounded-md bg-warning/10 px-2 py-1.5 text-xs text-warning-700">
+          {item.issues.map((issue) => issue.message).join(" · ")}
+        </div>
+      )}
+
+      {item.error && (
+        <div className="rounded-md bg-danger/10 px-2 py-1.5 text-xs text-danger">{item.error}</div>
+      )}
+
+      {item.parsedPayload ? (
+        results.length > 0 ? (
+          <SkinTestResultsPreview results={results} />
+        ) : (
+          <p className="text-xs text-foreground-500">
+            El archivo fue leído, pero no se detectaron resultados.
+          </p>
+        )
+      ) : (
+        <p className="text-xs text-foreground-500">
+          Metadata registrada. Usa Procesar para descargar el Excel y extraer resultados.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function SkinTestDetailField({ label, value }: { label: string; value?: null | string }) {
+  if (!value) return null;
+  return (
+    <div className="min-w-0">
+      <Description className="text-[11px] uppercase text-foreground-400">{label}</Description>
+      <p className="truncate text-foreground-700">{value}</p>
+    </div>
+  );
+}
+
+function formatOptionalDateTime(value?: null | string) {
+  if (!value) return null;
+  return new Date(value).toLocaleString();
 }
 
 function SkinTestResultsPreview({ results }: { results: SkinTestResult[] }) {

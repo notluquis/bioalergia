@@ -36,6 +36,9 @@ export interface SkinTestSyncProgress {
   accountIndex?: number;
   accountsTotal?: number;
   discovered?: number;
+  documents?: number;
+  documentsMatched?: number;
+  documentsUnmatched?: number;
   elapsedSeconds?: number;
   errors?: number;
   etaSeconds?: number | null;
@@ -122,6 +125,25 @@ export interface SkinTestDetailOutput {
   website: null | string;
 }
 
+export interface ClinicalDocumentImportOutput {
+  accountEmail: null | string;
+  accountName: null | string;
+  clinicalSeriesId: null | number;
+  documentKind: ClinicalDocumentImportKind;
+  extractedPatientName: null | string;
+  filename: string;
+  id: string;
+  importedAt: null | string;
+  issues: SkinTestIssue[];
+  modifiedAt: null | string;
+  oneDriveAccountId: null | string;
+  oneDriveWebUrl: null | string;
+  path: null | string;
+  size: null | number;
+  status: ClinicalDocumentImportStatus;
+  updatedAt: string;
+}
+
 interface ImportRow {
   accountEmail?: null | string;
   accountName?: null | string;
@@ -148,6 +170,22 @@ interface MatchResult {
   issues: SkinTestIssue[];
   seriesId: null | number;
 }
+
+type ClinicalDocumentImportKind = "CLINICAL_RECORD" | "OTHER" | "VISIT_SHEET";
+type ClinicalDocumentImportStatus = "DISCOVERED" | "MATCHED" | "REJECTED" | "SKIPPED" | "UNMATCHED";
+
+interface ClinicalSeriesNameEntry {
+  id: number;
+  name: string;
+  normalizedName: string;
+}
+
+interface ClinicalDocumentSeriesMatch {
+  issue?: SkinTestIssue;
+  seriesId: null | number;
+}
+
+let clinicalSeriesNameCache: ClinicalSeriesNameEntry[] | null = null;
 
 export function getSkinTestImportJobType() {
   return JOB_TYPE;
@@ -183,9 +221,13 @@ export async function syncClinicalSkinTestImports(options?: {
   let unchanged = 0;
   let errors = 0;
   let discovered = 0;
+  let documents = 0;
+  let documentsMatched = 0;
+  let documentsUnmatched = 0;
   let scanned = 0;
   let xlsx = 0;
   const workItems: Array<{ account: (typeof accounts)[number]; item: OneDriveItem }> = [];
+  const documentWorkItems: Array<{ account: (typeof accounts)[number]; item: OneDriveItem }> = [];
 
   const emit = (message: string, progress: SkinTestSyncProgress) => {
     options?.onProgress?.({ ...progress, message });
@@ -198,6 +240,9 @@ export async function syncClinicalSkinTestImports(options?: {
     scanned,
     total: accounts.length,
     xlsx,
+    documents,
+    documentsMatched,
+    documentsUnmatched,
   });
 
   for (const [accountIndex, account] of accounts.entries()) {
@@ -234,32 +279,48 @@ export async function syncClinicalSkinTestImports(options?: {
           scanned: scanned + itemsSoFar,
           total: accounts.length,
           xlsx,
+          documents,
+          documentsMatched,
+          documentsUnmatched,
         });
       },
     });
-    const xlsxItems = items.filter(isImportableXlsx);
+    const xlsxItems = items.filter(isRelevantXlsx);
+    const skinTestItems = xlsxItems.filter(isImportableXlsx);
+    const clinicalDocumentItems = xlsxItems.filter((item) => !isImportableXlsx(item));
     scanned += items.length;
     xlsx += xlsxItems.length;
-    workItems.push(...xlsxItems.map((item) => ({ account, item })));
+    workItems.push(...skinTestItems.map((item) => ({ account, item })));
+    documentWorkItems.push(...clinicalDocumentItems.map((item) => ({ account, item })));
 
-    emit(`[${account.email}] ${items.length} cambio(s), ${xlsxItems.length} .xlsx candidato(s)`, {
-      accountEmail: account.email,
-      accountId: account.accountId,
-      accountIndex: accountIndex + 1,
-      accountsTotal: accounts.length,
-      phase: "scanned",
-      processed: accountIndex + 1,
-      scanned,
-      total: accounts.length,
-      xlsx,
-    });
+    emit(
+      `[${account.email}] ${items.length} cambio(s), ${skinTestItems.length} test(s), ${clinicalDocumentItems.length} documento(s)`,
+      {
+        accountEmail: account.email,
+        accountId: account.accountId,
+        accountIndex: accountIndex + 1,
+        accountsTotal: accounts.length,
+        documents,
+        documentsMatched,
+        documentsUnmatched,
+        phase: "scanned",
+        processed: accountIndex + 1,
+        scanned,
+        total: accounts.length,
+        xlsx,
+      }
+    );
   }
 
-  if (workItems.length === 0) {
-    emit(`Sync terminado: ${scanned} item(s) revisado(s), sin .xlsx candidato(s)`, {
+  const totalWorkItems = workItems.length + documentWorkItems.length;
+  if (totalWorkItems === 0) {
+    emit(`Sync terminado: ${scanned} item(s) revisado(s), sin .xlsx relevante(s)`, {
       accountsTotal: accounts.length,
       errors,
       discovered,
+      documents,
+      documentsMatched,
+      documentsUnmatched,
       imported,
       pending,
       phase: "completed",
@@ -270,18 +331,34 @@ export async function syncClinicalSkinTestImports(options?: {
       unchanged,
       xlsx,
     });
-    return { discovered, errors, imported, pending, scanned, skipped, unchanged, xlsx };
+    return {
+      discovered,
+      documents,
+      documentsMatched,
+      documentsUnmatched,
+      errors,
+      imported,
+      pending,
+      scanned,
+      skipped,
+      unchanged,
+      xlsx,
+    };
   }
 
   let cursor = 0;
-  const workerCount = Math.min(concurrency, workItems.length);
+  let documentCursor = 0;
+  const workerCount = Math.min(concurrency, Math.max(workItems.length, documentWorkItems.length));
 
-  emit(`Registrando metadata de ${workItems.length} .xlsx candidato(s)`, {
+  emit(`Registrando ${workItems.length} test(s) y ${documentWorkItems.length} documento(s)`, {
     accountsTotal: accounts.length,
+    documents,
+    documentsMatched,
+    documentsUnmatched,
     phase: "processing",
     processed,
     scanned,
-    total: workItems.length,
+    total: totalWorkItems,
     xlsx,
   });
 
@@ -306,11 +383,14 @@ export async function syncClinicalSkinTestImports(options?: {
         filename: item.name,
         imported,
         pending,
+        documents,
+        documentsMatched,
+        documentsUnmatched,
         phase: "processing",
         processed,
         scanned,
         skipped,
-        total: workItems.length,
+        total: totalWorkItems,
         unchanged,
         xlsx,
       });
@@ -338,11 +418,14 @@ export async function syncClinicalSkinTestImports(options?: {
           filename: item.name,
           imported,
           pending,
+          documents,
+          documentsMatched,
+          documentsUnmatched,
           phase: "processing",
           processed,
           scanned,
           skipped,
-          total: workItems.length,
+          total: totalWorkItems,
           unchanged,
           xlsx,
         }
@@ -352,25 +435,84 @@ export async function syncClinicalSkinTestImports(options?: {
 
   await Promise.all(workers);
 
+  const documentWorkers = Array.from(
+    { length: Math.min(concurrency, documentWorkItems.length) },
+    async () => {
+      while (true) {
+        if (options?.shouldCancel?.()) {
+          throw new Error("SYNC_CANCELLED");
+        }
+        const index = documentCursor;
+        if (index >= documentWorkItems.length) return;
+        documentCursor += 1;
+
+        const { account, item } = documentWorkItems[index];
+        const result = await discoverOneDriveClinicalDocument(account.accountId, item);
+        if (result.status === "MATCHED") documentsMatched += 1;
+        else documentsUnmatched += 1;
+        documents += 1;
+        processed += 1;
+
+        emit(`[${account.email}] Documento: ${item.name} (${result.status})`, {
+          accountEmail: account.email,
+          accountId: account.accountId,
+          accountsTotal: accounts.length,
+          discovered,
+          documents,
+          documentsMatched,
+          documentsUnmatched,
+          errors,
+          filename: item.name,
+          imported,
+          pending,
+          phase: "processing",
+          processed,
+          scanned,
+          skipped,
+          total: totalWorkItems,
+          unchanged,
+          xlsx,
+        });
+      }
+    }
+  );
+
+  await Promise.all(documentWorkers);
+
   emit(
-    `Sync terminado: ${discovered} descubierto(s), ${unchanged} sin cambios, ${errors} error(es)`,
+    `Sync terminado: ${discovered} test(s) descubierto(s), ${documents} documento(s), ${unchanged} sin cambios, ${errors} error(es)`,
     {
       accountsTotal: accounts.length,
       errors,
       discovered,
+      documents,
+      documentsMatched,
+      documentsUnmatched,
       imported,
       pending,
       phase: "completed",
       processed,
       scanned,
       skipped,
-      total: workItems.length,
+      total: totalWorkItems,
       unchanged,
       xlsx,
     }
   );
 
-  return { discovered, errors, imported, pending, scanned, skipped, unchanged, xlsx };
+  return {
+    discovered,
+    documents,
+    documentsMatched,
+    documentsUnmatched,
+    errors,
+    imported,
+    pending,
+    scanned,
+    skipped,
+    unchanged,
+    xlsx,
+  };
 }
 
 function resolveSyncConcurrency(): number {
@@ -486,6 +628,109 @@ export async function processOneDriveSkinTestItem(
     });
     return await getSkinTestImport(importId);
   }
+}
+
+async function discoverOneDriveClinicalDocument(
+  accountId: string,
+  item: OneDriveItem
+): Promise<{
+  clinicalSeriesId: null | number;
+  documentKind: ClinicalDocumentImportKind;
+  extractedPatientName: null | string;
+  id: string;
+  status: ClinicalDocumentImportStatus;
+}> {
+  const driveId = item.parentReference?.driveId ?? "unknown";
+  const metadata = buildOneDriveItemMetadata(item, driveId);
+  const existing = await getClinicalDocumentImportByOneDriveItemId(accountId, driveId, item.id);
+  const importId = existing?.id ?? createId();
+  const documentKind = classifyClinicalDocumentFilename(item.name);
+  const extractedPatientName = extractPatientNameFromDocumentFilename(item.name);
+  const match = extractedPatientName
+    ? await matchClinicalSeriesByPatientName(extractedPatientName)
+    : { seriesId: null };
+  const clinicalSeriesId = match.seriesId;
+  const issues = match.issue
+    ? [match.issue]
+    : clinicalSeriesId || !extractedPatientName
+      ? []
+      : [
+          {
+            code: "clinical_series_not_matched",
+            message: "No se encontró serie clínica probable por nombre de archivo.",
+            severity: "warning",
+          },
+        ];
+  const status: ClinicalDocumentImportStatus = clinicalSeriesId ? "MATCHED" : "UNMATCHED";
+
+  await sql`
+    INSERT INTO clinical_document_imports (
+      id,
+      onedrive_account_id,
+      onedrive_item_id,
+      onedrive_drive_id,
+      onedrive_etag,
+      onedrive_ctag,
+      onedrive_web_url,
+      path,
+      filename,
+      mime_type,
+      size,
+      modified_at,
+      document_kind,
+      status,
+      extracted_patient_name,
+      clinical_series_id,
+      error,
+      issues,
+      imported_at,
+      created_at,
+      updated_at
+    )
+    VALUES (
+      ${importId},
+      ${accountId},
+      ${metadata.id},
+      ${metadata.driveId},
+      ${metadata.eTag},
+      ${metadata.cTag},
+      ${metadata.webUrl},
+      ${metadata.path},
+      ${metadata.filename},
+      ${metadata.mimeType},
+      ${metadata.size},
+      ${metadata.modifiedAt}::timestamptz,
+      ${documentKind}::"ClinicalDocumentImportKind",
+      ${status}::"ClinicalDocumentImportStatus",
+      ${extractedPatientName},
+      ${clinicalSeriesId},
+      null,
+      ${JSON.stringify(issues)}::jsonb,
+      now(),
+      now(),
+      now()
+    )
+    ON CONFLICT (onedrive_account_id, onedrive_drive_id, onedrive_item_id)
+    DO UPDATE SET
+      onedrive_etag = EXCLUDED.onedrive_etag,
+      onedrive_ctag = EXCLUDED.onedrive_ctag,
+      onedrive_web_url = EXCLUDED.onedrive_web_url,
+      path = EXCLUDED.path,
+      filename = EXCLUDED.filename,
+      mime_type = EXCLUDED.mime_type,
+      size = EXCLUDED.size,
+      modified_at = EXCLUDED.modified_at,
+      document_kind = EXCLUDED.document_kind,
+      status = EXCLUDED.status,
+      extracted_patient_name = EXCLUDED.extracted_patient_name,
+      clinical_series_id = EXCLUDED.clinical_series_id,
+      error = null,
+      issues = EXCLUDED.issues,
+      imported_at = coalesce(clinical_document_imports.imported_at, now()),
+      updated_at = now()
+  `.execute(kysely);
+
+  return { clinicalSeriesId, documentKind, extractedPatientName, id: importId, status };
 }
 
 async function discoverOneDriveSkinTestItem(
@@ -868,6 +1113,60 @@ export async function listSkinTestsBySeries(clinicalSeriesId: number) {
   return { tests };
 }
 
+export async function listClinicalDocumentsBySeries(clinicalSeriesId: number) {
+  const result = await sql<{
+    accountEmail: null | string;
+    accountName: null | string;
+    clinicalSeriesId: null | number;
+    documentKind: ClinicalDocumentImportKind;
+    extractedPatientName: null | string;
+    filename: string;
+    id: string;
+    importedAt: Date | null;
+    issues: unknown;
+    modifiedAt: Date | null;
+    oneDriveAccountId: null | string;
+    oneDriveWebUrl: null | string;
+    path: null | string;
+    size: null | number;
+    status: ClinicalDocumentImportStatus;
+    updatedAt: Date;
+  }>`
+    SELECT
+      d.id,
+      d.onedrive_account_id AS "oneDriveAccountId",
+      a.email AS "accountEmail",
+      a.name AS "accountName",
+      d.onedrive_web_url AS "oneDriveWebUrl",
+      d.path,
+      d.filename,
+      d.size,
+      d.modified_at AS "modifiedAt",
+      d.document_kind AS "documentKind",
+      d.status,
+      d.extracted_patient_name AS "extractedPatientName",
+      d.clinical_series_id AS "clinicalSeriesId",
+      d.issues,
+      d.imported_at AS "importedAt",
+      d.updated_at AS "updatedAt"
+    FROM clinical_document_imports d
+    LEFT JOIN onedrive_accounts a ON a.account_id = d.onedrive_account_id
+    WHERE d.clinical_series_id = ${clinicalSeriesId}
+      AND d.status = 'MATCHED'
+    ORDER BY d.modified_at DESC NULLS LAST, d.updated_at DESC
+  `.execute(kysely);
+
+  const documents: ClinicalDocumentImportOutput[] = result.rows.map((row) => ({
+    ...row,
+    importedAt: row.importedAt?.toISOString() ?? null,
+    issues: Array.isArray(row.issues) ? (row.issues as SkinTestIssue[]) : [],
+    modifiedAt: row.modifiedAt?.toISOString() ?? null,
+    updatedAt: row.updatedAt.toISOString(),
+  }));
+
+  return { documents };
+}
+
 async function maybeMaterializeImport(
   importId: string,
   parsed: ParsedSkinTestWorkbook
@@ -1147,6 +1446,21 @@ async function getImportByOneDriveItemId(accountId: string, driveId: string, ite
   return result.rows[0] ?? null;
 }
 
+async function getClinicalDocumentImportByOneDriveItemId(
+  accountId: string,
+  driveId: string,
+  itemId: string
+) {
+  const result = await sql<{ id: string }>`
+    SELECT id
+    FROM clinical_document_imports
+    WHERE onedrive_account_id = ${accountId}
+      AND onedrive_drive_id = ${driveId}
+      AND onedrive_item_id = ${itemId}
+  `.execute(kysely);
+  return result.rows[0] ?? null;
+}
+
 async function upsertImport(params: {
   accountId: string;
   confidence: number;
@@ -1271,15 +1585,18 @@ function buildImportWhereSql(input: SkinTestImportListInput) {
   `;
 }
 
-function isImportableXlsx(item: OneDriveItem): boolean {
+function isRelevantXlsx(item: OneDriveItem): boolean {
   if (item.deleted) return false;
   if (!item.file) return false;
   if (!/\.xlsx$/i.test(item.name)) return false;
   if (/^~\$/.test(item.name)) return false;
-  if (!isSkinTestCandidateFilename(item.name)) return false;
   if (isBlockedDownloadPath(item.parentReference?.path)) return false;
   if (isBlockedDownloadPath(item.remoteItem?.parentReference?.path)) return false;
   return true;
+}
+
+function isImportableXlsx(item: OneDriveItem): boolean {
+  return isRelevantXlsx(item) && isSkinTestCandidateFilename(item.name);
 }
 
 function isBlockedDownloadPath(path: null | string | undefined): boolean {
@@ -1288,6 +1605,106 @@ function isBlockedDownloadPath(path: null | string | undefined): boolean {
     .split(/[/:\\]+/)
     .map((segment) => segment.trim().toLowerCase())
     .some((segment) => ["descarga", "descargas", "download", "downloads"].includes(segment));
+}
+
+function classifyClinicalDocumentFilename(filename: string): ClinicalDocumentImportKind {
+  const text = normalizeDocumentName(filename);
+  if (
+    /\b(?:consulta|consultas|control|controles|visita|visitas|evolucion|evoluciones)\b/.test(text)
+  ) {
+    return "VISIT_SHEET";
+  }
+  if (/\b(?:ficha|fichas|clinica|clinico|historia|antecedentes)\b/.test(text)) {
+    return "CLINICAL_RECORD";
+  }
+  return "OTHER";
+}
+
+function extractPatientNameFromDocumentFilename(filename: string): null | string {
+  const cleaned = normalizeDocumentName(filename)
+    .replace(/\b(?:ficha|fichas|clinica|clinico|clinical|nueva|nuevo|completa|completo)\b/g, " ")
+    .replace(/\b(?:consulta|consultas|medica|medico|control|controles|visita|visitas)\b/g, " ")
+    .replace(/\b(?:final|fin|actualizado|actualizada|copia|copy|xlsx)\b/g, " ")
+    .replace(/\b(?:i{1,3}|iv|v|vi{0,3}|ix|x)\b/g, " ")
+    .replace(/\b\d+\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return cleaned.length >= 3 ? toTitleCase(cleaned) : null;
+}
+
+function normalizeDocumentName(filename: string): string {
+  return filename
+    .replace(/\.xlsx$/i, "")
+    .normalize("NFD")
+    .replace(/\p{M}+/gu, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9ñ]+/g, " ")
+    .trim();
+}
+
+function toTitleCase(value: string): string {
+  return value
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+async function matchClinicalSeriesByPatientName(
+  patientName: string
+): Promise<ClinicalDocumentSeriesMatch> {
+  const normalized = normalizeDocumentName(patientName);
+  if (!normalized) return { seriesId: null };
+  const entries = await getClinicalSeriesNameEntries();
+
+  const exactMatches = entries.filter((entry) => entry.normalizedName === normalized);
+  if (exactMatches.length === 1) return { seriesId: exactMatches[0]?.id ?? null };
+  if (exactMatches.length > 1) {
+    return {
+      issue: {
+        code: "multiple_series_candidates",
+        message: "Hay más de una serie clínica con el mismo nombre probable.",
+        severity: "warning",
+      },
+      seriesId: null,
+    };
+  }
+
+  const prefixMatches = entries.filter(
+    (entry) =>
+      entry.normalizedName.startsWith(`${normalized} `) ||
+      normalized.startsWith(`${entry.normalizedName} `)
+  );
+  if (prefixMatches.length === 1) return { seriesId: prefixMatches[0]?.id ?? null };
+  if (prefixMatches.length > 1) {
+    return {
+      issue: {
+        code: "multiple_series_candidates",
+        message: "Hay más de una serie clínica candidata por nombre de archivo.",
+        severity: "warning",
+      },
+      seriesId: null,
+    };
+  }
+
+  return { seriesId: null };
+}
+
+async function getClinicalSeriesNameEntries(): Promise<ClinicalSeriesNameEntry[]> {
+  if (clinicalSeriesNameCache) return clinicalSeriesNameCache;
+  const result = await sql<{ id: number; name: null | string }>`
+    SELECT id, patient_name AS name
+    FROM clinical_series
+    WHERE patient_name IS NOT NULL
+  `.execute(kysely);
+  clinicalSeriesNameCache = result.rows
+    .map((row) => ({
+      id: row.id,
+      name: row.name ?? "",
+      normalizedName: normalizeDocumentName(row.name ?? ""),
+    }))
+    .filter((entry) => entry.normalizedName.length > 0);
+  return clinicalSeriesNameCache;
 }
 
 function computeResultHash(results: ParsedSkinTestResult[]): string {

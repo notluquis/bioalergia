@@ -42,7 +42,7 @@ function CreditDetailsModalFallback({ isOpen, onClose }: { isOpen: boolean; onCl
       >
         <Modal.Container className="max-h-[90vh] overflow-hidden">
           <Modal.Dialog className="flex flex-col h-full">
-            <Modal.CloseTrigger onClick={onClose} />
+            <Modal.CloseTrigger onPress={onClose} />
             <Modal.Header className="flex-col items-start gap-2 border-b border-border py-5">
               <Skeleton className="h-6 w-40 rounded-md" />
               <Skeleton className="h-4 w-56 rounded-md" />
@@ -93,7 +93,7 @@ function CreditDetailsModalContent({
       >
         <Modal.Container className="max-h-[90vh] overflow-hidden">
           <Modal.Dialog className="flex flex-col h-full">
-            <Modal.CloseTrigger onClick={onClose} />
+            <Modal.CloseTrigger onPress={onClose} />
 
             <Modal.Header className="flex-col items-start gap-2 border-b border-border py-5">
               <div className="flex w-full items-center justify-between">

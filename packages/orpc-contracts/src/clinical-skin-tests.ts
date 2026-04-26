@@ -10,6 +10,16 @@ export const skinTestImportStatusSchema = z.enum([
   "SKIPPED",
 ]);
 
+export const clinicalDocumentImportKindSchema = z.enum(["CLINICAL_RECORD", "VISIT_SHEET", "OTHER"]);
+
+export const clinicalDocumentImportStatusSchema = z.enum([
+  "DISCOVERED",
+  "MATCHED",
+  "UNMATCHED",
+  "REJECTED",
+  "SKIPPED",
+]);
+
 export const skinTestControlTypeSchema = z.enum(["POSITIVE", "NEGATIVE"]);
 
 export const skinTestIssueSchema = z.object({
@@ -97,6 +107,25 @@ export const skinTestDetailSchema = z.object({
   sourceImportId: z.string(),
   testDate: z.string(),
   website: z.string().nullable(),
+});
+
+export const clinicalDocumentImportSchema = z.object({
+  accountEmail: z.string().nullable(),
+  accountName: z.string().nullable(),
+  clinicalSeriesId: z.number().int().nullable(),
+  documentKind: clinicalDocumentImportKindSchema,
+  extractedPatientName: z.string().nullable(),
+  filename: z.string(),
+  id: z.string(),
+  importedAt: z.string().nullable(),
+  issues: z.array(skinTestIssueSchema).catch([]),
+  modifiedAt: z.string().nullable(),
+  oneDriveAccountId: z.string().nullable(),
+  oneDriveWebUrl: z.string().nullable(),
+  path: z.string().nullable(),
+  size: z.number().int().nullable(),
+  status: clinicalDocumentImportStatusSchema,
+  updatedAt: z.string(),
 });
 
 export const skinTestImportListInputSchema = z.object({
@@ -283,6 +312,10 @@ export const skinTestsBySeriesOutputSchema = z.object({
   tests: z.array(skinTestDetailSchema),
 });
 
+export const clinicalDocumentsBySeriesOutputSchema = z.object({
+  documents: z.array(clinicalDocumentImportSchema),
+});
+
 export const clinicalSkinTestsContract = {
   approveImport: oc
     .route({ method: "POST", path: "/imports/{id}/approve" })
@@ -340,6 +373,10 @@ export const clinicalSkinTestsContract = {
     .route({ method: "GET", path: "/series/{clinicalSeriesId}/tests" })
     .input(skinTestsBySeriesInputSchema)
     .output(skinTestsBySeriesOutputSchema),
+  listDocumentsBySeries: oc
+    .route({ method: "GET", path: "/series/{clinicalSeriesId}/documents" })
+    .input(skinTestsBySeriesInputSchema)
+    .output(clinicalDocumentsBySeriesOutputSchema),
   rejectImport: oc
     .route({ method: "POST", path: "/imports/{id}/reject" })
     .input(skinTestImportActionInputSchema)

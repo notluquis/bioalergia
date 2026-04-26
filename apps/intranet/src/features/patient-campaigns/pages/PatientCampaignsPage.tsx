@@ -96,10 +96,9 @@ export function PatientCampaignsPage() {
                   return (
                     <Surface
                       key={campaign.id}
-                      className={`p-3 rounded-xl cursor-pointer transition-colors ${
-                        isSelected ? "ring-2 ring-primary bg-primary/5" : "hover:bg-default-50"
+                      className={`p-3 rounded-xl transition-colors ${
+                        isSelected ? "ring-2 ring-primary bg-primary/5" : "bg-default-50/40"
                       }`}
-                      onClick={() => setSelectedCampaignId(campaign.id)}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
@@ -139,6 +138,13 @@ export function PatientCampaignsPage() {
                         </div>
                       )}
                       <div className="mt-2 flex gap-1">
+                        <Button
+                          size="sm"
+                          variant={isSelected ? "secondary" : "ghost"}
+                          onPress={() => setSelectedCampaignId(campaign.id)}
+                        >
+                          Ver
+                        </Button>
                         <Button size="sm" variant="ghost" onPress={() => handleEdit(campaign)}>
                           <Pencil size={12} />
                           Editar

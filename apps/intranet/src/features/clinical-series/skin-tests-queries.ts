@@ -3,6 +3,7 @@ import { compactORPCInput } from "@/lib/orpc-input";
 import { clinicalSeriesKeys } from "./queries";
 import { clinicalSkinTestsORPCClient, toClinicalSkinTestsApiError } from "./skin-tests-orpc";
 import {
+  ClinicalDocumentImportSchema,
   OneDriveFolderFileSchema,
   OneDriveFolderItemSchema,
   SkinTestDetailSchema,
@@ -44,6 +45,8 @@ export const skinTestImportKeys = {
       itemId ?? "root",
     ] as const,
   oneDriveStatus: () => [...skinTestImportKeys.all, "onedrive-status"] as const,
+  seriesDocuments: (seriesId: number) =>
+    [...skinTestImportKeys.all, "series", seriesId, "documents"] as const,
   seriesTests: (seriesId: number) => [...skinTestImportKeys.all, "series", seriesId] as const,
 };
 
@@ -116,6 +119,19 @@ export function useSkinTestsBySeries(seriesId: number | null) {
       return SkinTestDetailSchema.array().parse(result.tests);
     },
     queryKey: skinTestImportKeys.seriesTests(seriesId!),
+  });
+}
+
+export function useClinicalDocumentsBySeries(seriesId: number | null) {
+  return useQuery({
+    enabled: seriesId != null,
+    queryFn: async () => {
+      const result = await clinicalSkinTestsORPCClient.listDocumentsBySeries({
+        clinicalSeriesId: seriesId!,
+      });
+      return ClinicalDocumentImportSchema.array().parse(result.documents);
+    },
+    queryKey: skinTestImportKeys.seriesDocuments(seriesId!),
   });
 }
 
