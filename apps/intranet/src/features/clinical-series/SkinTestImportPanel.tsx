@@ -104,6 +104,8 @@ interface SkinTestSyncJobMeta {
   elapsedSeconds?: number;
   errors?: number;
   etaSeconds?: number | null;
+  filesProcessed?: number;
+  filesTotal?: number;
   filename?: string;
   imported?: number;
   page?: number;
@@ -144,6 +146,8 @@ function getSyncJobMeta(meta: unknown): SkinTestSyncJobMeta {
         : value.etaSeconds === null
           ? null
           : undefined,
+    filesProcessed: typeof value.filesProcessed === "number" ? value.filesProcessed : undefined,
+    filesTotal: typeof value.filesTotal === "number" ? value.filesTotal : undefined,
     filename: typeof value.filename === "string" ? value.filename : undefined,
     imported: typeof value.imported === "number" ? value.imported : undefined,
     page: typeof value.page === "number" ? value.page : undefined,
@@ -427,7 +431,17 @@ export function SkinTestImportPanel() {
               {syncMeta.accountEmail && <span>Cuenta: {syncMeta.accountEmail}</span>}
               {syncMeta.accountsTotal != null && (
                 <span>
-                  Cuentas: {syncMeta.accountIndex ?? currentJob.progress}/{syncMeta.accountsTotal}
+                  Cuentas:{" "}
+                  {syncMeta.accountIndex ??
+                    (syncMeta.phase === "processing" || syncMeta.phase === "completed"
+                      ? syncMeta.accountsTotal
+                      : 0)}
+                  /{syncMeta.accountsTotal}
+                </span>
+              )}
+              {syncMeta.filesTotal != null && syncMeta.filesTotal > 0 && (
+                <span>
+                  Archivos: {syncMeta.filesProcessed ?? 0}/{syncMeta.filesTotal}
                 </span>
               )}
               {syncMeta.page != null && <span>Página delta: {syncMeta.page}</span>}

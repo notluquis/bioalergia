@@ -329,4 +329,63 @@ describe("clinical skin test parser", () => {
     );
     expect(parsed.results).toHaveLength(4);
   });
+
+  it("parses split PRICKTEST aeroallergen panel titles and dot dates", async () => {
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("Test");
+    sheet.getCell("B4").value = "PRICKTEST";
+    sheet.getCell("B5").value = "AEROALERGENOS I";
+    sheet.getCell("B7").value = "NOMBRE: ALEXANDER MONJES AEDO";
+    sheet.getCell("G7").value = "EDAD: 21 AÑOS";
+    sheet.getCell("B8").value = "RUT: 20.161.683-2";
+    sheet.getCell("G8").value = "FECHA:  20.11.2021";
+    sheet.getCell("C11").value = "ACAROS";
+    sheet.getCell("D11").value = "P";
+    sheet.getCell("E11").value = "E";
+    sheet.getCell("B12").value = "D1";
+    sheet.getCell("C12").value = "DERMATOPHAGOIDES P";
+    sheet.getCell("E12").value = 5;
+    sheet.getCell("H11").value = "GRAMINEAS";
+    sheet.getCell("I11").value = "P";
+    sheet.getCell("J11").value = "E";
+    sheet.getCell("G12").value = "G1";
+    sheet.getCell("H12").value = "GRAMA COMÚN";
+    sheet.getCell("I12").value = 3;
+    sheet.getCell("J12").value = 6;
+
+    const parsed = await parseSkinTestWorkbookBuffer(await workbook.xlsx.writeBuffer());
+
+    expect(parsed.header).toEqual(
+      expect.objectContaining({
+        ageLabel: "21 AÑOS",
+        patientName: "ALEXANDER MONJES AEDO",
+        patientRut: "20.161.683-2",
+        panelTitle: "AEROALERGENOS I",
+        testDate: "2021-11-20",
+      })
+    );
+    expect(parsed.issues).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "missing_title" }),
+        expect.objectContaining({ code: "missing_date" }),
+      ])
+    );
+    expect(parsed.results).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          allergenName: "DERMATOPHAGOIDES P",
+          code: "D1",
+          erythemaMm: 5,
+          section: "ACAROS",
+        }),
+        expect.objectContaining({
+          allergenName: "GRAMA COMUN",
+          code: "G1",
+          erythemaMm: 6,
+          papuleMm: 3,
+          section: "GRAMINEAS",
+        }),
+      ])
+    );
+  });
 });

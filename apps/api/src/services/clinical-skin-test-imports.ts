@@ -42,6 +42,8 @@ export interface SkinTestSyncProgress {
   elapsedSeconds?: number;
   errors?: number;
   etaSeconds?: number | null;
+  filesProcessed?: number;
+  filesTotal?: number;
   filename?: string;
   imported?: number;
   page?: number;
@@ -216,7 +218,6 @@ export async function syncClinicalSkinTestImports(options?: {
 
   let imported = 0;
   let pending = 0;
-  let processed = 0;
   let skipped = 0;
   let unchanged = 0;
   let errors = 0;
@@ -226,6 +227,7 @@ export async function syncClinicalSkinTestImports(options?: {
   let documentsUnmatched = 0;
   let scanned = 0;
   let xlsx = 0;
+  let filesProcessed = 0;
   const workItems: Array<{ account: (typeof accounts)[number]; item: OneDriveItem }> = [];
   const documentWorkItems: Array<{ account: (typeof accounts)[number]; item: OneDriveItem }> = [];
 
@@ -243,6 +245,8 @@ export async function syncClinicalSkinTestImports(options?: {
     documents,
     documentsMatched,
     documentsUnmatched,
+    filesProcessed,
+    filesTotal: 0,
   });
 
   for (const [accountIndex, account] of accounts.entries()) {
@@ -260,6 +264,8 @@ export async function syncClinicalSkinTestImports(options?: {
       scanned,
       total: accounts.length,
       xlsx,
+      filesProcessed,
+      filesTotal: 0,
     });
 
     const { items } = await listOneDriveDeltaItems(account.accountId, {
@@ -282,6 +288,8 @@ export async function syncClinicalSkinTestImports(options?: {
           documents,
           documentsMatched,
           documentsUnmatched,
+          filesProcessed,
+          filesTotal: 0,
         });
       },
     });
@@ -308,6 +316,8 @@ export async function syncClinicalSkinTestImports(options?: {
         scanned,
         total: accounts.length,
         xlsx,
+        filesProcessed,
+        filesTotal: 0,
       }
     );
   }
@@ -330,6 +340,8 @@ export async function syncClinicalSkinTestImports(options?: {
       total: accounts.length,
       unchanged,
       xlsx,
+      filesProcessed,
+      filesTotal: 0,
     });
     return {
       discovered,
@@ -356,9 +368,11 @@ export async function syncClinicalSkinTestImports(options?: {
     documentsMatched,
     documentsUnmatched,
     phase: "processing",
-    processed,
+    filesProcessed,
+    filesTotal: totalWorkItems,
+    processed: accounts.length + filesProcessed,
     scanned,
-    total: totalWorkItems,
+    total: accounts.length + totalWorkItems,
     xlsx,
   });
 
@@ -386,11 +400,13 @@ export async function syncClinicalSkinTestImports(options?: {
         documents,
         documentsMatched,
         documentsUnmatched,
+        filesProcessed,
+        filesTotal: totalWorkItems,
         phase: "processing",
-        processed,
+        processed: accounts.length + filesProcessed,
         scanned,
         skipped,
-        total: totalWorkItems,
+        total: accounts.length + totalWorkItems,
         unchanged,
         xlsx,
       });
@@ -406,7 +422,7 @@ export async function syncClinicalSkinTestImports(options?: {
       else if (result.status === "ERROR") errors += 1;
       else skipped += 1;
 
-      processed += 1;
+      filesProcessed += 1;
       emit(
         `[${account.email}] ${item.name}: ${result.syncAction === "SKIPPED_UNCHANGED" ? "sin cambios" : result.status}`,
         {
@@ -421,11 +437,13 @@ export async function syncClinicalSkinTestImports(options?: {
           documents,
           documentsMatched,
           documentsUnmatched,
+          filesProcessed,
+          filesTotal: totalWorkItems,
           phase: "processing",
-          processed,
+          processed: accounts.length + filesProcessed,
           scanned,
           skipped,
-          total: totalWorkItems,
+          total: accounts.length + totalWorkItems,
           unchanged,
           xlsx,
         }
@@ -451,7 +469,7 @@ export async function syncClinicalSkinTestImports(options?: {
         if (result.status === "MATCHED") documentsMatched += 1;
         else documentsUnmatched += 1;
         documents += 1;
-        processed += 1;
+        filesProcessed += 1;
 
         emit(`[${account.email}] Documento: ${item.name} (${result.status})`, {
           accountEmail: account.email,
@@ -465,11 +483,13 @@ export async function syncClinicalSkinTestImports(options?: {
           filename: item.name,
           imported,
           pending,
+          filesProcessed,
+          filesTotal: totalWorkItems,
           phase: "processing",
-          processed,
+          processed: accounts.length + filesProcessed,
           scanned,
           skipped,
-          total: totalWorkItems,
+          total: accounts.length + totalWorkItems,
           unchanged,
           xlsx,
         });
@@ -491,10 +511,12 @@ export async function syncClinicalSkinTestImports(options?: {
       imported,
       pending,
       phase: "completed",
-      processed,
+      filesProcessed,
+      filesTotal: totalWorkItems,
+      processed: accounts.length + filesProcessed,
       scanned,
       skipped,
-      total: totalWorkItems,
+      total: accounts.length + totalWorkItems,
       unchanged,
       xlsx,
     }
@@ -553,6 +575,27 @@ export async function processOneDriveSkinTestItem(
       buffer as unknown as Parameters<typeof parseSkinTestWorkbookBuffer>[0]
     );
     const resultHash = computeResultHash(parsed.results);
+    const templateIssue = getTemplateSkinTestIssue(parsed);
+    if (templateIssue) {
+      await upsertImport({
+        accountId,
+        confidence: 0,
+        duplicateOfImportId: null,
+        error: null,
+        id: importId,
+        issues: [templateIssue],
+        metadata,
+        parsedPayload: {
+          header: parsed.header,
+          interpretation: parsed.interpretation,
+          results: parsed.results,
+        },
+        resultHash,
+        status: "SKIPPED",
+      });
+      return await getSkinTestImport(importId);
+    }
+
     const duplicate = await findDuplicateSkinTest(importId, parsed, resultHash);
 
     if (duplicate.kind === "exact") {
@@ -952,6 +995,24 @@ export async function reprocessSkinTestImport(id: string) {
     buffer as unknown as Parameters<typeof parseSkinTestWorkbookBuffer>[0]
   );
   const resultHash = computeResultHash(parsed.results);
+  const templateIssue = getTemplateSkinTestIssue(parsed);
+  if (templateIssue) {
+    await sql`
+      UPDATE clinical_skin_test_imports
+      SET parser_version = ${SKIN_TEST_PARSER_VERSION},
+          status = 'SKIPPED',
+          confidence = 0,
+          error = null,
+          issues = ${JSON.stringify([templateIssue])}::jsonb,
+          parsed_payload = ${JSON.stringify({ header: parsed.header, interpretation: parsed.interpretation, results: parsed.results })}::jsonb,
+          result_hash = ${resultHash},
+          duplicate_of_import_id = null,
+          updated_at = now()
+      WHERE id = ${id}
+    `.execute(kysely);
+    return await getSkinTestImport(id);
+  }
+
   const duplicate = await findDuplicateSkinTest(id, parsed, resultHash);
   if (duplicate.kind === "exact") {
     const allIssues = [...parsed.issues, duplicate.issue];
@@ -1864,6 +1925,15 @@ function canAutoImport(parsed: ParsedSkinTestWorkbook, issues: SkinTestIssue[]):
     parsed.results.length > 0 &&
     issues.every((issue) => issue.severity !== "error")
   );
+}
+
+function getTemplateSkinTestIssue(parsed: ParsedSkinTestWorkbook): null | SkinTestIssue {
+  if (parsed.header.patientName || parsed.header.patientRut || parsed.header.testDate) return null;
+  return {
+    code: "template_without_patient",
+    message: "Plantilla sin paciente/RUT/fecha; se omite de la cola de importación.",
+    severity: "info",
+  };
 }
 
 function computeConfidence(baseConfidence: number, issues: SkinTestIssue[]): number {

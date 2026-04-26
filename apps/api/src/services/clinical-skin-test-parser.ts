@@ -92,7 +92,10 @@ export async function parseSkinTestWorkbookBuffer(
 export function parseSkinTestWorksheet(worksheet: ExcelJS.Worksheet): ParsedSkinTestWorkbook {
   const cells = collectCells(worksheet);
   const issues: SkinTestIssue[] = [];
-  const title = findCell(cells, /(?:(?:multi|prick)\s*test\s+cut[aá]neo|prick\s*test\s+aines)/i);
+  const title = findCell(
+    cells,
+    /(?:(?:multi|prick)\s*test\s+cut[aá]neo|prick\s*test\s+aines|^prick\s*test$)/i
+  );
   const panelTitle = findPanelTitle(cells, title);
   const header = extractHeader(cells);
   header.panelTitle = panelTitle;
