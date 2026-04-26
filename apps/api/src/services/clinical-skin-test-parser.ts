@@ -1,6 +1,6 @@
 import ExcelJS from "exceljs";
 
-export const SKIN_TEST_PARSER_VERSION = "2026-04-24.3";
+export const SKIN_TEST_PARSER_VERSION = "2026-04-26.1";
 
 export interface SkinTestIssue {
   code: string;
@@ -212,12 +212,19 @@ function findPanelTitle(cells: CellPoint[], title: CellPoint | null): null | str
 
 function extractHeader(cells: CellPoint[]): ParsedSkinTestHeader {
   const joined = cells.map((cell) => cell.text).join("\n");
-  const name = extractLabelValue(joined, /nombre\s*:?\s*([^\n\r]+)/i);
-  const rut = normalizeRut(extractLabelValue(joined, /rut\s*:?\s*([0-9.\-\skK]+)/i));
-  const age = extractLabelValue(joined, /edad\s*:?\s*([^\n\r]+)/i);
-  const dateRaw = extractLabelValue(joined, /fecha\s*:?\s*([^\n\r]+)/i);
+  const name =
+    extractLabelValue(joined, /nombre\s*:?\s*([^\n\r]+)/i) ?? extractRowLabelValue(cells, "nombre");
+  const rut = normalizeRut(
+    extractLabelValue(joined, /rut\s*:?\s*([0-9.\-\skK]+)/i) ?? extractRowLabelValue(cells, "rut")
+  );
+  const age =
+    extractLabelValue(joined, /edad\s*:?\s*([^\n\r]+)/i) ?? extractRowLabelValue(cells, "edad");
+  const dateRaw =
+    extractLabelValue(joined, /fecha\s*:?\s*([^\n\r]+)/i) ?? extractRowLabelValue(cells, "fecha");
   const email = extractEmail(joined);
-  const phone = extractLabelValue(joined, /celular\s*:?\s*([+0-9\s]+)/i);
+  const phone =
+    extractLabelValue(joined, /celular\s*:?\s*([+0-9\s]+)/i) ??
+    extractRowLabelValue(cells, "celular");
 
   return {
     ageLabel: cleanHeaderValue(age),
@@ -273,6 +280,35 @@ function extractLabelValue(text: string, pattern: RegExp): null | string {
   const match = text.match(pattern);
   if (!match?.[1]) return null;
   return match[1].split(/\s{2,}|\t/)[0]?.trim() || null;
+}
+
+function extractRowLabelValue(cells: CellPoint[], label: string): null | string {
+  const normalizedLabel = normalizeText(label).toLowerCase();
+  for (const cell of cells) {
+    const cellText = normalizeText(cell.text);
+    const lower = cellText.toLowerCase();
+    if (!new RegExp(`^${normalizedLabel}\\b`).test(lower)) continue;
+
+    const inline = cell.text.replace(new RegExp(`^\\s*${label}\\s*:?(.*)$`, "i"), "$1").trim();
+    if (inline && inline !== ":") return inline.replace(/^:\s*/, "").trim();
+
+    const sameRowCandidates = cells
+      .filter(
+        (candidate) =>
+          candidate.row === cell.row &&
+          candidate.col > cell.col &&
+          candidate.col <= cell.col + 6 &&
+          candidate.text.trim() !== ":"
+      )
+      .sort((left, right) => left.col - right.col);
+    const value = sameRowCandidates.find(
+      (candidate) =>
+        !/^(?:nombre|rut|edad|fecha|correo|celular)$/i.test(normalizeText(candidate.text)) &&
+        !/^:$/.test(candidate.text.trim())
+    );
+    if (value?.text.trim()) return value.text.trim().replace(/^:\s*/, "").trim();
+  }
+  return null;
 }
 
 function cleanHeaderValue(value: null | string): null | string {
@@ -347,11 +383,15 @@ function extractResults(
       (cell) => normalizeCode(cell.text) || /control\s+(positivo|negativo)/i.test(cell.text)
     );
     const sectionCells = nonEmpty.filter((cell) => isSectionLabel(cell.text));
-    if (!hasResultCandidate && sectionCells.length > 0) {
+    if (sectionCells.length > 0) {
       currentSectionByBlock = new Map(currentSectionByBlock);
       for (const section of sectionCells) {
+        if (isAllergenNameCell(nonEmpty, section)) continue;
         currentSectionByBlock.set(blockForColumn(section.col), normalizeSection(section.text));
       }
+      if (!hasResultCandidate) continue;
+    }
+    if (!hasResultCandidate) {
       continue;
     }
 
@@ -397,6 +437,7 @@ function isSectionLabel(value: string): boolean {
   const text = normalizeText(value).toLowerCase();
   if (!text || SECTION_STOPWORDS.has(text)) return false;
   if (/control\s+(positivo|negativo)/i.test(text)) return false;
+  if (/^panel\s+\d+\s*$/i.test(text)) return true;
   return /^[A-ZÁÉÍÓÚÑ\s/]+$/i.test(value) && text.length >= 4 && !/\d/.test(text);
 }
 
@@ -427,10 +468,11 @@ function extractResultRowsFromRow(
     const allergenName = isControl ? normalizeText(cell.text) : normalizeText(nameCell?.text ?? "");
     if (!allergenName || allergenName.length < 2) continue;
     if (isResultValue(allergenName)) continue;
+    if (!isControl && /^panel\s+\d+\b/i.test(normalizeText(allergenName))) continue;
+    if (!isControl && (normalizeCode(allergenName) || allergenName.startsWith(":"))) continue;
 
-    const numericCells = cells
-      .slice(index + (isControl ? 1 : 2), index + (isControl ? 5 : 6))
-      .filter((candidate) => isResultValue(candidate.text));
+    const numericCells = collectMetricCells(cells, index + (isControl ? 1 : 2), isControl);
+    if (numericCells.length === 0) continue;
     const byMetric = assignResultMetrics(worksheet, rowNumber, numericCells);
     const papule = byMetric.sawHeader ? byMetric.papule : (numericCells[0]?.text ?? null);
     const erythema = byMetric.sawHeader ? byMetric.erythema : (numericCells[1]?.text ?? null);
@@ -456,6 +498,39 @@ function extractResultRowsFromRow(
     });
   }
   return results;
+}
+
+function isAllergenNameCell(
+  cells: Array<{ col: number; text: string }>,
+  cell: { col: number; text: string }
+) {
+  if (/^panel\s+\d+\s*$/i.test(normalizeText(cell.text))) return false;
+  const previous = [...cells].reverse().find((candidate) => candidate.col < cell.col);
+  return previous ? Boolean(normalizeCode(previous.text)) : false;
+}
+
+function collectMetricCells(
+  cells: Array<{ col: number; text: string }>,
+  startIndex: number,
+  isControl: boolean
+): Array<{ col: number; text: string }> {
+  const metricCells: Array<{ col: number; text: string }> = [];
+  const maxMetricCells = isControl ? 2 : 2;
+
+  for (let index = startIndex; index < cells.length; index += 1) {
+    const candidate = cells[index];
+    if (!candidate?.text) continue;
+    if (isResultValue(candidate.text)) {
+      metricCells.push(candidate);
+      if (metricCells.length >= maxMetricCells) break;
+      continue;
+    }
+    if (normalizeCode(candidate.text) || /control\s+(positivo|negativo)/i.test(candidate.text)) {
+      break;
+    }
+  }
+
+  return metricCells;
 }
 
 function assignResultMetrics(
@@ -484,7 +559,7 @@ function findMetricHeader(
   rowNumber: number,
   col: number
 ): "E" | "P" | null {
-  for (let row = rowNumber - 1; row >= Math.max(1, rowNumber - 6); row -= 1) {
+  for (let row = rowNumber - 1; row >= Math.max(1, rowNumber - 30); row -= 1) {
     const value = normalizeText(cellToText(worksheet.getRow(row).getCell(col))).toUpperCase();
     if (value === "P" || value === "E") return value;
   }
@@ -494,6 +569,7 @@ function findMetricHeader(
 function normalizeCode(value: string): null | string {
   const text = value.trim().toUpperCase();
   if (text === "P" || text === "E") return null;
+  if (/^[A-Z]{2,3}$/.test(text) && text !== "MA" && text !== "MC") return null;
   if (/^(?:[A-Z]{1,3}\d{0,2}|\d{1,2})$/.test(text)) return text;
   return null;
 }

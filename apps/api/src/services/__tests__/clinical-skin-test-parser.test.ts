@@ -102,6 +102,136 @@ describe("clinical skin test parser", () => {
     );
   });
 
+  it("parses the panel grid format with separated P/E blocks", async () => {
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("Test");
+    sheet.getCell("D4").value = "MULTITEST CUTÁNEO";
+    sheet.getCell("D5").value = "PANEL 1, 2,3 Y ACAROS";
+    sheet.getCell("B7").value = "NOMBRE :Joaquin Heredia Flores";
+    sheet.getCell("H7").value = "EDAD";
+    sheet.getCell("I7").value = ":";
+    sheet.getCell("J7").value = "7 Años";
+    sheet.getCell("B8").value = "RUT";
+    sheet.getCell("C8").value = ": 26.200.889-4";
+    sheet.getCell("H8").value = "FECHA";
+    sheet.getCell("I8").value = ":";
+    sheet.getCell("J8").value = "14-01-2026";
+    sheet.getCell("B9").value = "CORREO:kflores28@gmail.com";
+    sheet.getCell("H9").value = "CELULAR";
+    sheet.getCell("I9").value = ":";
+    sheet.getCell("J9").value = "990789883";
+
+    sheet.getCell("C13").value = "PANEL 1";
+    sheet.getCell("E12").value = "P";
+    sheet.getCell("F12").value = "E";
+    sheet.getCell("B14").value = "D1";
+    sheet.getCell("C14").value = "MEZCLA ACAROS";
+    sheet.getCell("E14").value = 5;
+    sheet.getCell("F14").value = 18;
+    sheet.getCell("B15").value = "D5";
+    sheet.getCell("C15").value = "POLVO DE CASA";
+    sheet.getCell("E15").value = 6;
+    sheet.getCell("F15").value = 10;
+    sheet.getCell("B16").value = "E1";
+    sheet.getCell("C16").value = "GATO";
+    sheet.getCell("F16").value = 5;
+
+    sheet.getCell("H13").value = "PANEL 3";
+    sheet.getCell("J13").value = "P";
+    sheet.getCell("K13").value = "E";
+    sheet.getCell("G14").value = "G1";
+    sheet.getCell("H14").value = "GRAMA COMUN";
+    sheet.getCell("J14").value = 8;
+    sheet.getCell("K14").value = 25;
+
+    sheet.getCell("C27").value = "PANEL 2";
+    sheet.getCell("E28").value = "P";
+    sheet.getCell("F28").value = "E";
+    sheet.getCell("B29").value = "A2";
+    sheet.getCell("C29").value = "FRESNO";
+    sheet.getCell("F29").value = 8;
+    sheet.getCell("B30").value = "A4";
+    sheet.getCell("C30").value = "PINO";
+    sheet.getCell("E30").value = 10;
+    sheet.getCell("F30").value = 22;
+
+    sheet.getCell("H27").value = "Acaros/ insectario";
+    sheet.getCell("J27").value = "P";
+    sheet.getCell("K27").value = "E";
+    sheet.getCell("G28").value = "D1";
+    sheet.getCell("H28").value = "DERMATOFAGOIDES P";
+    sheet.getCell("K28").value = 8;
+    sheet.getCell("G29").value = "D2";
+    sheet.getCell("H29").value = "DERMATOPHAGOIDES F";
+    sheet.getCell("J29").value = 5;
+    sheet.getCell("K29").value = 19;
+
+    sheet.getCell("B42").value = "CONTROL POSITIVO";
+    sheet.getCell("E42").value = 10;
+    sheet.getCell("F42").value = 29;
+    sheet.getCell("B43").value = "CONTROL NEGATIVO";
+    sheet.getCell("F43").value = 5;
+
+    const parsed = await parseSkinTestWorkbookBuffer(await workbook.xlsx.writeBuffer());
+
+    expect(parsed.header).toEqual(
+      expect.objectContaining({
+        ageLabel: "7 Años",
+        patientEmail: "kflores28@gmail.com",
+        patientName: "Joaquin Heredia Flores",
+        patientPhone: "990789883",
+        patientRut: "26.200.889-4",
+        panelTitle: "PANEL 1, 2,3 Y ACAROS",
+        testDate: "2026-01-14",
+      })
+    );
+    expect(parsed.results).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          allergenName: "MEZCLA ACAROS",
+          code: "D1",
+          erythemaMm: 18,
+          papuleMm: 5,
+          section: "PANEL 1",
+        }),
+        expect.objectContaining({
+          allergenName: "GATO",
+          code: "E1",
+          erythemaMm: 5,
+          papuleMm: null,
+          section: "PANEL 1",
+        }),
+        expect.objectContaining({
+          allergenName: "GRAMA COMUN",
+          code: "G1",
+          erythemaMm: 25,
+          papuleMm: 8,
+          section: "PANEL 3",
+        }),
+        expect.objectContaining({
+          allergenName: "DERMATOPHAGOIDES F",
+          code: "D2",
+          erythemaMm: 19,
+          papuleMm: 5,
+          section: "Acaros/ insectario",
+        }),
+        expect.objectContaining({
+          allergenName: "CONTROL POSITIVO",
+          controlType: "POSITIVE",
+          erythemaMm: 29,
+          papuleMm: 10,
+        }),
+        expect.objectContaining({
+          allergenName: "CONTROL NEGATIVO",
+          controlType: "NEGATIVE",
+          erythemaMm: 5,
+          papuleMm: null,
+        }),
+      ])
+    );
+    expect(parsed.results).toHaveLength(10);
+  });
+
   it("extracts interpretation notes and non-conclusive hyperreactivity flags", async () => {
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet("Test");
