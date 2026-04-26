@@ -6,6 +6,7 @@ import {
   ClinicalDocumentImportSchema,
   OneDriveFolderFileSchema,
   OneDriveFolderItemSchema,
+  SkinTestAnalyticsSchema,
   SkinTestDetailSchema,
   SkinTestImportSchema,
   type SkinTestImportStatus,
@@ -22,9 +23,19 @@ export interface SkinTestImportFilters {
   status?: SkinTestImportStatus;
 }
 
+export interface SkinTestAnalyticsFilters {
+  dateFrom?: string;
+  dateTo?: string;
+  examType?: string;
+  pageSize?: number;
+  query?: string;
+}
+
 export const skinTestImportKeys = {
   all: ["clinical-skin-tests"] as const,
   activeJob: () => [...skinTestImportKeys.all, "active-job"] as const,
+  analytics: (filters?: SkinTestAnalyticsFilters) =>
+    [...skinTestImportKeys.all, "analytics", filters] as const,
   importsBase: () => [...skinTestImportKeys.all, "imports"] as const,
   imports: (filters?: SkinTestImportFilters) =>
     [...skinTestImportKeys.all, "imports", filters] as const,
@@ -106,6 +117,20 @@ export function useSkinTestImports(filters?: SkinTestImportFilters) {
       }
     },
     queryKey: skinTestImportKeys.imports(filters),
+  });
+}
+
+export function useSkinTestAnalytics(filters?: SkinTestAnalyticsFilters) {
+  return useQuery({
+    queryFn: async () => {
+      try {
+        const result = await clinicalSkinTestsORPCClient.analytics(compactORPCInput(filters) ?? {});
+        return SkinTestAnalyticsSchema.parse(result);
+      } catch (error) {
+        throw toClinicalSkinTestsApiError(error);
+      }
+    },
+    queryKey: skinTestImportKeys.analytics(filters),
   });
 }
 

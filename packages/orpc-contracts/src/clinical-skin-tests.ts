@@ -316,7 +316,63 @@ export const clinicalDocumentsBySeriesOutputSchema = z.object({
   documents: z.array(clinicalDocumentImportSchema),
 });
 
+export const skinTestAnalyticsInputSchema = z.object({
+  dateFrom: z.string().optional(),
+  dateTo: z.string().optional(),
+  examType: z.string().optional(),
+  pageSize: z.number().int().positive().max(100).default(20),
+  query: z.string().optional(),
+});
+
+export const skinTestAnalyticsOutputSchema = z.object({
+  byExamType: z.array(
+    z.object({
+      examType: z.string(),
+      total: z.number().int(),
+    })
+  ),
+  byMonth: z.array(
+    z.object({
+      month: z.string(),
+      total: z.number().int(),
+    })
+  ),
+  dateFrom: z.string().nullable(),
+  dateTo: z.string().nullable(),
+  positiveAllergenResults: z.number().int(),
+  recentTests: z.array(
+    z.object({
+      clinicalSeriesId: z.number().int(),
+      examType: z.string(),
+      id: z.string(),
+      oneDriveWebUrl: z.string().nullable(),
+      panelTitle: z.string().nullable(),
+      patientName: z.string().nullable(),
+      patientRut: z.string().nullable(),
+      resultCount: z.number().int(),
+      testDate: z.string(),
+    })
+  ),
+  topPatients: z.array(
+    z.object({
+      lastTestDate: z.string().nullable(),
+      patientName: z.string().nullable(),
+      patientRut: z.string().nullable(),
+      totalTests: z.number().int(),
+    })
+  ),
+  totalPatients: z.number().int(),
+  totalResults: z.number().int(),
+  totalTests: z.number().int(),
+  withRut: z.number().int(),
+  withoutRut: z.number().int(),
+});
+
 export const clinicalSkinTestsContract = {
+  analytics: oc
+    .route({ method: "GET", path: "/analytics" })
+    .input(skinTestAnalyticsInputSchema)
+    .output(skinTestAnalyticsOutputSchema),
   approveImport: oc
     .route({ method: "POST", path: "/imports/{id}/approve" })
     .input(skinTestImportActionInputSchema)

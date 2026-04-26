@@ -127,6 +127,44 @@ export interface SkinTestDetailOutput {
   website: null | string;
 }
 
+export interface SkinTestAnalyticsInput {
+  dateFrom?: string;
+  dateTo?: string;
+  examType?: string;
+  pageSize?: number;
+  query?: string;
+}
+
+export interface SkinTestAnalyticsOutput {
+  byExamType: Array<{ examType: string; total: number }>;
+  byMonth: Array<{ month: string; total: number }>;
+  dateFrom: null | string;
+  dateTo: null | string;
+  positiveAllergenResults: number;
+  recentTests: Array<{
+    clinicalSeriesId: number;
+    examType: string;
+    id: string;
+    oneDriveWebUrl: null | string;
+    panelTitle: null | string;
+    patientName: null | string;
+    patientRut: null | string;
+    resultCount: number;
+    testDate: string;
+  }>;
+  topPatients: Array<{
+    lastTestDate: null | string;
+    patientName: null | string;
+    patientRut: null | string;
+    totalTests: number;
+  }>;
+  totalPatients: number;
+  totalResults: number;
+  totalTests: number;
+  withRut: number;
+  withoutRut: number;
+}
+
 export interface ClinicalDocumentImportOutput {
   accountEmail: null | string;
   accountName: null | string;
@@ -890,6 +928,137 @@ export async function listSkinTestImports(input: SkinTestImportListInput = {}) {
     page,
     pageSize,
     total: countResult.rows[0]?.count ?? 0,
+  };
+}
+
+export async function getSkinTestAnalytics(
+  input: SkinTestAnalyticsInput = {}
+): Promise<SkinTestAnalyticsOutput> {
+  const pageSize = input.pageSize ?? 20;
+  const whereSql = buildSkinTestAnalyticsWhereSql(input);
+  const examTypeSql = skinTestExamTypeSql();
+
+  const [summaryResult, byExamTypeResult, byMonthResult, topPatientsResult, recentTestsResult] =
+    await Promise.all([
+      sql<{
+        dateFrom: Date | string | null;
+        dateTo: Date | string | null;
+        positiveAllergenResults: number;
+        totalPatients: number;
+        totalResults: number;
+        totalTests: number;
+        withRut: number;
+        withoutRut: number;
+      }>`
+        WITH filtered AS (
+          SELECT t.*
+          FROM clinical_skin_tests t
+          LEFT JOIN clinical_skin_test_imports i ON i.id = t.source_import_id
+          WHERE ${whereSql}
+        )
+        SELECT
+          count(*)::int AS "totalTests",
+          count(DISTINCT coalesce(nullif(patient_rut, ''), nullif(patient_name, ''), id))::int AS "totalPatients",
+          count(*) FILTER (WHERE nullif(patient_rut, '') IS NOT NULL)::int AS "withRut",
+          count(*) FILTER (WHERE nullif(patient_rut, '') IS NULL)::int AS "withoutRut",
+          min(test_date) AS "dateFrom",
+          max(test_date) AS "dateTo",
+          coalesce((SELECT count(*)::int FROM clinical_skin_test_results r WHERE r.skin_test_id IN (SELECT id FROM filtered)), 0) AS "totalResults",
+          coalesce((
+            SELECT count(*)::int
+            FROM clinical_skin_test_results r
+            WHERE r.skin_test_id IN (SELECT id FROM filtered)
+              AND r.control_type IS NULL
+              AND coalesce(r.papule_mm, 0) >= 3
+          ), 0) AS "positiveAllergenResults"
+        FROM filtered
+      `.execute(kysely),
+      sql<{ examType: string; total: number }>`
+        SELECT ${examTypeSql} AS "examType", count(*)::int AS total
+        FROM clinical_skin_tests t
+        LEFT JOIN clinical_skin_test_imports i ON i.id = t.source_import_id
+        WHERE ${whereSql}
+        GROUP BY "examType"
+        ORDER BY total DESC, "examType" ASC
+      `.execute(kysely),
+      sql<{ month: string; total: number }>`
+        SELECT to_char(date_trunc('month', t.test_date), 'YYYY-MM') AS month, count(*)::int AS total
+        FROM clinical_skin_tests t
+        LEFT JOIN clinical_skin_test_imports i ON i.id = t.source_import_id
+        WHERE ${whereSql}
+        GROUP BY month
+        ORDER BY month DESC
+        LIMIT 24
+      `.execute(kysely),
+      sql<{
+        lastTestDate: Date | string | null;
+        patientName: string | null;
+        patientRut: string | null;
+        totalTests: number;
+      }>`
+        SELECT
+          nullif(t.patient_name, '') AS "patientName",
+          nullif(t.patient_rut, '') AS "patientRut",
+          count(*)::int AS "totalTests",
+          max(t.test_date) AS "lastTestDate"
+        FROM clinical_skin_tests t
+        LEFT JOIN clinical_skin_test_imports i ON i.id = t.source_import_id
+        WHERE ${whereSql}
+        GROUP BY nullif(t.patient_name, ''), nullif(t.patient_rut, '')
+        ORDER BY "totalTests" DESC, "lastTestDate" DESC NULLS LAST
+        LIMIT 12
+      `.execute(kysely),
+      sql<{
+        clinicalSeriesId: number;
+        examType: string;
+        id: string;
+        oneDriveWebUrl: string | null;
+        panelTitle: string | null;
+        patientName: string | null;
+        patientRut: string | null;
+        resultCount: number;
+        testDate: Date | string;
+      }>`
+        SELECT
+          t.id,
+          t.clinical_series_id AS "clinicalSeriesId",
+          t.test_date AS "testDate",
+          t.patient_name AS "patientName",
+          t.patient_rut AS "patientRut",
+          t.panel_title AS "panelTitle",
+          i.onedrive_web_url AS "oneDriveWebUrl",
+          ${examTypeSql} AS "examType",
+          count(r.id)::int AS "resultCount"
+        FROM clinical_skin_tests t
+        LEFT JOIN clinical_skin_test_imports i ON i.id = t.source_import_id
+        LEFT JOIN clinical_skin_test_results r ON r.skin_test_id = t.id
+        WHERE ${whereSql}
+        GROUP BY t.id, i.onedrive_web_url, "examType"
+        ORDER BY t.test_date DESC, t.created_at DESC
+        LIMIT ${pageSize}
+      `.execute(kysely),
+    ]);
+
+  const summary = summaryResult.rows[0];
+  return {
+    byExamType: byExamTypeResult.rows,
+    byMonth: byMonthResult.rows.reverse(),
+    dateFrom: summary?.dateFrom ? toDateString(summary.dateFrom) : null,
+    dateTo: summary?.dateTo ? toDateString(summary.dateTo) : null,
+    positiveAllergenResults: summary?.positiveAllergenResults ?? 0,
+    recentTests: recentTestsResult.rows.map((row) => ({
+      ...row,
+      testDate: toDateString(row.testDate),
+    })),
+    topPatients: topPatientsResult.rows.map((row) => ({
+      ...row,
+      lastTestDate: row.lastTestDate ? toDateString(row.lastTestDate) : null,
+    })),
+    totalPatients: summary?.totalPatients ?? 0,
+    totalResults: summary?.totalResults ?? 0,
+    totalTests: summary?.totalTests ?? 0,
+    withRut: summary?.withRut ?? 0,
+    withoutRut: summary?.withoutRut ?? 0,
   };
 }
 
@@ -1692,6 +1861,39 @@ function buildImportWhereSql(input: SkinTestImportListInput) {
       OR i.parsed_payload->'header'->>'patientName' ILIKE ${`%${query ?? ""}%`}
       OR i.parsed_payload->'header'->>'patientRut' ILIKE ${`%${query ?? ""}%`}
     )
+  `;
+}
+
+function buildSkinTestAnalyticsWhereSql(input: SkinTestAnalyticsInput) {
+  const query = input.query?.trim();
+  const examType = input.examType?.trim();
+  const examTypeSql = skinTestExamTypeSql();
+  return sql<boolean>`
+    (${input.dateFrom ?? null}::date IS NULL OR t.test_date >= ${input.dateFrom ?? null}::date)
+    AND (${input.dateTo ?? null}::date IS NULL OR t.test_date <= ${input.dateTo ?? null}::date)
+    AND (${examType || null}::text IS NULL OR ${examTypeSql} = ${examType || null})
+    AND (
+      ${query ?? null}::text IS NULL
+      OR t.patient_name ILIKE ${`%${query ?? ""}%`}
+      OR t.patient_rut ILIKE ${`%${query ?? ""}%`}
+      OR t.panel_title ILIKE ${`%${query ?? ""}%`}
+      OR i.filename ILIKE ${`%${query ?? ""}%`}
+    )
+  `;
+}
+
+function skinTestExamTypeSql() {
+  return sql<string>`
+    CASE
+      WHEN concat_ws(' ', t.panel_title, i.filename) ILIKE '%AINES%' THEN 'AINES'
+      WHEN concat_ws(' ', t.panel_title, i.filename) ILIKE '%AEROAL%' THEN 'Aeroalérgenos'
+      WHEN concat_ws(' ', t.panel_title, i.filename) ILIKE '%ALIMENT%' THEN 'Alimentario'
+      WHEN concat_ws(' ', t.panel_title, i.filename) ILIKE '%ACARO%'
+        OR concat_ws(' ', t.panel_title, i.filename) ILIKE '%ÁCARO%' THEN 'Ácaros'
+      WHEN concat_ws(' ', t.panel_title, i.filename) ILIKE '%MULTITEST%' THEN 'Multitest'
+      WHEN concat_ws(' ', t.panel_title, i.filename) ILIKE '%PRICK%' THEN 'Prick test'
+      ELSE 'Sin clasificar'
+    END
   `;
 }
 

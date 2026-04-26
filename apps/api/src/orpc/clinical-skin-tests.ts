@@ -12,6 +12,8 @@ import {
   oneDriveFolderPreviewInputSchema,
   oneDriveFolderPreviewOutputSchema,
   oneDriveStatusOutputSchema,
+  skinTestAnalyticsInputSchema,
+  skinTestAnalyticsOutputSchema,
   skinTestImportActionInputSchema,
   skinTestBulkImportActionInputSchema,
   skinTestBulkImportActionOutputSchema,
@@ -50,6 +52,7 @@ import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
 import {
   approveSkinTestImport,
+  getSkinTestAnalytics,
   getSkinTestImportJobType,
   getSkinTestImport,
   listClinicalDocumentsBySeries,
@@ -94,6 +97,14 @@ const updateClinicalSkinTests = authed.use(async ({ context, next }) => {
 });
 
 const routerBase = {
+  analytics: readClinicalSkinTests
+    .route({ method: "GET", path: "/analytics" })
+    .input(skinTestAnalyticsInputSchema)
+    .output(skinTestAnalyticsOutputSchema)
+    .handler(async ({ input }: { input: z.input<typeof skinTestAnalyticsInputSchema> }) => {
+      return await getSkinTestAnalytics(input);
+    }),
+
   approveImport: updateClinicalSkinTests
     .route({ method: "POST", path: "/imports/{id}/approve" })
     .input(skinTestImportActionInputSchema)

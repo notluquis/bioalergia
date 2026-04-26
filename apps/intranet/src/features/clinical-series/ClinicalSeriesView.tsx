@@ -47,7 +47,7 @@ import type { CalendarEventDetail } from "@/features/calendar/types";
 import { formatEventDescriptionToPlainText } from "@/features/calendar/utils/format-event-description";
 import { PatientCampaignDrawerSection } from "@/features/patient-campaigns/components/PatientCampaignDrawerSection";
 import { SeriesSkinTestsSection } from "./SeriesSkinTestsSection";
-import { SkinTestImportPanel } from "./SkinTestImportPanel";
+import { SkinTestWorkspacePanel } from "./SkinTestWorkspacePanel";
 import {
   clinicalSeriesKeys,
   fetchClinicalSeriesDetail,
@@ -1457,7 +1457,7 @@ export function ClinicalSeriesView() {
       </Tabs>
 
       {isSkinTestImportTab ? (
-        <SkinTestImportPanel />
+        <SkinTestWorkspacePanel />
       ) : (
         <>
           {/* ── Filters ──────────────────────────────────────────────────────── */}

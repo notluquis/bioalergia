@@ -157,3 +157,49 @@ export const ClinicalDocumentImportSchema = z.object({
 });
 
 export type ClinicalDocumentImport = z.infer<typeof ClinicalDocumentImportSchema>;
+
+export const SkinTestAnalyticsSchema = z.object({
+  byExamType: z.array(
+    z.object({
+      examType: z.string(),
+      total: z.number(),
+    })
+  ),
+  byMonth: z.array(
+    z.object({
+      month: z.string(),
+      total: z.number(),
+    })
+  ),
+  dateFrom: z.string().nullable(),
+  dateTo: z.string().nullable(),
+  positiveAllergenResults: z.number(),
+  recentTests: z.array(
+    z.object({
+      clinicalSeriesId: z.number(),
+      examType: z.string(),
+      id: z.string(),
+      oneDriveWebUrl: z.string().nullable(),
+      panelTitle: z.string().nullable(),
+      patientName: z.string().nullable(),
+      patientRut: z.string().nullable(),
+      resultCount: z.number(),
+      testDate: z.string(),
+    })
+  ),
+  topPatients: z.array(
+    z.object({
+      lastTestDate: z.string().nullable(),
+      patientName: z.string().nullable(),
+      patientRut: z.string().nullable(),
+      totalTests: z.number(),
+    })
+  ),
+  totalPatients: z.number(),
+  totalResults: z.number(),
+  totalTests: z.number(),
+  withRut: z.number(),
+  withoutRut: z.number(),
+});
+
+export type SkinTestAnalytics = z.infer<typeof SkinTestAnalyticsSchema>;
