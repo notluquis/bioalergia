@@ -13,7 +13,9 @@ dayjs.extend(isoWeek);
 
 export const DOCTORALIA_BACKFILL_MIN_DATE = "2017-08-21";
 
-const WEEK_DELAY_MS = Number(process.env.DOCTORALIA_BACKFILL_WEEK_DELAY_MS ?? "1500");
+function getWeekDelayMs(): number {
+  return Number(process.env.DOCTORALIA_BACKFILL_WEEK_DELAY_MS ?? "1500");
+}
 
 export type BackfillBucketCounts = {
   inserted: number;
@@ -234,8 +236,9 @@ async function runBackfillLoop(params: {
 
       if (state.cancelRequested) break;
 
-      if (WEEK_DELAY_MS > 0) {
-        await sleep(WEEK_DELAY_MS);
+      const weekDelayMs = getWeekDelayMs();
+      if (weekDelayMs > 0) {
+        await sleep(weekDelayMs);
       }
 
       cursor = cursor.subtract(1, "week");

@@ -5,6 +5,8 @@ import { app } from "../app";
 // even though this test shouldn't touch them.
 vi.mock("@finanzas/db", () => ({
   authDb: {},
+  db: {},
+  kysely: {},
   schema: {},
 }));
 

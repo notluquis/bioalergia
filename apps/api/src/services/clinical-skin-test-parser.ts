@@ -221,7 +221,9 @@ function extractHeader(cells: CellPoint[]): ParsedSkinTestHeader {
   const name =
     extractLabelValue(joined, /nombre\s*:?\s*([^\n\r]+)/i) ?? extractRowLabelValue(cells, "nombre");
   const rut = normalizeRut(
-    extractLabelValue(joined, /rut\s*:?\s*([0-9.\-\skK]+)/i) ?? extractRowLabelValue(cells, "rut")
+    extractLabelValue(joined, /rut\s*:?\s*([0-9.\-\skK]+)/i) ??
+      extractRowLabelValue(cells, "rut") ??
+      extractStandaloneRut(cells)
   );
   const age =
     extractLabelValue(joined, /edad\s*:?\s*([^\n\r]+)/i) ?? extractRowLabelValue(cells, "edad");
@@ -315,6 +317,15 @@ function extractRowLabelValue(cells: CellPoint[], label: string): null | string 
     if (value?.text.trim()) return value.text.trim().replace(/^:\s*/, "").trim();
   }
   return null;
+}
+
+function extractStandaloneRut(cells: CellPoint[]): null | string {
+  const rutPattern = /\b(?:\d{1,2}[\s.]?\d{3}[\s.]?\d{3}|\d{7,8})\s*-\s*[\dkK]\b/;
+  const candidate = cells
+    .filter((cell) => cell.row <= 12)
+    .sort((left, right) => left.row - right.row || left.col - right.col)
+    .find((cell) => rutPattern.test(cell.text));
+  return candidate?.text.match(rutPattern)?.[0] ?? null;
 }
 
 function cleanHeaderValue(value: null | string): null | string {

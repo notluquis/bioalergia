@@ -423,4 +423,35 @@ describe("clinical skin test parser", () => {
       expect.arrayContaining([expect.objectContaining({ code: "missing_date" })])
     );
   });
+
+  it("parses standalone RUT cells in the header area", async () => {
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("Test");
+    sheet.getCell("B4").value = "PRICKTEST";
+    sheet.getCell("B5").value = "PANEL ALIMENTOS I";
+    sheet.getCell("B7").value = "NOMBRE: DAWSON MIRANDA SEPULVEDA";
+    sheet.getCell("G7").value = "EDAD: 13 AÑOS";
+    sheet.getCell("B8").value = "22.727.339-9";
+    sheet.getCell("G8").value = "FECHA: 26/04/2022";
+    sheet.getCell("D12").value = "P";
+    sheet.getCell("E12").value = "E";
+    sheet.getCell("B13").value = "1";
+    sheet.getCell("C13").value = "LECHE FRESCA";
+    sheet.getCell("E13").value = 5;
+
+    const parsed = await parseSkinTestWorkbookBuffer(await workbook.xlsx.writeBuffer());
+
+    expect(parsed.header).toEqual(
+      expect.objectContaining({
+        ageLabel: "13 AÑOS",
+        patientName: "DAWSON MIRANDA SEPULVEDA",
+        patientRut: "22.727.339-9",
+        panelTitle: "PANEL ALIMENTOS I",
+        testDate: "2022-04-26",
+      })
+    );
+    expect(parsed.issues).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: "missing_rut" })])
+    );
+  });
 });
