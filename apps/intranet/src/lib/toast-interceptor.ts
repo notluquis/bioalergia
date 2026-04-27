@@ -36,7 +36,16 @@ function getTitle(description: unknown, fallback: string): string {
   if (typeof description === "string" && description.trim().length > 0) {
     return description;
   }
-  return description ? String(description) : fallback;
+  if (typeof description === "number" || typeof description === "boolean") {
+    return String(description);
+  }
+  if (description && typeof description === "object" && "message" in description) {
+    const message = (description as { message?: unknown }).message;
+    if (typeof message === "string" && message.trim().length > 0) {
+      return message;
+    }
+  }
+  return fallback;
 }
 
 /**

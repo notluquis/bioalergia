@@ -26,6 +26,7 @@ const MAX_SYNC_CONCURRENCY = 8;
 export type SkinTestSyncProgressPhase =
   | "completed"
   | "delta"
+  | "discovered-processing"
   | "processing"
   | "scanned"
   | "starting";
@@ -42,6 +43,7 @@ export interface SkinTestSyncProgress {
   elapsedSeconds?: number;
   errors?: number;
   etaSeconds?: number | null;
+  failed?: number;
   filesProcessed?: number;
   filesTotal?: number;
   filename?: string;
@@ -1340,6 +1342,71 @@ export async function processSkinTestImports(ids: string[]) {
   return { errors, items };
 }
 
+export async function processDiscoveredSkinTestImports(options?: {
+  onProgress?: (progress: SkinTestSyncProgress & { message: string }) => void;
+  query?: string;
+  shouldCancel?: () => boolean;
+}) {
+  const idsResult = await sql<{ id: string; filename: string }>`
+    SELECT i.id, i.filename
+    FROM clinical_skin_test_imports i
+    WHERE ${buildImportWhereSql({ query: options?.query, status: "DISCOVERED" })}
+    ORDER BY i.updated_at ASC
+  `.execute(kysely);
+
+  const total = idsResult.rows.length;
+  let imported = 0;
+  let pending = 0;
+  let skipped = 0;
+  let errors = 0;
+
+  const emit = (message: string, processed: number, filename?: string) => {
+    options?.onProgress?.({
+      errors,
+      failed: errors,
+      filesProcessed: processed,
+      filesTotal: total,
+      filename,
+      imported,
+      pending,
+      phase: "discovered-processing",
+      processed,
+      skipped,
+      total,
+      message,
+    });
+  };
+
+  emit(`Preparando ${total} descubierto(s)`, 0);
+
+  for (const [index, row] of idsResult.rows.entries()) {
+    if (options?.shouldCancel?.()) {
+      throw new Error("SYNC_CANCELLED");
+    }
+
+    emit(`Procesando ${index + 1}/${total}: ${row.filename}`, index, row.filename);
+    try {
+      const result = await reprocessSkinTestImport(row.id);
+      if (result.status === "IMPORTED") imported += 1;
+      else if (result.status === "PENDING_REVIEW") pending += 1;
+      else if (result.status === "SKIPPED") skipped += 1;
+      else if (result.status === "ERROR") errors += 1;
+    } catch (error) {
+      errors += 1;
+      await sql`
+        UPDATE clinical_skin_test_imports
+        SET status = 'ERROR',
+            error = ${error instanceof Error ? error.message : String(error)},
+            updated_at = now()
+        WHERE id = ${row.id}
+      `.execute(kysely);
+    }
+    emit(`Procesados ${index + 1}/${total}`, index + 1, row.filename);
+  }
+
+  return { errors, imported, pending, processed: total, skipped, total };
+}
+
 export async function listSkinTestsBySeries(clinicalSeriesId: number) {
   const testsResult = await sql<{
     ageLabel: null | string;
@@ -2043,8 +2110,7 @@ function aggregateTopAllergens(
 
   return [...buckets.values()]
     .map((bucket) => {
-      const maxPapuleMm =
-        bucket.papuleValues.length > 0 ? Math.max(...bucket.papuleValues) : null;
+      const maxPapuleMm = bucket.papuleValues.length > 0 ? Math.max(...bucket.papuleValues) : null;
       const avgPapuleMm =
         bucket.papuleValues.length > 0
           ? Math.round((bucket.papuleSum / bucket.papuleValues.length) * 10) / 10
@@ -2073,11 +2139,14 @@ function aggregateTopAllergens(
     .slice(0, 20);
 }
 
-function canonicalizeAllergen(row: {
-  allergenName: string;
-  code: null | string;
-  section: string;
-}, catalogByAlias: Map<string, ClinicalAllergenCatalogEntry>): null | {
+function canonicalizeAllergen(
+  row: {
+    allergenName: string;
+    code: null | string;
+    section: string;
+  },
+  catalogByAlias: Map<string, ClinicalAllergenCatalogEntry>
+): null | {
   category: null | string;
   code: null | string;
   key: string;

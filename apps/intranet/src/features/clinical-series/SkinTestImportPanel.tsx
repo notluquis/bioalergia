@@ -31,6 +31,7 @@ import {
   RefreshCw,
   RotateCw,
   ScanLine,
+  ServerCog,
   X,
   Link as LinkIcon,
 } from "lucide-react";
@@ -43,6 +44,7 @@ import {
   useConfigureOneDriveFolder,
   useOneDriveSkinTestStatus,
   useOneDriveFolderChildren,
+  useProcessDiscoveredSkinTestImports,
   useProcessSkinTestImports,
   useOneDriveFolderPreview,
   useRejectSkinTestImport,
@@ -104,13 +106,14 @@ interface SkinTestSyncJobMeta {
   elapsedSeconds?: number;
   errors?: number;
   etaSeconds?: number | null;
+  failed?: number;
   filesProcessed?: number;
   filesTotal?: number;
   filename?: string;
   imported?: number;
   page?: number;
   pending?: number;
-  phase?: "completed" | "delta" | "processing" | "scanned" | "starting";
+  phase?: "completed" | "delta" | "discovered-processing" | "processing" | "scanned" | "starting";
   scanned?: number;
   skipped?: number;
   unchanged?: number;
@@ -120,6 +123,7 @@ interface SkinTestSyncJobMeta {
 const SYNC_PHASE_LABELS: Record<NonNullable<SkinTestSyncJobMeta["phase"]>, string> = {
   completed: "Completado",
   delta: "Leyendo OneDrive",
+  "discovered-processing": "Procesando descubiertos",
   processing: "Procesando xlsx",
   scanned: "Cambios leídos",
   starting: "Preparando",
@@ -146,6 +150,7 @@ function getSyncJobMeta(meta: unknown): SkinTestSyncJobMeta {
         : value.etaSeconds === null
           ? null
           : undefined,
+    failed: typeof value.failed === "number" ? value.failed : undefined,
     filesProcessed: typeof value.filesProcessed === "number" ? value.filesProcessed : undefined,
     filesTotal: typeof value.filesTotal === "number" ? value.filesTotal : undefined,
     filename: typeof value.filename === "string" ? value.filename : undefined,
@@ -164,6 +169,7 @@ function isSyncPhase(value: unknown): value is NonNullable<SkinTestSyncJobMeta["
   return (
     value === "completed" ||
     value === "delta" ||
+    value === "discovered-processing" ||
     value === "processing" ||
     value === "scanned" ||
     value === "starting"
@@ -199,6 +205,7 @@ export function SkinTestImportPanel() {
   const imports = useSkinTestImports(filters);
   const syncMutation = useSyncSkinTestImports();
   const cancelJobMutation = useCancelClinicalSkinTestJob();
+  const processDiscoveredMutation = useProcessDiscoveredSkinTestImports();
   const processSelectedMutation = useProcessSkinTestImports();
   const connectOneDrive = useConnectOneDrive();
   const authUrlQuery = useGetOneDriveAuthUrl(window.location.origin + window.location.pathname);
@@ -231,6 +238,12 @@ export function SkinTestImportPanel() {
   });
   const visibleStart = importsTotal === 0 ? 0 : (importsPage - 1) * IMPORTS_PAGE_SIZE + 1;
   const visibleEnd = Math.min(importsTotal, importsPage * IMPORTS_PAGE_SIZE);
+  const visibleDiscoveredItems =
+    imports.data?.items.filter((item) => item.status === "DISCOVERED") ?? [];
+  const allVisibleDiscoveredSelected =
+    visibleDiscoveredItems.length > 0 &&
+    visibleDiscoveredItems.every((item) => selectedImportIds[item.id]);
+  const canProcessAllDiscovered = status === "DISCOVERED" && importsTotal > 0;
 
   useEffect(() => {
     const initialJobId = activeJobQuery.data?.job?.id;
@@ -346,6 +359,20 @@ export function SkinTestImportPanel() {
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "No se pudieron procesar archivos");
+    }
+  }
+
+  async function handleProcessAllDiscovered() {
+    if (!canProcessAllDiscovered) return;
+    try {
+      const result = await processDiscoveredMutation.mutateAsync({
+        query: query.trim() || undefined,
+      });
+      setActiveJobId(result.jobId);
+      setSelectedImportIds({});
+      toast.success("Procesamiento de descubiertos iniciado", "Tests cutáneos");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo iniciar procesamiento");
     }
   }
 
@@ -469,12 +496,14 @@ export function SkinTestImportPanel() {
               {(syncMeta.imported != null ||
                 syncMeta.pending != null ||
                 syncMeta.errors != null ||
+                syncMeta.failed != null ||
                 syncMeta.skipped != null ||
                 syncMeta.unchanged != null) && (
                 <span>
                   Descubiertos {syncMeta.discovered ?? 0} · Importados {syncMeta.imported ?? 0} ·
-                  Pendientes {syncMeta.pending ?? 0} · Errores {syncMeta.errors ?? 0} · Omitidos{" "}
-                  {syncMeta.skipped ?? 0} · Sin cambios {syncMeta.unchanged ?? 0}
+                  Pendientes {syncMeta.pending ?? 0} · Errores{" "}
+                  {syncMeta.errors ?? syncMeta.failed ?? 0} · Omitidos {syncMeta.skipped ?? 0} · Sin
+                  cambios {syncMeta.unchanged ?? 0}
                 </span>
               )}
             </div>
@@ -535,82 +564,116 @@ export function SkinTestImportPanel() {
       </Surface>
 
       <Surface className="rounded-xl p-4">
-        <div className="grid gap-3 md:grid-cols-[1fr_220px]">
-          <TextField value={query} onChange={setQuery}>
-            <Label>Buscar</Label>
-            <Input placeholder="Paciente, RUT o archivo" />
-          </TextField>
-          <Select
-            value={(status as Key) ?? null}
-            onChange={(key) => setStatus((key as SkinTestImportStatus | null) ?? undefined)}
-            placeholder="Todos"
-            variant="secondary"
-          >
-            <Label>Estado</Label>
-            <Select.Trigger>
-              <Select.Value />
-              <Select.Indicator />
-            </Select.Trigger>
-            <Select.Popover>
-              <ListBox>
-                {STATUS_OPTIONS.map((item) => (
-                  <ListBox.Item key={item.value} id={item.value} textValue={item.label}>
-                    {item.label}
-                    <ListBox.ItemIndicator />
-                  </ListBox.Item>
-                ))}
-              </ListBox>
-            </Select.Popover>
-          </Select>
-        </div>
-
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm text-foreground-500">
-          <span>
-            {importsTotal > 0
-              ? `Mostrando ${visibleStart}-${visibleEnd} de ${importsTotal}`
-              : "Sin resultados"}
-          </span>
-          <span>Ordenado por última actualización</span>
-        </div>
-
-        {imports.data?.items.some((item) => item.status === "DISCOVERED") && (
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-content2 px-3 py-2">
-            <div className="flex items-center gap-2 text-sm text-foreground-600">
-              <Checkbox
-                aria-label="Seleccionar descubiertos visibles"
-                isSelected={
-                  imports.data.items.filter((item) => item.status === "DISCOVERED").length > 0 &&
-                  imports.data.items
-                    .filter((item) => item.status === "DISCOVERED")
-                    .every((item) => selectedImportIds[item.id])
-                }
-                onChange={(selected) => {
-                  const discovereds =
-                    imports.data?.items.filter((item) => item.status === "DISCOVERED") ?? [];
-                  setSelectedImportIds((prev) => {
-                    const next = { ...prev };
-                    for (const item of discovereds) next[item.id] = selected;
-                    return next;
-                  });
-                }}
-                variant="secondary"
-              >
-                <Checkbox.Control>
-                  <Checkbox.Indicator />
-                </Checkbox.Control>
-              </Checkbox>
-              <span>{selectedIds.length} seleccionado(s)</span>
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+          <div className="min-w-0 space-y-1">
+            <h3 className="text-sm font-semibold">Cola de importación</h3>
+            <div className="flex flex-wrap items-center gap-2 text-sm text-foreground-500">
+              <span>
+                {importsTotal > 0
+                  ? `Mostrando ${visibleStart}-${visibleEnd} de ${importsTotal}`
+                  : "Sin resultados"}
+              </span>
+              <span>· Ordenado por última actualización</span>
+              {status && (
+                <Chip size="sm" color={STATUS_COLORS[status]} variant="soft">
+                  {STATUS_LABELS[status]}
+                </Chip>
+              )}
             </div>
-            <Button
-              size="sm"
+          </div>
+          <div className="grid gap-3 md:grid-cols-[minmax(240px,1fr)_220px] xl:w-[640px]">
+            <TextField value={query} onChange={setQuery}>
+              <Label>Buscar</Label>
+              <Input placeholder="Paciente, RUT o archivo" />
+            </TextField>
+            <Select
+              value={(status as Key) ?? null}
+              onChange={(key) => setStatus((key as SkinTestImportStatus | null) ?? undefined)}
+              placeholder="Todos"
               variant="secondary"
-              onPress={() => void handleProcessSelected()}
-              isDisabled={selectedIds.length === 0}
-              isPending={processSelectedMutation.isPending}
             >
-              <FileSpreadsheet size={14} />
-              Descargar y procesar seleccionados
-            </Button>
+              <Label>Estado</Label>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  {STATUS_OPTIONS.map((item) => (
+                    <ListBox.Item key={item.value} id={item.value} textValue={item.label}>
+                      {item.label}
+                      <ListBox.ItemIndicator />
+                    </ListBox.Item>
+                  ))}
+                </ListBox>
+              </Select.Popover>
+            </Select>
+          </div>
+        </div>
+
+        {(canProcessAllDiscovered || visibleDiscoveredItems.length > 0) && (
+          <div className="mt-4 flex flex-col gap-3 rounded-lg bg-content2 p-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-wrap items-center gap-3">
+              {visibleDiscoveredItems.length > 0 && (
+                <Checkbox
+                  aria-label="Seleccionar descubiertos visibles"
+                  isSelected={allVisibleDiscoveredSelected}
+                  onChange={(selected) => {
+                    setSelectedImportIds((prev) => {
+                      const next = { ...prev };
+                      for (const item of visibleDiscoveredItems) next[item.id] = selected;
+                      return next;
+                    });
+                  }}
+                  variant="secondary"
+                >
+                  <Checkbox.Control>
+                    <Checkbox.Indicator />
+                  </Checkbox.Control>
+                  <Checkbox.Content>
+                    <Label>Seleccionar visibles ({visibleDiscoveredItems.length})</Label>
+                  </Checkbox.Content>
+                </Checkbox>
+              )}
+              <Chip size="sm" color={selectedIds.length > 0 ? "accent" : "default"} variant="soft">
+                {selectedIds.length} seleccionado(s)
+              </Chip>
+              {canProcessAllDiscovered && (
+                <Chip size="sm" color="warning" variant="soft">
+                  {importsTotal} descubierto(s)
+                </Chip>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2 lg:justify-end">
+              <Button
+                size="sm"
+                variant="secondary"
+                onPress={() => void handleProcessSelected()}
+                isDisabled={selectedIds.length === 0 || isSyncInProgress}
+                isPending={processSelectedMutation.isPending}
+              >
+                <FileSpreadsheet size={14} />
+                Procesar seleccionados
+              </Button>
+              {canProcessAllDiscovered && (
+                <Tooltip>
+                  <Tooltip.Trigger>
+                    <Button
+                      size="sm"
+                      onPress={() => void handleProcessAllDiscovered()}
+                      isDisabled={isSyncInProgress || imports.isFetching}
+                      isPending={processDiscoveredMutation.isPending}
+                    >
+                      <ServerCog size={14} />
+                      Procesar todos los descubiertos
+                    </Button>
+                  </Tooltip.Trigger>
+                  <Tooltip.Content>
+                    Descarga y procesa todos los descubiertos del filtro actual como job de fondo
+                  </Tooltip.Content>
+                </Tooltip>
+              )}
+            </div>
           </div>
         )}
 

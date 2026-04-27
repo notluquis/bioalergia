@@ -26,6 +26,7 @@ import {
   skinTestJobCancelOutputSchema,
   skinTestJobStatusInputSchema,
   skinTestJobStatusOutputSchema,
+  skinTestProcessDiscoveredInputSchema,
   skinTestsBySeriesInputSchema,
   skinTestsBySeriesOutputSchema,
   skinTestSyncInputSchema,
@@ -36,7 +37,10 @@ import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
 import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
-import { startClinicalSkinTestImportJob } from "../lib/clinical-skin-tests/clinical-skin-test-scheduler";
+import {
+  startClinicalSkinTestImportJob,
+  startClinicalSkinTestProcessDiscoveredJob,
+} from "../lib/clinical-skin-tests/clinical-skin-test-scheduler";
 import { cancelJob, getActiveJobsByType, getJobStatus } from "../lib/jobQueue";
 import {
   connectOneDriveWithCode,
@@ -289,6 +293,19 @@ const routerBase = {
     .output(skinTestBulkImportActionOutputSchema)
     .handler(async ({ input }: { input: z.input<typeof skinTestBulkImportActionInputSchema> }) => {
       return await processSkinTestImports(input.ids);
+    }),
+
+  processDiscoveredImports: updateClinicalSkinTests
+    .route({ method: "POST", path: "/imports/process-discovered" })
+    .input(skinTestProcessDiscoveredInputSchema)
+    .output(skinTestSyncOutputSchema)
+    .handler(async ({ input }: { input: z.input<typeof skinTestProcessDiscoveredInputSchema> }) => {
+      return {
+        jobId: await startClinicalSkinTestProcessDiscoveredJob({
+          query: input.query,
+          trigger: "manual:process-discovered",
+        }),
+      };
     }),
 
   sync: updateClinicalSkinTests

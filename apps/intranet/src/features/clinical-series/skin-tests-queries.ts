@@ -282,6 +282,17 @@ export function useProcessSkinTestImports() {
   });
 }
 
+export function useProcessDiscoveredSkinTestImports() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (params?: { query?: string }) =>
+      await clinicalSkinTestsORPCClient.processDiscoveredImports(compactORPCInput(params) ?? {}),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: skinTestImportKeys.activeJob() });
+    },
+  });
+}
+
 export function useClinicalSkinTestJobStatus(jobId: string | null) {
   return useQuery({
     enabled: !!jobId,

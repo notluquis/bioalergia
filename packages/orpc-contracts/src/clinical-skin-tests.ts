@@ -160,6 +160,10 @@ export const skinTestBulkImportActionOutputSchema = z.object({
   items: z.array(skinTestImportSchema),
 });
 
+export const skinTestProcessDiscoveredInputSchema = z.object({
+  query: z.string().optional(),
+});
+
 export const skinTestSyncInputSchema = z.object({
   accountId: z.string().optional(),
   folderDriveId: z.string().nullable().optional(),
@@ -461,6 +465,10 @@ export const clinicalSkinTestsContract = {
     .route({ method: "POST", path: "/imports/process" })
     .input(skinTestBulkImportActionInputSchema)
     .output(skinTestBulkImportActionOutputSchema),
+  processDiscoveredImports: oc
+    .route({ method: "POST", path: "/imports/process-discovered" })
+    .input(skinTestProcessDiscoveredInputSchema)
+    .output(skinTestSyncOutputSchema),
   sync: oc
     .route({ method: "POST", path: "/sync" })
     .input(skinTestSyncInputSchema)
