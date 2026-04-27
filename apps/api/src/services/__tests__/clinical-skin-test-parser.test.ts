@@ -454,4 +454,38 @@ describe("clinical skin test parser", () => {
       expect.arrayContaining([expect.objectContaining({ code: "missing_rut" })])
     );
   });
+
+  it("parses written dates that use DEL before the year", async () => {
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("Test");
+    sheet.getCell("B4").value = "PRICKTEST CUTANEO";
+    sheet.getCell("B5").value = "AEROALERGENOS PEDIATRICO";
+    sheet.getCell("B7").value = "NOMBRE: CATALINA HIDALGO GALLARDO";
+    sheet.getCell("G7").value = "EDAD: 12 AÑOS";
+    sheet.getCell("B8").value = "RUT:";
+    sheet.getCell("C8").value = "23.053.128-5";
+    sheet.getCell("G8").value = "FECHA: 12 DE MAYO DEL 2022";
+    sheet.getCell("C11").value = "ACAROS";
+    sheet.getCell("D11").value = "P";
+    sheet.getCell("E11").value = "E";
+    sheet.getCell("B12").value = "D1";
+    sheet.getCell("C12").value = "DERMATOPHAGOIDES P";
+    sheet.getCell("D12").value = 5;
+    sheet.getCell("E12").value = 15;
+
+    const parsed = await parseSkinTestWorkbookBuffer(await workbook.xlsx.writeBuffer());
+
+    expect(parsed.header).toEqual(
+      expect.objectContaining({
+        ageLabel: "12 AÑOS",
+        patientName: "CATALINA HIDALGO GALLARDO",
+        patientRut: "23.053.128-5",
+        panelTitle: "AEROALERGENOS PEDIATRICO",
+        testDate: "2022-05-12",
+      })
+    );
+    expect(parsed.issues).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: "missing_date" })])
+    );
+  });
 });

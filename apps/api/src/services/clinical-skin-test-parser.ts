@@ -351,6 +351,7 @@ export function parseDateToISO(value: null | string): null | string {
   if (!value) return null;
   const text = normalizeText(value)
     .toLowerCase()
+    .replace(/\s+del\s+/g, " ")
     .replace(/\s+de\s+/g, " ");
   const isoLike = text.match(/\b(\d{4})\s*[-/.]\s*(\d{1,2})\s*[-/.]\s*(\d{1,2})\b/);
   if (isoLike) {
