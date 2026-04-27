@@ -341,6 +341,13 @@ export function parseDateToISO(value: null | string): null | string {
   const text = normalizeText(value)
     .toLowerCase()
     .replace(/\s+de\s+/g, " ");
+  const isoLike = text.match(/\b(\d{4})\s*[-/.]\s*(\d{1,2})\s*[-/.]\s*(\d{1,2})\b/);
+  if (isoLike) {
+    const year = Number(isoLike[1]);
+    const month = Number(isoLike[2]);
+    const day = Number(isoLike[3]);
+    return formatISODate(year, month, day);
+  }
   const numeric = text.match(/\b(\d{1,2})\s*[-/.]\s*(\d{1,2})\s*[-/.]\s*(\d{2,4})\b/);
   if (numeric) {
     const day = Number(numeric[1]);

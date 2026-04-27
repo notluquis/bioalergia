@@ -1322,7 +1322,7 @@ function SkinTestImportRow({
             onPress={() => void runAction("reprocess")}
           >
             <RefreshCw size={14} />
-            {item.status === "DISCOVERED" ? "Procesar" : null}
+            {item.status === "DISCOVERED" ? "Procesar" : "Reprocesar"}
           </Button>
         </div>
       </div>

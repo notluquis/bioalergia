@@ -388,4 +388,39 @@ describe("clinical skin test parser", () => {
       ])
     );
   });
+
+  it("parses Excel date cells next to separated FECHA labels", async () => {
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("Test");
+    sheet.getCell("B5").value = "PRICKTEST";
+    sheet.getCell("B6").value = "AEROALERGENOS II";
+    sheet.getCell("B8").value = "NOMBRE: GABRIELA CUEVAS TRONCOSO";
+    sheet.getCell("G8").value = "EDAD: 30 AÑOS";
+    sheet.getCell("B9").value = "RUT :";
+    sheet.getCell("C9").value = "18.017.242-4";
+    sheet.getCell("G9").value = "FECHA:  ";
+    sheet.getCell("H9").value = new Date("2022-05-12T00:00:00.000Z");
+    sheet.getCell("C11").value = "ACAROS";
+    sheet.getCell("D11").value = "P";
+    sheet.getCell("E11").value = "E";
+    sheet.getCell("B12").value = "D1";
+    sheet.getCell("C12").value = "DERMATOPHAGOIDES P";
+    sheet.getCell("D12").value = 3;
+    sheet.getCell("E12").value = 5;
+
+    const parsed = await parseSkinTestWorkbookBuffer(await workbook.xlsx.writeBuffer());
+
+    expect(parsed.header).toEqual(
+      expect.objectContaining({
+        ageLabel: "30 AÑOS",
+        patientName: "GABRIELA CUEVAS TRONCOSO",
+        patientRut: "18.017.242-4",
+        panelTitle: "AEROALERGENOS II",
+        testDate: "2022-05-12",
+      })
+    );
+    expect(parsed.issues).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: "missing_date" })])
+    );
+  });
 });
