@@ -2,7 +2,7 @@ import { kysely } from "@finanzas/db";
 import { createId } from "@paralleldrive/cuid2";
 import { createHash } from "node:crypto";
 import { sql } from "kysely";
-import { isSkinTestCandidateFilename } from "../lib/skin-test-file-filter";
+import { isImportableSkinTestFilename } from "../lib/skin-test-file-filter";
 import {
   downloadOneDriveItem,
   getOneDriveStatus,
@@ -2163,7 +2163,7 @@ function isRelevantXlsx(item: OneDriveItem): boolean {
 }
 
 function isImportableXlsx(item: OneDriveItem): boolean {
-  return isRelevantXlsx(item) && isSkinTestCandidateFilename(item.name);
+  return isRelevantXlsx(item) && isImportableSkinTestFilename(item.name);
 }
 
 function isBlockedDownloadPath(path: null | string | undefined): boolean {
