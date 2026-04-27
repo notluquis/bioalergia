@@ -3457,6 +3457,139 @@ export class SchemaType implements SchemaDef {
                 oneDriveAccountId_oneDriveDriveId_oneDriveItemId: { oneDriveAccountId: { type: "String" }, oneDriveDriveId: { type: "String" }, oneDriveItemId: { type: "String" } }
             }
         },
+        ClinicalAllergen: {
+            name: "ClinicalAllergen",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true
+                },
+                scientificName: {
+                    name: "scientificName",
+                    type: "String",
+                    optional: true
+                },
+                commonName: {
+                    name: "commonName",
+                    type: "String"
+                },
+                englishName: {
+                    name: "englishName",
+                    type: "String",
+                    optional: true
+                },
+                category: {
+                    name: "category",
+                    type: "String"
+                },
+                categoryEn: {
+                    name: "categoryEn",
+                    type: "String",
+                    optional: true
+                },
+                pollenType: {
+                    name: "pollenType",
+                    type: "String",
+                    optional: true
+                },
+                pollenTypeEn: {
+                    name: "pollenTypeEn",
+                    type: "String",
+                    optional: true
+                },
+                normalizedScientificName: {
+                    name: "normalizedScientificName",
+                    type: "String",
+                    optional: true
+                },
+                normalizedCommonName: {
+                    name: "normalizedCommonName",
+                    type: "String"
+                },
+                source: {
+                    name: "source",
+                    type: "String",
+                    default: "lista_alergenos.xlsx" as FieldDefault
+                },
+                sourceRow: {
+                    name: "sourceRow",
+                    type: "Int",
+                    optional: true
+                },
+                isActive: {
+                    name: "isActive",
+                    type: "Boolean",
+                    default: true as FieldDefault
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                aliases: {
+                    name: "aliases",
+                    type: "ClinicalAllergenAlias",
+                    array: true,
+                    relation: { opposite: "allergen" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" }
+            }
+        },
+        ClinicalAllergenAlias: {
+            name: "ClinicalAllergenAlias",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true
+                },
+                allergenId: {
+                    name: "allergenId",
+                    type: "String",
+                    foreignKeyFor: [
+                        "allergen"
+                    ] as readonly string[]
+                },
+                alias: {
+                    name: "alias",
+                    type: "String"
+                },
+                normalizedAlias: {
+                    name: "normalizedAlias",
+                    type: "String"
+                },
+                aliasType: {
+                    name: "aliasType",
+                    type: "String",
+                    default: "SOURCE" as FieldDefault
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                allergen: {
+                    name: "allergen",
+                    type: "ClinicalAllergen",
+                    relation: { opposite: "aliases", fields: ["allergenId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" },
+                normalizedAlias: { type: "String" }
+            }
+        },
         ClinicalSkinTest: {
             name: "ClinicalSkinTest",
             fields: {

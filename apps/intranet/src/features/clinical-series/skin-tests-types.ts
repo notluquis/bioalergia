@@ -201,10 +201,12 @@ export const SkinTestAnalyticsSchema = z.object({
     z.object({
       allergenName: z.string(),
       avgPapuleMm: z.number().nullable(),
+      category: z.string().nullable(),
       code: z.string().nullable(),
       maxPapuleMm: z.number().nullable(),
       positiveResults: z.number(),
       section: z.string(),
+      scientificName: z.string().nullable(),
       testCount: z.number(),
       uniquePatients: z.number(),
     })

@@ -163,10 +163,12 @@ export interface SkinTestAnalyticsOutput {
   topAllergens: Array<{
     allergenName: string;
     avgPapuleMm: null | number;
+    category: null | string;
     code: null | string;
     maxPapuleMm: null | number;
     positiveResults: number;
     section: string;
+    scientificName: null | string;
     testCount: number;
     uniquePatients: number;
   }>;
@@ -194,6 +196,28 @@ export interface ClinicalDocumentImportOutput {
   size: null | number;
   status: ClinicalDocumentImportStatus;
   updatedAt: string;
+}
+
+interface ClinicalAllergenCatalogRow {
+  aliasType: string;
+  allergenId: string;
+  category: string;
+  commonName: string;
+  englishName: null | string;
+  normalizedAlias: string;
+  pollenType: null | string;
+  scientificName: null | string;
+}
+
+interface ClinicalAllergenCatalogEntry {
+  aliasType: string;
+  allergenId: string;
+  category: string;
+  commonName: string;
+  englishName: null | string;
+  normalizedAlias: string;
+  pollenType: null | string;
+  scientificName: null | string;
 }
 
 interface ImportRow {
@@ -956,6 +980,7 @@ export async function getSkinTestAnalytics(
     byMonthResult,
     topPatientsResult,
     topAllergensResult,
+    allergenCatalogResult,
     recentTestsResult,
   ] = await Promise.all([
       sql<{
@@ -1044,32 +1069,39 @@ export async function getSkinTestAnalytics(
       `.execute(kysely),
       sql<{
         allergenName: string;
-        avgPapuleMm: number | null;
         code: string | null;
-        maxPapuleMm: number | null;
-        positiveResults: number;
+        papuleMm: number | null;
+        patientKey: string;
         section: string;
-        testCount: number;
-        uniquePatients: number;
+        skinTestId: string;
       }>`
         SELECT
           r.section,
           r.code,
           r.allergen_name AS "allergenName",
-          count(*)::int AS "positiveResults",
-          count(DISTINCT t.id)::int AS "testCount",
-          count(DISTINCT coalesce(nullif(t.patient_rut, ''), nullif(t.patient_name, ''), t.clinical_series_id::text, t.id))::int AS "uniquePatients",
-          max(r.papule_mm)::float AS "maxPapuleMm",
-          round(avg(r.papule_mm)::numeric, 1)::float AS "avgPapuleMm"
+          r.papule_mm::float AS "papuleMm",
+          t.id AS "skinTestId",
+          coalesce(nullif(t.patient_rut, ''), nullif(t.patient_name, ''), t.clinical_series_id::text, t.id) AS "patientKey"
         FROM clinical_skin_test_results r
         JOIN clinical_skin_tests t ON t.id = r.skin_test_id
         LEFT JOIN clinical_skin_test_imports i ON i.id = t.source_import_id
         WHERE ${whereSql}
           AND r.control_type IS NULL
           AND coalesce(r.papule_mm, 0) >= 3
-        GROUP BY r.section, r.code, r.allergen_name
-        ORDER BY "uniquePatients" DESC, "positiveResults" DESC, "maxPapuleMm" DESC NULLS LAST, r.allergen_name ASC
-        LIMIT 20
+      `.execute(kysely),
+      sql<ClinicalAllergenCatalogRow>`
+        SELECT
+          a.id AS "allergenId",
+          a.scientific_name AS "scientificName",
+          a.common_name AS "commonName",
+          a.english_name AS "englishName",
+          a.category,
+          a.pollen_type AS "pollenType",
+          aa.normalized_alias AS "normalizedAlias",
+          aa.alias_type AS "aliasType"
+        FROM clinical_allergen_aliases aa
+        JOIN clinical_allergens a ON a.id = aa.allergen_id
+        WHERE a.is_active = true
       `.execute(kysely),
       sql<{
         clinicalSeriesId: number;
@@ -1119,7 +1151,10 @@ export async function getSkinTestAnalytics(
       ...row,
       lastTestDate: row.lastTestDate ? toDateString(row.lastTestDate) : null,
     })),
-    topAllergens: topAllergensResult.rows,
+    topAllergens: aggregateTopAllergens(
+      topAllergensResult.rows,
+      buildAllergenCatalogMap(allergenCatalogResult.rows)
+    ),
     totalPatients: summary?.totalPatients ?? 0,
     totalResults: summary?.totalResults ?? 0,
     totalTests: summary?.totalTests ?? 0,
@@ -1947,6 +1982,160 @@ function buildSkinTestAnalyticsWhereSql(input: SkinTestAnalyticsInput) {
     )
   `;
 }
+
+function aggregateTopAllergens(
+  rows: Array<{
+    allergenName: string;
+    code: null | string;
+    papuleMm: null | number;
+    patientKey: string;
+    section: string;
+    skinTestId: string;
+  }>,
+  catalogByAlias: Map<string, ClinicalAllergenCatalogEntry>
+): SkinTestAnalyticsOutput["topAllergens"] {
+  type AllergenBucket = {
+    canonicalCode: null | string;
+    category: null | string;
+    canonicalName: string;
+    patientKeys: Set<string>;
+    papuleSum: number;
+    papuleValues: number[];
+    positiveResults: number;
+    scientificName: null | string;
+    section: string;
+    skinTestIds: Set<string>;
+  };
+
+  const buckets = new Map<string, AllergenBucket>();
+  for (const row of rows) {
+    const canonical = canonicalizeAllergen(row, catalogByAlias);
+    if (!canonical) continue;
+
+    const existing = buckets.get(canonical.key);
+    const bucket =
+      existing ??
+      {
+        canonicalCode: canonical.code,
+        category: canonical.category,
+        canonicalName: canonical.name,
+        patientKeys: new Set<string>(),
+        papuleSum: 0,
+        papuleValues: [],
+        positiveResults: 0,
+        scientificName: canonical.scientificName,
+        section: canonical.section,
+        skinTestIds: new Set<string>(),
+      };
+
+    bucket.positiveResults += 1;
+    bucket.patientKeys.add(row.patientKey);
+    bucket.skinTestIds.add(row.skinTestId);
+    if (typeof row.papuleMm === "number" && Number.isFinite(row.papuleMm)) {
+      bucket.papuleValues.push(row.papuleMm);
+      bucket.papuleSum += row.papuleMm;
+    }
+    if (!bucket.canonicalCode && canonical.code) {
+      bucket.canonicalCode = canonical.code;
+    }
+    buckets.set(canonical.key, bucket);
+  }
+
+  return [...buckets.values()]
+    .map((bucket) => {
+      const maxPapuleMm =
+        bucket.papuleValues.length > 0 ? Math.max(...bucket.papuleValues) : null;
+      const avgPapuleMm =
+        bucket.papuleValues.length > 0
+          ? Math.round((bucket.papuleSum / bucket.papuleValues.length) * 10) / 10
+          : null;
+      return {
+        allergenName: bucket.canonicalName,
+        avgPapuleMm,
+        category: bucket.category,
+        code: bucket.canonicalCode,
+        maxPapuleMm,
+        positiveResults: bucket.positiveResults,
+        scientificName: bucket.scientificName,
+        section: bucket.section,
+        testCount: bucket.skinTestIds.size,
+        uniquePatients: bucket.patientKeys.size,
+      };
+    })
+    .sort((a, b) => {
+      if (b.uniquePatients !== a.uniquePatients) return b.uniquePatients - a.uniquePatients;
+      if (b.positiveResults !== a.positiveResults) return b.positiveResults - a.positiveResults;
+      if ((b.maxPapuleMm ?? 0) !== (a.maxPapuleMm ?? 0)) {
+        return (b.maxPapuleMm ?? 0) - (a.maxPapuleMm ?? 0);
+      }
+      return a.allergenName.localeCompare(b.allergenName, "es");
+    })
+    .slice(0, 20);
+}
+
+function canonicalizeAllergen(row: {
+  allergenName: string;
+  code: null | string;
+  section: string;
+}, catalogByAlias: Map<string, ClinicalAllergenCatalogEntry>): null | {
+  category: null | string;
+  code: null | string;
+  key: string;
+  name: string;
+  scientificName: null | string;
+  section: string;
+} {
+  const normalizedName = normalizeAllergenToken(row.allergenName);
+  const normalizedCode = normalizeAllergenCode(row.code);
+  if (!normalizedName || CONTROL_ALLERGEN_KEYS.has(normalizedName)) return null;
+
+  const isCodeOnlyName = /^[A-Z]{1,3}\d{1,2}$/.test(normalizedName);
+  const byName = catalogByAlias.get(normalizedName);
+  const byNameCode = isCodeOnlyName ? catalogByAlias.get(normalizedName) : undefined;
+  const byCode = normalizedCode ? catalogByAlias.get(normalizedCode) : undefined;
+  const canonical = byName ?? byNameCode ?? (isCodeOnlyName ? byCode : undefined);
+  if (!canonical) return null;
+
+  const code = canonical.aliasType === "PANEL_CODE" ? canonical.normalizedAlias : normalizedCode;
+  return {
+    category: canonical.category,
+    code,
+    key: canonical.allergenId,
+    name: canonical.commonName,
+    scientificName: canonical.scientificName,
+    section: canonical.pollenType ?? canonical.category,
+  };
+}
+
+function buildAllergenCatalogMap(rows: ClinicalAllergenCatalogRow[]) {
+  const map = new Map<string, ClinicalAllergenCatalogEntry>();
+  for (const row of rows) {
+    map.set(row.normalizedAlias, row);
+  }
+  return map;
+}
+
+function normalizeAllergenToken(value: null | string | undefined) {
+  return (value ?? "")
+    .normalize("NFD")
+    .replace(/\p{M}+/gu, "")
+    .replace(/[^A-Za-z0-9]+/g, " ")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toUpperCase();
+}
+
+function normalizeAllergenCode(value: null | string | undefined) {
+  const normalized = normalizeAllergenToken(value).replace(/\s+/g, "");
+  return /^[A-Z]{1,3}\d{1,2}$/.test(normalized) ? normalized : null;
+}
+
+const CONTROL_ALLERGEN_KEYS = new Set([
+  "CONTROL NEGATIVO",
+  "CONTROL POSITIVO",
+  "CONTROL POSITIVO HISTAMINA",
+  "CONTROL NEGATIVO GLICEROL SALINO",
+]);
 
 function skinTestExamTypeSql() {
   return sql<string>`

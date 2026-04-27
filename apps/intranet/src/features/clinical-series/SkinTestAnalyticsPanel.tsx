@@ -243,8 +243,10 @@ export function SkinTestAnalyticsPanel() {
                         </span>
                       </div>
                       <p className="mt-1 text-xs text-foreground-500">
-                        {allergen.section} · {formatNumber(allergen.positiveResults)} positivos · P
-                        prom. {allergen.avgPapuleMm?.toFixed(1) ?? "-"} · P máx.{" "}
+                        {allergen.scientificName ? `${allergen.scientificName} · ` : ""}
+                        {allergen.section} · {allergen.category ?? "Catálogo"} ·{" "}
+                        {formatNumber(allergen.positiveResults)} positivos · P prom.{" "}
+                        {allergen.avgPapuleMm?.toFixed(1) ?? "-"} · P máx.{" "}
                         {allergen.maxPapuleMm?.toFixed(1) ?? "-"}
                       </p>
                     </div>

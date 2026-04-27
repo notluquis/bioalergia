@@ -1067,6 +1067,55 @@ model ClinicalDocumentImport {
   @@map("clinical_document_imports")
 }
 
+model ClinicalAllergen {
+  id                       String                  @id
+  scientificName           String?                 @map("scientific_name")
+  commonName               String                  @map("common_name")
+  englishName              String?                 @map("english_name")
+  category                 String
+  categoryEn               String?                 @map("category_en")
+  pollenType               String?                 @map("pollen_type")
+  pollenTypeEn             String?                 @map("pollen_type_en")
+  normalizedScientificName String?                 @map("normalized_scientific_name")
+  normalizedCommonName     String                  @map("normalized_common_name")
+  source                   String                  @default("lista_alergenos.xlsx")
+  sourceRow                Int?                    @map("source_row")
+  isActive                 Boolean                 @default(true) @map("is_active")
+  createdAt                DateTime                @default(now()) @map("created_at")
+  updatedAt                DateTime                @default(now()) @updatedAt @map("updated_at")
+
+  aliases                  ClinicalAllergenAlias[]
+
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([category])
+  @@index([pollenType])
+  @@index([normalizedCommonName])
+  @@map("clinical_allergens")
+}
+
+model ClinicalAllergenAlias {
+  id              String           @id
+  allergenId      String           @map("allergen_id")
+  alias           String
+  normalizedAlias String           @map("normalized_alias")
+  aliasType       String           @default("SOURCE") @map("alias_type")
+  createdAt       DateTime         @default(now()) @map("created_at")
+
+  allergen        ClinicalAllergen @relation(fields: [allergenId], references: [id], onDelete: Cascade)
+
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@unique([normalizedAlias])
+  @@index([allergenId])
+  @@index([aliasType])
+  @@map("clinical_allergen_aliases")
+}
+
 model ClinicalSkinTest {
   id               String                 @id @default(cuid())
   clinicalSeriesId Int                    @map("clinical_series_id")

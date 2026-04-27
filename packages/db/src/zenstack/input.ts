@@ -5,7 +5,7 @@
 
 /* eslint-disable */
 
-import { type SchemaType as $Schema } from "./schema-lite";
+import { type SchemaType as $Schema } from "./schema-lite.js";
 import type { FindManyArgs as $FindManyArgs, FindUniqueArgs as $FindUniqueArgs, FindFirstArgs as $FindFirstArgs, ExistsArgs as $ExistsArgs, CreateArgs as $CreateArgs, CreateManyArgs as $CreateManyArgs, CreateManyAndReturnArgs as $CreateManyAndReturnArgs, UpdateArgs as $UpdateArgs, UpdateManyArgs as $UpdateManyArgs, UpdateManyAndReturnArgs as $UpdateManyAndReturnArgs, UpsertArgs as $UpsertArgs, DeleteArgs as $DeleteArgs, DeleteManyArgs as $DeleteManyArgs, CountArgs as $CountArgs, AggregateArgs as $AggregateArgs, GroupByArgs as $GroupByArgs, WhereInput as $WhereInput, SelectInput as $SelectInput, IncludeInput as $IncludeInput, OmitInput as $OmitInput, QueryOptions as $QueryOptions } from "@zenstackhq/orm";
 import type { SimplifiedPlainResult as $Result, SelectIncludeOmit as $SelectIncludeOmit } from "@zenstackhq/orm";
 export type PersonFindManyArgs = $FindManyArgs<$Schema, "Person">;
@@ -701,6 +701,48 @@ export type ClinicalDocumentImportSelect = $SelectInput<$Schema, "ClinicalDocume
 export type ClinicalDocumentImportInclude = $IncludeInput<$Schema, "ClinicalDocumentImport">;
 export type ClinicalDocumentImportOmit = $OmitInput<$Schema, "ClinicalDocumentImport">;
 export type ClinicalDocumentImportGetPayload<Args extends $SelectIncludeOmit<$Schema, "ClinicalDocumentImport", true>, Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>> = $Result<$Schema, "ClinicalDocumentImport", Args, Options>;
+export type ClinicalAllergenFindManyArgs = $FindManyArgs<$Schema, "ClinicalAllergen">;
+export type ClinicalAllergenFindUniqueArgs = $FindUniqueArgs<$Schema, "ClinicalAllergen">;
+export type ClinicalAllergenFindFirstArgs = $FindFirstArgs<$Schema, "ClinicalAllergen">;
+export type ClinicalAllergenExistsArgs = $ExistsArgs<$Schema, "ClinicalAllergen">;
+export type ClinicalAllergenCreateArgs = $CreateArgs<$Schema, "ClinicalAllergen">;
+export type ClinicalAllergenCreateManyArgs = $CreateManyArgs<$Schema, "ClinicalAllergen">;
+export type ClinicalAllergenCreateManyAndReturnArgs = $CreateManyAndReturnArgs<$Schema, "ClinicalAllergen">;
+export type ClinicalAllergenUpdateArgs = $UpdateArgs<$Schema, "ClinicalAllergen">;
+export type ClinicalAllergenUpdateManyArgs = $UpdateManyArgs<$Schema, "ClinicalAllergen">;
+export type ClinicalAllergenUpdateManyAndReturnArgs = $UpdateManyAndReturnArgs<$Schema, "ClinicalAllergen">;
+export type ClinicalAllergenUpsertArgs = $UpsertArgs<$Schema, "ClinicalAllergen">;
+export type ClinicalAllergenDeleteArgs = $DeleteArgs<$Schema, "ClinicalAllergen">;
+export type ClinicalAllergenDeleteManyArgs = $DeleteManyArgs<$Schema, "ClinicalAllergen">;
+export type ClinicalAllergenCountArgs = $CountArgs<$Schema, "ClinicalAllergen">;
+export type ClinicalAllergenAggregateArgs = $AggregateArgs<$Schema, "ClinicalAllergen">;
+export type ClinicalAllergenGroupByArgs = $GroupByArgs<$Schema, "ClinicalAllergen">;
+export type ClinicalAllergenWhereInput = $WhereInput<$Schema, "ClinicalAllergen">;
+export type ClinicalAllergenSelect = $SelectInput<$Schema, "ClinicalAllergen">;
+export type ClinicalAllergenInclude = $IncludeInput<$Schema, "ClinicalAllergen">;
+export type ClinicalAllergenOmit = $OmitInput<$Schema, "ClinicalAllergen">;
+export type ClinicalAllergenGetPayload<Args extends $SelectIncludeOmit<$Schema, "ClinicalAllergen", true>, Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>> = $Result<$Schema, "ClinicalAllergen", Args, Options>;
+export type ClinicalAllergenAliasFindManyArgs = $FindManyArgs<$Schema, "ClinicalAllergenAlias">;
+export type ClinicalAllergenAliasFindUniqueArgs = $FindUniqueArgs<$Schema, "ClinicalAllergenAlias">;
+export type ClinicalAllergenAliasFindFirstArgs = $FindFirstArgs<$Schema, "ClinicalAllergenAlias">;
+export type ClinicalAllergenAliasExistsArgs = $ExistsArgs<$Schema, "ClinicalAllergenAlias">;
+export type ClinicalAllergenAliasCreateArgs = $CreateArgs<$Schema, "ClinicalAllergenAlias">;
+export type ClinicalAllergenAliasCreateManyArgs = $CreateManyArgs<$Schema, "ClinicalAllergenAlias">;
+export type ClinicalAllergenAliasCreateManyAndReturnArgs = $CreateManyAndReturnArgs<$Schema, "ClinicalAllergenAlias">;
+export type ClinicalAllergenAliasUpdateArgs = $UpdateArgs<$Schema, "ClinicalAllergenAlias">;
+export type ClinicalAllergenAliasUpdateManyArgs = $UpdateManyArgs<$Schema, "ClinicalAllergenAlias">;
+export type ClinicalAllergenAliasUpdateManyAndReturnArgs = $UpdateManyAndReturnArgs<$Schema, "ClinicalAllergenAlias">;
+export type ClinicalAllergenAliasUpsertArgs = $UpsertArgs<$Schema, "ClinicalAllergenAlias">;
+export type ClinicalAllergenAliasDeleteArgs = $DeleteArgs<$Schema, "ClinicalAllergenAlias">;
+export type ClinicalAllergenAliasDeleteManyArgs = $DeleteManyArgs<$Schema, "ClinicalAllergenAlias">;
+export type ClinicalAllergenAliasCountArgs = $CountArgs<$Schema, "ClinicalAllergenAlias">;
+export type ClinicalAllergenAliasAggregateArgs = $AggregateArgs<$Schema, "ClinicalAllergenAlias">;
+export type ClinicalAllergenAliasGroupByArgs = $GroupByArgs<$Schema, "ClinicalAllergenAlias">;
+export type ClinicalAllergenAliasWhereInput = $WhereInput<$Schema, "ClinicalAllergenAlias">;
+export type ClinicalAllergenAliasSelect = $SelectInput<$Schema, "ClinicalAllergenAlias">;
+export type ClinicalAllergenAliasInclude = $IncludeInput<$Schema, "ClinicalAllergenAlias">;
+export type ClinicalAllergenAliasOmit = $OmitInput<$Schema, "ClinicalAllergenAlias">;
+export type ClinicalAllergenAliasGetPayload<Args extends $SelectIncludeOmit<$Schema, "ClinicalAllergenAlias", true>, Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>> = $Result<$Schema, "ClinicalAllergenAlias", Args, Options>;
 export type ClinicalSkinTestFindManyArgs = $FindManyArgs<$Schema, "ClinicalSkinTest">;
 export type ClinicalSkinTestFindUniqueArgs = $FindUniqueArgs<$Schema, "ClinicalSkinTest">;
 export type ClinicalSkinTestFindFirstArgs = $FindFirstArgs<$Schema, "ClinicalSkinTest">;
