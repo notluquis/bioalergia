@@ -53,7 +53,8 @@ const EmailPayloadSchema = z.object({
   subject: z.string().min(1),
   html: z.string().min(1),
   text: z.string().optional(),
-  attachments: z.array(AttachmentSchema).min(1),
+  replyTo: z.string().email().optional(),
+  attachments: z.array(AttachmentSchema).default([]),
 });
 
 function getAllowedOrigins() {
@@ -311,12 +312,13 @@ function buildMailOptions({
   const mailOptions: Mail.Options & { dsn?: SMTPConnection.DSNOptions } = {
     from: smtpUser,
     to: payload.to,
+    replyTo: payload.replyTo,
     messageId,
     date: messageDate,
     subject: payload.subject,
     html: payload.html,
     text: payload.text,
-    attachments,
+    attachments: attachments.length > 0 ? attachments : undefined,
     dsn,
   };
 

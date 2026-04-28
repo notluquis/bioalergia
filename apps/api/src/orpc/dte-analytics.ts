@@ -9,10 +9,12 @@ import {
   dteAnalyticsSalesDetailsResponseSchema,
   dteAnalyticsSummaryResponseSchema,
   dteFetchXmlByPeriodInputSchema,
+  dteFetchXmlByPeriodResponseSchema,
   dteFetchXmlInputSchema,
   dteFetchXmlResponseSchema,
   dteLineItemsQuerySchema,
   dteLineItemsResponseSchema,
+  dteXmlJobStatusResponseSchema,
 } from "@finanzas/orpc-contracts/dte-analytics";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
@@ -630,7 +632,7 @@ const dteAnalyticsORPCRouterBase = {
   fetchXmlByPeriod: readDteAnalytics
     .route({ method: "POST", path: "/fetch-xml-by-period" })
     .input(dteFetchXmlByPeriodInputSchema)
-    .output(dteFetchXmlResponseSchema)
+    .output(dteFetchXmlByPeriodResponseSchema)
     .handler(
       async ({ input }: { input: z.output<typeof dteFetchXmlByPeriodInputSchema> }) => {
         const { haulmerConfig: cfg } = await import("../config");
@@ -643,7 +645,6 @@ const dteAnalyticsORPCRouterBase = {
         const startDate = parsePeriodStart(input.period).toISOString();
         const endDate = parsePeriodEnd(input.period).toISOString();
 
-        // Find all DTEs in the period, optionally only those without line items
         let dteIds: string[];
         if (input.direction === "sales") {
           const rows = await db.$queryRaw<Array<{ id: string }>>`
@@ -667,27 +668,41 @@ const dteAnalyticsORPCRouterBase = {
         }
 
         if (dteIds.length === 0) {
-          return {
-            fetched: 0,
-            skipped: 0,
-            errors: [],
-            details: [],
-            status: "success" as const,
-          };
+          return { jobId: "none", total: 0, status: "success" as const };
         }
 
-        const { fetchSaleXmlLineItems, fetchPurchaseXmlLineItems } = await import(
-          "../modules/haulmer/xml-service"
-        );
+        const { startXmlFetchJob } = await import("../modules/haulmer/xml-service");
+        const jobId = startXmlFetchJob(dteIds, input.direction, cfg);
 
-        const result =
-          input.direction === "sales"
-            ? await fetchSaleXmlLineItems(dteIds, cfg)
-            : await fetchPurchaseXmlLineItems(dteIds, cfg);
-
-        return { ...result, status: "success" as const };
+        return { jobId, total: dteIds.length, status: "success" as const };
       }
     ),
+
+  xmlJobStatus: readDteAnalytics
+    .route({ method: "GET", path: "/xml-job-status" })
+    .output(dteXmlJobStatusResponseSchema)
+    .handler(async () => {
+      const { getActiveXmlFetchJob } = await import("../modules/haulmer/xml-service");
+      const { getJobStatus } = await import("../lib/jobQueue");
+
+      const activeJob = getActiveXmlFetchJob();
+      if (activeJob) {
+        return {
+          job: {
+            id: activeJob.id,
+            status: activeJob.status,
+            progress: activeJob.progress,
+            total: activeJob.total,
+            message: activeJob.message,
+            meta: activeJob.meta,
+            error: activeJob.error,
+          },
+          status: "success" as const,
+        };
+      }
+
+      return { job: null, status: "success" as const };
+    }),
 };
 
 export const dteAnalyticsORPCRouter = base

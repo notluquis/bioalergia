@@ -9017,6 +9017,54 @@ export class SchemaType implements SchemaDef {
             uniqueFields: {
                 id: { type: "Int" }
             }
+        },
+        BaileysAuthCreds: {
+            name: "BaileysAuthCreds",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    default: "default" as FieldDefault
+                },
+                creds: {
+                    name: "creds",
+                    type: "Json"
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" }
+            }
+        },
+        BaileysAuthKeys: {
+            name: "BaileysAuthKeys",
+            fields: {
+                type: {
+                    name: "type",
+                    type: "String",
+                    id: true
+                },
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true
+                },
+                value: {
+                    name: "value",
+                    type: "Json"
+                }
+            },
+            idFields: ["type", "id"],
+            uniqueFields: {
+                type_id: { type: { type: "String" }, id: { type: "String" } }
+            }
         }
     } as const;
     enums = {

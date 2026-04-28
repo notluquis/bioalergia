@@ -2,6 +2,7 @@ import { queryOptions } from "@tanstack/react-query";
 
 import {
   fetchDteLineItems,
+  fetchDteXmlJobStatus,
   fetchPurchasesAvailablePeriods,
   fetchPurchasesDetails,
   fetchPurchasesSummary,
@@ -55,5 +56,17 @@ export const dteAnalyticsKeys = {
       queryFn: () => fetchDteLineItems(dteId, direction),
       queryKey: ["dte-analytics", "line-items", dteId, direction],
       enabled: !!dteId,
+    }),
+  xmlJobStatus: () =>
+    queryOptions({
+      queryFn: () => fetchDteXmlJobStatus(),
+      queryKey: ["dte-analytics", "xml-job-status"],
+      refetchInterval: (query) => {
+        const status = query.state.data?.status;
+        if (!status || status === "completed" || status === "failed" || status === "cancelled") {
+          return false;
+        }
+        return 2000;
+      },
     }),
 };

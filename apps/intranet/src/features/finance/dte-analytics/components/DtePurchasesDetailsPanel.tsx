@@ -2,11 +2,11 @@ import { Button, Card, Chip, Description, Label, ListBox, Select, Surface } from
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import type { ColumnDef, PaginationState } from "@tanstack/react-table";
 import dayjs from "dayjs";
-import { Check, Download } from "lucide-react";
+import { Check } from "lucide-react";
 import { useEffect, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { DteLineItemsDrawer } from "./DteLineItemsDrawer";
-import { useFetchDteXmlByPeriod } from "../hooks/useFetchDteXml";
+import { DteXmlJobProgress } from "./DteXmlJobProgress";
 import { dteAnalyticsKeys } from "@/features/finance/dte-analytics/queries";
 import type { DTEPurchaseDetail } from "@/features/finance/dte-analytics/types";
 import { formatCurrency } from "@/features/finance/dte-analytics/utils";
@@ -136,7 +136,6 @@ export function DtePurchasesDetailsPanel() {
     enabled: Boolean(selectedPeriod),
   });
 
-  const fetchXmlByPeriod = useFetchDteXmlByPeriod();
   const purchaseColumns = buildPurchaseColumns((detail) => setLineItemsDetail(detail));
 
   if (periods.length === 0) {
@@ -185,22 +184,7 @@ export function DtePurchasesDetailsPanel() {
         <Description>
           {detailsQuery.data?.meta.total ?? 0} registros en {selectedPeriod}
         </Description>
-        <Button
-          size="sm"
-          variant="secondary"
-          isDisabled={!selectedPeriod || fetchXmlByPeriod.isPending}
-          onPress={() =>
-            fetchXmlByPeriod.mutate({ period: selectedPeriod, direction: "purchases" })
-          }
-        >
-          <Download size={14} />
-          {fetchXmlByPeriod.isPending ? "Obteniendo..." : "Obtener XMLs"}
-        </Button>
-        {fetchXmlByPeriod.isSuccess ? (
-          <Chip color="success" size="sm" variant="soft">
-            {fetchXmlByPeriod.data.fetched} obtenidos · {fetchXmlByPeriod.data.skipped} omitidos
-          </Chip>
-        ) : null}
+        <DteXmlJobProgress direction="purchases" selectedPeriod={selectedPeriod} />
       </Surface>
 
       <div className="min-h-0 flex-1">

@@ -3311,3 +3311,28 @@ model OutreachImportLog {
 
   @@map("outreach_import_logs")
 }
+
+// ============================================================
+// BAILEYS (WhatsApp) AUTH STATE
+// Managed via raw Kysely queries — not through ZenStack ORM.
+// Included here so `db push` does not drop these tables.
+// ============================================================
+
+model BaileysAuthCreds {
+  id        String   @id @default("default")
+  creds     Json
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@allow('all', true)
+  @@map("baileys_auth_creds")
+}
+
+model BaileysAuthKeys {
+  type  String
+  id    String
+  value Json
+
+  @@id([type, id])
+  @@allow('all', true)
+  @@map("baileys_auth_keys")
+}

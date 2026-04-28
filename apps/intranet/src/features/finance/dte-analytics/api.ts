@@ -189,12 +189,7 @@ export async function fetchDteXmlByPeriod(
   period: string,
   direction: "purchases" | "sales",
   onlyMissing = true
-): Promise<{
-  fetched: number;
-  skipped: number;
-  errors: string[];
-  details: DTEFetchXmlResultDetail[];
-}> {
+): Promise<{ jobId: string; total: number }> {
   try {
     const response = await dteAnalyticsORPCClient.fetchXmlByPeriod({
       period,
@@ -202,6 +197,25 @@ export async function fetchDteXmlByPeriod(
       onlyMissing,
     });
     return response;
+  } catch (error) {
+    throw toDteAnalyticsApiError(error);
+  }
+}
+
+export interface DteXmlJobStatus {
+  id: string;
+  status: "cancelled" | "completed" | "failed" | "pending" | "running";
+  progress: number;
+  total: number;
+  message: string;
+  meta: Record<string, unknown> | null;
+  error: null | string;
+}
+
+export async function fetchDteXmlJobStatus(): Promise<DteXmlJobStatus | null> {
+  try {
+    const response = await dteAnalyticsORPCClient.xmlJobStatus({});
+    return (response.job as DteXmlJobStatus) ?? null;
   } catch (error) {
     throw toDteAnalyticsApiError(error);
   }

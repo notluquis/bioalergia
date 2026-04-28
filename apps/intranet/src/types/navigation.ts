@@ -14,6 +14,7 @@ export type NavSection =
   | "Finanzas"
   | "Insumos"
   | "Operaciones"
+  | "Outreach"
   | "Prestaciones"
   | "Servicios"
   | "Sistema";

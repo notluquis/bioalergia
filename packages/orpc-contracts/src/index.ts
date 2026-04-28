@@ -34,6 +34,7 @@ export {
   type MercadopagoContract,
 } from "./mercadopago";
 export * from "./notifications";
+export * from "./outreach";
 export { patientsContract, type PatientsContract } from "./patients";
 export * from "./patient-campaigns";
 export * from "./people";

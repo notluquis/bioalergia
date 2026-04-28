@@ -11106,6 +11106,65 @@ export class SchemaType implements SchemaDef {
             uniqueFields: {
                 id: { type: "Int" }
             }
+        },
+        BaileysAuthCreds: {
+            name: "BaileysAuthCreds",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("default") }] }] as readonly AttributeApplication[],
+                    default: "default" as FieldDefault
+                },
+                creds: {
+                    name: "creds",
+                    type: "Json"
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                }
+            },
+            attributes: [
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("baileys_auth_creds") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" }
+            }
+        },
+        BaileysAuthKeys: {
+            name: "BaileysAuthKeys",
+            fields: {
+                type: {
+                    name: "type",
+                    type: "String",
+                    id: true
+                },
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true
+                },
+                value: {
+                    name: "value",
+                    type: "Json"
+                }
+            },
+            attributes: [
+                { name: "@@id", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("type"), ExpressionUtils.field("id")]) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("baileys_auth_keys") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["type", "id"],
+            uniqueFields: {
+                type_id: { type: { type: "String" }, id: { type: "String" } }
+            }
         }
     } as const;
     enums = {

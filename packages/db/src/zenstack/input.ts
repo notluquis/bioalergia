@@ -5,7 +5,7 @@
 
 /* eslint-disable */
 
-import { type SchemaType as $Schema } from "./schema-lite";
+import { type SchemaType as $Schema } from "./schema-lite.js";
 import type { FindManyArgs as $FindManyArgs, FindUniqueArgs as $FindUniqueArgs, FindFirstArgs as $FindFirstArgs, ExistsArgs as $ExistsArgs, CreateArgs as $CreateArgs, CreateManyArgs as $CreateManyArgs, CreateManyAndReturnArgs as $CreateManyAndReturnArgs, UpdateArgs as $UpdateArgs, UpdateManyArgs as $UpdateManyArgs, UpdateManyAndReturnArgs as $UpdateManyAndReturnArgs, UpsertArgs as $UpsertArgs, DeleteArgs as $DeleteArgs, DeleteManyArgs as $DeleteManyArgs, CountArgs as $CountArgs, AggregateArgs as $AggregateArgs, GroupByArgs as $GroupByArgs, WhereInput as $WhereInput, SelectInput as $SelectInput, IncludeInput as $IncludeInput, OmitInput as $OmitInput, QueryOptions as $QueryOptions } from "@zenstackhq/orm";
 import type { SimplifiedPlainResult as $Result, SelectIncludeOmit as $SelectIncludeOmit } from "@zenstackhq/orm";
 export type PersonFindManyArgs = $FindManyArgs<$Schema, "Person">;
@@ -2171,3 +2171,45 @@ export type OutreachImportLogSelect = $SelectInput<$Schema, "OutreachImportLog">
 export type OutreachImportLogInclude = $IncludeInput<$Schema, "OutreachImportLog">;
 export type OutreachImportLogOmit = $OmitInput<$Schema, "OutreachImportLog">;
 export type OutreachImportLogGetPayload<Args extends $SelectIncludeOmit<$Schema, "OutreachImportLog", true>, Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>> = $Result<$Schema, "OutreachImportLog", Args, Options>;
+export type BaileysAuthCredsFindManyArgs = $FindManyArgs<$Schema, "BaileysAuthCreds">;
+export type BaileysAuthCredsFindUniqueArgs = $FindUniqueArgs<$Schema, "BaileysAuthCreds">;
+export type BaileysAuthCredsFindFirstArgs = $FindFirstArgs<$Schema, "BaileysAuthCreds">;
+export type BaileysAuthCredsExistsArgs = $ExistsArgs<$Schema, "BaileysAuthCreds">;
+export type BaileysAuthCredsCreateArgs = $CreateArgs<$Schema, "BaileysAuthCreds">;
+export type BaileysAuthCredsCreateManyArgs = $CreateManyArgs<$Schema, "BaileysAuthCreds">;
+export type BaileysAuthCredsCreateManyAndReturnArgs = $CreateManyAndReturnArgs<$Schema, "BaileysAuthCreds">;
+export type BaileysAuthCredsUpdateArgs = $UpdateArgs<$Schema, "BaileysAuthCreds">;
+export type BaileysAuthCredsUpdateManyArgs = $UpdateManyArgs<$Schema, "BaileysAuthCreds">;
+export type BaileysAuthCredsUpdateManyAndReturnArgs = $UpdateManyAndReturnArgs<$Schema, "BaileysAuthCreds">;
+export type BaileysAuthCredsUpsertArgs = $UpsertArgs<$Schema, "BaileysAuthCreds">;
+export type BaileysAuthCredsDeleteArgs = $DeleteArgs<$Schema, "BaileysAuthCreds">;
+export type BaileysAuthCredsDeleteManyArgs = $DeleteManyArgs<$Schema, "BaileysAuthCreds">;
+export type BaileysAuthCredsCountArgs = $CountArgs<$Schema, "BaileysAuthCreds">;
+export type BaileysAuthCredsAggregateArgs = $AggregateArgs<$Schema, "BaileysAuthCreds">;
+export type BaileysAuthCredsGroupByArgs = $GroupByArgs<$Schema, "BaileysAuthCreds">;
+export type BaileysAuthCredsWhereInput = $WhereInput<$Schema, "BaileysAuthCreds">;
+export type BaileysAuthCredsSelect = $SelectInput<$Schema, "BaileysAuthCreds">;
+export type BaileysAuthCredsInclude = $IncludeInput<$Schema, "BaileysAuthCreds">;
+export type BaileysAuthCredsOmit = $OmitInput<$Schema, "BaileysAuthCreds">;
+export type BaileysAuthCredsGetPayload<Args extends $SelectIncludeOmit<$Schema, "BaileysAuthCreds", true>, Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>> = $Result<$Schema, "BaileysAuthCreds", Args, Options>;
+export type BaileysAuthKeysFindManyArgs = $FindManyArgs<$Schema, "BaileysAuthKeys">;
+export type BaileysAuthKeysFindUniqueArgs = $FindUniqueArgs<$Schema, "BaileysAuthKeys">;
+export type BaileysAuthKeysFindFirstArgs = $FindFirstArgs<$Schema, "BaileysAuthKeys">;
+export type BaileysAuthKeysExistsArgs = $ExistsArgs<$Schema, "BaileysAuthKeys">;
+export type BaileysAuthKeysCreateArgs = $CreateArgs<$Schema, "BaileysAuthKeys">;
+export type BaileysAuthKeysCreateManyArgs = $CreateManyArgs<$Schema, "BaileysAuthKeys">;
+export type BaileysAuthKeysCreateManyAndReturnArgs = $CreateManyAndReturnArgs<$Schema, "BaileysAuthKeys">;
+export type BaileysAuthKeysUpdateArgs = $UpdateArgs<$Schema, "BaileysAuthKeys">;
+export type BaileysAuthKeysUpdateManyArgs = $UpdateManyArgs<$Schema, "BaileysAuthKeys">;
+export type BaileysAuthKeysUpdateManyAndReturnArgs = $UpdateManyAndReturnArgs<$Schema, "BaileysAuthKeys">;
+export type BaileysAuthKeysUpsertArgs = $UpsertArgs<$Schema, "BaileysAuthKeys">;
+export type BaileysAuthKeysDeleteArgs = $DeleteArgs<$Schema, "BaileysAuthKeys">;
+export type BaileysAuthKeysDeleteManyArgs = $DeleteManyArgs<$Schema, "BaileysAuthKeys">;
+export type BaileysAuthKeysCountArgs = $CountArgs<$Schema, "BaileysAuthKeys">;
+export type BaileysAuthKeysAggregateArgs = $AggregateArgs<$Schema, "BaileysAuthKeys">;
+export type BaileysAuthKeysGroupByArgs = $GroupByArgs<$Schema, "BaileysAuthKeys">;
+export type BaileysAuthKeysWhereInput = $WhereInput<$Schema, "BaileysAuthKeys">;
+export type BaileysAuthKeysSelect = $SelectInput<$Schema, "BaileysAuthKeys">;
+export type BaileysAuthKeysInclude = $IncludeInput<$Schema, "BaileysAuthKeys">;
+export type BaileysAuthKeysOmit = $OmitInput<$Schema, "BaileysAuthKeys">;
+export type BaileysAuthKeysGetPayload<Args extends $SelectIncludeOmit<$Schema, "BaileysAuthKeys", true>, Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>> = $Result<$Schema, "BaileysAuthKeys", Args, Options>;

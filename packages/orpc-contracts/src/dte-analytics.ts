@@ -162,6 +162,27 @@ export const dteFetchXmlByPeriodInputSchema = z.object({
   onlyMissing: z.boolean().default(true),
 });
 
+export const dteFetchXmlByPeriodResponseSchema = z.object({
+  jobId: z.string(),
+  total: z.number().int(),
+  status: z.literal("success"),
+});
+
+export const dteXmlJobStatusSchema = z.object({
+  id: z.string(),
+  status: z.enum(["pending", "running", "completed", "failed", "cancelled"]),
+  progress: z.number().int(),
+  total: z.number().int(),
+  message: z.string(),
+  meta: z.record(z.string(), z.unknown()).nullable(),
+  error: z.string().nullable(),
+});
+
+export const dteXmlJobStatusResponseSchema = z.object({
+  job: dteXmlJobStatusSchema.nullable(),
+  status: z.literal("success"),
+});
+
 export const dteFetchXmlResultDetailSchema = z.object({
   folio: z.string(),
   documentType: z.number().int(),
@@ -215,7 +236,10 @@ export const dteAnalyticsContract = {
   fetchXmlByPeriod: oc
     .route({ method: "POST", path: "/fetch-xml-by-period" })
     .input(dteFetchXmlByPeriodInputSchema)
-    .output(dteFetchXmlResponseSchema),
+    .output(dteFetchXmlByPeriodResponseSchema),
+  xmlJobStatus: oc
+    .route({ method: "GET", path: "/xml-job-status" })
+    .output(dteXmlJobStatusResponseSchema),
 };
 
 export type DteAnalyticsContract = typeof dteAnalyticsContract;

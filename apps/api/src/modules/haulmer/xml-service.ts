@@ -1,10 +1,25 @@
 /**
  * Service to fetch DTE XML from Haulmer, parse line items, and persist to DB.
+ * Supports background job execution with progress tracking.
  */
 
 import { db } from "@finanzas/db";
 import Decimal from "decimal.js";
-import type { DteXmlLineItem } from "./xml-parser";
+import {
+  completeJob,
+  failJob,
+  getActiveJobsByType,
+  getJobStatus,
+  isJobCancelled,
+  startJob,
+  updateJobProgress,
+} from "../../lib/jobQueue";
+import type { HaulmerConfig } from "./auth";
+import { captureHaulmerJWT, isJWTExpired } from "./auth";
+import { tryDownloadDteXml } from "./xml-downloader";
+import { parseDteXml, type DteXmlLineItem } from "./xml-parser";
+
+const XML_FETCH_JOB_TYPE = "dte-xml-fetch";
 
 function toDecimal(val: number): Decimal {
   return new Decimal(val);
@@ -30,10 +45,6 @@ function lineItemData(item: DteXmlLineItem) {
     discountAmount: toDecimalOrUndef(item.discountAmount),
   };
 }
-import type { HaulmerConfig } from "./auth";
-import { captureHaulmerJWT, isJWTExpired } from "./auth";
-import { tryDownloadDteXml } from "./xml-downloader";
-import { parseDteXml } from "./xml-parser";
 
 let cachedJWT: { token: string; expiresAt: Date; workspaceId?: string } | null = null;
 
@@ -62,195 +73,219 @@ export interface FetchXmlLineItemsResult {
   }>;
 }
 
-/**
- * Fetch XML and extract line items for specific sale DTEs.
- */
-export async function fetchSaleXmlLineItems(
-  dteIds: string[],
+interface FetchXmlOptions {
+  onProgress?: (processed: number, total: number, message: string) => void;
+  shouldCancel?: () => boolean;
+}
+
+async function fetchAndSaveSaleXml(
+  dteId: string,
   config: HaulmerConfig & { workspaceId?: string },
+  auth: { token: string; workspaceId?: string },
+): Promise<{ folio: string; documentType: number; lineItemsCount: number; status: string }> {
+  const dte = await db.dTESaleDetail.findUnique({
+    where: { id: dteId },
+    select: { id: true, folio: true, documentType: true, lineItems: { select: { id: true } } },
+  });
+
+  if (!dte) return { folio: "?", documentType: 0, lineItemsCount: 0, status: "error" };
+
+  if (dte.lineItems.length > 0) {
+    return { folio: dte.folio, documentType: dte.documentType, lineItemsCount: dte.lineItems.length, status: "already_has" };
+  }
+
+  const xml = await tryDownloadDteXml(
+    { direction: "issued", ownerRut: config.rut, documentType: dte.documentType, folio: dte.folio },
+    { jwtToken: auth.token, workspaceId: auth.workspaceId },
+  );
+
+  if (!xml) {
+    return { folio: dte.folio, documentType: dte.documentType, lineItemsCount: 0, status: "not_found" };
+  }
+
+  const parsed = parseDteXml(xml);
+  for (const item of parsed.lineItems) {
+    const data = lineItemData(item);
+    await db.dTELineItem.upsert({
+      where: { dteSaleDetailId_lineNumber: { dteSaleDetailId: dteId, lineNumber: item.lineNumber } },
+      create: { ...data, dteSaleDetailId: dteId },
+      update: data,
+    });
+  }
+
+  return { folio: dte.folio, documentType: dte.documentType, lineItemsCount: parsed.lineItems.length, status: "fetched" };
+}
+
+async function fetchAndSavePurchaseXml(
+  dteId: string,
+  config: HaulmerConfig & { workspaceId?: string },
+  auth: { token: string; workspaceId?: string },
+): Promise<{ folio: string; documentType: number; lineItemsCount: number; status: string }> {
+  const dte = await db.dTEPurchaseDetail.findUnique({
+    where: { id: dteId },
+    select: { id: true, folio: true, documentType: true, providerRUT: true, lineItems: { select: { id: true } } },
+  });
+
+  if (!dte) return { folio: "?", documentType: 0, lineItemsCount: 0, status: "error" };
+
+  if (dte.lineItems.length > 0) {
+    return { folio: dte.folio, documentType: dte.documentType, lineItemsCount: dte.lineItems.length, status: "already_has" };
+  }
+
+  const xml = await tryDownloadDteXml(
+    { direction: "received", ownerRut: config.rut, providerRut: dte.providerRUT, documentType: dte.documentType, folio: dte.folio },
+    { jwtToken: auth.token, workspaceId: auth.workspaceId },
+  );
+
+  if (!xml) {
+    return { folio: dte.folio, documentType: dte.documentType, lineItemsCount: 0, status: "not_found" };
+  }
+
+  const parsed = parseDteXml(xml);
+  for (const item of parsed.lineItems) {
+    const data = lineItemData(item);
+    await db.dTELineItem.upsert({
+      where: { dtePurchaseDetailId_lineNumber: { dtePurchaseDetailId: dteId, lineNumber: item.lineNumber } },
+      create: { ...data, dtePurchaseDetailId: dteId },
+      update: data,
+    });
+  }
+
+  return { folio: dte.folio, documentType: dte.documentType, lineItemsCount: parsed.lineItems.length, status: "fetched" };
+}
+
+/**
+ * Fetch XML line items with progress callback (used by both sync and job modes).
+ */
+async function fetchXmlLineItemsBatch(
+  dteIds: string[],
+  direction: "sales" | "purchases",
+  config: HaulmerConfig & { workspaceId?: string },
+  options: FetchXmlOptions = {},
 ): Promise<FetchXmlLineItemsResult> {
   const auth = await getAuth(config);
   const result: FetchXmlLineItemsResult = { fetched: 0, skipped: 0, errors: [], details: [] };
+  const total = dteIds.length;
 
-  for (const dteId of dteIds) {
-    const dte = await db.dTESaleDetail.findUnique({
-      where: { id: dteId },
-      select: { id: true, folio: true, documentType: true, lineItems: { select: { id: true } } },
-    });
-
-    if (!dte) {
-      result.errors.push(`DTE ${dteId} not found`);
-      continue;
+  for (let i = 0; i < dteIds.length; i++) {
+    if (options.shouldCancel?.()) {
+      break;
     }
 
-    // Skip if already has line items
-    if (dte.lineItems.length > 0) {
-      result.skipped++;
-      result.details.push({
-        folio: dte.folio,
-        documentType: dte.documentType,
-        lineItemsCount: dte.lineItems.length,
-        status: "already_has",
-      });
-      continue;
-    }
-
+    const dteId = dteIds[i];
     try {
-      const xml = await tryDownloadDteXml(
-        {
-          direction: "issued",
-          ownerRut: config.rut,
-          documentType: dte.documentType,
-          folio: dte.folio,
-        },
-        { jwtToken: auth.token, workspaceId: auth.workspaceId },
-      );
+      const detail =
+        direction === "sales"
+          ? await fetchAndSaveSaleXml(dteId, config, auth)
+          : await fetchAndSavePurchaseXml(dteId, config, auth);
 
-      if (!xml) {
-        result.skipped++;
-        result.details.push({
-          folio: dte.folio,
-          documentType: dte.documentType,
-          lineItemsCount: 0,
-          status: "not_found",
-        });
-        continue;
-      }
+      if (detail.status === "fetched") result.fetched++;
+      else if (detail.status === "already_has" || detail.status === "not_found") result.skipped++;
 
-      const parsed = parseDteXml(xml);
-
-      // Upsert line items
-      for (const item of parsed.lineItems) {
-        const data = lineItemData(item);
-        await db.dTELineItem.upsert({
-          where: {
-            dteSaleDetailId_lineNumber: {
-              dteSaleDetailId: dteId,
-              lineNumber: item.lineNumber,
-            },
-          },
-          create: { ...data, dteSaleDetailId: dteId },
-          update: data,
-        });
-      }
-
-      result.fetched++;
       result.details.push({
-        folio: dte.folio,
-        documentType: dte.documentType,
-        lineItemsCount: parsed.lineItems.length,
-        status: "fetched",
+        folio: detail.folio,
+        documentType: detail.documentType,
+        lineItemsCount: detail.lineItemsCount,
+        status: detail.status as "fetched" | "not_found" | "error" | "already_has",
       });
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
-      result.errors.push(`Folio ${dte.folio}: ${msg}`);
-      result.details.push({
-        folio: dte.folio,
-        documentType: dte.documentType,
-        lineItemsCount: 0,
-        status: "error",
-      });
+      result.errors.push(msg);
+      result.details.push({ folio: "?", documentType: 0, lineItemsCount: 0, status: "error" });
     }
+
+    options.onProgress?.(i + 1, total, `${i + 1}/${total} — ${result.fetched} obtenidos`);
   }
 
   return result;
 }
 
-/**
- * Fetch XML and extract line items for specific purchase DTEs.
- */
+// ── Synchronous API (for individual/small fetches) ───────────────────────────
+
+export async function fetchSaleXmlLineItems(
+  dteIds: string[],
+  config: HaulmerConfig & { workspaceId?: string },
+): Promise<FetchXmlLineItemsResult> {
+  return fetchXmlLineItemsBatch(dteIds, "sales", config);
+}
+
 export async function fetchPurchaseXmlLineItems(
   dteIds: string[],
   config: HaulmerConfig & { workspaceId?: string },
 ): Promise<FetchXmlLineItemsResult> {
-  const auth = await getAuth(config);
-  const result: FetchXmlLineItemsResult = { fetched: 0, skipped: 0, errors: [], details: [] };
+  return fetchXmlLineItemsBatch(dteIds, "purchases", config);
+}
 
-  for (const dteId of dteIds) {
-    const dte = await db.dTEPurchaseDetail.findUnique({
-      where: { id: dteId },
-      select: {
-        id: true,
-        folio: true,
-        documentType: true,
-        providerRUT: true,
-        lineItems: { select: { id: true } },
-      },
-    });
+// ── Background Job API ───────────────────────────────────────────────────────
 
-    if (!dte) {
-      result.errors.push(`DTE ${dteId} not found`);
-      continue;
-    }
+export function getXmlFetchJobType() {
+  return XML_FETCH_JOB_TYPE;
+}
 
-    if (dte.lineItems.length > 0) {
-      result.skipped++;
-      result.details.push({
-        folio: dte.folio,
-        documentType: dte.documentType,
-        lineItemsCount: dte.lineItems.length,
-        status: "already_has",
-      });
-      continue;
-    }
+export function getActiveXmlFetchJob() {
+  const [job] = getActiveJobsByType(XML_FETCH_JOB_TYPE);
+  return job ?? null;
+}
 
+export function startXmlFetchJob(
+  dteIds: string[],
+  direction: "sales" | "purchases",
+  config: HaulmerConfig & { workspaceId?: string },
+): string {
+  // Return existing job if one is running
+  const active = getActiveXmlFetchJob();
+  if (active) return active.id;
+
+  const jobId = startJob(XML_FETCH_JOB_TYPE, dteIds.length);
+  updateJobProgress(jobId, 0, `Preparando descarga de ${dteIds.length} XMLs...`, {
+    direction,
+    fetched: 0,
+    skipped: 0,
+    errors: 0,
+  });
+
+  let phaseStartedAt = Date.now();
+
+  void (async () => {
     try {
-      const xml = await tryDownloadDteXml(
-        {
-          direction: "received",
-          ownerRut: config.rut,
-          providerRut: dte.providerRUT,
-          documentType: dte.documentType,
-          folio: dte.folio,
+      const result = await fetchXmlLineItemsBatch(dteIds, direction, config, {
+        shouldCancel: () => isJobCancelled(jobId),
+        onProgress: (processed, total, message) => {
+          const elapsedMs = Date.now() - phaseStartedAt;
+          const elapsedSeconds = Math.max(0, elapsedMs / 1000);
+          const remaining = total - processed;
+          const etaSeconds =
+            processed > 0 && remaining > 0 && elapsedSeconds >= 2
+              ? Math.round((elapsedSeconds / processed) * remaining)
+              : null;
+
+          updateJobProgress(jobId, processed, message, {
+            direction,
+            fetched: result.fetched,
+            skipped: result.skipped,
+            errors: result.errors.length,
+            elapsedSeconds: Math.round(elapsedSeconds),
+            etaSeconds,
+          }, total);
         },
-        { jwtToken: auth.token, workspaceId: auth.workspaceId },
-      );
-
-      if (!xml) {
-        result.skipped++;
-        result.details.push({
-          folio: dte.folio,
-          documentType: dte.documentType,
-          lineItemsCount: 0,
-          status: "not_found",
-        });
-        continue;
-      }
-
-      const parsed = parseDteXml(xml);
-
-      for (const item of parsed.lineItems) {
-        const data = lineItemData(item);
-        await db.dTELineItem.upsert({
-          where: {
-            dtePurchaseDetailId_lineNumber: {
-              dtePurchaseDetailId: dteId,
-              lineNumber: item.lineNumber,
-            },
-          },
-          create: { ...data, dtePurchaseDetailId: dteId },
-          update: data,
-        });
-      }
-
-      result.fetched++;
-      result.details.push({
-        folio: dte.folio,
-        documentType: dte.documentType,
-        lineItemsCount: parsed.lineItems.length,
-        status: "fetched",
       });
+
+      completeJob(
+        jobId,
+        result,
+        `XML fetch completado: ${result.fetched} obtenidos, ${result.skipped} omitidos`,
+        {
+          direction,
+          fetched: result.fetched,
+          skipped: result.skipped,
+          errors: result.errors.length,
+        },
+      );
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
-      result.errors.push(`Folio ${dte.folio}: ${msg}`);
-      result.details.push({
-        folio: dte.folio,
-        documentType: dte.documentType,
-        lineItemsCount: 0,
-        status: "error",
-      });
+      failJob(jobId, msg);
     }
-  }
+  })();
 
-  return result;
+  return jobId;
 }

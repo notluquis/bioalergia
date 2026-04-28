@@ -5,7 +5,7 @@
 
 /* eslint-disable */
 
-import { schema as $schema, type SchemaType as $Schema } from "./schema-lite";
+import { schema as $schema, type SchemaType as $Schema } from "./schema-lite.js";
 import type { ModelResult as $ModelResult } from "@zenstackhq/orm";
 export type Person = $ModelResult<$Schema, "Person">;
 export type User = $ModelResult<$Schema, "User">;
@@ -110,6 +110,8 @@ export type OutreachInteraction = $ModelResult<$Schema, "OutreachInteraction">;
 export type OutreachEmailCampaign = $ModelResult<$Schema, "OutreachEmailCampaign">;
 export type OutreachEmailDelivery = $ModelResult<$Schema, "OutreachEmailDelivery">;
 export type OutreachImportLog = $ModelResult<$Schema, "OutreachImportLog">;
+export type BaileysAuthCreds = $ModelResult<$Schema, "BaileysAuthCreds">;
+export type BaileysAuthKeys = $ModelResult<$Schema, "BaileysAuthKeys">;
 export const DoctoraliaSyncType = $schema.enums.DoctoraliaSyncType.values;
 export type DoctoraliaSyncType = (typeof DoctoraliaSyncType)[keyof typeof DoctoraliaSyncType];
 export const DoctoraliaEmailEventType = $schema.enums.DoctoraliaEmailEventType.values;
