@@ -371,13 +371,15 @@ export async function syncClinicalSkinTestImports(options?: {
       filesTotal: 0,
     });
 
+    let accountXlsxSoFar = 0;
     const { items } = await listOneDriveDeltaItems(account.accountId, {
       folderDriveId: options?.folderDriveId,
       folderItemId: options?.folderItemId,
       folderPath: options?.folderPath,
       force: options?.force,
-      onPage: ({ itemsSoFar, page }) => {
-        emit(`[${account.email}] Leyendo cambios: página ${page}, ${itemsSoFar} item(s)`, {
+      onPage: ({ items: pageItems, itemsSoFar, page }) => {
+        accountXlsxSoFar += pageItems.filter(isRelevantXlsx).length;
+        emit(`[${account.email}] Leyendo OneDrive: lote Graph ${page}, ${itemsSoFar} item(s)`, {
           accountEmail: account.email,
           accountId: account.accountId,
           accountIndex: accountIndex + 1,
@@ -387,7 +389,7 @@ export async function syncClinicalSkinTestImports(options?: {
           processed: accountIndex,
           scanned: scanned + itemsSoFar,
           total: accounts.length,
-          xlsx,
+          xlsx: xlsx + accountXlsxSoFar,
           documents,
           documentsMatched,
           documentsUnmatched,

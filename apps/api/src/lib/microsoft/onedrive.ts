@@ -6,6 +6,7 @@ const MICROSOFT_AUTH_URL = "https://login.microsoftonline.com/consumers/oauth2/v
 const GRAPH_BASE_URL = "https://graph.microsoft.com/v1.0";
 const DEFAULT_SCOPES = ["offline_access", "Files.Read", "User.Read"];
 const ONEDRIVE_WEBHOOK_CLIENT_STATE = "bioalergia-onedrive-sync";
+const DELTA_PAGE_SIZE = 999;
 
 // Process-scoped token cache — safe because access tokens last ~3600s.
 // Avoids a DB hit per file during sync (N xlsx = N redundant DB queries without this).
@@ -300,7 +301,7 @@ export async function listOneDriveDeltaItems(
     folderItemId?: null | string;
     folderPath?: string;
     force?: boolean;
-    onPage?: (snapshot: { itemsSoFar: number; page: number }) => void;
+    onPage?: (snapshot: { items: OneDriveItem[]; itemsSoFar: number; page: number }) => void;
   }
 ): Promise<{ items: OneDriveItem[]; totalPages: number }> {
   const account = await db.oneDriveAccount.findFirst({
@@ -321,7 +322,7 @@ export async function listOneDriveDeltaItems(
   // reduces the Graph payload by ~70% on large drives.
   const DELTA_SELECT =
     "id,name,file,folder,deleted,eTag,cTag,size,parentReference,lastModifiedDateTime,webUrl";
-  const initialUrl = `${buildDeltaUrl({ driveId: folderDriveId, folderPath: configuredFolder, itemId: folderItemId })}?$select=${DELTA_SELECT}`;
+  const initialUrl = `${buildDeltaUrl({ driveId: folderDriveId, folderPath: configuredFolder, itemId: folderItemId })}?$select=${DELTA_SELECT}&$top=${DELTA_PAGE_SIZE}`;
   let url = existingDelta || initialUrl;
 
   const items: OneDriveItem[] = [];
@@ -331,8 +332,9 @@ export async function listOneDriveDeltaItems(
   while (url) {
     totalPages += 1;
     const response = await graphFetch<DeltaResponse>(url, accessToken);
-    items.push(...(response.value ?? []));
-    options?.onPage?.({ itemsSoFar: items.length, page: totalPages });
+    const pageItems = response.value ?? [];
+    items.push(...pageItems);
+    options?.onPage?.({ items: pageItems, itemsSoFar: items.length, page: totalPages });
     url = response["@odata.nextLink"] ?? "";
     if (response["@odata.deltaLink"]) {
       finalDeltaLink = response["@odata.deltaLink"];

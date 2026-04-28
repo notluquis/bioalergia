@@ -259,6 +259,23 @@ export function SkinTestImportPanel() {
     knownActiveJobStatus === "running";
   const currentJob = jobStatusQuery.data?.job ?? null;
   const syncMeta = getSyncJobMeta(currentJob?.meta);
+  const hasFileProgress =
+    typeof syncMeta.filesTotal === "number" &&
+    syncMeta.filesTotal > 0 &&
+    typeof syncMeta.filesProcessed === "number";
+  const isUnknownProgress =
+    currentJob?.status === "running" &&
+    !hasFileProgress &&
+    (syncMeta.phase === "starting" || syncMeta.phase === "delta" || syncMeta.phase === "scanned");
+  const progressValue = hasFileProgress
+    ? (syncMeta.filesProcessed ?? 0)
+    : (currentJob?.progress ?? 0);
+  const progressMaxValue = hasFileProgress ? (syncMeta.filesTotal ?? 1) : currentJob?.total || 1;
+  const progressRatioLabel = hasFileProgress
+    ? `${syncMeta.filesProcessed ?? 0} / ${syncMeta.filesTotal}`
+    : !isUnknownProgress && currentJob && currentJob.total > 0
+      ? `${currentJob.progress} / ${currentJob.total}`
+      : null;
   const selectedIds = useMemo(
     () =>
       Object.entries(selectedImportIds)
@@ -588,15 +605,14 @@ export function SkinTestImportPanel() {
                       ? "success"
                       : "accent"
               }
-              value={currentJob.progress}
-              maxValue={currentJob.total || 1}
+              isIndeterminate={isUnknownProgress}
+              value={progressValue}
+              maxValue={progressMaxValue}
             >
               <div className="flex justify-between">
                 <Label>{currentJob.message || "Sincronizando..."}</Label>
-                {currentJob.total > 0 && (
-                  <span className="text-xs text-foreground-500">
-                    {currentJob.progress} / {currentJob.total}
-                  </span>
+                {progressRatioLabel && (
+                  <span className="text-xs text-foreground-500">{progressRatioLabel}</span>
                 )}
               </div>
               <ProgressBar.Track>
@@ -625,8 +641,8 @@ export function SkinTestImportPanel() {
                   Archivos: {syncMeta.filesProcessed ?? 0}/{syncMeta.filesTotal}
                 </span>
               )}
-              {syncMeta.page != null && <span>Página delta: {syncMeta.page}</span>}
-              {syncMeta.scanned != null && <span>Items leídos: {syncMeta.scanned}</span>}
+              {syncMeta.page != null && <span>Lote Graph: {syncMeta.page}</span>}
+              {syncMeta.scanned != null && <span>Items OneDrive: {syncMeta.scanned}</span>}
               {syncMeta.xlsx != null && <span>XLSX: {syncMeta.xlsx}</span>}
               {syncMeta.archived != null && <span>Snapshots: {syncMeta.archived}</span>}
               {syncMeta.downloadedBytes != null && (
@@ -640,13 +656,9 @@ export function SkinTestImportPanel() {
               )}
               {currentJob.status === "running" &&
                 syncMeta.phase &&
-                syncMeta.phase !== "completed" && (
-                  <span>
-                    ETA est.:{" "}
-                    {typeof syncMeta.etaSeconds === "number"
-                      ? formatDuration(syncMeta.etaSeconds)
-                      : "calculando"}
-                  </span>
+                syncMeta.phase !== "completed" &&
+                typeof syncMeta.etaSeconds === "number" && (
+                  <span>ETA est.: {formatDuration(syncMeta.etaSeconds)}</span>
                 )}
               {syncMeta.filename && (
                 <span className="min-w-0 truncate">Archivo: {syncMeta.filename}</span>
