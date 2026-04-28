@@ -74,7 +74,10 @@ export function useActiveClinicalSkinTestJob(options?: { enabled?: boolean }) {
     queryFn: async () => await clinicalSkinTestsORPCClient.activeJob({}),
     queryKey: skinTestImportKeys.activeJob(),
     staleTime: 1000,
+    retry: 2,
     refetchInterval: (query) => {
+      // If query errored (e.g. 401 during re-auth), keep retrying
+      if (query.state.status === "error") return 3000;
       const status = query.state.data?.job?.status;
       if (!status) return false;
       return ["completed", "failed", "cancelled"].includes(status) ? false : 5000;
@@ -316,7 +319,9 @@ export function useClinicalSkinTestJobStatus(jobId: string | null) {
     enabled: !!jobId,
     queryFn: async () => await clinicalSkinTestsORPCClient.jobStatus({ jobId: jobId! }),
     queryKey: [...skinTestImportKeys.all, "job-status", jobId],
+    retry: 2,
     refetchInterval: (query) => {
+      if (query.state.status === "error") return 3000;
       const status = query.state.data?.job?.status;
       if (!status) return 2000;
       return ["completed", "failed", "cancelled"].includes(status) ? false : 2000;

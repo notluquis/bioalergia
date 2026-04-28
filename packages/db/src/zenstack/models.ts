@@ -5,7 +5,7 @@
 
 /* eslint-disable */
 
-import { schema as $schema, type SchemaType as $Schema } from "./schema-lite";
+import { schema as $schema, type SchemaType as $Schema } from "./schema-lite.js";
 import type { ModelResult as $ModelResult } from "@zenstackhq/orm";
 export type Person = $ModelResult<$Schema, "Person">;
 export type User = $ModelResult<$Schema, "User">;
@@ -91,6 +91,7 @@ export type PatientPayment = $ModelResult<$Schema, "PatientPayment">;
 export type PatientAttachment = $ModelResult<$Schema, "PatientAttachment">;
 export type DTEPurchaseDetail = $ModelResult<$Schema, "DTEPurchaseDetail">;
 export type DTESaleDetail = $ModelResult<$Schema, "DTESaleDetail">;
+export type DTELineItem = $ModelResult<$Schema, "DTELineItem">;
 export type EventDteSaleLink = $ModelResult<$Schema, "EventDteSaleLink">;
 export type EventDteAutoLinkAttempt = $ModelResult<$Schema, "EventDteAutoLinkAttempt">;
 export type EventDteMatchReview = $ModelResult<$Schema, "EventDteMatchReview">;

@@ -1,5 +1,7 @@
 import { dteAnalyticsORPCClient, toDteAnalyticsApiError } from "./orpc";
 import type {
+  DTEFetchXmlResultDetail,
+  DTELineItem,
   DTEPurchaseDetail,
   DTESalesDetail,
   DTESalesLinkedEventsResponse,
@@ -149,6 +151,35 @@ export async function fetchPurchasesDetails(
       data: DTEPurchaseDetailArraySchema.parse(response.data),
       meta: DTEPurchaseDetailResponseSchema.shape.meta.parse(response.meta),
     };
+  } catch (error) {
+    throw toDteAnalyticsApiError(error);
+  }
+}
+
+export async function fetchDteLineItems(
+  dteId: string,
+  direction: "purchase" | "sale"
+): Promise<DTELineItem[]> {
+  try {
+    const response = await dteAnalyticsORPCClient.lineItems({ dteId, direction });
+    return response.data as DTELineItem[];
+  } catch (error) {
+    throw toDteAnalyticsApiError(error);
+  }
+}
+
+export async function fetchDteXml(
+  dteIds: string[],
+  direction: "purchases" | "sales"
+): Promise<{
+  fetched: number;
+  skipped: number;
+  errors: string[];
+  details: DTEFetchXmlResultDetail[];
+}> {
+  try {
+    const response = await dteAnalyticsORPCClient.fetchXml({ dteIds, direction });
+    return response;
   } catch (error) {
     throw toDteAnalyticsApiError(error);
   }

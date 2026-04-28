@@ -28,6 +28,8 @@ export function useJobProgress(jobId: null | string, options: UseJobProgressOpti
     queryKey: ["job-status", jobId],
 
     refetchInterval: (query) => {
+      // Keep retrying on auth/network errors so job status recovers after re-login
+      if (query.state.status === "error") return 3000;
       const data = query.state.data;
       // Stop polling when job is done
       if (!data || data.status === "completed" || data.status === "failed") {
@@ -35,6 +37,7 @@ export function useJobProgress(jobId: null | string, options: UseJobProgressOpti
       }
       return pollInterval;
     },
+    retry: 2,
     staleTime: 0, // Always refetch
   });
 

@@ -1,91 +1,121 @@
-import { Card, Description, Label, ListBox, Select, Surface } from "@heroui/react";
+import { Button, Card, Chip, Description, Label, ListBox, Select, Surface } from "@heroui/react";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import type { ColumnDef, PaginationState } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { Check } from "lucide-react";
 import { useEffect, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
+import { DteLineItemsDrawer } from "./DteLineItemsDrawer";
 import { dteAnalyticsKeys } from "@/features/finance/dte-analytics/queries";
 import type { DTEPurchaseDetail } from "@/features/finance/dte-analytics/types";
 import { formatCurrency } from "@/features/finance/dte-analytics/utils";
 
-const purchaseColumns: ColumnDef<DTEPurchaseDetail>[] = [
-  {
-    accessorKey: "documentType",
-    header: "document_type",
-  },
-  {
-    accessorKey: "purchaseType",
-    header: "purchase_type",
-    cell: ({ row }) => (
-      <span className="block max-w-44 truncate" title={row.original.purchaseType}>
-        {row.original.purchaseType}
-      </span>
-    ),
-  },
-  {
-    accessorKey: "providerRUT",
-    header: "provider_rut",
-  },
-  {
-    accessorKey: "providerName",
-    header: "provider_name",
-    minSize: 200,
-    size: 240,
-    cell: ({ row }) => (
-      <span className="block max-w-72 truncate" title={row.original.providerName}>
-        {row.original.providerName}
-      </span>
-    ),
-  },
-  {
-    accessorKey: "folio",
-    header: "folio",
-  },
-  {
-    accessorKey: "documentDate",
-    header: "document_date",
-    cell: ({ row }) => dayjs(row.original.documentDate).format("DD-MM-YYYY"),
-  },
-  {
-    accessorKey: "receiptDate",
-    header: "receipt_date",
-    cell: ({ row }) => dayjs(row.original.receiptDate).format("DD-MM-YYYY"),
-  },
-  {
-    accessorKey: "exemptAmount",
-    header: "exempt_amount",
-    cell: ({ row }) => formatCurrency(row.original.exemptAmount),
-  },
-  {
-    accessorKey: "netAmount",
-    header: "net_amount",
-    cell: ({ row }) => formatCurrency(row.original.netAmount),
-  },
-  {
-    accessorKey: "recoverableIVA",
-    header: "recoverable_iva",
-    cell: ({ row }) => formatCurrency(row.original.recoverableIVA),
-  },
-  {
-    accessorKey: "nonRecoverableIVA",
-    header: "non_recoverable_iva",
-    cell: ({ row }) => formatCurrency(row.original.nonRecoverableIVA),
-  },
-  {
-    accessorKey: "totalAmount",
-    header: "total_amount",
-    cell: ({ row }) => (
-      <span className="font-medium">{formatCurrency(row.original.totalAmount)}</span>
-    ),
-  },
-];
+function buildPurchaseColumns(
+  onOpenLineItems: (detail: DTEPurchaseDetail) => void
+): ColumnDef<DTEPurchaseDetail>[] {
+  return [
+    {
+      accessorKey: "documentType",
+      header: "document_type",
+    },
+    {
+      accessorKey: "purchaseType",
+      header: "purchase_type",
+      cell: ({ row }) => (
+        <span className="block max-w-44 truncate" title={row.original.purchaseType}>
+          {row.original.purchaseType}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "providerRUT",
+      header: "provider_rut",
+    },
+    {
+      accessorKey: "providerName",
+      header: "provider_name",
+      minSize: 200,
+      size: 240,
+      cell: ({ row }) => (
+        <span className="block max-w-72 truncate" title={row.original.providerName}>
+          {row.original.providerName}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "folio",
+      header: "folio",
+    },
+    {
+      accessorKey: "documentDate",
+      header: "document_date",
+      cell: ({ row }) => dayjs(row.original.documentDate).format("DD-MM-YYYY"),
+    },
+    {
+      accessorKey: "receiptDate",
+      header: "receipt_date",
+      cell: ({ row }) => dayjs(row.original.receiptDate).format("DD-MM-YYYY"),
+    },
+    {
+      accessorKey: "exemptAmount",
+      header: "exempt_amount",
+      cell: ({ row }) => formatCurrency(row.original.exemptAmount),
+    },
+    {
+      accessorKey: "netAmount",
+      header: "net_amount",
+      cell: ({ row }) => formatCurrency(row.original.netAmount),
+    },
+    {
+      accessorKey: "recoverableIVA",
+      header: "recoverable_iva",
+      cell: ({ row }) => formatCurrency(row.original.recoverableIVA),
+    },
+    {
+      accessorKey: "nonRecoverableIVA",
+      header: "non_recoverable_iva",
+      cell: ({ row }) => formatCurrency(row.original.nonRecoverableIVA),
+    },
+    {
+      accessorKey: "totalAmount",
+      header: "total_amount",
+      cell: ({ row }) => (
+        <span className="font-medium">{formatCurrency(row.original.totalAmount)}</span>
+      ),
+    },
+    {
+      id: "lineItems",
+      header: "ítems",
+      minSize: 130,
+      cell: ({ row }) => {
+        const count = row.original.lineItemsCount;
+
+        if (count === 0) {
+          return (
+            <Button size="sm" variant="tertiary" onPress={() => onOpenLineItems(row.original)}>
+              Obtener XML
+            </Button>
+          );
+        }
+
+        return (
+          <Button size="sm" variant="tertiary" onPress={() => onOpenLineItems(row.original)}>
+            <Chip color="accent" size="sm" variant="soft">
+              {count} ítem{count === 1 ? "" : "s"}
+            </Chip>
+          </Button>
+        );
+      },
+    },
+  ];
+}
 
 const DEFAULT_PAGE_SIZE = 50;
 
 export function DtePurchasesDetailsPanel() {
   const { data: periods } = useSuspenseQuery(dteAnalyticsKeys.purchasesAvailablePeriods());
   const [selectedPeriod, setSelectedPeriod] = useState<string>("");
+  const [lineItemsDetail, setLineItemsDetail] = useState<DTEPurchaseDetail | null>(null);
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: DEFAULT_PAGE_SIZE,
@@ -104,6 +134,8 @@ export function DtePurchasesDetailsPanel() {
     }),
     enabled: Boolean(selectedPeriod),
   });
+
+  const purchaseColumns = buildPurchaseColumns((detail) => setLineItemsDetail(detail));
 
   if (periods.length === 0) {
     return (
@@ -174,6 +206,12 @@ export function DtePurchasesDetailsPanel() {
           scrollMode="container"
         />
       </div>
+
+      <DteLineItemsDrawer
+        detail={lineItemsDetail ? { ...lineItemsDetail, direction: "purchase" } : null}
+        isOpen={lineItemsDetail != null}
+        onClose={() => setLineItemsDetail(null)}
+      />
     </div>
   );
 }

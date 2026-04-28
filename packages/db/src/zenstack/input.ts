@@ -5,7 +5,7 @@
 
 /* eslint-disable */
 
-import { type SchemaType as $Schema } from "./schema-lite";
+import { type SchemaType as $Schema } from "./schema-lite.js";
 import type { FindManyArgs as $FindManyArgs, FindUniqueArgs as $FindUniqueArgs, FindFirstArgs as $FindFirstArgs, ExistsArgs as $ExistsArgs, CreateArgs as $CreateArgs, CreateManyArgs as $CreateManyArgs, CreateManyAndReturnArgs as $CreateManyAndReturnArgs, UpdateArgs as $UpdateArgs, UpdateManyArgs as $UpdateManyArgs, UpdateManyAndReturnArgs as $UpdateManyAndReturnArgs, UpsertArgs as $UpsertArgs, DeleteArgs as $DeleteArgs, DeleteManyArgs as $DeleteManyArgs, CountArgs as $CountArgs, AggregateArgs as $AggregateArgs, GroupByArgs as $GroupByArgs, WhereInput as $WhereInput, SelectInput as $SelectInput, IncludeInput as $IncludeInput, OmitInput as $OmitInput, QueryOptions as $QueryOptions } from "@zenstackhq/orm";
 import type { SimplifiedPlainResult as $Result, SelectIncludeOmit as $SelectIncludeOmit } from "@zenstackhq/orm";
 export type PersonFindManyArgs = $FindManyArgs<$Schema, "Person">;
@@ -1772,6 +1772,27 @@ export type DTESaleDetailSelect = $SelectInput<$Schema, "DTESaleDetail">;
 export type DTESaleDetailInclude = $IncludeInput<$Schema, "DTESaleDetail">;
 export type DTESaleDetailOmit = $OmitInput<$Schema, "DTESaleDetail">;
 export type DTESaleDetailGetPayload<Args extends $SelectIncludeOmit<$Schema, "DTESaleDetail", true>, Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>> = $Result<$Schema, "DTESaleDetail", Args, Options>;
+export type DTELineItemFindManyArgs = $FindManyArgs<$Schema, "DTELineItem">;
+export type DTELineItemFindUniqueArgs = $FindUniqueArgs<$Schema, "DTELineItem">;
+export type DTELineItemFindFirstArgs = $FindFirstArgs<$Schema, "DTELineItem">;
+export type DTELineItemExistsArgs = $ExistsArgs<$Schema, "DTELineItem">;
+export type DTELineItemCreateArgs = $CreateArgs<$Schema, "DTELineItem">;
+export type DTELineItemCreateManyArgs = $CreateManyArgs<$Schema, "DTELineItem">;
+export type DTELineItemCreateManyAndReturnArgs = $CreateManyAndReturnArgs<$Schema, "DTELineItem">;
+export type DTELineItemUpdateArgs = $UpdateArgs<$Schema, "DTELineItem">;
+export type DTELineItemUpdateManyArgs = $UpdateManyArgs<$Schema, "DTELineItem">;
+export type DTELineItemUpdateManyAndReturnArgs = $UpdateManyAndReturnArgs<$Schema, "DTELineItem">;
+export type DTELineItemUpsertArgs = $UpsertArgs<$Schema, "DTELineItem">;
+export type DTELineItemDeleteArgs = $DeleteArgs<$Schema, "DTELineItem">;
+export type DTELineItemDeleteManyArgs = $DeleteManyArgs<$Schema, "DTELineItem">;
+export type DTELineItemCountArgs = $CountArgs<$Schema, "DTELineItem">;
+export type DTELineItemAggregateArgs = $AggregateArgs<$Schema, "DTELineItem">;
+export type DTELineItemGroupByArgs = $GroupByArgs<$Schema, "DTELineItem">;
+export type DTELineItemWhereInput = $WhereInput<$Schema, "DTELineItem">;
+export type DTELineItemSelect = $SelectInput<$Schema, "DTELineItem">;
+export type DTELineItemInclude = $IncludeInput<$Schema, "DTELineItem">;
+export type DTELineItemOmit = $OmitInput<$Schema, "DTELineItem">;
+export type DTELineItemGetPayload<Args extends $SelectIncludeOmit<$Schema, "DTELineItem", true>, Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>> = $Result<$Schema, "DTELineItem", Args, Options>;
 export type EventDteSaleLinkFindManyArgs = $FindManyArgs<$Schema, "EventDteSaleLink">;
 export type EventDteSaleLinkFindUniqueArgs = $FindUniqueArgs<$Schema, "EventDteSaleLink">;
 export type EventDteSaleLinkFindFirstArgs = $FindFirstArgs<$Schema, "EventDteSaleLink">;

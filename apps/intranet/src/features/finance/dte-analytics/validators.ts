@@ -86,6 +86,7 @@ export const DTESalesDetailSchema = z.object({
   emitterRUT: z.string().nullable(),
   referenceDocType: z.string().nullable(),
   referenceDocFolio: z.string().nullable(),
+  lineItemsCount: z.number().int().nonnegative(),
   linkedEventsCount: z.number().int().nonnegative(),
 }) satisfies z.ZodType<DTESalesDetail>;
 
@@ -116,6 +117,7 @@ export const DTEPurchaseDetailSchema = z.object({
   netAmount: AmountValidator,
   recoverableIVA: AmountValidator,
   nonRecoverableIVA: AmountValidator,
+  lineItemsCount: z.number().int().nonnegative(),
   totalAmount: AmountValidator,
 }) satisfies z.ZodType<DTEPurchaseDetail>;
 

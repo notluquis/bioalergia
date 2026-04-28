@@ -46,6 +46,7 @@ export const dteAnalyticsSalesDetailSchema = z.object({
   folio: z.string(),
   id: z.string(),
   ivaAmount: z.number(),
+  lineItemsCount: z.number().int().nonnegative(),
   netAmount: z.number(),
   referenceDocFolio: z.string().nullable(),
   referenceDocType: z.string().nullable(),
@@ -82,6 +83,7 @@ export const dteAnalyticsPurchaseDetailSchema = z.object({
   exemptAmount: z.number(),
   folio: z.string(),
   id: z.string(),
+  lineItemsCount: z.number().int().nonnegative(),
   netAmount: z.number(),
   nonRecoverableIVA: z.number(),
   providerName: z.string(),
@@ -121,6 +123,54 @@ export const dteAnalyticsPurchasesDetailsResponseSchema = z.object({
   status: z.literal("success"),
 });
 
+// ── Line Items (from XML) ────────────────────────────────────────────────────
+
+export const dteLineItemSchema = z.object({
+  id: z.string(),
+  lineNumber: z.number().int(),
+  itemName: z.string(),
+  itemDescription: z.string().nullable(),
+  quantity: z.number(),
+  unit: z.string().nullable(),
+  unitPrice: z.number(),
+  amount: z.number(),
+  isExempt: z.boolean(),
+  itemCode: z.string().nullable(),
+  itemCodeType: z.string().nullable(),
+  discountPercent: z.number().nullable(),
+  discountAmount: z.number().nullable(),
+});
+
+export const dteLineItemsQuerySchema = z.object({
+  dteId: z.string().min(1),
+  direction: z.enum(["sale", "purchase"]),
+});
+
+export const dteLineItemsResponseSchema = z.object({
+  data: z.array(dteLineItemSchema),
+  status: z.literal("success"),
+});
+
+export const dteFetchXmlInputSchema = z.object({
+  dteIds: z.array(z.string().min(1)).min(1).max(50),
+  direction: z.enum(["sales", "purchases"]),
+});
+
+export const dteFetchXmlResultDetailSchema = z.object({
+  folio: z.string(),
+  documentType: z.number().int(),
+  lineItemsCount: z.number().int(),
+  status: z.enum(["fetched", "not_found", "error", "already_has"]),
+});
+
+export const dteFetchXmlResponseSchema = z.object({
+  fetched: z.number().int(),
+  skipped: z.number().int(),
+  errors: z.array(z.string()),
+  details: z.array(dteFetchXmlResultDetailSchema),
+  status: z.literal("success"),
+});
+
 export const dteAnalyticsContract = {
   purchasesAvailablePeriods: oc
     .route({ method: "GET", path: "/purchases/available-periods" })
@@ -148,6 +198,14 @@ export const dteAnalyticsContract = {
     .route({ method: "GET", path: "/sales/summary" })
     .input(dteAnalyticsPeriodParamsSchema)
     .output(dteAnalyticsSummaryResponseSchema),
+  lineItems: oc
+    .route({ method: "GET", path: "/line-items" })
+    .input(dteLineItemsQuerySchema)
+    .output(dteLineItemsResponseSchema),
+  fetchXml: oc
+    .route({ method: "POST", path: "/fetch-xml" })
+    .input(dteFetchXmlInputSchema)
+    .output(dteFetchXmlResponseSchema),
 };
 
 export type DteAnalyticsContract = typeof dteAnalyticsContract;

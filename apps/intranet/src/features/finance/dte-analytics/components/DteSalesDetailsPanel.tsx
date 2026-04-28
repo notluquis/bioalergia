@@ -16,6 +16,7 @@ import dayjs from "dayjs";
 import { Check } from "lucide-react";
 import { useEffect, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
+import { DteLineItemsDrawer } from "./DteLineItemsDrawer";
 import { dteAnalyticsKeys } from "@/features/finance/dte-analytics/queries";
 import type {
   DTESalesDetail,
@@ -41,7 +42,8 @@ function matchedByLabel(matchedBy: DTESalesLinkedEvent["matchedBy"]) {
 }
 
 function buildSalesColumns(
-  onOpenLinkedEvents: (detail: DTESalesDetail) => void
+  onOpenLinkedEvents: (detail: DTESalesDetail) => void,
+  onOpenLineItems: (detail: DTESalesDetail) => void
 ): ColumnDef<DTESalesDetail>[] {
   return [
     {
@@ -117,6 +119,30 @@ function buildSalesColumns(
       accessorKey: "referenceDocFolio",
       header: "reference_doc_folio",
       cell: ({ row }) => row.original.referenceDocFolio ?? "-",
+    },
+    {
+      id: "lineItems",
+      header: "ítems",
+      minSize: 130,
+      cell: ({ row }) => {
+        const count = row.original.lineItemsCount;
+
+        if (count === 0) {
+          return (
+            <Button size="sm" variant="tertiary" onPress={() => onOpenLineItems(row.original)}>
+              Obtener XML
+            </Button>
+          );
+        }
+
+        return (
+          <Button size="sm" variant="tertiary" onPress={() => onOpenLineItems(row.original)}>
+            <Chip color="accent" size="sm" variant="soft">
+              {count} ítem{count === 1 ? "" : "s"}
+            </Chip>
+          </Button>
+        );
+      },
     },
     {
       id: "linkedEvents",
@@ -303,6 +329,7 @@ export function DteSalesDetailsPanel() {
   const { data: periods } = useSuspenseQuery(dteAnalyticsKeys.salesAvailablePeriods());
   const [selectedPeriod, setSelectedPeriod] = useState<string>("");
   const [selectedDetail, setSelectedDetail] = useState<DTESalesDetail | null>(null);
+  const [lineItemsDetail, setLineItemsDetail] = useState<DTESalesDetail | null>(null);
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: DEFAULT_PAGE_SIZE,
@@ -327,9 +354,10 @@ export function DteSalesDetailsPanel() {
     enabled: Boolean(selectedDetail?.id),
   });
 
-  const salesColumns = buildSalesColumns((detail) => {
-    setSelectedDetail(detail);
-  });
+  const salesColumns = buildSalesColumns(
+    (detail) => setSelectedDetail(detail),
+    (detail) => setLineItemsDetail(detail)
+  );
 
   if (periods.length === 0) {
     return (
@@ -407,6 +435,12 @@ export function DteSalesDetailsPanel() {
         isLoading={linkedEventsQuery.isLoading}
         isOpen={selectedDetail != null}
         onClose={() => setSelectedDetail(null)}
+      />
+
+      <DteLineItemsDrawer
+        detail={lineItemsDetail ? { ...lineItemsDetail, direction: "sale" } : null}
+        isOpen={lineItemsDetail != null}
+        onClose={() => setLineItemsDetail(null)}
       />
     </div>
   );

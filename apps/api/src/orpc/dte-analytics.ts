@@ -8,6 +8,10 @@ import {
   dteAnalyticsSalesLinkedEventsResponseSchema,
   dteAnalyticsSalesDetailsResponseSchema,
   dteAnalyticsSummaryResponseSchema,
+  dteFetchXmlInputSchema,
+  dteFetchXmlResponseSchema,
+  dteLineItemsQuerySchema,
+  dteLineItemsResponseSchema,
 } from "@finanzas/orpc-contracts/dte-analytics";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
@@ -143,6 +147,11 @@ const dteAnalyticsORPCRouterBase = {
           sql<number>`coalesce(p.recoverable_iva, 0)`.as("recoverableIVA"),
           sql<number>`coalesce(p.non_recoverable_iva, 0)`.as("nonRecoverableIVA"),
           sql<number>`coalesce(p.total_amount, 0)`.as("totalAmount"),
+          sql<number>`(
+            SELECT COUNT(*)::int
+            FROM dte_line_items li
+            WHERE li.dte_purchase_detail_id = p.id
+          )`.as("lineItemsCount"),
         ])
         .orderBy(sql`p.document_date`, "desc")
         .orderBy(sql`p.register_number`, "desc")
@@ -159,6 +168,7 @@ const dteAnalyticsORPCRouterBase = {
           exemptAmount: Number(row.exemptAmount),
           folio: row.folio,
           id: row.id,
+          lineItemsCount: Number((row as Record<string, unknown>).lineItemsCount ?? 0),
           netAmount: Number(row.netAmount),
           nonRecoverableIVA: Number(row.nonRecoverableIVA),
           providerName: row.providerName,
@@ -306,6 +316,11 @@ const dteAnalyticsORPCRouterBase = {
             FROM event_dte_sale_links l
             WHERE l.dte_sale_detail_id = s.id
           )`.as("linkedEventsCount"),
+          sql<number>`(
+            SELECT COUNT(*)::int
+            FROM dte_line_items li
+            WHERE li.dte_sale_detail_id = s.id
+          )`.as("lineItemsCount"),
         ])
         .orderBy(sql`s.document_date`, "desc")
         .orderBy(sql`s.register_number`, "desc")
@@ -326,6 +341,7 @@ const dteAnalyticsORPCRouterBase = {
           folio: row.folio,
           id: row.id,
           ivaAmount: Number(row.ivaAmount),
+          lineItemsCount: Number((row as Record<string, unknown>).lineItemsCount ?? 0),
           netAmount: Number(row.netAmount),
           referenceDocFolio: row.referenceDocFolio,
           referenceDocType: row.referenceDocType,
@@ -359,6 +375,7 @@ const dteAnalyticsORPCRouterBase = {
           folio: string;
           id: string;
           ivaAmount: number;
+          lineItemsCount: number;
           linkedEventsCount: number;
           netAmount: number;
           referenceDocFolio: null | string;
@@ -386,7 +403,12 @@ const dteAnalyticsORPCRouterBase = {
             SELECT COUNT(*)::int
             FROM event_dte_sale_links l
             WHERE l.dte_sale_detail_id = s.id
-          ) AS "linkedEventsCount"
+          ) AS "linkedEventsCount",
+          (
+            SELECT COUNT(*)::int
+            FROM dte_line_items li
+            WHERE li.dte_sale_detail_id = s.id
+          ) AS "lineItemsCount"
         FROM dte_sale_details s
         WHERE s.id = ${input.dteSaleDetailId}
         LIMIT 1
@@ -445,6 +467,7 @@ const dteAnalyticsORPCRouterBase = {
             folio: dteRow.folio,
             id: dteRow.id,
             ivaAmount: Number(dteRow.ivaAmount),
+            lineItemsCount: Number(dteRow.lineItemsCount),
             netAmount: Number(dteRow.netAmount),
             referenceDocFolio: dteRow.referenceDocFolio,
             referenceDocType: dteRow.referenceDocType,
@@ -513,6 +536,94 @@ const dteAnalyticsORPCRouterBase = {
         })),
         status: "success" as const,
       };
+    }),
+
+  lineItems: readDteAnalytics
+    .route({ method: "GET", path: "/line-items" })
+    .input(dteLineItemsQuerySchema)
+    .output(dteLineItemsResponseSchema)
+    .handler(async ({ input }: { input: z.output<typeof dteLineItemsQuerySchema> }) => {
+      const fkColumn =
+        input.direction === "sale" ? "dte_sale_detail_id" : "dte_purchase_detail_id";
+
+      const rows = await db.$queryRaw<
+        Array<{
+          id: string;
+          lineNumber: number;
+          itemName: string;
+          itemDescription: null | string;
+          quantity: number;
+          unit: null | string;
+          unitPrice: number;
+          amount: number;
+          isExempt: boolean;
+          itemCode: null | string;
+          itemCodeType: null | string;
+          discountPercent: null | number;
+          discountAmount: null | number;
+        }>
+      >`
+        SELECT
+          li.id AS "id",
+          li.line_number AS "lineNumber",
+          li.item_name AS "itemName",
+          li.item_description AS "itemDescription",
+          li.quantity::float AS "quantity",
+          li.unit AS "unit",
+          li.unit_price::float AS "unitPrice",
+          li.amount::float AS "amount",
+          li.is_exempt AS "isExempt",
+          li.item_code AS "itemCode",
+          li.item_code_type AS "itemCodeType",
+          li.discount_percent::float AS "discountPercent",
+          li.discount_amount::float AS "discountAmount"
+        FROM dte_line_items li
+        WHERE ${sql.raw(`li.${fkColumn}`)} = ${input.dteId}
+        ORDER BY li.line_number ASC
+      `;
+
+      return {
+        data: rows.map((row) => ({
+          id: row.id,
+          lineNumber: Number(row.lineNumber),
+          itemName: row.itemName,
+          itemDescription: row.itemDescription,
+          quantity: Number(row.quantity),
+          unit: row.unit,
+          unitPrice: Number(row.unitPrice),
+          amount: Number(row.amount),
+          isExempt: Boolean(row.isExempt),
+          itemCode: row.itemCode,
+          itemCodeType: row.itemCodeType,
+          discountPercent: row.discountPercent != null ? Number(row.discountPercent) : null,
+          discountAmount: row.discountAmount != null ? Number(row.discountAmount) : null,
+        })),
+        status: "success" as const,
+      };
+    }),
+
+  fetchXml: readDteAnalytics
+    .route({ method: "POST", path: "/fetch-xml" })
+    .input(dteFetchXmlInputSchema)
+    .output(dteFetchXmlResponseSchema)
+    .handler(async ({ input }: { input: z.output<typeof dteFetchXmlInputSchema> }) => {
+      const { haulmerConfig: cfg } = await import("../config");
+      if (!cfg) {
+        throw new ORPCError("INTERNAL_SERVER_ERROR", {
+          message: "Haulmer not configured (missing env vars)",
+        });
+      }
+
+      const { fetchSaleXmlLineItems, fetchPurchaseXmlLineItems } = await import(
+        "../modules/haulmer/xml-service"
+      );
+
+      const result =
+        input.direction === "sales"
+          ? await fetchSaleXmlLineItems(input.dteIds, cfg)
+          : await fetchPurchaseXmlLineItems(input.dteIds, cfg);
+
+      return { ...result, status: "success" as const };
     }),
 };
 

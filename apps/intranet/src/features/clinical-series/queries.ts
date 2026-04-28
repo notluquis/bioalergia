@@ -248,23 +248,39 @@ export function useClinicalSeriesRebuildProgress() {
   }, [job?.status, queryClient]);
 
   useEffect(() => {
-    const eventSource = new EventSource("/api/clinical-series/progress");
+    let es: EventSource | null = null;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    let cancelled = false;
 
-    eventSource.addEventListener("message", (e: MessageEvent) => {
-      try {
-        const msg = JSON.parse(String(e.data)) as { job: null | RebuildJob };
-        setJob(msg.job);
-      } catch {
-        // Ignore parse errors
-      }
-    });
+    function connect() {
+      if (cancelled) return;
+      es = new EventSource("/api/clinical-series/progress");
 
-    eventSource.addEventListener("error", () => {
-      eventSource.close();
-    });
+      es.addEventListener("message", (e: MessageEvent) => {
+        try {
+          const msg = JSON.parse(String(e.data)) as { job: null | RebuildJob };
+          setJob(msg.job);
+        } catch {
+          // Ignore parse errors
+        }
+      });
+
+      es.addEventListener("error", () => {
+        es?.close();
+        es = null;
+        // Reconnect after 3s (handles session expiry + re-login)
+        if (!cancelled) {
+          retryTimer = setTimeout(connect, 3000);
+        }
+      });
+    }
+
+    connect();
 
     return () => {
-      eventSource.close();
+      cancelled = true;
+      if (retryTimer) clearTimeout(retryTimer);
+      es?.close();
     };
   }, []);
 

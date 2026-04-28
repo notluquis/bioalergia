@@ -742,12 +742,14 @@ export function CalendarDteLinksOverview({
     ...calendarDteLinkQueries.autoLinkJob(activeAutoLinkJobId),
     enabled: Boolean(activeAutoLinkJobId),
     refetchInterval: (query) => {
+      if (query.state.status === "error") return 3000;
       const status = query.state.data?.status;
       if (status === "completed" || status === "failed") {
         return false;
       }
       return activeAutoLinkJobId ? 1000 : false;
     },
+    retry: 2,
     staleTime: 0,
   });
 

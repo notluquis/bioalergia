@@ -103,33 +103,48 @@ function useBackupProgress(onRefreshBackups: () => void) {
   >(null);
 
   useEffect(() => {
-    const eventSource = new EventSource("/api/backups/progress");
+    let es: EventSource | null = null;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    let cancelled = false;
+    let retries = 0;
+    const MAX_RETRIES = 5;
 
-    const handleMessage = (event: MessageEvent) => {
-      try {
-        const data = JSON.parse(event.data) as BackupProgressMessage;
-        applyBackupProgressMessage({
-          data,
-          onRefreshBackups,
-          setLastCompletedBackupResult,
-          setLiveJobs,
-        });
-      } catch {
-        // Ignore parse errors
-      }
-    };
+    function connect() {
+      if (cancelled || retries >= MAX_RETRIES) return;
+      es = new EventSource("/api/backups/progress");
 
-    const handleError = () => {
-      eventSource.close();
-    };
+      es.addEventListener("message", (event: MessageEvent) => {
+        retries = 0; // Reset on successful message
+        try {
+          const data = JSON.parse(event.data) as BackupProgressMessage;
+          applyBackupProgressMessage({
+            data,
+            onRefreshBackups,
+            setLastCompletedBackupResult,
+            setLiveJobs,
+          });
+        } catch {
+          // Ignore parse errors
+        }
+      });
 
-    eventSource.addEventListener("message", handleMessage);
-    eventSource.addEventListener("error", handleError);
+      es.addEventListener("error", () => {
+        es?.close();
+        es = null;
+        retries++;
+        if (!cancelled && retries < MAX_RETRIES) {
+          const delay = Math.min(3000 * 2 ** (retries - 1), 30_000);
+          retryTimer = setTimeout(connect, delay);
+        }
+      });
+    }
+
+    connect();
 
     return () => {
-      eventSource.removeEventListener("message", handleMessage);
-      eventSource.removeEventListener("error", handleError);
-      eventSource.close();
+      cancelled = true;
+      if (retryTimer) clearTimeout(retryTimer);
+      es?.close();
     };
   }, [onRefreshBackups]);
 

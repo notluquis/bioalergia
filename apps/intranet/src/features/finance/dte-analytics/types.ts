@@ -45,6 +45,7 @@ export interface DTESalesDetail {
   emitterRUT: null | string;
   referenceDocType: null | string;
   referenceDocFolio: null | string;
+  lineItemsCount: number;
   linkedEventsCount: number;
 }
 
@@ -80,7 +81,31 @@ export interface DTEPurchaseDetail {
   netAmount: number;
   recoverableIVA: number;
   nonRecoverableIVA: number;
+  lineItemsCount: number;
   totalAmount: number;
+}
+
+export interface DTELineItem {
+  id: string;
+  lineNumber: number;
+  itemName: string;
+  itemDescription: null | string;
+  quantity: number;
+  unit: null | string;
+  unitPrice: number;
+  amount: number;
+  isExempt: boolean;
+  itemCode: null | string;
+  itemCodeType: null | string;
+  discountPercent: null | number;
+  discountAmount: null | number;
+}
+
+export interface DTEFetchXmlResultDetail {
+  folio: string;
+  documentType: number;
+  lineItemsCount: number;
+  status: "already_has" | "error" | "fetched" | "not_found";
 }
 
 /**

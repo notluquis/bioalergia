@@ -8773,6 +8773,12 @@ export class SchemaType implements SchemaDef {
                     updatedAt: true,
                     attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[],
                     default: ExpressionUtils.call("now") as FieldDefault
+                },
+                lineItems: {
+                    name: "lineItems",
+                    type: "DTELineItem",
+                    array: true,
+                    relation: { opposite: "dtePurchaseDetail" }
                 }
             },
             attributes: [
@@ -9079,6 +9085,12 @@ export class SchemaType implements SchemaDef {
                     type: "EventDteSaleLink",
                     array: true,
                     relation: { opposite: "dteSaleDetail" }
+                },
+                lineItems: {
+                    name: "lineItems",
+                    type: "DTELineItem",
+                    array: true,
+                    relation: { opposite: "dteSaleDetail" }
                 }
             },
             attributes: [
@@ -9096,6 +9108,142 @@ export class SchemaType implements SchemaDef {
             uniqueFields: {
                 id: { type: "String" },
                 folio_documentType: { folio: { type: "String" }, documentType: { type: "Int" } }
+            }
+        },
+        DTELineItem: {
+            name: "DTELineItem",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("uuid") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("uuid") as FieldDefault
+                },
+                lineNumber: {
+                    name: "lineNumber",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("line_number") }] }] as readonly AttributeApplication[]
+                },
+                itemName: {
+                    name: "itemName",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("item_name") }] }] as readonly AttributeApplication[]
+                },
+                itemDescription: {
+                    name: "itemDescription",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("item_description") }] }] as readonly AttributeApplication[]
+                },
+                quantity: {
+                    name: "quantity",
+                    type: "Decimal",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(1) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("quantity") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(6) }] }] as readonly AttributeApplication[],
+                    default: 1 as FieldDefault
+                },
+                unit: {
+                    name: "unit",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("unit") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(10) }] }] as readonly AttributeApplication[]
+                },
+                unitPrice: {
+                    name: "unitPrice",
+                    type: "Decimal",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("unit_price") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(6) }] }] as readonly AttributeApplication[],
+                    default: 0 as FieldDefault
+                },
+                amount: {
+                    name: "amount",
+                    type: "Decimal",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }] as readonly AttributeApplication[],
+                    default: 0 as FieldDefault
+                },
+                isExempt: {
+                    name: "isExempt",
+                    type: "Boolean",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("is_exempt") }] }] as readonly AttributeApplication[],
+                    default: false as FieldDefault
+                },
+                itemCode: {
+                    name: "itemCode",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("item_code") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] }] as readonly AttributeApplication[]
+                },
+                itemCodeType: {
+                    name: "itemCodeType",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("item_code_type") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] }] as readonly AttributeApplication[]
+                },
+                discountPercent: {
+                    name: "discountPercent",
+                    type: "Decimal",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("discount_percent") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(5) }, { name: "s", value: ExpressionUtils.literal(2) }] }] as readonly AttributeApplication[]
+                },
+                discountAmount: {
+                    name: "discountAmount",
+                    type: "Decimal",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("discount_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }] as readonly AttributeApplication[]
+                },
+                dteSaleDetailId: {
+                    name: "dteSaleDetailId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("dte_sale_detail_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "dteSaleDetail"
+                    ] as readonly string[]
+                },
+                dtePurchaseDetailId: {
+                    name: "dtePurchaseDetailId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("dte_purchase_detail_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "dtePurchaseDetail"
+                    ] as readonly string[]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                dteSaleDetail: {
+                    name: "dteSaleDetail",
+                    type: "DTESaleDetail",
+                    optional: true,
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("dteSaleDetailId")]) }, { name: "references", value: ExpressionUtils.array("String", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "lineItems", fields: ["dteSaleDetailId"], references: ["id"], onDelete: "Cascade" }
+                },
+                dtePurchaseDetail: {
+                    name: "dtePurchaseDetail",
+                    type: "DTEPurchaseDetail",
+                    optional: true,
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("dtePurchaseDetailId")]) }, { name: "references", value: ExpressionUtils.array("String", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "lineItems", fields: ["dtePurchaseDetailId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@unique", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("dteSaleDetailId"), ExpressionUtils.field("lineNumber")]) }] },
+                { name: "@@unique", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("dtePurchaseDetailId"), ExpressionUtils.field("lineNumber")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("dteSaleDetailId")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("dtePurchaseDetailId")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("dte_line_items") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" },
+                dteSaleDetailId_lineNumber: { dteSaleDetailId: { type: "String" }, lineNumber: { type: "Int" } },
+                dtePurchaseDetailId_lineNumber: { dtePurchaseDetailId: { type: "String" }, lineNumber: { type: "Int" } }
             }
         },
         EventDteSaleLink: {

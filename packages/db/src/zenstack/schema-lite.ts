@@ -7127,6 +7127,12 @@ export class SchemaType implements SchemaDef {
                     type: "DateTime",
                     updatedAt: true,
                     default: ExpressionUtils.call("now") as FieldDefault
+                },
+                lineItems: {
+                    name: "lineItems",
+                    type: "DTELineItem",
+                    array: true,
+                    relation: { opposite: "dtePurchaseDetail" }
                 }
             },
             idFields: ["id"],
@@ -7378,12 +7384,126 @@ export class SchemaType implements SchemaDef {
                     type: "EventDteSaleLink",
                     array: true,
                     relation: { opposite: "dteSaleDetail" }
+                },
+                lineItems: {
+                    name: "lineItems",
+                    type: "DTELineItem",
+                    array: true,
+                    relation: { opposite: "dteSaleDetail" }
                 }
             },
             idFields: ["id"],
             uniqueFields: {
                 id: { type: "String" },
                 folio_documentType: { folio: { type: "String" }, documentType: { type: "Int" } }
+            }
+        },
+        DTELineItem: {
+            name: "DTELineItem",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    default: ExpressionUtils.call("uuid") as FieldDefault
+                },
+                lineNumber: {
+                    name: "lineNumber",
+                    type: "Int"
+                },
+                itemName: {
+                    name: "itemName",
+                    type: "String"
+                },
+                itemDescription: {
+                    name: "itemDescription",
+                    type: "String",
+                    optional: true
+                },
+                quantity: {
+                    name: "quantity",
+                    type: "Decimal",
+                    default: 1 as FieldDefault
+                },
+                unit: {
+                    name: "unit",
+                    type: "String",
+                    optional: true
+                },
+                unitPrice: {
+                    name: "unitPrice",
+                    type: "Decimal",
+                    default: 0 as FieldDefault
+                },
+                amount: {
+                    name: "amount",
+                    type: "Decimal",
+                    default: 0 as FieldDefault
+                },
+                isExempt: {
+                    name: "isExempt",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                itemCode: {
+                    name: "itemCode",
+                    type: "String",
+                    optional: true
+                },
+                itemCodeType: {
+                    name: "itemCodeType",
+                    type: "String",
+                    optional: true
+                },
+                discountPercent: {
+                    name: "discountPercent",
+                    type: "Decimal",
+                    optional: true
+                },
+                discountAmount: {
+                    name: "discountAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                dteSaleDetailId: {
+                    name: "dteSaleDetailId",
+                    type: "String",
+                    optional: true,
+                    foreignKeyFor: [
+                        "dteSaleDetail"
+                    ] as readonly string[]
+                },
+                dtePurchaseDetailId: {
+                    name: "dtePurchaseDetailId",
+                    type: "String",
+                    optional: true,
+                    foreignKeyFor: [
+                        "dtePurchaseDetail"
+                    ] as readonly string[]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                dteSaleDetail: {
+                    name: "dteSaleDetail",
+                    type: "DTESaleDetail",
+                    optional: true,
+                    relation: { opposite: "lineItems", fields: ["dteSaleDetailId"], references: ["id"], onDelete: "Cascade" }
+                },
+                dtePurchaseDetail: {
+                    name: "dtePurchaseDetail",
+                    type: "DTEPurchaseDetail",
+                    optional: true,
+                    relation: { opposite: "lineItems", fields: ["dtePurchaseDetailId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" },
+                dteSaleDetailId_lineNumber: { dteSaleDetailId: { type: "String" }, lineNumber: { type: "Int" } },
+                dtePurchaseDetailId_lineNumber: { dtePurchaseDetailId: { type: "String" }, lineNumber: { type: "Int" } }
             }
         },
         EventDteSaleLink: {

@@ -11,6 +11,7 @@ import { logError } from "./lib/logger";
 import { configureSuperjson } from "./lib/superjson-config";
 import { authOpenAPIHandler, authORPCHandler } from "./orpc/auth";
 import { backupsOpenAPIHandler, backupsORPCHandler } from "./orpc/backups";
+import { getCurrentJobs as getCurrentBackupJobs } from "./services/backups";
 import { balancesOpenAPIHandler, balancesORPCHandler } from "./orpc/balances";
 import { calendarOpenAPIHandler, calendarORPCHandler } from "./orpc/calendar";
 import { certificatesOpenAPIHandler, certificatesORPCHandler } from "./orpc/certificates";
@@ -690,6 +691,66 @@ app.use("/api/orpc/system/rpc/*", async (c, next) => {
   }
 
   return next();
+});
+
+// ─── Backups SSE progress stream ─────────────────────────────────────────────
+app.get("/api/backups/progress", async (c) => {
+  const user = await getSessionUser(c);
+  if (!user) return c.text("Unauthorized", 401);
+  const canRead = await hasPermission(user, "read", "Backup");
+  if (!canRead) return c.text("Forbidden", 403);
+
+  const encoder = new TextEncoder();
+  const encode = (data: unknown) => encoder.encode(`data: ${JSON.stringify(data)}\n\n`);
+
+  const stream = new ReadableStream({
+    start(controller) {
+      const currentJobs = getCurrentBackupJobs();
+      const backupJob = currentJobs.find((j) => j.type === "full" || j.type === "scheduled") ?? null;
+
+      // Send initial snapshot
+      controller.enqueue(
+        encode({
+          type: "init",
+          job: backupJob,
+          jobs: { backup: backupJob, restore: null },
+        }),
+      );
+
+      const interval = setInterval(() => {
+        try {
+          const jobs = getCurrentBackupJobs();
+          const backup = jobs.find((j) => j.type === "full" || j.type === "scheduled") ?? null;
+          controller.enqueue(
+            encode({
+              type: backup ? "backup" : "init",
+              job: backup,
+              jobs: { backup, restore: null },
+            }),
+          );
+        } catch {
+          clearInterval(interval);
+        }
+      }, 1000);
+
+      c.req.raw.signal.addEventListener("abort", () => {
+        clearInterval(interval);
+        try {
+          controller.close();
+        } catch {
+          // Already closed
+        }
+      });
+    },
+  });
+
+  return c.newResponse(stream, {
+    headers: {
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+      "Content-Type": "text/event-stream",
+    },
+  });
 });
 
 app.use("/api/orpc/backups/rpc/*", async (c, next) => {

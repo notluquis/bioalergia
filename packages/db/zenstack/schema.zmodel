@@ -2605,6 +2605,7 @@ model DTEPurchaseDetail {
 
   createdAt             DateTime  @default(now()) @map("created_at")
   updatedAt             DateTime  @default(now()) @updatedAt @map("updated_at")
+  lineItems             DTELineItem[]
 
   @@deny('all', auth() == null)
   @@allow('read', auth().status == 'ACTIVE')
@@ -2685,6 +2686,7 @@ model DTESaleDetail {
   updatedAt                      DateTime  @default(now()) @updatedAt @map("updated_at")
   autoLinkAttempts               EventDteAutoLinkAttempt[]
   eventLinks                     EventDteSaleLink[]
+  lineItems                      DTELineItem[]
 
   @@deny('all', auth() == null)
   @@allow('read', auth().status == 'ACTIVE')
@@ -2696,6 +2698,41 @@ model DTESaleDetail {
   @@index([documentType])
   @@index([documentDate, totalAmount])
   @@map("dte_sale_details")
+}
+
+model DTELineItem {
+  id                String             @id @default(uuid())
+  lineNumber        Int                @map("line_number")        // NroLinDet
+  itemName          String             @map("item_name")          // NmbItem
+  itemDescription   String?            @map("item_description")   // DscItem
+  quantity          Decimal            @default(1) @map("quantity") @db.Decimal(15, 6) // QtyItem
+  unit              String?            @map("unit") @db.VarChar(10) // UnmdItem
+  unitPrice         Decimal            @default(0) @map("unit_price") @db.Decimal(15, 6) // PrcItem
+  amount            Decimal            @default(0) @map("amount") @db.Decimal(15, 2) // MontoItem
+  isExempt          Boolean            @default(false) @map("is_exempt") // IndExe = 1
+  itemCode          String?            @map("item_code") @db.VarChar(50)  // CdgItem/VlrCodigo
+  itemCodeType      String?            @map("item_code_type") @db.VarChar(20) // CdgItem/TpoCodigo
+  discountPercent   Decimal?           @map("discount_percent") @db.Decimal(5, 2) // DescuentoPct
+  discountAmount    Decimal?           @map("discount_amount") @db.Decimal(15, 2) // DescuentoMonto
+
+  // Polymorphic FK: one of these is set
+  dteSaleDetailId   String?            @map("dte_sale_detail_id")
+  dtePurchaseDetailId String?          @map("dte_purchase_detail_id")
+
+  createdAt         DateTime           @default(now()) @map("created_at")
+
+  dteSaleDetail     DTESaleDetail?     @relation(fields: [dteSaleDetailId], references: [id], onDelete: Cascade)
+  dtePurchaseDetail DTEPurchaseDetail? @relation(fields: [dtePurchaseDetailId], references: [id], onDelete: Cascade)
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@unique([dteSaleDetailId, lineNumber])
+  @@unique([dtePurchaseDetailId, lineNumber])
+  @@index([dteSaleDetailId])
+  @@index([dtePurchaseDetailId])
+  @@map("dte_line_items")
 }
 
 model EventDteSaleLink {

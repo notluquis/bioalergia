@@ -1,6 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 
 import {
+  fetchDteLineItems,
   fetchPurchasesAvailablePeriods,
   fetchPurchasesDetails,
   fetchPurchasesSummary,
@@ -48,5 +49,11 @@ export const dteAnalyticsKeys = {
     queryOptions({
       queryFn: () => fetchPurchasesDetails(params),
       queryKey: ["dte-analytics", "purchases", "details", params],
+    }),
+  lineItems: (dteId: string, direction: "purchase" | "sale") =>
+    queryOptions({
+      queryFn: () => fetchDteLineItems(dteId, direction),
+      queryKey: ["dte-analytics", "line-items", dteId, direction],
+      enabled: !!dteId,
     }),
 };
