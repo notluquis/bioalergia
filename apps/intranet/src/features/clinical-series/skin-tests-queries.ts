@@ -319,9 +319,22 @@ export function useClinicalSkinTestJobStatus(jobId: string | null) {
     enabled: !!jobId,
     queryFn: async () => await clinicalSkinTestsORPCClient.jobStatus({ jobId: jobId! }),
     queryKey: [...skinTestImportKeys.all, "job-status", jobId],
-    retry: 2,
+    retry: (failureCount, error) => {
+      // Stop retrying on 404 (job expired/not found)
+      if (error && typeof error === "object" && "status" in error && error.status === 404) {
+        return false;
+      }
+      return failureCount < 2;
+    },
     refetchInterval: (query) => {
-      if (query.state.status === "error") return 3000;
+      // Stop polling entirely on 404 errors (job expired)
+      if (query.state.status === "error") {
+        const err = query.state.error;
+        if (err && typeof err === "object" && "status" in err && err.status === 404) {
+          return false;
+        }
+        return 3000;
+      }
       const status = query.state.data?.job?.status;
       if (!status) return 2000;
       return ["completed", "failed", "cancelled"].includes(status) ? false : 2000;

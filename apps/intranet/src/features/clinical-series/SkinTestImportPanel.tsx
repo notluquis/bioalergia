@@ -305,6 +305,16 @@ export function SkinTestImportPanel() {
     }
   }, [activeJobId, activeJobQuery.data?.job?.id]);
 
+  // Clear activeJobId when job expired/not found (404)
+  useEffect(() => {
+    if (!activeJobId || !jobStatusQuery.isError) return;
+    const err = jobStatusQuery.error;
+    const is404 = err && typeof err === "object" && "status" in err && err.status === 404;
+    if (is404) {
+      setActiveJobId(null);
+    }
+  }, [activeJobId, jobStatusQuery.isError, jobStatusQuery.error]);
+
   useEffect(() => {
     if (!activeJobId || !currentJob) return;
     if (!["completed", "failed", "cancelled"].includes(currentJob.status)) return;
@@ -313,7 +323,17 @@ export function SkinTestImportPanel() {
     handledTerminalJobRef.current = activeJobId;
     void imports.refetch();
     void oneDrive.refetch();
-  }, [activeJobId, currentJob, imports, oneDrive]);
+
+    // Notify user when job finishes
+    const meta = getSyncJobMeta(currentJob.meta);
+    if (currentJob.status === "completed") {
+      toast.success(`Sincronización completada — ${meta.filesProcessed ?? 0} archivos procesados`);
+    } else if (currentJob.status === "failed") {
+      toast.error(currentJob.message ?? "La sincronización falló");
+    } else if (currentJob.status === "cancelled") {
+      toast.info("Sincronización cancelada");
+    }
+  }, [activeJobId, currentJob, imports, oneDrive, toast]);
 
   useEffect(() => {
     setSelectedImportIds({});
