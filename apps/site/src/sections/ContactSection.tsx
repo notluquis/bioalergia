@@ -2,6 +2,7 @@ import { Button, Card, Link } from "@heroui/react";
 import { usePostHog } from "posthog-js/react";
 import { contactInfo, ctaCopy } from "@/data/clinic";
 import { doctoraliaLink } from "@/lib/doctoralia";
+import { trackConversion } from "@/lib/gtag";
 import { Section } from "@/sections/Section";
 
 export function ContactSection() {
@@ -10,10 +11,12 @@ export function ContactSection() {
 
   const handleEmailClick = (email: string) => {
     posthog?.capture("email_click", { email, location: "contact_section" });
+    trackConversion("email_click", 5000);
   };
 
   const handleDoctoraliaClick = () => {
     posthog?.capture("doctoralia_booking_attempt", { location: "contact_section" });
+    trackConversion("doctoralia_booking", 50000);
     window.open(doctoraliaLink, "_blank", "noopener,noreferrer");
   };
 
@@ -23,6 +26,7 @@ export function ContactSection() {
       phone,
       source: "contact_button",
     });
+    trackConversion("whatsapp_click", 10000);
     window.open(whatsappLink(phone), "_blank", "noopener,noreferrer");
   };
 
