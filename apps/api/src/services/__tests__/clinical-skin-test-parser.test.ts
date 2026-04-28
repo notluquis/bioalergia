@@ -488,4 +488,57 @@ describe("clinical skin test parser", () => {
       expect.arrayContaining([expect.objectContaining({ code: "missing_date" })])
     );
   });
+
+  it("parses generic TEST CUTANEO titles and hyphenated written dates", async () => {
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("Test");
+    sheet.getCell("B4").value = "TEST CUTÁNEO";
+    sheet.getCell("B7").value = "NOMBRE: CATALINA LILLO";
+    sheet.getCell("G7").value = "EDAD: 19 AÑOS";
+    sheet.getCell("B8").value = "RUT: 19.906.043-0";
+    sheet.getCell("G8").value = "FECHA: 08-AGOSTO-2017";
+    sheet.getCell("C11").value = "ACAROS";
+    sheet.getCell("D11").value = "P";
+    sheet.getCell("E11").value = "E";
+    sheet.getCell("B12").value = "D1";
+    sheet.getCell("C12").value = "DERMATOPHAGOIDES P y F";
+    sheet.getCell("D12").value = 10;
+    sheet.getCell("E12").value = 40;
+    sheet.getCell("C13").value = "CONTROL POSITIVO";
+    sheet.getCell("D13").value = 10;
+    sheet.getCell("E13").value = 40;
+    sheet.getCell("H13").value = "HONGOS";
+    sheet.getCell("I13").value = "P";
+    sheet.getCell("J13").value = "E";
+    sheet.getCell("G14").value = "H5";
+    sheet.getCell("H14").value = "MEZCLA HONGOS";
+    sheet.getCell("J14").value = "<3";
+
+    const parsed = await parseSkinTestWorkbookBuffer(await workbook.xlsx.writeBuffer());
+
+    expect(parsed.header).toEqual(
+      expect.objectContaining({
+        ageLabel: "19 AÑOS",
+        patientName: "CATALINA LILLO",
+        patientRut: "19.906.043-0",
+        testDate: "2017-08-08",
+      })
+    );
+    expect(parsed.issues).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "missing_date" }),
+        expect.objectContaining({ code: "missing_title" }),
+      ])
+    );
+    expect(parsed.results).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          allergenName: "MEZCLA HONGOS",
+          code: "H5",
+          erythemaMm: 3,
+          section: "HONGOS",
+        }),
+      ])
+    );
+  });
 });

@@ -94,7 +94,7 @@ export function parseSkinTestWorksheet(worksheet: ExcelJS.Worksheet): ParsedSkin
   const issues: SkinTestIssue[] = [];
   const title = findCell(
     cells,
-    /(?:(?:multi|prick)\s*test\s+cut[aá]neo|prick\s*test\s+aines|^prick\s*test$)/i
+    /(?:(?:multi|prick)?\s*test\s+cut[aá]neo|prick\s*test\s+aines|^prick\s*test$)/i
   );
   const panelTitle = findPanelTitle(cells, title);
   const header = extractHeader(cells);
@@ -367,7 +367,7 @@ export function parseDateToISO(value: null | string): null | string {
     const year = normalizeYear(Number(numeric[3]));
     return formatISODate(year, month, day);
   }
-  const written = text.match(/\b(\d{1,2})\s+([a-z]+)\s+(\d{2,4})\b/);
+  const written = text.match(/\b(\d{1,2})[\s-]+([a-z]+)[\s-]+(\d{2,4})\b/);
   if (written) {
     const day = Number(written[1]);
     const month = MONTHS[written[2] ?? ""];
@@ -592,7 +592,10 @@ function isAllergenNameCell(
 ) {
   if (/^panel\s+\d+\s*$/i.test(normalizeText(cell.text))) return false;
   const previous = [...cells].reverse().find((candidate) => candidate.col < cell.col);
-  return previous ? Boolean(normalizeCode(previous.text)) : false;
+  return previous
+    ? Boolean(normalizeCode(previous.text)) &&
+        (!isResultValue(previous.text) || cell.col - previous.col <= 1)
+    : false;
 }
 
 function collectMetricCells(
