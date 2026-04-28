@@ -323,7 +323,7 @@ function PeriodCard({
           </Button>
           <Button
             size="sm"
-            variant="secondary"
+            variant="outline"
             isDisabled={fetchXmlMutation.isPending}
             onPress={() => fetchXmlMutation.mutate({ period: yearMonth, direction: "sales" })}
           >
@@ -379,7 +379,7 @@ function PeriodCard({
           </Button>
           <Button
             size="sm"
-            variant="secondary"
+            variant="outline"
             isDisabled={fetchXmlMutation.isPending}
             onPress={() => fetchXmlMutation.mutate({ period: yearMonth, direction: "purchases" })}
           >
