@@ -1,14 +1,4 @@
-import {
-  Button,
-  Card,
-  Chip,
-  Form,
-  Input,
-  Select,
-  SelectOption,
-  Spinner,
-  Textarea,
-} from "@heroui/react";
+import { Button, Card, Chip, Spinner } from "@heroui/react";
 import { Link, useParams } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { useState } from "react";
@@ -17,6 +7,7 @@ import type {
   OutreachPriority,
   OutreachStatus,
 } from "@finanzas/orpc-contracts/outreach";
+import { Field, NativeSelect, TextAreaInput, TextInput } from "../components/FormField";
 import {
   useCreateInteraction,
   useDeleteContact,
@@ -25,7 +16,7 @@ import {
   useUpdateEstablishment,
   useUpsertContact,
 } from "../hooks/useOutreach";
-import { ESTADO_COLOR, ESTADO_LABELS, INTERACCION_LABELS, PRIORIDAD_LABELS } from "../labels";
+import { ESTADO_COLOR, ESTADO_LABELS, INTERACCION_LABELS } from "../labels";
 
 const ALL_ESTADOS: OutreachStatus[] = [
   "SIN_CONTACTAR",
@@ -62,8 +53,8 @@ export function OutreachEstablishmentDetailPage() {
   const createInter = useCreateInteraction();
   const deleteInter = useDeleteInteraction();
 
-  const [notas, setNotas] = useState("");
-  const [website, setWebsite] = useState("");
+  const [notas, setNotas] = useState<string | null>(null);
+  const [website, setWebsite] = useState<string | null>(null);
   const [showContactForm, setShowContactForm] = useState(false);
   const [contactDraft, setContactDraft] = useState({
     nombre: "",
@@ -77,7 +68,7 @@ export function OutreachEstablishmentDetailPage() {
     tipo: "LLAMADA_REALIZADA" as OutreachInteractionType,
     fecha: dayjs().format("YYYY-MM-DDTHH:mm"),
     contenido: "",
-    contactoId: "" as string,
+    contactoId: "",
     resultado: "",
   });
 
@@ -90,6 +81,8 @@ export function OutreachEstablishmentDetailPage() {
   }
 
   const e = data.establishment;
+  const notasValue = notas ?? e.notas ?? "";
+  const websiteValue = website ?? e.websiteUrl ?? "";
 
   return (
     <div className="space-y-4 p-6">
@@ -106,7 +99,7 @@ export function OutreachEstablishmentDetailPage() {
             RBD {e.rbd} · {e.comuna}
           </p>
         </div>
-        <Chip color={ESTADO_COLOR[e.estado]} variant="flat">
+        <Chip color={ESTADO_COLOR[e.estado]} variant="soft">
           {ESTADO_LABELS[e.estado]}
         </Chip>
       </div>
@@ -114,99 +107,97 @@ export function OutreachEstablishmentDetailPage() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card>
           <Card.Header>
-            <h2 className="font-semibold">Datos MINEDUC</h2>
+            <Card.Title>Datos MINEDUC</Card.Title>
           </Card.Header>
-          <Card.Body className="space-y-2 text-sm">
-            <Field label="Director" value={e.directorMineduc} />
-            <Field label="Email" value={e.emailMineduc} />
-            <Field label="Teléfono" value={e.telefonoMineduc} />
-            <Field label="Dirección" value={e.direccion} />
-            <Field label="Matrícula" value={e.matriculaTotal?.toString() ?? null} />
-            <Field label="Dependencia" value={e.dependencia} />
-            <Field label="Activo" value={e.activo ? "Sí" : "No"} />
-          </Card.Body>
+          <Card.Content className="space-y-2 p-4 text-sm">
+            <Row label="Director" value={e.directorMineduc} />
+            <Row label="Email" value={e.emailMineduc} />
+            <Row label="Teléfono" value={e.telefonoMineduc} />
+            <Row label="Dirección" value={e.direccion} />
+            <Row label="Matrícula" value={e.matriculaTotal?.toString() ?? null} />
+            <Row label="Dependencia" value={e.dependencia} />
+            <Row label="Activo" value={e.activo ? "Sí" : "No"} />
+          </Card.Content>
         </Card>
 
         <Card className="lg:col-span-2">
           <Card.Header>
-            <h2 className="font-semibold">Estado del outreach</h2>
+            <Card.Title>Estado del outreach</Card.Title>
           </Card.Header>
-          <Card.Body className="space-y-3">
+          <Card.Content className="space-y-3 p-4">
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              <Select
-                label="Estado"
-                selectedKey={e.estado}
-                onSelectionChange={(k) =>
-                  k && updateE.mutate({ rbd: e.rbd, estado: k as OutreachStatus })
-                }
-                size="sm"
-              >
-                {ALL_ESTADOS.map((s) => (
-                  <SelectOption key={s} id={s}>
-                    {ESTADO_LABELS[s]}
-                  </SelectOption>
-                ))}
-              </Select>
-              <Select
-                label="Prioridad"
-                selectedKey={e.prioridad}
-                onSelectionChange={(k) =>
-                  k && updateE.mutate({ rbd: e.rbd, prioridad: k as OutreachPriority })
-                }
-                size="sm"
-              >
-                {ALL_PRIORIDADES.map((p) => (
-                  <SelectOption key={p} id={p}>
-                    {PRIORIDAD_LABELS[p]}
-                  </SelectOption>
-                ))}
-              </Select>
-              <Input
-                label="Website"
-                value={website || e.websiteUrl || ""}
-                onValueChange={setWebsite}
-                onBlur={() =>
-                  updateE.mutate({ rbd: e.rbd, websiteUrl: website || e.websiteUrl || null })
-                }
-                size="sm"
-              />
-              <Input
-                label="Etiquetas (separadas por coma)"
-                value={e.etiquetas.join(", ")}
-                onBlur={(ev) =>
-                  updateE.mutate({
-                    rbd: e.rbd,
-                    etiquetas: ev.currentTarget.value
-                      .split(",")
-                      .map((t) => t.trim())
-                      .filter(Boolean),
-                  })
-                }
-                size="sm"
-              />
+              <Field label="Estado">
+                <NativeSelect
+                  value={e.estado}
+                  onChange={(ev) =>
+                    updateE.mutate({ rbd: e.rbd, estado: ev.target.value as OutreachStatus })
+                  }
+                >
+                  {ALL_ESTADOS.map((s) => (
+                    <option key={s} value={s}>
+                      {ESTADO_LABELS[s]}
+                    </option>
+                  ))}
+                </NativeSelect>
+              </Field>
+              <Field label="Prioridad">
+                <NativeSelect
+                  value={e.prioridad}
+                  onChange={(ev) =>
+                    updateE.mutate({ rbd: e.rbd, prioridad: ev.target.value as OutreachPriority })
+                  }
+                >
+                  {ALL_PRIORIDADES.map((p) => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))}
+                </NativeSelect>
+              </Field>
+              <Field label="Website">
+                <TextInput
+                  value={websiteValue}
+                  onChange={(ev) => setWebsite(ev.target.value)}
+                  onBlur={() => updateE.mutate({ rbd: e.rbd, websiteUrl: websiteValue || null })}
+                />
+              </Field>
+              <Field label="Etiquetas (separadas por coma)">
+                <TextInput
+                  defaultValue={e.etiquetas.join(", ")}
+                  onBlur={(ev) =>
+                    updateE.mutate({
+                      rbd: e.rbd,
+                      etiquetas: ev.currentTarget.value
+                        .split(",")
+                        .map((t) => t.trim())
+                        .filter(Boolean),
+                    })
+                  }
+                />
+              </Field>
             </div>
-            <Textarea
-              label="Notas internas"
-              value={notas || e.notas || ""}
-              onValueChange={setNotas}
-              onBlur={() => updateE.mutate({ rbd: e.rbd, notas: notas || e.notas || null })}
-              minRows={3}
-            />
-          </Card.Body>
+            <Field label="Notas internas">
+              <TextAreaInput
+                rows={3}
+                value={notasValue}
+                onChange={(ev) => setNotas(ev.target.value)}
+                onBlur={() => updateE.mutate({ rbd: e.rbd, notas: notasValue || null })}
+              />
+            </Field>
+          </Card.Content>
         </Card>
       </div>
 
       <Card>
         <Card.Header className="flex items-center justify-between">
-          <h2 className="font-semibold">Contactos ({data.contactos.length})</h2>
-          <Button size="sm" variant="flat" onPress={() => setShowContactForm((v) => !v)}>
+          <Card.Title>Contactos ({data.contactos.length})</Card.Title>
+          <Button size="sm" variant="secondary" onPress={() => setShowContactForm((v) => !v)}>
             {showContactForm ? "Cancelar" : "Agregar contacto"}
           </Button>
         </Card.Header>
-        <Card.Body className="space-y-3">
+        <Card.Content className="space-y-3 p-4">
           {showContactForm && (
-            <Form
-              validationBehavior="aria"
+            <form
               onSubmit={async (ev) => {
                 ev.preventDefault();
                 if (!contactDraft.nombre || !contactDraft.cargo) return;
@@ -229,49 +220,49 @@ export function OutreachEstablishmentDetailPage() {
               }}
               className="grid grid-cols-1 gap-2 rounded-medium bg-default-100 p-3 md:grid-cols-2"
             >
-              <Input
-                label="Nombre"
-                isRequired
-                value={contactDraft.nombre}
-                onValueChange={(v) => setContactDraft((d) => ({ ...d, nombre: v }))}
-                size="sm"
-              />
-              <Input
-                label="Cargo"
-                isRequired
-                value={contactDraft.cargo}
-                onValueChange={(v) => setContactDraft((d) => ({ ...d, cargo: v }))}
-                size="sm"
-              />
-              <Input
-                label="Email"
-                type="email"
-                value={contactDraft.email}
-                onValueChange={(v) => setContactDraft((d) => ({ ...d, email: v }))}
-                size="sm"
-              />
-              <Input
-                label="Teléfono"
-                value={contactDraft.telefono}
-                onValueChange={(v) => setContactDraft((d) => ({ ...d, telefono: v }))}
-                size="sm"
-              />
+              <Field label="Nombre">
+                <TextInput
+                  required
+                  value={contactDraft.nombre}
+                  onChange={(ev) => setContactDraft((d) => ({ ...d, nombre: ev.target.value }))}
+                />
+              </Field>
+              <Field label="Cargo">
+                <TextInput
+                  required
+                  value={contactDraft.cargo}
+                  onChange={(ev) => setContactDraft((d) => ({ ...d, cargo: ev.target.value }))}
+                />
+              </Field>
+              <Field label="Email">
+                <TextInput
+                  type="email"
+                  value={contactDraft.email}
+                  onChange={(ev) => setContactDraft((d) => ({ ...d, email: ev.target.value }))}
+                />
+              </Field>
+              <Field label="Teléfono">
+                <TextInput
+                  value={contactDraft.telefono}
+                  onChange={(ev) => setContactDraft((d) => ({ ...d, telefono: ev.target.value }))}
+                />
+              </Field>
               <label className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
                   checked={contactDraft.esPrincipal}
-                  onChange={(ev2) =>
-                    setContactDraft((d) => ({ ...d, esPrincipal: ev2.target.checked }))
+                  onChange={(ev) =>
+                    setContactDraft((d) => ({ ...d, esPrincipal: ev.target.checked }))
                   }
                 />
                 Contacto principal
               </label>
               <div className="md:col-span-2">
-                <Button type="submit" color="primary" size="sm">
+                <Button type="submit" variant="primary" size="sm">
                   Guardar contacto
                 </Button>
               </div>
-            </Form>
+            </form>
           )}
           {data.contactos.length === 0 ? (
             <p className="text-default-500 text-sm">Sin contactos registrados.</p>
@@ -286,7 +277,7 @@ export function OutreachEstablishmentDetailPage() {
                     <p className="font-medium text-sm">
                       {c.nombre}
                       {c.esPrincipal && (
-                        <Chip size="sm" color="primary" variant="flat" className="ml-2">
+                        <Chip size="sm" color="accent" variant="soft" className="ml-2">
                           Principal
                         </Chip>
                       )}
@@ -295,34 +286,26 @@ export function OutreachEstablishmentDetailPage() {
                       {c.cargo} · {c.email ?? "sin email"} · {c.telefono ?? "sin tel"}
                     </p>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="light"
-                    color="danger"
-                    onPress={() => deleteContact.mutate(c.id)}
-                  >
+                  <Button size="sm" variant="ghost" onPress={() => deleteContact.mutate(c.id)}>
                     Eliminar
                   </Button>
                 </li>
               ))}
             </ul>
           )}
-        </Card.Body>
+        </Card.Content>
       </Card>
 
       <Card>
         <Card.Header className="flex items-center justify-between">
-          <h2 className="font-semibold">
-            Historial de interacciones ({data.interacciones.length})
-          </h2>
-          <Button size="sm" variant="flat" onPress={() => setShowInterForm((v) => !v)}>
+          <Card.Title>Historial de interacciones ({data.interacciones.length})</Card.Title>
+          <Button size="sm" variant="secondary" onPress={() => setShowInterForm((v) => !v)}>
             {showInterForm ? "Cancelar" : "Registrar interacción"}
           </Button>
         </Card.Header>
-        <Card.Body className="space-y-3">
+        <Card.Content className="space-y-3 p-4">
           {showInterForm && (
-            <Form
-              validationBehavior="aria"
+            <form
               onSubmit={async (ev) => {
                 ev.preventDefault();
                 if (!interDraft.contenido) return;
@@ -347,63 +330,66 @@ export function OutreachEstablishmentDetailPage() {
               }}
               className="grid grid-cols-1 gap-2 rounded-medium bg-default-100 p-3 md:grid-cols-2"
             >
-              <Select
-                label="Tipo"
-                selectedKey={interDraft.tipo}
-                onSelectionChange={(k) =>
-                  k && setInterDraft((d) => ({ ...d, tipo: k as OutreachInteractionType }))
-                }
-                size="sm"
-              >
-                {ALL_INTERACCIONES.map((t) => (
-                  <SelectOption key={t} id={t}>
-                    {INTERACCION_LABELS[t]}
-                  </SelectOption>
-                ))}
-              </Select>
-              <Input
-                type="datetime-local"
-                label="Fecha y hora"
-                value={interDraft.fecha}
-                onValueChange={(v) => setInterDraft((d) => ({ ...d, fecha: v }))}
-                size="sm"
-              />
-              <Select
-                label="Contacto"
-                selectedKey={interDraft.contactoId || undefined}
-                onSelectionChange={(k) =>
-                  setInterDraft((d) => ({ ...d, contactoId: (k as string) ?? "" }))
-                }
-                size="sm"
-              >
-                <SelectOption id="">Sin contacto</SelectOption>
-                {data.contactos.map((c) => (
-                  <SelectOption key={c.id} id={String(c.id)}>
-                    {c.nombre} ({c.cargo})
-                  </SelectOption>
-                ))}
-              </Select>
-              <Input
-                label="Resultado"
-                value={interDraft.resultado}
-                onValueChange={(v) => setInterDraft((d) => ({ ...d, resultado: v }))}
-                size="sm"
-                placeholder="Ej: Volver a llamar en 1 semana"
-              />
-              <Textarea
-                label="Detalle"
-                value={interDraft.contenido}
-                onValueChange={(v) => setInterDraft((d) => ({ ...d, contenido: v }))}
-                isRequired
-                minRows={2}
-                className="md:col-span-2"
-              />
+              <Field label="Tipo">
+                <NativeSelect
+                  value={interDraft.tipo}
+                  onChange={(ev) =>
+                    setInterDraft((d) => ({
+                      ...d,
+                      tipo: ev.target.value as OutreachInteractionType,
+                    }))
+                  }
+                >
+                  {ALL_INTERACCIONES.map((t) => (
+                    <option key={t} value={t}>
+                      {INTERACCION_LABELS[t]}
+                    </option>
+                  ))}
+                </NativeSelect>
+              </Field>
+              <Field label="Fecha y hora">
+                <TextInput
+                  type="datetime-local"
+                  value={interDraft.fecha}
+                  onChange={(ev) => setInterDraft((d) => ({ ...d, fecha: ev.target.value }))}
+                />
+              </Field>
+              <Field label="Contacto">
+                <NativeSelect
+                  value={interDraft.contactoId}
+                  onChange={(ev) => setInterDraft((d) => ({ ...d, contactoId: ev.target.value }))}
+                >
+                  <option value="">Sin contacto</option>
+                  {data.contactos.map((c) => (
+                    <option key={c.id} value={String(c.id)}>
+                      {c.nombre} ({c.cargo})
+                    </option>
+                  ))}
+                </NativeSelect>
+              </Field>
+              <Field label="Resultado">
+                <TextInput
+                  value={interDraft.resultado}
+                  onChange={(ev) => setInterDraft((d) => ({ ...d, resultado: ev.target.value }))}
+                  placeholder="Ej: Volver a llamar en 1 semana"
+                />
+              </Field>
               <div className="md:col-span-2">
-                <Button type="submit" color="primary" size="sm">
+                <Field label="Detalle">
+                  <TextAreaInput
+                    rows={3}
+                    required
+                    value={interDraft.contenido}
+                    onChange={(ev) => setInterDraft((d) => ({ ...d, contenido: ev.target.value }))}
+                  />
+                </Field>
+              </div>
+              <div className="md:col-span-2">
+                <Button type="submit" variant="primary" size="sm">
                   Registrar
                 </Button>
               </div>
-            </Form>
+            </form>
           )}
           <div className="space-y-2">
             {data.interacciones.length === 0 ? (
@@ -416,7 +402,7 @@ export function OutreachEstablishmentDetailPage() {
                 >
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <Chip size="sm" variant="flat">
+                      <Chip size="sm" variant="soft">
                         {INTERACCION_LABELS[i.tipo]}
                       </Chip>
                       <span className="text-default-500 text-xs">
@@ -431,43 +417,38 @@ export function OutreachEstablishmentDetailPage() {
                       <p className="mt-1 text-default-500 text-xs">→ {i.resultado}</p>
                     )}
                   </div>
-                  <Button
-                    size="sm"
-                    variant="light"
-                    color="danger"
-                    onPress={() => deleteInter.mutate(i.id)}
-                  >
+                  <Button size="sm" variant="ghost" onPress={() => deleteInter.mutate(i.id)}>
                     Eliminar
                   </Button>
                 </div>
               ))
             )}
           </div>
-        </Card.Body>
+        </Card.Content>
       </Card>
 
       {data.envios.length > 0 && (
         <Card>
           <Card.Header>
-            <h2 className="font-semibold">Emails de campañas ({data.envios.length})</h2>
+            <Card.Title>Emails de campañas ({data.envios.length})</Card.Title>
           </Card.Header>
-          <Card.Body className="space-y-1">
+          <Card.Content className="space-y-1 p-4">
             {data.envios.slice(0, 20).map((d) => (
               <div key={d.id} className="flex items-center justify-between text-sm">
                 <span className="truncate">{d.asuntoRender ?? "(sin asunto)"}</span>
-                <Chip size="sm" variant="flat">
+                <Chip size="sm" variant="soft">
                   {d.estado}
                 </Chip>
               </div>
             ))}
-          </Card.Body>
+          </Card.Content>
         </Card>
       )}
     </div>
   );
 }
 
-function Field({ label, value }: { label: string; value: string | null }) {
+function Row({ label, value }: { label: string; value: string | null }) {
   return (
     <div className="flex justify-between gap-2">
       <span className="text-default-500">{label}</span>

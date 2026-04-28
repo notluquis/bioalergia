@@ -21,13 +21,13 @@ export const ESTADO_LABELS: Record<OutreachStatus, string> = {
 
 export const ESTADO_COLOR: Record<
   OutreachStatus,
-  "default" | "primary" | "warning" | "success" | "danger"
+  "default" | "warning" | "success" | "danger" | "accent"
 > = {
   SIN_CONTACTAR: "default",
-  CONTACTADO: "primary",
+  CONTACTADO: "accent",
   SIN_RESPUESTA: "warning",
   RESPONDIO_INTERES: "success",
-  RESPONDIO_MAS_INFO: "primary",
+  RESPONDIO_MAS_INFO: "accent",
   RESPONDIO_DESISTIO: "danger",
   REUNION_AGENDADA: "success",
   CONVENIO_FIRMADO: "success",
@@ -49,10 +49,7 @@ export const PRIORIDAD_LABELS: Record<OutreachPriority, string> = {
   BAJA: "Baja",
 };
 
-export const PRIORIDAD_COLOR: Record<
-  OutreachPriority,
-  "default" | "primary" | "warning" | "danger"
-> = {
+export const PRIORIDAD_COLOR: Record<OutreachPriority, "default" | "warning" | "danger"> = {
   ALTA: "danger",
   MEDIA: "warning",
   BAJA: "default",

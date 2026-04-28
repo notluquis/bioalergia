@@ -1,8 +1,9 @@
-import { Button, Card, Chip, Input, Select, SelectOption, Spinner, Table } from "@heroui/react";
+import { Button, Card, Chip, Spinner, Table } from "@heroui/react";
 import { Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import dayjs from "dayjs";
 import type { OutreachDependencia, OutreachStatus } from "@finanzas/orpc-contracts/outreach";
+import { Field, NativeSelect, TextInput } from "../components/FormField";
 import { useBulkUpdate, useEstablishments, useFiltersMeta } from "../hooks/useOutreach";
 import {
   DEPENDENCIA_LABELS,
@@ -35,7 +36,7 @@ const ALL_DEPS: OutreachDependencia[] = [
 
 export function OutreachEstablishmentsPage() {
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(50);
+  const pageSize = 50;
   const [search, setSearch] = useState("");
   const [estado, setEstado] = useState<OutreachStatus | "">("");
   const [dep, setDep] = useState<OutreachDependencia | "">("");
@@ -55,7 +56,7 @@ export function OutreachEstablishmentsPage() {
       comunas: comuna ? [comuna] : undefined,
       soloConEmail: soloConEmail || undefined,
     }),
-    [page, pageSize, search, estado, dep, comuna, soloConEmail]
+    [page, search, estado, dep, comuna, soloConEmail]
   );
 
   const { data, isLoading } = useEstablishments(params);
@@ -95,60 +96,58 @@ export function OutreachEstablishmentsPage() {
     <div className="space-y-4 p-6">
       <header className="flex items-center justify-between">
         <h1 className="font-bold text-2xl">Establecimientos</h1>
-        <Button as={Link} to="/outreach/importar" color="primary" variant="flat">
-          Importar MINEDUC
-        </Button>
+        <Link to="/outreach/importar">
+          <Button variant="primary">Importar MINEDUC</Button>
+        </Link>
       </header>
 
       <Card>
-        <Card.Body className="space-y-3">
+        <Card.Content className="space-y-3 p-4">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
-            <Input
-              placeholder="Buscar por nombre, RBD o director..."
-              value={search}
-              onValueChange={setSearch}
-              size="sm"
-            />
-            <Select
-              placeholder="Estado"
-              selectedKey={estado || undefined}
-              onSelectionChange={(k) => setEstado((k as OutreachStatus) ?? "")}
-              size="sm"
-            >
-              <SelectOption id="">Todos</SelectOption>
-              {ALL_ESTADOS.map((e) => (
-                <SelectOption key={e} id={e}>
-                  {ESTADO_LABELS[e]}
-                </SelectOption>
-              ))}
-            </Select>
-            <Select
-              placeholder="Dependencia"
-              selectedKey={dep || undefined}
-              onSelectionChange={(k) => setDep((k as OutreachDependencia) ?? "")}
-              size="sm"
-            >
-              <SelectOption id="">Todas</SelectOption>
-              {ALL_DEPS.map((d) => (
-                <SelectOption key={d} id={d}>
-                  {DEPENDENCIA_LABELS[d]}
-                </SelectOption>
-              ))}
-            </Select>
-            <Select
-              placeholder="Comuna"
-              selectedKey={comuna || undefined}
-              onSelectionChange={(k) => setComuna((k as string) ?? "")}
-              size="sm"
-            >
-              <SelectOption id="">Todas</SelectOption>
-              {(filtersMeta.data?.comunas ?? []).map((c) => (
-                <SelectOption key={c} id={c}>
-                  {c}
-                </SelectOption>
-              ))}
-            </Select>
-            <label className="flex items-center gap-2 text-sm">
+            <Field label="Buscar">
+              <TextInput
+                placeholder="Nombre, RBD o director..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </Field>
+            <Field label="Estado">
+              <NativeSelect
+                value={estado}
+                onChange={(e) => setEstado(e.target.value as OutreachStatus | "")}
+              >
+                <option value="">Todos</option>
+                {ALL_ESTADOS.map((s) => (
+                  <option key={s} value={s}>
+                    {ESTADO_LABELS[s]}
+                  </option>
+                ))}
+              </NativeSelect>
+            </Field>
+            <Field label="Dependencia">
+              <NativeSelect
+                value={dep}
+                onChange={(e) => setDep(e.target.value as OutreachDependencia | "")}
+              >
+                <option value="">Todas</option>
+                {ALL_DEPS.map((d) => (
+                  <option key={d} value={d}>
+                    {DEPENDENCIA_LABELS[d]}
+                  </option>
+                ))}
+              </NativeSelect>
+            </Field>
+            <Field label="Comuna">
+              <NativeSelect value={comuna} onChange={(e) => setComuna(e.target.value)}>
+                <option value="">Todas</option>
+                {(filtersMeta.data?.comunas ?? []).map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </NativeSelect>
+            </Field>
+            <label className="flex items-end gap-2 text-sm">
               <input
                 type="checkbox"
                 checked={soloConEmail}
@@ -161,24 +160,26 @@ export function OutreachEstablishmentsPage() {
           {selected.size > 0 && (
             <div className="flex flex-wrap items-center gap-2 rounded-medium bg-default-100 p-3">
               <span className="text-sm">{selected.size} seleccionados</span>
-              <Select
-                placeholder="Cambiar estado a..."
-                onSelectionChange={(k) => k && handleBulkEstado(k as OutreachStatus)}
-                size="sm"
+              <NativeSelect
                 className="max-w-xs"
+                onChange={(e) => {
+                  if (e.target.value) void handleBulkEstado(e.target.value as OutreachStatus);
+                }}
+                defaultValue=""
               >
-                {ALL_ESTADOS.map((e) => (
-                  <SelectOption key={e} id={e}>
-                    {ESTADO_LABELS[e]}
-                  </SelectOption>
+                <option value="">Cambiar estado a...</option>
+                {ALL_ESTADOS.map((s) => (
+                  <option key={s} value={s}>
+                    {ESTADO_LABELS[s]}
+                  </option>
                 ))}
-              </Select>
-              <Button size="sm" variant="flat" onPress={() => setSelected(new Set())}>
+              </NativeSelect>
+              <Button size="sm" variant="secondary" onPress={() => setSelected(new Set())}>
                 Limpiar selección
               </Button>
             </div>
           )}
-        </Card.Body>
+        </Card.Content>
       </Card>
 
       {isLoading || !data ? (
@@ -187,7 +188,7 @@ export function OutreachEstablishmentsPage() {
         </div>
       ) : (
         <Card>
-          <Card.Body className="p-0">
+          <Card.Content className="p-0">
             <Table>
               <Table.ScrollContainer>
                 <Table.Content aria-label="Establecimientos">
@@ -244,12 +245,12 @@ export function OutreachEstablishmentsPage() {
                           )}
                         </Table.Cell>
                         <Table.Cell>
-                          <Chip size="sm" color={ESTADO_COLOR[it.estado]} variant="flat">
+                          <Chip size="sm" color={ESTADO_COLOR[it.estado]} variant="soft">
                             {ESTADO_LABELS[it.estado]}
                           </Chip>
                         </Table.Cell>
                         <Table.Cell>
-                          <Chip size="sm" color={PRIORIDAD_COLOR[it.prioridad]} variant="flat">
+                          <Chip size="sm" color={PRIORIDAD_COLOR[it.prioridad]} variant="soft">
                             {PRIORIDAD_LABELS[it.prioridad]}
                           </Chip>
                         </Table.Cell>
@@ -265,7 +266,7 @@ export function OutreachEstablishmentsPage() {
                 </Table.Content>
               </Table.ScrollContainer>
             </Table>
-          </Card.Body>
+          </Card.Content>
         </Card>
       )}
 
@@ -276,7 +277,7 @@ export function OutreachEstablishmentsPage() {
         <div className="flex items-center gap-2">
           <Button
             size="sm"
-            variant="flat"
+            variant="secondary"
             isDisabled={page <= 1}
             onPress={() => setPage((p) => p - 1)}
           >
@@ -287,7 +288,7 @@ export function OutreachEstablishmentsPage() {
           </span>
           <Button
             size="sm"
-            variant="flat"
+            variant="secondary"
             isDisabled={page >= totalPages}
             onPress={() => setPage((p) => p + 1)}
           >

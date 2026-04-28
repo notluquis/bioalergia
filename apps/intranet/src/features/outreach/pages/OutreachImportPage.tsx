@@ -1,5 +1,6 @@
-import { Button, Card, Input } from "@heroui/react";
+import { Button, Card } from "@heroui/react";
 import { useState } from "react";
+import { Field, TextInput } from "../components/FormField";
 import { useImportMineduc } from "../hooks/useOutreach";
 
 const DEFAULT_URL =
@@ -29,52 +30,54 @@ export function OutreachImportPage() {
       <header>
         <h1 className="font-bold text-2xl">Importar dataset MINEDUC</h1>
         <p className="text-default-500 text-sm">
-          Filtra al Gran Concepción y preserva datos enriquecidos. Los establecimientos que ya no
-          aparezcan en el dataset quedan marcados como inactivos.
+          Filtra al Gran Concepción y preserva datos enriquecidos. Establecimientos que ya no
+          aparezcan quedan marcados como inactivos.
         </p>
       </header>
 
       <Card>
         <Card.Header>
-          <h2 className="font-semibold">Importar desde URL oficial</h2>
+          <Card.Title>Importar desde URL oficial</Card.Title>
         </Card.Header>
-        <Card.Body className="space-y-3">
-          <Input label="URL CSV" value={url} onValueChange={setUrl} size="sm" />
-          <Button color="primary" isDisabled={importM.isPending} onPress={startUrlImport}>
+        <Card.Content className="space-y-3 p-4">
+          <Field label="URL CSV">
+            <TextInput value={url} onChange={(e) => setUrl(e.target.value)} />
+          </Field>
+          <Button variant="primary" isDisabled={importM.isPending} onPress={startUrlImport}>
             {importM.isPending ? "Procesando..." : "Importar desde URL"}
           </Button>
-        </Card.Body>
+        </Card.Content>
       </Card>
 
       <Card>
         <Card.Header>
-          <h2 className="font-semibold">O subir CSV manualmente</h2>
+          <Card.Title>O subir CSV manualmente</Card.Title>
         </Card.Header>
-        <Card.Body>
+        <Card.Content className="p-4">
           <input
             type="file"
             accept=".csv,text/csv"
             onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
           />
-        </Card.Body>
+        </Card.Content>
       </Card>
 
       {importM.isError && (
         <Card>
-          <Card.Body>
+          <Card.Content className="p-4">
             <p className="text-danger text-sm">
               Error: {(importM.error as Error)?.message ?? "desconocido"}
             </p>
-          </Card.Body>
+          </Card.Content>
         </Card>
       )}
 
       {importM.data && (
         <Card>
           <Card.Header>
-            <h2 className="font-semibold">Última importación</h2>
+            <Card.Title>Última importación</Card.Title>
           </Card.Header>
-          <Card.Body className="space-y-1 text-sm">
+          <Card.Content className="space-y-1 p-4 text-sm">
             <p>Filas leídas: {importM.data.log.totalRows}</p>
             <p className="text-success">Nuevos: {importM.data.log.nuevos}</p>
             <p>Actualizados: {importM.data.log.actualizados}</p>
@@ -82,7 +85,7 @@ export function OutreachImportPage() {
             {importM.data.log.errores > 0 && (
               <p className="text-danger">Errores: {importM.data.log.errores}</p>
             )}
-          </Card.Body>
+          </Card.Content>
         </Card>
       )}
     </div>

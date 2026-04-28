@@ -1,7 +1,10 @@
-import { Button, Card, Form, Input, NumberField, Textarea } from "@heroui/react";
+import { Button, Card } from "@heroui/react";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { Field, NativeSelect as _Sel, TextAreaInput, TextInput } from "../components/FormField";
 import { useCreateCampaign, usePreviewCampaign } from "../hooks/useOutreach";
+
+void _Sel;
 
 const DEFAULT_ASUNTO = "Charla educativa gratuita sobre alergias para {{nombre_colegio}}";
 const DEFAULT_TEXT = `Estimado/a {{nombre_director}},
@@ -38,12 +41,7 @@ export function OutreachNewCampaignPage() {
   const [ratePerHour, setRatePerHour] = useState(50);
 
   const handlePreview = () =>
-    preview.mutate({
-      filtros: { soloConEmail: true },
-      asunto,
-      cuerpoHtml,
-      cuerpoTexto,
-    });
+    preview.mutate({ filtros: { soloConEmail: true }, asunto, cuerpoHtml, cuerpoTexto });
 
   const handleCreate = async (ev: React.FormEvent) => {
     ev.preventDefault();
@@ -58,7 +56,7 @@ export function OutreachNewCampaignPage() {
       ratePerHour,
       filtros: { soloConEmail: true },
     });
-    nav({ to: "/outreach/campanas/$id", params: { id: String(result.campaign.id) } });
+    void nav({ to: "/outreach/campanas/$id", params: { id: String(result.campaign.id) } });
   };
 
   return (
@@ -71,73 +69,85 @@ export function OutreachNewCampaignPage() {
         </p>
       </header>
 
-      <Form validationBehavior="aria" onSubmit={handleCreate} className="space-y-4">
+      <form onSubmit={handleCreate} className="space-y-4">
         <Card>
           <Card.Header>
-            <h2 className="font-semibold">Configuración</h2>
+            <Card.Title>Configuración</Card.Title>
           </Card.Header>
-          <Card.Body className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <Input label="Nombre interno" isRequired value={nombre} onValueChange={setNombre} />
-            <Input
-              label="Asunto"
-              isRequired
-              value={asunto}
-              onValueChange={setAsunto}
-              className="md:col-span-2"
-            />
-            <Input
-              label="Email remitente"
-              type="email"
-              isRequired
-              value={fromEmail}
-              onValueChange={setFromEmail}
-            />
-            <Input
-              label="Nombre remitente"
-              isRequired
-              value={fromNombre}
-              onValueChange={setFromNombre}
-            />
-            <Input label="Reply-To" type="email" value={replyTo} onValueChange={setReplyTo} />
-            <NumberField
-              label="Emails por hora (rate limit)"
-              value={ratePerHour}
-              onValueChange={(v) => setRatePerHour(typeof v === "number" ? v : 50)}
-              minValue={1}
-              maxValue={500}
-            />
-          </Card.Body>
+          <Card.Content className="grid grid-cols-1 gap-3 p-4 md:grid-cols-2">
+            <Field label="Nombre interno">
+              <TextInput required value={nombre} onChange={(e) => setNombre(e.target.value)} />
+            </Field>
+            <div className="md:col-span-2">
+              <Field label="Asunto">
+                <TextInput required value={asunto} onChange={(e) => setAsunto(e.target.value)} />
+              </Field>
+            </div>
+            <Field label="Email remitente">
+              <TextInput
+                type="email"
+                required
+                value={fromEmail}
+                onChange={(e) => setFromEmail(e.target.value)}
+              />
+            </Field>
+            <Field label="Nombre remitente">
+              <TextInput
+                required
+                value={fromNombre}
+                onChange={(e) => setFromNombre(e.target.value)}
+              />
+            </Field>
+            <Field label="Reply-To">
+              <TextInput
+                type="email"
+                value={replyTo}
+                onChange={(e) => setReplyTo(e.target.value)}
+              />
+            </Field>
+            <Field label="Emails por hora (rate limit)">
+              <TextInput
+                type="number"
+                min={1}
+                max={500}
+                value={ratePerHour}
+                onChange={(e) => setRatePerHour(Number.parseInt(e.target.value || "50", 10))}
+              />
+            </Field>
+          </Card.Content>
         </Card>
 
         <Card>
           <Card.Header>
-            <h2 className="font-semibold">Contenido</h2>
+            <Card.Title>Contenido</Card.Title>
           </Card.Header>
-          <Card.Body className="space-y-3">
-            <Textarea
-              label="Cuerpo (texto plano)"
-              value={cuerpoTexto}
-              onValueChange={setCuerpoTexto}
-              minRows={8}
-            />
-            <Textarea
-              label="Cuerpo HTML"
-              value={cuerpoHtml}
-              onValueChange={setCuerpoHtml}
-              minRows={8}
-            />
-          </Card.Body>
+          <Card.Content className="space-y-3 p-4">
+            <Field label="Cuerpo (texto plano)">
+              <TextAreaInput
+                rows={10}
+                value={cuerpoTexto}
+                onChange={(e) => setCuerpoTexto(e.target.value)}
+              />
+            </Field>
+            <Field label="Cuerpo HTML">
+              <TextAreaInput
+                rows={10}
+                value={cuerpoHtml}
+                onChange={(e) => setCuerpoHtml(e.target.value)}
+              />
+            </Field>
+          </Card.Content>
         </Card>
 
         <Card>
           <Card.Header className="flex items-center justify-between">
-            <h2 className="font-semibold">Vista previa de destinatarios</h2>
-            <Button size="sm" variant="flat" type="button" onPress={handlePreview}>
+            <Card.Title>Vista previa de destinatarios</Card.Title>
+            <Button size="sm" variant="secondary" type="button" onPress={handlePreview}>
               Previsualizar
             </Button>
           </Card.Header>
           {preview.data && (
-            <Card.Body className="space-y-2 text-sm">
+            <Card.Content className="space-y-2 p-4 text-sm">
               <p>
                 <strong>{preview.data.totalCandidatos}</strong> candidatos —{" "}
                 <span className="text-success">{preview.data.conEmail} con email</span>,{" "}
@@ -155,16 +165,16 @@ export function OutreachNewCampaignPage() {
                   </pre>
                 </div>
               )}
-            </Card.Body>
+            </Card.Content>
           )}
         </Card>
 
         <div className="flex gap-2">
-          <Button type="submit" color="primary" isDisabled={create.isPending}>
+          <Button type="submit" variant="primary" isDisabled={create.isPending}>
             {create.isPending ? "Creando..." : "Crear campaña"}
           </Button>
         </div>
-      </Form>
+      </form>
     </div>
   );
 }

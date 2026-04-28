@@ -99,7 +99,7 @@ export function OutreachCampaignDetailPage() {
         </Link>
         <div className="flex items-center justify-between">
           <h1 className="font-bold text-2xl">{c.nombre}</h1>
-          <Chip variant="flat">{CAMPAIGN_STATUS_LABELS[c.estado]}</Chip>
+          <Chip variant="soft">{CAMPAIGN_STATUS_LABELS[c.estado]}</Chip>
         </div>
       </div>
 
@@ -112,32 +112,32 @@ export function OutreachCampaignDetailPage() {
 
       <Card>
         <Card.Header>
-          <h2 className="font-semibold">Acciones</h2>
+          <Card.Title>Acciones</Card.Title>
         </Card.Header>
-        <Card.Body className="flex flex-wrap gap-2">
+        <Card.Content className="flex flex-wrap gap-2 p-4">
           {c.estado === "BORRADOR" && (
-            <Button color="primary" onPress={() => launch.mutate(numId)}>
+            <Button variant="primary" onPress={() => launch.mutate(numId)}>
               Iniciar envío (genera deliveries)
             </Button>
           )}
           {c.estado === "ENVIANDO" && (
-            <Button color="warning" variant="flat" onPress={() => pause.mutate(numId)}>
+            <Button variant="secondary" onPress={() => pause.mutate(numId)}>
               Pausar
             </Button>
           )}
           {c.estado === "PAUSADA" && (
-            <Button color="primary" onPress={() => launch.mutate(numId)}>
+            <Button variant="primary" onPress={() => launch.mutate(numId)}>
               Reanudar
             </Button>
           )}
-        </Card.Body>
+        </Card.Content>
       </Card>
 
       <Card>
         <Card.Header>
-          <h2 className="font-semibold">Agente local de correo</h2>
+          <Card.Title>Agente local de correo</Card.Title>
         </Card.Header>
-        <Card.Body className="space-y-3">
+        <Card.Content className="space-y-3 p-4">
           <p className="text-default-500 text-xs">
             Los emails se envían desde tu equipo via el agente local (no Railway). Configura URL +
             token y mantén la pestaña abierta mientras dura el envío.
@@ -156,18 +156,18 @@ export function OutreachCampaignDetailPage() {
               onChange={(e) => setAgentToken(e.target.value)}
               type="password"
             />
-            <Button size="sm" variant="flat" onPress={saveAgentConfig}>
+            <Button size="sm" variant="secondary" onPress={saveAgentConfig}>
               Guardar y verificar
             </Button>
           </div>
           {agentReady !== null && (
-            <Chip size="sm" color={agentReady ? "success" : "danger"} variant="flat">
+            <Chip size="sm" color={agentReady ? "success" : "danger"} variant="soft">
               Agente {agentReady ? "OK" : "no disponible"}
             </Chip>
           )}
           <div className="flex items-center gap-2">
             <Button
-              color="primary"
+              variant="primary"
               isDisabled={c.estado !== "ENVIANDO" || !agentReady || sending}
               onPress={sendBatch}
             >
@@ -179,23 +179,23 @@ export function OutreachCampaignDetailPage() {
               {log.slice(-50).join("\n")}
             </pre>
           )}
-        </Card.Body>
+        </Card.Content>
       </Card>
 
       <Card>
         <Card.Header>
-          <h2 className="font-semibold">Envíos ({data.envios.length})</h2>
+          <Card.Title>Envíos ({data.envios.length})</Card.Title>
         </Card.Header>
-        <Card.Body className="space-y-1 text-sm">
+        <Card.Content className="space-y-1 p-4 text-sm">
           {data.envios.slice(0, 100).map((d) => (
             <div key={d.id} className="flex items-center justify-between">
               <span className="truncate">{d.emailDestinatario}</span>
-              <Chip size="sm" variant="flat">
+              <Chip size="sm" variant="soft">
                 {DELIVERY_STATUS_LABELS[d.estado]}
               </Chip>
             </div>
           ))}
-        </Card.Body>
+        </Card.Content>
       </Card>
     </div>
   );
@@ -204,12 +204,12 @@ export function OutreachCampaignDetailPage() {
 function Stat({ label, value, accent }: { label: string; value: number; accent?: "danger" }) {
   return (
     <Card>
-      <Card.Body>
+      <Card.Content className="p-4">
         <p className="text-default-500 text-xs uppercase">{label}</p>
         <p className={`font-bold text-2xl ${accent === "danger" ? "text-danger" : ""}`}>
           {value.toLocaleString("es-CL")}
         </p>
-      </Card.Body>
+      </Card.Content>
     </Card>
   );
 }

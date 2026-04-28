@@ -10,9 +10,9 @@ export function OutreachCampaignsPage() {
     <div className="space-y-4 p-6">
       <header className="flex items-center justify-between">
         <h1 className="font-bold text-2xl">Campañas de email</h1>
-        <Button as={Link} to="/outreach/campanas/nueva" color="primary">
-          Nueva campaña
-        </Button>
+        <Link to="/outreach/campanas/nueva">
+          <Button variant="primary">Nueva campaña</Button>
+        </Link>
       </header>
 
       {isLoading || !data ? (
@@ -21,11 +21,11 @@ export function OutreachCampaignsPage() {
         </div>
       ) : data.campaigns.length === 0 ? (
         <Card>
-          <Card.Body>
+          <Card.Content className="p-4">
             <p className="text-default-500 text-sm">
-              No hay campañas. Crea una nueva para enviar emails masivos a establecimientos.
+              No hay campañas. Crea una nueva para enviar emails masivos.
             </p>
-          </Card.Body>
+          </Card.Content>
         </Card>
       ) : (
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -33,14 +33,14 @@ export function OutreachCampaignsPage() {
             <Card key={c.id}>
               <Card.Header className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-semibold">{c.nombre}</h3>
-                  <p className="text-default-500 text-xs">Asunto: {c.asunto}</p>
+                  <Card.Title>{c.nombre}</Card.Title>
+                  <Card.Description>Asunto: {c.asunto}</Card.Description>
                 </div>
-                <Chip size="sm" variant="flat">
+                <Chip size="sm" variant="soft">
                   {CAMPAIGN_STATUS_LABELS[c.estado]}
                 </Chip>
               </Card.Header>
-              <Card.Body className="space-y-2 text-sm">
+              <Card.Content className="space-y-2 p-4 text-sm">
                 <div className="flex justify-between">
                   <span className="text-default-500">Destinatarios</span>
                   <span>{c.totalDestinatarios}</span>
@@ -55,17 +55,16 @@ export function OutreachCampaignsPage() {
                     <span className="text-danger">{c.errores}</span>
                   </div>
                 )}
-                <Button
-                  as={Link}
+                <Link
                   to="/outreach/campanas/$id"
                   params={{ id: String(c.id) }}
-                  size="sm"
-                  variant="flat"
-                  className="mt-2"
+                  className="mt-2 inline-block"
                 >
-                  Abrir
-                </Button>
-              </Card.Body>
+                  <Button size="sm" variant="secondary">
+                    Abrir
+                  </Button>
+                </Link>
+              </Card.Content>
             </Card>
           ))}
         </div>

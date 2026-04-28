@@ -28,7 +28,7 @@ export function OutreachDashboardPage() {
       <header>
         <h1 className="font-bold text-2xl">Outreach a Establecimientos</h1>
         <p className="text-default-500 text-sm">
-          Campaña de charlas educativas y convenios para colegios del Gran Concepción.
+          Charlas educativas y convenios para colegios del Gran Concepción.
         </p>
       </header>
 
@@ -46,54 +46,54 @@ export function OutreachDashboardPage() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card>
           <Card.Header>
-            <h2 className="font-semibold">Por estado</h2>
+            <Card.Title>Por estado</Card.Title>
           </Card.Header>
-          <Card.Body className="space-y-2">
+          <Card.Content className="space-y-2 p-4">
             {porEstado.length === 0 && <p className="text-default-500 text-sm">Sin datos.</p>}
             {porEstado.map((row) => (
               <div key={row.estado} className="flex items-center justify-between">
-                <Chip color={ESTADO_COLOR[row.estado]} variant="flat" size="sm">
+                <Chip color={ESTADO_COLOR[row.estado]} variant="soft" size="sm">
                   {ESTADO_LABELS[row.estado]}
                 </Chip>
                 <span className="font-mono text-sm">{row.count}</span>
               </div>
             ))}
-          </Card.Body>
+          </Card.Content>
         </Card>
 
         <Card>
           <Card.Header>
-            <h2 className="font-semibold">Por dependencia</h2>
+            <Card.Title>Por dependencia</Card.Title>
           </Card.Header>
-          <Card.Body className="space-y-2">
+          <Card.Content className="space-y-2 p-4">
             {porDependencia.map((row) => (
               <div key={row.dependencia} className="flex items-center justify-between">
                 <span className="text-sm">{DEPENDENCIA_LABELS[row.dependencia]}</span>
                 <span className="font-mono text-sm">{row.count}</span>
               </div>
             ))}
-          </Card.Body>
+          </Card.Content>
         </Card>
 
         <Card>
           <Card.Header>
-            <h2 className="font-semibold">Por comuna</h2>
+            <Card.Title>Por comuna</Card.Title>
           </Card.Header>
-          <Card.Body className="space-y-2">
+          <Card.Content className="space-y-2 p-4">
             {porComuna.slice(0, 12).map((row) => (
               <div key={row.comuna} className="flex items-center justify-between">
                 <span className="text-sm">{row.comuna}</span>
                 <span className="font-mono text-sm">{row.count}</span>
               </div>
             ))}
-          </Card.Body>
+          </Card.Content>
         </Card>
 
         <Card>
           <Card.Header>
-            <h2 className="font-semibold">Últimas interacciones</h2>
+            <Card.Title>Últimas interacciones</Card.Title>
           </Card.Header>
-          <Card.Body className="space-y-2">
+          <Card.Content className="space-y-2 p-4">
             {ultimasInteracciones.length === 0 && (
               <p className="text-default-500 text-sm">Sin actividad reciente.</p>
             )}
@@ -106,14 +106,14 @@ export function OutreachDashboardPage() {
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="truncate text-sm">{i.establishmentNombre}</span>
-                  <Chip size="sm" variant="flat">
+                  <Chip size="sm" variant="soft">
                     {INTERACCION_LABELS[i.tipo]}
                   </Chip>
                 </div>
                 <p className="line-clamp-1 text-default-500 text-xs">{i.contenido}</p>
               </Link>
             ))}
-          </Card.Body>
+          </Card.Content>
         </Card>
       </div>
     </div>
@@ -123,12 +123,12 @@ export function OutreachDashboardPage() {
 function StatCard({ label, value, accent }: { label: string; value: number; accent?: "warning" }) {
   return (
     <Card>
-      <Card.Body>
+      <Card.Content className="p-4">
         <p className="text-default-500 text-xs uppercase tracking-wide">{label}</p>
         <p className={`font-bold text-3xl ${accent === "warning" ? "text-warning" : ""}`}>
           {value.toLocaleString("es-CL")}
         </p>
-      </Card.Body>
+      </Card.Content>
     </Card>
   );
 }

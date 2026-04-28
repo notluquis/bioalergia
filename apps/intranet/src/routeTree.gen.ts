@@ -16,6 +16,7 @@ import { Route as AuthedIndexRouteImport } from "./routes/_authed/index"
 import { Route as VerifyIdRouteImport } from "./routes/verify.$id"
 import { Route as AuthedSettingsRouteImport } from "./routes/_authed/settings"
 import { Route as AuthedServicesRouteImport } from "./routes/_authed/services"
+import { Route as AuthedOutreachRouteImport } from "./routes/_authed/outreach"
 import { Route as AuthedOperationsRouteImport } from "./routes/_authed/operations"
 import { Route as AuthedMarcarRouteImport } from "./routes/_authed/marcar"
 import { Route as AuthedHrRouteImport } from "./routes/_authed/hr"
@@ -27,6 +28,7 @@ import { Route as AuthedAccountRouteImport } from "./routes/_authed/account"
 import { Route as AuthedSettingsIndexRouteImport } from "./routes/_authed/settings/index"
 import { Route as AuthedServicesIndexRouteImport } from "./routes/_authed/services/index"
 import { Route as AuthedPatientsIndexRouteImport } from "./routes/_authed/patients/index"
+import { Route as AuthedOutreachIndexRouteImport } from "./routes/_authed/outreach/index"
 import { Route as AuthedHrIndexRouteImport } from "./routes/_authed/hr/index"
 import { Route as AuthedClinicalIndexRouteImport } from "./routes/_authed/clinical/index"
 import { Route as AuthedSettingsWhatsappRouteImport } from "./routes/_authed/settings/whatsapp"
@@ -40,6 +42,9 @@ import { Route as AuthedSettingsBackupsRouteImport } from "./routes/_authed/sett
 import { Route as AuthedServicesAgendaRouteImport } from "./routes/_authed/services/agenda"
 import { Route as AuthedPatientsNewRouteImport } from "./routes/_authed/patients/new"
 import { Route as AuthedPatientsCampaignsRouteImport } from "./routes/_authed/patients/campaigns"
+import { Route as AuthedOutreachImportarRouteImport } from "./routes/_authed/outreach/importar"
+import { Route as AuthedOutreachEstablecimientosRouteImport } from "./routes/_authed/outreach/establecimientos"
+import { Route as AuthedOutreachCampanasRouteImport } from "./routes/_authed/outreach/campanas"
 import { Route as AuthedOperationsSuppliesRouteImport } from "./routes/_authed/operations/supplies"
 import { Route as AuthedOperationsInventoryRouteImport } from "./routes/_authed/operations/inventory"
 import { Route as AuthedHrTimesheetsRouteImport } from "./routes/_authed/hr/timesheets"
@@ -73,6 +78,9 @@ import { Route as AuthedServicesIdEditRouteImport } from "./routes/_authed/servi
 import { Route as AuthedPatientsIdNewPaymentRouteImport } from "./routes/_authed/patients/$id/new-payment"
 import { Route as AuthedPatientsIdNewConsultationRouteImport } from "./routes/_authed/patients/$id/new-consultation"
 import { Route as AuthedPatientsIdNewBudgetRouteImport } from "./routes/_authed/patients/$id/new-budget"
+import { Route as AuthedOutreachEstablecimientosRbdRouteImport } from "./routes/_authed/outreach/establecimientos.$rbd"
+import { Route as AuthedOutreachCampanasNuevaRouteImport } from "./routes/_authed/outreach/campanas.nueva"
+import { Route as AuthedOutreachCampanasIdRouteImport } from "./routes/_authed/outreach/campanas.$id"
 import { Route as AuthedFinanzasPersonalCreditsCreditIdRouteImport } from "./routes/_authed/finanzas/personal-credits.$creditId"
 
 const OnboardingRoute = OnboardingRouteImport.update({
@@ -107,6 +115,11 @@ const AuthedSettingsRoute = AuthedSettingsRouteImport.update({
 const AuthedServicesRoute = AuthedServicesRouteImport.update({
   id: "/services",
   path: "/services",
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedOutreachRoute = AuthedOutreachRouteImport.update({
+  id: "/outreach",
+  path: "/outreach",
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedOperationsRoute = AuthedOperationsRouteImport.update({
@@ -163,6 +176,11 @@ const AuthedPatientsIndexRoute = AuthedPatientsIndexRouteImport.update({
   id: "/patients/",
   path: "/patients/",
   getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedOutreachIndexRoute = AuthedOutreachIndexRouteImport.update({
+  id: "/",
+  path: "/",
+  getParentRoute: () => AuthedOutreachRoute,
 } as any)
 const AuthedHrIndexRoute = AuthedHrIndexRouteImport.update({
   id: "/",
@@ -231,6 +249,22 @@ const AuthedPatientsCampaignsRoute = AuthedPatientsCampaignsRouteImport.update({
   id: "/patients/campaigns",
   path: "/patients/campaigns",
   getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedOutreachImportarRoute = AuthedOutreachImportarRouteImport.update({
+  id: "/importar",
+  path: "/importar",
+  getParentRoute: () => AuthedOutreachRoute,
+} as any)
+const AuthedOutreachEstablecimientosRoute =
+  AuthedOutreachEstablecimientosRouteImport.update({
+    id: "/establecimientos",
+    path: "/establecimientos",
+    getParentRoute: () => AuthedOutreachRoute,
+  } as any)
+const AuthedOutreachCampanasRoute = AuthedOutreachCampanasRouteImport.update({
+  id: "/campanas",
+  path: "/campanas",
+  getParentRoute: () => AuthedOutreachRoute,
 } as any)
 const AuthedOperationsSuppliesRoute =
   AuthedOperationsSuppliesRouteImport.update({
@@ -411,6 +445,24 @@ const AuthedPatientsIdNewBudgetRoute =
     path: "/patients/$id/new-budget",
     getParentRoute: () => AuthedRoute,
   } as any)
+const AuthedOutreachEstablecimientosRbdRoute =
+  AuthedOutreachEstablecimientosRbdRouteImport.update({
+    id: "/$rbd",
+    path: "/$rbd",
+    getParentRoute: () => AuthedOutreachEstablecimientosRoute,
+  } as any)
+const AuthedOutreachCampanasNuevaRoute =
+  AuthedOutreachCampanasNuevaRouteImport.update({
+    id: "/nueva",
+    path: "/nueva",
+    getParentRoute: () => AuthedOutreachCampanasRoute,
+  } as any)
+const AuthedOutreachCampanasIdRoute =
+  AuthedOutreachCampanasIdRouteImport.update({
+    id: "/$id",
+    path: "/$id",
+    getParentRoute: () => AuthedOutreachCampanasRoute,
+  } as any)
 const AuthedFinanzasPersonalCreditsCreditIdRoute =
   AuthedFinanzasPersonalCreditsCreditIdRouteImport.update({
     id: "/$creditId",
@@ -430,6 +482,7 @@ export interface FileRoutesByFullPath {
   "/hr": typeof AuthedHrRouteWithChildren
   "/marcar": typeof AuthedMarcarRoute
   "/operations": typeof AuthedOperationsRouteWithChildren
+  "/outreach": typeof AuthedOutreachRouteWithChildren
   "/services": typeof AuthedServicesRouteWithChildren
   "/settings": typeof AuthedSettingsRouteWithChildren
   "/verify/$id": typeof VerifyIdRoute
@@ -459,6 +512,9 @@ export interface FileRoutesByFullPath {
   "/hr/timesheets": typeof AuthedHrTimesheetsRoute
   "/operations/inventory": typeof AuthedOperationsInventoryRoute
   "/operations/supplies": typeof AuthedOperationsSuppliesRoute
+  "/outreach/campanas": typeof AuthedOutreachCampanasRouteWithChildren
+  "/outreach/establecimientos": typeof AuthedOutreachEstablecimientosRouteWithChildren
+  "/outreach/importar": typeof AuthedOutreachImportarRoute
   "/patients/campaigns": typeof AuthedPatientsCampaignsRoute
   "/patients/new": typeof AuthedPatientsNewRoute
   "/services/agenda": typeof AuthedServicesAgendaRoute
@@ -472,10 +528,14 @@ export interface FileRoutesByFullPath {
   "/settings/whatsapp": typeof AuthedSettingsWhatsappRoute
   "/clinical/": typeof AuthedClinicalIndexRoute
   "/hr/": typeof AuthedHrIndexRoute
+  "/outreach/": typeof AuthedOutreachIndexRoute
   "/patients/": typeof AuthedPatientsIndexRoute
   "/services/": typeof AuthedServicesIndexRoute
   "/settings/": typeof AuthedSettingsIndexRoute
   "/finanzas/personal-credits/$creditId": typeof AuthedFinanzasPersonalCreditsCreditIdRoute
+  "/outreach/campanas/$id": typeof AuthedOutreachCampanasIdRoute
+  "/outreach/campanas/nueva": typeof AuthedOutreachCampanasNuevaRoute
+  "/outreach/establecimientos/$rbd": typeof AuthedOutreachEstablecimientosRbdRoute
   "/patients/$id/new-budget": typeof AuthedPatientsIdNewBudgetRoute
   "/patients/$id/new-consultation": typeof AuthedPatientsIdNewConsultationRoute
   "/patients/$id/new-payment": typeof AuthedPatientsIdNewPaymentRoute
@@ -521,6 +581,9 @@ export interface FileRoutesByTo {
   "/hr/timesheets": typeof AuthedHrTimesheetsRoute
   "/operations/inventory": typeof AuthedOperationsInventoryRoute
   "/operations/supplies": typeof AuthedOperationsSuppliesRoute
+  "/outreach/campanas": typeof AuthedOutreachCampanasRouteWithChildren
+  "/outreach/establecimientos": typeof AuthedOutreachEstablecimientosRouteWithChildren
+  "/outreach/importar": typeof AuthedOutreachImportarRoute
   "/patients/campaigns": typeof AuthedPatientsCampaignsRoute
   "/patients/new": typeof AuthedPatientsNewRoute
   "/services/agenda": typeof AuthedServicesAgendaRoute
@@ -534,10 +597,14 @@ export interface FileRoutesByTo {
   "/settings/whatsapp": typeof AuthedSettingsWhatsappRoute
   "/clinical": typeof AuthedClinicalIndexRoute
   "/hr": typeof AuthedHrIndexRoute
+  "/outreach": typeof AuthedOutreachIndexRoute
   "/patients": typeof AuthedPatientsIndexRoute
   "/services": typeof AuthedServicesIndexRoute
   "/settings": typeof AuthedSettingsIndexRoute
   "/finanzas/personal-credits/$creditId": typeof AuthedFinanzasPersonalCreditsCreditIdRoute
+  "/outreach/campanas/$id": typeof AuthedOutreachCampanasIdRoute
+  "/outreach/campanas/nueva": typeof AuthedOutreachCampanasNuevaRoute
+  "/outreach/establecimientos/$rbd": typeof AuthedOutreachEstablecimientosRbdRoute
   "/patients/$id/new-budget": typeof AuthedPatientsIdNewBudgetRoute
   "/patients/$id/new-consultation": typeof AuthedPatientsIdNewConsultationRoute
   "/patients/$id/new-payment": typeof AuthedPatientsIdNewPaymentRoute
@@ -559,6 +626,7 @@ export interface FileRoutesById {
   "/_authed/hr": typeof AuthedHrRouteWithChildren
   "/_authed/marcar": typeof AuthedMarcarRoute
   "/_authed/operations": typeof AuthedOperationsRouteWithChildren
+  "/_authed/outreach": typeof AuthedOutreachRouteWithChildren
   "/_authed/services": typeof AuthedServicesRouteWithChildren
   "/_authed/settings": typeof AuthedSettingsRouteWithChildren
   "/verify/$id": typeof VerifyIdRoute
@@ -589,6 +657,9 @@ export interface FileRoutesById {
   "/_authed/hr/timesheets": typeof AuthedHrTimesheetsRoute
   "/_authed/operations/inventory": typeof AuthedOperationsInventoryRoute
   "/_authed/operations/supplies": typeof AuthedOperationsSuppliesRoute
+  "/_authed/outreach/campanas": typeof AuthedOutreachCampanasRouteWithChildren
+  "/_authed/outreach/establecimientos": typeof AuthedOutreachEstablecimientosRouteWithChildren
+  "/_authed/outreach/importar": typeof AuthedOutreachImportarRoute
   "/_authed/patients/campaigns": typeof AuthedPatientsCampaignsRoute
   "/_authed/patients/new": typeof AuthedPatientsNewRoute
   "/_authed/services/agenda": typeof AuthedServicesAgendaRoute
@@ -602,10 +673,14 @@ export interface FileRoutesById {
   "/_authed/settings/whatsapp": typeof AuthedSettingsWhatsappRoute
   "/_authed/clinical/": typeof AuthedClinicalIndexRoute
   "/_authed/hr/": typeof AuthedHrIndexRoute
+  "/_authed/outreach/": typeof AuthedOutreachIndexRoute
   "/_authed/patients/": typeof AuthedPatientsIndexRoute
   "/_authed/services/": typeof AuthedServicesIndexRoute
   "/_authed/settings/": typeof AuthedSettingsIndexRoute
   "/_authed/finanzas/personal-credits/$creditId": typeof AuthedFinanzasPersonalCreditsCreditIdRoute
+  "/_authed/outreach/campanas/$id": typeof AuthedOutreachCampanasIdRoute
+  "/_authed/outreach/campanas/nueva": typeof AuthedOutreachCampanasNuevaRoute
+  "/_authed/outreach/establecimientos/$rbd": typeof AuthedOutreachEstablecimientosRbdRoute
   "/_authed/patients/$id/new-budget": typeof AuthedPatientsIdNewBudgetRoute
   "/_authed/patients/$id/new-consultation": typeof AuthedPatientsIdNewConsultationRoute
   "/_authed/patients/$id/new-payment": typeof AuthedPatientsIdNewPaymentRoute
@@ -628,6 +703,7 @@ export interface FileRouteTypes {
     | "/hr"
     | "/marcar"
     | "/operations"
+    | "/outreach"
     | "/services"
     | "/settings"
     | "/verify/$id"
@@ -657,6 +733,9 @@ export interface FileRouteTypes {
     | "/hr/timesheets"
     | "/operations/inventory"
     | "/operations/supplies"
+    | "/outreach/campanas"
+    | "/outreach/establecimientos"
+    | "/outreach/importar"
     | "/patients/campaigns"
     | "/patients/new"
     | "/services/agenda"
@@ -670,10 +749,14 @@ export interface FileRouteTypes {
     | "/settings/whatsapp"
     | "/clinical/"
     | "/hr/"
+    | "/outreach/"
     | "/patients/"
     | "/services/"
     | "/settings/"
     | "/finanzas/personal-credits/$creditId"
+    | "/outreach/campanas/$id"
+    | "/outreach/campanas/nueva"
+    | "/outreach/establecimientos/$rbd"
     | "/patients/$id/new-budget"
     | "/patients/$id/new-consultation"
     | "/patients/$id/new-payment"
@@ -719,6 +802,9 @@ export interface FileRouteTypes {
     | "/hr/timesheets"
     | "/operations/inventory"
     | "/operations/supplies"
+    | "/outreach/campanas"
+    | "/outreach/establecimientos"
+    | "/outreach/importar"
     | "/patients/campaigns"
     | "/patients/new"
     | "/services/agenda"
@@ -732,10 +818,14 @@ export interface FileRouteTypes {
     | "/settings/whatsapp"
     | "/clinical"
     | "/hr"
+    | "/outreach"
     | "/patients"
     | "/services"
     | "/settings"
     | "/finanzas/personal-credits/$creditId"
+    | "/outreach/campanas/$id"
+    | "/outreach/campanas/nueva"
+    | "/outreach/establecimientos/$rbd"
     | "/patients/$id/new-budget"
     | "/patients/$id/new-consultation"
     | "/patients/$id/new-payment"
@@ -756,6 +846,7 @@ export interface FileRouteTypes {
     | "/_authed/hr"
     | "/_authed/marcar"
     | "/_authed/operations"
+    | "/_authed/outreach"
     | "/_authed/services"
     | "/_authed/settings"
     | "/verify/$id"
@@ -786,6 +877,9 @@ export interface FileRouteTypes {
     | "/_authed/hr/timesheets"
     | "/_authed/operations/inventory"
     | "/_authed/operations/supplies"
+    | "/_authed/outreach/campanas"
+    | "/_authed/outreach/establecimientos"
+    | "/_authed/outreach/importar"
     | "/_authed/patients/campaigns"
     | "/_authed/patients/new"
     | "/_authed/services/agenda"
@@ -799,10 +893,14 @@ export interface FileRouteTypes {
     | "/_authed/settings/whatsapp"
     | "/_authed/clinical/"
     | "/_authed/hr/"
+    | "/_authed/outreach/"
     | "/_authed/patients/"
     | "/_authed/services/"
     | "/_authed/settings/"
     | "/_authed/finanzas/personal-credits/$creditId"
+    | "/_authed/outreach/campanas/$id"
+    | "/_authed/outreach/campanas/nueva"
+    | "/_authed/outreach/establecimientos/$rbd"
     | "/_authed/patients/$id/new-budget"
     | "/_authed/patients/$id/new-consultation"
     | "/_authed/patients/$id/new-payment"
@@ -868,6 +966,13 @@ declare module "@tanstack/react-router" {
       path: "/services"
       fullPath: "/services"
       preLoaderRoute: typeof AuthedServicesRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    "/_authed/outreach": {
+      id: "/_authed/outreach"
+      path: "/outreach"
+      fullPath: "/outreach"
+      preLoaderRoute: typeof AuthedOutreachRouteImport
       parentRoute: typeof AuthedRoute
     }
     "/_authed/operations": {
@@ -946,6 +1051,13 @@ declare module "@tanstack/react-router" {
       fullPath: "/patients/"
       preLoaderRoute: typeof AuthedPatientsIndexRouteImport
       parentRoute: typeof AuthedRoute
+    }
+    "/_authed/outreach/": {
+      id: "/_authed/outreach/"
+      path: "/"
+      fullPath: "/outreach/"
+      preLoaderRoute: typeof AuthedOutreachIndexRouteImport
+      parentRoute: typeof AuthedOutreachRoute
     }
     "/_authed/hr/": {
       id: "/_authed/hr/"
@@ -1037,6 +1149,27 @@ declare module "@tanstack/react-router" {
       fullPath: "/patients/campaigns"
       preLoaderRoute: typeof AuthedPatientsCampaignsRouteImport
       parentRoute: typeof AuthedRoute
+    }
+    "/_authed/outreach/importar": {
+      id: "/_authed/outreach/importar"
+      path: "/importar"
+      fullPath: "/outreach/importar"
+      preLoaderRoute: typeof AuthedOutreachImportarRouteImport
+      parentRoute: typeof AuthedOutreachRoute
+    }
+    "/_authed/outreach/establecimientos": {
+      id: "/_authed/outreach/establecimientos"
+      path: "/establecimientos"
+      fullPath: "/outreach/establecimientos"
+      preLoaderRoute: typeof AuthedOutreachEstablecimientosRouteImport
+      parentRoute: typeof AuthedOutreachRoute
+    }
+    "/_authed/outreach/campanas": {
+      id: "/_authed/outreach/campanas"
+      path: "/campanas"
+      fullPath: "/outreach/campanas"
+      preLoaderRoute: typeof AuthedOutreachCampanasRouteImport
+      parentRoute: typeof AuthedOutreachRoute
     }
     "/_authed/operations/supplies": {
       id: "/_authed/operations/supplies"
@@ -1269,6 +1402,27 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedPatientsIdNewBudgetRouteImport
       parentRoute: typeof AuthedRoute
     }
+    "/_authed/outreach/establecimientos/$rbd": {
+      id: "/_authed/outreach/establecimientos/$rbd"
+      path: "/$rbd"
+      fullPath: "/outreach/establecimientos/$rbd"
+      preLoaderRoute: typeof AuthedOutreachEstablecimientosRbdRouteImport
+      parentRoute: typeof AuthedOutreachEstablecimientosRoute
+    }
+    "/_authed/outreach/campanas/nueva": {
+      id: "/_authed/outreach/campanas/nueva"
+      path: "/nueva"
+      fullPath: "/outreach/campanas/nueva"
+      preLoaderRoute: typeof AuthedOutreachCampanasNuevaRouteImport
+      parentRoute: typeof AuthedOutreachCampanasRoute
+    }
+    "/_authed/outreach/campanas/$id": {
+      id: "/_authed/outreach/campanas/$id"
+      path: "/$id"
+      fullPath: "/outreach/campanas/$id"
+      preLoaderRoute: typeof AuthedOutreachCampanasIdRouteImport
+      parentRoute: typeof AuthedOutreachCampanasRoute
+    }
     "/_authed/finanzas/personal-credits/$creditId": {
       id: "/_authed/finanzas/personal-credits/$creditId"
       path: "/$creditId"
@@ -1407,6 +1561,56 @@ const AuthedOperationsRouteChildren: AuthedOperationsRouteChildren = {
 const AuthedOperationsRouteWithChildren =
   AuthedOperationsRoute._addFileChildren(AuthedOperationsRouteChildren)
 
+interface AuthedOutreachCampanasRouteChildren {
+  AuthedOutreachCampanasIdRoute: typeof AuthedOutreachCampanasIdRoute
+  AuthedOutreachCampanasNuevaRoute: typeof AuthedOutreachCampanasNuevaRoute
+}
+
+const AuthedOutreachCampanasRouteChildren: AuthedOutreachCampanasRouteChildren =
+  {
+    AuthedOutreachCampanasIdRoute: AuthedOutreachCampanasIdRoute,
+    AuthedOutreachCampanasNuevaRoute: AuthedOutreachCampanasNuevaRoute,
+  }
+
+const AuthedOutreachCampanasRouteWithChildren =
+  AuthedOutreachCampanasRoute._addFileChildren(
+    AuthedOutreachCampanasRouteChildren,
+  )
+
+interface AuthedOutreachEstablecimientosRouteChildren {
+  AuthedOutreachEstablecimientosRbdRoute: typeof AuthedOutreachEstablecimientosRbdRoute
+}
+
+const AuthedOutreachEstablecimientosRouteChildren: AuthedOutreachEstablecimientosRouteChildren =
+  {
+    AuthedOutreachEstablecimientosRbdRoute:
+      AuthedOutreachEstablecimientosRbdRoute,
+  }
+
+const AuthedOutreachEstablecimientosRouteWithChildren =
+  AuthedOutreachEstablecimientosRoute._addFileChildren(
+    AuthedOutreachEstablecimientosRouteChildren,
+  )
+
+interface AuthedOutreachRouteChildren {
+  AuthedOutreachCampanasRoute: typeof AuthedOutreachCampanasRouteWithChildren
+  AuthedOutreachEstablecimientosRoute: typeof AuthedOutreachEstablecimientosRouteWithChildren
+  AuthedOutreachImportarRoute: typeof AuthedOutreachImportarRoute
+  AuthedOutreachIndexRoute: typeof AuthedOutreachIndexRoute
+}
+
+const AuthedOutreachRouteChildren: AuthedOutreachRouteChildren = {
+  AuthedOutreachCampanasRoute: AuthedOutreachCampanasRouteWithChildren,
+  AuthedOutreachEstablecimientosRoute:
+    AuthedOutreachEstablecimientosRouteWithChildren,
+  AuthedOutreachImportarRoute: AuthedOutreachImportarRoute,
+  AuthedOutreachIndexRoute: AuthedOutreachIndexRoute,
+}
+
+const AuthedOutreachRouteWithChildren = AuthedOutreachRoute._addFileChildren(
+  AuthedOutreachRouteChildren,
+)
+
 interface AuthedServicesRouteChildren {
   AuthedServicesAgendaRoute: typeof AuthedServicesAgendaRoute
   AuthedServicesIndexRoute: typeof AuthedServicesIndexRoute
@@ -1464,6 +1668,7 @@ interface AuthedRouteChildren {
   AuthedHrRoute: typeof AuthedHrRouteWithChildren
   AuthedMarcarRoute: typeof AuthedMarcarRoute
   AuthedOperationsRoute: typeof AuthedOperationsRouteWithChildren
+  AuthedOutreachRoute: typeof AuthedOutreachRouteWithChildren
   AuthedServicesRoute: typeof AuthedServicesRouteWithChildren
   AuthedSettingsRoute: typeof AuthedSettingsRouteWithChildren
   AuthedIndexRoute: typeof AuthedIndexRoute
@@ -1486,6 +1691,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedHrRoute: AuthedHrRouteWithChildren,
   AuthedMarcarRoute: AuthedMarcarRoute,
   AuthedOperationsRoute: AuthedOperationsRouteWithChildren,
+  AuthedOutreachRoute: AuthedOutreachRouteWithChildren,
   AuthedServicesRoute: AuthedServicesRouteWithChildren,
   AuthedSettingsRoute: AuthedSettingsRouteWithChildren,
   AuthedIndexRoute: AuthedIndexRoute,
