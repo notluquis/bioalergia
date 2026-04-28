@@ -22,6 +22,7 @@ import { z } from "zod";
 import { useConfirmDialog } from "@/context/ConfirmDialogContext";
 import { useToast } from "@/context/ToastContext";
 import { autoLinkEventDteByPeriod } from "@/features/calendar/api";
+import { useFetchDteXmlByPeriod } from "@/features/finance/dte-analytics/hooks/useFetchDteXml";
 import {
   fetchHaulmerAvailablePeriods,
   syncHaulmerIncremental,
@@ -244,9 +245,15 @@ function SyncAllCard({
   );
 }
 
+function haulmerPeriodToYearMonth(period: string): string {
+  // YYYYMM → YYYY-MM
+  return `${period.substring(0, 4)}-${period.substring(4, 6)}`;
+}
+
 interface PeriodCardProps {
   period: MonthPeriod;
   lastSyncs: LastSyncState;
+  fetchXmlMutation: ReturnType<typeof useFetchDteXmlByPeriod>;
   syncMutation: {
     isPending: boolean;
     variables?: { period: string; docType: "sales" | "purchases" };
@@ -261,6 +268,7 @@ interface PeriodCardProps {
 function PeriodCard({
   period,
   lastSyncs,
+  fetchXmlMutation,
   syncMutation,
   onSync,
   hasSalesData,
@@ -268,6 +276,7 @@ function PeriodCard({
   getSalesCount,
   getPurchasesCount,
 }: PeriodCardProps) {
+  const yearMonth = haulmerPeriodToYearMonth(period.period);
   return (
     <Card key={period.period} className="border-default-100">
       <div className="gap-3 space-y-3 p-3">
@@ -311,6 +320,14 @@ function PeriodCard({
           >
             <Download className="h-4 w-4" />
             Importar
+          </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            isDisabled={fetchXmlMutation.isPending}
+            onPress={() => fetchXmlMutation.mutate({ period: yearMonth, direction: "sales" })}
+          >
+            Obtener XMLs
           </Button>
           {lastSyncs[`${period.period}-sales`] && (
             <div className="space-y-1 text-default-600 text-xs">
@@ -360,6 +377,14 @@ function PeriodCard({
             <Download className="h-4 w-4" />
             Importar
           </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            isDisabled={fetchXmlMutation.isPending}
+            onPress={() => fetchXmlMutation.mutate({ period: yearMonth, direction: "purchases" })}
+          >
+            Obtener XMLs
+          </Button>
           {lastSyncs[`${period.period}-purchases`] && (
             <div className="space-y-1 text-default-600 text-xs">
               <span className="block">
@@ -384,6 +409,7 @@ function PeriodCard({
 export function HaulmerSyncPage() {
   const { error: showError, success: showSuccess } = useToast();
   const confirm = useConfirmDialog();
+  const fetchXmlMutation = useFetchDteXmlByPeriod();
   const [lastSyncs, setLastSyncs] = useState<LastSyncState>({});
   const [isSyncingAll, setIsSyncingAll] = useState(false);
   const [isSyncingIncremental, setIsSyncingIncremental] = useState(false);
@@ -803,6 +829,7 @@ export function HaulmerSyncPage() {
                   key={period.period}
                   period={period}
                   lastSyncs={lastSyncs}
+                  fetchXmlMutation={fetchXmlMutation}
                   syncMutation={syncMutation}
                   onSync={handleSync}
                   hasSalesData={hasSalesData}
