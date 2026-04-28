@@ -3063,3 +3063,251 @@ model PatientCampaignRecipient {
   @@index([campaignId])
   @@map("patient_campaign_recipients")
 }
+
+// ============================================================
+// OUTREACH (Schools/Educational establishments outreach module)
+// ============================================================
+
+enum OutreachDependencia {
+  MUNICIPAL
+  PARTICULAR_SUBVENCIONADO
+  PARTICULAR_PAGADO
+  SLEP
+  CORPORACION_MUNICIPAL
+  OTRO
+}
+
+enum OutreachStatus {
+  SIN_CONTACTAR
+  CONTACTADO
+  SIN_RESPUESTA
+  RESPONDIO_INTERES
+  RESPONDIO_MAS_INFO
+  RESPONDIO_DESISTIO
+  REUNION_AGENDADA
+  CONVENIO_FIRMADO
+  DESCARTADO
+}
+
+enum OutreachPriority {
+  ALTA
+  MEDIA
+  BAJA
+}
+
+enum OutreachInteractionType {
+  EMAIL_ENVIADO
+  EMAIL_RECIBIDO
+  LLAMADA_REALIZADA
+  LLAMADA_RECIBIDA
+  WHATSAPP
+  REUNION_PRESENCIAL
+  REUNION_ONLINE
+  CHARLA_REALIZADA
+  NOTA_INTERNA
+}
+
+enum OutreachCampaignStatus {
+  BORRADOR
+  REVISION
+  ENVIANDO
+  COMPLETADA
+  PAUSADA
+  CANCELADA
+}
+
+enum OutreachDeliveryStatus {
+  PENDIENTE
+  ENVIADO
+  ERROR
+  REBOTADO
+  ABIERTO
+  RESPONDIDO
+}
+
+model OutreachEstablishment {
+  rbd                  String                   @id @db.VarChar(20)
+  nombre               String
+  dependencia          OutreachDependencia      @default(OTRO)
+  comuna               String
+  region               String
+  direccion            String?
+  telefonoMineduc      String?                  @map("telefono_mineduc")
+  emailMineduc         String?                  @map("email_mineduc")
+  directorMineduc      String?                  @map("director_mineduc")
+  matriculaTotal       Int?                     @map("matricula_total")
+  rural                Boolean                  @default(false)
+
+  websiteUrl           String?                  @map("website_url")
+  emailsAdicionales    String[]                 @default([]) @map("emails_adicionales")
+  telefonosAdicionales String[]                 @default([]) @map("telefonos_adicionales")
+  notas                String?
+  prioridad            OutreachPriority         @default(MEDIA)
+  etiquetas            String[]                 @default([])
+
+  estado               OutreachStatus           @default(SIN_CONTACTAR)
+  ultimoContactoAt     DateTime?                @map("ultimo_contacto_at")
+
+  activo               Boolean                  @default(true)
+  importadoEn          DateTime                 @default(now()) @map("importado_en")
+  actualizadoEn        DateTime                 @default(now()) @updatedAt @map("actualizado_en")
+
+  contactos            OutreachContact[]
+  interacciones        OutreachInteraction[]
+  envios               OutreachEmailDelivery[]
+
+  @@index([estado])
+  @@index([dependencia])
+  @@index([comuna])
+  @@index([prioridad])
+  @@index([activo])
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("outreach_establishments")
+}
+
+model OutreachContact {
+  id                  Int                       @id @default(autoincrement())
+  establecimientoRbd  String                    @map("establecimiento_rbd") @db.VarChar(20)
+  nombre              String
+  cargo               String
+  email               String?
+  telefono            String?
+  esPrincipal         Boolean                   @default(false) @map("es_principal")
+  notas               String?
+  createdAt           DateTime                  @default(now()) @map("created_at")
+  updatedAt           DateTime                  @default(now()) @updatedAt @map("updated_at")
+
+  establishment       OutreachEstablishment     @relation(fields: [establecimientoRbd], references: [rbd], onDelete: Cascade)
+  interacciones       OutreachInteraction[]
+  envios              OutreachEmailDelivery[]
+
+  @@index([establecimientoRbd])
+  @@index([email])
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("outreach_contacts")
+}
+
+model OutreachInteraction {
+  id                  Int                       @id @default(autoincrement())
+  establecimientoRbd  String                    @map("establecimiento_rbd") @db.VarChar(20)
+  contactoId          Int?                      @map("contacto_id")
+  tipo                OutreachInteractionType
+  fecha               DateTime
+  asunto              String?
+  contenido           String
+  emailDesde          String?                   @map("email_desde")
+  emailHacia          String?                   @map("email_hacia")
+  resultado           String?
+  creadoPorUserId     Int?                      @map("creado_por_user_id")
+  creadoPorNombre     String?                   @map("creado_por_nombre")
+  createdAt           DateTime                  @default(now()) @map("created_at")
+
+  establishment       OutreachEstablishment     @relation(fields: [establecimientoRbd], references: [rbd], onDelete: Cascade)
+  contacto            OutreachContact?          @relation(fields: [contactoId], references: [id], onDelete: SetNull)
+
+  @@index([establecimientoRbd])
+  @@index([contactoId])
+  @@index([tipo])
+  @@index([fecha])
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("outreach_interactions")
+}
+
+model OutreachEmailCampaign {
+  id                  Int                       @id @default(autoincrement())
+  nombre              String
+  asunto              String
+  cuerpoHtml          String                    @map("cuerpo_html")
+  cuerpoTexto         String                    @map("cuerpo_texto")
+  fromEmail           String                    @map("from_email")
+  fromNombre          String                    @map("from_nombre")
+  replyTo             String?                   @map("reply_to")
+  filtros             Json                      @default("{}")
+  ratePerHour         Int                       @default(50) @map("rate_per_hour")
+  estado              OutreachCampaignStatus    @default(BORRADOR)
+
+  totalDestinatarios  Int                       @default(0) @map("total_destinatarios")
+  enviados            Int                       @default(0)
+  errores             Int                       @default(0)
+  respondidos         Int                       @default(0)
+
+  createdByUserId     Int?                      @map("created_by_user_id")
+  createdAt           DateTime                  @default(now()) @map("created_at")
+  updatedAt           DateTime                  @default(now()) @updatedAt @map("updated_at")
+  enviadoEn           DateTime?                 @map("enviado_en")
+
+  envios              OutreachEmailDelivery[]
+
+  @@index([estado])
+  @@index([createdByUserId])
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("outreach_email_campaigns")
+}
+
+model OutreachEmailDelivery {
+  id                  Int                       @id @default(autoincrement())
+  campaignId          Int                       @map("campaign_id")
+  establecimientoRbd  String                    @map("establecimiento_rbd") @db.VarChar(20)
+  contactoId          Int?                      @map("contacto_id")
+  emailDestinatario   String                    @map("email_destinatario")
+  asuntoRender        String?                   @map("asunto_render")
+  cuerpoHtmlRender    String?                   @map("cuerpo_html_render")
+  cuerpoTextoRender   String?                   @map("cuerpo_texto_render")
+  estado              OutreachDeliveryStatus    @default(PENDIENTE)
+  errorMensaje        String?                   @map("error_mensaje")
+  intentos            Int                       @default(0)
+  enviadoEn           DateTime?                 @map("enviado_en")
+  createdAt           DateTime                  @default(now()) @map("created_at")
+  updatedAt           DateTime                  @default(now()) @updatedAt @map("updated_at")
+
+  campaign            OutreachEmailCampaign     @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  establishment       OutreachEstablishment     @relation(fields: [establecimientoRbd], references: [rbd], onDelete: Cascade)
+  contacto            OutreachContact?          @relation(fields: [contactoId], references: [id], onDelete: SetNull)
+
+  @@index([campaignId])
+  @@index([establecimientoRbd])
+  @@index([estado])
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("outreach_email_deliveries")
+}
+
+model OutreachImportLog {
+  id                Int       @id @default(autoincrement())
+  source            String
+  fileUrl           String?   @map("file_url")
+  totalRows         Int       @default(0) @map("total_rows")
+  nuevos            Int       @default(0)
+  actualizados      Int       @default(0)
+  inactivos         Int       @default(0)
+  errores           Int       @default(0)
+  errorDetalle      String?   @map("error_detalle")
+  startedAt         DateTime  @default(now()) @map("started_at")
+  finishedAt        DateTime? @map("finished_at")
+  createdByUserId   Int?      @map("created_by_user_id")
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("outreach_import_logs")
+}

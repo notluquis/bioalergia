@@ -8435,6 +8435,588 @@ export class SchemaType implements SchemaDef {
                 id: { type: "Int" },
                 campaignId_patientRut: { campaignId: { type: "Int" }, patientRut: { type: "String" } }
             }
+        },
+        OutreachEstablishment: {
+            name: "OutreachEstablishment",
+            fields: {
+                rbd: {
+                    name: "rbd",
+                    type: "String",
+                    id: true
+                },
+                nombre: {
+                    name: "nombre",
+                    type: "String"
+                },
+                dependencia: {
+                    name: "dependencia",
+                    type: "OutreachDependencia",
+                    default: "OTRO" as FieldDefault
+                },
+                comuna: {
+                    name: "comuna",
+                    type: "String"
+                },
+                region: {
+                    name: "region",
+                    type: "String"
+                },
+                direccion: {
+                    name: "direccion",
+                    type: "String",
+                    optional: true
+                },
+                telefonoMineduc: {
+                    name: "telefonoMineduc",
+                    type: "String",
+                    optional: true
+                },
+                emailMineduc: {
+                    name: "emailMineduc",
+                    type: "String",
+                    optional: true
+                },
+                directorMineduc: {
+                    name: "directorMineduc",
+                    type: "String",
+                    optional: true
+                },
+                matriculaTotal: {
+                    name: "matriculaTotal",
+                    type: "Int",
+                    optional: true
+                },
+                rural: {
+                    name: "rural",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                websiteUrl: {
+                    name: "websiteUrl",
+                    type: "String",
+                    optional: true
+                },
+                emailsAdicionales: {
+                    name: "emailsAdicionales",
+                    type: "String",
+                    array: true,
+                    default: [] as FieldDefault
+                },
+                telefonosAdicionales: {
+                    name: "telefonosAdicionales",
+                    type: "String",
+                    array: true,
+                    default: [] as FieldDefault
+                },
+                notas: {
+                    name: "notas",
+                    type: "String",
+                    optional: true
+                },
+                prioridad: {
+                    name: "prioridad",
+                    type: "OutreachPriority",
+                    default: "MEDIA" as FieldDefault
+                },
+                etiquetas: {
+                    name: "etiquetas",
+                    type: "String",
+                    array: true,
+                    default: [] as FieldDefault
+                },
+                estado: {
+                    name: "estado",
+                    type: "OutreachStatus",
+                    default: "SIN_CONTACTAR" as FieldDefault
+                },
+                ultimoContactoAt: {
+                    name: "ultimoContactoAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                activo: {
+                    name: "activo",
+                    type: "Boolean",
+                    default: true as FieldDefault
+                },
+                importadoEn: {
+                    name: "importadoEn",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                actualizadoEn: {
+                    name: "actualizadoEn",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                contactos: {
+                    name: "contactos",
+                    type: "OutreachContact",
+                    array: true,
+                    relation: { opposite: "establishment" }
+                },
+                interacciones: {
+                    name: "interacciones",
+                    type: "OutreachInteraction",
+                    array: true,
+                    relation: { opposite: "establishment" }
+                },
+                envios: {
+                    name: "envios",
+                    type: "OutreachEmailDelivery",
+                    array: true,
+                    relation: { opposite: "establishment" }
+                }
+            },
+            idFields: ["rbd"],
+            uniqueFields: {
+                rbd: { type: "String" }
+            }
+        },
+        OutreachContact: {
+            name: "OutreachContact",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                establecimientoRbd: {
+                    name: "establecimientoRbd",
+                    type: "String",
+                    foreignKeyFor: [
+                        "establishment"
+                    ] as readonly string[]
+                },
+                nombre: {
+                    name: "nombre",
+                    type: "String"
+                },
+                cargo: {
+                    name: "cargo",
+                    type: "String"
+                },
+                email: {
+                    name: "email",
+                    type: "String",
+                    optional: true
+                },
+                telefono: {
+                    name: "telefono",
+                    type: "String",
+                    optional: true
+                },
+                esPrincipal: {
+                    name: "esPrincipal",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                notas: {
+                    name: "notas",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                establishment: {
+                    name: "establishment",
+                    type: "OutreachEstablishment",
+                    relation: { opposite: "contactos", fields: ["establecimientoRbd"], references: ["rbd"], onDelete: "Cascade" }
+                },
+                interacciones: {
+                    name: "interacciones",
+                    type: "OutreachInteraction",
+                    array: true,
+                    relation: { opposite: "contacto" }
+                },
+                envios: {
+                    name: "envios",
+                    type: "OutreachEmailDelivery",
+                    array: true,
+                    relation: { opposite: "contacto" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        OutreachInteraction: {
+            name: "OutreachInteraction",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                establecimientoRbd: {
+                    name: "establecimientoRbd",
+                    type: "String",
+                    foreignKeyFor: [
+                        "establishment"
+                    ] as readonly string[]
+                },
+                contactoId: {
+                    name: "contactoId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "contacto"
+                    ] as readonly string[]
+                },
+                tipo: {
+                    name: "tipo",
+                    type: "OutreachInteractionType"
+                },
+                fecha: {
+                    name: "fecha",
+                    type: "DateTime"
+                },
+                asunto: {
+                    name: "asunto",
+                    type: "String",
+                    optional: true
+                },
+                contenido: {
+                    name: "contenido",
+                    type: "String"
+                },
+                emailDesde: {
+                    name: "emailDesde",
+                    type: "String",
+                    optional: true
+                },
+                emailHacia: {
+                    name: "emailHacia",
+                    type: "String",
+                    optional: true
+                },
+                resultado: {
+                    name: "resultado",
+                    type: "String",
+                    optional: true
+                },
+                creadoPorUserId: {
+                    name: "creadoPorUserId",
+                    type: "Int",
+                    optional: true
+                },
+                creadoPorNombre: {
+                    name: "creadoPorNombre",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                establishment: {
+                    name: "establishment",
+                    type: "OutreachEstablishment",
+                    relation: { opposite: "interacciones", fields: ["establecimientoRbd"], references: ["rbd"], onDelete: "Cascade" }
+                },
+                contacto: {
+                    name: "contacto",
+                    type: "OutreachContact",
+                    optional: true,
+                    relation: { opposite: "interacciones", fields: ["contactoId"], references: ["id"], onDelete: "SetNull" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        OutreachEmailCampaign: {
+            name: "OutreachEmailCampaign",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                nombre: {
+                    name: "nombre",
+                    type: "String"
+                },
+                asunto: {
+                    name: "asunto",
+                    type: "String"
+                },
+                cuerpoHtml: {
+                    name: "cuerpoHtml",
+                    type: "String"
+                },
+                cuerpoTexto: {
+                    name: "cuerpoTexto",
+                    type: "String"
+                },
+                fromEmail: {
+                    name: "fromEmail",
+                    type: "String"
+                },
+                fromNombre: {
+                    name: "fromNombre",
+                    type: "String"
+                },
+                replyTo: {
+                    name: "replyTo",
+                    type: "String",
+                    optional: true
+                },
+                filtros: {
+                    name: "filtros",
+                    type: "Json",
+                    default: "{}" as FieldDefault
+                },
+                ratePerHour: {
+                    name: "ratePerHour",
+                    type: "Int",
+                    default: 50 as FieldDefault
+                },
+                estado: {
+                    name: "estado",
+                    type: "OutreachCampaignStatus",
+                    default: "BORRADOR" as FieldDefault
+                },
+                totalDestinatarios: {
+                    name: "totalDestinatarios",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                enviados: {
+                    name: "enviados",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                errores: {
+                    name: "errores",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                respondidos: {
+                    name: "respondidos",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                createdByUserId: {
+                    name: "createdByUserId",
+                    type: "Int",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                enviadoEn: {
+                    name: "enviadoEn",
+                    type: "DateTime",
+                    optional: true
+                },
+                envios: {
+                    name: "envios",
+                    type: "OutreachEmailDelivery",
+                    array: true,
+                    relation: { opposite: "campaign" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        OutreachEmailDelivery: {
+            name: "OutreachEmailDelivery",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                campaignId: {
+                    name: "campaignId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "campaign"
+                    ] as readonly string[]
+                },
+                establecimientoRbd: {
+                    name: "establecimientoRbd",
+                    type: "String",
+                    foreignKeyFor: [
+                        "establishment"
+                    ] as readonly string[]
+                },
+                contactoId: {
+                    name: "contactoId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "contacto"
+                    ] as readonly string[]
+                },
+                emailDestinatario: {
+                    name: "emailDestinatario",
+                    type: "String"
+                },
+                asuntoRender: {
+                    name: "asuntoRender",
+                    type: "String",
+                    optional: true
+                },
+                cuerpoHtmlRender: {
+                    name: "cuerpoHtmlRender",
+                    type: "String",
+                    optional: true
+                },
+                cuerpoTextoRender: {
+                    name: "cuerpoTextoRender",
+                    type: "String",
+                    optional: true
+                },
+                estado: {
+                    name: "estado",
+                    type: "OutreachDeliveryStatus",
+                    default: "PENDIENTE" as FieldDefault
+                },
+                errorMensaje: {
+                    name: "errorMensaje",
+                    type: "String",
+                    optional: true
+                },
+                intentos: {
+                    name: "intentos",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                enviadoEn: {
+                    name: "enviadoEn",
+                    type: "DateTime",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                campaign: {
+                    name: "campaign",
+                    type: "OutreachEmailCampaign",
+                    relation: { opposite: "envios", fields: ["campaignId"], references: ["id"], onDelete: "Cascade" }
+                },
+                establishment: {
+                    name: "establishment",
+                    type: "OutreachEstablishment",
+                    relation: { opposite: "envios", fields: ["establecimientoRbd"], references: ["rbd"], onDelete: "Cascade" }
+                },
+                contacto: {
+                    name: "contacto",
+                    type: "OutreachContact",
+                    optional: true,
+                    relation: { opposite: "envios", fields: ["contactoId"], references: ["id"], onDelete: "SetNull" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        OutreachImportLog: {
+            name: "OutreachImportLog",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                source: {
+                    name: "source",
+                    type: "String"
+                },
+                fileUrl: {
+                    name: "fileUrl",
+                    type: "String",
+                    optional: true
+                },
+                totalRows: {
+                    name: "totalRows",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                nuevos: {
+                    name: "nuevos",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                actualizados: {
+                    name: "actualizados",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                inactivos: {
+                    name: "inactivos",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                errores: {
+                    name: "errores",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                errorDetalle: {
+                    name: "errorDetalle",
+                    type: "String",
+                    optional: true
+                },
+                startedAt: {
+                    name: "startedAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                finishedAt: {
+                    name: "finishedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                createdByUserId: {
+                    name: "createdByUserId",
+                    type: "Int",
+                    optional: true
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
         }
     } as const;
     enums = {
@@ -8846,6 +9428,75 @@ export class SchemaType implements SchemaDef {
                 ACCEPTED: "ACCEPTED",
                 DISMISSED: "DISMISSED",
                 NO_RESPONSE: "NO_RESPONSE"
+            }
+        },
+        OutreachDependencia: {
+            name: "OutreachDependencia",
+            values: {
+                MUNICIPAL: "MUNICIPAL",
+                PARTICULAR_SUBVENCIONADO: "PARTICULAR_SUBVENCIONADO",
+                PARTICULAR_PAGADO: "PARTICULAR_PAGADO",
+                SLEP: "SLEP",
+                CORPORACION_MUNICIPAL: "CORPORACION_MUNICIPAL",
+                OTRO: "OTRO"
+            }
+        },
+        OutreachStatus: {
+            name: "OutreachStatus",
+            values: {
+                SIN_CONTACTAR: "SIN_CONTACTAR",
+                CONTACTADO: "CONTACTADO",
+                SIN_RESPUESTA: "SIN_RESPUESTA",
+                RESPONDIO_INTERES: "RESPONDIO_INTERES",
+                RESPONDIO_MAS_INFO: "RESPONDIO_MAS_INFO",
+                RESPONDIO_DESISTIO: "RESPONDIO_DESISTIO",
+                REUNION_AGENDADA: "REUNION_AGENDADA",
+                CONVENIO_FIRMADO: "CONVENIO_FIRMADO",
+                DESCARTADO: "DESCARTADO"
+            }
+        },
+        OutreachPriority: {
+            name: "OutreachPriority",
+            values: {
+                ALTA: "ALTA",
+                MEDIA: "MEDIA",
+                BAJA: "BAJA"
+            }
+        },
+        OutreachInteractionType: {
+            name: "OutreachInteractionType",
+            values: {
+                EMAIL_ENVIADO: "EMAIL_ENVIADO",
+                EMAIL_RECIBIDO: "EMAIL_RECIBIDO",
+                LLAMADA_REALIZADA: "LLAMADA_REALIZADA",
+                LLAMADA_RECIBIDA: "LLAMADA_RECIBIDA",
+                WHATSAPP: "WHATSAPP",
+                REUNION_PRESENCIAL: "REUNION_PRESENCIAL",
+                REUNION_ONLINE: "REUNION_ONLINE",
+                CHARLA_REALIZADA: "CHARLA_REALIZADA",
+                NOTA_INTERNA: "NOTA_INTERNA"
+            }
+        },
+        OutreachCampaignStatus: {
+            name: "OutreachCampaignStatus",
+            values: {
+                BORRADOR: "BORRADOR",
+                REVISION: "REVISION",
+                ENVIANDO: "ENVIANDO",
+                COMPLETADA: "COMPLETADA",
+                PAUSADA: "PAUSADA",
+                CANCELADA: "CANCELADA"
+            }
+        },
+        OutreachDeliveryStatus: {
+            name: "OutreachDeliveryStatus",
+            values: {
+                PENDIENTE: "PENDIENTE",
+                ENVIADO: "ENVIADO",
+                ERROR: "ERROR",
+                REBOTADO: "REBOTADO",
+                ABIERTO: "ABIERTO",
+                RESPONDIDO: "RESPONDIDO"
             }
         }
     } as const;

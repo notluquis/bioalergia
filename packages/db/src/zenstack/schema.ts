@@ -10394,6 +10394,718 @@ export class SchemaType implements SchemaDef {
                 id: { type: "Int" },
                 campaignId_patientRut: { campaignId: { type: "Int" }, patientRut: { type: "String" } }
             }
+        },
+        OutreachEstablishment: {
+            name: "OutreachEstablishment",
+            fields: {
+                rbd: {
+                    name: "rbd",
+                    type: "String",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] }] as readonly AttributeApplication[]
+                },
+                nombre: {
+                    name: "nombre",
+                    type: "String"
+                },
+                dependencia: {
+                    name: "dependencia",
+                    type: "OutreachDependencia",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("OTRO") }] }] as readonly AttributeApplication[],
+                    default: "OTRO" as FieldDefault
+                },
+                comuna: {
+                    name: "comuna",
+                    type: "String"
+                },
+                region: {
+                    name: "region",
+                    type: "String"
+                },
+                direccion: {
+                    name: "direccion",
+                    type: "String",
+                    optional: true
+                },
+                telefonoMineduc: {
+                    name: "telefonoMineduc",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("telefono_mineduc") }] }] as readonly AttributeApplication[]
+                },
+                emailMineduc: {
+                    name: "emailMineduc",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("email_mineduc") }] }] as readonly AttributeApplication[]
+                },
+                directorMineduc: {
+                    name: "directorMineduc",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("director_mineduc") }] }] as readonly AttributeApplication[]
+                },
+                matriculaTotal: {
+                    name: "matriculaTotal",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("matricula_total") }] }] as readonly AttributeApplication[]
+                },
+                rural: {
+                    name: "rural",
+                    type: "Boolean",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }] as readonly AttributeApplication[],
+                    default: false as FieldDefault
+                },
+                websiteUrl: {
+                    name: "websiteUrl",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("website_url") }] }] as readonly AttributeApplication[]
+                },
+                emailsAdicionales: {
+                    name: "emailsAdicionales",
+                    type: "String",
+                    array: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.array("Any", []) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("emails_adicionales") }] }] as readonly AttributeApplication[],
+                    default: [] as FieldDefault
+                },
+                telefonosAdicionales: {
+                    name: "telefonosAdicionales",
+                    type: "String",
+                    array: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.array("Any", []) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("telefonos_adicionales") }] }] as readonly AttributeApplication[],
+                    default: [] as FieldDefault
+                },
+                notas: {
+                    name: "notas",
+                    type: "String",
+                    optional: true
+                },
+                prioridad: {
+                    name: "prioridad",
+                    type: "OutreachPriority",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("MEDIA") }] }] as readonly AttributeApplication[],
+                    default: "MEDIA" as FieldDefault
+                },
+                etiquetas: {
+                    name: "etiquetas",
+                    type: "String",
+                    array: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.array("Any", []) }] }] as readonly AttributeApplication[],
+                    default: [] as FieldDefault
+                },
+                estado: {
+                    name: "estado",
+                    type: "OutreachStatus",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("SIN_CONTACTAR") }] }] as readonly AttributeApplication[],
+                    default: "SIN_CONTACTAR" as FieldDefault
+                },
+                ultimoContactoAt: {
+                    name: "ultimoContactoAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("ultimo_contacto_at") }] }] as readonly AttributeApplication[]
+                },
+                activo: {
+                    name: "activo",
+                    type: "Boolean",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(true) }] }] as readonly AttributeApplication[],
+                    default: true as FieldDefault
+                },
+                importadoEn: {
+                    name: "importadoEn",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("importado_en") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                actualizadoEn: {
+                    name: "actualizadoEn",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("actualizado_en") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                contactos: {
+                    name: "contactos",
+                    type: "OutreachContact",
+                    array: true,
+                    relation: { opposite: "establishment" }
+                },
+                interacciones: {
+                    name: "interacciones",
+                    type: "OutreachInteraction",
+                    array: true,
+                    relation: { opposite: "establishment" }
+                },
+                envios: {
+                    name: "envios",
+                    type: "OutreachEmailDelivery",
+                    array: true,
+                    relation: { opposite: "establishment" }
+                }
+            },
+            attributes: [
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("OutreachStatus", [ExpressionUtils.field("estado")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("OutreachDependencia", [ExpressionUtils.field("dependencia")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("comuna")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("OutreachPriority", [ExpressionUtils.field("prioridad")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Boolean", [ExpressionUtils.field("activo")]) }] },
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("outreach_establishments") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["rbd"],
+            uniqueFields: {
+                rbd: { type: "String" }
+            }
+        },
+        OutreachContact: {
+            name: "OutreachContact",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                establecimientoRbd: {
+                    name: "establecimientoRbd",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("establecimiento_rbd") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "establishment"
+                    ] as readonly string[]
+                },
+                nombre: {
+                    name: "nombre",
+                    type: "String"
+                },
+                cargo: {
+                    name: "cargo",
+                    type: "String"
+                },
+                email: {
+                    name: "email",
+                    type: "String",
+                    optional: true
+                },
+                telefono: {
+                    name: "telefono",
+                    type: "String",
+                    optional: true
+                },
+                esPrincipal: {
+                    name: "esPrincipal",
+                    type: "Boolean",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("es_principal") }] }] as readonly AttributeApplication[],
+                    default: false as FieldDefault
+                },
+                notas: {
+                    name: "notas",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                establishment: {
+                    name: "establishment",
+                    type: "OutreachEstablishment",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("establecimientoRbd")]) }, { name: "references", value: ExpressionUtils.array("String", [ExpressionUtils.field("rbd")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "contactos", fields: ["establecimientoRbd"], references: ["rbd"], onDelete: "Cascade" }
+                },
+                interacciones: {
+                    name: "interacciones",
+                    type: "OutreachInteraction",
+                    array: true,
+                    relation: { opposite: "contacto" }
+                },
+                envios: {
+                    name: "envios",
+                    type: "OutreachEmailDelivery",
+                    array: true,
+                    relation: { opposite: "contacto" }
+                }
+            },
+            attributes: [
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("establecimientoRbd")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("email")]) }] },
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("outreach_contacts") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        OutreachInteraction: {
+            name: "OutreachInteraction",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                establecimientoRbd: {
+                    name: "establecimientoRbd",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("establecimiento_rbd") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "establishment"
+                    ] as readonly string[]
+                },
+                contactoId: {
+                    name: "contactoId",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("contacto_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "contacto"
+                    ] as readonly string[]
+                },
+                tipo: {
+                    name: "tipo",
+                    type: "OutreachInteractionType"
+                },
+                fecha: {
+                    name: "fecha",
+                    type: "DateTime"
+                },
+                asunto: {
+                    name: "asunto",
+                    type: "String",
+                    optional: true
+                },
+                contenido: {
+                    name: "contenido",
+                    type: "String"
+                },
+                emailDesde: {
+                    name: "emailDesde",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("email_desde") }] }] as readonly AttributeApplication[]
+                },
+                emailHacia: {
+                    name: "emailHacia",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("email_hacia") }] }] as readonly AttributeApplication[]
+                },
+                resultado: {
+                    name: "resultado",
+                    type: "String",
+                    optional: true
+                },
+                creadoPorUserId: {
+                    name: "creadoPorUserId",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("creado_por_user_id") }] }] as readonly AttributeApplication[]
+                },
+                creadoPorNombre: {
+                    name: "creadoPorNombre",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("creado_por_nombre") }] }] as readonly AttributeApplication[]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                establishment: {
+                    name: "establishment",
+                    type: "OutreachEstablishment",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("establecimientoRbd")]) }, { name: "references", value: ExpressionUtils.array("String", [ExpressionUtils.field("rbd")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "interacciones", fields: ["establecimientoRbd"], references: ["rbd"], onDelete: "Cascade" }
+                },
+                contacto: {
+                    name: "contacto",
+                    type: "OutreachContact",
+                    optional: true,
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("contactoId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("SetNull") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "interacciones", fields: ["contactoId"], references: ["id"], onDelete: "SetNull" }
+                }
+            },
+            attributes: [
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("establecimientoRbd")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("contactoId")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("OutreachInteractionType", [ExpressionUtils.field("tipo")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("fecha")]) }] },
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("outreach_interactions") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        OutreachEmailCampaign: {
+            name: "OutreachEmailCampaign",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                nombre: {
+                    name: "nombre",
+                    type: "String"
+                },
+                asunto: {
+                    name: "asunto",
+                    type: "String"
+                },
+                cuerpoHtml: {
+                    name: "cuerpoHtml",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("cuerpo_html") }] }] as readonly AttributeApplication[]
+                },
+                cuerpoTexto: {
+                    name: "cuerpoTexto",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("cuerpo_texto") }] }] as readonly AttributeApplication[]
+                },
+                fromEmail: {
+                    name: "fromEmail",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("from_email") }] }] as readonly AttributeApplication[]
+                },
+                fromNombre: {
+                    name: "fromNombre",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("from_nombre") }] }] as readonly AttributeApplication[]
+                },
+                replyTo: {
+                    name: "replyTo",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("reply_to") }] }] as readonly AttributeApplication[]
+                },
+                filtros: {
+                    name: "filtros",
+                    type: "Json",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("{}") }] }] as readonly AttributeApplication[],
+                    default: "{}" as FieldDefault
+                },
+                ratePerHour: {
+                    name: "ratePerHour",
+                    type: "Int",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(50) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("rate_per_hour") }] }] as readonly AttributeApplication[],
+                    default: 50 as FieldDefault
+                },
+                estado: {
+                    name: "estado",
+                    type: "OutreachCampaignStatus",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("BORRADOR") }] }] as readonly AttributeApplication[],
+                    default: "BORRADOR" as FieldDefault
+                },
+                totalDestinatarios: {
+                    name: "totalDestinatarios",
+                    type: "Int",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("total_destinatarios") }] }] as readonly AttributeApplication[],
+                    default: 0 as FieldDefault
+                },
+                enviados: {
+                    name: "enviados",
+                    type: "Int",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }] as readonly AttributeApplication[],
+                    default: 0 as FieldDefault
+                },
+                errores: {
+                    name: "errores",
+                    type: "Int",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }] as readonly AttributeApplication[],
+                    default: 0 as FieldDefault
+                },
+                respondidos: {
+                    name: "respondidos",
+                    type: "Int",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }] as readonly AttributeApplication[],
+                    default: 0 as FieldDefault
+                },
+                createdByUserId: {
+                    name: "createdByUserId",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_by_user_id") }] }] as readonly AttributeApplication[]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                enviadoEn: {
+                    name: "enviadoEn",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("enviado_en") }] }] as readonly AttributeApplication[]
+                },
+                envios: {
+                    name: "envios",
+                    type: "OutreachEmailDelivery",
+                    array: true,
+                    relation: { opposite: "campaign" }
+                }
+            },
+            attributes: [
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("OutreachCampaignStatus", [ExpressionUtils.field("estado")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("createdByUserId")]) }] },
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("outreach_email_campaigns") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        OutreachEmailDelivery: {
+            name: "OutreachEmailDelivery",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                campaignId: {
+                    name: "campaignId",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("campaign_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "campaign"
+                    ] as readonly string[]
+                },
+                establecimientoRbd: {
+                    name: "establecimientoRbd",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("establecimiento_rbd") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "establishment"
+                    ] as readonly string[]
+                },
+                contactoId: {
+                    name: "contactoId",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("contacto_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "contacto"
+                    ] as readonly string[]
+                },
+                emailDestinatario: {
+                    name: "emailDestinatario",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("email_destinatario") }] }] as readonly AttributeApplication[]
+                },
+                asuntoRender: {
+                    name: "asuntoRender",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("asunto_render") }] }] as readonly AttributeApplication[]
+                },
+                cuerpoHtmlRender: {
+                    name: "cuerpoHtmlRender",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("cuerpo_html_render") }] }] as readonly AttributeApplication[]
+                },
+                cuerpoTextoRender: {
+                    name: "cuerpoTextoRender",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("cuerpo_texto_render") }] }] as readonly AttributeApplication[]
+                },
+                estado: {
+                    name: "estado",
+                    type: "OutreachDeliveryStatus",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("PENDIENTE") }] }] as readonly AttributeApplication[],
+                    default: "PENDIENTE" as FieldDefault
+                },
+                errorMensaje: {
+                    name: "errorMensaje",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("error_mensaje") }] }] as readonly AttributeApplication[]
+                },
+                intentos: {
+                    name: "intentos",
+                    type: "Int",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }] as readonly AttributeApplication[],
+                    default: 0 as FieldDefault
+                },
+                enviadoEn: {
+                    name: "enviadoEn",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("enviado_en") }] }] as readonly AttributeApplication[]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                campaign: {
+                    name: "campaign",
+                    type: "OutreachEmailCampaign",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("campaignId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "envios", fields: ["campaignId"], references: ["id"], onDelete: "Cascade" }
+                },
+                establishment: {
+                    name: "establishment",
+                    type: "OutreachEstablishment",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("establecimientoRbd")]) }, { name: "references", value: ExpressionUtils.array("String", [ExpressionUtils.field("rbd")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "envios", fields: ["establecimientoRbd"], references: ["rbd"], onDelete: "Cascade" }
+                },
+                contacto: {
+                    name: "contacto",
+                    type: "OutreachContact",
+                    optional: true,
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("contactoId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("SetNull") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "envios", fields: ["contactoId"], references: ["id"], onDelete: "SetNull" }
+                }
+            },
+            attributes: [
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("campaignId")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("establecimientoRbd")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("OutreachDeliveryStatus", [ExpressionUtils.field("estado")]) }] },
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("outreach_email_deliveries") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        OutreachImportLog: {
+            name: "OutreachImportLog",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                source: {
+                    name: "source",
+                    type: "String"
+                },
+                fileUrl: {
+                    name: "fileUrl",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("file_url") }] }] as readonly AttributeApplication[]
+                },
+                totalRows: {
+                    name: "totalRows",
+                    type: "Int",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("total_rows") }] }] as readonly AttributeApplication[],
+                    default: 0 as FieldDefault
+                },
+                nuevos: {
+                    name: "nuevos",
+                    type: "Int",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }] as readonly AttributeApplication[],
+                    default: 0 as FieldDefault
+                },
+                actualizados: {
+                    name: "actualizados",
+                    type: "Int",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }] as readonly AttributeApplication[],
+                    default: 0 as FieldDefault
+                },
+                inactivos: {
+                    name: "inactivos",
+                    type: "Int",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }] as readonly AttributeApplication[],
+                    default: 0 as FieldDefault
+                },
+                errores: {
+                    name: "errores",
+                    type: "Int",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }] as readonly AttributeApplication[],
+                    default: 0 as FieldDefault
+                },
+                errorDetalle: {
+                    name: "errorDetalle",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("error_detalle") }] }] as readonly AttributeApplication[]
+                },
+                startedAt: {
+                    name: "startedAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("started_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                finishedAt: {
+                    name: "finishedAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("finished_at") }] }] as readonly AttributeApplication[]
+                },
+                createdByUserId: {
+                    name: "createdByUserId",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_by_user_id") }] }] as readonly AttributeApplication[]
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("outreach_import_logs") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
         }
     } as const;
     enums = {
@@ -10805,6 +11517,75 @@ export class SchemaType implements SchemaDef {
                 ACCEPTED: "ACCEPTED",
                 DISMISSED: "DISMISSED",
                 NO_RESPONSE: "NO_RESPONSE"
+            }
+        },
+        OutreachDependencia: {
+            name: "OutreachDependencia",
+            values: {
+                MUNICIPAL: "MUNICIPAL",
+                PARTICULAR_SUBVENCIONADO: "PARTICULAR_SUBVENCIONADO",
+                PARTICULAR_PAGADO: "PARTICULAR_PAGADO",
+                SLEP: "SLEP",
+                CORPORACION_MUNICIPAL: "CORPORACION_MUNICIPAL",
+                OTRO: "OTRO"
+            }
+        },
+        OutreachStatus: {
+            name: "OutreachStatus",
+            values: {
+                SIN_CONTACTAR: "SIN_CONTACTAR",
+                CONTACTADO: "CONTACTADO",
+                SIN_RESPUESTA: "SIN_RESPUESTA",
+                RESPONDIO_INTERES: "RESPONDIO_INTERES",
+                RESPONDIO_MAS_INFO: "RESPONDIO_MAS_INFO",
+                RESPONDIO_DESISTIO: "RESPONDIO_DESISTIO",
+                REUNION_AGENDADA: "REUNION_AGENDADA",
+                CONVENIO_FIRMADO: "CONVENIO_FIRMADO",
+                DESCARTADO: "DESCARTADO"
+            }
+        },
+        OutreachPriority: {
+            name: "OutreachPriority",
+            values: {
+                ALTA: "ALTA",
+                MEDIA: "MEDIA",
+                BAJA: "BAJA"
+            }
+        },
+        OutreachInteractionType: {
+            name: "OutreachInteractionType",
+            values: {
+                EMAIL_ENVIADO: "EMAIL_ENVIADO",
+                EMAIL_RECIBIDO: "EMAIL_RECIBIDO",
+                LLAMADA_REALIZADA: "LLAMADA_REALIZADA",
+                LLAMADA_RECIBIDA: "LLAMADA_RECIBIDA",
+                WHATSAPP: "WHATSAPP",
+                REUNION_PRESENCIAL: "REUNION_PRESENCIAL",
+                REUNION_ONLINE: "REUNION_ONLINE",
+                CHARLA_REALIZADA: "CHARLA_REALIZADA",
+                NOTA_INTERNA: "NOTA_INTERNA"
+            }
+        },
+        OutreachCampaignStatus: {
+            name: "OutreachCampaignStatus",
+            values: {
+                BORRADOR: "BORRADOR",
+                REVISION: "REVISION",
+                ENVIANDO: "ENVIANDO",
+                COMPLETADA: "COMPLETADA",
+                PAUSADA: "PAUSADA",
+                CANCELADA: "CANCELADA"
+            }
+        },
+        OutreachDeliveryStatus: {
+            name: "OutreachDeliveryStatus",
+            values: {
+                PENDIENTE: "PENDIENTE",
+                ENVIADO: "ENVIADO",
+                ERROR: "ERROR",
+                REBOTADO: "REBOTADO",
+                ABIERTO: "ABIERTO",
+                RESPONDIDO: "RESPONDIDO"
             }
         }
     } as const;

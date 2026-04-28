@@ -5,7 +5,7 @@
 
 /* eslint-disable */
 
-import { schema as $schema, type SchemaType as $Schema } from "./schema-lite.js";
+import { schema as $schema, type SchemaType as $Schema } from "./schema-lite";
 import type { ModelResult as $ModelResult } from "@zenstackhq/orm";
 export type Person = $ModelResult<$Schema, "Person">;
 export type User = $ModelResult<$Schema, "User">;
@@ -104,6 +104,12 @@ export type CompensationPeriodBudget = $ModelResult<$Schema, "CompensationPeriod
 export type FinancialTransactionAllocation = $ModelResult<$Schema, "FinancialTransactionAllocation">;
 export type PatientCampaign = $ModelResult<$Schema, "PatientCampaign">;
 export type PatientCampaignRecipient = $ModelResult<$Schema, "PatientCampaignRecipient">;
+export type OutreachEstablishment = $ModelResult<$Schema, "OutreachEstablishment">;
+export type OutreachContact = $ModelResult<$Schema, "OutreachContact">;
+export type OutreachInteraction = $ModelResult<$Schema, "OutreachInteraction">;
+export type OutreachEmailCampaign = $ModelResult<$Schema, "OutreachEmailCampaign">;
+export type OutreachEmailDelivery = $ModelResult<$Schema, "OutreachEmailDelivery">;
+export type OutreachImportLog = $ModelResult<$Schema, "OutreachImportLog">;
 export const DoctoraliaSyncType = $schema.enums.DoctoraliaSyncType.values;
 export type DoctoraliaSyncType = (typeof DoctoraliaSyncType)[keyof typeof DoctoraliaSyncType];
 export const DoctoraliaEmailEventType = $schema.enums.DoctoraliaEmailEventType.values;
@@ -198,3 +204,15 @@ export const CompensationAllocationType = $schema.enums.CompensationAllocationTy
 export type CompensationAllocationType = (typeof CompensationAllocationType)[keyof typeof CompensationAllocationType];
 export const PatientCampaignRecipientStatus = $schema.enums.PatientCampaignRecipientStatus.values;
 export type PatientCampaignRecipientStatus = (typeof PatientCampaignRecipientStatus)[keyof typeof PatientCampaignRecipientStatus];
+export const OutreachDependencia = $schema.enums.OutreachDependencia.values;
+export type OutreachDependencia = (typeof OutreachDependencia)[keyof typeof OutreachDependencia];
+export const OutreachStatus = $schema.enums.OutreachStatus.values;
+export type OutreachStatus = (typeof OutreachStatus)[keyof typeof OutreachStatus];
+export const OutreachPriority = $schema.enums.OutreachPriority.values;
+export type OutreachPriority = (typeof OutreachPriority)[keyof typeof OutreachPriority];
+export const OutreachInteractionType = $schema.enums.OutreachInteractionType.values;
+export type OutreachInteractionType = (typeof OutreachInteractionType)[keyof typeof OutreachInteractionType];
+export const OutreachCampaignStatus = $schema.enums.OutreachCampaignStatus.values;
+export type OutreachCampaignStatus = (typeof OutreachCampaignStatus)[keyof typeof OutreachCampaignStatus];
+export const OutreachDeliveryStatus = $schema.enums.OutreachDeliveryStatus.values;
+export type OutreachDeliveryStatus = (typeof OutreachDeliveryStatus)[keyof typeof OutreachDeliveryStatus];
