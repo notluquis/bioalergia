@@ -85,6 +85,18 @@ export const skinTestImportSchema = z.object({
   matchedSeriesId: z.number().nullable().optional(),
   status: skinTestImportStatusSchema,
   updatedAt: z.string(),
+  workbookSnapshot: z.object({
+    archivedAt: z.string().nullable(),
+    cellCount: z.number().int().nullable(),
+    error: z.string().nullable(),
+    extractorVersion: z.string().nullable(),
+    mergeCount: z.number().int().nullable(),
+    sheetName: z.string().nullable(),
+    sha256: z.string().nullable(),
+    status: z.enum(["MISSING", "ARCHIVED", "ERROR", "STALE"]),
+    textHash: z.string().nullable(),
+    updatedAt: z.string().nullable(),
+  }),
 });
 
 export const skinTestDetailSchema = z.object({
@@ -161,6 +173,16 @@ export const skinTestBulkImportActionOutputSchema = z.object({
 });
 
 export const skinTestProcessDiscoveredInputSchema = z.object({
+  query: z.string().optional(),
+});
+
+export const skinTestArchiveSnapshotsInputSchema = z.object({
+  accountId: z.string().optional(),
+  dryRun: z.boolean().optional(),
+  importStatus: skinTestImportStatusSchema.optional(),
+  limit: z.number().int().positive().max(5000).optional(),
+  onlyChanged: z.boolean().optional(),
+  onlyMissing: z.boolean().optional(),
   query: z.string().optional(),
 });
 
@@ -468,6 +490,10 @@ export const clinicalSkinTestsContract = {
   processDiscoveredImports: oc
     .route({ method: "POST", path: "/imports/process-discovered" })
     .input(skinTestProcessDiscoveredInputSchema)
+    .output(skinTestSyncOutputSchema),
+  archiveSnapshots: oc
+    .route({ method: "POST", path: "/imports/archive-snapshots" })
+    .input(skinTestArchiveSnapshotsInputSchema)
     .output(skinTestSyncOutputSchema),
   sync: oc
     .route({ method: "POST", path: "/sync" })

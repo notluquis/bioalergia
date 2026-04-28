@@ -5,7 +5,7 @@
 
 /* eslint-disable */
 
-import { schema as $schema, type SchemaType as $Schema } from "./schema-lite.js";
+import { schema as $schema, type SchemaType as $Schema } from "./schema-lite";
 import type { ModelResult as $ModelResult } from "@zenstackhq/orm";
 export type Person = $ModelResult<$Schema, "Person">;
 export type User = $ModelResult<$Schema, "User">;
@@ -39,6 +39,8 @@ export type CalendarWatchChannel = $ModelResult<$Schema, "CalendarWatchChannel">
 export type Event = $ModelResult<$Schema, "Event">;
 export type ClinicalSeries = $ModelResult<$Schema, "ClinicalSeries">;
 export type ClinicalSkinTestImport = $ModelResult<$Schema, "ClinicalSkinTestImport">;
+export type ClinicalSkinTestWorkbookFile = $ModelResult<$Schema, "ClinicalSkinTestWorkbookFile">;
+export type ClinicalSkinTestWorkbookSnapshot = $ModelResult<$Schema, "ClinicalSkinTestWorkbookSnapshot">;
 export type ClinicalDocumentImport = $ModelResult<$Schema, "ClinicalDocumentImport">;
 export type ClinicalAllergen = $ModelResult<$Schema, "ClinicalAllergen">;
 export type ClinicalAllergenAlias = $ModelResult<$Schema, "ClinicalAllergenAlias">;
@@ -171,6 +173,8 @@ export const ClinicalSeriesStatus = $schema.enums.ClinicalSeriesStatus.values;
 export type ClinicalSeriesStatus = (typeof ClinicalSeriesStatus)[keyof typeof ClinicalSeriesStatus];
 export const ClinicalSkinTestImportStatus = $schema.enums.ClinicalSkinTestImportStatus.values;
 export type ClinicalSkinTestImportStatus = (typeof ClinicalSkinTestImportStatus)[keyof typeof ClinicalSkinTestImportStatus];
+export const ClinicalSkinTestWorkbookSnapshotStatus = $schema.enums.ClinicalSkinTestWorkbookSnapshotStatus.values;
+export type ClinicalSkinTestWorkbookSnapshotStatus = (typeof ClinicalSkinTestWorkbookSnapshotStatus)[keyof typeof ClinicalSkinTestWorkbookSnapshotStatus];
 export const ClinicalDocumentImportKind = $schema.enums.ClinicalDocumentImportKind.values;
 export type ClinicalDocumentImportKind = (typeof ClinicalDocumentImportKind)[keyof typeof ClinicalDocumentImportKind];
 export const ClinicalDocumentImportStatus = $schema.enums.ClinicalDocumentImportStatus.values;

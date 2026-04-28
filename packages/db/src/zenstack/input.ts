@@ -5,7 +5,7 @@
 
 /* eslint-disable */
 
-import { type SchemaType as $Schema } from "./schema-lite.js";
+import { type SchemaType as $Schema } from "./schema-lite";
 import type { FindManyArgs as $FindManyArgs, FindUniqueArgs as $FindUniqueArgs, FindFirstArgs as $FindFirstArgs, ExistsArgs as $ExistsArgs, CreateArgs as $CreateArgs, CreateManyArgs as $CreateManyArgs, CreateManyAndReturnArgs as $CreateManyAndReturnArgs, UpdateArgs as $UpdateArgs, UpdateManyArgs as $UpdateManyArgs, UpdateManyAndReturnArgs as $UpdateManyAndReturnArgs, UpsertArgs as $UpsertArgs, DeleteArgs as $DeleteArgs, DeleteManyArgs as $DeleteManyArgs, CountArgs as $CountArgs, AggregateArgs as $AggregateArgs, GroupByArgs as $GroupByArgs, WhereInput as $WhereInput, SelectInput as $SelectInput, IncludeInput as $IncludeInput, OmitInput as $OmitInput, QueryOptions as $QueryOptions } from "@zenstackhq/orm";
 import type { SimplifiedPlainResult as $Result, SelectIncludeOmit as $SelectIncludeOmit } from "@zenstackhq/orm";
 export type PersonFindManyArgs = $FindManyArgs<$Schema, "Person">;
@@ -680,6 +680,48 @@ export type ClinicalSkinTestImportSelect = $SelectInput<$Schema, "ClinicalSkinTe
 export type ClinicalSkinTestImportInclude = $IncludeInput<$Schema, "ClinicalSkinTestImport">;
 export type ClinicalSkinTestImportOmit = $OmitInput<$Schema, "ClinicalSkinTestImport">;
 export type ClinicalSkinTestImportGetPayload<Args extends $SelectIncludeOmit<$Schema, "ClinicalSkinTestImport", true>, Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>> = $Result<$Schema, "ClinicalSkinTestImport", Args, Options>;
+export type ClinicalSkinTestWorkbookFileFindManyArgs = $FindManyArgs<$Schema, "ClinicalSkinTestWorkbookFile">;
+export type ClinicalSkinTestWorkbookFileFindUniqueArgs = $FindUniqueArgs<$Schema, "ClinicalSkinTestWorkbookFile">;
+export type ClinicalSkinTestWorkbookFileFindFirstArgs = $FindFirstArgs<$Schema, "ClinicalSkinTestWorkbookFile">;
+export type ClinicalSkinTestWorkbookFileExistsArgs = $ExistsArgs<$Schema, "ClinicalSkinTestWorkbookFile">;
+export type ClinicalSkinTestWorkbookFileCreateArgs = $CreateArgs<$Schema, "ClinicalSkinTestWorkbookFile">;
+export type ClinicalSkinTestWorkbookFileCreateManyArgs = $CreateManyArgs<$Schema, "ClinicalSkinTestWorkbookFile">;
+export type ClinicalSkinTestWorkbookFileCreateManyAndReturnArgs = $CreateManyAndReturnArgs<$Schema, "ClinicalSkinTestWorkbookFile">;
+export type ClinicalSkinTestWorkbookFileUpdateArgs = $UpdateArgs<$Schema, "ClinicalSkinTestWorkbookFile">;
+export type ClinicalSkinTestWorkbookFileUpdateManyArgs = $UpdateManyArgs<$Schema, "ClinicalSkinTestWorkbookFile">;
+export type ClinicalSkinTestWorkbookFileUpdateManyAndReturnArgs = $UpdateManyAndReturnArgs<$Schema, "ClinicalSkinTestWorkbookFile">;
+export type ClinicalSkinTestWorkbookFileUpsertArgs = $UpsertArgs<$Schema, "ClinicalSkinTestWorkbookFile">;
+export type ClinicalSkinTestWorkbookFileDeleteArgs = $DeleteArgs<$Schema, "ClinicalSkinTestWorkbookFile">;
+export type ClinicalSkinTestWorkbookFileDeleteManyArgs = $DeleteManyArgs<$Schema, "ClinicalSkinTestWorkbookFile">;
+export type ClinicalSkinTestWorkbookFileCountArgs = $CountArgs<$Schema, "ClinicalSkinTestWorkbookFile">;
+export type ClinicalSkinTestWorkbookFileAggregateArgs = $AggregateArgs<$Schema, "ClinicalSkinTestWorkbookFile">;
+export type ClinicalSkinTestWorkbookFileGroupByArgs = $GroupByArgs<$Schema, "ClinicalSkinTestWorkbookFile">;
+export type ClinicalSkinTestWorkbookFileWhereInput = $WhereInput<$Schema, "ClinicalSkinTestWorkbookFile">;
+export type ClinicalSkinTestWorkbookFileSelect = $SelectInput<$Schema, "ClinicalSkinTestWorkbookFile">;
+export type ClinicalSkinTestWorkbookFileInclude = $IncludeInput<$Schema, "ClinicalSkinTestWorkbookFile">;
+export type ClinicalSkinTestWorkbookFileOmit = $OmitInput<$Schema, "ClinicalSkinTestWorkbookFile">;
+export type ClinicalSkinTestWorkbookFileGetPayload<Args extends $SelectIncludeOmit<$Schema, "ClinicalSkinTestWorkbookFile", true>, Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>> = $Result<$Schema, "ClinicalSkinTestWorkbookFile", Args, Options>;
+export type ClinicalSkinTestWorkbookSnapshotFindManyArgs = $FindManyArgs<$Schema, "ClinicalSkinTestWorkbookSnapshot">;
+export type ClinicalSkinTestWorkbookSnapshotFindUniqueArgs = $FindUniqueArgs<$Schema, "ClinicalSkinTestWorkbookSnapshot">;
+export type ClinicalSkinTestWorkbookSnapshotFindFirstArgs = $FindFirstArgs<$Schema, "ClinicalSkinTestWorkbookSnapshot">;
+export type ClinicalSkinTestWorkbookSnapshotExistsArgs = $ExistsArgs<$Schema, "ClinicalSkinTestWorkbookSnapshot">;
+export type ClinicalSkinTestWorkbookSnapshotCreateArgs = $CreateArgs<$Schema, "ClinicalSkinTestWorkbookSnapshot">;
+export type ClinicalSkinTestWorkbookSnapshotCreateManyArgs = $CreateManyArgs<$Schema, "ClinicalSkinTestWorkbookSnapshot">;
+export type ClinicalSkinTestWorkbookSnapshotCreateManyAndReturnArgs = $CreateManyAndReturnArgs<$Schema, "ClinicalSkinTestWorkbookSnapshot">;
+export type ClinicalSkinTestWorkbookSnapshotUpdateArgs = $UpdateArgs<$Schema, "ClinicalSkinTestWorkbookSnapshot">;
+export type ClinicalSkinTestWorkbookSnapshotUpdateManyArgs = $UpdateManyArgs<$Schema, "ClinicalSkinTestWorkbookSnapshot">;
+export type ClinicalSkinTestWorkbookSnapshotUpdateManyAndReturnArgs = $UpdateManyAndReturnArgs<$Schema, "ClinicalSkinTestWorkbookSnapshot">;
+export type ClinicalSkinTestWorkbookSnapshotUpsertArgs = $UpsertArgs<$Schema, "ClinicalSkinTestWorkbookSnapshot">;
+export type ClinicalSkinTestWorkbookSnapshotDeleteArgs = $DeleteArgs<$Schema, "ClinicalSkinTestWorkbookSnapshot">;
+export type ClinicalSkinTestWorkbookSnapshotDeleteManyArgs = $DeleteManyArgs<$Schema, "ClinicalSkinTestWorkbookSnapshot">;
+export type ClinicalSkinTestWorkbookSnapshotCountArgs = $CountArgs<$Schema, "ClinicalSkinTestWorkbookSnapshot">;
+export type ClinicalSkinTestWorkbookSnapshotAggregateArgs = $AggregateArgs<$Schema, "ClinicalSkinTestWorkbookSnapshot">;
+export type ClinicalSkinTestWorkbookSnapshotGroupByArgs = $GroupByArgs<$Schema, "ClinicalSkinTestWorkbookSnapshot">;
+export type ClinicalSkinTestWorkbookSnapshotWhereInput = $WhereInput<$Schema, "ClinicalSkinTestWorkbookSnapshot">;
+export type ClinicalSkinTestWorkbookSnapshotSelect = $SelectInput<$Schema, "ClinicalSkinTestWorkbookSnapshot">;
+export type ClinicalSkinTestWorkbookSnapshotInclude = $IncludeInput<$Schema, "ClinicalSkinTestWorkbookSnapshot">;
+export type ClinicalSkinTestWorkbookSnapshotOmit = $OmitInput<$Schema, "ClinicalSkinTestWorkbookSnapshot">;
+export type ClinicalSkinTestWorkbookSnapshotGetPayload<Args extends $SelectIncludeOmit<$Schema, "ClinicalSkinTestWorkbookSnapshot", true>, Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>> = $Result<$Schema, "ClinicalSkinTestWorkbookSnapshot", Args, Options>;
 export type ClinicalDocumentImportFindManyArgs = $FindManyArgs<$Schema, "ClinicalDocumentImport">;
 export type ClinicalDocumentImportFindUniqueArgs = $FindUniqueArgs<$Schema, "ClinicalDocumentImport">;
 export type ClinicalDocumentImportFindFirstArgs = $FindFirstArgs<$Schema, "ClinicalDocumentImport">;

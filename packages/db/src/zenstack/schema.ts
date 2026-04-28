@@ -3929,6 +3929,24 @@ export class SchemaType implements SchemaDef {
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("duplicate_of_import_id") }] }] as readonly AttributeApplication[]
                 },
+                workbookSnapshotStatus: {
+                    name: "workbookSnapshotStatus",
+                    type: "ClinicalSkinTestWorkbookSnapshotStatus",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("MISSING") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("workbook_snapshot_status") }] }] as readonly AttributeApplication[],
+                    default: "MISSING" as FieldDefault
+                },
+                workbookSnapshotError: {
+                    name: "workbookSnapshotError",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("workbook_snapshot_error") }] }] as readonly AttributeApplication[]
+                },
+                workbookSnapshotArchivedAt: {
+                    name: "workbookSnapshotArchivedAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("workbook_snapshot_archived_at") }] }, { name: "@db.Timestamptz", args: [{ name: "x", value: ExpressionUtils.literal(3) }] }] as readonly AttributeApplication[]
+                },
                 reviewedBy: {
                     name: "reviewedBy",
                     type: "Int",
@@ -3978,6 +3996,12 @@ export class SchemaType implements SchemaDef {
                     array: true,
                     relation: { opposite: "sourceImport" }
                 },
+                workbookSnapshot: {
+                    name: "workbookSnapshot",
+                    type: "ClinicalSkinTestWorkbookSnapshot",
+                    optional: true,
+                    relation: { opposite: "sourceImport" }
+                },
                 oneDriveAccount: {
                     name: "oneDriveAccount",
                     type: "OneDriveAccount",
@@ -3993,6 +4017,7 @@ export class SchemaType implements SchemaDef {
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("ClinicalSkinTestImportStatus", [ExpressionUtils.field("status")]) }] },
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("modifiedAt")]) }] },
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("oneDriveAccountId")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("ClinicalSkinTestWorkbookSnapshotStatus", [ExpressionUtils.field("workbookSnapshotStatus")]) }] },
                 { name: "@@unique", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("oneDriveAccountId"), ExpressionUtils.field("oneDriveDriveId"), ExpressionUtils.field("oneDriveItemId")]) }] },
                 { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("clinical_skin_test_imports") }] }
             ] as readonly AttributeApplication[],
@@ -4000,6 +4025,185 @@ export class SchemaType implements SchemaDef {
             uniqueFields: {
                 id: { type: "String" },
                 oneDriveAccountId_oneDriveDriveId_oneDriveItemId: { oneDriveAccountId: { type: "String" }, oneDriveDriveId: { type: "String" }, oneDriveItemId: { type: "String" } }
+            }
+        },
+        ClinicalSkinTestWorkbookFile: {
+            name: "ClinicalSkinTestWorkbookFile",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("cuid") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                extractorVersion: {
+                    name: "extractorVersion",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("extractor_version") }] }] as readonly AttributeApplication[]
+                },
+                sha256: {
+                    name: "sha256",
+                    type: "String"
+                },
+                sizeBytes: {
+                    name: "sizeBytes",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("size_bytes") }] }] as readonly AttributeApplication[]
+                },
+                sheetName: {
+                    name: "sheetName",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("sheet_name") }] }] as readonly AttributeApplication[]
+                },
+                cellCount: {
+                    name: "cellCount",
+                    type: "Int",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("cell_count") }] }] as readonly AttributeApplication[],
+                    default: 0 as FieldDefault
+                },
+                mergeCount: {
+                    name: "mergeCount",
+                    type: "Int",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("merge_count") }] }] as readonly AttributeApplication[],
+                    default: 0 as FieldDefault
+                },
+                textHash: {
+                    name: "textHash",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("text_hash") }] }] as readonly AttributeApplication[]
+                },
+                snapshotJson: {
+                    name: "snapshotJson",
+                    type: "Json",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("snapshot_json") }] }] as readonly AttributeApplication[]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                snapshots: {
+                    name: "snapshots",
+                    type: "ClinicalSkinTestWorkbookSnapshot",
+                    array: true,
+                    relation: { opposite: "workbookFile" }
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@unique", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("sha256"), ExpressionUtils.field("extractorVersion")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("sha256")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("textHash")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("createdAt")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("clinical_skin_test_workbook_files") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" },
+                sha256_extractorVersion: { sha256: { type: "String" }, extractorVersion: { type: "String" } }
+            }
+        },
+        ClinicalSkinTestWorkbookSnapshot: {
+            name: "ClinicalSkinTestWorkbookSnapshot",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("cuid") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                sourceImportId: {
+                    name: "sourceImportId",
+                    type: "String",
+                    unique: true,
+                    attributes: [{ name: "@unique" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("source_import_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "sourceImport"
+                    ] as readonly string[]
+                },
+                workbookFileId: {
+                    name: "workbookFileId",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("workbook_file_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "workbookFile"
+                    ] as readonly string[]
+                },
+                sourceETag: {
+                    name: "sourceETag",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("source_etag") }] }] as readonly AttributeApplication[]
+                },
+                sourceCTag: {
+                    name: "sourceCTag",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("source_ctag") }] }] as readonly AttributeApplication[]
+                },
+                status: {
+                    name: "status",
+                    type: "ClinicalSkinTestWorkbookSnapshotStatus",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("ARCHIVED") }] }] as readonly AttributeApplication[],
+                    default: "ARCHIVED" as FieldDefault
+                },
+                error: {
+                    name: "error",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                sourceImport: {
+                    name: "sourceImport",
+                    type: "ClinicalSkinTestImport",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("sourceImportId")]) }, { name: "references", value: ExpressionUtils.array("String", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "workbookSnapshot", fields: ["sourceImportId"], references: ["id"], onDelete: "Cascade" }
+                },
+                workbookFile: {
+                    name: "workbookFile",
+                    type: "ClinicalSkinTestWorkbookFile",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("workbookFileId")]) }, { name: "references", value: ExpressionUtils.array("String", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Restrict") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "snapshots", fields: ["workbookFileId"], references: ["id"], onDelete: "Restrict" }
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("workbookFileId")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("ClinicalSkinTestWorkbookSnapshotStatus", [ExpressionUtils.field("status")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("createdAt")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("clinical_skin_test_workbook_snapshots") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" },
+                sourceImportId: { type: "String" }
             }
         },
         ClinicalDocumentImport: {
@@ -10346,6 +10550,15 @@ export class SchemaType implements SchemaDef {
                 REJECTED: "REJECTED",
                 ERROR: "ERROR",
                 SKIPPED: "SKIPPED"
+            }
+        },
+        ClinicalSkinTestWorkbookSnapshotStatus: {
+            name: "ClinicalSkinTestWorkbookSnapshotStatus",
+            values: {
+                MISSING: "MISSING",
+                ARCHIVED: "ARCHIVED",
+                ERROR: "ERROR",
+                STALE: "STALE"
             }
         },
         ClinicalDocumentImportKind: {

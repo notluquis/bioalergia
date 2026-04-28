@@ -1003,6 +1003,9 @@ model ClinicalSkinTestImport {
   parsedPayload         Json?                     @map("parsed_payload")
   resultHash            String?                   @map("result_hash")
   duplicateOfImportId   String?                   @map("duplicate_of_import_id")
+  workbookSnapshotStatus ClinicalSkinTestWorkbookSnapshotStatus @default(MISSING) @map("workbook_snapshot_status")
+  workbookSnapshotError  String?                   @map("workbook_snapshot_error")
+  workbookSnapshotArchivedAt DateTime?             @map("workbook_snapshot_archived_at") @db.Timestamptz(3)
   reviewedBy            Int?                      @map("reviewed_by")
   reviewedAt            DateTime?                 @map("reviewed_at") @db.Timestamptz(3)
   reviewNotes           String?                   @map("review_notes")
@@ -1012,6 +1015,7 @@ model ClinicalSkinTestImport {
 
   skinTest              ClinicalSkinTest?
   results               ClinicalSkinTestResult[]
+  workbookSnapshot      ClinicalSkinTestWorkbookSnapshot?
   oneDriveAccount       OneDriveAccount?          @relation(fields: [oneDriveAccountId], references: [accountId], onDelete: SetNull)
 
   @@deny('all', auth() == null)
@@ -1021,8 +1025,59 @@ model ClinicalSkinTestImport {
   @@index([status])
   @@index([modifiedAt])
   @@index([oneDriveAccountId])
+  @@index([workbookSnapshotStatus])
   @@unique([oneDriveAccountId, oneDriveDriveId, oneDriveItemId])
   @@map("clinical_skin_test_imports")
+}
+
+model ClinicalSkinTestWorkbookFile {
+  id               String                 @id @default(cuid())
+  extractorVersion String                 @map("extractor_version")
+  sha256           String
+  sizeBytes        Int?                   @map("size_bytes")
+  sheetName        String                 @map("sheet_name")
+  cellCount        Int                    @default(0) @map("cell_count")
+  mergeCount       Int                    @default(0) @map("merge_count")
+  textHash         String                 @map("text_hash")
+  snapshotJson     Json                   @map("snapshot_json")
+  createdAt        DateTime               @default(now()) @map("created_at")
+  updatedAt        DateTime               @default(now()) @updatedAt @map("updated_at")
+
+  snapshots        ClinicalSkinTestWorkbookSnapshot[]
+
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@unique([sha256, extractorVersion])
+  @@index([sha256])
+  @@index([textHash])
+  @@index([createdAt])
+  @@map("clinical_skin_test_workbook_files")
+}
+
+model ClinicalSkinTestWorkbookSnapshot {
+  id               String                 @id @default(cuid())
+  sourceImportId   String                 @unique @map("source_import_id")
+  workbookFileId   String                 @map("workbook_file_id")
+  sourceETag       String?                @map("source_etag")
+  sourceCTag       String?                @map("source_ctag")
+  status           ClinicalSkinTestWorkbookSnapshotStatus @default(ARCHIVED)
+  error            String?
+  createdAt        DateTime               @default(now()) @map("created_at")
+  updatedAt        DateTime               @default(now()) @updatedAt @map("updated_at")
+
+  sourceImport     ClinicalSkinTestImport @relation(fields: [sourceImportId], references: [id], onDelete: Cascade)
+  workbookFile     ClinicalSkinTestWorkbookFile @relation(fields: [workbookFileId], references: [id], onDelete: Restrict)
+
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([workbookFileId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("clinical_skin_test_workbook_snapshots")
 }
 
 model ClinicalDocumentImport {
@@ -2198,6 +2253,13 @@ enum ClinicalSkinTestImportStatus {
   REJECTED
   ERROR
   SKIPPED
+}
+
+enum ClinicalSkinTestWorkbookSnapshotStatus {
+  MISSING
+  ARCHIVED
+  ERROR
+  STALE
 }
 
 enum ClinicalDocumentImportKind {

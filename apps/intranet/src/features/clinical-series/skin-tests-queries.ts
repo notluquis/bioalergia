@@ -293,6 +293,24 @@ export function useProcessDiscoveredSkinTestImports() {
   });
 }
 
+export function useArchiveSkinTestWorkbookSnapshots() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (params?: {
+      accountId?: string;
+      dryRun?: boolean;
+      importStatus?: SkinTestImportStatus;
+      limit?: number;
+      onlyChanged?: boolean;
+      onlyMissing?: boolean;
+      query?: string;
+    }) => await clinicalSkinTestsORPCClient.archiveSnapshots(compactORPCInput(params) ?? {}),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: skinTestImportKeys.activeJob() });
+    },
+  });
+}
+
 export function useClinicalSkinTestJobStatus(jobId: string | null) {
   return useQuery({
     enabled: !!jobId,

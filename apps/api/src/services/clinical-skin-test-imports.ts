@@ -17,6 +17,7 @@ import {
   type ParsedSkinTestWorkbook,
   type SkinTestIssue,
 } from "./clinical-skin-test-parser";
+import { persistSkinTestWorkbookSnapshot } from "./clinical-skin-test-workbook-snapshots";
 
 const AUTO_IMPORT_MIN_CONFIDENCE = 80;
 const JOB_TYPE = "clinical-skin-test-import-sync";
@@ -24,6 +25,7 @@ const DEFAULT_SYNC_CONCURRENCY = 3;
 const MAX_SYNC_CONCURRENCY = 8;
 
 export type SkinTestSyncProgressPhase =
+  | "archiving"
   | "completed"
   | "delta"
   | "discovered-processing"
@@ -40,6 +42,8 @@ export interface SkinTestSyncProgress {
   documents?: number;
   documentsMatched?: number;
   documentsUnmatched?: number;
+  downloadedBytes?: number;
+  dryRun?: boolean;
   elapsedSeconds?: number;
   errors?: number;
   etaSeconds?: number | null;
@@ -57,6 +61,7 @@ export interface SkinTestSyncProgress {
   total: number;
   unchanged?: number;
   xlsx?: number;
+  archived?: number;
 }
 
 export interface SkinTestImportListInput {
@@ -77,6 +82,8 @@ export type SkinTestImportStatus =
   | "PENDING_REVIEW"
   | "REJECTED"
   | "SKIPPED";
+
+type SkinTestWorkbookSnapshotStatus = "ARCHIVED" | "ERROR" | "MISSING" | "STALE";
 
 export interface SkinTestImportOutput {
   accountEmail: null | string;
@@ -99,6 +106,18 @@ export interface SkinTestImportOutput {
   status: SkinTestImportStatus;
   syncAction?: "PROCESSED" | "SKIPPED_UNCHANGED";
   updatedAt: string;
+  workbookSnapshot: {
+    archivedAt: null | string;
+    cellCount: null | number;
+    error: null | string;
+    extractorVersion: null | string;
+    mergeCount: null | number;
+    sheetName: null | string;
+    sha256: null | string;
+    status: SkinTestWorkbookSnapshotStatus;
+    textHash: null | string;
+    updatedAt: null | string;
+  };
 }
 
 export interface ParsedPayload {
@@ -242,6 +261,16 @@ interface ImportRow {
   matchedSeriesId?: null | number;
   status: SkinTestImportStatus;
   updatedAt: Date;
+  workbookSnapshotArchivedAt: Date | null;
+  workbookSnapshotCellCount?: null | number;
+  workbookSnapshotError: null | string;
+  workbookSnapshotExtractorVersion?: null | string;
+  workbookSnapshotMergeCount?: null | number;
+  workbookSnapshotSha256?: null | string;
+  workbookSnapshotSheetName?: null | string;
+  workbookSnapshotStatus: SkinTestWorkbookSnapshotStatus;
+  workbookSnapshotTextHash?: null | string;
+  workbookSnapshotUpdatedAt?: Date | null;
 }
 
 interface MatchResult {
@@ -647,6 +676,14 @@ export async function processOneDriveSkinTestItem(
 
   try {
     const buffer = await downloadOneDriveItem(accountId, item.id, driveId);
+    await ensureImportMetadataRow(accountId, importId, metadata);
+    await persistSkinTestWorkbookSnapshot({
+      buffer,
+      importId,
+      sourceCTag: metadata.cTag,
+      sourceETag: metadata.eTag,
+      sourceSizeBytes: metadata.size,
+    });
     const parsed = await parseSkinTestWorkbookBuffer(
       buffer as unknown as Parameters<typeof parseSkinTestWorkbookBuffer>[0]
     );
@@ -884,6 +921,12 @@ async function discoverOneDriveSkinTestItem(
           mime_type = ${metadata.mimeType},
           size = ${metadata.size},
           modified_at = ${metadata.modifiedAt}::timestamptz,
+          workbook_snapshot_status = CASE
+            WHEN workbook_snapshot_status = 'ARCHIVED'
+              AND (onedrive_etag IS DISTINCT FROM ${metadata.eTag} OR onedrive_ctag IS DISTINCT FROM ${metadata.cTag})
+            THEN 'STALE'::"ClinicalSkinTestWorkbookSnapshotStatus"
+            ELSE workbook_snapshot_status
+          END,
           updated_at = now()
       WHERE id = ${importId}
     `.execute(kysely);
@@ -945,11 +988,23 @@ export async function listSkinTestImports(input: SkinTestImportListInput = {}) {
         i.review_notes AS "reviewNotes",
         i.imported_at AS "importedAt",
         i.updated_at AS "updatedAt",
+        i.workbook_snapshot_status AS "workbookSnapshotStatus",
+        i.workbook_snapshot_error AS "workbookSnapshotError",
+        i.workbook_snapshot_archived_at AS "workbookSnapshotArchivedAt",
+        wf.extractor_version AS "workbookSnapshotExtractorVersion",
+        wf.sha256 AS "workbookSnapshotSha256",
+        wf.sheet_name AS "workbookSnapshotSheetName",
+        wf.cell_count AS "workbookSnapshotCellCount",
+        wf.merge_count AS "workbookSnapshotMergeCount",
+        wf.text_hash AS "workbookSnapshotTextHash",
+        ws.updated_at AS "workbookSnapshotUpdatedAt",
         t.id AS "skinTestId",
         t.clinical_series_id AS "matchedSeriesId"
       FROM clinical_skin_test_imports i
       LEFT JOIN onedrive_accounts a ON a.account_id = i.onedrive_account_id
       LEFT JOIN clinical_skin_tests t ON t.source_import_id = i.id
+      LEFT JOIN clinical_skin_test_workbook_snapshots ws ON ws.source_import_id = i.id
+      LEFT JOIN clinical_skin_test_workbook_files wf ON wf.id = ws.workbook_file_id
       WHERE ${whereSql}
       ORDER BY i.updated_at DESC
       LIMIT ${pageSize}
@@ -1185,11 +1240,23 @@ export async function getSkinTestImport(id: string): Promise<SkinTestImportOutpu
       i.review_notes AS "reviewNotes",
       i.imported_at AS "importedAt",
       i.updated_at AS "updatedAt",
+      i.workbook_snapshot_status AS "workbookSnapshotStatus",
+      i.workbook_snapshot_error AS "workbookSnapshotError",
+      i.workbook_snapshot_archived_at AS "workbookSnapshotArchivedAt",
+      wf.extractor_version AS "workbookSnapshotExtractorVersion",
+      wf.sha256 AS "workbookSnapshotSha256",
+      wf.sheet_name AS "workbookSnapshotSheetName",
+      wf.cell_count AS "workbookSnapshotCellCount",
+      wf.merge_count AS "workbookSnapshotMergeCount",
+      wf.text_hash AS "workbookSnapshotTextHash",
+      ws.updated_at AS "workbookSnapshotUpdatedAt",
       t.id AS "skinTestId",
       t.clinical_series_id AS "matchedSeriesId"
     FROM clinical_skin_test_imports i
     LEFT JOIN onedrive_accounts a ON a.account_id = i.onedrive_account_id
     LEFT JOIN clinical_skin_tests t ON t.source_import_id = i.id
+    LEFT JOIN clinical_skin_test_workbook_snapshots ws ON ws.source_import_id = i.id
+    LEFT JOIN clinical_skin_test_workbook_files wf ON wf.id = ws.workbook_file_id
     WHERE i.id = ${id}
   `.execute(kysely);
   const row = result.rows[0];
@@ -1239,11 +1306,17 @@ export async function reprocessSkinTestImport(id: string) {
     oneDriveDriveId: string | null;
     oneDriveItemId: string;
     oneDriveAccountId: string | null;
+    oneDriveCTag: string | null;
+    oneDriveETag: string | null;
+    size: number | null;
   }>`
     SELECT
       onedrive_drive_id AS "oneDriveDriveId",
       onedrive_item_id AS "oneDriveItemId",
-      onedrive_account_id AS "oneDriveAccountId"
+      onedrive_account_id AS "oneDriveAccountId",
+      onedrive_ctag AS "oneDriveCTag",
+      onedrive_etag AS "oneDriveETag",
+      size
     FROM clinical_skin_test_imports
     WHERE id = ${id}
   `.execute(kysely);
@@ -1263,6 +1336,13 @@ export async function reprocessSkinTestImport(id: string) {
   if (!accountId) throw new Error("No hay cuenta de OneDrive para re-procesar.");
 
   const buffer = await downloadOneDriveItem(accountId, itemId, driveId);
+  await persistSkinTestWorkbookSnapshot({
+    buffer,
+    importId: id,
+    sourceCTag: result.rows[0]?.oneDriveCTag,
+    sourceETag: result.rows[0]?.oneDriveETag,
+    sourceSizeBytes: result.rows[0]?.size,
+  });
   const parsed = await parseSkinTestWorkbookBuffer(
     buffer as unknown as Parameters<typeof parseSkinTestWorkbookBuffer>[0]
   );
@@ -1340,6 +1420,152 @@ export async function processSkinTestImports(ids: string[]) {
     }
   }
   return { errors, items };
+}
+
+export async function archiveMissingSkinTestWorkbookSnapshots(options?: {
+  accountId?: string;
+  dryRun?: boolean;
+  importStatus?: SkinTestImportStatus;
+  limit?: number;
+  onlyChanged?: boolean;
+  onlyMissing?: boolean;
+  onProgress?: (progress: SkinTestSyncProgress & { message: string }) => void;
+  query?: string;
+  shouldCancel?: () => boolean;
+}) {
+  const limit = Math.min(Math.max(options?.limit ?? 500, 1), 5000);
+  const query = options?.query?.trim();
+  const rowsResult = await sql<{
+    filename: string;
+    id: string;
+    oneDriveAccountId: string | null;
+    oneDriveCTag: string | null;
+    oneDriveDriveId: string | null;
+    oneDriveETag: string | null;
+    oneDriveItemId: string;
+    snapshotId: string | null;
+    size: number | null;
+  }>`
+    SELECT
+      i.id,
+      i.filename,
+      i.onedrive_account_id AS "oneDriveAccountId",
+      i.onedrive_item_id AS "oneDriveItemId",
+      i.onedrive_drive_id AS "oneDriveDriveId",
+      i.onedrive_etag AS "oneDriveETag",
+      i.onedrive_ctag AS "oneDriveCTag",
+      s.id AS "snapshotId",
+      i.size
+    FROM clinical_skin_test_imports i
+    LEFT JOIN clinical_skin_test_workbook_snapshots s ON s.source_import_id = i.id
+    WHERE i.onedrive_account_id IS NOT NULL
+      AND (${options?.accountId ?? null}::text IS NULL OR i.onedrive_account_id = ${options?.accountId ?? null})
+      AND (${options?.importStatus ?? null}::text IS NULL OR i.status = ${options?.importStatus ?? null}::"ClinicalSkinTestImportStatus")
+      AND (
+        ${query ?? null}::text IS NULL
+        OR i.filename ILIKE ${`%${query ?? ""}%`}
+        OR i.path ILIKE ${`%${query ?? ""}%`}
+        OR i.parsed_payload->'header'->>'patientName' ILIKE ${`%${query ?? ""}%`}
+        OR i.parsed_payload->'header'->>'patientRut' ILIKE ${`%${query ?? ""}%`}
+      )
+      AND (
+        CASE
+          WHEN ${options?.onlyMissing ?? false}::boolean THEN s.id IS NULL
+          WHEN ${options?.onlyChanged ?? false}::boolean THEN s.id IS NOT NULL AND (
+            s.source_etag IS DISTINCT FROM i.onedrive_etag
+            OR s.source_ctag IS DISTINCT FROM i.onedrive_ctag
+          )
+          ELSE s.id IS NULL
+            OR s.source_etag IS DISTINCT FROM i.onedrive_etag
+            OR s.source_ctag IS DISTINCT FROM i.onedrive_ctag
+        END
+      )
+    ORDER BY i.updated_at DESC
+    LIMIT ${limit}
+  `.execute(kysely);
+
+  const total = rowsResult.rows.length;
+  let archived = 0;
+  let downloadedBytes = 0;
+  let errors = 0;
+  let skipped = 0;
+
+  const emit = (message: string, processed: number, filename?: string) => {
+    options?.onProgress?.({
+      errors,
+      archived,
+      downloadedBytes,
+      dryRun: options?.dryRun ?? false,
+      failed: errors,
+      filesProcessed: processed,
+      filesTotal: total,
+      filename,
+      phase: "archiving",
+      processed,
+      skipped,
+      total,
+      message,
+    });
+  };
+
+  emit(
+    options?.dryRun
+      ? `Encontrados ${total} snapshot(s) candidato(s)`
+      : `Preparando ${total} snapshot(s) candidato(s)`,
+    0
+  );
+
+  if (options?.dryRun) {
+    return { archived: 0, downloadedBytes: 0, dryRun: true, errors: 0, processed: 0, skipped: total, total };
+  }
+
+  for (const [index, row] of rowsResult.rows.entries()) {
+    if (options?.shouldCancel?.()) throw new Error("SYNC_CANCELLED");
+    const processed = index + 1;
+    emit(`Archivando ${processed}/${total}: ${row.filename}`, index, row.filename);
+
+    if (!row.oneDriveAccountId) {
+      skipped += 1;
+      emit(`Omitido ${processed}/${total}: sin cuenta OneDrive`, processed, row.filename);
+      continue;
+    }
+
+    try {
+      const buffer = await downloadOneDriveItem(
+        row.oneDriveAccountId,
+        row.oneDriveItemId,
+        row.oneDriveDriveId
+      );
+      const snapshotResult = await persistSkinTestWorkbookSnapshot({
+        buffer,
+        importId: row.id,
+        sourceCTag: row.oneDriveCTag,
+        sourceETag: row.oneDriveETag,
+        sourceSizeBytes: row.size,
+      });
+      downloadedBytes += buffer.byteLength;
+      archived += 1;
+      emit(
+        `Archivado ${processed}/${total}: ${snapshotResult.cellCount} celdas`,
+        processed,
+        row.filename
+      );
+      continue;
+    } catch (error) {
+      errors += 1;
+      await sql`
+        UPDATE clinical_skin_test_imports
+        SET workbook_snapshot_status = 'ERROR',
+            workbook_snapshot_error = ${error instanceof Error ? error.message : String(error)},
+            updated_at = now()
+        WHERE id = ${row.id}
+      `.execute(kysely);
+    }
+
+    emit(`Archivados ${processed}/${total}`, processed, row.filename);
+  }
+
+  return { archived, errors, processed: total, skipped, total };
 }
 
 export async function processDiscoveredSkinTestImports(options?: {
@@ -1883,9 +2109,21 @@ async function getImportByOneDriveItemId(accountId: string, driveId: string, ite
       i.reviewed_at AS "reviewedAt",
       i.review_notes AS "reviewNotes",
       i.imported_at AS "importedAt",
-      i.updated_at AS "updatedAt"
+      i.updated_at AS "updatedAt",
+      i.workbook_snapshot_status AS "workbookSnapshotStatus",
+      i.workbook_snapshot_error AS "workbookSnapshotError",
+      i.workbook_snapshot_archived_at AS "workbookSnapshotArchivedAt",
+      wf.extractor_version AS "workbookSnapshotExtractorVersion",
+      wf.sha256 AS "workbookSnapshotSha256",
+      wf.sheet_name AS "workbookSnapshotSheetName",
+      wf.cell_count AS "workbookSnapshotCellCount",
+      wf.merge_count AS "workbookSnapshotMergeCount",
+      wf.text_hash AS "workbookSnapshotTextHash",
+      ws.updated_at AS "workbookSnapshotUpdatedAt"
     FROM clinical_skin_test_imports i
     LEFT JOIN onedrive_accounts a ON a.account_id = i.onedrive_account_id
+    LEFT JOIN clinical_skin_test_workbook_snapshots ws ON ws.source_import_id = i.id
+    LEFT JOIN clinical_skin_test_workbook_files wf ON wf.id = ws.workbook_file_id
     WHERE i.onedrive_account_id = ${accountId}
       AND i.onedrive_drive_id = ${driveId}
       AND i.onedrive_item_id = ${itemId}
@@ -1992,6 +2230,15 @@ async function upsertImport(params: {
       mime_type = EXCLUDED.mime_type,
       size = EXCLUDED.size,
       modified_at = EXCLUDED.modified_at,
+      workbook_snapshot_status = CASE
+        WHEN clinical_skin_test_imports.workbook_snapshot_status = 'ARCHIVED'
+          AND (
+            clinical_skin_test_imports.onedrive_etag IS DISTINCT FROM EXCLUDED.onedrive_etag
+            OR clinical_skin_test_imports.onedrive_ctag IS DISTINCT FROM EXCLUDED.onedrive_ctag
+          )
+        THEN 'STALE'::"ClinicalSkinTestWorkbookSnapshotStatus"
+        ELSE clinical_skin_test_imports.workbook_snapshot_status
+      END,
       parser_version = EXCLUDED.parser_version,
       status = EXCLUDED.status,
       confidence = EXCLUDED.confidence,
@@ -2000,6 +2247,86 @@ async function upsertImport(params: {
       parsed_payload = EXCLUDED.parsed_payload,
       result_hash = EXCLUDED.result_hash,
       duplicate_of_import_id = EXCLUDED.duplicate_of_import_id,
+      updated_at = now()
+  `.execute(kysely);
+}
+
+async function ensureImportMetadataRow(
+  accountId: string,
+  importId: string,
+  metadata: {
+    cTag: null | string;
+    driveId: null | string;
+    eTag: null | string;
+    filename: string;
+    id: string;
+    mimeType: null | string;
+    modifiedAt: null | string;
+    path: null | string;
+    size: null | number;
+    webUrl: null | string;
+  }
+) {
+  await sql`
+    INSERT INTO clinical_skin_test_imports (
+      id,
+      onedrive_account_id,
+      onedrive_item_id,
+      onedrive_drive_id,
+      onedrive_etag,
+      onedrive_ctag,
+      onedrive_web_url,
+      path,
+      filename,
+      mime_type,
+      size,
+      modified_at,
+      parser_version,
+      status,
+      confidence,
+      issues,
+      created_at,
+      updated_at
+    )
+    VALUES (
+      ${importId},
+      ${accountId},
+      ${metadata.id},
+      ${metadata.driveId},
+      ${metadata.eTag},
+      ${metadata.cTag},
+      ${metadata.webUrl},
+      ${metadata.path},
+      ${metadata.filename},
+      ${metadata.mimeType},
+      ${metadata.size},
+      ${metadata.modifiedAt}::timestamptz,
+      ${SKIN_TEST_PARSER_VERSION},
+      'DISCOVERED',
+      0,
+      '[]'::jsonb,
+      now(),
+      now()
+    )
+    ON CONFLICT (onedrive_account_id, onedrive_drive_id, onedrive_item_id)
+    DO UPDATE SET
+      onedrive_etag = EXCLUDED.onedrive_etag,
+      onedrive_ctag = EXCLUDED.onedrive_ctag,
+      onedrive_web_url = EXCLUDED.onedrive_web_url,
+      path = EXCLUDED.path,
+      filename = EXCLUDED.filename,
+      mime_type = EXCLUDED.mime_type,
+      size = EXCLUDED.size,
+      modified_at = EXCLUDED.modified_at,
+      workbook_snapshot_status = CASE
+        WHEN clinical_skin_test_imports.workbook_snapshot_status = 'ARCHIVED'
+          AND (
+            clinical_skin_test_imports.onedrive_etag IS DISTINCT FROM EXCLUDED.onedrive_etag
+            OR clinical_skin_test_imports.onedrive_ctag IS DISTINCT FROM EXCLUDED.onedrive_ctag
+          )
+        THEN 'STALE'::"ClinicalSkinTestWorkbookSnapshotStatus"
+        ELSE clinical_skin_test_imports.workbook_snapshot_status
+      END,
       updated_at = now()
   `.execute(kysely);
 }
@@ -2494,6 +2821,18 @@ function toImportOutput(row: ImportRow): SkinTestImportOutput {
     matchedSeriesId: row.matchedSeriesId ?? null,
     status: row.status,
     updatedAt: row.updatedAt.toISOString(),
+    workbookSnapshot: {
+      archivedAt: row.workbookSnapshotArchivedAt?.toISOString() ?? null,
+      cellCount: row.workbookSnapshotCellCount ?? null,
+      error: row.workbookSnapshotError,
+      extractorVersion: row.workbookSnapshotExtractorVersion ?? null,
+      mergeCount: row.workbookSnapshotMergeCount ?? null,
+      sheetName: row.workbookSnapshotSheetName ?? null,
+      sha256: row.workbookSnapshotSha256 ?? null,
+      status: row.workbookSnapshotStatus,
+      textHash: row.workbookSnapshotTextHash ?? null,
+      updatedAt: row.workbookSnapshotUpdatedAt?.toISOString() ?? null,
+    },
   };
 }
 

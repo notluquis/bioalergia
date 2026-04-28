@@ -11,6 +11,13 @@ export const SkinTestImportStatusSchema = z.enum([
 
 export type SkinTestImportStatus = z.infer<typeof SkinTestImportStatusSchema>;
 
+export const SkinTestWorkbookSnapshotStatusSchema = z.enum([
+  "MISSING",
+  "ARCHIVED",
+  "ERROR",
+  "STALE",
+]);
+
 export const ClinicalDocumentImportKindSchema = z.enum(["CLINICAL_RECORD", "VISIT_SHEET", "OTHER"]);
 
 export const ClinicalDocumentImportStatusSchema = z.enum([
@@ -86,6 +93,18 @@ export const SkinTestImportSchema = z.object({
   matchedSeriesId: z.number().nullable().optional(),
   status: SkinTestImportStatusSchema,
   updatedAt: z.string(),
+  workbookSnapshot: z.object({
+    archivedAt: z.string().nullable(),
+    cellCount: z.number().nullable(),
+    error: z.string().nullable(),
+    extractorVersion: z.string().nullable(),
+    mergeCount: z.number().nullable(),
+    sheetName: z.string().nullable(),
+    sha256: z.string().nullable(),
+    status: SkinTestWorkbookSnapshotStatusSchema,
+    textHash: z.string().nullable(),
+    updatedAt: z.string().nullable(),
+  }),
 });
 
 export type SkinTestImport = z.infer<typeof SkinTestImportSchema>;

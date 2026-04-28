@@ -3253,6 +3253,21 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true
                 },
+                workbookSnapshotStatus: {
+                    name: "workbookSnapshotStatus",
+                    type: "ClinicalSkinTestWorkbookSnapshotStatus",
+                    default: "MISSING" as FieldDefault
+                },
+                workbookSnapshotError: {
+                    name: "workbookSnapshotError",
+                    type: "String",
+                    optional: true
+                },
+                workbookSnapshotArchivedAt: {
+                    name: "workbookSnapshotArchivedAt",
+                    type: "DateTime",
+                    optional: true
+                },
                 reviewedBy: {
                     name: "reviewedBy",
                     type: "Int",
@@ -3296,6 +3311,12 @@ export class SchemaType implements SchemaDef {
                     array: true,
                     relation: { opposite: "sourceImport" }
                 },
+                workbookSnapshot: {
+                    name: "workbookSnapshot",
+                    type: "ClinicalSkinTestWorkbookSnapshot",
+                    optional: true,
+                    relation: { opposite: "sourceImport" }
+                },
                 oneDriveAccount: {
                     name: "oneDriveAccount",
                     type: "OneDriveAccount",
@@ -3307,6 +3328,146 @@ export class SchemaType implements SchemaDef {
             uniqueFields: {
                 id: { type: "String" },
                 oneDriveAccountId_oneDriveDriveId_oneDriveItemId: { oneDriveAccountId: { type: "String" }, oneDriveDriveId: { type: "String" }, oneDriveItemId: { type: "String" } }
+            }
+        },
+        ClinicalSkinTestWorkbookFile: {
+            name: "ClinicalSkinTestWorkbookFile",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                extractorVersion: {
+                    name: "extractorVersion",
+                    type: "String"
+                },
+                sha256: {
+                    name: "sha256",
+                    type: "String"
+                },
+                sizeBytes: {
+                    name: "sizeBytes",
+                    type: "Int",
+                    optional: true
+                },
+                sheetName: {
+                    name: "sheetName",
+                    type: "String"
+                },
+                cellCount: {
+                    name: "cellCount",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                mergeCount: {
+                    name: "mergeCount",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                textHash: {
+                    name: "textHash",
+                    type: "String"
+                },
+                snapshotJson: {
+                    name: "snapshotJson",
+                    type: "Json"
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                snapshots: {
+                    name: "snapshots",
+                    type: "ClinicalSkinTestWorkbookSnapshot",
+                    array: true,
+                    relation: { opposite: "workbookFile" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" },
+                sha256_extractorVersion: { sha256: { type: "String" }, extractorVersion: { type: "String" } }
+            }
+        },
+        ClinicalSkinTestWorkbookSnapshot: {
+            name: "ClinicalSkinTestWorkbookSnapshot",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                sourceImportId: {
+                    name: "sourceImportId",
+                    type: "String",
+                    unique: true,
+                    foreignKeyFor: [
+                        "sourceImport"
+                    ] as readonly string[]
+                },
+                workbookFileId: {
+                    name: "workbookFileId",
+                    type: "String",
+                    foreignKeyFor: [
+                        "workbookFile"
+                    ] as readonly string[]
+                },
+                sourceETag: {
+                    name: "sourceETag",
+                    type: "String",
+                    optional: true
+                },
+                sourceCTag: {
+                    name: "sourceCTag",
+                    type: "String",
+                    optional: true
+                },
+                status: {
+                    name: "status",
+                    type: "ClinicalSkinTestWorkbookSnapshotStatus",
+                    default: "ARCHIVED" as FieldDefault
+                },
+                error: {
+                    name: "error",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                sourceImport: {
+                    name: "sourceImport",
+                    type: "ClinicalSkinTestImport",
+                    relation: { opposite: "workbookSnapshot", fields: ["sourceImportId"], references: ["id"], onDelete: "Cascade" }
+                },
+                workbookFile: {
+                    name: "workbookFile",
+                    type: "ClinicalSkinTestWorkbookFile",
+                    relation: { opposite: "snapshots", fields: ["workbookFileId"], references: ["id"], onDelete: "Restrict" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" },
+                sourceImportId: { type: "String" }
             }
         },
         ClinicalDocumentImport: {
@@ -8458,6 +8619,15 @@ export class SchemaType implements SchemaDef {
                 REJECTED: "REJECTED",
                 ERROR: "ERROR",
                 SKIPPED: "SKIPPED"
+            }
+        },
+        ClinicalSkinTestWorkbookSnapshotStatus: {
+            name: "ClinicalSkinTestWorkbookSnapshotStatus",
+            values: {
+                MISSING: "MISSING",
+                ARCHIVED: "ARCHIVED",
+                ERROR: "ERROR",
+                STALE: "STALE"
             }
         },
         ClinicalDocumentImportKind: {

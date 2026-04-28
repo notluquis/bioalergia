@@ -14,6 +14,7 @@ import {
   oneDriveStatusOutputSchema,
   skinTestAnalyticsInputSchema,
   skinTestAnalyticsOutputSchema,
+  skinTestArchiveSnapshotsInputSchema,
   skinTestImportActionInputSchema,
   skinTestBulkImportActionInputSchema,
   skinTestBulkImportActionOutputSchema,
@@ -38,6 +39,7 @@ import type { Context as HonoContext } from "hono";
 import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import {
+  startClinicalSkinTestArchiveSnapshotsJob,
   startClinicalSkinTestImportJob,
   startClinicalSkinTestProcessDiscoveredJob,
 } from "../lib/clinical-skin-tests/clinical-skin-test-scheduler";
@@ -304,6 +306,25 @@ const routerBase = {
         jobId: await startClinicalSkinTestProcessDiscoveredJob({
           query: input.query,
           trigger: "manual:process-discovered",
+        }),
+      };
+    }),
+
+  archiveSnapshots: updateClinicalSkinTests
+    .route({ method: "POST", path: "/imports/archive-snapshots" })
+    .input(skinTestArchiveSnapshotsInputSchema)
+    .output(skinTestSyncOutputSchema)
+    .handler(async ({ input }: { input: z.input<typeof skinTestArchiveSnapshotsInputSchema> }) => {
+      return {
+        jobId: await startClinicalSkinTestArchiveSnapshotsJob({
+          accountId: input.accountId,
+          dryRun: input.dryRun,
+          importStatus: input.importStatus,
+          limit: input.limit,
+          onlyChanged: input.onlyChanged,
+          onlyMissing: input.onlyMissing,
+          query: input.query,
+          trigger: "manual:archive-snapshots",
         }),
       };
     }),

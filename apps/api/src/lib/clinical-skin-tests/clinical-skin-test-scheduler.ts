@@ -1,8 +1,10 @@
 import cron from "node-cron";
 import {
+  archiveMissingSkinTestWorkbookSnapshots,
   getSkinTestImportJobType,
   processDiscoveredSkinTestImports,
   syncClinicalSkinTestImports,
+  type SkinTestImportStatus,
 } from "../../services/clinical-skin-test-imports";
 import {
   cancelJob,
@@ -222,6 +224,100 @@ export async function startClinicalSkinTestProcessDiscoveredJob(options?: {
 
       failJob(jobId, message);
       logError("clinicalSkinTests.discoveredProcessing.failed", error, {
+        trigger: options?.trigger ?? "manual",
+      });
+    }
+  })();
+
+  return jobId;
+}
+
+export async function startClinicalSkinTestArchiveSnapshotsJob(options?: {
+  accountId?: string;
+  dryRun?: boolean;
+  importStatus?: SkinTestImportStatus;
+  limit?: number;
+  onlyChanged?: boolean;
+  onlyMissing?: boolean;
+  query?: string;
+  trigger?: string;
+}): Promise<string> {
+  const jobType = getSkinTestImportJobType();
+  const activeJobs = getActiveJobsByType(jobType);
+  if (activeJobs.length > 0) {
+    return activeJobs[0].id;
+  }
+
+  const jobId = startJob(jobType, 1);
+  updateJobProgress(jobId, 0, "Preparando archivo de snapshots de Excel", {
+    mode: "archive-snapshots",
+    phase: "archiving",
+  });
+  let progressTotal = 1;
+  let phaseStartedAt = Date.now();
+  let phaseStartedAtProgress = 0;
+
+  void (async () => {
+    try {
+      const result = await archiveMissingSkinTestWorkbookSnapshots({
+        accountId: options?.accountId,
+        dryRun: options?.dryRun,
+        importStatus: options?.importStatus,
+        limit: options?.limit,
+        onlyChanged: options?.onlyChanged,
+        onlyMissing: options?.onlyMissing,
+        query: options?.query,
+        shouldCancel: () => isJobCancelled(jobId),
+        onProgress: ({ message, processed, total, ...meta }) => {
+          if (total !== progressTotal || processed < phaseStartedAtProgress) {
+            progressTotal = total;
+            phaseStartedAt = Date.now();
+            phaseStartedAtProgress = processed;
+          }
+
+          const elapsedSeconds = Math.max(0, (Date.now() - phaseStartedAt) / 1000);
+          const completedInPhase = processed - phaseStartedAtProgress;
+          const remainingInPhase = total - processed;
+          const etaSeconds =
+            completedInPhase > 0 && remainingInPhase > 0 && elapsedSeconds >= 2
+              ? Math.round((elapsedSeconds / completedInPhase) * remainingInPhase)
+              : null;
+
+          updateJobProgress(
+            jobId,
+            processed,
+            message,
+            {
+              ...meta,
+              elapsedSeconds: Math.round(elapsedSeconds),
+              etaSeconds,
+              mode: "archive-snapshots",
+            },
+            total
+          );
+        },
+      });
+      completeJob(jobId, result, "Archivo de snapshots completado", {
+        ...result,
+        mode: "archive-snapshots",
+        phase: "completed",
+      });
+      logEvent("clinicalSkinTests.archiveSnapshots.completed", {
+        result,
+        trigger: options?.trigger ?? "manual",
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (message === "SYNC_CANCELLED") {
+        cancelJob(jobId, "Archivo de snapshots cancelado por usuario");
+        logEvent("clinicalSkinTests.archiveSnapshots.cancelled", {
+          trigger: options?.trigger ?? "manual",
+        });
+        return;
+      }
+
+      failJob(jobId, message);
+      logError("clinicalSkinTests.archiveSnapshots.failed", error, {
         trigger: options?.trigger ?? "manual",
       });
     }

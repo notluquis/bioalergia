@@ -40,6 +40,7 @@ import { buildPaginationItems } from "@/components/pagination/pagination-items";
 import { useToast } from "@/context/ToastContext";
 import {
   useActiveClinicalSkinTestJob,
+  useArchiveSkinTestWorkbookSnapshots,
   useApproveSkinTestImport,
   useConfigureOneDriveFolder,
   useOneDriveSkinTestStatus,
@@ -93,6 +94,13 @@ const STATUS_COLORS: Record<SkinTestImportStatus, "danger" | "default" | "succes
   SKIPPED: "default",
 };
 
+const SNAPSHOT_STATUS_LABELS = {
+  ARCHIVED: "archivado",
+  ERROR: "error",
+  MISSING: "pendiente",
+  STALE: "desactualizado",
+} as const;
+
 const IMPORTS_PAGE_SIZE = 20;
 
 interface SkinTestSyncJobMeta {
@@ -103,6 +111,8 @@ interface SkinTestSyncJobMeta {
   documents?: number;
   documentsMatched?: number;
   documentsUnmatched?: number;
+  downloadedBytes?: number;
+  dryRun?: boolean;
   elapsedSeconds?: number;
   errors?: number;
   etaSeconds?: number | null;
@@ -113,15 +123,24 @@ interface SkinTestSyncJobMeta {
   imported?: number;
   page?: number;
   pending?: number;
-  phase?: "completed" | "delta" | "discovered-processing" | "processing" | "scanned" | "starting";
+  phase?:
+    | "archiving"
+    | "completed"
+    | "delta"
+    | "discovered-processing"
+    | "processing"
+    | "scanned"
+    | "starting";
   scanned?: number;
   skipped?: number;
   unchanged?: number;
   xlsx?: number;
+  archived?: number;
 }
 
 const SYNC_PHASE_LABELS: Record<NonNullable<SkinTestSyncJobMeta["phase"]>, string> = {
   completed: "Completado",
+  archiving: "Archivando XLSX",
   delta: "Leyendo OneDrive",
   "discovered-processing": "Procesando descubiertos",
   processing: "Procesando xlsx",
@@ -142,6 +161,8 @@ function getSyncJobMeta(meta: unknown): SkinTestSyncJobMeta {
       typeof value.documentsMatched === "number" ? value.documentsMatched : undefined,
     documentsUnmatched:
       typeof value.documentsUnmatched === "number" ? value.documentsUnmatched : undefined,
+    downloadedBytes: typeof value.downloadedBytes === "number" ? value.downloadedBytes : undefined,
+    dryRun: typeof value.dryRun === "boolean" ? value.dryRun : undefined,
     elapsedSeconds: typeof value.elapsedSeconds === "number" ? value.elapsedSeconds : undefined,
     errors: typeof value.errors === "number" ? value.errors : undefined,
     etaSeconds:
@@ -162,12 +183,14 @@ function getSyncJobMeta(meta: unknown): SkinTestSyncJobMeta {
     skipped: typeof value.skipped === "number" ? value.skipped : undefined,
     unchanged: typeof value.unchanged === "number" ? value.unchanged : undefined,
     xlsx: typeof value.xlsx === "number" ? value.xlsx : undefined,
+    archived: typeof value.archived === "number" ? value.archived : undefined,
   };
 }
 
 function isSyncPhase(value: unknown): value is NonNullable<SkinTestSyncJobMeta["phase"]> {
   return (
     value === "completed" ||
+    value === "archiving" ||
     value === "delta" ||
     value === "discovered-processing" ||
     value === "processing" ||
@@ -205,6 +228,7 @@ export function SkinTestImportPanel() {
   const imports = useSkinTestImports(filters);
   const syncMutation = useSyncSkinTestImports();
   const cancelJobMutation = useCancelClinicalSkinTestJob();
+  const archiveSnapshotsMutation = useArchiveSkinTestWorkbookSnapshots();
   const processDiscoveredMutation = useProcessDiscoveredSkinTestImports();
   const processSelectedMutation = useProcessSkinTestImports();
   const connectOneDrive = useConnectOneDrive();
@@ -376,6 +400,21 @@ export function SkinTestImportPanel() {
     }
   }
 
+  async function handleArchiveSnapshots() {
+    try {
+      const result = await archiveSnapshotsMutation.mutateAsync({
+        importStatus: status,
+        limit: 500,
+        onlyMissing: true,
+        query: query.trim() || undefined,
+      });
+      setActiveJobId(result.jobId);
+      toast.success("Archivado de XLSX iniciado", "Tests cutáneos");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo iniciar archivado");
+    }
+  }
+
   return (
     <div className="space-y-4">
       <Surface className="rounded-xl p-4">
@@ -404,6 +443,23 @@ export function SkinTestImportPanel() {
             >
               Releer todo
             </Button>
+            <Tooltip>
+              <Tooltip.Trigger>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onPress={() => void handleArchiveSnapshots()}
+                  isDisabled={!oneDrive.data?.connected || isSyncInProgress}
+                  isPending={archiveSnapshotsMutation.isPending}
+                >
+                  <ScanLine size={14} />
+                  Archivar XLSX
+                </Button>
+              </Tooltip.Trigger>
+              <Tooltip.Content>
+                Descarga en Railway los XLSX del filtro actual que todavía no tienen snapshot
+              </Tooltip.Content>
+            </Tooltip>
             <Button
               size="sm"
               variant="ghost"
@@ -474,6 +530,10 @@ export function SkinTestImportPanel() {
               {syncMeta.page != null && <span>Página delta: {syncMeta.page}</span>}
               {syncMeta.scanned != null && <span>Items leídos: {syncMeta.scanned}</span>}
               {syncMeta.xlsx != null && <span>XLSX: {syncMeta.xlsx}</span>}
+              {syncMeta.archived != null && <span>Snapshots: {syncMeta.archived}</span>}
+              {syncMeta.downloadedBytes != null && (
+                <span>Descargado: {formatBytes(syncMeta.downloadedBytes)}</span>
+              )}
               {syncMeta.documents != null && (
                 <span>
                   Docs {syncMeta.documents} · Vinculados {syncMeta.documentsMatched ?? 0} · Sin
@@ -1252,6 +1312,24 @@ function SkinTestImportRow({
                 {item.accountEmail}
               </Chip>
             )}
+            <Tooltip>
+              <Tooltip.Trigger>
+                <Chip
+                  size="sm"
+                  color={item.workbookSnapshot.status === "ARCHIVED" ? "success" : "default"}
+                  variant="soft"
+                >
+                  XLSX {SNAPSHOT_STATUS_LABELS[item.workbookSnapshot.status]}
+                </Chip>
+              </Tooltip.Trigger>
+              <Tooltip.Content>
+                {item.workbookSnapshot.status === "ARCHIVED"
+                  ? `${item.workbookSnapshot.cellCount ?? 0} celdas · ${
+                      item.workbookSnapshot.mergeCount ?? 0
+                    } merges`
+                  : (item.workbookSnapshot.error ?? "Snapshot pendiente")}
+              </Tooltip.Content>
+            </Tooltip>
           </div>
           <div className="text-xs text-foreground-500 flex items-center gap-1.5 flex-wrap mt-1">
             {header?.panelTitle && (
