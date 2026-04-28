@@ -2,7 +2,6 @@ import { kysely } from "@finanzas/db";
 import { createId } from "@paralleldrive/cuid2";
 import { createHash } from "node:crypto";
 import { sql } from "kysely";
-import { isImportableSkinTestFilename } from "../lib/skin-test-file-filter";
 import {
   downloadOneDriveItem,
   getOneDriveStatus,
@@ -334,7 +333,6 @@ export async function syncClinicalSkinTestImports(options?: {
   let xlsx = 0;
   let filesProcessed = 0;
   const workItems: Array<{ account: (typeof accounts)[number]; item: OneDriveItem }> = [];
-  const documentWorkItems: Array<{ account: (typeof accounts)[number]; item: OneDriveItem }> = [];
 
   const emit = (message: string, progress: SkinTestSyncProgress) => {
     options?.onProgress?.({ ...progress, message });
@@ -399,15 +397,12 @@ export async function syncClinicalSkinTestImports(options?: {
       },
     });
     const xlsxItems = items.filter(isRelevantXlsx);
-    const skinTestItems = xlsxItems.filter(isImportableXlsx);
-    const clinicalDocumentItems = xlsxItems.filter((item) => !isImportableXlsx(item));
     scanned += items.length;
     xlsx += xlsxItems.length;
-    workItems.push(...skinTestItems.map((item) => ({ account, item })));
-    documentWorkItems.push(...clinicalDocumentItems.map((item) => ({ account, item })));
+    workItems.push(...xlsxItems.map((item) => ({ account, item })));
 
     emit(
-      `[${account.email}] ${items.length} cambio(s), ${skinTestItems.length} test(s), ${clinicalDocumentItems.length} documento(s)`,
+      `[${account.email}] ${items.length} cambio(s), ${xlsxItems.length} xlsx`,
       {
         accountEmail: account.email,
         accountId: account.accountId,
@@ -427,7 +422,7 @@ export async function syncClinicalSkinTestImports(options?: {
     );
   }
 
-  const totalWorkItems = workItems.length + documentWorkItems.length;
+  const totalWorkItems = workItems.length;
   if (totalWorkItems === 0) {
     emit(`Sync terminado: ${scanned} item(s) revisado(s), sin .xlsx relevante(s)`, {
       accountsTotal: accounts.length,
@@ -464,10 +459,9 @@ export async function syncClinicalSkinTestImports(options?: {
   }
 
   let cursor = 0;
-  let documentCursor = 0;
-  const workerCount = Math.min(concurrency, Math.max(workItems.length, documentWorkItems.length));
+  const workerCount = Math.min(concurrency, workItems.length);
 
-  emit(`Registrando ${workItems.length} test(s) y ${documentWorkItems.length} documento(s)`, {
+  emit(`Registrando ${workItems.length} xlsx para snapshot`, {
     accountsTotal: accounts.length,
     documents,
     documentsMatched,
@@ -558,54 +552,8 @@ export async function syncClinicalSkinTestImports(options?: {
 
   await Promise.all(workers);
 
-  const documentWorkers = Array.from(
-    { length: Math.min(concurrency, documentWorkItems.length) },
-    async () => {
-      while (true) {
-        if (options?.shouldCancel?.()) {
-          throw new Error("SYNC_CANCELLED");
-        }
-        const index = documentCursor;
-        if (index >= documentWorkItems.length) return;
-        documentCursor += 1;
-
-        const { account, item } = documentWorkItems[index];
-        const result = await discoverOneDriveClinicalDocument(account.accountId, item);
-        if (result.status === "MATCHED") documentsMatched += 1;
-        else documentsUnmatched += 1;
-        documents += 1;
-        filesProcessed += 1;
-
-        emit(`[${account.email}] Documento: ${item.name} (${result.status})`, {
-          accountEmail: account.email,
-          accountId: account.accountId,
-          accountsTotal: accounts.length,
-          discovered,
-          documents,
-          documentsMatched,
-          documentsUnmatched,
-          errors,
-          filename: item.name,
-          imported,
-          pending,
-          filesProcessed,
-          filesTotal: totalWorkItems,
-          phase: "processing",
-          processed: accounts.length + filesProcessed,
-          scanned,
-          skipped,
-          total: accounts.length + totalWorkItems,
-          unchanged,
-          xlsx,
-        });
-      }
-    }
-  );
-
-  await Promise.all(documentWorkers);
-
   emit(
-    `Sync terminado: ${discovered} test(s) descubierto(s), ${documents} documento(s), ${unchanged} sin cambios, ${errors} error(es)`,
+    `Sync terminado: ${discovered} xlsx descubierto(s), ${unchanged} sin cambios, ${errors} error(es)`,
     {
       accountsTotal: accounts.length,
       errors,
@@ -786,7 +734,7 @@ export async function processOneDriveSkinTestItem(
   }
 }
 
-async function discoverOneDriveClinicalDocument(
+export async function discoverOneDriveClinicalDocument(
   accountId: string,
   item: OneDriveItem
 ): Promise<{
@@ -2556,10 +2504,6 @@ function isRelevantXlsx(item: OneDriveItem): boolean {
   if (isBlockedDownloadPath(item.parentReference?.path)) return false;
   if (isBlockedDownloadPath(item.remoteItem?.parentReference?.path)) return false;
   return true;
-}
-
-function isImportableXlsx(item: OneDriveItem): boolean {
-  return isRelevantXlsx(item) && isImportableSkinTestFilename(item.name);
 }
 
 function isBlockedDownloadPath(path: null | string | undefined): boolean {

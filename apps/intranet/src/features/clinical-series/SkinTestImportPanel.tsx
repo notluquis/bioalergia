@@ -1,5 +1,6 @@
 import {
   Alert,
+  AlertDialog,
   Breadcrumbs,
   Button,
   Checkbox,
@@ -67,7 +68,8 @@ import type {
   SkinTestResult,
 } from "./skin-tests-types";
 
-const STATUS_OPTIONS: Array<{ label: string; value: SkinTestImportStatus }> = [
+const STATUS_FILTER_OPTIONS: Array<{ label: string; value: "ALL" | SkinTestImportStatus }> = [
+  { label: "Todos", value: "ALL" },
   { label: "Descubiertos", value: "DISCOVERED" },
   { label: "Pendientes", value: "PENDING_REVIEW" },
   { label: "Importados", value: "IMPORTED" },
@@ -93,6 +95,14 @@ const STATUS_COLORS: Record<SkinTestImportStatus, "danger" | "default" | "succes
   REJECTED: "danger",
   SKIPPED: "default",
 };
+
+const ARCHIVE_LIMIT_OPTIONS = [
+  { label: "50 archivos", value: 50 },
+  { label: "100 archivos", value: 100 },
+  { label: "500 archivos", value: 500 },
+  { label: "1000 archivos", value: 1000 },
+  { label: "5000 archivos", value: 5000 },
+];
 
 const SNAPSHOT_STATUS_LABELS = {
   ARCHIVED: "archivado",
@@ -214,6 +224,8 @@ export function SkinTestImportPanel() {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<SkinTestImportStatus | undefined>("DISCOVERED");
   const [importsPage, setImportsPage] = useState(1);
+  const [archiveLimit, setArchiveLimit] = useState(100);
+  const [isRereadAllOpen, setIsRereadAllOpen] = useState(false);
   const [selectedImportIds, setSelectedImportIds] = useState<Record<string, boolean>>({});
   const filters: SkinTestImportFilters = useMemo(
     () => ({
@@ -404,8 +416,7 @@ export function SkinTestImportPanel() {
     try {
       const result = await archiveSnapshotsMutation.mutateAsync({
         importStatus: status,
-        limit: 500,
-        onlyMissing: true,
+        limit: archiveLimit,
         query: query.trim() || undefined,
       });
       setActiveJobId(result.jobId);
@@ -418,7 +429,7 @@ export function SkinTestImportPanel() {
   return (
     <div className="space-y-4">
       <Surface className="rounded-xl p-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-1">
             <h2 className="text-base font-semibold">Importación tests cutáneos</h2>
             <p className="text-sm text-foreground-500">
@@ -426,40 +437,6 @@ export function SkinTestImportPanel() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button
-              size="sm"
-              variant="secondary"
-              onPress={() => void handleSync(false)}
-              isDisabled={!oneDrive.data?.connected || isSyncInProgress}
-            >
-              <RefreshCw size={14} />
-              Sincronizar
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onPress={() => void handleSync(true)}
-              isDisabled={!oneDrive.data?.connected || isSyncInProgress}
-            >
-              Releer todo
-            </Button>
-            <Tooltip>
-              <Tooltip.Trigger>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onPress={() => void handleArchiveSnapshots()}
-                  isDisabled={!oneDrive.data?.connected || isSyncInProgress}
-                  isPending={archiveSnapshotsMutation.isPending}
-                >
-                  <ScanLine size={14} />
-                  Archivar XLSX
-                </Button>
-              </Tooltip.Trigger>
-              <Tooltip.Content>
-                Descarga en Railway los XLSX del filtro actual que todavía no tienen snapshot
-              </Tooltip.Content>
-            </Tooltip>
             <Button
               size="sm"
               variant="ghost"
@@ -475,6 +452,127 @@ export function SkinTestImportPanel() {
             </Button>
           </div>
         </div>
+
+        {oneDrive.data?.connected && (
+          <div className="mt-4 grid gap-3 xl:grid-cols-3">
+            <div className="flex min-h-36 flex-col justify-between rounded-lg bg-content2 p-3">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <Chip size="sm" color="accent" variant="soft">
+                    1
+                  </Chip>
+                  <h3 className="text-sm font-semibold">Escanear OneDrive</h3>
+                </div>
+                <p className="text-xs text-foreground-500">
+                  Registra metadata de todos los .xlsx permitidos. No descarga el archivo ni
+                  clasifica.
+                </p>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onPress={() => void handleSync(false)}
+                  isDisabled={!oneDrive.data?.connected || isSyncInProgress}
+                >
+                  <RefreshCw size={14} />
+                  Sincronizar cambios
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onPress={() => setIsRereadAllOpen(true)}
+                  isDisabled={!oneDrive.data?.connected || isSyncInProgress}
+                >
+                  <RotateCw size={14} />
+                  Releer todo
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex min-h-36 flex-col justify-between rounded-lg bg-content2 p-3">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <Chip size="sm" color="accent" variant="soft">
+                    2
+                  </Chip>
+                  <h3 className="text-sm font-semibold">Guardar XLSX en DB</h3>
+                </div>
+                <p className="text-xs text-foreground-500">
+                  Descarga desde Railway y guarda la primera hoja estructurada de los archivos del
+                  filtro actual.
+                </p>
+              </div>
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end">
+                <Select
+                  value={String(archiveLimit)}
+                  onChange={(key) => {
+                    const nextLimit = Number(key);
+                    if (Number.isFinite(nextLimit)) setArchiveLimit(nextLimit);
+                  }}
+                  variant="secondary"
+                  className="sm:w-40"
+                >
+                  <Label>Lote</Label>
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      {ARCHIVE_LIMIT_OPTIONS.map((option) => (
+                        <ListBox.Item
+                          key={option.value}
+                          id={String(option.value)}
+                          textValue={option.label}
+                        >
+                          {option.label}
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                      ))}
+                    </ListBox>
+                  </Select.Popover>
+                </Select>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onPress={() => void handleArchiveSnapshots()}
+                  isDisabled={isSyncInProgress || imports.isFetching}
+                  isPending={archiveSnapshotsMutation.isPending}
+                >
+                  <ScanLine size={14} />
+                  Archivar filtrados
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex min-h-36 flex-col justify-between rounded-lg bg-content2 p-3">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <Chip size="sm" color="accent" variant="soft">
+                    3
+                  </Chip>
+                  <h3 className="text-sm font-semibold">Clasificar y procesar</h3>
+                </div>
+                <p className="text-xs text-foreground-500">
+                  Interpreta los descubiertos del filtro actual después de guardar los XLSX.
+                </p>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onPress={() => void handleProcessAllDiscovered()}
+                  isDisabled={!canProcessAllDiscovered || isSyncInProgress || imports.isFetching}
+                  isPending={processDiscoveredMutation.isPending}
+                >
+                  <ServerCog size={14} />
+                  Procesar descubiertos
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {activeJobId && currentJob && (
           <div className="mt-4">
@@ -647,8 +745,10 @@ export function SkinTestImportPanel() {
               <Input placeholder="Paciente, RUT o archivo" />
             </TextField>
             <Select
-              value={(status as Key) ?? null}
-              onChange={(key) => setStatus((key as SkinTestImportStatus | null) ?? undefined)}
+              value={(status as Key) ?? "ALL"}
+              onChange={(key) =>
+                setStatus(key === "ALL" ? undefined : (key as SkinTestImportStatus))
+              }
               placeholder="Todos"
               variant="secondary"
             >
@@ -659,7 +759,7 @@ export function SkinTestImportPanel() {
               </Select.Trigger>
               <Select.Popover>
                 <ListBox>
-                  {STATUS_OPTIONS.map((item) => (
+                  {STATUS_FILTER_OPTIONS.map((item) => (
                     <ListBox.Item key={item.value} id={item.value} textValue={item.label}>
                       {item.label}
                       <ListBox.ItemIndicator />
@@ -715,24 +815,6 @@ export function SkinTestImportPanel() {
                 <FileSpreadsheet size={14} />
                 Procesar seleccionados
               </Button>
-              {canProcessAllDiscovered && (
-                <Tooltip>
-                  <Tooltip.Trigger>
-                    <Button
-                      size="sm"
-                      onPress={() => void handleProcessAllDiscovered()}
-                      isDisabled={isSyncInProgress || imports.isFetching}
-                      isPending={processDiscoveredMutation.isPending}
-                    >
-                      <ServerCog size={14} />
-                      Procesar todos los descubiertos
-                    </Button>
-                  </Tooltip.Trigger>
-                  <Tooltip.Content>
-                    Descarga y procesa todos los descubiertos del filtro actual como job de fondo
-                  </Tooltip.Content>
-                </Tooltip>
-              )}
             </div>
           </div>
         )}
@@ -803,6 +885,41 @@ export function SkinTestImportPanel() {
           </Pagination>
         )}
       </Surface>
+      <AlertDialog.Backdrop
+        isOpen={isRereadAllOpen}
+        onOpenChange={setIsRereadAllOpen}
+        variant="blur"
+      >
+        <AlertDialog.Container size="sm">
+          <AlertDialog.Dialog>
+            <AlertDialog.CloseTrigger />
+            <AlertDialog.Header>
+              <AlertDialog.Icon status="warning" />
+              <AlertDialog.Heading>Releer todo OneDrive</AlertDialog.Heading>
+            </AlertDialog.Header>
+            <AlertDialog.Body>
+              Se va a ignorar el delta guardado y se volverá a escanear la carpeta configurada de
+              todas las cuentas. Este paso solo registra metadata de .xlsx; no descarga snapshots ni
+              clasifica exámenes.
+            </AlertDialog.Body>
+            <AlertDialog.Footer>
+              <Button variant="ghost" onPress={() => setIsRereadAllOpen(false)}>
+                Cancelar
+              </Button>
+              <Button
+                variant="secondary"
+                onPress={() => {
+                  setIsRereadAllOpen(false);
+                  void handleSync(true);
+                }}
+              >
+                <RotateCw size={14} />
+                Releer metadata
+              </Button>
+            </AlertDialog.Footer>
+          </AlertDialog.Dialog>
+        </AlertDialog.Container>
+      </AlertDialog.Backdrop>
     </div>
   );
 }
