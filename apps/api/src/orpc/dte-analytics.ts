@@ -8,6 +8,7 @@ import {
   dteAnalyticsSalesLinkedEventsResponseSchema,
   dteAnalyticsSalesDetailsResponseSchema,
   dteAnalyticsSummaryResponseSchema,
+  dteFetchXmlByPeriodInputSchema,
   dteFetchXmlInputSchema,
   dteFetchXmlResponseSchema,
   dteLineItemsQuerySchema,
@@ -625,6 +626,68 @@ const dteAnalyticsORPCRouterBase = {
 
       return { ...result, status: "success" as const };
     }),
+
+  fetchXmlByPeriod: readDteAnalytics
+    .route({ method: "POST", path: "/fetch-xml-by-period" })
+    .input(dteFetchXmlByPeriodInputSchema)
+    .output(dteFetchXmlResponseSchema)
+    .handler(
+      async ({ input }: { input: z.output<typeof dteFetchXmlByPeriodInputSchema> }) => {
+        const { haulmerConfig: cfg } = await import("../config");
+        if (!cfg) {
+          throw new ORPCError("INTERNAL_SERVER_ERROR", {
+            message: "Haulmer not configured (missing env vars)",
+          });
+        }
+
+        const startDate = parsePeriodStart(input.period).toISOString();
+        const endDate = parsePeriodEnd(input.period).toISOString();
+
+        // Find all DTEs in the period, optionally only those without line items
+        let dteIds: string[];
+        if (input.direction === "sales") {
+          const rows = await db.$queryRaw<Array<{ id: string }>>`
+            SELECT s.id FROM dte_sale_details s
+            WHERE s.document_date >= ${startDate}
+              AND s.document_date <= ${endDate}
+              AND s.document_type <> 61
+              ${input.onlyMissing ? sql`AND NOT EXISTS (SELECT 1 FROM dte_line_items li WHERE li.dte_sale_detail_id = s.id)` : sql``}
+            ORDER BY s.document_date DESC
+          `;
+          dteIds = rows.map((r) => r.id);
+        } else {
+          const rows = await db.$queryRaw<Array<{ id: string }>>`
+            SELECT p.id FROM dte_purchase_details p
+            WHERE p.document_date >= ${startDate}
+              AND p.document_date <= ${endDate}
+              ${input.onlyMissing ? sql`AND NOT EXISTS (SELECT 1 FROM dte_line_items li WHERE li.dte_purchase_detail_id = p.id)` : sql``}
+            ORDER BY p.document_date DESC
+          `;
+          dteIds = rows.map((r) => r.id);
+        }
+
+        if (dteIds.length === 0) {
+          return {
+            fetched: 0,
+            skipped: 0,
+            errors: [],
+            details: [],
+            status: "success" as const,
+          };
+        }
+
+        const { fetchSaleXmlLineItems, fetchPurchaseXmlLineItems } = await import(
+          "../modules/haulmer/xml-service"
+        );
+
+        const result =
+          input.direction === "sales"
+            ? await fetchSaleXmlLineItems(dteIds, cfg)
+            : await fetchPurchaseXmlLineItems(dteIds, cfg);
+
+        return { ...result, status: "success" as const };
+      }
+    ),
 };
 
 export const dteAnalyticsORPCRouter = base

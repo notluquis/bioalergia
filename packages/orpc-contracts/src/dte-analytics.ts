@@ -156,6 +156,12 @@ export const dteFetchXmlInputSchema = z.object({
   direction: z.enum(["sales", "purchases"]),
 });
 
+export const dteFetchXmlByPeriodInputSchema = z.object({
+  period: z.string().regex(/^\d{4}-\d{2}$/),
+  direction: z.enum(["sales", "purchases"]),
+  onlyMissing: z.boolean().default(true),
+});
+
 export const dteFetchXmlResultDetailSchema = z.object({
   folio: z.string(),
   documentType: z.number().int(),
@@ -205,6 +211,10 @@ export const dteAnalyticsContract = {
   fetchXml: oc
     .route({ method: "POST", path: "/fetch-xml" })
     .input(dteFetchXmlInputSchema)
+    .output(dteFetchXmlResponseSchema),
+  fetchXmlByPeriod: oc
+    .route({ method: "POST", path: "/fetch-xml-by-period" })
+    .input(dteFetchXmlByPeriodInputSchema)
     .output(dteFetchXmlResponseSchema),
 };
 

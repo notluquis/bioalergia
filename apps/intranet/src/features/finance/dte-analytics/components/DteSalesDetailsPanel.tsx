@@ -13,10 +13,11 @@ import {
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import type { ColumnDef, PaginationState } from "@tanstack/react-table";
 import dayjs from "dayjs";
-import { Check } from "lucide-react";
+import { Check, Download } from "lucide-react";
 import { useEffect, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { DteLineItemsDrawer } from "./DteLineItemsDrawer";
+import { useFetchDteXmlByPeriod } from "../hooks/useFetchDteXml";
 import { dteAnalyticsKeys } from "@/features/finance/dte-analytics/queries";
 import type {
   DTESalesDetail,
@@ -354,6 +355,8 @@ export function DteSalesDetailsPanel() {
     enabled: Boolean(selectedDetail?.id),
   });
 
+  const fetchXmlByPeriod = useFetchDteXmlByPeriod();
+
   const salesColumns = buildSalesColumns(
     (detail) => setSelectedDetail(detail),
     (detail) => setLineItemsDetail(detail)
@@ -405,6 +408,20 @@ export function DteSalesDetailsPanel() {
         <Description>
           {detailsQuery.data?.meta.total ?? 0} registros en {selectedPeriod}
         </Description>
+        <Button
+          size="sm"
+          variant="secondary"
+          isDisabled={!selectedPeriod || fetchXmlByPeriod.isPending}
+          onPress={() => fetchXmlByPeriod.mutate({ period: selectedPeriod, direction: "sales" })}
+        >
+          <Download size={14} />
+          {fetchXmlByPeriod.isPending ? "Obteniendo..." : "Obtener XMLs"}
+        </Button>
+        {fetchXmlByPeriod.isSuccess ? (
+          <Chip color="success" size="sm" variant="soft">
+            {fetchXmlByPeriod.data.fetched} obtenidos · {fetchXmlByPeriod.data.skipped} omitidos
+          </Chip>
+        ) : null}
       </Surface>
 
       <div className="min-h-0 flex-1">

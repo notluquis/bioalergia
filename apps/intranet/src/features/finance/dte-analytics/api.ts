@@ -184,3 +184,25 @@ export async function fetchDteXml(
     throw toDteAnalyticsApiError(error);
   }
 }
+
+export async function fetchDteXmlByPeriod(
+  period: string,
+  direction: "purchases" | "sales",
+  onlyMissing = true
+): Promise<{
+  fetched: number;
+  skipped: number;
+  errors: string[];
+  details: DTEFetchXmlResultDetail[];
+}> {
+  try {
+    const response = await dteAnalyticsORPCClient.fetchXmlByPeriod({
+      period,
+      direction,
+      onlyMissing,
+    });
+    return response;
+  } catch (error) {
+    throw toDteAnalyticsApiError(error);
+  }
+}
