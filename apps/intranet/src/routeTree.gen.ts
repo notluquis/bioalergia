@@ -14,6 +14,7 @@ import { Route as LoginRouteImport } from "./routes/login"
 import { Route as AuthedRouteImport } from "./routes/_authed"
 import { Route as AuthedIndexRouteImport } from "./routes/_authed/index"
 import { Route as VerifyIdRouteImport } from "./routes/verify.$id"
+import { Route as AuthedWaCloudRouteImport } from "./routes/_authed/wa-cloud"
 import { Route as AuthedSettingsRouteImport } from "./routes/_authed/settings"
 import { Route as AuthedServicesRouteImport } from "./routes/_authed/services"
 import { Route as AuthedOutreachRouteImport } from "./routes/_authed/outreach"
@@ -25,12 +26,15 @@ import { Route as AuthedClinicalRouteImport } from "./routes/_authed/clinical"
 import { Route as AuthedCertificatesRouteImport } from "./routes/_authed/certificates"
 import { Route as AuthedCalendarRouteImport } from "./routes/_authed/calendar"
 import { Route as AuthedAccountRouteImport } from "./routes/_authed/account"
+import { Route as AuthedWaCloudIndexRouteImport } from "./routes/_authed/wa-cloud/index"
 import { Route as AuthedSettingsIndexRouteImport } from "./routes/_authed/settings/index"
 import { Route as AuthedServicesIndexRouteImport } from "./routes/_authed/services/index"
 import { Route as AuthedPatientsIndexRouteImport } from "./routes/_authed/patients/index"
 import { Route as AuthedOutreachIndexRouteImport } from "./routes/_authed/outreach/index"
 import { Route as AuthedHrIndexRouteImport } from "./routes/_authed/hr/index"
 import { Route as AuthedClinicalIndexRouteImport } from "./routes/_authed/clinical/index"
+import { Route as AuthedWaCloudPlantillasRouteImport } from "./routes/_authed/wa-cloud/plantillas"
+import { Route as AuthedWaCloudConfiguracionRouteImport } from "./routes/_authed/wa-cloud/configuracion"
 import { Route as AuthedSettingsWhatsappRouteImport } from "./routes/_authed/settings/whatsapp"
 import { Route as AuthedSettingsRolesRouteImport } from "./routes/_authed/settings/roles"
 import { Route as AuthedSettingsMercadopagoRouteImport } from "./routes/_authed/settings/mercadopago"
@@ -108,6 +112,11 @@ const VerifyIdRoute = VerifyIdRouteImport.update({
   path: "/verify/$id",
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthedWaCloudRoute = AuthedWaCloudRouteImport.update({
+  id: "/wa-cloud",
+  path: "/wa-cloud",
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedSettingsRoute = AuthedSettingsRouteImport.update({
   id: "/settings",
   path: "/settings",
@@ -163,6 +172,11 @@ const AuthedAccountRoute = AuthedAccountRouteImport.update({
   path: "/account",
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedWaCloudIndexRoute = AuthedWaCloudIndexRouteImport.update({
+  id: "/",
+  path: "/",
+  getParentRoute: () => AuthedWaCloudRoute,
+} as any)
 const AuthedSettingsIndexRoute = AuthedSettingsIndexRouteImport.update({
   id: "/",
   path: "/",
@@ -193,6 +207,17 @@ const AuthedClinicalIndexRoute = AuthedClinicalIndexRouteImport.update({
   path: "/",
   getParentRoute: () => AuthedClinicalRoute,
 } as any)
+const AuthedWaCloudPlantillasRoute = AuthedWaCloudPlantillasRouteImport.update({
+  id: "/plantillas",
+  path: "/plantillas",
+  getParentRoute: () => AuthedWaCloudRoute,
+} as any)
+const AuthedWaCloudConfiguracionRoute =
+  AuthedWaCloudConfiguracionRouteImport.update({
+    id: "/configuracion",
+    path: "/configuracion",
+    getParentRoute: () => AuthedWaCloudRoute,
+  } as any)
 const AuthedSettingsWhatsappRoute = AuthedSettingsWhatsappRouteImport.update({
   id: "/whatsapp",
   path: "/whatsapp",
@@ -492,6 +517,7 @@ export interface FileRoutesByFullPath {
   "/outreach": typeof AuthedOutreachRouteWithChildren
   "/services": typeof AuthedServicesRouteWithChildren
   "/settings": typeof AuthedSettingsRouteWithChildren
+  "/wa-cloud": typeof AuthedWaCloudRouteWithChildren
   "/verify/$id": typeof VerifyIdRoute
   "/calendar/dte-links": typeof AuthedCalendarDteLinksRoute
   "/calendar/sync-history": typeof AuthedCalendarSyncHistoryRoute
@@ -534,12 +560,15 @@ export interface FileRoutesByFullPath {
   "/settings/mercadopago": typeof AuthedSettingsMercadopagoRoute
   "/settings/roles": typeof AuthedSettingsRolesRoute
   "/settings/whatsapp": typeof AuthedSettingsWhatsappRoute
+  "/wa-cloud/configuracion": typeof AuthedWaCloudConfiguracionRoute
+  "/wa-cloud/plantillas": typeof AuthedWaCloudPlantillasRoute
   "/clinical/": typeof AuthedClinicalIndexRoute
   "/hr/": typeof AuthedHrIndexRoute
   "/outreach/": typeof AuthedOutreachIndexRoute
   "/patients/": typeof AuthedPatientsIndexRoute
   "/services/": typeof AuthedServicesIndexRoute
   "/settings/": typeof AuthedSettingsIndexRoute
+  "/wa-cloud/": typeof AuthedWaCloudIndexRoute
   "/finanzas/personal-credits/$creditId": typeof AuthedFinanzasPersonalCreditsCreditIdRoute
   "/outreach/campanas/$id": typeof AuthedOutreachCampanasIdRoute
   "/outreach/campanas/nueva": typeof AuthedOutreachCampanasNuevaRoute
@@ -604,12 +633,15 @@ export interface FileRoutesByTo {
   "/settings/mercadopago": typeof AuthedSettingsMercadopagoRoute
   "/settings/roles": typeof AuthedSettingsRolesRoute
   "/settings/whatsapp": typeof AuthedSettingsWhatsappRoute
+  "/wa-cloud/configuracion": typeof AuthedWaCloudConfiguracionRoute
+  "/wa-cloud/plantillas": typeof AuthedWaCloudPlantillasRoute
   "/clinical": typeof AuthedClinicalIndexRoute
   "/hr": typeof AuthedHrIndexRoute
   "/outreach": typeof AuthedOutreachIndexRoute
   "/patients": typeof AuthedPatientsIndexRoute
   "/services": typeof AuthedServicesIndexRoute
   "/settings": typeof AuthedSettingsIndexRoute
+  "/wa-cloud": typeof AuthedWaCloudIndexRoute
   "/finanzas/personal-credits/$creditId": typeof AuthedFinanzasPersonalCreditsCreditIdRoute
   "/outreach/campanas/$id": typeof AuthedOutreachCampanasIdRoute
   "/outreach/campanas/nueva": typeof AuthedOutreachCampanasNuevaRoute
@@ -638,6 +670,7 @@ export interface FileRoutesById {
   "/_authed/outreach": typeof AuthedOutreachRouteWithChildren
   "/_authed/services": typeof AuthedServicesRouteWithChildren
   "/_authed/settings": typeof AuthedSettingsRouteWithChildren
+  "/_authed/wa-cloud": typeof AuthedWaCloudRouteWithChildren
   "/verify/$id": typeof VerifyIdRoute
   "/_authed/": typeof AuthedIndexRoute
   "/_authed/calendar/dte-links": typeof AuthedCalendarDteLinksRoute
@@ -681,12 +714,15 @@ export interface FileRoutesById {
   "/_authed/settings/mercadopago": typeof AuthedSettingsMercadopagoRoute
   "/_authed/settings/roles": typeof AuthedSettingsRolesRoute
   "/_authed/settings/whatsapp": typeof AuthedSettingsWhatsappRoute
+  "/_authed/wa-cloud/configuracion": typeof AuthedWaCloudConfiguracionRoute
+  "/_authed/wa-cloud/plantillas": typeof AuthedWaCloudPlantillasRoute
   "/_authed/clinical/": typeof AuthedClinicalIndexRoute
   "/_authed/hr/": typeof AuthedHrIndexRoute
   "/_authed/outreach/": typeof AuthedOutreachIndexRoute
   "/_authed/patients/": typeof AuthedPatientsIndexRoute
   "/_authed/services/": typeof AuthedServicesIndexRoute
   "/_authed/settings/": typeof AuthedSettingsIndexRoute
+  "/_authed/wa-cloud/": typeof AuthedWaCloudIndexRoute
   "/_authed/finanzas/personal-credits/$creditId": typeof AuthedFinanzasPersonalCreditsCreditIdRoute
   "/_authed/outreach/campanas/$id": typeof AuthedOutreachCampanasIdRoute
   "/_authed/outreach/campanas/nueva": typeof AuthedOutreachCampanasNuevaRoute
@@ -716,6 +752,7 @@ export interface FileRouteTypes {
     | "/outreach"
     | "/services"
     | "/settings"
+    | "/wa-cloud"
     | "/verify/$id"
     | "/calendar/dte-links"
     | "/calendar/sync-history"
@@ -758,12 +795,15 @@ export interface FileRouteTypes {
     | "/settings/mercadopago"
     | "/settings/roles"
     | "/settings/whatsapp"
+    | "/wa-cloud/configuracion"
+    | "/wa-cloud/plantillas"
     | "/clinical/"
     | "/hr/"
     | "/outreach/"
     | "/patients/"
     | "/services/"
     | "/settings/"
+    | "/wa-cloud/"
     | "/finanzas/personal-credits/$creditId"
     | "/outreach/campanas/$id"
     | "/outreach/campanas/nueva"
@@ -828,12 +868,15 @@ export interface FileRouteTypes {
     | "/settings/mercadopago"
     | "/settings/roles"
     | "/settings/whatsapp"
+    | "/wa-cloud/configuracion"
+    | "/wa-cloud/plantillas"
     | "/clinical"
     | "/hr"
     | "/outreach"
     | "/patients"
     | "/services"
     | "/settings"
+    | "/wa-cloud"
     | "/finanzas/personal-credits/$creditId"
     | "/outreach/campanas/$id"
     | "/outreach/campanas/nueva"
@@ -861,6 +904,7 @@ export interface FileRouteTypes {
     | "/_authed/outreach"
     | "/_authed/services"
     | "/_authed/settings"
+    | "/_authed/wa-cloud"
     | "/verify/$id"
     | "/_authed/"
     | "/_authed/calendar/dte-links"
@@ -904,12 +948,15 @@ export interface FileRouteTypes {
     | "/_authed/settings/mercadopago"
     | "/_authed/settings/roles"
     | "/_authed/settings/whatsapp"
+    | "/_authed/wa-cloud/configuracion"
+    | "/_authed/wa-cloud/plantillas"
     | "/_authed/clinical/"
     | "/_authed/hr/"
     | "/_authed/outreach/"
     | "/_authed/patients/"
     | "/_authed/services/"
     | "/_authed/settings/"
+    | "/_authed/wa-cloud/"
     | "/_authed/finanzas/personal-credits/$creditId"
     | "/_authed/outreach/campanas/$id"
     | "/_authed/outreach/campanas/nueva"
@@ -966,6 +1013,13 @@ declare module "@tanstack/react-router" {
       fullPath: "/verify/$id"
       preLoaderRoute: typeof VerifyIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    "/_authed/wa-cloud": {
+      id: "/_authed/wa-cloud"
+      path: "/wa-cloud"
+      fullPath: "/wa-cloud"
+      preLoaderRoute: typeof AuthedWaCloudRouteImport
+      parentRoute: typeof AuthedRoute
     }
     "/_authed/settings": {
       id: "/_authed/settings"
@@ -1044,6 +1098,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedAccountRouteImport
       parentRoute: typeof AuthedRoute
     }
+    "/_authed/wa-cloud/": {
+      id: "/_authed/wa-cloud/"
+      path: "/"
+      fullPath: "/wa-cloud/"
+      preLoaderRoute: typeof AuthedWaCloudIndexRouteImport
+      parentRoute: typeof AuthedWaCloudRoute
+    }
     "/_authed/settings/": {
       id: "/_authed/settings/"
       path: "/"
@@ -1085,6 +1146,20 @@ declare module "@tanstack/react-router" {
       fullPath: "/clinical/"
       preLoaderRoute: typeof AuthedClinicalIndexRouteImport
       parentRoute: typeof AuthedClinicalRoute
+    }
+    "/_authed/wa-cloud/plantillas": {
+      id: "/_authed/wa-cloud/plantillas"
+      path: "/plantillas"
+      fullPath: "/wa-cloud/plantillas"
+      preLoaderRoute: typeof AuthedWaCloudPlantillasRouteImport
+      parentRoute: typeof AuthedWaCloudRoute
+    }
+    "/_authed/wa-cloud/configuracion": {
+      id: "/_authed/wa-cloud/configuracion"
+      path: "/configuracion"
+      fullPath: "/wa-cloud/configuracion"
+      preLoaderRoute: typeof AuthedWaCloudConfiguracionRouteImport
+      parentRoute: typeof AuthedWaCloudRoute
     }
     "/_authed/settings/whatsapp": {
       id: "/_authed/settings/whatsapp"
@@ -1681,6 +1756,22 @@ const AuthedSettingsRouteWithChildren = AuthedSettingsRoute._addFileChildren(
   AuthedSettingsRouteChildren,
 )
 
+interface AuthedWaCloudRouteChildren {
+  AuthedWaCloudConfiguracionRoute: typeof AuthedWaCloudConfiguracionRoute
+  AuthedWaCloudPlantillasRoute: typeof AuthedWaCloudPlantillasRoute
+  AuthedWaCloudIndexRoute: typeof AuthedWaCloudIndexRoute
+}
+
+const AuthedWaCloudRouteChildren: AuthedWaCloudRouteChildren = {
+  AuthedWaCloudConfiguracionRoute: AuthedWaCloudConfiguracionRoute,
+  AuthedWaCloudPlantillasRoute: AuthedWaCloudPlantillasRoute,
+  AuthedWaCloudIndexRoute: AuthedWaCloudIndexRoute,
+}
+
+const AuthedWaCloudRouteWithChildren = AuthedWaCloudRoute._addFileChildren(
+  AuthedWaCloudRouteChildren,
+)
+
 interface AuthedRouteChildren {
   AuthedAccountRoute: typeof AuthedAccountRoute
   AuthedCalendarRoute: typeof AuthedCalendarRouteWithChildren
@@ -1693,6 +1784,7 @@ interface AuthedRouteChildren {
   AuthedOutreachRoute: typeof AuthedOutreachRouteWithChildren
   AuthedServicesRoute: typeof AuthedServicesRouteWithChildren
   AuthedSettingsRoute: typeof AuthedSettingsRouteWithChildren
+  AuthedWaCloudRoute: typeof AuthedWaCloudRouteWithChildren
   AuthedIndexRoute: typeof AuthedIndexRoute
   AuthedDevRoutesAuditRoute: typeof AuthedDevRoutesAuditRoute
   AuthedPatientsCampaignsRoute: typeof AuthedPatientsCampaignsRoute
@@ -1716,6 +1808,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedOutreachRoute: AuthedOutreachRouteWithChildren,
   AuthedServicesRoute: AuthedServicesRouteWithChildren,
   AuthedSettingsRoute: AuthedSettingsRouteWithChildren,
+  AuthedWaCloudRoute: AuthedWaCloudRouteWithChildren,
   AuthedIndexRoute: AuthedIndexRoute,
   AuthedDevRoutesAuditRoute: AuthedDevRoutesAuditRoute,
   AuthedPatientsCampaignsRoute: AuthedPatientsCampaignsRoute,

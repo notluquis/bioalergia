@@ -208,6 +208,11 @@
       "import": "./dist/users.js",
       "default": "./dist/users.js"
     },
+    "./wa-cloud": {
+      "types": "./dist/wa-cloud.d.ts",
+      "import": "./dist/wa-cloud.js",
+      "default": "./dist/wa-cloud.js"
+    },
     "./whatsapp": {
       "types": "./dist/whatsapp.d.ts",
       "import": "./dist/whatsapp.js",

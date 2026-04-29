@@ -50,6 +50,7 @@ export * from "./system";
 export * from "./timesheets";
 export * from "./transactions-insights";
 export * from "./users";
+export * from "./wa-cloud";
 export {
   listWhatsappContactStatesResponseSchema,
   whatsappContract,

@@ -3384,3 +3384,248 @@ model BaileysAuthKeys {
   @@allow('all', true)
   @@map("baileys_auth_keys")
 }
+
+// ============================================================
+// WHATSAPP CLOUD API (Meta official) — paralelo a Baileys (WhatsappX)
+// ============================================================
+
+enum WaMessageDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum WaMessageStatus {
+  PENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
+  DELETED
+}
+
+enum WaMessageType {
+  TEXT
+  IMAGE
+  VIDEO
+  AUDIO
+  DOCUMENT
+  STICKER
+  LOCATION
+  CONTACTS
+  INTERACTIVE
+  BUTTON
+  TEMPLATE
+  REACTION
+  SYSTEM
+  UNSUPPORTED
+}
+
+enum WaConversationStatus {
+  OPEN
+  PENDING
+  CLOSED
+  ARCHIVED
+}
+
+enum WaTemplateStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  DISABLED
+  PAUSED
+}
+
+enum WaTemplateCategory {
+  MARKETING
+  UTILITY
+  AUTHENTICATION
+}
+
+model WaBusinessAccount {
+  id                  Int       @id @default(autoincrement())
+  wabaId              String    @unique @map("waba_id")
+  metaBusinessId      String?   @map("meta_business_id")
+  appId               String?   @map("app_id")
+  appSecret           String?   @map("app_secret")
+  systemUserToken     String?   @map("system_user_token")
+  webhookVerifyToken  String?   @map("webhook_verify_token")
+  graphApiVersion     String    @default("v21.0") @map("graph_api_version")
+  displayName         String?   @map("display_name")
+  active              Boolean   @default(true)
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  phoneNumbers        WaPhoneNumber[]
+  templates           WaTemplate[]
+
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+  @@map("wa_business_accounts")
+}
+
+model WaPhoneNumber {
+  id                  Int       @id @default(autoincrement())
+  accountId           Int       @map("account_id")
+  phoneNumberId       String    @unique @map("phone_number_id")
+  displayPhoneNumber  String    @map("display_phone_number")
+  label               String?
+  qualityRating       String?   @map("quality_rating")
+  active              Boolean   @default(true)
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  account             WaBusinessAccount     @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  messages            WaMessage[]
+  conversations       WaConversationChannel[]
+
+  @@index([accountId])
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+  @@map("wa_phone_numbers")
+}
+
+model WaContact {
+  id                  Int       @id @default(autoincrement())
+  phoneE164           String    @unique @map("phone_e164")
+  name                String?
+  pushName            String?   @map("push_name")
+  optInStatus         String    @default("UNKNOWN") @map("opt_in_status")
+  notas               String?
+  etiquetas           String[]  @default([])
+  patientRut          String?   @map("patient_rut") @db.VarChar(20)
+  metadata            Json      @default("{}")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  conversations       WaConversation[]
+  messages            WaMessage[]
+
+  @@index([patientRut])
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+  @@map("wa_contacts")
+}
+
+model WaConversation {
+  id                  Int                   @id @default(autoincrement())
+  contactId           Int                   @map("contact_id")
+  status              WaConversationStatus  @default(OPEN)
+  assignedToUserId    Int?                  @map("assigned_to_user_id")
+  unreadCount         Int                   @default(0) @map("unread_count")
+  lastInboundAt       DateTime?             @map("last_inbound_at")
+  lastMessageAt       DateTime?             @map("last_message_at")
+  lastMessagePreview  String?               @map("last_message_preview")
+  notas               String?
+  etiquetas           String[]              @default([])
+  createdAt           DateTime              @default(now()) @map("created_at")
+  updatedAt           DateTime              @default(now()) @updatedAt @map("updated_at")
+
+  contact             WaContact             @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  channels            WaConversationChannel[]
+  messages            WaMessage[]
+
+  @@unique([contactId])
+  @@index([status])
+  @@index([assignedToUserId])
+  @@index([lastMessageAt])
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+  @@map("wa_conversations")
+}
+
+model WaConversationChannel {
+  id                  Int            @id @default(autoincrement())
+  conversationId      Int            @map("conversation_id")
+  phoneNumberId       Int            @map("phone_number_id")
+  lastMessageAt       DateTime?      @map("last_message_at")
+  createdAt           DateTime       @default(now()) @map("created_at")
+
+  conversation        WaConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  phoneNumber         WaPhoneNumber  @relation(fields: [phoneNumberId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, phoneNumberId])
+  @@index([phoneNumberId])
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+  @@map("wa_conversation_channels")
+}
+
+model WaMessage {
+  id                  Int                  @id @default(autoincrement())
+  conversationId      Int                  @map("conversation_id")
+  contactId           Int                  @map("contact_id")
+  phoneNumberId       Int                  @map("phone_number_id")
+  metaMessageId       String?              @map("meta_message_id")
+  direction           WaMessageDirection
+  type                WaMessageType
+  status              WaMessageStatus      @default(PENDING)
+  body                String?
+  mediaUrl            String?              @map("media_url")
+  mediaMimeType       String?              @map("media_mime_type")
+  mediaCaption        String?              @map("media_caption")
+  templateName        String?              @map("template_name")
+  templateLanguage    String?              @map("template_language")
+  payload             Json                 @default("{}")
+  errorCode           String?              @map("error_code")
+  errorTitle          String?              @map("error_title")
+  errorDetails        String?              @map("error_details")
+  sentByUserId        Int?                 @map("sent_by_user_id")
+  contextMetaMessageId String?             @map("context_meta_message_id")
+  timestamp           DateTime
+  deliveredAt         DateTime?            @map("delivered_at")
+  readAt              DateTime?            @map("read_at")
+  createdAt           DateTime             @default(now()) @map("created_at")
+  updatedAt           DateTime             @default(now()) @updatedAt @map("updated_at")
+
+  conversation        WaConversation       @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  contact             WaContact            @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  phoneNumber         WaPhoneNumber        @relation(fields: [phoneNumberId], references: [id], onDelete: Cascade)
+
+  @@unique([metaMessageId])
+  @@index([conversationId])
+  @@index([contactId])
+  @@index([phoneNumberId])
+  @@index([timestamp])
+  @@index([direction, status])
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+  @@map("wa_messages")
+}
+
+model WaTemplate {
+  id                  Int                 @id @default(autoincrement())
+  accountId           Int                 @map("account_id")
+  name                String
+  language            String
+  category            WaTemplateCategory  @default(UTILITY)
+  status              WaTemplateStatus    @default(PENDING)
+  components          Json                @default("[]")
+  qualityScore        String?             @map("quality_score")
+  metaTemplateId      String?             @map("meta_template_id")
+  syncedAt            DateTime?           @map("synced_at")
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @default(now()) @updatedAt @map("updated_at")
+
+  account             WaBusinessAccount   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@unique([accountId, name, language])
+  @@index([status])
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+  @@map("wa_templates")
+}
+
+model WaWebhookLog {
+  id                  Int       @id @default(autoincrement())
+  receivedAt          DateTime  @default(now()) @map("received_at")
+  signatureValid      Boolean   @map("signature_valid")
+  payload             Json
+  processed           Boolean   @default(false)
+  errorMessage        String?   @map("error_message")
+  eventCount          Int       @default(0) @map("event_count")
+
+  @@index([receivedAt])
+  @@deny('all', auth() == null)
+  @@allow('read,create,update,delete', auth().status == 'ACTIVE')
+  @@map("wa_webhook_logs")
+}

@@ -69,10 +69,12 @@ import {
   transactionsInsightsORPCHandler,
 } from "./orpc/transactions-insights";
 import { usersOpenAPIHandler, usersORPCHandler } from "./orpc/users";
+import { waCloudOpenAPIHandler, waCloudORPCHandler } from "./orpc/wa-cloud";
 import { whatsappOpenAPIHandler, whatsappORPCHandler } from "./orpc/whatsapp";
 import { doctoraliaScraperRoutes } from "./routes/doctoralia-scraper";
 import { googleCalendarWebhookRoutes } from "./routes/google-calendar-webhook";
 import { onedriveWebhookRoutes } from "./routes/onedrive-webhook";
+import { waCloudWebhookRoutes } from "./routes/wa-cloud-webhook";
 import { errorReply } from "./utils/error-reply";
 import { normalizeErrorResponse } from "./utils/normalize-error-response";
 import { reply, replyRaw } from "./utils/reply";
@@ -1198,6 +1200,19 @@ app.use("/api/orpc/outreach/rpc/*", async (c, next) => {
   return next();
 });
 
+app.use("/api/orpc/wa-cloud/rpc/*", async (c, next) => {
+  const { matched, response } = await waCloudORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/wa-cloud/rpc",
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
 app.use("/api/orpc/doctoralia/rpc/*", async (c, next) => {
   const { matched, response } = await doctoraliaORPCHandler.handle(createHonoORPCRequest(c), {
     prefix: "/api/orpc/doctoralia/rpc",
@@ -1556,6 +1571,18 @@ app.use("/api/orpc/outreach/*", async (c, next) => {
   return next();
 });
 
+app.use("/api/orpc/wa-cloud/*", async (c, next) => {
+  const { matched, response } = await waCloudOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: { hono: c },
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
 app.use("/api/orpc/doctoralia/*", async (c, next) => {
   const { matched, response } = await doctoraliaOpenAPIHandler.handle(createHonoORPCRequest(c), {
     context: { hono: c },
@@ -1728,6 +1755,7 @@ app.use("/api/orpc/whatsapp/*", async (c, next) => {
 // Dedicated external webhook ingress (Golden Standard 2026)
 app.route("/api/webhooks/google", googleCalendarWebhookRoutes);
 app.route("/api/webhooks/onedrive", onedriveWebhookRoutes);
+app.route("/api/webhooks/meta", waCloudWebhookRoutes);
 
 // Bearer-auth ingress for the Doctoralia scraper bot (reads/writes manual cookies).
 app.route("/api/scraper/doctoralia", doctoraliaScraperRoutes);

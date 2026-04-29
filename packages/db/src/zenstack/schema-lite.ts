@@ -9152,6 +9152,662 @@ export class SchemaType implements SchemaDef {
             uniqueFields: {
                 type_id: { type: { type: "String" }, id: { type: "String" } }
             }
+        },
+        WaBusinessAccount: {
+            name: "WaBusinessAccount",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                wabaId: {
+                    name: "wabaId",
+                    type: "String",
+                    unique: true
+                },
+                metaBusinessId: {
+                    name: "metaBusinessId",
+                    type: "String",
+                    optional: true
+                },
+                appId: {
+                    name: "appId",
+                    type: "String",
+                    optional: true
+                },
+                appSecret: {
+                    name: "appSecret",
+                    type: "String",
+                    optional: true
+                },
+                systemUserToken: {
+                    name: "systemUserToken",
+                    type: "String",
+                    optional: true
+                },
+                webhookVerifyToken: {
+                    name: "webhookVerifyToken",
+                    type: "String",
+                    optional: true
+                },
+                graphApiVersion: {
+                    name: "graphApiVersion",
+                    type: "String",
+                    default: "v21.0" as FieldDefault
+                },
+                displayName: {
+                    name: "displayName",
+                    type: "String",
+                    optional: true
+                },
+                active: {
+                    name: "active",
+                    type: "Boolean",
+                    default: true as FieldDefault
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                phoneNumbers: {
+                    name: "phoneNumbers",
+                    type: "WaPhoneNumber",
+                    array: true,
+                    relation: { opposite: "account" }
+                },
+                templates: {
+                    name: "templates",
+                    type: "WaTemplate",
+                    array: true,
+                    relation: { opposite: "account" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                wabaId: { type: "String" }
+            }
+        },
+        WaPhoneNumber: {
+            name: "WaPhoneNumber",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                accountId: {
+                    name: "accountId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "account"
+                    ] as readonly string[]
+                },
+                phoneNumberId: {
+                    name: "phoneNumberId",
+                    type: "String",
+                    unique: true
+                },
+                displayPhoneNumber: {
+                    name: "displayPhoneNumber",
+                    type: "String"
+                },
+                label: {
+                    name: "label",
+                    type: "String",
+                    optional: true
+                },
+                qualityRating: {
+                    name: "qualityRating",
+                    type: "String",
+                    optional: true
+                },
+                active: {
+                    name: "active",
+                    type: "Boolean",
+                    default: true as FieldDefault
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                account: {
+                    name: "account",
+                    type: "WaBusinessAccount",
+                    relation: { opposite: "phoneNumbers", fields: ["accountId"], references: ["id"], onDelete: "Cascade" }
+                },
+                messages: {
+                    name: "messages",
+                    type: "WaMessage",
+                    array: true,
+                    relation: { opposite: "phoneNumber" }
+                },
+                conversations: {
+                    name: "conversations",
+                    type: "WaConversationChannel",
+                    array: true,
+                    relation: { opposite: "phoneNumber" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                phoneNumberId: { type: "String" }
+            }
+        },
+        WaContact: {
+            name: "WaContact",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                phoneE164: {
+                    name: "phoneE164",
+                    type: "String",
+                    unique: true
+                },
+                name: {
+                    name: "name",
+                    type: "String",
+                    optional: true
+                },
+                pushName: {
+                    name: "pushName",
+                    type: "String",
+                    optional: true
+                },
+                optInStatus: {
+                    name: "optInStatus",
+                    type: "String",
+                    default: "UNKNOWN" as FieldDefault
+                },
+                notas: {
+                    name: "notas",
+                    type: "String",
+                    optional: true
+                },
+                etiquetas: {
+                    name: "etiquetas",
+                    type: "String",
+                    array: true,
+                    default: [] as FieldDefault
+                },
+                patientRut: {
+                    name: "patientRut",
+                    type: "String",
+                    optional: true
+                },
+                metadata: {
+                    name: "metadata",
+                    type: "Json",
+                    default: "{}" as FieldDefault
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                conversations: {
+                    name: "conversations",
+                    type: "WaConversation",
+                    array: true,
+                    relation: { opposite: "contact" }
+                },
+                messages: {
+                    name: "messages",
+                    type: "WaMessage",
+                    array: true,
+                    relation: { opposite: "contact" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                phoneE164: { type: "String" }
+            }
+        },
+        WaConversation: {
+            name: "WaConversation",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                contactId: {
+                    name: "contactId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "contact"
+                    ] as readonly string[]
+                },
+                status: {
+                    name: "status",
+                    type: "WaConversationStatus",
+                    default: "OPEN" as FieldDefault
+                },
+                assignedToUserId: {
+                    name: "assignedToUserId",
+                    type: "Int",
+                    optional: true
+                },
+                unreadCount: {
+                    name: "unreadCount",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                },
+                lastInboundAt: {
+                    name: "lastInboundAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                lastMessageAt: {
+                    name: "lastMessageAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                lastMessagePreview: {
+                    name: "lastMessagePreview",
+                    type: "String",
+                    optional: true
+                },
+                notas: {
+                    name: "notas",
+                    type: "String",
+                    optional: true
+                },
+                etiquetas: {
+                    name: "etiquetas",
+                    type: "String",
+                    array: true,
+                    default: [] as FieldDefault
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                contact: {
+                    name: "contact",
+                    type: "WaContact",
+                    relation: { opposite: "conversations", fields: ["contactId"], references: ["id"], onDelete: "Cascade" }
+                },
+                channels: {
+                    name: "channels",
+                    type: "WaConversationChannel",
+                    array: true,
+                    relation: { opposite: "conversation" }
+                },
+                messages: {
+                    name: "messages",
+                    type: "WaMessage",
+                    array: true,
+                    relation: { opposite: "conversation" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                contactId: { type: "Int" }
+            }
+        },
+        WaConversationChannel: {
+            name: "WaConversationChannel",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                conversationId: {
+                    name: "conversationId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "conversation"
+                    ] as readonly string[]
+                },
+                phoneNumberId: {
+                    name: "phoneNumberId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "phoneNumber"
+                    ] as readonly string[]
+                },
+                lastMessageAt: {
+                    name: "lastMessageAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                conversation: {
+                    name: "conversation",
+                    type: "WaConversation",
+                    relation: { opposite: "channels", fields: ["conversationId"], references: ["id"], onDelete: "Cascade" }
+                },
+                phoneNumber: {
+                    name: "phoneNumber",
+                    type: "WaPhoneNumber",
+                    relation: { opposite: "conversations", fields: ["phoneNumberId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                conversationId_phoneNumberId: { conversationId: { type: "Int" }, phoneNumberId: { type: "Int" } }
+            }
+        },
+        WaMessage: {
+            name: "WaMessage",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                conversationId: {
+                    name: "conversationId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "conversation"
+                    ] as readonly string[]
+                },
+                contactId: {
+                    name: "contactId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "contact"
+                    ] as readonly string[]
+                },
+                phoneNumberId: {
+                    name: "phoneNumberId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "phoneNumber"
+                    ] as readonly string[]
+                },
+                metaMessageId: {
+                    name: "metaMessageId",
+                    type: "String",
+                    optional: true
+                },
+                direction: {
+                    name: "direction",
+                    type: "WaMessageDirection"
+                },
+                type: {
+                    name: "type",
+                    type: "WaMessageType"
+                },
+                status: {
+                    name: "status",
+                    type: "WaMessageStatus",
+                    default: "PENDING" as FieldDefault
+                },
+                body: {
+                    name: "body",
+                    type: "String",
+                    optional: true
+                },
+                mediaUrl: {
+                    name: "mediaUrl",
+                    type: "String",
+                    optional: true
+                },
+                mediaMimeType: {
+                    name: "mediaMimeType",
+                    type: "String",
+                    optional: true
+                },
+                mediaCaption: {
+                    name: "mediaCaption",
+                    type: "String",
+                    optional: true
+                },
+                templateName: {
+                    name: "templateName",
+                    type: "String",
+                    optional: true
+                },
+                templateLanguage: {
+                    name: "templateLanguage",
+                    type: "String",
+                    optional: true
+                },
+                payload: {
+                    name: "payload",
+                    type: "Json",
+                    default: "{}" as FieldDefault
+                },
+                errorCode: {
+                    name: "errorCode",
+                    type: "String",
+                    optional: true
+                },
+                errorTitle: {
+                    name: "errorTitle",
+                    type: "String",
+                    optional: true
+                },
+                errorDetails: {
+                    name: "errorDetails",
+                    type: "String",
+                    optional: true
+                },
+                sentByUserId: {
+                    name: "sentByUserId",
+                    type: "Int",
+                    optional: true
+                },
+                contextMetaMessageId: {
+                    name: "contextMetaMessageId",
+                    type: "String",
+                    optional: true
+                },
+                timestamp: {
+                    name: "timestamp",
+                    type: "DateTime"
+                },
+                deliveredAt: {
+                    name: "deliveredAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                readAt: {
+                    name: "readAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                conversation: {
+                    name: "conversation",
+                    type: "WaConversation",
+                    relation: { opposite: "messages", fields: ["conversationId"], references: ["id"], onDelete: "Cascade" }
+                },
+                contact: {
+                    name: "contact",
+                    type: "WaContact",
+                    relation: { opposite: "messages", fields: ["contactId"], references: ["id"], onDelete: "Cascade" }
+                },
+                phoneNumber: {
+                    name: "phoneNumber",
+                    type: "WaPhoneNumber",
+                    relation: { opposite: "messages", fields: ["phoneNumberId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                metaMessageId: { type: "String" }
+            }
+        },
+        WaTemplate: {
+            name: "WaTemplate",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                accountId: {
+                    name: "accountId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "account"
+                    ] as readonly string[]
+                },
+                name: {
+                    name: "name",
+                    type: "String"
+                },
+                language: {
+                    name: "language",
+                    type: "String"
+                },
+                category: {
+                    name: "category",
+                    type: "WaTemplateCategory",
+                    default: "UTILITY" as FieldDefault
+                },
+                status: {
+                    name: "status",
+                    type: "WaTemplateStatus",
+                    default: "PENDING" as FieldDefault
+                },
+                components: {
+                    name: "components",
+                    type: "Json",
+                    default: "[]" as FieldDefault
+                },
+                qualityScore: {
+                    name: "qualityScore",
+                    type: "String",
+                    optional: true
+                },
+                metaTemplateId: {
+                    name: "metaTemplateId",
+                    type: "String",
+                    optional: true
+                },
+                syncedAt: {
+                    name: "syncedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                account: {
+                    name: "account",
+                    type: "WaBusinessAccount",
+                    relation: { opposite: "templates", fields: ["accountId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                accountId_name_language: { accountId: { type: "Int" }, name: { type: "String" }, language: { type: "String" } }
+            }
+        },
+        WaWebhookLog: {
+            name: "WaWebhookLog",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                receivedAt: {
+                    name: "receivedAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                signatureValid: {
+                    name: "signatureValid",
+                    type: "Boolean"
+                },
+                payload: {
+                    name: "payload",
+                    type: "Json"
+                },
+                processed: {
+                    name: "processed",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                errorMessage: {
+                    name: "errorMessage",
+                    type: "String",
+                    optional: true
+                },
+                eventCount: {
+                    name: "eventCount",
+                    type: "Int",
+                    default: 0 as FieldDefault
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
         }
     } as const;
     enums = {
@@ -9654,6 +10310,70 @@ export class SchemaType implements SchemaDef {
                 REBOTADO: "REBOTADO",
                 ABIERTO: "ABIERTO",
                 RESPONDIDO: "RESPONDIDO"
+            }
+        },
+        WaMessageDirection: {
+            name: "WaMessageDirection",
+            values: {
+                INBOUND: "INBOUND",
+                OUTBOUND: "OUTBOUND"
+            }
+        },
+        WaMessageStatus: {
+            name: "WaMessageStatus",
+            values: {
+                PENDING: "PENDING",
+                SENT: "SENT",
+                DELIVERED: "DELIVERED",
+                READ: "READ",
+                FAILED: "FAILED",
+                DELETED: "DELETED"
+            }
+        },
+        WaMessageType: {
+            name: "WaMessageType",
+            values: {
+                TEXT: "TEXT",
+                IMAGE: "IMAGE",
+                VIDEO: "VIDEO",
+                AUDIO: "AUDIO",
+                DOCUMENT: "DOCUMENT",
+                STICKER: "STICKER",
+                LOCATION: "LOCATION",
+                CONTACTS: "CONTACTS",
+                INTERACTIVE: "INTERACTIVE",
+                BUTTON: "BUTTON",
+                TEMPLATE: "TEMPLATE",
+                REACTION: "REACTION",
+                SYSTEM: "SYSTEM",
+                UNSUPPORTED: "UNSUPPORTED"
+            }
+        },
+        WaConversationStatus: {
+            name: "WaConversationStatus",
+            values: {
+                OPEN: "OPEN",
+                PENDING: "PENDING",
+                CLOSED: "CLOSED",
+                ARCHIVED: "ARCHIVED"
+            }
+        },
+        WaTemplateStatus: {
+            name: "WaTemplateStatus",
+            values: {
+                PENDING: "PENDING",
+                APPROVED: "APPROVED",
+                REJECTED: "REJECTED",
+                DISABLED: "DISABLED",
+                PAUSED: "PAUSED"
+            }
+        },
+        WaTemplateCategory: {
+            name: "WaTemplateCategory",
+            values: {
+                MARKETING: "MARKETING",
+                UTILITY: "UTILITY",
+                AUTHENTICATION: "AUTHENTICATION"
             }
         }
     } as const;
