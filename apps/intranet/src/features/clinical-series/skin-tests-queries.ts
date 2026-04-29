@@ -12,6 +12,8 @@ import {
   type SkinTestImportStatus,
 } from "./skin-tests-types";
 
+export type SkinTestSnapshotStatus = "ARCHIVED" | "ERROR" | "MISSING" | "STALE";
+
 export interface SkinTestImportFilters {
   confidenceMax?: number;
   confidenceMin?: number;
@@ -20,6 +22,7 @@ export interface SkinTestImportFilters {
   page?: number;
   pageSize?: number;
   query?: string;
+  snapshotStatus?: SkinTestSnapshotStatus;
   status?: SkinTestImportStatus;
 }
 

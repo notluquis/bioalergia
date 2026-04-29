@@ -60,6 +60,7 @@ import {
   useDisconnectOneDrive,
   useClinicalSkinTestJobStatus,
   type SkinTestImportFilters,
+  type SkinTestSnapshotStatus,
 } from "./skin-tests-queries";
 import type {
   OneDriveFolderItem,
@@ -223,6 +224,9 @@ export function SkinTestImportPanel() {
   const toast = useToast();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<SkinTestImportStatus | undefined>("DISCOVERED");
+  const [snapshotStatus, setSnapshotStatus] = useState<SkinTestSnapshotStatus | undefined>(
+    undefined
+  );
   const [importsPage, setImportsPage] = useState(1);
   const [archiveLimit, setArchiveLimit] = useState(100);
   const [isRereadAllOpen, setIsRereadAllOpen] = useState(false);
@@ -232,9 +236,10 @@ export function SkinTestImportPanel() {
       page: importsPage,
       pageSize: IMPORTS_PAGE_SIZE,
       query: query.trim() || undefined,
+      snapshotStatus,
       status,
     }),
-    [importsPage, query, status]
+    [importsPage, query, snapshotStatus, status]
   );
   const oneDrive = useOneDriveSkinTestStatus();
   const imports = useSkinTestImports(filters);
@@ -797,6 +802,44 @@ export function SkinTestImportPanel() {
                       <ListBox.ItemIndicator />
                     </ListBox.Item>
                   ))}
+                </ListBox>
+              </Select.Popover>
+            </Select>
+            <Select
+              value={(snapshotStatus as Key) ?? "ALL"}
+              onChange={(key) =>
+                setSnapshotStatus(key === "ALL" ? undefined : (key as SkinTestSnapshotStatus))
+              }
+              placeholder="Todos"
+              variant="secondary"
+            >
+              <Label>XLSX</Label>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  <ListBox.Item id="ALL" textValue="Todos">
+                    Todos
+                    <ListBox.ItemIndicator />
+                  </ListBox.Item>
+                  <ListBox.Item id="ARCHIVED" textValue="Archivado">
+                    Archivado
+                    <ListBox.ItemIndicator />
+                  </ListBox.Item>
+                  <ListBox.Item id="MISSING" textValue="Sin archivo">
+                    Sin archivo
+                    <ListBox.ItemIndicator />
+                  </ListBox.Item>
+                  <ListBox.Item id="STALE" textValue="Desactualizado">
+                    Desactualizado
+                    <ListBox.ItemIndicator />
+                  </ListBox.Item>
+                  <ListBox.Item id="ERROR" textValue="Error">
+                    Error
+                    <ListBox.ItemIndicator />
+                  </ListBox.Item>
                 </ListBox>
               </Select.Popover>
             </Select>

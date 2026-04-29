@@ -71,6 +71,7 @@ export interface SkinTestImportListInput {
   page?: number;
   pageSize?: number;
   query?: string;
+  snapshotStatus?: "ARCHIVED" | "ERROR" | "MISSING" | "STALE";
   status?: SkinTestImportStatus;
 }
 
@@ -2295,6 +2296,7 @@ function buildImportWhereSql(input: SkinTestImportListInput) {
   const query = input.query?.trim();
   return sql<boolean>`
     (${input.status ?? null}::text IS NULL OR i.status = ${input.status ?? null}::"ClinicalSkinTestImportStatus")
+    AND (${input.snapshotStatus ?? null}::text IS NULL OR i.workbook_snapshot_status = ${input.snapshotStatus ?? null}::"ClinicalSkinTestWorkbookSnapshotStatus")
     AND (${input.confidenceMin ?? null}::int IS NULL OR i.confidence >= ${input.confidenceMin ?? null})
     AND (${input.confidenceMax ?? null}::int IS NULL OR i.confidence <= ${input.confidenceMax ?? null})
     AND (${input.dateFrom ?? null}::date IS NULL OR (i.parsed_payload->'header'->>'testDate')::date >= ${input.dateFrom ?? null}::date)
