@@ -8,7 +8,7 @@ import type {
   OutreachProspectType,
   OutreachStatus,
 } from "@finanzas/orpc-contracts/outreach";
-import { Field, NativeSelect, TextInput } from "../components/FormField";
+import { SelectInput, TextInput } from "../components/FormField";
 import { useBulkUpdate, useEstablishments, useFiltersMeta } from "../hooks/useOutreach";
 import {
   DEPENDENCIA_LABELS,
@@ -37,6 +37,26 @@ const ALL_DEPS: OutreachDependencia[] = [
   "SLEP",
   "CORPORACION_MUNICIPAL",
   "OTRO",
+];
+
+const TIPO_OPTIONS = [
+  { value: "", label: "Todos los tipos" },
+  { value: "COLEGIO", label: "Colegio" },
+  { value: "EMPRESA", label: "Empresa" },
+  { value: "MUNICIPIO", label: "Municipio" },
+  { value: "INSTITUCION", label: "Institución" },
+  { value: "UNIVERSIDAD", label: "Universidad" },
+  { value: "OTRO", label: "Otro" },
+];
+
+const FUENTE_OPTIONS = [
+  { value: "", label: "Todas las fuentes" },
+  { value: "MINEDUC", label: "MINEDUC" },
+  { value: "GOOGLE_PLACES", label: "Google Places" },
+  { value: "CRAWLER", label: "Crawler" },
+  { value: "APOLLO", label: "Apollo" },
+  { value: "HUNTER", label: "Hunter" },
+  { value: "MANUAL", label: "Manual" },
 ];
 
 export function OutreachEstablishmentsPage() {
@@ -101,116 +121,87 @@ export function OutreachEstablishmentsPage() {
     setSelected(new Set());
   };
 
+  const comunaOptions = useMemo(() => {
+    const list = filtersMeta.data?.comunas ?? [];
+    return [
+      { value: "", label: "Todas las comunas" },
+      ...list.map((c) => ({ value: c, label: c })),
+    ];
+  }, [filtersMeta.data?.comunas]);
+
+  const estadoOptions = [
+    { value: "", label: "Todos los estados" },
+    ...ALL_ESTADOS.map((s) => ({ value: s, label: ESTADO_LABELS[s] })),
+  ];
+  const depOptions = [
+    { value: "", label: "Todas las dependencias" },
+    ...ALL_DEPS.map((d) => ({ value: d, label: DEPENDENCIA_LABELS[d] })),
+  ];
+  const bulkEstadoOptions = [
+    { value: "", label: "Cambiar estado a..." },
+    ...ALL_ESTADOS.map((s) => ({ value: s, label: ESTADO_LABELS[s] })),
+  ];
+
   return (
     <div className="space-y-4 p-6">
-      <header className="flex items-center justify-between">
-        <h1 className="font-bold text-2xl">Establecimientos</h1>
-        <Link to="/outreach/importar">
-          <Button variant="primary">Importar MINEDUC</Button>
-        </Link>
-      </header>
-
       <Card>
         <Card.Content className="space-y-3 p-4">
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
-            <Field label="Buscar">
-              <TextInput
-                placeholder="Nombre, RBD o director..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </Field>
-            <Field label="Estado">
-              <NativeSelect
-                value={estado}
-                onChange={(e) => setEstado(e.target.value as OutreachStatus | "")}
-              >
-                <option value="">Todos</option>
-                {ALL_ESTADOS.map((s) => (
-                  <option key={s} value={s}>
-                    {ESTADO_LABELS[s]}
-                  </option>
-                ))}
-              </NativeSelect>
-            </Field>
-            <Field label="Dependencia">
-              <NativeSelect
-                value={dep}
-                onChange={(e) => setDep(e.target.value as OutreachDependencia | "")}
-              >
-                <option value="">Todas</option>
-                {ALL_DEPS.map((d) => (
-                  <option key={d} value={d}>
-                    {DEPENDENCIA_LABELS[d]}
-                  </option>
-                ))}
-              </NativeSelect>
-            </Field>
-            <Field label="Comuna">
-              <NativeSelect value={comuna} onChange={(e) => setComuna(e.target.value)}>
-                <option value="">Todas</option>
-                {(filtersMeta.data?.comunas ?? []).map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </NativeSelect>
-            </Field>
-            <Field label="Tipo">
-              <NativeSelect
-                value={tipo}
-                onChange={(e) => setTipo(e.target.value as OutreachProspectType | "")}
-              >
-                <option value="">Todos</option>
-                <option value="COLEGIO">Colegio</option>
-                <option value="EMPRESA">Empresa</option>
-                <option value="MUNICIPIO">Municipio</option>
-                <option value="INSTITUCION">Institución</option>
-                <option value="UNIVERSIDAD">Universidad</option>
-                <option value="OTRO">Otro</option>
-              </NativeSelect>
-            </Field>
-            <Field label="Fuente">
-              <NativeSelect
-                value={fuente}
-                onChange={(e) => setFuente(e.target.value as OutreachProspectSource | "")}
-              >
-                <option value="">Todas</option>
-                <option value="MINEDUC">MINEDUC</option>
-                <option value="GOOGLE_PLACES">Google Places</option>
-                <option value="CRAWLER">Crawler</option>
-                <option value="APOLLO">Apollo</option>
-                <option value="HUNTER">Hunter</option>
-                <option value="MANUAL">Manual</option>
-              </NativeSelect>
-            </Field>
-            <label className="flex items-end gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={soloConEmail}
-                onChange={(e) => setSoloConEmail(e.target.checked)}
-              />
-              Solo con email
-            </label>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3 lg:grid-cols-6">
+            <TextInput
+              label="Buscar"
+              placeholder="Nombre, RBD o director"
+              value={search}
+              onValueChange={setSearch}
+            />
+            <SelectInput
+              label="Estado"
+              value={estado}
+              onValueChange={(v) => setEstado(v as OutreachStatus | "")}
+              options={estadoOptions}
+            />
+            <SelectInput
+              label="Dependencia"
+              value={dep}
+              onValueChange={(v) => setDep(v as OutreachDependencia | "")}
+              options={depOptions}
+            />
+            <SelectInput
+              label="Comuna"
+              value={comuna}
+              onValueChange={setComuna}
+              options={comunaOptions}
+            />
+            <SelectInput
+              label="Tipo"
+              value={tipo}
+              onValueChange={(v) => setTipo(v as OutreachProspectType | "")}
+              options={TIPO_OPTIONS}
+            />
+            <SelectInput
+              label="Fuente"
+              value={fuente}
+              onValueChange={(v) => setFuente(v as OutreachProspectSource | "")}
+              options={FUENTE_OPTIONS}
+            />
           </div>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={soloConEmail}
+              onChange={(e) => setSoloConEmail(e.target.checked)}
+            />
+            Solo con email
+          </label>
 
           {selected.size > 0 && (
             <div className="flex flex-wrap items-center gap-2 rounded-medium bg-default-100 p-3">
               <span className="text-sm">{selected.size} seleccionados</span>
-              <NativeSelect
+              <SelectInput
+                value=""
+                onValueChange={(v) => v && handleBulkEstado(v as OutreachStatus)}
+                options={bulkEstadoOptions}
                 className="max-w-xs"
-                onChange={(e) => {
-                  if (e.target.value) void handleBulkEstado(e.target.value as OutreachStatus);
-                }}
-                defaultValue=""
-              >
-                <option value="">Cambiar estado a...</option>
-                {ALL_ESTADOS.map((s) => (
-                  <option key={s} value={s}>
-                    {ESTADO_LABELS[s]}
-                  </option>
-                ))}
-              </NativeSelect>
+              />
               <Button size="sm" variant="secondary" onPress={() => setSelected(new Set())}>
                 Limpiar selección
               </Button>
@@ -240,14 +231,13 @@ export function OutreachEstablishmentsPage() {
                       />
                     </Table.Column>
                     <Table.Column isRowHeader>Nombre</Table.Column>
+                    <Table.Column>Tipo</Table.Column>
                     <Table.Column>Comuna</Table.Column>
-                    <Table.Column>Dependencia</Table.Column>
-                    <Table.Column>Director</Table.Column>
                     <Table.Column>Email</Table.Column>
                     <Table.Column>Estado</Table.Column>
                     <Table.Column>Prioridad</Table.Column>
+                    <Table.Column>Score</Table.Column>
                     <Table.Column>Último contacto</Table.Column>
-                    <Table.Column>Interacciones</Table.Column>
                   </Table.Header>
                   <Table.Body items={data.items}>
                     {(it) => (
@@ -267,13 +257,14 @@ export function OutreachEstablishmentsPage() {
                           >
                             {it.nombre}
                           </Link>
-                          <p className="text-default-400 text-xs">RBD {it.rbd}</p>
+                          <p className="text-default-400 text-xs">{it.rbd}</p>
+                        </Table.Cell>
+                        <Table.Cell>
+                          <Chip size="sm" variant="soft">
+                            {it.tipo}
+                          </Chip>
                         </Table.Cell>
                         <Table.Cell>{it.comuna}</Table.Cell>
-                        <Table.Cell>
-                          <span className="text-xs">{DEPENDENCIA_LABELS[it.dependencia]}</span>
-                        </Table.Cell>
-                        <Table.Cell>{it.directorMineduc ?? "—"}</Table.Cell>
                         <Table.Cell>
                           {it.emailMineduc ? (
                             <span className="text-xs">{it.emailMineduc}</span>
@@ -292,11 +283,13 @@ export function OutreachEstablishmentsPage() {
                           </Chip>
                         </Table.Cell>
                         <Table.Cell>
+                          <span className="font-mono text-xs">{it.score}</span>
+                        </Table.Cell>
+                        <Table.Cell>
                           {it.ultimoContactoAt
                             ? dayjs(it.ultimoContactoAt).format("DD-MM-YYYY")
                             : "—"}
                         </Table.Cell>
-                        <Table.Cell>{it.interaccionesCount}</Table.Cell>
                       </Table.Row>
                     )}
                   </Table.Body>

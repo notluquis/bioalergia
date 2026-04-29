@@ -6,6 +6,10 @@ import type {
 import {
   apolloEnrichInputSchema,
   apolloEnrichResponseSchema,
+  bulkCrawlInputSchema,
+  bulkCrawlStartResponseSchema,
+  bulkCrawlStatusInputSchema,
+  bulkCrawlStatusResponseSchema,
   bulkUpdateEstablishmentsInputSchema,
   crawlProspectInputSchema,
   crawlProspectResponseSchema,
@@ -57,6 +61,13 @@ import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
+import {
+  completeJob,
+  failJob,
+  getJobStatus,
+  startJob,
+  updateJobProgress,
+} from "../lib/job-queue/jobQueue";
 import { enrichProspectWithApollo } from "../modules/outreach/apollo";
 import { buildCampaignDeliveries, selectCandidates } from "../modules/outreach/campaign-builder";
 import { discoverGooglePlaces } from "../modules/outreach/google-places";
@@ -92,6 +103,28 @@ const readOutreach = gate("read", "OutreachEstablishment");
 const createOutreach = gate("create", "OutreachEstablishment");
 const updateOutreach = gate("update", "OutreachEstablishment");
 const deleteOutreach = gate("delete", "OutreachEstablishment");
+
+async function runBulkCrawl(jobId: string, rbds: string[]) {
+  let successful = 0;
+  let failed = 0;
+  let emailsFound = 0;
+  let phonesFound = 0;
+  for (let i = 0; i < rbds.length; i++) {
+    const rbd = rbds[i]!;
+    try {
+      const r = await runCrawler(rbd);
+      if (r.success) successful += 1;
+      else failed += 1;
+      emailsFound += r.emails.length;
+      phonesFound += r.phones.length;
+      await recomputeProspectScore(rbd).catch(() => undefined);
+    } catch {
+      failed += 1;
+    }
+    updateJobProgress(jobId, i + 1, `Procesando ${i + 1}/${rbds.length}`);
+  }
+  completeJob(jobId, { successful, failed, emailsFound, phonesFound });
+}
 
 function normalizeCampaign(c: Record<string, unknown>): OutreachCampaign {
   return {
@@ -683,6 +716,70 @@ const outreachRouterBase = {
       };
     }),
 
+  bulkCrawl: updateOutreach
+    .route({ method: "POST", path: "/enrich/bulk-crawl", tags: ["Outreach"] })
+    .input(bulkCrawlInputSchema)
+    .output(bulkCrawlStartResponseSchema)
+    .handler(async ({ input }) => {
+      const where: Record<string, unknown> = { activo: true };
+      if (input.tipos?.length) where.tipo = { in: input.tipos };
+      if (input.fuentes?.length) where.fuente = { in: input.fuentes };
+      if (input.comunas?.length) where.comuna = { in: input.comunas };
+      if (input.soloConWebsite) where.websiteUrl = { not: null };
+      if (input.soloSinEmail) {
+        where.AND = [
+          { OR: [{ emailMineduc: null }, { emailMineduc: "" }] },
+          { emailsAdicionales: { equals: [] } },
+        ];
+      }
+      if (input.saltarRecientes) {
+        const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        where.OR = [
+          ...(Array.isArray(where.OR) ? (where.OR as unknown[]) : []),
+          { crawledAt: null },
+          { crawledAt: { lt: cutoff } },
+        ];
+      }
+      const targets = await db.outreachEstablishment.findMany({
+        where,
+        select: { rbd: true },
+        take: input.limit,
+      });
+      const total = targets.length;
+      const jobId = startJob("outreach-bulk-crawl", total);
+      void runBulkCrawl(jobId, targets.map((t) => t.rbd)).catch((err) => {
+        failJob(jobId, err instanceof Error ? err.message : String(err));
+      });
+      return { jobId, total };
+    }),
+
+  bulkCrawlStatus: readOutreach
+    .route({ method: "POST", path: "/enrich/bulk-crawl-status", tags: ["Outreach"] })
+    .input(bulkCrawlStatusInputSchema)
+    .output(bulkCrawlStatusResponseSchema)
+    .handler(async ({ input }) => {
+      const job = getJobStatus(input.jobId);
+      if (!job) throw new ORPCError("NOT_FOUND", { message: "Job no encontrado o expirado" });
+      const result =
+        job.status === "completed" && job.result
+          ? (job.result as {
+              successful: number;
+              failed: number;
+              emailsFound: number;
+              phonesFound: number;
+            })
+          : null;
+      return {
+        jobId: job.id,
+        status: job.status,
+        progress: job.progress,
+        total: job.total,
+        message: job.message,
+        error: job.error,
+        result,
+      };
+    }),
+
   recomputeScore: updateOutreach
     .route({ method: "POST", path: "/enrich/recompute-score", tags: ["Outreach"] })
     .input(recomputeScoreInputSchema)
@@ -715,13 +812,29 @@ const outreachRouterBase = {
     .input(z.object({}).optional())
     .output(dashboardResponseSchema)
     .handler(async () => {
-      const [total, activos, conEmail, porEstado, porDep, porComuna] = await Promise.all([
+      const [
+        total,
+        activos,
+        conEmail,
+        porEstado,
+        porDep,
+        porComuna,
+        porTipo,
+        porFuente,
+        porTipoEstado,
+      ] = await Promise.all([
         db.outreachEstablishment.count(),
         db.outreachEstablishment.count({ where: { activo: true } }),
         db.outreachEstablishment.count({ where: { emailMineduc: { not: null } } }),
         db.outreachEstablishment.groupBy({ by: ["estado"], _count: { _all: true } }),
         db.outreachEstablishment.groupBy({ by: ["dependencia"], _count: { _all: true } }),
         db.outreachEstablishment.groupBy({ by: ["comuna"], _count: { _all: true } }),
+        db.outreachEstablishment.groupBy({ by: ["tipo"], _count: { _all: true } }),
+        db.outreachEstablishment.groupBy({ by: ["fuente"], _count: { _all: true } }),
+        db.outreachEstablishment.groupBy({
+          by: ["tipo", "estado"],
+          _count: { _all: true },
+        }),
       ]);
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
       const pendientesSeguimiento = await db.outreachEstablishment.count({
@@ -742,10 +855,17 @@ const outreachRouterBase = {
           conEmail,
         },
         porEstado: porEstado.map((r) => ({ estado: r.estado, count: r._count._all })),
+        porTipo: porTipo.map((r) => ({ tipo: r.tipo, count: r._count._all })),
+        porFuente: porFuente.map((r) => ({ fuente: r.fuente, count: r._count._all })),
         porDependencia: porDep.map((r) => ({ dependencia: r.dependencia, count: r._count._all })),
         porComuna: porComuna
           .map((r) => ({ comuna: r.comuna, count: r._count._all }))
           .sort((a, b) => b.count - a.count),
+        porTipoEstado: porTipoEstado.map((r) => ({
+          tipo: r.tipo,
+          estado: r.estado,
+          count: r._count._all,
+        })),
         pendientesSeguimiento,
         ultimasInteracciones: ultimas.map((i) => ({
           ...i,

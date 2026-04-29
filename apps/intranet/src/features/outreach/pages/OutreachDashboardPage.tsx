@@ -1,7 +1,26 @@
 import { Card, Chip, Spinner } from "@heroui/react";
 import { Link } from "@tanstack/react-router";
+import type { OutreachProspectType, OutreachStatus } from "@finanzas/orpc-contracts/outreach";
 import { useDashboard } from "../hooks/useOutreach";
 import { DEPENDENCIA_LABELS, ESTADO_COLOR, ESTADO_LABELS, INTERACCION_LABELS } from "../labels";
+
+const TIPO_LABELS: Record<string, string> = {
+  COLEGIO: "Colegios",
+  EMPRESA: "Empresas",
+  MUNICIPIO: "Municipios",
+  INSTITUCION: "Instituciones",
+  UNIVERSIDAD: "Universidades",
+  OTRO: "Otros",
+};
+
+const FUENTE_LABELS: Record<string, string> = {
+  MINEDUC: "MINEDUC",
+  GOOGLE_PLACES: "Google Places",
+  CRAWLER: "Crawler",
+  APOLLO: "Apollo",
+  HUNTER: "Hunter",
+  MANUAL: "Manual",
+};
 
 export function OutreachDashboardPage() {
   const { data, isLoading } = useDashboard();
@@ -17,21 +36,17 @@ export function OutreachDashboardPage() {
   const {
     totales,
     porEstado,
+    porTipo,
+    porFuente,
     porDependencia,
     porComuna,
+    porTipoEstado,
     pendientesSeguimiento,
     ultimasInteracciones,
   } = data;
 
   return (
     <div className="space-y-6 p-6">
-      <header>
-        <h1 className="font-bold text-2xl">Outreach a Establecimientos</h1>
-        <p className="text-default-500 text-sm">
-          Charlas educativas y convenios para colegios del Gran Concepción.
-        </p>
-      </header>
-
       <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
         <StatCard label="Total establecimientos" value={totales.establecimientos} />
         <StatCard label="Activos" value={totales.activos} />
@@ -43,10 +58,51 @@ export function OutreachDashboardPage() {
         />
       </div>
 
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <Card>
+          <Card.Header>
+            <Card.Title>Por tipo</Card.Title>
+          </Card.Header>
+          <Card.Content className="space-y-2 p-4">
+            {porTipo.length === 0 && <p className="text-default-500 text-sm">Sin datos.</p>}
+            {porTipo.map((row) => (
+              <div key={row.tipo} className="flex items-center justify-between">
+                <span className="font-medium text-sm">{TIPO_LABELS[row.tipo] ?? row.tipo}</span>
+                <span className="font-mono text-sm">{row.count}</span>
+              </div>
+            ))}
+          </Card.Content>
+        </Card>
+
+        <Card>
+          <Card.Header>
+            <Card.Title>Por fuente</Card.Title>
+          </Card.Header>
+          <Card.Content className="space-y-2 p-4">
+            {porFuente.map((row) => (
+              <div key={row.fuente} className="flex items-center justify-between">
+                <span className="text-sm">{FUENTE_LABELS[row.fuente] ?? row.fuente}</span>
+                <span className="font-mono text-sm">{row.count}</span>
+              </div>
+            ))}
+          </Card.Content>
+        </Card>
+
+        <Card>
+          <Card.Header>
+            <Card.Title>Tipo × Estado</Card.Title>
+            <Card.Description>Funnel cruzado.</Card.Description>
+          </Card.Header>
+          <Card.Content className="overflow-x-auto p-2">
+            <TipoEstadoMatrix data={porTipoEstado} />
+          </Card.Content>
+        </Card>
+      </div>
+
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card>
           <Card.Header>
-            <Card.Title>Por estado</Card.Title>
+            <Card.Title>Por estado (global)</Card.Title>
           </Card.Header>
           <Card.Content className="space-y-2 p-4">
             {porEstado.length === 0 && <p className="text-default-500 text-sm">Sin datos.</p>}
@@ -63,7 +119,7 @@ export function OutreachDashboardPage() {
 
         <Card>
           <Card.Header>
-            <Card.Title>Por dependencia</Card.Title>
+            <Card.Title>Por dependencia (colegios)</Card.Title>
           </Card.Header>
           <Card.Content className="space-y-2 p-4">
             {porDependencia.map((row) => (
@@ -77,7 +133,7 @@ export function OutreachDashboardPage() {
 
         <Card>
           <Card.Header>
-            <Card.Title>Por comuna</Card.Title>
+            <Card.Title>Por comuna (top 12)</Card.Title>
           </Card.Header>
           <Card.Content className="space-y-2 p-4">
             {porComuna.slice(0, 12).map((row) => (
@@ -130,5 +186,49 @@ function StatCard({ label, value, accent }: { label: string; value: number; acce
         </p>
       </Card.Content>
     </Card>
+  );
+}
+
+function TipoEstadoMatrix({
+  data,
+}: {
+  data: Array<{ tipo: OutreachProspectType; estado: OutreachStatus; count: number }>;
+}) {
+  const tipos = Array.from(new Set(data.map((d) => d.tipo))) as OutreachProspectType[];
+  const estados = Array.from(new Set(data.map((d) => d.estado))) as OutreachStatus[];
+  if (tipos.length === 0) {
+    return <p className="text-default-500 text-sm">Sin datos.</p>;
+  }
+  const lookup = new Map<string, number>();
+  for (const d of data) lookup.set(`${d.tipo}|${d.estado}`, d.count);
+
+  return (
+    <table className="w-full text-xs">
+      <thead>
+        <tr>
+          <th className="p-1 text-left font-medium text-default-500">Tipo</th>
+          {estados.map((e) => (
+            <th key={e} className="p-1 text-right font-medium text-default-500">
+              {ESTADO_LABELS[e].slice(0, 6)}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {tipos.map((t) => (
+          <tr key={t} className="border-default-200 border-t">
+            <td className="p-1 font-medium">{TIPO_LABELS[t] ?? t}</td>
+            {estados.map((e) => {
+              const v = lookup.get(`${t}|${e}`) ?? 0;
+              return (
+                <td key={e} className="p-1 text-right font-mono">
+                  {v || "·"}
+                </td>
+              );
+            })}
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }

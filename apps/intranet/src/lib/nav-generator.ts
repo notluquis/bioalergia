@@ -3,6 +3,7 @@ import {
   BarChart3,
   Box,
   Briefcase,
+  Bug,
   Calendar,
   CalendarDays,
   ChartLine,
@@ -51,6 +52,7 @@ export interface NavSectionData {
 const ICON_MAP: Record<string, ComponentType<{ className?: string; strokeWidth?: number }>> = {
   Box,
   Briefcase,
+  Bug,
   BarChart3,
   Calendar,
   CalendarDays,

@@ -1,41 +1,136 @@
+import { Input, Label, ListBox, Select, TextArea, TextField } from "@heroui/react";
 import type { ReactNode } from "react";
 
-const baseInput =
-  "w-full rounded-medium border border-default-300 bg-default-50 px-3 py-2 text-sm focus:border-primary focus:outline-none";
+export type SelectOption = { value: string; label: string };
 
-export function Field({ label, children }: { label: string; children: ReactNode }) {
+export type TextInputProps = {
+  label?: string;
+  value: string | number | null | undefined;
+  onValueChange: (value: string) => void;
+  type?: "text" | "email" | "url" | "number" | "datetime-local";
+  required?: boolean;
+  isDisabled?: boolean;
+  placeholder?: string;
+  min?: number;
+  max?: number;
+  defaultValue?: string;
+  className?: string;
+  onBlur?: () => void;
+  onKeyDown?: React.KeyboardEventHandler<HTMLInputElement>;
+};
+
+export function TextInput({
+  label,
+  value,
+  onValueChange,
+  type = "text",
+  required,
+  isDisabled,
+  placeholder,
+  min,
+  max,
+  defaultValue,
+  className,
+  onBlur,
+  onKeyDown,
+}: TextInputProps) {
   return (
-    <label className="flex flex-col gap-1 text-sm">
-      <span className="font-medium text-default-700">{label}</span>
-      {children}
-    </label>
+    <TextField
+      value={value == null ? "" : String(value)}
+      defaultValue={defaultValue}
+      onChange={onValueChange}
+      type={type}
+      isRequired={required}
+      isDisabled={isDisabled}
+      onBlur={onBlur}
+      className={className}
+    >
+      {label && <Label>{label}</Label>}
+      <Input placeholder={placeholder} min={min} max={max} onKeyDown={onKeyDown} />
+    </TextField>
   );
 }
 
-export function TextInput(
-  props: React.InputHTMLAttributes<HTMLInputElement> & { invalid?: boolean }
-) {
-  const { className, invalid, ...rest } = props;
+export type TextAreaInputProps = {
+  label?: string;
+  value: string;
+  onValueChange: (value: string) => void;
+  rows?: number;
+  required?: boolean;
+  isDisabled?: boolean;
+  placeholder?: string;
+  className?: string;
+  onBlur?: () => void;
+};
+
+export function TextAreaInput({
+  label,
+  value,
+  onValueChange,
+  rows = 4,
+  required,
+  isDisabled,
+  placeholder,
+  className,
+  onBlur,
+}: TextAreaInputProps) {
   return (
-    <input
-      className={`${baseInput} ${invalid ? "border-danger" : ""} ${className ?? ""}`}
-      {...rest}
-    />
+    <TextField
+      value={value}
+      onChange={onValueChange}
+      isRequired={required}
+      isDisabled={isDisabled}
+      onBlur={onBlur}
+      className={className}
+    >
+      {label && <Label>{label}</Label>}
+      <TextArea rows={rows} placeholder={placeholder} />
+    </TextField>
   );
 }
 
-export function TextAreaInput(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  const { className, ...rest } = props;
-  return <textarea className={`${baseInput} font-mono ${className ?? ""}`} {...rest} />;
+export type SelectInputProps = {
+  label?: string;
+  value: string;
+  onValueChange: (value: string) => void;
+  options: SelectOption[];
+  isDisabled?: boolean;
+  className?: string;
+};
+
+export function SelectInput({
+  label,
+  value,
+  onValueChange,
+  options,
+  isDisabled,
+  className,
+}: SelectInputProps) {
+  return (
+    <Select
+      value={value}
+      onChange={(key) => onValueChange(typeof key === "string" ? key : "")}
+      isDisabled={isDisabled}
+      className={className}
+    >
+      {label && <Label>{label}</Label>}
+      <Select.Trigger>
+        <Select.Value />
+        <Select.Indicator />
+      </Select.Trigger>
+      <Select.Popover>
+        <ListBox>
+          {options.map((opt) => (
+            <ListBox.Item key={opt.value} id={opt.value}>
+              {opt.label}
+            </ListBox.Item>
+          ))}
+        </ListBox>
+      </Select.Popover>
+    </Select>
+  );
 }
 
-export function NativeSelect(
-  props: React.SelectHTMLAttributes<HTMLSelectElement> & { children: ReactNode }
-) {
-  const { className, children, ...rest } = props;
-  return (
-    <select className={`${baseInput} ${className ?? ""}`} {...rest}>
-      {children}
-    </select>
-  );
+export function FieldGroup({ children }: { children: ReactNode }) {
+  return <div className="grid grid-cols-1 gap-3 md:grid-cols-2">{children}</div>;
 }

@@ -7,7 +7,7 @@ import type {
   OutreachPriority,
   OutreachStatus,
 } from "@finanzas/orpc-contracts/outreach";
-import { Field, NativeSelect, TextAreaInput, TextInput } from "../components/FormField";
+import { SelectInput, TextAreaInput, TextInput } from "../components/FormField";
 import {
   useApolloEnrich,
   useCrawlProspect,
@@ -22,30 +22,34 @@ import {
 } from "../hooks/useOutreach";
 import { ESTADO_COLOR, ESTADO_LABELS, INTERACCION_LABELS } from "../labels";
 
-const ALL_ESTADOS: OutreachStatus[] = [
-  "SIN_CONTACTAR",
-  "CONTACTADO",
-  "SIN_RESPUESTA",
-  "RESPONDIO_INTERES",
-  "RESPONDIO_MAS_INFO",
-  "RESPONDIO_DESISTIO",
-  "REUNION_AGENDADA",
-  "CONVENIO_FIRMADO",
-  "DESCARTADO",
+const ESTADO_OPTIONS = [
+  { value: "SIN_CONTACTAR", label: "Sin contactar" },
+  { value: "CONTACTADO", label: "Contactado" },
+  { value: "SIN_RESPUESTA", label: "Sin respuesta" },
+  { value: "RESPONDIO_INTERES", label: "Interés" },
+  { value: "RESPONDIO_MAS_INFO", label: "Pidió más info" },
+  { value: "RESPONDIO_DESISTIO", label: "Desistió" },
+  { value: "REUNION_AGENDADA", label: "Reunión agendada" },
+  { value: "CONVENIO_FIRMADO", label: "Convenio firmado" },
+  { value: "DESCARTADO", label: "Descartado" },
 ];
 
-const ALL_PRIORIDADES: OutreachPriority[] = ["ALTA", "MEDIA", "BAJA"];
+const PRIORIDAD_OPTIONS = [
+  { value: "ALTA", label: "Alta" },
+  { value: "MEDIA", label: "Media" },
+  { value: "BAJA", label: "Baja" },
+];
 
-const ALL_INTERACCIONES: OutreachInteractionType[] = [
-  "EMAIL_ENVIADO",
-  "EMAIL_RECIBIDO",
-  "LLAMADA_REALIZADA",
-  "LLAMADA_RECIBIDA",
-  "WHATSAPP",
-  "REUNION_PRESENCIAL",
-  "REUNION_ONLINE",
-  "CHARLA_REALIZADA",
-  "NOTA_INTERNA",
+const INTERACCION_OPTIONS = [
+  { value: "EMAIL_ENVIADO", label: "Email enviado" },
+  { value: "EMAIL_RECIBIDO", label: "Email recibido" },
+  { value: "LLAMADA_REALIZADA", label: "Llamada realizada" },
+  { value: "LLAMADA_RECIBIDA", label: "Llamada recibida" },
+  { value: "WHATSAPP", label: "WhatsApp" },
+  { value: "REUNION_PRESENCIAL", label: "Reunión presencial" },
+  { value: "REUNION_ONLINE", label: "Reunión online" },
+  { value: "CHARLA_REALIZADA", label: "Charla realizada" },
+  { value: "NOTA_INTERNA", label: "Nota interna" },
 ];
 
 export function OutreachEstablishmentDetailPage() {
@@ -92,19 +96,22 @@ export function OutreachEstablishmentDetailPage() {
   const notasValue = notas ?? e.notas ?? "";
   const websiteValue = website ?? e.websiteUrl ?? "";
 
+  const contactoOptions = [
+    { value: "", label: "Sin contacto" },
+    ...data.contactos.map((c) => ({ value: String(c.id), label: `${c.nombre} (${c.cargo})` })),
+  ];
+
   return (
     <div className="space-y-4 p-6">
+      <Link to="/outreach/establecimientos" className="text-default-500 text-sm hover:underline">
+        ← Volver al listado
+      </Link>
+
       <div className="flex items-center justify-between">
         <div>
-          <Link
-            to="/outreach/establecimientos"
-            className="text-default-500 text-sm hover:underline"
-          >
-            ← Volver al listado
-          </Link>
-          <h1 className="font-bold text-2xl">{e.nombre}</h1>
+          <h2 className="font-semibold text-lg">{e.nombre}</h2>
           <p className="text-default-500 text-sm">
-            RBD {e.rbd} · {e.comuna}
+            {e.rbd} · {e.comuna} · {e.tipo}
           </p>
         </div>
         <Chip color={ESTADO_COLOR[e.estado]} variant="soft">
@@ -115,7 +122,7 @@ export function OutreachEstablishmentDetailPage() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card>
           <Card.Header>
-            <Card.Title>Datos MINEDUC</Card.Title>
+            <Card.Title>Datos</Card.Title>
           </Card.Header>
           <Card.Content className="space-y-2 p-4 text-sm">
             <Row label="Director" value={e.directorMineduc} />
@@ -134,64 +141,48 @@ export function OutreachEstablishmentDetailPage() {
           </Card.Header>
           <Card.Content className="space-y-3 p-4">
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              <Field label="Estado">
-                <NativeSelect
-                  value={e.estado}
-                  onChange={(ev) =>
-                    updateE.mutate({ rbd: e.rbd, estado: ev.target.value as OutreachStatus })
-                  }
-                >
-                  {ALL_ESTADOS.map((s) => (
-                    <option key={s} value={s}>
-                      {ESTADO_LABELS[s]}
-                    </option>
-                  ))}
-                </NativeSelect>
-              </Field>
-              <Field label="Prioridad">
-                <NativeSelect
-                  value={e.prioridad}
-                  onChange={(ev) =>
-                    updateE.mutate({ rbd: e.rbd, prioridad: ev.target.value as OutreachPriority })
-                  }
-                >
-                  {ALL_PRIORIDADES.map((p) => (
-                    <option key={p} value={p}>
-                      {p}
-                    </option>
-                  ))}
-                </NativeSelect>
-              </Field>
-              <Field label="Website">
-                <TextInput
-                  value={websiteValue}
-                  onChange={(ev) => setWebsite(ev.target.value)}
-                  onBlur={() => updateE.mutate({ rbd: e.rbd, websiteUrl: websiteValue || null })}
-                />
-              </Field>
-              <Field label="Etiquetas (separadas por coma)">
-                <TextInput
-                  defaultValue={e.etiquetas.join(", ")}
-                  onBlur={(ev) =>
-                    updateE.mutate({
-                      rbd: e.rbd,
-                      etiquetas: ev.currentTarget.value
-                        .split(",")
-                        .map((t) => t.trim())
-                        .filter(Boolean),
-                    })
-                  }
-                />
-              </Field>
-            </div>
-            <Field label="Notas internas">
-              <TextAreaInput
-                rows={3}
-                value={notasValue}
-                onChange={(ev) => setNotas(ev.target.value)}
-                onBlur={() => updateE.mutate({ rbd: e.rbd, notas: notasValue || null })}
+              <SelectInput
+                label="Estado"
+                value={e.estado}
+                onValueChange={(v) => updateE.mutate({ rbd: e.rbd, estado: v as OutreachStatus })}
+                options={ESTADO_OPTIONS}
               />
-            </Field>
+              <SelectInput
+                label="Prioridad"
+                value={e.prioridad}
+                onValueChange={(v) =>
+                  updateE.mutate({ rbd: e.rbd, prioridad: v as OutreachPriority })
+                }
+                options={PRIORIDAD_OPTIONS}
+              />
+              <TextInput
+                label="Website"
+                value={websiteValue}
+                onValueChange={setWebsite}
+                onBlur={() => updateE.mutate({ rbd: e.rbd, websiteUrl: websiteValue || null })}
+              />
+              <TextInput
+                label="Etiquetas (separadas por coma)"
+                defaultValue={e.etiquetas.join(", ")}
+                value={e.etiquetas.join(", ")}
+                onValueChange={(v) =>
+                  updateE.mutate({
+                    rbd: e.rbd,
+                    etiquetas: v
+                      .split(",")
+                      .map((t) => t.trim())
+                      .filter(Boolean),
+                  })
+                }
+              />
+            </div>
+            <TextAreaInput
+              label="Notas internas"
+              rows={3}
+              value={notasValue}
+              onValueChange={setNotas}
+              onBlur={() => updateE.mutate({ rbd: e.rbd, notas: notasValue || null })}
+            />
           </Card.Content>
         </Card>
       </div>
@@ -256,31 +247,6 @@ export function OutreachEstablishmentDetailPage() {
               {e.hunterEmailPattern && <> · Patrón: {e.hunterEmailPattern}</>}
             </p>
           )}
-          {crawl.data && (
-            <pre className="rounded bg-default-100 p-2">
-              {JSON.stringify(
-                {
-                  emails: crawl.data.emails.length,
-                  phones: crawl.data.phones.length,
-                  social: Object.keys(crawl.data.social),
-                  pages: crawl.data.pagesVisited,
-                },
-                null,
-                2
-              )}
-            </pre>
-          )}
-          {apollo.data && (
-            <p>
-              Apollo: +{apollo.data.contactsCreated} contactos ({apollo.data.peopleFound}{" "}
-              encontrados)
-            </p>
-          )}
-          {hunter.data && (
-            <p>
-              Hunter: +{hunter.data.contactsCreated} contactos · patrón {hunter.data.pattern ?? "?"}
-            </p>
-          )}
           {(crawl.isError || apollo.isError || hunter.isError) && (
             <p className="text-danger">
               {(crawl.error as Error)?.message ??
@@ -322,35 +288,31 @@ export function OutreachEstablishmentDetailPage() {
                 });
                 setShowContactForm(false);
               }}
-              className="grid grid-cols-1 gap-2 rounded-medium bg-default-100 p-3 md:grid-cols-2"
+              className="grid grid-cols-1 gap-3 rounded-medium bg-default-100 p-3 md:grid-cols-2"
             >
-              <Field label="Nombre">
-                <TextInput
-                  required
-                  value={contactDraft.nombre}
-                  onChange={(ev) => setContactDraft((d) => ({ ...d, nombre: ev.target.value }))}
-                />
-              </Field>
-              <Field label="Cargo">
-                <TextInput
-                  required
-                  value={contactDraft.cargo}
-                  onChange={(ev) => setContactDraft((d) => ({ ...d, cargo: ev.target.value }))}
-                />
-              </Field>
-              <Field label="Email">
-                <TextInput
-                  type="email"
-                  value={contactDraft.email}
-                  onChange={(ev) => setContactDraft((d) => ({ ...d, email: ev.target.value }))}
-                />
-              </Field>
-              <Field label="Teléfono">
-                <TextInput
-                  value={contactDraft.telefono}
-                  onChange={(ev) => setContactDraft((d) => ({ ...d, telefono: ev.target.value }))}
-                />
-              </Field>
+              <TextInput
+                label="Nombre"
+                required
+                value={contactDraft.nombre}
+                onValueChange={(v) => setContactDraft((d) => ({ ...d, nombre: v }))}
+              />
+              <TextInput
+                label="Cargo"
+                required
+                value={contactDraft.cargo}
+                onValueChange={(v) => setContactDraft((d) => ({ ...d, cargo: v }))}
+              />
+              <TextInput
+                label="Email"
+                type="email"
+                value={contactDraft.email}
+                onValueChange={(v) => setContactDraft((d) => ({ ...d, email: v }))}
+              />
+              <TextInput
+                label="Teléfono"
+                value={contactDraft.telefono}
+                onValueChange={(v) => setContactDraft((d) => ({ ...d, telefono: v }))}
+              />
               <label className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
@@ -432,61 +394,42 @@ export function OutreachEstablishmentDetailPage() {
                 });
                 setShowInterForm(false);
               }}
-              className="grid grid-cols-1 gap-2 rounded-medium bg-default-100 p-3 md:grid-cols-2"
+              className="grid grid-cols-1 gap-3 rounded-medium bg-default-100 p-3 md:grid-cols-2"
             >
-              <Field label="Tipo">
-                <NativeSelect
-                  value={interDraft.tipo}
-                  onChange={(ev) =>
-                    setInterDraft((d) => ({
-                      ...d,
-                      tipo: ev.target.value as OutreachInteractionType,
-                    }))
-                  }
-                >
-                  {ALL_INTERACCIONES.map((t) => (
-                    <option key={t} value={t}>
-                      {INTERACCION_LABELS[t]}
-                    </option>
-                  ))}
-                </NativeSelect>
-              </Field>
-              <Field label="Fecha y hora">
-                <TextInput
-                  type="datetime-local"
-                  value={interDraft.fecha}
-                  onChange={(ev) => setInterDraft((d) => ({ ...d, fecha: ev.target.value }))}
-                />
-              </Field>
-              <Field label="Contacto">
-                <NativeSelect
-                  value={interDraft.contactoId}
-                  onChange={(ev) => setInterDraft((d) => ({ ...d, contactoId: ev.target.value }))}
-                >
-                  <option value="">Sin contacto</option>
-                  {data.contactos.map((c) => (
-                    <option key={c.id} value={String(c.id)}>
-                      {c.nombre} ({c.cargo})
-                    </option>
-                  ))}
-                </NativeSelect>
-              </Field>
-              <Field label="Resultado">
-                <TextInput
-                  value={interDraft.resultado}
-                  onChange={(ev) => setInterDraft((d) => ({ ...d, resultado: ev.target.value }))}
-                  placeholder="Ej: Volver a llamar en 1 semana"
-                />
-              </Field>
+              <SelectInput
+                label="Tipo"
+                value={interDraft.tipo}
+                onValueChange={(v) =>
+                  setInterDraft((d) => ({ ...d, tipo: v as OutreachInteractionType }))
+                }
+                options={INTERACCION_OPTIONS}
+              />
+              <TextInput
+                label="Fecha y hora"
+                type="datetime-local"
+                value={interDraft.fecha}
+                onValueChange={(v) => setInterDraft((d) => ({ ...d, fecha: v }))}
+              />
+              <SelectInput
+                label="Contacto"
+                value={interDraft.contactoId}
+                onValueChange={(v) => setInterDraft((d) => ({ ...d, contactoId: v }))}
+                options={contactoOptions}
+              />
+              <TextInput
+                label="Resultado"
+                value={interDraft.resultado}
+                onValueChange={(v) => setInterDraft((d) => ({ ...d, resultado: v }))}
+                placeholder="Ej: Volver a llamar en 1 semana"
+              />
               <div className="md:col-span-2">
-                <Field label="Detalle">
-                  <TextAreaInput
-                    rows={3}
-                    required
-                    value={interDraft.contenido}
-                    onChange={(ev) => setInterDraft((d) => ({ ...d, contenido: ev.target.value }))}
-                  />
-                </Field>
+                <TextAreaInput
+                  label="Detalle"
+                  rows={3}
+                  required
+                  value={interDraft.contenido}
+                  onValueChange={(v) => setInterDraft((d) => ({ ...d, contenido: v }))}
+                />
               </div>
               <div className="md:col-span-2">
                 <Button type="submit" variant="primary" size="sm">

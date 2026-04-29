@@ -8,12 +8,11 @@ export function OutreachCampaignsPage() {
 
   return (
     <div className="space-y-4 p-6">
-      <header className="flex items-center justify-between">
-        <h1 className="font-bold text-2xl">Campañas de email</h1>
+      <div className="flex items-center justify-end">
         <Link to="/outreach/campanas/nueva">
           <Button variant="primary">Nueva campaña</Button>
         </Link>
-      </header>
+      </div>
 
       {isLoading || !data ? (
         <div className="flex h-64 items-center justify-center">

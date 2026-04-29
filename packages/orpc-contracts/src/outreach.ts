@@ -392,6 +392,40 @@ export const hunterDomainInputSchema = z.object({ rbd: z.string() });
 export const hunterVerifyEmailInputSchema = z.object({ email: z.string().email() });
 export const recomputeScoreInputSchema = z.object({ rbd: z.string() });
 
+export const bulkCrawlInputSchema = z.object({
+  tipos: z.array(outreachProspectTypeSchema).optional(),
+  fuentes: z.array(outreachProspectSourceSchema).optional(),
+  comunas: z.array(z.string()).optional(),
+  soloSinEmail: z.boolean().default(true),
+  soloConWebsite: z.boolean().default(true),
+  saltarRecientes: z.boolean().default(true),
+  limit: z.number().int().min(1).max(500).default(50),
+});
+
+export const bulkCrawlStartResponseSchema = z.object({
+  jobId: z.string(),
+  total: z.number().int(),
+});
+
+export const bulkCrawlStatusInputSchema = z.object({ jobId: z.string() });
+
+export const bulkCrawlStatusResponseSchema = z.object({
+  jobId: z.string(),
+  status: z.enum(["pending", "running", "completed", "failed"]),
+  progress: z.number().int(),
+  total: z.number().int(),
+  message: z.string(),
+  error: z.string().nullable(),
+  result: z
+    .object({
+      successful: z.number().int(),
+      failed: z.number().int(),
+      emailsFound: z.number().int(),
+      phonesFound: z.number().int(),
+    })
+    .nullable(),
+});
+
 export const discoverGooglePlacesResponseSchema = z.object({
   found: z.number().int(),
   inserted: z.number().int(),
@@ -534,10 +568,19 @@ export const dashboardResponseSchema = z.object({
     conEmail: z.number().int(),
   }),
   porEstado: z.array(z.object({ estado: outreachStatusSchema, count: z.number().int() })),
+  porTipo: z.array(z.object({ tipo: outreachProspectTypeSchema, count: z.number().int() })),
+  porFuente: z.array(z.object({ fuente: outreachProspectSourceSchema, count: z.number().int() })),
   porDependencia: z.array(
     z.object({ dependencia: outreachDependenciaSchema, count: z.number().int() }),
   ),
   porComuna: z.array(z.object({ comuna: z.string(), count: z.number().int() })),
+  porTipoEstado: z.array(
+    z.object({
+      tipo: outreachProspectTypeSchema,
+      estado: outreachStatusSchema,
+      count: z.number().int(),
+    }),
+  ),
   pendientesSeguimiento: z.number().int(),
   ultimasInteracciones: z.array(
     outreachInteractionSchema.extend({ establishmentNombre: z.string() }),
@@ -669,6 +712,14 @@ export const outreachContract = {
     .route({ method: "POST", path: "/enrich/hunter-verify", tags: ["Outreach"] })
     .input(hunterVerifyEmailInputSchema)
     .output(hunterVerifyResponseSchema),
+  bulkCrawl: oc
+    .route({ method: "POST", path: "/enrich/bulk-crawl", tags: ["Outreach"] })
+    .input(bulkCrawlInputSchema)
+    .output(bulkCrawlStartResponseSchema),
+  bulkCrawlStatus: oc
+    .route({ method: "POST", path: "/enrich/bulk-crawl-status", tags: ["Outreach"] })
+    .input(bulkCrawlStatusInputSchema)
+    .output(bulkCrawlStatusResponseSchema),
   recomputeScore: oc
     .route({ method: "POST", path: "/enrich/recompute-score", tags: ["Outreach"] })
     .input(recomputeScoreInputSchema)

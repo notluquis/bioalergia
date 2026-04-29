@@ -16,6 +16,7 @@ import {
   sendOutreachEmailViaAgent,
   setLocalAgentConfig,
 } from "../mail-agent";
+import { TextInput } from "../components/FormField";
 
 export function OutreachCampaignDetailPage() {
   const { id } = useParams({ from: "/_authed/outreach/campanas/$id" });
@@ -93,14 +94,13 @@ export function OutreachCampaignDetailPage() {
 
   return (
     <div className="space-y-4 p-6">
-      <div>
-        <Link to="/outreach/campanas" className="text-default-500 text-sm hover:underline">
-          ← Volver a campañas
-        </Link>
-        <div className="flex items-center justify-between">
-          <h1 className="font-bold text-2xl">{c.nombre}</h1>
-          <Chip variant="soft">{CAMPAIGN_STATUS_LABELS[c.estado]}</Chip>
-        </div>
+      <Link to="/outreach/campanas" className="text-default-500 text-sm hover:underline">
+        ← Volver a campañas
+      </Link>
+
+      <div className="flex items-center justify-between">
+        <h2 className="font-semibold text-lg">{c.nombre}</h2>
+        <Chip variant="soft">{CAMPAIGN_STATUS_LABELS[c.estado]}</Chip>
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
@@ -136,29 +136,29 @@ export function OutreachCampaignDetailPage() {
       <Card>
         <Card.Header>
           <Card.Title>Agente local de correo</Card.Title>
+          <Card.Description>
+            Los emails se envían desde tu equipo via el agente local. Configura URL + token.
+          </Card.Description>
         </Card.Header>
         <Card.Content className="space-y-3 p-4">
-          <p className="text-default-500 text-xs">
-            Los emails se envían desde tu equipo via el agente local (no Railway). Configura URL +
-            token y mantén la pestaña abierta mientras dura el envío.
-          </p>
           <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
-            <input
-              className="rounded border border-default-300 p-2 text-sm"
+            <TextInput
+              label="URL agente"
               placeholder="https://127.0.0.1:3333"
               value={agentUrl}
-              onChange={(e) => setAgentUrl(e.target.value)}
+              onValueChange={setAgentUrl}
             />
-            <input
-              className="rounded border border-default-300 p-2 text-sm"
+            <TextInput
+              label="Token"
               placeholder="X-Local-Agent-Token"
               value={agentToken}
-              onChange={(e) => setAgentToken(e.target.value)}
-              type="password"
+              onValueChange={setAgentToken}
             />
-            <Button size="sm" variant="secondary" onPress={saveAgentConfig}>
-              Guardar y verificar
-            </Button>
+            <div className="flex items-end">
+              <Button size="sm" variant="secondary" onPress={saveAgentConfig}>
+                Guardar y verificar
+              </Button>
+            </div>
           </div>
           {agentReady !== null && (
             <Chip size="sm" color={agentReady ? "success" : "danger"} variant="soft">

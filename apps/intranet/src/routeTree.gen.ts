@@ -42,9 +42,9 @@ import { Route as AuthedSettingsBackupsRouteImport } from "./routes/_authed/sett
 import { Route as AuthedServicesAgendaRouteImport } from "./routes/_authed/services/agenda"
 import { Route as AuthedPatientsNewRouteImport } from "./routes/_authed/patients/new"
 import { Route as AuthedPatientsCampaignsRouteImport } from "./routes/_authed/patients/campaigns"
-import { Route as AuthedOutreachImportarRouteImport } from "./routes/_authed/outreach/importar"
 import { Route as AuthedOutreachEstablecimientosRouteImport } from "./routes/_authed/outreach/establecimientos"
 import { Route as AuthedOutreachDescubrirRouteImport } from "./routes/_authed/outreach/descubrir"
+import { Route as AuthedOutreachCrawlerMasivoRouteImport } from "./routes/_authed/outreach/crawler-masivo"
 import { Route as AuthedOutreachCampanasRouteImport } from "./routes/_authed/outreach/campanas"
 import { Route as AuthedOperationsSuppliesRouteImport } from "./routes/_authed/operations/supplies"
 import { Route as AuthedOperationsInventoryRouteImport } from "./routes/_authed/operations/inventory"
@@ -251,11 +251,6 @@ const AuthedPatientsCampaignsRoute = AuthedPatientsCampaignsRouteImport.update({
   path: "/patients/campaigns",
   getParentRoute: () => AuthedRoute,
 } as any)
-const AuthedOutreachImportarRoute = AuthedOutreachImportarRouteImport.update({
-  id: "/importar",
-  path: "/importar",
-  getParentRoute: () => AuthedOutreachRoute,
-} as any)
 const AuthedOutreachEstablecimientosRoute =
   AuthedOutreachEstablecimientosRouteImport.update({
     id: "/establecimientos",
@@ -267,6 +262,12 @@ const AuthedOutreachDescubrirRoute = AuthedOutreachDescubrirRouteImport.update({
   path: "/descubrir",
   getParentRoute: () => AuthedOutreachRoute,
 } as any)
+const AuthedOutreachCrawlerMasivoRoute =
+  AuthedOutreachCrawlerMasivoRouteImport.update({
+    id: "/crawler-masivo",
+    path: "/crawler-masivo",
+    getParentRoute: () => AuthedOutreachRoute,
+  } as any)
 const AuthedOutreachCampanasRoute = AuthedOutreachCampanasRouteImport.update({
   id: "/campanas",
   path: "/campanas",
@@ -519,9 +520,9 @@ export interface FileRoutesByFullPath {
   "/operations/inventory": typeof AuthedOperationsInventoryRoute
   "/operations/supplies": typeof AuthedOperationsSuppliesRoute
   "/outreach/campanas": typeof AuthedOutreachCampanasRouteWithChildren
+  "/outreach/crawler-masivo": typeof AuthedOutreachCrawlerMasivoRoute
   "/outreach/descubrir": typeof AuthedOutreachDescubrirRoute
   "/outreach/establecimientos": typeof AuthedOutreachEstablecimientosRouteWithChildren
-  "/outreach/importar": typeof AuthedOutreachImportarRoute
   "/patients/campaigns": typeof AuthedPatientsCampaignsRoute
   "/patients/new": typeof AuthedPatientsNewRoute
   "/services/agenda": typeof AuthedServicesAgendaRoute
@@ -589,9 +590,9 @@ export interface FileRoutesByTo {
   "/operations/inventory": typeof AuthedOperationsInventoryRoute
   "/operations/supplies": typeof AuthedOperationsSuppliesRoute
   "/outreach/campanas": typeof AuthedOutreachCampanasRouteWithChildren
+  "/outreach/crawler-masivo": typeof AuthedOutreachCrawlerMasivoRoute
   "/outreach/descubrir": typeof AuthedOutreachDescubrirRoute
   "/outreach/establecimientos": typeof AuthedOutreachEstablecimientosRouteWithChildren
-  "/outreach/importar": typeof AuthedOutreachImportarRoute
   "/patients/campaigns": typeof AuthedPatientsCampaignsRoute
   "/patients/new": typeof AuthedPatientsNewRoute
   "/services/agenda": typeof AuthedServicesAgendaRoute
@@ -666,9 +667,9 @@ export interface FileRoutesById {
   "/_authed/operations/inventory": typeof AuthedOperationsInventoryRoute
   "/_authed/operations/supplies": typeof AuthedOperationsSuppliesRoute
   "/_authed/outreach/campanas": typeof AuthedOutreachCampanasRouteWithChildren
+  "/_authed/outreach/crawler-masivo": typeof AuthedOutreachCrawlerMasivoRoute
   "/_authed/outreach/descubrir": typeof AuthedOutreachDescubrirRoute
   "/_authed/outreach/establecimientos": typeof AuthedOutreachEstablecimientosRouteWithChildren
-  "/_authed/outreach/importar": typeof AuthedOutreachImportarRoute
   "/_authed/patients/campaigns": typeof AuthedPatientsCampaignsRoute
   "/_authed/patients/new": typeof AuthedPatientsNewRoute
   "/_authed/services/agenda": typeof AuthedServicesAgendaRoute
@@ -743,9 +744,9 @@ export interface FileRouteTypes {
     | "/operations/inventory"
     | "/operations/supplies"
     | "/outreach/campanas"
+    | "/outreach/crawler-masivo"
     | "/outreach/descubrir"
     | "/outreach/establecimientos"
-    | "/outreach/importar"
     | "/patients/campaigns"
     | "/patients/new"
     | "/services/agenda"
@@ -813,9 +814,9 @@ export interface FileRouteTypes {
     | "/operations/inventory"
     | "/operations/supplies"
     | "/outreach/campanas"
+    | "/outreach/crawler-masivo"
     | "/outreach/descubrir"
     | "/outreach/establecimientos"
-    | "/outreach/importar"
     | "/patients/campaigns"
     | "/patients/new"
     | "/services/agenda"
@@ -889,9 +890,9 @@ export interface FileRouteTypes {
     | "/_authed/operations/inventory"
     | "/_authed/operations/supplies"
     | "/_authed/outreach/campanas"
+    | "/_authed/outreach/crawler-masivo"
     | "/_authed/outreach/descubrir"
     | "/_authed/outreach/establecimientos"
-    | "/_authed/outreach/importar"
     | "/_authed/patients/campaigns"
     | "/_authed/patients/new"
     | "/_authed/services/agenda"
@@ -1162,13 +1163,6 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedPatientsCampaignsRouteImport
       parentRoute: typeof AuthedRoute
     }
-    "/_authed/outreach/importar": {
-      id: "/_authed/outreach/importar"
-      path: "/importar"
-      fullPath: "/outreach/importar"
-      preLoaderRoute: typeof AuthedOutreachImportarRouteImport
-      parentRoute: typeof AuthedOutreachRoute
-    }
     "/_authed/outreach/establecimientos": {
       id: "/_authed/outreach/establecimientos"
       path: "/establecimientos"
@@ -1181,6 +1175,13 @@ declare module "@tanstack/react-router" {
       path: "/descubrir"
       fullPath: "/outreach/descubrir"
       preLoaderRoute: typeof AuthedOutreachDescubrirRouteImport
+      parentRoute: typeof AuthedOutreachRoute
+    }
+    "/_authed/outreach/crawler-masivo": {
+      id: "/_authed/outreach/crawler-masivo"
+      path: "/crawler-masivo"
+      fullPath: "/outreach/crawler-masivo"
+      preLoaderRoute: typeof AuthedOutreachCrawlerMasivoRouteImport
       parentRoute: typeof AuthedOutreachRoute
     }
     "/_authed/outreach/campanas": {
@@ -1613,18 +1614,18 @@ const AuthedOutreachEstablecimientosRouteWithChildren =
 
 interface AuthedOutreachRouteChildren {
   AuthedOutreachCampanasRoute: typeof AuthedOutreachCampanasRouteWithChildren
+  AuthedOutreachCrawlerMasivoRoute: typeof AuthedOutreachCrawlerMasivoRoute
   AuthedOutreachDescubrirRoute: typeof AuthedOutreachDescubrirRoute
   AuthedOutreachEstablecimientosRoute: typeof AuthedOutreachEstablecimientosRouteWithChildren
-  AuthedOutreachImportarRoute: typeof AuthedOutreachImportarRoute
   AuthedOutreachIndexRoute: typeof AuthedOutreachIndexRoute
 }
 
 const AuthedOutreachRouteChildren: AuthedOutreachRouteChildren = {
   AuthedOutreachCampanasRoute: AuthedOutreachCampanasRouteWithChildren,
+  AuthedOutreachCrawlerMasivoRoute: AuthedOutreachCrawlerMasivoRoute,
   AuthedOutreachDescubrirRoute: AuthedOutreachDescubrirRoute,
   AuthedOutreachEstablecimientosRoute:
     AuthedOutreachEstablecimientosRouteWithChildren,
-  AuthedOutreachImportarRoute: AuthedOutreachImportarRoute,
   AuthedOutreachIndexRoute: AuthedOutreachIndexRoute,
 }
 

@@ -261,6 +261,29 @@ export function useRecomputeScore() {
   });
 }
 
+export function useBulkCrawl() {
+  return useMutation({
+    mutationFn: (input: Parameters<typeof outreachORPCClient.bulkCrawl>[0]) =>
+      outreachORPCClient.bulkCrawl(input),
+  });
+}
+
+export function useBulkCrawlStatus(jobId: string | null) {
+  return useQuery({
+    queryKey: [...BASE_KEY, "bulk-crawl-status", jobId],
+    enabled: Boolean(jobId),
+    refetchInterval: (q) => {
+      const data = q.state.data as
+        | { status: "pending" | "running" | "completed" | "failed" }
+        | undefined;
+      if (!data) return 1500;
+      if (data.status === "running" || data.status === "pending") return 1500;
+      return false;
+    },
+    queryFn: () => outreachORPCClient.bulkCrawlStatus({ jobId: jobId! }),
+  });
+}
+
 export function useNextDeliveryBatch() {
   return useMutation({
     mutationFn: (input: { campaignId: number; limit: number }) =>
