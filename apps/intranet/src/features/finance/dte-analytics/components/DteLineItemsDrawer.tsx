@@ -68,90 +68,85 @@ export function DteLineItemsDrawer({ detail, isOpen, onClose }: DteLineItemsDraw
   }
 
   return (
-    <Drawer>
-      <Drawer.Backdrop isOpen={isOpen} onOpenChange={(open) => !open && onClose()} variant="blur">
-        <Drawer.Content
-          className="w-[min(92vw,580px)] border-l bg-background shadow-2xl"
-          placement="right"
-        >
-          <Drawer.Dialog className="flex h-full max-h-dvh flex-col">
-            <Drawer.CloseTrigger />
-            <Drawer.Header className="border-default-200/70 border-b">
-              <div className="space-y-2">
-                <Drawer.Heading>{drawerTitle}</Drawer.Heading>
-                {detail ? (
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Chip color="default" size="sm" variant="soft">
-                      {"clientName" in detail ? detail.clientName : detail.providerName}
+    <Drawer.Backdrop isOpen={isOpen} onOpenChange={(open) => !open && onClose()} variant="blur">
+      <Drawer.Content placement="right">
+        <Drawer.Dialog>
+          <Drawer.CloseTrigger />
+          <Drawer.Header>
+            <div className="space-y-2">
+              <Drawer.Heading>{drawerTitle}</Drawer.Heading>
+              {detail ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  <Chip color="default" size="sm" variant="soft">
+                    {"clientName" in detail ? detail.clientName : detail.providerName}
+                  </Chip>
+                  <Chip color="default" size="sm" variant="soft">
+                    {dayjs(detail.documentDate).format("DD-MM-YYYY")}
+                  </Chip>
+                  <Chip color="success" size="sm" variant="soft">
+                    {formatCurrency(detail.totalAmount)}
+                  </Chip>
+                  {hasItems ? (
+                    <Chip color="accent" size="sm" variant="soft">
+                      <Package size={12} className="mr-1" />
+                      {detail.lineItemsCount} ítem{detail.lineItemsCount !== 1 ? "s" : ""}
                     </Chip>
-                    <Chip color="default" size="sm" variant="soft">
-                      {dayjs(detail.documentDate).format("DD-MM-YYYY")}
-                    </Chip>
-                    <Chip color="success" size="sm" variant="soft">
-                      {formatCurrency(detail.totalAmount)}
-                    </Chip>
-                    {hasItems ? (
-                      <Chip color="accent" size="sm" variant="soft">
-                        <Package size={12} className="mr-1" />
-                        {detail.lineItemsCount} ítem{detail.lineItemsCount !== 1 ? "s" : ""}
-                      </Chip>
-                    ) : null}
-                  </div>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          </Drawer.Header>
+          <Drawer.Body className="space-y-3">
+            {isLoading ? (
+              <div className="space-y-3">
+                <Skeleton className="h-20 rounded-2xl" />
+                <Skeleton className="h-20 rounded-2xl" />
+                <Skeleton className="h-20 rounded-2xl" />
+              </div>
+            ) : null}
+
+            {!isLoading && hasItems && lineItems.length > 0
+              ? lineItems.map((item) => <LineItemCard key={item.id} item={item} />)
+              : null}
+
+            {!isLoading && !hasItems && detail ? (
+              <div className="flex flex-col items-center gap-4 py-10 text-center">
+                <div className="rounded-full bg-default-100 p-4">
+                  <Package size={32} className="text-default-400" />
+                </div>
+                <div className="space-y-1">
+                  <p className="font-medium text-default-700">Sin detalle XML</p>
+                  <p className="text-default-500 text-sm">
+                    Este DTE no tiene ítems descargados aún. Puedes obtener el detalle desde
+                    Haulmer.
+                  </p>
+                </div>
+                <Button
+                  isDisabled={fetchXmlMutation.isPending}
+                  onPress={handleFetchXml}
+                  size="md"
+                  variant="primary"
+                >
+                  <Download size={16} />
+                  Obtener detalle XML
+                </Button>
+                {fetchXmlMutation.isSuccess ? (
+                  <Chip color="success" size="sm" variant="soft">
+                    {fetchXmlMutation.data.fetched > 0
+                      ? `${fetchXmlMutation.data.details[0]?.lineItemsCount ?? 0} ítems obtenidos`
+                      : "No se encontró XML en Haulmer"}
+                  </Chip>
+                ) : null}
+                {fetchXmlMutation.isError ? (
+                  <Chip color="danger" size="sm" variant="soft">
+                    Error al obtener XML
+                  </Chip>
                 ) : null}
               </div>
-            </Drawer.Header>
-            <Drawer.Body className="space-y-3">
-              {isLoading ? (
-                <div className="space-y-3">
-                  <Skeleton className="h-20 rounded-2xl" />
-                  <Skeleton className="h-20 rounded-2xl" />
-                  <Skeleton className="h-20 rounded-2xl" />
-                </div>
-              ) : null}
-
-              {!isLoading && hasItems && lineItems.length > 0
-                ? lineItems.map((item) => <LineItemCard key={item.id} item={item} />)
-                : null}
-
-              {!isLoading && !hasItems && detail ? (
-                <div className="flex flex-col items-center gap-4 py-10 text-center">
-                  <div className="rounded-full bg-default-100 p-4">
-                    <Package size={32} className="text-default-400" />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="font-medium text-default-700">Sin detalle XML</p>
-                    <p className="text-default-500 text-sm">
-                      Este DTE no tiene ítems descargados aún. Puedes obtener el detalle desde
-                      Haulmer.
-                    </p>
-                  </div>
-                  <Button
-                    isDisabled={fetchXmlMutation.isPending}
-                    onPress={handleFetchXml}
-                    size="md"
-                    variant="primary"
-                  >
-                    <Download size={16} />
-                    Obtener detalle XML
-                  </Button>
-                  {fetchXmlMutation.isSuccess ? (
-                    <Chip color="success" size="sm" variant="soft">
-                      {fetchXmlMutation.data.fetched > 0
-                        ? `${fetchXmlMutation.data.details[0]?.lineItemsCount ?? 0} ítems obtenidos`
-                        : "No se encontró XML en Haulmer"}
-                    </Chip>
-                  ) : null}
-                  {fetchXmlMutation.isError ? (
-                    <Chip color="danger" size="sm" variant="soft">
-                      Error al obtener XML
-                    </Chip>
-                  ) : null}
-                </div>
-              ) : null}
-            </Drawer.Body>
-          </Drawer.Dialog>
-        </Drawer.Content>
-      </Drawer.Backdrop>
-    </Drawer>
+            ) : null}
+          </Drawer.Body>
+        </Drawer.Dialog>
+      </Drawer.Content>
+    </Drawer.Backdrop>
   );
 }
