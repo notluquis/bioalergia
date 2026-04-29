@@ -103,6 +103,7 @@ const ARCHIVE_LIMIT_OPTIONS = [
   { label: "500 archivos", value: 500 },
   { label: "1000 archivos", value: 1000 },
   { label: "5000 archivos", value: 5000 },
+  { label: "Todos", value: 999999 },
 ];
 
 const SNAPSHOT_STATUS_LABELS = {
