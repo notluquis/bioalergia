@@ -1,5 +1,7 @@
 import { Button, Chip, ProgressBar } from "@heroui/react";
 import { Download } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { useToast } from "@/context/ToastContext";
 import { useDteXmlJobStatus, useFetchDteXmlByPeriod } from "../hooks/useFetchDteXml";
 
 interface DteXmlJobProgressProps {
@@ -15,10 +17,33 @@ function formatEta(seconds: number): string {
 }
 
 export function DteXmlJobProgress({ direction, selectedPeriod }: DteXmlJobProgressProps) {
+  const toast = useToast();
   const fetchXml = useFetchDteXmlByPeriod();
   const jobStatus = useDteXmlJobStatus();
   const job = jobStatus.data;
   const isRunning = jobStatus.isRunning;
+  const notifiedJobRef = useRef<null | string>(null);
+
+  useEffect(() => {
+    if (!job || !jobStatus.isTerminal) return;
+    if (notifiedJobRef.current === job.id) return;
+    notifiedJobRef.current = job.id;
+
+    const meta = (job.meta ?? {}) as Record<string, unknown>;
+    const f = typeof meta.fetched === "number" ? meta.fetched : 0;
+    const s = typeof meta.skipped === "number" ? meta.skipped : 0;
+    const e = typeof meta.errors === "number" ? meta.errors : 0;
+
+    if (job.status === "completed") {
+      if (e > 0) {
+        toast.error(`XML: ${f} obtenidos, ${s} omitidos, ${e} errores`);
+      } else {
+        toast.success(`XML: ${f} obtenidos, ${s} omitidos`);
+      }
+    } else if (job.status === "failed") {
+      toast.error(job.error ?? "Error al obtener XMLs");
+    }
+  }, [job, jobStatus.isTerminal, toast]);
   const meta = (job?.meta ?? {}) as Record<string, unknown>;
   const etaSeconds = typeof meta.etaSeconds === "number" ? meta.etaSeconds : null;
   const fetched = typeof meta.fetched === "number" ? meta.fetched : 0;
