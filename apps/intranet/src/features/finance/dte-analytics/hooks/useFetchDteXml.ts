@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
 import { fetchDteXml, fetchDteXmlByPeriod } from "../api";
 import { dteAnalyticsKeys } from "../queries";
 
@@ -43,11 +44,16 @@ export function useDteXmlJobStatus(enabled = true) {
     query.data?.status === "failed" ||
     query.data?.status === "cancelled";
 
-  // Invalidate DTE data when job completes
-  if (isTerminal && query.data) {
-    void queryClient.invalidateQueries({ queryKey: ["dte-analytics", "sales"] });
-    void queryClient.invalidateQueries({ queryKey: ["dte-analytics", "purchases"] });
-  }
+  const invalidatedJobRef = useRef<null | string>(null);
+
+  useEffect(() => {
+    if (!isTerminal || !query.data?.id) return;
+    if (invalidatedJobRef.current === query.data.id) return;
+    invalidatedJobRef.current = query.data.id;
+
+    // Refresh all DTE data (details tables + line items)
+    void queryClient.invalidateQueries({ queryKey: ["dte-analytics"] });
+  }, [isTerminal, query.data?.id, queryClient]);
 
   return { ...query, isRunning, isTerminal };
 }

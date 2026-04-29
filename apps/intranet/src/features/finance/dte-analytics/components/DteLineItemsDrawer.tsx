@@ -49,13 +49,15 @@ function LineItemCard({ item }: { item: DTELineItem }) {
 export function DteLineItemsDrawer({ detail, isOpen, onClose }: DteLineItemsDrawerProps) {
   const fetchXmlMutation = useFetchDteXml();
 
+  const fetchSucceeded = fetchXmlMutation.isSuccess && (fetchXmlMutation.data?.fetched ?? 0) > 0;
+
   const lineItemsQuery = useQuery({
     ...dteAnalyticsKeys.lineItems(detail?.id ?? "", detail?.direction ?? "sale"),
-    enabled: isOpen && !!detail && detail.lineItemsCount > 0,
+    enabled: isOpen && !!detail && (detail.lineItemsCount > 0 || fetchSucceeded),
   });
 
   const lineItems = lineItemsQuery.data ?? [];
-  const hasItems = detail && detail.lineItemsCount > 0;
+  const hasItems = (detail && detail.lineItemsCount > 0) || fetchSucceeded;
   const isLoading = lineItemsQuery.isLoading && hasItems;
 
   const drawerTitle = detail ? `Folio ${detail.folio} — Detalle XML` : "Detalle XML";
