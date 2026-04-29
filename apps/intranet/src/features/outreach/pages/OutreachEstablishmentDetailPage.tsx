@@ -1,4 +1,4 @@
-import { Button, Card, Chip, Spinner } from "@heroui/react";
+import { Button, Card, Checkbox, Chip, Spinner } from "@heroui/react";
 import { Link, useParams } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { useState } from "react";
@@ -313,16 +313,15 @@ export function OutreachEstablishmentDetailPage() {
                 value={contactDraft.telefono}
                 onValueChange={(v) => setContactDraft((d) => ({ ...d, telefono: v }))}
               />
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={contactDraft.esPrincipal}
-                  onChange={(ev) =>
-                    setContactDraft((d) => ({ ...d, esPrincipal: ev.target.checked }))
-                  }
-                />
-                Contacto principal
-              </label>
+              <Checkbox
+                isSelected={contactDraft.esPrincipal}
+                onChange={(v) => setContactDraft((d) => ({ ...d, esPrincipal: v }))}
+              >
+                <Checkbox.Control>
+                  <Checkbox.Indicator />
+                </Checkbox.Control>
+                <Checkbox.Content>Contacto principal</Checkbox.Content>
+              </Checkbox>
               <div className="md:col-span-2">
                 <Button type="submit" variant="primary" size="sm">
                   Guardar contacto

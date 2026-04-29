@@ -1,4 +1,4 @@
-import { Button, Card, Chip, Spinner, Table } from "@heroui/react";
+import { Button, Card, Checkbox, Chip, Spinner, Table } from "@heroui/react";
 import { Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import dayjs from "dayjs";
@@ -93,26 +93,12 @@ export function OutreachEstablishmentsPage() {
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / pageSize)) : 1;
 
-  const toggleRow = (rbd: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(rbd)) next.delete(rbd);
-      else next.add(rbd);
-      return next;
-    });
-  };
-
-  const togglePage = () => {
-    if (!data) return;
-    const allOnPage = data.items.every((i) => selected.has(i.rbd));
-    setSelected((prev) => {
-      const next = new Set(prev);
-      for (const i of data.items) {
-        if (allOnPage) next.delete(i.rbd);
-        else next.add(i.rbd);
-      }
-      return next;
-    });
+  const onSelectionChange = (keys: "all" | Set<unknown>) => {
+    if (keys === "all") {
+      setSelected(new Set(data?.items.map((i) => i.rbd) ?? []));
+      return;
+    }
+    setSelected(new Set(Array.from(keys, (k) => String(k))));
   };
 
   const handleBulkEstado = async (newEstado: OutreachStatus) => {
@@ -184,14 +170,12 @@ export function OutreachEstablishmentsPage() {
               options={FUENTE_OPTIONS}
             />
           </div>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={soloConEmail}
-              onChange={(e) => setSoloConEmail(e.target.checked)}
-            />
-            Solo con email
-          </label>
+          <Checkbox isSelected={soloConEmail} onChange={setSoloConEmail}>
+            <Checkbox.Control>
+              <Checkbox.Indicator />
+            </Checkbox.Control>
+            <Checkbox.Content>Solo con email</Checkbox.Content>
+          </Checkbox>
 
           {selected.size > 0 && (
             <div className="flex flex-wrap items-center gap-2 rounded-medium bg-default-100 p-3">
@@ -219,17 +203,13 @@ export function OutreachEstablishmentsPage() {
           <Card.Content className="p-0">
             <Table>
               <Table.ScrollContainer>
-                <Table.Content aria-label="Establecimientos">
+                <Table.Content
+                  aria-label="Establecimientos"
+                  selectionMode="multiple"
+                  selectedKeys={selected}
+                  onSelectionChange={onSelectionChange as never}
+                >
                   <Table.Header>
-                    <Table.Column>
-                      <input
-                        type="checkbox"
-                        checked={
-                          data.items.length > 0 && data.items.every((i) => selected.has(i.rbd))
-                        }
-                        onChange={togglePage}
-                      />
-                    </Table.Column>
                     <Table.Column isRowHeader>Nombre</Table.Column>
                     <Table.Column>Tipo</Table.Column>
                     <Table.Column>Comuna</Table.Column>
@@ -242,13 +222,6 @@ export function OutreachEstablishmentsPage() {
                   <Table.Body items={data.items}>
                     {(it) => (
                       <Table.Row id={it.rbd}>
-                        <Table.Cell>
-                          <input
-                            type="checkbox"
-                            checked={selected.has(it.rbd)}
-                            onChange={() => toggleRow(it.rbd)}
-                          />
-                        </Table.Cell>
                         <Table.Cell>
                           <Link
                             to="/outreach/establecimientos/$rbd"

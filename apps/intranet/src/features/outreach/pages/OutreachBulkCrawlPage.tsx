@@ -1,4 +1,4 @@
-import { Button, Card, Chip } from "@heroui/react";
+import { Button, Card, Checkbox, Chip, ProgressBar } from "@heroui/react";
 import { useState } from "react";
 import type {
   OutreachProspectSource,
@@ -83,30 +83,24 @@ export function OutreachBulkCrawlPage() {
             value={limit}
             onValueChange={(v) => setLimit(Number.parseInt(v || "20", 10))}
           />
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={soloSinEmail}
-              onChange={(e) => setSoloSinEmail(e.target.checked)}
-            />
-            Solo sin email
-          </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={soloConWebsite}
-              onChange={(e) => setSoloConWebsite(e.target.checked)}
-            />
-            Solo con website
-          </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={saltarRecientes}
-              onChange={(e) => setSaltarRecientes(e.target.checked)}
-            />
-            Saltar crawled últimos 7d
-          </label>
+          <Checkbox isSelected={soloSinEmail} onChange={setSoloSinEmail}>
+            <Checkbox.Control>
+              <Checkbox.Indicator />
+            </Checkbox.Control>
+            <Checkbox.Content>Solo sin email</Checkbox.Content>
+          </Checkbox>
+          <Checkbox isSelected={soloConWebsite} onChange={setSoloConWebsite}>
+            <Checkbox.Control>
+              <Checkbox.Indicator />
+            </Checkbox.Control>
+            <Checkbox.Content>Solo con website</Checkbox.Content>
+          </Checkbox>
+          <Checkbox isSelected={saltarRecientes} onChange={setSaltarRecientes}>
+            <Checkbox.Control>
+              <Checkbox.Indicator />
+            </Checkbox.Control>
+            <Checkbox.Content>Saltar crawled últimos 7d</Checkbox.Content>
+          </Checkbox>
         </Card.Content>
       </Card>
 
@@ -148,9 +142,15 @@ export function OutreachBulkCrawlPage() {
                 {status.data.status}
               </Chip>
             </div>
-            <div className="h-2 w-full overflow-hidden rounded bg-default-200">
-              <div className="h-full bg-primary transition-all" style={{ width: `${pct}%` }} />
-            </div>
+            <ProgressBar
+              value={status.data.progress}
+              maxValue={Math.max(1, status.data.total)}
+              className="w-full"
+            >
+              <ProgressBar.Track>
+                <ProgressBar.Fill />
+              </ProgressBar.Track>
+            </ProgressBar>
             {status.data.error && <p className="text-danger text-sm">Error: {status.data.error}</p>}
             {status.data.result && (
               <div className="grid grid-cols-2 gap-2 text-sm md:grid-cols-4">

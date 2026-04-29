@@ -1,4 +1,4 @@
-import { Card, Chip, Spinner } from "@heroui/react";
+import { Card, Chip, Spinner, Table } from "@heroui/react";
 import { Link } from "@tanstack/react-router";
 import type { OutreachProspectType, OutreachStatus } from "@finanzas/orpc-contracts/outreach";
 import { useDashboard } from "../hooks/useOutreach";
@@ -203,32 +203,28 @@ function TipoEstadoMatrix({
   for (const d of data) lookup.set(`${d.tipo}|${d.estado}`, d.count);
 
   return (
-    <table className="w-full text-xs">
-      <thead>
-        <tr>
-          <th className="p-1 text-left font-medium text-default-500">Tipo</th>
-          {estados.map((e) => (
-            <th key={e} className="p-1 text-right font-medium text-default-500">
-              {ESTADO_LABELS[e].slice(0, 6)}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {tipos.map((t) => (
-          <tr key={t} className="border-default-200 border-t">
-            <td className="p-1 font-medium">{TIPO_LABELS[t] ?? t}</td>
-            {estados.map((e) => {
-              const v = lookup.get(`${t}|${e}`) ?? 0;
-              return (
-                <td key={e} className="p-1 text-right font-mono">
-                  {v || "·"}
-                </td>
-              );
-            })}
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <Table>
+      <Table.ScrollContainer>
+        <Table.Content aria-label="Matriz tipo × estado">
+          <Table.Header>
+            <Table.Column isRowHeader>Tipo</Table.Column>
+            {estados.map((e) => (
+              <Table.Column key={e}>{ESTADO_LABELS[e].slice(0, 6)}</Table.Column>
+            ))}
+          </Table.Header>
+          <Table.Body items={tipos.map((t) => ({ id: t, tipo: t }))}>
+            {(row) => (
+              <Table.Row id={row.id}>
+                <Table.Cell>{TIPO_LABELS[row.tipo] ?? row.tipo}</Table.Cell>
+                {estados.map((e) => {
+                  const v = lookup.get(`${row.tipo}|${e}`) ?? 0;
+                  return <Table.Cell key={e}>{v || "·"}</Table.Cell>;
+                })}
+              </Table.Row>
+            )}
+          </Table.Body>
+        </Table.Content>
+      </Table.ScrollContainer>
+    </Table>
   );
 }
