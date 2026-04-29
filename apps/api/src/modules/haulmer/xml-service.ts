@@ -73,8 +73,17 @@ export interface FetchXmlLineItemsResult {
   }>;
 }
 
+interface FetchXmlProgressInfo {
+  processed: number;
+  total: number;
+  message: string;
+  fetched: number;
+  skipped: number;
+  errors: number;
+}
+
 interface FetchXmlOptions {
-  onProgress?: (processed: number, total: number, message: string) => void;
+  onProgress?: (info: FetchXmlProgressInfo) => void;
   shouldCancel?: () => boolean;
 }
 
@@ -197,7 +206,14 @@ async function fetchXmlLineItemsBatch(
       result.details.push({ folio: "?", documentType: 0, lineItemsCount: 0, status: "error" });
     }
 
-    options.onProgress?.(i + 1, total, `${i + 1}/${total} — ${result.fetched} obtenidos`);
+    options.onProgress?.({
+      processed: i + 1,
+      total,
+      message: `${i + 1}/${total} — ${result.fetched} obtenidos`,
+      fetched: result.fetched,
+      skipped: result.skipped,
+      errors: result.errors.length,
+    });
   }
 
   return result;
@@ -247,29 +263,29 @@ export function startXmlFetchJob(
     errors: 0,
   });
 
-  let phaseStartedAt = Date.now();
+  const phaseStartedAt = Date.now();
 
   void (async () => {
     try {
       const result = await fetchXmlLineItemsBatch(dteIds, direction, config, {
         shouldCancel: () => isJobCancelled(jobId),
-        onProgress: (processed, total, message) => {
+        onProgress: (info) => {
           const elapsedMs = Date.now() - phaseStartedAt;
           const elapsedSeconds = Math.max(0, elapsedMs / 1000);
-          const remaining = total - processed;
+          const remaining = info.total - info.processed;
           const etaSeconds =
-            processed > 0 && remaining > 0 && elapsedSeconds >= 2
-              ? Math.round((elapsedSeconds / processed) * remaining)
+            info.processed > 0 && remaining > 0 && elapsedSeconds >= 2
+              ? Math.round((elapsedSeconds / info.processed) * remaining)
               : null;
 
-          updateJobProgress(jobId, processed, message, {
+          updateJobProgress(jobId, info.processed, info.message, {
             direction,
-            fetched: result.fetched,
-            skipped: result.skipped,
-            errors: result.errors.length,
+            fetched: info.fetched,
+            skipped: info.skipped,
+            errors: info.errors,
             elapsedSeconds: Math.round(elapsedSeconds),
             etaSeconds,
-          }, total);
+          }, info.total);
         },
       });
 
