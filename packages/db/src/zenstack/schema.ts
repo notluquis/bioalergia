@@ -10402,11 +10402,23 @@ export class SchemaType implements SchemaDef {
                     name: "rbd",
                     type: "String",
                     id: true,
-                    attributes: [{ name: "@id" }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] }] as readonly AttributeApplication[]
+                    attributes: [{ name: "@id" }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(64) }] }] as readonly AttributeApplication[]
                 },
                 nombre: {
                     name: "nombre",
                     type: "String"
+                },
+                tipo: {
+                    name: "tipo",
+                    type: "OutreachProspectType",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("COLEGIO") }] }] as readonly AttributeApplication[],
+                    default: "COLEGIO" as FieldDefault
+                },
+                fuente: {
+                    name: "fuente",
+                    type: "OutreachProspectSource",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("MINEDUC") }] }] as readonly AttributeApplication[],
+                    default: "MINEDUC" as FieldDefault
                 },
                 dependencia: {
                     name: "dependencia",
@@ -10417,6 +10429,11 @@ export class SchemaType implements SchemaDef {
                 comuna: {
                     name: "comuna",
                     type: "String"
+                },
+                ciudad: {
+                    name: "ciudad",
+                    type: "String",
+                    optional: true
                 },
                 region: {
                     name: "region",
@@ -10456,6 +10473,88 @@ export class SchemaType implements SchemaDef {
                     type: "Boolean",
                     attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }] as readonly AttributeApplication[],
                     default: false as FieldDefault
+                },
+                googlePlaceId: {
+                    name: "googlePlaceId",
+                    type: "String",
+                    unique: true,
+                    optional: true,
+                    attributes: [{ name: "@unique" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("google_place_id") }] }] as readonly AttributeApplication[]
+                },
+                categoria: {
+                    name: "categoria",
+                    type: "String",
+                    optional: true
+                },
+                dominio: {
+                    name: "dominio",
+                    type: "String",
+                    optional: true
+                },
+                rating: {
+                    name: "rating",
+                    type: "Float",
+                    optional: true
+                },
+                totalReviews: {
+                    name: "totalReviews",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("total_reviews") }] }] as readonly AttributeApplication[]
+                },
+                estadoNegocio: {
+                    name: "estadoNegocio",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("estado_negocio") }] }] as readonly AttributeApplication[]
+                },
+                linkedinUrl: {
+                    name: "linkedinUrl",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("linkedin_url") }] }] as readonly AttributeApplication[]
+                },
+                apolloOrgId: {
+                    name: "apolloOrgId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("apollo_org_id") }] }] as readonly AttributeApplication[]
+                },
+                apolloLastFetchedAt: {
+                    name: "apolloLastFetchedAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("apollo_last_fetched_at") }] }] as readonly AttributeApplication[]
+                },
+                hunterLastFetchedAt: {
+                    name: "hunterLastFetchedAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("hunter_last_fetched_at") }] }] as readonly AttributeApplication[]
+                },
+                hunterEmailPattern: {
+                    name: "hunterEmailPattern",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("hunter_email_pattern") }] }] as readonly AttributeApplication[]
+                },
+                crawledAt: {
+                    name: "crawledAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("crawled_at") }] }] as readonly AttributeApplication[]
+                },
+                crawlSuccess: {
+                    name: "crawlSuccess",
+                    type: "Boolean",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("crawl_success") }] }] as readonly AttributeApplication[],
+                    default: false as FieldDefault
+                },
+                score: {
+                    name: "score",
+                    type: "Int",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }] as readonly AttributeApplication[],
+                    default: 0 as FieldDefault
                 },
                 websiteUrl: {
                     name: "websiteUrl",
@@ -10551,6 +10650,10 @@ export class SchemaType implements SchemaDef {
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("comuna")]) }] },
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("OutreachPriority", [ExpressionUtils.field("prioridad")]) }] },
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Boolean", [ExpressionUtils.field("activo")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("OutreachProspectType", [ExpressionUtils.field("tipo")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("OutreachProspectSource", [ExpressionUtils.field("fuente")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("dominio")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("score")]) }] },
                 { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
                 { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
                 { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
@@ -10558,7 +10661,8 @@ export class SchemaType implements SchemaDef {
             ] as readonly AttributeApplication[],
             idFields: ["rbd"],
             uniqueFields: {
-                rbd: { type: "String" }
+                rbd: { type: "String" },
+                googlePlaceId: { type: "String" }
             }
         },
         OutreachContact: {
@@ -10574,7 +10678,7 @@ export class SchemaType implements SchemaDef {
                 establecimientoRbd: {
                     name: "establecimientoRbd",
                     type: "String",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("establecimiento_rbd") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] }] as readonly AttributeApplication[],
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("establecimiento_rbd") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(64) }] }] as readonly AttributeApplication[],
                     foreignKeyFor: [
                         "establishment"
                     ] as readonly string[]
@@ -10666,7 +10770,7 @@ export class SchemaType implements SchemaDef {
                 establecimientoRbd: {
                     name: "establecimientoRbd",
                     type: "String",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("establecimiento_rbd") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] }] as readonly AttributeApplication[],
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("establecimiento_rbd") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(64) }] }] as readonly AttributeApplication[],
                     foreignKeyFor: [
                         "establishment"
                     ] as readonly string[]
@@ -10913,7 +11017,7 @@ export class SchemaType implements SchemaDef {
                 establecimientoRbd: {
                     name: "establecimientoRbd",
                     type: "String",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("establecimiento_rbd") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] }] as readonly AttributeApplication[],
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("establecimiento_rbd") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(64) }] }] as readonly AttributeApplication[],
                     foreignKeyFor: [
                         "establishment"
                     ] as readonly string[]
@@ -11609,6 +11713,28 @@ export class SchemaType implements SchemaDef {
                 ALTA: "ALTA",
                 MEDIA: "MEDIA",
                 BAJA: "BAJA"
+            }
+        },
+        OutreachProspectType: {
+            name: "OutreachProspectType",
+            values: {
+                COLEGIO: "COLEGIO",
+                EMPRESA: "EMPRESA",
+                MUNICIPIO: "MUNICIPIO",
+                INSTITUCION: "INSTITUCION",
+                UNIVERSIDAD: "UNIVERSIDAD",
+                OTRO: "OTRO"
+            }
+        },
+        OutreachProspectSource: {
+            name: "OutreachProspectSource",
+            values: {
+                MINEDUC: "MINEDUC",
+                GOOGLE_PLACES: "GOOGLE_PLACES",
+                CRAWLER: "CRAWLER",
+                APOLLO: "APOLLO",
+                HUNTER: "HUNTER",
+                MANUAL: "MANUAL"
             }
         },
         OutreachInteractionType: {

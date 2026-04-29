@@ -55,6 +55,7 @@
     "argon2": "^0.44.0",
     "baileys": "7.0.0-rc.9",
     "bcryptjs": "^3.0.3",
+    "cheerio": "^1.2.0",
     "dayjs": "^1.11.20",
     "decimal.js": "^10.6.0",
     "exceljs": "^4.4.0",

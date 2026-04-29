@@ -62,13 +62,36 @@ export const outreachDeliveryStatusSchema = z.enum([
 ]);
 export type OutreachDeliveryStatus = z.infer<typeof outreachDeliveryStatusSchema>;
 
+export const outreachProspectTypeSchema = z.enum([
+  "COLEGIO",
+  "EMPRESA",
+  "MUNICIPIO",
+  "INSTITUCION",
+  "UNIVERSIDAD",
+  "OTRO",
+]);
+export type OutreachProspectType = z.infer<typeof outreachProspectTypeSchema>;
+
+export const outreachProspectSourceSchema = z.enum([
+  "MINEDUC",
+  "GOOGLE_PLACES",
+  "CRAWLER",
+  "APOLLO",
+  "HUNTER",
+  "MANUAL",
+]);
+export type OutreachProspectSource = z.infer<typeof outreachProspectSourceSchema>;
+
 // ── Entities ─────────────────────────────────────────────────────────────────
 
 export const outreachEstablishmentSchema = z.object({
   rbd: z.string(),
   nombre: z.string(),
+  tipo: outreachProspectTypeSchema,
+  fuente: outreachProspectSourceSchema,
   dependencia: outreachDependenciaSchema,
   comuna: z.string(),
+  ciudad: z.string().nullable(),
   region: z.string(),
   direccion: z.string().nullable(),
   telefonoMineduc: z.string().nullable(),
@@ -76,6 +99,20 @@ export const outreachEstablishmentSchema = z.object({
   directorMineduc: z.string().nullable(),
   matriculaTotal: z.number().int().nullable(),
   rural: z.boolean(),
+  googlePlaceId: z.string().nullable(),
+  categoria: z.string().nullable(),
+  dominio: z.string().nullable(),
+  rating: z.number().nullable(),
+  totalReviews: z.number().int().nullable(),
+  estadoNegocio: z.string().nullable(),
+  linkedinUrl: z.string().nullable(),
+  apolloOrgId: z.string().nullable(),
+  apolloLastFetchedAt: z.coerce.date().nullable(),
+  hunterLastFetchedAt: z.coerce.date().nullable(),
+  hunterEmailPattern: z.string().nullable(),
+  crawledAt: z.coerce.date().nullable(),
+  crawlSuccess: z.boolean(),
+  score: z.number().int(),
   websiteUrl: z.string().nullable(),
   emailsAdicionales: z.array(z.string()),
   telefonosAdicionales: z.array(z.string()),
@@ -193,16 +230,27 @@ export type OutreachImportLog = z.infer<typeof outreachImportLogSchema>;
 
 export const listEstablishmentsInputSchema = z.object({
   search: z.string().optional(),
+  tipos: z.array(outreachProspectTypeSchema).optional(),
+  fuentes: z.array(outreachProspectSourceSchema).optional(),
   estados: z.array(outreachStatusSchema).optional(),
   dependencias: z.array(outreachDependenciaSchema).optional(),
   comunas: z.array(z.string()).optional(),
+  ciudades: z.array(z.string()).optional(),
   prioridades: z.array(outreachPrioritySchema).optional(),
   soloConEmail: z.boolean().optional(),
   soloActivos: z.boolean().optional(),
   page: z.number().int().min(1).default(1),
   pageSize: z.number().int().min(1).max(200).default(50),
   sortBy: z
-    .enum(["nombre", "comuna", "estado", "prioridad", "ultimoContactoAt", "matriculaTotal"])
+    .enum([
+      "nombre",
+      "comuna",
+      "estado",
+      "prioridad",
+      "ultimoContactoAt",
+      "matriculaTotal",
+      "score",
+    ])
     .default("nombre"),
   sortDir: z.enum(["asc", "desc"]).default("asc"),
 });
@@ -315,6 +363,89 @@ export const recordDeliveryResultInputSchema = z.object({
   deliveryId: z.number().int().positive(),
   status: z.enum(["ENVIADO", "ERROR"]),
   errorMensaje: z.string().nullable().optional(),
+});
+
+// ── Discovery / enrichment inputs ───────────────────────────────────────────
+
+export const zonaSchema = z.object({
+  ciudad: z.string(),
+  nombre: z.string(),
+  lat: z.number(),
+  lng: z.number(),
+  radio: z.number().int(),
+});
+export type Zona = z.infer<typeof zonaSchema>;
+
+export const discoverGooglePlacesInputSchema = z.object({
+  zonaIndex: z.number().int().min(0).optional(),
+  customZona: zonaSchema.optional(),
+  ciudad: z.string().optional(),
+  region: z.string().optional(),
+  type: z.string().optional(),
+  textQuery: z.string().optional(),
+  maxResults: z.number().int().min(1).max(60).default(20),
+});
+
+export const crawlProspectInputSchema = z.object({ rbd: z.string() });
+export const apolloEnrichInputSchema = z.object({ rbd: z.string() });
+export const hunterDomainInputSchema = z.object({ rbd: z.string() });
+export const hunterVerifyEmailInputSchema = z.object({ email: z.string().email() });
+export const recomputeScoreInputSchema = z.object({ rbd: z.string() });
+
+export const discoverGooglePlacesResponseSchema = z.object({
+  found: z.number().int(),
+  inserted: z.number().int(),
+  updated: z.number().int(),
+  errors: z.number().int(),
+  prospectIds: z.array(z.string()),
+});
+
+export const crawlProspectResponseSchema = z.object({
+  url: z.string(),
+  emails: z.array(z.string()),
+  phones: z.array(z.string()),
+  social: z.object({
+    linkedin: z.string().optional(),
+    instagram: z.string().optional(),
+    facebook: z.string().optional(),
+    twitter: z.string().optional(),
+  }),
+  rrhhSnippets: z.array(z.string()),
+  success: z.boolean(),
+  pagesVisited: z.number().int(),
+  error: z.string().nullable(),
+});
+
+export const apolloEnrichResponseSchema = z.object({
+  contactsCreated: z.number().int(),
+  organizationName: z.string().nullable(),
+  apolloOrgId: z.string().nullable(),
+  peopleFound: z.number().int(),
+});
+
+export const hunterDomainResponseSchema = z.object({
+  domain: z.string(),
+  pattern: z.string().nullable(),
+  organization: z.string().nullable(),
+  contactsCreated: z.number().int(),
+  emailsFound: z.number().int(),
+});
+
+export const hunterVerifyResponseSchema = z.object({
+  email: z.string(),
+  result: z.string(),
+  score: z.number(),
+  status: z.string(),
+  smtp_check: z.boolean(),
+  disposable: z.boolean(),
+  webmail: z.boolean(),
+});
+
+export const scoreResponseSchema = z.object({ score: z.number().int() });
+
+export const zonasResponseSchema = z.object({
+  zonas: z.array(zonaSchema),
+  categorias: z.array(z.string()),
 });
 
 // ── Import inputs ───────────────────────────────────────────────────────────
@@ -512,6 +643,36 @@ export const outreachContract = {
     .route({ method: "POST", path: "/import/mineduc", tags: ["Outreach"] })
     .input(importMineducInputSchema)
     .output(importMineducResponseSchema),
+
+  // Descubrimiento + enriquecimiento
+  zonas: oc
+    .route({ method: "GET", path: "/zonas", tags: ["Outreach"] })
+    .input(z.object({}).optional())
+    .output(zonasResponseSchema),
+  discoverGooglePlaces: oc
+    .route({ method: "POST", path: "/discover/google-places", tags: ["Outreach"] })
+    .input(discoverGooglePlacesInputSchema)
+    .output(discoverGooglePlacesResponseSchema),
+  crawlProspect: oc
+    .route({ method: "POST", path: "/enrich/crawl", tags: ["Outreach"] })
+    .input(crawlProspectInputSchema)
+    .output(crawlProspectResponseSchema),
+  apolloEnrich: oc
+    .route({ method: "POST", path: "/enrich/apollo", tags: ["Outreach"] })
+    .input(apolloEnrichInputSchema)
+    .output(apolloEnrichResponseSchema),
+  hunterDomain: oc
+    .route({ method: "POST", path: "/enrich/hunter-domain", tags: ["Outreach"] })
+    .input(hunterDomainInputSchema)
+    .output(hunterDomainResponseSchema),
+  hunterVerifyEmail: oc
+    .route({ method: "POST", path: "/enrich/hunter-verify", tags: ["Outreach"] })
+    .input(hunterVerifyEmailInputSchema)
+    .output(hunterVerifyResponseSchema),
+  recomputeScore: oc
+    .route({ method: "POST", path: "/enrich/recompute-score", tags: ["Outreach"] })
+    .input(recomputeScoreInputSchema)
+    .output(scoreResponseSchema),
 
   // Dashboard
   dashboard: oc

@@ -9,10 +9,14 @@ import type {
 } from "@finanzas/orpc-contracts/outreach";
 import { Field, NativeSelect, TextAreaInput, TextInput } from "../components/FormField";
 import {
+  useApolloEnrich,
+  useCrawlProspect,
   useCreateInteraction,
   useDeleteContact,
   useDeleteInteraction,
   useEstablishment,
+  useHunterDomain,
+  useRecomputeScore,
   useUpdateEstablishment,
   useUpsertContact,
 } from "../hooks/useOutreach";
@@ -52,6 +56,10 @@ export function OutreachEstablishmentDetailPage() {
   const deleteContact = useDeleteContact();
   const createInter = useCreateInteraction();
   const deleteInter = useDeleteInteraction();
+  const crawl = useCrawlProspect();
+  const apollo = useApolloEnrich();
+  const hunter = useHunterDomain();
+  const recompute = useRecomputeScore();
 
   const [notas, setNotas] = useState<string | null>(null);
   const [website, setWebsite] = useState<string | null>(null);
@@ -187,6 +195,102 @@ export function OutreachEstablishmentDetailPage() {
           </Card.Content>
         </Card>
       </div>
+
+      <Card>
+        <Card.Header className="flex items-center justify-between">
+          <div>
+            <Card.Title>Enriquecimiento</Card.Title>
+            <Card.Description>
+              Score: <strong>{e.score}</strong> · Tipo: {e.tipo} · Fuente: {e.fuente}
+              {e.dominio && <> · Dominio: {e.dominio}</>}
+            </Card.Description>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              size="sm"
+              variant="secondary"
+              isDisabled={!e.websiteUrl || crawl.isPending}
+              onPress={() => crawl.mutate(e.rbd)}
+            >
+              {crawl.isPending ? "Crawling..." : "Crawler website"}
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              isDisabled={!e.dominio || apollo.isPending}
+              onPress={() => apollo.mutate(e.rbd)}
+            >
+              {apollo.isPending ? "Apollo..." : "Apollo enrich"}
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              isDisabled={!e.dominio || hunter.isPending}
+              onPress={() => hunter.mutate(e.rbd)}
+            >
+              {hunter.isPending ? "Hunter..." : "Hunter domain"}
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              isDisabled={recompute.isPending}
+              onPress={() => recompute.mutate(e.rbd)}
+            >
+              Recalc score
+            </Button>
+          </div>
+        </Card.Header>
+        <Card.Content className="space-y-2 p-4 text-xs">
+          {e.crawledAt && (
+            <p>
+              Crawled: {new Date(e.crawledAt).toLocaleString("es-CL")} ·{" "}
+              {e.crawlSuccess ? "exitoso" : "sin resultados"}
+            </p>
+          )}
+          {e.apolloLastFetchedAt && (
+            <p>Apollo: {new Date(e.apolloLastFetchedAt).toLocaleString("es-CL")}</p>
+          )}
+          {e.hunterLastFetchedAt && (
+            <p>
+              Hunter: {new Date(e.hunterLastFetchedAt).toLocaleString("es-CL")}
+              {e.hunterEmailPattern && <> · Patrón: {e.hunterEmailPattern}</>}
+            </p>
+          )}
+          {crawl.data && (
+            <pre className="rounded bg-default-100 p-2">
+              {JSON.stringify(
+                {
+                  emails: crawl.data.emails.length,
+                  phones: crawl.data.phones.length,
+                  social: Object.keys(crawl.data.social),
+                  pages: crawl.data.pagesVisited,
+                },
+                null,
+                2
+              )}
+            </pre>
+          )}
+          {apollo.data && (
+            <p>
+              Apollo: +{apollo.data.contactsCreated} contactos ({apollo.data.peopleFound}{" "}
+              encontrados)
+            </p>
+          )}
+          {hunter.data && (
+            <p>
+              Hunter: +{hunter.data.contactsCreated} contactos · patrón {hunter.data.pattern ?? "?"}
+            </p>
+          )}
+          {(crawl.isError || apollo.isError || hunter.isError) && (
+            <p className="text-danger">
+              {(crawl.error as Error)?.message ??
+                (apollo.error as Error)?.message ??
+                (hunter.error as Error)?.message ??
+                "Error"}
+            </p>
+          )}
+        </Card.Content>
+      </Card>
 
       <Card>
         <Card.Header className="flex items-center justify-between">

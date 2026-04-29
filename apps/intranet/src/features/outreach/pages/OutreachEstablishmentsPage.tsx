@@ -2,7 +2,12 @@ import { Button, Card, Chip, Spinner, Table } from "@heroui/react";
 import { Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import dayjs from "dayjs";
-import type { OutreachDependencia, OutreachStatus } from "@finanzas/orpc-contracts/outreach";
+import type {
+  OutreachDependencia,
+  OutreachProspectSource,
+  OutreachProspectType,
+  OutreachStatus,
+} from "@finanzas/orpc-contracts/outreach";
 import { Field, NativeSelect, TextInput } from "../components/FormField";
 import { useBulkUpdate, useEstablishments, useFiltersMeta } from "../hooks/useOutreach";
 import {
@@ -40,6 +45,8 @@ export function OutreachEstablishmentsPage() {
   const [search, setSearch] = useState("");
   const [estado, setEstado] = useState<OutreachStatus | "">("");
   const [dep, setDep] = useState<OutreachDependencia | "">("");
+  const [tipo, setTipo] = useState<OutreachProspectType | "">("");
+  const [fuente, setFuente] = useState<OutreachProspectSource | "">("");
   const [comuna, setComuna] = useState("");
   const [soloConEmail, setSoloConEmail] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -53,10 +60,12 @@ export function OutreachEstablishmentsPage() {
       search: search.trim() || undefined,
       estados: estado ? [estado] : undefined,
       dependencias: dep ? [dep] : undefined,
+      tipos: tipo ? [tipo] : undefined,
+      fuentes: fuente ? [fuente] : undefined,
       comunas: comuna ? [comuna] : undefined,
       soloConEmail: soloConEmail || undefined,
     }),
-    [page, search, estado, dep, comuna, soloConEmail]
+    [page, search, estado, dep, tipo, fuente, comuna, soloConEmail]
   );
 
   const { data, isLoading } = useEstablishments(params);
@@ -145,6 +154,34 @@ export function OutreachEstablishmentsPage() {
                     {c}
                   </option>
                 ))}
+              </NativeSelect>
+            </Field>
+            <Field label="Tipo">
+              <NativeSelect
+                value={tipo}
+                onChange={(e) => setTipo(e.target.value as OutreachProspectType | "")}
+              >
+                <option value="">Todos</option>
+                <option value="COLEGIO">Colegio</option>
+                <option value="EMPRESA">Empresa</option>
+                <option value="MUNICIPIO">Municipio</option>
+                <option value="INSTITUCION">Institución</option>
+                <option value="UNIVERSIDAD">Universidad</option>
+                <option value="OTRO">Otro</option>
+              </NativeSelect>
+            </Field>
+            <Field label="Fuente">
+              <NativeSelect
+                value={fuente}
+                onChange={(e) => setFuente(e.target.value as OutreachProspectSource | "")}
+              >
+                <option value="">Todas</option>
+                <option value="MINEDUC">MINEDUC</option>
+                <option value="GOOGLE_PLACES">Google Places</option>
+                <option value="CRAWLER">Crawler</option>
+                <option value="APOLLO">Apollo</option>
+                <option value="HUNTER">Hunter</option>
+                <option value="MANUAL">Manual</option>
               </NativeSelect>
             </Field>
             <label className="flex items-end gap-2 text-sm">

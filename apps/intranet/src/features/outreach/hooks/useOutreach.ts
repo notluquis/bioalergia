@@ -196,6 +196,71 @@ export function useImportMineduc() {
   });
 }
 
+export function useZonas() {
+  return useQuery({
+    queryKey: [...BASE_KEY, "zonas"],
+    queryFn: () => outreachORPCClient.zonas({}),
+  });
+}
+
+export function useDiscoverGooglePlaces() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof outreachORPCClient.discoverGooglePlaces>[0]) =>
+      outreachORPCClient.discoverGooglePlaces(input),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: [...BASE_KEY, "establishments"] });
+      void qc.invalidateQueries({ queryKey: [...BASE_KEY, "dashboard"] });
+    },
+  });
+}
+
+export function useCrawlProspect() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (rbd: string) => outreachORPCClient.crawlProspect({ rbd }),
+    onSuccess: (_, rbd) => {
+      void qc.invalidateQueries({ queryKey: [...BASE_KEY, "establishment", rbd] });
+    },
+  });
+}
+
+export function useApolloEnrich() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (rbd: string) => outreachORPCClient.apolloEnrich({ rbd }),
+    onSuccess: (_, rbd) => {
+      void qc.invalidateQueries({ queryKey: [...BASE_KEY, "establishment", rbd] });
+    },
+  });
+}
+
+export function useHunterDomain() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (rbd: string) => outreachORPCClient.hunterDomain({ rbd }),
+    onSuccess: (_, rbd) => {
+      void qc.invalidateQueries({ queryKey: [...BASE_KEY, "establishment", rbd] });
+    },
+  });
+}
+
+export function useHunterVerify() {
+  return useMutation({
+    mutationFn: (email: string) => outreachORPCClient.hunterVerifyEmail({ email }),
+  });
+}
+
+export function useRecomputeScore() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (rbd: string) => outreachORPCClient.recomputeScore({ rbd }),
+    onSuccess: (_, rbd) => {
+      void qc.invalidateQueries({ queryKey: [...BASE_KEY, "establishment", rbd] });
+    },
+  });
+}
+
 export function useNextDeliveryBatch() {
   return useMutation({
     mutationFn: (input: { campaignId: number; limit: number }) =>

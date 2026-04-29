@@ -8448,6 +8448,16 @@ export class SchemaType implements SchemaDef {
                     name: "nombre",
                     type: "String"
                 },
+                tipo: {
+                    name: "tipo",
+                    type: "OutreachProspectType",
+                    default: "COLEGIO" as FieldDefault
+                },
+                fuente: {
+                    name: "fuente",
+                    type: "OutreachProspectSource",
+                    default: "MINEDUC" as FieldDefault
+                },
                 dependencia: {
                     name: "dependencia",
                     type: "OutreachDependencia",
@@ -8456,6 +8466,11 @@ export class SchemaType implements SchemaDef {
                 comuna: {
                     name: "comuna",
                     type: "String"
+                },
+                ciudad: {
+                    name: "ciudad",
+                    type: "String",
+                    optional: true
                 },
                 region: {
                     name: "region",
@@ -8490,6 +8505,77 @@ export class SchemaType implements SchemaDef {
                     name: "rural",
                     type: "Boolean",
                     default: false as FieldDefault
+                },
+                googlePlaceId: {
+                    name: "googlePlaceId",
+                    type: "String",
+                    unique: true,
+                    optional: true
+                },
+                categoria: {
+                    name: "categoria",
+                    type: "String",
+                    optional: true
+                },
+                dominio: {
+                    name: "dominio",
+                    type: "String",
+                    optional: true
+                },
+                rating: {
+                    name: "rating",
+                    type: "Float",
+                    optional: true
+                },
+                totalReviews: {
+                    name: "totalReviews",
+                    type: "Int",
+                    optional: true
+                },
+                estadoNegocio: {
+                    name: "estadoNegocio",
+                    type: "String",
+                    optional: true
+                },
+                linkedinUrl: {
+                    name: "linkedinUrl",
+                    type: "String",
+                    optional: true
+                },
+                apolloOrgId: {
+                    name: "apolloOrgId",
+                    type: "String",
+                    optional: true
+                },
+                apolloLastFetchedAt: {
+                    name: "apolloLastFetchedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                hunterLastFetchedAt: {
+                    name: "hunterLastFetchedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                hunterEmailPattern: {
+                    name: "hunterEmailPattern",
+                    type: "String",
+                    optional: true
+                },
+                crawledAt: {
+                    name: "crawledAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                crawlSuccess: {
+                    name: "crawlSuccess",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                score: {
+                    name: "score",
+                    type: "Int",
+                    default: 0 as FieldDefault
                 },
                 websiteUrl: {
                     name: "websiteUrl",
@@ -8571,7 +8657,8 @@ export class SchemaType implements SchemaDef {
             },
             idFields: ["rbd"],
             uniqueFields: {
-                rbd: { type: "String" }
+                rbd: { type: "String" },
+                googlePlaceId: { type: "String" }
             }
         },
         OutreachContact: {
@@ -9509,6 +9596,28 @@ export class SchemaType implements SchemaDef {
                 ALTA: "ALTA",
                 MEDIA: "MEDIA",
                 BAJA: "BAJA"
+            }
+        },
+        OutreachProspectType: {
+            name: "OutreachProspectType",
+            values: {
+                COLEGIO: "COLEGIO",
+                EMPRESA: "EMPRESA",
+                MUNICIPIO: "MUNICIPIO",
+                INSTITUCION: "INSTITUCION",
+                UNIVERSIDAD: "UNIVERSIDAD",
+                OTRO: "OTRO"
+            }
+        },
+        OutreachProspectSource: {
+            name: "OutreachProspectSource",
+            values: {
+                MINEDUC: "MINEDUC",
+                GOOGLE_PLACES: "GOOGLE_PLACES",
+                CRAWLER: "CRAWLER",
+                APOLLO: "APOLLO",
+                HUNTER: "HUNTER",
+                MANUAL: "MANUAL"
             }
         },
         OutreachInteractionType: {

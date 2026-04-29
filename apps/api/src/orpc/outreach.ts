@@ -4,7 +4,20 @@ import type {
   OutreachCampaignFilters,
 } from "@finanzas/orpc-contracts/outreach";
 import {
+  apolloEnrichInputSchema,
+  apolloEnrichResponseSchema,
   bulkUpdateEstablishmentsInputSchema,
+  crawlProspectInputSchema,
+  crawlProspectResponseSchema,
+  discoverGooglePlacesInputSchema,
+  discoverGooglePlacesResponseSchema,
+  hunterDomainInputSchema,
+  hunterDomainResponseSchema,
+  hunterVerifyEmailInputSchema,
+  hunterVerifyResponseSchema,
+  recomputeScoreInputSchema,
+  scoreResponseSchema,
+  zonasResponseSchema,
   campaignDetailResponseSchema,
   campaignIdInputSchema,
   campaignPreviewResponseSchema,
@@ -44,9 +57,15 @@ import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
+import { enrichProspectWithApollo } from "../modules/outreach/apollo";
 import { buildCampaignDeliveries, selectCandidates } from "../modules/outreach/campaign-builder";
+import { discoverGooglePlaces } from "../modules/outreach/google-places";
+import { hunterEnrichProspect, verifyEmail } from "../modules/outreach/hunter";
 import { importMineducDataset } from "../modules/outreach/mineduc-importer";
+import { recomputeProspectScore } from "../modules/outreach/scoring";
 import { renderTemplate } from "../modules/outreach/template";
+import { crawlProspect as runCrawler } from "../modules/outreach/web-crawler";
+import { CATEGORIAS_GOOGLE_PLACES, ZONAS } from "../modules/outreach/zonas";
 import { SuperJSONRPCHandler } from "./superjson";
 
 configureSuperjson();
@@ -87,6 +106,9 @@ function buildEstablishmentWhere(input: z.infer<typeof listEstablishmentsInputSc
   if (input.estados?.length) where.estado = { in: input.estados };
   if (input.dependencias?.length) where.dependencia = { in: input.dependencias };
   if (input.comunas?.length) where.comuna = { in: input.comunas };
+  if (input.ciudades?.length) where.ciudad = { in: input.ciudades };
+  if (input.tipos?.length) where.tipo = { in: input.tipos };
+  if (input.fuentes?.length) where.fuente = { in: input.fuentes };
   if (input.prioridades?.length) where.prioridad = { in: input.prioridades };
   if (input.search) {
     const q = input.search.trim();
@@ -573,6 +595,99 @@ const outreachRouterBase = {
       }
       return { status: "ok" as const };
     }),
+
+  zonas: readOutreach
+    .route({ method: "GET", path: "/zonas", tags: ["Outreach"] })
+    .input(z.object({}).optional())
+    .output(zonasResponseSchema)
+    .handler(async () => ({
+      zonas: ZONAS,
+      categorias: [...CATEGORIAS_GOOGLE_PLACES],
+    })),
+
+  discoverGooglePlaces: createOutreach
+    .route({ method: "POST", path: "/discover/google-places", tags: ["Outreach"] })
+    .input(discoverGooglePlacesInputSchema)
+    .output(discoverGooglePlacesResponseSchema)
+    .handler(async ({ input }) => {
+      const zona = input.customZona ?? ZONAS[input.zonaIndex ?? 0];
+      if (!zona) throw new ORPCError("BAD_REQUEST", { message: "Zona inválida" });
+      const result = await discoverGooglePlaces({
+        lat: zona.lat,
+        lng: zona.lng,
+        radius: zona.radio,
+        type: input.type,
+        textQuery: input.textQuery,
+        ciudad: input.ciudad ?? zona.ciudad,
+        region: input.region ?? "Bío Bío",
+        maxResults: input.maxResults,
+      });
+      return result;
+    }),
+
+  crawlProspect: updateOutreach
+    .route({ method: "POST", path: "/enrich/crawl", tags: ["Outreach"] })
+    .input(crawlProspectInputSchema)
+    .output(crawlProspectResponseSchema)
+    .handler(async ({ input }) => {
+      const r = await runCrawler(input.rbd);
+      await recomputeProspectScore(input.rbd).catch(() => undefined);
+      return r;
+    }),
+
+  apolloEnrich: updateOutreach
+    .route({ method: "POST", path: "/enrich/apollo", tags: ["Outreach"] })
+    .input(apolloEnrichInputSchema)
+    .output(apolloEnrichResponseSchema)
+    .handler(async ({ input }) => {
+      const r = await enrichProspectWithApollo(input.rbd);
+      await recomputeProspectScore(input.rbd).catch(() => undefined);
+      return {
+        contactsCreated: r.contactsCreated,
+        organizationName: r.organization?.name ?? null,
+        apolloOrgId: r.organization?.id ?? null,
+        peopleFound: r.people.length,
+      };
+    }),
+
+  hunterDomain: updateOutreach
+    .route({ method: "POST", path: "/enrich/hunter-domain", tags: ["Outreach"] })
+    .input(hunterDomainInputSchema)
+    .output(hunterDomainResponseSchema)
+    .handler(async ({ input }) => {
+      const data = await hunterEnrichProspect(input.rbd);
+      await recomputeProspectScore(input.rbd).catch(() => undefined);
+      return {
+        domain: data.domain,
+        pattern: data.pattern,
+        organization: data.organization,
+        contactsCreated: data.emails.length,
+        emailsFound: data.emails.length,
+      };
+    }),
+
+  hunterVerifyEmail: updateOutreach
+    .route({ method: "POST", path: "/enrich/hunter-verify", tags: ["Outreach"] })
+    .input(hunterVerifyEmailInputSchema)
+    .output(hunterVerifyResponseSchema)
+    .handler(async ({ input }) => {
+      const r = await verifyEmail(input.email);
+      return {
+        email: r.email,
+        result: r.result,
+        score: r.score,
+        status: r.status,
+        smtp_check: r.smtp_check,
+        disposable: r.disposable,
+        webmail: r.webmail,
+      };
+    }),
+
+  recomputeScore: updateOutreach
+    .route({ method: "POST", path: "/enrich/recompute-score", tags: ["Outreach"] })
+    .input(recomputeScoreInputSchema)
+    .output(scoreResponseSchema)
+    .handler(async ({ input }) => recomputeProspectScore(input.rbd)),
 
   importMineduc: createOutreach
     .route({ method: "POST", path: "/import/mineduc", tags: ["Outreach"] })

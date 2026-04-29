@@ -3095,6 +3095,24 @@ enum OutreachPriority {
   BAJA
 }
 
+enum OutreachProspectType {
+  COLEGIO
+  EMPRESA
+  MUNICIPIO
+  INSTITUCION
+  UNIVERSIDAD
+  OTRO
+}
+
+enum OutreachProspectSource {
+  MINEDUC
+  GOOGLE_PLACES
+  CRAWLER
+  APOLLO
+  HUNTER
+  MANUAL
+}
+
 enum OutreachInteractionType {
   EMAIL_ENVIADO
   EMAIL_RECIBIDO
@@ -3126,10 +3144,17 @@ enum OutreachDeliveryStatus {
 }
 
 model OutreachEstablishment {
-  rbd                  String                   @id @db.VarChar(20)
+  // ID semantically: external prospect id.
+  // Colegios -> RBD MINEDUC (numeric string).
+  // Empresas Google Places -> "gp:<placeId>".
+  // Manual -> uuid or "manual:<slug>".
+  rbd                  String                   @id @db.VarChar(64)
   nombre               String
+  tipo                 OutreachProspectType     @default(COLEGIO)
+  fuente               OutreachProspectSource   @default(MINEDUC)
   dependencia          OutreachDependencia      @default(OTRO)
   comuna               String
+  ciudad               String?
   region               String
   direccion            String?
   telefonoMineduc      String?                  @map("telefono_mineduc")
@@ -3138,6 +3163,25 @@ model OutreachEstablishment {
   matriculaTotal       Int?                     @map("matricula_total")
   rural                Boolean                  @default(false)
 
+  // Empresa-specific
+  googlePlaceId        String?                  @unique @map("google_place_id")
+  categoria            String?
+  dominio              String?
+  rating               Float?
+  totalReviews         Int?                     @map("total_reviews")
+  estadoNegocio        String?                  @map("estado_negocio")
+  linkedinUrl          String?                  @map("linkedin_url")
+
+  // Enrichment metadata
+  apolloOrgId          String?                  @map("apollo_org_id")
+  apolloLastFetchedAt  DateTime?                @map("apollo_last_fetched_at")
+  hunterLastFetchedAt  DateTime?                @map("hunter_last_fetched_at")
+  hunterEmailPattern   String?                  @map("hunter_email_pattern")
+  crawledAt            DateTime?                @map("crawled_at")
+  crawlSuccess         Boolean                  @default(false) @map("crawl_success")
+  score                Int                      @default(0)
+
+  // Manual enrichment
   websiteUrl           String?                  @map("website_url")
   emailsAdicionales    String[]                 @default([]) @map("emails_adicionales")
   telefonosAdicionales String[]                 @default([]) @map("telefonos_adicionales")
@@ -3161,6 +3205,10 @@ model OutreachEstablishment {
   @@index([comuna])
   @@index([prioridad])
   @@index([activo])
+  @@index([tipo])
+  @@index([fuente])
+  @@index([dominio])
+  @@index([score])
 
   @@deny('all', auth() == null)
   @@allow('read', auth().status == 'ACTIVE')
@@ -3171,7 +3219,7 @@ model OutreachEstablishment {
 
 model OutreachContact {
   id                  Int                       @id @default(autoincrement())
-  establecimientoRbd  String                    @map("establecimiento_rbd") @db.VarChar(20)
+  establecimientoRbd  String                    @map("establecimiento_rbd") @db.VarChar(64)
   nombre              String
   cargo               String
   email               String?
@@ -3197,7 +3245,7 @@ model OutreachContact {
 
 model OutreachInteraction {
   id                  Int                       @id @default(autoincrement())
-  establecimientoRbd  String                    @map("establecimiento_rbd") @db.VarChar(20)
+  establecimientoRbd  String                    @map("establecimiento_rbd") @db.VarChar(64)
   contactoId          Int?                      @map("contacto_id")
   tipo                OutreachInteractionType
   fecha               DateTime
@@ -3263,7 +3311,7 @@ model OutreachEmailCampaign {
 model OutreachEmailDelivery {
   id                  Int                       @id @default(autoincrement())
   campaignId          Int                       @map("campaign_id")
-  establecimientoRbd  String                    @map("establecimiento_rbd") @db.VarChar(20)
+  establecimientoRbd  String                    @map("establecimiento_rbd") @db.VarChar(64)
   contactoId          Int?                      @map("contacto_id")
   emailDestinatario   String                    @map("email_destinatario")
   asuntoRender        String?                   @map("asunto_render")

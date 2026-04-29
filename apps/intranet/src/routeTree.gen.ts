@@ -44,6 +44,7 @@ import { Route as AuthedPatientsNewRouteImport } from "./routes/_authed/patients
 import { Route as AuthedPatientsCampaignsRouteImport } from "./routes/_authed/patients/campaigns"
 import { Route as AuthedOutreachImportarRouteImport } from "./routes/_authed/outreach/importar"
 import { Route as AuthedOutreachEstablecimientosRouteImport } from "./routes/_authed/outreach/establecimientos"
+import { Route as AuthedOutreachDescubrirRouteImport } from "./routes/_authed/outreach/descubrir"
 import { Route as AuthedOutreachCampanasRouteImport } from "./routes/_authed/outreach/campanas"
 import { Route as AuthedOperationsSuppliesRouteImport } from "./routes/_authed/operations/supplies"
 import { Route as AuthedOperationsInventoryRouteImport } from "./routes/_authed/operations/inventory"
@@ -261,6 +262,11 @@ const AuthedOutreachEstablecimientosRoute =
     path: "/establecimientos",
     getParentRoute: () => AuthedOutreachRoute,
   } as any)
+const AuthedOutreachDescubrirRoute = AuthedOutreachDescubrirRouteImport.update({
+  id: "/descubrir",
+  path: "/descubrir",
+  getParentRoute: () => AuthedOutreachRoute,
+} as any)
 const AuthedOutreachCampanasRoute = AuthedOutreachCampanasRouteImport.update({
   id: "/campanas",
   path: "/campanas",
@@ -513,6 +519,7 @@ export interface FileRoutesByFullPath {
   "/operations/inventory": typeof AuthedOperationsInventoryRoute
   "/operations/supplies": typeof AuthedOperationsSuppliesRoute
   "/outreach/campanas": typeof AuthedOutreachCampanasRouteWithChildren
+  "/outreach/descubrir": typeof AuthedOutreachDescubrirRoute
   "/outreach/establecimientos": typeof AuthedOutreachEstablecimientosRouteWithChildren
   "/outreach/importar": typeof AuthedOutreachImportarRoute
   "/patients/campaigns": typeof AuthedPatientsCampaignsRoute
@@ -582,6 +589,7 @@ export interface FileRoutesByTo {
   "/operations/inventory": typeof AuthedOperationsInventoryRoute
   "/operations/supplies": typeof AuthedOperationsSuppliesRoute
   "/outreach/campanas": typeof AuthedOutreachCampanasRouteWithChildren
+  "/outreach/descubrir": typeof AuthedOutreachDescubrirRoute
   "/outreach/establecimientos": typeof AuthedOutreachEstablecimientosRouteWithChildren
   "/outreach/importar": typeof AuthedOutreachImportarRoute
   "/patients/campaigns": typeof AuthedPatientsCampaignsRoute
@@ -658,6 +666,7 @@ export interface FileRoutesById {
   "/_authed/operations/inventory": typeof AuthedOperationsInventoryRoute
   "/_authed/operations/supplies": typeof AuthedOperationsSuppliesRoute
   "/_authed/outreach/campanas": typeof AuthedOutreachCampanasRouteWithChildren
+  "/_authed/outreach/descubrir": typeof AuthedOutreachDescubrirRoute
   "/_authed/outreach/establecimientos": typeof AuthedOutreachEstablecimientosRouteWithChildren
   "/_authed/outreach/importar": typeof AuthedOutreachImportarRoute
   "/_authed/patients/campaigns": typeof AuthedPatientsCampaignsRoute
@@ -734,6 +743,7 @@ export interface FileRouteTypes {
     | "/operations/inventory"
     | "/operations/supplies"
     | "/outreach/campanas"
+    | "/outreach/descubrir"
     | "/outreach/establecimientos"
     | "/outreach/importar"
     | "/patients/campaigns"
@@ -803,6 +813,7 @@ export interface FileRouteTypes {
     | "/operations/inventory"
     | "/operations/supplies"
     | "/outreach/campanas"
+    | "/outreach/descubrir"
     | "/outreach/establecimientos"
     | "/outreach/importar"
     | "/patients/campaigns"
@@ -878,6 +889,7 @@ export interface FileRouteTypes {
     | "/_authed/operations/inventory"
     | "/_authed/operations/supplies"
     | "/_authed/outreach/campanas"
+    | "/_authed/outreach/descubrir"
     | "/_authed/outreach/establecimientos"
     | "/_authed/outreach/importar"
     | "/_authed/patients/campaigns"
@@ -1162,6 +1174,13 @@ declare module "@tanstack/react-router" {
       path: "/establecimientos"
       fullPath: "/outreach/establecimientos"
       preLoaderRoute: typeof AuthedOutreachEstablecimientosRouteImport
+      parentRoute: typeof AuthedOutreachRoute
+    }
+    "/_authed/outreach/descubrir": {
+      id: "/_authed/outreach/descubrir"
+      path: "/descubrir"
+      fullPath: "/outreach/descubrir"
+      preLoaderRoute: typeof AuthedOutreachDescubrirRouteImport
       parentRoute: typeof AuthedOutreachRoute
     }
     "/_authed/outreach/campanas": {
@@ -1594,6 +1613,7 @@ const AuthedOutreachEstablecimientosRouteWithChildren =
 
 interface AuthedOutreachRouteChildren {
   AuthedOutreachCampanasRoute: typeof AuthedOutreachCampanasRouteWithChildren
+  AuthedOutreachDescubrirRoute: typeof AuthedOutreachDescubrirRoute
   AuthedOutreachEstablecimientosRoute: typeof AuthedOutreachEstablecimientosRouteWithChildren
   AuthedOutreachImportarRoute: typeof AuthedOutreachImportarRoute
   AuthedOutreachIndexRoute: typeof AuthedOutreachIndexRoute
@@ -1601,6 +1621,7 @@ interface AuthedOutreachRouteChildren {
 
 const AuthedOutreachRouteChildren: AuthedOutreachRouteChildren = {
   AuthedOutreachCampanasRoute: AuthedOutreachCampanasRouteWithChildren,
+  AuthedOutreachDescubrirRoute: AuthedOutreachDescubrirRoute,
   AuthedOutreachEstablecimientosRoute:
     AuthedOutreachEstablecimientosRouteWithChildren,
   AuthedOutreachImportarRoute: AuthedOutreachImportarRoute,
