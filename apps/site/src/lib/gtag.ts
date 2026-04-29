@@ -9,12 +9,11 @@
 
 const CONVERSION_ID = "AW-360676950";
 
-// Update these labels after creating conversion actions in Google Ads
 const CONVERSION_LABELS = {
-  doctoralia_booking: "", // e.g. "AbCdEfGhIjKl"
-  whatsapp_click: "",
-  email_click: "",
-  phone_click: "",
+  doctoralia_booking: "Kr90CP_iuqQcENb8_asB",
+  whatsapp_click: "", // TODO: add label from Google Ads
+  email_click: "", // TODO: add label from Google Ads
+  phone_click: "", // TODO: add label from Google Ads
 } as const;
 
 type ConversionAction = keyof typeof CONVERSION_LABELS;

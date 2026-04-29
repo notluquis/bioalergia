@@ -12,6 +12,17 @@ interface HaulmerXmlHeaders {
   workspaceId?: string;
 }
 
+/**
+ * Clean RUT for Haulmer API: remove dots, dash, and verification digit.
+ * "76.406.172-1" → "76406172", "76414634-3" → "76414634"
+ */
+function cleanRutForApi(rut: string): string {
+  const cleaned = rut.replace(/\./g, "");
+  // Remove dash and everything after it (verification digit)
+  const dashIdx = cleaned.indexOf("-");
+  return dashIdx >= 0 ? cleaned.substring(0, dashIdx) : cleaned;
+}
+
 function buildHeaders(auth: HaulmerXmlHeaders): Record<string, string> {
   const headers: Record<string, string> = {
     Authorization: `Bearer ${auth.jwtToken}`,
@@ -38,8 +49,7 @@ export async function downloadIssuedDteXml(
   folio: string,
   auth: HaulmerXmlHeaders,
 ): Promise<string> {
-  const cleanRut = rut.replace(/\./g, "").replace(/-/g, "");
-  const url = `https://api-frontend.haulmer.com/v3/dte/core/de/docs/issued/xml/${cleanRut}/${documentType}/${folio}/1`;
+  const url = `https://api-frontend.haulmer.com/v3/dte/core/de/docs/issued/xml/${cleanRutForApi(rut)}/${documentType}/${folio}/1`;
 
   const response = await request<string>({
     url,
@@ -66,9 +76,7 @@ export async function downloadReceivedDteXml(
   folio: string,
   auth: HaulmerXmlHeaders,
 ): Promise<string> {
-  const cleanOwnerRut = ownerRut.replace(/\./g, "").replace(/-/g, "");
-  const cleanProviderRut = providerRut.replace(/\./g, "").replace(/-/g, "");
-  const url = `https://api-frontend.haulmer.com/v3/dte/core/dte_recibidos/xml/${cleanOwnerRut}/${cleanProviderRut}/${documentType}/${folio}`;
+  const url = `https://api-frontend.haulmer.com/v3/dte/core/dte_recibidos/xml/${cleanRutForApi(ownerRut)}/${cleanRutForApi(providerRut)}/${documentType}/${folio}`;
 
   const response = await request<string>({
     url,
