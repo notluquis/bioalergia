@@ -174,11 +174,13 @@ async function fetchXmlLineItemsBatch(
 
     const dteId = dteIds[i];
     try {
+      console.log(`[XML Fetch] ${i + 1}/${total} — DTE ${dteId} (${direction})`);
       const detail =
         direction === "sales"
           ? await fetchAndSaveSaleXml(dteId, config, auth)
           : await fetchAndSavePurchaseXml(dteId, config, auth);
 
+      console.log(`[XML Fetch] ${i + 1}/${total} — Folio ${detail.folio}: ${detail.status} (${detail.lineItemsCount} items)`);
       if (detail.status === "fetched") result.fetched++;
       else if (detail.status === "already_has" || detail.status === "not_found") result.skipped++;
 
@@ -190,6 +192,7 @@ async function fetchXmlLineItemsBatch(
       });
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
+      console.error(`[XML Fetch] ${i + 1}/${total} — ERROR: ${msg}`);
       result.errors.push(msg);
       result.details.push({ folio: "?", documentType: 0, lineItemsCount: 0, status: "error" });
     }
@@ -270,6 +273,10 @@ export function startXmlFetchJob(
         },
       });
 
+      console.log(`[XML Fetch Job] Completed: ${result.fetched} fetched, ${result.skipped} skipped, ${result.errors.length} errors`);
+      if (result.errors.length > 0) {
+        console.warn(`[XML Fetch Job] Errors:`, result.errors.slice(0, 5));
+      }
       completeJob(
         jobId,
         result,
@@ -283,6 +290,7 @@ export function startXmlFetchJob(
       );
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
+      console.error(`[XML Fetch Job] Fatal error:`, msg);
       failJob(jobId, msg);
     }
   })();
