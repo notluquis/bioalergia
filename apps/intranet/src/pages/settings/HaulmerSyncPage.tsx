@@ -22,7 +22,7 @@ import { z } from "zod";
 import { useConfirmDialog } from "@/context/ConfirmDialogContext";
 import { useToast } from "@/context/ToastContext";
 import { autoLinkEventDteByPeriod } from "@/features/calendar/api";
-import { useFetchDteXmlByPeriod } from "@/features/finance/dte-analytics/hooks/useFetchDteXml";
+import { DteXmlJobProgress } from "@/features/finance/dte-analytics/components/DteXmlJobProgress";
 import {
   fetchHaulmerAvailablePeriods,
   syncHaulmerIncremental,
@@ -253,7 +253,6 @@ function haulmerPeriodToYearMonth(period: string): string {
 interface PeriodCardProps {
   period: MonthPeriod;
   lastSyncs: LastSyncState;
-  fetchXmlMutation: ReturnType<typeof useFetchDteXmlByPeriod>;
   syncMutation: {
     isPending: boolean;
     variables?: { period: string; docType: "sales" | "purchases" };
@@ -268,7 +267,6 @@ interface PeriodCardProps {
 function PeriodCard({
   period,
   lastSyncs,
-  fetchXmlMutation,
   syncMutation,
   onSync,
   hasSalesData,
@@ -321,14 +319,7 @@ function PeriodCard({
             <Download className="h-4 w-4" />
             Importar
           </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            isDisabled={fetchXmlMutation.isPending}
-            onPress={() => fetchXmlMutation.mutate({ period: yearMonth, direction: "sales" })}
-          >
-            Obtener XMLs
-          </Button>
+          <DteXmlJobProgress direction="sales" selectedPeriod={yearMonth} />
           {lastSyncs[`${period.period}-sales`] && (
             <div className="space-y-1 text-default-600 text-xs">
               <span className="block">
@@ -377,14 +368,7 @@ function PeriodCard({
             <Download className="h-4 w-4" />
             Importar
           </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            isDisabled={fetchXmlMutation.isPending}
-            onPress={() => fetchXmlMutation.mutate({ period: yearMonth, direction: "purchases" })}
-          >
-            Obtener XMLs
-          </Button>
+          <DteXmlJobProgress direction="purchases" selectedPeriod={yearMonth} />
           {lastSyncs[`${period.period}-purchases`] && (
             <div className="space-y-1 text-default-600 text-xs">
               <span className="block">
@@ -409,7 +393,6 @@ function PeriodCard({
 export function HaulmerSyncPage() {
   const { error: showError, success: showSuccess } = useToast();
   const confirm = useConfirmDialog();
-  const fetchXmlMutation = useFetchDteXmlByPeriod();
   const [lastSyncs, setLastSyncs] = useState<LastSyncState>({});
   const [isSyncingAll, setIsSyncingAll] = useState(false);
   const [isSyncingIncremental, setIsSyncingIncremental] = useState(false);
@@ -829,7 +812,6 @@ export function HaulmerSyncPage() {
                   key={period.period}
                   period={period}
                   lastSyncs={lastSyncs}
-                  fetchXmlMutation={fetchXmlMutation}
                   syncMutation={syncMutation}
                   onSync={handleSync}
                   hasSalesData={hasSalesData}
