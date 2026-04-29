@@ -35,10 +35,14 @@ if (process.env.ENABLE_DOCTORALIA_CALENDAR_SYNC === "true") {
   startDoctoraliaCalendarScheduler();
 }
 
-// Initialize Baileys WhatsApp connection if enabled in DB settings
-getSetting("whatsapp.enabled").then((val) => {
-  if (val === "true") {
+// Initialize Baileys WhatsApp connection if enabled and has stored credentials
+getSetting("whatsapp.enabled").then(async (val) => {
+  if (val !== "true") return;
+  const { hasStoredCreds } = await import("./lib/whatsapp/baileys-auth-state");
+  if (await hasStoredCreds()) {
     initBaileysSocket().catch((err) => console.error("Failed to initialize Baileys:", err));
+  } else {
+    console.log("[Baileys] No stored credentials — skipping auto-init. Scan QR from settings page.");
   }
 }).catch(() => {});
 

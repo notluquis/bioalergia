@@ -156,6 +156,11 @@ export async function clearAuthState(): Promise<void> {
   await db.deleteFrom("baileys_auth_creds").execute();
 }
 
+export async function hasStoredCreds(): Promise<boolean> {
+  const creds = await readCreds();
+  return creds != null;
+}
+
 export async function usePostgresAuthState(): Promise<{
   saveCreds: () => Promise<void>;
   state: AuthenticationState;

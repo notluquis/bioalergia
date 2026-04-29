@@ -261,7 +261,7 @@ export const whatsappChatSidebarItemSchema = z.object({
   name: z.string().nullable().optional(),
   presence: z.string().nullable().optional(),
   typing: z.boolean(),
-  unreadCount: z.number().int().min(0),
+  unreadCount: z.number().int(),
 });
 
 export const listWhatsappChatSidebarInputSchema = z.object({
