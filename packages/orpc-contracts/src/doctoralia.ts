@@ -387,6 +387,7 @@ export const calendarBackfillStatusResponseSchema = z.object({
 
 export const calendarBackfillStartInputSchema = z.object({
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 });
 
 export const doctoraliaContract = {

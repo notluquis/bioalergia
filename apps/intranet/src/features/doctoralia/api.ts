@@ -98,10 +98,14 @@ export async function fetchDoctoraliaBackfillStatus(): Promise<DoctoraliaCalenda
 
 export async function startDoctoraliaCalendarBackfill(input: {
   endDate: string;
+  startDate?: string;
 }): Promise<DoctoraliaCalendarBackfillStatus> {
   try {
     const response = DoctoraliaCalendarBackfillStatusResponseSchema.parse(
-      await doctoraliaORPCClient.calendarBackfillStart({ endDate: input.endDate })
+      await doctoraliaORPCClient.calendarBackfillStart({
+        endDate: input.endDate,
+        startDate: input.startDate,
+      })
     );
     return response.data;
   } catch (error) {

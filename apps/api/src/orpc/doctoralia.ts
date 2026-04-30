@@ -295,6 +295,7 @@ const calendarBackfillStatusResponseSchema = z.object({
 
 const calendarBackfillStartInputSchema = z.object({
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 });
 
 const scraperCookiesStatusSchema = z.object({
@@ -520,6 +521,7 @@ const doctoraliaORPCRouterBase = {
       try {
         startDoctoraliaBackfill({
           endDate: input.endDate,
+          startDate: input.startDate,
           triggeredByUserId: context.user.id,
         });
       } catch (error) {

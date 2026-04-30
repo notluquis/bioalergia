@@ -40,34 +40,34 @@ describe("planDoctoraliaBackfill", () => {
   const NOW = new Date("2026-04-21T12:00:00-04:00"); // Tuesday, ISO week 17, Chile
 
   it("floors end date to MIN_DATE when earlier", () => {
-    const plan = planDoctoraliaBackfill("2015-01-01", NOW);
+    const plan = planDoctoraliaBackfill("2015-01-01", undefined, NOW);
     expect(plan.effectiveEndDate).toBe(DOCTORALIA_BACKFILL_MIN_DATE);
     expect(plan.weeksTotal).toBeGreaterThan(100);
   });
 
   it("rejects end dates inside or after the current ISO week", () => {
     // Current Monday in Chile is 2026-04-20.
-    expect(() => planDoctoraliaBackfill("2026-04-20", NOW)).toThrow(/anterior a la semana actual/);
-    expect(() => planDoctoraliaBackfill("2026-04-25", NOW)).toThrow(/anterior a la semana actual/);
-    expect(() => planDoctoraliaBackfill("2026-05-10", NOW)).toThrow(/anterior a la semana actual/);
+    expect(() => planDoctoraliaBackfill("2026-04-20", undefined, NOW)).toThrow(/anterior a la semana actual/);
+    expect(() => planDoctoraliaBackfill("2026-04-25", undefined, NOW)).toThrow(/anterior a la semana actual/);
+    expect(() => planDoctoraliaBackfill("2026-05-10", undefined, NOW)).toThrow(/anterior a la semana actual/);
   });
 
   it("accepts a valid date strictly before current ISO week", () => {
-    const plan = planDoctoraliaBackfill("2026-04-13", NOW);
+    const plan = planDoctoraliaBackfill("2026-04-13", undefined, NOW);
     // From last-completed week (Apr 13 Monday) back to target week Apr 13 = 1 week.
     expect(plan.weeksTotal).toBe(1);
     expect(plan.effectiveEndDate).toBe("2026-04-13");
   });
 
   it("computes correct week count across months", () => {
-    const plan = planDoctoraliaBackfill("2026-01-05", NOW);
+    const plan = planDoctoraliaBackfill("2026-01-05", undefined, NOW);
     // Mondays from Apr 13 back to Jan 5 inclusive.
     // weeks = diff Apr13-Jan5 in weeks + 1 = 14 + 1 = 15.
     expect(plan.weeksTotal).toBe(15);
   });
 
   it("throws on invalid date string", () => {
-    expect(() => planDoctoraliaBackfill("not-a-date", NOW)).toThrow();
+    expect(() => planDoctoraliaBackfill("not-a-date", undefined, NOW)).toThrow();
   });
 });
 

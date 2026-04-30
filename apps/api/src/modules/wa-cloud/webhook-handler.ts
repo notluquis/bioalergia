@@ -136,7 +136,7 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
   const out: ProcessResult = { events: 0, errors: [] };
   for (const entry of payload.entry ?? []) {
     for (const change of entry.changes ?? []) {
-      if (change.field !== "messages") continue;
+      const FIELD = change.field;
       const v = change.value;
       const phoneNumberId = v.metadata?.phone_number_id;
       if (!phoneNumberId) continue;
@@ -145,9 +145,156 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
         include: { account: true },
       });
       if (!phoneRow) {
-        out.errors.push(`PhoneNumber ${phoneNumberId} no registrado`);
+        out.errors.push(`PhoneNumber ${phoneNumberId} no registrado (field=${FIELD})`);
         continue;
       }
+
+      // ── message_echoes / smb_message_echoes (Coexistence: outbound from celular) ──
+      const echoes = (v as unknown as { message_echoes?: MetaMessage[] }).message_echoes;
+      if ((FIELD === "message_echoes" || FIELD === "smb_message_echoes") && echoes?.length) {
+        for (const m of echoes) {
+          out.events += 1;
+          try {
+            const echoTo = (m as unknown as { to?: string }).to;
+            const targetWaId = echoTo ?? m.from;
+            const contactId = await upsertContact(targetWaId, undefined);
+            const convId = await ensureConversation(contactId, phoneRow.id);
+            const exists = await db.waMessage.findUnique({ where: { metaMessageId: m.id } });
+            if (exists) continue;
+            const msgType = (TYPE_MAP[m.type] ?? "UNSUPPORTED") as keyof typeof TYPE_MAP;
+            const body =
+              m.text?.body ?? m.button?.text ?? m.reaction?.emoji ?? null;
+            const tsMs = Number.parseInt(m.timestamp, 10) * 1000;
+            const ts = Number.isFinite(tsMs) ? new Date(tsMs) : new Date();
+            const preview = previewFromMessage(m);
+            await db.waMessage.create({
+              data: {
+                conversationId: convId,
+                contactId,
+                phoneNumberId: phoneRow.id,
+                metaMessageId: m.id,
+                direction: "OUTBOUND",
+                type: msgType as never,
+                status: "SENT",
+                body,
+                contextMetaMessageId: m.context?.id ?? null,
+                payload: m as never,
+                timestamp: ts,
+              },
+            });
+            await db.waConversation.update({
+              where: { id: convId },
+              data: { lastMessageAt: ts, lastMessagePreview: `[eco] ${preview}` },
+            });
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            out.errors.push(`echo ${m.id}: ${msg}`);
+            logWarn("[wa-cloud.webhook] echo failed", { messageId: m.id, error: msg });
+          }
+        }
+        continue;
+      }
+
+      // ── smb_app_state_sync (contact add/update/delete sync de WA Business app) ──
+      const stateSync = (v as unknown as { state_sync?: Array<Record<string, unknown>> }).state_sync;
+      if (FIELD === "smb_app_state_sync" && stateSync?.length) {
+        for (const s of stateSync) {
+          out.events += 1;
+          try {
+            const type = s.type as string;
+            const action = s.action as string;
+            if (type === "contact" && s.contact && typeof s.contact === "object") {
+              const c = s.contact as { full_name?: string; first_name?: string; phone_number?: string };
+              if (c.phone_number) {
+                const phoneE164 = normalizeToE164(c.phone_number);
+                const existing = await db.waContact.findUnique({ where: { phoneE164 } });
+                if (action === "delete") {
+                  // soft-noop: no borramos contactos para preservar historial
+                } else {
+                  const data = {
+                    phoneE164,
+                    name: c.full_name ?? c.first_name ?? null,
+                    pushName: c.full_name ?? c.first_name ?? null,
+                  };
+                  if (existing) {
+                    await db.waContact.update({ where: { id: existing.id }, data });
+                  } else {
+                    await db.waContact.create({ data });
+                  }
+                }
+              }
+            }
+            // Otros types (chat, label, etc): logueo solo
+            logEvent("[wa-cloud.webhook] state_sync", { type, action });
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            out.errors.push(`state_sync: ${msg}`);
+          }
+        }
+        continue;
+      }
+
+      // ── history (one-shot bulk import of past chats during Coexistence onboarding) ──
+      const history = (v as unknown as {
+        history?: Array<{
+          metadata?: { phase?: number; chunk_order?: number; progress?: number };
+          threads?: Array<{
+            id?: string;
+            context?: { wa_id?: string };
+            messages?: Array<MetaMessage & { history_context?: { status?: string; from_me?: boolean } }>;
+          }>;
+        }>;
+      }).history;
+      if (FIELD === "history" && history?.length) {
+        for (const h of history) {
+          for (const thread of h.threads ?? []) {
+            const waId = thread.context?.wa_id ?? thread.id;
+            if (!waId) continue;
+            const contactId = await upsertContact(waId, undefined);
+            const convId = await ensureConversation(contactId, phoneRow.id);
+            for (const m of thread.messages ?? []) {
+              out.events += 1;
+              try {
+                if (m.type === "media_placeholder") continue;
+                const exists = await db.waMessage.findUnique({ where: { metaMessageId: m.id } });
+                if (exists) continue;
+                const msgType = (TYPE_MAP[m.type] ?? "UNSUPPORTED") as keyof typeof TYPE_MAP;
+                const fromMe = m.history_context?.from_me === true;
+                const body =
+                  m.text?.body ?? m.button?.text ?? m.reaction?.emoji ?? null;
+                const tsMs = Number.parseInt(m.timestamp, 10) * 1000;
+                const ts = Number.isFinite(tsMs) ? new Date(tsMs) : new Date();
+                const status = m.history_context?.status?.toUpperCase() ?? "DELIVERED";
+                await db.waMessage.create({
+                  data: {
+                    conversationId: convId,
+                    contactId,
+                    phoneNumberId: phoneRow.id,
+                    metaMessageId: m.id,
+                    direction: fromMe ? "OUTBOUND" : "INBOUND",
+                    type: msgType as never,
+                    status: status as never,
+                    body,
+                    payload: m as never,
+                    timestamp: ts,
+                  },
+                });
+              } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                out.errors.push(`history ${m.id}: ${msg}`);
+              }
+            }
+          }
+        }
+        logEvent("[wa-cloud.webhook] history chunk", {
+          phase: history[0]?.metadata?.phase,
+          progress: history[0]?.metadata?.progress,
+        });
+        continue;
+      }
+
+      // ── messages (default Cloud API webhook field) ──
+      if (FIELD !== "messages") continue;
 
       // Inbound messages
       if (v.messages?.length) {

@@ -46,11 +46,13 @@ export function DoctoraliaCalendarBackfillPanel() {
   const status = statusQuery.data;
   const running = Boolean(status?.running);
 
-  const defaultEndDate = useMemo(() => lastCompletedSunday(), []);
+  const defaultStartDate = useMemo(() => lastCompletedSunday(), []);
+  const defaultEndDate = "2017-08-21";
+  const [startDate, setStartDate] = useState<string>(defaultStartDate);
   const [endDate, setEndDate] = useState<string>(defaultEndDate);
 
   const startMutation = useMutation({
-    mutationFn: () => startDoctoraliaCalendarBackfill({ endDate }),
+    mutationFn: () => startDoctoraliaCalendarBackfill({ endDate, startDate }),
     onError: (error) => {
       const apiError = toDoctoraliaApiError(error);
       toast.error(apiError.message, "No se pudo iniciar el backfill");
@@ -93,63 +95,111 @@ export function DoctoraliaCalendarBackfillPanel() {
             <History className="h-4 w-4" /> Recorrer historial
           </h2>
           <Description className="text-default-500 text-xs">
-            Descarga semana a semana hacia atrás desde la semana pasada hasta la fecha que elijas
-            (mínimo {minEndDate}). No corre en paralelo al scraper: se ejecuta en el backend y
-            actualiza el progreso aquí.
+            Descarga semana a semana entre las fechas seleccionadas. No corre en paralelo al
+            scraper: se ejecuta en el backend y actualiza el progreso aquí.
           </Description>
         </Card.Header>
         <Card.Content className="space-y-4">
-          <DatePicker
-            aria-label="Fecha inicial del backfill"
-            isDisabled={running}
-            minValue={parseDate(minEndDate)}
-            maxValue={parseDate(defaultEndDate)}
-            onChange={(value) => {
-              if (value) setEndDate(value.toString());
-            }}
-            value={parseDate(endDate)}
-          >
-            <Label>Llegar hasta (lunes de esa semana)</Label>
-            <DateField.Group>
-              <DateField.InputContainer>
-                <DateField.Input>
-                  {(segment) => <DateField.Segment segment={segment} />}
-                </DateField.Input>
-              </DateField.InputContainer>
-              <DateField.Suffix>
-                <DatePicker.Trigger>
-                  <DatePicker.TriggerIndicator />
-                </DatePicker.Trigger>
-              </DateField.Suffix>
-            </DateField.Group>
-            <DatePicker.Popover>
-              <Calendar aria-label="Fecha inicial del backfill">
-                <Calendar.Header>
-                  <Calendar.YearPickerTrigger>
-                    <Calendar.YearPickerTriggerHeading />
-                    <Calendar.YearPickerTriggerIndicator />
-                  </Calendar.YearPickerTrigger>
-                  <Calendar.NavButton slot="previous" />
-                  <Calendar.NavButton slot="next" />
-                </Calendar.Header>
-                <Calendar.Grid>
-                  <Calendar.GridHeader>
-                    {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
-                  </Calendar.GridHeader>
-                  <Calendar.GridBody>{(date) => <Calendar.Cell date={date} />}</Calendar.GridBody>
-                </Calendar.Grid>
-                <Calendar.YearPickerGrid>
-                  <Calendar.YearPickerGridBody>
-                    {({ year }) => <Calendar.YearPickerCell year={year} />}
-                  </Calendar.YearPickerGridBody>
-                </Calendar.YearPickerGrid>
-              </Calendar>
-            </DatePicker.Popover>
-          </DatePicker>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <DatePicker
+              aria-label="Fecha de inicio del backfill"
+              isDisabled={running}
+              minValue={parseDate(minEndDate)}
+              maxValue={parseDate(defaultStartDate)}
+              onChange={(value) => {
+                if (value) setStartDate(value.toString());
+              }}
+              value={parseDate(startDate)}
+            >
+              <Label>Desde</Label>
+              <DateField.Group>
+                <DateField.InputContainer>
+                  <DateField.Input>
+                    {(segment) => <DateField.Segment segment={segment} />}
+                  </DateField.Input>
+                </DateField.InputContainer>
+                <DateField.Suffix>
+                  <DatePicker.Trigger>
+                    <DatePicker.TriggerIndicator />
+                  </DatePicker.Trigger>
+                </DateField.Suffix>
+              </DateField.Group>
+              <DatePicker.Popover>
+                <Calendar aria-label="Fecha inicial del backfill">
+                  <Calendar.Header>
+                    <Calendar.YearPickerTrigger>
+                      <Calendar.YearPickerTriggerHeading />
+                      <Calendar.YearPickerTriggerIndicator />
+                    </Calendar.YearPickerTrigger>
+                    <Calendar.NavButton slot="previous" />
+                    <Calendar.NavButton slot="next" />
+                  </Calendar.Header>
+                  <Calendar.Grid>
+                    <Calendar.GridHeader>
+                      {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
+                    </Calendar.GridHeader>
+                    <Calendar.GridBody>{(date) => <Calendar.Cell date={date} />}</Calendar.GridBody>
+                  </Calendar.Grid>
+                  <Calendar.YearPickerGrid>
+                    <Calendar.YearPickerGridBody>
+                      {({ year }) => <Calendar.YearPickerCell year={year} />}
+                    </Calendar.YearPickerGridBody>
+                  </Calendar.YearPickerGrid>
+                </Calendar>
+              </DatePicker.Popover>
+            </DatePicker>
+
+            <DatePicker
+              aria-label="Fecha final del backfill"
+              isDisabled={running}
+              minValue={parseDate(minEndDate)}
+              maxValue={parseDate(startDate)}
+              onChange={(value) => {
+                if (value) setEndDate(value.toString());
+              }}
+              value={parseDate(endDate)}
+            >
+              <Label>Hasta</Label>
+              <DateField.Group>
+                <DateField.InputContainer>
+                  <DateField.Input>
+                    {(segment) => <DateField.Segment segment={segment} />}
+                  </DateField.Input>
+                </DateField.InputContainer>
+                <DateField.Suffix>
+                  <DatePicker.Trigger>
+                    <DatePicker.TriggerIndicator />
+                  </DatePicker.Trigger>
+                </DateField.Suffix>
+              </DateField.Group>
+              <DatePicker.Popover>
+                <Calendar aria-label="Fecha final del backfill">
+                  <Calendar.Header>
+                    <Calendar.YearPickerTrigger>
+                      <Calendar.YearPickerTriggerHeading />
+                      <Calendar.YearPickerTriggerIndicator />
+                    </Calendar.YearPickerTrigger>
+                    <Calendar.NavButton slot="previous" />
+                    <Calendar.NavButton slot="next" />
+                  </Calendar.Header>
+                  <Calendar.Grid>
+                    <Calendar.GridHeader>
+                      {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
+                    </Calendar.GridHeader>
+                    <Calendar.GridBody>{(date) => <Calendar.Cell date={date} />}</Calendar.GridBody>
+                  </Calendar.Grid>
+                  <Calendar.YearPickerGrid>
+                    <Calendar.YearPickerGridBody>
+                      {({ year }) => <Calendar.YearPickerCell year={year} />}
+                    </Calendar.YearPickerGridBody>
+                  </Calendar.YearPickerGrid>
+                </Calendar>
+              </DatePicker.Popover>
+            </DatePicker>
+          </div>
 
           <Description className="text-default-500 text-xs">
-            Se pisará hasta el lunes ISO que contenga esa fecha. Las semanas ya cargadas se contarán
-            como “sin cambios” (skipped).
+            Las semanas ya cargadas se contarán como "sin cambios" (skipped).
           </Description>
 
           <div className="flex flex-wrap justify-end gap-2">

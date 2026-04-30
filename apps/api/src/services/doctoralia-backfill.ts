@@ -122,6 +122,7 @@ export type PlannedBackfill = {
 
 export function planDoctoraliaBackfill(
   endDate: string,
+  startDate?: string,
   now: Date = new Date(),
 ): PlannedBackfill {
   const endDateNormalized = dayjs.tz(endDate, TIMEZONE).startOf("day");
@@ -135,14 +136,30 @@ export function planDoctoraliaBackfill(
   const todayLocal = dayjs(now).tz(TIMEZONE).startOf("day");
   const currentMonday = todayLocal.startOf("isoWeek");
 
-  if (!effectiveEnd.isBefore(currentMonday, "day")) {
+  // Start from a specific date or default to last week
+  let startMonday: dayjs.Dayjs;
+  if (startDate) {
+    const startNormalized = dayjs.tz(startDate, TIMEZONE).startOf("day");
+    if (!startNormalized.isValid()) {
+      throw new Error("Fecha de inicio inválida");
+    }
+    startMonday = startNormalized.startOf("isoWeek");
+    // Don't allow start in the future
+    const maxStart = currentMonday.subtract(1, "week");
+    if (startMonday.isAfter(maxStart)) {
+      startMonday = maxStart;
+    }
+  } else {
+    startMonday = currentMonday.subtract(1, "week");
+  }
+
+  if (!effectiveEnd.isBefore(startMonday.add(1, "week"), "day")) {
     throw new Error(
-      "La fecha objetivo debe ser anterior a la semana actual (el scraper ya cubre esa ventana).",
+      "La fecha final debe ser anterior a la fecha de inicio.",
     );
   }
 
   const targetMonday = effectiveEnd.startOf("isoWeek");
-  const startMonday = currentMonday.subtract(1, "week");
   const weeksTotal = Math.max(1, startMonday.diff(targetMonday, "week") + 1);
 
   return {
@@ -155,13 +172,14 @@ export function planDoctoraliaBackfill(
 
 export function startDoctoraliaBackfill(params: {
   endDate: string;
+  startDate?: string;
   triggeredByUserId: number;
 }): DoctoraliaBackfillStatus {
   if (state.running) {
     throw new Error("Ya hay un backfill en curso");
   }
 
-  const plan = planDoctoraliaBackfill(params.endDate);
+  const plan = planDoctoraliaBackfill(params.endDate, params.startDate);
 
   resetState();
   state.running = true;

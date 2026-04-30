@@ -211,6 +211,9 @@ importers:
       sharp:
         specifier: ^0.34.5
         version: 0.34.5
+      stream-json:
+        specifier: ^2.1.0
+        version: 2.1.0
       superjson:
         specifier: ^2.2.6
         version: 2.2.6
@@ -7237,6 +7240,12 @@ packages:
     peerDependenciesMeta:
       prettier:
         optional: true
+
+  stream-chain@3.6.1:
+    resolution: {integrity: sha512-M4BQpNPI71uumkVXjl4y+mIormQXdo4R0pSR23mcLbn6D+kpvu7Kx2g1hf0jRB76Zb1IT1M06OIGghMTAtZdyQ==}
+
+  stream-json@2.1.0:
+    resolution: {integrity: sha512-9gV/ywtebMn3DdKnNKYCb9iESvgR1dHbucNV+bRGvdvy+jV4c9FFgYKmENhpKv58jSwvs90Wk80RhfKk1KxHPg==}
 
   strict-event-emitter@0.5.1:
     resolution: {integrity: sha512-vMgjE/GGEPEFnhFub6pa4FmJBRBVOLpIII2hvCZ8Kzb7K0hlHo7mQv6xYrBvCL2LtAIBwFUK8wvuJgTVSQ5MFQ==}
@@ -15047,6 +15056,12 @@ snapshots:
       - react
       - react-dom
       - utf-8-validate
+
+  stream-chain@3.6.1: {}
+
+  stream-json@2.1.0:
+    dependencies:
+      stream-chain: 3.6.1
 
   strict-event-emitter@0.5.1: {}
 
