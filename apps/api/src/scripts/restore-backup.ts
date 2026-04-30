@@ -254,7 +254,16 @@ function normalizeRow(modelName: string, row: unknown) {
     delete copy.metadata;
   }
 
-  if (modelName === "EmployeeTimesheet" || modelName === "AttendanceMark") {
+  if (modelName === "WhatsappMessage") {
+    if (copy.rawMessageJson === null) delete copy.rawMessageJson;
+    if (copy.rawContentJson === null) delete copy.rawContentJson;
+  }
+
+  if (
+    modelName === "EmployeeTimesheet" ||
+    modelName === "AttendanceMark" ||
+    modelName === "ClinicalSeriesMergeLog"
+  ) {
     copy.id = numericStringToBigInt(copy.id);
   }
 

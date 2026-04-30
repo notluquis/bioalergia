@@ -33,6 +33,7 @@ import { Route as AuthedPatientsIndexRouteImport } from "./routes/_authed/patien
 import { Route as AuthedOutreachIndexRouteImport } from "./routes/_authed/outreach/index"
 import { Route as AuthedHrIndexRouteImport } from "./routes/_authed/hr/index"
 import { Route as AuthedClinicalIndexRouteImport } from "./routes/_authed/clinical/index"
+import { Route as AuthedWaCloudWebhooksRouteImport } from "./routes/_authed/wa-cloud/webhooks"
 import { Route as AuthedWaCloudPlantillasRouteImport } from "./routes/_authed/wa-cloud/plantillas"
 import { Route as AuthedWaCloudConfiguracionRouteImport } from "./routes/_authed/wa-cloud/configuracion"
 import { Route as AuthedSettingsWhatsappRouteImport } from "./routes/_authed/settings/whatsapp"
@@ -206,6 +207,11 @@ const AuthedClinicalIndexRoute = AuthedClinicalIndexRouteImport.update({
   id: "/",
   path: "/",
   getParentRoute: () => AuthedClinicalRoute,
+} as any)
+const AuthedWaCloudWebhooksRoute = AuthedWaCloudWebhooksRouteImport.update({
+  id: "/webhooks",
+  path: "/webhooks",
+  getParentRoute: () => AuthedWaCloudRoute,
 } as any)
 const AuthedWaCloudPlantillasRoute = AuthedWaCloudPlantillasRouteImport.update({
   id: "/plantillas",
@@ -562,6 +568,7 @@ export interface FileRoutesByFullPath {
   "/settings/whatsapp": typeof AuthedSettingsWhatsappRoute
   "/wa-cloud/configuracion": typeof AuthedWaCloudConfiguracionRoute
   "/wa-cloud/plantillas": typeof AuthedWaCloudPlantillasRoute
+  "/wa-cloud/webhooks": typeof AuthedWaCloudWebhooksRoute
   "/clinical/": typeof AuthedClinicalIndexRoute
   "/hr/": typeof AuthedHrIndexRoute
   "/outreach/": typeof AuthedOutreachIndexRoute
@@ -635,6 +642,7 @@ export interface FileRoutesByTo {
   "/settings/whatsapp": typeof AuthedSettingsWhatsappRoute
   "/wa-cloud/configuracion": typeof AuthedWaCloudConfiguracionRoute
   "/wa-cloud/plantillas": typeof AuthedWaCloudPlantillasRoute
+  "/wa-cloud/webhooks": typeof AuthedWaCloudWebhooksRoute
   "/clinical": typeof AuthedClinicalIndexRoute
   "/hr": typeof AuthedHrIndexRoute
   "/outreach": typeof AuthedOutreachIndexRoute
@@ -716,6 +724,7 @@ export interface FileRoutesById {
   "/_authed/settings/whatsapp": typeof AuthedSettingsWhatsappRoute
   "/_authed/wa-cloud/configuracion": typeof AuthedWaCloudConfiguracionRoute
   "/_authed/wa-cloud/plantillas": typeof AuthedWaCloudPlantillasRoute
+  "/_authed/wa-cloud/webhooks": typeof AuthedWaCloudWebhooksRoute
   "/_authed/clinical/": typeof AuthedClinicalIndexRoute
   "/_authed/hr/": typeof AuthedHrIndexRoute
   "/_authed/outreach/": typeof AuthedOutreachIndexRoute
@@ -797,6 +806,7 @@ export interface FileRouteTypes {
     | "/settings/whatsapp"
     | "/wa-cloud/configuracion"
     | "/wa-cloud/plantillas"
+    | "/wa-cloud/webhooks"
     | "/clinical/"
     | "/hr/"
     | "/outreach/"
@@ -870,6 +880,7 @@ export interface FileRouteTypes {
     | "/settings/whatsapp"
     | "/wa-cloud/configuracion"
     | "/wa-cloud/plantillas"
+    | "/wa-cloud/webhooks"
     | "/clinical"
     | "/hr"
     | "/outreach"
@@ -950,6 +961,7 @@ export interface FileRouteTypes {
     | "/_authed/settings/whatsapp"
     | "/_authed/wa-cloud/configuracion"
     | "/_authed/wa-cloud/plantillas"
+    | "/_authed/wa-cloud/webhooks"
     | "/_authed/clinical/"
     | "/_authed/hr/"
     | "/_authed/outreach/"
@@ -1146,6 +1158,13 @@ declare module "@tanstack/react-router" {
       fullPath: "/clinical/"
       preLoaderRoute: typeof AuthedClinicalIndexRouteImport
       parentRoute: typeof AuthedClinicalRoute
+    }
+    "/_authed/wa-cloud/webhooks": {
+      id: "/_authed/wa-cloud/webhooks"
+      path: "/webhooks"
+      fullPath: "/wa-cloud/webhooks"
+      preLoaderRoute: typeof AuthedWaCloudWebhooksRouteImport
+      parentRoute: typeof AuthedWaCloudRoute
     }
     "/_authed/wa-cloud/plantillas": {
       id: "/_authed/wa-cloud/plantillas"
@@ -1759,12 +1778,14 @@ const AuthedSettingsRouteWithChildren = AuthedSettingsRoute._addFileChildren(
 interface AuthedWaCloudRouteChildren {
   AuthedWaCloudConfiguracionRoute: typeof AuthedWaCloudConfiguracionRoute
   AuthedWaCloudPlantillasRoute: typeof AuthedWaCloudPlantillasRoute
+  AuthedWaCloudWebhooksRoute: typeof AuthedWaCloudWebhooksRoute
   AuthedWaCloudIndexRoute: typeof AuthedWaCloudIndexRoute
 }
 
 const AuthedWaCloudRouteChildren: AuthedWaCloudRouteChildren = {
   AuthedWaCloudConfiguracionRoute: AuthedWaCloudConfiguracionRoute,
   AuthedWaCloudPlantillasRoute: AuthedWaCloudPlantillasRoute,
+  AuthedWaCloudWebhooksRoute: AuthedWaCloudWebhooksRoute,
   AuthedWaCloudIndexRoute: AuthedWaCloudIndexRoute,
 }
 

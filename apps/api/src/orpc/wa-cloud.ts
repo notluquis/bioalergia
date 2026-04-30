@@ -8,6 +8,8 @@ import {
   listConversationsInputSchema,
   listConversationsResponseSchema,
   listTemplatesResponseSchema,
+  listWebhookLogsInputSchema,
+  listWebhookLogsResponseSchema,
   markReadInputSchema,
   sendMessageResponseSchema,
   sendTemplateInputSchema,
@@ -516,6 +518,46 @@ const waRouterBase = {
       const tpls = await db.waTemplate.findMany({ where, orderBy: { name: "asc" } });
       return {
         templates: tpls.map((t) => ({ ...t, components: (t.components as unknown[]) ?? [] })),
+      };
+    }),
+
+  listWebhookLogs: readWa
+    .route({ method: "POST", path: "/webhook-logs", tags: ["WA Cloud"] })
+    .input(listWebhookLogsInputSchema)
+    .output(listWebhookLogsResponseSchema)
+    .handler(async ({ input }) => {
+      const where = input.onlyInvalid ? { signatureValid: false } : {};
+      const logs = await db.waWebhookLog.findMany({
+        where,
+        orderBy: { receivedAt: "desc" },
+        take: input.limit,
+      });
+      return {
+        logs: logs.map((l) => {
+          const payload = l.payload as
+            | {
+                entry?: Array<{ changes?: Array<{ field?: string }> }>;
+                object?: string;
+              }
+            | null;
+          const fields: string[] = [];
+          for (const e of payload?.entry ?? []) {
+            for (const c of e.changes ?? []) {
+              if (c.field) fields.push(c.field);
+            }
+          }
+          const preview = JSON.stringify(payload).slice(0, 200);
+          return {
+            id: l.id,
+            receivedAt: l.receivedAt,
+            signatureValid: l.signatureValid,
+            processed: l.processed,
+            eventCount: l.eventCount,
+            errorMessage: l.errorMessage,
+            fields: Array.from(new Set(fields)),
+            preview,
+          };
+        }),
       };
     }),
 };

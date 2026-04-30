@@ -257,6 +257,26 @@ export const listTemplatesResponseSchema = z.object({
   templates: z.array(waTemplateSchema),
 });
 
+export const waWebhookLogSchema = z.object({
+  id: z.number().int(),
+  receivedAt: z.coerce.date(),
+  signatureValid: z.boolean(),
+  processed: z.boolean(),
+  eventCount: z.number().int(),
+  errorMessage: z.string().nullable(),
+  fields: z.array(z.string()),
+  preview: z.string(),
+});
+
+export const listWebhookLogsInputSchema = z.object({
+  limit: z.number().int().min(1).max(200).default(50),
+  onlyInvalid: z.boolean().optional(),
+});
+
+export const listWebhookLogsResponseSchema = z.object({
+  logs: z.array(waWebhookLogSchema),
+});
+
 // ── Contract ────────────────────────────────────────────────────────────────
 
 export const waCloudContract = {
@@ -331,6 +351,11 @@ export const waCloudContract = {
     .route({ method: "GET", path: "/templates", tags: ["WA Cloud"] })
     .input(z.object({ accountId: z.number().int().optional() }).optional())
     .output(listTemplatesResponseSchema),
+
+  listWebhookLogs: oc
+    .route({ method: "POST", path: "/webhook-logs", tags: ["WA Cloud"] })
+    .input(listWebhookLogsInputSchema)
+    .output(listWebhookLogsResponseSchema),
 };
 
 export type WaCloudContract = typeof waCloudContract;
