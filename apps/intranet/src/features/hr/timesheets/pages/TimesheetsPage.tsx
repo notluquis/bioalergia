@@ -79,8 +79,8 @@ export function TimesheetsPage() {
               className="w-full"
               isDisabled={activeEmployees.length === 0}
               placeholder="Seleccionar..."
-              selectedKey={selectedEmployeeId ? String(selectedEmployeeId) : null}
-              onSelectionChange={(key) => {
+              value={selectedEmployeeId ? String(selectedEmployeeId) : null}
+              onChange={(key) => {
                 const value = key ? Number(key) : null;
                 startTransition(() => {
                   setSelectedEmployeeId(value);
@@ -106,8 +106,8 @@ export function TimesheetsPage() {
           <div className="min-w-44">
             <Select
               className="w-full"
-              selectedKey={month}
-              onSelectionChange={(key) => {
+              value={month}
+              onChange={(key) => {
                 if (key) {
                   startTransition(() => {
                     setMonth(key.toString());
