@@ -162,6 +162,7 @@ export function WaCloudSettingsPage() {
               </ul>
             )}
             <CredentialsEditor accountId={acc.id} />
+            <ManualPhoneAdd accountId={acc.id} />
           </Card.Content>
         </Card>
       ))}
@@ -302,6 +303,67 @@ function CredentialsEditor({ accountId }: { accountId: number }) {
               ))}
             </div>
           )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ManualPhoneAdd({ accountId }: { accountId: number }) {
+  const upPhone = useUpsertPhoneNumber();
+  const [open, setOpen] = useState(false);
+  const [phoneNumberId, setPhoneNumberId] = useState("");
+  const [displayPhone, setDisplayPhone] = useState("");
+  const [label, setLabel] = useState("");
+
+  const save = async () => {
+    if (!phoneNumberId || !displayPhone) return;
+    await upPhone.mutateAsync({
+      accountId,
+      phoneNumberId,
+      displayPhoneNumber: displayPhone,
+      label: label || undefined,
+    });
+    setPhoneNumberId("");
+    setDisplayPhone("");
+    setLabel("");
+    setOpen(false);
+  };
+
+  return (
+    <div>
+      <Button size="sm" variant="ghost" onPress={() => setOpen((v) => !v)}>
+        {open ? "Cerrar" : "Agregar número manualmente"}
+      </Button>
+      {open && (
+        <div className="mt-3 space-y-2 rounded bg-default-50 p-3">
+          <p className="text-default-500 text-xs">
+            Útil cuando tu token no tiene scope <code>whatsapp_business_management</code> para
+            listar automáticamente. Pega los IDs desde Meta dashboard.
+          </p>
+          <TextInput
+            label="Phone Number ID"
+            required
+            value={phoneNumberId}
+            onValueChange={setPhoneNumberId}
+            placeholder="ej: 1084868904714116"
+          />
+          <TextInput
+            label="Display Phone Number"
+            required
+            value={displayPhone}
+            onValueChange={setDisplayPhone}
+            placeholder="ej: +1 555 631-8956"
+          />
+          <TextInput
+            label="Etiqueta"
+            value={label}
+            onValueChange={setLabel}
+            placeholder="Sandbox / Recepción / Doctor"
+          />
+          <Button variant="primary" size="sm" isDisabled={upPhone.isPending} onPress={save}>
+            {upPhone.isPending ? "Guardando..." : "Agregar número"}
+          </Button>
         </div>
       )}
     </div>
