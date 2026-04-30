@@ -797,6 +797,7 @@ model OneDriveAccount {
   watchChannels   OneDriveWatchChannel[]
   skinTestImports ClinicalSkinTestImport[]
   clinicalDocumentImports ClinicalDocumentImport[]
+  clinicalXlsxFiles ClinicalXlsxFile[]
 
   @@deny('all', auth() == null)
   @@allow('create,update,delete', auth().status == 'ACTIVE')
@@ -980,6 +981,37 @@ model ClinicalSeries {
   @@index([patientRut])
   @@index([beneficiaryRut])
   @@map("clinical_series")
+}
+
+model ClinicalXlsxFile {
+  id                    String                       @id @default(cuid())
+  oneDriveAccountId     String?                      @map("onedrive_account_id")
+  oneDriveItemId        String                       @map("onedrive_item_id")
+  oneDriveDriveId       String?                      @map("onedrive_drive_id")
+  oneDriveETag          String?                      @map("onedrive_etag")
+  oneDriveCTag          String?                      @map("onedrive_ctag")
+  oneDriveWebUrl        String?                      @map("onedrive_web_url")
+  path                  String?
+  filename              String
+  mimeType              String?                      @map("mime_type")
+  size                  Int?
+  modifiedAt            DateTime?                    @map("modified_at") @db.Timestamptz(3)
+  classification        ClinicalXlsxFileClassification @default(OTHER)
+  classificationReason  String?                      @map("classification_reason")
+  createdAt             DateTime                     @default(now()) @map("created_at")
+  updatedAt             DateTime                     @default(now()) @updatedAt @map("updated_at")
+
+  oneDriveAccount       OneDriveAccount?             @relation(fields: [oneDriveAccountId], references: [accountId], onDelete: SetNull)
+
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([classification])
+  @@index([modifiedAt])
+  @@index([oneDriveAccountId])
+  @@unique([oneDriveAccountId, oneDriveDriveId, oneDriveItemId])
+  @@map("clinical_xlsx_files")
 }
 
 model ClinicalSkinTestImport {
@@ -2260,6 +2292,12 @@ enum ClinicalSkinTestWorkbookSnapshotStatus {
   ARCHIVED
   ERROR
   STALE
+}
+
+enum ClinicalXlsxFileClassification {
+  SKIN_TEST
+  CLINICAL_DOCUMENT
+  OTHER
 }
 
 enum ClinicalDocumentImportKind {

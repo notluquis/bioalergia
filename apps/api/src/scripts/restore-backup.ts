@@ -136,6 +136,7 @@ const ORDER_HINT = [
   "Setting",
   "OneDriveAccount",
   "OneDriveWatchChannel",
+  "ClinicalXlsxFile",
   "Calendar",
   "CalendarWatchChannel",
   "Counterpart",
@@ -259,10 +260,28 @@ function normalizeRow(modelName: string, row: unknown) {
     if (copy.rawContentJson === null) delete copy.rawContentJson;
   }
 
+  if (modelName === "CalendarSyncLog" && copy.changeDetails === null) {
+    delete copy.changeDetails;
+  }
+
+  if (modelName === "CalendarSyncLogEntry") {
+    if (copy.attributes === null) delete copy.attributes;
+    if (copy.tags === null) delete copy.tags;
+  }
+
+  if (modelName === "SyncLog" && copy.changeDetails === null) {
+    delete copy.changeDetails;
+  }
+
+  if (modelName === "BackupLog" && copy.context === null) {
+    delete copy.context;
+  }
+
   if (
     modelName === "EmployeeTimesheet" ||
     modelName === "AttendanceMark" ||
-    modelName === "ClinicalSeriesMergeLog"
+    modelName === "ClinicalSeriesMergeLog" ||
+    modelName === "SyncLog"
   ) {
     copy.id = numericStringToBigInt(copy.id);
   }

@@ -2532,6 +2532,12 @@ export class SchemaType implements SchemaDef {
                     type: "ClinicalDocumentImport",
                     array: true,
                     relation: { opposite: "oneDriveAccount" }
+                },
+                clinicalXlsxFiles: {
+                    name: "clinicalXlsxFiles",
+                    type: "ClinicalXlsxFile",
+                    array: true,
+                    relation: { opposite: "oneDriveAccount" }
                 }
             },
             idFields: ["id"],
@@ -3147,6 +3153,105 @@ export class SchemaType implements SchemaDef {
             idFields: ["id"],
             uniqueFields: {
                 id: { type: "Int" }
+            }
+        },
+        ClinicalXlsxFile: {
+            name: "ClinicalXlsxFile",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                oneDriveAccountId: {
+                    name: "oneDriveAccountId",
+                    type: "String",
+                    optional: true,
+                    foreignKeyFor: [
+                        "oneDriveAccount"
+                    ] as readonly string[]
+                },
+                oneDriveItemId: {
+                    name: "oneDriveItemId",
+                    type: "String"
+                },
+                oneDriveDriveId: {
+                    name: "oneDriveDriveId",
+                    type: "String",
+                    optional: true
+                },
+                oneDriveETag: {
+                    name: "oneDriveETag",
+                    type: "String",
+                    optional: true
+                },
+                oneDriveCTag: {
+                    name: "oneDriveCTag",
+                    type: "String",
+                    optional: true
+                },
+                oneDriveWebUrl: {
+                    name: "oneDriveWebUrl",
+                    type: "String",
+                    optional: true
+                },
+                path: {
+                    name: "path",
+                    type: "String",
+                    optional: true
+                },
+                filename: {
+                    name: "filename",
+                    type: "String"
+                },
+                mimeType: {
+                    name: "mimeType",
+                    type: "String",
+                    optional: true
+                },
+                size: {
+                    name: "size",
+                    type: "Int",
+                    optional: true
+                },
+                modifiedAt: {
+                    name: "modifiedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                classification: {
+                    name: "classification",
+                    type: "ClinicalXlsxFileClassification",
+                    default: "OTHER" as FieldDefault
+                },
+                classificationReason: {
+                    name: "classificationReason",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                oneDriveAccount: {
+                    name: "oneDriveAccount",
+                    type: "OneDriveAccount",
+                    optional: true,
+                    relation: { opposite: "clinicalXlsxFiles", fields: ["oneDriveAccountId"], references: ["accountId"], onDelete: "SetNull" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" },
+                oneDriveAccountId_oneDriveDriveId_oneDriveItemId: { oneDriveAccountId: { type: "String" }, oneDriveDriveId: { type: "String" }, oneDriveItemId: { type: "String" } }
             }
         },
         ClinicalSkinTestImport: {
@@ -10121,6 +10226,14 @@ export class SchemaType implements SchemaDef {
                 ARCHIVED: "ARCHIVED",
                 ERROR: "ERROR",
                 STALE: "STALE"
+            }
+        },
+        ClinicalXlsxFileClassification: {
+            name: "ClinicalXlsxFileClassification",
+            values: {
+                SKIN_TEST: "SKIN_TEST",
+                CLINICAL_DOCUMENT: "CLINICAL_DOCUMENT",
+                OTHER: "OTHER"
             }
         },
         ClinicalDocumentImportKind: {

@@ -9,6 +9,10 @@ import {
   type OneDriveItem,
 } from "../lib/microsoft/onedrive";
 import {
+  classifyClinicalXlsxFilename,
+  type ClinicalXlsxFileClassification,
+} from "../lib/clinical-xlsx-file-classifier";
+import {
   parseSkinTestWorkbookBuffer,
   SKIN_TEST_PARSER_VERSION,
   type ParsedSkinTestInterpretation,
@@ -513,20 +517,29 @@ export async function syncClinicalSkinTestImports(options?: {
         xlsx,
       });
 
-      const result = await discoverOneDriveSkinTestItem(account.accountId, item, {
+      const result = await discoverOneDriveClinicalXlsxItem(account.accountId, item, {
         force: options?.force,
       });
 
-      if (result.syncAction === "SKIPPED_UNCHANGED") unchanged += 1;
-      else if (result.status === "DISCOVERED") discovered += 1;
-      else if (result.status === "IMPORTED") imported += 1;
-      else if (result.status === "PENDING_REVIEW") pending += 1;
-      else if (result.status === "ERROR") errors += 1;
-      else skipped += 1;
+      if (result.syncAction === "SKIPPED_UNCHANGED") {
+        unchanged += 1;
+      } else if (result.classification === "SKIN_TEST") {
+        if (result.status === "DISCOVERED") discovered += 1;
+        else if (result.status === "IMPORTED") imported += 1;
+        else if (result.status === "PENDING_REVIEW") pending += 1;
+        else if (result.status === "ERROR") errors += 1;
+        else skipped += 1;
+      } else if (result.classification === "CLINICAL_DOCUMENT") {
+        documents += 1;
+        if (result.status === "MATCHED") documentsMatched += 1;
+        else if (result.status === "UNMATCHED") documentsUnmatched += 1;
+      } else {
+        skipped += 1;
+      }
 
       filesProcessed += 1;
       emit(
-        `[${account.email}] ${item.name}: ${result.syncAction === "SKIPPED_UNCHANGED" ? "sin cambios" : result.status}`,
+        `[${account.email}] ${item.name}: ${result.syncAction === "SKIPPED_UNCHANGED" ? "sin cambios" : `${result.classification}:${result.status}`}`,
         {
           accountEmail: account.email,
           accountId: account.accountId,
@@ -735,6 +748,72 @@ export async function processOneDriveSkinTestItem(
     });
     return await getSkinTestImport(importId);
   }
+}
+
+async function discoverOneDriveClinicalXlsxItem(
+  accountId: string,
+  item: OneDriveItem,
+  options?: { force?: boolean }
+): Promise<{
+  classification: ClinicalXlsxFileClassification;
+  id: string;
+  status: ClinicalDocumentImportStatus | SkinTestImportStatus | "LIBRARY_ONLY";
+  syncAction?: "PROCESSED" | "SKIPPED_UNCHANGED";
+}> {
+  const driveId = item.parentReference?.driveId ?? "unknown";
+  const metadata = buildOneDriveItemMetadata(item, driveId);
+  const classification = classifyClinicalXlsxFilename(item.name);
+  const existing = await getClinicalXlsxFileByOneDriveItemId(accountId, driveId, item.id);
+
+  if (
+    existing &&
+    !options?.force &&
+    existing.oneDriveETag === metadata.eTag &&
+    existing.oneDriveCTag === metadata.cTag &&
+    existing.classification === classification.classification
+  ) {
+    return {
+      classification: classification.classification,
+      id: existing.id,
+      status: "LIBRARY_ONLY",
+      syncAction: "SKIPPED_UNCHANGED",
+    };
+  }
+
+  const libraryId = existing?.id ?? createId();
+  await upsertClinicalXlsxFile({
+    accountId,
+    classification,
+    id: libraryId,
+    metadata,
+  });
+
+  if (classification.classification === "SKIN_TEST") {
+    const result = await discoverOneDriveSkinTestItem(accountId, item, options);
+    return {
+      classification: "SKIN_TEST",
+      id: result.id,
+      status: result.status,
+      syncAction: result.syncAction ?? "PROCESSED",
+    };
+  }
+
+  if (classification.classification === "CLINICAL_DOCUMENT") {
+    const result = await discoverOneDriveClinicalDocument(accountId, item);
+    return {
+      classification: "CLINICAL_DOCUMENT",
+      id: result.id,
+      status: result.status,
+      syncAction: "PROCESSED",
+    };
+  }
+
+  return {
+    classification: "OTHER",
+    id: libraryId,
+    status: "LIBRARY_ONLY",
+    syncAction: "PROCESSED",
+  };
 }
 
 export async function discoverOneDriveClinicalDocument(
@@ -2095,6 +2174,103 @@ async function getClinicalDocumentImportByOneDriveItemId(
       AND onedrive_item_id = ${itemId}
   `.execute(kysely);
   return result.rows[0] ?? null;
+}
+
+async function getClinicalXlsxFileByOneDriveItemId(
+  accountId: string,
+  driveId: string,
+  itemId: string
+) {
+  const result = await sql<{
+    classification: ClinicalXlsxFileClassification;
+    id: string;
+    oneDriveCTag: null | string;
+    oneDriveETag: null | string;
+  }>`
+    SELECT
+      id,
+      classification,
+      onedrive_etag AS "oneDriveETag",
+      onedrive_ctag AS "oneDriveCTag"
+    FROM clinical_xlsx_files
+    WHERE onedrive_account_id = ${accountId}
+      AND onedrive_drive_id = ${driveId}
+      AND onedrive_item_id = ${itemId}
+  `.execute(kysely);
+  return result.rows[0] ?? null;
+}
+
+async function upsertClinicalXlsxFile(params: {
+  accountId: string;
+  classification: {
+    classification: ClinicalXlsxFileClassification;
+    reason: string;
+  };
+  id: string;
+  metadata: {
+    cTag: null | string;
+    driveId: null | string;
+    eTag: null | string;
+    filename: string;
+    id: string;
+    mimeType: null | string;
+    modifiedAt: null | string;
+    path: null | string;
+    size: null | number;
+    webUrl: null | string;
+  };
+}) {
+  await sql`
+    INSERT INTO clinical_xlsx_files (
+      id,
+      onedrive_account_id,
+      onedrive_item_id,
+      onedrive_drive_id,
+      onedrive_etag,
+      onedrive_ctag,
+      onedrive_web_url,
+      path,
+      filename,
+      mime_type,
+      size,
+      modified_at,
+      classification,
+      classification_reason,
+      created_at,
+      updated_at
+    )
+    VALUES (
+      ${params.id},
+      ${params.accountId},
+      ${params.metadata.id},
+      ${params.metadata.driveId},
+      ${params.metadata.eTag},
+      ${params.metadata.cTag},
+      ${params.metadata.webUrl},
+      ${params.metadata.path},
+      ${params.metadata.filename},
+      ${params.metadata.mimeType},
+      ${params.metadata.size},
+      ${params.metadata.modifiedAt}::timestamptz,
+      ${params.classification.classification}::"ClinicalXlsxFileClassification",
+      ${params.classification.reason},
+      now(),
+      now()
+    )
+    ON CONFLICT (onedrive_account_id, onedrive_drive_id, onedrive_item_id)
+    DO UPDATE SET
+      onedrive_etag = EXCLUDED.onedrive_etag,
+      onedrive_ctag = EXCLUDED.onedrive_ctag,
+      onedrive_web_url = EXCLUDED.onedrive_web_url,
+      path = EXCLUDED.path,
+      filename = EXCLUDED.filename,
+      mime_type = EXCLUDED.mime_type,
+      size = EXCLUDED.size,
+      modified_at = EXCLUDED.modified_at,
+      classification = EXCLUDED.classification,
+      classification_reason = EXCLUDED.classification_reason,
+      updated_at = now()
+  `.execute(kysely);
 }
 
 async function upsertImport(params: {
