@@ -138,14 +138,148 @@ export async function processWebhookPayload(payload: MetaWebhookPayload): Promis
     for (const change of entry.changes ?? []) {
       const FIELD = change.field;
       const v = change.value;
+      const wabaId = entry.id;
+
+      // ── Eventos a nivel WABA (no requieren phone_number_id) ──
+      // template_*: actualizar WaTemplate
+      if (
+        FIELD === "message_template_status_update" ||
+        FIELD === "message_template_quality_update" ||
+        FIELD === "template_category_update" ||
+        FIELD === "template_correct_category_detection" ||
+        FIELD === "message_template_components_update"
+      ) {
+        out.events += 1;
+        try {
+          const tplPayload = v as unknown as {
+            message_template_id?: string;
+            message_template_name?: string;
+            message_template_language?: string;
+            event?: string;
+            new_quality_score?: string;
+            new_category?: string;
+            old_category?: string;
+            reason?: string;
+          };
+          const account = await db.waBusinessAccount.findUnique({ where: { wabaId } });
+          if (account && tplPayload.message_template_name && tplPayload.message_template_language) {
+            const where = {
+              accountId_name_language: {
+                accountId: account.id,
+                name: tplPayload.message_template_name,
+                language: tplPayload.message_template_language,
+              },
+            };
+            const data: Record<string, unknown> = { syncedAt: new Date() };
+            if (FIELD === "message_template_status_update" && tplPayload.event) {
+              const statusMap: Record<string, string> = {
+                APPROVED: "APPROVED",
+                REJECTED: "REJECTED",
+                FLAGGED: "PAUSED",
+                PENDING: "PENDING",
+                PAUSED: "PAUSED",
+                DISABLED: "DISABLED",
+              };
+              data.status = statusMap[tplPayload.event] ?? tplPayload.event;
+            }
+            if (FIELD === "message_template_quality_update" && tplPayload.new_quality_score) {
+              data.qualityScore = tplPayload.new_quality_score;
+            }
+            if (FIELD === "template_category_update" && tplPayload.new_category) {
+              data.category = tplPayload.new_category;
+            }
+            const existing = await db.waTemplate.findUnique({ where });
+            if (existing) {
+              await db.waTemplate.update({ where, data });
+            }
+          }
+          logEvent("[wa-cloud.webhook] template event", { field: FIELD, ...tplPayload });
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          out.errors.push(`${FIELD}: ${msg}`);
+        }
+        continue;
+      }
+
+      // account_*: log + opcionalmente actualizar account (sin fields aún en schema)
+      if (
+        FIELD === "account_alerts" ||
+        FIELD === "account_review_update" ||
+        FIELD === "account_settings_update" ||
+        FIELD === "account_update" ||
+        FIELD === "business_capability_update" ||
+        FIELD === "business_status_update" ||
+        FIELD === "automatic_events" ||
+        FIELD === "security" ||
+        FIELD === "partner_solutions" ||
+        FIELD === "payment_configuration_update" ||
+        FIELD === "user_preferences"
+      ) {
+        out.events += 1;
+        logEvent(`[wa-cloud.webhook] ${FIELD}`, { wabaId, value: v });
+        continue;
+      }
+
       const phoneNumberId = v.metadata?.phone_number_id;
-      if (!phoneNumberId) continue;
+      if (!phoneNumberId) {
+        // Eventos sin phone_number_id ya manejados arriba; warn si llegan otros
+        logWarn("[wa-cloud.webhook] skip sin phone_number_id", { field: FIELD });
+        continue;
+      }
       const phoneRow = await db.waPhoneNumber.findUnique({
         where: { phoneNumberId },
         include: { account: true },
       });
       if (!phoneRow) {
         out.errors.push(`PhoneNumber ${phoneNumberId} no registrado (field=${FIELD})`);
+        continue;
+      }
+
+      // ── phone_number_*: actualizar WaPhoneNumber ──
+      if (FIELD === "phone_number_quality_update") {
+        out.events += 1;
+        try {
+          const p = v as unknown as { current_limit?: string; event?: string };
+          await db.waPhoneNumber.update({
+            where: { id: phoneRow.id },
+            data: { qualityRating: p.current_limit ?? p.event ?? null },
+          });
+        } catch (err) {
+          out.errors.push(`phone quality: ${err instanceof Error ? err.message : String(err)}`);
+        }
+        continue;
+      }
+      if (FIELD === "phone_number_name_update") {
+        out.events += 1;
+        try {
+          const p = v as unknown as { decision?: string; display_phone_number?: string };
+          if (p.display_phone_number) {
+            await db.waPhoneNumber.update({
+              where: { id: phoneRow.id },
+              data: { displayPhoneNumber: p.display_phone_number },
+            });
+          }
+          logEvent("[wa-cloud.webhook] phone name update", { decision: p.decision });
+        } catch (err) {
+          out.errors.push(`phone name: ${err instanceof Error ? err.message : String(err)}`);
+        }
+        continue;
+      }
+
+      // ── calls / flows / messaging_handovers / standby / tracking_events: log ──
+      if (
+        FIELD === "calls" ||
+        FIELD === "flows" ||
+        FIELD === "messaging_handovers" ||
+        FIELD === "standby" ||
+        FIELD === "tracking_events" ||
+        FIELD === "group_lifecycle_update" ||
+        FIELD === "group_participants_update" ||
+        FIELD === "group_settings_update" ||
+        FIELD === "group_status_update"
+      ) {
+        out.events += 1;
+        logEvent(`[wa-cloud.webhook] ${FIELD}`, { phoneNumberId, value: v });
         continue;
       }
 
