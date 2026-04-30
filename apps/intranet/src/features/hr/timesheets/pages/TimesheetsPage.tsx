@@ -108,11 +108,7 @@ export function TimesheetsPage() {
               className="w-full"
               value={month}
               onChange={(key) => {
-                if (key) {
-                  startTransition(() => {
-                    setMonth(key.toString());
-                  });
-                }
+                if (key) setMonth(key.toString());
               }}
             >
               <Label>Periodo</Label>

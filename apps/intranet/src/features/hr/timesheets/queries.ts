@@ -1,4 +1,4 @@
-import { queryOptions } from "@tanstack/react-query";
+import { keepPreviousData, queryOptions } from "@tanstack/react-query";
 
 import { fetchTimesheetDetail, fetchTimesheetMonths, fetchTimesheetSummary } from "./api";
 
@@ -24,6 +24,7 @@ export const timesheetQueries = {
     }),
   summary: (month: string, employeeId?: null | number) =>
     queryOptions({
+      placeholderData: keepPreviousData,
       queryFn: () => fetchTimesheetSummary(month, employeeId),
       queryKey: timesheetKeys.summary(month),
     }),
