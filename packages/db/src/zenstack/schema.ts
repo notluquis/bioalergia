@@ -210,12 +210,6 @@ export class SchemaType implements SchemaDef {
                     array: true,
                     relation: { opposite: "user" }
                 },
-                permissionVersion: {
-                    name: "permissionVersion",
-                    type: "UserPermissionVersion",
-                    optional: true,
-                    relation: { opposite: "user" }
-                },
                 roles: {
                     name: "roles",
                     type: "UserRoleAssignment",
@@ -714,49 +708,6 @@ export class SchemaType implements SchemaDef {
             idFields: ["userId", "roleId"],
             uniqueFields: {
                 userId_roleId: { userId: { type: "Int" }, roleId: { type: "Int" } }
-            }
-        },
-        UserPermissionVersion: {
-            name: "UserPermissionVersion",
-            fields: {
-                userId: {
-                    name: "userId",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("user_id") }] }] as readonly AttributeApplication[],
-                    foreignKeyFor: [
-                        "user"
-                    ] as readonly string[]
-                },
-                version: {
-                    name: "version",
-                    type: "Int",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(1) }] }] as readonly AttributeApplication[],
-                    default: 1 as FieldDefault
-                },
-                updatedAt: {
-                    name: "updatedAt",
-                    type: "DateTime",
-                    updatedAt: true,
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[],
-                    default: ExpressionUtils.call("now") as FieldDefault
-                },
-                user: {
-                    name: "user",
-                    type: "User",
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("userId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }] as readonly AttributeApplication[],
-                    relation: { opposite: "permissionVersion", fields: ["userId"], references: ["id"], onDelete: "Cascade" }
-                }
-            },
-            attributes: [
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("update") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("user_permission_versions") }] }
-            ] as readonly AttributeApplication[],
-            idFields: ["userId"],
-            uniqueFields: {
-                userId: { type: "Int" }
             }
         },
         Employee: {
@@ -5197,53 +5148,6 @@ export class SchemaType implements SchemaDef {
             idFields: ["id"],
             uniqueFields: {
                 id: { type: "BigInt" }
-            }
-        },
-        BackupLog: {
-            name: "BackupLog",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "String",
-                    id: true,
-                    attributes: [{ name: "@id" }] as readonly AttributeApplication[]
-                },
-                timestamp: {
-                    name: "timestamp",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }] as readonly AttributeApplication[],
-                    default: ExpressionUtils.call("now") as FieldDefault
-                },
-                level: {
-                    name: "level",
-                    type: "String"
-                },
-                message: {
-                    name: "message",
-                    type: "String"
-                },
-                context: {
-                    name: "context",
-                    type: "Json",
-                    optional: true
-                },
-                jobId: {
-                    name: "jobId",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("job_id") }] }] as readonly AttributeApplication[]
-                }
-            },
-            attributes: [
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("timestamp")]) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("backup_logs") }] }
-            ] as readonly AttributeApplication[],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "String" }
             }
         },
         InventoryCategory: {

@@ -3,6 +3,7 @@ import {
   archiveMissingSkinTestWorkbookSnapshots,
   getSkinTestImportJobType,
   processDiscoveredSkinTestImports,
+  reclassifyClinicalXlsxLibrary,
   syncClinicalSkinTestImports,
   type SkinTestImportStatus,
 } from "../../services/clinical-skin-test-imports";
@@ -318,6 +319,86 @@ export async function startClinicalSkinTestArchiveSnapshotsJob(options?: {
 
       failJob(jobId, message);
       logError("clinicalSkinTests.archiveSnapshots.failed", error, {
+        trigger: options?.trigger ?? "manual",
+      });
+    }
+  })();
+
+  return jobId;
+}
+
+export async function startClinicalXlsxLibraryReclassifyJob(options?: {
+  trigger?: string;
+}): Promise<string> {
+  const jobType = getSkinTestImportJobType();
+  const activeJobs = getActiveJobsByType(jobType);
+  if (activeJobs.length > 0) {
+    return activeJobs[0].id;
+  }
+
+  const jobId = startJob(jobType, 1);
+  updateJobProgress(jobId, 0, "Preparando reclasificación de librería XLSX", {
+    mode: "reclassify-xlsx-library",
+    phase: "processing",
+  });
+  let progressTotal = 1;
+  let phaseStartedAt = Date.now();
+  let phaseStartedAtProgress = 0;
+
+  void (async () => {
+    try {
+      const result = await reclassifyClinicalXlsxLibrary({
+        shouldCancel: () => isJobCancelled(jobId),
+        onProgress: ({ message, processed, total, ...meta }) => {
+          if (total !== progressTotal || processed < phaseStartedAtProgress) {
+            progressTotal = total;
+            phaseStartedAt = Date.now();
+            phaseStartedAtProgress = processed;
+          }
+
+          const elapsedSeconds = Math.max(0, (Date.now() - phaseStartedAt) / 1000);
+          const completedInPhase = processed - phaseStartedAtProgress;
+          const remainingInPhase = total - processed;
+          const etaSeconds =
+            completedInPhase > 0 && remainingInPhase > 0 && elapsedSeconds >= 2
+              ? Math.round((elapsedSeconds / completedInPhase) * remainingInPhase)
+              : null;
+
+          updateJobProgress(
+            jobId,
+            processed,
+            message,
+            {
+              ...meta,
+              elapsedSeconds: Math.round(elapsedSeconds),
+              etaSeconds,
+              mode: "reclassify-xlsx-library",
+            },
+            total
+          );
+        },
+      });
+      completeJob(jobId, result, "Reclasificación de librería XLSX completada", {
+        ...result,
+        mode: "reclassify-xlsx-library",
+        phase: "completed",
+      });
+      logEvent("clinicalSkinTests.xlsxLibraryReclassify.completed", {
+        result,
+        trigger: options?.trigger ?? "manual",
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (message === "SYNC_CANCELLED") {
+        cancelJob(jobId, "Reclasificación cancelada por usuario");
+        logEvent("clinicalSkinTests.xlsxLibraryReclassify.cancelled", {
+          trigger: options?.trigger ?? "manual",
+        });
+        return;
+      }
+
+      failJob(jobId, message);
+      logError("clinicalSkinTests.xlsxLibraryReclassify.failed", error, {
         trigger: options?.trigger ?? "manual",
       });
     }

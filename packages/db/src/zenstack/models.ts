@@ -5,7 +5,7 @@
 
 /* eslint-disable */
 
-import { schema as $schema, type SchemaType as $Schema } from "./schema-lite.js";
+import { schema as $schema, type SchemaType as $Schema } from "./schema-lite";
 import type { ModelResult as $ModelResult } from "@zenstackhq/orm";
 export type Person = $ModelResult<$Schema, "Person">;
 export type User = $ModelResult<$Schema, "User">;
@@ -15,7 +15,6 @@ export type Role = $ModelResult<$Schema, "Role">;
 export type Permission = $ModelResult<$Schema, "Permission">;
 export type RolePermission = $ModelResult<$Schema, "RolePermission">;
 export type UserRoleAssignment = $ModelResult<$Schema, "UserRoleAssignment">;
-export type UserPermissionVersion = $ModelResult<$Schema, "UserPermissionVersion">;
 export type Employee = $ModelResult<$Schema, "Employee">;
 export type AttendanceMark = $ModelResult<$Schema, "AttendanceMark">;
 export type OfficeNetwork = $ModelResult<$Schema, "OfficeNetwork">;
@@ -50,7 +49,6 @@ export type ClinicalSkinTestResult = $ModelResult<$Schema, "ClinicalSkinTestResu
 export type ClinicalSeriesMergeLog = $ModelResult<$Schema, "ClinicalSeriesMergeLog">;
 export type AbandonmentContact = $ModelResult<$Schema, "AbandonmentContact">;
 export type SyncLog = $ModelResult<$Schema, "SyncLog">;
-export type BackupLog = $ModelResult<$Schema, "BackupLog">;
 export type InventoryCategory = $ModelResult<$Schema, "InventoryCategory">;
 export type InventoryItem = $ModelResult<$Schema, "InventoryItem">;
 export type InventoryMovement = $ModelResult<$Schema, "InventoryMovement">;

@@ -129,7 +129,6 @@ const ORDER_HINT = [
   "Role",
   "RolePermission",
   "UserRoleAssignment",
-  "UserPermissionVersion",
   "Passkey",
   "DebugToken",
   "Patient",
@@ -173,7 +172,6 @@ const ORDER_HINT = [
   "SupplyRequest",
   "CommonSupply",
   "SyncLog",
-  "BackupLog",
   "CalendarSyncLog",
   "CalendarSyncLogEntry",
   "DoctoraliaSyncLog",
@@ -273,10 +271,6 @@ function normalizeRow(modelName: string, row: unknown) {
     delete copy.changeDetails;
   }
 
-  if (modelName === "BackupLog" && copy.context === null) {
-    delete copy.context;
-  }
-
   if (
     modelName === "EmployeeTimesheet" ||
     modelName === "AttendanceMark" ||
@@ -331,7 +325,7 @@ async function createManyOverride(
   const inserted = await kysely
     .insertInto("employee_timesheets")
     .values(rows.map(normalizeEmployeeTimesheetForInsert))
-    .onConflict((oc) => oc.columns(["employee_id", "work_date"]).doNothing())
+    .onConflict((oc) => oc.doNothing())
     .returning("id")
     .execute();
   return { count: inserted.length };

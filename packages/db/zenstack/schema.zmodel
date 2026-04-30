@@ -72,7 +72,6 @@ model User {
   dailyProductionBalances DailyProductionBalance[]
   pushSubscriptions       PushSubscription[]
   supplyRequests          SupplyRequest[]
-  permissionVersion       UserPermissionVersion?
   roles                   UserRoleAssignment[]
   medicalCertificates     MedicalCertificate[]
   issuedDebugTokens       DebugToken[]               @relation("DebugTokenIssuedBy")
@@ -215,20 +214,6 @@ model UserRoleAssignment {
   @@allow('create,delete', auth().status == 'ACTIVE')
 
   @@map("user_role_assignments")
-}
-
-model UserPermissionVersion {
-  userId    Int      @id @map("user_id")
-  version   Int      @default(1)
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  // Access policies
-  @@deny('all', auth() == null)
-  @@allow('read', true)
-  @@allow('update', auth().status == 'ACTIVE')
-
-  @@map("user_permission_versions")
 }
 
 model Employee {
@@ -1329,23 +1314,6 @@ model SyncLog {
   @@index([triggerSource])
   @@index([startedAt])
   @@map("sync_logs")
-}
-
-model BackupLog {
-  id        String   @id
-  timestamp DateTime @default(now())
-  level     String
-  message   String
-  context   Json?
-  jobId     String?  @map("job_id")
-
-  // Access policies
-  @@deny('all', auth() == null)
-  @@allow('read', true)
-  @@allow('create', auth().status == 'ACTIVE')
-
-  @@index([timestamp(sort: Desc)])
-  @@map("backup_logs")
 }
 
 model InventoryCategory {

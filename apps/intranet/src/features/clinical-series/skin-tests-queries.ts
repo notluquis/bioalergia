@@ -299,6 +299,16 @@ export function useProcessDiscoveredSkinTestImports() {
   });
 }
 
+export function useReclassifyClinicalXlsxLibrary() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => await clinicalSkinTestsORPCClient.reclassifyXlsxLibrary({}),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: skinTestImportKeys.activeJob() });
+    },
+  });
+}
+
 export function useArchiveSkinTestWorkbookSnapshots() {
   const queryClient = useQueryClient();
   return useMutation({

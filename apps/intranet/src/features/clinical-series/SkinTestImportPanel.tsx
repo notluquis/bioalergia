@@ -50,6 +50,7 @@ import {
   useProcessSkinTestImports,
   useOneDriveFolderPreview,
   useRejectSkinTestImport,
+  useReclassifyClinicalXlsxLibrary,
   useRenewOneDriveSubscription,
   useReprocessSkinTestImport,
   useSkinTestImports,
@@ -119,6 +120,9 @@ interface SkinTestSyncJobMeta {
   accountEmail?: string;
   accountIndex?: number;
   accountsTotal?: number;
+  archived?: number;
+  changed?: number;
+  clinicalDocumentsToSkinTests?: number;
   discovered?: number;
   documents?: number;
   documentsMatched?: number;
@@ -133,6 +137,8 @@ interface SkinTestSyncJobMeta {
   filesTotal?: number;
   filename?: string;
   imported?: number;
+  importableSkinTests?: number;
+  libraryOnlySkinTests?: number;
   page?: number;
   pending?: number;
   phase?:
@@ -147,7 +153,6 @@ interface SkinTestSyncJobMeta {
   skipped?: number;
   unchanged?: number;
   xlsx?: number;
-  archived?: number;
 }
 
 const SYNC_PHASE_LABELS: Record<NonNullable<SkinTestSyncJobMeta["phase"]>, string> = {
@@ -167,6 +172,12 @@ function getSyncJobMeta(meta: unknown): SkinTestSyncJobMeta {
     accountEmail: typeof value.accountEmail === "string" ? value.accountEmail : undefined,
     accountIndex: typeof value.accountIndex === "number" ? value.accountIndex : undefined,
     accountsTotal: typeof value.accountsTotal === "number" ? value.accountsTotal : undefined,
+    archived: typeof value.archived === "number" ? value.archived : undefined,
+    changed: typeof value.changed === "number" ? value.changed : undefined,
+    clinicalDocumentsToSkinTests:
+      typeof value.clinicalDocumentsToSkinTests === "number"
+        ? value.clinicalDocumentsToSkinTests
+        : undefined,
     discovered: typeof value.discovered === "number" ? value.discovered : undefined,
     documents: typeof value.documents === "number" ? value.documents : undefined,
     documentsMatched:
@@ -188,6 +199,10 @@ function getSyncJobMeta(meta: unknown): SkinTestSyncJobMeta {
     filesTotal: typeof value.filesTotal === "number" ? value.filesTotal : undefined,
     filename: typeof value.filename === "string" ? value.filename : undefined,
     imported: typeof value.imported === "number" ? value.imported : undefined,
+    importableSkinTests:
+      typeof value.importableSkinTests === "number" ? value.importableSkinTests : undefined,
+    libraryOnlySkinTests:
+      typeof value.libraryOnlySkinTests === "number" ? value.libraryOnlySkinTests : undefined,
     page: typeof value.page === "number" ? value.page : undefined,
     pending: typeof value.pending === "number" ? value.pending : undefined,
     phase: isSyncPhase(value.phase) ? value.phase : undefined,
@@ -195,7 +210,6 @@ function getSyncJobMeta(meta: unknown): SkinTestSyncJobMeta {
     skipped: typeof value.skipped === "number" ? value.skipped : undefined,
     unchanged: typeof value.unchanged === "number" ? value.unchanged : undefined,
     xlsx: typeof value.xlsx === "number" ? value.xlsx : undefined,
-    archived: typeof value.archived === "number" ? value.archived : undefined,
   };
 }
 
@@ -247,6 +261,7 @@ export function SkinTestImportPanel() {
   const syncMutation = useSyncSkinTestImports();
   const cancelJobMutation = useCancelClinicalSkinTestJob();
   const archiveSnapshotsMutation = useArchiveSkinTestWorkbookSnapshots();
+  const reclassifyXlsxLibraryMutation = useReclassifyClinicalXlsxLibrary();
   const processDiscoveredMutation = useProcessDiscoveredSkinTestImports();
   const processSelectedMutation = useProcessSkinTestImports();
   const connectOneDrive = useConnectOneDrive();
@@ -469,6 +484,17 @@ export function SkinTestImportPanel() {
     }
   }
 
+  async function handleReclassifyXlsxLibrary() {
+    try {
+      const result = await reclassifyXlsxLibraryMutation.mutateAsync();
+      setActiveJobId(result.jobId);
+      setSelectedImportIds({});
+      toast.success("Reclasificación de XLSX iniciada", "Tests cutáneos");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo iniciar reclasificación");
+    }
+  }
+
   return (
     <div className="space-y-4">
       <Surface className="rounded-xl p-4">
@@ -497,7 +523,7 @@ export function SkinTestImportPanel() {
         </div>
 
         {oneDrive.data?.connected && (
-          <div className="mt-4 grid gap-3 xl:grid-cols-3">
+          <div className="mt-4 grid gap-3 xl:grid-cols-4">
             <div className="flex min-h-36 flex-col justify-between rounded-lg bg-content2 p-3">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
@@ -538,6 +564,33 @@ export function SkinTestImportPanel() {
                 <div className="flex items-center gap-2">
                   <Chip size="sm" color="accent" variant="soft">
                     2
+                  </Chip>
+                  <h3 className="text-sm font-semibold">Reclasificar librería</h3>
+                </div>
+                <p className="text-xs text-foreground-500">
+                  Reaplica palabras clave sobre los nombres ya escaneados y agrega tests importables
+                  a descubiertos.
+                </p>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onPress={() => void handleReclassifyXlsxLibrary()}
+                  isDisabled={isSyncInProgress}
+                  isPending={reclassifyXlsxLibraryMutation.isPending}
+                >
+                  <ServerCog size={14} />
+                  Reclasificar XLSX
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex min-h-36 flex-col justify-between rounded-lg bg-content2 p-3">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <Chip size="sm" color="accent" variant="soft">
+                    3
                   </Chip>
                   <h3 className="text-sm font-semibold">Guardar XLSX en DB</h3>
                 </div>
@@ -593,7 +646,7 @@ export function SkinTestImportPanel() {
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <Chip size="sm" color="accent" variant="soft">
-                    3
+                    4
                   </Chip>
                   <h3 className="text-sm font-semibold">Clasificar y procesar</h3>
                 </div>
@@ -670,6 +723,16 @@ export function SkinTestImportPanel() {
               {syncMeta.page != null && <span>Lote Graph: {syncMeta.page}</span>}
               {syncMeta.scanned != null && <span>Items OneDrive: {syncMeta.scanned}</span>}
               {syncMeta.xlsx != null && <span>XLSX: {syncMeta.xlsx}</span>}
+              {syncMeta.changed != null && <span>Reclasificados: {syncMeta.changed}</span>}
+              {syncMeta.importableSkinTests != null && (
+                <span>Tests importables: {syncMeta.importableSkinTests}</span>
+              )}
+              {syncMeta.libraryOnlySkinTests != null && (
+                <span>Solo librería: {syncMeta.libraryOnlySkinTests}</span>
+              )}
+              {syncMeta.clinicalDocumentsToSkinTests != null && (
+                <span>Docs a tests: {syncMeta.clinicalDocumentsToSkinTests}</span>
+              )}
               {syncMeta.archived != null && <span>Snapshots: {syncMeta.archived}</span>}
               {syncMeta.downloadedBytes != null && (
                 <span>Descargado: {formatBytes(syncMeta.downloadedBytes)}</span>

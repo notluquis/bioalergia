@@ -12,6 +12,7 @@ import {
   classifyClinicalXlsxFilename,
   type ClinicalXlsxFileClassification,
 } from "../lib/clinical-xlsx-file-classifier";
+import { isImportableSkinTestFilename } from "../lib/skin-test-file-filter";
 import {
   parseSkinTestWorkbookBuffer,
   SKIN_TEST_PARSER_VERSION,
@@ -300,6 +301,148 @@ let clinicalSeriesNameCache: ClinicalSeriesNameEntry[] | null = null;
 
 export function getSkinTestImportJobType() {
   return JOB_TYPE;
+}
+
+export async function reclassifyClinicalXlsxLibrary(options?: {
+  onProgress?: (progress: SkinTestSyncProgress & { message: string }) => void;
+  shouldCancel?: () => boolean;
+}) {
+  const rows = (
+    await sql<
+      {
+        classification: ClinicalXlsxFileClassification;
+        filename: string;
+        id: string;
+        modifiedAt: null | string;
+        oneDriveAccountId: string;
+        oneDriveCTag: null | string;
+        oneDriveDriveId: null | string;
+        oneDriveETag: null | string;
+        oneDriveItemId: string;
+        oneDriveWebUrl: null | string;
+        path: null | string;
+        mimeType: null | string;
+        size: null | number;
+      }
+    >`
+      SELECT
+        id,
+        onedrive_account_id AS "oneDriveAccountId",
+        onedrive_item_id AS "oneDriveItemId",
+        onedrive_drive_id AS "oneDriveDriveId",
+        onedrive_etag AS "oneDriveETag",
+        onedrive_ctag AS "oneDriveCTag",
+        onedrive_web_url AS "oneDriveWebUrl",
+        path,
+        filename,
+        mime_type AS "mimeType",
+        size,
+        modified_at::text AS "modifiedAt",
+        classification
+      FROM clinical_xlsx_files
+      ORDER BY updated_at DESC, id ASC
+    `.execute(kysely)
+  ).rows;
+
+  let changed = 0;
+  let clinicalDocumentsToSkinTests = 0;
+  let importableSkinTests = 0;
+  let queuedImports = 0;
+  let libraryOnlySkinTests = 0;
+  let skippedUnchanged = 0;
+
+  const total = rows.length;
+  options?.onProgress?.({
+    message: `Reclasificando ${total} XLSX de la librería`,
+    phase: "processing",
+    processed: 0,
+    total,
+  });
+
+  for (const [index, row] of rows.entries()) {
+    if (options?.shouldCancel?.()) throw new Error("SYNC_CANCELLED");
+
+    const next = classifyClinicalXlsxFilename(row.filename);
+    if (next.classification === row.classification) {
+      skippedUnchanged += 1;
+    } else {
+      changed += 1;
+      if (row.classification === "CLINICAL_DOCUMENT" && next.classification === "SKIN_TEST") {
+        clinicalDocumentsToSkinTests += 1;
+      }
+      await sql`
+        UPDATE clinical_xlsx_files
+        SET classification = ${next.classification}::"ClinicalXlsxFileClassification",
+            classification_reason = ${next.reason},
+            updated_at = now()
+        WHERE id = ${row.id}
+      `.execute(kysely);
+    }
+
+    if (next.classification === "SKIN_TEST") {
+      if (isImportableSkinTestFilename(row.filename)) {
+        importableSkinTests += 1;
+        const driveId = row.oneDriveDriveId ?? "unknown";
+        const existingImport = await getImportByOneDriveItemId(
+          row.oneDriveAccountId,
+          driveId,
+          row.oneDriveItemId
+        );
+        if (!existingImport) {
+          queuedImports += 1;
+          await upsertImport({
+            accountId: row.oneDriveAccountId,
+            confidence: 0,
+            duplicateOfImportId: null,
+            error: null,
+            id: createId(),
+            issues: [],
+            metadata: {
+              cTag: row.oneDriveCTag,
+              driveId,
+              eTag: row.oneDriveETag,
+              filename: row.filename,
+              id: row.oneDriveItemId,
+              mimeType: row.mimeType,
+              modifiedAt: row.modifiedAt,
+              path: row.path,
+              size: row.size,
+              webUrl: row.oneDriveWebUrl,
+            },
+            parsedPayload: null,
+            resultHash: null,
+            status: "DISCOVERED",
+          });
+        }
+      } else {
+        libraryOnlySkinTests += 1;
+      }
+    }
+
+    const processed = index + 1;
+    if (processed % 250 === 0 || processed === total) {
+      options?.onProgress?.({
+        discovered: queuedImports,
+        imported: importableSkinTests,
+        message: `Reclasificados ${processed}/${total} XLSX`,
+        phase: "processing",
+        processed,
+        skipped: skippedUnchanged,
+        total,
+        xlsx: total,
+      });
+    }
+  }
+
+  return {
+    changed,
+    clinicalDocumentsToSkinTests,
+    importableSkinTests,
+    libraryOnlySkinTests,
+    queuedImports,
+    skippedUnchanged,
+    total,
+  };
 }
 
 export async function syncClinicalSkinTestImports(options?: {
@@ -788,7 +931,7 @@ async function discoverOneDriveClinicalXlsxItem(
     metadata,
   });
 
-  if (classification.classification === "SKIN_TEST") {
+  if (classification.classification === "SKIN_TEST" && isImportableSkinTestFilename(item.name)) {
     const result = await discoverOneDriveSkinTestItem(accountId, item, options);
     return {
       classification: "SKIN_TEST",

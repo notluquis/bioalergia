@@ -185,12 +185,6 @@ export class SchemaType implements SchemaDef {
                     array: true,
                     relation: { opposite: "user" }
                 },
-                permissionVersion: {
-                    name: "permissionVersion",
-                    type: "UserPermissionVersion",
-                    optional: true,
-                    relation: { opposite: "user" }
-                },
                 roles: {
                     name: "roles",
                     type: "UserRoleAssignment",
@@ -599,39 +593,6 @@ export class SchemaType implements SchemaDef {
             idFields: ["userId", "roleId"],
             uniqueFields: {
                 userId_roleId: { userId: { type: "Int" }, roleId: { type: "Int" } }
-            }
-        },
-        UserPermissionVersion: {
-            name: "UserPermissionVersion",
-            fields: {
-                userId: {
-                    name: "userId",
-                    type: "Int",
-                    id: true,
-                    foreignKeyFor: [
-                        "user"
-                    ] as readonly string[]
-                },
-                version: {
-                    name: "version",
-                    type: "Int",
-                    default: 1 as FieldDefault
-                },
-                updatedAt: {
-                    name: "updatedAt",
-                    type: "DateTime",
-                    updatedAt: true,
-                    default: ExpressionUtils.call("now") as FieldDefault
-                },
-                user: {
-                    name: "user",
-                    type: "User",
-                    relation: { opposite: "permissionVersion", fields: ["userId"], references: ["id"], onDelete: "Cascade" }
-                }
-            },
-            idFields: ["userId"],
-            uniqueFields: {
-                userId: { type: "Int" }
             }
         },
         Employee: {
@@ -4264,43 +4225,6 @@ export class SchemaType implements SchemaDef {
             idFields: ["id"],
             uniqueFields: {
                 id: { type: "BigInt" }
-            }
-        },
-        BackupLog: {
-            name: "BackupLog",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "String",
-                    id: true
-                },
-                timestamp: {
-                    name: "timestamp",
-                    type: "DateTime",
-                    default: ExpressionUtils.call("now") as FieldDefault
-                },
-                level: {
-                    name: "level",
-                    type: "String"
-                },
-                message: {
-                    name: "message",
-                    type: "String"
-                },
-                context: {
-                    name: "context",
-                    type: "Json",
-                    optional: true
-                },
-                jobId: {
-                    name: "jobId",
-                    type: "String",
-                    optional: true
-                }
-            },
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "String" }
             }
         },
         InventoryCategory: {

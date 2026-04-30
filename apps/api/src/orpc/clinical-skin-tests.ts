@@ -42,6 +42,7 @@ import {
   startClinicalSkinTestArchiveSnapshotsJob,
   startClinicalSkinTestImportJob,
   startClinicalSkinTestProcessDiscoveredJob,
+  startClinicalXlsxLibraryReclassifyJob,
 } from "../lib/clinical-skin-tests/clinical-skin-test-scheduler";
 import { cancelJob, getActiveJobsByType, getJobStatus } from "../lib/jobQueue";
 import {
@@ -306,6 +307,18 @@ const routerBase = {
         jobId: await startClinicalSkinTestProcessDiscoveredJob({
           query: input.query,
           trigger: "manual:process-discovered",
+        }),
+      };
+    }),
+
+  reclassifyXlsxLibrary: updateClinicalSkinTests
+    .route({ method: "POST", path: "/xlsx-library/reclassify" })
+    .input(z.object({}))
+    .output(skinTestSyncOutputSchema)
+    .handler(async () => {
+      return {
+        jobId: await startClinicalXlsxLibraryReclassifyJob({
+          trigger: "manual:reclassify-xlsx-library",
         }),
       };
     }),

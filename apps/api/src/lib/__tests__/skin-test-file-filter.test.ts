@@ -18,6 +18,13 @@ describe("skin test file filter", () => {
     expect(isSkinTestCandidateFilename("MAIR HASSON GOLUBOFF - TEST CUTANEO AINES.xlsx")).toBe(
       true
     );
+    expect(isSkinTestCandidateFilename("_MULTISTEST ANTIBIOTICO - AINES.xlsx")).toBe(true);
+    expect(isSkinTestCandidateFilename("_TEST DE PARCHE 30 ALERGENOS.xlsx")).toBe(true);
+    expect(isSkinTestCandidateFilename("patch test alimentario.xlsx")).toBe(true);
+    expect(isSkinTestCandidateFilename("_panel aeroalérgenos I, + LTP, PROFILINA, LATEX.xlsx"))
+      .toBe(true);
+    expect(isSkinTestCandidateFilename("TEST LATEX LORENA DELGADO.xlsx")).toBe(true);
+    expect(isSkinTestCandidateFilename("PANEL ALIMENTARIO-INSECTARIO.xlsx")).toBe(true);
   });
 
   it("rejects generic clinical and patient spreadsheets", () => {
@@ -40,6 +47,10 @@ describe("skin test file filter", () => {
     expect(isSkinTestTemplateFilename("Copia de PRICK TEST panel aeroalérgenos I(219136).xlsx"))
       .toBe(true);
     expect(isSkinTestTemplateFilename("MULTITEST 1, 2 , 3 Y Acaros 2020 (2).xlsx")).toBe(true);
+    expect(isSkinTestTemplateFilename("_TEST DE PARCHE 30 ALERGENOS.xlsx")).toBe(true);
+    expect(isSkinTestTemplateFilename("FORMATO TEST DE PARCHE RESULTADOS.xlsx")).toBe(true);
+    expect(isImportableSkinTestFilename("Costos Test Parche.xlsx")).toBe(false);
+    expect(isImportableSkinTestFilename("invententario test de parche.xlsx")).toBe(false);
   });
 
   it("keeps patient-specific skin test files importable even if they contain nuevo or copia", () => {
@@ -52,5 +63,9 @@ describe("skin test file filter", () => {
     expect(
       isImportableSkinTestFilename("MAIR HASSON GOLUBOFF - TEST CUTANEO AINES.xlsx")
     ).toBe(true);
+    expect(
+      isImportableSkinTestFilename("_TEST DE PARCHE 30 ALERGENOS VICTORIA SAEZ PAREDES.xlsx")
+    ).toBe(true);
+    expect(isImportableSkinTestFilename("TEST LATEX LORENA DELGADO.xlsx")).toBe(true);
   });
 });

@@ -492,6 +492,10 @@ export const clinicalSkinTestsContract = {
     .route({ method: "POST", path: "/imports/process-discovered" })
     .input(skinTestProcessDiscoveredInputSchema)
     .output(skinTestSyncOutputSchema),
+  reclassifyXlsxLibrary: oc
+    .route({ method: "POST", path: "/xlsx-library/reclassify" })
+    .input(z.object({}))
+    .output(skinTestSyncOutputSchema),
   archiveSnapshots: oc
     .route({ method: "POST", path: "/imports/archive-snapshots" })
     .input(skinTestArchiveSnapshotsInputSchema)
