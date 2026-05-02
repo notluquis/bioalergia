@@ -60,7 +60,7 @@ import { Route as AuthedHrAuditRouteImport } from "./routes/_authed/hr/audit"
 import { Route as AuthedHrAttendanceRouteImport } from "./routes/_authed/hr/attendance"
 import { Route as AuthedFinanzasStatisticsRouteImport } from "./routes/_authed/finanzas/statistics"
 import { Route as AuthedFinanzasProductionBalancesRouteImport } from "./routes/_authed/finanzas/production-balances"
-import { Route as AuthedFinanzasPersonalCreditsRouteImport } from "./routes/_authed/finanzas/personal-credits"
+import { Route as AuthedFinanzasPersonalRouteImport } from "./routes/_authed/finanzas/personal"
 import { Route as AuthedFinanzasLoansRouteImport } from "./routes/_authed/finanzas/loans"
 import { Route as AuthedFinanzasDteAnalyticsRouteImport } from "./routes/_authed/finanzas/dte-analytics"
 import { Route as AuthedFinanzasDashboardRouteImport } from "./routes/_authed/finanzas/dashboard"
@@ -87,7 +87,7 @@ import { Route as AuthedPatientsIdNewBudgetRouteImport } from "./routes/_authed/
 import { Route as AuthedOutreachEstablecimientosRbdRouteImport } from "./routes/_authed/outreach/establecimientos.$rbd"
 import { Route as AuthedOutreachCampanasNuevaRouteImport } from "./routes/_authed/outreach/campanas.nueva"
 import { Route as AuthedOutreachCampanasIdRouteImport } from "./routes/_authed/outreach/campanas.$id"
-import { Route as AuthedFinanzasPersonalCreditsCreditIdRouteImport } from "./routes/_authed/finanzas/personal-credits.$creditId"
+import { Route as AuthedFinanzasPersonalCreditIdRouteImport } from "./routes/_authed/finanzas/personal.$creditId"
 
 const OnboardingRoute = OnboardingRouteImport.update({
   id: "/onboarding",
@@ -353,12 +353,11 @@ const AuthedFinanzasProductionBalancesRoute =
     path: "/production-balances",
     getParentRoute: () => AuthedFinanzasRoute,
   } as any)
-const AuthedFinanzasPersonalCreditsRoute =
-  AuthedFinanzasPersonalCreditsRouteImport.update({
-    id: "/personal-credits",
-    path: "/personal-credits",
-    getParentRoute: () => AuthedFinanzasRoute,
-  } as any)
+const AuthedFinanzasPersonalRoute = AuthedFinanzasPersonalRouteImport.update({
+  id: "/personal",
+  path: "/personal",
+  getParentRoute: () => AuthedFinanzasRoute,
+} as any)
 const AuthedFinanzasLoansRoute = AuthedFinanzasLoansRouteImport.update({
   id: "/loans",
   path: "/loans",
@@ -501,11 +500,11 @@ const AuthedOutreachCampanasIdRoute =
     path: "/$id",
     getParentRoute: () => AuthedOutreachCampanasRoute,
   } as any)
-const AuthedFinanzasPersonalCreditsCreditIdRoute =
-  AuthedFinanzasPersonalCreditsCreditIdRouteImport.update({
+const AuthedFinanzasPersonalCreditIdRoute =
+  AuthedFinanzasPersonalCreditIdRouteImport.update({
     id: "/$creditId",
     path: "/$creditId",
-    getParentRoute: () => AuthedFinanzasPersonalCreditsRoute,
+    getParentRoute: () => AuthedFinanzasPersonalRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -541,7 +540,7 @@ export interface FileRoutesByFullPath {
   "/finanzas/dashboard": typeof AuthedFinanzasDashboardRoute
   "/finanzas/dte-analytics": typeof AuthedFinanzasDteAnalyticsRoute
   "/finanzas/loans": typeof AuthedFinanzasLoansRoute
-  "/finanzas/personal-credits": typeof AuthedFinanzasPersonalCreditsRouteWithChildren
+  "/finanzas/personal": typeof AuthedFinanzasPersonalRouteWithChildren
   "/finanzas/production-balances": typeof AuthedFinanzasProductionBalancesRoute
   "/finanzas/statistics": typeof AuthedFinanzasStatisticsRoute
   "/hr/attendance": typeof AuthedHrAttendanceRoute
@@ -576,7 +575,7 @@ export interface FileRoutesByFullPath {
   "/services/": typeof AuthedServicesIndexRoute
   "/settings/": typeof AuthedSettingsIndexRoute
   "/wa-cloud/": typeof AuthedWaCloudIndexRoute
-  "/finanzas/personal-credits/$creditId": typeof AuthedFinanzasPersonalCreditsCreditIdRoute
+  "/finanzas/personal/$creditId": typeof AuthedFinanzasPersonalCreditIdRoute
   "/outreach/campanas/$id": typeof AuthedOutreachCampanasIdRoute
   "/outreach/campanas/nueva": typeof AuthedOutreachCampanasNuevaRoute
   "/outreach/establecimientos/$rbd": typeof AuthedOutreachEstablecimientosRbdRoute
@@ -615,7 +614,7 @@ export interface FileRoutesByTo {
   "/finanzas/dashboard": typeof AuthedFinanzasDashboardRoute
   "/finanzas/dte-analytics": typeof AuthedFinanzasDteAnalyticsRoute
   "/finanzas/loans": typeof AuthedFinanzasLoansRoute
-  "/finanzas/personal-credits": typeof AuthedFinanzasPersonalCreditsRouteWithChildren
+  "/finanzas/personal": typeof AuthedFinanzasPersonalRouteWithChildren
   "/finanzas/production-balances": typeof AuthedFinanzasProductionBalancesRoute
   "/finanzas/statistics": typeof AuthedFinanzasStatisticsRoute
   "/hr/attendance": typeof AuthedHrAttendanceRoute
@@ -650,7 +649,7 @@ export interface FileRoutesByTo {
   "/services": typeof AuthedServicesIndexRoute
   "/settings": typeof AuthedSettingsIndexRoute
   "/wa-cloud": typeof AuthedWaCloudIndexRoute
-  "/finanzas/personal-credits/$creditId": typeof AuthedFinanzasPersonalCreditsCreditIdRoute
+  "/finanzas/personal/$creditId": typeof AuthedFinanzasPersonalCreditIdRoute
   "/outreach/campanas/$id": typeof AuthedOutreachCampanasIdRoute
   "/outreach/campanas/nueva": typeof AuthedOutreachCampanasNuevaRoute
   "/outreach/establecimientos/$rbd": typeof AuthedOutreachEstablecimientosRbdRoute
@@ -697,7 +696,7 @@ export interface FileRoutesById {
   "/_authed/finanzas/dashboard": typeof AuthedFinanzasDashboardRoute
   "/_authed/finanzas/dte-analytics": typeof AuthedFinanzasDteAnalyticsRoute
   "/_authed/finanzas/loans": typeof AuthedFinanzasLoansRoute
-  "/_authed/finanzas/personal-credits": typeof AuthedFinanzasPersonalCreditsRouteWithChildren
+  "/_authed/finanzas/personal": typeof AuthedFinanzasPersonalRouteWithChildren
   "/_authed/finanzas/production-balances": typeof AuthedFinanzasProductionBalancesRoute
   "/_authed/finanzas/statistics": typeof AuthedFinanzasStatisticsRoute
   "/_authed/hr/attendance": typeof AuthedHrAttendanceRoute
@@ -732,7 +731,7 @@ export interface FileRoutesById {
   "/_authed/services/": typeof AuthedServicesIndexRoute
   "/_authed/settings/": typeof AuthedSettingsIndexRoute
   "/_authed/wa-cloud/": typeof AuthedWaCloudIndexRoute
-  "/_authed/finanzas/personal-credits/$creditId": typeof AuthedFinanzasPersonalCreditsCreditIdRoute
+  "/_authed/finanzas/personal/$creditId": typeof AuthedFinanzasPersonalCreditIdRoute
   "/_authed/outreach/campanas/$id": typeof AuthedOutreachCampanasIdRoute
   "/_authed/outreach/campanas/nueva": typeof AuthedOutreachCampanasNuevaRoute
   "/_authed/outreach/establecimientos/$rbd": typeof AuthedOutreachEstablecimientosRbdRoute
@@ -779,7 +778,7 @@ export interface FileRouteTypes {
     | "/finanzas/dashboard"
     | "/finanzas/dte-analytics"
     | "/finanzas/loans"
-    | "/finanzas/personal-credits"
+    | "/finanzas/personal"
     | "/finanzas/production-balances"
     | "/finanzas/statistics"
     | "/hr/attendance"
@@ -814,7 +813,7 @@ export interface FileRouteTypes {
     | "/services/"
     | "/settings/"
     | "/wa-cloud/"
-    | "/finanzas/personal-credits/$creditId"
+    | "/finanzas/personal/$creditId"
     | "/outreach/campanas/$id"
     | "/outreach/campanas/nueva"
     | "/outreach/establecimientos/$rbd"
@@ -853,7 +852,7 @@ export interface FileRouteTypes {
     | "/finanzas/dashboard"
     | "/finanzas/dte-analytics"
     | "/finanzas/loans"
-    | "/finanzas/personal-credits"
+    | "/finanzas/personal"
     | "/finanzas/production-balances"
     | "/finanzas/statistics"
     | "/hr/attendance"
@@ -888,7 +887,7 @@ export interface FileRouteTypes {
     | "/services"
     | "/settings"
     | "/wa-cloud"
-    | "/finanzas/personal-credits/$creditId"
+    | "/finanzas/personal/$creditId"
     | "/outreach/campanas/$id"
     | "/outreach/campanas/nueva"
     | "/outreach/establecimientos/$rbd"
@@ -934,7 +933,7 @@ export interface FileRouteTypes {
     | "/_authed/finanzas/dashboard"
     | "/_authed/finanzas/dte-analytics"
     | "/_authed/finanzas/loans"
-    | "/_authed/finanzas/personal-credits"
+    | "/_authed/finanzas/personal"
     | "/_authed/finanzas/production-balances"
     | "/_authed/finanzas/statistics"
     | "/_authed/hr/attendance"
@@ -969,7 +968,7 @@ export interface FileRouteTypes {
     | "/_authed/services/"
     | "/_authed/settings/"
     | "/_authed/wa-cloud/"
-    | "/_authed/finanzas/personal-credits/$creditId"
+    | "/_authed/finanzas/personal/$creditId"
     | "/_authed/outreach/campanas/$id"
     | "/_authed/outreach/campanas/nueva"
     | "/_authed/outreach/establecimientos/$rbd"
@@ -1348,11 +1347,11 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedFinanzasProductionBalancesRouteImport
       parentRoute: typeof AuthedFinanzasRoute
     }
-    "/_authed/finanzas/personal-credits": {
-      id: "/_authed/finanzas/personal-credits"
-      path: "/personal-credits"
-      fullPath: "/finanzas/personal-credits"
-      preLoaderRoute: typeof AuthedFinanzasPersonalCreditsRouteImport
+    "/_authed/finanzas/personal": {
+      id: "/_authed/finanzas/personal"
+      path: "/personal"
+      fullPath: "/finanzas/personal"
+      preLoaderRoute: typeof AuthedFinanzasPersonalRouteImport
       parentRoute: typeof AuthedFinanzasRoute
     }
     "/_authed/finanzas/loans": {
@@ -1537,12 +1536,12 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedOutreachCampanasIdRouteImport
       parentRoute: typeof AuthedOutreachCampanasRoute
     }
-    "/_authed/finanzas/personal-credits/$creditId": {
-      id: "/_authed/finanzas/personal-credits/$creditId"
+    "/_authed/finanzas/personal/$creditId": {
+      id: "/_authed/finanzas/personal/$creditId"
       path: "/$creditId"
-      fullPath: "/finanzas/personal-credits/$creditId"
-      preLoaderRoute: typeof AuthedFinanzasPersonalCreditsCreditIdRouteImport
-      parentRoute: typeof AuthedFinanzasPersonalCreditsRoute
+      fullPath: "/finanzas/personal/$creditId"
+      preLoaderRoute: typeof AuthedFinanzasPersonalCreditIdRouteImport
+      parentRoute: typeof AuthedFinanzasPersonalRoute
     }
   }
 }
@@ -1596,19 +1595,18 @@ const AuthedClinicalRouteWithChildren = AuthedClinicalRoute._addFileChildren(
   AuthedClinicalRouteChildren,
 )
 
-interface AuthedFinanzasPersonalCreditsRouteChildren {
-  AuthedFinanzasPersonalCreditsCreditIdRoute: typeof AuthedFinanzasPersonalCreditsCreditIdRoute
+interface AuthedFinanzasPersonalRouteChildren {
+  AuthedFinanzasPersonalCreditIdRoute: typeof AuthedFinanzasPersonalCreditIdRoute
 }
 
-const AuthedFinanzasPersonalCreditsRouteChildren: AuthedFinanzasPersonalCreditsRouteChildren =
+const AuthedFinanzasPersonalRouteChildren: AuthedFinanzasPersonalRouteChildren =
   {
-    AuthedFinanzasPersonalCreditsCreditIdRoute:
-      AuthedFinanzasPersonalCreditsCreditIdRoute,
+    AuthedFinanzasPersonalCreditIdRoute: AuthedFinanzasPersonalCreditIdRoute,
   }
 
-const AuthedFinanzasPersonalCreditsRouteWithChildren =
-  AuthedFinanzasPersonalCreditsRoute._addFileChildren(
-    AuthedFinanzasPersonalCreditsRouteChildren,
+const AuthedFinanzasPersonalRouteWithChildren =
+  AuthedFinanzasPersonalRoute._addFileChildren(
+    AuthedFinanzasPersonalRouteChildren,
   )
 
 interface AuthedFinanzasRouteChildren {
@@ -1618,7 +1616,7 @@ interface AuthedFinanzasRouteChildren {
   AuthedFinanzasDashboardRoute: typeof AuthedFinanzasDashboardRoute
   AuthedFinanzasDteAnalyticsRoute: typeof AuthedFinanzasDteAnalyticsRoute
   AuthedFinanzasLoansRoute: typeof AuthedFinanzasLoansRoute
-  AuthedFinanzasPersonalCreditsRoute: typeof AuthedFinanzasPersonalCreditsRouteWithChildren
+  AuthedFinanzasPersonalRoute: typeof AuthedFinanzasPersonalRouteWithChildren
   AuthedFinanzasProductionBalancesRoute: typeof AuthedFinanzasProductionBalancesRoute
   AuthedFinanzasStatisticsRoute: typeof AuthedFinanzasStatisticsRoute
 }
@@ -1630,8 +1628,7 @@ const AuthedFinanzasRouteChildren: AuthedFinanzasRouteChildren = {
   AuthedFinanzasDashboardRoute: AuthedFinanzasDashboardRoute,
   AuthedFinanzasDteAnalyticsRoute: AuthedFinanzasDteAnalyticsRoute,
   AuthedFinanzasLoansRoute: AuthedFinanzasLoansRoute,
-  AuthedFinanzasPersonalCreditsRoute:
-    AuthedFinanzasPersonalCreditsRouteWithChildren,
+  AuthedFinanzasPersonalRoute: AuthedFinanzasPersonalRouteWithChildren,
   AuthedFinanzasProductionBalancesRoute: AuthedFinanzasProductionBalancesRoute,
   AuthedFinanzasStatisticsRoute: AuthedFinanzasStatisticsRoute,
 }

@@ -3,7 +3,7 @@ import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { personalFinanceQueries } from "@/features/personal-finance/queries";
 import { PersonalCreditDetailsPageWrapper } from "@/features/personal-finance/pages/PersonalCreditDetailsPage";
 
-export const Route = createFileRoute("/_authed/finanzas/personal-credits/$creditId")({
+export const Route = createFileRoute("/_authed/finanzas/personal/$creditId")({
   staticData: {
     breadcrumb: (data: unknown) => {
       const credit = data as
@@ -25,8 +25,8 @@ export const Route = createFileRoute("/_authed/finanzas/personal-credits/$credit
   loader: async ({ context: { queryClient }, params }) => {
     const creditId = Number(params.creditId);
     if (Number.isNaN(creditId)) {
-      const routeApi = getRouteApi("/_authed/finanzas/personal-credits/$creditId");
-      throw routeApi.redirect({ to: "/finanzas/personal-credits" });
+      const routeApi = getRouteApi("/_authed/finanzas/personal/$creditId");
+      throw routeApi.redirect({ to: "/finanzas/personal", search: { tab: "creditos" } });
     }
     await queryClient.ensureQueryData(personalFinanceQueries.detail(creditId));
   },

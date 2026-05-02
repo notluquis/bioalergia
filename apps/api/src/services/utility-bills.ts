@@ -1,10 +1,15 @@
-// Utility bill scrapers for Essbio (water) and CGE (electricity)
-// Both endpoints are public — no auth required at runtime.
+// Utility bill scrapers for Essbio (water), CGE (electricity), and future providers.
+// Both known endpoints are public — no auth required at runtime.
+
+import { db } from "@finanzas/db";
+import { Decimal } from "decimal.js";
+
+type UtilityProvider = "CGE" | "ESSBIO" | "OTHER";
 
 const ESSBIO_BASE = "https://www.essbio.cl";
 const CGE_ORCHESTRATOR = "https://orchestrator-portalescge-prd.lfr.cloud";
 
-// ─── Essbio ───────────────────────────────────────────────────────────────────
+// ─── Raw fetchers ─────────────────────────────────────────────────────────────
 
 export interface EssbioBillResult {
   accountNumber: string;
@@ -41,7 +46,6 @@ export async function fetchEssbioBill(serviceNumber: string): Promise<EssbioBill
     throw new Error(`Essbio request failed: ${response.status}`);
   }
 
-  // Actual field names from the API (verified by testing)
   const data = (await response.json()) as {
     CodError?: string;
     MsgError?: null | string;
@@ -49,7 +53,7 @@ export async function fetchEssbioBill(serviceNumber: string): Promise<EssbioBill
     deuda?: number | string;
     direccion?: string;
     empresa?: string;
-    item?: string; // JSON string: {"Fecha":"10-03-2026","Monto":14980}
+    item?: string;
     nombre_cliente?: string;
     observacion?: null | string;
     regulado?: string;
@@ -81,9 +85,6 @@ export async function fetchEssbioBill(serviceNumber: string): Promise<EssbioBill
     regulated: data.regulado === "si",
   };
 }
-
-// ─── CGE ─────────────────────────────────────────────────────────────────────
-// Token validation is not enforced server-side — any value works.
 
 export interface CgeBillResult {
   accountNumber: string;
@@ -153,4 +154,128 @@ export async function fetchCgeBill(accountNumber: string): Promise<CgeBillResult
     previousBill: Number(cupon.antBoleta ?? 0),
     thirdBill: Number(cupon.terBoleta ?? 0),
   };
+}
+
+// ─── Normalized bill result (used by refreshAccount) ─────────────────────────
+
+export interface BillRefreshResult {
+  address: string;
+  clientName: string;
+  currentAmount: number;
+  previousAmount: number;
+}
+
+async function fetchBillForProvider(
+  provider: UtilityProvider,
+  serviceNumber: string,
+): Promise<BillRefreshResult> {
+  if (provider === "ESSBIO") {
+    const r = await fetchEssbioBill(serviceNumber);
+    return {
+      address: r.address,
+      clientName: r.clientName,
+      currentAmount: r.currentDebt,
+      previousAmount: r.previousBalance,
+    };
+  }
+
+  if (provider === "CGE") {
+    const r = await fetchCgeBill(serviceNumber);
+    return {
+      address: r.address,
+      clientName: r.clientName,
+      currentAmount: r.currentBill,
+      previousAmount: r.previousBill,
+    };
+  }
+
+  throw new Error(`No scraper implemented for provider: ${provider}`);
+}
+
+// ─── UtilityAccount CRUD ──────────────────────────────────────────────────────
+
+export interface UtilityAccountPayload {
+  expenseServiceId?: null | number;
+  isActive?: boolean;
+  label?: null | string;
+  notes?: null | string;
+  provider: UtilityProvider;
+  serviceNumber: string;
+}
+
+type RawAccount = Awaited<ReturnType<typeof db.utilityAccount.findFirstOrThrow>>;
+
+function mapAccount(a: RawAccount) {
+  return {
+    ...a,
+    lastAmount: a.lastAmount !== null ? Number(a.lastAmount) : null,
+    lastPreviousAmount: a.lastPreviousAmount !== null ? Number(a.lastPreviousAmount) : null,
+  };
+}
+
+export async function listUtilityAccounts(filters: { isActive?: boolean; provider?: string }) {
+  const accounts = await db.utilityAccount.findMany({
+    where: {
+      ...(filters.isActive !== undefined ? { isActive: filters.isActive } : {}),
+      ...(filters.provider ? { provider: filters.provider as UtilityProvider } : {}),
+    },
+    orderBy: [{ provider: "asc" }, { label: "asc" }],
+  });
+  return accounts.map(mapAccount);
+}
+
+export async function createUtilityAccount(payload: UtilityAccountPayload) {
+  const account = await db.utilityAccount.create({
+    data: {
+      expenseServiceId: payload.expenseServiceId ?? null,
+      isActive: payload.isActive ?? true,
+      label: payload.label ?? null,
+      notes: payload.notes ?? null,
+      provider: payload.provider,
+      serviceNumber: payload.serviceNumber,
+    },
+  });
+  return mapAccount(account);
+}
+
+export async function updateUtilityAccount(id: number, payload: UtilityAccountPayload) {
+  const account = await db.utilityAccount.update({
+    where: { id },
+    data: {
+      expenseServiceId: payload.expenseServiceId ?? null,
+      isActive: payload.isActive ?? true,
+      label: payload.label ?? null,
+      notes: payload.notes ?? null,
+      provider: payload.provider,
+      serviceNumber: payload.serviceNumber,
+    },
+  });
+  return mapAccount(account);
+}
+
+export async function deleteUtilityAccount(id: number) {
+  await db.utilityAccount.delete({ where: { id } });
+}
+
+export async function refreshUtilityAccount(id: number) {
+  const account = await db.utilityAccount.findFirst({ where: { id } });
+
+  if (!account) {
+    return null;
+  }
+
+  const bill = await fetchBillForProvider(account.provider, account.serviceNumber);
+
+  const updated = await db.utilityAccount.update({
+    where: { id },
+    data: {
+      address: bill.address,
+      clientName: bill.clientName,
+      lastAmount: new Decimal(bill.currentAmount),
+      lastFetchedAt: new Date(),
+      lastPreviousAmount: new Decimal(bill.previousAmount),
+    },
+  });
+
+  return { account: mapAccount(updated), bill };
 }

@@ -1,18 +1,30 @@
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import {
-  fetchCgeBillInputSchema,
-  fetchCgeBillResponseSchema,
-  fetchEssbioBillInputSchema,
-  fetchEssbioBillResponseSchema,
+  cgeBillResultSchema,
+  essbioBillResultSchema,
+  listUtilityAccountsInputSchema,
+  utilityAccountDetailResponseSchema,
+  utilityAccountListResponseSchema,
+  utilityAccountPayloadSchema,
+  utilityAccountRefreshResponseSchema,
 } from "@finanzas/orpc-contracts/utility-bills";
 import { ORPCError, onError, os } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context as HonoContext } from "hono";
+import { z } from "zod";
 import { getSessionUser } from "../auth";
 import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
-import { fetchCgeBill, fetchEssbioBill } from "../services/utility-bills";
+import {
+  createUtilityAccount,
+  deleteUtilityAccount,
+  fetchCgeBill,
+  fetchEssbioBill,
+  listUtilityAccounts,
+  refreshUtilityAccount,
+  updateUtilityAccount,
+} from "../services/utility-bills";
 import { SuperJSONRPCHandler } from "./superjson";
 
 configureSuperjson();
@@ -33,20 +45,79 @@ const authed = base.use(async ({ context, next }) => {
   return next({ context: { ...context, user } });
 });
 
+const idInputSchema = z.object({ id: z.number().int() });
+
 const utilityBillsRouterBase = {
+  // ─── UtilityAccount CRUD ──────────────────────────────────────────────────
+
+  createAccount: authed
+    .route({ method: "POST", path: "/accounts" })
+    .input(utilityAccountPayloadSchema)
+    .output(utilityAccountDetailResponseSchema)
+    .handler(async ({ input }) => {
+      const account = await createUtilityAccount(input);
+      return { account, status: "ok" as const };
+    }),
+
+  deleteAccount: authed
+    .route({ method: "DELETE", path: "/accounts/{id}" })
+    .input(idInputSchema)
+    .output(z.object({ status: z.literal("ok") }))
+    .handler(async ({ input }) => {
+      await deleteUtilityAccount(input.id);
+      return { status: "ok" as const };
+    }),
+
+  listAccounts: authed
+    .route({ method: "GET", path: "/accounts" })
+    .input(listUtilityAccountsInputSchema)
+    .output(utilityAccountListResponseSchema)
+    .handler(async ({ input }) => {
+      const accounts = await listUtilityAccounts({
+        isActive: input.isActive,
+        provider: input.provider,
+      });
+      return { accounts, status: "ok" as const };
+    }),
+
+  updateAccount: authed
+    .route({ method: "PUT", path: "/accounts/{id}" })
+    .input(z.object({ id: z.number().int(), payload: utilityAccountPayloadSchema }))
+    .output(utilityAccountDetailResponseSchema)
+    .handler(async ({ input }) => {
+      const account = await updateUtilityAccount(input.id, input.payload);
+      return { account, status: "ok" as const };
+    }),
+
+  refreshAccount: authed
+    .route({ method: "POST", path: "/accounts/{id}/refresh" })
+    .input(idInputSchema)
+    .output(utilityAccountRefreshResponseSchema)
+    .handler(async ({ input }) => {
+      const result = await refreshUtilityAccount(input.id);
+
+      if (!result) {
+        throw new ORPCError("NOT_FOUND", { message: "Utility account not found" });
+      }
+
+      return { account: result.account, bill: result.bill, status: "ok" as const };
+    }),
+
+  // ─── One-off raw fetches ──────────────────────────────────────────────────
+
   fetchEssbio: authed
-    .route({ method: "POST", path: "/essbio" })
-    .input(fetchEssbioBillInputSchema)
-    .output(fetchEssbioBillResponseSchema)
+    .route({ method: "POST", path: "/fetch/essbio" })
+    .input(z.object({ serviceNumber: z.string().min(1) }))
+    .output(z.object({ bill: essbioBillResultSchema, status: z.literal("ok") }))
     .handler(async ({ input }) => {
       const bill = await fetchEssbioBill(input.serviceNumber);
       return { bill, status: "ok" as const };
     }),
 
   fetchCge: authed
-    .route({ method: "POST", path: "/cge" })
-    .input(fetchCgeBillInputSchema)
-    .output(fetchCgeBillResponseSchema)
+    .route({ method: "POST", path: "/fetch/cge" })
+    .input(z.object({ accountNumber: z.string().min(1) }))
+    .output(z.object({ bill: cgeBillResultSchema, status: z.literal("ok") }))
     .handler(async ({ input }) => {
       const bill = await fetchCgeBill(input.accountNumber);
       return { bill, status: "ok" as const };
@@ -75,7 +146,7 @@ export const utilityBillsOpenAPIHandler = new OpenAPIHandler(utilityBillsORPCRou
       specGenerateOptions: {
         info: {
           title: "Bioalergia Utility Bills oRPC",
-          description: "Essbio (agua) y CGE (electricidad) — consulta de deuda sin autenticación.",
+          description: "Cuentas de servicios básicos (Essbio, CGE, etc.) — CRUD y consulta de deuda.",
           version: "1.0.0",
         },
       },

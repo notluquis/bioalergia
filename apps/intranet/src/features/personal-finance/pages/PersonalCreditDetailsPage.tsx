@@ -75,7 +75,7 @@ export function PersonalCreditDetailsPage({ creditId }: { creditId: number }) {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Link to="/finanzas/personal-credits">
+        <Link to="/finanzas/personal" search={{ tab: "creditos" }}>
           <Button isIconOnly size="sm" variant="ghost" className=" size-8 p-0 ">
             <ArrowLeftIcon className="size-4" />
           </Button>
@@ -134,7 +134,7 @@ export function PersonalCreditDetailsPage({ creditId }: { creditId: number }) {
   );
 }
 export function PersonalCreditDetailsPageWrapper() {
-  const params = useParams({ from: "/_authed/finanzas/personal-credits/$creditId" });
+  const params = useParams({ from: "/_authed/finanzas/personal/$creditId" });
   const creditId = Number(params.creditId);
 
   if (Number.isNaN(creditId)) {

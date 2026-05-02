@@ -10139,6 +10139,87 @@ export class SchemaType implements SchemaDef {
                 publicId: { type: "String" }
             }
         },
+        UtilityAccount: {
+            name: "UtilityAccount",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                provider: {
+                    name: "provider",
+                    type: "UtilityProvider"
+                },
+                serviceNumber: {
+                    name: "serviceNumber",
+                    type: "String",
+                    unique: true
+                },
+                label: {
+                    name: "label",
+                    type: "String",
+                    optional: true
+                },
+                clientName: {
+                    name: "clientName",
+                    type: "String",
+                    optional: true
+                },
+                address: {
+                    name: "address",
+                    type: "String",
+                    optional: true
+                },
+                lastFetchedAt: {
+                    name: "lastFetchedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                lastAmount: {
+                    name: "lastAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                lastPreviousAmount: {
+                    name: "lastPreviousAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                expenseServiceId: {
+                    name: "expenseServiceId",
+                    type: "Int",
+                    optional: true
+                },
+                isActive: {
+                    name: "isActive",
+                    type: "Boolean",
+                    default: true as FieldDefault
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                serviceNumber: { type: "String" }
+            }
+        },
         ExpenseTransaction: {
             name: "ExpenseTransaction",
             fields: {
@@ -10785,6 +10866,14 @@ export class SchemaType implements SchemaDef {
             values: {
                 MONTHLY: "MONTHLY",
                 ONE_TIME: "ONE_TIME"
+            }
+        },
+        UtilityProvider: {
+            name: "UtilityProvider",
+            values: {
+                ESSBIO: "ESSBIO",
+                CGE: "CGE",
+                OTHER: "OTHER"
             }
         }
     } as const;

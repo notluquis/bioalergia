@@ -3740,6 +3740,43 @@ model Expense {
   @@map("expenses")
 }
 
+// ─── Utility Accounts ────────────────────────────────────────────────────────
+
+enum UtilityProvider {
+  ESSBIO
+  CGE
+  OTHER
+}
+
+model UtilityAccount {
+  id               Int             @id @default(autoincrement())
+  provider         UtilityProvider
+  serviceNumber    String          @unique @map("service_number") // Essbio: numero_servicio, CGE: CTA_CTO
+  label            String?         // e.g. "Casa San Pedro", "Clínica"
+
+  // Cached from last API fetch
+  clientName       String?         @map("client_name")
+  address          String?
+  lastFetchedAt    DateTime?       @map("last_fetched_at")
+  lastAmount       Decimal?        @map("last_amount") @db.Decimal(15, 2)
+  lastPreviousAmount Decimal?      @map("last_previous_amount") @db.Decimal(15, 2)
+
+  // Optional link to ExpenseService for auto-generating monthly expenses
+  expenseServiceId Int?            @map("expense_service_id")
+
+  isActive         Boolean         @default(true) @map("is_active")
+  notes            String?
+  createdAt        DateTime        @default(now()) @map("created_at")
+  updatedAt        DateTime        @default(now()) @updatedAt @map("updated_at")
+
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@schema("personal")
+  @@map("utility_accounts")
+}
+
 model ExpenseTransaction {
   id            Int      @id @default(autoincrement())
   expenseId     Int      @map("expense_id")
