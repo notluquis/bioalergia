@@ -83,7 +83,7 @@ function normalizeSkinTestFilename(filename: string): string {
 }
 
 function isAdministrativeSkinTestWorkbookName(spaced: string): boolean {
-  if (/\b(?:costos?|cotizacion|inventario|invententario|recepcion|solicitud)\b/.test(spaced)) {
+  if (/\b(?:costos?|cotizacion|inventario|invententario|recepcion|solicitud|lista)\b/.test(spaced)) {
     return true;
   }
 
