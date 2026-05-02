@@ -98,19 +98,23 @@ export async function extractSkinTestWorkbookSnapshot(
   const cells: SkinTestWorkbookSnapshotCell[] = [];
   worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
     row.eachCell({ includeEmpty: false }, (cell, colNumber) => {
-      if (isEmptyCell(cell)) return;
-      cells.push({
-        a1: cell.address,
-        c: colNumber,
-        note: serializeNote(cell.note),
-        r: rowNumber,
-        raw: serializeCellValue(cell.value),
-        result: serializeFormulaResult(cell.value),
-        style: serializeCellStyle(cell),
-        text: cell.text ?? "",
-        type: getCellType(cell.value),
-        ...(getFormula(cell.value) ? { formula: getFormula(cell.value) } : {}),
-      });
+      try {
+        if (isEmptyCell(cell)) return;
+        cells.push({
+          a1: cell.address,
+          c: colNumber,
+          note: serializeNote(cell.note),
+          r: rowNumber,
+          raw: serializeCellValue(cell.value),
+          result: serializeFormulaResult(cell.value),
+          style: serializeCellStyle(cell),
+          text: cell.text ?? "",
+          type: getCellType(cell.value),
+          ...(getFormula(cell.value) ? { formula: getFormula(cell.value) } : {}),
+        });
+      } catch {
+        // skip malformed cell, continue with rest of sheet
+      }
     });
   });
 
@@ -232,7 +236,7 @@ export async function persistSkinTestWorkbookSnapshot({
 }
 
 function isEmptyCell(cell: ExcelJS.Cell): boolean {
-  return cell.value === null || cell.value === undefined || cell.text.trim() === "";
+  return cell.value === null || cell.value === undefined || (cell.text ?? "").trim() === "";
 }
 
 function getCellType(value: ExcelJS.CellValue): SnapshotCellType {
@@ -251,7 +255,7 @@ function getCellType(value: ExcelJS.CellValue): SnapshotCellType {
 
 function serializeCellValue(value: ExcelJS.CellValue): SnapshotRawValue {
   if (value === null || value === undefined) return { kind: "blank", value: null };
-  if (value instanceof Date) return { kind: "date", value: value.toISOString() };
+  if (value instanceof Date) return { kind: "date", value: isNaN(value.getTime()) ? "Invalid Date" : value.toISOString() };
   if (typeof value === "boolean") return { kind: "boolean", value };
   if (typeof value === "number") return { kind: "number", value };
   if (typeof value === "string") return { kind: "string", value };
@@ -263,7 +267,7 @@ function serializeCellValue(value: ExcelJS.CellValue): SnapshotRawValue {
     };
   }
   if ("richText" in value) {
-    return { kind: "richText", value: value.richText.map((part) => part.text).join("") };
+    return { kind: "richText", value: value.richText.map((part) => part?.text ?? "").join("") };
   }
   if ("hyperlink" in value) {
     return {
