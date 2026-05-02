@@ -380,17 +380,43 @@ export async function downloadOneDriveItem(
   itemId: string,
   driveId?: null | string
 ): Promise<Buffer> {
-  const accessToken = await getOneDriveAccessToken(accountId);
   const url = driveId
     ? `${GRAPH_BASE_URL}/drives/${encodeURIComponent(driveId)}/items/${encodeURIComponent(itemId)}/content`
     : `${GRAPH_BASE_URL}/me/drive/items/${encodeURIComponent(itemId)}/content`;
-  const response = await fetch(url, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
-  if (!response.ok) {
+
+  const MAX_ATTEMPTS = 4;
+  let lastError: Error | null = null;
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    const accessToken = await getOneDriveAccessToken(accountId);
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    if (response.ok) {
+      return Buffer.from(await response.arrayBuffer());
+    }
+
+    // Throttle: honor Retry-After header, then retry
+    if (response.status === 429 || response.status === 503) {
+      const retryAfter = Number(response.headers.get("Retry-After") ?? "0");
+      const waitMs = retryAfter > 0 ? retryAfter * 1000 : 2 ** attempt * 1000;
+      await new Promise((r) => setTimeout(r, waitMs));
+      lastError = new Error(`OneDrive download throttled (${response.status}), retrying`);
+      continue;
+    }
+
+    // Transient server errors: retry with exponential backoff
+    if (response.status >= 500 && attempt < MAX_ATTEMPTS) {
+      await new Promise((r) => setTimeout(r, 2 ** attempt * 500));
+      lastError = new Error(`OneDrive download failed ${response.status}`);
+      continue;
+    }
+
     throw new Error(`OneDrive download failed ${response.status}: ${await response.text()}`);
   }
-  return Buffer.from(await response.arrayBuffer());
+
+  throw lastError ?? new Error("OneDrive download failed after retries");
 }
 
 async function getOneDriveAccessToken(accountId: string): Promise<string> {

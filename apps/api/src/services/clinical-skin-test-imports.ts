@@ -30,6 +30,10 @@ const AUTO_IMPORT_MIN_CONFIDENCE = 80;
 const JOB_TYPE = "clinical-skin-test-import-sync";
 const DEFAULT_SYNC_CONCURRENCY = 3;
 const MAX_SYNC_CONCURRENCY = 8;
+const DEFAULT_ARCHIVE_CONCURRENCY = 4;
+const MAX_ARCHIVE_CONCURRENCY = 8;
+const ARCHIVE_BATCH_SIZE = 500;
+const ARCHIVE_UNLIMITED_THRESHOLD = 10_000;
 
 export type SkinTestSyncProgressPhase =
   | "archiving"
@@ -842,6 +846,14 @@ function resolveSyncConcurrency(): number {
     return DEFAULT_SYNC_CONCURRENCY;
   }
   return Math.min(Math.max(raw, 1), MAX_SYNC_CONCURRENCY);
+}
+
+function resolveArchiveConcurrency(): number {
+  const raw = Number.parseInt(process.env.SKIN_TEST_ARCHIVE_CONCURRENCY ?? "", 10);
+  if (!Number.isFinite(raw) || raw <= 0) {
+    return DEFAULT_ARCHIVE_CONCURRENCY;
+  }
+  return Math.min(Math.max(raw, 1), MAX_ARCHIVE_CONCURRENCY);
 }
 
 export async function processOneDriveSkinTestItem(
@@ -1818,9 +1830,12 @@ export async function archiveMissingSkinTestWorkbookSnapshots(options?: {
   query?: string;
   shouldCancel?: () => boolean;
 }) {
-  const limit = Math.min(Math.max(options?.limit ?? 500, 1), 5000);
+  const requestedLimit = Math.max(options?.limit ?? ARCHIVE_BATCH_SIZE, 1);
+  const unlimited = requestedLimit > ARCHIVE_UNLIMITED_THRESHOLD;
+  const concurrency = resolveArchiveConcurrency();
   const query = options?.query?.trim();
-  const rowsResult = await sql<{
+
+  type ArchiveRow = {
     filename: string;
     id: string;
     oneDriveAccountId: string | null;
@@ -1828,59 +1843,72 @@ export async function archiveMissingSkinTestWorkbookSnapshots(options?: {
     oneDriveDriveId: string | null;
     oneDriveETag: string | null;
     oneDriveItemId: string;
-    snapshotId: string | null;
     size: number | null;
-  }>`
-    SELECT
-      i.id,
-      i.filename,
-      i.onedrive_account_id AS "oneDriveAccountId",
-      i.onedrive_item_id AS "oneDriveItemId",
-      i.onedrive_drive_id AS "oneDriveDriveId",
-      i.onedrive_etag AS "oneDriveETag",
-      i.onedrive_ctag AS "oneDriveCTag",
-      s.id AS "snapshotId",
-      i.size
-    FROM clinical_skin_test_imports i
-    LEFT JOIN clinical_skin_test_workbook_snapshots s ON s.source_import_id = i.id
-    WHERE i.onedrive_account_id IS NOT NULL
-      AND (${options?.accountId ?? null}::text IS NULL OR i.onedrive_account_id = ${options?.accountId ?? null})
-      AND (${options?.importStatus ?? null}::text IS NULL OR i.status = ${options?.importStatus ?? null}::"ClinicalSkinTestImportStatus")
-      AND (
-        ${query ?? null}::text IS NULL
-        OR i.filename ILIKE ${`%${query ?? ""}%`}
-        OR i.path ILIKE ${`%${query ?? ""}%`}
-        OR i.parsed_payload->'header'->>'patientName' ILIKE ${`%${query ?? ""}%`}
-        OR i.parsed_payload->'header'->>'patientRut' ILIKE ${`%${query ?? ""}%`}
-      )
-      AND (
-        CASE
-          WHEN ${options?.onlyMissing ?? false}::boolean THEN s.id IS NULL
-          WHEN ${options?.onlyChanged ?? false}::boolean THEN s.id IS NOT NULL AND (
-            s.source_etag IS DISTINCT FROM i.onedrive_etag
-            OR s.source_ctag IS DISTINCT FROM i.onedrive_ctag
-          )
-          ELSE s.id IS NULL
-            OR s.source_etag IS DISTINCT FROM i.onedrive_etag
-            OR s.source_ctag IS DISTINCT FROM i.onedrive_ctag
-        END
-      )
-    ORDER BY i.updated_at DESC
-    LIMIT ${limit}
-  `.execute(kysely);
+  };
 
-  const total = rowsResult.rows.length;
+  const fetchRows = async (batchLimit: number, excludeIds: string[]): Promise<ArchiveRow[]> => {
+    const excludeCondition =
+      excludeIds.length > 0
+        ? sql`AND i.id != ALL(ARRAY[${sql.join(excludeIds.map((id) => sql`${id}`))}]::text[])`
+        : sql``;
+    return (
+      await sql<ArchiveRow>`
+        SELECT
+          i.id,
+          i.filename,
+          i.onedrive_account_id AS "oneDriveAccountId",
+          i.onedrive_item_id AS "oneDriveItemId",
+          i.onedrive_drive_id AS "oneDriveDriveId",
+          i.onedrive_etag AS "oneDriveETag",
+          i.onedrive_ctag AS "oneDriveCTag",
+          i.size
+        FROM clinical_skin_test_imports i
+        LEFT JOIN clinical_skin_test_workbook_snapshots s ON s.source_import_id = i.id
+        WHERE i.onedrive_account_id IS NOT NULL
+          AND (${options?.accountId ?? null}::text IS NULL OR i.onedrive_account_id = ${options?.accountId ?? null})
+          AND (${options?.importStatus ?? null}::text IS NULL OR i.status = ${options?.importStatus ?? null}::"ClinicalSkinTestImportStatus")
+          AND (
+            ${query ?? null}::text IS NULL
+            OR i.filename ILIKE ${`%${query ?? ""}%`}
+            OR i.path ILIKE ${`%${query ?? ""}%`}
+            OR i.parsed_payload->'header'->>'patientName' ILIKE ${`%${query ?? ""}%`}
+            OR i.parsed_payload->'header'->>'patientRut' ILIKE ${`%${query ?? ""}%`}
+          )
+          AND (
+            CASE
+              WHEN ${options?.onlyMissing ?? false}::boolean THEN s.id IS NULL
+              WHEN ${options?.onlyChanged ?? false}::boolean THEN s.id IS NOT NULL AND (
+                s.source_etag IS DISTINCT FROM i.onedrive_etag
+                OR s.source_ctag IS DISTINCT FROM i.onedrive_ctag
+              )
+              ELSE s.id IS NULL
+                OR s.source_etag IS DISTINCT FROM i.onedrive_etag
+                OR s.source_ctag IS DISTINCT FROM i.onedrive_ctag
+            END
+          )
+          ${excludeCondition}
+        ORDER BY i.updated_at DESC
+        LIMIT ${batchLimit}
+      `.execute(kysely)
+    ).rows;
+  };
+
+  const initialRows = await fetchRows(unlimited ? ARCHIVE_BATCH_SIZE : requestedLimit, []);
+
+  // In unlimited mode total grows as we drain the queue; start with first-batch count
+  let total = initialRows.length;
   let archived = 0;
   let downloadedBytes = 0;
   let errors = 0;
   let skipped = 0;
+  const erroredIds: string[] = [];
 
   const emit = (message: string, processed: number, filename?: string) => {
     options?.onProgress?.({
-      errors,
       archived,
       downloadedBytes,
       dryRun: options?.dryRun ?? false,
+      errors,
       failed: errors,
       filesProcessed: processed,
       filesTotal: total,
@@ -1904,53 +1932,80 @@ export async function archiveMissingSkinTestWorkbookSnapshots(options?: {
     return { archived: 0, downloadedBytes: 0, dryRun: true, errors: 0, processed: 0, skipped: total, total };
   }
 
-  for (const [index, row] of rowsResult.rows.entries()) {
-    if (options?.shouldCancel?.()) throw new Error("SYNC_CANCELLED");
-    const processed = index + 1;
-    emit(`Archivando ${processed}/${total}: ${row.filename}`, index, row.filename);
+  const processRows = async (rows: ArchiveRow[]) => {
+    let cursor = 0;
+    const workerCount = Math.min(concurrency, rows.length);
+    const workers = Array.from({ length: workerCount }, async () => {
+      while (true) {
+        if (options?.shouldCancel?.()) throw new Error("SYNC_CANCELLED");
+        const index = cursor;
+        if (index >= rows.length) return;
+        cursor += 1;
 
-    if (!row.oneDriveAccountId) {
-      skipped += 1;
-      emit(`Omitido ${processed}/${total}: sin cuenta OneDrive`, processed, row.filename);
-      continue;
+        const row = rows[index];
+        const done = archived + errors + skipped;
+        emit(`Archivando ${done + 1}/${total}: ${row.filename}`, done, row.filename);
+
+        if (!row.oneDriveAccountId) {
+          skipped += 1;
+          continue;
+        }
+
+        try {
+          const buffer = await downloadOneDriveItem(
+            row.oneDriveAccountId,
+            row.oneDriveItemId,
+            row.oneDriveDriveId
+          );
+          const snapshotResult = await persistSkinTestWorkbookSnapshot({
+            buffer,
+            importId: row.id,
+            sourceCTag: row.oneDriveCTag,
+            sourceETag: row.oneDriveETag,
+            sourceSizeBytes: row.size,
+          });
+          downloadedBytes += buffer.byteLength;
+          archived += 1;
+          emit(
+            `Archivado ${archived + errors + skipped}/${total}: ${snapshotResult.cellCount} celdas`,
+            archived + errors + skipped,
+            row.filename
+          );
+        } catch (error) {
+          errors += 1;
+          erroredIds.push(row.id);
+          await sql`
+            UPDATE clinical_skin_test_imports
+            SET workbook_snapshot_status = 'ERROR',
+                workbook_snapshot_error = ${error instanceof Error ? error.message : String(error)},
+                updated_at = now()
+            WHERE id = ${row.id}
+          `.execute(kysely);
+          emit(
+            `Error ${archived + errors + skipped}/${total}: ${row.filename}`,
+            archived + errors + skipped,
+            row.filename
+          );
+        }
+      }
+    });
+    await Promise.all(workers);
+  };
+
+  if (unlimited) {
+    let currentBatch = initialRows;
+    while (currentBatch.length > 0) {
+      await processRows(currentBatch);
+      if (options?.shouldCancel?.()) throw new Error("SYNC_CANCELLED");
+      currentBatch = await fetchRows(ARCHIVE_BATCH_SIZE, erroredIds);
+      // Update running total so progress display stays accurate
+      total = archived + errors + skipped + currentBatch.length;
     }
-
-    try {
-      const buffer = await downloadOneDriveItem(
-        row.oneDriveAccountId,
-        row.oneDriveItemId,
-        row.oneDriveDriveId
-      );
-      const snapshotResult = await persistSkinTestWorkbookSnapshot({
-        buffer,
-        importId: row.id,
-        sourceCTag: row.oneDriveCTag,
-        sourceETag: row.oneDriveETag,
-        sourceSizeBytes: row.size,
-      });
-      downloadedBytes += buffer.byteLength;
-      archived += 1;
-      emit(
-        `Archivado ${processed}/${total}: ${snapshotResult.cellCount} celdas`,
-        processed,
-        row.filename
-      );
-      continue;
-    } catch (error) {
-      errors += 1;
-      await sql`
-        UPDATE clinical_skin_test_imports
-        SET workbook_snapshot_status = 'ERROR',
-            workbook_snapshot_error = ${error instanceof Error ? error.message : String(error)},
-            updated_at = now()
-        WHERE id = ${row.id}
-      `.execute(kysely);
-    }
-
-    emit(`Archivados ${processed}/${total}`, processed, row.filename);
+  } else {
+    await processRows(initialRows);
   }
 
-  return { archived, errors, processed: total, skipped, total };
+  return { archived, downloadedBytes, errors, processed: archived + errors + skipped, skipped, total };
 }
 
 export async function processDiscoveredSkinTestImports(options?: {
