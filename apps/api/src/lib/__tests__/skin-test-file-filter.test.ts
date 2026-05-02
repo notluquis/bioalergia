@@ -36,6 +36,15 @@ describe("skin test file filter", () => {
     expect(isSkinTestCandidateFilename("CHRISTOPHER AINES.xlsx")).toBe(true);
     expect(isSkinTestCandidateFilename("MAITE OLIVA GRANDFELDT - ULTITEST 1, 2 , 3 Y Acaros.xlsx"))
       .toBe(true);
+    expect(isSkinTestCandidateFilename("HELGA HEIM GONZALEZ - TEST PARCHE DERIVADOS.xlsx")).toBe(
+      true
+    );
+    expect(isSkinTestCandidateFilename("TEST PARCHE MARIA PALMA.xlsx")).toBe(true);
+    expect(isSkinTestCandidateFilename("TESTE DE PARCHE CARLOS PEREZ.xlsx")).toBe(true);
+    expect(isSkinTestCandidateFilename("LIBNI OYARZO PARCHE.xlsx")).toBe(true);
+    expect(isSkinTestCandidateFilename("PRICK CAROLINA VENEGAS.xlsx")).toBe(true);
+    expect(isSkinTestCandidateFilename("MARTINEZ PRICK.xlsx")).toBe(true);
+    expect(isSkinTestCandidateFilename("NICOLE SANCHEZ SANDOVAL - LATEX.xlsx")).toBe(true);
   });
 
   it("rejects generic clinical and patient spreadsheets", () => {
@@ -43,6 +52,14 @@ describe("skin test file filter", () => {
     expect(isSkinTestCandidateFilename("Emilia Briceño.xlsx")).toBe(false);
     expect(isSkinTestCandidateFilename("consulta medica francisco.xlsx")).toBe(false);
     expect(isSkinTestCandidateFilename("plantilla vacunas.xlsx")).toBe(false);
+    expect(isSkinTestCandidateFilename("Costos Test Parche.xlsx")).toBe(false);
+    expect(isSkinTestCandidateFilename("INVENTARIO ALERGENOS 2025(1).xlsx")).toBe(false);
+    expect(isSkinTestCandidateFilename("STOCK ALERGENOS.xlsx")).toBe(false);
+    expect(isSkinTestCandidateFilename("COTIZACION ALERGENOS.xlsx")).toBe(false);
+    expect(isSkinTestCandidateFilename("recepcion alergenos 04-12-2024.xlsx")).toBe(false);
+    expect(isSkinTestCandidateFilename("SOLICITUD ALERGENOS - MULTIAPLICADORES - LANCETAS.xlsx"))
+      .toBe(false);
+    expect(isSkinTestCandidateFilename("SOLICITUD ALIMENTARIO-INSECTARIO.xlsx")).toBe(false);
   });
 
   it("marks generic skin test templates as non-importable", () => {
@@ -60,11 +77,27 @@ describe("skin test file filter", () => {
     expect(isSkinTestTemplateFilename("MULTITEST 1, 2 , 3 Y Acaros 2020 (2).xlsx")).toBe(true);
     expect(isSkinTestTemplateFilename("_TEST DE PARCHE 30 ALERGENOS.xlsx")).toBe(true);
     expect(isSkinTestTemplateFilename("FORMATO TEST DE PARCHE RESULTADOS.xlsx")).toBe(true);
-    expect(isImportableSkinTestFilename("Costos Test Parche.xlsx")).toBe(false);
     expect(isImportableSkinTestFilename("invententario test de parche.xlsx")).toBe(false);
     expect(isImportableSkinTestFilename("PANEL 28 AEROALERGENOS.xlsx")).toBe(false);
     expect(isImportableSkinTestFilename("PANEL COMPLETO AEROALERGENOS.xlsx")).toBe(false);
     expect(isImportableSkinTestFilename("PANEL ALIMENTARIO ADULTO.xlsx")).toBe(false);
+    expect(isImportableSkinTestFilename("TEST LATEX.xlsx")).toBe(false);
+    expect(isImportableSkinTestFilename("Formulario MULTITEST.xlsx")).toBe(false);
+    expect(isImportableSkinTestFilename("TEST CUTANEO multiaplicador.xlsx")).toBe(false);
+    expect(isImportableSkinTestFilename("PRICK AEROALERGENO II NUEVO 2019.xlsx")).toBe(false);
+    expect(isImportableSkinTestFilename("PANEL 28 AEROALERGENOS_41834.xlsx")).toBe(false);
+    expect(isImportableSkinTestFilename("FORMATO TEST DE PARCHE ACHS.xlsx")).toBe(false);
+    expect(isImportableSkinTestFilename("Multitest PANEL 9 y grupo de 8.xlsx")).toBe(false);
+    expect(isImportableSkinTestFilename("_Multitest panel 4,g8 , ovalacteos, p,m.xlsx")).toBe(
+      false
+    );
+    expect(isImportableSkinTestFilename("MULTITEST PANEL 5, 6, G8 y pescado.xlsx")).toBe(false);
+    expect(isImportableSkinTestFilename("_MULTITEST PANEL 1, AC,INSECTARIOS, GR8.xlsx")).toBe(
+      false
+    );
+    expect(
+      isImportableSkinTestFilename("MULTITEST Panel 1^J Acaros^J Ovolacteo y grupo de los 8.xlsx")
+    ).toBe(false);
   });
 
   it("keeps patient-specific skin test files importable even if they contain nuevo or copia", () => {
@@ -84,5 +117,14 @@ describe("skin test file filter", () => {
     expect(isImportableSkinTestFilename("PRICK MEDICAMENTOS ana maria luna.xlsx")).toBe(true);
     expect(isImportableSkinTestFilename("AEROALERGENO II LUIS RAMIREZ.xlsx")).toBe(true);
     expect(isImportableSkinTestFilename("CHRISTOPHER AINES.xlsx")).toBe(true);
+    expect(isImportableSkinTestFilename("HELGA HEIM GONZALEZ - TEST PARCHE DERIVADOS.xlsx")).toBe(
+      true
+    );
+    expect(isImportableSkinTestFilename("TEST PARCHE MARIA PALMA.xlsx")).toBe(true);
+    expect(isImportableSkinTestFilename("TESTE DE PARCHE CARLOS PEREZ.xlsx")).toBe(true);
+    expect(isImportableSkinTestFilename("LIBNI OYARZO PARCHE.xlsx")).toBe(true);
+    expect(isImportableSkinTestFilename("PRICK DANIELA MATAMALA.xlsx")).toBe(true);
+    expect(isImportableSkinTestFilename("MARTINEZ PRICK.xlsx")).toBe(true);
+    expect(isImportableSkinTestFilename("NICOLE SANCHEZ SANDOVAL - LATEX.xlsx")).toBe(true);
   });
 });
