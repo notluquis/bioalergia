@@ -3797,6 +3797,30 @@ export class SchemaType implements SchemaDef {
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("onedrive_drive_id") }] }] as readonly AttributeApplication[]
                 },
+                oneDriveSourceKey: {
+                    name: "oneDriveSourceKey",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("onedrive_source_key") }] }] as readonly AttributeApplication[]
+                },
+                oneDriveSourceDriveId: {
+                    name: "oneDriveSourceDriveId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("onedrive_source_drive_id") }] }] as readonly AttributeApplication[]
+                },
+                oneDriveSourceItemId: {
+                    name: "oneDriveSourceItemId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("onedrive_source_item_id") }] }] as readonly AttributeApplication[]
+                },
+                oneDriveSharePointUniqueId: {
+                    name: "oneDriveSharePointUniqueId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("onedrive_sharepoint_unique_id") }] }] as readonly AttributeApplication[]
+                },
                 oneDriveETag: {
                     name: "oneDriveETag",
                     type: "String",
@@ -3881,6 +3905,7 @@ export class SchemaType implements SchemaDef {
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("ClinicalXlsxFileClassification", [ExpressionUtils.field("classification")]) }] },
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("modifiedAt")]) }] },
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("oneDriveAccountId")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("oneDriveSourceKey")]) }] },
                 { name: "@@unique", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("oneDriveAccountId"), ExpressionUtils.field("oneDriveDriveId"), ExpressionUtils.field("oneDriveItemId")]) }] },
                 { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("clinical_xlsx_files") }] }
             ] as readonly AttributeApplication[],
@@ -3919,6 +3944,30 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("onedrive_drive_id") }] }] as readonly AttributeApplication[]
+                },
+                oneDriveSourceKey: {
+                    name: "oneDriveSourceKey",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("onedrive_source_key") }] }] as readonly AttributeApplication[]
+                },
+                oneDriveSourceDriveId: {
+                    name: "oneDriveSourceDriveId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("onedrive_source_drive_id") }] }] as readonly AttributeApplication[]
+                },
+                oneDriveSourceItemId: {
+                    name: "oneDriveSourceItemId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("onedrive_source_item_id") }] }] as readonly AttributeApplication[]
+                },
+                oneDriveSharePointUniqueId: {
+                    name: "oneDriveSharePointUniqueId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("onedrive_sharepoint_unique_id") }] }] as readonly AttributeApplication[]
                 },
                 oneDriveETag: {
                     name: "oneDriveETag",
@@ -4097,6 +4146,7 @@ export class SchemaType implements SchemaDef {
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("ClinicalSkinTestImportStatus", [ExpressionUtils.field("status")]) }] },
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("modifiedAt")]) }] },
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("oneDriveAccountId")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("oneDriveSourceKey")]) }] },
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("ClinicalSkinTestWorkbookSnapshotStatus", [ExpressionUtils.field("workbookSnapshotStatus")]) }] },
                 { name: "@@unique", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("oneDriveAccountId"), ExpressionUtils.field("oneDriveDriveId"), ExpressionUtils.field("oneDriveItemId")]) }] },
                 { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("clinical_skin_test_imports") }] }

@@ -94,6 +94,7 @@ export interface SkinTestImportOutput {
   accountEmail: null | string;
   accountName: null | string;
   confidence: number;
+  duplicateOfImportId: null | string;
   error: null | string;
   filename: string;
   id: string;
@@ -129,6 +130,23 @@ export interface ParsedPayload {
   header: ParsedSkinTestWorkbook["header"];
   interpretation?: ParsedSkinTestWorkbook["interpretation"];
   results: ParsedSkinTestResult[];
+}
+
+interface OneDriveItemMetadata {
+  cTag: null | string;
+  driveId: null | string;
+  eTag: null | string;
+  filename: string;
+  id: string;
+  mimeType: null | string;
+  modifiedAt: null | string;
+  path: null | string;
+  size: null | number;
+  sourceDriveId: null | string;
+  sourceItemId: null | string;
+  sourceKey: null | string;
+  sharePointUniqueId: null | string;
+  webUrl: null | string;
 }
 
 export interface SkinTestDetailOutput {
@@ -250,6 +268,7 @@ interface ImportRow {
   accountEmail?: null | string;
   accountName?: null | string;
   confidence: number;
+  duplicateOfImportId: null | string;
   error: null | string;
   filename: string;
   id: string;
@@ -319,6 +338,10 @@ export async function reclassifyClinicalXlsxLibrary(options?: {
         oneDriveDriveId: null | string;
         oneDriveETag: null | string;
         oneDriveItemId: string;
+        oneDriveSharePointUniqueId: null | string;
+        oneDriveSourceDriveId: null | string;
+        oneDriveSourceItemId: null | string;
+        oneDriveSourceKey: null | string;
         oneDriveWebUrl: null | string;
         path: null | string;
         mimeType: null | string;
@@ -330,6 +353,10 @@ export async function reclassifyClinicalXlsxLibrary(options?: {
         onedrive_account_id AS "oneDriveAccountId",
         onedrive_item_id AS "oneDriveItemId",
         onedrive_drive_id AS "oneDriveDriveId",
+        onedrive_source_key AS "oneDriveSourceKey",
+        onedrive_source_drive_id AS "oneDriveSourceDriveId",
+        onedrive_source_item_id AS "oneDriveSourceItemId",
+        onedrive_sharepoint_unique_id AS "oneDriveSharePointUniqueId",
         onedrive_etag AS "oneDriveETag",
         onedrive_ctag AS "oneDriveCTag",
         onedrive_web_url AS "oneDriveWebUrl",
@@ -390,28 +417,40 @@ export async function reclassifyClinicalXlsxLibrary(options?: {
         );
         if (!existingImport) {
           queuedImports += 1;
+          const metadata = {
+            cTag: row.oneDriveCTag,
+            driveId,
+            eTag: row.oneDriveETag,
+            filename: row.filename,
+            id: row.oneDriveItemId,
+            mimeType: row.mimeType,
+            modifiedAt: row.modifiedAt,
+            path: row.path,
+            size: row.size,
+            sourceDriveId: row.oneDriveSourceDriveId,
+            sourceItemId: row.oneDriveSourceItemId,
+            sourceKey: row.oneDriveSourceKey,
+            sharePointUniqueId: row.oneDriveSharePointUniqueId,
+            webUrl: row.oneDriveWebUrl,
+          };
+          const importId = createId();
+          const sharedDuplicate = await findOneDriveSharedDuplicateImport(
+            metadata.sourceKey,
+            importId
+          );
           await upsertImport({
             accountId: row.oneDriveAccountId,
             confidence: 0,
-            duplicateOfImportId: null,
+            duplicateOfImportId: sharedDuplicate?.sourceImportId ?? null,
             error: null,
-            id: createId(),
-            issues: [],
-            metadata: {
-              cTag: row.oneDriveCTag,
-              driveId,
-              eTag: row.oneDriveETag,
-              filename: row.filename,
-              id: row.oneDriveItemId,
-              mimeType: row.mimeType,
-              modifiedAt: row.modifiedAt,
-              path: row.path,
-              size: row.size,
-              webUrl: row.oneDriveWebUrl,
-            },
+            id: importId,
+            issues: sharedDuplicate
+              ? [getOneDriveSharedDuplicateIssue(sharedDuplicate.filename)]
+              : [],
+            metadata,
             parsedPayload: null,
             resultHash: null,
-            status: "DISCOVERED",
+            status: sharedDuplicate ? "SKIPPED" : "DISCOVERED",
           });
         }
       } else {
@@ -905,7 +944,7 @@ async function discoverOneDriveClinicalXlsxItem(
 }> {
   const driveId = item.parentReference?.driveId ?? "unknown";
   const metadata = buildOneDriveItemMetadata(item, driveId);
-  const classification = classifyClinicalXlsxFilename(item.name);
+  const classification = classifyClinicalXlsxFilename(metadata.filename);
   const existing = await getClinicalXlsxFileByOneDriveItemId(accountId, driveId, item.id);
 
   if (
@@ -931,7 +970,10 @@ async function discoverOneDriveClinicalXlsxItem(
     metadata,
   });
 
-  if (classification.classification === "SKIN_TEST" && isImportableSkinTestFilename(item.name)) {
+  if (
+    classification.classification === "SKIN_TEST" &&
+    isImportableSkinTestFilename(metadata.filename)
+  ) {
     const result = await discoverOneDriveSkinTestItem(accountId, item, options);
     return {
       classification: "SKIN_TEST",
@@ -973,8 +1015,8 @@ export async function discoverOneDriveClinicalDocument(
   const metadata = buildOneDriveItemMetadata(item, driveId);
   const existing = await getClinicalDocumentImportByOneDriveItemId(accountId, driveId, item.id);
   const importId = existing?.id ?? createId();
-  const documentKind = classifyClinicalDocumentFilename(item.name);
-  const extractedPatientName = extractPatientNameFromDocumentFilename(item.name);
+  const documentKind = classifyClinicalDocumentFilename(metadata.filename);
+  const extractedPatientName = extractPatientNameFromDocumentFilename(metadata.filename);
   const match = extractedPatientName
     ? await matchClinicalSeriesByPatientName(extractedPatientName)
     : { seriesId: null };
@@ -1086,7 +1128,11 @@ async function discoverOneDriveSkinTestItem(
   if (existing) {
     await sql`
       UPDATE clinical_skin_test_imports
-      SET onedrive_etag = ${metadata.eTag},
+      SET onedrive_source_key = ${metadata.sourceKey},
+          onedrive_source_drive_id = ${metadata.sourceDriveId},
+          onedrive_source_item_id = ${metadata.sourceItemId},
+          onedrive_sharepoint_unique_id = ${metadata.sharePointUniqueId},
+          onedrive_etag = ${metadata.eTag},
           onedrive_ctag = ${metadata.cTag},
           onedrive_web_url = ${metadata.webUrl},
           path = ${metadata.path},
@@ -1106,6 +1152,23 @@ async function discoverOneDriveSkinTestItem(
     return await getSkinTestImport(importId);
   }
 
+  const sharedDuplicate = await findOneDriveSharedDuplicateImport(metadata.sourceKey, importId);
+  if (sharedDuplicate) {
+    await upsertImport({
+      accountId,
+      confidence: 0,
+      duplicateOfImportId: sharedDuplicate.sourceImportId,
+      error: null,
+      id: importId,
+      issues: [getOneDriveSharedDuplicateIssue(sharedDuplicate.filename)],
+      metadata,
+      parsedPayload: null,
+      resultHash: null,
+      status: "SKIPPED",
+    });
+    return await getSkinTestImport(importId);
+  }
+
   await upsertImport({
     accountId,
     confidence: 0,
@@ -1121,18 +1184,71 @@ async function discoverOneDriveSkinTestItem(
   return await getSkinTestImport(importId);
 }
 
-function buildOneDriveItemMetadata(item: OneDriveItem, driveId: string) {
+function buildOneDriveItemMetadata(item: OneDriveItem, driveId: string): OneDriveItemMetadata {
+  const remote = item.remoteItem;
+  const sourceDriveId = item.remoteItem?.parentReference?.driveId ?? null;
+  const sourceItemId = item.remoteItem?.id ?? null;
+  const sharePointUniqueId =
+    item.remoteItem?.sharepointIds?.listItemUniqueId ??
+    item.sharepointIds?.listItemUniqueId ??
+    null;
+  const sourceKey = sharePointUniqueId
+    ? `sharepoint:${sharePointUniqueId}`
+    : sourceDriveId && sourceItemId
+      ? `drive:${sourceDriveId}:item:${sourceItemId}`
+      : null;
+
   return {
     cTag: item.cTag ?? null,
     driveId,
     eTag: item.eTag ?? null,
-    filename: item.name,
+    filename: remote?.name ?? item.name,
     id: item.id,
-    mimeType: item.file?.mimeType ?? null,
+    mimeType: item.file?.mimeType ?? remote?.file?.mimeType ?? null,
     modifiedAt: item.lastModifiedDateTime ?? null,
-    path: item.parentReference?.path ?? null,
-    size: item.size ?? null,
-    webUrl: item.webUrl ?? null,
+    path: remote?.parentReference?.path ?? item.parentReference?.path ?? null,
+    size: remote?.size ?? item.size ?? null,
+    sourceDriveId,
+    sourceItemId,
+    sourceKey,
+    sharePointUniqueId,
+    webUrl: remote?.webUrl ?? item.webUrl ?? null,
+  };
+}
+
+async function findOneDriveSharedDuplicateImport(
+  sourceKey: null | string,
+  currentImportId: string
+): Promise<null | { filename: string; sourceImportId: string }> {
+  if (!sourceKey) return null;
+
+  const result = await sql<{ filename: string; sourceImportId: string }>`
+    SELECT
+      coalesce(duplicate_of_import_id, id) AS "sourceImportId",
+      filename
+    FROM clinical_skin_test_imports
+    WHERE onedrive_source_key = ${sourceKey}
+      AND id <> ${currentImportId}
+    ORDER BY
+      CASE status
+        WHEN 'IMPORTED' THEN 0
+        WHEN 'PENDING_REVIEW' THEN 1
+        WHEN 'DISCOVERED' THEN 2
+        WHEN 'SKIPPED' THEN 3
+        ELSE 4
+      END,
+      created_at ASC
+    LIMIT 1
+  `.execute(kysely);
+
+  return result.rows[0] ?? null;
+}
+
+function getOneDriveSharedDuplicateIssue(sourceFilename: string): SkinTestIssue {
+  return {
+    code: "duplicate_onedrive_shared_file",
+    message: `Este XLSX apunta al mismo archivo compartido de OneDrive que ${sourceFilename}; se omite para no procesar el mismo archivo desde otra cuenta.`,
+    severity: "info",
   };
 }
 
@@ -1152,6 +1268,7 @@ export async function listSkinTestImports(input: SkinTestImportListInput = {}) {
         i.path,
         i.status,
         i.confidence,
+        i.duplicate_of_import_id AS "duplicateOfImportId",
         i.error,
         i.issues,
         i.parsed_payload AS "parsedPayload",
@@ -1404,6 +1521,7 @@ export async function getSkinTestImport(id: string): Promise<SkinTestImportOutpu
       i.path,
       i.status,
       i.confidence,
+      i.duplicate_of_import_id AS "duplicateOfImportId",
       i.error,
       i.issues,
       i.parsed_payload AS "parsedPayload",
@@ -2274,6 +2392,7 @@ async function getImportByOneDriveItemId(accountId: string, driveId: string, ite
       i.onedrive_account_id AS "oneDriveAccountId",
       a.email AS "accountEmail",
       a.name AS "accountName",
+      i.duplicate_of_import_id AS "duplicateOfImportId",
       i.onedrive_etag AS "oneDriveETag",
       i.onedrive_ctag AS "oneDriveCTag",
       i.parsed_payload AS "parsedPayload",
@@ -2350,18 +2469,7 @@ async function upsertClinicalXlsxFile(params: {
     reason: string;
   };
   id: string;
-  metadata: {
-    cTag: null | string;
-    driveId: null | string;
-    eTag: null | string;
-    filename: string;
-    id: string;
-    mimeType: null | string;
-    modifiedAt: null | string;
-    path: null | string;
-    size: null | number;
-    webUrl: null | string;
-  };
+  metadata: OneDriveItemMetadata;
 }) {
   await sql`
     INSERT INTO clinical_xlsx_files (
@@ -2369,6 +2477,10 @@ async function upsertClinicalXlsxFile(params: {
       onedrive_account_id,
       onedrive_item_id,
       onedrive_drive_id,
+      onedrive_source_key,
+      onedrive_source_drive_id,
+      onedrive_source_item_id,
+      onedrive_sharepoint_unique_id,
       onedrive_etag,
       onedrive_ctag,
       onedrive_web_url,
@@ -2387,6 +2499,10 @@ async function upsertClinicalXlsxFile(params: {
       ${params.accountId},
       ${params.metadata.id},
       ${params.metadata.driveId},
+      ${params.metadata.sourceKey},
+      ${params.metadata.sourceDriveId},
+      ${params.metadata.sourceItemId},
+      ${params.metadata.sharePointUniqueId},
       ${params.metadata.eTag},
       ${params.metadata.cTag},
       ${params.metadata.webUrl},
@@ -2402,6 +2518,10 @@ async function upsertClinicalXlsxFile(params: {
     )
     ON CONFLICT (onedrive_account_id, onedrive_drive_id, onedrive_item_id)
     DO UPDATE SET
+      onedrive_source_key = EXCLUDED.onedrive_source_key,
+      onedrive_source_drive_id = EXCLUDED.onedrive_source_drive_id,
+      onedrive_source_item_id = EXCLUDED.onedrive_source_item_id,
+      onedrive_sharepoint_unique_id = EXCLUDED.onedrive_sharepoint_unique_id,
       onedrive_etag = EXCLUDED.onedrive_etag,
       onedrive_ctag = EXCLUDED.onedrive_ctag,
       onedrive_web_url = EXCLUDED.onedrive_web_url,
@@ -2423,18 +2543,7 @@ async function upsertImport(params: {
   error: null | string;
   id: string;
   issues: SkinTestIssue[];
-  metadata: {
-    cTag: null | string;
-    driveId: null | string;
-    eTag: null | string;
-    filename: string;
-    id: string;
-    mimeType: null | string;
-    modifiedAt: null | string;
-    path: null | string;
-    size: null | number;
-    webUrl: null | string;
-  };
+  metadata: OneDriveItemMetadata;
   parsedPayload: null | ParsedPayload;
   resultHash: null | string;
   status: SkinTestImportStatus;
@@ -2445,6 +2554,10 @@ async function upsertImport(params: {
       onedrive_account_id,
       onedrive_item_id,
       onedrive_drive_id,
+      onedrive_source_key,
+      onedrive_source_drive_id,
+      onedrive_source_item_id,
+      onedrive_sharepoint_unique_id,
       onedrive_etag,
       onedrive_ctag,
       onedrive_web_url,
@@ -2469,6 +2582,10 @@ async function upsertImport(params: {
       ${params.accountId},
       ${params.metadata.id},
       ${params.metadata.driveId},
+      ${params.metadata.sourceKey},
+      ${params.metadata.sourceDriveId},
+      ${params.metadata.sourceItemId},
+      ${params.metadata.sharePointUniqueId},
       ${params.metadata.eTag},
       ${params.metadata.cTag},
       ${params.metadata.webUrl},
@@ -2492,6 +2609,10 @@ async function upsertImport(params: {
     DO UPDATE SET
       onedrive_account_id = EXCLUDED.onedrive_account_id,
       onedrive_drive_id = EXCLUDED.onedrive_drive_id,
+      onedrive_source_key = EXCLUDED.onedrive_source_key,
+      onedrive_source_drive_id = EXCLUDED.onedrive_source_drive_id,
+      onedrive_source_item_id = EXCLUDED.onedrive_source_item_id,
+      onedrive_sharepoint_unique_id = EXCLUDED.onedrive_sharepoint_unique_id,
       onedrive_etag = EXCLUDED.onedrive_etag,
       onedrive_ctag = EXCLUDED.onedrive_ctag,
       onedrive_web_url = EXCLUDED.onedrive_web_url,
@@ -2524,18 +2645,7 @@ async function upsertImport(params: {
 async function ensureImportMetadataRow(
   accountId: string,
   importId: string,
-  metadata: {
-    cTag: null | string;
-    driveId: null | string;
-    eTag: null | string;
-    filename: string;
-    id: string;
-    mimeType: null | string;
-    modifiedAt: null | string;
-    path: null | string;
-    size: null | number;
-    webUrl: null | string;
-  }
+  metadata: OneDriveItemMetadata
 ) {
   await sql`
     INSERT INTO clinical_skin_test_imports (
@@ -2543,6 +2653,10 @@ async function ensureImportMetadataRow(
       onedrive_account_id,
       onedrive_item_id,
       onedrive_drive_id,
+      onedrive_source_key,
+      onedrive_source_drive_id,
+      onedrive_source_item_id,
+      onedrive_sharepoint_unique_id,
       onedrive_etag,
       onedrive_ctag,
       onedrive_web_url,
@@ -2563,6 +2677,10 @@ async function ensureImportMetadataRow(
       ${accountId},
       ${metadata.id},
       ${metadata.driveId},
+      ${metadata.sourceKey},
+      ${metadata.sourceDriveId},
+      ${metadata.sourceItemId},
+      ${metadata.sharePointUniqueId},
       ${metadata.eTag},
       ${metadata.cTag},
       ${metadata.webUrl},
@@ -2580,6 +2698,10 @@ async function ensureImportMetadataRow(
     )
     ON CONFLICT (onedrive_account_id, onedrive_drive_id, onedrive_item_id)
     DO UPDATE SET
+      onedrive_source_key = EXCLUDED.onedrive_source_key,
+      onedrive_source_drive_id = EXCLUDED.onedrive_source_drive_id,
+      onedrive_source_item_id = EXCLUDED.onedrive_source_item_id,
+      onedrive_sharepoint_unique_id = EXCLUDED.onedrive_sharepoint_unique_id,
       onedrive_etag = EXCLUDED.onedrive_etag,
       onedrive_ctag = EXCLUDED.onedrive_ctag,
       onedrive_web_url = EXCLUDED.onedrive_web_url,
@@ -2820,10 +2942,11 @@ function skinTestExamTypeSql() {
 }
 
 function isRelevantXlsx(item: OneDriveItem): boolean {
+  const name = item.remoteItem?.name ?? item.name;
   if (item.deleted) return false;
-  if (!item.file) return false;
-  if (!/\.xlsx$/i.test(item.name)) return false;
-  if (/^~\$/.test(item.name)) return false;
+  if (!item.file && !item.remoteItem?.file) return false;
+  if (!/\.xlsx$/i.test(name)) return false;
+  if (/^~\$/.test(name)) return false;
   if (isBlockedDownloadPath(item.parentReference?.path)) return false;
   if (isBlockedDownloadPath(item.remoteItem?.parentReference?.path)) return false;
   return true;
@@ -2969,31 +3092,88 @@ type DuplicateCheckResult =
   | { kind: "none" }
   | { issue: SkinTestIssue; kind: "exact" | "probable"; sourceImportId: string };
 
+interface DuplicateCandidateRow {
+  patientName: null | string;
+  patientRut: null | string;
+  sourceImportId: string;
+  sourceRank: number;
+  testDate: Date | string;
+}
+
 async function findDuplicateSkinTest(
   importId: string,
   parsed: ParsedSkinTestWorkbook,
   resultHash: string
 ): Promise<DuplicateCheckResult> {
-  const { patientRut, testDate } = parsed.header;
-  if (!patientRut || !testDate || parsed.results.length === 0) return { kind: "none" };
+  const { patientName, patientRut, testDate } = parsed.header;
+  const patientKey = buildDuplicatePatientKey(patientRut, patientName);
+  if (!patientKey || !testDate || parsed.results.length === 0) return { kind: "none" };
 
-  const exact = await sql<{ sourceImportId: string; testDate: Date | string }>`
-    SELECT source_import_id AS "sourceImportId", test_date AS "testDate"
-    FROM clinical_skin_tests
-    WHERE patient_rut = ${patientRut}
-      AND test_date = ${testDate}::date
-      AND result_hash = ${resultHash}
-      AND source_import_id <> ${importId}
-    ORDER BY created_at ASC
-    LIMIT 1
+  const candidates = await sql<DuplicateCandidateRow>`
+    WITH duplicate_candidates AS (
+      SELECT
+        source_import_id AS "sourceImportId",
+        test_date AS "testDate",
+        patient_rut AS "patientRut",
+        patient_name AS "patientName",
+        0 AS "sourceRank",
+        created_at AS "createdAt"
+      FROM clinical_skin_tests
+      WHERE result_hash = ${resultHash}
+        AND source_import_id <> ${importId}
+
+      UNION ALL
+
+      SELECT
+        coalesce(duplicate_of_import_id, id) AS "sourceImportId",
+        (parsed_payload->'header'->>'testDate')::date AS "testDate",
+        nullif(parsed_payload->'header'->>'patientRut', '') AS "patientRut",
+        nullif(parsed_payload->'header'->>'patientName', '') AS "patientName",
+        CASE status
+          WHEN 'IMPORTED' THEN 1
+          WHEN 'PENDING_REVIEW' THEN 2
+          WHEN 'SKIPPED' THEN 3
+          ELSE 4
+        END AS "sourceRank",
+        created_at AS "createdAt"
+      FROM clinical_skin_test_imports
+      WHERE result_hash = ${resultHash}
+        AND id <> ${importId}
+        AND parsed_payload IS NOT NULL
+        AND parsed_payload->'header'->>'testDate' IS NOT NULL
+        AND status IN ('IMPORTED', 'PENDING_REVIEW', 'SKIPPED')
+    )
+    SELECT DISTINCT ON ("sourceImportId")
+      "sourceImportId",
+      "testDate",
+      "patientRut",
+      "patientName",
+      "sourceRank"
+    FROM duplicate_candidates
+    WHERE "sourceImportId" <> ${importId}
+    ORDER BY "sourceImportId", "sourceRank" ASC, "createdAt" ASC
   `.execute(kysely);
-  const exactMatch = exact.rows[0];
+
+  const samePatientCandidates = candidates.rows
+    .filter((candidate) =>
+      isSameDuplicatePatient(patientKey, candidate.patientRut, candidate.patientName)
+    )
+    .sort(
+      (a, b) =>
+        a.sourceRank - b.sourceRank ||
+        Math.abs(Date.parse(toDateString(a.testDate)) - Date.parse(testDate)) -
+          Math.abs(Date.parse(toDateString(b.testDate)) - Date.parse(testDate))
+    );
+
+  const exactMatch = samePatientCandidates.find(
+    (candidate) => toDateString(candidate.testDate) === testDate
+  );
   if (exactMatch) {
     return {
       issue: {
         code: "duplicate_exact_skin_test",
         message:
-          "Este archivo tiene el mismo RUT, fecha y resultados que un test cutáneo ya importado; se omite como duplicado exacto.",
+          "Este archivo tiene el mismo paciente, fecha y resultados que un test cutáneo ya procesado; se omite como duplicado exacto.",
         severity: "info",
       },
       kind: "exact",
@@ -3001,22 +3181,14 @@ async function findDuplicateSkinTest(
     };
   }
 
-  const probable = await sql<{ sourceImportId: string; testDate: Date | string }>`
-    SELECT source_import_id AS "sourceImportId", test_date AS "testDate"
-    FROM clinical_skin_tests
-    WHERE patient_rut = ${patientRut}
-      AND result_hash = ${resultHash}
-      AND test_date <> ${testDate}::date
-      AND source_import_id <> ${importId}
-    ORDER BY abs(test_date - ${testDate}::date) ASC, created_at ASC
-    LIMIT 1
-  `.execute(kysely);
-  const probableMatch = probable.rows[0];
+  const probableMatch = samePatientCandidates.find(
+    (candidate) => toDateString(candidate.testDate) !== testDate
+  );
   if (probableMatch) {
     return {
       issue: {
         code: "probable_duplicate_different_date",
-        message: `Mismo RUT y mismos resultados que otro test importado, pero con fecha distinta (${toDateString(probableMatch.testDate)}). Requiere revisión antes de importar.`,
+        message: `Mismo paciente y mismos resultados que otro test procesado, pero con fecha distinta (${toDateString(probableMatch.testDate)}). Requiere revisión antes de importar.`,
         severity: "error",
       },
       kind: "probable",
@@ -3025,6 +3197,20 @@ async function findDuplicateSkinTest(
   }
 
   return { kind: "none" };
+}
+
+function buildDuplicatePatientKey(patientRut: null | string, patientName: null | string) {
+  if (patientRut) return `rut:${patientRut}`;
+  const normalizedName = normalizeDocumentName(patientName ?? "");
+  return normalizedName ? `name:${normalizedName}` : null;
+}
+
+function isSameDuplicatePatient(
+  expectedKey: string,
+  patientRut: null | string,
+  patientName: null | string
+) {
+  return buildDuplicatePatientKey(patientRut, patientName) === expectedKey;
 }
 
 function emptyInterpretation(): ParsedSkinTestInterpretation {
@@ -3069,6 +3255,7 @@ function toImportOutput(row: ImportRow): SkinTestImportOutput {
     accountEmail: row.accountEmail ?? null,
     accountName: row.accountName ?? null,
     confidence: row.confidence,
+    duplicateOfImportId: row.duplicateOfImportId ?? null,
     error: row.error,
     filename: row.filename,
     id: row.id,

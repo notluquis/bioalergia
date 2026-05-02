@@ -71,6 +71,7 @@ export const skinTestImportSchema = z.object({
   accountName: z.string().nullable(),
   oneDriveAccountId: z.string().nullable(),
   confidence: z.number().int(),
+  duplicateOfImportId: z.string().nullable(),
   error: z.string().nullable(),
   filename: z.string(),
   importedAt: z.string().nullable(),

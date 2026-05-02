@@ -49,6 +49,7 @@ export interface OneDriveItem {
     path?: string;
   };
   remoteItem?: {
+    file?: { mimeType?: string };
     folder?: unknown;
     id?: string;
     name?: string;
@@ -56,7 +57,14 @@ export interface OneDriveItem {
       driveId?: string;
       path?: string;
     };
+    sharepointIds?: {
+      listItemUniqueId?: string;
+    };
+    size?: number;
     webUrl?: string;
+  };
+  sharepointIds?: {
+    listItemUniqueId?: string;
   };
   size?: number;
   webUrl?: string;
@@ -321,7 +329,7 @@ export async function listOneDriveDeltaItems(
   // Only requesting the fields used by isImportableXlsx + processOneDriveSkinTestItem
   // reduces the Graph payload by ~70% on large drives.
   const DELTA_SELECT =
-    "id,name,file,folder,deleted,eTag,cTag,size,parentReference,lastModifiedDateTime,webUrl";
+    "id,name,file,folder,deleted,eTag,cTag,size,parentReference,lastModifiedDateTime,webUrl,remoteItem,sharepointIds";
   const initialUrl = `${buildDeltaUrl({ driveId: folderDriveId, folderPath: configuredFolder, itemId: folderItemId })}?$select=${DELTA_SELECT}&$top=${DELTA_PAGE_SIZE}`;
   let url = existingDelta || initialUrl;
 
@@ -487,9 +495,9 @@ export async function listOneDriveFolderChildren(
     .map((item) => ({
       id: item.id,
       lastModifiedDateTime: item.lastModifiedDateTime ?? null,
-      name: item.name,
-      size: item.size ?? null,
-      webUrl: item.webUrl ?? null,
+      name: item.remoteItem?.name ?? item.name,
+      size: item.remoteItem?.size ?? item.size ?? null,
+      webUrl: item.remoteItem?.webUrl ?? item.webUrl ?? null,
     }))
     .sort((a, b) => a.name.localeCompare(b.name, "es"));
   return {
@@ -558,7 +566,8 @@ function toFolderItem(item: OneDriveItem): OneDriveFolderItem {
 }
 
 function isXlsxItem(item: OneDriveItem): boolean {
-  return Boolean(item.file) && /\.xlsx$/i.test(item.name) && !/^~\$/.test(item.name);
+  const name = item.remoteItem?.name ?? item.name;
+  return Boolean(item.file ?? item.remoteItem?.file) && /\.xlsx$/i.test(name) && !/^~\$/.test(name);
 }
 
 function normalizeGraphPath(path: null | string | undefined): null | string {

@@ -3142,6 +3142,26 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true
                 },
+                oneDriveSourceKey: {
+                    name: "oneDriveSourceKey",
+                    type: "String",
+                    optional: true
+                },
+                oneDriveSourceDriveId: {
+                    name: "oneDriveSourceDriveId",
+                    type: "String",
+                    optional: true
+                },
+                oneDriveSourceItemId: {
+                    name: "oneDriveSourceItemId",
+                    type: "String",
+                    optional: true
+                },
+                oneDriveSharePointUniqueId: {
+                    name: "oneDriveSharePointUniqueId",
+                    type: "String",
+                    optional: true
+                },
                 oneDriveETag: {
                     name: "oneDriveETag",
                     type: "String",
@@ -3238,6 +3258,26 @@ export class SchemaType implements SchemaDef {
                 },
                 oneDriveDriveId: {
                     name: "oneDriveDriveId",
+                    type: "String",
+                    optional: true
+                },
+                oneDriveSourceKey: {
+                    name: "oneDriveSourceKey",
+                    type: "String",
+                    optional: true
+                },
+                oneDriveSourceDriveId: {
+                    name: "oneDriveSourceDriveId",
+                    type: "String",
+                    optional: true
+                },
+                oneDriveSourceItemId: {
+                    name: "oneDriveSourceItemId",
+                    type: "String",
+                    optional: true
+                },
+                oneDriveSharePointUniqueId: {
+                    name: "oneDriveSharePointUniqueId",
                     type: "String",
                     optional: true
                 },
