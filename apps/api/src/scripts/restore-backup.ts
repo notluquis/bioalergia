@@ -316,7 +316,9 @@ async function createManyOverride(
   const kysely = dbModule.kysely as {
     insertInto: (table: string) => {
       values: (values: unknown[]) => {
-        onConflict: (callback: (oc: { columns: (columns: string[]) => { doNothing: () => unknown } }) => unknown) => {
+        onConflict: (callback: (oc: {
+          columns: (columns: string[]) => { doNothing: () => unknown };
+        }) => unknown) => {
           returning: (column: string) => { execute: () => Promise<unknown[]> };
         };
       };
@@ -325,7 +327,7 @@ async function createManyOverride(
   const inserted = await kysely
     .insertInto("employee_timesheets")
     .values(rows.map(normalizeEmployeeTimesheetForInsert))
-    .onConflict((oc) => oc.doNothing())
+    .onConflict((oc) => oc.columns(["employee_id", "week_start"]).doNothing())
     .returning("id")
     .execute();
   return { count: inserted.length };
