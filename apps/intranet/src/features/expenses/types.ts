@@ -1,38 +1,29 @@
-export interface CreateMonthlyExpensePayload {
-  amountExpected: number;
-  category?: null | string;
-  expenseDate: Date;
-  name: string;
-  notes?: null | string;
-  serviceId?: null | number;
-  source?: MonthlyExpenseSource;
-  status?: "CLOSED" | "OPEN";
-  tags?: string[];
-}
+export type ExpenseScope = "BIOALERGIA" | "EMPRESA" | "PERSONAL";
+export type ExpenseStatus = "OVERDUE" | "PAID" | "PENDING" | "SKIPPED";
+export type ExpenseSource = "MANUAL" | "TEMPLATE" | "TRANSACTION";
+export type ExpenseRecurrence = "MONTHLY" | "ONE_TIME";
 
-export interface LinkMonthlyExpenseTransactionPayload {
-  amount?: number;
-  transactionId: number;
-}
-
-export interface MonthlyExpense {
+export interface Expense {
   amountApplied: number;
   amountExpected: number;
   category: null | string;
   createdAt: Date;
-  expenseDate: Date;
+  detail: null | string;
+  dueDate: Date | null;
+  expenseMonth: string; // YYYY-MM
   name: string;
   notes: null | string;
   publicId: string;
+  scope: ExpenseScope;
   serviceId: null | number;
-  source: MonthlyExpenseSource;
-  status: "CLOSED" | "OPEN";
+  source: ExpenseSource;
+  status: ExpenseStatus;
   tags: string[];
   transactionCount: number;
   updatedAt: Date;
 }
 
-export type MonthlyExpenseDetail = MonthlyExpense & {
+export type ExpenseDetail = Expense & {
   transactions: {
     amount: number;
     description: null | string;
@@ -42,11 +33,31 @@ export type MonthlyExpenseDetail = MonthlyExpense & {
   }[];
 };
 
-export type MonthlyExpenseSource = "MANUAL" | "SERVICE" | "TRANSACTION";
+export interface ExpenseService {
+  billingDay: null | number;
+  category: null | string;
+  createdAt: Date;
+  defaultAmount: null | number;
+  detail: null | string;
+  dueDateRule: null | string;
+  endDate: Date | null;
+  id: number;
+  isActive: boolean;
+  isFixed: boolean;
+  name: string;
+  notes: null | string;
+  publicId: string;
+  recurrence: ExpenseRecurrence;
+  scope: ExpenseScope;
+  startDate: Date | null;
+  tags: string[];
+  updatedAt: Date;
+}
 
-export interface MonthlyExpenseStatsRow {
+export interface ExpenseStatsRow {
   expenseCount: number;
   period: string;
+  scope: ExpenseScope | null;
   totalApplied: number;
   totalExpected: number;
 }

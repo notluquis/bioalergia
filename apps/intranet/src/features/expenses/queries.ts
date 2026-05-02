@@ -1,46 +1,83 @@
 import { queryOptions } from "@tanstack/react-query";
-import { fetchMonthlyExpenseDetail, fetchMonthlyExpenseStats, fetchMonthlyExpenses } from "./api";
-import type { ExpenseFilters } from "./hooks/use-monthly-expenses";
+import { fetchExpenseDetail, fetchExpenses, fetchExpenseServices, fetchExpenseStats } from "./api";
+import type { ExpenseScope, ExpenseStatus } from "./types";
+
+export interface ExpenseListFilters {
+  from?: string;
+  scope?: ExpenseScope;
+  serviceId?: null | number;
+  status?: ExpenseStatus;
+  to?: string;
+}
+
+export interface ExpenseStatsFilters {
+  from?: string;
+  groupBy?: "month" | "quarter" | "year";
+  scope?: ExpenseScope;
+  to?: string;
+}
+
+export interface ExpenseServiceFilters {
+  isActive?: boolean;
+  scope?: ExpenseScope;
+}
+
+// Keep backward compat alias used in the existing hook
+export type ExpenseFilters = ExpenseListFilters & { category?: null | string };
 
 export const expenseKeys = {
-  all: ["monthly-expenses"] as const,
-  detail: (id: string) =>
+  all: ["expenses"] as const,
+  allServices: ["expense-services"] as const,
+  allStats: ["expense-stats"] as const,
+
+  detail: (publicId: string) =>
     queryOptions({
-      enabled: Boolean(id),
-      queryFn: () => fetchMonthlyExpenseDetail(id),
-      queryKey: ["monthly-expense-detail", id],
+      enabled: Boolean(publicId),
+      queryFn: () => fetchExpenseDetail(publicId),
+      queryKey: ["expense-detail", publicId] as const,
     }),
-  list: (filters: ExpenseFilters) =>
+
+  list: (filters: ExpenseListFilters) =>
     queryOptions({
-      queryFn: async () => {
-        const response = await fetchMonthlyExpenses({
+      queryFn: () =>
+        fetchExpenses({
           from: filters.from,
+          scope: filters.scope,
+          serviceId: filters.serviceId,
+          status: filters.status,
           to: filters.to,
-        });
-        // We handle normalization in the hook or passing a select here.
-        // But for useSuspenseQuery, simple raw data return is better and select later,
-        // or normalize here. Code used map(normalizeExpense).
-        // Let's return raw and let hook handle it? Or normalize here.
-        // Hook logic: response.expenses.map((e) => normalizeExpense(e))
-        // Let's just return the response and select in the hook if needed,
-        // OR standard is to return the data the component expects.
-        // The API returns { expenses: ... }.
-        return response;
-      },
-      queryKey: ["monthly-expenses", filters.from, filters.to],
+        }),
+      queryKey: [
+        "expenses",
+        filters.from,
+        filters.to,
+        filters.scope,
+        filters.status,
+        filters.serviceId,
+      ] as const,
     }),
-  stats: (filters: ExpenseFilters) =>
+
+  services: (filters: ExpenseServiceFilters = {}) =>
     queryOptions({
-      queryFn: async () => {
-        const response = await fetchMonthlyExpenseStats({
-          category: filters.category ?? undefined,
-          from: filters.from,
-          groupBy: "month",
-          to: filters.to,
-        });
-        return response;
-      },
-      queryKey: ["monthly-expenses-stats", filters.from, filters.to, filters.category],
+      queryFn: () => fetchExpenseServices(filters),
+      queryKey: ["expense-services", filters.isActive, filters.scope] as const,
     }),
-  statsAll: ["monthly-expenses-stats"] as const,
+
+  stats: (filters: ExpenseStatsFilters) =>
+    queryOptions({
+      queryFn: () =>
+        fetchExpenseStats({
+          from: filters.from,
+          groupBy: filters.groupBy ?? "month",
+          scope: filters.scope,
+          to: filters.to,
+        }),
+      queryKey: [
+        "expense-stats",
+        filters.from,
+        filters.to,
+        filters.scope,
+        filters.groupBy,
+      ] as const,
+    }),
 };

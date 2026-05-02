@@ -1,7 +1,6 @@
 import { Button } from "@heroui/react";
-import dayjs from "dayjs";
 
-import type { MonthlyExpense } from "../types";
+import type { Expense as MonthlyExpense } from "../types";
 
 interface MonthlyExpenseListProps {
   expenses: MonthlyExpense[];
@@ -59,9 +58,17 @@ export function MonthlyExpenseList({
                 </span>
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-3 text-default-400 text-xs">
-                <span>{dayjs(expense.expenseDate).format("DD MMM YYYY")}</span>
+                <span>{expense.expenseMonth}</span>
                 <span>{expense.transactionCount} transacciones</span>
-                <span>{expense.status === "OPEN" ? "Pendiente" : "Cerrado"}</span>
+                <span>
+                  {expense.status === "PENDING"
+                    ? "Pendiente"
+                    : expense.status === "PAID"
+                      ? "Pagado"
+                      : expense.status === "OVERDUE"
+                        ? "Vencido"
+                        : "Omitido"}
+                </span>
               </div>
             </Button>
           );

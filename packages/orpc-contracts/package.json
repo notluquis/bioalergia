@@ -208,6 +208,11 @@
       "import": "./dist/users.js",
       "default": "./dist/users.js"
     },
+    "./utility-bills": {
+      "types": "./dist/utility-bills.d.ts",
+      "import": "./dist/utility-bills.js",
+      "default": "./dist/utility-bills.js"
+    },
     "./wa-cloud": {
       "types": "./dist/wa-cloud.d.ts",
       "import": "./dist/wa-cloud.js",

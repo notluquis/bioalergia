@@ -9922,6 +9922,263 @@ export class SchemaType implements SchemaDef {
             uniqueFields: {
                 id: { type: "Int" }
             }
+        },
+        ExpenseService: {
+            name: "ExpenseService",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                publicId: {
+                    name: "publicId",
+                    type: "String",
+                    unique: true,
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                name: {
+                    name: "name",
+                    type: "String"
+                },
+                detail: {
+                    name: "detail",
+                    type: "String",
+                    optional: true
+                },
+                scope: {
+                    name: "scope",
+                    type: "ExpenseScope"
+                },
+                category: {
+                    name: "category",
+                    type: "String",
+                    optional: true
+                },
+                billingDay: {
+                    name: "billingDay",
+                    type: "Int",
+                    optional: true
+                },
+                dueDateRule: {
+                    name: "dueDateRule",
+                    type: "String",
+                    optional: true
+                },
+                defaultAmount: {
+                    name: "defaultAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                isFixed: {
+                    name: "isFixed",
+                    type: "Boolean",
+                    default: false as FieldDefault
+                },
+                recurrence: {
+                    name: "recurrence",
+                    type: "ExpenseRecurrence",
+                    default: "MONTHLY" as FieldDefault
+                },
+                startDate: {
+                    name: "startDate",
+                    type: "DateTime",
+                    optional: true
+                },
+                endDate: {
+                    name: "endDate",
+                    type: "DateTime",
+                    optional: true
+                },
+                isActive: {
+                    name: "isActive",
+                    type: "Boolean",
+                    default: true as FieldDefault
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                tags: {
+                    name: "tags",
+                    type: "String",
+                    array: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                expenses: {
+                    name: "expenses",
+                    type: "Expense",
+                    array: true,
+                    relation: { opposite: "service" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                publicId: { type: "String" }
+            }
+        },
+        Expense: {
+            name: "Expense",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                publicId: {
+                    name: "publicId",
+                    type: "String",
+                    unique: true,
+                    default: ExpressionUtils.call("cuid") as FieldDefault
+                },
+                serviceId: {
+                    name: "serviceId",
+                    type: "Int",
+                    optional: true,
+                    foreignKeyFor: [
+                        "service"
+                    ] as readonly string[]
+                },
+                name: {
+                    name: "name",
+                    type: "String"
+                },
+                detail: {
+                    name: "detail",
+                    type: "String",
+                    optional: true
+                },
+                scope: {
+                    name: "scope",
+                    type: "ExpenseScope"
+                },
+                expenseMonth: {
+                    name: "expenseMonth",
+                    type: "String"
+                },
+                dueDate: {
+                    name: "dueDate",
+                    type: "DateTime",
+                    optional: true
+                },
+                amountExpected: {
+                    name: "amountExpected",
+                    type: "Decimal"
+                },
+                amountApplied: {
+                    name: "amountApplied",
+                    type: "Decimal",
+                    default: 0 as FieldDefault
+                },
+                status: {
+                    name: "status",
+                    type: "ExpenseStatus",
+                    default: "PENDING" as FieldDefault
+                },
+                source: {
+                    name: "source",
+                    type: "ExpenseSource",
+                    default: "MANUAL" as FieldDefault
+                },
+                category: {
+                    name: "category",
+                    type: "String",
+                    optional: true
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                tags: {
+                    name: "tags",
+                    type: "String",
+                    array: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                service: {
+                    name: "service",
+                    type: "ExpenseService",
+                    optional: true,
+                    relation: { opposite: "expenses", fields: ["serviceId"], references: ["id"], onDelete: "SetNull" }
+                },
+                transactions: {
+                    name: "transactions",
+                    type: "ExpenseTransaction",
+                    array: true,
+                    relation: { opposite: "expense" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                publicId: { type: "String" }
+            }
+        },
+        ExpenseTransaction: {
+            name: "ExpenseTransaction",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                expenseId: {
+                    name: "expenseId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "expense"
+                    ] as readonly string[]
+                },
+                transactionId: {
+                    name: "transactionId",
+                    type: "Int"
+                },
+                amount: {
+                    name: "amount",
+                    type: "Decimal"
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                expense: {
+                    name: "expense",
+                    type: "Expense",
+                    relation: { opposite: "transactions", fields: ["expenseId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                expenseId_transactionId: { expenseId: { type: "Int" }, transactionId: { type: "Int" } }
+            }
         }
     } as const;
     enums = {
@@ -10496,6 +10753,38 @@ export class SchemaType implements SchemaDef {
                 MARKETING: "MARKETING",
                 UTILITY: "UTILITY",
                 AUTHENTICATION: "AUTHENTICATION"
+            }
+        },
+        ExpenseScope: {
+            name: "ExpenseScope",
+            values: {
+                BIOALERGIA: "BIOALERGIA",
+                PERSONAL: "PERSONAL",
+                EMPRESA: "EMPRESA"
+            }
+        },
+        ExpenseStatus: {
+            name: "ExpenseStatus",
+            values: {
+                PENDING: "PENDING",
+                PAID: "PAID",
+                OVERDUE: "OVERDUE",
+                SKIPPED: "SKIPPED"
+            }
+        },
+        ExpenseSource: {
+            name: "ExpenseSource",
+            values: {
+                MANUAL: "MANUAL",
+                TEMPLATE: "TEMPLATE",
+                TRANSACTION: "TRANSACTION"
+            }
+        },
+        ExpenseRecurrence: {
+            name: "ExpenseRecurrence",
+            values: {
+                MONTHLY: "MONTHLY",
+                ONE_TIME: "ONE_TIME"
             }
         }
     } as const;

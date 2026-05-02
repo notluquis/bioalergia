@@ -1,7 +1,7 @@
 import { Alert, Button, Description, Skeleton } from "@heroui/react";
 import dayjs from "dayjs";
 
-import type { MonthlyExpenseDetail as MonthlyExpenseDetailData } from "../types";
+import type { ExpenseDetail as MonthlyExpenseDetailData } from "../types";
 
 interface MonthlyExpenseDetailProps {
   canManage: boolean;
@@ -48,8 +48,7 @@ export function MonthlyExpenseDetail({
         <div>
           <span className="block break-all font-semibold text-primary text-xl">{expense.name}</span>
           <Description className="text-default-400 text-xs">
-            {expense.category || "Sin categoría"} ·{" "}
-            {dayjs(expense.expenseDate).format("DD MMM YYYY")}
+            {expense.category || "Sin categoría"} · {expense.expenseMonth}
           </Description>
         </div>
         {canManage && (
@@ -77,7 +76,18 @@ export function MonthlyExpenseDetail({
           value={`$${expense.amountApplied.toLocaleString("es-CL")}`}
         />
 
-        <DetailCard title="Estado" value={expense.status === "OPEN" ? "Pendiente" : "Cerrado"} />
+        <DetailCard
+          title="Estado"
+          value={
+            expense.status === "PENDING"
+              ? "Pendiente"
+              : expense.status === "PAID"
+                ? "Pagado"
+                : expense.status === "OVERDUE"
+                  ? "Vencido"
+                  : "Omitido"
+          }
+        />
         <DetailCard
           helper="Registros conciliados"
           title="Transacciones asociadas"

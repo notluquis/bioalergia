@@ -5,7 +5,7 @@
 
 /* eslint-disable */
 
-import { schema as $schema, type SchemaType as $Schema } from "./schema-lite";
+import { schema as $schema, type SchemaType as $Schema } from "./schema-lite.js";
 import type { ModelResult as $ModelResult } from "@zenstackhq/orm";
 export type Person = $ModelResult<$Schema, "Person">;
 export type User = $ModelResult<$Schema, "User">;
@@ -119,6 +119,9 @@ export type WaConversationChannel = $ModelResult<$Schema, "WaConversationChannel
 export type WaMessage = $ModelResult<$Schema, "WaMessage">;
 export type WaTemplate = $ModelResult<$Schema, "WaTemplate">;
 export type WaWebhookLog = $ModelResult<$Schema, "WaWebhookLog">;
+export type ExpenseService = $ModelResult<$Schema, "ExpenseService">;
+export type Expense = $ModelResult<$Schema, "Expense">;
+export type ExpenseTransaction = $ModelResult<$Schema, "ExpenseTransaction">;
 export const DoctoraliaSyncType = $schema.enums.DoctoraliaSyncType.values;
 export type DoctoraliaSyncType = (typeof DoctoraliaSyncType)[keyof typeof DoctoraliaSyncType];
 export const DoctoraliaEmailEventType = $schema.enums.DoctoraliaEmailEventType.values;
@@ -243,3 +246,11 @@ export const WaTemplateStatus = $schema.enums.WaTemplateStatus.values;
 export type WaTemplateStatus = (typeof WaTemplateStatus)[keyof typeof WaTemplateStatus];
 export const WaTemplateCategory = $schema.enums.WaTemplateCategory.values;
 export type WaTemplateCategory = (typeof WaTemplateCategory)[keyof typeof WaTemplateCategory];
+export const ExpenseScope = $schema.enums.ExpenseScope.values;
+export type ExpenseScope = (typeof ExpenseScope)[keyof typeof ExpenseScope];
+export const ExpenseStatus = $schema.enums.ExpenseStatus.values;
+export type ExpenseStatus = (typeof ExpenseStatus)[keyof typeof ExpenseStatus];
+export const ExpenseSource = $schema.enums.ExpenseSource.values;
+export type ExpenseSource = (typeof ExpenseSource)[keyof typeof ExpenseSource];
+export const ExpenseRecurrence = $schema.enums.ExpenseRecurrence.values;
+export type ExpenseRecurrence = (typeof ExpenseRecurrence)[keyof typeof ExpenseRecurrence];

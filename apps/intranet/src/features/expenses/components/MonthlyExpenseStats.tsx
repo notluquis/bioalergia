@@ -1,7 +1,7 @@
 import { Description } from "@heroui/react";
 import { currencyFormatter } from "@/lib/format";
 
-import type { MonthlyExpenseStatsRow } from "../types";
+import type { ExpenseStatsRow as MonthlyExpenseStatsRow } from "../types";
 
 interface MonthlyExpenseStatsProps {
   loading: boolean;

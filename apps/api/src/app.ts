@@ -69,6 +69,10 @@ import {
   transactionsInsightsORPCHandler,
 } from "./orpc/transactions-insights";
 import { usersOpenAPIHandler, usersORPCHandler } from "./orpc/users";
+import {
+  utilityBillsOpenAPIHandler,
+  utilityBillsORPCHandler,
+} from "./orpc/utility-bills";
 import { waCloudOpenAPIHandler, waCloudORPCHandler } from "./orpc/wa-cloud";
 import { whatsappOpenAPIHandler, whatsappORPCHandler } from "./orpc/whatsapp";
 import { doctoraliaScraperRoutes } from "./routes/doctoralia-scraper";
@@ -447,6 +451,15 @@ app.get("/api/orpc", (c) =>
             <li><a href="/api/orpc/users/docs">Reference UI</a></li>
             <li><a href="/api/orpc/users/openapi.json">OpenAPI JSON</a></li>
             <li><code>/api/orpc/users/rpc/*</code></li>
+          </ul>
+        </section>
+        <section class="card">
+          <h2>Utility Bills</h2>
+          <p>Consulta de deuda Essbio (agua) y CGE (electricidad).</p>
+          <ul>
+            <li><a href="/api/orpc/utility-bills/docs">Reference UI</a></li>
+            <li><a href="/api/orpc/utility-bills/openapi.json">OpenAPI JSON</a></li>
+            <li><code>/api/orpc/utility-bills/rpc/*</code></li>
           </ul>
         </section>
         <section class="card">
@@ -1025,6 +1038,22 @@ app.use("/api/orpc/users/rpc/*", async (c, next) => {
   return next();
 });
 
+app.use("/api/orpc/utility-bills/rpc/*", async (c, next) => {
+  const { matched, response } = await utilityBillsORPCHandler.handle(
+    createHonoORPCRequest(c),
+    {
+      prefix: "/api/orpc/utility-bills/rpc",
+      context: { hono: c },
+    },
+  );
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
 app.use("/api/orpc/people/rpc/*", async (c, next) => {
   const { matched, response } = await peopleORPCHandler.handle(createHonoORPCRequest(c), {
     prefix: "/api/orpc/people/rpc",
@@ -1398,6 +1427,19 @@ app.use("/api/orpc/users/*", async (c, next) => {
   const { matched, response } = await usersOpenAPIHandler.handle(createHonoORPCRequest(c), {
     context: { hono: c },
   });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/utility-bills/*", async (c, next) => {
+  const { matched, response } = await utilityBillsOpenAPIHandler.handle(
+    createHonoORPCRequest(c),
+    { context: { hono: c } },
+  );
 
   if (matched) {
     return c.newResponse(response.body, response);

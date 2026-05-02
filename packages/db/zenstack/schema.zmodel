@@ -3654,3 +3654,104 @@ model WaWebhookLog {
   @@allow('read,create,update,delete', auth().status == 'ACTIVE')
   @@map("wa_webhook_logs")
 }
+
+// ─── Expenses ────────────────────────────────────────────────────────────────
+
+enum ExpenseScope {
+  BIOALERGIA
+  PERSONAL
+  EMPRESA
+}
+
+enum ExpenseStatus {
+  PENDING
+  PAID
+  OVERDUE
+  SKIPPED
+}
+
+enum ExpenseSource {
+  MANUAL
+  TEMPLATE
+  TRANSACTION
+}
+
+enum ExpenseRecurrence {
+  MONTHLY
+  ONE_TIME
+}
+
+model ExpenseService {
+  id             Int               @id @default(autoincrement())
+  publicId       String            @unique @default(cuid()) @map("public_id")
+  name           String
+  detail         String?
+  scope          ExpenseScope
+  category       String?
+  billingDay     Int?              @map("billing_day")
+  dueDateRule    String?           @map("due_date_rule")
+  defaultAmount  Decimal?          @map("default_amount") @db.Decimal(14, 2)
+  isFixed        Boolean           @default(false) @map("is_fixed")
+  recurrence     ExpenseRecurrence @default(MONTHLY)
+  startDate      DateTime?         @map("start_date") @db.Date
+  endDate        DateTime?         @map("end_date") @db.Date
+  isActive       Boolean           @default(true) @map("is_active")
+  notes          String?
+  tags           String[]
+  createdAt      DateTime          @default(now()) @map("created_at")
+  updatedAt      DateTime          @default(now()) @updatedAt @map("updated_at")
+
+  expenses       Expense[]
+
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+  @@map("expense_services")
+}
+
+model Expense {
+  id             Int             @id @default(autoincrement())
+  publicId       String          @unique @default(cuid()) @map("public_id")
+  serviceId      Int?            @map("service_id")
+  name           String
+  detail         String?
+  scope          ExpenseScope
+  expenseMonth   String          @map("expense_month")
+  dueDate        DateTime?       @map("due_date") @db.Date
+  amountExpected Decimal         @map("amount_expected") @db.Decimal(14, 2)
+  amountApplied  Decimal         @default(0) @map("amount_applied") @db.Decimal(14, 2)
+  status         ExpenseStatus   @default(PENDING)
+  source         ExpenseSource   @default(MANUAL)
+  category       String?
+  notes          String?
+  tags           String[]
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @default(now()) @updatedAt @map("updated_at")
+
+  service        ExpenseService? @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  transactions   ExpenseTransaction[]
+
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+  @@index([expenseMonth])
+  @@index([scope])
+  @@index([serviceId])
+  @@map("expenses")
+}
+
+model ExpenseTransaction {
+  id            Int      @id @default(autoincrement())
+  expenseId     Int      @map("expense_id")
+  transactionId Int      @map("transaction_id")
+  amount        Decimal  @db.Decimal(14, 2)
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  expense       Expense  @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+  @@unique([expenseId, transactionId])
+  @@map("expense_transactions")
+}

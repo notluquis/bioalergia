@@ -9,27 +9,23 @@ import { type ChangeEvent, useRef, useState } from "react";
 
 import { useAuth } from "@/context/AuthContext";
 import {
-  createMonthlyExpense,
-  linkMonthlyExpenseTransaction,
-  unlinkMonthlyExpenseTransaction,
-  updateMonthlyExpense,
+  createExpense,
+  linkExpenseTransaction,
+  unlinkExpenseTransaction,
+  updateExpense,
 } from "../api";
-// Update payload matches Create payload for PUT operations
+import type { CreateExpensePayload } from "../api";
 import { expenseKeys } from "../queries";
-import type {
-  CreateMonthlyExpensePayload,
-  LinkMonthlyExpenseTransactionPayload,
-  MonthlyExpense,
-  MonthlyExpenseDetail,
-} from "../types";
+import type { Expense, ExpenseDetail, ExpenseScope } from "../types";
 
 export interface ExpenseFilters {
   category?: null | string;
   from?: string;
+  scope?: ExpenseScope;
   to?: string;
 }
 
-type UpdateMonthlyExpensePayload = CreateMonthlyExpensePayload;
+type UpdateExpensePayload = CreateExpensePayload;
 
 export function useMonthlyExpenses() {
   const { can } = useAuth();
@@ -53,19 +49,21 @@ export function useMonthlyExpenses() {
 
   // 1. Fetch List
   const { data: expensesResponse, isLoading: loadingList } = useSuspenseQuery(
-    expenseKeys.list(filters),
+    expenseKeys.list({
+      from: filters.from,
+      scope: filters.scope,
+      to: filters.to,
+    })
   );
 
-  const expenses = expensesResponse.expenses.map((e) => normalizeExpense(e));
+  const expenses = expensesResponse.expenses as Expense[];
 
   // 2. Fetch Stats
   const { data: statsResponse, isLoading: statsLoading } = useSuspenseQuery(
-    expenseKeys.stats(filters),
+    expenseKeys.stats({ from: filters.from, scope: filters.scope, to: filters.to })
   );
 
-  const statsData = statsResponse.stats;
-
-  const stats = statsData;
+  const stats = statsResponse.stats;
 
   // 3. Fetch Detail (use useQuery with skipToken for conditional fetching)
   const { data: detailResponse } = useQuery({
@@ -73,33 +71,32 @@ export function useMonthlyExpenses() {
     queryFn: selectedId ? expenseKeys.detail(selectedId).queryFn : skipToken,
   });
 
-  const detail = detailResponse ? normalizeExpenseDetail(detailResponse.expense) : null;
+  const detail = detailResponse ? (detailResponse.expense as ExpenseDetail) : null;
 
   // Mutations
   const createMutation = useMutation({
-    mutationFn: createMonthlyExpense,
+    mutationFn: createExpense,
     onError: (err) => {
       setCreateError(err instanceof Error ? err.message : "No se pudo crear el gasto");
     },
     onSuccess: (response) => {
-      const normalized = normalizeExpenseDetail(response.expense);
       void queryClient.invalidateQueries({ queryKey: expenseKeys.all });
-      void queryClient.invalidateQueries({ queryKey: expenseKeys.statsAll });
-      setSelectedId(normalized.publicId);
+      void queryClient.invalidateQueries({ queryKey: expenseKeys.allStats });
+      setSelectedId(response.expense.publicId);
       setCreateOpen(false);
     },
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, payload }: { id: string; payload: UpdateMonthlyExpensePayload }) => {
-      return updateMonthlyExpense(id, payload);
+    mutationFn: async ({ id, payload }: { id: string; payload: UpdateExpensePayload }) => {
+      return updateExpense(id, payload);
     },
     onError: (err) => {
       setCreateError(err instanceof Error ? err.message : "No se pudo actualizar el gasto");
     },
     onSuccess: (response) => {
       void queryClient.invalidateQueries({ queryKey: expenseKeys.all });
-      void queryClient.invalidateQueries({ queryKey: expenseKeys.statsAll });
+      void queryClient.invalidateQueries({ queryKey: expenseKeys.allStats });
       queryClient.setQueryData(expenseKeys.detail(response.expense.publicId).queryKey, {
         expense: response.expense,
         status: "ok",
@@ -113,40 +110,40 @@ export function useMonthlyExpenses() {
       payload,
     }: {
       id: string;
-      payload: LinkMonthlyExpenseTransactionPayload;
+      payload: { amount?: number; transactionId: number };
     }) => {
-      return linkMonthlyExpenseTransaction(id, payload);
+      return linkExpenseTransaction(id, payload);
     },
     onError: (err) => {
       setLinkError(err instanceof Error ? err.message : "Error al vincular");
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: expenseKeys.all });
-      void queryClient.invalidateQueries({ queryKey: expenseKeys.statsAll });
+      void queryClient.invalidateQueries({ queryKey: expenseKeys.allStats });
       setLinkModalOpen(false);
     },
   });
 
   const unlinkMutation = useMutation({
     mutationFn: async ({ id, transactionId }: { id: string; transactionId: number }) => {
-      return unlinkMonthlyExpenseTransaction(id, transactionId);
+      return unlinkExpenseTransaction(id, transactionId);
     },
     onError: (err) => {
       setLinkError(err instanceof Error ? err.message : "Error al desvincular");
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: expenseKeys.all });
-      void queryClient.invalidateQueries({ queryKey: expenseKeys.statsAll });
+      void queryClient.invalidateQueries({ queryKey: expenseKeys.allStats });
     },
   });
 
   // Handlers
-  const handleCreate = async (payload: CreateMonthlyExpensePayload) => {
+  const handleCreate = async (payload: CreateExpensePayload) => {
     setCreateError(null);
     await createMutation.mutateAsync(payload);
   };
 
-  const handleUpdate = async (publicId: string, payload: UpdateMonthlyExpensePayload) => {
+  const handleUpdate = async (publicId: string, payload: UpdateExpensePayload) => {
     setCreateError(null);
     await updateMutation.mutateAsync({ id: publicId, payload });
   };
@@ -163,14 +160,14 @@ export function useMonthlyExpenses() {
 
   const handleLinkFieldChange = (
     field: "amount" | "transactionId",
-    event: ChangeEvent<HTMLInputElement>,
+    event: ChangeEvent<HTMLInputElement>
   ) => {
     setLinkForm((prev) => ({ ...prev, [field]: event.target.value }));
   };
 
   const handleLinkSubmit = async (publicId: string) => {
     setLinkError(null);
-    const payload: LinkMonthlyExpenseTransactionPayload = {
+    const payload: { amount?: number; transactionId: number } = {
       amount: linkForm.amount ? Number(linkForm.amount) : undefined,
       transactionId: Number(linkForm.transactionId),
     };
@@ -182,11 +179,6 @@ export function useMonthlyExpenses() {
     await unlinkMutation.mutateAsync({ id: publicId, transactionId });
   };
 
-  const error = (() => {
-    // listError is handled by Suspense
-    return null;
-  })();
-
   return {
     canManage,
     canView,
@@ -195,9 +187,8 @@ export function useMonthlyExpenses() {
     },
     closeLinkModal,
     createError,
-    // loadingDetail removed (Suspense)
     createOpen,
-    error,
+    error: null as null | string,
     expenses,
     filters,
     handleCreate,
@@ -221,21 +212,5 @@ export function useMonthlyExpenses() {
     setSelectedId,
     stats,
     statsLoading,
-  };
-}
-
-function normalizeExpense(expense: MonthlyExpense): MonthlyExpense {
-  return {
-    ...expense,
-    tags: expense.tags,
-  };
-}
-
-function normalizeExpenseDetail(expense: MonthlyExpenseDetail): MonthlyExpenseDetail {
-  return {
-    ...normalizeExpense(expense),
-    transactions: expense.transactions.map((item) => ({
-      ...item,
-    })),
   };
 }
