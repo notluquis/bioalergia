@@ -10,7 +10,10 @@ export const essbioBillResultSchema = z.object({
   company: z.string(),
   currentDebt: z.number(),
   error: z.string().nullable(),
+  lastPayment: z.object({ amount: z.number(), date: z.string() }).nullable(),
+  observation: z.string().nullable(),
   previousBalance: z.number(),
+  regulated: z.boolean(),
 });
 
 export const fetchEssbioBillInputSchema = z.object({
@@ -33,12 +36,11 @@ export const cgeBillResultSchema = z.object({
   currentBill: z.number(),
   emissionDate: z.string(),
   previousBill: z.number(),
+  thirdBill: z.number(),
 });
 
 export const fetchCgeBillInputSchema = z.object({
   accountNumber: z.string().min(1),
-  password: z.string().min(1),
-  rut: z.string().min(1),
 });
 
 export const fetchCgeBillResponseSchema = z.object({

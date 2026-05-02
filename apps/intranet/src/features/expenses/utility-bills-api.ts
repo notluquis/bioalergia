@@ -27,7 +27,10 @@ export interface EssbioBillResult {
   company: string;
   currentDebt: number;
   error: null | string;
+  lastPayment: { amount: number; date: string } | null;
+  observation: string | null;
   previousBalance: number;
+  regulated: boolean;
 }
 
 export interface CgeBillResult {
@@ -39,6 +42,7 @@ export interface CgeBillResult {
   currentBill: number;
   emissionDate: string;
   previousBill: number;
+  thirdBill: number;
 }
 
 export async function fetchEssbioBill(serviceNumber: string): Promise<EssbioBillResult> {
@@ -50,13 +54,9 @@ export async function fetchEssbioBill(serviceNumber: string): Promise<EssbioBill
   }
 }
 
-export async function fetchCgeBill(
-  accountNumber: string,
-  rut: string,
-  password: string
-): Promise<CgeBillResult> {
+export async function fetchCgeBill(accountNumber: string): Promise<CgeBillResult> {
   try {
-    const result = await client.fetchCge({ accountNumber, password, rut });
+    const result = await client.fetchCge({ accountNumber });
     return result.bill as CgeBillResult;
   } catch (error) {
     throw toApiError(error);

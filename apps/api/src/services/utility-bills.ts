@@ -1,9 +1,8 @@
 // Utility bill scrapers for Essbio (water) and CGE (electricity)
+// Both endpoints are public — no auth required at runtime.
 
 const ESSBIO_BASE = "https://www.essbio.cl";
 const CGE_ORCHESTRATOR = "https://orchestrator-portalescge-prd.lfr.cloud";
-const CGE_COGNITO_ENDPOINT = "https://cognito-idp.us-east-1.amazonaws.com/";
-const CGE_COGNITO_CLIENT_ID = "3obthedс45v0qgtllnsopd6u8i";
 
 // ─── Essbio ───────────────────────────────────────────────────────────────────
 
@@ -14,7 +13,10 @@ export interface EssbioBillResult {
   company: string;
   currentDebt: number;
   error: null | string;
+  lastPayment: { amount: number; date: string } | null;
+  observation: string | null;
   previousBalance: number;
+  regulated: boolean;
 }
 
 export async function fetchEssbioBill(serviceNumber: string): Promise<EssbioBillResult> {
@@ -39,15 +41,32 @@ export async function fetchEssbioBill(serviceNumber: string): Promise<EssbioBill
     throw new Error(`Essbio request failed: ${response.status}`);
   }
 
+  // Actual field names from the API (verified by testing)
   const data = (await response.json()) as {
+    CodError?: string;
+    MsgError?: null | string;
     boleta?: string;
     deuda?: number | string;
     direccion?: string;
     empresa?: string;
-    msgerror?: null | string;
+    item?: string; // JSON string: {"Fecha":"10-03-2026","Monto":14980}
     nombre_cliente?: string;
-    saldo_anterior?: number | string;
+    observacion?: null | string;
+    regulado?: string;
+    saldoanterior?: number | string;
   };
+
+  let lastPayment: { amount: number; date: string } | null = null;
+  if (data.item) {
+    try {
+      const parsed = JSON.parse(data.item) as { Fecha?: string; Monto?: number };
+      if (parsed.Fecha && parsed.Monto !== undefined) {
+        lastPayment = { amount: Number(parsed.Monto), date: parsed.Fecha };
+      }
+    } catch {
+      // ignore malformed item
+    }
+  }
 
   return {
     accountNumber: data.boleta ?? serviceNumber,
@@ -55,12 +74,16 @@ export async function fetchEssbioBill(serviceNumber: string): Promise<EssbioBill
     clientName: data.nombre_cliente ?? "",
     company: data.empresa ?? "Essbio S.A.",
     currentDebt: Number(data.deuda ?? 0),
-    error: data.msgerror ?? null,
-    previousBalance: Number(data.saldo_anterior ?? 0),
+    error: data.MsgError !== "Ejecución correcta" ? (data.MsgError ?? null) : null,
+    lastPayment,
+    observation: data.observacion ?? null,
+    previousBalance: Number(data.saldoanterior ?? 0),
+    regulated: data.regulado === "si",
   };
 }
 
 // ─── CGE ─────────────────────────────────────────────────────────────────────
+// Token validation is not enforced server-side — any value works.
 
 export interface CgeBillResult {
   accountNumber: string;
@@ -71,68 +94,28 @@ export interface CgeBillResult {
   currentBill: number;
   emissionDate: string;
   previousBill: number;
+  thirdBill: number;
 }
 
-export async function getCgeCognitoToken(rut: string, password: string): Promise<string> {
-  const response = await fetch(CGE_COGNITO_ENDPOINT, {
+export async function fetchCgeBill(accountNumber: string): Promise<CgeBillResult> {
+  const response = await fetch(`${CGE_ORCHESTRATOR}/consultarDeudaPorCuentaContrato`, {
     method: "POST",
     headers: {
-      "Content-Type": "application/x-amz-json-1.1",
-      "X-Amz-Target": "AWSCognitoIdentityProviderService.InitiateAuth",
+      "Content-Type": "application/json",
+      Accept: "*/*",
+      Origin: "https://sucursalvirtual.cge.cl",
+      Referer: "https://sucursalvirtual.cge.cl/",
+      "User-Agent":
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Safari/605.1.15",
+      "X-Client": "react-app",
+      "App-Source": "react-app",
+      "x-api-auth": "bioalergia",
     },
     body: JSON.stringify({
-      AuthFlow: "USER_PASSWORD_AUTH",
-      AuthParameters: {
-        PASSWORD: password,
-        USERNAME: rut,
-      },
-      ClientId: CGE_COGNITO_CLIENT_ID,
+      ITEM: { CANAL: "OVIRTUAL", CTA_CTO: accountNumber },
+      url: "OFVCGE_P",
     }),
   });
-
-  if (!response.ok) {
-    const body = await response.text();
-    throw new Error(`CGE auth failed: ${response.status} ${body}`);
-  }
-
-  const data = (await response.json()) as {
-    AuthenticationResult?: { AccessToken?: string };
-  };
-
-  const token = data.AuthenticationResult?.AccessToken;
-
-  if (!token) {
-    throw new Error("CGE auth response missing AccessToken");
-  }
-
-  return token;
-}
-
-export async function fetchCgeBill(
-  accountNumber: string,
-  accessToken: string,
-): Promise<CgeBillResult> {
-  const response = await fetch(
-    `${CGE_ORCHESTRATOR}/consultarDeudaPorCuentaContrato`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "*/*",
-        Origin: "https://sucursalvirtual.cge.cl",
-        Referer: "https://sucursalvirtual.cge.cl/",
-        "User-Agent":
-          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Safari/605.1.15",
-        "X-Client": "react-app",
-        "App-Source": "react-app",
-        "x-api-auth": accessToken,
-      },
-      body: JSON.stringify({
-        ITEM: { CANAL: "OVIRTUAL", CTA_CTO: accountNumber },
-        url: "OFVCGE_P",
-      }),
-    },
-  );
 
   if (!response.ok) {
     throw new Error(`CGE request failed: ${response.status}`);
@@ -147,6 +130,7 @@ export async function fetchCgeBill(
       empresa?: string;
       fecEmision?: string;
       nomCliente?: string;
+      terBoleta?: string;
       ultBoleta?: string;
     };
     mensaje?: string;
@@ -167,14 +151,6 @@ export async function fetchCgeBill(
     currentBill: Number(cupon.ultBoleta ?? 0),
     emissionDate: cupon.fecEmision ?? "",
     previousBill: Number(cupon.antBoleta ?? 0),
+    thirdBill: Number(cupon.terBoleta ?? 0),
   };
-}
-
-export async function fetchCgeBillWithCredentials(
-  accountNumber: string,
-  rut: string,
-  password: string,
-): Promise<CgeBillResult> {
-  const token = await getCgeCognitoToken(rut, password);
-  return fetchCgeBill(accountNumber, token);
 }

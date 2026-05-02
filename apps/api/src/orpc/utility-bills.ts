@@ -12,7 +12,7 @@ import type { Context as HonoContext } from "hono";
 import { getSessionUser } from "../auth";
 import { logError } from "../lib/logger";
 import { configureSuperjson } from "../lib/superjson-config";
-import { fetchCgeBillWithCredentials, fetchEssbioBill } from "../services/utility-bills";
+import { fetchCgeBill, fetchEssbioBill } from "../services/utility-bills";
 import { SuperJSONRPCHandler } from "./superjson";
 
 configureSuperjson();
@@ -48,11 +48,7 @@ const utilityBillsRouterBase = {
     .input(fetchCgeBillInputSchema)
     .output(fetchCgeBillResponseSchema)
     .handler(async ({ input }) => {
-      const bill = await fetchCgeBillWithCredentials(
-        input.accountNumber,
-        input.rut,
-        input.password,
-      );
+      const bill = await fetchCgeBill(input.accountNumber);
       return { bill, status: "ok" as const };
     }),
 };
@@ -79,7 +75,7 @@ export const utilityBillsOpenAPIHandler = new OpenAPIHandler(utilityBillsORPCRou
       specGenerateOptions: {
         info: {
           title: "Bioalergia Utility Bills oRPC",
-          description: "Essbio and CGE bill lookup endpoints.",
+          description: "Essbio (agua) y CGE (electricidad) — consulta de deuda sin autenticación.",
           version: "1.0.0",
         },
       },
