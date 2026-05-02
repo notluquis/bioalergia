@@ -15,15 +15,17 @@ export function isSkinTestCandidateFilename(filename: string): boolean {
     compact.includes("patchtest") ||
     compact.includes("testcutaneo") ||
     compact.includes("testcutanea") ||
-    /\btests?\s+de\s+parche\b/.test(spaced) ||
-    /\btests?\s+parche\b/.test(spaced) ||
-    /\bteste\s+de\s+parche\b/.test(spaced) ||
-    /\bpruebas?\s+de\s+parche\b/.test(spaced) ||
+    /\btests?\s+de\s+parches?\b/.test(spaced) ||
+    /\btests?\s+parches?\b/.test(spaced) ||
+    /\bteste\s+de\s+parches?\b/.test(spaced) ||
+    /\bpruebas?\s+de\s+parches?\b/.test(spaced) ||
     /\btests?\s+cutane[oa]s?\b/.test(spaced) ||
     /\bprick\s+(?:aeroalergenos?|aeroalergeno|alimentari[oa]s?|medicamentos?|aines?)\b/.test(spaced) ||
     /\bprick\s+[a-zñ]+(?:\s+[a-zñ]+){1,5}\b/.test(spaced) ||
     /^[a-zñ]+(?:\s+[a-zñ]+){0,4}\s+prick\b/.test(spaced) ||
     /\btests?\s+(?:de\s+)?aeroalergenos?\b/.test(spaced) ||
+    compact.includes("panelaeroalergenos") ||
+    compact.includes("testdeparche") ||
     /\bpanel\s+(?:[0-9]+|completo)?\s*aeroalergenos?\b/.test(spaced) ||
     /\baeroalergenos?\s+(?:i|ii|iii|iv|v)\b/.test(spaced) ||
     /\bpanel\s+alimentari[oa]\b/.test(spaced) ||
@@ -34,7 +36,8 @@ export function isSkinTestCandidateFilename(filename: string): boolean {
     /\btests?\s+latex\b/.test(spaced) ||
     /^[a-zñ]+(?:\s+[a-zñ]+){1,5}\s+latex\b/.test(spaced) ||
     /\blatex\s+[a-zñ]+(?:\s+[a-zñ]+){1,5}$/.test(spaced) ||
-    /\b(?:acaros?|aines?|ltp|profilina)\b/.test(spaced) ||
+    /\b(?:acaros?|aines?|ltp|profilina|mariscos|pescado)\b/.test(spaced) ||
+    /\bgrupo\s+(?:de\s+)?(?:los\s+)?8\b/.test(spaced) ||
     /\bpanel\s+alimentario\s+insectario\b/.test(spaced)
   );
 }
@@ -54,11 +57,11 @@ export function isSkinTestTemplateFilename(filename: string): boolean {
     .replace(/[_-]+/g, " ")
     .replace(/\b(nuevo|nueva|actualizado|actualizada|ultimo|ultima|final|este\s+si)\b/g, " ")
     .replace(
-      /\b(multitest|multi\s+test|multistest|ultitest|prick\s*test|pricktest|prick|patch\s*test|tests?\s+cutane[oa]s?|tests?\s+de\s+parche|tests?\s+parche|teste\s+de\s+parche|tests?\s+latex|pruebas?\s+de\s+parche)\b/g,
+      /\b(multitest|multi\s+test|multistest|ultitest|prick\s*test|pricktest|prick|patch\s*test|tests?\s+cutane[oa]s?|tests?\s+de\s+parches?|tests?\s+parches?|teste\s+de\s+parches?|tests?\s+latex|pruebas?\s+de\s+parches?)\b/g,
       " "
     )
     .replace(
-      /\b(panel|aeroalergenos?|aeroalegenos?|alimentarios?|alimentari[oa]|alimentos?|pediatrico|pediatrica|adulto|aplv|huevo|hcs|completos?|acaros?|ac|aines|antiinflamatorio|antinflamatorio|antibioticos?|medicamentos?|alergenos?|parche|latex|ltp|profilina|insectarios?|mariscos|pescado|producto\s+del\s+mar|ovolacteos?|ovalacteos?|ovalcateos?|grupo\s+(?:de\s+)?(?:los\s+)?8|g8|gr8|ov|p9)\b/g,
+      /\b(panel|panelaeroalergenos|aeroalergenos?|aeroalegenos?|alimentarios?|alimentari[oa]|alimentos?|pediatrico|pediatrica|adulto|aplv|huevo|hcs|completos?|acaros?|ac|aines|antiinflamatorio|antinflamatorio|antibioticos?|medicamentos?|alergenos?|parches?|latex|ltp|profilina|insectarios?|mariscos|pescado|producto\s+del\s+mar|ovolacteos?|ovalacteos?|ovalcateos?|grupo\s+(?:de\s+)?(?:los\s+)?8|g8|gr8|ov|p9)\b/g,
       " "
     )
     .replace(
