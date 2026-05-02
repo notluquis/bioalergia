@@ -1608,9 +1608,22 @@ function SkinTestImportRow({
             )}
           </div>
           {item.issues.length > 0 && (
-            <p className="mt-1 text-xs text-warning">
-              {item.issues.map((issue) => issue.message).join(" · ")}
-            </p>
+            <div className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5">
+              {item.issues.map((issue, i) => (
+                <p
+                  key={i}
+                  className={
+                    issue.severity === "error"
+                      ? "text-xs text-danger"
+                      : issue.severity === "warning"
+                        ? "text-xs text-warning"
+                        : "text-xs text-foreground-500"
+                  }
+                >
+                  {issue.message}
+                </p>
+              ))}
+            </div>
           )}
           {item.error && <p className="mt-1 text-xs text-danger">{item.error}</p>}
         </div>
@@ -1691,8 +1704,21 @@ function SkinTestImportExpandedDetails({ item }: { item: SkinTestImport }) {
       </div>
 
       {item.issues.length > 0 && (
-        <div className="rounded-md bg-warning/10 px-2 py-1.5 text-xs text-warning-700">
-          {item.issues.map((issue) => issue.message).join(" · ")}
+        <div className="space-y-1">
+          {item.issues.map((issue, i) => (
+            <div
+              key={i}
+              className={
+                issue.severity === "error"
+                  ? "rounded-md bg-danger/10 px-2 py-1.5 text-xs text-danger"
+                  : issue.severity === "warning"
+                    ? "rounded-md bg-warning/10 px-2 py-1.5 text-xs text-warning-700"
+                    : "rounded-md bg-default/40 px-2 py-1.5 text-xs text-foreground-600"
+              }
+            >
+              {issue.message}
+            </div>
+          ))}
         </div>
       )}
 

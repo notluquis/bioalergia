@@ -3821,6 +3821,24 @@ export class SchemaType implements SchemaDef {
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("onedrive_sharepoint_unique_id") }] }] as readonly AttributeApplication[]
                 },
+                oneDriveQuickXorHash: {
+                    name: "oneDriveQuickXorHash",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("onedrive_quick_xor_hash") }] }] as readonly AttributeApplication[]
+                },
+                oneDriveSha1Hash: {
+                    name: "oneDriveSha1Hash",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("onedrive_sha1_hash") }] }] as readonly AttributeApplication[]
+                },
+                oneDriveCrc32Hash: {
+                    name: "oneDriveCrc32Hash",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("onedrive_crc32_hash") }] }] as readonly AttributeApplication[]
+                },
                 oneDriveETag: {
                     name: "oneDriveETag",
                     type: "String",
@@ -3968,6 +3986,24 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("onedrive_sharepoint_unique_id") }] }] as readonly AttributeApplication[]
+                },
+                oneDriveQuickXorHash: {
+                    name: "oneDriveQuickXorHash",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("onedrive_quick_xor_hash") }] }] as readonly AttributeApplication[]
+                },
+                oneDriveSha1Hash: {
+                    name: "oneDriveSha1Hash",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("onedrive_sha1_hash") }] }] as readonly AttributeApplication[]
+                },
+                oneDriveCrc32Hash: {
+                    name: "oneDriveCrc32Hash",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("onedrive_crc32_hash") }] }] as readonly AttributeApplication[]
                 },
                 oneDriveETag: {
                     name: "oneDriveETag",
@@ -4365,6 +4401,24 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("onedrive_drive_id") }] }] as readonly AttributeApplication[]
+                },
+                oneDriveQuickXorHash: {
+                    name: "oneDriveQuickXorHash",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("onedrive_quick_xor_hash") }] }] as readonly AttributeApplication[]
+                },
+                oneDriveSha1Hash: {
+                    name: "oneDriveSha1Hash",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("onedrive_sha1_hash") }] }] as readonly AttributeApplication[]
+                },
+                oneDriveCrc32Hash: {
+                    name: "oneDriveCrc32Hash",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("onedrive_crc32_hash") }] }] as readonly AttributeApplication[]
                 },
                 oneDriveETag: {
                     name: "oneDriveETag",

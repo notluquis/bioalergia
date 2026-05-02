@@ -39,7 +39,14 @@ export interface OneDriveItem {
   cTag?: string;
   deleted?: unknown;
   eTag?: string;
-  file?: { mimeType?: string };
+  file?: {
+    hashes?: {
+      crc32Hash?: string;
+      quickXorHash?: string;
+      sha1Hash?: string;
+    };
+    mimeType?: string;
+  };
   folder?: unknown;
   id: string;
   lastModifiedDateTime?: string;
@@ -49,7 +56,14 @@ export interface OneDriveItem {
     path?: string;
   };
   remoteItem?: {
-    file?: { mimeType?: string };
+    file?: {
+      hashes?: {
+        crc32Hash?: string;
+        quickXorHash?: string;
+        sha1Hash?: string;
+      };
+      mimeType?: string;
+    };
     folder?: unknown;
     id?: string;
     name?: string;
@@ -568,6 +582,30 @@ function toFolderItem(item: OneDriveItem): OneDriveFolderItem {
 function isXlsxItem(item: OneDriveItem): boolean {
   const name = item.remoteItem?.name ?? item.name;
   return Boolean(item.file ?? item.remoteItem?.file) && /\.xlsx$/i.test(name) && !/^~\$/.test(name);
+}
+
+export function getOneDriveQuickXorHash(item: OneDriveItem): string | null {
+  return (
+    item.remoteItem?.file?.hashes?.quickXorHash ??
+    item.file?.hashes?.quickXorHash ??
+    null
+  );
+}
+
+export function getOneDriveSha1Hash(item: OneDriveItem): string | null {
+  return (
+    item.remoteItem?.file?.hashes?.sha1Hash ??
+    item.file?.hashes?.sha1Hash ??
+    null
+  );
+}
+
+export function getOneDriveCrc32Hash(item: OneDriveItem): string | null {
+  return (
+    item.remoteItem?.file?.hashes?.crc32Hash ??
+    item.file?.hashes?.crc32Hash ??
+    null
+  );
 }
 
 function normalizeGraphPath(path: null | string | undefined): null | string {

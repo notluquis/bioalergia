@@ -5,6 +5,9 @@ import { sql } from "kysely";
 import {
   downloadOneDriveItem,
   getOneDriveStatus,
+  getOneDriveCrc32Hash,
+  getOneDriveQuickXorHash,
+  getOneDriveSha1Hash,
   listOneDriveDeltaItems,
   type OneDriveItem,
 } from "../lib/microsoft/onedrive";
@@ -146,6 +149,9 @@ interface OneDriveItemMetadata {
   sourceItemId: null | string;
   sourceKey: null | string;
   sharePointUniqueId: null | string;
+  quickXorHash: null | string;
+  sha1Hash: null | string;
+  crc32Hash: null | string;
   webUrl: null | string;
 }
 
@@ -431,6 +437,9 @@ export async function reclassifyClinicalXlsxLibrary(options?: {
             sourceItemId: row.oneDriveSourceItemId,
             sourceKey: row.oneDriveSourceKey,
             sharePointUniqueId: row.oneDriveSharePointUniqueId,
+            quickXorHash: null,
+            sha1Hash: null,
+            crc32Hash: null,
             webUrl: row.oneDriveWebUrl,
           };
           const importId = createId();
@@ -519,7 +528,11 @@ export async function syncClinicalSkinTestImports(options?: {
   let scanned = 0;
   let xlsx = 0;
   let filesProcessed = 0;
-  const workItems: Array<{ account: (typeof accounts)[number]; item: OneDriveItem }> = [];
+  const workItems: Array<{
+    account: (typeof accounts)[number];
+    item: OneDriveItem;
+    key: string;
+  }> = [];
 
   const emit = (message: string, progress: SkinTestSyncProgress) => {
     options?.onProgress?.({ ...progress, message });
@@ -585,10 +598,24 @@ export async function syncClinicalSkinTestImports(options?: {
         });
       },
     });
+    const deletedItems = items.filter((i) => i.deleted);
     const xlsxItems = items.filter(isRelevantXlsx);
     scanned += items.length;
     xlsx += xlsxItems.length;
-    workItems.push(...xlsxItems.map((item) => ({ account, item })));
+
+    if (deletedItems.length > 0) {
+      await Promise.all(
+        deletedItems.map((item) =>
+          markOneDriveItemDeleted(
+            account.accountId,
+            item.parentReference?.driveId ?? options?.folderDriveId ?? account.accountId,
+            item.id
+          )
+        )
+      );
+    }
+
+    workItems.push(...xlsxItems.map((item) => ({ account, item, key: `${account.accountId}:${item.id}` })));
 
     emit(
       `[${account.email}] ${items.length} cambio(s), ${xlsxItems.length} xlsx`,
@@ -647,6 +674,26 @@ export async function syncClinicalSkinTestImports(options?: {
     };
   }
 
+  const quickXorHashCanonicalFiles = new Map<string, string>();
+  const quickXorHashDuplicates = new Map<string, SkinTestIssue>();
+  for (const { key, item } of workItems) {
+    const metadata = buildOneDriveItemMetadata(item, item.parentReference?.driveId ?? "unknown");
+    const classification = classifyClinicalXlsxFilename(metadata.filename);
+    if (
+      classification.classification !== "SKIN_TEST" ||
+      !isImportableSkinTestFilename(metadata.filename)
+    ) {
+      continue;
+    }
+    if (!metadata.quickXorHash) continue;
+    const canonicalFilename = quickXorHashCanonicalFiles.get(metadata.quickXorHash);
+    if (canonicalFilename) {
+      quickXorHashDuplicates.set(key, getOneDriveQuickXorHashDuplicateIssue(canonicalFilename));
+      continue;
+    }
+    quickXorHashCanonicalFiles.set(metadata.quickXorHash, metadata.filename);
+  }
+
   let cursor = 0;
   const workerCount = Math.min(concurrency, workItems.length);
 
@@ -676,7 +723,7 @@ export async function syncClinicalSkinTestImports(options?: {
       }
       cursor += 1;
 
-      const { account, item } = workItems[index];
+      const { account, item, key } = workItems[index];
       emit(`[${account.email}] Registrando ${item.name}`, {
         accountEmail: account.email,
         accountId: account.accountId,
@@ -700,6 +747,7 @@ export async function syncClinicalSkinTestImports(options?: {
       });
 
       const result = await discoverOneDriveClinicalXlsxItem(account.accountId, item, {
+        contentDuplicate: quickXorHashDuplicates.get(key) ?? null,
         force: options?.force,
       });
 
@@ -799,7 +847,7 @@ function resolveSyncConcurrency(): number {
 export async function processOneDriveSkinTestItem(
   accountId: string,
   item: OneDriveItem,
-  options?: { force?: boolean }
+  options?: { contentDuplicate?: null | SkinTestIssue; force?: boolean }
 ): Promise<SkinTestImportOutput> {
   const driveId = item.parentReference?.driveId ?? "unknown";
   const existing = await getImportByOneDriveItemId(accountId, driveId, item.id);
@@ -819,6 +867,23 @@ export async function processOneDriveSkinTestItem(
 
   const importId = existing?.id ?? createId();
   const metadata = buildOneDriveItemMetadata(item, driveId);
+
+  if (options?.contentDuplicate) {
+    await ensureImportMetadataRow(accountId, importId, metadata);
+    await upsertImport({
+      accountId,
+      confidence: 0,
+      duplicateOfImportId: null,
+      error: null,
+      id: importId,
+      issues: [options.contentDuplicate],
+      metadata,
+      parsedPayload: null,
+      resultHash: null,
+      status: "SKIPPED",
+    });
+    return await getSkinTestImport(importId);
+  }
 
   try {
     const buffer = await downloadOneDriveItem(accountId, item.id, driveId);
@@ -935,7 +1000,7 @@ export async function processOneDriveSkinTestItem(
 async function discoverOneDriveClinicalXlsxItem(
   accountId: string,
   item: OneDriveItem,
-  options?: { force?: boolean }
+  options?: { contentDuplicate?: null | SkinTestIssue; force?: boolean }
 ): Promise<{
   classification: ClinicalXlsxFileClassification;
   id: string;
@@ -1107,7 +1172,7 @@ export async function discoverOneDriveClinicalDocument(
 async function discoverOneDriveSkinTestItem(
   accountId: string,
   item: OneDriveItem,
-  options?: { force?: boolean }
+  options?: { contentDuplicate?: null | SkinTestIssue; force?: boolean }
 ): Promise<SkinTestImportOutput> {
   const driveId = item.parentReference?.driveId ?? "unknown";
   const existing = await getImportByOneDriveItemId(accountId, driveId, item.id);
@@ -1125,6 +1190,21 @@ async function discoverOneDriveSkinTestItem(
 
   const importId = existing?.id ?? createId();
   const metadata = buildOneDriveItemMetadata(item, driveId);
+  if (options?.contentDuplicate) {
+    await upsertImport({
+      accountId,
+      confidence: 0,
+      duplicateOfImportId: null,
+      error: null,
+      id: importId,
+      issues: [options.contentDuplicate],
+      metadata,
+      parsedPayload: null,
+      resultHash: null,
+      status: "SKIPPED",
+    });
+    return await getSkinTestImport(importId);
+  }
   if (existing) {
     await sql`
       UPDATE clinical_skin_test_imports
@@ -1188,6 +1268,9 @@ function buildOneDriveItemMetadata(item: OneDriveItem, driveId: string): OneDriv
   const remote = item.remoteItem;
   const sourceDriveId = item.remoteItem?.parentReference?.driveId ?? null;
   const sourceItemId = item.remoteItem?.id ?? null;
+  const quickXorHash = getOneDriveQuickXorHash(item);
+  const sha1Hash = getOneDriveSha1Hash(item);
+  const crc32Hash = getOneDriveCrc32Hash(item);
   const sharePointUniqueId =
     item.remoteItem?.sharepointIds?.listItemUniqueId ??
     item.sharepointIds?.listItemUniqueId ??
@@ -1208,6 +1291,9 @@ function buildOneDriveItemMetadata(item: OneDriveItem, driveId: string): OneDriv
     modifiedAt: item.lastModifiedDateTime ?? null,
     path: remote?.parentReference?.path ?? item.parentReference?.path ?? null,
     size: remote?.size ?? item.size ?? null,
+    quickXorHash,
+    sha1Hash,
+    crc32Hash,
     sourceDriveId,
     sourceItemId,
     sourceKey,
@@ -1248,6 +1334,14 @@ function getOneDriveSharedDuplicateIssue(sourceFilename: string): SkinTestIssue 
   return {
     code: "duplicate_onedrive_shared_file",
     message: `Este XLSX apunta al mismo archivo compartido de OneDrive que ${sourceFilename}; se omite para no procesar el mismo archivo desde otra cuenta.`,
+    severity: "info",
+  };
+}
+
+function getOneDriveQuickXorHashDuplicateIssue(sourceFilename: string): SkinTestIssue {
+  return {
+    code: "duplicate_onedrive_quickxorhash",
+    message: `Este XLSX comparte quickXorHash con ${sourceFilename}; se omite porque parece ser el mismo contenido desde otra cuenta o un duplicado renombrado.`,
     severity: "info",
   };
 }
@@ -2657,6 +2751,9 @@ async function ensureImportMetadataRow(
       onedrive_source_drive_id,
       onedrive_source_item_id,
       onedrive_sharepoint_unique_id,
+      onedrive_quick_xor_hash,
+      onedrive_sha1_hash,
+      onedrive_crc32_hash,
       onedrive_etag,
       onedrive_ctag,
       onedrive_web_url,
@@ -2681,6 +2778,9 @@ async function ensureImportMetadataRow(
       ${metadata.sourceDriveId},
       ${metadata.sourceItemId},
       ${metadata.sharePointUniqueId},
+      ${metadata.quickXorHash},
+      ${metadata.sha1Hash},
+      ${metadata.crc32Hash},
       ${metadata.eTag},
       ${metadata.cTag},
       ${metadata.webUrl},
@@ -2702,6 +2802,9 @@ async function ensureImportMetadataRow(
       onedrive_source_drive_id = EXCLUDED.onedrive_source_drive_id,
       onedrive_source_item_id = EXCLUDED.onedrive_source_item_id,
       onedrive_sharepoint_unique_id = EXCLUDED.onedrive_sharepoint_unique_id,
+      onedrive_quick_xor_hash = EXCLUDED.onedrive_quick_xor_hash,
+      onedrive_sha1_hash = EXCLUDED.onedrive_sha1_hash,
+      onedrive_crc32_hash = EXCLUDED.onedrive_crc32_hash,
       onedrive_etag = EXCLUDED.onedrive_etag,
       onedrive_ctag = EXCLUDED.onedrive_ctag,
       onedrive_web_url = EXCLUDED.onedrive_web_url,
@@ -3288,6 +3391,33 @@ function toImportOutput(row: ImportRow): SkinTestImportOutput {
       updatedAt: row.workbookSnapshotUpdatedAt?.toISOString() ?? null,
     },
   };
+}
+
+async function markOneDriveItemDeleted(
+  accountId: string,
+  driveId: string,
+  itemId: string
+) {
+  const deletedIssue: SkinTestIssue = {
+    code: "onedrive_deleted",
+    message: "El archivo fue eliminado de OneDrive según el delta de Graph.",
+    severity: "info",
+  };
+  await sql`
+    UPDATE clinical_skin_test_imports
+    SET
+      status = 'SKIPPED',
+      issues = (
+        COALESCE(issues, '[]'::jsonb) ||
+        ${JSON.stringify([deletedIssue])}::jsonb
+      ),
+      updated_at = now()
+    WHERE
+      onedrive_account_id = ${accountId}
+      AND onedrive_drive_id = ${driveId}
+      AND onedrive_item_id = ${itemId}
+      AND status NOT IN ('IMPORTED', 'REJECTED')
+  `.execute(kysely);
 }
 
 function toDateString(value: Date | string): string {

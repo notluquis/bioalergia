@@ -3162,6 +3162,21 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true
                 },
+                oneDriveQuickXorHash: {
+                    name: "oneDriveQuickXorHash",
+                    type: "String",
+                    optional: true
+                },
+                oneDriveSha1Hash: {
+                    name: "oneDriveSha1Hash",
+                    type: "String",
+                    optional: true
+                },
+                oneDriveCrc32Hash: {
+                    name: "oneDriveCrc32Hash",
+                    type: "String",
+                    optional: true
+                },
                 oneDriveETag: {
                     name: "oneDriveETag",
                     type: "String",
@@ -3278,6 +3293,21 @@ export class SchemaType implements SchemaDef {
                 },
                 oneDriveSharePointUniqueId: {
                     name: "oneDriveSharePointUniqueId",
+                    type: "String",
+                    optional: true
+                },
+                oneDriveQuickXorHash: {
+                    name: "oneDriveQuickXorHash",
+                    type: "String",
+                    optional: true
+                },
+                oneDriveSha1Hash: {
+                    name: "oneDriveSha1Hash",
+                    type: "String",
+                    optional: true
+                },
+                oneDriveCrc32Hash: {
+                    name: "oneDriveCrc32Hash",
                     type: "String",
                     optional: true
                 },
@@ -3599,6 +3629,21 @@ export class SchemaType implements SchemaDef {
                 },
                 oneDriveDriveId: {
                     name: "oneDriveDriveId",
+                    type: "String",
+                    optional: true
+                },
+                oneDriveQuickXorHash: {
+                    name: "oneDriveQuickXorHash",
+                    type: "String",
+                    optional: true
+                },
+                oneDriveSha1Hash: {
+                    name: "oneDriveSha1Hash",
+                    type: "String",
+                    optional: true
+                },
+                oneDriveCrc32Hash: {
+                    name: "oneDriveCrc32Hash",
                     type: "String",
                     optional: true
                 },
