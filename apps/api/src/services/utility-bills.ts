@@ -194,7 +194,7 @@ async function fetchBillForProvider(
 
 // ─── UtilityAccount CRUD ──────────────────────────────────────────────────────
 
-type ExpenseScope = "BIOALERGIA" | "EMPRESA" | "PERSONAL";
+type ExpenseScope = "BIOALERGIA" | "PERSONAL";
 
 export interface UtilityAccountPayload {
   expenseServiceId?: null | number;

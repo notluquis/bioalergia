@@ -13203,8 +13203,7 @@ export class SchemaType implements SchemaDef {
             name: "ExpenseScope",
             values: {
                 BIOALERGIA: "BIOALERGIA",
-                PERSONAL: "PERSONAL",
-                EMPRESA: "EMPRESA"
+                PERSONAL: "PERSONAL"
             }
         },
         ExpenseStatus: {

@@ -1,4 +1,4 @@
-export type ExpenseScope = "BIOALERGIA" | "EMPRESA" | "PERSONAL";
+export type ExpenseScope = "BIOALERGIA" | "PERSONAL";
 export type ExpenseStatus = "OVERDUE" | "PAID" | "PENDING" | "SKIPPED";
 export type ExpenseSource = "MANUAL" | "TEMPLATE" | "TRANSACTION";
 export type ExpenseRecurrence = "MONTHLY" | "ONE_TIME";

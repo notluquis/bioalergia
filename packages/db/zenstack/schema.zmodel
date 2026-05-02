@@ -3660,7 +3660,6 @@ model WaWebhookLog {
 enum ExpenseScope {
   BIOALERGIA
   PERSONAL
-  EMPRESA
 }
 
 enum ExpenseStatus {

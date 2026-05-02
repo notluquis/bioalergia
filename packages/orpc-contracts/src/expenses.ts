@@ -3,7 +3,7 @@ import { z } from "zod";
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
-export const expenseScopeSchema = z.enum(["BIOALERGIA", "PERSONAL", "EMPRESA"]);
+export const expenseScopeSchema = z.enum(["BIOALERGIA", "PERSONAL"]);
 export const expenseStatusSchema = z.enum(["PENDING", "PAID", "OVERDUE", "SKIPPED"]);
 export const expenseSourceSchema = z.enum(["MANUAL", "TEMPLATE", "TRANSACTION"]);
 export const expenseRecurrenceSchema = z.enum(["MONTHLY", "ONE_TIME"]);
