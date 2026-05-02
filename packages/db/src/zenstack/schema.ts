@@ -12479,6 +12479,12 @@ export class SchemaType implements SchemaDef {
                     name: "provider",
                     type: "UtilityProvider"
                 },
+                scope: {
+                    name: "scope",
+                    type: "ExpenseScope",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("PERSONAL") }] }] as readonly AttributeApplication[],
+                    default: "PERSONAL" as FieldDefault
+                },
                 serviceNumber: {
                     name: "serviceNumber",
                     type: "String",
@@ -12554,6 +12560,7 @@ export class SchemaType implements SchemaDef {
                 { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
                 { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
                 { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("ExpenseScope", [ExpressionUtils.field("scope")]) }] },
                 { name: "@@schema", args: [{ name: "map", value: ExpressionUtils.literal("personal") }] },
                 { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("utility_accounts") }] }
             ] as readonly AttributeApplication[],

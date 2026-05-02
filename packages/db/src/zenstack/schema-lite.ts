@@ -10152,6 +10152,11 @@ export class SchemaType implements SchemaDef {
                     name: "provider",
                     type: "UtilityProvider"
                 },
+                scope: {
+                    name: "scope",
+                    type: "ExpenseScope",
+                    default: "PERSONAL" as FieldDefault
+                },
                 serviceNumber: {
                     name: "serviceNumber",
                     type: "String",

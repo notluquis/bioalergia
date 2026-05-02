@@ -63,7 +63,7 @@ export function UtilityAccountsTab() {
   const [form, setForm] = useState<AccountFormState>(DEFAULT_FORM);
 
   const { data, isLoading } = useQuery({
-    queryFn: () => utilityBillsClient.listAccounts({}),
+    queryFn: () => utilityBillsClient.listAccounts({ scope: "PERSONAL" }),
     queryKey: UTILITY_ACCOUNTS_KEY,
   });
 
@@ -75,6 +75,7 @@ export function UtilityAccountsTab() {
         label: values.label || null,
         notes: values.notes || null,
         provider: values.provider,
+        scope: "PERSONAL",
         serviceNumber: values.serviceNumber,
       }),
     onError: (err) => {
@@ -99,6 +100,7 @@ export function UtilityAccountsTab() {
           label: values.label || null,
           notes: values.notes || null,
           provider: values.provider,
+          scope: "PERSONAL",
           serviceNumber: values.serviceNumber,
         },
       }),

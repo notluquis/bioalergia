@@ -194,12 +194,15 @@ async function fetchBillForProvider(
 
 // ─── UtilityAccount CRUD ──────────────────────────────────────────────────────
 
+type ExpenseScope = "BIOALERGIA" | "EMPRESA" | "PERSONAL";
+
 export interface UtilityAccountPayload {
   expenseServiceId?: null | number;
   isActive?: boolean;
   label?: null | string;
   notes?: null | string;
   provider: UtilityProvider;
+  scope?: ExpenseScope;
   serviceNumber: string;
 }
 
@@ -213,11 +216,16 @@ function mapAccount(a: RawAccount) {
   };
 }
 
-export async function listUtilityAccounts(filters: { isActive?: boolean; provider?: string }) {
+export async function listUtilityAccounts(filters: {
+  isActive?: boolean;
+  provider?: string;
+  scope?: string;
+}) {
   const accounts = await db.utilityAccount.findMany({
     where: {
       ...(filters.isActive !== undefined ? { isActive: filters.isActive } : {}),
       ...(filters.provider ? { provider: filters.provider as UtilityProvider } : {}),
+      ...(filters.scope ? { scope: filters.scope as ExpenseScope } : {}),
     },
     orderBy: [{ provider: "asc" }, { label: "asc" }],
   });
@@ -232,6 +240,7 @@ export async function createUtilityAccount(payload: UtilityAccountPayload) {
       label: payload.label ?? null,
       notes: payload.notes ?? null,
       provider: payload.provider,
+      scope: payload.scope ?? "PERSONAL",
       serviceNumber: payload.serviceNumber,
     },
   });
@@ -247,6 +256,7 @@ export async function updateUtilityAccount(id: number, payload: UtilityAccountPa
       label: payload.label ?? null,
       notes: payload.notes ?? null,
       provider: payload.provider,
+      scope: payload.scope ?? "PERSONAL",
       serviceNumber: payload.serviceNumber,
     },
   });

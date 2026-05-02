@@ -3751,6 +3751,7 @@ enum UtilityProvider {
 model UtilityAccount {
   id               Int             @id @default(autoincrement())
   provider         UtilityProvider
+  scope            ExpenseScope    @default(PERSONAL)
   serviceNumber    String          @unique @map("service_number") // Essbio: numero_servicio, CGE: CTA_CTO
   label            String?         // e.g. "Casa San Pedro", "Clínica"
 
@@ -3773,6 +3774,7 @@ model UtilityAccount {
   @@allow('read', true)
   @@allow('create,update,delete', auth().status == 'ACTIVE')
 
+  @@index([scope])
   @@schema("personal")
   @@map("utility_accounts")
 }

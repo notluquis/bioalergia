@@ -1,5 +1,6 @@
 import { oc } from "@orpc/contract";
 import { z } from "zod";
+import { expenseScopeSchema } from "./expenses";
 
 // ─── Raw bill fetch schemas ───────────────────────────────────────────────────
 
@@ -48,6 +49,7 @@ export const utilityAccountItemSchema = z.object({
   lastPreviousAmount: z.number().nullable(),
   notes: z.string().nullable(),
   provider: utilityProviderSchema,
+  scope: expenseScopeSchema,
   serviceNumber: z.string(),
   updatedAt: z.coerce.date(),
 });
@@ -58,6 +60,7 @@ export const utilityAccountPayloadSchema = z.object({
   label: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
   provider: utilityProviderSchema,
+  scope: expenseScopeSchema.optional(),
   serviceNumber: z.string().min(1),
 });
 
@@ -74,6 +77,7 @@ export const utilityAccountListResponseSchema = z.object({
 export const listUtilityAccountsInputSchema = z.object({
   isActive: z.boolean().optional(),
   provider: utilityProviderSchema.optional(),
+  scope: expenseScopeSchema.optional(),
 });
 
 // Refresh result — normalized from either Essbio or CGE response

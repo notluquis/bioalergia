@@ -76,6 +76,7 @@ const utilityBillsRouterBase = {
       const accounts = await listUtilityAccounts({
         isActive: input.isActive,
         provider: input.provider,
+        scope: input.scope,
       });
       return { accounts, status: "ok" as const };
     }),
