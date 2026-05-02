@@ -182,7 +182,7 @@ export const skinTestArchiveSnapshotsInputSchema = z.object({
   accountId: z.string().optional(),
   dryRun: z.boolean().optional(),
   importStatus: skinTestImportStatusSchema.optional(),
-  limit: z.number().int().positive().max(5000).optional(),
+  limit: z.number().int().positive().optional(),
   onlyChanged: z.boolean().optional(),
   onlyMissing: z.boolean().optional(),
   query: z.string().optional(),
