@@ -8276,6 +8276,12 @@ export class SchemaType implements SchemaDef {
                     type: "PatientDteSaleSource",
                     array: true,
                     relation: { opposite: "patient" }
+                },
+                shipments: {
+                    name: "shipments",
+                    type: "Shipment",
+                    array: true,
+                    relation: { opposite: "patient" }
                 }
             },
             attributes: [
@@ -8288,6 +8294,150 @@ export class SchemaType implements SchemaDef {
             uniqueFields: {
                 id: { type: "Int" },
                 personId: { type: "Int" }
+            }
+        },
+        Shipment: {
+            name: "Shipment",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                patientId: {
+                    name: "patientId",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_id") }] }] as readonly AttributeApplication[],
+                    foreignKeyFor: [
+                        "patient"
+                    ] as readonly string[]
+                },
+                otNumber: {
+                    name: "otNumber",
+                    type: "String",
+                    unique: true,
+                    attributes: [{ name: "@unique" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("ot_number") }] }] as readonly AttributeApplication[]
+                },
+                serviceTypeCode: {
+                    name: "serviceTypeCode",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("service_type_code") }] }] as readonly AttributeApplication[]
+                },
+                serviceDescription: {
+                    name: "serviceDescription",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("service_description") }] }] as readonly AttributeApplication[]
+                },
+                cashOnDelivery: {
+                    name: "cashOnDelivery",
+                    type: "Decimal",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("cash_on_delivery") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(12) }, { name: "s", value: ExpressionUtils.literal(2) }] }] as readonly AttributeApplication[]
+                },
+                declaredValue: {
+                    name: "declaredValue",
+                    type: "Decimal",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("declared_value") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(12) }, { name: "s", value: ExpressionUtils.literal(2) }] }] as readonly AttributeApplication[]
+                },
+                weight: {
+                    name: "weight",
+                    type: "Decimal",
+                    attributes: [{ name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(8) }, { name: "s", value: ExpressionUtils.literal(2) }] }] as readonly AttributeApplication[]
+                },
+                height: {
+                    name: "height",
+                    type: "Decimal",
+                    attributes: [{ name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(8) }, { name: "s", value: ExpressionUtils.literal(2) }] }] as readonly AttributeApplication[]
+                },
+                width: {
+                    name: "width",
+                    type: "Decimal",
+                    attributes: [{ name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(8) }, { name: "s", value: ExpressionUtils.literal(2) }] }] as readonly AttributeApplication[]
+                },
+                length: {
+                    name: "length",
+                    type: "Decimal",
+                    attributes: [{ name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(8) }, { name: "s", value: ExpressionUtils.literal(2) }] }] as readonly AttributeApplication[]
+                },
+                recipientName: {
+                    name: "recipientName",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("recipient_name") }] }] as readonly AttributeApplication[]
+                },
+                recipientPhone: {
+                    name: "recipientPhone",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("recipient_phone") }] }] as readonly AttributeApplication[]
+                },
+                recipientEmail: {
+                    name: "recipientEmail",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("recipient_email") }] }] as readonly AttributeApplication[]
+                },
+                commercialOfficeId: {
+                    name: "commercialOfficeId",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("commercial_office_id") }] }] as readonly AttributeApplication[]
+                },
+                commercialOfficeName: {
+                    name: "commercialOfficeName",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("commercial_office_name") }] }] as readonly AttributeApplication[]
+                },
+                coverageCode: {
+                    name: "coverageCode",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("coverage_code") }] }] as readonly AttributeApplication[]
+                },
+                contentDescription: {
+                    name: "contentDescription",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("content_description") }] }] as readonly AttributeApplication[]
+                },
+                labelBase64: {
+                    name: "labelBase64",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("label_base64") }] }, { name: "@db.Text" }] as readonly AttributeApplication[]
+                },
+                status: {
+                    name: "status",
+                    type: "String",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("CREATED") }] }] as readonly AttributeApplication[],
+                    default: "CREATED" as FieldDefault
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }] as readonly AttributeApplication[],
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                patient: {
+                    name: "patient",
+                    type: "Patient",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("patientId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }] as readonly AttributeApplication[],
+                    relation: { opposite: "shipments", fields: ["patientId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("shipments") }] }
+            ] as readonly AttributeApplication[],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                otNumber: { type: "String" }
             }
         },
         PatientDteSaleSource: {

@@ -202,3 +202,43 @@ if (!doctoraliaScraperApiToken) {
     "[config] Doctoralia scraper API deshabilitado. Variable faltante: DOCTORALIA_SCRAPER_API_TOKEN",
   );
 }
+
+// ChileExpress Config
+export interface ChilexpressConfig {
+  coverageApiKey: string;
+  ratingApiKey: string;
+  ordersApiKey: string;
+  clientRut: string;
+  originCoverageCode: string;
+  sandbox: boolean;
+}
+
+const cxMissing: string[] = [];
+const cxCoverageKey = process.env.CHILEXPRESS_API_KEY_COVERAGE;
+if (!cxCoverageKey) cxMissing.push("CHILEXPRESS_API_KEY_COVERAGE");
+const cxRatingKey = process.env.CHILEXPRESS_API_KEY_RATING;
+if (!cxRatingKey) cxMissing.push("CHILEXPRESS_API_KEY_RATING");
+const cxOrdersKey = process.env.CHILEXPRESS_API_KEY_ORDERS;
+if (!cxOrdersKey) cxMissing.push("CHILEXPRESS_API_KEY_ORDERS");
+const cxClientRut = process.env.CHILEXPRESS_TCC;
+if (!cxClientRut) cxMissing.push("CHILEXPRESS_TCC");
+const cxOriginCode = process.env.CHILEXPRESS_ORIGIN_COVERAGE_CODE;
+if (!cxOriginCode) cxMissing.push("CHILEXPRESS_ORIGIN_COVERAGE_CODE");
+
+export const chilexpressConfig: ChilexpressConfig | null =
+  cxCoverageKey && cxRatingKey && cxOrdersKey && cxClientRut && cxOriginCode
+    ? {
+        coverageApiKey: cxCoverageKey,
+        ratingApiKey: cxRatingKey,
+        ordersApiKey: cxOrdersKey,
+        clientRut: cxClientRut,
+        originCoverageCode: cxOriginCode,
+        sandbox: process.env.CHILEXPRESS_SANDBOX !== "false",
+      }
+    : null;
+
+if (cxMissing.length > 0) {
+  console.warn(
+    `[config] ChileExpress deshabilitado. Variables faltantes: ${cxMissing.join(", ")}`,
+  );
+}

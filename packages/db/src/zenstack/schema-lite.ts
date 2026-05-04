@@ -6730,12 +6730,133 @@ export class SchemaType implements SchemaDef {
                     type: "PatientDteSaleSource",
                     array: true,
                     relation: { opposite: "patient" }
+                },
+                shipments: {
+                    name: "shipments",
+                    type: "Shipment",
+                    array: true,
+                    relation: { opposite: "patient" }
                 }
             },
             idFields: ["id"],
             uniqueFields: {
                 id: { type: "Int" },
                 personId: { type: "Int" }
+            }
+        },
+        Shipment: {
+            name: "Shipment",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement") as FieldDefault
+                },
+                patientId: {
+                    name: "patientId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "patient"
+                    ] as readonly string[]
+                },
+                otNumber: {
+                    name: "otNumber",
+                    type: "String",
+                    unique: true
+                },
+                serviceTypeCode: {
+                    name: "serviceTypeCode",
+                    type: "String"
+                },
+                serviceDescription: {
+                    name: "serviceDescription",
+                    type: "String"
+                },
+                cashOnDelivery: {
+                    name: "cashOnDelivery",
+                    type: "Decimal"
+                },
+                declaredValue: {
+                    name: "declaredValue",
+                    type: "Decimal"
+                },
+                weight: {
+                    name: "weight",
+                    type: "Decimal"
+                },
+                height: {
+                    name: "height",
+                    type: "Decimal"
+                },
+                width: {
+                    name: "width",
+                    type: "Decimal"
+                },
+                length: {
+                    name: "length",
+                    type: "Decimal"
+                },
+                recipientName: {
+                    name: "recipientName",
+                    type: "String"
+                },
+                recipientPhone: {
+                    name: "recipientPhone",
+                    type: "String"
+                },
+                recipientEmail: {
+                    name: "recipientEmail",
+                    type: "String",
+                    optional: true
+                },
+                commercialOfficeId: {
+                    name: "commercialOfficeId",
+                    type: "String"
+                },
+                commercialOfficeName: {
+                    name: "commercialOfficeName",
+                    type: "String"
+                },
+                coverageCode: {
+                    name: "coverageCode",
+                    type: "String"
+                },
+                contentDescription: {
+                    name: "contentDescription",
+                    type: "String"
+                },
+                labelBase64: {
+                    name: "labelBase64",
+                    type: "String",
+                    optional: true
+                },
+                status: {
+                    name: "status",
+                    type: "String",
+                    default: "CREATED" as FieldDefault
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now") as FieldDefault
+                },
+                patient: {
+                    name: "patient",
+                    type: "Patient",
+                    relation: { opposite: "shipments", fields: ["patientId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                otNumber: { type: "String" }
             }
         },
         PatientDteSaleSource: {

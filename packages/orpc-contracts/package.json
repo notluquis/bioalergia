@@ -222,6 +222,11 @@
       "types": "./dist/whatsapp.d.ts",
       "import": "./dist/whatsapp.js",
       "default": "./dist/whatsapp.js"
+    },
+    "./shipments": {
+      "types": "./dist/shipments.d.ts",
+      "import": "./dist/shipments.js",
+      "default": "./dist/shipments.js"
     }
   },
   "scripts": {

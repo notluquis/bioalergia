@@ -75,6 +75,7 @@ import {
 } from "./orpc/utility-bills";
 import { waCloudOpenAPIHandler, waCloudORPCHandler } from "./orpc/wa-cloud";
 import { whatsappOpenAPIHandler, whatsappORPCHandler } from "./orpc/whatsapp";
+import { shipmentsOpenAPIHandler, shipmentsORPCHandler } from "./orpc/shipments";
 import { doctoraliaScraperRoutes } from "./routes/doctoralia-scraper";
 import { googleCalendarWebhookRoutes } from "./routes/google-calendar-webhook";
 import { onedriveWebhookRoutes } from "./routes/onedrive-webhook";
@@ -559,6 +560,15 @@ app.get("/api/orpc", (c) =>
             <li><a href="/api/orpc/settlement-transactions/docs">Reference UI</a></li>
             <li><a href="/api/orpc/settlement-transactions/openapi.json">OpenAPI JSON</a></li>
             <li><code>/api/orpc/settlement-transactions/rpc/*</code></li>
+          </ul>
+        </section>
+        <section class="card">
+          <h2>Shipments</h2>
+          <p>Cobertura, cotización y órdenes de transporte ChileExpress.</p>
+          <ul>
+            <li><a href="/api/orpc/shipments/docs">Reference UI</a></li>
+            <li><a href="/api/orpc/shipments/openapi.json">OpenAPI JSON</a></li>
+            <li><code>/api/orpc/shipments/rpc/*</code></li>
           </ul>
         </section>
         <section class="card">
@@ -1759,6 +1769,31 @@ app.use("/api/orpc/transactions-insights/*", async (c, next) => {
       context: { hono: c },
     }
   );
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/shipments/rpc/*", async (c, next) => {
+  const { matched, response } = await shipmentsORPCHandler.handle(createHonoORPCRequest(c), {
+    prefix: "/api/orpc/shipments/rpc",
+    context: {},
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return next();
+});
+
+app.use("/api/orpc/shipments/*", async (c, next) => {
+  const { matched, response } = await shipmentsOpenAPIHandler.handle(createHonoORPCRequest(c), {
+    context: {},
+  });
 
   if (matched) {
     return c.newResponse(response.body, response);

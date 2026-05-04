@@ -2443,12 +2443,46 @@ model Patient {
   payments            PatientPayment[]
   attachments         PatientAttachment[]
   dteSaleSources      PatientDteSaleSource[]
+  shipments           Shipment[]
 
   @@deny('all', auth() == null)
   @@allow('read', auth().status == 'ACTIVE')
   @@allow('create,update', auth().status == 'ACTIVE')
 
   @@map("patients")
+}
+
+model Shipment {
+  id                   Int      @id @default(autoincrement())
+  patientId            Int      @map("patient_id")
+  otNumber             String   @unique @map("ot_number")
+  serviceTypeCode      String   @map("service_type_code")
+  serviceDescription   String   @map("service_description")
+  cashOnDelivery       Decimal  @map("cash_on_delivery") @db.Decimal(12, 2)
+  declaredValue        Decimal  @map("declared_value") @db.Decimal(12, 2)
+  weight               Decimal  @db.Decimal(8, 2)
+  height               Decimal  @db.Decimal(8, 2)
+  width                Decimal  @db.Decimal(8, 2)
+  length               Decimal  @db.Decimal(8, 2)
+  recipientName        String   @map("recipient_name")
+  recipientPhone       String   @map("recipient_phone")
+  recipientEmail       String?  @map("recipient_email")
+  commercialOfficeId   String   @map("commercial_office_id")
+  commercialOfficeName String   @map("commercial_office_name")
+  coverageCode         String   @map("coverage_code")
+  contentDescription   String   @map("content_description")
+  labelBase64          String?  @map("label_base64") @db.Text
+  status               String   @default("CREATED")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @default(now()) @updatedAt @map("updated_at")
+
+  patient              Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update', auth().status == 'ACTIVE')
+
+  @@map("shipments")
 }
 
 model PatientDteSaleSource {

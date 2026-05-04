@@ -16,12 +16,14 @@ import {
   Phone,
   PlusCircle,
   Trash2,
+  Truck,
   User,
 } from "lucide-react";
 import { useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { fetchPatient } from "@/features/patients/api";
 import { NewAttachmentModal } from "@/features/patients/components/NewAttachmentModal";
+import { ShipmentsList } from "@/features/shipments/components/ShipmentsList";
 import { useLazyTabs } from "@/hooks/use-lazy-tabs";
 
 type Patient = Awaited<ReturnType<typeof fetchPatient>>;
@@ -54,10 +56,10 @@ function PatientDetailsPage() {
   const navigate = useNavigate();
   const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    "budgets" | "certificates" | "docs" | "history" | "info" | "payments"
+    "budgets" | "certificates" | "docs" | "history" | "info" | "payments" | "shipments"
   >("history");
   const { isTabMounted, markTabAsMounted } = useLazyTabs<
-    "budgets" | "certificates" | "docs" | "history" | "info" | "payments"
+    "budgets" | "certificates" | "docs" | "history" | "info" | "payments" | "shipments"
   >("history");
 
   const { data: patientData, isLoading } = useQuery({
@@ -148,12 +150,20 @@ function PatientDetailsPage() {
             selectedKey={activeTab}
             onSelectionChange={(key) => {
               const keyValue = String(key);
-              const nextTab: "budgets" | "certificates" | "docs" | "history" | "info" | "payments" =
+              const nextTab:
+                | "budgets"
+                | "certificates"
+                | "docs"
+                | "history"
+                | "info"
+                | "payments"
+                | "shipments" =
                 keyValue === "certificates" ||
                 keyValue === "budgets" ||
                 keyValue === "payments" ||
                 keyValue === "docs" ||
-                keyValue === "info"
+                keyValue === "info" ||
+                keyValue === "shipments"
                   ? keyValue
                   : "history";
               setActiveTab(nextTab);
@@ -193,6 +203,11 @@ function PatientDetailsPage() {
                 <Tabs.Tab id="info" className="min-w-max gap-2 font-semibold">
                   <User size={18} />
                   <span>Info Detallada</span>
+                  <Tabs.Indicator />
+                </Tabs.Tab>
+                <Tabs.Tab id="shipments" className="min-w-max gap-2 font-semibold">
+                  <Truck size={18} />
+                  <span>Despachos</span>
                   <Tabs.Indicator />
                 </Tabs.Tab>
               </Tabs.List>
@@ -307,6 +322,15 @@ function PatientDetailsPage() {
                     scrollMaxHeight="min(56dvh, 640px)"
                   />
                 </>
+              ) : null}
+            </Tabs.Panel>
+
+            <Tabs.Panel id="shipments" className="py-4">
+              {isTabMounted("shipments") ? (
+                <ShipmentsList
+                  patientId={patient.id}
+                  patientName={`${person.names} ${person.fatherName}`.trim()}
+                />
               ) : null}
             </Tabs.Panel>
 
