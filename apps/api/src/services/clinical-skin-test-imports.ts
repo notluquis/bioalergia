@@ -286,6 +286,7 @@ interface ImportRow {
   issues: unknown;
   modifiedAt: Date | null;
   oneDriveAccountId?: null | string;
+  oneDriveQuickXorHash?: null | string;
   oneDriveWebUrl: null | string;
   parsedPayload: unknown;
   path: null | string;
@@ -871,6 +872,14 @@ export async function processOneDriveSkinTestItem(
     existing.oneDriveETag === item.eTag &&
     existing.oneDriveCTag === item.cTag
   ) {
+    const incomingHash = getOneDriveQuickXorHash(item);
+    if (incomingHash && !existing.oneDriveQuickXorHash) {
+      await sql`
+        UPDATE clinical_skin_test_imports
+        SET onedrive_quick_xor_hash = ${incomingHash}, updated_at = now()
+        WHERE id = ${existing.id}
+      `.execute(kysely);
+    }
     return {
       ...toImportOutput(existing),
       syncAction: "SKIPPED_UNCHANGED",
@@ -900,15 +909,33 @@ export async function processOneDriveSkinTestItem(
   try {
     const buffer = await downloadOneDriveItem(accountId, item.id, driveId);
     await ensureImportMetadataRow(accountId, importId, metadata);
-    await persistSkinTestWorkbookSnapshot({
+    const snapshotResult = await persistSkinTestWorkbookSnapshot({
       buffer,
       importId,
       sourceCTag: metadata.cTag,
       sourceETag: metadata.eTag,
       sourceSizeBytes: metadata.size,
     });
+
+    const sha256Duplicate = await findWorkbookSha256DuplicateImport(snapshotResult.sha256, importId);
+    if (sha256Duplicate) {
+      await upsertImport({
+        accountId,
+        confidence: 0,
+        duplicateOfImportId: sha256Duplicate.sourceImportId,
+        error: null,
+        id: importId,
+        issues: [getWorkbookSha256DuplicateIssue(sha256Duplicate.filename)],
+        metadata,
+        parsedPayload: null,
+        resultHash: null,
+        status: "SKIPPED",
+      });
+      return await getSkinTestImport(importId);
+    }
+
     const parsed = await parseSkinTestWorkbookBuffer(
-      buffer as unknown as Parameters<typeof parseSkinTestWorkbookBuffer>[0]
+      buffer
     );
     const resultHash = computeResultHash(parsed.results);
     const templateIssue = getTemplateSkinTestIssue(parsed);
@@ -1194,6 +1221,14 @@ async function discoverOneDriveSkinTestItem(
     existing.oneDriveETag === item.eTag &&
     existing.oneDriveCTag === item.cTag
   ) {
+    const incomingHash = getOneDriveQuickXorHash(item);
+    if (incomingHash && !existing.oneDriveQuickXorHash) {
+      await sql`
+        UPDATE clinical_skin_test_imports
+        SET onedrive_quick_xor_hash = ${incomingHash}, updated_at = now()
+        WHERE id = ${existing.id}
+      `.execute(kysely);
+    }
     return {
       ...toImportOutput(existing),
       syncAction: "SKIPPED_UNCHANGED",
@@ -1259,6 +1294,25 @@ async function discoverOneDriveSkinTestItem(
       status: "SKIPPED",
     });
     return await getSkinTestImport(importId);
+  }
+
+  if (metadata.quickXorHash) {
+    const xorDuplicate = await findQuickXorHashDuplicateImport(metadata.quickXorHash, importId);
+    if (xorDuplicate) {
+      await upsertImport({
+        accountId,
+        confidence: 0,
+        duplicateOfImportId: xorDuplicate.sourceImportId,
+        error: null,
+        id: importId,
+        issues: [getOneDriveQuickXorHashDuplicateIssue(xorDuplicate.filename)],
+        metadata,
+        parsedPayload: null,
+        resultHash: null,
+        status: "SKIPPED",
+      });
+      return await getSkinTestImport(importId);
+    }
   }
 
   await upsertImport({
@@ -1733,15 +1787,34 @@ export async function reprocessSkinTestImport(id: string) {
   if (!accountId) throw new Error("No hay cuenta de OneDrive para re-procesar.");
 
   const buffer = await downloadOneDriveItem(accountId, itemId, driveId);
-  await persistSkinTestWorkbookSnapshot({
+  const snapshotResult = await persistSkinTestWorkbookSnapshot({
     buffer,
     importId: id,
     sourceCTag: result.rows[0]?.oneDriveCTag,
     sourceETag: result.rows[0]?.oneDriveETag,
     sourceSizeBytes: result.rows[0]?.size,
   });
+
+  const sha256Duplicate = await findWorkbookSha256DuplicateImport(snapshotResult.sha256, id);
+  if (sha256Duplicate) {
+    await sql`
+      UPDATE clinical_skin_test_imports
+      SET parser_version = ${SKIN_TEST_PARSER_VERSION},
+          status = 'SKIPPED',
+          confidence = 0,
+          error = null,
+          issues = ${JSON.stringify([getWorkbookSha256DuplicateIssue(sha256Duplicate.filename)])}::jsonb,
+          parsed_payload = null,
+          result_hash = null,
+          duplicate_of_import_id = ${sha256Duplicate.sourceImportId},
+          updated_at = now()
+      WHERE id = ${id}
+    `.execute(kysely);
+    return await getSkinTestImport(id);
+  }
+
   const parsed = await parseSkinTestWorkbookBuffer(
-    buffer as unknown as Parameters<typeof parseSkinTestWorkbookBuffer>[0]
+    buffer
   );
   const resultHash = computeResultHash(parsed.results);
   const templateIssue = getTemplateSkinTestIssue(parsed);
@@ -2435,9 +2508,16 @@ async function writeSkinTest(
     )
   `.execute(kysely);
 
+  // Deduplicate by conflict key before batch insert — parser can emit duplicate (section, code, allergenName)
+  const seenResultKeys = new Map<string, (typeof parsed.results)[number]>();
+  for (const r of parsed.results) {
+    seenResultKeys.set(`${r.section}|${r.code ?? ""}|${r.allergenName}`, r);
+  }
+  const dedupedResults = [...seenResultKeys.values()];
+
   // Batch insert results — one query per chunk instead of one per row.
-  for (let i = 0; i < parsed.results.length; i += RESULTS_BATCH_SIZE) {
-    const chunk = parsed.results.slice(i, i + RESULTS_BATCH_SIZE);
+  for (let i = 0; i < dedupedResults.length; i += RESULTS_BATCH_SIZE) {
+    const chunk = dedupedResults.slice(i, i + RESULTS_BATCH_SIZE);
     const valueRows = sql.join(
       chunk.map(
         (result) =>
@@ -2534,7 +2614,7 @@ async function getStoredParsedPayload(id: string): Promise<ParsedPayload> {
 
 async function getImportByOneDriveItemId(accountId: string, driveId: string, itemId: string) {
   const result = await sql<
-    ImportRow & { oneDriveCTag: null | string; oneDriveETag: null | string }
+    ImportRow & { oneDriveCTag: null | string; oneDriveETag: null | string; oneDriveQuickXorHash: null | string }
   >`
     SELECT
       i.*,
@@ -2544,6 +2624,7 @@ async function getImportByOneDriveItemId(accountId: string, driveId: string, ite
       i.duplicate_of_import_id AS "duplicateOfImportId",
       i.onedrive_etag AS "oneDriveETag",
       i.onedrive_ctag AS "oneDriveCTag",
+      i.onedrive_quick_xor_hash AS "oneDriveQuickXorHash",
       i.parsed_payload AS "parsedPayload",
       i.modified_at AS "modifiedAt",
       i.onedrive_web_url AS "oneDriveWebUrl",
@@ -2707,6 +2788,9 @@ async function upsertImport(params: {
       onedrive_source_drive_id,
       onedrive_source_item_id,
       onedrive_sharepoint_unique_id,
+      onedrive_quick_xor_hash,
+      onedrive_sha1_hash,
+      onedrive_crc32_hash,
       onedrive_etag,
       onedrive_ctag,
       onedrive_web_url,
@@ -2735,6 +2819,9 @@ async function upsertImport(params: {
       ${params.metadata.sourceDriveId},
       ${params.metadata.sourceItemId},
       ${params.metadata.sharePointUniqueId},
+      ${params.metadata.quickXorHash},
+      ${params.metadata.sha1Hash},
+      ${params.metadata.crc32Hash},
       ${params.metadata.eTag},
       ${params.metadata.cTag},
       ${params.metadata.webUrl},
@@ -2762,6 +2849,9 @@ async function upsertImport(params: {
       onedrive_source_drive_id = EXCLUDED.onedrive_source_drive_id,
       onedrive_source_item_id = EXCLUDED.onedrive_source_item_id,
       onedrive_sharepoint_unique_id = EXCLUDED.onedrive_sharepoint_unique_id,
+      onedrive_quick_xor_hash = EXCLUDED.onedrive_quick_xor_hash,
+      onedrive_sha1_hash = EXCLUDED.onedrive_sha1_hash,
+      onedrive_crc32_hash = EXCLUDED.onedrive_crc32_hash,
       onedrive_etag = EXCLUDED.onedrive_etag,
       onedrive_ctag = EXCLUDED.onedrive_ctag,
       onedrive_web_url = EXCLUDED.onedrive_web_url,
@@ -3258,6 +3348,66 @@ interface DuplicateCandidateRow {
   testDate: Date | string;
 }
 
+async function findQuickXorHashDuplicateImport(
+  quickXorHash: string,
+  currentImportId: string
+): Promise<null | { filename: string; sourceImportId: string }> {
+  const result = await sql<{ filename: string; sourceImportId: string }>`
+    SELECT
+      coalesce(duplicate_of_import_id, id) AS "sourceImportId",
+      filename
+    FROM clinical_skin_test_imports
+    WHERE onedrive_quick_xor_hash = ${quickXorHash}
+      AND id <> ${currentImportId}
+    ORDER BY
+      CASE status
+        WHEN 'IMPORTED' THEN 0
+        WHEN 'PENDING_REVIEW' THEN 1
+        WHEN 'SKIPPED' THEN 2
+        ELSE 3
+      END,
+      created_at ASC
+    LIMIT 1
+  `.execute(kysely);
+
+  return result.rows[0] ?? null;
+}
+
+async function findWorkbookSha256DuplicateImport(
+  sha256: string,
+  currentImportId: string
+): Promise<null | { filename: string; sourceImportId: string }> {
+  const result = await sql<{ filename: string; sourceImportId: string }>`
+    SELECT
+      coalesce(i.duplicate_of_import_id, i.id) AS "sourceImportId",
+      i.filename
+    FROM clinical_skin_test_workbook_snapshots ws
+    JOIN clinical_skin_test_workbook_files wf ON wf.id = ws.workbook_file_id
+    JOIN clinical_skin_test_imports i ON i.id = ws.source_import_id
+    WHERE wf.sha256 = ${sha256}
+      AND ws.source_import_id <> ${currentImportId}
+    ORDER BY
+      CASE i.status
+        WHEN 'IMPORTED' THEN 0
+        WHEN 'PENDING_REVIEW' THEN 1
+        WHEN 'SKIPPED' THEN 2
+        ELSE 3
+      END,
+      i.created_at ASC
+    LIMIT 1
+  `.execute(kysely);
+
+  return result.rows[0] ?? null;
+}
+
+function getWorkbookSha256DuplicateIssue(sourceFilename: string): SkinTestIssue {
+  return {
+    code: "duplicate_workbook_sha256",
+    message: `Este XLSX tiene contenido idéntico (sha256) a ${sourceFilename}; se omite como duplicado.`,
+    severity: "info",
+  };
+}
+
 async function findDuplicateSkinTest(
   importId: string,
   parsed: ParsedSkinTestWorkbook,
@@ -3391,8 +3541,18 @@ function canAutoImport(parsed: ParsedSkinTestWorkbook, issues: SkinTestIssue[]):
   );
 }
 
+const PLACEHOLDER_PATIENT_NAMES = new Set(["nombre", "nombre apellido", "paciente", "apellido nombre"]);
+
+function isPlaceholderPatientName(name: null | string): boolean {
+  return !name || PLACEHOLDER_PATIENT_NAMES.has(name.trim().toLowerCase());
+}
+
 function getTemplateSkinTestIssue(parsed: ParsedSkinTestWorkbook): null | SkinTestIssue {
-  if (parsed.header.patientName || parsed.header.patientRut || parsed.header.testDate) return null;
+  const hasRealPatient =
+    !isPlaceholderPatientName(parsed.header.patientName) ||
+    parsed.header.patientRut ||
+    parsed.header.testDate;
+  if (hasRealPatient) return null;
   return {
     code: "template_without_patient",
     message: "Plantilla sin paciente/RUT/fecha; se omite de la cola de importación.",

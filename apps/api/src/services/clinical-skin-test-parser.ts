@@ -1,4 +1,4 @@
-import ExcelJS from "exceljs";
+import * as XLSX from "xlsx";
 
 export const SKIN_TEST_PARSER_VERSION = "2026-04-26.3";
 
@@ -49,8 +49,6 @@ export interface ParsedSkinTestWorkbook {
   results: ParsedSkinTestResult[];
 }
 
-type ExcelWorkbookBuffer = Parameters<ExcelJS.Workbook["xlsx"]["load"]>[0];
-
 interface CellPoint {
   col: number;
   row: number;
@@ -75,21 +73,24 @@ const MONTHS: Record<string, number> = {
 
 const SECTION_STOPWORDS = new Set(["mm", "p", "e"]);
 
-export async function parseSkinTestWorkbookBuffer(
-  buffer: ExcelWorkbookBuffer
-): Promise<ParsedSkinTestWorkbook> {
-  const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.load(buffer);
-  const worksheet = workbook.worksheets[0];
-  if (!worksheet) {
+export async function parseSkinTestWorkbookBuffer(buffer: Buffer): Promise<ParsedSkinTestWorkbook> {
+  const wb = XLSX.read(buffer, { type: "buffer", cellDates: true, cellFormula: true, cellHTML: false });
+  const sheetName = wb.SheetNames[0];
+  if (!sheetName) {
     return emptyParsedWorkbook([
       { code: "empty_workbook", message: "El archivo no tiene hojas.", severity: "error" },
     ]);
   }
-  return parseSkinTestWorksheet(worksheet);
+  const ws = wb.Sheets[sheetName];
+  if (!ws) {
+    return emptyParsedWorkbook([
+      { code: "empty_workbook", message: "El archivo no tiene hojas.", severity: "error" },
+    ]);
+  }
+  return parseSkinTestWorksheet(ws);
 }
 
-export function parseSkinTestWorksheet(worksheet: ExcelJS.Worksheet): ParsedSkinTestWorkbook {
+export function parseSkinTestWorksheet(worksheet: XLSX.WorkSheet): ParsedSkinTestWorkbook {
   const cells = collectCells(worksheet);
   const issues: SkinTestIssue[] = [];
   const title = findCell(
@@ -165,31 +166,32 @@ function emptyInterpretation(): ParsedSkinTestInterpretation {
   };
 }
 
-function collectCells(worksheet: ExcelJS.Worksheet): CellPoint[] {
+function collectCells(ws: XLSX.WorkSheet): CellPoint[] {
+  const ref = ws["!ref"];
+  if (!ref) return [];
+  const range = XLSX.utils.decode_range(ref);
   const cells: CellPoint[] = [];
-  worksheet.eachRow((row, rowNumber) => {
-    row.eachCell({ includeEmpty: false }, (cell, colNumber) => {
-      const text = cellToText(cell).trim();
-      if (text) {
-        cells.push({ col: colNumber, row: rowNumber, text });
-      }
-    });
-  });
+  for (let R = range.s.r; R <= range.e.r; R++) {
+    for (let C = range.s.c; C <= range.e.c; C++) {
+      const addr = XLSX.utils.encode_cell({ r: R, c: C });
+      const cell = ws[addr] as XLSX.CellObject | undefined;
+      if (!cell || cell.t === "z") continue;
+      const text = getCellText(cell).trim();
+      if (text) cells.push({ col: C + 1, row: R + 1, text });
+    }
+  }
   return cells;
 }
 
-function cellToText(cell: ExcelJS.Cell): string {
-  const value = cell.value;
-  if (value == null) return "";
-  if (value instanceof Date) return value.toISOString().slice(0, 10);
-  if (typeof value === "object") {
-    if ("text" in value && typeof value.text === "string") return value.text;
-    if ("result" in value) return String(value.result ?? "");
-    if ("richText" in value && Array.isArray(value.richText)) {
-      return value.richText.map((part) => part.text).join("");
-    }
+function getCellText(cell: XLSX.CellObject): string {
+  if (cell.t === "d") {
+    const d = cell.v as Date;
+    return isNaN(d.getTime()) ? "" : d.toISOString().slice(0, 10);
   }
-  return String(value);
+  if (cell.w != null) return cell.w;
+  if (cell.v == null) return "";
+  if (cell.t === "b") return cell.v ? "TRUE" : "FALSE";
+  return String(cell.v);
 }
 
 function normalizeText(value: string): string {
@@ -389,7 +391,7 @@ function formatISODate(year: number, month: number, day: number): null | string 
 }
 
 function extractResults(
-  worksheet: ExcelJS.Worksheet,
+  ws: XLSX.WorkSheet,
   cells: CellPoint[],
   minRow: number,
   issues: SkinTestIssue[]
@@ -397,10 +399,10 @@ function extractResults(
   const results: ParsedSkinTestResult[] = [];
   let currentSectionByBlock = new Map<number, string>();
   let sortOrder = 0;
+  const maxRow = ws["!ref"] ? XLSX.utils.decode_range(ws["!ref"]).e.r + 1 : minRow;
 
-  for (let rowNumber = minRow + 1; rowNumber <= worksheet.rowCount; rowNumber += 1) {
-    const row = worksheet.getRow(rowNumber);
-    const rowTexts = rowToTexts(row);
+  for (let rowNumber = minRow + 1; rowNumber <= maxRow; rowNumber += 1) {
+    const rowTexts = rowToTexts(ws, rowNumber);
     const nonEmpty = rowTexts.filter((cell) => cell.text);
     if (nonEmpty.length === 0) continue;
 
@@ -421,7 +423,7 @@ function extractResults(
     }
 
     const rowResults = extractResultRowsFromRow(
-      worksheet,
+      ws,
       rowNumber,
       nonEmpty,
       currentSectionByBlock,
@@ -450,11 +452,16 @@ function extractResults(
   return results;
 }
 
-function rowToTexts(row: ExcelJS.Row): Array<{ col: number; text: string }> {
+function rowToTexts(ws: XLSX.WorkSheet, rowNumber: number): Array<{ col: number; text: string }> {
+  const ref = ws["!ref"];
+  if (!ref) return [];
+  const range = XLSX.utils.decode_range(ref);
   const cells: Array<{ col: number; text: string }> = [];
-  row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-    cells.push({ col: colNumber, text: cellToText(cell).trim() });
-  });
+  for (let C = range.s.c; C <= range.e.c; C++) {
+    const addr = XLSX.utils.encode_cell({ r: rowNumber - 1, c: C });
+    const cell = ws[addr] as XLSX.CellObject | undefined;
+    cells.push({ col: C + 1, text: cell && cell.t !== "z" ? getCellText(cell).trim() : "" });
+  }
   return cells;
 }
 
@@ -475,14 +482,14 @@ function blockForColumn(col: number): number {
 }
 
 function extractResultRowsFromRow(
-  worksheet: ExcelJS.Worksheet,
+  ws: XLSX.WorkSheet,
   rowNumber: number,
   cells: Array<{ col: number; text: string }>,
   sectionByBlock: Map<number, string>,
   sortOrderBase: number
 ): ParsedSkinTestResult[] {
   const results: ParsedSkinTestResult[] = [];
-  const ainesResult = extractAinesResultFromRow(worksheet, rowNumber, cells, sortOrderBase);
+  const ainesResult = extractAinesResultFromRow(ws, rowNumber, cells, sortOrderBase);
   if (ainesResult) {
     results.push(ainesResult);
     return results;
@@ -504,7 +511,7 @@ function extractResultRowsFromRow(
 
     const numericCells = collectMetricCells(cells, index + (isControl ? 1 : 2), isControl);
     if (numericCells.length === 0) continue;
-    const byMetric = assignResultMetrics(worksheet, rowNumber, numericCells);
+    const byMetric = assignResultMetrics(ws, rowNumber, numericCells);
     const papule = byMetric.sawHeader ? byMetric.papule : (numericCells[0]?.text ?? null);
     const erythema = byMetric.sawHeader ? byMetric.erythema : (numericCells[1]?.text ?? null);
     const section = isControl
@@ -532,7 +539,7 @@ function extractResultRowsFromRow(
 }
 
 function extractAinesResultFromRow(
-  worksheet: ExcelJS.Worksheet,
+  ws: XLSX.WorkSheet,
   rowNumber: number,
   cells: Array<{ col: number; text: string }>,
   sortOrderBase: number
@@ -551,12 +558,16 @@ function extractAinesResultFromRow(
   if (!isControl && !code) return null;
 
   const numericCells = cells
-    .filter((cell) => cell.col < nameCell.col && isResultValue(cell.text))
+    .filter((cell) => {
+      if (cell.col >= nameCell.col || !isResultValue(cell.text)) return false;
+      const label = findMetricHeader(ws, rowNumber, cell.col);
+      return label === null || label === "P" || label === "E" || label === "48H" || label === "96H";
+    })
     .sort((left, right) => left.col - right.col)
     .slice(-2);
   if (numericCells.length === 0) return null;
 
-  const byMetric = assignResultMetrics(worksheet, rowNumber, numericCells);
+  const byMetric = assignResultMetrics(ws, rowNumber, numericCells);
   const papule = byMetric.sawHeader
     ? byMetric.papule
     : numericCells.length > 1
@@ -622,8 +633,10 @@ function collectMetricCells(
   return metricCells;
 }
 
+type MetricLabel = "%" | "48H" | "96H" | "E" | "N" | "P";
+
 function assignResultMetrics(
-  worksheet: ExcelJS.Worksheet,
+  ws: XLSX.WorkSheet,
   rowNumber: number,
   numericCells: Array<{ col: number; text: string }>
 ): { erythema: null | string; papule: null | string; sawHeader: boolean } {
@@ -631,26 +644,31 @@ function assignResultMetrics(
   let erythema: null | string = null;
   let sawHeader = false;
   for (const cell of numericCells) {
-    const label = findMetricHeader(worksheet, rowNumber, cell.col);
-    if (label === "P") {
+    const label = findMetricHeader(ws, rowNumber, cell.col);
+    if (label === "P" || label === "48H") {
       sawHeader = true;
       papule = cell.text;
-    } else if (label === "E") {
+    } else if (label === "E" || label === "96H") {
       sawHeader = true;
       erythema = cell.text;
+    } else if (label === "%" || label === "N") {
+      // Concentration or ordinal column — not a reaction measurement
+      sawHeader = true;
     }
   }
   return { erythema, papule, sawHeader };
 }
 
-function findMetricHeader(
-  worksheet: ExcelJS.Worksheet,
-  rowNumber: number,
-  col: number
-): "E" | "P" | null {
+function findMetricHeader(ws: XLSX.WorkSheet, rowNumber: number, col: number): MetricLabel | null {
   for (let row = rowNumber - 1; row >= Math.max(1, rowNumber - 30); row -= 1) {
-    const value = normalizeText(cellToText(worksheet.getRow(row).getCell(col))).toUpperCase();
+    const addr = XLSX.utils.encode_cell({ r: row - 1, c: col - 1 });
+    const cell = ws[addr] as XLSX.CellObject | undefined;
+    const value = cell && cell.t !== "z" ? normalizeText(getCellText(cell)).toUpperCase() : "";
     if (value === "P" || value === "E") return value;
+    if (value === "%") return "%";
+    if (/^48\s*H/i.test(value)) return "48H";
+    if (/^96\s*H/i.test(value)) return "96H";
+    if (/^N[°O]?$/i.test(value) || value === "NUM" || value === "N°") return "N";
   }
   return null;
 }

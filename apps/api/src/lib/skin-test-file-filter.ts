@@ -36,7 +36,8 @@ export function isSkinTestCandidateFilename(filename: string): boolean {
     /\btests?\s+latex\b/.test(spaced) ||
     /^[a-zñ]+(?:\s+[a-zñ]+){1,5}\s+latex\b/.test(spaced) ||
     /\blatex\s+[a-zñ]+(?:\s+[a-zñ]+){1,5}$/.test(spaced) ||
-    /\b(?:acaros?|aines?|ltp|profilina|mariscos|pescado)\b/.test(spaced) ||
+    (/\b(?:acaros?|aines?|ltp|profilina|mariscos|pescado)\b/.test(spaced) &&
+      !looksLikePatientAllergenFilename(spaced)) ||
     /\bgrupo\s+(?:de\s+)?(?:los\s+)?8\b/.test(spaced) ||
     /\bpanel\s+alimentario\s+insectario\b/.test(spaced)
   );
@@ -75,6 +76,39 @@ export function isSkinTestTemplateFilename(filename: string): boolean {
     .replace(/\s+/g, " ");
 
   return meaningfulRemainder.length === 0;
+}
+
+function looksLikePatientAllergenFilename(spaced: string): boolean {
+  const parts = spaced.split(/\s+/).filter(Boolean);
+  if (parts.length < 2 || parts.length > 6) return false;
+
+  const allergenPattern = /^(?:acaros?|aines?|ltp|profilina|mariscos|pescado)$/;
+
+  // Find the rightmost allergen keyword; allow a short medical suffix after it (e.g. "ita")
+  let allergenIdx = -1;
+  for (let i = parts.length - 1; i >= 0; i--) {
+    if (allergenPattern.test(parts[i])) {
+      allergenIdx = i;
+      break;
+    }
+  }
+  if (allergenIdx === -1) return false;
+
+  // Tokens after the allergen must be short (<=4 chars) known medical suffixes
+  const suffix = parts.slice(allergenIdx + 1);
+  if (suffix.some((w) => w.length > 4 || !/^[a-zñ]+$/.test(w))) return false;
+
+  // Tokens before allergen must be alpha-only name words, no skin-test qualifiers
+  const nameWords = parts.slice(0, allergenIdx);
+  if (nameWords.length === 0) return false;
+
+  const hasSkinTestQualifier =
+    /\b(?:tests?|prick|parches?|multi|panel|aeroalergenos?|alimentarios?|grupo)\b/.test(
+      nameWords.join(" ")
+    );
+  if (hasSkinTestQualifier) return false;
+
+  return nameWords.every((w) => /^[a-zñ]+$/.test(w) && w.length >= 2);
 }
 
 function normalizeSkinTestFilename(filename: string): string {
