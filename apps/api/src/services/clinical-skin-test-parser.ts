@@ -231,7 +231,9 @@ function extractHeader(cells: CellPoint[]): ParsedSkinTestHeader {
   const age =
     extractLabelValue(joined, /edad\s*:?\s*([^\n\r]+)/i) ?? extractRowLabelValue(cells, "edad");
   const dateRaw =
-    extractLabelValue(joined, /fecha\s*:?\s*([^\n\r]+)/i) ?? extractRowLabelValue(cells, "fecha");
+    extractLabelValue(joined, /fecha[^:\n\r]*:[^\S\n]*(\S[^\n\r]*)/i) ??
+    extractRowLabelValue(cells, "fecha del test") ??
+    extractRowLabelValue(cells, "fecha");
   const email = extractEmail(joined);
   const phone =
     extractLabelValue(joined, /celular\s*:?\s*([+0-9\s]+)/i) ??

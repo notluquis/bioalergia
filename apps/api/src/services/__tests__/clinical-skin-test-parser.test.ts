@@ -635,4 +635,39 @@ describe("clinical skin test parser", () => {
       ])
     );
   });
+
+  it("parses date from 'FECHA DEL TEST:' label with value two columns right (AGREE format)", async () => {
+    const buf = makeBuffer("Test", {
+      B4: s("I N F O R M E    T E S T    D E    P A R C H E"),
+      B6: s("NOMBRE:"),
+      C6: s("PATRICIA CARRASCO"),
+      B7: s("EDAD"),
+      C7: s("64 AÑOS"),
+      E8: s("RUT:"),
+      F8: s("8.183.382-6"),
+      E9: s("FECHA DEL TEST:"),
+      G9: s("2022-03-28"),
+      B13: s("ESTANDAR EUROPEO 30 AGREE"),
+      B14: s("N°"),
+      C14: s("SUBSTANCIA"),
+      D14: s("CONCENTRACIÓN"),
+      E14: s("48 HRS"),
+      F14: s("72 HRS"),
+      G14: s("96 HRS"),
+      B15: s("1"),
+      C15: s("Dicromato de potasio"),
+      D15: s("0.50%"),
+      E15: s("-"),
+      F15: s("-"),
+      G15: s("+"),
+    });
+
+    const parsed = await parseSkinTestWorkbookBuffer(buf);
+
+    expect(parsed.header.testDate).toBe("2022-03-28");
+    expect(parsed.header.patientRut).toBe("8.183.382-6");
+    expect(parsed.issues).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: "missing_date" })])
+    );
+  });
 });
