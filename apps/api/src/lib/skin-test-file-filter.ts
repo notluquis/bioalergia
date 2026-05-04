@@ -62,7 +62,7 @@ export function isSkinTestTemplateFilename(filename: string): boolean {
       " "
     )
     .replace(
-      /\b(panel|panelaeroalergenos|aeroalergenos?|aeroalegenos?|alimentarios?|alimentari[oa]|alimentos?|pediatrico|pediatrica|adulto|aplv|huevo|hcs|completos?|acaros?|ac|aines|antiinflamatorio|antinflamatorio|antibioticos?|medicamentos?|alergenos?|parches?|latex|ltp|profilina|insectarios?|mariscos|pescado|producto\s+del\s+mar|ovolacteos?|ovalacteos?|ovalcateos?|grupo\s+(?:de\s+)?(?:los\s+)?8|g8|gr8|ov|p9)\b/g,
+      /\b(panel|panelaeroalergenos|aeroalergenos?|aeroalegenos?|alimentarios?|alimentari[oa]|alimentos?|pediatrico|pediatrica|adulto|aplv|huevo|hcs|completos?|acaros?|ac|aines|antiinflamatorio|antinflamatorio|antibioticos?|medicamentos?|alergenos?|parches?|latex|ltp|profilina|insectarios?|mariscos|pescado|producto\s+del\s+mar|ovolacteos?|ovalacteos?|ovalcateos?|grupo\s+(?:de\s+)?(?:los\s+)?8|g8|gr8|ov|p9|bateria|corta|estandar|europeo|haptenos?|standard)\b/g,
       " "
     )
     .replace(

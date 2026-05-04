@@ -564,4 +564,75 @@ describe("clinical skin test parser", () => {
       ])
     );
   });
+
+  it("parses European standard patch test (ESTANDAR EUROPEO N HAPTENOS) with % / 48H / 96H columns", async () => {
+    const buf = makeBuffer("Test", {
+      // Spaced-letter title in merged row (common in these templates)
+      B3: s("I N F O R M E    T E S T    D E    P A R C H E    STANDARD"),
+      B5: s("NOMBRE                :       LUCIANA MOLINA CIFUENTES"),
+      D8: s("RUT       :     26.046.147-8"),
+      D9: s("FECHA  :     13-10-22"),
+      // "ESTANDAR EUROPEO 17 HAPTENOS" is the title anchor
+      B11: s("ESTANDAR EUROPEO 17 HAPTENOS"),
+      // Double header row
+      B12: s("Cod"),    C12: s("SUBSTANCIA"),  D12: s("LECTURAS"), E12: s("LECTURAS"), F12: s("LECTURAS"),
+      B13: s("Cod"),    C13: s("SUBSTANCIA"),  D13: s("%"),        E13: s("48 HRS"),   F13: s("96 HRS"),
+      // Data rows: concentration in D (should NOT become papule), grades in E/F
+      B14: s("1"),  C14: s("Dicromato de potasio"),    D14: s("0.005"), E14: s("+"),  F14: s("+"),
+      B15: s("2"),  C15: s("Sulfato de Neomicina"),    D15: s("0.2"),   E15: s("+"),  F15: s("-"),
+      B16: s("8"),  C16: s("Colofonia"),               D16: s("0.2"),   E16: s("-"),  F16: s("-"),
+      // Control
+      C31: s("Control negativo"),                                       E31: s("-"),  F31: s("-"),
+    });
+
+    const parsed = await parseSkinTestWorkbookBuffer(buf);
+
+    expect(parsed.header).toEqual(
+      expect.objectContaining({
+        patientName: "LUCIANA MOLINA CIFUENTES",
+        patientRut: "26.046.147-8",
+        testDate: "2022-10-13",
+        panelTitle: "ESTANDAR EUROPEO 17 HAPTENOS",
+      })
+    );
+    // No missing_title warning for known patch test format
+    expect(parsed.issues).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: "missing_title" })])
+    );
+    // % concentration must NOT be stored as papuleMm
+    expect(parsed.results).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "1",
+          allergenName: "Dicromato de potasio",
+          papuleMm: null,
+          rawPapule: "+",
+          rawErythema: "+",
+        }),
+        expect.objectContaining({
+          code: "2",
+          allergenName: "Sulfato de Neomicina",
+          rawPapule: "+",
+          rawErythema: "-",
+        }),
+        expect.objectContaining({
+          code: "8",
+          allergenName: "Colofonia",
+          rawPapule: "-",
+          rawErythema: "-",
+        }),
+      ])
+    );
+    // Control negativo must be included
+    expect(parsed.results).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          allergenName: "Control negativo",
+          controlType: "NEGATIVE",
+          rawPapule: "-",
+          rawErythema: "-",
+        }),
+      ])
+    );
+  });
 });

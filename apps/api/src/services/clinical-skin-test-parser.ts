@@ -71,7 +71,7 @@ const MONTHS: Record<string, number> = {
   setiembre: 9,
 };
 
-const SECTION_STOPWORDS = new Set(["mm", "p", "e"]);
+const SECTION_STOPWORDS = new Set(["mm", "p", "e", "+", "-", "++", "+++", "+?", "ir", "nt"]);
 
 export async function parseSkinTestWorkbookBuffer(buffer: Buffer): Promise<ParsedSkinTestWorkbook> {
   const wb = XLSX.read(buffer, { type: "buffer", cellDates: true, cellFormula: true, cellHTML: false });
@@ -95,7 +95,7 @@ export function parseSkinTestWorksheet(worksheet: XLSX.WorkSheet): ParsedSkinTes
   const issues: SkinTestIssue[] = [];
   const title = findCell(
     cells,
-    /(?:(?:multi|prick)?\s*test\s+cut[aá]neo|prick\s*test\s+aines|^prick\s*test$)/i
+    /(?:(?:multi|prick)?\s*test\s+cut[aá]neo|prick\s*test\s+aines|^prick\s*test$|estandar\s+europeo)/i
   );
   const panelTitle = findPanelTitle(cells, title);
   const header = extractHeader(cells);
@@ -208,9 +208,10 @@ function findCell(cells: CellPoint[], pattern: RegExp): CellPoint | null {
 
 function findPanelTitle(cells: CellPoint[], title: CellPoint | null): null | string {
   if (!title) return null;
-  if (/prick\s*test\s+aines/i.test(normalizeText(title.text))) {
-    return normalizeText(title.text);
-  }
+  const normalized = normalizeText(title.text);
+  if (/prick\s*test\s+aines/i.test(normalized)) return normalized;
+  // European standard patch test: the title cell IS the panel identifier
+  if (/estandar\s+europeo/i.test(normalized)) return normalized;
   const sameOrNextRows = cells
     .filter((cell) => cell.row > title.row && cell.row <= title.row + 2)
     .map((cell) => cell.text.trim())
@@ -615,7 +616,8 @@ function collectMetricCells(
   isControl: boolean
 ): Array<{ col: number; text: string }> {
   const metricCells: Array<{ col: number; text: string }> = [];
-  const maxMetricCells = isControl ? 2 : 2;
+  // 4 slots: up to 2 non-metric pass-through columns (% / N°) + 2 metric columns (48H/96H or P/E)
+  const maxMetricCells = isControl ? 4 : 4;
 
   for (let index = startIndex; index < cells.length; index += 1) {
     const candidate = cells[index];
@@ -682,7 +684,12 @@ function normalizeCode(value: string): null | string {
 }
 
 function isResultValue(value: string): boolean {
-  return /^<?\s*\d+(?:[.,]\d+)?\s*$/.test(value.trim());
+  const v = value.trim();
+  // Numeric measurement (mm or similar)
+  if (/^<?\s*\d+(?:[.,]\d+)?\s*$/.test(v)) return true;
+  // Patch test grading notation: -, +, ++, +++, +?, IR, NT
+  if (/^(?:\+{1,3}\??|-|IR|NT)$/i.test(v)) return true;
+  return false;
 }
 
 function parseMm(value: null | string): null | number {
