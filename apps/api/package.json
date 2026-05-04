@@ -58,7 +58,6 @@
     "cheerio": "^1.2.0",
     "dayjs": "^1.11.20",
     "decimal.js": "^10.6.0",
-    "exceljs": "^4.4.0",
     "fast-xml-parser": "^5.7.2",
     "gaxios": "^7.1.4",
     "google-auth-library": "^10.6.2",
@@ -83,6 +82,7 @@
     "talisman": "^1.1.4",
     "tsx": "^4.21.0",
     "web-push": "^3.6.7",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-latest/xlsx-latest.tgz",
     "zod": "^4.3.6"
   },
   "devDependencies": {

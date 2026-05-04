@@ -1,10 +1,38 @@
-import ExcelJS from "exceljs";
+import * as XLSX from "xlsx";
 import { describe, expect, it } from "vitest";
 import {
   normalizeRut,
   parseDateToISO,
   parseSkinTestWorkbookBuffer,
 } from "../clinical-skin-test-parser";
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function s(v: string): XLSX.CellObject { return { t: "s", v }; }
+function n(v: number): XLSX.CellObject { return { t: "n", v }; }
+function d(v: Date): XLSX.CellObject { return { t: "d", v }; }
+
+function makeSheet(cells: Record<string, XLSX.CellObject>): XLSX.WorkSheet {
+  let minR = Infinity, maxR = -Infinity, minC = Infinity, maxC = -Infinity;
+  for (const addr of Object.keys(cells)) {
+    const { r, c } = XLSX.utils.decode_cell(addr);
+    if (r < minR) minR = r;
+    if (r > maxR) maxR = r;
+    if (c < minC) minC = c;
+    if (c > maxC) maxC = c;
+  }
+  const sheet: XLSX.WorkSheet = { ...cells };
+  sheet["!ref"] = XLSX.utils.encode_range({ s: { r: minR, c: minC }, e: { r: maxR, c: maxC } });
+  return sheet;
+}
+
+function makeBuffer(name: string, cells: Record<string, XLSX.CellObject>): Buffer {
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, makeSheet(cells), name);
+  return Buffer.from(XLSX.write(wb, { bookType: "xlsx", type: "buffer" }) as ArrayBuffer);
+}
+
+// ─── Tests ────────────────────────────────────────────────────────────────────
 
 describe("clinical skin test parser", () => {
   it("normalizes Chilean RUTs and numeric/textual dates", () => {
@@ -16,30 +44,30 @@ describe("clinical skin test parser", () => {
   });
 
   it("parses the modern P/E multitest format", async () => {
-    const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet("Test");
-    sheet.getCell("B2").value = "MULTITEST CUTANEO";
-    sheet.getCell("B3").value = "PANEL 1, 2, 3 Y ACAROS";
-    sheet.getCell("B5").value = "NOMBRE : ISIDORA GARRIDO JARA";
-    sheet.getCell("E5").value = "EDAD : 5 AÑOS";
-    sheet.getCell("B6").value = "RUT : 26.813.410-7";
-    sheet.getCell("E6").value = "FECHA : 06-01-2025";
-    sheet.getCell("B7").value = "CORREO: magustincory@gmail.com";
-    sheet.getCell("E7").value = "CELULAR : 72781713";
-    sheet.getCell("B10").value = "ACAROS";
-    sheet.getCell("C10").value = "P";
-    sheet.getCell("D10").value = "E";
-    sheet.getCell("A11").value = "D1";
-    sheet.getCell("B11").value = "MEZCLA ACAROS";
-    sheet.getCell("D11").value = 5;
-    sheet.getCell("A12").value = "D5";
-    sheet.getCell("B12").value = "POLVO DE CASA";
-    sheet.getCell("D12").value = 5;
-    sheet.getCell("B20").value = "CONTROL POSITIVO";
-    sheet.getCell("C20").value = 5;
-    sheet.getCell("D20").value = 10;
+    const buf = makeBuffer("Test", {
+      B2: s("MULTITEST CUTANEO"),
+      B3: s("PANEL 1, 2, 3 Y ACAROS"),
+      B5: s("NOMBRE : ISIDORA GARRIDO JARA"),
+      E5: s("EDAD : 5 AÑOS"),
+      B6: s("RUT : 26.813.410-7"),
+      E6: s("FECHA : 06-01-2025"),
+      B7: s("CORREO: magustincory@gmail.com"),
+      E7: s("CELULAR : 72781713"),
+      B10: s("ACAROS"),
+      C10: s("P"),
+      D10: s("E"),
+      A11: s("D1"),
+      B11: s("MEZCLA ACAROS"),
+      D11: n(5),
+      A12: s("D5"),
+      B12: s("POLVO DE CASA"),
+      D12: n(5),
+      B20: s("CONTROL POSITIVO"),
+      C20: n(5),
+      D20: n(10),
+    });
 
-    const parsed = await parseSkinTestWorkbookBuffer(await workbook.xlsx.writeBuffer());
+    const parsed = await parseSkinTestWorkbookBuffer(buf);
 
     expect(parsed.header.patientRut).toBe("26.813.410-7");
     expect(parsed.header.testDate).toBe("2025-01-06");
@@ -63,24 +91,24 @@ describe("clinical skin test parser", () => {
   });
 
   it("parses the older two-mm-column format and <3 values", async () => {
-    const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet("Test");
-    sheet.getCell("B2").value = "MULTITEST CUTANEO";
-    sheet.getCell("B4").value = "NOMBRE: SANTIAGO CIFUENTES PARADA";
-    sheet.getCell("E4").value = "EDAD: 6 MESES";
-    sheet.getCell("B5").value = "RUT:";
-    sheet.getCell("E5").value = "FECHA: 10 DE OCTUBRE DE 2017";
-    sheet.getCell("B8").value = "ALIMENTOS";
-    sheet.getCell("A9").value = "1";
-    sheet.getCell("B9").value = "LECHE FRESCA";
-    sheet.getCell("C9").value = 5;
-    sheet.getCell("D9").value = 20;
-    sheet.getCell("G8").value = "ÁCAROS";
-    sheet.getCell("F10").value = "MA";
-    sheet.getCell("G10").value = "MEZCLA ÁCAROS";
-    sheet.getCell("I10").value = "<3";
+    const buf = makeBuffer("Test", {
+      B2: s("MULTITEST CUTANEO"),
+      B4: s("NOMBRE: SANTIAGO CIFUENTES PARADA"),
+      E4: s("EDAD: 6 MESES"),
+      B5: s("RUT:"),
+      E5: s("FECHA: 10 DE OCTUBRE DE 2017"),
+      B8: s("ALIMENTOS"),
+      A9: s("1"),
+      B9: s("LECHE FRESCA"),
+      C9: n(5),
+      D9: n(20),
+      G8: s("ÁCAROS"),
+      F10: s("MA"),
+      G10: s("MEZCLA ÁCAROS"),
+      I10: s("<3"),
+    });
 
-    const parsed = await parseSkinTestWorkbookBuffer(await workbook.xlsx.writeBuffer());
+    const parsed = await parseSkinTestWorkbookBuffer(buf);
 
     expect(parsed.header.patientName).toBe("SANTIAGO CIFUENTES PARADA");
     expect(parsed.header.testDate).toBe("2017-10-10");
@@ -104,76 +132,71 @@ describe("clinical skin test parser", () => {
   });
 
   it("parses the panel grid format with separated P/E blocks", async () => {
-    const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet("Test");
-    sheet.getCell("D4").value = "MULTITEST CUTÁNEO";
-    sheet.getCell("D5").value = "PANEL 1, 2,3 Y ACAROS";
-    sheet.getCell("B7").value = "NOMBRE :Joaquin Heredia Flores";
-    sheet.getCell("H7").value = "EDAD";
-    sheet.getCell("I7").value = ":";
-    sheet.getCell("J7").value = "7 Años";
-    sheet.getCell("B8").value = "RUT";
-    sheet.getCell("C8").value = ": 26.200.889-4";
-    sheet.getCell("H8").value = "FECHA";
-    sheet.getCell("I8").value = ":";
-    sheet.getCell("J8").value = "14-01-2026";
-    sheet.getCell("B9").value = "CORREO:kflores28@gmail.com";
-    sheet.getCell("H9").value = "CELULAR";
-    sheet.getCell("I9").value = ":";
-    sheet.getCell("J9").value = "990789883";
+    const buf = makeBuffer("Test", {
+      D4: s("MULTITEST CUTÁNEO"),
+      D5: s("PANEL 1, 2,3 Y ACAROS"),
+      B7: s("NOMBRE :Joaquin Heredia Flores"),
+      H7: s("EDAD"),
+      I7: s(":"),
+      J7: s("7 Años"),
+      B8: s("RUT"),
+      C8: s(": 26.200.889-4"),
+      H8: s("FECHA"),
+      I8: s(":"),
+      J8: s("14-01-2026"),
+      B9: s("CORREO:kflores28@gmail.com"),
+      H9: s("CELULAR"),
+      I9: s(":"),
+      J9: s("990789883"),
+      C13: s("PANEL 1"),
+      E12: s("P"),
+      F12: s("E"),
+      B14: s("D1"),
+      C14: s("MEZCLA ACAROS"),
+      E14: n(5),
+      F14: n(18),
+      B15: s("D5"),
+      C15: s("POLVO DE CASA"),
+      E15: n(6),
+      F15: n(10),
+      B16: s("E1"),
+      C16: s("GATO"),
+      F16: n(5),
+      H13: s("PANEL 3"),
+      J13: s("P"),
+      K13: s("E"),
+      G14: s("G1"),
+      H14: s("GRAMA COMUN"),
+      J14: n(8),
+      K14: n(25),
+      C27: s("PANEL 2"),
+      E28: s("P"),
+      F28: s("E"),
+      B29: s("A2"),
+      C29: s("FRESNO"),
+      F29: n(8),
+      B30: s("A4"),
+      C30: s("PINO"),
+      E30: n(10),
+      F30: n(22),
+      H27: s("Acaros/ insectario"),
+      J27: s("P"),
+      K27: s("E"),
+      G28: s("D1"),
+      H28: s("DERMATOFAGOIDES P"),
+      K28: n(8),
+      G29: s("D2"),
+      H29: s("DERMATOPHAGOIDES F"),
+      J29: n(5),
+      K29: n(19),
+      B42: s("CONTROL POSITIVO"),
+      E42: n(10),
+      F42: n(29),
+      B43: s("CONTROL NEGATIVO"),
+      F43: n(5),
+    });
 
-    sheet.getCell("C13").value = "PANEL 1";
-    sheet.getCell("E12").value = "P";
-    sheet.getCell("F12").value = "E";
-    sheet.getCell("B14").value = "D1";
-    sheet.getCell("C14").value = "MEZCLA ACAROS";
-    sheet.getCell("E14").value = 5;
-    sheet.getCell("F14").value = 18;
-    sheet.getCell("B15").value = "D5";
-    sheet.getCell("C15").value = "POLVO DE CASA";
-    sheet.getCell("E15").value = 6;
-    sheet.getCell("F15").value = 10;
-    sheet.getCell("B16").value = "E1";
-    sheet.getCell("C16").value = "GATO";
-    sheet.getCell("F16").value = 5;
-
-    sheet.getCell("H13").value = "PANEL 3";
-    sheet.getCell("J13").value = "P";
-    sheet.getCell("K13").value = "E";
-    sheet.getCell("G14").value = "G1";
-    sheet.getCell("H14").value = "GRAMA COMUN";
-    sheet.getCell("J14").value = 8;
-    sheet.getCell("K14").value = 25;
-
-    sheet.getCell("C27").value = "PANEL 2";
-    sheet.getCell("E28").value = "P";
-    sheet.getCell("F28").value = "E";
-    sheet.getCell("B29").value = "A2";
-    sheet.getCell("C29").value = "FRESNO";
-    sheet.getCell("F29").value = 8;
-    sheet.getCell("B30").value = "A4";
-    sheet.getCell("C30").value = "PINO";
-    sheet.getCell("E30").value = 10;
-    sheet.getCell("F30").value = 22;
-
-    sheet.getCell("H27").value = "Acaros/ insectario";
-    sheet.getCell("J27").value = "P";
-    sheet.getCell("K27").value = "E";
-    sheet.getCell("G28").value = "D1";
-    sheet.getCell("H28").value = "DERMATOFAGOIDES P";
-    sheet.getCell("K28").value = 8;
-    sheet.getCell("G29").value = "D2";
-    sheet.getCell("H29").value = "DERMATOPHAGOIDES F";
-    sheet.getCell("J29").value = 5;
-    sheet.getCell("K29").value = 19;
-
-    sheet.getCell("B42").value = "CONTROL POSITIVO";
-    sheet.getCell("E42").value = 10;
-    sheet.getCell("F42").value = 29;
-    sheet.getCell("B43").value = "CONTROL NEGATIVO";
-    sheet.getCell("F43").value = 5;
-
-    const parsed = await parseSkinTestWorkbookBuffer(await workbook.xlsx.writeBuffer());
+    const parsed = await parseSkinTestWorkbookBuffer(buf);
 
     expect(parsed.header).toEqual(
       expect.objectContaining({
@@ -234,29 +257,29 @@ describe("clinical skin test parser", () => {
   });
 
   it("extracts interpretation notes and non-conclusive hyperreactivity flags", async () => {
-    const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet("Test");
-    sheet.getCell("B2").value = "PRICKTEST CUTANEO";
-    sheet.getCell("B4").value = "NOMBRE: AURALY CISTERNA";
-    sheet.getCell("E4").value = "EDAD: 27 AÑOS";
-    sheet.getCell("B5").value = "RUT: 17.710.040-4";
-    sheet.getCell("E5").value = "FECHA: 11/09/19";
-    sheet.getCell("B8").value = "ALIMENTOS";
-    sheet.getCell("A9").value = "1";
-    sheet.getCell("B9").value = "LECHE FRESCA";
-    sheet.getCell("C8").value = "P";
-    sheet.getCell("D8").value = "E";
-    sheet.getCell("C9").value = 4;
-    sheet.getCell("D9").value = 15;
-    sheet.getCell("B20").value = "CEX. PIEL HIPERREACTIVA";
-    sheet.getCell("B21").value = "BAJO ESTAS CONDICIONES EL PRICKTEST NO ES CONCLUYENTE";
-    sheet.getCell("B22").value = "EVALUAR IGE TOTAL Y ESPECIFICAS, DESCARTAR AUTOINMUNIDAD";
-    sheet.getCell("H25").value = "DR JOSE MANUEL MARTINEZ M.";
-    sheet.getCell("H26").value = "ALERGOLOGO-INMUNOLOGO";
-    sheet.getCell("B27").value = "www.jmmmartinez-alergia-inmunologia.com";
-    sheet.getCell("B28").value = "SAN MARTÍN 870, OF 509-B, CONCEPCIÓN";
+    const buf = makeBuffer("Test", {
+      B2: s("PRICKTEST CUTANEO"),
+      B4: s("NOMBRE: AURALY CISTERNA"),
+      E4: s("EDAD: 27 AÑOS"),
+      B5: s("RUT: 17.710.040-4"),
+      E5: s("FECHA: 11/09/19"),
+      B8: s("ALIMENTOS"),
+      A9: s("1"),
+      B9: s("LECHE FRESCA"),
+      C8: s("P"),
+      D8: s("E"),
+      C9: n(4),
+      D9: n(15),
+      B20: s("CEX. PIEL HIPERREACTIVA"),
+      B21: s("BAJO ESTAS CONDICIONES EL PRICKTEST NO ES CONCLUYENTE"),
+      B22: s("EVALUAR IGE TOTAL Y ESPECIFICAS, DESCARTAR AUTOINMUNIDAD"),
+      H25: s("DR JOSE MANUEL MARTINEZ M."),
+      H26: s("ALERGOLOGO-INMUNOLOGO"),
+      B27: s("www.jmmmartinez-alergia-inmunologia.com"),
+      B28: s("SAN MARTÍN 870, OF 509-B, CONCEPCIÓN"),
+    });
 
-    const parsed = await parseSkinTestWorkbookBuffer(await workbook.xlsx.writeBuffer());
+    const parsed = await parseSkinTestWorkbookBuffer(buf);
 
     expect(parsed.interpretation.nonConclusiveDueToHyperreactivity).toBe(true);
     expect(parsed.interpretation.clinicalNote).toContain("PIEL HIPERREACTIVA");
@@ -268,26 +291,26 @@ describe("clinical skin test parser", () => {
   });
 
   it("parses AINES prick test format with metrics before allergen names", async () => {
-    const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet("Test");
-    sheet.getCell("E7").value = "NOMBRE:  MAIR HASSON GULOBOFF";
-    sheet.getCell("E8").value = "EDAD:       46 AÑOS";
-    sheet.getCell("E9").value = "FECHA:      13.05.2022";
-    sheet.getCell("B12").value = "PRICKTEST AINES";
-    sheet.getCell("C13").value = "P";
-    sheet.getCell("D13").value = "E";
-    sheet.getCell("D14").value = 4;
-    sheet.getCell("E14").value = "1 IBUPROFENO";
-    sheet.getCell("C20").value = 3;
-    sheet.getCell("D20").value = 6;
-    sheet.getCell("E20").value = "4 PARACETAMOL";
-    sheet.getCell("C46").value = 8;
-    sheet.getCell("D46").value = 25;
-    sheet.getCell("E46").value = "CONTROL POSITIVO (HISTAMINA)";
-    sheet.getCell("D47").value = 5;
-    sheet.getCell("E47").value = "CONTROL NEGATIVO (GLICEROL SALINO)";
+    const buf = makeBuffer("Test", {
+      E7: s("NOMBRE:  MAIR HASSON GULOBOFF"),
+      E8: s("EDAD:       46 AÑOS"),
+      E9: s("FECHA:      13.05.2022"),
+      B12: s("PRICKTEST AINES"),
+      C13: s("P"),
+      D13: s("E"),
+      D14: n(4),
+      E14: s("1 IBUPROFENO"),
+      C20: n(3),
+      D20: n(6),
+      E20: s("4 PARACETAMOL"),
+      C46: n(8),
+      D46: n(25),
+      E46: s("CONTROL POSITIVO (HISTAMINA)"),
+      D47: n(5),
+      E47: s("CONTROL NEGATIVO (GLICEROL SALINO)"),
+    });
 
-    const parsed = await parseSkinTestWorkbookBuffer(await workbook.xlsx.writeBuffer());
+    const parsed = await parseSkinTestWorkbookBuffer(buf);
 
     expect(parsed.header).toEqual(
       expect.objectContaining({
@@ -331,29 +354,29 @@ describe("clinical skin test parser", () => {
   });
 
   it("parses split PRICKTEST aeroallergen panel titles and dot dates", async () => {
-    const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet("Test");
-    sheet.getCell("B4").value = "PRICKTEST";
-    sheet.getCell("B5").value = "AEROALERGENOS I";
-    sheet.getCell("B7").value = "NOMBRE: ALEXANDER MONJES AEDO";
-    sheet.getCell("G7").value = "EDAD: 21 AÑOS";
-    sheet.getCell("B8").value = "RUT: 20.161.683-2";
-    sheet.getCell("G8").value = "FECHA:  20.11.2021";
-    sheet.getCell("C11").value = "ACAROS";
-    sheet.getCell("D11").value = "P";
-    sheet.getCell("E11").value = "E";
-    sheet.getCell("B12").value = "D1";
-    sheet.getCell("C12").value = "DERMATOPHAGOIDES P";
-    sheet.getCell("E12").value = 5;
-    sheet.getCell("H11").value = "GRAMINEAS";
-    sheet.getCell("I11").value = "P";
-    sheet.getCell("J11").value = "E";
-    sheet.getCell("G12").value = "G1";
-    sheet.getCell("H12").value = "GRAMA COMÚN";
-    sheet.getCell("I12").value = 3;
-    sheet.getCell("J12").value = 6;
+    const buf = makeBuffer("Test", {
+      B4: s("PRICKTEST"),
+      B5: s("AEROALERGENOS I"),
+      B7: s("NOMBRE: ALEXANDER MONJES AEDO"),
+      G7: s("EDAD: 21 AÑOS"),
+      B8: s("RUT: 20.161.683-2"),
+      G8: s("FECHA:  20.11.2021"),
+      C11: s("ACAROS"),
+      D11: s("P"),
+      E11: s("E"),
+      B12: s("D1"),
+      C12: s("DERMATOPHAGOIDES P"),
+      E12: n(5),
+      H11: s("GRAMINEAS"),
+      I11: s("P"),
+      J11: s("E"),
+      G12: s("G1"),
+      H12: s("GRAMA COMÚN"),
+      I12: n(3),
+      J12: n(6),
+    });
 
-    const parsed = await parseSkinTestWorkbookBuffer(await workbook.xlsx.writeBuffer());
+    const parsed = await parseSkinTestWorkbookBuffer(buf);
 
     expect(parsed.header).toEqual(
       expect.objectContaining({
@@ -390,25 +413,25 @@ describe("clinical skin test parser", () => {
   });
 
   it("parses Excel date cells next to separated FECHA labels", async () => {
-    const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet("Test");
-    sheet.getCell("B5").value = "PRICKTEST";
-    sheet.getCell("B6").value = "AEROALERGENOS II";
-    sheet.getCell("B8").value = "NOMBRE: GABRIELA CUEVAS TRONCOSO";
-    sheet.getCell("G8").value = "EDAD: 30 AÑOS";
-    sheet.getCell("B9").value = "RUT :";
-    sheet.getCell("C9").value = "18.017.242-4";
-    sheet.getCell("G9").value = "FECHA:  ";
-    sheet.getCell("H9").value = new Date("2022-05-12T00:00:00.000Z");
-    sheet.getCell("C11").value = "ACAROS";
-    sheet.getCell("D11").value = "P";
-    sheet.getCell("E11").value = "E";
-    sheet.getCell("B12").value = "D1";
-    sheet.getCell("C12").value = "DERMATOPHAGOIDES P";
-    sheet.getCell("D12").value = 3;
-    sheet.getCell("E12").value = 5;
+    const buf = makeBuffer("Test", {
+      B5: s("PRICKTEST"),
+      B6: s("AEROALERGENOS II"),
+      B8: s("NOMBRE: GABRIELA CUEVAS TRONCOSO"),
+      G8: s("EDAD: 30 AÑOS"),
+      B9: s("RUT :"),
+      C9: s("18.017.242-4"),
+      G9: s("FECHA:  "),
+      H9: d(new Date("2022-05-12T00:00:00.000Z")),
+      C11: s("ACAROS"),
+      D11: s("P"),
+      E11: s("E"),
+      B12: s("D1"),
+      C12: s("DERMATOPHAGOIDES P"),
+      D12: n(3),
+      E12: n(5),
+    });
 
-    const parsed = await parseSkinTestWorkbookBuffer(await workbook.xlsx.writeBuffer());
+    const parsed = await parseSkinTestWorkbookBuffer(buf);
 
     expect(parsed.header).toEqual(
       expect.objectContaining({
@@ -425,21 +448,21 @@ describe("clinical skin test parser", () => {
   });
 
   it("parses standalone RUT cells in the header area", async () => {
-    const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet("Test");
-    sheet.getCell("B4").value = "PRICKTEST";
-    sheet.getCell("B5").value = "PANEL ALIMENTOS I";
-    sheet.getCell("B7").value = "NOMBRE: DAWSON MIRANDA SEPULVEDA";
-    sheet.getCell("G7").value = "EDAD: 13 AÑOS";
-    sheet.getCell("B8").value = "22.727.339-9";
-    sheet.getCell("G8").value = "FECHA: 26/04/2022";
-    sheet.getCell("D12").value = "P";
-    sheet.getCell("E12").value = "E";
-    sheet.getCell("B13").value = "1";
-    sheet.getCell("C13").value = "LECHE FRESCA";
-    sheet.getCell("E13").value = 5;
+    const buf = makeBuffer("Test", {
+      B4: s("PRICKTEST"),
+      B5: s("PANEL ALIMENTOS I"),
+      B7: s("NOMBRE: DAWSON MIRANDA SEPULVEDA"),
+      G7: s("EDAD: 13 AÑOS"),
+      B8: s("22.727.339-9"),
+      G8: s("FECHA: 26/04/2022"),
+      D12: s("P"),
+      E12: s("E"),
+      B13: s("1"),
+      C13: s("LECHE FRESCA"),
+      E13: n(5),
+    });
 
-    const parsed = await parseSkinTestWorkbookBuffer(await workbook.xlsx.writeBuffer());
+    const parsed = await parseSkinTestWorkbookBuffer(buf);
 
     expect(parsed.header).toEqual(
       expect.objectContaining({
@@ -456,24 +479,24 @@ describe("clinical skin test parser", () => {
   });
 
   it("parses written dates that use DEL before the year", async () => {
-    const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet("Test");
-    sheet.getCell("B4").value = "PRICKTEST CUTANEO";
-    sheet.getCell("B5").value = "AEROALERGENOS PEDIATRICO";
-    sheet.getCell("B7").value = "NOMBRE: CATALINA HIDALGO GALLARDO";
-    sheet.getCell("G7").value = "EDAD: 12 AÑOS";
-    sheet.getCell("B8").value = "RUT:";
-    sheet.getCell("C8").value = "23.053.128-5";
-    sheet.getCell("G8").value = "FECHA: 12 DE MAYO DEL 2022";
-    sheet.getCell("C11").value = "ACAROS";
-    sheet.getCell("D11").value = "P";
-    sheet.getCell("E11").value = "E";
-    sheet.getCell("B12").value = "D1";
-    sheet.getCell("C12").value = "DERMATOPHAGOIDES P";
-    sheet.getCell("D12").value = 5;
-    sheet.getCell("E12").value = 15;
+    const buf = makeBuffer("Test", {
+      B4: s("PRICKTEST CUTANEO"),
+      B5: s("AEROALERGENOS PEDIATRICO"),
+      B7: s("NOMBRE: CATALINA HIDALGO GALLARDO"),
+      G7: s("EDAD: 12 AÑOS"),
+      B8: s("RUT:"),
+      C8: s("23.053.128-5"),
+      G8: s("FECHA: 12 DE MAYO DEL 2022"),
+      C11: s("ACAROS"),
+      D11: s("P"),
+      E11: s("E"),
+      B12: s("D1"),
+      C12: s("DERMATOPHAGOIDES P"),
+      D12: n(5),
+      E12: n(15),
+    });
 
-    const parsed = await parseSkinTestWorkbookBuffer(await workbook.xlsx.writeBuffer());
+    const parsed = await parseSkinTestWorkbookBuffer(buf);
 
     expect(parsed.header).toEqual(
       expect.objectContaining({
@@ -490,31 +513,31 @@ describe("clinical skin test parser", () => {
   });
 
   it("parses generic TEST CUTANEO titles and hyphenated written dates", async () => {
-    const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet("Test");
-    sheet.getCell("B4").value = "TEST CUTÁNEO";
-    sheet.getCell("B7").value = "NOMBRE: CATALINA LILLO";
-    sheet.getCell("G7").value = "EDAD: 19 AÑOS";
-    sheet.getCell("B8").value = "RUT: 19.906.043-0";
-    sheet.getCell("G8").value = "FECHA: 08-AGOSTO-2017";
-    sheet.getCell("C11").value = "ACAROS";
-    sheet.getCell("D11").value = "P";
-    sheet.getCell("E11").value = "E";
-    sheet.getCell("B12").value = "D1";
-    sheet.getCell("C12").value = "DERMATOPHAGOIDES P y F";
-    sheet.getCell("D12").value = 10;
-    sheet.getCell("E12").value = 40;
-    sheet.getCell("C13").value = "CONTROL POSITIVO";
-    sheet.getCell("D13").value = 10;
-    sheet.getCell("E13").value = 40;
-    sheet.getCell("H13").value = "HONGOS";
-    sheet.getCell("I13").value = "P";
-    sheet.getCell("J13").value = "E";
-    sheet.getCell("G14").value = "H5";
-    sheet.getCell("H14").value = "MEZCLA HONGOS";
-    sheet.getCell("J14").value = "<3";
+    const buf = makeBuffer("Test", {
+      B4: s("TEST CUTÁNEO"),
+      B7: s("NOMBRE: CATALINA LILLO"),
+      G7: s("EDAD: 19 AÑOS"),
+      B8: s("RUT: 19.906.043-0"),
+      G8: s("FECHA: 08-AGOSTO-2017"),
+      C11: s("ACAROS"),
+      D11: s("P"),
+      E11: s("E"),
+      B12: s("D1"),
+      C12: s("DERMATOPHAGOIDES P y F"),
+      D12: n(10),
+      E12: n(40),
+      C13: s("CONTROL POSITIVO"),
+      D13: n(10),
+      E13: n(40),
+      H13: s("HONGOS"),
+      I13: s("P"),
+      J13: s("E"),
+      G14: s("H5"),
+      H14: s("MEZCLA HONGOS"),
+      J14: s("<3"),
+    });
 
-    const parsed = await parseSkinTestWorkbookBuffer(await workbook.xlsx.writeBuffer());
+    const parsed = await parseSkinTestWorkbookBuffer(buf);
 
     expect(parsed.header).toEqual(
       expect.objectContaining({

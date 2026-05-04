@@ -1,12 +1,11 @@
 import { createId } from "@paralleldrive/cuid2";
-import ExcelJS from "exceljs";
 import { sql } from "kysely";
 import { createHash } from "node:crypto";
+import * as XLSX from "xlsx";
 import { kysely } from "@finanzas/db";
 
-export const SKIN_TEST_WORKBOOK_SNAPSHOT_VERSION = "2026-04-27.1";
-
-type ExcelWorkbookBuffer = Parameters<ExcelJS.Workbook["xlsx"]["load"]>[0];
+// Bumped from 2026-04-27.1: migrated from ExcelJS to SheetJS 0.20.3 (fixes merged-cell richText bugs)
+export const SKIN_TEST_WORKBOOK_SNAPSHOT_VERSION = "2026-05-02.1";
 
 type SnapshotCellType = "blank" | "boolean" | "date" | "error" | "formula" | "number" | "richText" | "string";
 type SnapshotRawValue =
@@ -85,47 +84,64 @@ export interface PersistSkinTestWorkbookSnapshotInput {
   sourceSizeBytes?: null | number;
 }
 
-export async function extractSkinTestWorkbookSnapshot(
-  buffer: ExcelWorkbookBuffer
-): Promise<SkinTestWorkbookSnapshot> {
-  const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.load(buffer);
-  const worksheet = workbook.worksheets[0];
-  if (!worksheet) {
-    throw new Error("El archivo no tiene hojas para snapshot.");
+export async function extractSkinTestWorkbookSnapshot(buffer: Buffer): Promise<SkinTestWorkbookSnapshot> {
+  const wb = XLSX.read(buffer, {
+    type: "buffer",
+    cellDates: true,
+    cellFormula: true,
+    cellHTML: false,
+    cellNF: true,
+  });
+
+  const sheetName = wb.SheetNames[0];
+  if (!sheetName) throw new Error("El archivo no tiene hojas para snapshot.");
+
+  const ws = wb.Sheets[sheetName];
+  if (!ws || !ws["!ref"]) {
+    return { sheet: { cells: [], merges: [], name: sheetName }, version: 1 };
   }
 
+  const range = XLSX.utils.decode_range(ws["!ref"]);
   const cells: SkinTestWorkbookSnapshotCell[] = [];
-  worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-    row.eachCell({ includeEmpty: false }, (cell, colNumber) => {
+
+  for (let R = range.s.r; R <= range.e.r; R++) {
+    for (let C = range.s.c; C <= range.e.c; C++) {
+      const addr = XLSX.utils.encode_cell({ r: R, c: C });
+      const cell = ws[addr] as XLSX.CellObject | undefined;
+      if (!cell || cell.t === "z") continue;
+
       try {
-        if (isEmptyCell(cell)) return;
+        const text = getCellText(cell);
+        if (!text.trim()) continue;
+
+        const type = getCellType(cell);
+        const raw = serializeCellValue(cell);
+
         cells.push({
-          a1: cell.address,
-          c: colNumber,
-          note: serializeNote(cell.note),
-          r: rowNumber,
-          raw: serializeCellValue(cell.value),
-          result: serializeFormulaResult(cell.value),
-          style: serializeCellStyle(cell),
-          text: cell.text ?? "",
-          type: getCellType(cell.value),
-          ...(getFormula(cell.value) ? { formula: getFormula(cell.value) } : {}),
+          a1: addr,
+          c: C + 1,
+          r: R + 1,
+          text,
+          type,
+          raw,
+          ...(cell.f ? { formula: cell.f, result: serializeScalar(cell) } : {}),
+          ...(getCellNote(cell) ? { note: getCellNote(cell) } : {}),
         });
       } catch {
         // skip malformed cell, continue with rest of sheet
       }
-    });
-  });
+    }
+  }
 
-  return {
-    sheet: {
-      cells,
-      merges: extractMerges(worksheet),
-      name: worksheet.name,
-    },
-    version: 1,
-  };
+  const merges = (ws["!merges"] ?? []).map((m) => ({
+    bottom: m.e.r + 1,
+    left: m.s.c + 1,
+    range: `${XLSX.utils.encode_cell(m.s)}:${XLSX.utils.encode_cell(m.e)}`,
+    right: m.e.c + 1,
+    top: m.s.r + 1,
+  }));
+
+  return { sheet: { cells, merges, name: sheetName }, version: 1 };
 }
 
 export async function persistSkinTestWorkbookSnapshot({
@@ -135,7 +151,7 @@ export async function persistSkinTestWorkbookSnapshot({
   sourceETag,
   sourceSizeBytes,
 }: PersistSkinTestWorkbookSnapshotInput): Promise<PersistSkinTestWorkbookSnapshotResult> {
-  const snapshot = await extractSkinTestWorkbookSnapshot(buffer as unknown as ExcelWorkbookBuffer);
+  const snapshot = await extractSkinTestWorkbookSnapshot(buffer);
   const sha256 = createHash("sha256").update(buffer).digest("hex");
   const textHash = computeSnapshotTextHash(snapshot);
   const fileId = createId();
@@ -235,54 +251,55 @@ export async function persistSkinTestWorkbookSnapshot({
   };
 }
 
-function isEmptyCell(cell: ExcelJS.Cell): boolean {
-  return cell.value === null || cell.value === undefined || (cell.text ?? "").trim() === "";
+function getCellType(cell: XLSX.CellObject): SnapshotCellType {
+  if (cell.f) return "formula";
+  switch (cell.t) {
+    case "n": return "number";
+    case "s": return "string";
+    case "b": return "boolean";
+    case "e": return "error";
+    case "d": return "date";
+    default: return "blank";
+  }
 }
 
-function getCellType(value: ExcelJS.CellValue): SnapshotCellType {
-  if (value === null || value === undefined) return "blank";
-  if (value instanceof Date) return "date";
-  if (typeof value === "boolean") return "boolean";
-  if (typeof value === "number") return "number";
-  if (typeof value === "string") return "string";
-  if (typeof value === "object") {
-    if ("formula" in value) return "formula";
-    if ("error" in value) return "error";
-    if ("richText" in value) return "richText";
+function getCellText(cell: XLSX.CellObject): string {
+  if (cell.t === "d") {
+    const d = cell.v as Date;
+    return isNaN(d.getTime()) ? "Invalid Date" : d.toISOString().slice(0, 10);
   }
-  return "string";
+  if (cell.w != null) return cell.w;
+  if (cell.v == null) return "";
+  if (cell.t === "b") return cell.v ? "TRUE" : "FALSE";
+  return String(cell.v);
 }
 
-function serializeCellValue(value: ExcelJS.CellValue): SnapshotRawValue {
-  if (value === null || value === undefined) return { kind: "blank", value: null };
-  if (value instanceof Date) return { kind: "date", value: isNaN(value.getTime()) ? "Invalid Date" : value.toISOString() };
-  if (typeof value === "boolean") return { kind: "boolean", value };
-  if (typeof value === "number") return { kind: "number", value };
-  if (typeof value === "string") return { kind: "string", value };
-  if ("formula" in value) {
-    return {
-      kind: "formula",
-      formula: value.formula ?? "",
-      result: serializeCellValue(value.result as ExcelJS.CellValue),
-    };
+function serializeCellValue(cell: XLSX.CellObject): SnapshotRawValue {
+  if (cell.f) {
+    return { kind: "formula", formula: cell.f, result: serializeScalar(cell) };
   }
-  if ("richText" in value) {
-    return { kind: "richText", value: value.richText.map((part) => part?.text ?? "").join("") };
-  }
-  if ("hyperlink" in value) {
-    return {
-      kind: "hyperlink",
-      hyperlink: value.hyperlink,
-      text: value.text ?? "",
-    };
-  }
-  if ("error" in value) return { kind: "error", value: value.error };
-  return { kind: "string", value: JSON.stringify(value) };
+  return serializeScalar(cell);
 }
 
-function serializeFormulaResult(value: ExcelJS.CellValue): SnapshotRawValue | undefined {
-  if (!value || typeof value !== "object" || !("formula" in value)) return undefined;
-  return serializeCellValue(value.result as ExcelJS.CellValue);
+function serializeScalar(cell: XLSX.CellObject): SnapshotRawValue {
+  switch (cell.t) {
+    case "n": return { kind: "number", value: cell.v as number };
+    case "s": return { kind: "string", value: cell.w ?? String(cell.v ?? "") };
+    case "b": return { kind: "boolean", value: cell.v as boolean };
+    case "e": return { kind: "error", value: cell.w ?? String(cell.v ?? "") };
+    case "d": {
+      const d = cell.v as Date;
+      return { kind: "date", value: isNaN(d.getTime()) ? "Invalid Date" : d.toISOString() };
+    }
+    default: return { kind: "blank", value: null };
+  }
+}
+
+function getCellNote(cell: XLSX.CellObject): string | undefined {
+  const comments = cell.c;
+  if (!comments?.length) return undefined;
+  const text = comments.map((c) => c.t ?? "").join("\n");
+  return text || undefined;
 }
 
 function computeSnapshotTextHash(snapshot: SkinTestWorkbookSnapshot): string {
@@ -291,95 +308,4 @@ function computeSnapshotTextHash(snapshot: SkinTestWorkbookSnapshot): string {
     .sort()
     .join("\n");
   return createHash("sha256").update(visibleText).digest("hex");
-}
-
-function getFormula(value: ExcelJS.CellValue): string | undefined {
-  if (!value || typeof value !== "object" || !("formula" in value)) return undefined;
-  return value.formula;
-}
-
-function serializeNote(note: ExcelJS.Cell["note"]): string | undefined {
-  if (!note) return undefined;
-  if (typeof note === "string") return note;
-  if (typeof note === "object" && "texts" in note) {
-    return note.texts?.map((entry) => entry.text).join("") || undefined;
-  }
-  return String(note);
-}
-
-function serializeCellStyle(cell: ExcelJS.Cell): SkinTestWorkbookSnapshotCell["style"] | undefined {
-  const font = cell.font;
-  const alignment = cell.alignment;
-  const fill = cell.fill;
-  const border = cell.border;
-  const style: NonNullable<SkinTestWorkbookSnapshotCell["style"]> = {};
-
-  if (font) {
-    style.font = {
-      ...(font.bold ? { bold: true } : {}),
-      ...(font.color?.argb ? { color: font.color.argb } : {}),
-      ...(font.italic ? { italic: true } : {}),
-      ...(font.name ? { name: font.name } : {}),
-      ...(font.size ? { size: font.size } : {}),
-      ...(font.underline ? { underline: true } : {}),
-    };
-  }
-  if (alignment) {
-    style.alignment = {
-      ...(alignment.horizontal ? { horizontal: alignment.horizontal } : {}),
-      ...(alignment.vertical ? { vertical: alignment.vertical } : {}),
-    };
-  }
-  if (cell.numFmt) style.numFmt = cell.numFmt;
-  if (fill && "fgColor" in fill && fill.fgColor?.argb) style.fillColor = fill.fgColor.argb;
-  if (border && Object.values(border).some(Boolean)) style.border = true;
-
-  if (
-    !style.alignment?.horizontal &&
-    !style.alignment?.vertical &&
-    !style.border &&
-    !style.fillColor &&
-    !style.font?.bold &&
-    !style.font?.color &&
-    !style.font?.italic &&
-    !style.font?.name &&
-    !style.font?.size &&
-    !style.font?.underline &&
-    !style.numFmt
-  ) {
-    return undefined;
-  }
-  return style;
-}
-
-function extractMerges(worksheet: ExcelJS.Worksheet): SkinTestWorkbookSnapshot["sheet"]["merges"] {
-  const merges = (worksheet.model as { merges?: string[] }).merges ?? [];
-  return merges.map((range) => {
-    const decoded = decodeRange(range);
-    return { range, ...decoded };
-  });
-}
-
-function decodeRange(range: string): { bottom: number; left: number; right: number; top: number } {
-  const [start, end = start] = range.split(":");
-  const from = decodeAddress(start ?? "A1");
-  const to = decodeAddress(end ?? start ?? "A1");
-  return {
-    bottom: Math.max(from.row, to.row),
-    left: Math.min(from.col, to.col),
-    right: Math.max(from.col, to.col),
-    top: Math.min(from.row, to.row),
-  };
-}
-
-function decodeAddress(address: string): { col: number; row: number } {
-  const match = address.match(/^([A-Z]+)(\d+)$/i);
-  if (!match) return { col: 1, row: 1 };
-  const letters = match[1]?.toUpperCase() ?? "A";
-  const row = Number(match[2] ?? 1);
-  let col = 0;
-  for (const letter of letters) {
-    col = col * 26 + letter.charCodeAt(0) - 64;
-  }
-  return { col, row };
 }

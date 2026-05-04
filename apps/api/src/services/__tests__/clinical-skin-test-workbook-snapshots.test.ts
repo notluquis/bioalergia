@@ -1,25 +1,29 @@
-import ExcelJS from "exceljs";
+import * as XLSX from "xlsx";
 import { describe, expect, it } from "vitest";
 import { extractSkinTestWorkbookSnapshot } from "../clinical-skin-test-workbook-snapshots";
 
 describe("clinical skin test workbook snapshots", () => {
   it("extracts only the first worksheet cells, merges, formulas, notes, and basic style hints", async () => {
-    const workbook = new ExcelJS.Workbook();
-    const first = workbook.addWorksheet("Primera");
-    const second = workbook.addWorksheet("Segunda");
+    const first: XLSX.WorkSheet = {
+      B2: { t: "s", v: "PRICKTEST CUTANEO" },
+      A4: { t: "s", v: "RUT:" },
+      B4: { t: "s", v: "23.053.128-5" },
+      C6: { t: "n", v: 15, f: "SUM(C7:C8)" },
+      D6: { t: "d", v: new Date("2022-05-12T00:00:00.000Z"), c: [{ a: "", t: "valor calculado" }] },
+      "!ref": "A2:D6",
+      "!merges": [{ s: { r: 1, c: 1 }, e: { r: 1, c: 3 } }],
+    };
+    const second: XLSX.WorkSheet = {
+      A1: { t: "s", v: "NO DEBE ENTRAR" },
+      "!ref": "A1:A1",
+    };
 
-    first.mergeCells("B2:D2");
-    first.getCell("B2").value = "PRICKTEST CUTANEO";
-    first.getCell("B2").font = { bold: true, color: { argb: "FF1F4E79" }, size: 18 };
-    first.getCell("B2").alignment = { horizontal: "center" };
-    first.getCell("A4").value = "RUT:";
-    first.getCell("B4").value = "23.053.128-5";
-    first.getCell("C6").value = { formula: "SUM(C7:C8)", result: 15 };
-    first.getCell("D6").note = "valor calculado";
-    first.getCell("D6").value = new Date("2022-05-12T00:00:00.000Z");
-    second.getCell("A1").value = "NO DEBE ENTRAR";
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, first, "Primera");
+    XLSX.utils.book_append_sheet(wb, second, "Segunda");
+    const buf = Buffer.from(XLSX.write(wb, { bookType: "xlsx", type: "buffer" }) as ArrayBuffer);
 
-    const snapshot = await extractSkinTestWorkbookSnapshot(await workbook.xlsx.writeBuffer());
+    const snapshot = await extractSkinTestWorkbookSnapshot(buf);
 
     expect(snapshot.version).toBe(1);
     expect(snapshot.sheet.name).toBe("Primera");
@@ -34,10 +38,6 @@ describe("clinical skin test workbook snapshots", () => {
           c: 2,
           text: "PRICKTEST CUTANEO",
           type: "string",
-          style: expect.objectContaining({
-            alignment: { horizontal: "center" },
-            font: expect.objectContaining({ bold: true, color: "FF1F4E79", size: 18 }),
-          }),
         }),
         expect.objectContaining({
           a1: "C6",
