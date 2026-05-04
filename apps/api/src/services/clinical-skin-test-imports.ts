@@ -3614,7 +3614,12 @@ function canAutoImport(parsed: ParsedSkinTestWorkbook, issues: SkinTestIssue[]):
 const PLACEHOLDER_PATIENT_NAMES = new Set(["nombre", "nombre apellido", "paciente", "apellido nombre"]);
 
 function isPlaceholderPatientName(name: null | string): boolean {
-  return !name || PLACEHOLDER_PATIENT_NAMES.has(name.trim().toLowerCase());
+  if (!name) return true;
+  const trimmed = name.trim().toLowerCase();
+  if (PLACEHOLDER_PATIENT_NAMES.has(trimmed)) return true;
+  // Label cells captured as name (e.g. "DIRECCIÓN:", "TELÉFONO:", "CORREO:")
+  if (/^[a-záéíóúñü\s]+:$/.test(trimmed)) return true;
+  return false;
 }
 
 function getTemplateSkinTestIssue(parsed: ParsedSkinTestWorkbook): null | SkinTestIssue {

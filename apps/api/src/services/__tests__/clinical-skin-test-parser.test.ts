@@ -636,6 +636,45 @@ describe("clinical skin test parser", () => {
     );
   });
 
+  it("parses date with no space between digit and 'DE' (e.g. '16DE NOVIEMBRE DE 2017')", () => {
+    expect(parseDateToISO("16DE NOVIEMBRE DE 2017")).toBe("2017-11-16");
+    expect(parseDateToISO("FECHA: 16DE NOVIEMBRE DE 2017")).toBe("2017-11-16");
+  });
+
+  it("recognises 'ESTANDAR AINES' as a valid title", async () => {
+    const buf = makeBuffer("Test", {
+      B2: s("NOMBRE: JUAN PEREZ"),
+      B3: s("RUT: 12.345.678-9"),
+      B4: s("FECHA: 15-03-2025"),
+      B11: s("ESTANDAR AINES"),
+      A12: s("1 ASPIRINA"),
+      B12: s("-"),
+      C12: s("+"),
+    });
+    const parsed = await parseSkinTestWorkbookBuffer(buf);
+    expect(parsed.issues).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: "missing_title" })])
+    );
+  });
+
+  it("recognises 'TEST DE PARCHE ALIMENTARIO' as a valid title", async () => {
+    const buf = makeBuffer("Test", {
+      C9: s("TEST DE PARCHE ALIMENTARIO"),
+      B10: s("NOMBRE: FLORENCIA URRUTIA"),
+      B11: s("RUT: 15.000.000-1"),
+      B12: s("FECHA: 06-11-2024"),
+      A15: s("VERDURAS"),
+      A16: s("A1"),
+      B16: s("Tomate"),
+      C16: s("+"),
+      D16: s("-"),
+    });
+    const parsed = await parseSkinTestWorkbookBuffer(buf);
+    expect(parsed.issues).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: "missing_title" })])
+    );
+  });
+
   it("parses date from 'FECHA DEL TEST:' label with value two columns right (AGREE format)", async () => {
     const buf = makeBuffer("Test", {
       B4: s("I N F O R M E    T E S T    D E    P A R C H E"),

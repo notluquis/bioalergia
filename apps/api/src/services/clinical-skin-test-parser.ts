@@ -1,6 +1,6 @@
 import * as XLSX from "xlsx";
 
-export const SKIN_TEST_PARSER_VERSION = "2026-04-26.3";
+export const SKIN_TEST_PARSER_VERSION = "2026-05-04.1";
 
 export interface SkinTestIssue {
   code: string;
@@ -95,7 +95,7 @@ export function parseSkinTestWorksheet(worksheet: XLSX.WorkSheet): ParsedSkinTes
   const issues: SkinTestIssue[] = [];
   const title = findCell(
     cells,
-    /(?:(?:multi|prick)?\s*test\s+cut[aá]neo|prick\s*test\s+aines|^prick\s*test$|estandar\s+europeo)/i
+    /(?:(?:multi|prick)?\s*test\s+cut[aá]neo|prick\s*test\s+aines|estandar\s+aines|^prick\s*test$|estandar\s+europeo|test\s+de\s+parche\s+alimentario|test\s+cut[aá]neo\s+alimentario)/i
   );
   const panelTitle = findPanelTitle(cells, title);
   const header = extractHeader(cells);
@@ -356,6 +356,7 @@ export function parseDateToISO(value: null | string): null | string {
   if (!value) return null;
   const text = normalizeText(value)
     .toLowerCase()
+    .replace(/(\d+)de\b/g, "$1 de")
     .replace(/\s+del\s+/g, " ")
     .replace(/\s+de\s+/g, " ");
   const isoLike = text.match(/\b(\d{4})\s*[-/.]\s*(\d{1,2})\s*[-/.]\s*(\d{1,2})\b/);
