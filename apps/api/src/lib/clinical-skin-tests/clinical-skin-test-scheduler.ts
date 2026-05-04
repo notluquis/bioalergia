@@ -3,6 +3,7 @@ import {
   archiveMissingSkinTestWorkbookSnapshots,
   getSkinTestImportJobType,
   processDiscoveredSkinTestImports,
+  reprocessPendingSkinTestImports,
   reclassifyClinicalXlsxLibrary,
   syncClinicalSkinTestImports,
   type SkinTestImportStatus,
@@ -225,6 +226,79 @@ export async function startClinicalSkinTestProcessDiscoveredJob(options?: {
 
       failJob(jobId, message);
       logError("clinicalSkinTests.discoveredProcessing.failed", error, {
+        trigger: options?.trigger ?? "manual",
+      });
+    }
+  })();
+
+  return jobId;
+}
+
+export async function startClinicalSkinTestReprocessPendingJob(options?: {
+  query?: string;
+  trigger?: string;
+}): Promise<string> {
+  const jobType = getSkinTestImportJobType();
+  const activeJobs = getActiveJobsByType(jobType);
+  if (activeJobs.length > 0) {
+    return activeJobs[0].id;
+  }
+
+  const jobId = startJob(jobType, 1);
+  updateJobProgress(jobId, 0, "Preparando reprocesamiento de pendientes", {
+    phase: "pending-reprocessing",
+  });
+  let progressTotal = 1;
+  let phaseStartedAt = Date.now();
+  let phaseStartedAtProgress = 0;
+
+  void (async () => {
+    try {
+      const result = await reprocessPendingSkinTestImports({
+        query: options?.query,
+        shouldCancel: () => isJobCancelled(jobId),
+        onProgress: ({ message, processed, total, ...meta }) => {
+          if (total !== progressTotal || processed < phaseStartedAtProgress) {
+            progressTotal = total;
+            phaseStartedAt = Date.now();
+            phaseStartedAtProgress = processed;
+          }
+          const elapsedSeconds = Math.max(0, (Date.now() - phaseStartedAt) / 1000);
+          const completedInPhase = processed - phaseStartedAtProgress;
+          const remainingInPhase = total - processed;
+          const etaSeconds =
+            completedInPhase > 0 && remainingInPhase > 0 && elapsedSeconds >= 2
+              ? Math.round((elapsedSeconds / completedInPhase) * remainingInPhase)
+              : null;
+          updateJobProgress(
+            jobId,
+            processed,
+            message,
+            { ...meta, elapsedSeconds: Math.round(elapsedSeconds), etaSeconds, mode: "reprocess-pending" },
+            total
+          );
+        },
+      });
+      completeJob(jobId, result, "Reprocesamiento de pendientes completado", {
+        ...result,
+        mode: "reprocess-pending",
+        phase: "completed",
+      });
+      logEvent("clinicalSkinTests.pendingReprocessing.completed", {
+        result,
+        trigger: options?.trigger ?? "manual",
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (message === "SYNC_CANCELLED") {
+        cancelJob(jobId, "Reprocesamiento cancelado por usuario");
+        logEvent("clinicalSkinTests.pendingReprocessing.cancelled", {
+          trigger: options?.trigger ?? "manual",
+        });
+        return;
+      }
+      failJob(jobId, message);
+      logError("clinicalSkinTests.pendingReprocessing.failed", error, {
         trigger: options?.trigger ?? "manual",
       });
     }

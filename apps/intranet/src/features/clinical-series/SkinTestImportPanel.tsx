@@ -48,6 +48,7 @@ import {
   useOneDriveFolderChildren,
   useProcessDiscoveredSkinTestImports,
   useProcessSkinTestImports,
+  useReprocessPendingSkinTestImports,
   useOneDriveFolderPreview,
   useRejectSkinTestImport,
   useReclassifyClinicalXlsxLibrary,
@@ -146,6 +147,7 @@ interface SkinTestSyncJobMeta {
     | "completed"
     | "delta"
     | "discovered-processing"
+    | "pending-reprocessing"
     | "processing"
     | "scanned"
     | "starting";
@@ -160,6 +162,7 @@ const SYNC_PHASE_LABELS: Record<NonNullable<SkinTestSyncJobMeta["phase"]>, strin
   archiving: "Archivando XLSX",
   delta: "Leyendo OneDrive",
   "discovered-processing": "Procesando descubiertos",
+  "pending-reprocessing": "Reprocesando pendientes",
   processing: "Procesando xlsx",
   scanned: "Cambios leídos",
   starting: "Preparando",
@@ -219,6 +222,7 @@ function isSyncPhase(value: unknown): value is NonNullable<SkinTestSyncJobMeta["
     value === "archiving" ||
     value === "delta" ||
     value === "discovered-processing" ||
+    value === "pending-reprocessing" ||
     value === "processing" ||
     value === "scanned" ||
     value === "starting"
@@ -245,6 +249,7 @@ export function SkinTestImportPanel() {
   const [importsPage, setImportsPage] = useState(1);
   const [archiveLimit, setArchiveLimit] = useState(100);
   const [isRereadAllOpen, setIsRereadAllOpen] = useState(false);
+  const [isReprocessPendingOpen, setIsReprocessPendingOpen] = useState(false);
   const [selectedImportIds, setSelectedImportIds] = useState<Record<string, boolean>>({});
   const filters: SkinTestImportFilters = useMemo(
     () => ({
@@ -264,6 +269,7 @@ export function SkinTestImportPanel() {
   const reclassifyXlsxLibraryMutation = useReclassifyClinicalXlsxLibrary();
   const processDiscoveredMutation = useProcessDiscoveredSkinTestImports();
   const processSelectedMutation = useProcessSkinTestImports();
+  const reprocessPendingMutation = useReprocessPendingSkinTestImports();
   const connectOneDrive = useConnectOneDrive();
   const authUrlQuery = useGetOneDriveAuthUrl(window.location.origin + window.location.pathname);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
@@ -470,6 +476,19 @@ export function SkinTestImportPanel() {
     }
   }
 
+  async function handleReprocessAllPending() {
+    try {
+      const result = await reprocessPendingMutation.mutateAsync({
+        query: query.trim() || undefined,
+      });
+      setActiveJobId(result.jobId);
+      setSelectedImportIds({});
+      toast.success("Reprocesamiento de pendientes iniciado", "Tests cutáneos");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo iniciar el reprocesamiento");
+    }
+  }
+
   async function handleArchiveSnapshots() {
     try {
       const result = await archiveSnapshotsMutation.mutateAsync({
@@ -664,6 +683,16 @@ export function SkinTestImportPanel() {
                 >
                   <ServerCog size={14} />
                   Procesar descubiertos
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onPress={() => setIsReprocessPendingOpen(true)}
+                  isDisabled={isSyncInProgress || imports.isFetching}
+                  isPending={reprocessPendingMutation.isPending}
+                >
+                  <RotateCw size={14} />
+                  Reprocesar pendientes
                 </Button>
               </div>
             </div>
@@ -1024,6 +1053,43 @@ export function SkinTestImportPanel() {
           </Pagination>
         )}
       </Surface>
+      <AlertDialog.Backdrop
+        isOpen={isReprocessPendingOpen}
+        onOpenChange={setIsReprocessPendingOpen}
+        variant="blur"
+      >
+        <AlertDialog.Container size="sm">
+          <AlertDialog.Dialog>
+            <AlertDialog.CloseTrigger />
+            <AlertDialog.Header>
+              <AlertDialog.Icon status="warning" />
+              <AlertDialog.Heading>Reprocesar todos los pendientes</AlertDialog.Heading>
+            </AlertDialog.Header>
+            <AlertDialog.Body>
+              Se va a volver a descargar y parsear cada archivo en estado <strong>Pendiente</strong>
+              {query.trim() ? ` que coincida con "${query.trim()}"` : ""}. Esto puede tomar varios
+              minutos dependiendo de la cantidad de archivos.
+            </AlertDialog.Body>
+            <AlertDialog.Footer>
+              <Button variant="ghost" onPress={() => setIsReprocessPendingOpen(false)}>
+                Cancelar
+              </Button>
+              <Button
+                variant="secondary"
+                onPress={() => {
+                  setIsReprocessPendingOpen(false);
+                  void handleReprocessAllPending();
+                }}
+                isPending={reprocessPendingMutation.isPending}
+              >
+                <RotateCw size={14} />
+                Reprocesar
+              </Button>
+            </AlertDialog.Footer>
+          </AlertDialog.Dialog>
+        </AlertDialog.Container>
+      </AlertDialog.Backdrop>
+
       <AlertDialog.Backdrop
         isOpen={isRereadAllOpen}
         onOpenChange={setIsRereadAllOpen}

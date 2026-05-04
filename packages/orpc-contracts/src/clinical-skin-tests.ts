@@ -178,6 +178,10 @@ export const skinTestProcessDiscoveredInputSchema = z.object({
   query: z.string().optional(),
 });
 
+export const skinTestReprocessPendingInputSchema = z.object({
+  query: z.string().optional(),
+});
+
 export const skinTestArchiveSnapshotsInputSchema = z.object({
   accountId: z.string().optional(),
   dryRun: z.boolean().optional(),
@@ -492,6 +496,10 @@ export const clinicalSkinTestsContract = {
   processDiscoveredImports: oc
     .route({ method: "POST", path: "/imports/process-discovered" })
     .input(skinTestProcessDiscoveredInputSchema)
+    .output(skinTestSyncOutputSchema),
+  reprocessPendingImports: oc
+    .route({ method: "POST", path: "/imports/reprocess-pending" })
+    .input(skinTestReprocessPendingInputSchema)
     .output(skinTestSyncOutputSchema),
   reclassifyXlsxLibrary: oc
     .route({ method: "POST", path: "/xlsx-library/reclassify" })

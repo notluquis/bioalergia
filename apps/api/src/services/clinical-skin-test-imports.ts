@@ -40,6 +40,7 @@ export type SkinTestSyncProgressPhase =
   | "completed"
   | "delta"
   | "discovered-processing"
+  | "pending-reprocessing"
   | "processing"
   | "scanned"
   | "starting";
@@ -2117,6 +2118,71 @@ export async function processDiscoveredSkinTestImports(options?: {
   };
 
   emit(`Preparando ${total} descubierto(s)`, 0);
+
+  for (const [index, row] of idsResult.rows.entries()) {
+    if (options?.shouldCancel?.()) {
+      throw new Error("SYNC_CANCELLED");
+    }
+
+    emit(`Procesando ${index + 1}/${total}: ${row.filename}`, index, row.filename);
+    try {
+      const result = await reprocessSkinTestImport(row.id);
+      if (result.status === "IMPORTED") imported += 1;
+      else if (result.status === "PENDING_REVIEW") pending += 1;
+      else if (result.status === "SKIPPED") skipped += 1;
+      else if (result.status === "ERROR") errors += 1;
+    } catch (error) {
+      errors += 1;
+      await sql`
+        UPDATE clinical_skin_test_imports
+        SET status = 'ERROR',
+            error = ${error instanceof Error ? error.message : String(error)},
+            updated_at = now()
+        WHERE id = ${row.id}
+      `.execute(kysely);
+    }
+    emit(`Procesados ${index + 1}/${total}`, index + 1, row.filename);
+  }
+
+  return { errors, imported, pending, processed: total, skipped, total };
+}
+
+export async function reprocessPendingSkinTestImports(options?: {
+  onProgress?: (progress: SkinTestSyncProgress & { message: string }) => void;
+  query?: string;
+  shouldCancel?: () => boolean;
+}) {
+  const idsResult = await sql<{ id: string; filename: string }>`
+    SELECT i.id, i.filename
+    FROM clinical_skin_test_imports i
+    WHERE ${buildImportWhereSql({ query: options?.query, status: "PENDING_REVIEW" })}
+    ORDER BY i.updated_at ASC
+  `.execute(kysely);
+
+  const total = idsResult.rows.length;
+  let imported = 0;
+  let pending = 0;
+  let skipped = 0;
+  let errors = 0;
+
+  const emit = (message: string, processed: number, filename?: string) => {
+    options?.onProgress?.({
+      errors,
+      failed: errors,
+      filesProcessed: processed,
+      filesTotal: total,
+      filename,
+      imported,
+      pending,
+      phase: "pending-reprocessing",
+      processed,
+      skipped,
+      total,
+      message,
+    });
+  };
+
+  emit(`Preparando ${total} pendiente(s)`, 0);
 
   for (const [index, row] of idsResult.rows.entries()) {
     if (options?.shouldCancel?.()) {

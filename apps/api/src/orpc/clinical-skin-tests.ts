@@ -28,6 +28,7 @@ import {
   skinTestJobStatusInputSchema,
   skinTestJobStatusOutputSchema,
   skinTestProcessDiscoveredInputSchema,
+  skinTestReprocessPendingInputSchema,
   skinTestsBySeriesInputSchema,
   skinTestsBySeriesOutputSchema,
   skinTestSyncInputSchema,
@@ -42,6 +43,7 @@ import {
   startClinicalSkinTestArchiveSnapshotsJob,
   startClinicalSkinTestImportJob,
   startClinicalSkinTestProcessDiscoveredJob,
+  startClinicalSkinTestReprocessPendingJob,
   startClinicalXlsxLibraryReclassifyJob,
 } from "../lib/clinical-skin-tests/clinical-skin-test-scheduler";
 import { cancelJob, getActiveJobsByType, getJobStatus } from "../lib/jobQueue";
@@ -307,6 +309,19 @@ const routerBase = {
         jobId: await startClinicalSkinTestProcessDiscoveredJob({
           query: input.query,
           trigger: "manual:process-discovered",
+        }),
+      };
+    }),
+
+  reprocessPendingImports: updateClinicalSkinTests
+    .route({ method: "POST", path: "/imports/reprocess-pending" })
+    .input(skinTestReprocessPendingInputSchema)
+    .output(skinTestSyncOutputSchema)
+    .handler(async ({ input }: { input: z.input<typeof skinTestReprocessPendingInputSchema> }) => {
+      return {
+        jobId: await startClinicalSkinTestReprocessPendingJob({
+          query: input.query,
+          trigger: "manual:reprocess-pending",
         }),
       };
     }),
