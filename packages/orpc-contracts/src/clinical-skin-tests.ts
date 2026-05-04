@@ -8,6 +8,7 @@ export const skinTestImportStatusSchema = z.enum([
   "REJECTED",
   "ERROR",
   "SKIPPED",
+  "TEMPLATE",
 ]);
 
 export const clinicalDocumentImportKindSchema = z.enum(["CLINICAL_RECORD", "VISIT_SHEET", "OTHER"]);

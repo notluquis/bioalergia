@@ -12926,7 +12926,8 @@ export class SchemaType implements SchemaDef {
                 IMPORTED: "IMPORTED",
                 REJECTED: "REJECTED",
                 ERROR: "ERROR",
-                SKIPPED: "SKIPPED"
+                SKIPPED: "SKIPPED",
+                TEMPLATE: "TEMPLATE"
             }
         },
         ClinicalSkinTestWorkbookSnapshotStatus: {

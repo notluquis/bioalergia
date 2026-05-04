@@ -2272,6 +2272,7 @@ enum ClinicalSkinTestImportStatus {
   REJECTED
   ERROR
   SKIPPED
+  TEMPLATE
 }
 
 enum ClinicalSkinTestWorkbookSnapshotStatus {

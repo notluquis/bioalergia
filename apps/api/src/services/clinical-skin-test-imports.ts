@@ -94,7 +94,8 @@ export type SkinTestImportStatus =
   | "IMPORTED"
   | "PENDING_REVIEW"
   | "REJECTED"
-  | "SKIPPED";
+  | "SKIPPED"
+  | "TEMPLATE";
 
 type SkinTestWorkbookSnapshotStatus = "ARCHIVED" | "ERROR" | "MISSING" | "STALE";
 
@@ -955,7 +956,7 @@ export async function processOneDriveSkinTestItem(
           results: parsed.results,
         },
         resultHash,
-        status: "SKIPPED",
+        status: "TEMPLATE",
       });
       return await getSkinTestImport(importId);
     }
@@ -1388,7 +1389,8 @@ async function findOneDriveSharedDuplicateImport(
         WHEN 'PENDING_REVIEW' THEN 1
         WHEN 'DISCOVERED' THEN 2
         WHEN 'SKIPPED' THEN 3
-        ELSE 4
+        WHEN 'TEMPLATE' THEN 4
+        ELSE 5
       END,
       created_at ASC
     LIMIT 1
@@ -1823,7 +1825,7 @@ export async function reprocessSkinTestImport(id: string) {
     await sql`
       UPDATE clinical_skin_test_imports
       SET parser_version = ${SKIN_TEST_PARSER_VERSION},
-          status = 'SKIPPED',
+          status = 'TEMPLATE',
           confidence = 0,
           error = null,
           issues = ${JSON.stringify([templateIssue])}::jsonb,
@@ -2129,7 +2131,7 @@ export async function processDiscoveredSkinTestImports(options?: {
       const result = await reprocessSkinTestImport(row.id);
       if (result.status === "IMPORTED") imported += 1;
       else if (result.status === "PENDING_REVIEW") pending += 1;
-      else if (result.status === "SKIPPED") skipped += 1;
+      else if (result.status === "SKIPPED" || result.status === "TEMPLATE") skipped += 1;
       else if (result.status === "ERROR") errors += 1;
     } catch (error) {
       errors += 1;
@@ -2194,7 +2196,7 @@ export async function reprocessPendingSkinTestImports(options?: {
       const result = await reprocessSkinTestImport(row.id);
       if (result.status === "IMPORTED") imported += 1;
       else if (result.status === "PENDING_REVIEW") pending += 1;
-      else if (result.status === "SKIPPED") skipped += 1;
+      else if (result.status === "SKIPPED" || result.status === "TEMPLATE") skipped += 1;
       else if (result.status === "ERROR") errors += 1;
     } catch (error) {
       errors += 1;
@@ -3430,7 +3432,8 @@ async function findQuickXorHashDuplicateImport(
         WHEN 'IMPORTED' THEN 0
         WHEN 'PENDING_REVIEW' THEN 1
         WHEN 'SKIPPED' THEN 2
-        ELSE 3
+        WHEN 'TEMPLATE' THEN 3
+        ELSE 4
       END,
       created_at ASC
     LIMIT 1
@@ -3457,7 +3460,8 @@ async function findWorkbookSha256DuplicateImport(
         WHEN 'IMPORTED' THEN 0
         WHEN 'PENDING_REVIEW' THEN 1
         WHEN 'SKIPPED' THEN 2
-        ELSE 3
+        WHEN 'TEMPLATE' THEN 3
+        ELSE 4
       END,
       i.created_at ASC
     LIMIT 1

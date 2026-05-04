@@ -79,6 +79,7 @@ const STATUS_FILTER_OPTIONS: Array<{ label: string; value: "ALL" | SkinTestImpor
   { label: "Con error", value: "ERROR" },
   { label: "Rechazados", value: "REJECTED" },
   { label: "Omitidos", value: "SKIPPED" },
+  { label: "Plantillas", value: "TEMPLATE" },
 ];
 
 const STATUS_LABELS: Record<SkinTestImportStatus, string> = {
@@ -88,6 +89,7 @@ const STATUS_LABELS: Record<SkinTestImportStatus, string> = {
   PENDING_REVIEW: "Pendiente",
   REJECTED: "Rechazado",
   SKIPPED: "Omitido",
+  TEMPLATE: "Plantilla",
 };
 
 const STATUS_COLORS: Record<SkinTestImportStatus, "danger" | "default" | "success" | "warning"> = {
@@ -97,6 +99,7 @@ const STATUS_COLORS: Record<SkinTestImportStatus, "danger" | "default" | "succes
   PENDING_REVIEW: "warning",
   REJECTED: "danger",
   SKIPPED: "default",
+  TEMPLATE: "default",
 };
 
 const ARCHIVE_LIMIT_OPTIONS = [
