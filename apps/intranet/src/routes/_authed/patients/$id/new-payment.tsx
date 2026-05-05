@@ -5,10 +5,9 @@ import {
   DateField,
   DatePicker,
   FieldError,
+  Form,
   Label,
-  ListBox,
   NumberField,
-  Select,
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { useForm } from "@tanstack/react-form";
@@ -19,6 +18,7 @@ import { ChevronLeft, Save } from "lucide-react";
 import { z } from "zod";
 import {
   TanStackInputField,
+  TanStackSelectField,
   TanStackTextAreaField,
 } from "@/components/forms/TanStackFieldControls";
 import { createPatientPayment, fetchPatientBudgets } from "@/features/patients/api";
@@ -123,13 +123,14 @@ function NewPaymentPage() {
       </div>
 
       <Card className="p-6">
-        <form
-          onSubmit={(e) => {
+        <Form
+          onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
             e.preventDefault();
             e.stopPropagation();
             void form.handleSubmit();
           }}
           className="space-y-6"
+          validationBehavior="aria"
         >
           <div className="grid gap-4 sm:grid-cols-2">
             <form.Field name="paymentDate">
@@ -215,72 +216,31 @@ function NewPaymentPage() {
 
             <form.Field name="paymentMethod">
               {(field) => (
-                <Select
-                  value={field.state.value}
-                  onChange={(key) => {
-                    if (key) {
-                      field.handleChange(key as PaymentForm["paymentMethod"]);
-                    }
-                  }}
-                >
-                  <Label>Método de Pago</Label>
-                  <Select.Trigger>
-                    <Select.Value />
-                    <Select.Indicator />
-                  </Select.Trigger>
-                  <Select.Popover>
-                    <ListBox>
-                      <ListBox.Item
-                        id="Transferencia"
-                        key="Transferencia"
-                        textValue="Transferencia"
-                      >
-                        Transferencia
-                      </ListBox.Item>
-                      <ListBox.Item id="Efectivo" key="Efectivo" textValue="Efectivo">
-                        Efectivo
-                      </ListBox.Item>
-                      <ListBox.Item id="Tarjeta" key="Tarjeta" textValue="Tarjeta">
-                        Tarjeta
-                      </ListBox.Item>
-                      <ListBox.Item id="Otro" key="Otro" textValue="Otro">
-                        Otro/Varios
-                      </ListBox.Item>
-                    </ListBox>
-                  </Select.Popover>
-                </Select>
+                <TanStackSelectField
+                  field={field}
+                  label="Método de Pago"
+                  options={[
+                    { label: "Transferencia", value: "Transferencia" },
+                    { label: "Efectivo", value: "Efectivo" },
+                    { label: "Tarjeta", value: "Tarjeta" },
+                    { label: "Otro/Varios", value: "Otro" },
+                  ]}
+                  required
+                />
               )}
             </form.Field>
 
             <form.Field name="budgetId">
               {(field) => (
-                <Select
-                  placeholder="Seleccione un presupuesto"
-                  value={field.state.value}
-                  onChange={(key) => {
-                    field.handleChange(key ? String(key) : "");
-                  }}
-                >
-                  <Label>Vincular a Presupuesto (Opcional)</Label>
-                  <Select.Trigger>
-                    <Select.Value />
-                    <Select.Indicator />
-                  </Select.Trigger>
-                  <Select.Popover>
-                    <ListBox>
-                      {(budgets || []).map((b) => (
-                        <ListBox.Item id={String(b.id)} key={String(b.id)} textValue={b.title}>
-                          {b.title} (
-                          {new Intl.NumberFormat("es-CL", {
-                            style: "currency",
-                            currency: "CLP",
-                          }).format(Number(b.finalAmount))}
-                          )
-                        </ListBox.Item>
-                      ))}
-                    </ListBox>
-                  </Select.Popover>
-                </Select>
+                <TanStackSelectField
+                  emptyOption={{ label: "Sin presupuesto", value: "" }}
+                  field={field}
+                  label="Vincular a Presupuesto (Opcional)"
+                  options={(budgets ?? []).map((b) => ({
+                    label: `${b.title} (${new Intl.NumberFormat("es-CL", { currency: "CLP", style: "currency" }).format(Number(b.finalAmount))})`,
+                    value: String(b.id),
+                  }))}
+                />
               )}
             </form.Field>
 
@@ -326,7 +286,7 @@ function NewPaymentPage() {
               Registrar Pago
             </Button>
           </div>
-        </form>
+        </Form>
       </Card>
     </div>
   );
