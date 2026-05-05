@@ -1,6 +1,6 @@
 import * as XLSX from "xlsx";
 
-export const SKIN_TEST_PARSER_VERSION = "2026-05-04.1";
+export const SKIN_TEST_PARSER_VERSION = "2026-05-05.1";
 
 export interface SkinTestIssue {
   code: string;
@@ -58,6 +58,10 @@ interface CellPoint {
 const MONTHS: Record<string, number> = {
   abril: 4,
   agosto: 8,
+  agsoto: 8,
+  dciembre: 12,
+  dieciembre: 12,
+  diciembrre: 12,
   diciembre: 12,
   enero: 1,
   febrero: 2,
@@ -358,15 +362,24 @@ export function parseDateToISO(value: null | string): null | string {
     .toLowerCase()
     .replace(/(\d+)de\b/g, "$1 de")
     .replace(/\s+del\s+/g, " ")
-    .replace(/\s+de\s+/g, " ");
-  const isoLike = text.match(/\b(\d{4})\s*[-/.]\s*(\d{1,2})\s*[-/.]\s*(\d{1,2})\b/);
+    .replace(/\s+de\s+/g, " ")
+    .replace(/\s+de\s+/g, " "); // second pass for "de de" doubles
+  const isoLike = text.match(/\b(\d{4})\s*[-/.,]\s*(\d{1,2})\s*[-/.,]\s*(\d{1,2})\b/);
   if (isoLike) {
     const year = Number(isoLike[1]);
     const month = Number(isoLike[2]);
     const day = Number(isoLike[3]);
     return formatISODate(year, month, day);
   }
-  const numeric = text.match(/\b(\d{1,2})\s*[-/.]\s*(\d{1,2})\s*[-/.]\s*(\d{2,4})\b/);
+  // handle missing second separator: "12/102018" → day=12, month=10, year=2018
+  const missingLastSep = text.match(/\b(\d{1,2})\s*[-/.,](\d{2})(\d{4})\b/);
+  if (missingLastSep) {
+    const day = Number(missingLastSep[1]);
+    const month = Number(missingLastSep[2]);
+    const year = normalizeYear(Number(missingLastSep[3]));
+    return formatISODate(year, month, day);
+  }
+  const numeric = text.match(/\b(\d{1,2})\s*[-/.,]\s*(\d{1,2})\s*[-/.,]\s*(\d{2,4})\b/);
   if (numeric) {
     const day = Number(numeric[1]);
     const month = Number(numeric[2]);
@@ -376,7 +389,9 @@ export function parseDateToISO(value: null | string): null | string {
   const written = text.match(/\b(\d{1,2})[\s-]+([a-z]+)[\s-]+(\d{2,4})\b/);
   if (written) {
     const day = Number(written[1]);
-    const month = MONTHS[written[2] ?? ""];
+    const rawMonth = written[2] ?? "";
+    // handle "mayode" type concatenations — strip trailing "de" if month not found
+    const month = MONTHS[rawMonth] ?? MONTHS[rawMonth.replace(/de$/, "")];
     const year = normalizeYear(Number(written[3]));
     if (month) return formatISODate(year, month, day);
   }
