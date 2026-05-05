@@ -109,7 +109,7 @@ export function DoctoraliaSyncLogsPanel() {
           </Button>
         </Card.Header>
         <Card.Content className="space-y-3">
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap items-end gap-3">
             <Select
               className="w-40"
               onChange={(key) => {
