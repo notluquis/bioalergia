@@ -64,12 +64,14 @@ RUN --mount=type=cache,id=s/4990f681-049b-467f-9034-ef5c74a55f0a-/pnpm/store,tar
 FROM node:22-bookworm AS runner
 WORKDIR /app
 ENV NODE_ENV=production
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
 COPY --from=build /app/deploy/ .
 
-# Install Chromium + all system deps matching the deployed playwright version.
-# Must run as root before switching to unprivileged user.
-RUN npx playwright@1.59.1 install --with-deps chromium
+# Install to /ms-playwright (PLAYWRIGHT_BROWSERS_PATH) so root-installed browsers
+# are accessible to the unprivileged node user at runtime.
+RUN npx playwright@1.59.1 install --with-deps chromium \
+    && chmod -R o+rx /ms-playwright
 
 USER node
 
