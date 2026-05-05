@@ -4,7 +4,7 @@ import { MercadoPagoSettingsPage } from "@/pages/settings/MercadoPagoSettingsPag
 
 export const Route = createFileRoute("/_authed/settings/mercadopago")({
   staticData: {
-    nav: { iconKey: "CreditCard", label: "MercadoPago", order: 6, section: "Sistema" },
+    nav: { iconKey: "CreditCard", label: "MercadoPago", order: 60, section: "Sistema" },
     permission: { action: "read", subject: "Integration" },
   },
   beforeLoad: ({ context }) => {

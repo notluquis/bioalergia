@@ -6,7 +6,7 @@ import { TimesheetsPage } from "@/features/hr/timesheets/pages/TimesheetsPage";
 
 export const Route = createFileRoute("/_authed/hr/timesheets")({
   staticData: {
-    nav: { iconKey: "Clock", label: "Control Horario", order: 4, section: "Operaciones" },
+    nav: { iconKey: "Timer", label: "Control Horario", order: 40, section: "Personal" },
     permission: { action: "read", subject: "TimesheetList" },
     relatedSubjects: ["Timesheet"],
   },

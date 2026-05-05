@@ -3,7 +3,7 @@ import { ShipmentsPage } from "@/features/shipments/pages/ShipmentsPage";
 
 export const Route = createFileRoute("/_authed/operations/shipments")({
   staticData: {
-    nav: { iconKey: "Truck", label: "Despachos", order: 10, section: "Operaciones" },
+    nav: { iconKey: "Truck", label: "Despachos", order: 30, section: "Logística" },
     permission: { action: "read", subject: "Shipment" },
     title: "Despachos",
   },

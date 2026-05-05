@@ -4,7 +4,7 @@ import { DailyBalancePage } from "@/features/production-balances/DailyBalancePag
 
 export const Route = createFileRoute("/_authed/finanzas/production-balances")({
   staticData: {
-    nav: { iconKey: "FileSpreadsheet", label: "Balance Diario", order: 7, section: "Finanzas" },
+    nav: { iconKey: "FileSpreadsheet", label: "Balance Diario", order: 40, section: "Finanzas" },
     permission: { action: "read", subject: "DailyBalance" },
     relatedSubjects: [
       "Balance",

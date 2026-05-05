@@ -7,7 +7,7 @@ const routeApi = getRouteApi("/_authed/clinical/");
 export const Route = createFileRoute("/_authed/clinical/")({
   component: ClinicalSeriesPage,
   staticData: {
-    nav: { iconKey: "ListChecks", label: "Series", order: 1, section: "Prestaciones" },
+    nav: { iconKey: "ListChecks", label: "Series", order: 10, section: "Clínica" },
     permission: { action: "read", subject: "ClinicalSeries" },
     title: "Series clínicas",
   },

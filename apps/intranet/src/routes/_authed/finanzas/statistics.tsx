@@ -4,7 +4,7 @@ import { FinanzasStatsPage } from "@/features/finance/statistics/pages/FinanzasS
 
 export const Route = createFileRoute("/_authed/finanzas/statistics")({
   staticData: {
-    nav: { iconKey: "BarChart3", label: "Estadísticas", order: 4, section: "Finanzas" },
+    nav: { iconKey: "BarChart3", label: "Estadísticas", order: 50, section: "Finanzas" },
     permission: { action: "read", subject: "TransactionStats" },
     title: "Estadísticas financieras",
   },

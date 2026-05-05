@@ -4,7 +4,7 @@ import { HaulmerSyncPage } from "@/pages/settings/HaulmerSyncPage";
 
 export const Route = createFileRoute("/_authed/settings/haulmer")({
   staticData: {
-    nav: { iconKey: "Download", label: "Haulmer", order: 7, section: "Sistema" },
+    nav: { iconKey: "ArrowDownToLine", label: "Haulmer", order: 70, section: "Sistema" },
     permission: { action: "read", subject: "Integration" },
     relatedSubjects: ["HaulmerAuthToken", "HaulmerSyncLog"],
   },

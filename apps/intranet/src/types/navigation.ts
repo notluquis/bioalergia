@@ -10,13 +10,13 @@ export interface NavConfig {
 }
 
 export type NavSection =
-  | "Calendario"
+  | "Clínica"
+  | "Comunicaciones"
   | "Finanzas"
-  | "Insumos"
-  | "Operaciones"
+  | "Logística"
   | "Outreach"
-  | "Prestaciones"
-  | "Servicios"
+  | "Pacientes"
+  | "Personal"
   | "Sistema";
 
 export interface RoutePermission {

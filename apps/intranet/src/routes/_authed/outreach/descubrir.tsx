@@ -3,7 +3,7 @@ import { OutreachDiscoverPage } from "@/features/outreach/pages/OutreachDiscover
 
 export const Route = createFileRoute("/_authed/outreach/descubrir")({
   staticData: {
-    nav: { iconKey: "Search", label: "Descubrir empresas", order: 5, section: "Outreach" },
+    nav: { iconKey: "SearchCode", label: "Descubrir", order: 40, section: "Outreach" },
     permission: { action: "create", subject: "OutreachEstablishment" },
     title: "Descubrir empresas",
   },

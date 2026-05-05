@@ -4,7 +4,7 @@ import { DoctoraliaSettingsPage } from "@/pages/settings/DoctoraliaSettingsPage"
 
 export const Route = createFileRoute("/_authed/settings/doctoralia")({
   staticData: {
-    nav: { iconKey: "Mail", label: "Doctoralia", order: 8, section: "Sistema" },
+    nav: { iconKey: "Mail", label: "Doctoralia", order: 80, section: "Sistema" },
     permission: { action: "read", subject: "Integration" },
     relatedSubjects: ["WhatsappNotification"],
   },

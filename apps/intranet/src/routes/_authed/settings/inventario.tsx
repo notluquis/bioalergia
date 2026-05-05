@@ -4,7 +4,7 @@ import { InventorySettingsPage } from "@/pages/settings/InventorySettingsPage";
 
 export const Route = createFileRoute("/_authed/settings/inventario")({
   staticData: {
-    nav: { iconKey: "PackagePlus", label: "Conf. Inventario", order: 5, section: "Sistema" },
+    nav: { iconKey: "PackageSearch", label: "Inventario Config", order: 50, section: "Sistema" },
     permission: { action: "update", subject: "InventorySetting" },
     relatedSubjects: [
       "InventoryCategory",

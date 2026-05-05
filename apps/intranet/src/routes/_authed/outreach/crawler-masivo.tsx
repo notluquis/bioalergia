@@ -3,7 +3,7 @@ import { OutreachBulkCrawlPage } from "@/features/outreach/pages/OutreachBulkCra
 
 export const Route = createFileRoute("/_authed/outreach/crawler-masivo")({
   staticData: {
-    nav: { iconKey: "Bug", label: "Crawler masivo", order: 6, section: "Outreach" },
+    nav: { iconKey: "Bot", label: "Crawler", order: 50, section: "Outreach" },
     permission: { action: "update", subject: "OutreachEstablishment" },
     title: "Crawler masivo",
   },

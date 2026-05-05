@@ -4,7 +4,7 @@ import { TimesheetAuditPage } from "@/features/hr/timesheets-audit/pages/Timeshe
 
 export const Route = createFileRoute("/_authed/hr/audit")({
   staticData: {
-    nav: { iconKey: "History", label: "Auditoría HR", order: 5, section: "Operaciones" },
+    nav: { iconKey: "History", label: "Auditoría RRHH", order: 60, section: "Personal" },
     permission: { action: "read", subject: "TimesheetAudit" },
   },
   beforeLoad: ({ context }) => {

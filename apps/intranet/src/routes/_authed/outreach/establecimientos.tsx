@@ -3,7 +3,7 @@ import { OutreachEstablishmentsPage } from "@/features/outreach/pages/OutreachEs
 
 export const Route = createFileRoute("/_authed/outreach/establecimientos")({
   staticData: {
-    nav: { iconKey: "School", label: "Establecimientos", order: 2, section: "Outreach" },
+    nav: { iconKey: "School", label: "Establecimientos", order: 20, section: "Outreach" },
     permission: { action: "read", subject: "OutreachEstablishment" },
     title: "Establecimientos",
   },

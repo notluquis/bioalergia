@@ -4,7 +4,7 @@ import { RolesSettingsPage } from "@/pages/settings/RolesSettingsPage";
 
 export const Route = createFileRoute("/_authed/settings/roles")({
   staticData: {
-    nav: { iconKey: "UserCog", label: "Roles", order: 2, section: "Sistema" },
+    nav: { iconKey: "ShieldCheck", label: "Roles", order: 20, section: "Sistema" },
     permission: { action: "read", subject: "Role" },
     relatedSubjects: ["Permission"],
     title: "Roles y permisos",

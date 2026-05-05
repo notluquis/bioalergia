@@ -6,8 +6,8 @@ export const Route = createFileRoute("/_authed/finanzas/dashboard")({
   staticData: {
     nav: {
       iconKey: "LayoutDashboard",
-      label: "Tablero Financiero",
-      order: 1,
+      label: "Tablero",
+      order: 10,
       section: "Finanzas",
     },
     permission: { action: "read", subject: "Event" },

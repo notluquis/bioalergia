@@ -3,7 +3,7 @@ import { WaCloudTemplatesPage } from "@/features/wa-cloud/pages/WaCloudTemplates
 
 export const Route = createFileRoute("/_authed/wa-cloud/plantillas")({
   staticData: {
-    nav: { iconKey: "ClipboardList", label: "WA Plantillas", order: 2, section: "Operaciones" },
+    nav: { iconKey: "LayoutList", label: "Plantillas WA", order: 20, section: "Comunicaciones" },
     permission: { action: "read", subject: "WaBusinessAccount" },
     title: "WhatsApp Cloud — Plantillas",
   },

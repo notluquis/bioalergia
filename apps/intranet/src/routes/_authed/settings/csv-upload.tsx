@@ -4,7 +4,7 @@ import { CSVUploadPage } from "@/pages/settings/CSVUploadPage";
 
 export const Route = createFileRoute("/_authed/settings/csv-upload")({
   staticData: {
-    nav: { iconKey: "Upload", label: "Carga Masiva", order: 4, section: "Sistema" },
+    nav: { iconKey: "Upload", label: "Carga Masiva", order: 40, section: "Sistema" },
     permission: { action: "create", subject: "BulkData" },
   },
   beforeLoad: ({ context }) => {

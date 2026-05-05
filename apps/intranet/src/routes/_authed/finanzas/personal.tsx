@@ -11,7 +11,7 @@ const searchSchema = z.object({
 export const Route = createFileRoute("/_authed/finanzas/personal")({
   validateSearch: searchSchema,
   staticData: {
-    nav: { iconKey: "User", label: "Personal", order: 21, section: "Finanzas" },
+    nav: { iconKey: "Coins", label: "Personal", order: 90, section: "Finanzas" },
     permission: { action: "read", subject: "PersonalCredit" },
     breadcrumb: "Personal",
   },

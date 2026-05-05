@@ -3,7 +3,7 @@ import { UserManagementPage } from "@/features/users/pages/UserManagementPage";
 
 export const Route = createFileRoute("/_authed/settings/users/")({
   staticData: {
-    nav: { iconKey: "Users", label: "Usuarios", order: 1, section: "Sistema" },
+    nav: { iconKey: "UserCog", label: "Usuarios", order: 10, section: "Sistema" },
     permission: { action: "read", subject: "User" },
     title: "Gestión de usuarios",
   },

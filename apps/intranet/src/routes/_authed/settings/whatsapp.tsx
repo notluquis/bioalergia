@@ -4,7 +4,7 @@ import { WhatsappSettingsPage } from "@/pages/settings/WhatsappSettingsPage";
 
 export const Route = createFileRoute("/_authed/settings/whatsapp")({
   staticData: {
-    nav: { iconKey: "MessageCircle", label: "WhatsApp", order: 9, section: "Sistema" },
+    nav: { iconKey: "MessageCircle", label: "WhatsApp", order: 90, section: "Sistema" },
     permission: { action: "read", subject: "Integration" },
     relatedSubjects: ["WhatsappNotification", "PushSubscription"],
   },

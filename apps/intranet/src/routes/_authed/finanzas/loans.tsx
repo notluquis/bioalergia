@@ -6,7 +6,7 @@ import { LoansPage } from "@/features/finance/loans/pages/LoansPage";
 
 export const Route = createFileRoute("/_authed/finanzas/loans")({
   staticData: {
-    nav: { iconKey: "PiggyBank", label: "Préstamos", order: 8, section: "Finanzas" },
+    nav: { iconKey: "PiggyBank", label: "Préstamos", order: 80, section: "Finanzas" },
     permission: { action: "read", subject: "Loan" },
     title: "Gestión de préstamos",
   },

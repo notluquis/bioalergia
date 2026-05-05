@@ -25,10 +25,10 @@ export const Route = createFileRoute("/_authed/clinical/doctoralia")({
   component: DoctoraliaAnalyticsPage,
   staticData: {
     nav: {
-      iconKey: "ClipboardList",
+      iconKey: "Stethoscope",
       label: "Doctoralia",
-      order: 2,
-      section: "Prestaciones",
+      order: 20,
+      section: "Clínica",
     },
     permission: { action: "read", subject: "DoctoraliaCalendarAppointment" },
     title: "Doctoralia",

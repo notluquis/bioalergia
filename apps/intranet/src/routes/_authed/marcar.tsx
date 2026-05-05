@@ -4,7 +4,7 @@ import { MarcarPage } from "@/features/attendance/MarcarPage";
 
 export const Route = createFileRoute("/_authed/marcar")({
   staticData: {
-    nav: { iconKey: "Fingerprint", label: "Marcaje", order: 10, section: "Operaciones" },
+    nav: { iconKey: "Fingerprint", label: "Marcaje", order: 20, section: "Personal" },
     permission: { action: "create", subject: "Attendance" },
     relatedSubjects: ["Attendance"],
   },

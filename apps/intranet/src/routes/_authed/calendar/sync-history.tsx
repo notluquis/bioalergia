@@ -5,7 +5,7 @@ import { CalendarSyncHistoryPage } from "@/pages/CalendarSyncHistoryPage";
 
 export const Route = createFileRoute("/_authed/calendar/sync-history")({
   staticData: {
-    nav: { iconKey: "Clock", label: "Historial Sync", order: 5, section: "Calendario" },
+    nav: { iconKey: "Clock", label: "Historial Sync", order: 85, section: "Sistema" },
     permission: { action: "read", subject: "CalendarSyncLog" },
     relatedSubjects: [
       "Calendar",

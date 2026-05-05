@@ -4,7 +4,7 @@ import { Supplies } from "@/features/operations/supplies/pages/SuppliesPage";
 
 export const Route = createFileRoute("/_authed/operations/supplies")({
   staticData: {
-    nav: { iconKey: "PackagePlus", label: "Solicitudes", order: 2, section: "Insumos" },
+    nav: { iconKey: "PackagePlus", label: "Solicitudes", order: 10, section: "Logística" },
     permission: { action: "read", subject: "SupplyRequest" },
     title: "Solicitudes de insumos",
   },

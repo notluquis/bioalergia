@@ -6,7 +6,7 @@ import { ReportsPage } from "@/features/hr/reports/pages/ReportsPage";
 
 export const Route = createFileRoute("/_authed/hr/reports")({
   staticData: {
-    nav: { iconKey: "FileSpreadsheet", label: "Reportes HR", order: 3, section: "Operaciones" },
+    nav: { iconKey: "FileBarChart", label: "Reportes RRHH", order: 50, section: "Personal" },
     permission: { action: "read", subject: "Report" },
   },
   beforeLoad: ({ context }) => {

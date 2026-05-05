@@ -3,7 +3,7 @@ import { OutreachCampaignsPage } from "@/features/outreach/pages/OutreachCampaig
 
 export const Route = createFileRoute("/_authed/outreach/campanas")({
   staticData: {
-    nav: { iconKey: "Megaphone", label: "Campañas", order: 3, section: "Outreach" },
+    nav: { iconKey: "Megaphone", label: "Campañas", order: 30, section: "Outreach" },
     permission: { action: "read", subject: "OutreachEstablishment" },
     title: "Campañas",
   },

@@ -5,9 +5,9 @@ export const Route = createFileRoute("/_authed/finanzas/daily")({
   component: DailyIncomePage,
   staticData: {
     nav: {
-      iconKey: "CalendarDays",
+      iconKey: "Receipt",
       label: "Ingresos Diarios",
-      order: 2,
+      order: 30,
       section: "Finanzas",
     },
     permission: { action: "read", subject: "Event" },

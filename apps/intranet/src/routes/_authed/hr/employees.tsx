@@ -5,7 +5,7 @@ import { EmployeesPage } from "@/features/hr/employees/pages/EmployeesPage";
 
 export const Route = createFileRoute("/_authed/hr/employees")({
   staticData: {
-    nav: { iconKey: "Users2", label: "Empleados", order: 2, section: "Operaciones" },
+    nav: { iconKey: "UserCheck", label: "Empleados", order: 10, section: "Personal" },
     permission: { action: "read", subject: "Employee" },
   },
   beforeLoad: ({ context }) => {

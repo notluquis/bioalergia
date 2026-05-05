@@ -39,9 +39,9 @@ export const Route = createFileRoute("/_authed/finanzas/dte-analytics")({
   component: DTEAnalyticsPage,
   staticData: {
     nav: {
-      iconKey: "BarChart3",
+      iconKey: "ScanBarcode",
       label: "Análisis DTEs",
-      order: 10,
+      order: 60,
       section: "Finanzas",
     },
     permission: { action: "read", subject: "DTEPurchaseDetail" },

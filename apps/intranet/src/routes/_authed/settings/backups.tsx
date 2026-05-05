@@ -4,7 +4,7 @@ import { BackupSettingsPage } from "@/pages/settings/BackupSettingsPage";
 
 export const Route = createFileRoute("/_authed/settings/backups")({
   staticData: {
-    nav: { iconKey: "Database", label: "Backups", order: 4, section: "Sistema" },
+    nav: { iconKey: "HardDrive", label: "Backups", order: 30, section: "Sistema" },
     permission: { action: "read", subject: "Backup" },
     relatedSubjects: ["DebugToken", "Setting"],
     title: "Copias de seguridad",

@@ -3,7 +3,7 @@ import { WaCloudSettingsPage } from "@/features/wa-cloud/pages/WaCloudSettingsPa
 
 export const Route = createFileRoute("/_authed/wa-cloud/configuracion")({
   staticData: {
-    nav: { iconKey: "Settings2", label: "WA Configuración", order: 9, section: "Sistema" },
+    nav: { iconKey: "Settings2", label: "WA Configuración", order: 110, section: "Sistema" },
     permission: { action: "update", subject: "WaBusinessAccount" },
     title: "WhatsApp Cloud — Configuración",
   },

@@ -3,7 +3,7 @@ import { OutreachDashboardPage } from "@/features/outreach/pages/OutreachDashboa
 
 export const Route = createFileRoute("/_authed/outreach/")({
   staticData: {
-    nav: { iconKey: "GraduationCap", label: "Outreach", order: 1, section: "Outreach" },
+    nav: { iconKey: "GraduationCap", label: "Outreach", order: 10, section: "Outreach" },
     permission: { action: "read", subject: "OutreachEstablishment" },
     title: "Outreach a Colegios",
   },

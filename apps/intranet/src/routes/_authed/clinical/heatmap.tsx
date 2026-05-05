@@ -21,7 +21,7 @@ export const Route = createFileRoute("/_authed/clinical/heatmap")({
     return parsed;
   },
   staticData: {
-    nav: { iconKey: "LayoutDashboard", label: "Heatmap", order: 4, section: "Prestaciones" },
+    nav: { iconKey: "LayoutGrid", label: "Heatmap", order: 50, section: "Clínica" },
     permission: { action: "read", subject: "CalendarHeatmap" },
     title: "Heatmap clínico",
   },

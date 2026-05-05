@@ -1,42 +1,59 @@
 import type { AnyRoute } from "@tanstack/react-router";
 import {
+  ArrowDownToLine,
   BarChart3,
-  Box,
+  Bot,
   Briefcase,
-  Bug,
-  Calendar,
+  Building2,
+  CalendarCheck,
   CalendarDays,
-  ChartLine,
+  CalendarRange,
   ClipboardCheck,
   ClipboardList,
   Clock,
+  Coins,
   CreditCard,
-  Database,
+  FileBadge,
+  FileBarChart,
   FileSpreadsheet,
   Fingerprint,
   GraduationCap,
+  HardDrive,
   History,
   Home,
   LayoutDashboard,
+  LayoutGrid,
+  LayoutList,
   ListChecks,
+  Mail,
   Megaphone,
+  MessageCircle,
+  MessageSquare,
+  Package,
   PackagePlus,
+  PackageSearch,
   PiggyBank,
+  Receipt,
+  ScanBarcode,
   School,
-  Search,
+  SearchCode,
   Settings2,
+  ShieldCheck,
+  Stethoscope,
+  Timer,
+  TrendingUp,
   Truck,
   Upload,
+  UserCheck,
   UserCog,
   Users,
-  Users2,
   Wallet,
+  Webhook,
 } from "lucide-react";
 import type { ComponentType } from "react";
 
 import type { NavConfig, NavSection, RoutePermission } from "@/types/navigation";
 
-// Reuse NavItem interface from original generator to stay compatible with Sidebar
 export interface NavItem {
   exact?: boolean;
   icon: ComponentType<{ className?: string; strokeWidth?: number }>;
@@ -51,47 +68,65 @@ export interface NavSectionData {
 }
 
 const ICON_MAP: Record<string, ComponentType<{ className?: string; strokeWidth?: number }>> = {
-  Box,
-  Briefcase,
-  Bug,
+  ArrowDownToLine,
   BarChart3,
-  Calendar,
+  Bot,
+  Briefcase,
+  Building2,
+  CalendarCheck,
   CalendarDays,
-  ChartLine,
+  CalendarRange,
   ClipboardCheck,
   ClipboardList,
   Clock,
+  Coins,
   CreditCard,
-  Database,
+  FileBadge,
+  FileBarChart,
   FileSpreadsheet,
   Fingerprint,
   GraduationCap,
+  HardDrive,
   History,
   Home,
   LayoutDashboard,
+  LayoutGrid,
+  LayoutList,
   ListChecks,
+  Mail,
   Megaphone,
+  MessageCircle,
+  MessageSquare,
+  Package,
   PackagePlus,
+  PackageSearch,
   PiggyBank,
+  Receipt,
+  ScanBarcode,
   School,
-  Search,
+  SearchCode,
   Settings2,
+  ShieldCheck,
+  Stethoscope,
+  Timer,
+  TrendingUp,
   Truck,
   Upload,
+  UserCheck,
   UserCog,
   Users,
-  Users2,
   Wallet,
+  Webhook,
 };
 
 const SECTION_ORDER: NavSection[] = [
-  "Prestaciones",
-  "Insumos",
+  "Clínica",
+  "Pacientes",
   "Finanzas",
-  "Servicios",
+  "Logística",
+  "Personal",
+  "Comunicaciones",
   "Outreach",
-  "Calendario",
-  "Operaciones",
   "Sistema",
 ];
 
@@ -106,7 +141,6 @@ type RouteTreeNode = AnyRoute;
 export function generateNavSections(routeTree: RouteTreeNode): NavSectionData[] {
   const extractedItems = extractNavItems(routeTree);
 
-  // Group by section
   const sectionMap = new Map<NavSection, ExtractedNavItem[]>();
 
   for (const item of extractedItems) {
@@ -115,7 +149,6 @@ export function generateNavSections(routeTree: RouteTreeNode): NavSectionData[] 
     sectionMap.set(item.section, existing);
   }
 
-  // Build sections in defined order
   const sections: NavSectionData[] = [];
 
   for (const sectionName of SECTION_ORDER) {
@@ -124,13 +157,12 @@ export function generateNavSections(routeTree: RouteTreeNode): NavSectionData[] 
       continue;
     }
 
-    // Sort by order and convert to NavItem
     const sortedItems = items
       .sort((a, b) => a.order - b.order)
       .map(
         (item): NavItem => ({
           exact: item.exact,
-          icon: ICON_MAP[item.iconKey] ?? Box,
+          icon: ICON_MAP[item.iconKey] ?? Package,
           label: item.label,
           requiredPermission: item.requiredPermission,
           to: item.to,
@@ -149,16 +181,10 @@ export function generateNavSections(routeTree: RouteTreeNode): NavSectionData[] 
 function extractNavItems(route: RouteTreeNode): ExtractedNavItem[] {
   const items: ExtractedNavItem[] = [];
 
-  // Check if current route has nav data
-  // TanStack router adds options to the route object
   if (route.options?.staticData?.nav) {
     const nav = route.options.staticData.nav as NavConfig;
     const permission = route.options.staticData.permission as RoutePermission | undefined;
 
-    // Using route.fullPath or route.to for the link
-    // routeTree nodes usually have fullPath available if flattened or built correctly
-    // If not, we might need to rely on the "path" and build it up, but generated tree usually has fullPath
-    // Let's assume for now route.fullPath exists on the plain object structure from .gen.ts
     const to = (route.fullPath || route.path || "/") as string;
 
     items.push({
@@ -169,16 +195,12 @@ function extractNavItems(route: RouteTreeNode): ExtractedNavItem[] {
       section: nav.section,
       to: to,
     });
-  }
-  // In development, warn about routes that might be missing nav
-  else if (process.env.NODE_ENV === "development") {
+  } else if (process.env.NODE_ENV === "development") {
     const fullPath = (route.fullPath || route.path) as string;
     const hasPermission = Boolean(route.options?.staticData?.permission);
     const hideFromNav = route.options?.staticData?.hideFromNav === true;
 
-    // Only warn for non-technical routes with permission but no nav
     if (fullPath && hasPermission && !hideFromNav) {
-      // Import isTechnicalRoute dynamically to avoid circular deps
       import("./route-utils")
         .then(({ isTechnicalRoute }) => {
           if (!isTechnicalRoute(fullPath)) {
@@ -187,13 +209,10 @@ function extractNavItems(route: RouteTreeNode): ExtractedNavItem[] {
             );
           }
         })
-        .catch(() => {
-          // Silently ignore if route-utils not available yet
-        });
+        .catch(() => {});
     }
   }
 
-  // Process children
   if (route.children) {
     const children = getRouteChildren(route.children);
     children.forEach((child) => {

@@ -5,7 +5,7 @@ import { InventoryPage } from "@/features/operations/inventory/pages/InventoryPa
 
 export const Route = createFileRoute("/_authed/operations/inventory")({
   staticData: {
-    nav: { iconKey: "Box", label: "Inventario", order: 3, section: "Insumos" },
+    nav: { iconKey: "Package", label: "Inventario", order: 20, section: "Logística" },
     permission: { action: "read", subject: "InventoryItem" },
     title: "Inventario",
   },

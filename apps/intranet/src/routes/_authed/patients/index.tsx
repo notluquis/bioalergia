@@ -19,7 +19,7 @@ import { PAGE_CONTAINER_RELAXED } from "@/lib/styles";
 
 export const Route = createFileRoute("/_authed/patients/")({
   staticData: {
-    nav: { iconKey: "Users", label: "Pacientes", order: 1, section: "Servicios" },
+    nav: { iconKey: "Users", label: "Pacientes", order: 10, section: "Pacientes" },
     permission: { action: "read", subject: "Patient" },
     relatedSubjects: ["Person", "Consultation", "Passkey"],
   },

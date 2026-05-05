@@ -3,7 +3,7 @@ import { AdminAttendancePage } from "@/features/attendance/AdminAttendancePage";
 
 export const Route = createFileRoute("/_authed/hr/attendance")({
   staticData: {
-    nav: { iconKey: "ClipboardList", label: "Asistencia", order: 6, section: "Operaciones" },
+    nav: { iconKey: "ClipboardList", label: "Asistencia", order: 30, section: "Personal" },
     permission: { action: "read", subject: "AttendanceAdmin" },
     relatedSubjects: ["AttendanceAdmin"],
   },
