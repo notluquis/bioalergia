@@ -5,15 +5,11 @@ export function formatRut(value?: null | string): string {
   if (!value || typeof value !== "string") {
     return "";
   }
-
-  const normalized = normalizeRut(value);
-  if (!normalized) {
-    return "";
-  }
-  const [body, dv] = normalized.split("-");
-  if (!body || !dv) {
-    return "";
-  }
+  const cleaned = value.toUpperCase().replaceAll(RUT_CLEAN_REGEX, "");
+  if (cleaned.length < 2) return cleaned;
+  const body = cleaned.slice(0, -1);
+  const dv = cleaned.slice(-1);
+  if (!RUT_BODY_REGEX.test(body)) return cleaned;
   const formattedBody = new Intl.NumberFormat("es-CL").format(Number(body));
   return `${formattedBody}-${dv}`;
 }

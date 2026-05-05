@@ -169,7 +169,8 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
                     <form.Field
                       name="rut"
                       validators={{
-                        onBlur: ({ value }) => (!validateRut(value) ? "RUT inválido" : undefined),
+                        onBlur: ({ value }) =>
+                          value && !validateRut(value) ? "RUT inválido" : undefined,
                       }}
                     >
                       {(field) => (
