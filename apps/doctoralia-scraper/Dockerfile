@@ -59,17 +59,18 @@ RUN --mount=type=cache,id=s/4990f681-049b-467f-9034-ef5c74a55f0a-/pnpm/store,tar
     pnpm --filter=@finanzas/doctoralia-scraper --prod deploy /app/deploy
 
 # ============================================================================
-# STAGE 4: Runner — Playwright image for browser-based login fallback
+# STAGE 4: Runner — installs Chromium for browser-based login fallback
 # ============================================================================
-# mcr.microsoft.com/playwright/node includes Chromium + all system deps needed
-# for headless browser login when Doctoralia's captcha blocks HTTP form POST.
-FROM mcr.microsoft.com/playwright/node:22-noble AS runner
+FROM node:22-noble AS runner
 WORKDIR /app
 ENV NODE_ENV=production
-ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
 COPY --from=build /app/deploy/ .
 
-USER pwuser
+# Install Chromium + all system deps matching the deployed playwright version.
+# Must run as root before switching to unprivileged user.
+RUN npx playwright install --with-deps chromium
+
+USER node
 
 CMD ["node", "--import", "tsx", "src/index.ts"]
