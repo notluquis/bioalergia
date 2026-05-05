@@ -52,6 +52,7 @@ import { Route as AuthedOutreachDescubrirRouteImport } from "./routes/_authed/ou
 import { Route as AuthedOutreachCrawlerMasivoRouteImport } from "./routes/_authed/outreach/crawler-masivo"
 import { Route as AuthedOutreachCampanasRouteImport } from "./routes/_authed/outreach/campanas"
 import { Route as AuthedOperationsSuppliesRouteImport } from "./routes/_authed/operations/supplies"
+import { Route as AuthedOperationsShipmentsRouteImport } from "./routes/_authed/operations/shipments"
 import { Route as AuthedOperationsInventoryRouteImport } from "./routes/_authed/operations/inventory"
 import { Route as AuthedHrTimesheetsRouteImport } from "./routes/_authed/hr/timesheets"
 import { Route as AuthedHrReportsRouteImport } from "./routes/_authed/hr/reports"
@@ -310,6 +311,12 @@ const AuthedOperationsSuppliesRoute =
     path: "/supplies",
     getParentRoute: () => AuthedOperationsRoute,
   } as any)
+const AuthedOperationsShipmentsRoute =
+  AuthedOperationsShipmentsRouteImport.update({
+    id: "/shipments",
+    path: "/shipments",
+    getParentRoute: () => AuthedOperationsRoute,
+  } as any)
 const AuthedOperationsInventoryRoute =
   AuthedOperationsInventoryRouteImport.update({
     id: "/inventory",
@@ -549,6 +556,7 @@ export interface FileRoutesByFullPath {
   "/hr/reports": typeof AuthedHrReportsRoute
   "/hr/timesheets": typeof AuthedHrTimesheetsRoute
   "/operations/inventory": typeof AuthedOperationsInventoryRoute
+  "/operations/shipments": typeof AuthedOperationsShipmentsRoute
   "/operations/supplies": typeof AuthedOperationsSuppliesRoute
   "/outreach/campanas": typeof AuthedOutreachCampanasRouteWithChildren
   "/outreach/crawler-masivo": typeof AuthedOutreachCrawlerMasivoRoute
@@ -623,6 +631,7 @@ export interface FileRoutesByTo {
   "/hr/reports": typeof AuthedHrReportsRoute
   "/hr/timesheets": typeof AuthedHrTimesheetsRoute
   "/operations/inventory": typeof AuthedOperationsInventoryRoute
+  "/operations/shipments": typeof AuthedOperationsShipmentsRoute
   "/operations/supplies": typeof AuthedOperationsSuppliesRoute
   "/outreach/campanas": typeof AuthedOutreachCampanasRouteWithChildren
   "/outreach/crawler-masivo": typeof AuthedOutreachCrawlerMasivoRoute
@@ -705,6 +714,7 @@ export interface FileRoutesById {
   "/_authed/hr/reports": typeof AuthedHrReportsRoute
   "/_authed/hr/timesheets": typeof AuthedHrTimesheetsRoute
   "/_authed/operations/inventory": typeof AuthedOperationsInventoryRoute
+  "/_authed/operations/shipments": typeof AuthedOperationsShipmentsRoute
   "/_authed/operations/supplies": typeof AuthedOperationsSuppliesRoute
   "/_authed/outreach/campanas": typeof AuthedOutreachCampanasRouteWithChildren
   "/_authed/outreach/crawler-masivo": typeof AuthedOutreachCrawlerMasivoRoute
@@ -787,6 +797,7 @@ export interface FileRouteTypes {
     | "/hr/reports"
     | "/hr/timesheets"
     | "/operations/inventory"
+    | "/operations/shipments"
     | "/operations/supplies"
     | "/outreach/campanas"
     | "/outreach/crawler-masivo"
@@ -861,6 +872,7 @@ export interface FileRouteTypes {
     | "/hr/reports"
     | "/hr/timesheets"
     | "/operations/inventory"
+    | "/operations/shipments"
     | "/operations/supplies"
     | "/outreach/campanas"
     | "/outreach/crawler-masivo"
@@ -942,6 +954,7 @@ export interface FileRouteTypes {
     | "/_authed/hr/reports"
     | "/_authed/hr/timesheets"
     | "/_authed/operations/inventory"
+    | "/_authed/operations/shipments"
     | "/_authed/operations/supplies"
     | "/_authed/outreach/campanas"
     | "/_authed/outreach/crawler-masivo"
@@ -1289,6 +1302,13 @@ declare module "@tanstack/react-router" {
       path: "/supplies"
       fullPath: "/operations/supplies"
       preLoaderRoute: typeof AuthedOperationsSuppliesRouteImport
+      parentRoute: typeof AuthedOperationsRoute
+    }
+    "/_authed/operations/shipments": {
+      id: "/_authed/operations/shipments"
+      path: "/shipments"
+      fullPath: "/operations/shipments"
+      preLoaderRoute: typeof AuthedOperationsShipmentsRouteImport
       parentRoute: typeof AuthedOperationsRoute
     }
     "/_authed/operations/inventory": {
@@ -1661,11 +1681,13 @@ const AuthedHrRouteWithChildren = AuthedHrRoute._addFileChildren(
 
 interface AuthedOperationsRouteChildren {
   AuthedOperationsInventoryRoute: typeof AuthedOperationsInventoryRoute
+  AuthedOperationsShipmentsRoute: typeof AuthedOperationsShipmentsRoute
   AuthedOperationsSuppliesRoute: typeof AuthedOperationsSuppliesRoute
 }
 
 const AuthedOperationsRouteChildren: AuthedOperationsRouteChildren = {
   AuthedOperationsInventoryRoute: AuthedOperationsInventoryRoute,
+  AuthedOperationsShipmentsRoute: AuthedOperationsShipmentsRoute,
   AuthedOperationsSuppliesRoute: AuthedOperationsSuppliesRoute,
 }
 

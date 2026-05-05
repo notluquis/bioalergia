@@ -127,47 +127,56 @@ function PatientSelectModal({
   });
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="md">
-      <Modal.Dialog>
-        <Modal.Header>
-          <Modal.Title>Seleccionar Paciente</Modal.Title>
-        </Modal.Header>
-        <Modal.Body className="gap-4">
-          <div className="relative">
-            <Search
-              size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-default-400"
-            />
-            <input
-              className="w-full rounded-lg border border-default-200 bg-default-50 py-2 pl-9 pr-3 text-sm outline-none focus:border-primary"
-              placeholder="Buscar por nombre o RUT..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-          <div className="max-h-72 overflow-y-auto space-y-1">
-            {isLoading ? (
-              <p className="py-4 text-center text-default-400 text-sm">Buscando...</p>
-            ) : patients.length === 0 ? (
-              <p className="py-4 text-center text-default-400 text-sm">Sin resultados</p>
-            ) : (
-              patients.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  className="w-full rounded-lg px-3 py-2 text-left hover:bg-default-100 transition-colors"
-                  onClick={() => onSelect(p)}
-                >
-                  <div className="font-medium text-sm">
-                    {p.person.names} {p.person.fatherName}
-                  </div>
-                  <div className="font-mono text-default-400 text-xs">{p.person.rut}</div>
-                </button>
-              ))
-            )}
-          </div>
-        </Modal.Body>
-      </Modal.Dialog>
+    <Modal>
+      <Modal.Backdrop
+        isOpen={isOpen}
+        onOpenChange={(open) => {
+          if (!open) onClose();
+        }}
+      >
+        <Modal.Container placement="center">
+          <Modal.Dialog className="relative w-full max-w-md rounded-[28px] bg-background p-6 shadow-2xl">
+            <Modal.Header className="mb-4 font-bold text-primary text-xl">
+              <Modal.Heading>Seleccionar Paciente</Modal.Heading>
+            </Modal.Header>
+            <Modal.Body className="gap-4">
+              <div className="relative">
+                <Search
+                  size={16}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-default-400"
+                />
+                <input
+                  className="w-full rounded-lg border border-default-200 bg-default-50 py-2 pl-9 pr-3 text-sm outline-none focus:border-primary"
+                  placeholder="Buscar por nombre o RUT..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+              <div className="max-h-72 overflow-y-auto space-y-1">
+                {isLoading ? (
+                  <p className="py-4 text-center text-default-400 text-sm">Buscando...</p>
+                ) : patients.length === 0 ? (
+                  <p className="py-4 text-center text-default-400 text-sm">Sin resultados</p>
+                ) : (
+                  patients.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      className="w-full rounded-lg px-3 py-2 text-left hover:bg-default-100 transition-colors"
+                      onClick={() => onSelect(p)}
+                    >
+                      <div className="font-medium text-sm">
+                        {p.person.names} {p.person.fatherName}
+                      </div>
+                      <div className="font-mono text-default-400 text-xs">{p.person.rut}</div>
+                    </button>
+                  ))
+                )}
+              </div>
+            </Modal.Body>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
     </Modal>
   );
 }
