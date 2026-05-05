@@ -479,6 +479,10 @@ export const doctoraliaContract = {
     .route({ method: "POST", path: "/scraper/run-override/clear" })
     .input(z.object({}))
     .output(scraperRunOverrideStatusSchema),
+  calendarSyncNow: oc
+    .route({ method: "POST", path: "/calendar/sync/now" })
+    .input(z.object({}))
+    .output(calendarSyncNowResponseSchema),
 };
 
 export type DoctoraliaContract = typeof doctoraliaContract;

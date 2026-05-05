@@ -336,6 +336,19 @@ const scraperRunOverrideStatusSchema = z.object({
   status: z.literal("ok"),
 });
 
+const calendarSyncNowResponseSchema = z.object({
+  status: z.enum(["ok", "skip", "error"]),
+  message: z.string(),
+  data: z
+    .object({
+      alertsFetched: z.number().int(),
+      pendingAlertsFetched: z.number().int(),
+      appointmentsInserted: z.number().int(),
+      appointmentsUpdated: z.number().int(),
+    })
+    .nullable(),
+});
+
 const authed = base.use(async ({ context, next }) => {
   const user = await getSessionUser(context.hono);
 
@@ -1170,6 +1183,68 @@ const doctoraliaORPCRouterBase = {
         data,
         status: "ok" as const,
       };
+    }),
+
+  calendarSyncNow: canManageDoctoraliaCalendar
+    .route({ method: "POST", path: "/calendar/sync/now" })
+    .input(z.object({}))
+    .output(calendarSyncNowResponseSchema)
+    .handler(async ({ context }) => {
+      if (process.env.ENABLE_DOCTORALIA_CALENDAR_SYNC !== "true") {
+        return {
+          status: "skip" as const,
+          message: "La sincronización de calendario no está habilitada en este entorno.",
+          data: null,
+        };
+      }
+
+      const { hasCalendarApiToken } = await import(
+        "../lib/doctoralia/doctoralia-calendar-client.js"
+      );
+      const hasToken = await hasCalendarApiToken();
+      if (!hasToken) {
+        return {
+          status: "skip" as const,
+          message: "No hay token de API de Doctoralia configurado.",
+          data: null,
+        };
+      }
+
+      try {
+        const { doctoraliaCalendarSyncService } = await import(
+          "../services/doctoralia-calendar.js"
+        );
+        const result = await doctoraliaCalendarSyncService.syncFromAlerts(
+          3,
+          "manual-ui",
+          context.user.id,
+        );
+
+        logEvent("doctoralia.calendar.sync.manual", {
+          userId: context.user.id,
+          alertsFetched: result.alertsFetched,
+          pendingAlertsFetched: result.pendingAlertsFetched,
+          appointmentsInserted: result.appointments.inserted,
+          appointmentsUpdated: result.appointments.updated,
+        });
+
+        return {
+          status: "ok" as const,
+          message: `Sincronización completada. Alertas: ${result.alertsFetched} (${result.pendingAlertsFetched} pendientes). Citas: +${result.appointments.inserted} / ~${result.appointments.updated}.`,
+          data: {
+            alertsFetched: result.alertsFetched,
+            pendingAlertsFetched: result.pendingAlertsFetched,
+            appointmentsInserted: result.appointments.inserted,
+            appointmentsUpdated: result.appointments.updated,
+          },
+        };
+      } catch (error) {
+        return {
+          status: "error" as const,
+          message: error instanceof Error ? error.message : "Error desconocido al sincronizar.",
+          data: null,
+        };
+      }
     }),
 };
 

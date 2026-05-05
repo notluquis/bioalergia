@@ -10,6 +10,7 @@ import {
   DoctoraliaCalendarBackfillStatusResponseSchema,
   DoctoraliaCalendarMergedResponseSchema,
   DoctoraliaCalendarMonthlySummaryResponseSchema,
+  DoctoraliaCalendarSyncNowResponseSchema,
   DoctoraliaEmailMonthlySummaryResponseSchema,
   DoctoraliaEmailNotificationsCalendarResponseSchema,
   DoctoraliaEmailNotificationsListResponseSchema,
@@ -358,6 +359,27 @@ export async function clearDoctoraliaScraperRunOverride(): Promise<DoctoraliaScr
       await doctoraliaORPCClient.clearScraperRunOverride({})
     );
     return response.data;
+  } catch (error) {
+    throw toDoctoraliaApiError(error);
+  }
+}
+
+export type DoctoraliaCalendarSyncNowResponse = {
+  status: "ok" | "skip" | "error";
+  message: string;
+  data: {
+    alertsFetched: number;
+    pendingAlertsFetched: number;
+    appointmentsInserted: number;
+    appointmentsUpdated: number;
+  } | null;
+};
+
+export async function triggerDoctoraliaCalendarSync(): Promise<DoctoraliaCalendarSyncNowResponse> {
+  try {
+    return DoctoraliaCalendarSyncNowResponseSchema.parse(
+      await doctoraliaORPCClient.calendarSyncNow({})
+    );
   } catch (error) {
     throw toDoctoraliaApiError(error);
   }

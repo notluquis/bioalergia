@@ -288,3 +288,16 @@ export const DoctoraliaUpdateScraperCookiesResponseSchema = z.strictObject({
   }),
   status: z.literal("ok"),
 });
+
+export const DoctoraliaCalendarSyncNowResponseSchema = z.strictObject({
+  status: z.enum(["ok", "skip", "error"]),
+  message: z.string(),
+  data: z
+    .strictObject({
+      alertsFetched: z.number().int(),
+      pendingAlertsFetched: z.number().int(),
+      appointmentsInserted: z.number().int(),
+      appointmentsUpdated: z.number().int(),
+    })
+    .nullable(),
+});

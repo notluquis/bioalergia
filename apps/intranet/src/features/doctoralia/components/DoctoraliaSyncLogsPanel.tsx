@@ -1,5 +1,6 @@
 import {
   Alert,
+  Button,
   Card,
   Chip,
   Description,
@@ -9,11 +10,13 @@ import {
   Skeleton,
   Table,
 } from "@heroui/react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { History } from "lucide-react";
+import { History, RefreshCw } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { useToast } from "@/context/ToastContext";
+import { triggerDoctoraliaCalendarSync } from "@/features/doctoralia/api";
 import { doctoraliaSettingsKeys } from "@/features/doctoralia/settings-queries";
 import type { DoctoraliaSyncLog } from "@/features/doctoralia/types";
 
@@ -45,9 +48,29 @@ function statusColor(status: string): "accent" | "danger" | "success" | "default
 }
 
 export function DoctoraliaSyncLogsPanel() {
+  const toast = useToast();
+  const queryClient = useQueryClient();
+
   const { data: logs = [], isPending } = useQuery({
     ...doctoraliaSettingsKeys.syncLogs(),
     refetchInterval: 30_000,
+  });
+
+  const syncNowMutation = useMutation({
+    mutationFn: triggerDoctoraliaCalendarSync,
+    onError: (err: Error) => toast.error(`Error al sincronizar: ${err.message}`),
+    onSuccess: (result) => {
+      if (result.status === "error") {
+        toast.error(result.message, "Sincronización fallida");
+        return;
+      }
+      if (result.status === "skip") {
+        toast.info(result.message, "Sincronización omitida");
+        return;
+      }
+      toast.success(result.message, "Sincronización completada");
+      void queryClient.invalidateQueries({ queryKey: doctoraliaSettingsKeys.all });
+    },
   });
 
   const [syncTypeFilter, setSyncTypeFilter] = useState<(typeof SYNC_TYPES)[number]>("ALL");
@@ -64,14 +87,26 @@ export function DoctoraliaSyncLogsPanel() {
   return (
     <div className="mt-4 space-y-4">
       <Card>
-        <Card.Header className="flex flex-col items-start gap-1">
-          <h2 className="flex items-center gap-2 font-semibold text-base">
-            <History className="h-4 w-4" /> Registro de sincronizaciones
-          </h2>
-          <Description className="text-default-500 text-xs">
-            Últimos 50 eventos de sincronización (scraper, listener IMAP y backfills manuales). Se
-            refresca cada 30 s.
-          </Description>
+        <Card.Header className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="flex items-center gap-2 font-semibold text-base">
+              <History className="h-4 w-4" /> Registro de sincronizaciones
+            </h2>
+            <Description className="text-default-500 text-xs">
+              Últimos 50 eventos de sincronización (scraper, listener IMAP y backfills manuales). Se
+              refresca cada 30 s.
+            </Description>
+          </div>
+          <Button
+            isDisabled={syncNowMutation.isPending}
+            isPending={syncNowMutation.isPending}
+            onPress={() => syncNowMutation.mutate()}
+            size="sm"
+            variant="secondary"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Sincronizar ahora
+          </Button>
         </Card.Header>
         <Card.Content className="space-y-3">
           <div className="flex flex-wrap gap-3">
