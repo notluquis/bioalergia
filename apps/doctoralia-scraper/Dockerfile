@@ -61,7 +61,7 @@ RUN --mount=type=cache,id=s/4990f681-049b-467f-9034-ef5c74a55f0a-/pnpm/store,tar
 # ============================================================================
 # STAGE 4: Runner — installs Chromium for browser-based login fallback
 # ============================================================================
-FROM node:22-noble AS runner
+FROM node:22-bookworm AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
@@ -69,7 +69,7 @@ COPY --from=build /app/deploy/ .
 
 # Install Chromium + all system deps matching the deployed playwright version.
 # Must run as root before switching to unprivileged user.
-RUN npx playwright install --with-deps chromium
+RUN npx playwright@1.59.1 install --with-deps chromium
 
 USER node
 
