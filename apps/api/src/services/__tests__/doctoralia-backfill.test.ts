@@ -47,9 +47,9 @@ describe("planDoctoraliaBackfill", () => {
 
   it("rejects end dates inside or after the current ISO week", () => {
     // Current Monday in Chile is 2026-04-20.
-    expect(() => planDoctoraliaBackfill("2026-04-20", undefined, NOW)).toThrow(/anterior a la semana actual/);
-    expect(() => planDoctoraliaBackfill("2026-04-25", undefined, NOW)).toThrow(/anterior a la semana actual/);
-    expect(() => planDoctoraliaBackfill("2026-05-10", undefined, NOW)).toThrow(/anterior a la semana actual/);
+    expect(() => planDoctoraliaBackfill("2026-04-20", undefined, NOW)).toThrow(/anterior a la fecha de inicio/);
+    expect(() => planDoctoraliaBackfill("2026-04-25", undefined, NOW)).toThrow(/anterior a la fecha de inicio/);
+    expect(() => planDoctoraliaBackfill("2026-05-10", undefined, NOW)).toThrow(/anterior a la fecha de inicio/);
   });
 
   it("accepts a valid date strictly before current ISO week", () => {

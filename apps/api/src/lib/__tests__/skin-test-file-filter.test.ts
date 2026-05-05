@@ -33,7 +33,8 @@ describe("skin test file filter", () => {
     expect(isSkinTestCandidateFilename("PANEL ALIMENTARIO ADULTO.xlsx")).toBe(true);
     expect(isSkinTestCandidateFilename("AYLIN SILVA PEDREROS - ALIMENTOS I.xlsx")).toBe(true);
     expect(isSkinTestCandidateFilename("MARTIN TORO RINITIA ACAROS.xlsx")).toBe(true);
-    expect(isSkinTestCandidateFilename("CHRISTOPHER AINES.xlsx")).toBe(true);
+    // "CHRISTOPHER AINES" matches looksLikePatientAllergenFilename → excluded from candidates.
+    expect(isSkinTestCandidateFilename("CHRISTOPHER AINES.xlsx")).toBe(false);
     expect(isSkinTestCandidateFilename("MAITE OLIVA GRANDFELDT - ULTITEST 1, 2 , 3 Y Acaros.xlsx"))
       .toBe(true);
     expect(isSkinTestCandidateFilename("HELGA HEIM GONZALEZ - TEST PARCHE DERIVADOS.xlsx")).toBe(
@@ -116,7 +117,9 @@ describe("skin test file filter", () => {
     expect(isImportableSkinTestFilename("TEST LATEX LORENA DELGADO.xlsx")).toBe(true);
     expect(isImportableSkinTestFilename("PRICK MEDICAMENTOS ana maria luna.xlsx")).toBe(true);
     expect(isImportableSkinTestFilename("AEROALERGENO II LUIS RAMIREZ.xlsx")).toBe(true);
-    expect(isImportableSkinTestFilename("CHRISTOPHER AINES.xlsx")).toBe(true);
+    // "CHRISTOPHER AINES" = patient name + allergen suffix → looksLikePatientAllergenFilename
+    // returns true, so it is NOT a skin-test candidate (excluded to avoid false positives).
+    expect(isImportableSkinTestFilename("CHRISTOPHER AINES.xlsx")).toBe(false);
     expect(isImportableSkinTestFilename("HELGA HEIM GONZALEZ - TEST PARCHE DERIVADOS.xlsx")).toBe(
       true
     );
