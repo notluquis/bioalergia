@@ -1,7 +1,7 @@
 import {
   Button,
-  Form,
   FieldError,
+  Form,
   Input,
   Label,
   ListBox,
@@ -15,6 +15,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle, MapPin, Package, PackageCheck, Truck } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/context/ToastContext";
+import { fetchPatient } from "@/features/patients/api";
 import {
   createShipment,
   fetchCommercialOffices,
@@ -72,6 +73,12 @@ export function CreateShipmentWizard({
     declaredValue: 10000,
     cashOnDelivery: 0,
   });
+
+  const { data: patientData } = useQuery({
+    queryKey: ["patient", String(patientId)],
+    queryFn: () => fetchPatient(patientId),
+    staleTime: 1000 * 60 * 5,
+  });
   const [result, setResult] = useState<{ otNumber: string; labelBase64: string | null } | null>(
     null
   );
@@ -117,6 +124,7 @@ export function CreateShipmentWizard({
               {step === "coverage" && (
                 <CoverageStep
                   state={state}
+                  patientAddress={patientData?.person.address ?? null}
                   onNext={(data) => {
                     merge(data);
                     setStep("quote");
@@ -136,6 +144,11 @@ export function CreateShipmentWizard({
               {step === "recipient" && (
                 <RecipientStep
                   state={state}
+                  patientDefaults={{
+                    name: patientName,
+                    phone: patientData?.person.phone ?? "",
+                    email: patientData?.person.email ?? "",
+                  }}
                   onBack={() => setStep("quote")}
                   onNext={(data) => {
                     merge(data);
@@ -216,9 +229,11 @@ function StepIndicator({ step }: { step: Step }) {
 
 function CoverageStep({
   state,
+  patientAddress,
   onNext,
 }: {
   state: Partial<WizardState>;
+  patientAddress: null | string;
   onNext: (data: Partial<WizardState>) => void;
 }) {
   const [regionId, setRegionId] = useState(state.regionId ?? "");
@@ -255,6 +270,14 @@ function CoverageStep({
         <MapPin size={16} />
         Selecciona la sucursal de destino del paciente
       </div>
+      {patientAddress && (
+        <div className="flex items-start gap-2 rounded-lg bg-default-50 px-3 py-2 text-default-600 text-xs">
+          <MapPin size={13} className="mt-0.5 shrink-0 text-default-400" />
+          <span>
+            Dirección del paciente: <span className="font-medium">{patientAddress}</span>
+          </span>
+        </div>
+      )}
 
       <div className="space-y-4">
         <Select
@@ -565,18 +588,20 @@ function QuoteStep({
 
 function RecipientStep({
   state,
+  patientDefaults,
   onBack,
   onNext,
 }: {
   state: Partial<WizardState>;
+  patientDefaults: { name: string; phone: string; email: string };
   onBack: () => void;
   onNext: (data: Partial<WizardState>) => void;
 }) {
   const form = useForm({
     defaultValues: {
-      recipientName: state.recipientName ?? "",
-      recipientPhone: state.recipientPhone ?? "",
-      recipientEmail: state.recipientEmail ?? "",
+      recipientName: state.recipientName || patientDefaults.name,
+      recipientPhone: state.recipientPhone || patientDefaults.phone,
+      recipientEmail: state.recipientEmail || patientDefaults.email,
       contentDescription: state.contentDescription ?? "Medicamentos",
       cashOnDelivery: state.cashOnDelivery ?? 0,
     },

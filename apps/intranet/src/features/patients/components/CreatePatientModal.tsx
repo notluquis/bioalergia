@@ -1,6 +1,7 @@
 import {
   Button,
   Calendar,
+  Chip,
   DateField,
   DatePicker,
   Form,
@@ -11,14 +12,16 @@ import {
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { useForm } from "@tanstack/react-form";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Save, User, UserPlus } from "lucide-react";
+import { useStore } from "@tanstack/react-store";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AlertTriangle, OctagonX, Save, User, UserPlus } from "lucide-react";
+import { useEffect, useState } from "react";
 import {
   TanStackInputField,
   TanStackTextAreaField,
 } from "@/components/forms/TanStackFieldControls";
 import { useToast } from "@/context/ToastContext";
-import { createPatient } from "@/features/patients/api";
+import { createPatient, fetchPatients } from "@/features/patients/api";
 import { formatRut, validateRut } from "@/lib/rut";
 
 const BLOOD_TYPES = ["O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-"];
@@ -92,6 +95,44 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
     form.reset();
     onClose();
   };
+
+  // Dedup: debounced RUT + name for similar patient search
+  const rutValue = useStore(form.store, (s) => s.values.rut);
+  const nameValue = useStore(form.store, (s) => s.values.names);
+  const [debouncedRut, setDebouncedRut] = useState("");
+  const [debouncedName, setDebouncedName] = useState("");
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedRut(rutValue), 400);
+    return () => clearTimeout(t);
+  }, [rutValue]);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedName(nameValue), 500);
+    return () => clearTimeout(t);
+  }, [nameValue]);
+
+  const normalizedRut = debouncedRut.replace(/\./g, "").replace(/-/g, "").toUpperCase();
+  const { data: rutMatches } = useQuery({
+    queryKey: ["patients", debouncedRut],
+    queryFn: () => fetchPatients(debouncedRut),
+    enabled: normalizedRut.length >= 7,
+    staleTime: 1000 * 30,
+  });
+
+  const { data: nameMatches } = useQuery({
+    queryKey: ["patients", debouncedName],
+    queryFn: () => fetchPatients(debouncedName),
+    enabled: debouncedName.trim().length >= 3,
+    staleTime: 1000 * 30,
+  });
+
+  const exactDuplicate = rutMatches?.find((p) => {
+    const pRut = p.person.rut.replace(/\./g, "").replace(/-/g, "").toUpperCase();
+    return pRut === normalizedRut;
+  });
+
+  const similarByName = nameMatches?.filter((p) => !rutMatches?.some((r) => r.id === p.id)) ?? [];
 
   return (
     <Modal>
@@ -230,7 +271,7 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
                         <Select
                           onChange={(val) =>
                             field.handleChange(
-                              val === "__unknown_blood_type__" ? "" : (val as string),
+                              val === "__unknown_blood_type__" ? "" : (val as string)
                             )
                           }
                           value={field.state.value || "__unknown_blood_type__"}
@@ -319,6 +360,44 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
                   </form.Field>
                 </div>
 
+                {exactDuplicate && (
+                  <div className="flex items-start gap-2 rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-danger text-sm">
+                    <OctagonX size={16} className="mt-0.5 shrink-0" />
+                    <div>
+                      <p className="font-semibold">RUT duplicado</p>
+                      <p className="text-xs">
+                        Ya existe:{" "}
+                        <span className="font-medium">
+                          {exactDuplicate.person.names} {exactDuplicate.person.fatherName}
+                        </span>{" "}
+                        — {exactDuplicate.person.rut}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {!exactDuplicate && similarByName.length > 0 && (
+                  <div className="rounded-xl border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning-700 dark:text-warning-300">
+                    <div className="mb-2 flex items-center gap-2 font-semibold">
+                      <AlertTriangle size={15} />
+                      Pacientes similares encontrados
+                    </div>
+                    <ul className="space-y-1">
+                      {similarByName.slice(0, 3).map((p) => (
+                        <li key={p.id} className="flex items-center gap-2 text-xs">
+                          <Chip size="sm" variant="soft" color="warning">
+                            {p.person.rut}
+                          </Chip>
+                          {p.person.names} {p.person.fatherName}
+                          {p.person.phone && (
+                            <span className="text-default-500">· {p.person.phone}</span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
                 <div className="flex justify-end gap-3 pt-2">
                   <Button
                     isDisabled={createPatientMutation.isPending}
@@ -332,7 +411,9 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
                     {([canSubmit, isSubmitting]) => (
                       <Button
                         className="min-w-37.5"
-                        isDisabled={!canSubmit || createPatientMutation.isPending}
+                        isDisabled={
+                          !canSubmit || createPatientMutation.isPending || Boolean(exactDuplicate)
+                        }
                         isPending={isSubmitting || createPatientMutation.isPending}
                         type="submit"
                         variant="primary"

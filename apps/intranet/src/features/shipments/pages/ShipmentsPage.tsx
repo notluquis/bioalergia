@@ -264,7 +264,7 @@ export function ShipmentsPage() {
           onClose={() => {
             setWizardOpen(false);
             setSelectedPatient(null);
-            refetch();
+            void refetch();
           }}
           patientId={selectedPatient.id}
           patientName={`${selectedPatient.person.names} ${selectedPatient.person.fatherName}`.trim()}
