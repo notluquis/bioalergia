@@ -128,13 +128,28 @@ const SPA_SHELL_MARKER = /<div id="vuesaas">/i;
 async function performLoginWithBrowser(session: ImpitSession, config: ScraperConfig): Promise<void> {
   log("switching to Playwright browser-based login (captcha detected)...");
   const { chromium } = await import("playwright");
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({
+    headless: true,
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+      "--disable-gpu",
+      "--disable-blink-features=AutomationControlled",
+    ],
+  });
   try {
     const context = await browser.newContext({
       locale: "es-CL",
       userAgent:
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
     });
+
+    // Mask navigator.webdriver so Friendly Captcha headless detection fails.
+    await context.addInitScript(() => {
+      Object.defineProperty(navigator, "webdriver", { get: () => undefined });
+    });
+
     const page = await context.newPage();
 
     log("  browser: navigating to", LOGIN_URL);
@@ -143,19 +158,31 @@ async function performLoginWithBrowser(session: ImpitSession, config: ScraperCon
     await page.fill('input[type="email"], input[name="email"], input[name="_username"]', config.email);
     await page.fill('input[type="password"], input[name="password"], input[name="_password"]', config.password);
 
-    // Wait for Friendly Captcha PoW puzzle to solve (fills hidden input with hash solution).
-    // Without this, submitting too early sends an empty/pending token and the server rejects it.
-    const hasFrc = await page.$('[name="frc-captcha-solution"]');
-    if (hasFrc) {
+    // Friendly Captcha default startMode is "focus" — the widget won't create the hidden
+    // input or start solving until focusin fires on the form. Dispatch it explicitly.
+    await page.evaluate(() => {
+      document.querySelector("form")?.dispatchEvent(new Event("focusin", { bubbles: true }));
+    });
+
+    // Wait for the hidden input to appear in the DOM (Vue widget renders it async).
+    // All Friendly Captcha "not ready" states start with "." (.UNSTARTED, .HEADLESS_ERROR, .ERROR).
+    // A real PoW solution hash does NOT start with ".".
+    const frcInput = await page
+      .waitForSelector('[name="frc-captcha-solution"]', { timeout: 10_000 })
+      .catch(() => null);
+    if (frcInput) {
       log("  browser: waiting for Friendly Captcha PoW to complete...");
       await page.waitForFunction(
         () => {
           const el = document.querySelector<HTMLInputElement>('[name="frc-captcha-solution"]');
-          return el != null && el.value !== "" && el.value !== ".";
+          if (!el || el.value === "" || el.value.startsWith(".")) return false;
+          return true;
         },
         { timeout: 30_000 }
       );
       log("  browser: captcha solved");
+    } else {
+      log("  browser: no frc-captcha-solution input found — submitting without captcha token");
     }
 
     log("  browser: submitting form...");
