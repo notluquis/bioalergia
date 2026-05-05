@@ -128,7 +128,7 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
   });
 
   const exactDuplicate = rutMatches?.find((p) => {
-    const pRut = p.person.rut.replace(/\./g, "").replace(/-/g, "").toUpperCase();
+    const pRut = (p.person.rut ?? "").replace(/\./g, "").replace(/-/g, "").toUpperCase();
     return pRut === normalizedRut;
   });
 

@@ -3,7 +3,7 @@ import { zDateString } from "@/lib/api-validate";
 
 const DecimalSchema = z.union([z.number(), z.string()]);
 
-export const PersonSchema = z.strictObject({
+export const PersonSchema = z.object({
   address: z.string().nullable().optional(),
   createdAt: z.coerce.date(),
   email: z.string().nullable().optional(),
@@ -13,11 +13,11 @@ export const PersonSchema = z.strictObject({
   names: z.string(),
   personType: z.string(),
   phone: z.string().nullable().optional(),
-  rut: z.string(),
+  rut: z.string().nullable(),
   updatedAt: z.coerce.date(),
 });
 
-export const PatientListItemSchema = z.strictObject({
+export const PatientListItemSchema = z.object({
   birthDate: zDateString.nullable().optional(),
   bloodType: z.string().nullable().optional(),
   createdAt: z.coerce.date(),

@@ -369,7 +369,7 @@ function PatientDetailsPage() {
                         value={`${person.fatherName} ${person.motherName}`}
                       />
 
-                      <DetailRow label="RUT" value={person.rut} />
+                      <DetailRow label="RUT" value={person.rut ?? "Sin RUT"} />
                       <DetailRow
                         label="Fecha Nacimiento"
                         value={
@@ -479,7 +479,7 @@ function PatientDetailsHeader({
       to: "/certificates/medical",
       search: {
         patientName: person.names,
-        rut: person.rut,
+        rut: person.rut ?? undefined,
         address: person.address || "",
         birthDate: birthDate || undefined,
       },
