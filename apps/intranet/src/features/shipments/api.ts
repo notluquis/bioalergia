@@ -72,3 +72,11 @@ export async function fetchShipments(patientId: number) {
     throw toShipmentsApiError(error);
   }
 }
+
+export async function fetchAllShipments() {
+  try {
+    return await shipmentsORPCClient.listAll({});
+  } catch (error) {
+    throw toShipmentsApiError(error);
+  }
+}

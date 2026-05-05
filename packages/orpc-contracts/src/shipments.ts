@@ -112,6 +112,15 @@ export const listShipmentsOutputSchema = z.object({
   shipments: z.array(shipmentSchema),
 });
 
+export const shipmentWithPatientSchema = shipmentSchema.extend({
+  patientName: z.string(),
+  patientRut: z.string(),
+});
+
+export const listAllShipmentsOutputSchema = z.object({
+  shipments: z.array(shipmentWithPatientSchema),
+});
+
 // ─── Contract ─────────────────────────────────────────────────────────────────
 
 export const shipmentsContract = {
@@ -143,6 +152,10 @@ export const shipmentsContract = {
     .route({ method: "GET", path: "/" })
     .input(listShipmentsInputSchema)
     .output(listShipmentsOutputSchema),
+
+  listAll: oc
+    .route({ method: "GET", path: "/all" })
+    .output(listAllShipmentsOutputSchema),
 };
 
 export type ShipmentsContract = typeof shipmentsContract;

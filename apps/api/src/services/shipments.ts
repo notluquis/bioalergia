@@ -182,3 +182,19 @@ export async function listShipmentsByPatient(patientId: number) {
   });
   return shipments.map(serializeShipment);
 }
+
+export async function listAllShipments() {
+  const shipments = await db.shipment.findMany({
+    orderBy: { createdAt: "desc" },
+    include: {
+      patient: {
+        include: { person: { select: { names: true, fatherName: true, rut: true } } },
+      },
+    },
+  });
+  return shipments.map((s) => ({
+    ...serializeShipment(s),
+    patientName: `${s.patient.person.names} ${s.patient.person.fatherName}`.trim(),
+    patientRut: s.patient.person.rut,
+  }));
+}

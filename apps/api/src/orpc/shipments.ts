@@ -15,6 +15,7 @@ import {
   fetchCommercialOffices,
   fetchCommunes,
   fetchRegions,
+  listAllShipments,
   listShipmentsByPatient,
   quoteShipment,
 } from "../services/shipments";
@@ -123,6 +124,23 @@ const shipmentsRouterBase = {
     .output(z.object({ shipments: z.array(serializedShipmentSchema) }))
     .handler(async ({ input }) => {
       const shipments = await listShipmentsByPatient(input.patientId);
+      return { shipments };
+    }),
+
+  listAll: base
+    .route({ method: "GET", path: "/all", summary: "List all shipments", tags: ["Shipments"] })
+    .output(
+      z.object({
+        shipments: z.array(
+          serializedShipmentSchema.extend({
+            patientName: z.string(),
+            patientRut: z.string(),
+          }),
+        ),
+      }),
+    )
+    .handler(async () => {
+      const shipments = await listAllShipments();
       return { shipments };
     }),
 };

@@ -18,7 +18,6 @@ import {
   Phone,
   PlusCircle,
   Trash2,
-  Truck,
   User,
 } from "lucide-react";
 import { useState } from "react";
@@ -27,7 +26,6 @@ import { fetchPatient } from "@/features/patients/api";
 import { ClinicalSeriesList } from "@/features/patients/components/ClinicalSeriesList";
 import { NewAttachmentModal } from "@/features/patients/components/NewAttachmentModal";
 import { SkinTestsList } from "@/features/patients/components/SkinTestsList";
-import { ShipmentsList } from "@/features/shipments/components/ShipmentsList";
 import { useLazyTabs } from "@/hooks/use-lazy-tabs";
 
 type Patient = Awaited<ReturnType<typeof fetchPatient>>;
@@ -67,7 +65,6 @@ function PatientDetailsPage() {
     | "history"
     | "info"
     | "payments"
-    | "shipments"
     | "skin-tests"
   >("history");
   const { isTabMounted, markTabAsMounted } = useLazyTabs<
@@ -78,7 +75,6 @@ function PatientDetailsPage() {
     | "history"
     | "info"
     | "payments"
-    | "shipments"
     | "skin-tests"
   >("history");
 
@@ -178,14 +174,12 @@ function PatientDetailsPage() {
                 | "history"
                 | "info"
                 | "payments"
-                | "shipments"
                 | "skin-tests" =
                 keyValue === "certificates" ||
                 keyValue === "budgets" ||
                 keyValue === "payments" ||
                 keyValue === "docs" ||
                 keyValue === "info" ||
-                keyValue === "shipments" ||
                 keyValue === "clinical-series" ||
                 keyValue === "skin-tests"
                   ? keyValue
@@ -227,11 +221,6 @@ function PatientDetailsPage() {
                 <Tabs.Tab id="info" className="min-w-max gap-2 font-semibold">
                   <User size={18} />
                   <span>Info Detallada</span>
-                  <Tabs.Indicator />
-                </Tabs.Tab>
-                <Tabs.Tab id="shipments" className="min-w-max gap-2 font-semibold">
-                  <Truck size={18} />
-                  <span>Despachos</span>
                   <Tabs.Indicator />
                 </Tabs.Tab>
                 <Tabs.Tab id="clinical-series" className="min-w-max gap-2 font-semibold">
@@ -356,15 +345,6 @@ function PatientDetailsPage() {
                     scrollMaxHeight="min(56dvh, 640px)"
                   />
                 </>
-              ) : null}
-            </Tabs.Panel>
-
-            <Tabs.Panel id="shipments" className="py-4">
-              {isTabMounted("shipments") ? (
-                <ShipmentsList
-                  patientId={patient.id}
-                  patientName={`${person.names} ${person.fatherName}`.trim()}
-                />
               ) : null}
             </Tabs.Panel>
 
