@@ -635,15 +635,23 @@ const patientsORPCRouterBase = {
     .input(listPatientsInputSchema)
     .output(patientListResponseSchema)
     .handler(async ({ input }) => {
-      const where = input.q
+      const tokens = input.q
+        ? input.q
+            .trim()
+            .split(/\s+/)
+            .filter((t) => t.length > 0)
+        : [];
+      const where = tokens.length > 0
         ? {
             person: {
-              OR: [
-                { names: { contains: input.q, mode: "insensitive" as const } },
-                { fatherName: { contains: input.q, mode: "insensitive" as const } },
-                { motherName: { contains: input.q, mode: "insensitive" as const } },
-                { rut: { contains: input.q, mode: "insensitive" as const } },
-              ],
+              AND: tokens.map((token) => ({
+                OR: [
+                  { names: { contains: token, mode: "insensitive" as const } },
+                  { fatherName: { contains: token, mode: "insensitive" as const } },
+                  { motherName: { contains: token, mode: "insensitive" as const } },
+                  { rut: { contains: token, mode: "insensitive" as const } },
+                ],
+              })),
             },
           }
         : {};
